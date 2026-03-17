@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { logger } from '@/lib/logger';
 import { safeLocalStorageGet, safeLocalStorageSet } from '@/lib/safeJson';
 import { SK } from '@/lib/storageKeys';
@@ -51,9 +51,16 @@ export function useTasksData({ onAwardXp, onEarnTreats }: UseTasksDataOptions): 
     setIsLoaded(true);
   }, []);
 
+  // Prevent re-syncs when tasks array reference changes without actual data change
+  const prevTasksRef = useRef<string>('');
+
   // Save tasks to localStorage whenever they change
   useEffect(() => {
     if (!isLoaded) return;
+    const serialized = JSON.stringify(tasks);
+    if (serialized === prevTasksRef.current) return;
+    prevTasksRef.current = serialized;
+
     safeLocalStorageSet(SK.TASKS, tasks);
 
     window.dispatchEvent(new CustomEvent('zenflow-tasks-updated'));

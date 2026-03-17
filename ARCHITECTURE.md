@@ -491,6 +491,22 @@ Hooks are registered via `useHydrateGamification({ awardXp, earnTreats, plantSee
 3. **NEVER use `localStorage` directly.** Use `SK.*` keys + `safeJson` accessors (`storageGetRaw`, `safeLocalStorageSet`, etc.). ESLint `no-restricted-globals` enforces this.
 4. **Atomic writes**: When updating IndexedDB, persist FIRST, then update React state on success.
 5. **Cloud sync is async and non-blocking.** Local-first: the app must work fully offline.
+6. **Supabase Migration Safety Rules:**
+   - Every NOT NULL column MUST have a DEFAULT value (except natural keys like `user_id`, `id`, FK refs).
+   - `CREATE TABLE IF NOT EXISTS` does NOT update existing tables — use `ALTER TABLE` for retroactive fixes.
+   - Every migration MUST end with `NOTIFY pgrst, 'reload schema';` to refresh PostgREST cache.
+   - Audit query: `SELECT table_name, column_name FROM information_schema.columns WHERE is_nullable='NO' AND column_default IS NULL AND column_name NOT IN ('user_id','id') AND table_schema='public';`
+   - Incident: 20260307 migration created `user_reminder_settings` without defaults, 20260311's `IF NOT EXISTS` skipped fix → 400 errors. Fixed by 20260316.
+7. **Effect-Sync Dedup Pattern:** Any `useEffect` that depends on a Zustand object (not primitive) and triggers async sync MUST use a `JSON.stringify` ref guard to prevent triple-fire from reference-only changes. Pattern:
+   ```typescript
+   const prevRef = useRef<string>('');
+   useEffect(() => {
+     const serialized = JSON.stringify(dep);
+     if (serialized === prevRef.current) return;
+     prevRef.current = serialized;
+     // ... sync logic
+   }, [dep]);
+   ```
 
 ---
 
