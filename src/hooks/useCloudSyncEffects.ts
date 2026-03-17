@@ -39,9 +39,15 @@ export function useCloudSyncEffects({
 
   // Guard against concurrent reminder syncs (prevents infinite loop on 400 error)
   const reminderSyncPendingRef = useRef(false);
+  // Prevent duplicate syncs when Zustand emits a new object reference without actual data change
+  const prevRemindersRef = useRef<string>('');
 
   // Reminder sync to cloud
   useEffect(() => {
+    const serialized = JSON.stringify(reminders) + '|' + language;
+    if (serialized === prevRemindersRef.current) return;
+    prevRemindersRef.current = serialized;
+
     if (!supabase || reminderSyncPendingRef.current) return;
 
     reminderSyncPendingRef.current = true;

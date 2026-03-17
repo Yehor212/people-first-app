@@ -69,7 +69,12 @@ export const syncReminderSettings = async (
         // Table doesn't exist — migration not applied
         logger.warn('[ReminderSync] Table not found — run migration 20260311_fix_reminder_inner_world.sql. Disabled for session.');
       } else {
-        logger.warn('[ReminderSync] Sync failed, disabled for session:', error.code, error.message);
+        logger.warn('[ReminderSync] Sync failed, disabled for session:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+        });
       }
       return;
     }

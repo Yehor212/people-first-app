@@ -541,6 +541,30 @@ export type Database = {
         }
         Relationships: []
       }
+      journal_embeddings: {
+        Row: {
+          content_hash: string
+          created_at: string
+          embedding: string
+          entry_id: string
+          user_id: string
+        }
+        Insert: {
+          content_hash: string
+          created_at?: string
+          embedding: string
+          entry_id: string
+          user_id: string
+        }
+        Update: {
+          content_hash?: string
+          created_at?: string
+          embedding?: string
+          entry_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       journal_entries: {
         Row: {
           audio_ids: string[]
@@ -1205,19 +1229,19 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          days: number[]
-          enabled: boolean
-          focus_time: string
-          habit_ids: string[]
-          habit_time: string
+          days?: number[]
+          enabled?: boolean
+          focus_time?: string
+          habit_ids?: string[]
+          habit_time?: string
           language?: string
-          mood_time: string
+          mood_time?: string
           mood_time_afternoon?: string | null
           mood_time_evening?: string | null
           mood_time_morning?: string | null
-          quiet_end: string
-          quiet_start: string
-          timezone: string
+          quiet_end?: string
+          quiet_start?: string
+          timezone?: string
           updated_at?: string
           user_id: string
         }
@@ -1381,6 +1405,18 @@ export type Database = {
       get_user_weekly_summary: {
         Args: { p_week_start?: string }
         Returns: Json
+      }
+      match_journal_entries: {
+        Args: {
+          match_count?: number
+          match_threshold?: number
+          match_user_id: string
+          query_embedding: string
+        }
+        Returns: {
+          entry_id: string
+          similarity: number
+        }[]
       }
       reset_monthly_leaderboard: { Args: never; Returns: undefined }
       reset_weekly_leaderboard: { Args: never; Returns: undefined }
