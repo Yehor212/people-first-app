@@ -260,7 +260,7 @@ export function UrgencyAlert({
   const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(() => {
     const data = safeLocalStorageGet<{ date?: string; alerts?: string[] }>(SK.DISMISSED_URGENCY, {});
     // Clear dismissed alerts from previous day
-    const today = new Date().toDateString();
+    const today = getToday();
     if (data.date !== today) {
       return new Set();
     }
@@ -269,7 +269,7 @@ export function UrgencyAlert({
 
   // Persist dismissed alerts
   useEffect(() => {
-    const today = new Date().toDateString();
+    const today = getToday();
     safeLocalStorageSet(SK.DISMISSED_URGENCY, {
       date: today,
       alerts: Array.from(dismissedAlerts),

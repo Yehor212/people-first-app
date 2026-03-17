@@ -49,7 +49,7 @@ const state: AdControllerState = {
   lastDismissTime: 0,
 };
 
-let AdMobPlugin: any = null;
+let AdMobPlugin: any = null; // any: Capacitor AdMob plugin type not exported, loaded dynamically
 
 // ============================================
 // INITIALIZATION

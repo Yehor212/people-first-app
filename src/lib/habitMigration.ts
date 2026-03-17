@@ -66,7 +66,7 @@ interface HabitV1 {
  */
 export function needsMigration(habits: unknown[]): boolean {
   if (!habits || habits.length === 0) return false;
-  return habits.some((h: any) =>
+  return habits.some((h: any) => // any: pre-migration habit shape is untyped (v1 format)
     'completedDates' in h ||
     'skippedDates' in h ||
     'progressByDate' in h ||

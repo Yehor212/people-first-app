@@ -6,7 +6,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Gift, Sparkles, Check, Lock, Zap, X } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { cn } from '@/lib/utils';
+import { cn, getToday, formatDate } from '@/lib/utils';
 import { safeLocalStorageGet, safeLocalStorageSet, storageGetRaw, storageSetRaw } from '@/lib/safeJson';
 import { safeParseInt } from '@/lib/validation';
 import { SK } from '@/lib/storageKeys';
@@ -56,8 +56,8 @@ export function DailyRewards({ onClose, onClaimReward }: DailyRewardsProps) {
     const savedStreak = storageGetRaw(SK.LOGIN_STREAK);
     const lastLogin = storageGetRaw(SK.LAST_LOGIN) || null;
 
-    const today = new Date().toDateString();
-    const yesterday = new Date(Date.now() - 86400000).toDateString();
+    const today = getToday();
+    const yesterday = formatDate(new Date(Date.now() - 86400000));
 
     if (savedLogin) {
       setRewards(savedLogin.rewards || getDailyLoginRewards());
@@ -110,7 +110,7 @@ export function DailyRewards({ onClose, onClaimReward }: DailyRewardsProps) {
       rewards: nextDay === 1 ? getDailyLoginRewards() : updatedRewards,
       currentDay: nextDay,
     });
-    storageSetRaw(SK.LAST_LOGIN, new Date().toDateString());
+    storageSetRaw(SK.LAST_LOGIN, getToday());
 
     // Store timeout ref and check mounted before state update
     claimTimeoutRef.current = setTimeout(() => {

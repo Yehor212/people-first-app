@@ -6,6 +6,7 @@
 
 import type { JournalEntry, JournalPhoto, JournalAudio } from './types';
 import * as storage from './journalStorage';
+import { getToday } from '@/lib/utils';
 
 // ── Helpers ──
 
@@ -82,7 +83,7 @@ export async function exportJSON(
 
   onProgress?.('Generating file...');
   const json = JSON.stringify(backup, null, 2);
-  const dateStr = new Date().toISOString().split('T')[0];
+  const dateStr = getToday();
   downloadText(json, `journal-backup-${dateStr}.json`, 'application/json');
 }
 
@@ -111,7 +112,7 @@ export async function exportCSV(): Promise<void> {
   });
 
   const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-  const dateStr = new Date().toISOString().split('T')[0];
+  const dateStr = getToday();
   downloadText(csv, `journal-${dateStr}.csv`, 'text/csv');
 }
 
@@ -163,7 +164,7 @@ export async function exportMarkdown(): Promise<void> {
   }
 
   const md = lines.join('\n');
-  const dateStr = new Date().toISOString().split('T')[0];
+  const dateStr = getToday();
   downloadText(md, `journal-${dateStr}.md`, 'text/markdown');
 }
 
@@ -283,6 +284,6 @@ export async function exportPDF(
     }
   }
 
-  const dateStr = new Date().toISOString().split('T')[0];
+  const dateStr = getToday();
   doc.save(`journal-${dateStr}.pdf`);
 }
