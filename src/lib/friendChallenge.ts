@@ -357,6 +357,7 @@ export function updateChallengeProgress(
   // Sync progress to cloud (non-blocking)
   if (isCloudChallengesAvailable()) {
     syncProgressToCloud(challenge).catch(err =>
+      // graceful: local progress saved; cloud sync is secondary
       logger.warn('[FriendChallenge] Cloud progress sync failed:', err)
     );
   }

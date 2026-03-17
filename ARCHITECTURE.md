@@ -986,7 +986,9 @@ On PR to main:
 | TD-28 | P3 | Feature module migration stalled | Only `features/journal/` migrated. Planned domains (mood, habits, focus, challenges, mindfulness, canvas) remain in `components/` + `hooks/`. | src/components/, src/hooks/ |
 | TD-29 | P3 | Multi-tab sync coordination | `BroadcastChannel` only used for token refresh (`apiClient.ts`). Sync operations lack multi-tab coordination — concurrent tabs can create conflicts. | src/storage/cloudSync.ts |
 | TD-30 | P3 | Missing aria-labels on SVG emojis | 20+ SVG emoji components (coolEmojis.tsx, warmEmojis.tsx) lack `role="img"` + `aria-label`. Screen readers see empty icons. | src/components/animated-emotion-emoji/ |
-| TD-31 | P2 | Silent `.catch(() => {})` reappeared | 2 instances: ErrorBoundary.tsx (cache cleanup) + OrbLottie.tsx (animation load). Should have `// graceful:` annotation per Law 5 convention. | ErrorBoundary.tsx, OrbLottie.tsx |
+| TD-31 | ~~P2~~ → DONE | Silent `.catch(() => {})` reappeared | **Fixed 2026-03-16**: Standardized `// graceful:` annotations across 14 catch blocks in 11 files. All silent catches now explain WHY silence is acceptable per Law 5. | Various |
+| TD-32 | P2 | i18n `as unknown as Record<string, string>` pattern | **122 instances** in 45+ files. Translation object `t` from `useLanguage()` is double-cast to bypass type inference. Root cause: `LanguageContext.tsx` generic typing. Fix: refactor i18n types to export properly indexed type. | src/contexts/LanguageContext.tsx |
+| TD-33 | P3 | DOM type assertions without justification | 31 instances of `e.target as HTMLElement`, `as EventListener`, `as CustomEvent` without runtime guard or `// any:` comment. | Various |
 
 ### God Components (TD-20 Detail)
 

@@ -42,7 +42,7 @@ export const JournalPhotoGallery = memo(function JournalPhotoGallery({
     if (photoIds.length === 0) { setPhotos([]); return; }
     getPhotosForEntry(entryId).then(all => {
       setPhotos(all.filter(p => photoIds.includes(p.id)));
-    }).catch(err => { logger.warn('[Journal]', 'Photos load failed:', err); setPhotos([]); });
+    }).catch(err => { logger.warn('[Journal]', 'Photos load failed:', err); setPhotos([]); }); // graceful: photo display, not data mutation
   }, [entryId, photoIds]);
 
   const openLightbox = async (photo: JournalPhoto) => {

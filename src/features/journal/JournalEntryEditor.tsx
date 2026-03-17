@@ -439,7 +439,7 @@ export function JournalEntryEditor({
       setSaving(false);
       setSaveSuccess(true);
       // Celebration: sound + haptic
-      try { const { playSuccess } = await import('@/lib/audioManager'); playSuccess(); } catch { /* optional */ }
+      try { const { playSuccess } = await import('@/lib/audioManager'); playSuccess(); } catch { /* graceful: celebration audio is decorative */ }
       void hapticSuccess();
       // Navigate after brief celebration
       navigationTimeoutRef.current = setTimeout(() => onBack(), 600);

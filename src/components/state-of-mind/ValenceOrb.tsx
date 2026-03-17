@@ -295,7 +295,7 @@ export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: Vale
 
       // Runtime dopamine gate
       if (!shouldAnimate()) {
-        try { render(state.currentValence, state.time, state.particles); } catch { /* static frame best-effort */ }
+        try { render(state.currentValence, state.time, state.particles); } catch { /* graceful: static frame render failure invisible — orb just stays as-is */ }
         return;
       }
 
@@ -469,7 +469,7 @@ export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: Vale
 
     // ── Animation gate ──
     if (!shouldAnimate()) {
-      try { render(valenceRef.current, 0, stateRef.current.particles); } catch { /* best-effort */ }
+      try { render(valenceRef.current, 0, stateRef.current.particles); } catch { /* graceful: initial frame render failure invisible — orb shows fallback CSS */ }
       return cleanup;
     }
 

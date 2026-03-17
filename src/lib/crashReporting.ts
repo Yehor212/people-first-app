@@ -46,7 +46,7 @@ const webFallback: CrashReportingInterface = {
       const next = [...existing, entry].slice(-20);
       safeLocalStorageSet(SK.CRASH_LOG, next);
     } catch {
-      // Ignore storage errors
+      // graceful: crash log persistence failure must never throw (would mask the original crash)
     }
   },
 

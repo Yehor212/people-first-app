@@ -99,6 +99,7 @@ const acquireInitLock = async (): Promise<void> => {
       };
       // Track flush promise with proper error handling (no fire-and-forget)
       flushQueue().catch(err => {
+        // graceful: inner try/catch already dispatches zenflow:storage-error for UI
         logger.error('[useIndexedDB] Unhandled flush error:', err);
       });
     }

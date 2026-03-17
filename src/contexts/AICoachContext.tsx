@@ -164,7 +164,7 @@ export function AICoachProvider({ children }: AICoachProviderProps) {
           snippet: e.content.slice(0, 100),
         }));
       }
-    } catch { /* journal data is optional */ }
+    } catch { /* graceful: journal data enriches AI context but is not required */ }
 
     return {
       recentMoods: moods.slice(-7).map(m => ({

@@ -152,7 +152,7 @@ export const FloatingMediaLayer = memo(function FloatingMediaLayer({
     if (floatingIds.length === 0) { setPhotos([]); return; }
     getPhotosForEntry(entryId).then(all => {
       setPhotos(all.filter(p => floatingIds.includes(p.id)));
-    }).catch(() => setPhotos([]));
+    }).catch(() => setPhotos([])); // graceful: photo load failure shows empty — non-destructive
   }, [entryId, photoIds, layout]);
 
   if (photos.length === 0) return null;

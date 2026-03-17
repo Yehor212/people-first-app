@@ -68,6 +68,7 @@ export function useTasksData({ onAwardXp, onEarnTreats }: UseTasksDataOptions): 
     syncOrchestrator.sync('tasks', async () => {
       await pushTasksToCloud(tasks);
     }).catch(err => {
+      // graceful: local save succeeded; syncOrchestrator handles retry
       logger.error('[TasksPanel] Cloud sync failed:', err);
     });
   }, [tasks, isLoaded]);

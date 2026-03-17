@@ -196,7 +196,7 @@ export function JournalModule({ onToggleHabit, onAddGratitude }: JournalModulePr
       await journal.createEntry(data);
     }
     // Trigger cloud sync after save to reduce data loss risk
-    try { const { triggerSync } = await import('@/storage/cloudSync'); triggerSync(); } catch { /* non-critical */ }
+    try { const { triggerSync } = await import('@/storage/cloudSync'); triggerSync(); } catch { /* graceful: cloud sync is secondary; data already saved to IndexedDB */ }
     // Streak milestone celebration (only for new entries on today's date)
     if (isNew) {
       // Award XP, treats, plant story flower (IA Blueprint Wave A)
@@ -207,7 +207,7 @@ export function JournalModule({ onToggleHabit, onAddGratitude }: JournalModulePr
         const newStreak = streak + 1;
         const milestones = [7, 14, 30, 60, 100];
         if (milestones.includes(newStreak)) {
-          try { const { playStreakMilestone } = await import('@/lib/audioManager'); playStreakMilestone(); } catch { /* optional */ }
+          try { const { playStreakMilestone } = await import('@/lib/audioManager'); playStreakMilestone(); } catch { /* graceful: celebration audio is decorative */ }
         }
       }
     }

@@ -174,7 +174,7 @@ export function storageSetRaw(key: string, value: string): void {
 export function storageRemove(key: string): void {
   try {
     localStorage.removeItem(key);
-  } catch { /* ignore */ }
+  } catch { /* graceful: storage removal is best-effort, failure has no user impact */ }
 }
 
 // ─── Quota exceeded notification (picked up by OfflineBanner) ───

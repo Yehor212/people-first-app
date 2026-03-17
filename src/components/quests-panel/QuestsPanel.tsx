@@ -62,6 +62,7 @@ export function QuestsPanel({ onClose }: QuestsPanelProps) {
     };
     safeLocalStorageSet(SK.QUESTS, data);
     pushQuestsToCloud(data).catch(err => {
+      // graceful: local save succeeded; cloud is secondary, retry on next sync
       logger.error('Failed to push quests to cloud:', err);
     });
   }, [dailyQuest, weeklyQuest, bonusQuest, isLoaded]);

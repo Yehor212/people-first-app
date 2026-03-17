@@ -165,7 +165,7 @@ export async function unlockAudio(): Promise<void> {
       if (ctx && needsResume(ctx)) {
         await ctx.resume();
       }
-    } catch { /* ignore */ }
+    } catch { /* graceful: audio resume is best-effort, silent failure invisible to user */ }
     return;
   }
   // eslint-disable-next-line @typescript-eslint/no-misused-promises

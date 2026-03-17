@@ -282,6 +282,7 @@ export function useHabitHandlers({
 
     // Delete from cloud habits table immediately (untrack on success)
     deleteHabitFromCloud(habitId).catch(err => {
+      // graceful: local delete already succeeded; cloud retry via syncOrchestrator
       logger.error('[Habits] Cloud delete failed:', err);
     });
 
