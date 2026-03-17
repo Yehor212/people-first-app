@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { ChevronRight, Sparkles, Check, Timer, Wind, Heart, Target, ListTodo, Trophy, Flower2 } from 'lucide-react';
+import { ChevronRight, Sparkles, Check, Timer, Wind, Heart, Target, ClipboardList, Trophy, Flower2 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useFeatureFlags, ToggleableFeature } from '@/contexts/FeatureFlagsContext';
 import { cn } from '@/lib/utils';
@@ -118,7 +118,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     },
     {
       id: 'tasks',
-      icon: <ListTodo className="w-5 h-5" />,
+      icon: <ClipboardList className="w-5 h-5" />,
       emoji: '📋',
       gradient: 'from-blue-500 to-indigo-500'
     },

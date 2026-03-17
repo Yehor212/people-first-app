@@ -1,4 +1,4 @@
-import { Timer, Wind, Target, ListTodo, Trophy, Flower2, LayoutGrid } from 'lucide-react';
+import { Timer, Wind, Target, ClipboardList, Trophy, Flower2, LayoutGrid } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import { FeatureToggleItem } from '@/components/FeatureToggleItem';
@@ -67,7 +67,7 @@ export function ModulesSection() {
             lockedMessage={t.settingsModuleUnlockHint}
           />
           <FeatureToggleItem
-            icon={<ListTodo className="w-4 h-4 text-blue-500" />}
+            icon={<ClipboardList className="w-4 h-4 text-blue-500" />}
             title={t.settingsModuleTasks}
             description={t.settingsModuleTasksDesc}
             enabled={isFeatureEnabled('tasks')}

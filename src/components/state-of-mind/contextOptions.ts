@@ -23,7 +23,7 @@ export const CONTEXT_OPTIONS: ContextOption[] = [
   { key: 'identity', icon: 'Fingerprint' },
   { key: 'money', icon: 'Wallet' },
   { key: 'spirituality', icon: 'Sparkles' },
-  { key: 'tasks', icon: 'ListTodo' },
+  { key: 'tasks', icon: 'ClipboardList' },
   { key: 'weather', icon: 'CloudSun' },
   { key: 'work', icon: 'Briefcase' },
   { key: 'partner', icon: 'HeartHandshake' },

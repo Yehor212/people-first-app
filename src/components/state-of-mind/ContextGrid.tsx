@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import {
   Users, Newspaper, Heart, GraduationCap, Home, Dumbbell, UserPlus,
-  Gamepad2, Activity, Palette, Fingerprint, Wallet, Sparkles, ListTodo,
+  Gamepad2, Activity, Palette, Fingerprint, Wallet, Sparkles, ClipboardList,
   CloudSun, Briefcase, HeartHandshake, Flower2, Plane, type LucideIcon,
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -13,7 +13,7 @@ import type { Translations } from '@/i18n/types';
 /** Map icon name string → Lucide component */
 const ICON_MAP: Record<string, LucideIcon> = {
   Users, Newspaper, Heart, GraduationCap, Home, Dumbbell, UserPlus,
-  Gamepad2, Activity, Palette, Fingerprint, Wallet, Sparkles, ListTodo,
+  Gamepad2, Activity, Palette, Fingerprint, Wallet, Sparkles, ClipboardList,
   CloudSun, Briefcase, HeartHandshake, Flower2, Plane,
 };
 

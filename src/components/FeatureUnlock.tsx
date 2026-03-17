@@ -8,7 +8,7 @@
  */
 
 import { useState, useEffect, useRef } from 'react';
-import { Sparkles, Timer, Trophy, ListTodo, Heart, Target } from 'lucide-react';
+import { Sparkles, Timer, Trophy, ClipboardList, Heart, Target } from 'lucide-react';
 import type { FeatureId } from '@/types';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useBackHandler } from '@/hooks/useBackHandler';
@@ -59,7 +59,7 @@ const FEATURE_META: Record<
     bgClass: 'bg-green-50 dark:bg-green-950',
   },
   tasks: {
-    icon: ListTodo,
+    icon: ClipboardList,
     colorClass: 'text-emerald-500',
     bgClass: 'bg-emerald-50 dark:bg-emerald-950',
   },

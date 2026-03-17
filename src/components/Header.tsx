@@ -1,6 +1,6 @@
 import { memo, useMemo } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Trophy, ListTodo, Sparkles, Users, Flame } from 'lucide-react';
+import { Trophy, ClipboardList, Sparkles, Users, Flame } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { SyncStatusIndicatorCompact } from '@/components/SyncStatusIndicator';
 
@@ -74,7 +74,7 @@ export const Header = memo(function Header({ userName = 'Friend', streak, onOpen
               className="flex-1 min-w-0 flex items-center justify-center gap-1.5 py-2.5 px-3 bg-secondary hover:bg-secondary/80 active:scale-[0.97] text-foreground rounded-xl transition-all min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
               aria-label={t.openTasks}
             >
-              <ListTodo className="w-4 h-4 flex-shrink-0 text-muted-foreground" />
+              <ClipboardList className="w-4 h-4 flex-shrink-0 text-muted-foreground" />
               <span className="text-sm font-medium truncate">{t.tasks}</span>
             </button>
           )}
