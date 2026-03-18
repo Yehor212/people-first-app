@@ -75,9 +75,9 @@
       "description": "TODO/FIXME/HACK/XXX comments in source"
     },
     "bundleSizeKB": {
-      "value": 4814,
+      "value": 4820,
       "direction": "down",
-      "recorded": "2026-03-16",
+      "recorded": "2026-03-18",
       "description": "Total JS bundle size in KB (dist/assets/*.js)"
     }
   },
@@ -121,5 +121,20 @@
       }
     }
   },
-  "overrides": []
+  "overrides": [
+    {
+      "metric": "bundleSizeKB",
+      "from": 4814,
+      "to": 4815,
+      "reason": "8th color stop (RED) added to ValenceOrb spectrum — +1KB for genuine feature enhancement",
+      "date": "2026-03-17"
+    },
+    {
+      "metric": "bundleSizeKB",
+      "from": 4815,
+      "to": 4820,
+      "reason": "9th color stop (Orange) + OKLAB preview bridge + smooth shape morphing in shader — +5KB for visual quality",
+      "date": "2026-03-18"
+    }
+  ]
 }

@@ -1,7 +1,8 @@
 /**
  * Valence → color mapping for State of Mind.
- * 7-stop HSL gradient aligned to the 7 ValenceSlider snap positions.
- * Violet → Indigo → Blue → Teal → Amber → Gold → Coral.
+ * 9-stop HSL gradient: OKLAB-interpolated between stops for perceptual uniformity.
+ * Violet → Indigo → Blue → Teal → Amber → Gold → Orange → Coral → Red.
+ * 7 slider snaps map into these 9 stops via interpolation.
  */
 
 interface HSL {
@@ -10,15 +11,17 @@ interface HSL {
   l: number;
 }
 
-/** Color stops mapped to valence values (7-stop, aligned to slider snaps) */
+/** Color stops mapped to valence values (9-stop, orange added for warm zone richness) */
 const COLOR_STOPS: { valence: number; color: HSL }[] = [
   { valence: -1.000, color: { h: 280, s: 60, l: 26 } },  // Deep violet — dark, brooding
-  { valence: -0.667, color: { h: 252, s: 58, l: 38 } },  // Indigo-purple — bridge violet→blue
-  { valence: -0.333, color: { h: 220, s: 55, l: 45 } },  // Cool blue — tension, unease
-  { valence:  0.000, color: { h: 175, s: 55, l: 48 } },  // Teal-cyan — calm center (anchor)
-  { valence:  0.333, color: { h: 55,  s: 58, l: 48 } },  // Warm amber — bridge teal→gold
-  { valence:  0.667, color: { h: 38,  s: 65, l: 50 } },  // Rich gold-orange — contentment
-  { valence:  1.000, color: { h: 16,  s: 72, l: 50 } },  // Warm coral — joyful radiance
+  { valence: -0.714, color: { h: 252, s: 58, l: 38 } },  // Indigo-purple — bridge violet→blue
+  { valence: -0.429, color: { h: 220, s: 55, l: 45 } },  // Cool blue — tension, unease
+  { valence: -0.143, color: { h: 175, s: 55, l: 48 } },  // Teal-cyan — calm center (anchor)
+  { valence:  0.143, color: { h: 55,  s: 58, l: 48 } },  // Warm amber — bridge teal→gold
+  { valence:  0.429, color: { h: 38,  s: 65, l: 50 } },  // Rich gold — contentment
+  { valence:  0.571, color: { h: 25,  s: 78, l: 52 } },  // Sunset orange — enthusiasm
+  { valence:  0.714, color: { h: 16,  s: 72, l: 50 } },  // Warm coral — joy
+  { valence:  1.000, color: { h: 355, s: 78, l: 48 } },  // Vivid red — passionate radiance
 ];
 
 // ── OKLAB perceptually uniform color interpolation (Bjorn Ottosson) ──

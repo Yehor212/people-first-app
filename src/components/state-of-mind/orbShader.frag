@@ -16,6 +16,102 @@ uniform float uGenesis;    // 0→1 birth animation (CPU-eased elastic)
 uniform vec3 uTouch;       // xy = UV touch position, z = age since touch (0 = inactive)
 uniform float uShimmer;    // 0→1 transition burst (large valence change flash)
 
+// ─── glsl-canvas full-cycle preview bridge ───
+// glsl-canvas auto-animates u_time/u_resolution (snake_case).
+// Production WebGL sets uTime/uResolution etc. (camelCase) via JS uniforms.
+// Self-referential #define (C99 §6.10.3.4): macro name in own expansion is NOT re-expanded.
+// In production: u_time=0 → ternaries pick original uniforms. Zero overhead.
+// In preview: u_time>0 → ternaries pick cycling values. Full orb lifecycle visible.
+uniform float u_time;
+uniform vec2 u_resolution;
+
+// ── Preview: HSL → sRGB ──
+vec3 hsl2rgb_p(float h, float s, float l) {
+  h = mod(h, 360.0) / 60.0; s *= 0.01; l *= 0.01;
+  float c = (1.0 - abs(2.0 * l - 1.0)) * s;
+  float x = c * (1.0 - abs(mod(h, 2.0) - 1.0));
+  float m = l - c * 0.5;
+  vec3 rgb = (h < 1.0) ? vec3(c,x,0) : (h < 2.0) ? vec3(x,c,0) :
+             (h < 3.0) ? vec3(0,c,x) : (h < 4.0) ? vec3(0,x,c) :
+             (h < 5.0) ? vec3(x,0,c) : vec3(c,0,x);
+  return rgb + m;
+}
+
+// ── Preview: OKLAB perceptually uniform interpolation (mirrors colorUtils.ts lerpOklab) ──
+float srgb2lin_p(float c) { return c <= 0.04045 ? c / 12.92 : pow((c + 0.055) / 1.055, 2.4); }
+float lin2srgb_p(float c) { c = clamp(c, 0.0, 1.0); return c <= 0.0031308 ? c * 12.92 : 1.055 * pow(c, 1.0/2.4) - 0.055; }
+float cbrt_p(float x) { return sign(x) * pow(abs(x), 1.0/3.0); }
+
+vec3 rgb2oklab_p(vec3 rgb) {
+  float r = srgb2lin_p(rgb.r), g = srgb2lin_p(rgb.g), b = srgb2lin_p(rgb.b);
+  float l_ = cbrt_p(0.4122*r + 0.5363*g + 0.0514*b);
+  float m_ = cbrt_p(0.2119*r + 0.7736*g + 0.0144*b);
+  float s_ = cbrt_p(0.0883*r + 0.2289*g + 0.6928*b);
+  return vec3(0.2105*l_+0.7936*m_-0.0041*s_, 1.9780*l_-2.4286*m_+0.4506*s_, 0.0259*l_+0.7828*m_-0.8087*s_);
+}
+
+vec3 oklab2rgb_p(vec3 lab) {
+  float l_ = lab.x + 0.3963*lab.y + 0.2158*lab.z;
+  float m_ = lab.x - 0.1056*lab.y - 0.0639*lab.z;
+  float s_ = lab.x - 0.0895*lab.y - 1.2915*lab.z;
+  float l = l_*l_*l_, m = m_*m_*m_, s = s_*s_*s_;
+  return vec3(lin2srgb_p(4.0767*l-3.3077*m+0.2310*s), lin2srgb_p(-1.2684*l+2.6098*m-0.3413*s), lin2srgb_p(-0.0042*l-0.7034*m+1.7076*s));
+}
+
+// OKLAB lerp: HSL pair → RGB through Lab space (no hue wrapping artifacts)
+vec3 lerpOklab_p(vec3 hsl0, vec3 hsl1, float t) {
+  vec3 lab0 = rgb2oklab_p(hsl2rgb_p(hsl0.x, hsl0.y, hsl0.z));
+  vec3 lab1 = rgb2oklab_p(hsl2rgb_p(hsl1.x, hsl1.y, hsl1.z));
+  return oklab2rgb_p(mix(lab0, lab1, t));
+}
+
+// ── Preview: 9-stop valence → RGB via OKLAB (identical to production colorUtils.ts) ──
+vec3 valenceColor_p(float v) {
+  v = clamp(v, -1.0, 1.0);
+  vec3 c0, c1;
+  float f;
+  if      (v < -0.714) { f=(v+1.000)/0.286; c0=vec3(280,60,26); c1=vec3(252,58,38); }
+  else if (v < -0.429) { f=(v+0.714)/0.285; c0=vec3(252,58,38); c1=vec3(220,55,45); }
+  else if (v < -0.143) { f=(v+0.429)/0.286; c0=vec3(220,55,45); c1=vec3(175,55,48); }
+  else if (v <  0.143) { f=(v+0.143)/0.286; c0=vec3(175,55,48); c1=vec3(55,58,48);  }
+  else if (v <  0.429) { f=(v-0.143)/0.286; c0=vec3(55,58,48);  c1=vec3(38,65,50);  }
+  else if (v <  0.571) { f=(v-0.429)/0.142; c0=vec3(38,65,50);  c1=vec3(25,78,52);  }
+  else if (v <  0.714) { f=(v-0.571)/0.143; c0=vec3(25,78,52);  c1=vec3(16,72,50);  }
+  else                 { f=(v-0.714)/0.286; c0=vec3(16,72,50);  c1=vec3(355,78,48); }
+  return lerpOklab_p(c0, c1, smoothstep(0.0, 1.0, clamp(f, 0.0, 1.0)));
+}
+
+// ── Preview: 7-preset shape interpolation (mirrors orbRenderer.ts SHAPE_PRESETS) ──
+vec4 valenceShape_p(float v) {
+  v = clamp(v, -1.0, 1.0);
+  // vec4(m, n1, n2, n3) per preset
+  vec4 s0, s1;
+  float f;
+  if      (v < -0.667) { f=(v+1.000)/0.333; s0=vec4(8,1.25,1.30,1.30); s1=vec4(7,1.40,1.35,1.35); }
+  else if (v < -0.333) { f=(v+0.667)/0.334; s0=vec4(7,1.40,1.35,1.35); s1=vec4(6,1.80,1.50,1.50); }
+  else if (v <  0.000) { f=(v+0.333)/0.333; s0=vec4(6,1.80,1.50,1.50); s1=vec4(6,2.00,2.00,2.00); }
+  else if (v <  0.333) { f=(v-0.000)/0.333; s0=vec4(6,2.00,2.00,2.00); s1=vec4(5,1.80,1.50,1.50); }
+  else if (v <  0.667) { f=(v-0.333)/0.334; s0=vec4(5,1.80,1.50,1.50); s1=vec4(5,1.40,1.35,1.35); }
+  else                 { f=(v-0.667)/0.333; s0=vec4(5,1.40,1.35,1.35); s1=vec4(5,1.25,1.30,1.30); }
+  return mix(s0, s1, smoothstep(0.0, 1.0, clamp(f, 0.0, 1.0)));
+}
+
+// ── Preview: mouse → valence (left=-1, right=+1, like slider) ──
+uniform vec2 u_mouse;
+float previewValence_p() {
+  return clamp(u_mouse.x / max(u_resolution.x, 1.0), 0.0, 1.0) * 2.0 - 1.0;
+}
+
+// Self-referential macros (C99 §6.10.3.4): production u_time=0 → originals; preview u_time>0 → live
+#define uTime (uTime + u_time)
+#define uResolution max(uResolution, u_resolution)
+#define uValence (u_time > 0.0 ? previewValence_p() : uValence)
+#define uColor (u_time > 0.0 ? valenceColor_p(previewValence_p()) : uColor)
+#define uShapeM (u_time > 0.0 ? valenceShape_p(previewValence_p()).x : uShapeM)
+#define uShapeN1 (u_time > 0.0 ? valenceShape_p(previewValence_p()).y : uShapeN1)
+#define uShapeN2 (u_time > 0.0 ? valenceShape_p(previewValence_p()).z : uShapeN2)
+#define uShapeN3 (u_time > 0.0 ? valenceShape_p(previewValence_p()).w : uShapeN3)
+
 // ─── 3D Simplex Noise (Stefan Gustavson / Ashima Arts) ───
 
 vec3 mod289v3(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
@@ -167,9 +263,15 @@ void main() {
   ));
   float warpedAngle = rotAngle + (warp1 * 0.65 + warp2 * 0.35) * warpAmp * 6.2832 * uGenesis;
 
-  // ── Superformula shape ──
-  float mRound = floor(uShapeM + 0.5);
-  float sf = superformula(warpedAngle, mRound, uShapeN1, uShapeN2, uShapeN3);
+  // ── Superformula shape (smooth morph between petal counts) ──
+  // Instead of floor(m+0.5) snap → blend two shapes with smoothstep for organic morphing.
+  // At integer m: pure shape. Between integers: cross-dissolve (ghostly petal fade).
+  float mLow = floor(uShapeM);
+  float mHigh = mLow + 1.0;
+  float mBlend = smoothstep(0.0, 1.0, fract(uShapeM));
+  float sfLow = superformula(warpedAngle, max(mLow, 3.0), uShapeN1, uShapeN2, uShapeN3);
+  float sfHigh = superformula(warpedAngle, max(mHigh, 3.0), uShapeN1, uShapeN2, uShapeN3);
+  float sf = mix(sfLow, sfHigh, mBlend);
   float baseR = 0.25; // smaller body — Apple: delicate flower floating in space, not filling canvas
   float cleanShapeR = baseR * sf * breath * max(uGenesis, 0.01); // pure superformula (for rings)
   float shapeR = cleanShapeR * (1.0 + noiseDisp); // with noise (for body)

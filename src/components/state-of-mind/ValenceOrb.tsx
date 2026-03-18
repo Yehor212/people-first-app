@@ -95,6 +95,7 @@ export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: Vale
   const shimmerRef = useRef(0); // P3: 1.0→0 decaying flash on large valence change
   const prevStableValenceRef = useRef(0); // P3: last settled valence for delta detection
   const lastInteractionRef = useRef(performance.now()); // P4: idle awareness
+  const smoothValenceRef = useRef(valence); // P5: smoothed valence for organic color/shape flow
 
   // Mutable animation state — avoids React re-renders during animation
   const stateRef = useRef<{
@@ -241,13 +242,16 @@ export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: Vale
     const renderGL = (v: number, t: number, particles: Particle[], timestamp = performance.now()) => {
       const gl = glRendererRef.current;
       if (!gl) return;
+      // P5: Color breathing — ±2° hue oscillation for organic life
+      const color = valenceToHSL(v);
+      color.h = (color.h + Math.sin(t * 0.5) * 2 + 360) % 360;
       gl.render({
         valence: v,
         time: t,
         size,
         dpr,
         isDark: isDarkRead(),
-        color: valenceToHSL(v),
+        color,
         shape: getShapeParams(v),
         particles,
         genesis: computeGenesis(timestamp),
@@ -341,6 +345,11 @@ export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: Vale
 
       state.time += dt * (1 - idleFactor * 0.4); // idle → 40% slower internal time
 
+      // P5: Smoothed valence — organic flow between color/shape states
+      // Factor 0.12 per frame → ~130ms settle time. Responsive on drag, visible on tap.
+      const smoothLerp = 1 - Math.pow(1 - 0.12, dt * 60);
+      smoothValenceRef.current += (state.currentValence - smoothValenceRef.current) * smoothLerp;
+
       // Update particles (skip when off-screen to save CPU)
       if (isVisibleRef.current) {
         updateParticles(
@@ -362,7 +371,7 @@ export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: Vale
       // Draw scene (skip when off-screen, catch errors to prevent loop death)
       if (isVisibleRef.current) {
         try {
-          render(state.currentValence, state.time, state.particles, timestamp);
+          render(smoothValenceRef.current, state.time, state.particles, timestamp);
         } catch (err) {
           recordError(err, { component: 'ValenceOrb', action: 'render' });
 
