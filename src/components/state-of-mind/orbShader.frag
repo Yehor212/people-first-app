@@ -273,7 +273,7 @@ void main() {
   float sfHigh = superformula(warpedAngle, max(mHigh, 3.0), uShapeN1, uShapeN2, uShapeN3);
   float sf = mix(sfLow, sfHigh, mBlend);
   float baseR = 0.25; // smaller body — Apple: delicate flower floating in space, not filling canvas
-  float cleanShapeR = baseR * sf * breath * max(uGenesis, 0.01); // pure superformula (for rings)
+  float cleanShapeR = baseR * sf * breath * max(uGenesis, 0.01); // pure superformula (for body contour)
   float shapeR = cleanShapeR * (1.0 + noiseDisp); // with noise (for body)
 
   // ── Signed Distance Field (Apple Quality: micro-bump removed for clean edges) ──
@@ -283,6 +283,12 @@ void main() {
   float fw = fwidth(sdf);
   float edgeScale = mix(1.2, 1.8, (uValence + 1.0) * 0.5);
   float edge = 1.0 - smoothstep(-fw * edgeScale, fw * edgeScale, sdf);
+
+  // Clean edge from pure superformula (no noise) — for glass rim highlight only.
+  // Body interior uses noisy `edge` (organic), but the bright rim must be smooth.
+  float cleanSdfEarly = dist - cleanShapeR;
+  float cleanFwEarly = fwidth(cleanSdfEarly);
+  float cleanEdge = 1.0 - smoothstep(-cleanFwEarly * edgeScale, cleanFwEarly * edgeScale, cleanSdfEarly);
 
   // ── 3D Normal (sphere approximation for lighting) ──
   float normalZ = sqrt(max(0.001, 1.0 - clamp(dist * dist / (shapeR * shapeR), 0.0, 1.0)));
@@ -438,6 +444,8 @@ void main() {
   innerGlow *= atmosphereFade;
   bloom *= atmosphereFade;
 
+  // NOTE: aura dimming is ring-local, applied after ring computation (before final composition)
+
   // ── Volumetric Light Rays (god rays behind orb) ──
   float rayAngle = angle + uTime * 0.03;
   float raySharpHi = mix(4.0, 12.0, nv);  // foggy at negative → sharp at positive
@@ -490,17 +498,22 @@ void main() {
   float glassEdge = edge * glassDepth;
 
   // ── Glass Edge Refraction (wide bright band on body contour — Apple glass rim) ──
-  float edgeHighlight = exp(-sdf * sdf / (fw * fw * 20.0)) * 0.92;
+  // Uses cleanSdfEarly/cleanFwEarly (pure superformula, no noise) — prevents
+  // noise micro-bumps from appearing as ugly corners in the bright rim.
+  float edgeHighlight = exp(-cleanSdfEarly * cleanSdfEarly / (cleanFwEarly * cleanFwEarly * 20.0)) * 0.92;
   vec3 edgeHLColor = mix(shimmerColor * 1.15, vec3(1.0), 0.40);
 
-  // ── Concentric Ring System (crisp glass rim highlights) ──
-  float ringFw = fw * 2.0; // resolution-adaptive ring sharpness (tighter for crisp edges)
-  float breathBase = breathCurve;
+  // ── Concentric Ring System (outward wave — rings emanate from body) ──
+  // Rings are born at body edge, expand outward following body silhouette,
+  // fade as they travel. 4 rings staggered = continuous pulse from center.
+  // Like ripples on water, each following the body's superformula contour.
+  float ringFw = fw * 2.0; // resolution-adaptive ring sharpness
 
   // Sharp glass rim edge + one-sided soft glow
   #define GLASS_RIM(s, alpha) ((smoothstep(ringFw, 0.0, abs(s)) * 0.65 + exp(-max(s, 0.0) * max(s, 0.0) / (ringFw * ringFw * 16.0)) * 0.35) * (alpha))
 
-  // Inner rings (2 inside body — visible through glass)
+  // Inner rings (2 inside body — visible through glass, original behavior)
+  float breathBase = breathCurve;
   float ripple0 = 1.0 + breathBase * 0.03;
   float ripple1 = 1.0 + breathBase * 0.026;
 
@@ -512,29 +525,70 @@ void main() {
   float innerRings = in1 + in2;
   vec3 innerRingColor = shimmerColor * 1.2;
 
-  // Outer rings (4 outside body)
-  float rip1 = 1.0 + breathBase * 0.028;
-  float rip2 = 1.0 + breathBase * 0.024;
-  float rip3 = 1.0 + breathBase * 0.020;
-  float rip4 = 1.0 + breathBase * 0.016;
+  // ── Outer rings: STEADY OUTWARD PULSE (metronome heartbeat) ──
+  // Apple principle: body = expression (shape/color/breath adapts to mood)
+  //                  rings = heartbeat (constant rhythm, never changes speed)
+  // On valence change: rings adapt SHAPE (follow cleanShapeR) not RHYTHM → zero glitch.
 
-  float or1_sdf = dist - cleanShapeR * 1.12 * rip1;
-  float ring1 = GLASS_RIM(or1_sdf, 0.55);
-  float or2_sdf = dist - cleanShapeR * 1.28 * rip2;
-  float ring2 = GLASS_RIM(or2_sdf, 0.45);
-  float or3_sdf = dist - cleanShapeR * 1.44 * rip3;
-  float ring3 = GLASS_RIM(or3_sdf, 0.35);
-  float or4_sdf = dist - cleanShapeR * 1.55 * rip4;
-  float ring4 = GLASS_RIM(or4_sdf, 0.25);
+  // FIXED pulse speed — metronome, no valence/breath dependency
+  float pulseSpeed = 0.09;  // cycles/sec (~11s cycle, ring every ~2.8s — visible movement)
+  float ringGap = 1.08;     // 8% gap after body edge (visible breathing room)
+  float ringTravel = 0.42;  // travel: 1.08 → 1.50 × body (safe under atmosphereFade 1.6×)
 
-  vec3 ring1Color = shimmerColor * 0.90;
-  vec3 ring2Color = mix(shimmerColor, vec3(1.0), 0.08) * 0.82;
-  vec3 ring3Color = mix(shimmerColor, vec3(1.0), 0.15) * 0.72;
-  vec3 ring4Color = mix(shimmerColor, vec3(1.0), 0.22) * 0.60;
+  // 4 rings at exactly 25% phase intervals (equal spacing like Apple)
+  float wp1 = fract(uTime * pulseSpeed);
+  float wp2 = fract(uTime * pulseSpeed + 0.25);
+  float wp3 = fract(uTime * pulseSpeed + 0.50);
+  float wp4 = fract(uTime * pulseSpeed + 0.75);
+
+  // Position: ease-out cubic — fast emergence near body, decelerates outward
+  float ws1 = ringGap + (1.0 - pow(1.0 - wp1, 3.0)) * ringTravel;
+  float ws2 = ringGap + (1.0 - pow(1.0 - wp2, 3.0)) * ringTravel;
+  float ws3 = ringGap + (1.0 - pow(1.0 - wp3, 3.0)) * ringTravel;
+  float ws4 = ringGap + (1.0 - pow(1.0 - wp4, 3.0)) * ringTravel;
+
+  // Opacity: gentle fade-in (20%) → sustained → soft fade-out (starts at 50%)
+  float wa1 = smoothstep(0.0, 0.20, wp1) * (1.0 - smoothstep(0.50, 1.0, wp1));
+  float wa2 = smoothstep(0.0, 0.20, wp2) * (1.0 - smoothstep(0.50, 1.0, wp2));
+  float wa3 = smoothstep(0.0, 0.20, wp3) * (1.0 - smoothstep(0.50, 1.0, wp3));
+  float wa4 = smoothstep(0.0, 0.20, wp4) * (1.0 - smoothstep(0.50, 1.0, wp4));
+
+  // Ring softness: sharp near body (birth) → softer as expands (death)
+  float ringSoft1 = ringFw * (1.0 + wp1 * 1.0);
+  float ringSoft2 = ringFw * (1.0 + wp2 * 1.0);
+  float ringSoft3 = ringFw * (1.0 + wp3 * 1.0);
+  float ringSoft4 = ringFw * (1.0 + wp4 * 1.0);
+
+  // SDF: each ring follows body silhouette at expanding distance
+  // 80% sharp edge / 20% soft glow — crisper than body rings for better contrast vs aura
+  #define GLASS_RIM_W(s, alpha, soft) ((smoothstep(soft, 0.0, abs(s)) * 0.80 + exp(-max(s, 0.0) * max(s, 0.0) / (soft * soft * 12.0)) * 0.20) * (alpha))
+
+  float or1_sdf = dist - cleanShapeR * ws1;
+  float ring1 = GLASS_RIM_W(or1_sdf, wa1 * 0.80, ringSoft1);
+  float or2_sdf = dist - cleanShapeR * ws2;
+  float ring2 = GLASS_RIM_W(or2_sdf, wa2 * 0.75, ringSoft2);
+  float or3_sdf = dist - cleanShapeR * ws3;
+  float ring3 = GLASS_RIM_W(or3_sdf, wa3 * 0.65, ringSoft3);
+  float or4_sdf = dist - cleanShapeR * ws4;
+  float ring4 = GLASS_RIM_W(or4_sdf, wa4 * 0.55, ringSoft4);
+
+  // Color: BRIGHTER than aura (1.1× shimmerColor + white mix) so rings punch through
+  // Quadratic wp² keeps rings saturated near body, lighter as they expand
+  vec3 ring1Color = mix(shimmerColor * 1.10, mix(shimmerColor * 1.10, vec3(1.0), 0.30), wp1 * wp1);
+  vec3 ring2Color = mix(shimmerColor * 1.10, mix(shimmerColor * 1.10, vec3(1.0), 0.30), wp2 * wp2);
+  vec3 ring3Color = mix(shimmerColor * 1.10, mix(shimmerColor * 1.10, vec3(1.0), 0.30), wp3 * wp3);
+  vec3 ring4Color = mix(shimmerColor * 1.10, mix(shimmerColor * 1.10, vec3(1.0), 0.30), wp4 * wp4);
+
+  // ── Ring-local aura dimming (only where rings currently ARE, not a static zone) ──
+  // This creates contrast for rings without leaving ugly dark bands in empty areas
+  float ringPresence = ring1 + ring2 + ring3 + ring4;
+  float localAuraDim = 1.0 - clamp(ringPresence * 2.5, 0.0, 0.6);
+  aura *= localAuraDim;
+  innerGlow *= localAuraDim;
 
   // ── Final Composition (glass body + ring highlights) ──
   vec3 finalColor = litColor * glassEdge
-                  + edgeHLColor * edgeHighlight * edge
+                  + edgeHLColor * edgeHighlight * cleanEdge
                   + innerRingColor * innerRings
                   + ring1Color * ring1 + ring2Color * ring2 + ring3Color * ring3
                   + ring4Color * ring4
