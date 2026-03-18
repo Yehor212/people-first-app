@@ -118,3 +118,8 @@ docs/visual-aesthetic.md
 
 # Shader preview files (dev-only, not for production)
 *.preview.frag
+
+# Claude Code enforcement tokens (one-time gate files)
+.postflight-done
+.fullcycle-active
+.fullcycle-laws-read
