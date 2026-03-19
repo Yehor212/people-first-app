@@ -14,6 +14,7 @@ import { joinPresence, leavePresence } from '@/lib/presenceService';
 import { migrateExistingUser } from '@/lib/cloudSyncSettings';
 import { logger } from '@/lib/logger';
 import { endAuthFlow } from '@/lib/authGuard';
+import { APP_VERSION } from '@/lib/appVersion';
 
 /**
  * Manages Supabase auth session lifecycle:
@@ -312,6 +313,23 @@ export function useAuthSession(isLoading: boolean): void {
       subscription?.unsubscribe();
     };
   }, [setUserName]);
+
+  // Track app_version in profiles on login (last_active_at handled by server trigger)
+  useEffect(() => {
+    if (!supabase) return;
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (event === 'SIGNED_IN' && session?.user?.id) {
+          supabase.from('profiles').update({
+            app_version: APP_VERSION,
+          }).eq('id', session.user.id).then(({ error }) => {
+            if (error) logger.warn('[Auth] Failed to track app_version:', error.message);
+          });
+        }
+      }
+    );
+    return () => subscription?.unsubscribe();
+  }, []);
 
   // Session expired handler - listens for 401 errors from API/sync
   // Verify actual session state before resetting auth

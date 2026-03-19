@@ -786,28 +786,34 @@ export type Database = {
       }
       profiles: {
         Row: {
+          app_version: string | null
           avatar_url: string | null
           created_at: string | null
           display_name: string | null
           id: string
+          last_active_at: string | null
           preferred_language: string | null
           timezone: string | null
           updated_at: string | null
         }
         Insert: {
+          app_version?: string | null
           avatar_url?: string | null
           created_at?: string | null
           display_name?: string | null
           id: string
+          last_active_at?: string | null
           preferred_language?: string | null
           timezone?: string | null
           updated_at?: string | null
         }
         Update: {
+          app_version?: string | null
           avatar_url?: string | null
           created_at?: string | null
           display_name?: string | null
           id?: string
+          last_active_at?: string | null
           preferred_language?: string | null
           timezone?: string | null
           updated_at?: string | null

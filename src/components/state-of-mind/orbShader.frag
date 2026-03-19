@@ -507,7 +507,7 @@ void main() {
   // Rings are born at body edge, expand outward following body silhouette,
   // fade as they travel. 4 rings staggered = continuous pulse from center.
   // Like ripples on water, each following the body's superformula contour.
-  float ringFw = fw * 2.0; // resolution-adaptive ring sharpness
+  float ringFw = max(fw * 4.0, 0.008); // wider rings + minimum floor for any DPI
 
   // Sharp glass rim edge + one-sided soft glow
   #define GLASS_RIM(s, alpha) ((smoothstep(ringFw, 0.0, abs(s)) * 0.65 + exp(-max(s, 0.0) * max(s, 0.0) / (ringFw * ringFw * 16.0)) * 0.35) * (alpha))
@@ -531,83 +531,70 @@ void main() {
   // On valence change: rings adapt SHAPE (follow cleanShapeR) not RHYTHM → zero glitch.
 
   // FIXED pulse speed — metronome, no valence/breath dependency
-  float pulseSpeed = 0.09;  // cycles/sec (~11s cycle, ring every ~2.8s — visible movement)
+  float pulseSpeed = 0.11;  // cycles/sec (~9s cycle, ring every ~3s — more alive)
   float ringGap = 1.08;     // 8% gap after body edge (visible breathing room)
-  float ringTravel = 0.42;  // travel: 1.08 → 1.50 × body (safe under atmosphereFade 1.6×)
+  float ringTravel = 0.55;  // travel: 1.08 → 1.63 × body (wider sweep, more visible)
 
-  // 4 rings at exactly 25% phase intervals (equal spacing like Apple)
+  // 3 rings at 33% phase intervals — more impact per ring, more spacing
   float wp1 = fract(uTime * pulseSpeed);
-  float wp2 = fract(uTime * pulseSpeed + 0.25);
-  float wp3 = fract(uTime * pulseSpeed + 0.50);
-  float wp4 = fract(uTime * pulseSpeed + 0.75);
+  float wp2 = fract(uTime * pulseSpeed + 0.333);
+  float wp3 = fract(uTime * pulseSpeed + 0.667);
 
   // Position: ease-out cubic — fast emergence near body, decelerates outward
   float ws1 = ringGap + (1.0 - pow(1.0 - wp1, 3.0)) * ringTravel;
   float ws2 = ringGap + (1.0 - pow(1.0 - wp2, 3.0)) * ringTravel;
   float ws3 = ringGap + (1.0 - pow(1.0 - wp3, 3.0)) * ringTravel;
-  float ws4 = ringGap + (1.0 - pow(1.0 - wp4, 3.0)) * ringTravel;
 
-  // Opacity: gentle fade-in (20%) → sustained → soft fade-out (starts at 50%)
-  float wa1 = smoothstep(0.0, 0.20, wp1) * (1.0 - smoothstep(0.50, 1.0, wp1));
-  float wa2 = smoothstep(0.0, 0.20, wp2) * (1.0 - smoothstep(0.50, 1.0, wp2));
-  float wa3 = smoothstep(0.0, 0.20, wp3) * (1.0 - smoothstep(0.50, 1.0, wp3));
-  float wa4 = smoothstep(0.0, 0.20, wp4) * (1.0 - smoothstep(0.50, 1.0, wp4));
+  // Opacity: fast fade-in (12%) → long sustain → late fade-out (70%) = 58% full visibility
+  float wa1 = smoothstep(0.0, 0.12, wp1) * (1.0 - smoothstep(0.70, 1.0, wp1));
+  float wa2 = smoothstep(0.0, 0.12, wp2) * (1.0 - smoothstep(0.70, 1.0, wp2));
+  float wa3 = smoothstep(0.0, 0.12, wp3) * (1.0 - smoothstep(0.70, 1.0, wp3));
 
-  // Ring softness: sharp near body (birth) → softer as expands (death)
-  float ringSoft1 = ringFw * (1.0 + wp1 * 1.0);
-  float ringSoft2 = ringFw * (1.0 + wp2 * 1.0);
-  float ringSoft3 = ringFw * (1.0 + wp3 * 1.0);
-  float ringSoft4 = ringFw * (1.0 + wp4 * 1.0);
+  // Ring softness: sharp near body (birth) → slightly softer as expands
+  float ringSoft1 = ringFw * (1.0 + wp1 * 0.5);
+  float ringSoft2 = ringFw * (1.0 + wp2 * 0.5);
+  float ringSoft3 = ringFw * (1.0 + wp3 * 0.5);
 
   // SDF: each ring follows body silhouette at expanding distance
-  // 80% sharp edge / 20% soft glow — crisper than body rings for better contrast vs aura
-  #define GLASS_RIM_W(s, alpha, soft) ((smoothstep(soft, 0.0, abs(s)) * 0.80 + exp(-max(s, 0.0) * max(s, 0.0) / (soft * soft * 12.0)) * 0.20) * (alpha))
+  // 70% sharp edge / 30% bloom glow — luminous halo per ring
+  #define GLASS_RIM_W(s, alpha, soft) ((smoothstep(soft, 0.0, abs(s)) * 0.70 + exp(-max(s, 0.0) * max(s, 0.0) / (soft * soft * 10.0)) * 0.30) * (alpha))
 
   float or1_sdf = dist - cleanShapeR * ws1;
-  float ring1 = GLASS_RIM_W(or1_sdf, wa1 * 0.80, ringSoft1);
+  float ring1 = GLASS_RIM_W(or1_sdf, wa1 * 0.95, ringSoft1);
   float or2_sdf = dist - cleanShapeR * ws2;
-  float ring2 = GLASS_RIM_W(or2_sdf, wa2 * 0.75, ringSoft2);
+  float ring2 = GLASS_RIM_W(or2_sdf, wa2 * 0.90, ringSoft2);
   float or3_sdf = dist - cleanShapeR * ws3;
-  float ring3 = GLASS_RIM_W(or3_sdf, wa3 * 0.65, ringSoft3);
-  float or4_sdf = dist - cleanShapeR * ws4;
-  float ring4 = GLASS_RIM_W(or4_sdf, wa4 * 0.55, ringSoft4);
+  float ring3 = GLASS_RIM_W(or3_sdf, wa3 * 0.80, ringSoft3);
 
-  // Color: BRIGHTER than aura (1.1× shimmerColor + white mix) so rings punch through
-  // Quadratic wp² keeps rings saturated near body, lighter as they expand
-  vec3 ring1Color = mix(shimmerColor * 1.10, mix(shimmerColor * 1.10, vec3(1.0), 0.30), wp1 * wp1);
-  vec3 ring2Color = mix(shimmerColor * 1.10, mix(shimmerColor * 1.10, vec3(1.0), 0.30), wp2 * wp2);
-  vec3 ring3Color = mix(shimmerColor * 1.10, mix(shimmerColor * 1.10, vec3(1.0), 0.30), wp3 * wp3);
-  vec3 ring4Color = mix(shimmerColor * 1.10, mix(shimmerColor * 1.10, vec3(1.0), 0.30), wp4 * wp4);
+  // Ring colors computed post-ACES (see "Post-ACES ring overlay" section below)
 
   // ── Ring-local aura dimming (only where rings currently ARE, not a static zone) ──
-  // This creates contrast for rings without leaving ugly dark bands in empty areas
-  float ringPresence = ring1 + ring2 + ring3 + ring4;
-  float localAuraDim = 1.0 - clamp(ringPresence * 2.5, 0.0, 0.6);
+  // Aggressive contrast carving — up to 85% dimming where rings are brightest
+  float ringPresence = ring1 + ring2 + ring3;
+  float localAuraDim = 1.0 - clamp(ringPresence * 6.0, 0.0, 0.85);
   aura *= localAuraDim;
   innerGlow *= localAuraDim;
 
-  // ── Final Composition (glass body + ring highlights) ──
-  vec3 finalColor = litColor * glassEdge
-                  + edgeHLColor * edgeHighlight * cleanEdge
-                  + innerRingColor * innerRings
-                  + ring1Color * ring1 + ring2Color * ring2 + ring3Color * ring3
-                  + ring4Color * ring4
-                  + auraColor * innerGlow * (1.0 + uShimmer * 0.8)
-                  + auraColor * aura * (1.0 + uShimmer * 0.8)
-                  + auraColor * rayIntensity
-                  + vec3(1.0) * bloom * 0.25
-                  + (shimmerColor * 1.2 + vec3(0.15)) * particleGlow
-                  + shimmerColor * ripple * 2.0;
+  // ── Final Composition (base scene WITHOUT outer rings) ──
+  vec3 baseColor = litColor * glassEdge
+                 + edgeHLColor * edgeHighlight * cleanEdge
+                 + innerRingColor * innerRings
+                 + auraColor * innerGlow * (1.0 + uShimmer * 0.8)
+                 + auraColor * aura * (1.0 + uShimmer * 0.8)
+                 + auraColor * rayIntensity
+                 + vec3(1.0) * bloom * 0.25
+                 + (shimmerColor * 1.2 + vec3(0.15)) * particleGlow
+                 + shimmerColor * ripple * 2.0;
   float finalAlpha = clamp(glassEdge + edgeHighlight * 0.5 + innerRings * 0.6
-                  + ring1 + ring2 + ring3 + ring4
+                  + ring1 + ring2 + ring3
                   + innerGlow + aura + bloom + particleGlow + rayIntensity + ripple, 0.0, 1.0);
 
   // ── Genesis fade-in (glow appears before body materializes) ──
   float genesisAlpha = smoothstep(0.0, 0.15, uGenesis);
   finalAlpha *= genesisAlpha;
 
-  // ── Vignette (safety net — all effects already fade via atmosphereFade) ──
-  float vignette = 1.0 - smoothstep(0.42, 0.52, dist);
+  // ── Vignette (extended to not clip outer rings) ──
+  float vignette = 1.0 - smoothstep(0.46, 0.56, dist);
   finalAlpha *= vignette;
 
   // Kill sub-threshold alpha (prevents dark fringing on any background)
@@ -617,9 +604,16 @@ void main() {
     finalAlpha = min(1.0, finalAlpha * 1.15);
   }
 
-  // ── ACES Filmic Tone Mapping (cinematic color — highlights preserve hue, don't burn white) ──
+  // ── ACES Filmic Tone Mapping (base scene only — rings bypass) ──
   float tmA = 2.51; float tmB = 0.03; float tmC = 2.43; float tmD = 0.59; float tmE = 0.14;
-  finalColor = clamp((finalColor * (tmA * finalColor + tmB)) / (finalColor * (tmC * finalColor + tmD) + tmE), 0.0, 1.0);
+  vec3 finalColor = clamp((baseColor * (tmA * baseColor + tmB)) / (baseColor * (tmC * baseColor + tmD) + tmE), 0.0, 1.0);
+
+  // ── Post-ACES ring overlay (additive glow — bypasses tone mapping compression) ──
+  // Tone-map shimmerColor to match scene palette, but ring INTENSITY is uncompressed
+  vec3 tmShimmer = clamp((shimmerColor * (tmA * shimmerColor + tmB)) / (shimmerColor * (tmC * shimmerColor + tmD) + tmE), 0.0, 1.0);
+  vec3 ringGlowColor = mix(tmShimmer * 1.3, vec3(1.0), 0.30);
+  float ringSum = ring1 + ring2 + ring3;
+  finalColor = clamp(finalColor + ringGlowColor * ringSum, 0.0, 1.0);
 
   // Premultiplied alpha
   gl_FragColor = vec4(finalColor * finalAlpha, finalAlpha);
