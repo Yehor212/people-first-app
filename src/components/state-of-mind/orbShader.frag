@@ -531,7 +531,7 @@ void main() {
   // On valence change: rings adapt SHAPE (follow cleanShapeR) not RHYTHM → zero glitch.
 
   // FIXED pulse speed — metronome, no valence/breath dependency
-  float pulseSpeed = 0.11;  // cycles/sec (~9s cycle, ring every ~3s — more alive)
+  float pulseSpeed = 0.15;  // cycles/sec (~6.7s cycle, ring every ~2.2s — calm heartbeat)
   float ringGap = 1.08;     // 8% gap after body edge (visible breathing room)
   float ringTravel = 0.55;  // travel: 1.08 → 1.63 × body (wider sweep, more visible)
 
@@ -545,10 +545,10 @@ void main() {
   float ws2 = ringGap + (1.0 - pow(1.0 - wp2, 3.0)) * ringTravel;
   float ws3 = ringGap + (1.0 - pow(1.0 - wp3, 3.0)) * ringTravel;
 
-  // Opacity: fast fade-in (12%) → long sustain → late fade-out (70%) = 58% full visibility
-  float wa1 = smoothstep(0.0, 0.12, wp1) * (1.0 - smoothstep(0.70, 1.0, wp1));
-  float wa2 = smoothstep(0.0, 0.12, wp2) * (1.0 - smoothstep(0.70, 1.0, wp2));
-  float wa3 = smoothstep(0.0, 0.12, wp3) * (1.0 - smoothstep(0.70, 1.0, wp3));
+  // Opacity: snap birth (8%) → sustain → graceful fade (40-72%) → gone before next arrives
+  float wa1 = smoothstep(0.0, 0.08, wp1) * (1.0 - smoothstep(0.40, 0.72, wp1));
+  float wa2 = smoothstep(0.0, 0.08, wp2) * (1.0 - smoothstep(0.40, 0.72, wp2));
+  float wa3 = smoothstep(0.0, 0.08, wp3) * (1.0 - smoothstep(0.40, 0.72, wp3));
 
   // Ring softness: sharp near body (birth) → slightly softer as expands
   float ringSoft1 = ringFw * (1.0 + wp1 * 0.5);
