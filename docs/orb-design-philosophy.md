@@ -63,22 +63,29 @@ These blend via spatial noise fields (`snoise(center * 1.5 + time)`) creating li
 
 ### 1.4 The Rings: Concentric Glass Echoes
 
-6 concentric rings surround and pervade the body — 2 inner (visible through glass) + 4 outer (radiating outward):
+5 concentric rings surround and pervade the body — 2 inner (visible through glass) + 3 outer (pulsing outward):
 
 ```
-Inner: 0.65R, 0.35R (inside body, alpha 0.40, 0.30)
-Outer: 1.12R, 1.28R, 1.44R, 1.55R (outside body, alpha 0.55→0.25 decay)
+Inner: 0.65R, 0.35R (inside body, alpha 0.40, 0.30 — breathe with body)
+Outer: 3 rings at 33% phase intervals, born at ~1.08R, travel to ~1.63R
+       Fade envelope: birth 0→8%, sustain 8→40%, fade 40→72%, gone before next arrives
+       Alpha: 0.95 / 0.90 / 0.80 (slight decay per ring)
 ```
 
-**GLASS_RIM macro**: Each ring is NOT a simple line. It's a **sharp glass edge + one-sided soft glow**:
+**Metronome principle**: Body = expression (shape/color/breath adapts to mood). Rings = heartbeat (fixed 0.15 speed, ~2.2s per ring). No valence dependency on ring speed — prevents glitch on mood switch.
+
+**Spatial gap guarantee**: Each ring fades to zero before the next ring reaches its dying position (≥0.12R gap). The orb pulses like a heartbeat: pulse, pause, pulse, pause.
+
+**Post-ACES composition**: Outer rings bypass ACES tone mapping as additive glow overlays. This prevents the S-curve from compressing ring brightness into the aura, keeping rings clearly visible.
+
+**GLASS_RIM_W macro**: Each ring is a **sharp glass edge + one-sided soft glow**:
 ```glsl
-(smoothstep(ringFw, 0, |sdf|) × 0.65 + exp(-max(sdf,0)² / (ringFw²×16)) × 0.35) × alpha
+(smoothstep(soft, 0, |sdf|) × 0.70 + exp(-max(sdf,0)² / (soft²×10)) × 0.30) × alpha
 ```
-- The `smoothstep` creates a crisp bright core
-- The `exp` adds a soft glow on the OUTSIDE only (light diffracting past the edge)
-- `ringFw = fw × 2.0` makes ring width resolution-adaptive
-
-Rings breathe with the body (phase-offset sinusoidal), creating rhythmic expanding/contracting echoes.
+- The `smoothstep` creates a crisp bright core (70%)
+- The `exp` adds a soft glow on the OUTSIDE only (30% — light diffracting past the edge)
+- `ringFw = max(fw × 4.0, 0.008)` — wider rings with minimum floor for any DPI
+- Ring softness increases with travel: `ringFw × (1 + phase × 0.5)`
 
 ---
 
@@ -94,7 +101,7 @@ Inhale (0-33%) → Hold (33-42%) → Exhale (42-83%) → Pause (83-100%)
 
 Period adapts to valence: **8s** (anxious, v=-1) → **16s** (calm, v=+1). Organic jitter (±5% noise) prevents mechanical feel.
 
-Body scales ±2.5% with breath. Rings breathe with decreasing amplitude (0.028 → 0.016) — each ring is slightly behind, creating a ripple-outward effect.
+Body scales ±2.5% with breath. Inner rings breathe with the body (phase-offset sinusoidal). Outer rings pulse independently at fixed metronome speed — a steady heartbeat regardless of breathing rate.
 
 ### 2.2 Rotation & Flow
 

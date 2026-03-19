@@ -342,14 +342,14 @@ void main() {
 
   // ── GGX Specular — WHITE (glass reflects light color, not body color) ──
   vec3 halfDir = normalize(lightDir1 + viewDir);
-  float roughness = mix(0.38, 0.14, nv);
+  float roughness = mix(0.38, 0.20, nv);
   float ggxA = roughness * roughness;
   float ggxA2 = ggxA * ggxA;
   float NdotH = max(dot(normal, halfDir), 0.0);
   float ggxDenom = NdotH * NdotH * (ggxA2 - 1.0) + 1.0;
   float ggxD = ggxA2 / (3.14159 * ggxDenom * ggxDenom);
   float specF = 0.08 + 0.92 * pow(1.0 - max(dot(halfDir, viewDir), 0.0), 5.0);
-  vec3 specular = vec3(1.0) * ggxD * specF * 0.80;
+  vec3 specular = vec3(1.0) * ggxD * specF * 0.65;
   // Secondary specular from rim light
   vec3 halfDir2 = normalize(lightDir2 + viewDir);
   float NdotH2 = max(dot(normal, halfDir2), 0.0);
@@ -369,7 +369,7 @@ void main() {
   // ── Inner Depth Luminance (Apple Quality: -30% intensity) ──
   float depthZone1 = exp(-dist * dist / (shapeR * shapeR * 0.16)) * 0.14;
   float depthZone2 = exp(-dist * dist / (shapeR * shapeR * 0.42)) * 0.08;
-  float depthPulse = sin(uTime * 1.2) * 0.25 + 0.75;
+  float depthPulse = sin(uTime * 1.2) * 0.15 + 0.85;
   float depthGlow = (depthZone1 * depthPulse + depthZone2 * (1.0 - depthPulse * 0.3));
   float depthStr = mix(0.35, 1.0, (uValence + 1.0) * 0.5);
 
@@ -489,8 +489,8 @@ void main() {
   litColor = mix(litColor, vec3(lum * 1.5 + 0.15), uShimmer * 0.4);
 
   // ── Luminous Core (bright center — light focusing through glass stack) ──
-  float coreGlow = exp(-dist * dist / (shapeR * shapeR * 0.06)) * 0.55;
-  vec3 coreColor = mix(shimmerColor * 1.1, vec3(1.0), 0.55);
+  float coreGlow = exp(-dist * dist / (shapeR * shapeR * 0.10)) * 0.38;
+  vec3 coreColor = mix(shimmerColor * 1.1, vec3(1.0), 0.35);
   litColor += coreColor * coreGlow;
 
   // ── Apple Health: Glass Transparency (bright center → almost-transparent edge) ──
@@ -560,18 +560,18 @@ void main() {
   #define GLASS_RIM_W(s, alpha, soft) ((smoothstep(soft, 0.0, abs(s)) * 0.70 + exp(-max(s, 0.0) * max(s, 0.0) / (soft * soft * 10.0)) * 0.30) * (alpha))
 
   float or1_sdf = dist - cleanShapeR * ws1;
-  float ring1 = GLASS_RIM_W(or1_sdf, wa1 * 0.95, ringSoft1);
+  float ring1 = GLASS_RIM_W(or1_sdf, wa1 * 0.48, ringSoft1);
   float or2_sdf = dist - cleanShapeR * ws2;
-  float ring2 = GLASS_RIM_W(or2_sdf, wa2 * 0.90, ringSoft2);
+  float ring2 = GLASS_RIM_W(or2_sdf, wa2 * 0.45, ringSoft2);
   float or3_sdf = dist - cleanShapeR * ws3;
-  float ring3 = GLASS_RIM_W(or3_sdf, wa3 * 0.80, ringSoft3);
+  float ring3 = GLASS_RIM_W(or3_sdf, wa3 * 0.40, ringSoft3);
 
   // Ring colors computed post-ACES (see "Post-ACES ring overlay" section below)
 
   // ── Ring-local aura dimming (only where rings currently ARE, not a static zone) ──
   // Aggressive contrast carving — up to 85% dimming where rings are brightest
   float ringPresence = ring1 + ring2 + ring3;
-  float localAuraDim = 1.0 - clamp(ringPresence * 6.0, 0.0, 0.85);
+  float localAuraDim = 1.0 - clamp(ringPresence * 4.0, 0.0, 0.50);
   aura *= localAuraDim;
   innerGlow *= localAuraDim;
 
@@ -611,7 +611,7 @@ void main() {
   // ── Post-ACES ring overlay (additive glow — bypasses tone mapping compression) ──
   // Tone-map shimmerColor to match scene palette, but ring INTENSITY is uncompressed
   vec3 tmShimmer = clamp((shimmerColor * (tmA * shimmerColor + tmB)) / (shimmerColor * (tmC * shimmerColor + tmD) + tmE), 0.0, 1.0);
-  vec3 ringGlowColor = mix(tmShimmer * 1.3, vec3(1.0), 0.30);
+  vec3 ringGlowColor = mix(tmShimmer * 1.15, vec3(1.0), 0.18);
   float ringSum = ring1 + ring2 + ring3;
   finalColor = clamp(finalColor + ringGlowColor * ringSum, 0.0, 1.0);
 
