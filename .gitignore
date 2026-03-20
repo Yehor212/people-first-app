@@ -43,6 +43,7 @@ android/build/
 # Claude / AI agent temp files
 # ============================================
 tmpclaude*
+CLAUDE.md
 .claude/*
 !.claude/rules/
 .mcp.json
