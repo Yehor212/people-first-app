@@ -3,50 +3,53 @@
  * Shows after WelcomeTutorial, before OnboardingFlow
  */
 
-import { useState } from 'react';
-import { Sparkles, ChevronRight } from 'lucide-react';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { useAICoach } from '@/contexts/AICoachContext';
-import { cn } from '@/lib/utils';
-import { haptics } from '@/lib/haptics';
-import { useBackHandler } from '@/hooks/useBackHandler';
-import { type Step, type GoalId, GOALS, getText } from './texts';
+import { useState } from "react";
+import { Sparkles, ChevronRight } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useAICoach } from "@/contexts/AICoachContext";
+import { cn } from "@/lib/utils";
+import { haptics } from "@/lib/haptics";
+import { useBackHandler } from "@/hooks/useBackHandler";
+import { type Step, type GoalId, GOALS, getText } from "./texts";
 
 interface AICoachOnboardingProps {
   onComplete: () => void;
   onSkip: () => void;
 }
 
-export function AICoachOnboarding({ onComplete, onSkip }: AICoachOnboardingProps) {
+export function AICoachOnboarding({
+  onComplete,
+  onSkip,
+}: AICoachOnboardingProps) {
   const { t: _t, language } = useLanguage();
   const { saveOnboardingAnswer } = useAICoach();
   useBackHandler(true, onSkip);
 
-  const [step, setStep] = useState<Step>('intro');
+  const [step, setStep] = useState<Step>("intro");
   const [selectedGoal, setSelectedGoal] = useState<string | null>(null);
-  const [concern, setConcern] = useState('');
-  const [stressMethod, setStressMethod] = useState('');
+  const [concern, setConcern] = useState("");
+  const [stressMethod, setStressMethod] = useState("");
 
   const handleGoalSelect = (goalId: GoalId) => {
     void haptics.buttonTap();
     setSelectedGoal(goalId);
-    saveOnboardingAnswer('mainGoal', goalId);
+    saveOnboardingAnswer("mainGoal", goalId);
   };
 
   const handleNext = () => {
     void haptics.buttonTap();
-    if (step === 'intro') {
-      setStep('goal');
-    } else if (step === 'goal' && selectedGoal) {
-      setStep('concern');
-    } else if (step === 'concern') {
+    if (step === "intro") {
+      setStep("goal");
+    } else if (step === "goal" && selectedGoal) {
+      setStep("concern");
+    } else if (step === "concern") {
       if (concern.trim()) {
-        saveOnboardingAnswer('currentConcern', concern);
+        saveOnboardingAnswer("currentConcern", concern);
       }
-      setStep('stress');
-    } else if (step === 'stress') {
+      setStep("stress");
+    } else if (step === "stress") {
       if (stressMethod.trim()) {
-        saveOnboardingAnswer('stressManagement', stressMethod);
+        saveOnboardingAnswer("stressManagement", stressMethod);
       }
       onComplete();
     }
@@ -57,7 +60,7 @@ export function AICoachOnboarding({ onComplete, onSkip }: AICoachOnboardingProps
     onSkip();
   };
 
-  const steps: Step[] = ['intro', 'goal', 'concern', 'stress'];
+  const steps: Step[] = ["intro", "goal", "concern", "stress"];
   const currentStepIndex = steps.indexOf(step);
 
   return (
@@ -69,41 +72,47 @@ export function AICoachOnboarding({ onComplete, onSkip }: AICoachOnboardingProps
             <Sparkles className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-foreground mb-2">
-            {step === 'intro' ? getText('intro', 'title', language) :
-             step === 'goal' ? getText('goal', 'title', language) :
-             step === 'concern' ? getText('concern', 'title', language) :
-             getText('stress', 'title', language)}
+            {step === "intro"
+              ? getText("intro", "title", language)
+              : step === "goal"
+                ? getText("goal", "title", language)
+                : step === "concern"
+                  ? getText("concern", "title", language)
+                  : getText("stress", "title", language)}
           </h1>
           <p className="text-muted-foreground">
-            {step === 'intro' ? getText('intro', 'subtitle', language) :
-             step === 'goal' ? getText('goal', 'subtitle', language) :
-             step === 'concern' ? getText('concern', 'subtitle', language) :
-             getText('stress', 'subtitle', language)}
+            {step === "intro"
+              ? getText("intro", "subtitle", language)
+              : step === "goal"
+                ? getText("goal", "subtitle", language)
+                : step === "concern"
+                  ? getText("concern", "subtitle", language)
+                  : getText("stress", "subtitle", language)}
           </p>
         </div>
 
         {/* Content */}
         <div className="bg-card rounded-2xl p-6 shadow-xl">
-          {step === 'intro' && (
+          {step === "intro" && (
             <div className="text-center py-4">
               <div className="flex justify-center gap-4 mb-6">
                 <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                  <span className="text-2xl">{'\u{1F3AF}'}</span>
+                  <span className="text-2xl">{"\u{1F3AF}"}</span>
                 </div>
                 <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center">
-                  <span className="text-2xl">{'\u{1F4AA}'}</span>
+                  <span className="text-2xl">{"\u{1F4AA}"}</span>
                 </div>
                 <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                  <span className="text-2xl">{'\u{1F9E0}'}</span>
+                  <span className="text-2xl">{"\u{1F9E0}"}</span>
                 </div>
               </div>
               <p className="text-sm text-muted-foreground">
-                {getText('introDescription', '', language)}
+                {getText("introDescription", "", language)}
               </p>
             </div>
           )}
 
-          {step === 'goal' && (
+          {step === "goal" && (
             <div className="grid grid-cols-2 gap-3">
               {GOALS.map((goal) => (
                 <button
@@ -113,33 +122,33 @@ export function AICoachOnboarding({ onComplete, onSkip }: AICoachOnboardingProps
                     "p-4 rounded-xl flex flex-col items-center gap-2 transition-all active:scale-95",
                     selectedGoal === goal.id
                       ? "bg-primary text-primary-foreground ring-2 ring-primary"
-                      : "bg-secondary hover:bg-secondary/80"
+                      : "bg-secondary hover:bg-secondary/80",
                   )}
                 >
                   <span className="text-3xl">{goal.emoji}</span>
                   <span className="text-sm font-medium text-center">
-                    {getText('goals', goal.id, language)}
+                    {getText("goals", goal.id, language)}
                   </span>
                 </button>
               ))}
             </div>
           )}
 
-          {step === 'concern' && (
+          {step === "concern" && (
             <textarea
               value={concern}
               onChange={(e) => setConcern(e.target.value)}
-              placeholder={getText('concern', 'placeholder', language)}
+              placeholder={getText("concern", "placeholder", language)}
               className="w-full h-32 px-4 py-3 bg-secondary rounded-xl text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary/50"
               autoFocus
             />
           )}
 
-          {step === 'stress' && (
+          {step === "stress" && (
             <textarea
               value={stressMethod}
               onChange={(e) => setStressMethod(e.target.value)}
-              placeholder={getText('stress', 'placeholder', language)}
+              placeholder={getText("stress", "placeholder", language)}
               className="w-full h-32 px-4 py-3 bg-secondary rounded-xl text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary/50"
               autoFocus
             />
@@ -152,22 +161,24 @@ export function AICoachOnboarding({ onComplete, onSkip }: AICoachOnboardingProps
             onClick={handleSkip}
             className="flex-1 py-4 bg-secondary/50 text-secondary-foreground rounded-xl font-semibold hover:bg-secondary transition-colors active:scale-[0.98]"
           >
-            {getText('buttons', 'skip', language)}
+            {getText("buttons", "skip", language)}
           </button>
           <button
             onClick={handleNext}
-            disabled={step === 'goal' && !selectedGoal}
+            disabled={step === "goal" && !selectedGoal}
             className={cn(
               "flex-1 py-4 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all active:scale-[0.98]",
-              (step !== 'goal' || selectedGoal)
+              step !== "goal" || selectedGoal
                 ? "bg-gradient-to-r from-primary to-accent text-primary-foreground hover:opacity-90"
-                : "bg-secondary text-muted-foreground"
+                : "bg-secondary text-muted-foreground",
             )}
           >
-            {step === 'intro' ? getText('buttons', 'letsGo', language) :
-             step === 'stress' ? getText('buttons', 'start', language) :
-             getText('buttons', 'next', language)}
-            <ChevronRight className="w-5 h-5" />
+            {step === "intro"
+              ? getText("buttons", "letsGo", language)
+              : step === "stress"
+                ? getText("buttons", "start", language)
+                : getText("buttons", "next", language)}
+            <ChevronRight className="w-5 h-5 rtl:scale-x-[-1]" />
           </button>
         </div>
 
@@ -178,8 +189,11 @@ export function AICoachOnboarding({ onComplete, onSkip }: AICoachOnboardingProps
               key={s}
               className={cn(
                 "h-2 rounded-full transition-all",
-                i === currentStepIndex ? "w-6 bg-primary" :
-                i < currentStepIndex ? "w-2 bg-primary/50" : "w-2 bg-muted"
+                i === currentStepIndex
+                  ? "w-6 bg-primary"
+                  : i < currentStepIndex
+                    ? "w-2 bg-primary/50"
+                    : "w-2 bg-muted",
               )}
             />
           ))}

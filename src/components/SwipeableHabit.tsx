@@ -9,11 +9,11 @@
  * - Protection against accidental taps
  */
 
-import { useState, useRef, useCallback, ReactNode } from 'react';
-import { useThrottledCallback } from '@/hooks/useThrottledCallback';
-import { cn } from '@/lib/utils';
-import { Check, ChevronRight } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useRef, useCallback, ReactNode } from "react";
+import { useThrottledCallback } from "@/hooks/useThrottledCallback";
+import { cn } from "@/lib/utils";
+import { Check, ChevronRight } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface SwipeableHabitProps {
   children: ReactNode;
@@ -33,7 +33,7 @@ export function SwipeableHabit({
   onComplete,
   disabled = false,
   completed = false,
-  habitColor: _habitColor = 'bg-primary',
+  habitColor: _habitColor = "bg-primary",
   habitIcon: _habitIcon,
   className,
 }: SwipeableHabitProps) {
@@ -47,65 +47,71 @@ export function SwipeableHabit({
   const isSwipingRef = useRef(false);
   const hasTriggeredRef = useRef(false);
 
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    if (disabled || completed) return;
+  const handleTouchStart = useCallback(
+    (e: React.TouchEvent) => {
+      if (disabled || completed) return;
 
-    startXRef.current = e.touches[0].clientX;
-    startYRef.current = e.touches[0].clientY;
-    isSwipingRef.current = false;
-    hasTriggeredRef.current = false;
-  }, [disabled, completed]);
+      startXRef.current = e.touches[0].clientX;
+      startYRef.current = e.touches[0].clientY;
+      isSwipingRef.current = false;
+      hasTriggeredRef.current = false;
+    },
+    [disabled, completed],
+  );
 
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (disabled || completed || hasTriggeredRef.current) return;
+  const handleTouchMove = useCallback(
+    (e: React.TouchEvent) => {
+      if (disabled || completed || hasTriggeredRef.current) return;
 
-    const currentX = e.touches[0].clientX;
-    const currentY = e.touches[0].clientY;
-    const deltaX = currentX - startXRef.current;
-    const deltaY = currentY - startYRef.current;
+      const currentX = e.touches[0].clientX;
+      const currentY = e.touches[0].clientY;
+      const deltaX = currentX - startXRef.current;
+      const deltaY = currentY - startYRef.current;
 
-    // Ignore if scrolling vertically
-    if (!isSwipingRef.current && Math.abs(deltaY) > Math.abs(deltaX)) {
-      return;
-    }
-
-    // Start tracking horizontal swipe
-    if (deltaX > MIN_SWIPE_DISTANCE && !isSwipingRef.current) {
-      isSwipingRef.current = true;
-      setIsSwiping(true);
-    }
-
-    if (isSwipingRef.current && containerRef.current) {
-      const containerWidth = containerRef.current.offsetWidth;
-      const progress = Math.min(1, Math.max(0, deltaX / containerWidth));
-      setSwipeProgress(progress);
-
-      // Trigger completion at threshold
-      if (progress >= SWIPE_THRESHOLD && !hasTriggeredRef.current) {
-        hasTriggeredRef.current = true;
-
-        // Haptic feedback
-        if (navigator.vibrate) {
-          navigator.vibrate(50);
-        }
-
-        // Show success animation
-        setShowSuccess(true);
-        setSwipeProgress(1);
-
-        // Trigger callback
-        setTimeout(() => {
-          onComplete();
-          // Reset after animation
-          setTimeout(() => {
-            setShowSuccess(false);
-            setSwipeProgress(0);
-            setIsSwiping(false);
-          }, 300);
-        }, 200);
+      // Ignore if scrolling vertically
+      if (!isSwipingRef.current && Math.abs(deltaY) > Math.abs(deltaX)) {
+        return;
       }
-    }
-  }, [disabled, completed, onComplete]);
+
+      // Start tracking horizontal swipe
+      if (deltaX > MIN_SWIPE_DISTANCE && !isSwipingRef.current) {
+        isSwipingRef.current = true;
+        setIsSwiping(true);
+      }
+
+      if (isSwipingRef.current && containerRef.current) {
+        const containerWidth = containerRef.current.offsetWidth;
+        const progress = Math.min(1, Math.max(0, deltaX / containerWidth));
+        setSwipeProgress(progress);
+
+        // Trigger completion at threshold
+        if (progress >= SWIPE_THRESHOLD && !hasTriggeredRef.current) {
+          hasTriggeredRef.current = true;
+
+          // Haptic feedback
+          if (navigator.vibrate) {
+            navigator.vibrate(50);
+          }
+
+          // Show success animation
+          setShowSuccess(true);
+          setSwipeProgress(1);
+
+          // Trigger callback
+          setTimeout(() => {
+            onComplete();
+            // Reset after animation
+            setTimeout(() => {
+              setShowSuccess(false);
+              setSwipeProgress(0);
+              setIsSwiping(false);
+            }, 300);
+          }, 200);
+        }
+      }
+    },
+    [disabled, completed, onComplete],
+  );
 
   const handleTouchEnd = useCallback(() => {
     if (!hasTriggeredRef.current) {
@@ -117,23 +123,26 @@ export function SwipeableHabit({
   }, []);
 
   // Desktop: simple click to complete
-  const handleClick = useCallback((e: React.MouseEvent) => {
-    if (disabled || completed) return;
+  const handleClick = useCallback(
+    (e: React.MouseEvent) => {
+      if (disabled || completed) return;
 
-    // Ignore if this was a touch event (mobile devices trigger both touch and click)
-    if (e.detail === 0) return; // Touch events have detail=0
+      // Ignore if this was a touch event (mobile devices trigger both touch and click)
+      if (e.detail === 0) return; // Touch events have detail=0
 
-    // Show success animation
-    setShowSuccess(true);
+      // Show success animation
+      setShowSuccess(true);
 
-    // Trigger callback
-    onComplete();
+      // Trigger callback
+      onComplete();
 
-    // Reset after animation
-    setTimeout(() => {
-      setShowSuccess(false);
-    }, 500);
-  }, [disabled, completed, onComplete]);
+      // Reset after animation
+      setTimeout(() => {
+        setShowSuccess(false);
+      }, 500);
+    },
+    [disabled, completed, onComplete],
+  );
 
   const throttledClick = useThrottledCallback(handleClick, 500);
 
@@ -143,7 +152,7 @@ export function SwipeableHabit({
       className={cn(
         "relative overflow-hidden rounded-xl transition-all",
         isSwiping && "touch-none",
-        className
+        className,
       )}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
@@ -155,12 +164,11 @@ export function SwipeableHabit({
         {(isSwiping || showSuccess) && !completed && (
           <motion.div
             className={cn(
-              "absolute inset-0 z-0",
+              "absolute inset-0 z-0 origin-left",
               showSuccess
                 ? "bg-gradient-to-r from-emerald-500 to-green-500"
-                : "bg-gradient-to-r from-primary/30 to-primary/50"
+                : "bg-gradient-to-r from-primary/30 to-primary/50",
             )}
-            className="origin-left"
             initial={{ scaleX: 0 }}
             animate={{ scaleX: showSuccess ? 1 : swipeProgress }}
             exit={{ scaleX: 0 }}
@@ -168,7 +176,6 @@ export function SwipeableHabit({
           />
         )}
       </AnimatePresence>
-
 
       {/* Success checkmark overlay */}
       <AnimatePresence>
@@ -182,7 +189,7 @@ export function SwipeableHabit({
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
-              transition={{ type: 'spring', stiffness: 500, damping: 20 }}
+              transition={{ type: "spring", stiffness: 500, damping: 20 }}
             >
               <Check className="w-8 h-8 text-white" />
             </motion.div>
@@ -191,19 +198,17 @@ export function SwipeableHabit({
       </AnimatePresence>
 
       {/* Content */}
-      <div className="relative z-5">
-        {children}
-      </div>
+      <div className="relative z-5">{children}</div>
 
       {/* Swipe hint arrow (when not completed and not swiping) */}
       {!completed && !isSwiping && !showSuccess && (
         <div className="absolute end-2 top-1/2 -translate-y-1/2 z-5 pointer-events-none sm:hidden">
           <motion.div
             animate={{ x: [0, 5, 0] }}
-            transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
             className="text-muted-foreground/30"
           >
-            <ChevronRight className="w-5 h-5" />
+            <ChevronRight className="w-5 h-5 rtl:scale-x-[-1]" />
           </motion.div>
         </div>
       )}

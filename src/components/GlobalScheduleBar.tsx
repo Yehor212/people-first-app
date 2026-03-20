@@ -3,11 +3,11 @@
  * Shows current time and upcoming/current event
  */
 
-import { useState, useEffect, useMemo } from 'react';
-import { Clock, ChevronRight } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { ScheduleEvent } from '@/types';
+import { useState, useEffect, useMemo } from "react";
+import { Clock, ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { ScheduleEvent } from "@/types";
 
 interface GlobalScheduleBarProps {
   events: ScheduleEvent[];
@@ -29,13 +29,13 @@ export function GlobalScheduleBar({ events, onTap }: GlobalScheduleBarProps) {
 
   // Format time
   const formatTime = (hour: number, minute: number = 0) => {
-    return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+    return `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
   };
 
   // Find current event
   const currentEvent = useMemo(() => {
     const nowMinutes = currentHour * 60 + currentMinute;
-    return events.find(event => {
+    return events.find((event) => {
       const startMinutes = event.startHour * 60 + event.startMinute;
       const endMinutes = event.endHour * 60 + event.endMinute;
       return nowMinutes >= startMinutes && nowMinutes < endMinutes;
@@ -46,7 +46,7 @@ export function GlobalScheduleBar({ events, onTap }: GlobalScheduleBarProps) {
   const nextEvent = useMemo(() => {
     const nowMinutes = currentHour * 60 + currentMinute;
     const upcoming = events
-      .filter(event => {
+      .filter((event) => {
         const startMinutes = event.startHour * 60 + event.startMinute;
         return startMinutes > nowMinutes;
       })
@@ -70,9 +70,9 @@ export function GlobalScheduleBar({ events, onTap }: GlobalScheduleBarProps) {
     const minutes = diff % 60;
 
     if (hours > 0) {
-      return `${hours}${t.hoursShort || 'h'} ${minutes}${t.minutesShort || 'm'}`;
+      return `${hours}${t.hoursShort || "h"} ${minutes}${t.minutesShort || "m"}`;
     }
-    return `${minutes}${t.minutesShort || 'm'}`;
+    return `${minutes}${t.minutesShort || "m"}`;
   }, [nextEvent, currentHour, currentMinute, t]);
 
   // Don't show if no events
@@ -81,24 +81,28 @@ export function GlobalScheduleBar({ events, onTap }: GlobalScheduleBarProps) {
   return (
     <button
       onClick={onTap}
-      aria-label={t.viewSchedule || 'View schedule'}
+      aria-label={t.viewSchedule || "View schedule"}
       className={cn(
         "w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl transition-all",
         "bg-card/80 backdrop-blur-sm border border-border/50",
         "hover:bg-card hover:border-primary/30",
-        "active:scale-[0.98]"
+        "active:scale-[0.98]",
       )}
     >
       {/* Clock icon with time */}
       <div className="flex items-center gap-2">
-        <div className={cn(
-          "w-8 h-8 rounded-xl flex items-center justify-center",
-          currentEvent ? "bg-primary/20" : "bg-muted"
-        )}>
-          <Clock className={cn(
-            "w-4 h-4",
-            currentEvent ? "text-primary" : "text-muted-foreground"
-          )} />
+        <div
+          className={cn(
+            "w-8 h-8 rounded-xl flex items-center justify-center",
+            currentEvent ? "bg-primary/20" : "bg-muted",
+          )}
+        >
+          <Clock
+            className={cn(
+              "w-4 h-4",
+              currentEvent ? "text-primary" : "text-muted-foreground",
+            )}
+          />
         </div>
         <span className="text-lg font-bold text-foreground">
           {formatTime(currentHour, currentMinute)}
@@ -117,7 +121,7 @@ export function GlobalScheduleBar({ events, onTap }: GlobalScheduleBarProps) {
               {currentEvent.emoji} {currentEvent.title}
             </span>
             <span className="text-xs text-muted-foreground">
-              {t.timeNow || 'now'}
+              {t.timeNow || "now"}
             </span>
           </div>
         ) : nextEvent ? (
@@ -126,18 +130,18 @@ export function GlobalScheduleBar({ events, onTap }: GlobalScheduleBarProps) {
               {nextEvent.emoji} {nextEvent.title}
             </span>
             <span className="text-xs text-primary font-medium">
-              {t.timeIn || 'in'} {timeUntilNext}
+              {t.timeIn || "in"} {timeUntilNext}
             </span>
           </div>
         ) : (
           <span className="text-sm text-muted-foreground">
-            {t.scheduleEmpty || 'No upcoming events'}
+            {t.scheduleEmpty || "No upcoming events"}
           </span>
         )}
       </div>
 
       {/* Arrow */}
-      <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+      <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0 rtl:scale-x-[-1]" />
     </button>
   );
 }

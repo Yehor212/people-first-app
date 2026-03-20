@@ -1,10 +1,10 @@
-import { motion } from 'framer-motion';
-import { zenMotion, zenTap } from '@/lib/animationUtils';
-import { Settings2, ChevronRight } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { habitTemplates } from '@/lib/habitTemplates';
-import type { Habit } from '@/types';
+import { motion } from "framer-motion";
+import { zenMotion, zenTap } from "@/lib/animationUtils";
+import { Settings2, ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { habitTemplates } from "@/lib/habitTemplates";
+import type { Habit } from "@/types";
 
 interface TemplatePickerProps {
   isPrimaryCTA: boolean;
@@ -29,21 +29,33 @@ export function TemplatePicker({
         "mb-4 p-4 rounded-2xl",
         isPrimaryCTA
           ? "bg-foreground/5 backdrop-blur-sm border border-foreground/10"
-          : "bg-secondary"
+          : "bg-secondary",
       )}
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={zenMotion.snappy}
     >
-      <p className={cn(
-        "text-sm font-medium mb-3",
-        isPrimaryCTA ? "text-slate-700 dark:text-foreground/80" : "text-foreground"
-      )}>{t.quickAdd || 'Quick Add'}</p>
+      <p
+        className={cn(
+          "text-sm font-medium mb-3",
+          isPrimaryCTA
+            ? "text-slate-700 dark:text-foreground/80"
+            : "text-foreground",
+        )}
+      >
+        {t.quickAdd || "Quick Add"}
+      </p>
       <div className="grid grid-cols-2 gap-2 mb-4">
         {habitTemplates
-          .filter(template => !habits.some(h => h.name === (template.names[language] || template.names.en)))
+          .filter(
+            (template) =>
+              !habits.some(
+                (h) =>
+                  h.name === (template.names[language] || template.names.en),
+              ),
+          )
           .slice(0, 6)
-          .map((template, index) => (
+          .map((template, index) =>
             isPrimaryCTA ? (
               <motion.button
                 key={template.id}
@@ -73,8 +85,8 @@ export function TemplatePicker({
                   {template.names[language] || template.names.en}
                 </span>
               </Button>
-            )
-          ))}
+            ),
+          )}
       </div>
       <Button
         variant="outline"
@@ -83,9 +95,9 @@ export function TemplatePicker({
       >
         <div className="flex items-center gap-2">
           <Settings2 className="w-5 h-5 text-primary" />
-          <span>{t.createCustomHabit || 'Create custom habit'}</span>
+          <span>{t.createCustomHabit || "Create custom habit"}</span>
         </div>
-        <ChevronRight className="w-5 h-5 text-muted-foreground" />
+        <ChevronRight className="w-5 h-5 text-muted-foreground rtl:scale-x-[-1]" />
       </Button>
     </motion.div>
   );

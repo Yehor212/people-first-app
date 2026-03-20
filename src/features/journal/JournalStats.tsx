@@ -5,35 +5,51 @@
  * to avoid TDZ errors. Use lazyWithRetry() or React.lazy() from the parent.
  */
 
-import { useMemo, useState } from 'react';
-import { ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
-import { motion } from 'framer-motion';
-import { PieChart, Pie, Cell, LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { cn } from '@/lib/utils';
-import { useLanguage } from '@/contexts/LanguageContext';
-import type { JournalEntry } from './types';
-import { countWords } from './types';
-import { StickerRenderer } from './StickerRenderer';
-import type { MoodType } from '@/types';
+import { useMemo, useState } from "react";
+import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
+import { motion } from "framer-motion";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
+import { cn } from "@/lib/utils";
+import { useLanguage } from "@/contexts/LanguageContext";
+import type { JournalEntry } from "./types";
+import { countWords } from "./types";
+import { StickerRenderer } from "./StickerRenderer";
+import type { MoodType } from "@/types";
 
 const MOOD_COLORS: Record<MoodType, string> = {
-  great: '#4ade80',
-  good: '#34d399',
-  okay: '#fbbf24',
-  bad: '#fb923c',
-  terrible: '#f87171',
+  great: "#4ade80",
+  good: "#34d399",
+  okay: "#fbbf24",
+  bad: "#fb923c",
+  terrible: "#f87171",
 };
 
 const MOOD_SCORE: Record<MoodType, number> = {
-  terrible: 1, bad: 2, okay: 3, good: 4, great: 5,
+  terrible: 1,
+  bad: 2,
+  okay: 3,
+  good: 4,
+  great: 5,
 };
 
 const MOOD_PIXEL_BG: Record<MoodType, string> = {
-  great: 'bg-green-400',
-  good: 'bg-emerald-400',
-  okay: 'bg-amber-400',
-  bad: 'bg-orange-400',
-  terrible: 'bg-red-400',
+  great: "bg-green-400",
+  good: "bg-emerald-400",
+  okay: "bg-amber-400",
+  bad: "bg-orange-400",
+  terrible: "bg-red-400",
 };
 
 interface JournalStatsProps {
@@ -46,18 +62,21 @@ export function JournalStats({ entries, onBack }: JournalStatsProps) {
   const ts = t as unknown as Record<string, string>;
   const [pixelYear, setPixelYear] = useState(() => new Date().getFullYear());
 
-  const moodLabels = useMemo<Record<MoodType, string>>(() => ({
-    great: ts.moodGreat || 'Great',
-    good: ts.moodGood || 'Good',
-    okay: ts.moodOkay || 'Okay',
-    bad: ts.moodBad || 'Bad',
-    terrible: ts.moodTerrible || 'Terrible',
-  }), [ts]);
+  const moodLabels = useMemo<Record<MoodType, string>>(
+    () => ({
+      great: ts.moodGreat || "Great",
+      good: ts.moodGood || "Good",
+      okay: ts.moodOkay || "Okay",
+      bad: ts.moodBad || "Bad",
+      terrible: ts.moodTerrible || "Terrible",
+    }),
+    [ts],
+  );
 
   const dayNames = useMemo(() => {
-    const formatter = new Intl.DateTimeFormat(language, { weekday: 'short' });
+    const formatter = new Intl.DateTimeFormat(language, { weekday: "short" });
     return Array.from({ length: 7 }, (_, i) =>
-      formatter.format(new Date(2025, 0, 5 + i))
+      formatter.format(new Date(2025, 0, 5 + i)),
     );
   }, [language]);
 
@@ -70,13 +89,15 @@ export function JournalStats({ entries, onBack }: JournalStatsProps) {
     return Object.entries(counts).map(([mood, count]) => ({
       name: moodLabels[mood as MoodType] || mood,
       value: count,
-      color: MOOD_COLORS[mood as MoodType] || '#888',
+      color: MOOD_COLORS[mood as MoodType] || "#888",
     }));
   }, [entries, moodLabels]);
 
   // Mood over time (weekly average)
   const moodTimeline = useMemo(() => {
-    const entriesWithMood = entries.filter(e => e.mood).sort((a, b) => a.createdAt - b.createdAt);
+    const entriesWithMood = entries
+      .filter((e) => e.mood)
+      .sort((a, b) => a.createdAt - b.createdAt);
     if (entriesWithMood.length === 0) return [];
 
     // Group by week
@@ -86,14 +107,19 @@ export function JournalStats({ entries, onBack }: JournalStatsProps) {
       const weekStart = new Date(d);
       const dow = d.getDay();
       weekStart.setDate(d.getDate() - (dow === 0 ? 6 : dow - 1));
-      const key = `${weekStart.getFullYear()}-${String(weekStart.getMonth() + 1).padStart(2, '0')}-${String(weekStart.getDate()).padStart(2, '0')}`;
+      const key = `${weekStart.getFullYear()}-${String(weekStart.getMonth() + 1).padStart(2, "0")}-${String(weekStart.getDate()).padStart(2, "0")}`;
       if (!weeks.has(key)) weeks.set(key, []);
       if (e.mood) weeks.get(key)?.push(MOOD_SCORE[e.mood]);
     }
 
     return [...weeks.entries()].slice(-12).map(([week, scores]) => ({
-      week: new Date(week + 'T00:00:00').toLocaleDateString(language, { month: 'short', day: 'numeric' }),
-      avg: Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10,
+      week: new Date(week + "T00:00:00").toLocaleDateString(language, {
+        month: "short",
+        day: "numeric",
+      }),
+      avg:
+        Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) /
+        10,
     }));
   }, [entries, language]);
 
@@ -105,8 +131,13 @@ export function JournalStats({ entries, onBack }: JournalStatsProps) {
     for (let i = 7; i >= 0; i--) {
       const weekStart = now - (i + 1) * 7 * 86400000;
       const weekEnd = now - i * 7 * 86400000;
-      const count = entries.filter(e => e.createdAt >= weekStart && e.createdAt < weekEnd).length;
-      const label = new Date(weekStart).toLocaleDateString(language, { month: 'short', day: 'numeric' });
+      const count = entries.filter(
+        (e) => e.createdAt >= weekStart && e.createdAt < weekEnd,
+      ).length;
+      const label = new Date(weekStart).toLocaleDateString(language, {
+        month: "short",
+        day: "numeric",
+      });
       weeks.push({ week: label, count });
     }
 
@@ -129,12 +160,13 @@ export function JournalStats({ entries, onBack }: JournalStatsProps) {
 
   // Streaks
   const streakData = useMemo(() => {
-    const dates = [...new Set(entries.map(e => e.date))].sort();
-    if (dates.length === 0) return { current: 0, longest: 0, thisMonth: 0, avgPerWeek: 0 };
+    const dates = [...new Set(entries.map((e) => e.date))].sort();
+    if (dates.length === 0)
+      return { current: 0, longest: 0, thisMonth: 0, avgPerWeek: 0 };
 
     // Current streak (from today backwards)
     const today = new Date();
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
     const dateSet = new Set(dates);
 
     let current = 0;
@@ -144,7 +176,7 @@ export function JournalStats({ entries, onBack }: JournalStatsProps) {
       checkDate.setDate(checkDate.getDate() - 1);
     }
     while (current < 365) {
-      const str = `${checkDate.getFullYear()}-${String(checkDate.getMonth() + 1).padStart(2, '0')}-${String(checkDate.getDate()).padStart(2, '0')}`;
+      const str = `${checkDate.getFullYear()}-${String(checkDate.getMonth() + 1).padStart(2, "0")}-${String(checkDate.getDate()).padStart(2, "0")}`;
       if (dateSet.has(str)) {
         current++;
         checkDate.setDate(checkDate.getDate() - 1);
@@ -157,8 +189,8 @@ export function JournalStats({ entries, onBack }: JournalStatsProps) {
     let longest = 0;
     let streak = 1;
     for (let i = 1; i < dates.length; i++) {
-      const prev = new Date(dates[i - 1] + 'T00:00:00');
-      const curr = new Date(dates[i] + 'T00:00:00');
+      const prev = new Date(dates[i - 1] + "T00:00:00");
+      const curr = new Date(dates[i] + "T00:00:00");
       const diff = Math.round((curr.getTime() - prev.getTime()) / 86400000);
       if (diff === 1) {
         streak++;
@@ -170,12 +202,14 @@ export function JournalStats({ entries, onBack }: JournalStatsProps) {
     longest = Math.max(longest, streak);
 
     // This month
-    const monthStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
-    const thisMonth = entries.filter(e => e.date.startsWith(monthStr)).length;
+    const monthStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
+    const thisMonth = entries.filter((e) => e.date.startsWith(monthStr)).length;
 
     // Avg per week (over last 4 weeks)
     const fourWeeksAgo = Date.now() - 28 * 86400000;
-    const recentCount = entries.filter(e => e.createdAt >= fourWeeksAgo).length;
+    const recentCount = entries.filter(
+      (e) => e.createdAt >= fourWeeksAgo,
+    ).length;
     const avgPerWeek = Math.round((recentCount / 4) * 10) / 10;
 
     return { current, longest, thisMonth, avgPerWeek };
@@ -185,7 +219,7 @@ export function JournalStats({ entries, onBack }: JournalStatsProps) {
   const dayActivity = useMemo(() => {
     const counts = new Array(7).fill(0);
     for (const e of entries) {
-      const day = new Date(e.date + 'T00:00:00').getDay();
+      const day = new Date(e.date + "T00:00:00").getDay();
       counts[day]++;
     }
     return dayNames.map((name, i) => ({ day: name, count: counts[i] }));
@@ -216,7 +250,12 @@ export function JournalStats({ entries, onBack }: JournalStatsProps) {
     for (const e of entries) {
       if (e.mood && e.date.startsWith(String(pixelYear))) {
         // If multiple entries same day, keep the latest
-        if (!moodByDate.has(e.date) || e.createdAt > (entries.find(x => x.date === e.date && x.id !== e.id)?.createdAt ?? 0)) {
+        if (
+          !moodByDate.has(e.date) ||
+          e.createdAt >
+            (entries.find((x) => x.date === e.date && x.id !== e.id)
+              ?.createdAt ?? 0)
+        ) {
           moodByDate.set(e.date, e.mood);
         }
       }
@@ -234,19 +273,26 @@ export function JournalStats({ entries, onBack }: JournalStatsProps) {
     const months: Array<{
       month: number;
       label: string;
-      days: Array<{ date: string; mood?: MoodType; hasEntry: boolean; isFuture: boolean }>;
+      days: Array<{
+        date: string;
+        mood?: MoodType;
+        hasEntry: boolean;
+        isFuture: boolean;
+      }>;
     }> = [];
 
     const today = new Date();
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-    const monthFormatter = new Intl.DateTimeFormat(language, { month: 'short' });
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    const monthFormatter = new Intl.DateTimeFormat(language, {
+      month: "short",
+    });
 
     for (let m = 0; m < 12; m++) {
       const daysInMonth = new Date(pixelYear, m + 1, 0).getDate();
-      const days: typeof months[0]['days'] = [];
+      const days: (typeof months)[0]["days"] = [];
 
       for (let d = 1; d <= daysInMonth; d++) {
-        const dateStr = `${pixelYear}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        const dateStr = `${pixelYear}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
         const isFuture = dateStr > todayStr;
         days.push({
           date: dateStr,
@@ -279,12 +325,12 @@ export function JournalStats({ entries, onBack }: JournalStatsProps) {
         <button
           onClick={onBack}
           className="p-2 rounded-lg hover:bg-muted/50 min-w-[44px] min-h-[44px] flex items-center justify-center"
-          aria-label={ts.back || 'Back'}
+          aria-label={ts.back || "Back"}
         >
           <ArrowLeft className="w-5 h-5 text-foreground rtl:scale-x-[-1]" />
         </button>
         <h2 className="text-base font-bold text-foreground">
-          {ts.journalStatsTitle || 'Diary Statistics'}
+          {ts.journalStatsTitle || "Diary Statistics"}
         </h2>
         <div className="w-[44px]" />
       </div>
@@ -293,21 +339,39 @@ export function JournalStats({ entries, onBack }: JournalStatsProps) {
         {entries.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-sm text-muted-foreground">
-              {ts.journalStatsEmpty || 'Start writing to see your statistics'}
+              {ts.journalStatsEmpty || "Start writing to see your statistics"}
             </p>
           </div>
         ) : (
           <>
             {/* Summary cards */}
             <div className="grid grid-cols-2 gap-2.5">
-              {([
-                { label: ts.journalStatsTotal || 'Total Entries', value: String(entries.length) },
-                { label: ts.journalStatsTotalWords || 'Total Words', value: totalWords.toLocaleString() },
-                { label: ts.journalStatsStreaks || 'Current Streak', value: `${streakData.current} ${ts.journalStatsDays || 'days'}` },
-                { label: ts.journalStatsLongestStreak || 'Longest Streak', value: `${streakData.longest} ${ts.journalStatsDays || 'days'}` },
-                { label: ts.journalStatsThisMonth || 'This Month', value: String(streakData.thisMonth) },
-                { label: ts.journalStatsAvgPerWeek || 'Avg / Week', value: String(streakData.avgPerWeek) },
-              ]).map((card, i) => (
+              {[
+                {
+                  label: ts.journalStatsTotal || "Total Entries",
+                  value: String(entries.length),
+                },
+                {
+                  label: ts.journalStatsTotalWords || "Total Words",
+                  value: totalWords.toLocaleString(),
+                },
+                {
+                  label: ts.journalStatsStreaks || "Current Streak",
+                  value: `${streakData.current} ${ts.journalStatsDays || "days"}`,
+                },
+                {
+                  label: ts.journalStatsLongestStreak || "Longest Streak",
+                  value: `${streakData.longest} ${ts.journalStatsDays || "days"}`,
+                },
+                {
+                  label: ts.journalStatsThisMonth || "This Month",
+                  value: String(streakData.thisMonth),
+                },
+                {
+                  label: ts.journalStatsAvgPerWeek || "Avg / Week",
+                  value: String(streakData.avgPerWeek),
+                },
+              ].map((card, i) => (
                 <motion.div
                   key={card.label}
                   initial={{ opacity: 0, y: 10 }}
@@ -315,8 +379,12 @@ export function JournalStats({ entries, onBack }: JournalStatsProps) {
                   transition={{ delay: i * 0.05 }}
                   className="p-3 rounded-xl bg-card/70 backdrop-blur-sm border border-border/20"
                 >
-                  <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider">{card.label}</p>
-                  <p className="text-lg font-bold text-foreground mt-0.5">{card.value}</p>
+                  <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider">
+                    {card.label}
+                  </p>
+                  <p className="text-lg font-bold text-foreground mt-0.5">
+                    {card.value}
+                  </p>
                 </motion.div>
               ))}
             </div>
@@ -326,13 +394,13 @@ export function JournalStats({ entries, onBack }: JournalStatsProps) {
               {/* Header with year navigation */}
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-xs font-bold text-muted-foreground/50 uppercase tracking-widest">
-                  {ts.journalStatsYearInPixels || 'Year in Pixels'}
+                  {ts.journalStatsYearInPixels || "Year in Pixels"}
                 </h3>
                 <div className="flex items-center gap-1">
                   <button
-                    onClick={() => setPixelYear(y => y - 1)}
+                    onClick={() => setPixelYear((y) => y - 1)}
                     className="p-1.5 rounded-lg hover:bg-muted/50 min-w-[32px] min-h-[32px] flex items-center justify-center"
-                    aria-label={ts.previous || 'Previous'}
+                    aria-label={ts.previous || "Previous"}
                   >
                     <ChevronLeft className="w-3.5 h-3.5 text-muted-foreground rtl:scale-x-[-1]" />
                   </button>
@@ -340,10 +408,12 @@ export function JournalStats({ entries, onBack }: JournalStatsProps) {
                     {pixelYear}
                   </span>
                   <button
-                    onClick={() => setPixelYear(y => Math.min(y + 1, currentYear))}
+                    onClick={() =>
+                      setPixelYear((y) => Math.min(y + 1, currentYear))
+                    }
                     disabled={pixelYear >= currentYear}
                     className="p-1.5 rounded-lg hover:bg-muted/50 disabled:opacity-30 min-w-[32px] min-h-[32px] flex items-center justify-center"
-                    aria-label={ts.next || 'Next'}
+                    aria-label={ts.next || "Next"}
                   >
                     <ChevronRight className="w-3.5 h-3.5 text-muted-foreground rtl:scale-x-[-1]" />
                   </button>
@@ -353,7 +423,7 @@ export function JournalStats({ entries, onBack }: JournalStatsProps) {
               {/* Pixel grid — 12 months × up to 31 days */}
               <div className="overflow-x-auto scrollbar-hide -mx-1 px-1">
                 <div className="grid gap-[3px] grid-cols-[auto_repeat(31,1fr)]">
-                  {pixelData.months.map(monthData => (
+                  {pixelData.months.map((monthData) => (
                     <div key={monthData.month} className="contents">
                       {/* Month label */}
                       <div className="flex items-center pe-1.5 h-[14px]">
@@ -366,22 +436,27 @@ export function JournalStats({ entries, onBack }: JournalStatsProps) {
                         const dayData = monthData.days[dayIdx];
                         if (!dayData) {
                           // Empty cell for months with <31 days
-                          return <div key={dayIdx} className="w-full aspect-square" />;
+                          return (
+                            <div
+                              key={dayIdx}
+                              className="w-full aspect-square"
+                            />
+                          );
                         }
                         return (
                           <div
                             key={dayIdx}
                             className={cn(
-                              'w-full aspect-square rounded-[2px] transition-colors',
+                              "w-full aspect-square rounded-[2px] transition-colors",
                               dayData.isFuture
-                                ? 'bg-muted/20'
+                                ? "bg-muted/20"
                                 : dayData.mood
                                   ? MOOD_PIXEL_BG[dayData.mood]
                                   : dayData.hasEntry
-                                    ? 'bg-primary/30'
-                                    : 'bg-muted/40',
+                                    ? "bg-primary/30"
+                                    : "bg-muted/40",
                             )}
-                            title={`${dayData.date}${dayData.mood ? ` — ${moodLabels[dayData.mood]}` : ''}`}
+                            title={`${dayData.date}${dayData.mood ? ` — ${moodLabels[dayData.mood]}` : ""}`}
                           />
                         );
                       })}
@@ -393,19 +468,29 @@ export function JournalStats({ entries, onBack }: JournalStatsProps) {
               {/* Legend */}
               <div className="flex items-center justify-between mt-3 pt-2 border-t border-border/10">
                 <div className="flex items-center gap-2.5 flex-wrap">
-                  {(['great', 'good', 'okay', 'bad', 'terrible'] as MoodType[]).map(mood => (
-                    <span key={mood} className="flex items-center gap-1 text-[9px] text-muted-foreground/60">
-                      <span className={cn('w-2 h-2 rounded-[1px]', MOOD_PIXEL_BG[mood])} />
+                  {(
+                    ["great", "good", "okay", "bad", "terrible"] as MoodType[]
+                  ).map((mood) => (
+                    <span
+                      key={mood}
+                      className="flex items-center gap-1 text-[9px] text-muted-foreground/60"
+                    >
+                      <span
+                        className={cn(
+                          "w-2 h-2 rounded-[1px]",
+                          MOOD_PIXEL_BG[mood],
+                        )}
+                      />
                       {moodLabels[mood]}
                     </span>
                   ))}
                   <span className="flex items-center gap-1 text-[9px] text-muted-foreground/60">
                     <span className="w-2 h-2 rounded-[1px] bg-primary/30" />
-                    {ts.journalStatsNoMood || 'No mood'}
+                    {ts.journalStatsNoMood || "No mood"}
                   </span>
                 </div>
                 <span className="text-[9px] text-muted-foreground/40 tabular-nums flex-shrink-0">
-                  {pixelData.totalDaysWithEntry} {ts.journalStatsDays || 'days'}
+                  {pixelData.totalDaysWithEntry} {ts.journalStatsDays || "days"}
                 </span>
               </div>
             </div>
@@ -414,7 +499,7 @@ export function JournalStats({ entries, onBack }: JournalStatsProps) {
             {moodDist.length > 0 && (
               <div className="p-4 rounded-xl bg-card/70 backdrop-blur-sm border border-border/20">
                 <h3 className="text-xs font-bold text-muted-foreground/50 uppercase tracking-widest mb-3">
-                  {ts.journalStatsMoodDist || 'Mood Distribution'}
+                  {ts.journalStatsMoodDist || "Mood Distribution"}
                 </h3>
                 <div className="flex items-center gap-4">
                   <ResponsiveContainer width={120} height={120}>
@@ -435,11 +520,18 @@ export function JournalStats({ entries, onBack }: JournalStatsProps) {
                     </PieChart>
                   </ResponsiveContainer>
                   <div className="flex-1 space-y-1">
-                    {moodDist.map(m => (
+                    {moodDist.map((m) => (
                       <div key={m.name} className="flex items-center gap-2">
-                        <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: m.color }} />
-                        <span className="text-xs text-foreground flex-1">{m.name}</span>
-                        <span className="text-xs text-muted-foreground tabular-nums">{m.value}</span>
+                        <div
+                          className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: m.color }}
+                        />
+                        <span className="text-xs text-foreground flex-1">
+                          {m.name}
+                        </span>
+                        <span className="text-xs text-muted-foreground tabular-nums">
+                          {m.value}
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -451,33 +543,67 @@ export function JournalStats({ entries, onBack }: JournalStatsProps) {
             {moodTimeline.length > 2 && (
               <div className="p-4 rounded-xl bg-card/70 backdrop-blur-sm border border-border/20">
                 <h3 className="text-xs font-bold text-muted-foreground/50 uppercase tracking-widest mb-3">
-                  {ts.journalStatsMoodTime || 'Mood Over Time'}
+                  {ts.journalStatsMoodTime || "Mood Over Time"}
                 </h3>
                 <ResponsiveContainer width="100%" height={140}>
                   <LineChart data={moodTimeline}>
-                    <XAxis dataKey="week" tick={{ fontSize: 9 }} stroke="#888" />
-                    <YAxis domain={[1, 5]} tick={{ fontSize: 9 }} stroke="#888" width={20} />
-                    <Tooltip
-                      contentStyle={{ fontSize: 11, borderRadius: 8, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                    <XAxis
+                      dataKey="week"
+                      tick={{ fontSize: 9 }}
+                      stroke="#888"
                     />
-                    <Line type="monotone" dataKey="avg" stroke="#818cf8" strokeWidth={2} dot={{ r: 3 }} />
+                    <YAxis
+                      domain={[1, 5]}
+                      tick={{ fontSize: 9 }}
+                      stroke="#888"
+                      width={20}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        fontSize: 11,
+                        borderRadius: 8,
+                        border: "none",
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                      }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="avg"
+                      stroke="#818cf8"
+                      strokeWidth={2}
+                      dot={{ r: 3 }}
+                    />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
             )}
 
             {/* Writing frequency */}
-            {frequency.some(f => f.count > 0) && (
+            {frequency.some((f) => f.count > 0) && (
               <div className="p-4 rounded-xl bg-card/70 backdrop-blur-sm border border-border/20">
                 <h3 className="text-xs font-bold text-muted-foreground/50 uppercase tracking-widest mb-3">
-                  {ts.journalStatsFrequency || 'Writing Frequency'}
+                  {ts.journalStatsFrequency || "Writing Frequency"}
                 </h3>
                 <ResponsiveContainer width="100%" height={120}>
                   <BarChart data={frequency}>
-                    <XAxis dataKey="week" tick={{ fontSize: 8 }} stroke="#888" />
-                    <YAxis tick={{ fontSize: 9 }} stroke="#888" width={20} allowDecimals={false} />
+                    <XAxis
+                      dataKey="week"
+                      tick={{ fontSize: 8 }}
+                      stroke="#888"
+                    />
+                    <YAxis
+                      tick={{ fontSize: 9 }}
+                      stroke="#888"
+                      width={20}
+                      allowDecimals={false}
+                    />
                     <Tooltip
-                      contentStyle={{ fontSize: 11, borderRadius: 8, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                      contentStyle={{
+                        fontSize: 11,
+                        borderRadius: 8,
+                        border: "none",
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                      }}
                     />
                     <Bar dataKey="count" fill="#818cf8" radius={[4, 4, 0, 0]} />
                   </BarChart>
@@ -488,22 +614,30 @@ export function JournalStats({ entries, onBack }: JournalStatsProps) {
             {/* Most active day */}
             <div className="p-4 rounded-xl bg-card/70 backdrop-blur-sm border border-border/20">
               <h3 className="text-xs font-bold text-muted-foreground/50 uppercase tracking-widest mb-3">
-                {ts.journalStatsMostActiveDay || 'Most Active Day'}
+                {ts.journalStatsMostActiveDay || "Most Active Day"}
               </h3>
               <div className="flex items-end gap-1.5 h-16">
-                {dayActivity.map(d => {
-                  const maxCount = Math.max(...dayActivity.map(x => x.count), 1);
+                {dayActivity.map((d) => {
+                  const maxCount = Math.max(
+                    ...dayActivity.map((x) => x.count),
+                    1,
+                  );
                   const height = (d.count / maxCount) * 100;
                   return (
-                    <div key={d.day} className="flex-1 flex flex-col items-center gap-1">
+                    <div
+                      key={d.day}
+                      className="flex-1 flex flex-col items-center gap-1"
+                    >
                       <div
                         className={cn(
-                          'w-full rounded-t-md transition-all',
-                          d.count > 0 ? 'bg-primary/60' : 'bg-muted/30',
+                          "w-full rounded-t-md transition-all",
+                          d.count > 0 ? "bg-primary/60" : "bg-muted/30",
                         )}
                         style={{ height: `${Math.max(height, 4)}%` }}
                       />
-                      <span className="text-[10px] text-muted-foreground/60">{d.day}</span>
+                      <span className="text-[10px] text-muted-foreground/60">
+                        {d.day}
+                      </span>
                     </div>
                   );
                 })}
@@ -514,7 +648,7 @@ export function JournalStats({ entries, onBack }: JournalStatsProps) {
             {tagCloud.length > 0 && (
               <div className="p-4 rounded-xl bg-card/70 backdrop-blur-sm border border-border/20">
                 <h3 className="text-xs font-bold text-muted-foreground/50 uppercase tracking-widest mb-3">
-                  {ts.journalStatsTagCloud || 'Top Tags'}
+                  {ts.journalStatsTagCloud || "Top Tags"}
                 </h3>
                 <div className="flex flex-wrap gap-1.5">
                   {tagCloud.map(({ tag, count }) => {
@@ -526,7 +660,10 @@ export function JournalStats({ entries, onBack }: JournalStatsProps) {
                         className="px-2 py-0.5 rounded-full bg-primary/8 text-primary/80"
                         style={{ fontSize: `${size}px` }}
                       >
-                        #{tag} <span className="text-muted-foreground/50">{count}</span>
+                        #{tag}{" "}
+                        <span className="text-muted-foreground/50">
+                          {count}
+                        </span>
                       </span>
                     );
                   })}
@@ -538,7 +675,7 @@ export function JournalStats({ entries, onBack }: JournalStatsProps) {
             {topStickers.length > 0 && (
               <div className="p-4 rounded-xl bg-card/70 backdrop-blur-sm border border-border/20">
                 <h3 className="text-xs font-bold text-muted-foreground/50 uppercase tracking-widest mb-3">
-                  {ts.journalStatsMostUsedStickers || 'Most Used Stickers'}
+                  {ts.journalStatsMostUsedStickers || "Most Used Stickers"}
                 </h3>
                 <div className="space-y-2">
                   {topStickers.map(({ sticker, count }, idx) => {
@@ -549,11 +686,10 @@ export function JournalStats({ entries, onBack }: JournalStatsProps) {
                         <StickerRenderer emoji={sticker} size="sm" />
                         <div className="flex-1 h-5 bg-muted/20 rounded-full overflow-hidden">
                           <motion.div
-                            className="origin-left"
+                            className="origin-left h-full w-full bg-primary/40 rounded-full"
                             initial={{ scaleX: 0 }}
                             animate={{ scaleX: widthPct / 100 }}
                             transition={{ delay: idx * 0.05, duration: 0.4 }}
-                            className="h-full w-full bg-primary/40 rounded-full"
                           />
                         </div>
                         <span className="text-xs text-muted-foreground tabular-nums min-w-[24px] text-end">

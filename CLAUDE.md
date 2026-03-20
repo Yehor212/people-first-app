@@ -23,10 +23,10 @@ Index.tsx = orchestrator. 6 TabTypes, 5 visible. 4 Zustand stores + IndexedDB.
 
 ## Enforcement
 
-Mechanical hooks in `.claude/hooks/` enforce quality gates at framework level (27 hooks, 5 blocking + 22 advisory).
+Mechanical hooks in `.claude/hooks/` enforce quality gates at framework level (29 hooks, 6 blocking + 23 advisory).
 Domain-specific rules in `.claude/rules/` load per file context (12 rule files).
-Lifecycle: session-start → preflight-inject → protected-files + preflight-gate → edit → ide-diagnostic-gate (+ postflight invalidation) + auto-format → quality-stop-gate → commit-gate (8 layers) → push → pre-compact.
-Token files (`.preflight-token`, `.postflight-done`, `.fullcycle-active`, `.fullcycle-laws-read`, `.claude-md-unlock`) are gitignored, one-time, consumed after use.
+Lifecycle: session-start → preflight-inject → protected-files + preflight-gate + search-gate → edit → ide-diagnostic-gate (+ postflight invalidation) + auto-format → Grep → search-confirm → quality-stop-gate → commit-gate (8 layers) → push → pre-compact.
+Token files (`.preflight-token`, `.postflight-done`, `.fullcycle-active`, `.fullcycle-laws-read`, `.claude-md-unlock`, `.bugfix-pending`, `.search-confirmed`) are gitignored, one-time, consumed after use.
 SDK architecture: hooks use stdin JSON (not env vars). Security hooks fail-closed (exit 2). Audit log: `.claude-audit.log`.
 Self-tampering defense: CLAUDE.md and `.claude/settings.json` require `.claude-md-unlock` token for edits (AAI006).
 

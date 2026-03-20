@@ -3,11 +3,11 @@
  * Shows pending notifications, challenges, and quick actions
  */
 
-import { useState, useEffect } from 'react';
-import { Bell, Zap, Clock, Gift, ChevronRight, X } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { TimeChallenge, ADHDNotification } from '@/lib/adhdHooks';
+import { useState, useEffect } from "react";
+import { Bell, Zap, Clock, Gift, ChevronRight, X } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { TimeChallenge, ADHDNotification } from "@/lib/adhdHooks";
 
 interface QuickActionsBarProps {
   challenges?: TimeChallenge[];
@@ -36,14 +36,14 @@ export function QuickActionsBar({
 
   // Active challenges (not expired, not completed)
   const activeChallenges = challenges.filter(
-    c => !c.completed && c.expiresAt > Date.now()
+    (c) => !c.completed && c.expiresAt > Date.now(),
   );
 
   // Update time left for challenges
   useEffect(() => {
     const updateTimes = () => {
       const newTimes: Record<string, string> = {};
-      activeChallenges.forEach(c => {
+      activeChallenges.forEach((c) => {
         const remaining = c.expiresAt - Date.now();
         if (remaining > 0) {
           const hours = Math.floor(remaining / 3600000);
@@ -73,8 +73,11 @@ export function QuickActionsBar({
     return null;
   }
 
-  const totalItems = activeChallenges.length + notifications.length +
-    (hasUnclaimedReward ? 1 : 0) + (spinTokens > 0 ? 1 : 0);
+  const totalItems =
+    activeChallenges.length +
+    notifications.length +
+    (hasUnclaimedReward ? 1 : 0) +
+    (spinTokens > 0 ? 1 : 0);
 
   return (
     <div className="mb-4 animate-fade-in">
@@ -94,10 +97,10 @@ export function QuickActionsBar({
               )}
             </div>
             <span className="text-sm font-medium">
-              {totalItems} {totalItems === 1 ? 'action' : 'actions'} pending
+              {totalItems} {totalItems === 1 ? "action" : "actions"} pending
             </span>
           </div>
-          <ChevronRight className="w-5 h-5 text-muted-foreground" />
+          <ChevronRight className="w-5 h-5 text-muted-foreground rtl:scale-x-[-1]" />
         </button>
       )}
 
@@ -128,9 +131,11 @@ export function QuickActionsBar({
                 <Gift className="w-5 h-5 text-pink-500" />
               </div>
               <div className="flex-1 text-start">
-                <div className="font-medium">{t.dailyRewards || 'Daily Rewards'}</div>
+                <div className="font-medium">
+                  {t.dailyRewards || "Daily Rewards"}
+                </div>
                 <div className="text-xs text-muted-foreground">
-                  {t.claim || 'Claim your reward!'}
+                  {t.claim || "Claim your reward!"}
                 </div>
               </div>
               <div className="px-2 py-1 bg-pink-500 text-white text-xs font-bold rounded-full animate-pulse">
@@ -149,9 +154,11 @@ export function QuickActionsBar({
                 <Zap className="w-5 h-5 text-yellow-500" />
               </div>
               <div className="flex-1 text-start">
-                <div className="font-medium">{t.spinWheel || 'Spin the Wheel!'}</div>
+                <div className="font-medium">
+                  {t.spinWheel || "Spin the Wheel!"}
+                </div>
                 <div className="text-xs text-muted-foreground">
-                  {spinTokens} {t.spinsAvailable || 'spins available'}
+                  {spinTokens} {t.spinsAvailable || "spins available"}
                 </div>
               </div>
               <div className="px-2 py-1 bg-yellow-500 text-white text-xs font-bold rounded-full">
@@ -161,21 +168,25 @@ export function QuickActionsBar({
           )}
 
           {/* Active Challenges */}
-          {activeChallenges.map(challenge => (
+          {activeChallenges.map((challenge) => (
             <button
               key={challenge.id}
               onClick={() => onOpenChallenge?.(challenge)}
               className={cn(
-                'w-full flex items-center gap-3 p-3 rounded-xl transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
-                challenge.type === 'flash'
-                  ? 'bg-gradient-to-r from-red-500/10 to-orange-500/10 dark:from-red-500/20 dark:to-orange-500/20 hover:from-red-500/20 hover:to-orange-500/20 dark:hover:from-red-500/30 dark:hover:to-orange-500/30'
-                  : 'bg-gradient-to-r from-blue-500/10 to-cyan-500/10 dark:from-blue-500/20 dark:to-cyan-500/20 hover:from-blue-500/20 hover:to-cyan-500/20 dark:hover:from-blue-500/30 dark:hover:to-cyan-500/30'
+                "w-full flex items-center gap-3 p-3 rounded-xl transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+                challenge.type === "flash"
+                  ? "bg-gradient-to-r from-red-500/10 to-orange-500/10 dark:from-red-500/20 dark:to-orange-500/20 hover:from-red-500/20 hover:to-orange-500/20 dark:hover:from-red-500/30 dark:hover:to-orange-500/30"
+                  : "bg-gradient-to-r from-blue-500/10 to-cyan-500/10 dark:from-blue-500/20 dark:to-cyan-500/20 hover:from-blue-500/20 hover:to-cyan-500/20 dark:hover:from-blue-500/30 dark:hover:to-cyan-500/30",
               )}
             >
-              <div className={cn(
-                'p-2 rounded-lg',
-                challenge.type === 'flash' ? 'bg-red-500/20' : 'bg-blue-500/20'
-              )}>
+              <div
+                className={cn(
+                  "p-2 rounded-lg",
+                  challenge.type === "flash"
+                    ? "bg-red-500/20"
+                    : "bg-blue-500/20",
+                )}
+              >
                 <span className="text-xl">{challenge.icon}</span>
               </div>
               <div className="flex-1 text-start">
@@ -184,10 +195,14 @@ export function QuickActionsBar({
                   <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
                     <div
                       className={cn(
-                        'h-full rounded-full transition-all',
-                        challenge.type === 'flash' ? 'bg-red-500' : 'bg-blue-500'
+                        "h-full rounded-full transition-all",
+                        challenge.type === "flash"
+                          ? "bg-red-500"
+                          : "bg-blue-500",
                       )}
-                      style={{ width: `${(challenge.progress / challenge.target) * 100}%` }}
+                      style={{
+                        width: `${(challenge.progress / challenge.target) * 100}%`,
+                      }}
                     />
                   </div>
                   <span className="text-xs text-muted-foreground">
@@ -197,28 +212,30 @@ export function QuickActionsBar({
               </div>
               <div className="flex items-center gap-1 text-xs text-muted-foreground">
                 <Clock className="w-3 h-3" />
-                {timeLeft[challenge.id] || '...'}
+                {timeLeft[challenge.id] || "..."}
               </div>
             </button>
           ))}
 
           {/* Notifications */}
-          {notifications.map(notification => (
+          {notifications.map((notification) => (
             <div
               key={notification.id}
               className={cn(
-                'flex items-center gap-3 p-3 rounded-xl',
-                (notification.type as string) === 'warning'
-                  ? 'bg-yellow-500/10 dark:bg-yellow-500/20'
-                  : (notification.type as string) === 'success'
-                  ? 'bg-green-500/10 dark:bg-green-500/20'
-                  : 'bg-primary/10 dark:bg-primary/20'
+                "flex items-center gap-3 p-3 rounded-xl",
+                (notification.type as string) === "warning"
+                  ? "bg-yellow-500/10 dark:bg-yellow-500/20"
+                  : (notification.type as string) === "success"
+                    ? "bg-green-500/10 dark:bg-green-500/20"
+                    : "bg-primary/10 dark:bg-primary/20",
               )}
             >
               <span className="text-xl">{notification.icon}</span>
               <div className="flex-1">
                 <div className="font-medium text-sm">{notification.title}</div>
-                <div className="text-xs text-muted-foreground">{notification.message}</div>
+                <div className="text-xs text-muted-foreground">
+                  {notification.message}
+                </div>
               </div>
               {onDismissNotification && (
                 <button

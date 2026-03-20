@@ -1,9 +1,23 @@
-import { useState, useRef, useEffect } from 'react';
-import { ChevronRight, Sparkles, Check, Timer, Wind, Heart, Target, ClipboardList, Trophy, Flower2 } from 'lucide-react';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { useFeatureFlags, ToggleableFeature } from '@/contexts/FeatureFlagsContext';
-import { cn } from '@/lib/utils';
-import { logger } from '@/lib/logger';
+import { useState, useRef, useEffect } from "react";
+import {
+  ChevronRight,
+  Sparkles,
+  Check,
+  Timer,
+  Wind,
+  Heart,
+  Target,
+  ClipboardList,
+  Trophy,
+  Flower2,
+} from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import {
+  useFeatureFlags,
+  ToggleableFeature,
+} from "@/contexts/FeatureFlagsContext";
+import { cn } from "@/lib/utils";
+import { logger } from "@/lib/logger";
 
 interface OnboardingResult {
   skipped?: boolean;
@@ -33,7 +47,13 @@ function FloatingParticles() {
           style={{
             left: `${Math.random() * 100}%`,
             top: `${Math.random() * 100}%`,
-            backgroundColor: ['#4a9d7c', '#e8a849', '#6366f1', '#ec4899', '#22c55e'][i % 5],
+            backgroundColor: [
+              "#4a9d7c",
+              "#e8a849",
+              "#6366f1",
+              "#ec4899",
+              "#22c55e",
+            ][i % 5],
             animationDelay: `${Math.random() * 5}s`,
             animationDuration: `${8 + Math.random() * 4}s`,
           }}
@@ -49,31 +69,37 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
 
   // All modules enabled by default
   const [selectedModules, setSelectedModules] = useState<ToggleableFeature[]>([
-    'focusTimer',
-    'breathingExercise',
-    'gratitudeJournal',
-    'quests',
-    'tasks',
-    'challenges',
-    'innerWorld',
+    "focusTimer",
+    "breathingExercise",
+    "gratitudeJournal",
+    "quests",
+    "tasks",
+    "challenges",
+    "innerWorld",
   ]);
   const [animatingModule, setAnimatingModule] = useState<string | null>(null);
   const [clickAttempts, setClickAttempts] = useState(0);
-  const completionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const completionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
   const animatingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lockResetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lockResetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
 
   // Fallback: If user clicks multiple times and nothing happens, force complete
   useEffect(() => {
     if (clickAttempts >= 3) {
-      logger.log('[OnboardingFlow] Multiple click attempts detected, forcing completion');
+      logger.log(
+        "[OnboardingFlow] Multiple click attempts detected, forcing completion",
+      );
       // Clear any pending timeout
       if (completionTimeoutRef.current) {
         clearTimeout(completionTimeoutRef.current);
       }
       // Force complete after 1 second
       completionTimeoutRef.current = setTimeout(() => {
-        logger.log('[OnboardingFlow] Force completing onboarding');
+        logger.log("[OnboardingFlow] Force completing onboarding");
         onComplete({ modules: selectedModules });
       }, 1000);
     }
@@ -93,60 +119,63 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   // Module definitions
   const modules: ModuleItem[] = [
     {
-      id: 'focusTimer',
+      id: "focusTimer",
       icon: <Timer className="w-5 h-5" />,
-      emoji: '🕐',
-      gradient: 'from-orange-500 to-red-500'
+      emoji: "🕐",
+      gradient: "from-orange-500 to-red-500",
     },
     {
-      id: 'breathingExercise',
+      id: "breathingExercise",
       icon: <Wind className="w-5 h-5" />,
-      emoji: '💨',
-      gradient: 'from-sky-400 to-blue-500'
+      emoji: "💨",
+      gradient: "from-sky-400 to-blue-500",
     },
     {
-      id: 'gratitudeJournal',
+      id: "gratitudeJournal",
       icon: <Heart className="w-5 h-5" />,
-      emoji: '❤️',
-      gradient: 'from-pink-500 to-rose-500'
+      emoji: "❤️",
+      gradient: "from-pink-500 to-rose-500",
     },
     {
-      id: 'quests',
+      id: "quests",
       icon: <Target className="w-5 h-5" />,
-      emoji: '🎯',
-      gradient: 'from-yellow-500 to-amber-500'
+      emoji: "🎯",
+      gradient: "from-yellow-500 to-amber-500",
     },
     {
-      id: 'tasks',
+      id: "tasks",
       icon: <ClipboardList className="w-5 h-5" />,
-      emoji: '📋',
-      gradient: 'from-blue-500 to-indigo-500'
+      emoji: "📋",
+      gradient: "from-blue-500 to-indigo-500",
     },
     {
-      id: 'challenges',
+      id: "challenges",
       icon: <Trophy className="w-5 h-5" />,
-      emoji: '🏆',
-      gradient: 'from-amber-500 to-yellow-600'
+      emoji: "🏆",
+      gradient: "from-amber-500 to-yellow-600",
     },
     {
-      id: 'innerWorld',
+      id: "innerWorld",
       icon: <Flower2 className="w-5 h-5" />,
-      emoji: '🌸',
-      gradient: 'from-green-500 to-emerald-500'
+      emoji: "🌸",
+      gradient: "from-green-500 to-emerald-500",
     },
   ];
 
   // Get module name translation
   const getModuleName = (id: ToggleableFeature): string => {
     const names: Record<ToggleableFeature, string> = {
-      focusTimer: t.moduleFocus || t.settingsModuleFocus || 'Focus Timer',
-      breathingExercise: t.moduleBreathing || t.settingsModuleBreathing || 'Breathing',
-      gratitudeJournal: t.moduleGratitude || t.settingsModuleGratitude || 'Gratitude',
-      quests: t.moduleQuests || t.settingsModuleQuests || 'Quests',
-      tasks: t.moduleTasks || t.settingsModuleTasks || 'Tasks',
-      challenges: t.moduleChallenges || t.settingsModuleChallenges || 'Challenges',
-      innerWorld: t.moduleGarden || t.settingsModuleGarden || 'Garden',
-      aiCoach: 'AI Coach', // Not shown
+      focusTimer: t.moduleFocus || t.settingsModuleFocus || "Focus Timer",
+      breathingExercise:
+        t.moduleBreathing || t.settingsModuleBreathing || "Breathing",
+      gratitudeJournal:
+        t.moduleGratitude || t.settingsModuleGratitude || "Gratitude",
+      quests: t.moduleQuests || t.settingsModuleQuests || "Quests",
+      tasks: t.moduleTasks || t.settingsModuleTasks || "Tasks",
+      challenges:
+        t.moduleChallenges || t.settingsModuleChallenges || "Challenges",
+      innerWorld: t.moduleGarden || t.settingsModuleGarden || "Garden",
+      aiCoach: "AI Coach", // Not shown
     };
     return names[id];
   };
@@ -154,14 +183,33 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   // Get module description translation
   const getModuleDesc = (id: ToggleableFeature): string => {
     const descs: Record<ToggleableFeature, string> = {
-      focusTimer: t.moduleFocusDesc || t.settingsModuleFocusDesc || 'Pomodoro timer for deep work',
-      breathingExercise: t.moduleBreathingDesc || t.settingsModuleBreathingDesc || 'Relaxation techniques',
-      gratitudeJournal: t.moduleGratitudeDesc || t.settingsModuleGratitudeDesc || 'Daily gratitude practice',
-      quests: t.moduleQuestsDesc || t.settingsModuleQuestsDesc || 'Daily challenges & goals',
-      tasks: t.moduleTasksDesc || t.settingsModuleTasksDesc || 'Task management',
-      challenges: t.moduleChallengesDesc || t.settingsModuleChallengesDesc || 'Compete with friends',
-      innerWorld: t.moduleGardenDesc || t.settingsModuleGardenDesc || 'Virtual companion & garden',
-      aiCoach: '', // Not shown
+      focusTimer:
+        t.moduleFocusDesc ||
+        t.settingsModuleFocusDesc ||
+        "Pomodoro timer for deep work",
+      breathingExercise:
+        t.moduleBreathingDesc ||
+        t.settingsModuleBreathingDesc ||
+        "Relaxation techniques",
+      gratitudeJournal:
+        t.moduleGratitudeDesc ||
+        t.settingsModuleGratitudeDesc ||
+        "Daily gratitude practice",
+      quests:
+        t.moduleQuestsDesc ||
+        t.settingsModuleQuestsDesc ||
+        "Daily challenges & goals",
+      tasks:
+        t.moduleTasksDesc || t.settingsModuleTasksDesc || "Task management",
+      challenges:
+        t.moduleChallengesDesc ||
+        t.settingsModuleChallengesDesc ||
+        "Compete with friends",
+      innerWorld:
+        t.moduleGardenDesc ||
+        t.settingsModuleGardenDesc ||
+        "Virtual companion & garden",
+      aiCoach: "", // Not shown
     };
     return descs[id];
   };
@@ -171,69 +219,89 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     if (animatingTimerRef.current) clearTimeout(animatingTimerRef.current);
     animatingTimerRef.current = setTimeout(() => setAnimatingModule(null), 400);
 
-    setSelectedModules(prev =>
+    setSelectedModules((prev) =>
       prev.includes(moduleId)
-        ? prev.filter(id => id !== moduleId)
-        : [...prev, moduleId]
+        ? prev.filter((id) => id !== moduleId)
+        : [...prev, moduleId],
     );
   };
 
   const transitionLockRef = useRef(false);
 
   const handleSkip = () => {
-    logger.log('[OnboardingFlow] handleSkip called, transitionLockRef:', transitionLockRef.current);
-    setClickAttempts(prev => prev + 1);
+    logger.log(
+      "[OnboardingFlow] handleSkip called, transitionLockRef:",
+      transitionLockRef.current,
+    );
+    setClickAttempts((prev) => prev + 1);
 
     if (transitionLockRef.current) {
-      logger.log('[OnboardingFlow] handleSkip blocked by transitionLockRef');
+      logger.log("[OnboardingFlow] handleSkip blocked by transitionLockRef");
       return;
     }
     transitionLockRef.current = true;
 
     // Safety: reset lock after 2s in case component doesn't unmount
     if (lockResetTimeoutRef.current) clearTimeout(lockResetTimeoutRef.current);
-    lockResetTimeoutRef.current = setTimeout(() => { transitionLockRef.current = false; }, 2000);
+    lockResetTimeoutRef.current = setTimeout(() => {
+      transitionLockRef.current = false;
+    }, 2000);
 
     try {
-      logger.log('[OnboardingFlow] Setting flags for all modules...');
-      modules.forEach(m => setFlag(m.id, true));
-      logger.log('[OnboardingFlow] Calling onComplete with skipped=true');
-      onComplete({ skipped: true, modules: modules.map(m => m.id) });
-      logger.log('[OnboardingFlow] onComplete called successfully');
+      logger.log("[OnboardingFlow] Setting flags for all modules...");
+      modules.forEach((m) => setFlag(m.id, true));
+      logger.log("[OnboardingFlow] Calling onComplete with skipped=true");
+      onComplete({ skipped: true, modules: modules.map((m) => m.id) });
+      logger.log("[OnboardingFlow] onComplete called successfully");
     } catch (error) {
-      logger.error('[OnboardingFlow] Error in handleSkip:', error);
+      logger.error("[OnboardingFlow] Error in handleSkip:", error);
       transitionLockRef.current = false;
-      if (lockResetTimeoutRef.current) clearTimeout(lockResetTimeoutRef.current);
+      if (lockResetTimeoutRef.current)
+        clearTimeout(lockResetTimeoutRef.current);
     }
   };
 
   const handleComplete = () => {
-    logger.log('[OnboardingFlow] handleComplete called, transitionLockRef:', transitionLockRef.current);
-    setClickAttempts(prev => prev + 1);
+    logger.log(
+      "[OnboardingFlow] handleComplete called, transitionLockRef:",
+      transitionLockRef.current,
+    );
+    setClickAttempts((prev) => prev + 1);
 
     if (transitionLockRef.current) {
-      logger.log('[OnboardingFlow] handleComplete blocked by transitionLockRef');
+      logger.log(
+        "[OnboardingFlow] handleComplete blocked by transitionLockRef",
+      );
       return;
     }
     transitionLockRef.current = true;
 
     // Safety: reset lock after 2s in case component doesn't unmount
     if (lockResetTimeoutRef.current) clearTimeout(lockResetTimeoutRef.current);
-    lockResetTimeoutRef.current = setTimeout(() => { transitionLockRef.current = false; }, 2000);
+    lockResetTimeoutRef.current = setTimeout(() => {
+      transitionLockRef.current = false;
+    }, 2000);
 
     try {
-      logger.log('[OnboardingFlow] Setting flags for selected modules:', selectedModules);
-      modules.forEach(m => {
+      logger.log(
+        "[OnboardingFlow] Setting flags for selected modules:",
+        selectedModules,
+      );
+      modules.forEach((m) => {
         setFlag(m.id, selectedModules.includes(m.id));
       });
 
-      logger.log('[OnboardingFlow] Calling onComplete with modules:', selectedModules);
+      logger.log(
+        "[OnboardingFlow] Calling onComplete with modules:",
+        selectedModules,
+      );
       onComplete({ modules: selectedModules });
-      logger.log('[OnboardingFlow] onComplete called successfully');
+      logger.log("[OnboardingFlow] onComplete called successfully");
     } catch (error) {
-      logger.error('[OnboardingFlow] Error in handleComplete:', error);
+      logger.error("[OnboardingFlow] Error in handleComplete:", error);
       transitionLockRef.current = false;
-      if (lockResetTimeoutRef.current) clearTimeout(lockResetTimeoutRef.current);
+      if (lockResetTimeoutRef.current)
+        clearTimeout(lockResetTimeoutRef.current);
     }
   };
 
@@ -243,17 +311,17 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
 
       <div className="flex-1 flex flex-col items-center justify-start pt-6 sm:pt-10 px-3 sm:px-4 pb-4">
         <div className="w-full max-w-md relative z-10">
-
           {/* Header */}
           <div className="text-center mb-6">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-accent shadow-lg shadow-primary/30 mb-4">
               <Sparkles className="w-8 h-8 text-white" />
             </div>
             <h1 className="text-2xl font-bold text-foreground mb-2">
-              {t.modulesOnboardingTitle || 'Choose Features'}
+              {t.modulesOnboardingTitle || "Choose Features"}
             </h1>
             <p className="text-muted-foreground text-sm">
-              {t.modulesOnboardingSubtitle || 'You can change this later in settings'}
+              {t.modulesOnboardingSubtitle ||
+                "You can change this later in settings"}
             </p>
           </div>
 
@@ -276,31 +344,37 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
                       isSelected
                         ? `bg-gradient-to-br ${module.gradient} shadow-lg`
                         : "bg-secondary/50 hover:bg-secondary",
-                      isAnimating && "motion-safe:animate-selection-pop"
+                      isAnimating && "motion-safe:animate-selection-pop",
                     )}
                     style={{ animationDelay: `${index * 50}ms` }}
                   >
                     {/* Emoji */}
-                    <span className={cn(
-                      "text-3xl transition-transform",
-                      isSelected && "scale-110"
-                    )}>
+                    <span
+                      className={cn(
+                        "text-3xl transition-transform",
+                        isSelected && "scale-110",
+                      )}
+                    >
                       {module.emoji}
                     </span>
 
                     {/* Name */}
-                    <span className={cn(
-                      "text-sm font-semibold",
-                      isSelected ? "text-white" : "text-foreground"
-                    )}>
+                    <span
+                      className={cn(
+                        "text-sm font-semibold",
+                        isSelected ? "text-white" : "text-foreground",
+                      )}
+                    >
                       {getModuleName(module.id)}
                     </span>
 
                     {/* Description */}
-                    <span className={cn(
-                      "text-[10px] leading-tight",
-                      isSelected ? "text-white/80" : "text-muted-foreground"
-                    )}>
+                    <span
+                      className={cn(
+                        "text-[10px] leading-tight",
+                        isSelected ? "text-white/80" : "text-muted-foreground",
+                      )}
+                    >
                       {getModuleDesc(module.id)}
                     </span>
 
@@ -318,14 +392,15 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
             {/* Selection count */}
             <div className="mt-4 flex items-center justify-center gap-2 py-2 bg-primary/10 rounded-xl">
               <span className="text-sm font-medium text-primary">
-                {selectedModules.length} {t.modulesSelected || 'features selected'}
+                {selectedModules.length}{" "}
+                {t.modulesSelected || "features selected"}
               </span>
             </div>
           </div>
 
           {/* Note about core features */}
           <p className="text-xs text-center text-muted-foreground mt-3">
-            {t.coreModulesNote || 'Mood Tracker and Habits are always enabled'}
+            {t.coreModulesNote || "Mood Tracker and Habits are always enabled"}
           </p>
 
           {/* Actions */}
@@ -333,23 +408,23 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
             <button
               type="button"
               onClick={() => {
-                logger.log('[OnboardingFlow] Skip button clicked');
+                logger.log("[OnboardingFlow] Skip button clicked");
                 handleSkip();
               }}
               className="flex-1 py-3 sm:py-4 bg-secondary/50 backdrop-blur-sm text-secondary-foreground rounded-xl sm:rounded-2xl font-semibold hover:bg-secondary transition-colors text-sm sm:text-base active:scale-95"
             >
-              {t.skip || 'Skip'}
+              {t.skip || "Skip"}
             </button>
             <button
               type="button"
               onClick={() => {
-                logger.log('[OnboardingFlow] Start button clicked');
+                logger.log("[OnboardingFlow] Start button clicked");
                 handleComplete();
               }}
               className="flex-1 py-3 sm:py-4 bg-gradient-to-r from-primary to-accent text-primary-foreground rounded-xl sm:rounded-2xl font-semibold hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/30 text-sm sm:text-base active:scale-95"
             >
-              {t.getStarted || 'Start'}
-              <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
+              {t.getStarted || "Start"}
+              <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 rtl:scale-x-[-1]" />
             </button>
           </div>
         </div>

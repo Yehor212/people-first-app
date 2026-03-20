@@ -3,10 +3,10 @@
  * Helps ADHD users discover features gradually without overwhelming them
  */
 
-import { useState, useEffect, useRef } from 'react';
-import { X, Lightbulb, ChevronRight, Sparkles } from 'lucide-react';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { cn } from '@/lib/utils';
+import { useState, useEffect, useRef } from "react";
+import { X, Lightbulb, ChevronRight, Sparkles } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { cn } from "@/lib/utils";
 
 interface OnboardingHintsProps {
   hasCompletedTutorial: boolean;
@@ -16,15 +16,18 @@ interface OnboardingHintsProps {
   hasGratitude: boolean;
   onDismiss: (hintId: string) => void;
   dismissedHints: string[];
-  onNavigate?: (section: 'mood' | 'habits' | 'focus' | 'gratitude') => void;
+  onNavigate?: (section: "mood" | "habits" | "focus" | "gratitude") => void;
 }
 
 // Map hint IDs to navigation targets
-const HINT_NAVIGATION: Record<string, 'mood' | 'habits' | 'focus' | 'gratitude'> = {
-  first_mood: 'mood',
-  first_habit: 'habits',
-  first_focus: 'focus',
-  first_gratitude: 'gratitude',
+const HINT_NAVIGATION: Record<
+  string,
+  "mood" | "habits" | "focus" | "gratitude"
+> = {
+  first_mood: "mood",
+  first_habit: "habits",
+  first_focus: "focus",
+  first_gratitude: "gratitude",
 };
 
 interface Hint {
@@ -35,27 +38,32 @@ interface Hint {
 
 const hints: Hint[] = [
   {
-    id: 'first_mood',
+    id: "first_mood",
     condition: (p) => p.hasCompletedTutorial && !p.hasMoodToday,
     priority: 1,
   },
   {
-    id: 'first_habit',
+    id: "first_habit",
     condition: (p) => p.hasCompletedTutorial && p.hasMoodToday && !p.hasHabits,
     priority: 2,
   },
   {
-    id: 'first_focus',
-    condition: (p) => p.hasCompletedTutorial && p.hasMoodToday && p.hasHabits && !p.hasFocusSession,
+    id: "first_focus",
+    condition: (p) =>
+      p.hasCompletedTutorial &&
+      p.hasMoodToday &&
+      p.hasHabits &&
+      !p.hasFocusSession,
     priority: 3,
   },
   {
-    id: 'first_gratitude',
-    condition: (p) => p.hasCompletedTutorial && p.hasMoodToday && !p.hasGratitude,
+    id: "first_gratitude",
+    condition: (p) =>
+      p.hasCompletedTutorial && p.hasMoodToday && !p.hasGratitude,
     priority: 4,
   },
   {
-    id: 'schedule_tip',
+    id: "schedule_tip",
     condition: (p) => p.hasCompletedTutorial && p.hasMoodToday && p.hasHabits,
     priority: 5,
   },
@@ -77,34 +85,47 @@ export function OnboardingHints(props: OnboardingHintsProps) {
 
   // Hint content with translations
   const getHintContent = (id: string) => {
-    const content: Record<string, { title: string; description: string; action?: string }> = {
+    const content: Record<
+      string,
+      { title: string; description: string; action?: string }
+    > = {
       first_mood: {
         title: t.hintFirstMoodTitle || "How are you feeling?",
-        description: t.hintFirstMoodDesc || "Start your day by logging your mood. It takes just 5 seconds and helps you understand yourself better!",
+        description:
+          t.hintFirstMoodDesc ||
+          "Start your day by logging your mood. It takes just 5 seconds and helps you understand yourself better!",
         action: t.hintFirstMoodAction || "Log mood",
       },
       first_habit: {
         title: t.hintFirstHabitTitle || "Build your first habit",
-        description: t.hintFirstHabitDesc || "Small habits lead to big changes. Try adding something simple like 'Drink water' or 'Take a break'.",
+        description:
+          t.hintFirstHabitDesc ||
+          "Small habits lead to big changes. Try adding something simple like 'Drink water' or 'Take a break'.",
         action: t.hintFirstHabitAction || "Add habit",
       },
       first_focus: {
         title: t.hintFirstFocusTitle || "Ready to focus?",
-        description: t.hintFirstFocusDesc || "Use the focus timer with calming sounds. Start with just 25 minutes - your brain will thank you!",
+        description:
+          t.hintFirstFocusDesc ||
+          "Use the focus timer with calming sounds. Start with just 25 minutes - your brain will thank you!",
         action: t.hintFirstFocusAction || "Start focus",
       },
       first_gratitude: {
         title: t.hintFirstGratitudeTitle || "Practice gratitude",
-        description: t.hintFirstGratitudeDesc || "Write down one thing you're grateful for. It's a powerful mood booster!",
+        description:
+          t.hintFirstGratitudeDesc ||
+          "Write down one thing you're grateful for. It's a powerful mood booster!",
         action: t.hintFirstGratitudeAction || "Add gratitude",
       },
       schedule_tip: {
         title: t.hintScheduleTipTitle || "Plan your day",
-        description: t.hintScheduleTipDesc || "Use the timeline to see your day at a glance. Add events to stay on track!",
+        description:
+          t.hintScheduleTipDesc ||
+          "Use the timeline to see your day at a glance. Add events to stay on track!",
         action: t.hintScheduleTipAction || "View timeline",
       },
     };
-    return content[id] || { title: '', description: '' };
+    return content[id] || { title: "", description: "" };
   };
 
   // Find the most relevant hint to show
@@ -115,7 +136,7 @@ export function OnboardingHints(props: OnboardingHintsProps) {
     }
 
     const availableHints = hints
-      .filter(h => h.condition(props) && !props.dismissedHints.includes(h.id))
+      .filter((h) => h.condition(props) && !props.dismissedHints.includes(h.id))
       .sort((a, b) => a.priority - b.priority);
 
     if (availableHints.length > 0 && availableHints[0] !== currentHint) {
@@ -152,7 +173,7 @@ export function OnboardingHints(props: OnboardingHintsProps) {
     <div
       className={cn(
         "bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10 rounded-2xl p-4 border border-primary/20 transition-all duration-300",
-        isAnimating ? "opacity-0 translate-y-2" : "opacity-100 translate-y-0"
+        isAnimating ? "opacity-0 translate-y-2" : "opacity-100 translate-y-0",
       )}
     >
       <div className="flex items-start gap-3">
@@ -185,7 +206,7 @@ export function OnboardingHints(props: OnboardingHintsProps) {
               className="mt-2 text-xs font-medium text-primary flex items-center gap-1 hover:underline"
             >
               {content.action}
-              <ChevronRight className="w-3 h-3" />
+              <ChevronRight className="w-3 h-3 rtl:scale-x-[-1]" />
             </button>
           )}
         </div>
@@ -194,7 +215,7 @@ export function OnboardingHints(props: OnboardingHintsProps) {
         <button
           onClick={handleDismiss}
           className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-muted rounded-lg transition-colors flex-shrink-0"
-          aria-label={t.dismiss || 'Dismiss'}
+          aria-label={t.dismiss || "Dismiss"}
         >
           <X className="w-4 h-4 text-muted-foreground" />
         </button>

@@ -141,6 +141,9 @@
     "workbox-routing": "^7.1.0",
     "workbox-strategies": "^7.1.0"
   },
+  "overrides": {
+    "@rollup/plugin-terser": "^1.0.0"
+  },
   "lint-staged": {
     "*.{ts,tsx}": [
       "eslint"

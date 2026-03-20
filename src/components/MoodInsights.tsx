@@ -3,13 +3,21 @@
  * Displays personalized insights based on mood, habits, and focus data
  */
 
-import { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, ChevronRight, X, Brain, TrendingUp, Heart, Target } from 'lucide-react';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { cn } from '@/lib/utils';
-import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
-import { generateMoodInsights, MoodInsight } from '@/lib/moodInsights';
+import { useState, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Sparkles,
+  ChevronRight,
+  X,
+  Brain,
+  TrendingUp,
+  Heart,
+  Target,
+} from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { cn } from "@/lib/utils";
+import { MoodEntry, Habit, FocusSession, GratitudeEntry } from "@/types";
+import { generateMoodInsights, MoodInsight } from "@/lib/moodInsights";
 
 interface MoodInsightsProps {
   moods: MoodEntry[];
@@ -19,31 +27,46 @@ interface MoodInsightsProps {
 }
 
 // Helper function to get icon for insight type - avoids module-level const with component refs
-function getInsightIcon(type: MoodInsight['type']) {
+function getInsightIcon(type: MoodInsight["type"]) {
   switch (type) {
-    case 'pattern': return TrendingUp;
-    case 'correlation': return Brain;
-    case 'tip': return Target;
-    case 'achievement': return Sparkles;
-    case 'warning': return Heart;
-    default: return Brain;
+    case "pattern":
+      return TrendingUp;
+    case "correlation":
+      return Brain;
+    case "tip":
+      return Target;
+    case "achievement":
+      return Sparkles;
+    case "warning":
+      return Heart;
+    default:
+      return Brain;
   }
 }
 
 // Helper function to get color for insight type using CSS variables
-function getInsightColor(type: MoodInsight['type']) {
+function getInsightColor(type: MoodInsight["type"]) {
   switch (type) {
-    case 'pattern': return 'from-[hsl(var(--insight-mood))]/20 to-[hsl(var(--insight-mood))]/10 border-[hsl(var(--insight-mood))]/30';
-    case 'correlation': return 'from-[hsl(var(--insight-habit))]/20 to-[hsl(var(--insight-habit))]/10 border-[hsl(var(--insight-habit))]/30';
-    case 'tip': return 'from-[hsl(var(--insight-energy))]/20 to-[hsl(var(--insight-energy))]/10 border-[hsl(var(--insight-energy))]/30';
-    case 'achievement': return 'from-[hsl(var(--insight-positive))]/20 to-[hsl(var(--insight-positive))]/10 border-[hsl(var(--insight-positive))]/30';
-    case 'warning': return 'from-[hsl(var(--insight-warning))]/20 to-[hsl(var(--insight-warning))]/10 border-[hsl(var(--insight-warning))]/30';
-    default: return 'from-[hsl(var(--insight-mood))]/20 to-[hsl(var(--insight-mood))]/10 border-[hsl(var(--insight-mood))]/30';
+    case "pattern":
+      return "from-[hsl(var(--insight-mood))]/20 to-[hsl(var(--insight-mood))]/10 border-[hsl(var(--insight-mood))]/30";
+    case "correlation":
+      return "from-[hsl(var(--insight-habit))]/20 to-[hsl(var(--insight-habit))]/10 border-[hsl(var(--insight-habit))]/30";
+    case "tip":
+      return "from-[hsl(var(--insight-energy))]/20 to-[hsl(var(--insight-energy))]/10 border-[hsl(var(--insight-energy))]/30";
+    case "achievement":
+      return "from-[hsl(var(--insight-positive))]/20 to-[hsl(var(--insight-positive))]/10 border-[hsl(var(--insight-positive))]/30";
+    case "warning":
+      return "from-[hsl(var(--insight-warning))]/20 to-[hsl(var(--insight-warning))]/10 border-[hsl(var(--insight-warning))]/30";
+    default:
+      return "from-[hsl(var(--insight-mood))]/20 to-[hsl(var(--insight-mood))]/10 border-[hsl(var(--insight-mood))]/30";
   }
 }
 
 // Helper function to interpolate translation parameters
-function interpolate(template: string, params: Record<string, string | number>): string {
+function interpolate(
+  template: string,
+  params: Record<string, string | number>,
+): string {
   return template.replace(/\{(\w+)\}/g, (_, key) => String(params[key] ?? key));
 }
 
@@ -51,17 +74,21 @@ function interpolate(template: string, params: Record<string, string | number>):
 function getInsightText(
   insight: MoodInsight,
   t: Record<string, unknown>,
-  field: 'title' | 'description'
+  field: "title" | "description",
 ): string {
-  const key = field === 'title' ? insight.titleKey : insight.descriptionKey;
-  const fallback = field === 'title' ? insight.title : insight.description;
+  const key = field === "title" ? insight.titleKey : insight.descriptionKey;
+  const fallback = field === "title" ? insight.title : insight.description;
 
   // If no key or translation not found, use fallback
-  const translation = key ? (t as unknown as Record<string, string>)[key] : undefined;
+  const translation = key
+    ? (t as unknown as Record<string, string>)[key]
+    : undefined;
   if (!translation) return fallback;
 
   // Interpolate parameters
-  return insight.params ? interpolate(translation, insight.params) : translation;
+  return insight.params
+    ? interpolate(translation, insight.params)
+    : translation;
 }
 
 export function MoodInsights({
@@ -75,12 +102,16 @@ export function MoodInsights({
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
 
   const insights = useMemo(() => {
-    return generateMoodInsights(moods, habits, focusSessions, gratitudeEntries)
-      .filter(insight => !dismissedIds.has(insight.id));
+    return generateMoodInsights(
+      moods,
+      habits,
+      focusSessions,
+      gratitudeEntries,
+    ).filter((insight) => !dismissedIds.has(insight.id));
   }, [moods, habits, focusSessions, gratitudeEntries, dismissedIds]);
 
   const handleDismiss = (id: string) => {
-    setDismissedIds(prev => new Set([...prev, id]));
+    setDismissedIds((prev) => new Set([...prev, id]));
   };
 
   if (insights.length === 0) {
@@ -92,12 +123,15 @@ export function MoodInsights({
             <div className="p-2 bg-primary/10 rounded-xl">
               <Brain className="w-5 h-5 text-primary" />
             </div>
-            <h3 className="text-lg font-semibold">{t.aiInsights || 'AI Insights'}</h3>
+            <h3 className="text-lg font-semibold">
+              {t.aiInsights || "AI Insights"}
+            </h3>
           </div>
           <div className="text-center py-4">
             <div className="text-4xl mb-2">🔮</div>
             <p className="text-sm text-muted-foreground">
-              {t.insightsNeedMoreData || 'Log your mood for a week to unlock personalized insights!'}
+              {t.insightsNeedMoreData ||
+                "Log your mood for a week to unlock personalized insights!"}
             </p>
             <div className="mt-3 flex justify-center gap-1">
               {Array.from({ length: 7 }).map((_, i) => (
@@ -105,13 +139,13 @@ export function MoodInsights({
                   key={i}
                   className={cn(
                     "w-3 h-3 rounded-full",
-                    i < moods.length ? "bg-primary" : "bg-muted"
+                    i < moods.length ? "bg-primary" : "bg-muted",
                   )}
                 />
               ))}
             </div>
             <p className="text-xs text-muted-foreground mt-2">
-              {moods.length}/7 {t.daysLogged || 'days logged'}
+              {moods.length}/7 {t.daysLogged || "days logged"}
             </p>
           </div>
         </div>
@@ -132,7 +166,7 @@ export function MoodInsights({
         animate={{ opacity: 1, y: 0 }}
         className={cn(
           "relative bg-gradient-to-br rounded-2xl p-5 border overflow-hidden",
-          getInsightColor(featuredInsight.type)
+          getInsightColor(featuredInsight.type),
         )}
       >
         {/* Background decoration */}
@@ -141,7 +175,7 @@ export function MoodInsights({
         {/* Dismiss button */}
         <button
           onClick={() => handleDismiss(featuredInsight.id)}
-          aria-label={t.insightsDismiss || 'Dismiss insight'}
+          aria-label={t.insightsDismiss || "Dismiss insight"}
           className="absolute top-3 end-3 p-1.5 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-black/10 rounded-lg transition-colors"
         >
           <X className="w-4 h-4 text-muted-foreground" />
@@ -154,9 +188,11 @@ export function MoodInsights({
           </div>
           <div>
             <div className="text-xs font-medium text-primary uppercase tracking-wide">
-              {t.aiInsight || 'AI Insight'}
+              {t.aiInsight || "AI Insight"}
             </div>
-            <h3 className="font-semibold text-foreground">{t.personalizedForYou || 'Personalized for you'}</h3>
+            <h3 className="font-semibold text-foreground">
+              {t.personalizedForYou || "Personalized for you"}
+            </h3>
           </div>
         </div>
 
@@ -164,8 +200,20 @@ export function MoodInsights({
         <div className="flex items-start gap-4">
           <div className="text-4xl">{featuredInsight.icon}</div>
           <div className="flex-1">
-            <h4 className="font-bold text-foreground mb-1">{getInsightText(featuredInsight, t as unknown as Record<string, unknown>, 'title')}</h4>
-            <p className="text-sm text-muted-foreground">{getInsightText(featuredInsight, t as unknown as Record<string, unknown>, 'description')}</p>
+            <h4 className="font-bold text-foreground mb-1">
+              {getInsightText(
+                featuredInsight,
+                t as unknown as Record<string, unknown>,
+                "title",
+              )}
+            </h4>
+            <p className="text-sm text-muted-foreground">
+              {getInsightText(
+                featuredInsight,
+                t as unknown as Record<string, unknown>,
+                "description",
+              )}
+            </p>
           </div>
         </div>
 
@@ -174,54 +222,76 @@ export function MoodInsights({
           <button
             onClick={() => setShowAll(!showAll)}
             aria-expanded={showAll}
-            aria-label={showAll ? (t.hideInsights || 'Hide insights') : (t.moreInsights || 'Show more insights')}
+            aria-label={
+              showAll
+                ? t.hideInsights || "Hide insights"
+                : t.moreInsights || "Show more insights"
+            }
             className="mt-4 flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
           >
             <span>
               {showAll
-                ? (t.hideInsights || 'Hide insights')
-                : `${t.showMore || 'Show'} ${otherInsights.length} ${t.moreInsights || 'more insights'}`}
+                ? t.hideInsights || "Hide insights"
+                : `${t.showMore || "Show"} ${otherInsights.length} ${t.moreInsights || "more insights"}`}
             </span>
-            <ChevronRight className={cn("w-4 h-4 transition-transform", showAll && "rotate-90")} />
+            <ChevronRight
+              className={cn(
+                "w-4 h-4 transition-transform rtl:scale-x-[-1]",
+                showAll && "rotate-90",
+              )}
+            />
           </button>
         )}
       </motion.div>
 
       {/* Other Insights */}
       <AnimatePresence>
-        {showAll && otherInsights.map((insight, index) => {
-          const _Icon = getInsightIcon(insight.type);
-          return (
-            <motion.div
-              key={insight.id}
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ delay: index * 0.1 }}
-              className={cn(
-                "relative bg-gradient-to-br rounded-xl p-4 border",
-                getInsightColor(insight.type)
-              )}
-            >
-              {/* Dismiss button */}
-              <button
-                onClick={() => handleDismiss(insight.id)}
-                aria-label={t.insightsDismiss || 'Dismiss insight'}
-                className="absolute top-2 end-2 p-1 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-black/10 rounded-lg transition-colors"
+        {showAll &&
+          otherInsights.map((insight, index) => {
+            const _Icon = getInsightIcon(insight.type);
+            return (
+              <motion.div
+                key={insight.id}
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className={cn(
+                  "relative bg-gradient-to-br rounded-xl p-4 border",
+                  getInsightColor(insight.type),
+                )}
               >
-                <X className="w-3 h-3 text-muted-foreground" />
-              </button>
+                {/* Dismiss button */}
+                <button
+                  onClick={() => handleDismiss(insight.id)}
+                  aria-label={t.insightsDismiss || "Dismiss insight"}
+                  className="absolute top-2 end-2 p-1 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-black/10 rounded-lg transition-colors"
+                >
+                  <X className="w-3 h-3 text-muted-foreground" />
+                </button>
 
-              <div className="flex items-start gap-3">
-                <div className="text-2xl">{insight.icon}</div>
-                <div className="flex-1 pe-6">
-                  <h4 className="font-semibold text-foreground text-sm mb-0.5">{getInsightText(insight, t as unknown as Record<string, unknown>, 'title')}</h4>
-                  <p className="text-xs text-muted-foreground">{getInsightText(insight, t as unknown as Record<string, unknown>, 'description')}</p>
+                <div className="flex items-start gap-3">
+                  <div className="text-2xl">{insight.icon}</div>
+                  <div className="flex-1 pe-6">
+                    <h4 className="font-semibold text-foreground text-sm mb-0.5">
+                      {getInsightText(
+                        insight,
+                        t as unknown as Record<string, unknown>,
+                        "title",
+                      )}
+                    </h4>
+                    <p className="text-xs text-muted-foreground">
+                      {getInsightText(
+                        insight,
+                        t as unknown as Record<string, unknown>,
+                        "description",
+                      )}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </motion.div>
-          );
-        })}
+              </motion.div>
+            );
+          })}
       </AnimatePresence>
     </div>
   );

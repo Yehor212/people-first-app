@@ -1,1 +1,0 @@
-export { EmotionWheel } from './EmotionWheel';

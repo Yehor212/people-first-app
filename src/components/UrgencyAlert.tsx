@@ -9,16 +9,23 @@
  * Design: Glassmorphism + gradient animations + micro-interactions
  */
 
-import { useState, useEffect, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Clock, Flame, AlertTriangle, Sparkles, ChevronRight, X } from 'lucide-react';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { Habit } from '@/types';
-import { cn, interpolate, getToday } from '@/lib/utils';
-import { zenTap } from '@/lib/animationUtils';
-import { isHabitCompletedOnDate } from '@/lib/habits';
-import { SK } from '@/lib/storageKeys';
-import { safeLocalStorageGet, safeLocalStorageSet } from '@/lib/safeJson';
+import { useState, useEffect, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Clock,
+  Flame,
+  AlertTriangle,
+  Sparkles,
+  ChevronRight,
+  X,
+} from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { Habit } from "@/types";
+import { cn, interpolate, getToday } from "@/lib/utils";
+import { zenTap } from "@/lib/animationUtils";
+import { isHabitCompletedOnDate } from "@/lib/habits";
+import { SK } from "@/lib/storageKeys";
+import { safeLocalStorageGet, safeLocalStorageSet } from "@/lib/safeJson";
 
 interface UrgencyAlertProps {
   habits: Habit[];
@@ -27,7 +34,7 @@ interface UrgencyAlertProps {
   onDismiss?: (alertType: string) => void;
 }
 
-type AlertType = 'habits_pending' | 'streak_at_risk' | 'perfect_day_possible';
+type AlertType = "habits_pending" | "streak_at_risk" | "perfect_day_possible";
 
 interface Alert {
   id: string;
@@ -60,18 +67,24 @@ function getHoursUntilMidnight(): number {
 }
 
 // Animated gradient background
-function AnimatedGradient({ colors, className }: { colors: string; className?: string }) {
+function AnimatedGradient({
+  colors,
+  className,
+}: {
+  colors: string;
+  className?: string;
+}) {
   return (
     <motion.div
       className={cn("absolute inset-0 rounded-2xl opacity-80", className)}
       style={{ background: colors }}
       animate={{
-        backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
+        backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
       }}
       transition={{
         duration: 5,
         repeat: Infinity,
-        ease: 'linear',
+        ease: "linear",
       }}
     />
   );
@@ -150,7 +163,7 @@ function AlertCard({
             onDismiss();
           }}
           className="absolute top-2 end-2 p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors"
-          aria-label={t.close || 'Dismiss'}
+          aria-label={t.close || "Dismiss"}
         >
           <X className="w-4 h-4 text-white/80" />
         </button>
@@ -180,7 +193,7 @@ function AlertCard({
             </p>
 
             {/* Timer / Counter */}
-            {alert.type === 'habits_pending' && (
+            {alert.type === "habits_pending" && (
               <div className="mt-3 flex items-center gap-3">
                 <motion.div
                   className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/20 backdrop-blur-sm"
@@ -189,36 +202,44 @@ function AlertCard({
                 >
                   <Clock className="w-4 h-4 text-white" />
                   <span className="text-sm font-semibold text-white">
-                    {interpolate(t.urgencyTimeLeft || '{hours}h left', { hours: hoursLeft })}
+                    {interpolate(t.urgencyTimeLeft || "{hours}h left", {
+                      hours: hoursLeft,
+                    })}
                   </span>
                 </motion.div>
 
                 {pendingCount && pendingCount > 0 && (
                   <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/20 backdrop-blur-sm">
                     <span className="text-sm font-semibold text-white">
-                      {interpolate(t.urgencyPendingCount || '{count} pending', { count: pendingCount || 0 })}
+                      {interpolate(t.urgencyPendingCount || "{count} pending", {
+                        count: pendingCount || 0,
+                      })}
                     </span>
                   </div>
                 )}
               </div>
             )}
 
-            {alert.type === 'streak_at_risk' && (
+            {alert.type === "streak_at_risk" && (
               <motion.div
                 className="mt-3 flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/20 backdrop-blur-sm w-fit"
                 animate={{
-                  backgroundColor: ['rgba(255,255,255,0.2)', 'rgba(255,255,255,0.3)', 'rgba(255,255,255,0.2)'],
+                  backgroundColor: [
+                    "rgba(255,255,255,0.2)",
+                    "rgba(255,255,255,0.3)",
+                    "rgba(255,255,255,0.2)",
+                  ],
                 }}
                 transition={{ duration: 1.5, repeat: Infinity }}
               >
                 <Flame className="w-4 h-4 text-white" />
                 <span className="text-sm font-semibold text-white">
-                  {t.urgencyProtectStreak || 'Protect your streak!'}
+                  {t.urgencyProtectStreak || "Protect your streak!"}
                 </span>
               </motion.div>
             )}
 
-            {alert.type === 'perfect_day_possible' && (
+            {alert.type === "perfect_day_possible" && (
               <motion.div
                 className="mt-3 flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/20 backdrop-blur-sm w-fit"
                 animate={{ scale: [1, 1.02, 1] }}
@@ -226,7 +247,7 @@ function AlertCard({
               >
                 <Sparkles className="w-4 h-4 text-white" />
                 <span className="text-sm font-semibold text-white">
-                  {t.urgencyPerfectDayAwaits || 'Perfect day awaits!'}
+                  {t.urgencyPerfectDayAwaits || "Perfect day awaits!"}
                 </span>
               </motion.div>
             )}
@@ -241,8 +262,10 @@ function AlertCard({
             whileHover={{ scale: 1.02 }}
             whileTap={zenTap.card}
           >
-            <span className="text-sm font-semibold text-white">{t.urgencyCompleteNow || 'Complete now'}</span>
-            <ChevronRight className="w-4 h-4 text-white group-hover:translate-x-1 transition-transform" />
+            <span className="text-sm font-semibold text-white">
+              {t.urgencyCompleteNow || "Complete now"}
+            </span>
+            <ChevronRight className="w-4 h-4 text-white group-hover:translate-x-1 transition-transform rtl:scale-x-[-1]" />
           </motion.button>
         )}
       </div>
@@ -258,7 +281,10 @@ export function UrgencyAlert({
 }: UrgencyAlertProps) {
   const { t } = useLanguage();
   const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(() => {
-    const data = safeLocalStorageGet<{ date?: string; alerts?: string[] }>(SK.DISMISSED_URGENCY, {});
+    const data = safeLocalStorageGet<{ date?: string; alerts?: string[] }>(
+      SK.DISMISSED_URGENCY,
+      {},
+    );
     // Clear dismissed alerts from previous day
     const today = getToday();
     if (data.date !== today) {
@@ -283,7 +309,9 @@ export function UrgencyAlert({
 
   // Calculate pending habits (entry-based model)
   const pendingHabits = useMemo(() => {
-    return habits.filter(h => !h.isArchived && !isHabitCompletedOnDate(h, today));
+    return habits.filter(
+      (h) => !h.isArchived && !isHabitCompletedOnDate(h, today),
+    );
   }, [habits, today]);
 
   // Generate alerts
@@ -291,62 +319,106 @@ export function UrgencyAlert({
     const result: Alert[] = [];
 
     // Habits pending alert (show after 8 PM if there are pending habits)
-    if (isLate && pendingHabits.length > 0 && !dismissedAlerts.has('habits_pending')) {
+    if (
+      isLate &&
+      pendingHabits.length > 0 &&
+      !dismissedAlerts.has("habits_pending")
+    ) {
       result.push({
-        id: 'habits_pending',
-        type: 'habits_pending',
+        id: "habits_pending",
+        type: "habits_pending",
         priority: isVeryLateNow ? 10 : 5,
         title: isVeryLateNow
-          ? (t.urgencyLastChance || 'Last chance today!')
-          : (t.urgencyHabitsPending || 'Habits waiting for you'),
+          ? t.urgencyLastChance || "Last chance today!"
+          : t.urgencyHabitsPending || "Habits waiting for you",
         subtitle: isVeryLateNow
-          ? interpolate(t.urgencyLastChanceDesc || "{count} habits left. Don't break your momentum!", { count: pendingHabits.length })
-          : interpolate(t.urgencyHabitsPendingDesc || '{hours} hours left to complete {count} habits', { hours: hoursLeft, count: pendingHabits.length }),
+          ? interpolate(
+              t.urgencyLastChanceDesc ||
+                "{count} habits left. Don't break your momentum!",
+              { count: pendingHabits.length },
+            )
+          : interpolate(
+              t.urgencyHabitsPendingDesc ||
+                "{hours} hours left to complete {count} habits",
+              { hours: hoursLeft, count: pendingHabits.length },
+            ),
         icon: isVeryLateNow ? AlertTriangle : Clock,
         gradient: isVeryLateNow
-          ? 'linear-gradient(135deg, #ef4444 0%, #f97316 50%, #f59e0b 100%)'
-          : 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%)',
-        glowColor: isVeryLateNow ? 'rgba(239, 68, 68, 0.4)' : 'rgba(139, 92, 246, 0.4)',
+          ? "linear-gradient(135deg, #ef4444 0%, #f97316 50%, #f59e0b 100%)"
+          : "linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%)",
+        glowColor: isVeryLateNow
+          ? "rgba(239, 68, 68, 0.4)"
+          : "rgba(139, 92, 246, 0.4)",
         action: () => onHabitClick?.(pendingHabits[0]?.id),
       });
     }
 
     // Streak at risk (show if streak > 3 and habits pending after 10 PM)
-    if (isVeryLateNow && currentStreak >= 3 && pendingHabits.length > 0 && !dismissedAlerts.has('streak_at_risk')) {
+    if (
+      isVeryLateNow &&
+      currentStreak >= 3 &&
+      pendingHabits.length > 0 &&
+      !dismissedAlerts.has("streak_at_risk")
+    ) {
       result.push({
-        id: 'streak_at_risk',
-        type: 'streak_at_risk',
+        id: "streak_at_risk",
+        type: "streak_at_risk",
         priority: 15,
-        title: interpolate(t.urgencyStreakAtRisk || '{streak}-day streak at risk!', { streak: currentStreak }),
-        subtitle: t.urgencyStreakAtRiskDesc || "Complete at least one habit to keep your streak alive",
+        title: interpolate(
+          t.urgencyStreakAtRisk || "{streak}-day streak at risk!",
+          { streak: currentStreak },
+        ),
+        subtitle:
+          t.urgencyStreakAtRiskDesc ||
+          "Complete at least one habit to keep your streak alive",
         icon: Flame,
-        gradient: 'linear-gradient(135deg, #f97316 0%, #ef4444 50%, #dc2626 100%)',
-        glowColor: 'rgba(249, 115, 22, 0.5)',
+        gradient:
+          "linear-gradient(135deg, #f97316 0%, #ef4444 50%, #dc2626 100%)",
+        glowColor: "rgba(249, 115, 22, 0.5)",
         action: () => onHabitClick?.(pendingHabits[0]?.id),
       });
     }
 
     // Perfect day possible (show if only 1 habit left and it's not too late)
-    if (pendingHabits.length === 1 && !isVeryLateNow && habits.length >= 3 && !dismissedAlerts.has('perfect_day_possible')) {
+    if (
+      pendingHabits.length === 1 &&
+      !isVeryLateNow &&
+      habits.length >= 3 &&
+      !dismissedAlerts.has("perfect_day_possible")
+    ) {
       result.push({
-        id: 'perfect_day_possible',
-        type: 'perfect_day_possible',
+        id: "perfect_day_possible",
+        type: "perfect_day_possible",
         priority: 3,
-        title: t.urgencyPerfectDay || 'Perfect day within reach!',
-        subtitle: interpolate(t.urgencyPerfectDayDesc || 'Just 1 habit left: {habit}', { habit: pendingHabits[0]?.name || '' }),
+        title: t.urgencyPerfectDay || "Perfect day within reach!",
+        subtitle: interpolate(
+          t.urgencyPerfectDayDesc || "Just 1 habit left: {habit}",
+          { habit: pendingHabits[0]?.name || "" },
+        ),
         icon: Sparkles,
-        gradient: 'linear-gradient(135deg, #10b981 0%, #14b8a6 50%, #06b6d4 100%)',
-        glowColor: 'rgba(16, 185, 129, 0.4)',
+        gradient:
+          "linear-gradient(135deg, #10b981 0%, #14b8a6 50%, #06b6d4 100%)",
+        glowColor: "rgba(16, 185, 129, 0.4)",
         action: () => onHabitClick?.(pendingHabits[0]?.id),
       });
     }
 
     // Sort by priority (highest first)
     return result.sort((a, b) => b.priority - a.priority);
-  }, [habits, pendingHabits, currentStreak, isLate, isVeryLateNow, hoursLeft, dismissedAlerts, t, onHabitClick]);
+  }, [
+    habits,
+    pendingHabits,
+    currentStreak,
+    isLate,
+    isVeryLateNow,
+    hoursLeft,
+    dismissedAlerts,
+    t,
+    onHabitClick,
+  ]);
 
   const handleDismiss = (alertId: string) => {
-    setDismissedAlerts(prev => new Set([...prev, alertId]));
+    setDismissedAlerts((prev) => new Set([...prev, alertId]));
     onDismiss?.(alertId);
   };
 

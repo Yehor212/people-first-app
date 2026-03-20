@@ -9,18 +9,26 @@
  * - Smooth spring animations
  */
 
-import { useMemo } from 'react';
-import { motion } from 'framer-motion';
-import { zenTap } from '@/lib/animationUtils';
-import { TrendingUp, TrendingDown, Minus, Sparkles, Zap, ChevronRight, X } from 'lucide-react';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { useBackHandler } from '@/hooks/useBackHandler';
-import { useScrollLock } from '@/hooks/useScrollLock';
-import { cn, getToday } from '@/lib/utils';
-import type { RingDetailSheetProps } from './types';
-import { ringThemes } from './types';
-import { PremiumChart } from './PremiumChart';
-import { SparkleParticles } from './SparkleParticles';
+import { useMemo } from "react";
+import { motion } from "framer-motion";
+import { zenTap } from "@/lib/animationUtils";
+import {
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  Sparkles,
+  Zap,
+  ChevronRight,
+  X,
+} from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useBackHandler } from "@/hooks/useBackHandler";
+import { useScrollLock } from "@/hooks/useScrollLock";
+import { cn, getToday } from "@/lib/utils";
+import type { RingDetailSheetProps } from "./types";
+import { ringThemes } from "./types";
+import { PremiumChart } from "./PremiumChart";
+import { SparkleParticles } from "./SparkleParticles";
 
 export function RingDetailSheet({
   open,
@@ -40,14 +48,14 @@ export function RingDetailSheet({
 
   // Calculate stats with week-over-week trend
   const stats = useMemo(() => {
-    if (weeklyData.length === 0) return { trend: 0, weekHigh: 0, weekLow: 0, avg: 0 };
+    if (weeklyData.length === 0)
+      return { trend: 0, weekHigh: 0, weekLow: 0, avg: 0 };
 
-    const values = weeklyData.map(d => d.value);
+    const values = weeklyData.map((d) => d.value);
     const avg = values.reduce((a, b) => a + b, 0) / values.length;
     // Week-over-week trend: current week avg vs previous week avg
-    const trend = previousAverage != null
-      ? Math.round(avg - previousAverage)
-      : 0;
+    const trend =
+      previousAverage != null ? Math.round(avg - previousAverage) : 0;
 
     return {
       trend,
@@ -59,20 +67,53 @@ export function RingDetailSheet({
 
   // Personalized recommendation
   const getRecommendation = () => {
-    if (!ringType) return '';
-    if (ringType === 'mood') {
-      if (currentValue >= 80) return t.ringRecommendationMoodHigh || "You're in a great headspace! Share your positivity with someone today.";
-      if (currentValue >= 50) return t.ringRecommendationMoodMid || "Try a 3-minute gratitude practice to boost your mood.";
-      return t.ringRecommendationMoodLow || "Be gentle with yourself. A short walk or breathing exercise can help.";
+    if (!ringType) return "";
+    if (ringType === "mood") {
+      if (currentValue >= 80)
+        return (
+          t.ringRecommendationMoodHigh ||
+          "You're in a great headspace! Share your positivity with someone today."
+        );
+      if (currentValue >= 50)
+        return (
+          t.ringRecommendationMoodMid ||
+          "Try a 3-minute gratitude practice to boost your mood."
+        );
+      return (
+        t.ringRecommendationMoodLow ||
+        "Be gentle with yourself. A short walk or breathing exercise can help."
+      );
     }
-    if (ringType === 'habits') {
-      if (currentValue >= 80) return t.ringRecommendationHabitsHigh || "Outstanding consistency! Your routines are building real momentum.";
-      if (currentValue >= 50) return t.ringRecommendationHabitsMid || "You're making progress. Try starting with your favorite habit.";
-      return t.ringRecommendationHabitsLow || "Small steps count. Just one habit today builds tomorrow's streak.";
+    if (ringType === "habits") {
+      if (currentValue >= 80)
+        return (
+          t.ringRecommendationHabitsHigh ||
+          "Outstanding consistency! Your routines are building real momentum."
+        );
+      if (currentValue >= 50)
+        return (
+          t.ringRecommendationHabitsMid ||
+          "You're making progress. Try starting with your favorite habit."
+        );
+      return (
+        t.ringRecommendationHabitsLow ||
+        "Small steps count. Just one habit today builds tomorrow's streak."
+      );
     }
-    if (currentValue >= 80) return t.ringRecommendationFocusHigh || "Deep work mastery! Your focused sessions are paying dividends.";
-    if (currentValue >= 50) return t.ringRecommendationFocusMid || "Try a 25-minute Pomodoro session for your next task.";
-    return t.ringRecommendationFocusLow || "Start with just 10 focused minutes. You've got this.";
+    if (currentValue >= 80)
+      return (
+        t.ringRecommendationFocusHigh ||
+        "Deep work mastery! Your focused sessions are paying dividends."
+      );
+    if (currentValue >= 50)
+      return (
+        t.ringRecommendationFocusMid ||
+        "Try a 25-minute Pomodoro session for your next task."
+      );
+    return (
+      t.ringRecommendationFocusLow ||
+      "Start with just 10 focused minutes. You've got this."
+    );
   };
 
   const dayNames = [t.sun, t.mon, t.tue, t.wed, t.thu, t.fri, t.sat];
@@ -85,23 +126,32 @@ export function RingDetailSheet({
 
   return (
     <>
-      <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm animate-fade-in" onClick={() => onOpenChange(false)} />
-      <div role="dialog" aria-modal="true" className="fixed bottom-0 inset-x-0 z-[60] rounded-t-[2rem] bg-background max-h-[90dvh] overflow-hidden animate-slide-up">
+      <div
+        className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm animate-fade-in"
+        onClick={() => onOpenChange(false)}
+      />
+      <div
+        role="dialog"
+        aria-modal="true"
+        className="fixed bottom-0 inset-x-0 z-[60] rounded-t-[2rem] bg-background max-h-[90dvh] overflow-hidden animate-slide-up"
+      >
         <h2 className="sr-only">{t[ringType] || theme.label}</h2>
 
         {/* Premium Header with Gradient */}
-        <div className={cn(
-          'relative h-36 overflow-hidden',
-          `bg-gradient-to-br ${theme.bgGradient}`
-        )}>
+        <div
+          className={cn(
+            "relative h-36 overflow-hidden",
+            `bg-gradient-to-br ${theme.bgGradient}`,
+          )}
+        >
           {/* Sparkle particles */}
           <SparkleParticles color={theme.particleColor} />
 
           {/* Animated gradient orb */}
           <motion.div
             className={cn(
-              'absolute -top-24 -end-24 w-72 h-72 rounded-full blur-3xl',
-              `bg-gradient-to-br ${theme.gradient}`
+              "absolute -top-24 -end-24 w-72 h-72 rounded-full blur-3xl",
+              `bg-gradient-to-br ${theme.gradient}`,
             )}
             animate={{
               scale: [1, 1.15, 1],
@@ -117,7 +167,7 @@ export function RingDetailSheet({
           <button
             onClick={() => onOpenChange(false)}
             className="absolute top-3 end-3 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-foreground/20 hover:bg-foreground/30 transition-colors z-10"
-            aria-label={t.close || 'Close'}
+            aria-label={t.close || "Close"}
           >
             <X className="w-5 h-5 text-white" />
           </button>
@@ -144,14 +194,14 @@ export function RingDetailSheet({
                   {t[ringType] || theme.label}
                 </h2>
                 <p className="text-sm text-white/70">
-                  {t.last7Days || 'Last 7 days'}
+                  {t.last7Days || "Last 7 days"}
                 </p>
               </div>
             </div>
             <motion.div
               initial={{ scale: 0, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.2, type: 'spring' }}
+              transition={{ delay: 0.2, type: "spring" }}
             >
               <span
                 className="text-4xl font-black text-white tabular-nums"
@@ -174,18 +224,29 @@ export function RingDetailSheet({
           >
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold text-foreground">
-                {t.weeklyTrend || 'Weekly Trend'}
+                {t.weeklyTrend || "Weekly Trend"}
               </h3>
-              <div className={cn(
-                'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold',
-                stats.trend > 0 ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' :
-                stats.trend < 0 ? 'bg-red-500/15 text-red-600 dark:text-red-400' :
-                'bg-muted text-muted-foreground'
-              )}>
-                {stats.trend > 0 ? <TrendingUp className="w-3.5 h-3.5" /> :
-                 stats.trend < 0 ? <TrendingDown className="w-3.5 h-3.5" /> :
-                 <Minus className="w-3.5 h-3.5" />}
-                <span>{stats.trend > 0 ? '+' : ''}{Math.round(stats.trend)}%</span>
+              <div
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold",
+                  stats.trend > 0
+                    ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                    : stats.trend < 0
+                      ? "bg-red-500/15 text-red-600 dark:text-red-400"
+                      : "bg-muted text-muted-foreground",
+                )}
+              >
+                {stats.trend > 0 ? (
+                  <TrendingUp className="w-3.5 h-3.5" />
+                ) : stats.trend < 0 ? (
+                  <TrendingDown className="w-3.5 h-3.5" />
+                ) : (
+                  <Minus className="w-3.5 h-3.5" />
+                )}
+                <span>
+                  {stats.trend > 0 ? "+" : ""}
+                  {Math.round(stats.trend)}%
+                </span>
               </div>
             </div>
             <div className="flex justify-center">
@@ -206,9 +267,21 @@ export function RingDetailSheet({
             transition={{ delay: 0.2 }}
           >
             {[
-              { label: t.average || 'Average', value: `${stats.avg}%`, emoji: '📊' },
-              { label: t.weekHigh || 'Best', value: `${Math.round(stats.weekHigh)}%`, emoji: '🏆' },
-              { label: t.weekLow || 'Low', value: `${Math.round(stats.weekLow)}%`, emoji: '📉' },
+              {
+                label: t.average || "Average",
+                value: `${stats.avg}%`,
+                emoji: "📊",
+              },
+              {
+                label: t.weekHigh || "Best",
+                value: `${Math.round(stats.weekHigh)}%`,
+                emoji: "🏆",
+              },
+              {
+                label: t.weekLow || "Low",
+                value: `${Math.round(stats.weekLow)}%`,
+                emoji: "📉",
+              },
             ].map((stat, i) => (
               <motion.div
                 key={stat.label}
@@ -218,8 +291,12 @@ export function RingDetailSheet({
                 transition={{ delay: 0.25 + i * 0.08 }}
               >
                 <span className="text-xl">{stat.emoji}</span>
-                <p className="text-lg font-bold text-foreground mt-1">{stat.value}</p>
-                <p className="text-xs text-muted-foreground font-medium">{stat.label}</p>
+                <p className="text-lg font-bold text-foreground mt-1">
+                  {stat.value}
+                </p>
+                <p className="text-xs text-muted-foreground font-medium">
+                  {stat.label}
+                </p>
               </motion.div>
             ))}
           </motion.div>
@@ -231,7 +308,7 @@ export function RingDetailSheet({
             transition={{ delay: 0.3 }}
           >
             <p className="text-sm font-semibold text-foreground mb-3">
-              {t.dailyBreakdown || 'Daily Breakdown'}
+              {t.dailyBreakdown || "Daily Breakdown"}
             </p>
             <div className="grid grid-cols-7 gap-2">
               {weeklyData.slice(-7).map((day, idx) => {
@@ -243,11 +320,16 @@ export function RingDetailSheet({
                   <motion.div
                     key={day.date}
                     className={cn(
-                      'flex flex-col items-center py-2 rounded-xl transition-all',
-                      isToday && 'ring-2 ring-primary ring-offset-2 ring-offset-background'
+                      "flex flex-col items-center py-2 rounded-xl transition-all",
+                      isToday &&
+                        "ring-2 ring-primary ring-offset-2 ring-offset-background",
                     )}
                     style={{
-                      background: `linear-gradient(135deg, ${theme.chartColor}${Math.round(intensity * 40).toString(16).padStart(2, '0')}, transparent)`,
+                      background: `linear-gradient(135deg, ${theme.chartColor}${Math.round(
+                        intensity * 40,
+                      )
+                        .toString(16)
+                        .padStart(2, "0")}, transparent)`,
                     }}
                     initial={{ scale: 0.8, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
@@ -261,7 +343,10 @@ export function RingDetailSheet({
                       style={{
                         background: `linear-gradient(180deg, ${theme.chartColor}, ${theme.chartColor}aa)`,
                         opacity: 0.3 + intensity * 0.7,
-                        boxShadow: intensity > 0.6 ? `0 0 8px ${theme.glowColor}` : 'none',
+                        boxShadow:
+                          intensity > 0.6
+                            ? `0 0 8px ${theme.glowColor}`
+                            : "none",
                       }}
                     >
                       <span className="text-[10px] font-bold text-white">
@@ -277,21 +362,26 @@ export function RingDetailSheet({
           {/* Recommendation Card */}
           <motion.div
             className={cn(
-              'relative overflow-hidden rounded-2xl p-4',
+              "relative overflow-hidden rounded-2xl p-4",
               `bg-gradient-to-br ${theme.bgGradient}`,
-              'border border-border/40'
+              "border border-border/40",
             )}
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.4 }}
           >
             <div className="flex items-start gap-3">
-              <div className={cn('p-2 rounded-xl', `bg-gradient-to-br ${theme.gradient}`)}>
+              <div
+                className={cn(
+                  "p-2 rounded-xl",
+                  `bg-gradient-to-br ${theme.gradient}`,
+                )}
+              >
                 <Zap className="w-4 h-4 text-white" />
               </div>
               <div className="flex-1">
                 <h4 className="text-sm font-semibold text-foreground mb-1">
-                  {t.recommendation || 'For You'}
+                  {t.recommendation || "For You"}
                 </h4>
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   {getRecommendation()}
@@ -303,26 +393,31 @@ export function RingDetailSheet({
           {/* CTA Button */}
           <motion.button
             className={cn(
-              'w-full py-4 px-5 rounded-2xl font-semibold',
-              'flex items-center justify-center gap-2',
+              "w-full py-4 px-5 rounded-2xl font-semibold",
+              "flex items-center justify-center gap-2",
               `bg-gradient-to-r ${theme.gradient}`,
-              'text-white shadow-xl transition-all active:scale-[0.98]'
+              "text-white shadow-xl transition-all active:scale-[0.98]",
             )}
             style={{ boxShadow: `0 8px 32px ${theme.glowColor}` }}
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.5 }}
-            whileHover={{ scale: 1.02, boxShadow: `0 12px 40px ${theme.glowColor}` }}
+            whileHover={{
+              scale: 1.02,
+              boxShadow: `0 12px 40px ${theme.glowColor}`,
+            }}
             whileTap={zenTap.card}
-            onClick={() => onAction ? onAction() : onOpenChange(false)}
+            onClick={() => (onAction ? onAction() : onOpenChange(false))}
           >
             <Sparkles className="w-5 h-5" />
             <span>
-              {ringType === 'mood' ? (t.logMood || 'Log Mood') :
-               ringType === 'habits' ? (t.viewHabits || 'View Habits') :
-               (t.startFocus || 'Start Focus')}
+              {ringType === "mood"
+                ? t.logMood || "Log Mood"
+                : ringType === "habits"
+                  ? t.viewHabits || "View Habits"
+                  : t.startFocus || "Start Focus"}
             </span>
-            <ChevronRight className="w-5 h-5" />
+            <ChevronRight className="w-5 h-5 rtl:scale-x-[-1]" />
           </motion.button>
         </div>
       </div>

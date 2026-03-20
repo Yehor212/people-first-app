@@ -3,12 +3,12 @@
  * Designed for both ADHD-aware and general users
  */
 
-import { useState, useEffect, useRef } from 'react';
-import { ChevronRight, ChevronLeft, CheckCircle2 } from 'lucide-react';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { useBackHandler } from '@/hooks/useBackHandler';
-import { cn } from '@/lib/utils';
-import { getSlides, getSlideContent } from './slides';
+import { useState, useEffect, useRef } from "react";
+import { ChevronRight, ChevronLeft, CheckCircle2 } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useBackHandler } from "@/hooks/useBackHandler";
+import { cn } from "@/lib/utils";
+import { getSlides, getSlideContent } from "./slides";
 
 interface WelcomeTutorialProps {
   onComplete: () => void;
@@ -19,14 +19,16 @@ export function WelcomeTutorial({ onComplete, onSkip }: WelcomeTutorialProps) {
   const { t } = useLanguage();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
-  const [direction, setDirection] = useState<'next' | 'prev'>('next');
+  const [direction, setDirection] = useState<"next" | "prev">("next");
 
   // Refs for swipe gesture tracking
   const startXRef = useRef(0);
   const isSwipingRef = useRef(false);
 
   // Refs for timeout cleanup and race condition prevention
-  const animationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const animationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
   const transitionLockRef = useRef(false);
 
   // Get slides array inside component to avoid TDZ issues
@@ -49,7 +51,7 @@ export function WelcomeTutorial({ onComplete, onSkip }: WelcomeTutorialProps) {
       return;
     }
     transitionLockRef.current = true;
-    setDirection('next');
+    setDirection("next");
     setIsAnimating(true);
 
     // Clear previous timeout before setting new one
@@ -57,7 +59,7 @@ export function WelcomeTutorial({ onComplete, onSkip }: WelcomeTutorialProps) {
       clearTimeout(animationTimeoutRef.current);
     }
     animationTimeoutRef.current = setTimeout(() => {
-      setCurrentSlide(prev => prev + 1);
+      setCurrentSlide((prev) => prev + 1);
       setIsAnimating(false);
       transitionLockRef.current = false;
     }, 300);
@@ -67,14 +69,14 @@ export function WelcomeTutorial({ onComplete, onSkip }: WelcomeTutorialProps) {
     // Double protection with both state and ref
     if (isAnimating || transitionLockRef.current || currentSlide === 0) return;
     transitionLockRef.current = true;
-    setDirection('prev');
+    setDirection("prev");
     setIsAnimating(true);
 
     if (animationTimeoutRef.current) {
       clearTimeout(animationTimeoutRef.current);
     }
     animationTimeoutRef.current = setTimeout(() => {
-      setCurrentSlide(prev => prev - 1);
+      setCurrentSlide((prev) => prev - 1);
       setIsAnimating(false);
       transitionLockRef.current = false;
     }, 300);
@@ -86,9 +88,10 @@ export function WelcomeTutorial({ onComplete, onSkip }: WelcomeTutorialProps) {
 
   const handleDotClick = (index: number) => {
     // Double protection with both state and ref
-    if (isAnimating || transitionLockRef.current || index === currentSlide) return;
+    if (isAnimating || transitionLockRef.current || index === currentSlide)
+      return;
     transitionLockRef.current = true;
-    setDirection(index > currentSlide ? 'next' : 'prev');
+    setDirection(index > currentSlide ? "next" : "prev");
     setIsAnimating(true);
 
     if (animationTimeoutRef.current) {
@@ -164,29 +167,36 @@ export function WelcomeTutorial({ onComplete, onSkip }: WelcomeTutorialProps) {
           onClick={onSkip}
           className="text-sm text-muted-foreground hover:text-foreground transition-colors px-3 py-2 sm:px-4"
         >
-          {t.skip || 'Skip'}
+          {t.skip || "Skip"}
         </button>
       </div>
 
       {/* Main content */}
       <div className="screen-centered px-4 sm:px-6 pb-4 sm:pb-8">
         {/* Animated icon - responsive sizes */}
-        <div className={cn(
-          'relative w-24 h-24 sm:w-28 sm:h-28 md:w-36 md:h-36 lg:w-44 lg:h-44 rounded-2xl sm:rounded-3xl flex items-center justify-center mb-6 sm:mb-8 md:mb-10 transition-all duration-500',
-          `bg-gradient-to-br ${slide.gradient}`,
-          isAnimating && (direction === 'next' ? 'translate-x-10 opacity-0' : '-translate-x-10 opacity-0')
-        )}>
-          <Icon className={cn(
-            'w-12 h-12 sm:w-14 sm:h-14 md:w-18 md:h-18 lg:w-22 lg:h-22 transition-all',
-            slide.iconColor,
-            slide.animation === 'float' && 'animate-float',
-            slide.animation === 'pulse' && 'animate-pulse',
-            slide.animation === 'bounce' && 'animate-bounce',
-            slide.animation === 'heartbeat' && 'animate-heartbeat',
-            slide.animation === 'spin-slow' && 'animate-spin-slow',
-            slide.animation === 'zap' && 'animate-zap',
-            slide.animation === 'color-shift' && 'animate-color-shift'
-          )} />
+        <div
+          className={cn(
+            "relative w-24 h-24 sm:w-28 sm:h-28 md:w-36 md:h-36 lg:w-44 lg:h-44 rounded-2xl sm:rounded-3xl flex items-center justify-center mb-6 sm:mb-8 md:mb-10 transition-all duration-500",
+            `bg-gradient-to-br ${slide.gradient}`,
+            isAnimating &&
+              (direction === "next"
+                ? "translate-x-10 opacity-0"
+                : "-translate-x-10 opacity-0"),
+          )}
+        >
+          <Icon
+            className={cn(
+              "w-12 h-12 sm:w-14 sm:h-14 md:w-18 md:h-18 lg:w-22 lg:h-22 transition-all",
+              slide.iconColor,
+              slide.animation === "float" && "animate-float",
+              slide.animation === "pulse" && "animate-pulse",
+              slide.animation === "bounce" && "animate-bounce",
+              slide.animation === "heartbeat" && "animate-heartbeat",
+              slide.animation === "spin-slow" && "animate-spin-slow",
+              slide.animation === "zap" && "animate-zap",
+              slide.animation === "color-shift" && "animate-color-shift",
+            )}
+          />
 
           {/* Decorative circles - responsive */}
           <div className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 w-4 h-4 sm:w-6 sm:h-6 rounded-full bg-primary/20 animate-ping" />
@@ -194,10 +204,15 @@ export function WelcomeTutorial({ onComplete, onSkip }: WelcomeTutorialProps) {
         </div>
 
         {/* Text content - responsive */}
-        <div className={cn(
-          'text-center max-w-sm md:max-w-md lg:max-w-lg transition-all duration-300 px-2',
-          isAnimating && (direction === 'next' ? 'translate-x-10 opacity-0' : '-translate-x-10 opacity-0')
-        )}>
+        <div
+          className={cn(
+            "text-center max-w-sm md:max-w-md lg:max-w-lg transition-all duration-300 px-2",
+            isAnimating &&
+              (direction === "next"
+                ? "translate-x-10 opacity-0"
+                : "-translate-x-10 opacity-0"),
+          )}
+        >
           <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-2 md:mb-3">
             {content.title}
           </h1>
@@ -227,25 +242,23 @@ export function WelcomeTutorial({ onComplete, onSkip }: WelcomeTutorialProps) {
       </div>
 
       {/* Navigation - responsive */}
-      <div
-        className="px-4 sm:px-6 pb-[calc(1rem+var(--safe-bottom))]"
-      >
+      <div className="px-4 sm:px-6 pb-[calc(1rem+var(--safe-bottom))]">
         {/* Dots */}
         <div className="flex justify-center gap-1.5 sm:gap-2 mb-4 sm:mb-6">
           {slides.map((_, index) => (
             <button
               key={index}
               onClick={() => handleDotClick(index)}
-              aria-label={`${t.goToSlide || 'Go to slide'} ${index + 1}`}
-              aria-current={index === currentSlide ? 'step' : undefined}
+              aria-label={`${t.goToSlide || "Go to slide"} ${index + 1}`}
+              aria-current={index === currentSlide ? "step" : undefined}
               className="flex items-center justify-center min-w-[44px] min-h-[44px]"
             >
               <span
                 className={cn(
-                  'h-1.5 sm:h-2 rounded-full transition-all duration-300',
+                  "h-1.5 sm:h-2 rounded-full transition-all duration-300",
                   index === currentSlide
-                    ? 'w-6 sm:w-8 bg-primary'
-                    : 'w-1.5 sm:w-2 bg-muted hover:bg-muted-foreground/50'
+                    ? "w-6 sm:w-8 bg-primary"
+                    : "w-1.5 sm:w-2 bg-muted hover:bg-muted-foreground/50",
                 )}
               />
             </button>
@@ -257,7 +270,7 @@ export function WelcomeTutorial({ onComplete, onSkip }: WelcomeTutorialProps) {
           {currentSlide > 0 && (
             <button
               onClick={handlePrev}
-              aria-label={t.back || 'Back'}
+              aria-label={t.back || "Back"}
               className="p-3 sm:p-4 bg-secondary rounded-xl hover:bg-muted transition-colors"
             >
               <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 rtl:scale-x-[-1]" />
@@ -267,17 +280,16 @@ export function WelcomeTutorial({ onComplete, onSkip }: WelcomeTutorialProps) {
           <button
             onClick={handleNext}
             className={cn(
-              'flex-1 py-3 sm:py-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 text-sm sm:text-base',
+              "flex-1 py-3 sm:py-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 text-sm sm:text-base",
               currentSlide === slides.length - 1
-                ? 'zen-gradient text-primary-foreground hover:opacity-90'
-                : 'zen-gradient text-primary-foreground hover:opacity-90'
+                ? "zen-gradient text-primary-foreground hover:opacity-90"
+                : "zen-gradient text-primary-foreground hover:opacity-90",
             )}
           >
             {currentSlide === slides.length - 1
-              ? (t.tutorialStart || "Let's Go!")
-              : (t.next || 'Next')
-            }
-            <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
+              ? t.tutorialStart || "Let's Go!"
+              : t.next || "Next"}
+            <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 rtl:scale-x-[-1]" />
           </button>
         </div>
       </div>

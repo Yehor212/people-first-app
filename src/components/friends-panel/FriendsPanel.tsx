@@ -4,8 +4,8 @@
  * This file: ~280L, 2 useState, delegates state to 3 custom hooks.
  */
 
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Users,
   UserPlus,
@@ -16,28 +16,28 @@ import {
   ChevronLeft,
   RefreshCw,
   Settings,
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { EmptyState } from '@/components/EmptyState';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { useBackHandler } from '@/hooks/useBackHandler';
-import { useScrollLock } from '@/hooks/useScrollLock';
-import { useModalKeyboard } from '@/hooks/useModalKeyboard';
-import { isUserOnline } from '@/lib/presenceService';
-import type { Friend } from './types';
-import { formatLastActive } from './types';
-import type { FriendsPanelProps } from './types';
-import { useFriendsData } from './useFriendsData';
-import { useFriendForm } from './useFriendForm';
-import { useFriendActions } from './useFriendActions';
-import { FriendProfileCard } from './FriendProfileCard';
-import { FriendDetailView } from './FriendDetailView';
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { EmptyState } from "@/components/EmptyState";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useBackHandler } from "@/hooks/useBackHandler";
+import { useScrollLock } from "@/hooks/useScrollLock";
+import { useModalKeyboard } from "@/hooks/useModalKeyboard";
+import { isUserOnline } from "@/lib/presenceService";
+import type { Friend } from "./types";
+import { formatLastActive } from "./types";
+import type { FriendsPanelProps } from "./types";
+import { useFriendsData } from "./useFriendsData";
+import { useFriendForm } from "./useFriendForm";
+import { useFriendActions } from "./useFriendActions";
+import { FriendProfileCard } from "./FriendProfileCard";
+import { FriendDetailView } from "./FriendDetailView";
 
 export function FriendsPanel({
   onClose,
-  userName = 'Zen User',
+  userName = "Zen User",
   currentStreak = 0,
   level = 1,
 }: FriendsPanelProps) {
@@ -76,8 +76,12 @@ export function FriendsPanel({
   const fmtLastActive = (dateStr: string) => formatLastActive(dateStr, tRecord);
 
   // Filter visible activities for global feed
-  const hiddenFriendIds = new Set(data.friends.filter(f => f.activityHidden).map(f => f.id));
-  const visibleActivities = data.activities.filter(a => !hiddenFriendIds.has(a.friendId));
+  const hiddenFriendIds = new Set(
+    data.friends.filter((f) => f.activityHidden).map((f) => f.id),
+  );
+  const visibleActivities = data.activities.filter(
+    (a) => !hiddenFriendIds.has(a.friendId),
+  );
 
   return (
     <div
@@ -92,9 +96,12 @@ export function FriendsPanel({
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h2 id="friends-panel-title" className="text-2xl font-bold zen-text-gradient flex items-center gap-2">
+            <h2
+              id="friends-panel-title"
+              className="text-2xl font-bold zen-text-gradient flex items-center gap-2"
+            >
               <Users className="w-6 h-6" />
-              {tRecord.friends || 'Friends'}
+              {tRecord.friends || "Friends"}
             </h2>
           </div>
           <div className="flex items-center gap-2">
@@ -102,20 +109,25 @@ export function FriendsPanel({
               onClick={() => void actions.handleRefresh()}
               disabled={actions.isRefreshing}
               className="p-3 rounded-xl bg-muted hover:bg-muted/80 transition-colors"
-              aria-label={tRecord.refresh || 'Refresh'}
+              aria-label={tRecord.refresh || "Refresh"}
             >
-              <RefreshCw className={cn("w-4 h-4", actions.isRefreshing && "animate-spin")} />
+              <RefreshCw
+                className={cn(
+                  "w-4 h-4",
+                  actions.isRefreshing && "animate-spin",
+                )}
+              />
             </button>
             <button
               onClick={() => setShowSettings(!showSettings)}
               className="p-3 rounded-xl bg-muted hover:bg-muted/80 transition-colors"
-              aria-label={tRecord.settings || 'Settings'}
+              aria-label={tRecord.settings || "Settings"}
             >
               <Settings className="w-4 h-4" />
             </button>
             <button
               onClick={onClose}
-              aria-label={tRecord.close || 'Close'}
+              aria-label={tRecord.close || "Close"}
               className="p-3 rounded-xl bg-muted hover:bg-muted/80 transition-colors"
             >
               <X className="w-5 h-5" />
@@ -158,26 +170,45 @@ export function FriendsPanel({
                         form.setAddError(null);
                       }}
                       placeholder="ZF-XXXXXXXX"
-                      className={cn("font-mono text-center", form.addError && "input-error")}
+                      className={cn(
+                        "font-mono text-center",
+                        form.addError && "input-error",
+                      )}
                       maxLength={11}
-                      onFocus={(e) => { const el = e.target; setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300); }}
+                      onFocus={(e) => {
+                        const el = e.target;
+                        setTimeout(
+                          () =>
+                            el.scrollIntoView({
+                              behavior: "smooth",
+                              block: "center",
+                            }),
+                          300,
+                        );
+                      }}
                     />
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={() => {
                         form.setShowAddFriend(false);
-                        form.setFriendCode('');
+                        form.setFriendCode("");
                         form.setAddError(null);
                       }}
                       className="shrink-0"
-                      aria-label={tRecord.cancel || 'Cancel'}
+                      aria-label={tRecord.cancel || "Cancel"}
                     >
                       <X className="w-4 h-4" />
                     </Button>
                   </div>
                   {form.addError && (
-                    <p className="text-sm text-destructive" role="status" aria-live="polite">{form.addError}</p>
+                    <p
+                      className="text-sm text-destructive"
+                      role="status"
+                      aria-live="polite"
+                    >
+                      {form.addError}
+                    </p>
                   )}
                   <Button
                     variant="gradient"
@@ -190,7 +221,7 @@ export function FriendsPanel({
                     ) : (
                       <UserPlus className="w-4 h-4 me-2" />
                     )}
-                    {tRecord.addFriend || 'Add Friend'}
+                    {tRecord.addFriend || "Add Friend"}
                   </Button>
                 </motion.div>
               ) : (
@@ -206,7 +237,7 @@ export function FriendsPanel({
                     onClick={() => form.setShowAddFriend(true)}
                   >
                     <UserPlus className="w-4 h-4 me-2" />
-                    {tRecord.addFriendByCode || 'Add Friend by Code'}
+                    {tRecord.addFriendByCode || "Add Friend by Code"}
                   </Button>
                 </motion.div>
               )}
@@ -249,17 +280,21 @@ export function FriendsPanel({
                   transition={{ duration: 0.2 }}
                 >
                   <h3 className="text-sm font-medium text-muted-foreground mb-3">
-                    {tRecord.yourFriends || 'Your Friends'} ({data.friends.length})
+                    {tRecord.yourFriends || "Your Friends"} (
+                    {data.friends.length})
                   </h3>
 
                   {data.friends.length === 0 ? (
                     <EmptyState
                       icon={<Users className="w-6 h-6 text-primary" />}
-                      title={tRecord.noFriendsYet || 'No friends yet'}
-                      message={tRecord.addFriendsHint || 'Share your code or add friends by their code'}
+                      title={tRecord.noFriendsYet || "No friends yet"}
+                      message={
+                        tRecord.addFriendsHint ||
+                        "Share your code or add friends by their code"
+                      }
                       size="compact"
                       action={{
-                        label: tRecord.addFriendByCode || 'Add Friend by Code',
+                        label: tRecord.addFriendByCode || "Add Friend by Code",
                         onClick: () => form.setShowAddFriend(true),
                         icon: <UserPlus className="w-4 h-4" />,
                       }}
@@ -277,7 +312,12 @@ export function FriendsPanel({
                           onClick={() => setSelectedFriend(friend)}
                           role="button"
                           tabIndex={0}
-                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedFriend(friend); } }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              setSelectedFriend(friend);
+                            }
+                          }}
                         >
                           <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-xl shrink-0 relative">
                             {friend.avatarEmoji}
@@ -292,11 +332,13 @@ export function FriendsPanel({
                             <div className="flex items-center gap-3 text-xs text-muted-foreground">
                               <span className="flex items-center gap-1">
                                 <Flame className="w-3 h-3 text-orange-500" />
-                                {friend.streakHidden ? '—' : friend.currentStreak}
+                                {friend.streakHidden
+                                  ? "—"
+                                  : friend.currentStreak}
                               </span>
                               <span className="flex items-center gap-1">
                                 <Trophy className="w-3 h-3 text-yellow-500" />
-                                {friend.levelHidden ? '—' : friend.level}
+                                {friend.levelHidden ? "—" : friend.level}
                               </span>
                               <span className="flex items-center gap-1">
                                 <Clock className="w-3 h-3" />
@@ -304,7 +346,7 @@ export function FriendsPanel({
                               </span>
                             </div>
                           </div>
-                          <ChevronLeft className="w-4 h-4 text-muted-foreground rotate-180 shrink-0" />
+                          <ChevronLeft className="w-4 h-4 text-muted-foreground rotate-180 rtl:scale-x-[-1] shrink-0" />
                         </motion.div>
                       ))}
                     </div>
@@ -318,7 +360,7 @@ export function FriendsPanel({
           {visibleActivities.length > 0 && (
             <div className="p-4 border-t">
               <h3 className="text-sm font-medium text-muted-foreground mb-3">
-                {tRecord.recentActivity || 'Recent Activity'}
+                {tRecord.recentActivity || "Recent Activity"}
               </h3>
               <div className="space-y-2">
                 {visibleActivities.map((activity) => (
@@ -329,7 +371,9 @@ export function FriendsPanel({
                     <span className="text-lg">{activity.icon}</span>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-foreground truncate">
-                        <span className="font-medium">{activity.friendName}</span>{' '}
+                        <span className="font-medium">
+                          {activity.friendName}
+                        </span>{" "}
                         {activity.description}
                       </p>
                       <p className="text-xs text-muted-foreground">

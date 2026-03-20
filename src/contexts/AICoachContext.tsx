@@ -3,31 +3,46 @@
  * Manages coach state, conversation history, and triggers
  */
 
-import { createContext, useContext, useState, useCallback, ReactNode, useMemo, useRef, useEffect } from 'react';
-import { useLanguage } from './LanguageContext';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
-import { MoodEntry, Habit, InnerWorld } from '@/types';
-import { supabase } from '@/lib/supabaseClient';
-import { logger } from '@/lib/logger';
-import { SK } from '@/lib/storageKeys';
-import { SUPABASE_URL } from '@/lib/env';
-import { getToday } from '@/lib/utils';
+import {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  ReactNode,
+  useMemo,
+  useRef,
+  useEffect,
+} from "react";
+import { useLanguage } from "./LanguageContext";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { MoodEntry, Habit, InnerWorld } from "@/types";
+import { supabase } from "@/lib/supabaseClient";
+import { logger } from "@/lib/logger";
+import { SK } from "@/lib/storageKeys";
+import { SUPABASE_URL } from "@/lib/env";
+import { getToday } from "@/lib/utils";
 
 // Constants
 const API_TIMEOUT = 30000; // 30 seconds timeout for API calls
 
 // Types
-export type CoachTrigger = 'onboarding' | 'daily_checkin' | 'low_mood' | 'streak_broken' | 'habit_skip' | 'manual';
+export type CoachTrigger =
+  | "onboarding"
+  | "daily_checkin"
+  | "low_mood"
+  | "streak_broken"
+  | "habit_skip"
+  | "manual";
 
 export interface ChatMessage {
   id: string;
-  role: 'user' | 'coach';
+  role: "user" | "coach";
   content: string;
   timestamp: number;
 }
 
 export interface OnboardingData {
-  mainGoal?: 'wellbeing' | 'productivity' | 'habits' | 'mood';
+  mainGoal?: "wellbeing" | "productivity" | "habits" | "mood";
   currentConcern?: string;
   stressManagement?: string;
   completedAt?: number;
@@ -64,7 +79,11 @@ interface AICoachContextType {
   clearHistory: () => void;
   restoreHistory: (msgs: ChatMessage[]) => void;
   saveOnboardingAnswer: (key: keyof OnboardingData, value: string) => void;
-  setUserData: (moods: MoodEntry[], habits: Habit[], innerWorld: InnerWorld) => void;
+  setUserData: (
+    moods: MoodEntry[],
+    habits: Habit[],
+    innerWorld: InnerWorld,
+  ) => void;
 
   // Trigger helpers
   triggerLowMoodCheck: (mood: MoodEntry) => void;
@@ -82,10 +101,16 @@ export function AICoachProvider({ children }: AICoachProviderProps) {
   const { language } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [currentTrigger, setCurrentTrigger] = useState<CoachTrigger>('manual');
+  const [currentTrigger, setCurrentTrigger] = useState<CoachTrigger>("manual");
   const [daysAwayContext, setDaysAwayContext] = useState(0);
-  const [messages, setMessages] = useLocalStorage<ChatMessage[]>(SK.COACH_HISTORY, []);
-  const [onboardingData, setOnboardingData] = useLocalStorage<OnboardingData>(SK.COACH_ONBOARDING, {});
+  const [messages, setMessages] = useLocalStorage<ChatMessage[]>(
+    SK.COACH_HISTORY,
+    [],
+  );
+  const [onboardingData, setOnboardingData] = useLocalStorage<OnboardingData>(
+    SK.COACH_ONBOARDING,
+    {},
+  );
 
   // Store user data in ref to avoid re-renders
   const userDataRef = useRef<UserDataRef>({
@@ -127,12 +152,14 @@ export function AICoachProvider({ children }: AICoachProviderProps) {
 
   // Clear user data on logout - use refs to avoid re-subscription
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_OUT') {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_OUT") {
         userDataRef.current = { moods: [], habits: [], innerWorld: null };
         setMessagesRef.current([]);
         setOnboardingDataRef.current({});
-        logger.log('[AICoach] Cleared user data on logout');
+        logger.log("[AICoach] Cleared user data on logout");
       }
     });
 
@@ -142,9 +169,12 @@ export function AICoachProvider({ children }: AICoachProviderProps) {
   }, []); // Empty deps - effect runs once, uses refs for setters
 
   // Set user data (called from Index)
-  const setUserData = useCallback((moods: MoodEntry[], habits: Habit[], innerWorld: InnerWorld) => {
-    userDataRef.current = { moods, habits, innerWorld };
-  }, []);
+  const setUserData = useCallback(
+    (moods: MoodEntry[], habits: Habit[], innerWorld: InnerWorld) => {
+      userDataRef.current = { moods, habits, innerWorld };
+    },
+    [],
+  );
 
   // Build context for API (async to fetch journal entries from IndexedDB)
   const buildUserContext = useCallback(async (): Promise<UserContext> => {
@@ -152,30 +182,36 @@ export function AICoachProvider({ children }: AICoachProviderProps) {
     const today = getToday();
 
     // Fetch recent journal entries for coach context
-    let journalEntries: UserContext['journalEntries'];
+    let journalEntries: UserContext["journalEntries"];
     try {
-      const { getAllEntries } = await import('@/features/journal/journalStorage');
+      const { getAllEntries } =
+        await import("@/features/journal/journalStorage");
       const entries = await getAllEntries();
-      const recent = entries.sort((a, b) => b.createdAt - a.createdAt).slice(0, 3);
+      const recent = entries
+        .sort((a, b) => b.createdAt - a.createdAt)
+        .slice(0, 3);
       if (recent.length > 0) {
-        journalEntries = recent.map(e => ({
+        journalEntries = recent.map((e) => ({
           date: e.date,
           mood: e.mood,
           snippet: e.content.slice(0, 100),
         }));
       }
-    } catch { /* graceful: journal data enriches AI context but is not required */ }
+    } catch {
+      /* graceful: journal data enriches AI context but is not required */
+    }
 
     return {
-      recentMoods: moods.slice(-7).map(m => ({
+      recentMoods: moods.slice(-7).map((m) => ({
         mood: m.mood,
         emotion: m.emotion?.primary,
         date: m.date,
       })),
-      habits: habits.map(h => ({
+      habits: habits.map((h) => ({
         name: h.name,
         completedToday: h.entries?.[today]?.value === 2,
-        streak: Object.values(h.entries || {}).filter(e => e.value === 2).length,
+        streak: Object.values(h.entries || {}).filter((e) => e.value === 2)
+          .length,
       })),
       currentStreak: innerWorld?.currentActiveStreak || 0,
       lastActiveDate: innerWorld?.lastActiveDate,
@@ -187,163 +223,177 @@ export function AICoachProvider({ children }: AICoachProviderProps) {
   }, [onboardingData, daysAwayContext]);
 
   // Send message to API
-  const sendMessage = useCallback(async (message: string) => {
-    // Prevent empty messages and concurrent requests
-    if (!message.trim() || sendingRef.current) return;
-    sendingRef.current = true;
+  const sendMessage = useCallback(
+    async (message: string) => {
+      // Prevent empty messages and concurrent requests
+      if (!message.trim() || sendingRef.current) return;
+      sendingRef.current = true;
 
-    const userMessage: ChatMessage = {
-      id: `msg_${Date.now()}`,
-      role: 'user',
-      content: message,
-      timestamp: Date.now(),
-    };
+      const userMessage: ChatMessage = {
+        id: `msg_${Date.now()}`,
+        role: "user",
+        content: message,
+        timestamp: Date.now(),
+      };
 
-    setMessages(prev => [...prev, userMessage]);
-    setIsLoading(true);
+      setMessages((prev) => [...prev, userMessage]);
+      setIsLoading(true);
 
-    // AbortController for timeout - stored in refs for cleanup on unmount
-    abortControllerRef.current = new AbortController();
-    timeoutIdRef.current = setTimeout(() => abortControllerRef.current?.abort(), API_TIMEOUT);
+      // AbortController for timeout - stored in refs for cleanup on unmount
+      abortControllerRef.current = new AbortController();
+      timeoutIdRef.current = setTimeout(
+        () => abortControllerRef.current?.abort(),
+        API_TIMEOUT,
+      );
 
-    try {
-      const session = await supabase.auth.getSession();
-      const token = session.data.session?.access_token;
+      try {
+        const session = await supabase.auth.getSession();
+        const token = session.data.session?.access_token;
 
-      if (!token) {
-        throw new Error('Not authenticated');
-      }
+        if (!token) {
+          throw new Error("Not authenticated");
+        }
 
-      const supabaseUrl = SUPABASE_URL;
+        const supabaseUrl = SUPABASE_URL;
 
-      const response = await fetch(
-        `${supabaseUrl}/functions/v1/ai-coach`,
-        {
-          method: 'POST',
+        const response = await fetch(`${supabaseUrl}/functions/v1/ai-coach`, {
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
             message,
             context: await buildUserContext(),
             language,
             trigger: currentTrigger,
-            conversationHistory: messages.slice(-10).map(m => ({
+            conversationHistory: messages.slice(-10).map((m) => ({
               role: m.role,
               content: m.content,
             })),
           }),
           signal: abortControllerRef.current?.signal,
+        });
+
+        // Clear timeout and controller refs on success
+        if (timeoutIdRef.current) {
+          clearTimeout(timeoutIdRef.current);
+          timeoutIdRef.current = null;
         }
-      );
+        abortControllerRef.current = null;
 
-      // Clear timeout and controller refs on success
-      if (timeoutIdRef.current) {
-        clearTimeout(timeoutIdRef.current);
-        timeoutIdRef.current = null;
-      }
-      abortControllerRef.current = null;
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'API error');
-      }
-
-      const data = await response.json();
-
-      const coachMessage: ChatMessage = {
-        id: `msg_${Date.now()}_coach`,
-        role: 'coach',
-        content: data.message,
-        timestamp: Date.now(),
-      };
-
-      setMessages(prev => [...prev, coachMessage]);
-    } catch (error) {
-      // Clear timeout and controller refs on error
-      if (timeoutIdRef.current) {
-        clearTimeout(timeoutIdRef.current);
-        timeoutIdRef.current = null;
-      }
-      abortControllerRef.current = null;
-
-      // Handle different error types
-      const isTimeout = error instanceof Error && error.name === 'AbortError';
-      const isAuthError = error instanceof Error && error.message === 'Not authenticated';
-      logger.error('[AICoach] Send message error:', isTimeout ? 'Request timeout' : isAuthError ? 'Not authenticated' : error);
-
-      // Better fallback messages for different error types
-      const getFallbackMessage = (): string => {
-        if (isAuthError) {
-          const authMessages: Record<string, string> = {
-            en: 'Please sign in from Settings to use AI Coach.',
-            uk: 'Увійди в акаунт в налаштуваннях, щоб використовувати AI Coach.',
-            es: 'Por favor, inicia sesión en Configuración para usar AI Coach.',
-            de: 'Bitte melde dich in den Einstellungen an, um AI Coach zu nutzen.',
-            fr: 'Connecte-toi dans les Paramètres pour utiliser AI Coach.',
-            ja: '設定からサインインしてAI Coachを使用してください。',
-            ar: 'يرجى تسجيل الدخول من الإعدادات لاستخدام AI Coach.',
-            he: 'התחבר מההגדרות כדי להשתמש ב-AI Coach.',
-          };
-          return authMessages[language] || authMessages.en;
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({})); // graceful: response may not be JSON (e.g. 502 proxy error)
+          throw new Error(errorData.error || "API error");
         }
-        if (isTimeout) {
-          const timeoutMessages: Record<string, string> = {
-            en: 'Request timed out. Try again later.',
-            uk: 'Час очікування вичерпано. Спробуй пізніше.',
-            es: 'Tiempo de espera agotado. Intenta más tarde.',
-            de: 'Zeitüberschreitung. Versuche es später.',
-            fr: 'Délai dépassé. Réessaie plus tard.',
-            ja: 'リクエストがタイムアウトしました。後でもう一度お試しください。',
-            ar: 'انتهت مهلة الطلب. حاول مرة أخرى لاحقًا.',
-            he: 'הזמן הקצוב לבקשה עבר. נסה שוב מאוחר יותר.',
-          };
-          return timeoutMessages[language] || timeoutMessages.en;
-        }
-        const genericMessages: Record<string, string> = {
-          en: 'Sorry, I cannot respond right now. Try again later.',
-          uk: 'Вибач, зараз не можу відповісти. Спробуй пізніше.',
-          es: 'Lo siento, no puedo responder ahora. Intenta más tarde.',
-          de: 'Entschuldige, ich kann gerade nicht antworten. Versuche es später.',
-          fr: 'Désolé, je ne peux pas répondre maintenant. Réessaie plus tard.',
-          ja: 'ごめんなさい、今は応答できません。後でもう一度お試しください。',
-          ar: 'عذرًا، لا أستطيع الرد الآن. حاول مرة أخرى لاحقًا.',
-          he: 'סליחה, אני לא יכול להגיב כרגע. נסה שוב מאוחר יותר.',
+
+        const data = await response.json();
+
+        const coachMessage: ChatMessage = {
+          id: `msg_${Date.now()}_coach`,
+          role: "coach",
+          content: data.message,
+          timestamp: Date.now(),
         };
-        return genericMessages[language] || genericMessages.en;
-      };
 
-      const fallbackMessage: ChatMessage = {
-        id: `msg_${Date.now()}_fallback`,
-        role: 'coach',
-        content: getFallbackMessage(),
-        timestamp: Date.now(),
-      };
-      setMessages(prev => [...prev, fallbackMessage]);
-    } finally {
-      setIsLoading(false);
-      sendingRef.current = false; // Reset sending flag
-    }
-  }, [buildUserContext, language, currentTrigger, messages, setMessages]);
+        setMessages((prev) => [...prev, coachMessage]);
+      } catch (error) {
+        // Clear timeout and controller refs on error
+        if (timeoutIdRef.current) {
+          clearTimeout(timeoutIdRef.current);
+          timeoutIdRef.current = null;
+        }
+        abortControllerRef.current = null;
+
+        // Handle different error types
+        const isTimeout = error instanceof Error && error.name === "AbortError";
+        const isAuthError =
+          error instanceof Error && error.message === "Not authenticated";
+        logger.error(
+          "[AICoach] Send message error:",
+          isTimeout
+            ? "Request timeout"
+            : isAuthError
+              ? "Not authenticated"
+              : error,
+        );
+
+        // Better fallback messages for different error types
+        const getFallbackMessage = (): string => {
+          if (isAuthError) {
+            const authMessages: Record<string, string> = {
+              en: "Please sign in from Settings to use AI Coach.",
+              uk: "Увійди в акаунт в налаштуваннях, щоб використовувати AI Coach.",
+              es: "Por favor, inicia sesión en Configuración para usar AI Coach.",
+              de: "Bitte melde dich in den Einstellungen an, um AI Coach zu nutzen.",
+              fr: "Connecte-toi dans les Paramètres pour utiliser AI Coach.",
+              ja: "設定からサインインしてAI Coachを使用してください。",
+              ar: "يرجى تسجيل الدخول من الإعدادات لاستخدام AI Coach.",
+              he: "התחבר מההגדרות כדי להשתמש ב-AI Coach.",
+            };
+            return authMessages[language] || authMessages.en;
+          }
+          if (isTimeout) {
+            const timeoutMessages: Record<string, string> = {
+              en: "Request timed out. Try again later.",
+              uk: "Час очікування вичерпано. Спробуй пізніше.",
+              es: "Tiempo de espera agotado. Intenta más tarde.",
+              de: "Zeitüberschreitung. Versuche es später.",
+              fr: "Délai dépassé. Réessaie plus tard.",
+              ja: "リクエストがタイムアウトしました。後でもう一度お試しください。",
+              ar: "انتهت مهلة الطلب. حاول مرة أخرى لاحقًا.",
+              he: "הזמן הקצוב לבקשה עבר. נסה שוב מאוחר יותר.",
+            };
+            return timeoutMessages[language] || timeoutMessages.en;
+          }
+          const genericMessages: Record<string, string> = {
+            en: "Sorry, I cannot respond right now. Try again later.",
+            uk: "Вибач, зараз не можу відповісти. Спробуй пізніше.",
+            es: "Lo siento, no puedo responder ahora. Intenta más tarde.",
+            de: "Entschuldige, ich kann gerade nicht antworten. Versuche es später.",
+            fr: "Désolé, je ne peux pas répondre maintenant. Réessaie plus tard.",
+            ja: "ごめんなさい、今は応答できません。後でもう一度お試しください。",
+            ar: "عذرًا، لا أستطيع الرد الآن. حاول مرة أخرى لاحقًا.",
+            he: "סליחה, אני לא יכול להגיב כרגע. נסה שוב מאוחר יותר.",
+          };
+          return genericMessages[language] || genericMessages.en;
+        };
+
+        const fallbackMessage: ChatMessage = {
+          id: `msg_${Date.now()}_fallback`,
+          role: "coach",
+          content: getFallbackMessage(),
+          timestamp: Date.now(),
+        };
+        setMessages((prev) => [...prev, fallbackMessage]);
+      } finally {
+        setIsLoading(false);
+        sendingRef.current = false; // Reset sending flag
+      }
+    },
+    [buildUserContext, language, currentTrigger, messages, setMessages],
+  );
 
   // Open coach with trigger
-  const openCoach = useCallback((trigger: CoachTrigger, initialMessage?: string) => {
-    setCurrentTrigger(trigger);
-    setIsOpen(true);
+  const openCoach = useCallback(
+    (trigger: CoachTrigger, initialMessage?: string) => {
+      setCurrentTrigger(trigger);
+      setIsOpen(true);
 
-    // Add initial message as COACH message, not user message
-    // The greeting should appear from the coach, not from the user
-    if (initialMessage) {
-      const greetingMessage: ChatMessage = {
-        id: `msg_${Date.now()}_greeting`,
-        role: 'coach', // Coach greeting, not user message
-        content: initialMessage,
-        timestamp: Date.now(),
-      };
-      setMessages(prev => [...prev, greetingMessage]);
-    }
-  }, [setMessages]);
+      // Add initial message as COACH message, not user message
+      // The greeting should appear from the coach, not from the user
+      if (initialMessage) {
+        const greetingMessage: ChatMessage = {
+          id: `msg_${Date.now()}_greeting`,
+          role: "coach", // Coach greeting, not user message
+          content: initialMessage,
+          timestamp: Date.now(),
+        };
+        setMessages((prev) => [...prev, greetingMessage]);
+      }
+    },
+    [setMessages],
+  );
 
   // Close coach
   const closeCoach = useCallback(() => {
@@ -356,104 +406,120 @@ export function AICoachProvider({ children }: AICoachProviderProps) {
   }, [setMessages]);
 
   // Restore history (for undo)
-  const restoreHistory = useCallback((msgs: ChatMessage[]) => {
-    setMessages(msgs);
-  }, [setMessages]);
+  const restoreHistory = useCallback(
+    (msgs: ChatMessage[]) => {
+      setMessages(msgs);
+    },
+    [setMessages],
+  );
 
   // Save onboarding answer
-  const saveOnboardingAnswer = useCallback((key: keyof OnboardingData, value: string) => {
-    setOnboardingData(prev => ({ ...prev, [key]: value }));
-  }, [setOnboardingData]);
+  const saveOnboardingAnswer = useCallback(
+    (key: keyof OnboardingData, value: string) => {
+      setOnboardingData((prev) => ({ ...prev, [key]: value }));
+    },
+    [setOnboardingData],
+  );
 
   // Trigger helpers
-  const triggerLowMoodCheck = useCallback((mood: MoodEntry) => {
-    if (mood.mood === 'bad' || mood.mood === 'terrible') {
+  const triggerLowMoodCheck = useCallback(
+    (mood: MoodEntry) => {
+      if (mood.mood === "bad" || mood.mood === "terrible") {
+        const greetings: Record<string, string> = {
+          en: "I noticed you are having a hard time...",
+          uk: "Помітив, що тобі зараз нелегко...",
+          es: "Noté que estás pasando por un momento difícil...",
+          de: "Ich habe bemerkt, dass du gerade eine schwere Zeit hast...",
+          fr: "J'ai remarqué que tu traverses un moment difficile...",
+          ja: "今つらい時期を過ごしているみたいだね…",
+          ar: "لاحظت أنك تمر بوقت صعب...",
+          he: "שמתי לב שקשה לך עכשיו...",
+        };
+        openCoach("low_mood", greetings[language] || greetings.en);
+      }
+    },
+    [openCoach, language],
+  );
+
+  const triggerStreakBroken = useCallback(
+    (daysAway: number) => {
+      setDaysAwayContext(daysAway);
       const greetings: Record<string, string> = {
-        en: 'I noticed you are having a hard time...',
-        uk: 'Помітив, що тобі зараз нелегко...',
-        es: 'Noté que estás pasando por un momento difícil...',
-        de: 'Ich habe bemerkt, dass du gerade eine schwere Zeit hast...',
-        fr: 'J\'ai remarqué que tu traverses un moment difficile...',
-        ja: '今つらい時期を過ごしているみたいだね…',
-        ar: 'لاحظت أنك تمر بوقت صعب...',
-        he: 'שמתי לב שקשה לך עכשיו...',
+        en: `Welcome back! You were away for ${daysAway} days.`,
+        uk: `З поверненням! Ти був відсутній ${daysAway} днів.`,
+        es: `¡Bienvenido de vuelta! Estuviste ausente ${daysAway} días.`,
+        de: `Willkommen zurück! Du warst ${daysAway} Tage weg.`,
+        fr: `Bienvenue! Tu étais absent ${daysAway} jours.`,
+        ja: `おかえりなさい！${daysAway}日間お休みでしたね。`,
+        ar: `مرحبًا بعودتك! كنت غائبًا لمدة ${daysAway} أيام.`,
+        he: `ברוך שובך! נעדרת ${daysAway} ימים.`,
       };
-      openCoach('low_mood', greetings[language] || greetings.en);
-    }
-  }, [openCoach, language]);
+      openCoach("streak_broken", greetings[language] || greetings.en);
+    },
+    [openCoach, language],
+  );
 
-  const triggerStreakBroken = useCallback((daysAway: number) => {
-    setDaysAwayContext(daysAway);
-    const greetings: Record<string, string> = {
-      en: `Welcome back! You were away for ${daysAway} days.`,
-      uk: `З поверненням! Ти був відсутній ${daysAway} днів.`,
-      es: `¡Bienvenido de vuelta! Estuviste ausente ${daysAway} días.`,
-      de: `Willkommen zurück! Du warst ${daysAway} Tage weg.`,
-      fr: `Bienvenue! Tu étais absent ${daysAway} jours.`,
-      ja: `おかえりなさい！${daysAway}日間お休みでしたね。`,
-      ar: `مرحبًا بعودتك! كنت غائبًا لمدة ${daysAway} أيام.`,
-      he: `ברוך שובך! נעדרת ${daysAway} ימים.`,
-    };
-    openCoach('streak_broken', greetings[language] || greetings.en);
-  }, [openCoach, language]);
+  const triggerHabitSkip = useCallback(
+    (habitName: string) => {
+      const messages: Record<string, string> = {
+        en: `I skipped the habit "${habitName}"`,
+        uk: `Я пропустив звичку "${habitName}"`,
+        es: `Me salté el hábito "${habitName}"`,
+        de: `Ich habe die Gewohnheit "${habitName}" übersprungen`,
+        fr: `J'ai sauté l'habitude "${habitName}"`,
+        ja: `「${habitName}」の習慣をスキップしました`,
+        ar: `تخطيت عادة "${habitName}"`,
+        he: `דילגתי על ההרגל "${habitName}"`,
+      };
+      openCoach("habit_skip", messages[language] || messages.en);
+    },
+    [openCoach, language],
+  );
 
-  const triggerHabitSkip = useCallback((habitName: string) => {
-    const messages: Record<string, string> = {
-      en: `I skipped the habit "${habitName}"`,
-      uk: `Я пропустив звичку "${habitName}"`,
-      es: `Me salté el hábito "${habitName}"`,
-      de: `Ich habe die Gewohnheit "${habitName}" übersprungen`,
-      fr: `J'ai sauté l'habitude "${habitName}"`,
-      ja: `「${habitName}」の習慣をスキップしました`,
-      ar: `تخطيت عادة "${habitName}"`,
-      he: `דילגתי על ההרגל "${habitName}"`,
-    };
-    openCoach('habit_skip', messages[language] || messages.en);
-  }, [openCoach, language]);
-
-  const value = useMemo(() => ({
-    isOpen,
-    isLoading,
-    messages,
-    onboardingData,
-    openCoach,
-    closeCoach,
-    sendMessage,
-    clearHistory,
-    saveOnboardingAnswer,
-    setUserData,
-    triggerLowMoodCheck,
-    triggerStreakBroken,
-    triggerHabitSkip,
-    restoreHistory,
-  }), [
-    isOpen,
-    isLoading,
-    messages,
-    onboardingData,
-    openCoach,
-    closeCoach,
-    sendMessage,
-    clearHistory,
-    restoreHistory,
-    saveOnboardingAnswer,
-    setUserData,
-    triggerLowMoodCheck,
-    triggerStreakBroken,
-    triggerHabitSkip,
-  ]);
+  const value = useMemo(
+    () => ({
+      isOpen,
+      isLoading,
+      messages,
+      onboardingData,
+      openCoach,
+      closeCoach,
+      sendMessage,
+      clearHistory,
+      saveOnboardingAnswer,
+      setUserData,
+      triggerLowMoodCheck,
+      triggerStreakBroken,
+      triggerHabitSkip,
+      restoreHistory,
+    }),
+    [
+      isOpen,
+      isLoading,
+      messages,
+      onboardingData,
+      openCoach,
+      closeCoach,
+      sendMessage,
+      clearHistory,
+      restoreHistory,
+      saveOnboardingAnswer,
+      setUserData,
+      triggerLowMoodCheck,
+      triggerStreakBroken,
+      triggerHabitSkip,
+    ],
+  );
 
   return (
-    <AICoachContext.Provider value={value}>
-      {children}
-    </AICoachContext.Provider>
+    <AICoachContext.Provider value={value}>{children}</AICoachContext.Provider>
   );
 }
 
 export function useAICoach() {
   const context = useContext(AICoachContext);
   if (!context) {
-    throw new Error('useAICoach must be used within AICoachProvider');
+    throw new Error("useAICoach must be used within AICoachProvider");
   }
   return context;
 }

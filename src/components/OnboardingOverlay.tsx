@@ -8,17 +8,17 @@
  * - Feature unlock notifications
  */
 
-import { useState, useEffect } from 'react';
-import { Sparkles, X, ChevronRight } from 'lucide-react';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { useScrollLock } from '@/hooks/useScrollLock';
-import { useBackHandler } from '@/hooks/useBackHandler';
+import { useState, useEffect } from "react";
+import { Sparkles, X, ChevronRight } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useScrollLock } from "@/hooks/useScrollLock";
+import { useBackHandler } from "@/hooks/useBackHandler";
 import {
   getOnboardingState,
   shouldShowWelcome,
   markWelcomeSeen,
   getUnlockProgress,
-} from '@/lib/onboardingFlow';
+} from "@/lib/onboardingFlow";
 
 interface OnboardingOverlayProps {
   onClose?: () => void;
@@ -38,25 +38,25 @@ export function WelcomeOverlay({ onClose }: { onClose: () => void }) {
 
   const steps = [
     {
-      title: t.onboardingWelcomeTitle || 'Welcome to ZenFlow! 🌱',
+      title: t.onboardingWelcomeTitle || "Welcome to ZenFlow! 🌱",
       description:
         t.onboardingWelcomeDescription ||
         "We're excited to help you build better habits and understand what works for YOUR brain.",
-      icon: '👋',
+      icon: "👋",
     },
     {
       title: t.onboardingDay1Title || "Let's start simple",
       description:
         t.onboardingDay1Description ||
         "For today, we'll focus on just two things: tracking your mood and creating your first habit. Your data is stored safely on your device.",
-      icon: '🎯',
+      icon: "🎯",
     },
     {
-      title: t.onboardingGradualTitle || 'More features unlock gradually',
+      title: t.onboardingGradualTitle || "More features unlock gradually",
       description:
         t.onboardingGradualDescription ||
         "Over the next 4 days, you'll discover new features as you progress. No information overload!",
-      icon: '✨',
+      icon: "✨",
     },
   ];
 
@@ -94,8 +94,15 @@ export function WelcomeOverlay({ onClose }: { onClose: () => void }) {
               <X className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground" />
             </button>
           </div>
-          <h2 id="onboarding-welcome-title" className="text-xl sm:text-2xl font-bold text-foreground mb-2">{currentStep.title}</h2>
-          <p className="text-sm sm:text-base text-muted-foreground">{currentStep.description}</p>
+          <h2
+            id="onboarding-welcome-title"
+            className="text-xl sm:text-2xl font-bold text-foreground mb-2"
+          >
+            {currentStep.title}
+          </h2>
+          <p className="text-sm sm:text-base text-muted-foreground">
+            {currentStep.description}
+          </p>
         </div>
 
         {/* Progress dots - responsive */}
@@ -106,10 +113,10 @@ export function WelcomeOverlay({ onClose }: { onClose: () => void }) {
                 key={i}
                 className={`h-1.5 sm:h-2 rounded-full transition-all duration-300 ${
                   i === step
-                    ? 'w-6 sm:w-8 bg-primary'
+                    ? "w-6 sm:w-8 bg-primary"
                     : i < step
-                    ? 'w-1.5 sm:w-2 bg-primary/50'
-                    : 'w-1.5 sm:w-2 bg-border'
+                      ? "w-1.5 sm:w-2 bg-primary/50"
+                      : "w-1.5 sm:w-2 bg-border"
                 }`}
               />
             ))}
@@ -120,8 +127,10 @@ export function WelcomeOverlay({ onClose }: { onClose: () => void }) {
             onClick={handleNext}
             className="w-full py-2.5 sm:py-3 px-4 bg-primary text-primary-foreground rounded-lg sm:rounded-xl font-medium hover:bg-primary/90 transition-colors zen-shadow-sm flex items-center justify-center gap-2 text-sm sm:text-base"
           >
-            {step < steps.length - 1 ? t.onboardingNext || 'Next' : t.onboardingGetStarted || "Let's start!"}
-            <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
+            {step < steps.length - 1
+              ? t.onboardingNext || "Next"
+              : t.onboardingGetStarted || "Let's start!"}
+            <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 rtl:scale-x-[-1]" />
           </button>
         </div>
       </div>
@@ -148,13 +157,14 @@ export function DayProgressIndicator() {
         <div className="flex items-center gap-1.5 sm:gap-2">
           <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
           <span className="font-semibold text-sm sm:text-base text-foreground">
-            {(t.onboardingDayProgress || 'Day {day} of {maxDay}')
-              .replace('{day}', String(progress.day))
-              .replace('{maxDay}', String(progress.maxDay))}
+            {(t.onboardingDayProgress || "Day {day} of {maxDay}")
+              .replace("{day}", String(progress.day))
+              .replace("{maxDay}", String(progress.maxDay))}
           </span>
         </div>
         <span className="text-xs sm:text-xs text-muted-foreground">
-          {progress.unlockedCount}/{progress.totalCount} {t.onboardingFeaturesUnlocked || 'features'}
+          {progress.unlockedCount}/{progress.totalCount}{" "}
+          {t.onboardingFeaturesUnlocked || "features"}
         </span>
       </div>
 
@@ -162,14 +172,17 @@ export function DayProgressIndicator() {
       <div className="w-full h-1.5 sm:h-2 bg-border rounded-full overflow-hidden">
         <div
           className="h-full bg-primary transition-all duration-500 ease-out"
-          style={{ width: `${(progress.unlockedCount / progress.totalCount) * 100}%` }}
+          style={{
+            width: `${(progress.unlockedCount / progress.totalCount) * 100}%`,
+          }}
         />
       </div>
 
       {/* Next unlock hint */}
       {progress.nextUnlock && (
         <p className="mt-1.5 sm:mt-2 text-xs sm:text-xs text-muted-foreground">
-          {t.onboardingNextUnlock || 'Next unlock'}: <span className="font-medium">{progress.nextUnlock.requirement}</span>
+          {t.onboardingNextUnlock || "Next unlock"}:{" "}
+          <span className="font-medium">{progress.nextUnlock.requirement}</span>
         </p>
       )}
     </div>
