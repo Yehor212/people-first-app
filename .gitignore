@@ -43,7 +43,8 @@ android/build/
 # Claude / AI agent temp files
 # ============================================
 tmpclaude*
-.claude/
+.claude/*
+!.claude/rules/
 .mcp.json
 
 # ============================================
@@ -120,6 +121,10 @@ docs/visual-aesthetic.md
 *.preview.frag
 
 # Claude Code enforcement tokens (one-time gate files)
+.preflight-token
 .postflight-done
 .fullcycle-active
 .fullcycle-laws-read
+.claude-audit.log
+.claude-md-unlock
+.prettier-circuit-breaker
