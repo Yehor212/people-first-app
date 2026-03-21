@@ -81,15 +81,15 @@
       "description": "Total JS bundle size in KB (dist/assets/*.js)"
     },
     "enforcement.blockingHooks": {
-      "value": 5,
+      "value": 6,
       "direction": "up",
-      "recorded": "2026-03-20",
-      "description": "BLOCKING hooks (exit 2 fail-closed): preflight-gate, protected-files, commit-gate, quality-stop-gate, search-gate"
+      "recorded": "2026-03-21",
+      "description": "BLOCKING hooks (exit 2 fail-closed): preflight-gate, protected-files, commit-gate, quality-stop-gate, search-gate, bandaid-gate"
     },
     "enforcement.totalHooks": {
-      "value": 30,
+      "value": 32,
       "direction": "up",
-      "recorded": "2026-03-20",
+      "recorded": "2026-03-21",
       "description": "Total enforcement hooks"
     },
     "enforcement.uncoveredAntiPatterns": {
