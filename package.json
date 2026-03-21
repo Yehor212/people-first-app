@@ -28,6 +28,8 @@
     "enforcement:check": "npx tsx scripts/check-enforcement-health.ts",
     "check:all": "npm run typecheck && npm run lint && npm run i18n:check && npm run check:colors",
     "ci:preflight": "npx eslint . --max-warnings=0 && tsc --noEmit && npm run i18n:check && vitest run --coverage && vite build && npm run ratchet:check",
+    "ci:remote": "npx tsx scripts/check-remote-ci.ts",
+    "ci:remote:wait": "npx tsx scripts/check-remote-ci.ts --wait",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",

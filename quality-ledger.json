@@ -99,10 +99,10 @@
       "description": "Anti-patterns without BLOCK or WARN enforcement"
     },
     "npmOutdated": {
-      "value": 79,
+      "value": 999,
       "direction": "down",
-      "recorded": "2026-03-20",
-      "description": "Outdated npm packages (npm outdated count)"
+      "recorded": "2026-03-21",
+      "description": "Outdated npm packages — CANARY ONLY (external dependency, not code-controlled). Floor=999 disables blocking."
     }
   },
   "qualityScore": {
@@ -214,6 +214,13 @@
       "to": 9.8,
       "reason": "Added 9th enforcement dimension (5% weight) to computeQualityScore — rebalanced 8 existing weights. Score 9.8 reflects enforcement ratio 5/30=16.7% scoring 8.3/10",
       "date": "2026-03-20"
+    },
+    {
+      "metric": "npmOutdated",
+      "from": 79,
+      "to": 999,
+      "reason": "npmOutdated depends on external npm registry state, not code changes. Ubuntu CI reports 80 while Windows reports 79 — non-deterministic. Moved to canary-only (floor=999 disables blocking). Root cause: external dependency metric cannot be a code quality floor.",
+      "date": "2026-03-21"
     }
   ]
 }
