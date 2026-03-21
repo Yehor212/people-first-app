@@ -5,23 +5,28 @@
  * Falls back to full backup sync if granular sync fails.
  */
 
-import { logger } from '@/lib/logger';
-import { addCategorizedBreadcrumb } from '@/lib/sentry';
-import { isAbortError, isValidUUID } from '@/lib/validation';
-import { supabase, getCurrentUserId } from '@/lib/supabaseClient';
-import { db } from '@/storage/db';
-import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
-import type { JournalEntry, JournalPhoto, JournalAudio } from '@/features/journal/types';
-import { RealtimeChannel } from '@supabase/supabase-js';
-import { offlineQueue } from '@/lib/offlineQueue';
-import { generateEmbeddings } from '@/lib/journalAI';
+import { logger } from "@/lib/logger";
+import { addCategorizedBreadcrumb } from "@/lib/sentry";
+import { isAbortError, isValidUUID } from "@/lib/validation";
+import { supabase, getCurrentUserId } from "@/lib/supabaseClient";
+import { db } from "@/storage/db";
+import { MoodEntry, Habit, FocusSession, GratitudeEntry } from "@/types";
+import type { Json } from "@/types/supabase";
+import type {
+  JournalEntry,
+  JournalPhoto,
+  JournalAudio,
+} from "@/features/journal/types";
+import { RealtimeChannel } from "@supabase/supabase-js";
+import { offlineQueue } from "@/lib/offlineQueue";
+import { generateEmbeddings } from "@/lib/journalAI";
 import {
   runtimeMoodEntrySchema,
   runtimeHabitSchema,
   runtimeFocusSessionSchema,
   runtimeGratitudeEntrySchema,
   validateArray,
-} from '@/lib/schemas';
+} from "@/lib/schemas";
 
 // Track active subscriptions
 let realtimeChannel: RealtimeChannel | null = null;
@@ -53,14 +58,16 @@ const detectNetworkError = (error: unknown): boolean => {
 
   // Check error name (more reliable than message)
   const networkErrorNames = [
-    'NetworkError',
-    'TimeoutError',
-    'TypeError',       // fetch failures are often TypeErrors
+    "NetworkError",
+    "TimeoutError",
+    "TypeError", // fetch failures are often TypeErrors
   ];
   if (networkErrorNames.includes(error.name)) {
     // TypeError is only network-related if it's a fetch error
-    if (error.name === 'TypeError') {
-      return error.message.includes('fetch') || error.message.includes('network');
+    if (error.name === "TypeError") {
+      return (
+        error.message.includes("fetch") || error.message.includes("network")
+      );
     }
     return true;
   }
@@ -68,7 +75,7 @@ const detectNetworkError = (error: unknown): boolean => {
   // Check for DOMException with network-related code
   if (error instanceof DOMException) {
     // NetworkError is code 19 in some browsers
-    if (error.code === 19 || error.name === 'NetworkError') {
+    if (error.code === 19 || error.name === "NetworkError") {
       return true;
     }
   }
@@ -76,21 +83,21 @@ const detectNetworkError = (error: unknown): boolean => {
   // Fallback: check message for known patterns (case-insensitive)
   const message = error.message.toLowerCase();
   const networkPatterns = [
-    'network',
-    'failed to fetch',
-    'fetch failed',
-    'networkerror',
-    'econnrefused',
-    'etimedout',
-    'enotfound',
-    'enetunreach',
-    'connection refused',
-    'connection reset',
-    'socket hang up',
-    'dns',
+    "network",
+    "failed to fetch",
+    "fetch failed",
+    "networkerror",
+    "econnrefused",
+    "etimedout",
+    "enotfound",
+    "enetunreach",
+    "connection refused",
+    "connection reset",
+    "socket hang up",
+    "dns",
   ];
 
-  return networkPatterns.some(pattern => message.includes(pattern));
+  return networkPatterns.some((pattern) => message.includes(pattern));
 };
 
 const BATCH_SIZE = 20; // Max concurrent sync operations
@@ -100,14 +107,14 @@ const BATCH_DELAY = 50; // ms between batches
 async function processBatched<T>(
   items: T[],
   processor: (item: T) => Promise<void>,
-  batchSize: number = BATCH_SIZE
+  batchSize: number = BATCH_SIZE,
 ): Promise<void> {
   for (let i = 0; i < items.length; i += batchSize) {
     const batch = items.slice(i, i + batchSize);
     await Promise.all(batch.map(processor));
     // Small pause between batches to avoid rate limiting
     if (i + batchSize < items.length) {
-      await new Promise(resolve => setTimeout(resolve, BATCH_DELAY));
+      await new Promise((resolve) => setTimeout(resolve, BATCH_DELAY));
     }
   }
 }
@@ -121,51 +128,66 @@ export const syncMood = async (mood: MoodEntry): Promise<void> => {
   // Explicit validation to prevent RLS violations with undefined user_id
   if (!supabase) return;
   if (!userId) {
-    logger.warn('[Sync] Cannot sync mood: User not authenticated');
+    logger.warn("[Sync] Cannot sync mood: User not authenticated");
     return;
   }
 
   // Skip granular sync for non-UUID IDs (nanoid) — data is persisted via JSONB backup
   if (!isValidUUID(mood.id)) {
-    logger.log('[Sync] Skipping granular mood sync (non-UUID ID):', mood.id);
+    logger.log("[Sync] Skipping granular mood sync (non-UUID ID):", mood.id);
     return;
   }
 
-  addCategorizedBreadcrumb('sync', 'Starting mood sync', { moodId: mood.id, date: mood.date });
+  addCategorizedBreadcrumb("sync", "Starting mood sync", {
+    moodId: mood.id,
+    date: mood.date,
+  });
 
   // If offline, queue for later sync
   if (!navigator.onLine) {
-    await offlineQueue.enqueue('CREATE_MOOD', mood.id, mood);
-    addCategorizedBreadcrumb('sync', 'Mood queued (offline)', { moodId: mood.id });
-    logger.log('[Sync] Mood queued for offline sync:', mood.id);
+    await offlineQueue.enqueue("CREATE_MOOD", mood.id, mood);
+    addCategorizedBreadcrumb("sync", "Mood queued (offline)", {
+      moodId: mood.id,
+    });
+    logger.log("[Sync] Mood queued for offline sync:", mood.id);
     return;
   }
 
   try {
-    const { error } = await supabase.from('moods').upsert({
-      id: mood.id,
-      user_id: userId,
-      mood: mood.mood,
-      note: mood.note || null,
-      tags: mood.tags || [],
-      date: mood.date,
-      timestamp: mood.timestamp,
-      emotion: mood.emotion || null,
-      // State of Mind fields (v2.0.0)
-      valence: mood.valence ?? null,
-      log_type: mood.logType ?? null,
-      emotion_tags: mood.emotionTags ?? [],
-      contexts: mood.contexts ?? [],
-    }, { onConflict: 'id' });
+    const { error } = await supabase.from("moods").upsert(
+      {
+        id: mood.id,
+        user_id: userId,
+        mood: mood.mood,
+        note: mood.note || null,
+        tags: mood.tags || [],
+        date: mood.date,
+        timestamp: mood.timestamp,
+        emotion: (mood.emotion as unknown as Json) || null,
+        // State of Mind fields (v2.0.0)
+        valence: mood.valence ?? null,
+        log_type: mood.logType ?? null,
+        emotion_tags: mood.emotionTags ?? [],
+        contexts: mood.contexts ?? [],
+      },
+      { onConflict: "id" },
+    );
 
     if (error) throw error;
-    addCategorizedBreadcrumb('sync', 'Mood synced successfully', { moodId: mood.id });
-    logger.log('[Sync] Mood synced:', mood.id);
+    addCategorizedBreadcrumb("sync", "Mood synced successfully", {
+      moodId: mood.id,
+    });
+    logger.log("[Sync] Mood synced:", mood.id);
   } catch (error) {
     // Handle AbortError separately - it's intentional, don't retry/queue
     if (isAbortError(error)) {
-      addCategorizedBreadcrumb('sync', 'Mood sync aborted', { moodId: mood.id }, 'warning');
-      logger.warn('[Sync] Mood sync aborted (timeout or navigation):', mood.id);
+      addCategorizedBreadcrumb(
+        "sync",
+        "Mood sync aborted",
+        { moodId: mood.id },
+        "warning",
+      );
+      logger.warn("[Sync] Mood sync aborted (timeout or navigation):", mood.id);
       return; // Don't retry, don't queue - this was intentional
     }
 
@@ -174,13 +196,23 @@ export const syncMood = async (mood: MoodEntry): Promise<void> => {
     const isNetworkError = detectNetworkError(error);
 
     if (isNetworkError) {
-      await offlineQueue.enqueue('CREATE_MOOD', mood.id, mood);
-      addCategorizedBreadcrumb('sync', 'Mood queued (network error)', { moodId: mood.id }, 'warning');
-      logger.log('[Sync] Mood queued after network error:', mood.id);
+      await offlineQueue.enqueue("CREATE_MOOD", mood.id, mood);
+      addCategorizedBreadcrumb(
+        "sync",
+        "Mood queued (network error)",
+        { moodId: mood.id },
+        "warning",
+      );
+      logger.log("[Sync] Mood queued after network error:", mood.id);
       // Don't re-throw network errors - they're handled via offline queue
     } else {
-      addCategorizedBreadcrumb('sync', 'Mood sync failed', { moodId: mood.id, error: (error as Error).message }, 'error');
-      logger.error('[Sync] Failed to sync mood:', error);
+      addCategorizedBreadcrumb(
+        "sync",
+        "Mood sync failed",
+        { moodId: mood.id, error: (error as Error).message },
+        "error",
+      );
+      logger.error("[Sync] Failed to sync mood:", error);
       // P0-4 Fix: Re-throw so callers (especially offline queue handlers) know sync failed
       // Without this, the offline queue removes the action thinking it succeeded
       throw error;
@@ -194,33 +226,36 @@ export const deleteMoodFromCloud = async (moodId: string): Promise<void> => {
 
   // Skip granular sync for non-UUID IDs (nanoid)
   if (!isValidUUID(moodId)) {
-    logger.log('[Sync] Skipping granular mood delete (non-UUID ID):', moodId);
+    logger.log("[Sync] Skipping granular mood delete (non-UUID ID):", moodId);
     return;
   }
 
   // If offline, queue for later
   if (!navigator.onLine) {
-    await offlineQueue.enqueue('DELETE_MOOD', moodId, { id: moodId });
-    logger.log('[Sync] Mood delete queued for offline:', moodId);
+    await offlineQueue.enqueue("DELETE_MOOD", moodId, { id: moodId });
+    logger.log("[Sync] Mood delete queued for offline:", moodId);
     return;
   }
 
   try {
     const { error } = await supabase
-      .from('moods')
+      .from("moods")
       .delete()
-      .eq('id', moodId)
-      .eq('user_id', userId);
+      .eq("id", moodId)
+      .eq("user_id", userId);
 
     if (error) throw error;
-    logger.log('[Sync] Mood deleted:', moodId);
+    logger.log("[Sync] Mood deleted:", moodId);
   } catch (error) {
     // Handle AbortError separately
     if (isAbortError(error)) {
-      logger.warn('[Sync] Mood delete aborted (timeout or navigation):', moodId);
+      logger.warn(
+        "[Sync] Mood delete aborted (timeout or navigation):",
+        moodId,
+      );
       return;
     }
-    logger.error('[Sync] Failed to delete mood:', error);
+    logger.error("[Sync] Failed to delete mood:", error);
     // P0-4 Fix: Re-throw for offline queue handlers
     throw error;
   }
@@ -235,66 +270,76 @@ export const syncHabit = async (habit: Habit): Promise<void> => {
   // Explicit validation to prevent RLS violations with undefined user_id
   if (!supabase) return;
   if (!userId) {
-    logger.warn('[Sync] Cannot sync habit: User not authenticated');
+    logger.warn("[Sync] Cannot sync habit: User not authenticated");
     return;
   }
 
   // Skip granular sync for non-UUID IDs (nanoid) — data is persisted via JSONB backup
   if (!isValidUUID(habit.id)) {
-    logger.log('[Sync] Skipping granular habit sync (non-UUID ID):', habit.id);
+    logger.log("[Sync] Skipping granular habit sync (non-UUID ID):", habit.id);
     return;
   }
 
   // If offline, queue for later sync
   if (!navigator.onLine) {
-    await offlineQueue.enqueue('UPDATE_HABIT', habit.id, habit);
-    logger.log('[Sync] Habit queued for offline sync:', habit.id);
+    await offlineQueue.enqueue("UPDATE_HABIT", habit.id, habit);
+    logger.log("[Sync] Habit queued for offline sync:", habit.id);
     return;
   }
 
   try {
     // Sync habit metadata (map new local model → old cloud schema)
     const freq = habit.frequency || { numerator: 1, denominator: 1 };
-    const cloudFrequency = freq.denominator === 1 ? 'daily' : 'weekly';
-    const cloudType = habit.habitType === 'numerical' ? 'multiple' : 'daily';
+    const cloudFrequency = freq.denominator === 1 ? "daily" : "weekly";
+    const cloudType = habit.habitType === "numerical" ? "multiple" : "daily";
 
-    const { error: habitError } = await supabase.from('habits').upsert({
-      id: habit.id,
-      user_id: userId,
-      name: habit.name,
-      icon: habit.icon,
-      color: typeof habit.color === 'number' ? String(habit.color) : habit.color,
-      type: cloudType,
-      frequency: cloudFrequency,
-      custom_days: [],
-      requires_duration: false,
-      target_duration: null,
-      start_date: null,
-      daily_target: habit.targetValue || 1,
-      target_count: habit.targetValue || null,
-      template_id: habit.templateId || null,
-    }, { onConflict: 'id' });
+    const { error: habitError } = await supabase.from("habits").upsert(
+      {
+        id: habit.id,
+        user_id: userId,
+        name: habit.name,
+        icon: habit.icon,
+        color:
+          typeof habit.color === "number" ? String(habit.color) : habit.color,
+        type: cloudType,
+        frequency: cloudFrequency,
+        custom_days: [],
+        requires_duration: false,
+        target_duration: null,
+        start_date: null,
+        daily_target: habit.targetValue || 1,
+        target_count: habit.targetValue || null,
+        template_id: habit.templateId || null,
+      },
+      { onConflict: "id" },
+    );
 
     if (habitError) throw habitError;
 
     // Sync entries as completions (map entries → habit_completions rows)
     const entries = habit.entries || {};
     const completedDates = Object.entries(entries)
-      .filter(([, e]) => e.value === 2 || (habit.habitType === 'numerical' && e.value > 0))
+      .filter(
+        ([, e]) =>
+          e.value === 2 || (habit.habitType === "numerical" && e.value > 0),
+      )
       .map(([date]) => date);
 
     if (completedDates.length > 0) {
-      const completions = completedDates.map(date => ({
+      const completions = completedDates.map((date) => ({
         user_id: userId,
         habit_id: habit.id,
         date,
-        count: habit.habitType === 'numerical' ? Math.round((entries[date]?.value || 0) / 1000) : 1,
+        count:
+          habit.habitType === "numerical"
+            ? Math.round((entries[date]?.value || 0) / 1000)
+            : 1,
         duration: null,
       }));
 
       const { error: completionError } = await supabase
-        .from('habit_completions')
-        .upsert(completions, { onConflict: 'habit_id,date' });
+        .from("habit_completions")
+        .upsert(completions, { onConflict: "habit_id,date" });
 
       if (completionError) throw completionError;
     }
@@ -302,10 +347,13 @@ export const syncHabit = async (habit: Habit): Promise<void> => {
     // Sync reminders - use safe insert-then-delete pattern to prevent data loss
     if (habit.reminders && habit.reminders.length > 0) {
       // Generate deterministic IDs based on habit + time + days
-      const generateReminderId = (habitId: string, time: string, days: number[]) =>
-        `${habitId}-${time}-${days.sort().join('')}`;
+      const generateReminderId = (
+        habitId: string,
+        time: string,
+        days: number[],
+      ) => `${habitId}-${time}-${days.sort().join("")}`;
 
-      const reminders = habit.reminders.map(r => ({
+      const reminders = habit.reminders.map((r) => ({
         id: generateReminderId(habit.id, r.time, r.days),
         user_id: userId,
         habit_id: habit.id,
@@ -316,43 +364,54 @@ export const syncHabit = async (habit: Habit): Promise<void> => {
 
       // Upsert reminders (safe - won't lose data on failure)
       const { error: reminderError } = await supabase
-        .from('habit_reminders')
-        .upsert(reminders, { onConflict: 'id' });
+        .from("habit_reminders")
+        .upsert(reminders, { onConflict: "id" });
 
       if (reminderError) throw reminderError;
 
       // Clean up orphan reminders (non-critical - duplicates are better than data loss)
-      const currentIds = reminders.map(r => r.id);
+      const currentIds = reminders.map((r) => r.id);
       const { error: cleanupError } = await supabase
-        .from('habit_reminders')
+        .from("habit_reminders")
         .delete()
-        .eq('habit_id', habit.id)
-        .not('id', 'in', `(${currentIds.map(id => `'${id}'`).join(',')})`);
+        .eq("habit_id", habit.id)
+        .not("id", "in", `(${currentIds.map((id) => `'${id}'`).join(",")})`);
 
       if (cleanupError) {
-        logger.warn('[Sync] Failed to cleanup old reminders for habit:', habit.id, cleanupError);
+        logger.warn(
+          "[Sync] Failed to cleanup old reminders for habit:",
+          habit.id,
+          cleanupError,
+        );
         // Non-critical - continue anyway
       }
     } else {
       // No reminders - safe to delete all
       const { error: deleteError } = await supabase
-        .from('habit_reminders')
+        .from("habit_reminders")
         .delete()
-        .eq('habit_id', habit.id);
+        .eq("habit_id", habit.id);
 
       if (deleteError) {
-        logger.warn('[Sync] Failed to delete reminders for habit:', habit.id, deleteError);
+        logger.warn(
+          "[Sync] Failed to delete reminders for habit:",
+          habit.id,
+          deleteError,
+        );
       }
     }
 
-    logger.log('[Sync] Habit synced:', habit.id);
+    logger.log("[Sync] Habit synced:", habit.id);
   } catch (error) {
     // Handle AbortError separately
     if (isAbortError(error)) {
-      logger.warn('[Sync] Habit sync aborted (timeout or navigation):', habit.id);
+      logger.warn(
+        "[Sync] Habit sync aborted (timeout or navigation):",
+        habit.id,
+      );
       return;
     }
-    logger.error('[Sync] Failed to sync habit:', error);
+    logger.error("[Sync] Failed to sync habit:", error);
     // P0-4 Fix: Re-throw for offline queue handlers
     throw error;
   }
@@ -364,34 +423,37 @@ export const deleteHabitFromCloud = async (habitId: string): Promise<void> => {
 
   // Skip granular sync for non-UUID IDs (nanoid) — deletion tracker stays as permanent guard
   if (!isValidUUID(habitId)) {
-    logger.log('[Sync] Skipping granular habit delete (non-UUID ID):', habitId);
+    logger.log("[Sync] Skipping granular habit delete (non-UUID ID):", habitId);
     return;
   }
 
   // If offline, queue for later
   if (!navigator.onLine) {
-    await offlineQueue.enqueue('DELETE_HABIT', habitId, { id: habitId });
-    logger.log('[Sync] Habit delete queued for offline:', habitId);
+    await offlineQueue.enqueue("DELETE_HABIT", habitId, { id: habitId });
+    logger.log("[Sync] Habit delete queued for offline:", habitId);
     return;
   }
 
   try {
     const { error } = await supabase
-      .from('habits')
+      .from("habits")
       .delete()
-      .eq('id', habitId)
-      .eq('user_id', userId);
+      .eq("id", habitId)
+      .eq("user_id", userId);
 
     if (error) throw error;
 
-    logger.log('[Sync] Habit deleted:', habitId);
+    logger.log("[Sync] Habit deleted:", habitId);
   } catch (error) {
     // Handle AbortError separately
     if (isAbortError(error)) {
-      logger.warn('[Sync] Habit delete aborted (timeout or navigation):', habitId);
+      logger.warn(
+        "[Sync] Habit delete aborted (timeout or navigation):",
+        habitId,
+      );
       return;
     }
-    logger.error('[Sync] Failed to delete habit:', error);
+    logger.error("[Sync] Failed to delete habit:", error);
     // P0-4 Fix: Re-throw for offline queue handlers
     throw error;
   }
@@ -401,57 +463,69 @@ export const deleteHabitFromCloud = async (habitId: string): Promise<void> => {
  * Sync habit completion to cloud
  * P1-9 Fix: Now includes offline queue support and error re-throw
  */
-export const syncHabitCompletion = async (habitId: string, date: string, completed: boolean, count?: number, duration?: number): Promise<void> => {
+export const syncHabitCompletion = async (
+  habitId: string,
+  date: string,
+  completed: boolean,
+  count?: number,
+  duration?: number,
+): Promise<void> => {
   const userId = await getCurrentUserId();
   if (!supabase || !userId) return;
 
   // Skip granular sync for non-UUID habit IDs (nanoid)
   if (!isValidUUID(habitId)) {
-    logger.log('[Sync] Skipping granular habit completion sync (non-UUID ID):', habitId);
+    logger.log(
+      "[Sync] Skipping granular habit completion sync (non-UUID ID):",
+      habitId,
+    );
     return;
   }
 
   // P1-9 Fix: Add offline queue support (was missing)
   if (!navigator.onLine) {
-    await offlineQueue.enqueue('TOGGLE_HABIT', `${habitId}_${date}`, {
+    await offlineQueue.enqueue("TOGGLE_HABIT", `${habitId}_${date}`, {
       habitId,
       date,
       completed,
       count,
       duration,
     });
-    logger.log('[Sync] Habit completion queued for offline:', habitId, date);
+    logger.log("[Sync] Habit completion queued for offline:", habitId, date);
     return;
   }
 
   try {
     if (completed) {
-      const { error } = await supabase.from('habit_completions').upsert({
-        user_id: userId,
-        habit_id: habitId,
-        date,
-        count: count || 1,
-        duration: duration || null,
-      }, { onConflict: 'habit_id,date' });
+      const { error } = await supabase.from("habit_completions").upsert(
+        {
+          user_id: userId,
+          habit_id: habitId,
+          date,
+          count: count || 1,
+          duration: duration || null,
+        },
+        { onConflict: "habit_id,date" },
+      );
 
       if (error) throw error;
     } else {
       const { error } = await supabase
-        .from('habit_completions')
+        .from("habit_completions")
         .delete()
-        .eq('habit_id', habitId)
-        .eq('date', date);
+        .eq("habit_id", habitId)
+        .eq("date", date);
 
       if (error) throw error;
     }
-    logger.log('[Sync] Habit completion synced:', habitId, date, completed);
+    logger.log("[Sync] Habit completion synced:", habitId, date, completed);
   } catch (error) {
     // Handle AbortError separately
     if (isAbortError(error)) {
-      logger.warn('[Sync] Habit completion sync aborted:', habitId, date);
+      logger.warn("[Sync] Habit completion sync aborted:", habitId, date);
       return;
     }
-    logger.error('[Sync] Failed to sync habit completion:', error);
+    logger.error("[Sync] Failed to sync habit completion:", error);
     // P0-4 Fix: Re-throw for retry logic
     throw error;
   }
@@ -461,49 +535,57 @@ export const syncHabitCompletion = async (habitId: string, date: string, complet
 // FOCUS SESSION SYNC
 // ============================================
 
-export const syncFocusSession = async (session: FocusSession): Promise<void> => {
+export const syncFocusSession = async (
+  session: FocusSession,
+): Promise<void> => {
   const userId = await getCurrentUserId();
   // Explicit validation to prevent RLS violations with undefined user_id
   if (!supabase) return;
   if (!userId) {
-    logger.warn('[Sync] Cannot sync focus session: User not authenticated');
+    logger.warn("[Sync] Cannot sync focus session: User not authenticated");
     return;
   }
 
   // Skip granular sync for non-UUID IDs (nanoid) — data is persisted via JSONB backup
   if (!isValidUUID(session.id)) {
-    logger.log('[Sync] Skipping granular focus session sync (non-UUID ID):', session.id);
+    logger.log(
+      "[Sync] Skipping granular focus session sync (non-UUID ID):",
+      session.id,
+    );
     return;
   }
 
   // If offline, queue for later sync
   if (!navigator.onLine) {
-    await offlineQueue.enqueue('CREATE_FOCUS_SESSION', session.id, session);
-    logger.log('[Sync] Focus session queued for offline sync:', session.id);
+    await offlineQueue.enqueue("CREATE_FOCUS_SESSION", session.id, session);
+    logger.log("[Sync] Focus session queued for offline sync:", session.id);
     return;
   }
 
   try {
-    const { error } = await supabase.from('focus_sessions').upsert({
-      id: session.id,
-      user_id: userId,
-      duration: session.duration,
-      label: session.label || null,
-      status: session.status || 'completed',
-      reflection: session.reflection || null,
-      date: session.date,
-      completed_at: session.completedAt,
-    }, { onConflict: 'id' });
+    const { error } = await supabase.from("focus_sessions").upsert(
+      {
+        id: session.id,
+        user_id: userId,
+        duration: session.duration,
+        label: session.label || null,
+        status: session.status || "completed",
+        reflection: session.reflection || null,
+        date: session.date,
+        completed_at: session.completedAt,
+      },
+      { onConflict: "id" },
+    );
 
     if (error) throw error;
-    logger.log('[Sync] Focus session synced:', session.id);
+    logger.log("[Sync] Focus session synced:", session.id);
   } catch (error) {
     // Handle AbortError separately
     if (isAbortError(error)) {
-      logger.warn('[Sync] Focus session sync aborted:', session.id);
+      logger.warn("[Sync] Focus session sync aborted:", session.id);
       return;
     }
-    logger.error('[Sync] Failed to sync focus session:', error);
+    logger.error("[Sync] Failed to sync focus session:", error);
     // P0-4 Fix: Re-throw for offline queue handlers
     throw error;
   }
@@ -518,79 +600,90 @@ export const syncGratitude = async (entry: GratitudeEntry): Promise<void> => {
   // Explicit validation to prevent RLS violations with undefined user_id
   if (!supabase) return;
   if (!userId) {
-    logger.warn('[Sync] Cannot sync gratitude: User not authenticated');
+    logger.warn("[Sync] Cannot sync gratitude: User not authenticated");
     return;
   }
 
   // Skip granular sync for non-UUID IDs (nanoid) — data is persisted via JSONB backup
   if (!isValidUUID(entry.id)) {
-    logger.log('[Sync] Skipping granular gratitude sync (non-UUID ID):', entry.id);
+    logger.log(
+      "[Sync] Skipping granular gratitude sync (non-UUID ID):",
+      entry.id,
+    );
     return;
   }
 
   // If offline, queue for later sync
   if (!navigator.onLine) {
-    await offlineQueue.enqueue('CREATE_GRATITUDE', entry.id, entry);
-    logger.log('[Sync] Gratitude queued for offline sync:', entry.id);
+    await offlineQueue.enqueue("CREATE_GRATITUDE", entry.id, entry);
+    logger.log("[Sync] Gratitude queued for offline sync:", entry.id);
     return;
   }
 
   try {
-    const { error } = await supabase.from('gratitude_entries').upsert({
-      id: entry.id,
-      user_id: userId,
-      text: entry.text,
-      date: entry.date,
-      timestamp: entry.timestamp,
-    }, { onConflict: 'id' });
+    const { error } = await supabase.from("gratitude_entries").upsert(
+      {
+        id: entry.id,
+        user_id: userId,
+        text: entry.text,
+        date: entry.date,
+        timestamp: entry.timestamp,
+      },
+      { onConflict: "id" },
+    );
 
     if (error) throw error;
-    logger.log('[Sync] Gratitude synced:', entry.id);
+    logger.log("[Sync] Gratitude synced:", entry.id);
   } catch (error) {
     // Handle AbortError separately
     if (isAbortError(error)) {
-      logger.warn('[Sync] Gratitude sync aborted:', entry.id);
+      logger.warn("[Sync] Gratitude sync aborted:", entry.id);
       return;
     }
-    logger.error('[Sync] Failed to sync gratitude:', error);
+    logger.error("[Sync] Failed to sync gratitude:", error);
     // P0-4 Fix: Re-throw for offline queue handlers
     throw error;
   }
 };
 
-export const deleteGratitudeFromCloud = async (entryId: string): Promise<void> => {
+export const deleteGratitudeFromCloud = async (
+  entryId: string,
+): Promise<void> => {
   const userId = await getCurrentUserId();
   if (!supabase || !userId) return;
 
   // Skip granular sync for non-UUID IDs (nanoid)
   if (!isValidUUID(entryId)) {
-    logger.log('[Sync] Skipping granular gratitude delete (non-UUID ID):', entryId);
+    logger.log(
+      "[Sync] Skipping granular gratitude delete (non-UUID ID):",
+      entryId,
+    );
     return;
   }
 
   // If offline, queue for later
   if (!navigator.onLine) {
-    await offlineQueue.enqueue('DELETE_GRATITUDE', entryId, { id: entryId });
-    logger.log('[Sync] Gratitude delete queued for offline:', entryId);
+    await offlineQueue.enqueue("DELETE_GRATITUDE", entryId, { id: entryId });
+    logger.log("[Sync] Gratitude delete queued for offline:", entryId);
     return;
   }
 
   try {
     const { error } = await supabase
-      .from('gratitude_entries')
+      .from("gratitude_entries")
       .delete()
-      .eq('id', entryId)
-      .eq('user_id', userId);
+      .eq("id", entryId)
+      .eq("user_id", userId);
 
     if (error) throw error;
-    logger.log('[Sync] Gratitude deleted:', entryId);
+    logger.log("[Sync] Gratitude deleted:", entryId);
   } catch (error) {
     // Handle AbortError separately
     if (isAbortError(error)) {
-      logger.warn('[Sync] Gratitude delete aborted:', entryId);
+      logger.warn("[Sync] Gratitude delete aborted:", entryId);
       return;
     }
-    logger.error('[Sync] Failed to delete gratitude:', error);
+    logger.error("[Sync] Failed to delete gratitude:", error);
     // P0-4 Fix: Re-throw for offline queue handlers
     throw error;
   }
@@ -600,31 +693,38 @@ export const deleteGratitudeFromCloud = async (entryId: string): Promise<void> =
 // SETTINGS SYNC
 // ============================================
 
-export const syncSetting = async (key: string, value: unknown): Promise<void> => {
+export const syncSetting = async (
+  key: string,
+  value: unknown,
+): Promise<void> => {
   const userId = await getCurrentUserId();
   // Explicit validation to prevent RLS violations with undefined user_id
   if (!supabase) return;
   if (!userId) {
-    logger.warn('[Sync] Cannot sync setting: User not authenticated');
+    logger.warn("[Sync] Cannot sync setting: User not authenticated");
     return;
   }
 
   try {
-    const { error } = await supabase.from('user_settings').upsert({
-      user_id: userId,
-      key,
-      value,
-    }, { onConflict: 'user_id,key' });
+    const { error } = await supabase.from("user_settings").upsert(
+      {
+        user_id: userId,
+        key,
+        value: value as Json,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "user_id,key" },
+    );
 
     if (error) throw error;
-    logger.log('[Sync] Setting synced:', key);
+    logger.log("[Sync] Setting synced:", key);
   } catch (error) {
     // Handle AbortError separately
     if (isAbortError(error)) {
-      logger.warn('[Sync] Setting sync aborted:', key);
+      logger.warn("[Sync] Setting sync aborted:", key);
       return;
     }
-    logger.error('[Sync] Failed to sync setting:', error);
+    logger.error("[Sync] Failed to sync setting:", error);
     // P0-4 Fix: Re-throw for offline queue handlers
     throw error;
   }
@@ -639,11 +739,11 @@ export const pullFromCloud = async (): Promise<boolean> => {
   // Explicit validation to prevent RLS violations with undefined user_id
   if (!supabase) return false;
   if (!userId) {
-    logger.warn('[Sync] Cannot pull from cloud: User not authenticated');
+    logger.warn("[Sync] Cannot pull from cloud: User not authenticated");
     return false;
   }
 
-  addCategorizedBreadcrumb('sync', 'Starting pullFromCloud');
+  addCategorizedBreadcrumb("sync", "Starting pullFromCloud");
 
   try {
     // Fetch all data in parallel
@@ -659,16 +759,58 @@ export const pullFromCloud = async (): Promise<boolean> => {
       journalPhotosRes,
       journalAudioRes,
     ] = await Promise.all([
-      supabase.from('moods').select('*').eq('user_id', userId).order('date', { ascending: false }).limit(1000),
-      supabase.from('habits').select('*').eq('user_id', userId).eq('is_archived', false).limit(200),
-      supabase.from('habit_completions').select('*').eq('user_id', userId).order('date', { ascending: false }).limit(2000),
-      supabase.from('habit_reminders').select('*').eq('user_id', userId).limit(500),
-      supabase.from('focus_sessions').select('*').eq('user_id', userId).order('date', { ascending: false }).limit(1000),
-      supabase.from('gratitude_entries').select('*').eq('user_id', userId).order('date', { ascending: false }).limit(1000),
-      supabase.from('user_settings').select('*').eq('user_id', userId),
-      supabase.from('journal_entries').select('*').eq('user_id', userId).order('date', { ascending: false }).limit(1000),
-      supabase.from('journal_photos').select('*').eq('user_id', userId).limit(5000),
-      supabase.from('journal_audio').select('*').eq('user_id', userId).limit(3000),
+      supabase
+        .from("moods")
+        .select("*")
+        .eq("user_id", userId)
+        .order("date", { ascending: false })
+        .limit(1000),
+      supabase
+        .from("habits")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("is_archived", false)
+        .limit(200),
+      supabase
+        .from("habit_completions")
+        .select("*")
+        .eq("user_id", userId)
+        .order("date", { ascending: false })
+        .limit(2000),
+      supabase
+        .from("habit_reminders")
+        .select("*")
+        .eq("user_id", userId)
+        .limit(500),
+      supabase
+        .from("focus_sessions")
+        .select("*")
+        .eq("user_id", userId)
+        .order("date", { ascending: false })
+        .limit(1000),
+      supabase
+        .from("gratitude_entries")
+        .select("*")
+        .eq("user_id", userId)
+        .order("date", { ascending: false })
+        .limit(1000),
+      supabase.from("user_settings").select("*").eq("user_id", userId),
+      supabase
+        .from("journal_entries")
+        .select("*")
+        .eq("user_id", userId)
+        .order("date", { ascending: false })
+        .limit(1000),
+      supabase
+        .from("journal_photos")
+        .select("*")
+        .eq("user_id", userId)
+        .limit(5000),
+      supabase
+        .from("journal_audio")
+        .select("*")
+        .eq("user_id", userId)
+        .limit(3000),
     ]);
 
     // Check for errors
@@ -698,7 +840,7 @@ export const pullFromCloud = async (): Promise<boolean> => {
     // Transform cloud data to local format
     const moods: MoodEntry[] = validateArray(
       runtimeMoodEntrySchema,
-      moodsData.map(m => ({
+      moodsData.map((m) => ({
         id: m.id,
         mood: m.mood,
         note: m.note || undefined,
@@ -712,7 +854,7 @@ export const pullFromCloud = async (): Promise<boolean> => {
         emotionTags: m.emotion_tags ?? undefined,
         contexts: m.contexts ?? undefined,
       })),
-      'cloud-moods'
+      "cloud-moods",
     ) as MoodEntry[];
 
     // Group completions by habit → convert to entries format
@@ -727,7 +869,10 @@ export const pullFromCloud = async (): Promise<boolean> => {
       habitEntries[c.date] = { value: c.count > 1 ? c.count * 1000 : 2 };
     }
 
-    const remindersByHabit = new Map<string, Array<{ enabled: boolean; time: string; days: number[] }>>();
+    const remindersByHabit = new Map<
+      string,
+      Array<{ enabled: boolean; time: string; days: number[] }>
+    >();
     for (const r of remindersData) {
       let reminders = remindersByHabit.get(r.habit_id);
       if (!reminders) {
@@ -743,20 +888,27 @@ export const pullFromCloud = async (): Promise<boolean> => {
 
     const habits: Habit[] = validateArray(
       runtimeHabitSchema,
-      habitsData.map(h => {
+      habitsData.map((h) => {
         const entries = entriesByHabit.get(h.id) || {};
         const reminders = remindersByHabit.get(h.id) || [];
         // Map old cloud type → new habitType
-        const cloudType = h.type || 'daily';
-        const habitType = (cloudType === 'multiple' || cloudType === 'reduce') ? 'numerical' : 'boolean';
+        const cloudType = h.type || "daily";
+        const habitType =
+          cloudType === "multiple" || cloudType === "reduce"
+            ? "numerical"
+            : "boolean";
         // Map old cloud frequency → new ratio
-        const cloudFreq = h.frequency || 'daily';
-        const frequency = cloudFreq === 'weekly'
-          ? { numerator: 1, denominator: 7 }
-          : { numerator: 1, denominator: 1 };
+        const cloudFreq = h.frequency || "daily";
+        const frequency =
+          cloudFreq === "weekly"
+            ? { numerator: 1, denominator: 7 }
+            : { numerator: 1, denominator: 1 };
         // Parse color: try number, fallback to string
         const colorRaw = h.color;
-        const color = typeof colorRaw === 'string' && /^\d+$/.test(colorRaw) ? parseInt(colorRaw, 10) : colorRaw;
+        const color =
+          typeof colorRaw === "string" && /^\d+$/.test(colorRaw)
+            ? parseInt(colorRaw, 10)
+            : colorRaw;
 
         return {
           id: h.id,
@@ -769,21 +921,21 @@ export const pullFromCloud = async (): Promise<boolean> => {
           habitType,
           reminders,
           frequency,
-          question: '',
-          description: '',
+          question: "",
+          description: "",
           isArchived: false,
           position: 0,
           targetValue: h.daily_target || h.target_count || 0,
-          targetType: cloudType === 'reduce' ? 'atMost' : 'atLeast',
-          unit: '',
+          targetType: cloudType === "reduce" ? "atMost" : "atLeast",
+          unit: "",
         };
       }),
-      'cloud-habits'
+      "cloud-habits",
     ) as Habit[];
 
     const focusSessions: FocusSession[] = validateArray(
       runtimeFocusSessionSchema,
-      focusData.map(f => ({
+      focusData.map((f) => ({
         id: f.id,
         duration: f.duration,
         completedAt: f.completed_at,
@@ -792,44 +944,45 @@ export const pullFromCloud = async (): Promise<boolean> => {
         status: f.status,
         reflection: f.reflection || undefined,
       })),
-      'cloud-focusSessions'
+      "cloud-focusSessions",
     ) as FocusSession[];
 
     const gratitudeEntries: GratitudeEntry[] = validateArray(
       runtimeGratitudeEntrySchema,
-      gratitudeData.map(g => ({
+      gratitudeData.map((g) => ({
         id: g.id,
         text: g.text,
         date: g.date,
         timestamp: g.timestamp,
       })),
-      'cloud-gratitudeEntries'
+      "cloud-gratitudeEntries",
     ) as GratitudeEntry[];
 
     // Transform journal data from cloud to local format
     // Note: photos/audio only have metadata here — binary data lives in Storage
     // and will be lazily downloaded when the user views an entry
-    const journalEntries: JournalEntry[] = journalEntriesData.map(e => ({
+    const journalEntries: JournalEntry[] = journalEntriesData.map((e) => ({
       id: e.id,
       date: e.date,
       title: e.title,
       content: e.content,
       stickers: e.stickers,
-      mood: e.mood as JournalEntry['mood'],
+      mood: e.mood as JournalEntry["mood"],
       tags: e.tags,
       templateId: e.template_id || undefined,
-      habitSnapshot: (e.habit_snapshot as JournalEntry['habitSnapshot']) || undefined,
+      habitSnapshot:
+        (e.habit_snapshot as JournalEntry["habitSnapshot"]) || undefined,
       photoIds: e.photo_ids,
       audioIds: e.audio_ids,
       createdAt: e.created_at,
       updatedAt: e.updated_at,
     }));
 
-    const journalPhotos: JournalPhoto[] = journalPhotosData.map(p => ({
+    const journalPhotos: JournalPhoto[] = journalPhotosData.map((p) => ({
       id: p.id,
       entryId: p.entry_id,
-      data: '',         // Binary data not stored in Supabase table — download from Storage on demand
-      thumbnail: '',
+      data: "", // Binary data not stored in Supabase table — download from Storage on demand
+      thumbnail: "",
       width: p.width,
       height: p.height,
       createdAt: p.created_at,
@@ -837,10 +990,10 @@ export const pullFromCloud = async (): Promise<boolean> => {
       storageUrl: p.storage_url || undefined,
     }));
 
-    const journalAudioItems: JournalAudio[] = journalAudioData.map(a => ({
+    const journalAudioItems: JournalAudio[] = journalAudioData.map((a) => ({
       id: a.id,
       entryId: a.entry_id,
-      data: '',         // Binary data not stored in Supabase table — download from Storage on demand
+      data: "", // Binary data not stored in Supabase table — download from Storage on demand
       duration: a.duration,
       mimeType: a.mime_type,
       createdAt: a.created_at,
@@ -851,65 +1004,123 @@ export const pullFromCloud = async (): Promise<boolean> => {
     // P2-4 Fix: Save to local DB with explicit transaction error handling
     // Dexie transactions are atomic - if any operation fails, all changes roll back
     try {
-      await db.transaction('rw', [db.moods, db.habits, db.focusSessions, db.gratitudeEntries, db.settings, db.journalEntries, db.journalPhotos, db.journalAudio], async () => {
-        // Upsert all data
-        if (moods.length) await db.moods.bulkPut(moods);
+      await db.transaction(
+        "rw",
+        [
+          db.moods,
+          db.habits,
+          db.focusSessions,
+          db.gratitudeEntries,
+          db.settings,
+          db.journalEntries,
+          db.journalPhotos,
+          db.journalAudio,
+        ],
+        async () => {
+          // Upsert all data
+          if (moods.length) await db.moods.bulkPut(moods);
 
-        // Filter out locally deleted habits before saving — prevents resurrection
-        if (habits.length) {
-          const { getDeletedHabitIds } = await import('@/storage/deletionTracker');
-          const deletedIds = await getDeletedHabitIds();
-          const filteredHabits = deletedIds.size > 0
-            ? habits.filter(h => !deletedIds.has(h.id))
-            : habits;
-          if (filteredHabits.length) await db.habits.bulkPut(filteredHabits);
-        }
-        if (focusSessions.length) await db.focusSessions.bulkPut(focusSessions);
-        if (gratitudeEntries.length) await db.gratitudeEntries.bulkPut(gratitudeEntries);
+          // Filter out locally deleted habits before saving — prevents resurrection
+          if (habits.length) {
+            const { getDeletedHabitIds } =
+              await import("@/storage/deletionTracker");
+            const deletedIds = await getDeletedHabitIds();
+            const filteredHabits =
+              deletedIds.size > 0
+                ? habits.filter((h) => !deletedIds.has(h.id))
+                : habits;
+            if (filteredHabits.length) await db.habits.bulkPut(filteredHabits);
+          }
+          if (focusSessions.length)
+            await db.focusSessions.bulkPut(focusSessions);
+          if (gratitudeEntries.length)
+            await db.gratitudeEntries.bulkPut(gratitudeEntries);
 
-        // Journal entries: use updatedAt-based conflict resolution + deletion tracking
-        if (journalEntries.length) {
-          const { getDeletedJournalEntryIds } = await import('@/storage/deletionTracker');
-          const deletedEntryIds = await getDeletedJournalEntryIds();
+          // Journal entries: use updatedAt-based conflict resolution + deletion tracking
+          if (journalEntries.length) {
+            const { getDeletedJournalEntryIds } =
+              await import("@/storage/deletionTracker");
+            const deletedEntryIds = await getDeletedJournalEntryIds();
 
-          const localEntries = await db.journalEntries.toArray();
-          const localMap = new Map(localEntries.map(e => [e.id, e]));
-          const merged = journalEntries
-            .filter(remote => !deletedEntryIds.has(remote.id))
-            .map(remote => {
-              const local = localMap.get(remote.id);
-              if (!local) return remote;
-              // Keep whichever has the newer updatedAt
-              return local.updatedAt > remote.updatedAt ? local : remote;
-            });
-          if (merged.length) await db.journalEntries.bulkPut(merged);
+            const localEntries = await db.journalEntries.toArray();
+            const localMap = new Map(localEntries.map((e) => [e.id, e]));
+            const merged = journalEntries
+              .filter((remote) => !deletedEntryIds.has(remote.id))
+              .map((remote) => {
+                const local = localMap.get(remote.id);
+                if (!local) return remote;
+                // Keep whichever has the newer updatedAt
+                return local.updatedAt > remote.updatedAt ? local : remote;
+              });
+            if (merged.length) await db.journalEntries.bulkPut(merged);
 
-          // Journal photos: merge — filter out deleted entries + preserve local binary data
-          if (journalPhotos.length) {
-            const filteredPhotos = deletedEntryIds.size > 0
-              ? journalPhotos.filter(p => !deletedEntryIds.has(p.entryId))
-              : journalPhotos;
-            if (filteredPhotos.length) {
+            // Journal photos: merge — filter out deleted entries + preserve local binary data
+            if (journalPhotos.length) {
+              const filteredPhotos =
+                deletedEntryIds.size > 0
+                  ? journalPhotos.filter((p) => !deletedEntryIds.has(p.entryId))
+                  : journalPhotos;
+              if (filteredPhotos.length) {
+                const localPhotos = await db.journalPhotos.toArray();
+                const localPhotoMap = new Map(
+                  localPhotos.map((p) => [p.id, p]),
+                );
+                const mergedPhotos = filteredPhotos.map((remote) => {
+                  const local = localPhotoMap.get(remote.id);
+                  if (local && local.data)
+                    return {
+                      ...remote,
+                      data: local.data,
+                      thumbnail: local.thumbnail,
+                    };
+                  return remote;
+                });
+                await db.journalPhotos.bulkPut(mergedPhotos);
+              }
+            }
+
+            // Journal audio: same logic as photos
+            if (journalAudioItems.length) {
+              const filteredAudio =
+                deletedEntryIds.size > 0
+                  ? journalAudioItems.filter(
+                      (a) => !deletedEntryIds.has(a.entryId),
+                    )
+                  : journalAudioItems;
+              if (filteredAudio.length) {
+                const localAudio = await db.journalAudio.toArray();
+                const localAudioMap = new Map(localAudio.map((a) => [a.id, a]));
+                const mergedAudio = filteredAudio.map((remote) => {
+                  const local = localAudioMap.get(remote.id);
+                  if (local && local.data)
+                    return { ...remote, data: local.data };
+                  return remote;
+                });
+                await db.journalAudio.bulkPut(mergedAudio);
+              }
+            }
+          } else {
+            // No journal entries to merge, but still handle photos/audio
+            if (journalPhotos.length) {
               const localPhotos = await db.journalPhotos.toArray();
-              const localPhotoMap = new Map(localPhotos.map(p => [p.id, p]));
-              const mergedPhotos = filteredPhotos.map(remote => {
+              const localPhotoMap = new Map(localPhotos.map((p) => [p.id, p]));
+              const mergedPhotos = journalPhotos.map((remote) => {
                 const local = localPhotoMap.get(remote.id);
-                if (local && local.data) return { ...remote, data: local.data, thumbnail: local.thumbnail };
+                if (local && local.data)
+                  return {
+                    ...remote,
+                    data: local.data,
+                    thumbnail: local.thumbnail,
+                  };
                 return remote;
               });
               await db.journalPhotos.bulkPut(mergedPhotos);
             }
-          }
 
-          // Journal audio: same logic as photos
-          if (journalAudioItems.length) {
-            const filteredAudio = deletedEntryIds.size > 0
-              ? journalAudioItems.filter(a => !deletedEntryIds.has(a.entryId))
-              : journalAudioItems;
-            if (filteredAudio.length) {
+            if (journalAudioItems.length) {
               const localAudio = await db.journalAudio.toArray();
-              const localAudioMap = new Map(localAudio.map(a => [a.id, a]));
-              const mergedAudio = filteredAudio.map(remote => {
+              const localAudioMap = new Map(localAudio.map((a) => [a.id, a]));
+              const mergedAudio = journalAudioItems.map((remote) => {
                 const local = localAudioMap.get(remote.id);
                 if (local && local.data) return { ...remote, data: local.data };
                 return remote;
@@ -917,59 +1128,50 @@ export const pullFromCloud = async (): Promise<boolean> => {
               await db.journalAudio.bulkPut(mergedAudio);
             }
           }
-        } else {
-          // No journal entries to merge, but still handle photos/audio
-          if (journalPhotos.length) {
-            const localPhotos = await db.journalPhotos.toArray();
-            const localPhotoMap = new Map(localPhotos.map(p => [p.id, p]));
-            const mergedPhotos = journalPhotos.map(remote => {
-              const local = localPhotoMap.get(remote.id);
-              if (local && local.data) return { ...remote, data: local.data, thumbnail: local.thumbnail };
-              return remote;
-            });
-            await db.journalPhotos.bulkPut(mergedPhotos);
-          }
 
-          if (journalAudioItems.length) {
-            const localAudio = await db.journalAudio.toArray();
-            const localAudioMap = new Map(localAudio.map(a => [a.id, a]));
-            const mergedAudio = journalAudioItems.map(remote => {
-              const local = localAudioMap.get(remote.id);
-              if (local && local.data) return { ...remote, data: local.data };
-              return remote;
-            });
-            await db.journalAudio.bulkPut(mergedAudio);
+          // Settings
+          for (const s of settingsData) {
+            await db.settings.put({ key: s.key, value: s.value });
           }
-        }
-
-        // Settings
-        for (const s of settingsData) {
-          await db.settings.put({ key: s.key, value: s.value });
-        }
-      });
+        },
+      );
     } catch (transactionError) {
       // P2-4 Fix: Emit event for UI awareness when transaction fails
-      logger.error('[Sync] Transaction failed during pullFromCloud:', transactionError);
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('zenflow:sync-transaction-failed', {
-          detail: {
-            operation: 'pullFromCloud',
-            error: transactionError instanceof Error ? transactionError.message : 'Transaction failed',
-            dataAffected: { moods: moods.length, habits: habits.length, focusSessions: focusSessions.length, gratitudeEntries: gratitudeEntries.length, journalEntries: journalEntries.length }
-          }
-        }));
+      logger.error(
+        "[Sync] Transaction failed during pullFromCloud:",
+        transactionError,
+      );
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("zenflow:sync-transaction-failed", {
+            detail: {
+              operation: "pullFromCloud",
+              error:
+                transactionError instanceof Error
+                  ? transactionError.message
+                  : "Transaction failed",
+              dataAffected: {
+                moods: moods.length,
+                habits: habits.length,
+                focusSessions: focusSessions.length,
+                gratitudeEntries: gratitudeEntries.length,
+                journalEntries: journalEntries.length,
+              },
+            },
+          }),
+        );
       }
       throw transactionError; // Re-throw to be caught by outer catch
     }
 
-    addCategorizedBreadcrumb('sync', 'pullFromCloud completed', {
+    addCategorizedBreadcrumb("sync", "pullFromCloud completed", {
       moods: moods.length,
       habits: habits.length,
       focusSessions: focusSessions.length,
       gratitudeEntries: gratitudeEntries.length,
       journalEntries: journalEntries.length,
     });
-    logger.log('[Sync] Pulled from cloud:', {
+    logger.log("[Sync] Pulled from cloud:", {
       moods: moods.length,
       habits: habits.length,
       focusSessions: focusSessions.length,
@@ -981,13 +1183,18 @@ export const pullFromCloud = async (): Promise<boolean> => {
   } catch (error) {
     // Handle AbortError gracefully
     if (isAbortError(error)) {
-      addCategorizedBreadcrumb('sync', 'pullFromCloud aborted', {}, 'warning');
-      logger.warn('[Sync] pullFromCloud aborted (timeout or navigation)');
+      addCategorizedBreadcrumb("sync", "pullFromCloud aborted", {}, "warning");
+      logger.warn("[Sync] pullFromCloud aborted (timeout or navigation)");
       return false;
     }
-    addCategorizedBreadcrumb('sync', 'pullFromCloud failed', { error: (error as Error).message }, 'error');
-    logger.error('[Sync] Failed to pull from cloud:', error);
-    logger.warn('[Sync] Operation failed, will retry via orchestrator');
+    addCategorizedBreadcrumb(
+      "sync",
+      "pullFromCloud failed",
+      { error: (error as Error).message },
+      "error",
+    );
+    logger.error("[Sync] Failed to pull from cloud:", error);
+    logger.warn("[Sync] Operation failed, will retry via orchestrator");
     return false;
   }
 };
@@ -1001,14 +1208,23 @@ export const pushToCloud = async (): Promise<boolean> => {
   // Explicit validation to prevent RLS violations with undefined user_id
   if (!supabase) return false;
   if (!userId) {
-    logger.warn('[Sync] Cannot push to cloud: User not authenticated');
+    logger.warn("[Sync] Cannot push to cloud: User not authenticated");
     return false;
   }
 
-  addCategorizedBreadcrumb('sync', 'Starting pushToCloud');
+  addCategorizedBreadcrumb("sync", "Starting pushToCloud");
 
   try {
-    const [moods, habits, focusSessions, gratitudeEntries, settings, journalEntries, journalPhotos, journalAudio] = await Promise.all([
+    const [
+      moods,
+      habits,
+      focusSessions,
+      gratitudeEntries,
+      settings,
+      journalEntries,
+      journalPhotos,
+      journalAudio,
+    ] = await Promise.all([
       db.moods.toArray(),
       db.habits.toArray(),
       db.focusSessions.toArray(),
@@ -1020,23 +1236,23 @@ export const pushToCloud = async (): Promise<boolean> => {
     ]);
 
     // Sync all data in batches to avoid overwhelming the backend
-    await processBatched(moods, m => syncMood(m));
-    await processBatched(habits, h => syncHabit(h));
-    await processBatched(focusSessions, f => syncFocusSession(f));
-    await processBatched(gratitudeEntries, g => syncGratitude(g));
-    await processBatched(settings, s => syncSetting(s.key, s.value));
-    await processBatched(journalEntries, e => syncJournalEntry(e));
-    await processBatched(journalPhotos, p => syncJournalPhoto(p));
-    await processBatched(journalAudio, a => syncJournalAudio(a));
+    await processBatched(moods, (m) => syncMood(m));
+    await processBatched(habits, (h) => syncHabit(h));
+    await processBatched(focusSessions, (f) => syncFocusSession(f));
+    await processBatched(gratitudeEntries, (g) => syncGratitude(g));
+    await processBatched(settings, (s) => syncSetting(s.key, s.value));
+    await processBatched(journalEntries, (e) => syncJournalEntry(e));
+    await processBatched(journalPhotos, (p) => syncJournalPhoto(p));
+    await processBatched(journalAudio, (a) => syncJournalAudio(a));
 
-    addCategorizedBreadcrumb('sync', 'pushToCloud completed', {
+    addCategorizedBreadcrumb("sync", "pushToCloud completed", {
       moods: moods.length,
       habits: habits.length,
       focusSessions: focusSessions.length,
       gratitudeEntries: gratitudeEntries.length,
       journalEntries: journalEntries.length,
     });
-    logger.log('[Sync] Pushed to cloud:', {
+    logger.log("[Sync] Pushed to cloud:", {
       moods: moods.length,
       habits: habits.length,
       focusSessions: focusSessions.length,
@@ -1048,13 +1264,18 @@ export const pushToCloud = async (): Promise<boolean> => {
   } catch (error) {
     // Handle AbortError gracefully
     if (isAbortError(error)) {
-      addCategorizedBreadcrumb('sync', 'pushToCloud aborted', {}, 'warning');
-      logger.warn('[Sync] pushToCloud aborted (timeout or navigation)');
+      addCategorizedBreadcrumb("sync", "pushToCloud aborted", {}, "warning");
+      logger.warn("[Sync] pushToCloud aborted (timeout or navigation)");
       return false;
     }
-    addCategorizedBreadcrumb('sync', 'pushToCloud failed', { error: (error as Error).message }, 'error');
-    logger.error('[Sync] Failed to push to cloud:', error);
-    logger.warn('[Sync] Operation failed, will retry via orchestrator');
+    addCategorizedBreadcrumb(
+      "sync",
+      "pushToCloud failed",
+      { error: (error as Error).message },
+      "error",
+    );
+    logger.error("[Sync] Failed to push to cloud:", error);
+    logger.warn("[Sync] Operation failed, will retry via orchestrator");
     return false;
   }
 };
@@ -1074,7 +1295,7 @@ export const pushToCloud = async (): Promise<boolean> => {
  */
 export const subscribeToRealtime = async (): Promise<void> => {
   // Disabled to reduce WAL overhead - data syncs on app resume via pullFromCloud()
-  logger.log('[Realtime] Subscriptions disabled for performance optimization');
+  logger.log("[Realtime] Subscriptions disabled for performance optimization");
   return;
 };
 
@@ -1083,19 +1304,27 @@ export const unsubscribeFromRealtime = async (): Promise<void> => {
 
   await supabase.removeChannel(realtimeChannel);
   realtimeChannel = null;
-  logger.log('[Realtime] Unsubscribed');
+  logger.log("[Realtime] Unsubscribed");
 };
 
 // Handle realtime changes from other devices
-const _handleRealtimeChange = async (table: string, payload: { eventType: string; new: Record<string, unknown> | null; old: Record<string, unknown> | null }) => {
-  logger.log('[Realtime] Change received:', table, payload.eventType);
+const _handleRealtimeChange = async (
+  table: string,
+  payload: {
+    eventType: string;
+    new: Record<string, unknown> | null;
+    old: Record<string, unknown> | null;
+  },
+) => {
+  logger.log("[Realtime] Change received:", table, payload.eventType);
 
   try {
     switch (table) {
-      case 'moods':
-        if (payload.eventType === 'DELETE') {
+      case "moods":
+        if (payload.eventType === "DELETE") {
           const oldId = payload.old?.id;
-          if (typeof oldId === 'string' && oldId.length > 0) await db.moods.delete(oldId);
+          if (typeof oldId === "string" && oldId.length > 0)
+            await db.moods.delete(oldId);
         } else if (payload.new) {
           const moodData = payload.new;
           const mapped = {
@@ -1107,67 +1336,95 @@ const _handleRealtimeChange = async (table: string, payload: { eventType: string
             tags: Array.isArray(moodData.tags) ? moodData.tags : [],
             emotion: moodData.emotion || undefined,
             // State of Mind fields
-            valence: typeof moodData.valence === 'number' ? moodData.valence : undefined,
+            valence:
+              typeof moodData.valence === "number"
+                ? moodData.valence
+                : undefined,
             logType: moodData.log_type || undefined,
-            emotionTags: Array.isArray(moodData.emotion_tags) ? moodData.emotion_tags : undefined,
-            contexts: Array.isArray(moodData.contexts) ? moodData.contexts : undefined,
+            emotionTags: Array.isArray(moodData.emotion_tags)
+              ? moodData.emotion_tags
+              : undefined,
+            contexts: Array.isArray(moodData.contexts)
+              ? moodData.contexts
+              : undefined,
           };
           const validated = runtimeMoodEntrySchema.safeParse(mapped);
           if (validated.success) {
             await db.moods.put(validated.data as MoodEntry);
           } else {
-            logger.warn('[Realtime] Invalid mood data received, skipping:', validated.error.issues[0]);
+            logger.warn(
+              "[Realtime] Invalid mood data received, skipping:",
+              validated.error.issues[0],
+            );
           }
         }
         break;
 
-      case 'focus_sessions':
-        if (payload.eventType === 'DELETE') {
+      case "focus_sessions":
+        if (payload.eventType === "DELETE") {
           const oldId = payload.old?.id;
-          if (typeof oldId === 'string' && oldId.length > 0) await db.focusSessions.delete(oldId);
+          if (typeof oldId === "string" && oldId.length > 0)
+            await db.focusSessions.delete(oldId);
         } else if (payload.new) {
           const focusData = payload.new;
           const mapped = {
             id: focusData.id,
-            duration: typeof focusData.duration === 'number' ? focusData.duration : 0,
-            completedAt: typeof focusData.completed_at === 'number' ? focusData.completed_at : Date.now(),
+            duration:
+              typeof focusData.duration === "number" ? focusData.duration : 0,
+            completedAt:
+              typeof focusData.completed_at === "number"
+                ? focusData.completed_at
+                : Date.now(),
             date: focusData.date,
             label: focusData.label || undefined,
-            status: focusData.status || 'completed',
-            reflection: typeof focusData.reflection === 'number' ? focusData.reflection : undefined,
+            status: focusData.status || "completed",
+            reflection:
+              typeof focusData.reflection === "number"
+                ? focusData.reflection
+                : undefined,
           };
           const validated = runtimeFocusSessionSchema.safeParse(mapped);
           if (validated.success) {
             await db.focusSessions.put(validated.data as FocusSession);
           } else {
-            logger.warn('[Realtime] Invalid focus session data received, skipping:', validated.error.issues[0]);
+            logger.warn(
+              "[Realtime] Invalid focus session data received, skipping:",
+              validated.error.issues[0],
+            );
           }
         }
         break;
 
-      case 'gratitude_entries':
-        if (payload.eventType === 'DELETE') {
+      case "gratitude_entries":
+        if (payload.eventType === "DELETE") {
           const oldId = payload.old?.id;
-          if (typeof oldId === 'string' && oldId.length > 0) await db.gratitudeEntries.delete(oldId);
+          if (typeof oldId === "string" && oldId.length > 0)
+            await db.gratitudeEntries.delete(oldId);
         } else if (payload.new) {
           const gratData = payload.new;
           const mapped = {
             id: gratData.id,
             text: gratData.text,
             date: gratData.date,
-            timestamp: typeof gratData.timestamp === 'number' ? gratData.timestamp : Date.now(),
+            timestamp:
+              typeof gratData.timestamp === "number"
+                ? gratData.timestamp
+                : Date.now(),
           };
           const validated = runtimeGratitudeEntrySchema.safeParse(mapped);
           if (validated.success) {
             await db.gratitudeEntries.put(validated.data as GratitudeEntry);
           } else {
-            logger.warn('[Realtime] Invalid gratitude data received, skipping:', validated.error.issues[0]);
+            logger.warn(
+              "[Realtime] Invalid gratitude data received, skipping:",
+              validated.error.issues[0],
+            );
           }
         }
         break;
 
-      case 'habits':
-      case 'habit_completions':
+      case "habits":
+      case "habit_completions":
         // For habits, we need to refetch the full habit with completions
         // This is simpler than trying to merge partial updates
         await pullFromCloud();
@@ -1175,9 +1432,13 @@ const _handleRealtimeChange = async (table: string, payload: { eventType: string
     }
 
     // Dispatch custom event to notify UI
-    window.dispatchEvent(new CustomEvent('realtime-sync', { detail: { table, event: payload.eventType } }));
+    window.dispatchEvent(
+      new CustomEvent("realtime-sync", {
+        detail: { table, event: payload.eventType },
+      }),
+    );
   } catch (error) {
-    logger.error('[Realtime] Failed to handle change:', error);
+    logger.error("[Realtime] Failed to handle change:", error);
   }
 };
 
@@ -1193,63 +1454,72 @@ export const syncJournalEntry = async (entry: JournalEntry): Promise<void> => {
   const userId = await getCurrentUserId();
   if (!supabase) return;
   if (!userId) {
-    logger.warn('[Sync] Cannot sync journal entry: User not authenticated');
+    logger.warn("[Sync] Cannot sync journal entry: User not authenticated");
     return;
   }
 
   if (!navigator.onLine) {
-    await offlineQueue.enqueue('SYNC_JOURNAL_ENTRY', entry.id, entry);
-    logger.log('[Sync] Journal entry queued for offline sync:', entry.id);
+    await offlineQueue.enqueue("SYNC_JOURNAL_ENTRY", entry.id, entry);
+    logger.log("[Sync] Journal entry queued for offline sync:", entry.id);
     return;
   }
 
   try {
-    const { error } = await supabase.from('journal_entries').upsert({
-      id: entry.id,
-      user_id: userId,
-      date: entry.date,
-      title: entry.title,
-      content: entry.content,
-      stickers: entry.stickers,
-      mood: entry.mood || null,
-      tags: entry.tags,
-      template_id: entry.templateId || null,
-      habit_snapshot: entry.habitSnapshot || null,
-      photo_ids: entry.photoIds,
-      audio_ids: entry.audioIds || [],
-      created_at: entry.createdAt,
-      updated_at: entry.updatedAt,
-    }, { onConflict: 'id' });
+    const { error } = await supabase.from("journal_entries").upsert(
+      {
+        id: entry.id,
+        user_id: userId,
+        date: entry.date,
+        title: entry.title,
+        content: entry.content,
+        stickers: entry.stickers,
+        mood: entry.mood || null,
+        tags: entry.tags,
+        template_id: entry.templateId || null,
+        habit_snapshot: (entry.habitSnapshot as unknown as Json) || null,
+        photo_ids: entry.photoIds,
+        audio_ids: entry.audioIds || [],
+        created_at: entry.createdAt,
+        updated_at: entry.updatedAt,
+      },
+      { onConflict: "id" },
+    );
 
     if (error) throw error;
-    logger.log('[Sync] Journal entry synced:', entry.id);
+    logger.log("[Sync] Journal entry synced:", entry.id);
 
     // Fire-and-forget: generate vector embedding for semantic search
-    generateEmbeddings([entry.id]).catch(err => logger.warn('[Sync]', 'Embedding generation failed:', err));
+    generateEmbeddings([entry.id]).catch((err) =>
+      logger.warn("[Sync]", "Embedding generation failed:", err),
+    );
   } catch (error) {
     if (isAbortError(error)) {
-      logger.warn('[Sync] Journal entry sync aborted:', entry.id);
+      logger.warn("[Sync] Journal entry sync aborted:", entry.id);
       return;
     }
     const isNetworkError = detectNetworkError(error);
     if (isNetworkError) {
-      await offlineQueue.enqueue('SYNC_JOURNAL_ENTRY', entry.id, entry);
-      logger.log('[Sync] Journal entry queued after network error:', entry.id);
+      await offlineQueue.enqueue("SYNC_JOURNAL_ENTRY", entry.id, entry);
+      logger.log("[Sync] Journal entry queued after network error:", entry.id);
     } else {
       // Graceful: log but don't throw — IndexedDB has the data,
       // cloud sync will retry. Common cause: migration not applied (404).
-      logger.warn('[Sync] Journal entry sync failed (non-network):', error);
+      logger.warn("[Sync] Journal entry sync failed (non-network):", error);
     }
   }
 };
 
-export const deleteJournalEntryFromCloud = async (entryId: string): Promise<void> => {
+export const deleteJournalEntryFromCloud = async (
+  entryId: string,
+): Promise<void> => {
   const userId = await getCurrentUserId();
   if (!supabase || !userId) return;
 
   if (!navigator.onLine) {
-    await offlineQueue.enqueue('DELETE_JOURNAL_ENTRY', entryId, { id: entryId });
-    logger.log('[Sync] Journal entry delete queued for offline:', entryId);
+    await offlineQueue.enqueue("DELETE_JOURNAL_ENTRY", entryId, {
+      id: entryId,
+    });
+    logger.log("[Sync] Journal entry delete queued for offline:", entryId);
     return;
   }
 
@@ -1257,22 +1527,37 @@ export const deleteJournalEntryFromCloud = async (entryId: string): Promise<void
     // Delete entry + associated photos/audio metadata from cloud tables
     // (Storage files are cleaned up separately by journalStorage.ts)
     const [entryRes, photosRes, audioRes] = await Promise.all([
-      supabase.from('journal_entries').delete().eq('id', entryId).eq('user_id', userId),
-      supabase.from('journal_photos').delete().eq('entry_id', entryId).eq('user_id', userId),
-      supabase.from('journal_audio').delete().eq('entry_id', entryId).eq('user_id', userId),
+      supabase
+        .from("journal_entries")
+        .delete()
+        .eq("id", entryId)
+        .eq("user_id", userId),
+      supabase
+        .from("journal_photos")
+        .delete()
+        .eq("entry_id", entryId)
+        .eq("user_id", userId),
+      supabase
+        .from("journal_audio")
+        .delete()
+        .eq("entry_id", entryId)
+        .eq("user_id", userId),
     ]);
 
-    if (entryRes.error) logger.warn('[Sync] Journal entry delete failed:', entryRes.error);
-    if (photosRes.error) logger.warn('[Sync] Journal photos delete failed:', photosRes.error);
-    if (audioRes.error) logger.warn('[Sync] Journal audio delete failed:', audioRes.error);
+    if (entryRes.error)
+      logger.warn("[Sync] Journal entry delete failed:", entryRes.error);
+    if (photosRes.error)
+      logger.warn("[Sync] Journal photos delete failed:", photosRes.error);
+    if (audioRes.error)
+      logger.warn("[Sync] Journal audio delete failed:", audioRes.error);
 
-    logger.log('[Sync] Journal entry deleted from cloud:', entryId);
+    logger.log("[Sync] Journal entry deleted from cloud:", entryId);
   } catch (error) {
     if (isAbortError(error)) {
-      logger.warn('[Sync] Journal entry delete aborted:', entryId);
+      logger.warn("[Sync] Journal entry delete aborted:", entryId);
       return;
     }
-    logger.warn('[Sync] Failed to delete journal entry from cloud:', error);
+    logger.warn("[Sync] Failed to delete journal entry from cloud:", error);
   }
 };
 
@@ -1285,22 +1570,25 @@ export const syncJournalPhoto = async (photo: JournalPhoto): Promise<void> => {
   if (!supabase || !userId) return;
 
   try {
-    const { error } = await supabase.from('journal_photos').upsert({
-      id: photo.id,
-      user_id: userId,
-      entry_id: photo.entryId,
-      width: photo.width,
-      height: photo.height,
-      storage_path: photo.storagePath || null,
-      storage_url: photo.storageUrl || null,
-      created_at: photo.createdAt,
-    }, { onConflict: 'id' });
+    const { error } = await supabase.from("journal_photos").upsert(
+      {
+        id: photo.id,
+        user_id: userId,
+        entry_id: photo.entryId,
+        width: photo.width,
+        height: photo.height,
+        storage_path: photo.storagePath || null,
+        storage_url: photo.storageUrl || null,
+        created_at: photo.createdAt,
+      },
+      { onConflict: "id" },
+    );
 
     if (error) throw error;
-    logger.log('[Sync] Journal photo metadata synced:', photo.id);
+    logger.log("[Sync] Journal photo metadata synced:", photo.id);
   } catch (error) {
     if (!isAbortError(error)) {
-      logger.warn('[Sync] Journal photo sync failed:', error);
+      logger.warn("[Sync] Journal photo sync failed:", error);
     }
   }
 };
@@ -1313,48 +1601,63 @@ export const syncJournalAudio = async (audio: JournalAudio): Promise<void> => {
   if (!supabase || !userId) return;
 
   try {
-    const { error } = await supabase.from('journal_audio').upsert({
-      id: audio.id,
-      user_id: userId,
-      entry_id: audio.entryId,
-      duration: audio.duration,
-      mime_type: audio.mimeType,
-      storage_path: audio.storagePath || null,
-      storage_url: audio.storageUrl || null,
-      created_at: audio.createdAt,
-    }, { onConflict: 'id' });
+    const { error } = await supabase.from("journal_audio").upsert(
+      {
+        id: audio.id,
+        user_id: userId,
+        entry_id: audio.entryId,
+        duration: audio.duration,
+        mime_type: audio.mimeType,
+        storage_path: audio.storagePath || null,
+        storage_url: audio.storageUrl || null,
+        created_at: audio.createdAt,
+      },
+      { onConflict: "id" },
+    );
 
     if (error) throw error;
-    logger.log('[Sync] Journal audio metadata synced:', audio.id);
+    logger.log("[Sync] Journal audio metadata synced:", audio.id);
   } catch (error) {
     if (!isAbortError(error)) {
-      logger.warn('[Sync] Journal audio sync failed:', error);
+      logger.warn("[Sync] Journal audio sync failed:", error);
     }
   }
 };
 
-export const deleteJournalPhotoFromCloud = async (photoId: string): Promise<void> => {
+export const deleteJournalPhotoFromCloud = async (
+  photoId: string,
+): Promise<void> => {
   const userId = await getCurrentUserId();
   if (!supabase || !userId) return;
 
   try {
-    await supabase.from('journal_photos').delete().eq('id', photoId).eq('user_id', userId);
+    await supabase
+      .from("journal_photos")
+      .delete()
+      .eq("id", photoId)
+      .eq("user_id", userId);
   } catch (error) {
     if (!isAbortError(error)) {
-      logger.warn('[Sync] Journal photo delete from cloud failed:', error);
+      logger.warn("[Sync] Journal photo delete from cloud failed:", error);
     }
   }
 };
 
-export const deleteJournalAudioFromCloud = async (audioId: string): Promise<void> => {
+export const deleteJournalAudioFromCloud = async (
+  audioId: string,
+): Promise<void> => {
   const userId = await getCurrentUserId();
   if (!supabase || !userId) return;
 
   try {
-    await supabase.from('journal_audio').delete().eq('id', audioId).eq('user_id', userId);
+    await supabase
+      .from("journal_audio")
+      .delete()
+      .eq("id", audioId)
+      .eq("user_id", userId);
   } catch (error) {
     if (!isAbortError(error)) {
-      logger.warn('[Sync] Journal audio delete from cloud failed:', error);
+      logger.warn("[Sync] Journal audio delete from cloud failed:", error);
     }
   }
 };
@@ -1369,11 +1672,13 @@ export const fetchUserStats = async () => {
 
   try {
     // get_user_stats is typed in Database['public']['Functions']
-    const { data, error } = await supabase.rpc('get_user_stats', { p_user_id: userId });
+    const { data, error } = await supabase.rpc("get_user_stats", {
+      p_user_id: userId,
+    });
     if (error) throw error;
     return data;
   } catch (error) {
-    logger.error('[Sync] Failed to fetch user stats:', error);
+    logger.error("[Sync] Failed to fetch user stats:", error);
     return null;
   }
 };

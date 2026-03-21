@@ -79,11 +79,35 @@
       "direction": "down",
       "recorded": "2026-03-18",
       "description": "Total JS bundle size in KB (dist/assets/*.js)"
+    },
+    "enforcement.blockingHooks": {
+      "value": 5,
+      "direction": "up",
+      "recorded": "2026-03-20",
+      "description": "BLOCKING hooks (exit 2 fail-closed): preflight-gate, protected-files, commit-gate, quality-stop-gate, search-gate"
+    },
+    "enforcement.totalHooks": {
+      "value": 30,
+      "direction": "up",
+      "recorded": "2026-03-20",
+      "description": "Total enforcement hooks"
+    },
+    "enforcement.uncoveredAntiPatterns": {
+      "value": 0,
+      "direction": "down",
+      "recorded": "2026-03-20",
+      "description": "Anti-patterns without BLOCK or WARN enforcement"
+    },
+    "npmOutdated": {
+      "value": 79,
+      "direction": "down",
+      "recorded": "2026-03-20",
+      "description": "Outdated npm packages (npm outdated count)"
     }
   },
   "qualityScore": {
-    "current": 9.9,
-    "floor": 9.9,
+    "current": 9.8,
+    "floor": 9.8,
     "weights": {
       "typeSafety": 0.15,
       "lintCleanliness": 0.1,
@@ -93,7 +117,11 @@
       "buildIntegrity": 0.1,
       "staleness": 0.1,
       "debtTrend": 0.1
-    }
+    },
+    "history": [
+      { "date": "2026-03-15", "value": 9.9 },
+      { "date": "2026-03-20", "value": 9.8 }
+    ]
   },
   "staleness": {
     "lastFullAudit": "2026-03-14",
@@ -121,6 +149,50 @@
       }
     }
   },
+  "hookGraduation": {
+    "worktree-verify": {
+      "current": "WARNING",
+      "target": "BLOCKING",
+      "evaluateAfter": "2026-04-17",
+      "falsePositives": 0
+    },
+    "staged-gap": {
+      "current": "WARNING",
+      "target": "BLOCKING",
+      "evaluateAfter": "2026-04-17",
+      "falsePositives": 0
+    },
+    "depth-scope": {
+      "current": "WARNING",
+      "target": "BLOCKING",
+      "evaluateAfter": "2026-05-01",
+      "falsePositives": 0
+    },
+    "self-reflection-structure": {
+      "current": "WARNING",
+      "target": "BLOCKING",
+      "evaluateAfter": "2026-04-17",
+      "falsePositives": 0
+    },
+    "ci-evidence-v4": {
+      "current": "WARNING",
+      "target": "BLOCKING",
+      "evaluateAfter": "2026-05-01",
+      "falsePositives": 0
+    },
+    "changes-match-v3": {
+      "current": "WARNING",
+      "target": "BLOCKING",
+      "evaluateAfter": "2026-05-15",
+      "falsePositives": 0
+    },
+    "what-went-wrong": {
+      "current": "WARNING",
+      "target": "BLOCKING",
+      "evaluateAfter": "2026-04-17",
+      "falsePositives": 0
+    }
+  },
   "overrides": [
     {
       "metric": "bundleSizeKB",
@@ -135,6 +207,13 @@
       "to": 4820,
       "reason": "9th color stop (Orange) + OKLAB preview bridge + smooth shape morphing in shader — +5KB for visual quality",
       "date": "2026-03-18"
+    },
+    {
+      "metric": "qualityScore.floor",
+      "from": 9.9,
+      "to": 9.8,
+      "reason": "Added 9th enforcement dimension (5% weight) to computeQualityScore — rebalanced 8 existing weights. Score 9.8 reflects enforcement ratio 5/30=16.7% scoring 8.3/10",
+      "date": "2026-03-20"
     }
   ]
 }

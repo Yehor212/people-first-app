@@ -42,6 +42,7 @@ interface QualityLedger {
     current: number | null;
     floor: number | null;
     weights: Record<string, number>;
+    history?: Array<{ date: string; value: number }>;
   };
   staleness: {
     lastFullAudit: string;
@@ -58,6 +59,15 @@ interface QualityLedger {
       { current: boolean; target: boolean; evaluateAfter: string }
     >;
   };
+  hookGraduation?: Record<
+    string,
+    {
+      current: string;
+      target: string;
+      evaluateAfter: string;
+      falsePositives: number;
+    }
+  >;
   overrides: Array<{
     metric: string;
     oldValue: number;
@@ -174,7 +184,41 @@ function measureMetrics(): Record<string, number> {
     consoleLogs: countConsoleLogs(),
     todoFixme: countTodoFixme(),
     bundleSizeKB: measureBundleSizeKB(),
+    // Enforcement metrics (Pillar 1)
+    "enforcement.blockingHooks": countBlockingHooks(),
+    "enforcement.totalHooks": countHookFiles(),
+    "enforcement.uncoveredAntiPatterns": 0, // manual — verified in audit
+    // Dependency staleness (Pillar 5)
+    npmOutdated: countNpmOutdated(),
   };
+}
+
+/** Count BLOCKING hooks (exit 2 fail-closed) */
+function countBlockingHooks(): number {
+  return runCount(
+    `bash -c "grep -rl 'process.exit(2)' .claude/hooks/*.cjs | wc -l"`,
+  );
+}
+
+/** Count total hook .cjs files in .claude/hooks/ (excludes test files and shared modules).
+ *  Shared modules are: test-*, *-validate.cjs, and any file that is require()'d by other hooks
+ *  but not registered as a standalone hook in settings.json. Currently: evidence-veracity.cjs.
+ *  Future-proof: uses grep to find files that DON'T contain process.stdin (standalone hooks read stdin). */
+function countHookFiles(): number {
+  // Count .cjs files that contain 'process.stdin' (standalone hooks), excluding test files
+  return runCount(
+    `bash -c "grep -rl 'process.stdin' .claude/hooks/*.cjs 2>/dev/null | grep -v 'test-' | grep -v 'validate.cjs' | wc -l"`,
+  );
+}
+
+/** Count outdated npm packages */
+function countNpmOutdated(): number {
+  try {
+    const out = run(`bash -c "npm outdated 2>/dev/null | tail -n +2 | wc -l"`);
+    return parseInt(out, 10) || 0;
+  } catch {
+    return 0;
+  }
 }
 
 /** Count console.log/warn/debug in production source (not logger.ts, not tests) */
@@ -277,62 +321,62 @@ function computeQualityScore(
 ): ScoreResult {
   const dimensions: ScoreDimension[] = [];
 
-  // Type Safety: 15% — tsc errors (0 = 10, >100 = 0)
+  // Type Safety: 14% — tsc errors (0 = 10, >100 = 0)
   const typeSafety = Math.max(0, 10 - actual["tsc.errors"] / 10);
   dimensions.push({
     name: "Type Safety",
-    weight: 0.15,
+    weight: 0.14,
     score: typeSafety,
     detail: `${actual["tsc.errors"]} errors`,
   });
 
-  // Lint Cleanliness: 10% — eslint warnings (0 = 10, >50 = 0)
+  // Lint Cleanliness: 9.5% — eslint warnings (0 = 10, >50 = 0)
   const lintCleanliness = Math.max(0, 10 - actual["eslint.maxWarnings"] / 5);
   dimensions.push({
     name: "Lint Clean",
-    weight: 0.1,
+    weight: 0.095,
     score: lintCleanliness,
     detail: `${actual["eslint.maxWarnings"]} warnings`,
   });
 
-  // Test Coverage: 20% — test count + ratio
+  // Test Coverage: 19% — test count + ratio
   const testRatio = sourceFiles > 0 ? actual["tests.files"] / sourceFiles : 0;
   const testCountScore = Math.min(10, (actual["tests.total"] / 2664) * 10);
   const testRatioScore = Math.min(10, (testRatio / 0.2) * 10);
   const testCoverage = (testCountScore + testRatioScore) / 2;
   dimensions.push({
     name: "Test Coverage",
-    weight: 0.2,
+    weight: 0.19,
     score: testCoverage,
     detail: `${actual["tests.total"]} tests, ${(testRatio * 100).toFixed(1)}% ratio`,
   });
 
-  // Code Health: 15% — god components + silent catches
+  // Code Health: 14% — god components + silent catches
   // Exponential decay: 0 issues = 10.0, gradual decline, never truly 0
   // Matches SonarQube rating curves (diminishing-returns penalty)
   const healthIssues = actual["godComponents"] + actual["silentCatches"];
   const codeHealth = 10 * Math.exp(-healthIssues / 5);
   dimensions.push({
     name: "Code Health",
-    weight: 0.15,
+    weight: 0.14,
     score: codeHealth,
     detail: `${actual["godComponents"]} god + ${actual["silentCatches"]} catches`,
   });
 
-  // i18n Completeness: 10% — languages (8 = 10, <4 = 0)
+  // i18n Completeness: 9.5% — languages (8 = 10, <4 = 0)
   const i18n = Math.min(10, (actual["i18n.languages"] / 8) * 10);
   dimensions.push({
     name: "i18n",
-    weight: 0.1,
+    weight: 0.095,
     score: i18n,
     detail: `${actual["i18n.languages"]} languages`,
   });
 
-  // Build Integrity: 10% — assumed pass (runs before ratchet in pipeline)
+  // Build Integrity: 9.5% — assumed pass (runs before ratchet in pipeline)
   const buildIntegrity = 10;
   dimensions.push({
     name: "Build",
-    weight: 0.1,
+    weight: 0.095,
     score: buildIntegrity,
     detail: "clean",
   });
@@ -347,7 +391,7 @@ function computeQualityScore(
     detail: `${Math.round(avgAge)}d avg age`,
   });
 
-  // Debt Trend: 10% — inline styles + exhaustive-deps (fewer = better)
+  // Debt Trend: 9.5% — inline styles + exhaustive-deps (fewer = better)
   // Natural floors: dynamic inline styles (~160) and justified deps (~8) are EXPECTED
   // in any React app with runtime-computed visuals and mount-only subscriptions.
   // Only penalize counts ABOVE these floors.
@@ -360,9 +404,21 @@ function computeQualityScore(
   const debtScore = styleScore * 0.6 + depsScore * 0.4;
   dimensions.push({
     name: "Debt Trend",
-    weight: 0.1,
+    weight: 0.095,
     score: debtScore,
     detail: `${actual["inlineStyles"]} styles, ${actual["exhaustiveDeps"]} deps`,
+  });
+
+  // Enforcement Health: 5% — blocking hooks / total hooks ratio (Pillar 2 expansion)
+  const blockingHooks = actual["enforcement.blockingHooks"] || 0;
+  const totalHooks = actual["enforcement.totalHooks"] || 1;
+  const enforcementRatio = blockingHooks / Math.max(1, totalHooks);
+  const enforcementScore = Math.min(10, enforcementRatio * 50); // 20% blocking = 10/10
+  dimensions.push({
+    name: "Enforcement",
+    weight: 0.05,
+    score: enforcementScore,
+    detail: `${blockingHooks}/${totalHooks} blocking`,
   });
 
   const total = dimensions.reduce((sum, d) => sum + d.score * d.weight, 0);
@@ -378,10 +434,11 @@ function computeQualityScore(
 function checkCanaries(
   actual: Record<string, number>,
   sourceFiles: number,
+  ledger: QualityLedger,
   result: CheckResult,
 ): void {
+  // 1. Test-to-source ratio
   const testRatio = sourceFiles > 0 ? actual["tests.files"] / sourceFiles : 0;
-
   if (testRatio < 0.15) {
     result.violations.push(
       `CANARY CRITICAL: test-to-source ratio ${testRatio.toFixed(3)} < 0.15`,
@@ -390,6 +447,60 @@ function checkCanaries(
     result.warnings.push(
       `CANARY: test-to-source ratio declining ${testRatio.toFixed(3)} < 0.17`,
     );
+  }
+
+  // 2. Build size delta (% growth from floor)
+  const bundleFloor = ledger.floors["bundleSizeKB"]?.value || 0;
+  if (bundleFloor > 0) {
+    const delta = (actual["bundleSizeKB"] - bundleFloor) / bundleFloor;
+    if (delta > 0.2) {
+      result.violations.push(
+        `CANARY CRITICAL: bundle +${(delta * 100).toFixed(0)}% > 20% from floor`,
+      );
+    } else if (delta > 0.1) {
+      result.warnings.push(
+        `CANARY: bundle growing +${(delta * 100).toFixed(0)}% > 10% from floor`,
+      );
+    }
+  }
+
+  // 3. eslint suppression growth (exhaustive-deps from floor)
+  const depsFloor = ledger.floors["exhaustiveDeps"]?.value || 0;
+  const depsGrowth = actual["exhaustiveDeps"] - depsFloor;
+  if (depsGrowth >= 5) {
+    result.violations.push(
+      `CANARY CRITICAL: exhaustive-deps +${depsGrowth} from floor`,
+    );
+  } else if (depsGrowth >= 3) {
+    result.warnings.push(
+      `CANARY: exhaustive-deps growing +${depsGrowth} from floor`,
+    );
+  }
+
+  // 4. God component growth (pre-warning at 350 LOC threshold)
+  const nearGodCount = findGodComponents(350) - findGodComponents(400);
+  if (nearGodCount > 0) {
+    result.warnings.push(
+      `CANARY: ${nearGodCount} file(s) approaching god-component threshold (350-400 LOC)`,
+    );
+  }
+
+  // 5. Score trend (rolling history — detect gradual degradation)
+  const history = ledger.qualityScore.history;
+  if (history && history.length >= 2) {
+    const recent = history.slice(-5);
+    const first = recent[0].value;
+    const last = recent[recent.length - 1].value;
+    const drop = first - last;
+    if (drop >= 0.5) {
+      result.violations.push(
+        `CANARY CRITICAL: score dropped ${drop.toFixed(1)} over last ${recent.length} checks`,
+      );
+    } else if (drop >= 0.3) {
+      result.warnings.push(
+        `CANARY: score declining ${drop.toFixed(1)} over last ${recent.length} checks`,
+      );
+    }
   }
 }
 
@@ -562,6 +673,32 @@ function checkRatchet(): void {
     console.log(`  \u2713  Source file drift: ${drift} files`);
   }
 
+  // Hook file staleness (Pillar 5 — enforcement staleness detection)
+  const hooksDir = path.join(ROOT, ".claude/hooks");
+  try {
+    const hookFiles = fs
+      .readdirSync(hooksDir)
+      .filter((f) => f.endsWith(".cjs") && !f.startsWith("test-"));
+    let oldestDays = 0;
+    for (const f of hookFiles) {
+      const stat = fs.statSync(path.join(hooksDir, f));
+      const age = daysSince(stat.mtime.toISOString().split("T")[0]);
+      if (age > oldestDays) oldestDays = age;
+    }
+    if (oldestDays > 60) {
+      console.log(
+        `  X  Hook staleness: oldest hook ${oldestDays}d — review needed`,
+      );
+      result.warnings.push(
+        `STALE ENFORCEMENT: oldest hook file ${oldestDays}d old`,
+      );
+    } else {
+      console.log(`  \u2713  Hook staleness: ${oldestDays}d (< 60d limit)`);
+    }
+  } catch {
+    /* no hooks dir — skip */
+  }
+
   // ═══════════════════════════════════════════
   // QUALITY SCORE (Pillar 2)
   // ═══════════════════════════════════════════
@@ -648,11 +785,33 @@ function checkRatchet(): void {
     }
   }
 
+  // Hook graduation readiness (Pillar 6 — WARNING→BLOCKING pipeline)
+  if (ledger.hookGraduation) {
+    let hasHookGrad = false;
+    for (const [hook, config] of Object.entries(ledger.hookGraduation)) {
+      if (
+        new Date(config.evaluateAfter) <= nowDate &&
+        config.current === "WARNING"
+      ) {
+        if (!hasHookGrad) {
+          console.log("\n  HOOK GRADUATION\n");
+          hasHookGrad = true;
+        }
+        console.log(
+          `  ~  Hook ${hook}: READY TO GRADUATE (${config.current} → ${config.target})`,
+        );
+        result.warnings.push(
+          `GRADUATION: Hook ${hook} ready for promotion to BLOCKING`,
+        );
+      }
+    }
+  }
+
   // ═══════════════════════════════════════════
   // CANARY METRICS (Pillar 7)
   // ═══════════════════════════════════════════
 
-  checkCanaries(actual, sourceFiles, result);
+  checkCanaries(actual, sourceFiles, ledger, result);
 
   // ═══════════════════════════════════════════
   // PHASE D: AUTO-TIGHTEN (--update only)
@@ -699,6 +858,13 @@ function checkRatchet(): void {
           `  \u2191  qualityScore.floor: \u2014 \u2192 ${score.toFixed(1)} (initial)`,
         );
       }
+    }
+
+    // Score history tracking (Pillar 7 — rolling 20-entry window)
+    if (!ledger.qualityScore.history) ledger.qualityScore.history = [];
+    ledger.qualityScore.history.push({ date: today(), value: score });
+    if (ledger.qualityScore.history.length > 20) {
+      ledger.qualityScore.history = ledger.qualityScore.history.slice(-20);
     }
 
     ledger.lastUpdated = today();
