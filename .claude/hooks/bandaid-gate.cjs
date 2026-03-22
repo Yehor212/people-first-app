@@ -20,6 +20,13 @@
 const path = require('path');
 
 const ROOT = process.cwd();
+const HOOK_NAME = "bandaid-gate";
+function audit(event, detail) {
+  try { var e = JSON.stringify({ ts: Date.now(), hook: HOOK_NAME, event, detail });
+    require("fs").appendFileSync(require("path").join(ROOT, ".claude-audit.log"), e + String.fromCharCode(10));
+  } catch {}
+}
+
 
 // Files/dirs where bandaid patterns are legitimate
 const SKIP_PATTERNS = [
@@ -213,7 +220,8 @@ process.stdin.on('end', () => {
     }
 
     // All checks passed — allow edit
-    process.exit(0);
+    audit("allow", "passed all checks");
+  process.exit(0);
   } catch (e) {
     // Fail-closed: block on parse error (security hook pattern)
     process.stderr.write('HOOK ERROR [bandaid-gate]: ' + (e.message || e) + '\n');

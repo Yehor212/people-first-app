@@ -18,6 +18,13 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = process.cwd();
+const HOOK_NAME = "protected-files";
+function audit(event, detail) {
+  try { var e = JSON.stringify({ ts: Date.now(), hook: HOOK_NAME, event, detail });
+    require("fs").appendFileSync(require("path").join(ROOT, ".claude-audit.log"), e + String.fromCharCode(10));
+  } catch {}
+}
+
 
 const BLOCKED = [
   '.env',
@@ -157,5 +164,6 @@ process.stdin.on('end', () => {
     process.stderr.write('HOOK ERROR [protected-files]: ' + (e.message || e) + '\n');
     process.exit(2); // Fail-closed — block on error
   }
+  audit("allow", "passed all checks");
   process.exit(0);
 });

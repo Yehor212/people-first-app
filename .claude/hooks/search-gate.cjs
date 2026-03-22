@@ -20,6 +20,13 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = process.cwd();
+const HOOK_NAME = "search-gate";
+function audit(event, detail) {
+  try { var e = JSON.stringify({ ts: Date.now(), hook: HOOK_NAME, event, detail });
+    require("fs").appendFileSync(require("path").join(ROOT, ".claude-audit.log"), e + String.fromCharCode(10));
+  } catch {}
+}
+
 const BUGFIX_PENDING = path.join(ROOT, '.bugfix-pending');
 const SEARCH_CONFIRMED = path.join(ROOT, '.search-confirmed');
 const AUDIT_LOG = path.join(ROOT, '.claude-audit.log');
@@ -80,7 +87,8 @@ process.stdin.on('end', () => {
       auditLog('debt-cleared', 'both tokens present → cleaned');
       cleanToken(BUGFIX_PENDING);
       cleanToken(SEARCH_CONFIRMED);
-      process.exit(0);
+      audit("allow", "passed all checks");
+  process.exit(0);
     }
 
     // Case 3: Bugfix pending but no search → BLOCK

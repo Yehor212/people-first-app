@@ -18,6 +18,13 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = process.cwd();
+const HOOK_NAME = "preflight-gate";
+function audit(event, detail) {
+  try { var e = JSON.stringify({ ts: Date.now(), hook: HOOK_NAME, event, detail });
+    require("fs").appendFileSync(require("path").join(ROOT, ".claude-audit.log"), e + String.fromCharCode(10));
+  } catch {}
+}
+
 const TOKEN = path.join(ROOT, '.preflight-token');
 
 // Paths that bypass the gate (not production code)
@@ -105,7 +112,8 @@ process.stdin.on('end', () => {
     const tokenLower = cleaned.toLowerCase();
     if (tokenLower.includes('7checks') && tokenLower.includes('verdict') && tokenLower.includes('go')) {
       process.stderr.write('WARNING: Legacy .preflight-token format detected. Use structured JSON for better validation.\n');
-      process.exit(0); // Legacy token valid — allow edit
+      audit("allow", "passed all checks");
+  process.exit(0); // Legacy token valid — allow edit
     }
 
     // BLOCK — no valid token
