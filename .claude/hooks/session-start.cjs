@@ -140,7 +140,34 @@ process.stdin.on('end', () => {
     }
   } catch { /* settings.json parse error — skip drift check */ }
 
-  // 1d. TEST COVERAGE: check that each hook is mentioned in test-all-hooks.cjs
+  // 1d. SYNTAX VALIDATION: node --check on all blocking hooks (fail-open prevention)
+  // If a hook has a syntax error, Node.js crashes with exit(1) = SDK fail-open = enforcement DISABLED.
+  // Pre-validating syntax catches this BEFORE hooks run.
+  // Research: Stefan Judis, Husky fail-closed pattern, spawn-wrap reliability.
+  try {
+    const { execSync } = require('child_process');
+    const syntaxErrors = [];
+    for (const hookFile of EXPECTED_HOOKS) {
+      const hookPath = path.join(HOOKS_DIR, hookFile);
+      if (!fs.existsSync(hookPath)) continue;
+      try {
+        execSync('node --check "' + hookPath.replace(/\\/g, '/') + '"', {
+          stdio: 'pipe', timeout: 5000
+        });
+      } catch {
+        syntaxErrors.push(hookFile);
+      }
+    }
+    if (syntaxErrors.length > 0) {
+      warnings.push(
+        'SYNTAX ERROR in hooks: ' + syntaxErrors.join(', ') + '!\n' +
+        '    → These hooks will CRASH (exit 1) = SDK fail-open = enforcement DISABLED\n' +
+        '    → Fix syntax errors immediately to restore enforcement'
+      );
+    }
+  } catch { /* execSync unavailable — skip */ }
+
+  // 1e. TEST COVERAGE: check that each hook is mentioned in test-all-hooks.cjs
   try {
     const testFile = fs.readFileSync(path.join(HOOKS_DIR, 'test-all-hooks.cjs'), 'utf8');
     const untestedHooks = EXPECTED_HOOKS.filter(h => !testFile.includes(h));
