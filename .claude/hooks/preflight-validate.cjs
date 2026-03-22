@@ -344,6 +344,51 @@ function validate(content) {
     }
   }
 
+  // ═══════════════════════════════════════════════════════════════════
+  // REASONING QUALITY ENFORCEMENT (Rules 36-38)
+  // Based on: OpenAI CoT Monitorability, AWS Semi-Formal, Peirce Abduction
+  // ═══════════════════════════════════════════════════════════════════
+
+  // Rule 36: CoT Monitorability — flag SUSPICIOUS/OPAQUE preflight tokens (L2+)
+  // OpenAI research: reasoning traces can be CLEAN, SUSPICIOUS, or OPAQUE
+  // SUSPICIOUS = generic/template-like. OPAQUE = all fields present but no real evidence.
+  if (!isL1 && typeof parsed.pre_mortem === 'string' && typeof parsed.transmutation === 'string') {
+    const fields = [parsed.pre_mortem, parsed.transmutation, parsed.unknowns || ''];
+    const allText = fields.join(' ').toLowerCase();
+    // SUSPICIOUS: same word repeated >3 times = template fill
+    const words = allText.split(/\s+/).filter(w => w.length > 4);
+    const wordCounts = {};
+    for (const w of words) wordCounts[w] = (wordCounts[w] || 0) + 1;
+    const repeated = Object.entries(wordCounts).filter(([, c]) => c > 5);
+    if (repeated.length > 2) {
+      warnings.push('COT SUSPICIOUS: ' + repeated.length + ' words repeated >5 times — possible template fill, not genuine reasoning');
+    }
+    // OPAQUE: fields present but no concrete file/line evidence
+    const hasEvidence = /[a-z]+\.(ts|tsx|cjs|js|md)/.test(allText) || /:\d+/.test(allText);
+    if (!hasEvidence && fields.every(f => f.length > 20)) {
+      warnings.push('COT OPAQUE: all fields filled but no file:line evidence — reasoning may be disconnected from code');
+    }
+  }
+
+  // Rule 37: Semi-Formal Reasoning — pre_mortem must have causal structure (L2+ full cycle)
+  // AWS: "premise_A ∧ premise_B → conclusion" improves accuracy 78%→87%
+  // Check: pre_mortem contains causal connectors (if/then, because, therefore, causes, leads to)
+  if (!isL1 && isFullCycle && typeof parsed.pre_mortem === 'string') {
+    const CAUSAL = /\b(if|when|because|therefore|causes|leads to|results in|implies|means that|due to|since|consequently)\b/i;
+    if (!CAUSAL.test(parsed.pre_mortem)) {
+      errors.push('FULL CYCLE pre_mortem must contain CAUSAL reasoning (if/because/therefore/causes). Semi-formal: premise → conclusion. (AWS research: +9% accuracy)');
+    }
+  }
+
+  // Rule 38: Abductive Reasoning in pre_mortem — symptoms → best explanation (L2+ full cycle)
+  // Peirce: "given symptoms, infer the BEST explanation, not the first one"
+  if (!isL1 && isFullCycle && typeof parsed.pre_mortem === 'string') {
+    const ABDUCTIVE = /\b(root cause|best explanation|5 whys|why.*because|symptom|diagnos|hypothesis|most likely|evidence suggests)\b/i;
+    if (!ABDUCTIVE.test(parsed.pre_mortem)) {
+      warnings.push('FULL CYCLE pre_mortem should use ABDUCTIVE reasoning (root cause, best explanation, hypothesis). Law 21: Peirce\'s abduction.');
+    }
+  }
+
   return { valid: errors.length === 0, errors, warnings, parsed };
 }
 
