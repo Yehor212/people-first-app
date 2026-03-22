@@ -477,6 +477,22 @@ function validate(content) {
     }
   }
 
+  // Rule 43: Convenience Bias Detection — full audit must check ALL stack layers (Anti-Pattern #16)
+  // Incident: agent audited only local hooks, missed 401 errors in Supabase for 2 days
+  // When goal mentions "all"/"audit"/"everything"/"полный анализ", diagnostic_sources must span multiple layers
+  if (!isL1 && typeof parsed.goal === 'string' && Array.isArray(parsed.diagnostic_sources)) {
+    const AUDIT_LANGUAGE = /\b(all|every|everything|full|audit|полн|все|всё|весь|анализ|complete|exhaustive|comprehensive)\b/i;
+    if (AUDIT_LANGUAGE.test(parsed.goal)) {
+      const BACKEND_MARKERS = /supabase|edge.func|postgres|api|auth|cron|database|backend|server/i;
+      const hasBackend = parsed.diagnostic_sources.some(s => BACKEND_MARKERS.test(s));
+      if (!hasBackend) {
+        warnings.push('CONVENIENCE BIAS (Anti-Pattern #16): goal mentions full audit/analysis but diagnostic_sources has NO backend categories. ' +
+          'Check ALL layers: local code + Supabase (api, auth, edge-functions, postgres, cron) + external services. ' +
+          'Incident: missed 401 errors in Supabase edge functions for 2 days because only local hooks were audited.');
+      }
+    }
+  }
+
   return { valid: errors.length === 0, errors, warnings, parsed };
 }
 
