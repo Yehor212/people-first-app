@@ -483,12 +483,21 @@ function validate(content) {
   if (!isL1 && typeof parsed.goal === 'string' && Array.isArray(parsed.diagnostic_sources)) {
     const AUDIT_LANGUAGE = /\b(all|every|everything|full|audit|полн|все|всё|весь|анализ|complete|exhaustive|comprehensive)\b/i;
     if (AUDIT_LANGUAGE.test(parsed.goal)) {
-      const BACKEND_MARKERS = /supabase|edge.func|postgres|api|auth|cron|database|backend|server/i;
-      const hasBackend = parsed.diagnostic_sources.some(s => BACKEND_MARKERS.test(s));
-      if (!hasBackend) {
-        warnings.push('CONVENIENCE BIAS (Anti-Pattern #16): goal mentions full audit/analysis but diagnostic_sources has NO backend categories. ' +
-          'Check ALL layers: local code + Supabase (api, auth, edge-functions, postgres, cron) + external services. ' +
-          'Incident: missed 401 errors in Supabase edge functions for 2 days because only local hooks were audited.');
+      const srcJoined = parsed.diagnostic_sources.join(' ').toLowerCase();
+
+      // Check each META-LAYER is represented
+      const LAYER_CHECKS = [
+        { name: 'backend', markers: /supabase|edge.func|postgres|api.log|auth.log|cron|database|backend|server|vault/, msg: 'Supabase (api, auth, edge-functions, postgres, cron)' },
+        { name: 'mobile', markers: /capacitor|android|ios|platform|mobile|touch|safe.area|back.handler/, msg: 'Mobile (capacitor, android, ios, touch targets, safe areas)' },
+        { name: 'local', markers: /src|hook|component|code|lint|tsc|test|local|type/, msg: 'Local code (src, types, lint, tests)' },
+      ];
+      const missing = LAYER_CHECKS.filter(lc => !lc.markers.test(srcJoined));
+
+      if (missing.length > 0) {
+        warnings.push('CONVENIENCE BIAS (Anti-Pattern #16): goal mentions full audit but diagnostic_sources missing ' +
+          missing.length + ' layer(s): [' + missing.map(m => m.name + ': ' + m.msg).join('; ') + ']. ' +
+          'Use META-LAYER template: local + backend + mobile + external + CI/CD. ' +
+          'Incident: missed 401s in Supabase for 2 days because only local hooks were audited.');
       }
     }
   }
