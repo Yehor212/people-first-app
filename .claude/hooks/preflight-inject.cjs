@@ -204,9 +204,10 @@ process.stdin.on('end', () => {
         constraints: [...new Set(foundConstraints)],
         topics: topics,
         total_actions: foundActionsRu.length + foundActionsEn.length,
+        // "полный цикл" = MAXIMUM enforcement — inherits ALL constraint flags
         has_no_simplification: foundConstraints.includes('no_simplification') || foundConstraints.includes('ban_simplification') || foundConstraints.includes('full_cycle'),
-        has_deep_reflection: foundConstraints.includes('deep_reflection'),
-        has_best_practices: foundConstraints.includes('best_practices'),
+        has_deep_reflection: foundConstraints.includes('deep_reflection') || foundConstraints.includes('full_cycle'),
+        has_best_practices: foundConstraints.includes('best_practices') || foundConstraints.includes('full_cycle'),
         raw_length: rawMsgOriginal.length,
       };
 
