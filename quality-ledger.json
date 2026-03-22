@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-03-15",
+  "lastUpdated": "2026-03-22",
   "floors": {
     "tests.total": {
       "value": 3405,
@@ -51,9 +51,9 @@
       "description": "eslint-disable exhaustive-deps suppressions"
     },
     "inlineStyles": {
-      "value": 334,
+      "value": 326,
       "direction": "down",
-      "recorded": "2026-03-15",
+      "recorded": "2026-03-22",
       "description": "Inline style={{}} in .tsx files"
     },
     "hardcodedColors": {
@@ -63,9 +63,9 @@
       "description": "Theme-blind hardcoded colors (Visual Aesthetic Part 6)"
     },
     "consoleLogs": {
-      "value": 11,
+      "value": 9,
       "direction": "down",
-      "recorded": "2026-03-16",
+      "recorded": "2026-03-22",
       "description": "console.log/warn/debug in production source (use logger.ts)"
     },
     "todoFixme": {
@@ -75,9 +75,9 @@
       "description": "TODO/FIXME/HACK/XXX comments in source"
     },
     "bundleSizeKB": {
-      "value": 4820,
+      "value": 4796,
       "direction": "down",
-      "recorded": "2026-03-18",
+      "recorded": "2026-03-22",
       "description": "Total JS bundle size in KB (dist/assets/*.js)"
     },
     "enforcement.blockingHooks": {
@@ -99,15 +99,15 @@
       "description": "Anti-patterns without BLOCK or WARN enforcement"
     },
     "npmOutdated": {
-      "value": 999,
+      "value": 79,
       "direction": "down",
-      "recorded": "2026-03-21",
+      "recorded": "2026-03-22",
       "description": "Outdated npm packages — CANARY ONLY (external dependency, not code-controlled). Floor=999 disables blocking."
     }
   },
   "qualityScore": {
-    "current": 9.8,
-    "floor": 9.8,
+    "current": 9.9,
+    "floor": 9.9,
     "weights": {
       "typeSafety": 0.15,
       "lintCleanliness": 0.1,
@@ -119,8 +119,18 @@
       "debtTrend": 0.1
     },
     "history": [
-      { "date": "2026-03-15", "value": 9.9 },
-      { "date": "2026-03-20", "value": 9.8 }
+      {
+        "date": "2026-03-15",
+        "value": 9.9
+      },
+      {
+        "date": "2026-03-20",
+        "value": 9.8
+      },
+      {
+        "date": "2026-03-22",
+        "value": 9.9
+      }
     ]
   },
   "staleness": {

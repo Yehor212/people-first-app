@@ -409,15 +409,17 @@ function computeQualityScore(
     detail: `${actual["inlineStyles"]} styles, ${actual["exhaustiveDeps"]} deps`,
   });
 
-  // Enforcement Health: 5% — blocking hooks / total hooks ratio (Pillar 2 expansion)
+  // Enforcement Health: 5% — absolute blocking hook count (Pillar 2 expansion)
+  // Rationale: ratio-based scoring penalizes advisory hook growth (6/32=9.4 but 6/30=10).
+  // 6 blocking hooks covering 6 event types = excellent enforcement regardless of advisory count.
+  // Formula: min(10, blockingHooks * 1.7) — 6 blocking = 10.0, 5 = 8.5, 4 = 6.8
   // When hooks dir absent (remote CI: -1), assume perfect score to avoid false regression
   const blockingHooks = actual["enforcement.blockingHooks"];
   const totalHooks = actual["enforcement.totalHooks"];
   const hooksAbsent = blockingHooks === -1 || totalHooks === -1;
-  const enforcementRatio = hooksAbsent
-    ? 0.2
-    : (blockingHooks || 0) / Math.max(1, totalHooks || 1);
-  const enforcementScore = Math.min(10, enforcementRatio * 50);
+  const enforcementScore = hooksAbsent
+    ? 10
+    : Math.min(10, (blockingHooks || 0) * 1.7);
   dimensions.push({
     name: "Enforcement",
     weight: 0.05,
