@@ -229,39 +229,44 @@ function validate(content) {
       const reqs = JSON.parse(fs.readFileSync(USER_REQ_FILE, 'utf8'));
       const postflightText = JSON.stringify(parsed).toLowerCase();
 
+      // Determine enforcement level: user demands "no simplification" → ERRORS, otherwise → warnings
+      // Law of Irrationality: when user explicitly demands depth, system BLOCKS shortcuts
+      const push = reqs.has_no_simplification ? errors : warnings;
+      const modeLabel = reqs.has_no_simplification ? 'BLOCKED' : 'WARNING';
+
       // Check action coverage: each extracted action should appear in postflight evidence
       const allActions = [...(reqs.actions_ru || []), ...(reqs.actions_en || [])];
       if (allActions.length > 0) {
         const uncovered = allActions.filter(a => !postflightText.includes(a.toLowerCase()));
         if (uncovered.length > allActions.length * 0.5) {
-          warnings.push('REQUIREMENT COVERAGE: ' + uncovered.length + '/' + allActions.length +
-            ' user actions not addressed in postflight: [' + uncovered.join(', ') + ']. Did you simplify the scope?');
+          push.push(modeLabel + ' REQUIREMENT COVERAGE: ' + uncovered.length + '/' + allActions.length +
+            ' user actions not addressed in postflight: [' + uncovered.join(', ') + ']. Scope reduction detected.');
         }
       }
 
-      // If user demanded "no simplification" — enforce stricter standards
+      // If user demanded "no simplification" — enforce stricter standards (ERRORS)
       if (reqs.has_no_simplification) {
         // self_reflection fields must be extra substantive (≥100 chars each)
         if (sr) {
           const SHORT_FIELDS = ['what_went_wrong', 'what_I_assumed', 'what_I_verified'];
           for (const field of SHORT_FIELDS) {
             if (typeof sr[field] === 'string' && sr[field].length < 100) {
-              warnings.push('NO-SIMPLIFICATION MODE: self_reflection.' + field + ' is ' +
+              errors.push('NO-SIMPLIFICATION BLOCKED: self_reflection.' + field + ' is ' +
                 sr[field].length + ' chars (need ≥100 when user demands no simplification)');
             }
           }
         }
         // changes[] must have multiple entries (not just one file)
         if (Array.isArray(parsed.changes) && parsed.changes.length < 2 && reqs.total_actions > 2) {
-          warnings.push('NO-SIMPLIFICATION MODE: only ' + parsed.changes.length +
-            ' file(s) changed but user requested ' + reqs.total_actions + ' actions. Scope reduction?');
+          errors.push('NO-SIMPLIFICATION BLOCKED: only ' + parsed.changes.length +
+            ' file(s) changed but user requested ' + reqs.total_actions + ' actions. Scope reduction.');
         }
       }
 
       // If user demanded "deep reflection" — self_reflection.confidence must be substantive
       if (reqs.has_deep_reflection && sr) {
         if (typeof sr.confidence === 'string' && sr.confidence.length < 6) {
-          warnings.push('DEEP REFLECTION MODE: self_reflection.confidence should be detailed, not just "' + sr.confidence + '"');
+          push.push(modeLabel + ' DEEP REFLECTION: self_reflection.confidence should be detailed, not just "' + sr.confidence + '"');
         }
       }
 
@@ -271,7 +276,7 @@ function validate(content) {
           const preflightContent = fs.readFileSync(PREFLIGHT_TOKEN, 'utf8');
           const preflight = JSON.parse(preflightContent);
           if (preflight.evidence && Array.isArray(preflight.evidence.search) && preflight.evidence.search.length === 0) {
-            warnings.push('BEST PRACTICES MODE: user requested best practices research but evidence.search[] is empty');
+            push.push(modeLabel + ' BEST PRACTICES: user requested research but evidence.search[] is empty');
           }
         } catch { /* skip if no preflight */ }
       }
