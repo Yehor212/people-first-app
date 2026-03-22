@@ -46,6 +46,9 @@ tmpclaude*
 CLAUDE.md
 .claude/*
 !.claude/rules/
+!.claude/hooks/
+!.claude/settings.json
+!.claude/agents/
 .mcp.json
 
 # ============================================
@@ -132,6 +135,7 @@ docs/visual-aesthetic.md
 .ide-ack-pending
 .ide-ack-done
 .worktree-verify-pending
+.user-requirements
 .claude-audit.log
 .claude-md-unlock
 .prettier-circuit-breaker

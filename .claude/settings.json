@@ -1,0 +1,345 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/protected-files.cjs",
+            "timeout": 5000,
+            "statusMessage": "Protected file check..."
+          },
+          {
+            "type": "command",
+            "command": "node .claude/hooks/preflight-gate.cjs",
+            "timeout": 5000,
+            "statusMessage": "Pre-flight gate..."
+          },
+          {
+            "type": "command",
+            "command": "node .claude/hooks/goal-drift-check.cjs",
+            "timeout": 5000,
+            "statusMessage": "Goal drift check..."
+          },
+          {
+            "type": "command",
+            "command": "node .claude/hooks/search-gate.cjs",
+            "timeout": 5000,
+            "statusMessage": "Search gate check..."
+          },
+          {
+            "type": "command",
+            "command": "node .claude/hooks/bandaid-gate.cjs",
+            "timeout": 5000,
+            "statusMessage": "Bandaid detection (Law 21)..."
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/commit-gate.cjs",
+            "timeout": 130000,
+            "statusMessage": "Checking commit/push gates..."
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/ide-diagnostic-gate.cjs",
+            "timeout": 5000,
+            "statusMessage": "IDE diagnostic check..."
+          },
+          {
+            "type": "command",
+            "command": "node .claude/hooks/code-quality-check.cjs",
+            "timeout": 5000,
+            "statusMessage": "Code quality check..."
+          },
+          {
+            "type": "command",
+            "command": "node .claude/hooks/auto-format.cjs",
+            "timeout": 15000,
+            "statusMessage": "Auto-formatting..."
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/output-taint-check.cjs",
+            "timeout": 5000,
+            "statusMessage": "Output taint check..."
+          },
+          {
+            "type": "command",
+            "command": "node .claude/hooks/ci-tracker.cjs",
+            "timeout": 5000,
+            "statusMessage": "CI execution tracking..."
+          }
+        ]
+      },
+      {
+        "matcher": "Grep",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/search-confirm.cjs",
+            "timeout": 5000,
+            "statusMessage": "Recording search confirmation..."
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/preflight-inject.cjs",
+            "timeout": 5000,
+            "statusMessage": "Checking triggers + injecting protocol..."
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/quality-stop-gate.cjs",
+            "timeout": 10000,
+            "statusMessage": "Quality stop gate..."
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/pre-compact.cjs",
+            "timeout": 5000,
+            "statusMessage": "Injecting enforcement reminder..."
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/session-start.cjs",
+            "timeout": 10000,
+            "statusMessage": "Workspace integrity check..."
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/subagent-start.cjs",
+            "timeout": 5000,
+            "statusMessage": "Logging subagent spawn..."
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/tool-failure-log.cjs",
+            "timeout": 5000,
+            "statusMessage": "Logging tool failure..."
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/subagent-stop.cjs",
+            "timeout": 5000,
+            "statusMessage": "Logging subagent completion..."
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/session-end.cjs",
+            "timeout": 5000,
+            "statusMessage": "Session cleanup..."
+          }
+        ]
+      }
+    ],
+    "StopFailure": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/stop-failure-log.cjs",
+            "timeout": 5000,
+            "statusMessage": "Logging stop failure..."
+          }
+        ]
+      }
+    ],
+    "ConfigChange": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/config-change-log.cjs",
+            "timeout": 5000,
+            "statusMessage": "Config change check..."
+          }
+        ]
+      }
+    ],
+    "PostCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/post-compact.cjs",
+            "timeout": 5000,
+            "statusMessage": "Post-compaction logging..."
+          }
+        ]
+      }
+    ],
+    "InstructionsLoaded": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/instructions-loaded.cjs",
+            "timeout": 5000,
+            "statusMessage": "Logging instructions loaded..."
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/notification-log.cjs",
+            "timeout": 5000,
+            "statusMessage": "Logging notification..."
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/permission-request-log.cjs",
+            "timeout": 5000,
+            "statusMessage": "Logging permission request..."
+          }
+        ]
+      }
+    ],
+    "WorktreeCreate": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/worktree-create-log.cjs",
+            "timeout": 5000,
+            "statusMessage": "Logging worktree creation..."
+          }
+        ]
+      }
+    ],
+    "WorktreeRemove": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/worktree-remove-log.cjs",
+            "timeout": 5000,
+            "statusMessage": "Logging worktree removal..."
+          }
+        ]
+      }
+    ],
+    "Elicitation": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/elicitation-log.cjs",
+            "timeout": 5000,
+            "statusMessage": "Logging elicitation..."
+          }
+        ]
+      }
+    ],
+    "ElicitationResult": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/elicitation-result-log.cjs",
+            "timeout": 5000,
+            "statusMessage": "Logging elicitation result..."
+          }
+        ]
+      }
+    ],
+    "TeammateIdle": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/teammate-idle-log.cjs",
+            "timeout": 5000,
+            "statusMessage": "Logging teammate idle..."
+          }
+        ]
+      }
+    ],
+    "TaskCompleted": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/task-completed-log.cjs",
+            "timeout": 5000,
+            "statusMessage": "Logging task completion..."
+          }
+        ]
+      }
+    ]
+  }
+}
