@@ -33,7 +33,8 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
-    "prepare": "husky"
+    "prepare": "husky",
+    "enforcement:metrics": "npx tsx scripts/enforcement-metrics.ts"
   },
   "dependencies": {
     "@capacitor-community/admob": "^8.0.0",
