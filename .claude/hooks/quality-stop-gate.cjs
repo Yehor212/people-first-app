@@ -64,15 +64,37 @@ process.stdin.on('end', () => {
       try { fs.appendFileSync(AUDIT_LOG, entry); } catch {}
     }
 
+    // REQUIREMENT COVERAGE CHECK at stop time (research: PairCoder, Strands +17.5pp)
+    // Prevents stopping before all user-requested actions are addressed
+    const USER_REQ = path.join(ROOT, '.user-requirements');
+    let reqWarning = '';
+    try {
+      if (fs.existsSync(USER_REQ)) {
+        const reqs = JSON.parse(fs.readFileSync(USER_REQ, 'utf8'));
+        if (reqs.has_no_simplification && reqs.total_actions > 0) {
+          // In no-simplification mode: remind about ALL user actions before stopping
+          const allActions = [...(reqs.actions_ru || []), ...(reqs.actions_en || [])];
+          reqWarning = '\n** NO-SIMPLIFICATION MODE ACTIVE **\n' +
+            'User requested ' + reqs.total_actions + ' actions: [' + allActions.join(', ') + ']\n' +
+            'Before stopping, verify EACH action was addressed. Scope reduction = BLOCKED at commit.\n';
+        }
+        if (reqs.has_full_cycle) {
+          reqWarning += '\n** FULL CYCLE MODE ** — law_compliance[28] + mirror_compliance[5] + web research required.\n';
+        }
+      }
+    } catch { /* non-critical */ }
+
     // No TS changes → allow stop, clean token, advisory completion check
     if (!tsChanges) {
       try { fs.unlinkSync(PREFLIGHT_TOKEN); } catch { /* ok */ }
       process.stderr.write(
-        'COMPLETION SELF-CHECK (advisory):\n' +
+        'COMPLETION SELF-CHECK:\n' +
         '- All user-requested tasks completed?\n' +
         '- Any partial work or TODO left?\n' +
-        '- IDE diagnostics clean?\n'
+        '- IDE diagnostics clean?\n' +
+        reqWarning
       );
+      audit("allow", "passed all checks");
       process.exit(0);
     }
 
