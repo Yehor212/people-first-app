@@ -80,6 +80,79 @@ process.stdin.on('end', () => {
         block('PROTECTED FILE: ' + filePath + ' (token check failed). Create .claude-md-unlock to allow one edit.');
       }
     }
+    // Tier 3: Hook Integrity Ratchet (Law of Irrationality — system assumes agent WILL try to weaken rules)
+    // Edits to .claude/hooks/*.cjs are ALLOWED only if they don't weaken enforcement.
+    // Weakening = decreasing count of: process.exit(2), errors.push(, regex patterns (/.../)
+    // Research: GAI framework, ratchet monotonicity, behavioral economics nudge theory
+    const relPath = filePath.replace(ROOT.replace(/\\/g, '/'), '').replace(/^\//, '');
+    if (relPath.startsWith('.claude/hooks/') && relPath.endsWith('.cjs') && !relPath.includes('test-all-hooks')) {
+      const newCode = data.tool_input?.new_string || data.tool_input?.content || '';
+      if (newCode.length > 0) {
+        try {
+          const { execSync } = require('child_process');
+          // Get the git HEAD version of this file
+          const gitPath = relPath.replace(/\\/g, '/');
+          const oldCode = execSync('git show HEAD:' + gitPath, {
+            cwd: ROOT, encoding: 'utf8', timeout: 5000, stdio: ['pipe', 'pipe', 'pipe']
+          });
+
+          // Count enforcement markers in old vs new
+          const countMarkers = (code) => ({
+            exit2: (code.match(/process\.exit\(2\)/g) || []).length,
+            errorsPush: (code.match(/errors\.push\(/g) || []).length,
+            regexPatterns: (code.match(/regex:\s*\//g) || []).length + (code.match(/pattern:\s*\//g) || []).length,
+            blockCalls: (code.match(/block\(/g) || []).length,
+          });
+
+          const oldMarkers = countMarkers(oldCode);
+          const newMarkers = countMarkers(newCode);
+
+          // For Edit tool: new_string is only the replacement, not the full file.
+          // Only flag if the new_string EXPLICITLY removes markers (contains fewer than it replaces)
+          // For Write tool: content is the full file — compare totals
+          const isWriteTool = !!data.tool_input?.content;
+
+          if (isWriteTool) {
+            // Full file comparison — any decrease in markers = weakening
+            const weakened = [];
+            if (newMarkers.exit2 < oldMarkers.exit2) weakened.push('process.exit(2): ' + oldMarkers.exit2 + ' → ' + newMarkers.exit2);
+            if (newMarkers.errorsPush < oldMarkers.errorsPush) weakened.push('errors.push(: ' + oldMarkers.errorsPush + ' → ' + newMarkers.errorsPush);
+            if (newMarkers.blockCalls < oldMarkers.blockCalls) weakened.push('block(: ' + oldMarkers.blockCalls + ' → ' + newMarkers.blockCalls);
+
+            if (weakened.length > 0) {
+              block('HOOK INTEGRITY RATCHET: Cannot weaken enforcement in ' + basename + '.\n' +
+                'Weakened markers: ' + weakened.join(', ') + '\n' +
+                'Hooks can only be STRENGTHENED (add checks), never WEAKENED (remove checks).\n' +
+                'Law of Irrationality: the system assumes you WILL try to simplify.');
+            }
+          }
+          // For Edit tool: we check if old_string contained markers that new_string removes
+          else {
+            const oldStr = data.tool_input?.old_string || '';
+            const oldStrMarkers = countMarkers(oldStr);
+            const newStrMarkers = countMarkers(newCode);
+
+            const weakened = [];
+            if (oldStrMarkers.exit2 > newStrMarkers.exit2) weakened.push('process.exit(2) removed');
+            if (oldStrMarkers.errorsPush > newStrMarkers.errorsPush) weakened.push('errors.push( removed');
+            if (oldStrMarkers.blockCalls > newStrMarkers.blockCalls) weakened.push('block( call removed');
+
+            if (weakened.length > 0) {
+              block('HOOK INTEGRITY RATCHET: Cannot weaken enforcement in ' + basename + '.\n' +
+                'Removed markers: ' + weakened.join(', ') + '\n' +
+                'Hooks can only be STRENGTHENED (add checks), never WEAKENED (remove checks).\n' +
+                'Law of Irrationality: the system assumes you WILL try to simplify.');
+            }
+          }
+        } catch (gitErr) {
+          // If git show fails (file not yet committed), allow the edit
+          // New files can't weaken what doesn't exist
+          if (!gitErr.message?.includes('exists on disk')) {
+            // Legitimate git error — allow (don't block new hook creation)
+          }
+        }
+      }
+    }
   } catch (e) {
     process.stderr.write('HOOK ERROR [protected-files]: ' + (e.message || e) + '\n');
     process.exit(2); // Fail-closed — block on error
