@@ -323,6 +323,44 @@ process.stdin.on('end', () => {
         }
       } catch { /* non-critical — advisory only */ }
 
+      // Layer 5e: CI Evidence Gate — BLOCKING (NASA GMIP pattern)
+      // Research: "Verification that depends on agent choosing to verify will be skipped" (OpenAI, Qodo, NASA)
+      // .ci-evidence must exist and be <10min old when TS changes are staged
+      // Incident: agent declared "all works" without running tsc/eslint/vitest — Anti-Pattern #5
+      const CI_EVIDENCE_PATH = path.join(ROOT, '.ci-evidence');
+      try {
+        const staged = execSync('git diff --cached --name-only', { cwd: ROOT, stdio: 'pipe', timeout: 5000 }).toString();
+        const hasTsChanges = staged.split('\n').some(f => /\.(ts|tsx)$/.test(f.trim()));
+
+        if (hasTsChanges) {
+          if (!fs.existsSync(CI_EVIDENCE_PATH)) {
+            block(
+              'CI EVIDENCE REQUIRED! You have staged .ts/.tsx changes but no .ci-evidence file.\n' +
+              'Run: npm run ci:preflight (or at minimum: npx tsc --noEmit && npx eslint src/ --max-warnings 0)\n' +
+              'The ci-tracker hook records evidence automatically when you run CI commands.\n' +
+              'Anti-Pattern #5: Never claim "all works" without fresh CI output.',
+              cmd
+            );
+          } else {
+            const lines = fs.readFileSync(CI_EVIDENCE_PATH, 'utf8').trim().split('\n').filter(Boolean);
+            if (lines.length > 0) {
+              try {
+                const last = JSON.parse(lines[lines.length - 1]);
+                const ageMin = Math.round((Date.now() - (last.ts || 0)) / 60000);
+                if (ageMin > 10) {
+                  block(
+                    'CI EVIDENCE STALE! Last CI run was ' + ageMin + ' minutes ago.\n' +
+                    'Run: npm run ci:preflight (or: npx tsc --noEmit && npx eslint src/ --max-warnings 0)\n' +
+                    'Anti-Pattern #12: Stale Citation — CI evidence must be <10 minutes old.',
+                    cmd
+                  );
+                }
+              } catch { /* parse error — allow, ci-tracker format may vary */ }
+            }
+          }
+        }
+      } catch { /* git diff failed — don't block on git errors */ }
+
       // All checks passed — consume tokens
       try { fs.unlinkSync(POSTFLIGHT); } catch {}
       if (isFullCycle) {
