@@ -263,10 +263,11 @@ function validate(content) {
         }
       }
 
-      // If user demanded "deep reflection" — self_reflection.confidence must be substantive
+      // If user demanded "deep reflection" — confidence must not be LOW
+      // Note: confidence must be exactly HIGH/MEDIUM/LOW (base rule). Deep reflection ensures it's HIGH.
       if (reqs.has_deep_reflection && sr) {
-        if (typeof sr.confidence === 'string' && sr.confidence.length < 6) {
-          push.push(modeLabel + ' DEEP REFLECTION: self_reflection.confidence should be detailed, not just "' + sr.confidence + '"');
+        if (typeof sr.confidence === 'string' && sr.confidence !== 'HIGH') {
+          push.push(modeLabel + ' DEEP REFLECTION: confidence must be HIGH when deep reflection demanded (got "' + sr.confidence + '")');
         }
       }
 

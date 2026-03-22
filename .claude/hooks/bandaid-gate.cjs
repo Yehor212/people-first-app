@@ -70,6 +70,13 @@ const BANDAID_PATTERNS = [
     label: 'CORNER-CUTTING: Empty function/arrow body — implement the logic or remove the stub',
     exemptMarker: '// INTENTIONAL:',
   },
+  // Visual regression prevention (V1) — blocks style/className changes without verification
+  {
+    regex: /style\s*=\s*\{\{[^}]*\}\}/,
+    label: 'VISUAL REGRESSION RISK: inline style modification in .tsx — verify visual output before committing',
+    exemptMarker: '// VISUAL-VERIFIED:',
+    tsxOnly: true,
+  },
 ];
 
 const ROOT_CAUSE_MARKER = '// ROOT-CAUSE:';
@@ -101,6 +108,13 @@ process.stdin.on('end', () => {
 
     for (const bp of BANDAID_PATTERNS) {
       if (!bp.regex.test(newString)) continue;
+
+      // Skip tsx-only patterns on non-tsx files
+      if (bp.tsxOnly && !filePath.endsWith('.tsx')) continue;
+
+      // Skip visual regression checks for Write tool (full file content — can't detect changes)
+      // Only check Edit tool where new_string = actual change
+      if (bp.tsxOnly && data.tool_input?.content) continue;
 
       // Check file-level OR context-level exemption (e.g., setTimeout in animation files or retry contexts)
       if (bp.fileExempt) {
