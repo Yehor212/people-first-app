@@ -70,6 +70,7 @@ process.stdin.on('end', () => {
       '.env', '.env.local', '.env.production',
       'android/keystore', 'supabase/functions/_shared/auth.ts',
       '.claude-audit.log', '.claude/settings.json', 'CLAUDE.md',
+      '.evidence-chain', '.verification-done',
     ];
     const bashFileWritePatterns = [
       { pattern: /\bsed\s+-i\b/, label: 'sed in-place edit' },

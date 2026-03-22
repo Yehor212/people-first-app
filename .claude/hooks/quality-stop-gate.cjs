@@ -55,10 +55,16 @@ process.stdin.on('end', () => {
     // Intent snapshot: log GOAL vs actual changes for accountability trail (ReflAct/AEGIS)
     let goal = '';
     try {
-      const tokenContent = fs.readFileSync(PREFLIGHT_TOKEN, 'utf8');
-      const goalLine = tokenContent.split('\n').find(l => l.startsWith('GOAL:'));
-      if (goalLine) goal = goalLine.replace('GOAL:', '').trim();
-    } catch { /* no token */ }
+      const tokenContent = fs.readFileSync(PREFLIGHT_TOKEN, 'utf8').replace(/^\uFEFF/, '').trim();
+      if (tokenContent.startsWith('{')) {
+        const parsed = JSON.parse(tokenContent);
+        goal = parsed.goal || '';
+      } else {
+        // Legacy text format fallback
+        const goalLine = tokenContent.split('\n').find(l => l.startsWith('GOAL:'));
+        if (goalLine) goal = goalLine.replace('GOAL:', '').trim();
+      }
+    } catch { /* no token or parse error */ }
     if (goal) {
       const entry = JSON.stringify({ ts: Date.now(), hook: 'quality-stop-gate', event: 'stop', goal, tsChanges }) + '\n';
       try { fs.appendFileSync(AUDIT_LOG, entry); } catch {}
@@ -212,7 +218,9 @@ process.stdin.on('end', () => {
     process.exit(2);
   } catch (e) {
     process.stderr.write('HOOK ERROR [quality-stop-gate]: ' + (e.message || e) + '\n');
-    audit("allow", "passed all checks");
-  process.exit(0);
+    // Clean stale tokens on error path to prevent carry-over to next session
+    try { fs.unlinkSync(PREFLIGHT_TOKEN); } catch { /* ok */ }
+    audit("allow", "error path — tokens cleaned");
+    process.exit(0);
   }
 });

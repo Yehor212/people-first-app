@@ -356,12 +356,12 @@ function validate(content) {
     const fields = [parsed.pre_mortem, parsed.transmutation, parsed.unknowns || ''];
     const allText = fields.join(' ').toLowerCase();
     // SUSPICIOUS: same word repeated >3 times = template fill
-    const words = allText.split(/\s+/).filter(w => w.length > 4);
+    const words = allText.split(/\s+/).filter(w => w.length >= 4);
     const wordCounts = {};
     for (const w of words) wordCounts[w] = (wordCounts[w] || 0) + 1;
-    const repeated = Object.entries(wordCounts).filter(([, c]) => c > 5);
+    const repeated = Object.entries(wordCounts).filter(([, c]) => c > 3);
     if (repeated.length > 2) {
-      warnings.push('COT SUSPICIOUS: ' + repeated.length + ' words repeated >5 times — possible template fill, not genuine reasoning');
+      warnings.push('COT SUSPICIOUS: ' + repeated.length + ' words repeated >3 times — possible template fill, not genuine reasoning');
     }
     // OPAQUE: fields present but no concrete file/line evidence
     const hasEvidence = /[a-z]+\.(ts|tsx|cjs|js|md)/.test(allText) || /:\d+/.test(allText);

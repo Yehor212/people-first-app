@@ -144,9 +144,11 @@ process.stdin.on('end', () => {
       const markers = [ROOT_CAUSE_MARKER];
       if (bp.exemptMarker) markers.push(bp.exemptMarker);
 
-      let exempted = false;
+      let exempted = true; // Assume exempted until we find an un-exempted instance
+      let hasMatch = false;
       for (let i = 0; i < lines.length; i++) {
         if (!bp.regex.test(lines[i])) continue;
+        hasMatch = true;
         let foundRC = false;
         // Walk backwards from pattern line
         for (let j = i - 1; j >= Math.max(0, i - 3); j--) {
@@ -175,13 +177,13 @@ process.stdin.on('end', () => {
             }
           }
         }
-        if (foundRC) {
-          exempted = true;
-          break;
+        if (!foundRC) {
+          exempted = false;
+          break; // Found un-exempted instance — no need to check more
         }
       }
-
-      if (exempted) continue;
+      if (!hasMatch) continue; // Pattern not in code — nothing to check, move to next pattern
+      if (exempted) continue; // All instances are exempted
 
       // Check if there's an exemption marker anywhere but too short
       for (const marker of markers) {

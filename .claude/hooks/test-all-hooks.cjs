@@ -1743,6 +1743,26 @@ const cc5 = testBandaidGate({ tool_input: { file_path: 'src/test.ts', new_string
 if (cc5.exit === 0) { pass++; results.push({ name: 'bandaid-gate: non-empty function allows', status: 'PASS' }); }
 else { fail++; results.push({ name: 'bandaid-gate: non-empty function allows', status: 'FAIL', issues: JSON.stringify(cc5) }); }
 
+// ═══════════════════════════════════════════════════════
+// BANDAID-GATE MULTI-INSTANCE TESTS
+// ═══════════════════════════════════════════════════════
+console.log('\n  BANDAID-GATE MULTI-INSTANCE\n');
+
+// BG-MI-1: Two setTimeout, first exempted, second NOT → should BLOCK
+const bgmi1 = testBandaidGate({ tool_input: { file_path: 'src/test.ts', new_string: '// ROOT-CAUSE: debounce logic requires delay for UX\nsetTimeout(() => {}, 100);\n\nsetTimeout(() => {}, 200);' } });
+if (bgmi1.exit === 2) { pass++; results.push({ name: 'bandaid-gate: multi-instance second un-exempted blocks', status: 'PASS' }); }
+else { fail++; results.push({ name: 'bandaid-gate: multi-instance second un-exempted blocks', status: 'FAIL', issues: JSON.stringify(bgmi1) }); }
+
+// BG-MI-2: Two setTimeout, BOTH exempted → should ALLOW
+const bgmi2 = testBandaidGate({ tool_input: { file_path: 'src/test.ts', new_string: '// ROOT-CAUSE: debounce logic requires delay\nsetTimeout(() => {}, 100);\n// ROOT-CAUSE: retry after network failure\nsetTimeout(() => {}, 200);' } });
+if (bgmi2.exit === 0) { pass++; results.push({ name: 'bandaid-gate: multi-instance both exempted allows', status: 'PASS' }); }
+else { fail++; results.push({ name: 'bandaid-gate: multi-instance both exempted allows', status: 'FAIL', issues: JSON.stringify(bgmi2) }); }
+
+// BG-MI-3: No bandaid pattern at all → should ALLOW
+const bgmi3 = testBandaidGate({ tool_input: { file_path: 'src/test.ts', new_string: 'const x = 1;\nconst y = 2;\nconsole.log(x + y);' } });
+if (bgmi3.exit === 0) { pass++; results.push({ name: 'bandaid-gate: no pattern at all allows', status: 'PASS' }); }
+else { fail++; results.push({ name: 'bandaid-gate: no pattern at all allows', status: 'FAIL', issues: JSON.stringify(bgmi3) }); }
+
 console.log(`\n  TOTAL: ${results.length} tests — ${pass} pass, ${fail} fail`);
 
 if (fail > 0) {
