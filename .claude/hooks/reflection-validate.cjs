@@ -79,6 +79,28 @@ function validate(content) {
     errors.push(`laws_checked must be ${EXPECTED_LAWS} (got ${parsed.laws_checked})`);
   }
 
+  // Rule 5b: Full Cycle — law_compliance TABLE required (not just a number)
+  // In full cycle mode, postflight must include law_compliance: [{law: 1, status: "pass", evidence: "..."}]
+  // This prevents the agent from writing laws_checked:28 without actually checking each law
+  const isFullCycleForLaws = fs.existsSync(FULLCYCLE_ACTIVE) ||
+    (() => { try { const ur = JSON.parse(fs.readFileSync(path.join(ROOT, '.user-requirements'), 'utf8')); return ur.constraints && ur.constraints.includes('full_cycle'); } catch { return false; } })();
+
+  if (isFullCycleForLaws) {
+    if (!Array.isArray(parsed.law_compliance)) {
+      errors.push('FULL CYCLE requires law_compliance[] array — not just laws_checked:28. Each law needs {law, status, evidence}.');
+    } else if (parsed.law_compliance.length < EXPECTED_LAWS) {
+      errors.push(`FULL CYCLE law_compliance has ${parsed.law_compliance.length} entries, need ${EXPECTED_LAWS}. Each law must be verified.`);
+    } else {
+      // Verify each entry has required fields
+      const invalid = parsed.law_compliance.filter(lc =>
+        typeof lc.law !== 'number' || !lc.status || typeof lc.evidence !== 'string' || lc.evidence.length < 5
+      );
+      if (invalid.length > 0) {
+        errors.push(`FULL CYCLE law_compliance has ${invalid.length} invalid entries. Each needs: {law: N, status: "pass"/"na", evidence: "file:line or reason"}`);
+      }
+    }
+  }
+
   // Rule 6: mirrors_checked — must match expected count
   if (parsed.mirrors_checked !== EXPECTED_MIRRORS) {
     errors.push(`mirrors_checked must be ${EXPECTED_MIRRORS} (got ${parsed.mirrors_checked})`);
