@@ -72,6 +72,16 @@ process.stdin.on('end', () => {
       }
     }
 
+    // A4: Control flow mutation — fix verification (Anti-Pattern #15: Fix Without Trace)
+    // Research: control flow changes are #1 source of regressions from fixes
+    // Incident: bandaid-gate regression — changed break/continue logic without tracing all paths
+    const CONTROL_FLOW = /\b(if\s*\(|else\s*\{|break\b|continue\b|return\b|throw\b|process\.exit)/;
+    if (CONTROL_FLOW.test(newString)) {
+      warnings.push('CONTROL FLOW CHANGE: Edit modifies if/break/continue/return/exit. ' +
+        'TRACE ALL PATHS: (1) What happens when condition is TRUE? (2) FALSE? (3) What about edge cases (empty/null/missing)? ' +
+        '(Anti-Pattern #15: Fix Without Trace — incident: bandaid-gate regression from untested path)');
+    }
+
     // Always inject self-reflection reminder after TS edits (SR8)
     const selfReflectionReminder = 'SELF-REFLECTION: After this edit, verify: (1) No IDE errors introduced (2) No regression in existing behavior (3) Change aligns with stated goal';
 
