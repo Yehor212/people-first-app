@@ -1,15 +1,20 @@
-import { useState, useEffect, useCallback } from 'react';
-import { safeJsonParse, safeLocalStorageGet, safeLocalStorageSet } from '@/lib/safeJson';
-import { SK } from '@/lib/storageKeys';
-import { Volume2, VolumeX, Sparkles, Zap, Award, Music } from 'lucide-react';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { cn } from '@/lib/utils';
-import { Switch } from '@/components/ui/switch';
-import { useModalA11y } from '@/hooks/useModalA11y';
-import { useScrollLock } from '@/hooks/useScrollLock';
+import { useState, useEffect, useCallback } from "react";
+import {
+  safeJsonParse,
+  safeLocalStorageGet,
+  safeLocalStorageSet,
+} from "@/lib/safeJson";
+import { SK } from "@/lib/storageKeys";
+import { Volume2, VolumeX, Sparkles, Zap, Award, Music } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { cn } from "@/lib/utils";
+import { Switch } from "@/components/ui/switch";
+import { useModalA11y } from "@/hooks/useModalA11y";
+import { useScrollLock } from "@/hooks/useScrollLock";
+import { useBackHandler } from "@/hooks/useBackHandler";
 
 export interface DopamineSettings {
-  intensity: 'minimal' | 'normal' | 'adhd';
+  intensity: "minimal" | "normal" | "adhd";
   animations: boolean;
   sounds: boolean;
   haptics: boolean;
@@ -19,7 +24,7 @@ export interface DopamineSettings {
 }
 
 const DEFAULT_SETTINGS: DopamineSettings = {
-  intensity: 'normal',
+  intensity: "normal",
   animations: true,
   sounds: true,
   haptics: false,
@@ -37,68 +42,95 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
 
   useModalA11y(true, onClose);
   useScrollLock(true);
+  useBackHandler(true, onClose);
 
   const [settings, setSettings] = useState<DopamineSettings>(DEFAULT_SETTINGS);
 
   // Load settings from localStorage
   useEffect(() => {
-    const parsed = safeLocalStorageGet<DopamineSettings | null>(SK.DOPAMINE_SETTINGS, null);
+    const parsed = safeLocalStorageGet<DopamineSettings | null>(
+      SK.DOPAMINE_SETTINGS,
+      null,
+    );
     if (parsed) {
       setSettings({ ...DEFAULT_SETTINGS, ...parsed });
     }
   }, []);
 
   // Save settings to localStorage and dispatch event
-  const updateSettings = useCallback((newSettings: Partial<DopamineSettings>) => {
-    setSettings(prev => {
-      const updated = { ...prev, ...newSettings };
-      safeLocalStorageSet(SK.DOPAMINE_SETTINGS, updated);
-      // Dispatch custom event for same-tab updates
-      window.dispatchEvent(new CustomEvent('dopamine-settings-change', { detail: updated }));
-      return updated;
-    });
-  }, []);
+  const updateSettings = useCallback(
+    (newSettings: Partial<DopamineSettings>) => {
+      setSettings((prev) => {
+        const updated = { ...prev, ...newSettings };
+        safeLocalStorageSet(SK.DOPAMINE_SETTINGS, updated);
+        // Dispatch custom event for same-tab updates
+        window.dispatchEvent(
+          new CustomEvent("dopamine-settings-change", { detail: updated }),
+        );
+        return updated;
+      });
+    },
+    [],
+  );
 
-  const handleIntensityChange = useCallback((intensity: DopamineSettings['intensity']) => {
-    if (intensity === 'adhd') {
-      // ADHD mode = EVERYTHING ON!
-      updateSettings({
-        intensity,
-        animations: true,
-        sounds: true,
-        haptics: true,
-        confetti: true,
-        streakFire: true,
-        moodDrivenUI: true,
-      });
-    } else if (intensity === 'minimal') {
-      // Minimal mode = quiet experience
-      updateSettings({
-        intensity,
-        animations: false,
-        sounds: false,
-        haptics: false,
-        confetti: false,
-        streakFire: false,
-        moodDrivenUI: false,
-      });
-    } else {
-      // Normal mode = balanced
-      updateSettings({
-        intensity,
-        animations: true,
-        sounds: true,
-        haptics: false,
-        confetti: true,
-        streakFire: true,
-        moodDrivenUI: true,
-      });
-    }
-  }, [updateSettings]);
+  const handleIntensityChange = useCallback(
+    (intensity: DopamineSettings["intensity"]) => {
+      if (intensity === "adhd") {
+        // ADHD mode = EVERYTHING ON!
+        updateSettings({
+          intensity,
+          animations: true,
+          sounds: true,
+          haptics: true,
+          confetti: true,
+          streakFire: true,
+          moodDrivenUI: true,
+        });
+      } else if (intensity === "minimal") {
+        // Minimal mode = quiet experience
+        updateSettings({
+          intensity,
+          animations: false,
+          sounds: false,
+          haptics: false,
+          confetti: false,
+          streakFire: false,
+          moodDrivenUI: false,
+        });
+      } else {
+        // Normal mode = balanced
+        updateSettings({
+          intensity,
+          animations: true,
+          sounds: true,
+          haptics: false,
+          confetti: true,
+          streakFire: true,
+          moodDrivenUI: true,
+        });
+      }
+    },
+    [updateSettings],
+  );
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="dopamine-settings-title" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }} onTouchEnd={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="bg-card rounded-2xl shadow-2xl max-w-md w-full max-h-[90dvh] overflow-y-auto" onClick={(e) => e.stopPropagation()} onTouchEnd={(e) => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="dopamine-settings-title"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      onTouchEnd={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div
+        className="bg-card rounded-2xl shadow-2xl max-w-md w-full max-h-[90dvh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+        onTouchEnd={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="sticky top-0 bg-card border-b border-border p-6 z-10">
           <div className="flex items-center justify-between">
@@ -107,15 +139,18 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
                 <Sparkles className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h2 id="dopamine-settings-title" className="text-xl font-bold">{t.dopamineSettings || 'Dopamine Dashboard'}</h2>
+                <h2 id="dopamine-settings-title" className="text-xl font-bold">
+                  {t.dopamineSettings || "Dopamine Dashboard"}
+                </h2>
                 <p className="text-sm text-muted-foreground">
-                  {t.dopamineSettingsDesc || 'Customize your feedback experience'}
+                  {t.dopamineSettingsDesc ||
+                    "Customize your feedback experience"}
                 </p>
               </div>
             </div>
             <button
               onClick={onClose}
-              aria-label={t.close || 'Close'}
+              aria-label={t.close || "Close"}
               className="p-2 hover:bg-muted rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
             >
               ×
@@ -129,65 +164,66 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
           <div>
             <h3 className="font-semibold mb-3 flex items-center gap-2">
               <Zap className="w-4 h-4" />
-              {t.dopamineIntensity || 'Intensity Level'}
+              {t.dopamineIntensity || "Intensity Level"}
             </h3>
             <div className="grid grid-cols-3 gap-2">
               <button
-                onClick={() => handleIntensityChange('minimal')}
-                aria-pressed={settings.intensity === 'minimal'}
+                onClick={() => handleIntensityChange("minimal")}
+                aria-pressed={settings.intensity === "minimal"}
                 className={cn(
-                  'p-3 rounded-xl text-sm font-medium transition-all',
-                  settings.intensity === 'minimal'
-                    ? 'bg-primary text-primary-foreground zen-shadow'
-                    : 'bg-muted hover:bg-muted/70'
+                  "p-3 rounded-xl text-sm font-medium transition-all",
+                  settings.intensity === "minimal"
+                    ? "bg-primary text-primary-foreground zen-shadow"
+                    : "bg-muted hover:bg-muted/70",
                 )}
               >
                 <div className="text-center">
                   <div className="text-lg mb-1">🌙</div>
-                  <div>{t.dopamineMinimal || 'Minimal'}</div>
+                  <div>{t.dopamineMinimal || "Minimal"}</div>
                 </div>
               </button>
 
               <button
-                onClick={() => handleIntensityChange('normal')}
-                aria-pressed={settings.intensity === 'normal'}
+                onClick={() => handleIntensityChange("normal")}
+                aria-pressed={settings.intensity === "normal"}
                 className={cn(
-                  'p-3 rounded-xl text-sm font-medium transition-all',
-                  settings.intensity === 'normal'
-                    ? 'bg-primary text-primary-foreground zen-shadow'
-                    : 'bg-muted hover:bg-muted/70'
+                  "p-3 rounded-xl text-sm font-medium transition-all",
+                  settings.intensity === "normal"
+                    ? "bg-primary text-primary-foreground zen-shadow"
+                    : "bg-muted hover:bg-muted/70",
                 )}
               >
                 <div className="text-center">
                   <div className="text-lg mb-1">⚖️</div>
-                  <div>{t.dopamineNormal || 'Normal'}</div>
+                  <div>{t.dopamineNormal || "Normal"}</div>
                 </div>
               </button>
 
               <button
-                onClick={() => handleIntensityChange('adhd')}
-                aria-pressed={settings.intensity === 'adhd'}
+                onClick={() => handleIntensityChange("adhd")}
+                aria-pressed={settings.intensity === "adhd"}
                 className={cn(
-                  'p-3 rounded-xl text-sm font-medium transition-all',
-                  settings.intensity === 'adhd'
-                    ? 'zen-gradient text-white zen-shadow-xl'
-                    : 'bg-muted hover:bg-muted/70'
+                  "p-3 rounded-xl text-sm font-medium transition-all",
+                  settings.intensity === "adhd"
+                    ? "zen-gradient text-white zen-shadow-xl"
+                    : "bg-muted hover:bg-muted/70",
                 )}
               >
                 <div className="text-center">
                   <div className="text-lg mb-1">🚀</div>
-                  <div>{t.dopamineADHD || 'ADHD'}</div>
+                  <div>{t.dopamineADHD || "ADHD"}</div>
                 </div>
               </button>
             </div>
 
             <p className="text-xs text-muted-foreground mt-2">
-              {settings.intensity === 'minimal' &&
-                (t.dopamineMinimalDesc || 'Quiet, distraction-free experience')}
-              {settings.intensity === 'normal' &&
-                (t.dopamineNormalDesc || 'Balanced feedback and motivation')}
-              {settings.intensity === 'adhd' &&
-                (t.dopamineADHDDesc || 'Maximum dopamine! All effects enabled 🎉')}
+              {settings.intensity === "minimal" &&
+                (t.dopamineMinimalDesc || "Quiet, distraction-free experience")}
+              {settings.intensity === "normal" &&
+                (t.dopamineNormalDesc || "Balanced feedback and motivation")}
+              {settings.intensity === "adhd" &&
+                (t.dopamineADHDDesc ||
+                  "Maximum dopamine! All effects enabled 🎉")}
             </p>
           </div>
 
@@ -198,7 +234,7 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
           <div className="space-y-4">
             <h3 className="font-semibold mb-3 flex items-center gap-2">
               <Award className="w-4 h-4" />
-              {t.dopamineCustomize || 'Fine-tune Settings'}
+              {t.dopamineCustomize || "Fine-tune Settings"}
             </h3>
 
             {/* Animations */}
@@ -208,16 +244,21 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
                   <Sparkles className="w-5 h-5 text-primary" />
                 </div>
                 <div className="min-w-0">
-                  <div className="font-medium truncate">{t.dopamineAnimations || 'Animations'}</div>
+                  <div className="font-medium truncate">
+                    {t.dopamineAnimations || "Animations"}
+                  </div>
                   <div className="text-xs text-muted-foreground line-clamp-1">
-                    {t.dopamineAnimationsDesc || 'Smooth transitions and effects'}
+                    {t.dopamineAnimationsDesc ||
+                      "Smooth transitions and effects"}
                   </div>
                 </div>
               </div>
               <Switch
                 checked={settings.animations}
-                onCheckedChange={(checked) => updateSettings({ animations: checked })}
-                aria-label={t.dopamineAnimations || 'Animations'}
+                onCheckedChange={(checked) =>
+                  updateSettings({ animations: checked })
+                }
+                aria-label={t.dopamineAnimations || "Animations"}
               />
             </div>
 
@@ -232,16 +273,21 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
                   )}
                 </div>
                 <div className="min-w-0">
-                  <div className="font-medium truncate">{t.dopamineSounds || 'Sounds'}</div>
+                  <div className="font-medium truncate">
+                    {t.dopamineSounds || "Sounds"}
+                  </div>
                   <div className="text-xs text-muted-foreground line-clamp-1">
-                    {t.dopamineSoundsDesc || 'Success sounds and audio feedback'}
+                    {t.dopamineSoundsDesc ||
+                      "Success sounds and audio feedback"}
                   </div>
                 </div>
               </div>
               <Switch
                 checked={settings.sounds}
-                onCheckedChange={(checked) => updateSettings({ sounds: checked })}
-                aria-label={t.dopamineSounds || 'Sounds'}
+                onCheckedChange={(checked) =>
+                  updateSettings({ sounds: checked })
+                }
+                aria-label={t.dopamineSounds || "Sounds"}
               />
             </div>
 
@@ -252,16 +298,21 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
                   <Music className="w-5 h-5 text-primary" />
                 </div>
                 <div className="min-w-0">
-                  <div className="font-medium truncate">{t.dopamineHaptics || 'Haptics'}</div>
+                  <div className="font-medium truncate">
+                    {t.dopamineHaptics || "Haptics"}
+                  </div>
                   <div className="text-xs text-muted-foreground line-clamp-1">
-                    {t.dopamineHapticsDesc || 'Vibration feedback (mobile only)'}
+                    {t.dopamineHapticsDesc ||
+                      "Vibration feedback (mobile only)"}
                   </div>
                 </div>
               </div>
               <Switch
                 checked={settings.haptics}
-                onCheckedChange={(checked) => updateSettings({ haptics: checked })}
-                aria-label={t.dopamineHaptics || 'Haptics'}
+                onCheckedChange={(checked) =>
+                  updateSettings({ haptics: checked })
+                }
+                aria-label={t.dopamineHaptics || "Haptics"}
               />
             </div>
 
@@ -272,16 +323,20 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
                   <span className="text-lg leading-none">🎉</span>
                 </div>
                 <div className="min-w-0">
-                  <div className="font-medium truncate">{t.dopamineConfetti || 'Confetti'}</div>
+                  <div className="font-medium truncate">
+                    {t.dopamineConfetti || "Confetti"}
+                  </div>
                   <div className="text-xs text-muted-foreground line-clamp-1">
-                    {t.dopamineConfettiDesc || 'Celebrate habit completions'}
+                    {t.dopamineConfettiDesc || "Celebrate habit completions"}
                   </div>
                 </div>
               </div>
               <Switch
                 checked={settings.confetti}
-                onCheckedChange={(checked) => updateSettings({ confetti: checked })}
-                aria-label={t.dopamineConfetti || 'Confetti'}
+                onCheckedChange={(checked) =>
+                  updateSettings({ confetti: checked })
+                }
+                aria-label={t.dopamineConfetti || "Confetti"}
               />
             </div>
 
@@ -292,16 +347,20 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
                   <span className="text-lg leading-none">🔥</span>
                 </div>
                 <div className="min-w-0">
-                  <div className="font-medium truncate">{t.dopamineStreakFire || 'Streak Fire'}</div>
+                  <div className="font-medium truncate">
+                    {t.dopamineStreakFire || "Streak Fire"}
+                  </div>
                   <div className="text-xs text-muted-foreground line-clamp-1">
-                    {t.dopamineStreakFireDesc || 'Animated fire for streaks'}
+                    {t.dopamineStreakFireDesc || "Animated fire for streaks"}
                   </div>
                 </div>
               </div>
               <Switch
                 checked={settings.streakFire}
-                onCheckedChange={(checked) => updateSettings({ streakFire: checked })}
-                aria-label={t.dopamineStreakFire || 'Streak Fire'}
+                onCheckedChange={(checked) =>
+                  updateSettings({ streakFire: checked })
+                }
+                aria-label={t.dopamineStreakFire || "Streak Fire"}
               />
             </div>
 
@@ -312,16 +371,20 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
                   <span className="text-lg leading-none">🎨</span>
                 </div>
                 <div className="min-w-0">
-                  <div className="font-medium truncate">{t.dopamineMoodDrivenUI || 'Mood Visuals'}</div>
+                  <div className="font-medium truncate">
+                    {t.dopamineMoodDrivenUI || "Mood Visuals"}
+                  </div>
                   <div className="text-xs text-muted-foreground line-clamp-1">
-                    {t.dopamineMoodDrivenUIDesc || 'UI adapts to your mood'}
+                    {t.dopamineMoodDrivenUIDesc || "UI adapts to your mood"}
                   </div>
                 </div>
               </div>
               <Switch
                 checked={settings.moodDrivenUI}
-                onCheckedChange={(checked) => updateSettings({ moodDrivenUI: checked })}
-                aria-label={t.dopamineMoodDrivenUI || 'Mood Visuals'}
+                onCheckedChange={(checked) =>
+                  updateSettings({ moodDrivenUI: checked })
+                }
+                aria-label={t.dopamineMoodDrivenUI || "Mood Visuals"}
               />
             </div>
           </div>
@@ -332,11 +395,11 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
               <div className="text-2xl">💡</div>
               <div className="text-sm">
                 <div className="font-medium mb-1">
-                  {t.dopamineTip || 'ADHD Tip'}
+                  {t.dopamineTip || "ADHD Tip"}
                 </div>
                 <div className="text-muted-foreground">
                   {t.dopamineTipText ||
-                    'ADHD brains need more dopamine! Try ADHD mode for maximum motivation and feedback. You can always adjust individual settings.'}
+                    "ADHD brains need more dopamine! Try ADHD mode for maximum motivation and feedback. You can always adjust individual settings."}
                 </div>
               </div>
             </div>
@@ -349,7 +412,7 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
             onClick={onClose}
             className="w-full py-3 zen-gradient text-white font-medium rounded-xl hover:opacity-90 transition-opacity"
           >
-            {t.dopamineSave || 'Save & Close'}
+            {t.dopamineSave || "Save & Close"}
           </button>
         </div>
       </div>
@@ -361,8 +424,11 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
 export function useDopamineSettings(): DopamineSettings {
   const [settings, setSettings] = useState<DopamineSettings>(() => {
     // Initialize from localStorage on first render
-    if (typeof window !== 'undefined') {
-      const parsed = safeLocalStorageGet<DopamineSettings | null>(SK.DOPAMINE_SETTINGS, null);
+    if (typeof window !== "undefined") {
+      const parsed = safeLocalStorageGet<DopamineSettings | null>(
+        SK.DOPAMINE_SETTINGS,
+        null,
+      );
       if (parsed) {
         return { ...DEFAULT_SETTINGS, ...parsed };
       }
@@ -384,12 +450,18 @@ export function useDopamineSettings(): DopamineSettings {
       setSettings(e.detail);
     };
 
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('dopamine-settings-change', handleCustomChange as EventListener);
+    window.addEventListener("storage", handleStorageChange);
+    window.addEventListener(
+      "dopamine-settings-change",
+      handleCustomChange as EventListener,
+    );
 
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('dopamine-settings-change', handleCustomChange as EventListener);
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener(
+        "dopamine-settings-change",
+        handleCustomChange as EventListener,
+      );
     };
   }, []);
 

@@ -7,13 +7,23 @@
  * To update: just edit CHANGELOG.md and rebuild - no code changes needed!
  */
 
-import { useState } from 'react';
-import { X, ChevronDown, ChevronUp, Sparkles, Bug, Zap, Trash2, History } from 'lucide-react';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { useModalA11y } from '@/hooks/useModalA11y';
-import { useScrollLock } from '@/hooks/useScrollLock';
-import changelog from 'virtual:changelog';
-import type { ChangelogVersion } from '@/types/changelog';
+import { useState } from "react";
+import {
+  X,
+  ChevronDown,
+  ChevronUp,
+  Sparkles,
+  Bug,
+  Zap,
+  Trash2,
+  History,
+} from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useModalA11y } from "@/hooks/useModalA11y";
+import { useScrollLock } from "@/hooks/useScrollLock";
+import { useBackHandler } from "@/hooks/useBackHandler";
+import changelog from "virtual:changelog";
+import type { ChangelogVersion } from "@/types/changelog";
 
 interface ChangelogPanelProps {
   onClose: () => void;
@@ -27,16 +37,24 @@ function getSectionIcon(title: string, emoji?: string): React.ReactNode {
 
   const lowerTitle = title.toLowerCase();
 
-  if (lowerTitle.includes('add') || lowerTitle.includes('new') || lowerTitle.includes('feature')) {
+  if (
+    lowerTitle.includes("add") ||
+    lowerTitle.includes("new") ||
+    lowerTitle.includes("feature")
+  ) {
     return <Sparkles className="w-4 h-4 text-green-500" />;
   }
-  if (lowerTitle.includes('fix') || lowerTitle.includes('bug')) {
+  if (lowerTitle.includes("fix") || lowerTitle.includes("bug")) {
     return <Bug className="w-4 h-4 text-orange-500" />;
   }
-  if (lowerTitle.includes('change') || lowerTitle.includes('improve') || lowerTitle.includes('enhance')) {
+  if (
+    lowerTitle.includes("change") ||
+    lowerTitle.includes("improve") ||
+    lowerTitle.includes("enhance")
+  ) {
     return <Zap className="w-4 h-4 text-blue-500" />;
   }
-  if (lowerTitle.includes('remove') || lowerTitle.includes('deprecat')) {
+  if (lowerTitle.includes("remove") || lowerTitle.includes("deprecat")) {
     return <Trash2 className="w-4 h-4 text-red-500" />;
   }
 
@@ -44,20 +62,23 @@ function getSectionIcon(title: string, emoji?: string): React.ReactNode {
 }
 
 // Translate section titles
-function translateSectionTitle(title: string, t: Record<string, string>): string {
+function translateSectionTitle(
+  title: string,
+  t: Record<string, string>,
+): string {
   const lowerTitle = title.toLowerCase();
 
-  if (lowerTitle === 'added' || lowerTitle.includes('new')) {
-    return t.changelogAdded || 'Added';
+  if (lowerTitle === "added" || lowerTitle.includes("new")) {
+    return t.changelogAdded || "Added";
   }
-  if (lowerTitle === 'fixed' || lowerTitle.includes('bug fix')) {
-    return t.changelogFixed || 'Fixed';
+  if (lowerTitle === "fixed" || lowerTitle.includes("bug fix")) {
+    return t.changelogFixed || "Fixed";
   }
-  if (lowerTitle === 'changed') {
-    return t.changelogChanged || 'Changed';
+  if (lowerTitle === "changed") {
+    return t.changelogChanged || "Changed";
   }
-  if (lowerTitle === 'removed') {
-    return t.changelogRemoved || 'Removed';
+  if (lowerTitle === "removed") {
+    return t.changelogRemoved || "Removed";
   }
 
   return title;
@@ -67,7 +88,7 @@ function VersionCard({
   version,
   isExpanded,
   onToggle,
-  t
+  t,
 }: {
   version: ChangelogVersion;
   isExpanded: boolean;
@@ -84,7 +105,9 @@ function VersionCard({
         <div className="flex items-center gap-3">
           <div className="flex flex-col items-start">
             <div className="flex items-center gap-2">
-              <span className="font-bold text-foreground">v{version.version}</span>
+              <span className="font-bold text-foreground">
+                v{version.version}
+              </span>
               {version.codename && (
                 <span className="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded-full">
                   {version.codename}
@@ -92,7 +115,9 @@ function VersionCard({
               )}
             </div>
             {version.date && (
-              <span className="text-xs text-muted-foreground">{version.date}</span>
+              <span className="text-xs text-muted-foreground">
+                {version.date}
+              </span>
             )}
           </div>
         </div>
@@ -135,6 +160,7 @@ function VersionCard({
 export function ChangelogPanel({ onClose }: ChangelogPanelProps) {
   const { t } = useLanguage();
   useModalA11y(true, onClose);
+  useBackHandler(true, onClose);
   useScrollLock(true);
   const [expandedVersions, setExpandedVersions] = useState<Set<string>>(() => {
     // Expand the first (latest) version by default
@@ -145,7 +171,7 @@ export function ChangelogPanel({ onClose }: ChangelogPanelProps) {
   });
 
   const toggleVersion = (version: string) => {
-    setExpandedVersions(prev => {
+    setExpandedVersions((prev) => {
       const next = new Set(prev);
       if (next.has(version)) {
         next.delete(version);
@@ -157,7 +183,7 @@ export function ChangelogPanel({ onClose }: ChangelogPanelProps) {
   };
 
   const expandAll = () => {
-    setExpandedVersions(new Set(changelog.map(v => v.version)));
+    setExpandedVersions(new Set(changelog.map((v) => v.version)));
   };
 
   const collapseAll = () => {
@@ -165,18 +191,26 @@ export function ChangelogPanel({ onClose }: ChangelogPanelProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-[80] bg-background motion-safe:animate-fade-in overflow-hidden flex flex-col" role="dialog" aria-modal="true" aria-labelledby="changelog-title">
+    <div
+      className="fixed inset-0 z-[80] bg-background motion-safe:animate-fade-in overflow-hidden flex flex-col"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="changelog-title"
+    >
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-border bg-card/80 backdrop-blur-sm">
         <div className="flex items-center gap-3">
           <History className="w-6 h-6 text-primary" />
-          <h2 id="changelog-title" className="text-xl font-bold text-foreground">
-            {t.changelogTitle || 'Version History'}
+          <h2
+            id="changelog-title"
+            className="text-xl font-bold text-foreground"
+          >
+            {t.changelogTitle || "Version History"}
           </h2>
         </div>
         <button
           onClick={onClose}
-          aria-label={t.close || 'Close'}
+          aria-label={t.close || "Close"}
           className="p-2 hover:bg-muted rounded-full transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
         >
           <X className="w-6 h-6" />
@@ -189,13 +223,13 @@ export function ChangelogPanel({ onClose }: ChangelogPanelProps) {
           onClick={expandAll}
           className="px-3 py-1.5 text-xs bg-secondary text-secondary-foreground rounded-lg hover:bg-muted transition-colors min-h-[44px] flex items-center justify-center"
         >
-          {t.changelogExpandAll || 'Expand All'}
+          {t.changelogExpandAll || "Expand All"}
         </button>
         <button
           onClick={collapseAll}
           className="px-3 py-1.5 text-xs bg-secondary text-secondary-foreground rounded-lg hover:bg-muted transition-colors min-h-[44px] flex items-center justify-center"
         >
-          {t.changelogCollapseAll || 'Collapse All'}
+          {t.changelogCollapseAll || "Collapse All"}
         </button>
       </div>
 
@@ -203,7 +237,7 @@ export function ChangelogPanel({ onClose }: ChangelogPanelProps) {
       <div className="flex-1 overflow-y-auto p-4 space-y-3 pb-safe">
         {changelog.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
-            {t.changelogEmpty || 'No version history available'}
+            {t.changelogEmpty || "No version history available"}
           </div>
         ) : (
           changelog.map((version) => (

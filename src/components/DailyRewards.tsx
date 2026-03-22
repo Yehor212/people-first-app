@@ -3,33 +3,42 @@
  * ADHD-optimized daily check-in with escalating rewards
  */
 
-import { useState, useRef, useEffect } from 'react';
-import { Gift, Sparkles, Check, Lock, Zap, X } from 'lucide-react';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { cn, getToday, formatDate } from '@/lib/utils';
-import { safeLocalStorageGet, safeLocalStorageSet, storageGetRaw, storageSetRaw } from '@/lib/safeJson';
-import { safeParseInt } from '@/lib/validation';
-import { SK } from '@/lib/storageKeys';
-import { RewardedAdPrompt } from '@/components/ads/RewardedAdPrompt';
-import { useModalA11y } from '@/hooks/useModalA11y';
-import { useScrollLock } from '@/hooks/useScrollLock';
+import { useState, useRef, useEffect } from "react";
+import { Gift, Sparkles, Check, Lock, Zap, X } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { cn, getToday, formatDate } from "@/lib/utils";
+import {
+  safeLocalStorageGet,
+  safeLocalStorageSet,
+  storageGetRaw,
+  storageSetRaw,
+} from "@/lib/safeJson";
+import { safeParseInt } from "@/lib/validation";
+import { SK } from "@/lib/storageKeys";
+import { RewardedAdPrompt } from "@/components/ads/RewardedAdPrompt";
+import { useModalA11y } from "@/hooks/useModalA11y";
+import { useScrollLock } from "@/hooks/useScrollLock";
+import { useBackHandler } from "@/hooks/useBackHandler";
 import {
   getDailyLoginRewards,
   getLoginStreakBonus,
   DailyLoginReward,
-} from '@/lib/adhdHooks';
+} from "@/lib/adhdHooks";
 
 interface DailyRewardsProps {
   onClose: () => void;
-  onClaimReward: (reward: DailyLoginReward['reward'], bonusXp: number) => void;
+  onClaimReward: (reward: DailyLoginReward["reward"], bonusXp: number) => void;
 }
 
 export function DailyRewards({ onClose, onClaimReward }: DailyRewardsProps) {
   const { t } = useLanguage();
   useModalA11y(true, onClose);
   useScrollLock(true);
+  useBackHandler(true, onClose);
 
-  const [rewards, setRewards] = useState<DailyLoginReward[]>(getDailyLoginRewards());
+  const [rewards, setRewards] = useState<DailyLoginReward[]>(
+    getDailyLoginRewards(),
+  );
   const [currentDay, setCurrentDay] = useState(1);
   const [loginStreak, setLoginStreak] = useState(0);
   const [canClaim, setCanClaim] = useState(false);
@@ -52,7 +61,10 @@ export function DailyRewards({ onClose, onClaimReward }: DailyRewardsProps) {
 
   useEffect(() => {
     // Load saved state
-    const savedLogin = safeLocalStorageGet<{ rewards?: DailyLoginReward[]; currentDay?: number }>(SK.DAILY_LOGIN, null);
+    const savedLogin = safeLocalStorageGet<{
+      rewards?: DailyLoginReward[];
+      currentDay?: number;
+    }>(SK.DAILY_LOGIN, null);
     const savedStreak = storageGetRaw(SK.LOGIN_STREAK);
     const lastLogin = storageGetRaw(SK.LAST_LOGIN) || null;
 
@@ -81,7 +93,7 @@ export function DailyRewards({ onClose, onClaimReward }: DailyRewardsProps) {
       } else if (lastLogin && lastLogin !== today) {
         // Streak broken - reset
         setLoginStreak(1);
-        storageSetRaw(SK.LOGIN_STREAK, '1');
+        storageSetRaw(SK.LOGIN_STREAK, "1");
         // Reset rewards cycle
         setCurrentDay(1);
         setRewards(getDailyLoginRewards());
@@ -100,7 +112,7 @@ export function DailyRewards({ onClose, onClaimReward }: DailyRewardsProps) {
 
     // Mark as claimed
     const updatedRewards = rewards.map((r, i) =>
-      i === currentDay - 1 ? { ...r, claimed: true } : r
+      i === currentDay - 1 ? { ...r, claimed: true } : r,
     );
     setRewards(updatedRewards);
 
@@ -125,7 +137,11 @@ export function DailyRewards({ onClose, onClaimReward }: DailyRewardsProps) {
   const bonusXp = getLoginStreakBonus(loginStreak);
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4" role="dialog" aria-modal="true">
+    <div
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+    >
       {/* Confetti Effect */}
       {showConfetti && (
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -140,7 +156,7 @@ export function DailyRewards({ onClose, onClaimReward }: DailyRewardsProps) {
                 animationDuration: `${1 + Math.random()}s`,
               }}
             >
-              {['🎉', '⭐', '✨', '🎊', '💫'][Math.floor(Math.random() * 5)]}
+              {["🎉", "⭐", "✨", "🎊", "💫"][Math.floor(Math.random() * 5)]}
             </div>
           ))}
         </div>
@@ -162,9 +178,12 @@ export function DailyRewards({ onClose, onClaimReward }: DailyRewardsProps) {
               <Gift className="w-8 h-8" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold">{t.dailyRewards || 'Daily Rewards'}</h2>
+              <h2 className="text-2xl font-bold">
+                {t.dailyRewards || "Daily Rewards"}
+              </h2>
               <p className="text-foreground/80 text-sm">
-                {t.loginStreak || 'Login Streak'}: {loginStreak} {t.days || 'days'} 🔥
+                {t.loginStreak || "Login Streak"}: {loginStreak}{" "}
+                {t.days || "days"} 🔥
               </p>
             </div>
           </div>
@@ -185,17 +204,21 @@ export function DailyRewards({ onClose, onClaimReward }: DailyRewardsProps) {
                 <div
                   key={index}
                   className={cn(
-                    'aspect-square rounded-xl flex flex-col items-center justify-center relative transition-all',
-                    isToday && canClaim && 'ring-2 ring-primary ring-offset-2 animate-pulse',
-                    isPast && 'bg-primary/10',
-                    isFuture && 'bg-muted opacity-60',
-                    isToday && !canClaim && 'bg-primary/20',
-                    isToday && canClaim && 'bg-primary/30 cursor-pointer hover:scale-105'
+                    "aspect-square rounded-xl flex flex-col items-center justify-center relative transition-all",
+                    isToday &&
+                      canClaim &&
+                      "ring-2 ring-primary ring-offset-2 animate-pulse",
+                    isPast && "bg-primary/10",
+                    isFuture && "bg-muted opacity-60",
+                    isToday && !canClaim && "bg-primary/20",
+                    isToday &&
+                      canClaim &&
+                      "bg-primary/30 cursor-pointer hover:scale-105",
                   )}
                   onClick={isToday && canClaim ? handleClaim : undefined}
                 >
                   <span className="text-xs font-medium text-muted-foreground mb-1">
-                    {t.day || 'Day'} {index + 1}
+                    {t.day || "Day"} {index + 1}
                   </span>
                   <span className="text-lg">{reward.reward.icon}</span>
                   {isPast && (
@@ -212,17 +235,23 @@ export function DailyRewards({ onClose, onClaimReward }: DailyRewardsProps) {
           </div>
 
           {/* Today's Reward */}
-          <div className={cn(
-            'bg-gradient-to-r from-primary/10 to-accent/10 rounded-2xl p-4 mb-4',
-            canClaim && 'animate-pulse'
-          )}>
+          <div
+            className={cn(
+              "bg-gradient-to-r from-primary/10 to-accent/10 rounded-2xl p-4 mb-4",
+              canClaim && "animate-pulse",
+            )}
+          >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <span className="text-3xl">{rewards[currentDay - 1]?.reward.icon}</span>
+                <span className="text-3xl">
+                  {rewards[currentDay - 1]?.reward.icon}
+                </span>
                 <div>
-                  <div className="font-bold">{rewards[currentDay - 1]?.reward.label}</div>
+                  <div className="font-bold">
+                    {rewards[currentDay - 1]?.reward.label}
+                  </div>
                   <div className="text-sm text-muted-foreground">
-                    {t.day || 'Day'} {currentDay} {t.reward || 'Reward'}
+                    {t.day || "Day"} {currentDay} {t.reward || "Reward"}
                   </div>
                 </div>
               </div>
@@ -231,16 +260,16 @@ export function DailyRewards({ onClose, onClaimReward }: DailyRewardsProps) {
                   onClick={handleClaim}
                   disabled={claiming}
                   className={cn(
-                    'px-4 py-2 zen-gradient text-white rounded-xl font-medium transition-all',
-                    claiming ? 'opacity-50' : 'hover:scale-105 active:scale-95'
+                    "px-4 py-2 zen-gradient text-white rounded-xl font-medium transition-all",
+                    claiming ? "opacity-50" : "hover:scale-105 active:scale-95",
                   )}
                 >
-                  {claiming ? '...' : t.claim || 'Claim!'}
+                  {claiming ? "..." : t.claim || "Claim!"}
                 </button>
               )}
               {!canClaim && (
                 <div className="text-sm text-muted-foreground">
-                  ✅ {t.claimed || 'Claimed'}
+                  ✅ {t.claimed || "Claimed"}
                 </div>
               )}
             </div>
@@ -260,14 +289,14 @@ export function DailyRewards({ onClose, onClaimReward }: DailyRewardsProps) {
             <div className="flex items-center justify-center gap-2 p-3 bg-yellow-500/10 rounded-xl">
               <Zap className="w-5 h-5 text-yellow-600" />
               <span className="font-medium text-yellow-700">
-                +{bonusXp} XP {t.streakBonus || 'Streak Bonus'}! 🔥
+                +{bonusXp} XP {t.streakBonus || "Streak Bonus"}! 🔥
               </span>
             </div>
           )}
 
           {/* Tip */}
           <p className="text-center text-xs text-muted-foreground mt-4">
-            {t.dailyRewardsTip || 'Come back every day for better rewards!'}
+            {t.dailyRewardsTip || "Come back every day for better rewards!"}
           </p>
         </div>
       </div>

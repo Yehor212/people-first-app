@@ -4,11 +4,12 @@
  * Shows after focus sessions or on demand
  */
 
-import { useState, useEffect, useCallback } from 'react';
-import { X, Heart, Sparkles } from 'lucide-react';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { useScrollLock } from '@/hooks/useScrollLock';
-import { useModalA11y } from '@/hooks/useModalA11y';
+import { useState, useEffect, useCallback } from "react";
+import { X, Heart, Sparkles } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useScrollLock } from "@/hooks/useScrollLock";
+import { useModalA11y } from "@/hooks/useModalA11y";
+import { useBackHandler } from "@/hooks/useBackHandler";
 
 import {
   MindfulPrompt,
@@ -16,22 +17,22 @@ import {
   getMindfulPromptText,
   getRandomMindfulPrompt,
   getRandomPostFocusPrompt,
-} from '@/lib/mindfulPrompts';
+} from "@/lib/mindfulPrompts";
 
 interface MindfulMomentProps {
   isOpen: boolean;
   onClose: () => void;
   onComplete?: () => void;
   onViewProgress?: () => void;
-  trigger?: 'focus' | 'manual' | 'random';
+  trigger?: "focus" | "manual" | "random";
   prompt?: MindfulPrompt; // Optional specific prompt
 }
 
 // Quick response options - use translation keys
 const QUICK_RESPONSES = [
-  { emoji: '😊', labelKey: 'moodGood' as const },
-  { emoji: '😐', labelKey: 'moodOkay' as const },
-  { emoji: '😔', labelKey: 'moodNotGreat' as const },
+  { emoji: "😊", labelKey: "moodGood" as const },
+  { emoji: "😐", labelKey: "moodOkay" as const },
+  { emoji: "😔", labelKey: "moodNotGreat" as const },
 ] as const;
 
 export function MindfulMoment({
@@ -39,21 +40,27 @@ export function MindfulMoment({
   onClose,
   onComplete,
   onViewProgress,
-  trigger = 'manual',
+  trigger = "manual",
   prompt: providedPrompt,
 }: MindfulMomentProps) {
   const { language, t } = useLanguage();
   useScrollLock(isOpen);
   useModalA11y(isOpen, onClose);
-  const [currentPrompt, setCurrentPrompt] = useState<MindfulPrompt | null>(null);
+  useBackHandler(isOpen, onClose);
+  const [currentPrompt, setCurrentPrompt] = useState<MindfulPrompt | null>(
+    null,
+  );
   const [countdown, setCountdown] = useState(0);
   const [showResponse, setShowResponse] = useState(false);
 
   // Initialize prompt when opened
   useEffect(() => {
     if (isOpen) {
-      const prompt = providedPrompt
-        || (trigger === 'focus' ? getRandomPostFocusPrompt() : getRandomMindfulPrompt());
+      const prompt =
+        providedPrompt ||
+        (trigger === "focus"
+          ? getRandomPostFocusPrompt()
+          : getRandomMindfulPrompt());
       setCurrentPrompt(prompt);
       setCountdown(prompt.duration);
       setShowResponse(false);
@@ -65,7 +72,7 @@ export function MindfulMoment({
     if (!isOpen || countdown <= 0) return;
 
     const timer = setInterval(() => {
-      setCountdown(prev => {
+      setCountdown((prev) => {
         if (prev <= 1) {
           setShowResponse(true);
           return 0;
@@ -91,10 +98,16 @@ export function MindfulMoment({
   if (!isOpen || !currentPrompt) return null;
 
   const promptText = getMindfulPromptText(currentPrompt, language);
-  const typeLabel = MINDFUL_TYPE_LABELS[currentPrompt.type][language] || MINDFUL_TYPE_LABELS[currentPrompt.type].en;
+  const typeLabel =
+    MINDFUL_TYPE_LABELS[currentPrompt.type][language] ||
+    MINDFUL_TYPE_LABELS[currentPrompt.type].en;
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[70] p-4 animate-fade-in" role="dialog" aria-modal="true">
+    <div
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[70] p-4 animate-fade-in"
+      role="dialog"
+      aria-modal="true"
+    >
       <div className="bg-card rounded-3xl p-6 w-full max-w-sm animate-scale-in shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
@@ -104,7 +117,7 @@ export function MindfulMoment({
             </div>
             <div>
               <h3 className="font-semibold text-foreground text-lg">
-                {t.mindfulMoment || 'Mindful Moment'}
+                {t.mindfulMoment || "Mindful Moment"}
               </h3>
               <span className="text-xs text-muted-foreground">{typeLabel}</span>
             </div>
@@ -112,7 +125,7 @@ export function MindfulMoment({
           <button
             onClick={handleSkip}
             className="p-2 hover:bg-secondary rounded-full transition-colors"
-            aria-label={t.close || 'Close'}
+            aria-label={t.close || "Close"}
           >
             <X className="w-5 h-5" />
           </button>
@@ -121,7 +134,9 @@ export function MindfulMoment({
         {/* Prompt */}
         <div className="text-center mb-6">
           {currentPrompt.emoji && (
-            <div className="text-5xl mb-4 animate-pulse">{currentPrompt.emoji}</div>
+            <div className="text-5xl mb-4 animate-pulse">
+              {currentPrompt.emoji}
+            </div>
           )}
           <p className="text-xl font-medium text-foreground leading-relaxed">
             {promptText}
@@ -160,13 +175,13 @@ export function MindfulMoment({
               </span>
             </div>
             <p className="text-sm text-muted-foreground mt-2">
-              {t.takeAMoment || 'Take a moment...'}
+              {t.takeAMoment || "Take a moment..."}
             </p>
           </div>
         ) : (
           <div className="space-y-4">
             {/* Quick response buttons */}
-            {currentPrompt.type === 'checkin' && (
+            {currentPrompt.type === "checkin" && (
               <div className="flex justify-center gap-3">
                 {QUICK_RESPONSES.map((response) => (
                   <button
@@ -184,23 +199,27 @@ export function MindfulMoment({
             )}
 
             {/* Done button for non-checkin prompts */}
-            {currentPrompt.type !== 'checkin' && (
+            {currentPrompt.type !== "checkin" && (
               <button
                 onClick={handleResponse}
                 className="w-full py-3 zen-gradient text-primary-foreground rounded-xl font-semibold flex items-center justify-center gap-2"
               >
                 <Heart className="w-5 h-5" />
-                {t.done || 'Done'}
+                {t.done || "Done"}
               </button>
             )}
 
             {/* View Progress link — shown after focus sessions */}
-            {onViewProgress && trigger === 'focus' && (
+            {onViewProgress && trigger === "focus" && (
               <button
-                onClick={() => { onComplete?.(); onClose(); onViewProgress(); }}
+                onClick={() => {
+                  onComplete?.();
+                  onClose();
+                  onViewProgress();
+                }}
                 className="w-full py-2 text-sm text-primary hover:text-primary/80 font-medium transition-colors"
               >
-                {t.viewProgress || 'View Progress →'}
+                {t.viewProgress || "View Progress →"}
               </button>
             )}
           </div>
@@ -212,13 +231,13 @@ export function MindfulMoment({
             onClick={handleSkip}
             className="w-full py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
-            {t.skip || 'Skip'}
+            {t.skip || "Skip"}
           </button>
         )}
 
         {/* XP hint */}
         <p className="text-xs text-center text-muted-foreground mt-4">
-          +3 XP • +1 {t.treat || 'treat'}
+          +3 XP • +1 {t.treat || "treat"}
         </p>
       </div>
     </div>

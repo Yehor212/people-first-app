@@ -1,11 +1,12 @@
-import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { X, Sparkles, PenLine } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { zenMotion, zenTap } from '@/lib/animationUtils';
-import { useModalA11y } from '@/hooks/useModalA11y';
-import { RewardedAdPrompt } from '@/components/ads/RewardedAdPrompt';
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { X, Sparkles, PenLine } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { zenMotion, zenTap } from "@/lib/animationUtils";
+import { useModalA11y } from "@/hooks/useModalA11y";
+import { useBackHandler } from "@/hooks/useBackHandler";
+import { RewardedAdPrompt } from "@/components/ads/RewardedAdPrompt";
 
 /**
  * Theme-aware particle — CSS switches animation via .dark ancestor:
@@ -13,19 +14,31 @@ import { RewardedAdPrompt } from '@/components/ads/RewardedAdPrompt';
  *   Night: zen-star-twinkle — pulse in place (distant stars)
  * Only transform + opacity → GPU compositor, 60fps.
  */
-export function CosmicStar({ x, y, size, delay }: { x: number; y: number; size: number; delay: number }) {
+export function CosmicStar({
+  x,
+  y,
+  size,
+  delay,
+}: {
+  x: number;
+  y: number;
+  size: number;
+  delay: number;
+}) {
   return (
     <div
       className="zen-particle absolute rounded-full"
-      style={{
-        left: `${x}%`,
-        top: `${y}%`,
-        width: size,
-        height: size,
-        backgroundColor: 'var(--particle-color)',
-        '--particle-duration': `${2 + delay}s`,
-        '--particle-delay': `${delay}s`,
-      } as React.CSSProperties}
+      style={
+        {
+          left: `${x}%`,
+          top: `${y}%`,
+          width: size,
+          height: size,
+          backgroundColor: "var(--particle-color)",
+          "--particle-duration": `${2 + delay}s`,
+          "--particle-delay": `${delay}s`,
+        } as React.CSSProperties
+      }
     />
   );
 }
@@ -47,10 +60,17 @@ interface FocusReflectionModalProps {
   onExpandToJournal?: () => void; // IA Blueprint Phase 3: Focus → Journal expansion
 }
 
-export function FocusReflectionModal({ reflectionValue, onSelectValue, onSave, onDismiss, onExpandToJournal }: FocusReflectionModalProps) {
+export function FocusReflectionModal({
+  reflectionValue,
+  onSelectValue,
+  onSave,
+  onDismiss,
+  onExpandToJournal,
+}: FocusReflectionModalProps) {
   const { t } = useLanguage();
   const [isSaving, setIsSaving] = useState(false);
   useModalA11y(true, onDismiss);
+  useBackHandler(true, onDismiss);
 
   return (
     <motion.div
@@ -77,7 +97,7 @@ export function FocusReflectionModal({ reflectionValue, onSelectValue, onSave, o
           className="absolute inset-0 hidden dark:block"
           style={{
             background: `radial-gradient(ellipse at top,
-              hsl(var(--focus-cosmic-dark)) 0%, hsl(var(--focus-cosmic-mid)) 60%, hsl(var(--focus-cosmic-deep)) 100%)`
+              hsl(var(--focus-cosmic-dark)) 0%, hsl(var(--focus-cosmic-mid)) 60%, hsl(var(--focus-cosmic-deep)) 100%)`,
           }}
         />
         {/* Star particles */}
@@ -97,19 +117,23 @@ export function FocusReflectionModal({ reflectionValue, onSelectValue, onSave, o
 
           <div className="flex items-center gap-2 mb-2">
             <Sparkles className="w-5 h-5 text-violet-600 dark:text-violet-400" />
-            <h4 className="text-lg font-semibold text-slate-800 dark:text-white pe-10">{t.focusReflectionTitle}</h4>
+            <h4 className="text-lg font-semibold text-slate-800 dark:text-white pe-10">
+              {t.focusReflectionTitle}
+            </h4>
           </div>
-          <p className="text-sm text-slate-600 dark:text-white/60 mt-1">{t.focusReflectionQuestion}</p>
+          <p className="text-sm text-slate-600 dark:text-white/60 mt-1">
+            {t.focusReflectionQuestion}
+          </p>
 
           <div className="flex justify-between mt-5">
             {[1, 2, 3, 4, 5].map((value) => {
               const isSelected = reflectionValue === value;
               const colors = [
-                'from-red-500 to-red-600',
-                'from-orange-500 to-orange-600',
-                'from-amber-500 to-amber-600',
-                'from-emerald-500 to-emerald-600',
-                'from-violet-500 to-violet-600',
+                "from-red-500 to-red-600",
+                "from-orange-500 to-orange-600",
+                "from-amber-500 to-amber-600",
+                "from-emerald-500 to-emerald-600",
+                "from-violet-500 to-violet-600",
               ];
               return (
                 <motion.button
@@ -119,7 +143,7 @@ export function FocusReflectionModal({ reflectionValue, onSelectValue, onSave, o
                     "w-11 h-11 rounded-full text-sm font-bold transition-all",
                     isSelected
                       ? `bg-gradient-to-br ${colors[value - 1]} text-white shadow-[0_0_16px_hsl(var(--focus-violet)/0.5)]`
-                      : "bg-secondary text-muted-foreground hover:bg-secondary/80 hover:text-foreground"
+                      : "bg-secondary text-muted-foreground hover:bg-secondary/80 hover:text-foreground",
                   )}
                   whileHover={{ scale: 1.1 }}
                   whileTap={zenTap.button}
@@ -139,7 +163,11 @@ export function FocusReflectionModal({ reflectionValue, onSelectValue, onSave, o
               {t.focusReflectionSkip}
             </motion.button>
             <motion.button
-              onClick={() => { if (isSaving) return; setIsSaving(true); onSave(reflectionValue); }}
+              onClick={() => {
+                if (isSaving) return;
+                setIsSaving(true);
+                onSave(reflectionValue);
+              }}
               disabled={isSaving}
               className={cn(
                 "flex-1 py-3 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 text-white font-medium",
@@ -157,11 +185,16 @@ export function FocusReflectionModal({ reflectionValue, onSelectValue, onSave, o
           {onExpandToJournal && (
             <button
               disabled={isSaving}
-              onClick={() => { if (isSaving) return; setIsSaving(true); onSave(reflectionValue); onExpandToJournal(); }}
+              onClick={() => {
+                if (isSaving) return;
+                setIsSaving(true);
+                onSave(reflectionValue);
+                onExpandToJournal();
+              }}
               className="w-full mt-3 py-2.5 rounded-xl text-sm font-medium text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950/30 transition-colors flex items-center justify-center gap-2"
             >
               <PenLine className="w-4 h-4" />
-              {t.focusExpandToJournal || 'Write about it in your journal'}
+              {t.focusExpandToJournal || "Write about it in your journal"}
             </button>
           )}
 

@@ -1,10 +1,11 @@
-import { useState } from 'react';
-import { X, Shield, FileText, Scale, ExternalLink } from 'lucide-react';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { useModalA11y } from '@/hooks/useModalA11y';
-import { useScrollLock } from '@/hooks/useScrollLock';
+import { useState } from "react";
+import { X, Shield, FileText, Scale, ExternalLink } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useModalA11y } from "@/hooks/useModalA11y";
+import { useScrollLock } from "@/hooks/useScrollLock";
+import { useBackHandler } from "@/hooks/useBackHandler";
 
-type LegalTab = 'privacy' | 'terms' | 'licenses';
+type LegalTab = "privacy" | "terms" | "licenses";
 
 interface LegalModalProps {
   open: boolean;
@@ -12,49 +13,105 @@ interface LegalModalProps {
   initialTab?: LegalTab;
 }
 
-const PRIVACY_URL = 'https://yehor212.github.io/people-first-app/privacy.html';
-const TERMS_URL = 'https://yehor212.github.io/people-first-app/terms.html';
+const PRIVACY_URL = "https://yehor212.github.io/people-first-app/privacy.html";
+const TERMS_URL = "https://yehor212.github.io/people-first-app/terms.html";
 
 const OSS_LICENSES = [
-  { name: 'React', license: 'MIT', url: 'https://github.com/facebook/react' },
-  { name: 'Capacitor', license: 'MIT', url: 'https://github.com/ionic-team/capacitor' },
-  { name: 'Supabase', license: 'Apache 2.0', url: 'https://github.com/supabase/supabase' },
-  { name: 'Zustand', license: 'MIT', url: 'https://github.com/pmndrs/zustand' },
-  { name: 'Dexie.js', license: 'Apache 2.0', url: 'https://github.com/dexie/Dexie.js' },
-  { name: 'Framer Motion', license: 'MIT', url: 'https://github.com/framer/motion' },
-  { name: 'Tailwind CSS', license: 'MIT', url: 'https://github.com/tailwindlabs/tailwindcss' },
-  { name: 'Radix UI', license: 'MIT', url: 'https://github.com/radix-ui/primitives' },
-  { name: 'Lucide Icons', license: 'ISC', url: 'https://github.com/lucide-icons/lucide' },
-  { name: 'Zod', license: 'MIT', url: 'https://github.com/colinhacks/zod' },
-  { name: 'DOMPurify', license: 'Apache 2.0', url: 'https://github.com/cure53/DOMPurify' },
-  { name: 'Recharts', license: 'MIT', url: 'https://github.com/recharts/recharts' },
-  { name: 'date-fns', license: 'MIT', url: 'https://github.com/date-fns/date-fns' },
-  { name: 'Lottie React', license: 'MIT', url: 'https://github.com/Gamote/lottie-react' },
-  { name: 'Sentry', license: 'MIT', url: 'https://github.com/getsentry/sentry-javascript' },
+  { name: "React", license: "MIT", url: "https://github.com/facebook/react" },
+  {
+    name: "Capacitor",
+    license: "MIT",
+    url: "https://github.com/ionic-team/capacitor",
+  },
+  {
+    name: "Supabase",
+    license: "Apache 2.0",
+    url: "https://github.com/supabase/supabase",
+  },
+  { name: "Zustand", license: "MIT", url: "https://github.com/pmndrs/zustand" },
+  {
+    name: "Dexie.js",
+    license: "Apache 2.0",
+    url: "https://github.com/dexie/Dexie.js",
+  },
+  {
+    name: "Framer Motion",
+    license: "MIT",
+    url: "https://github.com/framer/motion",
+  },
+  {
+    name: "Tailwind CSS",
+    license: "MIT",
+    url: "https://github.com/tailwindlabs/tailwindcss",
+  },
+  {
+    name: "Radix UI",
+    license: "MIT",
+    url: "https://github.com/radix-ui/primitives",
+  },
+  {
+    name: "Lucide Icons",
+    license: "ISC",
+    url: "https://github.com/lucide-icons/lucide",
+  },
+  { name: "Zod", license: "MIT", url: "https://github.com/colinhacks/zod" },
+  {
+    name: "DOMPurify",
+    license: "Apache 2.0",
+    url: "https://github.com/cure53/DOMPurify",
+  },
+  {
+    name: "Recharts",
+    license: "MIT",
+    url: "https://github.com/recharts/recharts",
+  },
+  {
+    name: "date-fns",
+    license: "MIT",
+    url: "https://github.com/date-fns/date-fns",
+  },
+  {
+    name: "Lottie React",
+    license: "MIT",
+    url: "https://github.com/Gamote/lottie-react",
+  },
+  {
+    name: "Sentry",
+    license: "MIT",
+    url: "https://github.com/getsentry/sentry-javascript",
+  },
 ] as const;
 
-export function LegalModal({ open, onOpenChange, initialTab = 'privacy' }: LegalModalProps) {
+export function LegalModal({
+  open,
+  onOpenChange,
+  initialTab = "privacy",
+}: LegalModalProps) {
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<LegalTab>(initialTab);
   const onClose = () => onOpenChange(false);
 
   useModalA11y(open, onClose);
   useScrollLock(open);
+  useBackHandler(open, onClose);
 
   if (!open) return null;
 
   const tabs: { key: LegalTab; label: string; icon: typeof Shield }[] = [
-    { key: 'privacy', label: t.privacyPolicy, icon: Shield },
-    { key: 'terms', label: t.termsOfService, icon: FileText },
-    { key: 'licenses', label: t.openSourceLicenses, icon: Scale },
+    { key: "privacy", label: t.privacyPolicy, icon: Shield },
+    { key: "terms", label: t.termsOfService, icon: FileText },
+    { key: "licenses", label: t.openSourceLicenses, icon: Scale },
   ];
 
   const handleOpenExternal = (url: string) => {
-    window.open(url, '_blank', 'noopener,noreferrer');
+    window.open(url, "_blank", "noopener,noreferrer");
   };
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+      onClick={onClose}
+    >
       <div
         className="bg-card rounded-2xl shadow-zen-card w-full max-w-md max-h-[80dvh] flex flex-col overflow-hidden"
         role="dialog"
@@ -64,8 +121,11 @@ export function LegalModal({ open, onOpenChange, initialTab = 'privacy' }: Legal
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b">
-          <h2 id="legal-modal-title" className="text-lg font-semibold text-foreground">
-            {tabs.find(tab => tab.key === activeTab)?.label}
+          <h2
+            id="legal-modal-title"
+            className="text-lg font-semibold text-foreground"
+          >
+            {tabs.find((tab) => tab.key === activeTab)?.label}
           </h2>
           <button
             onClick={onClose}
@@ -86,8 +146,8 @@ export function LegalModal({ open, onOpenChange, initialTab = 'privacy' }: Legal
               onClick={() => setActiveTab(key)}
               className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-sm font-medium transition-colors min-h-[48px] ${
                 activeTab === key
-                  ? 'text-primary border-b-2 border-primary'
-                  : 'text-muted-foreground hover:text-foreground'
+                  ? "text-primary border-b-2 border-primary"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               <Icon className="w-4 h-4" />
@@ -98,7 +158,7 @@ export function LegalModal({ open, onOpenChange, initialTab = 'privacy' }: Legal
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-5" role="tabpanel">
-          {activeTab === 'privacy' && (
+          {activeTab === "privacy" && (
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
                 {t.legalPrivacyDescription}
@@ -113,7 +173,7 @@ export function LegalModal({ open, onOpenChange, initialTab = 'privacy' }: Legal
             </div>
           )}
 
-          {activeTab === 'terms' && (
+          {activeTab === "terms" && (
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
                 {t.legalTermsDescription}
@@ -128,7 +188,7 @@ export function LegalModal({ open, onOpenChange, initialTab = 'privacy' }: Legal
             </div>
           )}
 
-          {activeTab === 'licenses' && (
+          {activeTab === "licenses" && (
             <div className="space-y-2">
               <p className="text-sm text-muted-foreground mb-3">
                 {t.legalLicensesDescription}
@@ -139,8 +199,12 @@ export function LegalModal({ open, onOpenChange, initialTab = 'privacy' }: Legal
                   onClick={() => handleOpenExternal(url)}
                   className="w-full flex items-center justify-between py-2.5 px-3 rounded-xl hover:bg-muted/50 transition-colors text-start min-h-[48px]"
                 >
-                  <span className="text-sm font-medium text-foreground">{name}</span>
-                  <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{license}</span>
+                  <span className="text-sm font-medium text-foreground">
+                    {name}
+                  </span>
+                  <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                    {license}
+                  </span>
                 </button>
               ))}
             </div>
