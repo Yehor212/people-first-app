@@ -235,12 +235,19 @@ process.stdin.on('end', () => {
           );
         }
 
-        // Verify content: must list at least 14 law filenames
+        // Verify content: must list at least 14 law filenames + ARCHITECTURE.md
         const lawsContent = fs.readFileSync(FULLCYCLE_LAWS, 'utf8');
         const missing = REQUIRED_LAW_FILES.filter(f => !lawsContent.includes(f));
         if (missing.length > 0) {
           block(
             `FULL CYCLE INCOMPLETE! Missing ${missing.length} law files in .fullcycle-laws-read: ${missing.join(', ')}`,
+            cmd
+          );
+        }
+        // ARCHITECTURE.md is project blueprint — must be read in full cycle
+        if (!lawsContent.includes('ARCHITECTURE.md')) {
+          block(
+            'FULL CYCLE INCOMPLETE! ARCHITECTURE.md not listed in .fullcycle-laws-read. Read it and add to the list.',
             cmd
           );
         }
