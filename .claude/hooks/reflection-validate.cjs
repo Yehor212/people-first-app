@@ -106,6 +106,23 @@ function validate(content) {
     errors.push(`mirrors_checked must be ${EXPECTED_MIRRORS} (got ${parsed.mirrors_checked})`);
   }
 
+  // Rule 6b: Full Cycle — mirror_compliance TABLE required (not just a number)
+  // Same pattern as law_compliance: each mirror needs {mirror, status, evidence}
+  if (isFullCycleForLaws) {
+    if (!Array.isArray(parsed.mirror_compliance)) {
+      errors.push('FULL CYCLE requires mirror_compliance[] array — not just mirrors_checked:5. Each mirror needs {mirror, status, evidence}.');
+    } else if (parsed.mirror_compliance.length < EXPECTED_MIRRORS) {
+      errors.push(`FULL CYCLE mirror_compliance has ${parsed.mirror_compliance.length} entries, need ${EXPECTED_MIRRORS}.`);
+    } else {
+      const invalid = parsed.mirror_compliance.filter(mc =>
+        !mc.mirror || !mc.status || typeof mc.evidence !== 'string' || mc.evidence.length < 5
+      );
+      if (invalid.length > 0) {
+        errors.push(`FULL CYCLE mirror_compliance has ${invalid.length} invalid entries. Each needs: {mirror: "name", status: "pass"/"na", evidence: "..."}`);
+      }
+    }
+  }
+
   // Rule 7: ci_passed — boolean true
   if (parsed.ci_passed !== true) {
     errors.push('CI not passed (ci_passed must be true)');

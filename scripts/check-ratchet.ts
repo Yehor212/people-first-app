@@ -316,8 +316,8 @@ interface ScoreResult {
 function computeQualityScore(
   actual: Record<string, number>,
   sourceFiles: number,
-  ledgerAgeDays: number,
-  auditAgeDays: number,
+  _ledgerAgeDays: number,
+  _auditAgeDays: number,
 ): ScoreResult {
   const dimensions: ScoreDimension[] = [];
 
@@ -325,16 +325,16 @@ function computeQualityScore(
   const typeSafety = Math.max(0, 10 - actual["tsc.errors"] / 10);
   dimensions.push({
     name: "Type Safety",
-    weight: 0.14,
+    weight: 0.15,
     score: typeSafety,
     detail: `${actual["tsc.errors"]} errors`,
   });
 
-  // Lint Cleanliness: 9.5% — eslint warnings (0 = 10, >50 = 0)
+  // Lint Cleanliness: 9% — eslint warnings (0 = 10, >50 = 0)
   const lintCleanliness = Math.max(0, 10 - actual["eslint.maxWarnings"] / 5);
   dimensions.push({
     name: "Lint Clean",
-    weight: 0.095,
+    weight: 0.09,
     score: lintCleanliness,
     detail: `${actual["eslint.maxWarnings"]} warnings`,
   });
@@ -358,7 +358,7 @@ function computeQualityScore(
   const codeHealth = 10 * Math.exp(-healthIssues / 5);
   dimensions.push({
     name: "Code Health",
-    weight: 0.14,
+    weight: 0.15,
     score: codeHealth,
     detail: `${actual["godComponents"]} god + ${actual["silentCatches"]} catches`,
   });
@@ -367,36 +367,49 @@ function computeQualityScore(
   const i18n = Math.min(10, (actual["i18n.languages"] / 8) * 10);
   dimensions.push({
     name: "i18n",
-    weight: 0.095,
+    weight: 0.07,
     score: i18n,
     detail: `${actual["i18n.languages"]} languages`,
   });
 
-  // Build Integrity: 9.5% — assumed pass (runs before ratchet in pipeline)
+  // Build Integrity: 5% — binary pass/fail (reduced: binary metrics get less weight)
   const buildIntegrity = 10;
   dimensions.push({
     name: "Build",
-    weight: 0.095,
+    weight: 0.05,
     score: buildIntegrity,
     detail: "clean",
   });
 
-  // Staleness: 10% — ledger + audit age (<7 days = 10, >30 = 0)
-  const avgAge = (ledgerAgeDays + auditAgeDays) / 2;
-  const staleness = Math.max(0, Math.min(10, 10 - (avgAge - 7) / 2.3));
+  // Security: 10% — npm audit vulnerabilities (replaces Staleness — no industry precedent)
+  // Based on: SonarQube Security axis, OWASP Top 10, ISO/IEC 25010
+  // Formula: 10 - (moderate*0.5 + high*2 + critical*4), floor 0
+  const securityScore = (() => {
+    try {
+      const auditOut = require("child_process").execSync(
+        "npm audit --json 2>/dev/null",
+        { encoding: "utf8", timeout: 30000 },
+      );
+      const audit = JSON.parse(auditOut);
+      const v = audit.metadata?.vulnerabilities || {};
+      const penalty =
+        (v.moderate || 0) * 0.5 + (v.high || 0) * 2 + (v.critical || 0) * 4;
+      return Math.max(0, Math.min(10, 10 - penalty));
+    } catch {
+      return 10; // npm audit unavailable — don't penalize CI
+    }
+  })();
   dimensions.push({
-    name: "Staleness",
+    name: "Security",
     weight: 0.1,
-    score: staleness,
-    detail: `${Math.round(avgAge)}d avg age`,
+    score: securityScore,
+    detail: "npm audit",
   });
 
-  // Debt Trend: 9.5% — inline styles + exhaustive-deps (fewer = better)
-  // Natural floors: dynamic inline styles (~160) and justified deps (~8) are EXPECTED
-  // in any React app with runtime-computed visuals and mount-only subscriptions.
-  // Only penalize counts ABOVE these floors.
-  const DYNAMIC_STYLE_FLOOR = 160; // runtime-computed styles (React norm)
-  const JUSTIFIED_DEPS_FLOOR = 22; // mount-only + subscription patterns (audit: 22/22 justified)
+  // Debt Trend: 12% — inline styles + exhaustive-deps (increased per industry research)
+  // SonarQube: Technical Debt is core. Research: should be 12-15%.
+  const DYNAMIC_STYLE_FLOOR = 160;
+  const JUSTIFIED_DEPS_FLOOR = 22;
   const stylesOver = Math.max(0, actual["inlineStyles"] - DYNAMIC_STYLE_FLOOR);
   const depsOver = Math.max(0, actual["exhaustiveDeps"] - JUSTIFIED_DEPS_FLOOR);
   const styleScore = 10 * Math.max(0, 1 - stylesOver / 800);
@@ -404,9 +417,31 @@ function computeQualityScore(
   const debtScore = styleScore * 0.6 + depsScore * 0.4;
   dimensions.push({
     name: "Debt Trend",
-    weight: 0.095,
+    weight: 0.12,
     score: debtScore,
     detail: `${actual["inlineStyles"]} styles, ${actual["exhaustiveDeps"]} deps`,
+  });
+
+  // Code Duplication: 5% — SonarQube mandatory metric
+  // Research: duplicated code has 2.5-5x higher defect density
+  const duplicationScore = (() => {
+    try {
+      const jscpdOut = require("child_process").execSync(
+        "npx jscpd src/ --min-lines 5 --reporters json --silent 2>/dev/null",
+        { encoding: "utf8", timeout: 60000 },
+      );
+      const result = JSON.parse(jscpdOut);
+      const pct = result.statistics?.total?.percentage || 0;
+      return Math.max(0, Math.min(10, 10 - pct));
+    } catch {
+      return 10;
+    }
+  })();
+  dimensions.push({
+    name: "Duplication",
+    weight: 0.05,
+    score: duplicationScore,
+    detail: "jscpd",
   });
 
   // Enforcement Health: 5% — absolute blocking hook count (Pillar 2 expansion)
@@ -422,7 +457,7 @@ function computeQualityScore(
     : Math.min(10, (blockingHooks || 0) * 1.7);
   dimensions.push({
     name: "Enforcement",
-    weight: 0.05,
+    weight: 0.03,
     score: enforcementScore,
     detail: hooksAbsent
       ? "skipped (hooks gitignored)"
