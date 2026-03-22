@@ -1,34 +1,38 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Bell, X } from 'lucide-react';
-import { LocalNotifications } from '@capacitor/local-notifications';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { isNative } from '@/lib/platform';
-import { logger } from '@/lib/logger';
-import { useScrollLock } from '@/hooks/useScrollLock';
-import { useModalA11y } from '@/hooks/useModalA11y';
-import { SK } from '@/lib/storageKeys';
-import { storageGetRaw, storageSetRaw } from '@/lib/safeJson';
+import { useState, useEffect, useCallback } from "react";
+import { Bell, X } from "lucide-react";
+import { LocalNotifications } from "@capacitor/local-notifications";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { isNative } from "@/lib/platform";
+import { logger } from "@/lib/logger";
+import { useScrollLock } from "@/hooks/useScrollLock";
+import { useModalA11y } from "@/hooks/useModalA11y";
+import { useBackHandler } from "@/hooks/useBackHandler";
+import { SK } from "@/lib/storageKeys";
+import { storageGetRaw, storageSetRaw } from "@/lib/safeJson";
 
 interface NotificationPermissionProps {
   onComplete: () => void;
 }
 
-export function NotificationPermission({ onComplete }: NotificationPermissionProps) {
+export function NotificationPermission({
+  onComplete,
+}: NotificationPermissionProps) {
   const { t } = useLanguage();
   const [showPrompt, setShowPrompt] = useState(false);
   useScrollLock(showPrompt);
 
   const handleDeny = useCallback(() => {
-    storageSetRaw(SK.NOTIFICATION_PERMISSION_ASKED, 'true');
+    storageSetRaw(SK.NOTIFICATION_PERMISSION_ASKED, "true");
     setShowPrompt(false);
     onComplete();
   }, [onComplete]);
 
   useModalA11y(showPrompt, handleDeny);
+  useBackHandler(showPrompt, handleDeny);
 
   useEffect(() => {
     void checkPermission();
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only: check permission once
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only: check permission once
   }, []);
 
   const checkPermission = async () => {
@@ -47,8 +51,8 @@ export function NotificationPermission({ onComplete }: NotificationPermissionPro
 
     try {
       const permission = await LocalNotifications.checkPermissions();
-      if (permission.display === 'granted') {
-        storageSetRaw(SK.NOTIFICATION_PERMISSION_ASKED, 'true');
+      if (permission.display === "granted") {
+        storageSetRaw(SK.NOTIFICATION_PERMISSION_ASKED, "true");
         onComplete();
         return;
       }
@@ -56,7 +60,7 @@ export function NotificationPermission({ onComplete }: NotificationPermissionPro
       // Show the prompt
       setShowPrompt(true);
     } catch (error) {
-      logger.error('[Notifications] Failed to check permissions:', error);
+      logger.error("[Notifications] Failed to check permissions:", error);
       onComplete();
     }
   };
@@ -64,16 +68,16 @@ export function NotificationPermission({ onComplete }: NotificationPermissionPro
   const handleAllow = async () => {
     try {
       const result = await LocalNotifications.requestPermissions();
-      storageSetRaw(SK.NOTIFICATION_PERMISSION_ASKED, 'true');
+      storageSetRaw(SK.NOTIFICATION_PERMISSION_ASKED, "true");
 
-      if (result.display === 'granted') {
-        logger.log('[Notifications] Permission granted');
+      if (result.display === "granted") {
+        logger.log("[Notifications] Permission granted");
       }
 
       setShowPrompt(false);
       onComplete();
     } catch (error) {
-      logger.error('[Notifications] Failed to request permissions:', error);
+      logger.error("[Notifications] Failed to request permissions:", error);
       setShowPrompt(false);
       onComplete();
     }
@@ -84,13 +88,17 @@ export function NotificationPermission({ onComplete }: NotificationPermissionPro
   }
 
   return (
-    <div className="fixed inset-0 bg-background/95 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-fade-in" role="dialog" aria-modal="true">
+    <div
+      className="fixed inset-0 bg-background/95 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-fade-in"
+      role="dialog"
+      aria-modal="true"
+    >
       <div className="w-full max-w-md bg-card rounded-2xl p-4 sm:p-6 zen-shadow-card animate-scale-in">
         {/* Close button */}
         <button
           onClick={handleDeny}
           className="absolute top-4 end-4 p-2 text-muted-foreground hover:text-foreground transition-colors"
-          aria-label={t.close || 'Close'}
+          aria-label={t.close || "Close"}
         >
           <X className="w-5 h-5" />
         </button>
@@ -104,13 +112,13 @@ export function NotificationPermission({ onComplete }: NotificationPermissionPro
 
         {/* Title */}
         <h2 className="text-2xl font-bold text-foreground text-center mb-2">
-          {t.notificationPermissionTitle || 'Stay on Track'}
+          {t.notificationPermissionTitle || "Stay on Track"}
         </h2>
 
         {/* Description */}
         <p className="text-muted-foreground text-center mb-6">
           {t.notificationPermissionDescription ||
-            'Get gentle reminders to track your mood, complete habits, and take focus breaks. Notifications help you build healthy routines.'}
+            "Get gentle reminders to track your mood, complete habits, and take focus breaks. Notifications help you build healthy routines."}
         </p>
 
         {/* Features */}
@@ -119,10 +127,11 @@ export function NotificationPermission({ onComplete }: NotificationPermissionPro
             <div className="w-2 h-2 rounded-full bg-primary mt-2" />
             <div>
               <p className="font-medium text-foreground">
-                {t.notificationFeature1Title || 'Daily Mood Reminders'}
+                {t.notificationFeature1Title || "Daily Mood Reminders"}
               </p>
               <p className="text-sm text-muted-foreground">
-                {t.notificationFeature1Desc || 'Check in with yourself every day'}
+                {t.notificationFeature1Desc ||
+                  "Check in with yourself every day"}
               </p>
             </div>
           </div>
@@ -130,10 +139,11 @@ export function NotificationPermission({ onComplete }: NotificationPermissionPro
             <div className="w-2 h-2 rounded-full bg-primary mt-2" />
             <div>
               <p className="font-medium text-foreground">
-                {t.notificationFeature2Title || 'Habit Tracking'}
+                {t.notificationFeature2Title || "Habit Tracking"}
               </p>
               <p className="text-sm text-muted-foreground">
-                {t.notificationFeature2Desc || 'Stay consistent with your goals'}
+                {t.notificationFeature2Desc ||
+                  "Stay consistent with your goals"}
               </p>
             </div>
           </div>
@@ -141,10 +151,11 @@ export function NotificationPermission({ onComplete }: NotificationPermissionPro
             <div className="w-2 h-2 rounded-full bg-primary mt-2" />
             <div>
               <p className="font-medium text-foreground">
-                {t.notificationFeature3Title || 'Focus Sessions'}
+                {t.notificationFeature3Title || "Focus Sessions"}
               </p>
               <p className="text-sm text-muted-foreground">
-                {t.notificationFeature3Desc || 'Get reminded to take productive breaks'}
+                {t.notificationFeature3Desc ||
+                  "Get reminded to take productive breaks"}
               </p>
             </div>
           </div>
@@ -156,19 +167,20 @@ export function NotificationPermission({ onComplete }: NotificationPermissionPro
             onClick={handleAllow}
             className="btn-press w-full py-3 zen-gradient text-primary-foreground font-semibold rounded-xl zen-shadow-soft hover:opacity-90 transition-opacity"
           >
-            {t.notificationAllow || 'Enable Notifications'}
+            {t.notificationAllow || "Enable Notifications"}
           </button>
           <button
             onClick={handleDeny}
             className="btn-press w-full py-3 bg-secondary text-secondary-foreground font-medium rounded-xl hover:bg-muted transition-colors"
           >
-            {t.notificationDeny || 'Maybe Later'}
+            {t.notificationDeny || "Maybe Later"}
           </button>
         </div>
 
         {/* Privacy note */}
         <p className="text-xs text-muted-foreground text-center mt-4">
-          {t.notificationPrivacyNote || 'You can change this anytime in Settings. Notifications are local and private.'}
+          {t.notificationPrivacyNote ||
+            "You can change this anytime in Settings. Notifications are local and private."}
         </p>
       </div>
     </div>
