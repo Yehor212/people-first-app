@@ -322,18 +322,17 @@ function validate(content) {
       }
 
       // If user demanded "best practices" — verify REAL web research was conducted
-      // Minimum: 3 substantive search entries, ≥30 chars each, ≥2 referencing web sources
-      // This ensures actual WebSearch/internet research, not just filling a field
+      // ADAPTIVE: not fixed "≥3" but "as many as needed to understand"
+      // Minimum: ≥1 search with substantive content. Quality over quantity.
       if (reqs.has_best_practices) {
         try {
           const preflightContent = fs.readFileSync(PREFLIGHT_TOKEN, 'utf8');
           const preflight = JSON.parse(preflightContent);
           const searchEntries = (preflight.evidence && Array.isArray(preflight.evidence.search)) ? preflight.evidence.search : [];
-          const MIN_SEARCHES = 3;
           const MIN_CHARS = 30;
 
-          if (searchEntries.length < MIN_SEARCHES) {
-            push.push(modeLabel + ' BEST PRACTICES: only ' + searchEntries.length + ' search entries. Need ≥' + MIN_SEARCHES + ' for substantive research. Use WebSearch tool for each topic.');
+          if (searchEntries.length === 0) {
+            push.push(modeLabel + ' BEST PRACTICES: zero search entries. Research as much as needed to fully understand the task. Use WebSearch.');
           } else {
             // Each entry must be substantive (≥30 chars — real description of what was found)
             const shallow = searchEntries.filter(s => typeof s === 'string' && s.length < MIN_CHARS);

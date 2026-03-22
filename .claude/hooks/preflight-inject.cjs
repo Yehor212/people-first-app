@@ -221,7 +221,7 @@ process.stdin.on('end', () => {
     let context = PREFLIGHT_PROTOCOL;
     if (fullCycleActivated) {
       context += '\n\nFULL CYCLE MODE ACTIVATED. .fullcycle-active flag created. You MUST read all 14 law spec files and touch .fullcycle-laws-read before commit.';
-      context += '\nBEST PRACTICES RESEARCH REQUIRED: You MUST use WebSearch or Agent(Explore) to research best practices BEFORE implementing. Minimum 3 searches, describe findings in evidence.search[]. Commit will be BLOCKED without substantive web research evidence.';
+      context += '\nBEST PRACTICES RESEARCH REQUIRED: You MUST use WebSearch or Agent(Explore) to research as much as needed to FULLY UNDERSTAND the task. No fixed minimum — research until confident. Describe findings in evidence.search[]. Commit BLOCKED without research evidence.';
     }
     if (injectionWarning) {
       context += '\n\nPROMPT INJECTION SCAN (OWASP ASI01):' + injectionWarning;
