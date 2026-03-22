@@ -84,6 +84,46 @@ process.stdin.on('end', () => {
       }
     } catch { /* non-critical */ }
 
+    // DIAGNOSTIC EXHAUSTION advisory at stop time
+    // Reminds about unchecked sources from preflight enumeration
+    try {
+      const pfContent = fs.readFileSync(PREFLIGHT_TOKEN, 'utf8').replace(/^\uFEFF/, '').trim();
+      if (pfContent.startsWith('{')) {
+        const preflight = JSON.parse(pfContent);
+        if (Array.isArray(preflight.diagnostic_sources) && preflight.diagnostic_sources.length > 0) {
+          reqWarning += '\n** DIAGNOSTIC EXHAUSTION ** — preflight enumerated ' +
+            preflight.diagnostic_sources.length + ' sources: [' +
+            preflight.diagnostic_sources.join(', ') + ']\n' +
+            'postflight.sources_checked[] must cover ALL of them. Commit BLOCKED if mismatch.\n';
+        }
+      }
+    } catch { /* no preflight or parse error */ }
+
+    // EVIDENCE CHAIN CANARY: observable verification — count actual Grep uses vs diagnostic_sources
+    // Research: Mutation testing (Stryker), Canary injection — verify detection capability
+    const EVIDENCE_CHAIN = path.join(ROOT, '.evidence-chain');
+    try {
+      const pfContent2 = fs.readFileSync(PREFLIGHT_TOKEN, 'utf8').replace(/^\uFEFF/, '').trim();
+      if (pfContent2.startsWith('{')) {
+        const preflight = JSON.parse(pfContent2);
+        if (Array.isArray(preflight.diagnostic_sources) && preflight.diagnostic_sources.length >= 3) {
+          // Count actual Grep tool uses from evidence chain
+          let grepCount = 0;
+          if (fs.existsSync(EVIDENCE_CHAIN)) {
+            const chainLines = fs.readFileSync(EVIDENCE_CHAIN, 'utf8').trim().split('\n').filter(Boolean);
+            grepCount = chainLines.filter(l => { try { return JSON.parse(l).tool === 'Grep'; } catch { return false; } }).length;
+          }
+          const sourceCount = preflight.diagnostic_sources.length;
+          // If enumerated 5+ sources but did <2 greps — suspicious satisficing
+          if (grepCount < Math.floor(sourceCount / 3)) {
+            reqWarning += '\n** EVIDENCE CHAIN CANARY ** — enumerated ' + sourceCount +
+              ' diagnostic sources but only ' + grepCount + ' Grep tool uses recorded.\n' +
+              'Did you actually search each source? Observable evidence suggests satisficing.\n';
+          }
+        }
+      }
+    } catch { /* non-critical */ }
+
     // No TS changes → allow stop, clean token, advisory completion check
     if (!tsChanges) {
       try { fs.unlinkSync(PREFLIGHT_TOKEN); } catch { /* ok */ }

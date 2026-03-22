@@ -33,6 +33,7 @@ const BLOCKED = [
   'android/keystore',
   'supabase/functions/_shared/auth.ts',
   '.claude-audit.log',
+  '.evidence-chain',
 ];
 
 // Protected but unlockable — prevents self-tampering (AAI006)

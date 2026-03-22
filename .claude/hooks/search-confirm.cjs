@@ -49,6 +49,19 @@ process.stdin.on('end', () => {
     }) + '\n';
     try { fs.appendFileSync(AUDIT_LOG, entry); } catch { /* best-effort */ }
 
+    // Evidence Chain: append-only log of tool uses (Challenge-Response pattern, Aegis research)
+    // Used by commit-gate to cross-reference preflight [READ:]/[SEARCH] claims
+    const EVIDENCE_CHAIN = path.join(ROOT, '.evidence-chain');
+    try {
+      const chainEntry = JSON.stringify({
+        tool: 'Grep',
+        input_pattern: String(pattern).slice(0, 100),
+        input_path: String(searchPath).slice(0, 200),
+        ts: Date.now(),
+      }) + '\n';
+      fs.appendFileSync(EVIDENCE_CHAIN, chainEntry);
+    } catch { /* best-effort — don't block on chain failure */ }
+
     // Notify agent
     console.log(JSON.stringify({
       hookSpecificOutput: {

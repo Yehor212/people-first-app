@@ -238,7 +238,7 @@ function validate(content) {
     }
   }
 
-  // --- Cross-Gate Intelligence (advisory, not blocking) ---
+  // --- Cross-Gate Intelligence + Diagnostic Exhaustion (single preflight read) ---
   try {
     const preflightContent = fs.readFileSync(PREFLIGHT_TOKEN, 'utf8').replace(/^\uFEFF/, '').trim();
     if (preflightContent.startsWith('{')) {
@@ -268,8 +268,44 @@ function validate(content) {
           warnings.push(`ASSUMPTION CHECK: PRE-FLIGHT assumed [${unverified.join(', ')}]. Did you verify these?`);
         }
       }
+
+      // Rule 22: DIAGNOSTIC EXHAUSTION CLOSED LOOP — cross-reference preflight.diagnostic_sources with postflight.sources_checked
+      // BLOCKING: commit refused if enumerated sources not fully covered
+      if (Array.isArray(preflight.diagnostic_sources) && preflight.diagnostic_sources.length > 0) {
+        const enumerated = preflight.diagnostic_sources.map(s => (typeof s === 'string' ? s.trim().toLowerCase() : ''));
+
+        if (!Array.isArray(parsed.sources_checked) || parsed.sources_checked.length === 0) {
+          errors.push('DIAGNOSTIC EXHAUSTION BLOCKED: preflight enumerated ' + enumerated.length +
+            ' diagnostic sources [' + enumerated.join(', ') + '] but postflight has no sources_checked[]. ' +
+            'You MUST report what you found for EACH source. Format: sources_checked: [{name, result, evidence}]');
+        } else {
+          // Check coverage: every enumerated source must appear in sources_checked
+          const checkedNames = parsed.sources_checked
+            .map(sc => (typeof sc === 'object' && sc.name ? sc.name.trim().toLowerCase() : ''))
+            .filter(Boolean);
+
+          const uncovered = enumerated.filter(src => src && src.length >= 2 && !checkedNames.some(cn =>
+            cn.length >= 2 && (cn.includes(src) || src.includes(cn))
+          ));
+
+          if (uncovered.length > 0) {
+            errors.push('DIAGNOSTIC EXHAUSTION BLOCKED: ' + uncovered.length + '/' + enumerated.length +
+              ' sources NOT checked: [' + uncovered.join(', ') + ']. ' +
+              'You enumerated these in preflight but never reported results. Satisficing detected.');
+          }
+
+          // Each checked source must have evidence (not empty)
+          const emptyEvidence = parsed.sources_checked.filter(sc =>
+            typeof sc === 'object' && (!sc.evidence || (typeof sc.evidence === 'string' && sc.evidence.trim().length < 5))
+          );
+          if (emptyEvidence.length > 0) {
+            warnings.push('DIAGNOSTIC EXHAUSTION: ' + emptyEvidence.length + ' sources_checked entries have empty/short evidence. ' +
+              'Each source needs substantive evidence of what was found (or "no issue found + how verified").');
+          }
+        }
+      }
     }
-  } catch { /* No preflight token or not JSON — skip cross-gate */ }
+  } catch { /* No preflight token or parse error — skip cross-gate + diagnostic */ }
 
   // Rule 21: Requirement coverage check — cross-reference user requirements with postflight
   // Reads .user-requirements (created by preflight-inject.cjs from user's message)

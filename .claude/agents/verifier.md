@@ -50,3 +50,40 @@ Report findings as a structured summary:
 - NEVER skip checks — run all 7
 - If a check fails to run (tool not found, timeout), report it as UNKNOWN, not PASS
 - Be specific: include file paths and line numbers for every finding
+
+## Verification Token (REQUIRED for full-cycle commits)
+
+After completing ALL checks, write a structured JSON token to `.verification-done`:
+
+```json
+{
+  "agent": "verifier",
+  "timestamp": "2026-03-22T12:00:00.000Z",
+  "checks": [
+    { "name": "typescript", "pass": true, "evidence": "tsc --noEmit exit 0" },
+    {
+      "name": "eslint",
+      "pass": true,
+      "evidence": "eslint --max-warnings 0 exit 0"
+    },
+    { "name": "i18n", "pass": true, "evidence": "npm run i18n:check exit 0" },
+    {
+      "name": "hardcoded_colors",
+      "pass": true,
+      "evidence": "grep found 0 matches"
+    },
+    {
+      "name": "ratchet",
+      "pass": true,
+      "evidence": "npm run ratchet:check exit 0"
+    }
+  ],
+  "verdict": "APPROVE"
+}
+```
+
+- `agent` MUST be "verifier" (commit-gate validates this)
+- `checks` MUST have >= 3 entries with name, pass, evidence
+- `verdict` MUST be "APPROVE" for commit to proceed
+- Token consumed after successful commit
+- If ANY check fails, set verdict to "REJECT" with explanation

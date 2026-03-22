@@ -1382,9 +1382,221 @@ try {
   if (pvl1ok.valid) { pass++; results.push({ name: 'preflight-validate: L1 without scope_boundaries still passes', status: 'PASS' }); }
   else { fail++; results.push({ name: 'preflight-validate: L1 without scope_boundaries still passes', status: 'FAIL', issues: JSON.stringify(pvl1ok.errors) }); }
 
+  // ── DIAGNOSTIC EXHAUSTION (Rules 39-40) ──
+
+  // PV-R39-BLOCK: L2 pre_mortem claims "checked" without enumeration → ERROR
+  const pvr39block = pv.validate(JSON.stringify({
+    timestamp: new Date().toISOString(), goal: 'Test R39', depth: 'L2',
+    transmutation: 'user asked X they need Y because Z',
+    checks_completed: 11,
+    evidence: { read: ['src/App.tsx:1'], search: ['pattern'], assumed: [] },
+    pre_mortem: 'I checked the code and verified it works fine',
+    scope_boundaries: 'WILL: src/App.tsx with refs. WILL NOT: other files',
+    post_verification_plan: 'npm run ci:preflight to verify',
+    anti_patterns_checked: ['#1', '#3'],
+    confidence: { codebase_familiarity: 7, change_scope: 7, regression_risk: 7, platform_coverage: 7, state_integrity: 7 },
+    overall_score: 7, unknowns: 'timing edge case', verdict: 'GO'
+  }));
+  if (!pvr39block.valid && pvr39block.errors.some(e => e.includes('DIAGNOSTIC EXHAUSTION BLOCKED'))) {
+    pass++; results.push({ name: 'preflight-validate: R39 blocks "checked" without enumeration (L2)', status: 'PASS' });
+  } else {
+    fail++; results.push({ name: 'preflight-validate: R39 blocks "checked" without enumeration (L2)', status: 'FAIL', issues: JSON.stringify(pvr39block) });
+  }
+
+  // PV-R39-PASS: L2 pre_mortem claims "checked" WITH enumeration + diagnostic_sources → passes
+  const pvr39pass = pv.validate(JSON.stringify({
+    timestamp: new Date().toISOString(), goal: 'Test R39 pass', depth: 'L2',
+    transmutation: 'user asked X they need Y because Z',
+    checks_completed: 11,
+    evidence: { read: ['src/App.tsx:1'], search: ['pattern'], assumed: [] },
+    pre_mortem: 'I checked all sources: api ✓ no errors, auth ✓ tokens valid, edge-functions ✓ 200',
+    diagnostic_sources: ['api', 'auth', 'edge-functions'],
+    scope_boundaries: 'WILL: src/App.tsx with refs. WILL NOT: other files',
+    post_verification_plan: 'npm run ci:preflight to verify',
+    anti_patterns_checked: ['#1', '#3'],
+    confidence: { codebase_familiarity: 7, change_scope: 7, regression_risk: 7, platform_coverage: 7, state_integrity: 7 },
+    overall_score: 7, unknowns: 'timing edge case', verdict: 'GO'
+  }));
+  if (!pvr39pass.errors.some(e => e.includes('DIAGNOSTIC EXHAUSTION'))) {
+    pass++; results.push({ name: 'preflight-validate: R39 passes with enumeration', status: 'PASS' });
+  } else {
+    fail++; results.push({ name: 'preflight-validate: R39 passes with enumeration', status: 'FAIL', issues: JSON.stringify(pvr39pass.errors) });
+  }
+
+  // PV-R40-BLOCK: diagnostic_sources with <2 entries → ERROR
+  const pvr40block = pv.validate(JSON.stringify({
+    timestamp: new Date().toISOString(), goal: 'Test R40', depth: 'L2',
+    transmutation: 'user asked X they need Y because Z',
+    checks_completed: 11,
+    evidence: { read: ['src/App.tsx:1'], search: ['pattern'], assumed: [] },
+    pre_mortem: 'Sources: api ✓ no errors found in logs',
+    diagnostic_sources: ['api'],
+    scope_boundaries: 'WILL: src/App.tsx with refs. WILL NOT: other files',
+    post_verification_plan: 'npm run ci:preflight to verify',
+    anti_patterns_checked: ['#1', '#3'],
+    confidence: { codebase_familiarity: 7, change_scope: 7, regression_risk: 7, platform_coverage: 7, state_integrity: 7 },
+    overall_score: 7, unknowns: 'timing edge case', verdict: 'GO'
+  }));
+  if (!pvr40block.valid && pvr40block.errors.some(e => e.includes('diagnostic_sources has') && e.includes('need ≥2'))) {
+    pass++; results.push({ name: 'preflight-validate: R40 blocks diagnostic_sources with <2 entries', status: 'PASS' });
+  } else {
+    fail++; results.push({ name: 'preflight-validate: R40 blocks diagnostic_sources with <2 entries', status: 'FAIL', issues: JSON.stringify(pvr40block) });
+  }
+
+  // PV-R40-PASS: diagnostic_sources with ≥2 entries → passes
+  const pvr40pass = pv.validate(JSON.stringify({
+    timestamp: new Date().toISOString(), goal: 'Test R40 pass', depth: 'L2',
+    transmutation: 'user asked X they need Y because Z',
+    checks_completed: 11,
+    evidence: { read: ['src/App.tsx:1'], search: ['pattern'], assumed: [] },
+    pre_mortem: 'Sources: api ✓ clean, auth ✓ valid, edge ✓ 200',
+    diagnostic_sources: ['api', 'auth', 'edge-functions'],
+    scope_boundaries: 'WILL: src/App.tsx with refs. WILL NOT: other files',
+    post_verification_plan: 'npm run ci:preflight to verify',
+    anti_patterns_checked: ['#1', '#3'],
+    confidence: { codebase_familiarity: 7, change_scope: 7, regression_risk: 7, platform_coverage: 7, state_integrity: 7 },
+    overall_score: 7, unknowns: 'timing edge case', verdict: 'GO'
+  }));
+  if (!pvr40pass.errors.some(e => e.includes('diagnostic_sources'))) {
+    pass++; results.push({ name: 'preflight-validate: R40 passes with ≥2 diagnostic_sources', status: 'PASS' });
+  } else {
+    fail++; results.push({ name: 'preflight-validate: R40 passes with ≥2 diagnostic_sources', status: 'FAIL', issues: JSON.stringify(pvr40pass.errors) });
+  }
+
+  // PV-R40b-BLOCK: L2 pre_mortem mentions "bug" but NO diagnostic_sources → ERROR (anti-bypass)
+  const pvr40b = pv.validate(JSON.stringify({
+    timestamp: new Date().toISOString(), goal: 'Test R40b anti-bypass', depth: 'L2',
+    transmutation: 'user asked X they need Y because Z',
+    checks_completed: 11,
+    evidence: { read: ['src/App.tsx:1'], search: ['pattern'], assumed: [] },
+    pre_mortem: 'Sources: logic ✓ found a bug in error handling, may cause crash',
+    scope_boundaries: 'WILL: src/App.tsx with refs. WILL NOT: other files',
+    post_verification_plan: 'npm run ci:preflight to verify',
+    anti_patterns_checked: ['#1', '#3'],
+    confidence: { codebase_familiarity: 7, change_scope: 7, regression_risk: 7, platform_coverage: 7, state_integrity: 7 },
+    overall_score: 7, unknowns: 'timing edge case', verdict: 'GO'
+  }));
+  if (!pvr40b.valid && pvr40b.errors.some(e => e.includes('DIAGNOSTIC EXHAUSTION BLOCKED') && e.includes('bypassing'))) {
+    pass++; results.push({ name: 'preflight-validate: R40b blocks investigation without diagnostic_sources (anti-bypass)', status: 'PASS' });
+  } else {
+    fail++; results.push({ name: 'preflight-validate: R40b blocks investigation without diagnostic_sources (anti-bypass)', status: 'FAIL', issues: JSON.stringify(pvr40b) });
+  }
+
+  // PV-R40b-PASS: L2 pre_mortem mentions "bug" WITH diagnostic_sources → passes
+  const pvr40bpass = pv.validate(JSON.stringify({
+    timestamp: new Date().toISOString(), goal: 'Test R40b pass', depth: 'L2',
+    transmutation: 'user asked X they need Y because Z',
+    checks_completed: 11,
+    evidence: { read: ['src/App.tsx:1'], search: ['pattern'], assumed: [] },
+    pre_mortem: 'Sources: logic ✓ found bug, security ✓ no issues',
+    diagnostic_sources: ['logic', 'security', 'tests'],
+    scope_boundaries: 'WILL: src/App.tsx with refs. WILL NOT: other files',
+    post_verification_plan: 'npm run ci:preflight to verify',
+    anti_patterns_checked: ['#1', '#3'],
+    confidence: { codebase_familiarity: 7, change_scope: 7, regression_risk: 7, platform_coverage: 7, state_integrity: 7 },
+    overall_score: 7, unknowns: 'timing edge case', verdict: 'GO'
+  }));
+  if (!pvr40bpass.errors.some(e => e.includes('bypassing'))) {
+    pass++; results.push({ name: 'preflight-validate: R40b passes with diagnostic_sources present', status: 'PASS' });
+  } else {
+    fail++; results.push({ name: 'preflight-validate: R40b passes with diagnostic_sources present', status: 'FAIL', issues: JSON.stringify(pvr40bpass.errors) });
+  }
+
 } catch (e) {
   fail++;
   results.push({ name: 'preflight-validate new rules: MODULE LOAD', status: 'ERROR', issues: e.message });
+}
+
+// ═══════════════════════════════════════════════════════
+// REFLECTION-VALIDATE DIAGNOSTIC EXHAUSTION CROSS-REFERENCE
+// ═══════════════════════════════════════════════════════
+console.log('\n  REFLECTION-VALIDATE DIAGNOSTIC CROSS-REF\n');
+
+try {
+  const rv = require(path.join(HOOKS, 'reflection-validate.cjs'));
+  const fs = require('fs');
+  const PREFLIGHT_PATH = path.join(process.cwd(), '.preflight-token');
+  const FULLCYCLE_PATH = path.join(process.cwd(), '.fullcycle-active');
+
+  // Save a preflight token with diagnostic_sources for cross-reference tests
+  const preflightWithSources = {
+    timestamp: new Date().toISOString(), goal: 'Test diagnostic cross-ref', depth: 'L2',
+    diagnostic_sources: ['api', 'auth', 'edge-functions', 'postgres'],
+    evidence: { read: ['src/App.tsx:1'], search: ['pattern'], assumed: [] },
+    confidence: { codebase_familiarity: 7, change_scope: 7, regression_risk: 7, platform_coverage: 7, state_integrity: 7 },
+    overall_score: 7, verdict: 'GO'
+  };
+  fs.writeFileSync(PREFLIGHT_PATH, JSON.stringify(preflightWithSources), 'utf8');
+  // Remove fullcycle flag if exists (avoid full-cycle-specific rules interfering)
+  try { fs.unlinkSync(FULLCYCLE_PATH); } catch {}
+
+  // RV-R22-BLOCK-MISSING: preflight has diagnostic_sources but postflight has NO sources_checked → BLOCK
+  const rvMissing = rv.validate(JSON.stringify({
+    timestamp: new Date().toISOString(), goal: 'Test diagnostic cross-ref',
+    changes: ['src/App.tsx'], laws_checked: 28, mirrors_checked: 5, ci_passed: true,
+    self_reflection: {
+      what_went_wrong: 'Nothing went wrong because this is a test scenario',
+      what_I_assumed: 'Assumed the test would pass because values are valid',
+      what_I_verified: 'Verified with grep in src/App.tsx:1 and git log abc1234',
+      git_history_checked: true, confidence: 'HIGH'
+    }
+  }));
+  if (!rvMissing.valid && rvMissing.errors.some(e => e.includes('DIAGNOSTIC EXHAUSTION BLOCKED') && e.includes('no sources_checked'))) {
+    pass++; results.push({ name: 'reflection-validate: R22 blocks missing sources_checked', status: 'PASS' });
+  } else {
+    fail++; results.push({ name: 'reflection-validate: R22 blocks missing sources_checked', status: 'FAIL', issues: JSON.stringify(rvMissing) });
+  }
+
+  // RV-R22-BLOCK-PARTIAL: sources_checked covers only 2/4 enumerated sources → BLOCK
+  const rvPartial = rv.validate(JSON.stringify({
+    timestamp: new Date().toISOString(), goal: 'Test diagnostic cross-ref',
+    changes: ['src/App.tsx'], laws_checked: 28, mirrors_checked: 5, ci_passed: true,
+    sources_checked: [
+      { name: 'api', result: '✓', evidence: 'API logs clean, 200 status' },
+      { name: 'auth', result: '✓', evidence: 'Auth tokens valid' }
+    ],
+    self_reflection: {
+      what_went_wrong: 'Nothing went wrong because this is a test scenario',
+      what_I_assumed: 'Assumed the test would pass because values are valid',
+      what_I_verified: 'Verified with grep in src/App.tsx:1 and git log abc1234',
+      git_history_checked: true, confidence: 'HIGH'
+    }
+  }));
+  if (!rvPartial.valid && rvPartial.errors.some(e => e.includes('DIAGNOSTIC EXHAUSTION BLOCKED') && e.includes('NOT checked'))) {
+    pass++; results.push({ name: 'reflection-validate: R22 blocks partial coverage (2/4)', status: 'PASS' });
+  } else {
+    fail++; results.push({ name: 'reflection-validate: R22 blocks partial coverage (2/4)', status: 'FAIL', issues: JSON.stringify(rvPartial) });
+  }
+
+  // RV-R22-PASS: sources_checked covers ALL 4 enumerated sources → passes
+  const rvFull = rv.validate(JSON.stringify({
+    timestamp: new Date().toISOString(), goal: 'Test diagnostic cross-ref',
+    changes: ['src/App.tsx'], laws_checked: 28, mirrors_checked: 5, ci_passed: true,
+    sources_checked: [
+      { name: 'api', result: '✓', evidence: 'API logs clean, 200 status codes' },
+      { name: 'auth', result: '✓', evidence: 'Auth tokens valid, no 401s' },
+      { name: 'edge-functions', result: '✓', evidence: 'Edge function logs show 200' },
+      { name: 'postgres', result: '✓', evidence: 'No failed queries in pg logs' }
+    ],
+    self_reflection: {
+      what_went_wrong: 'Nothing went wrong because this is a test scenario',
+      what_I_assumed: 'Assumed the test would pass because values are valid',
+      what_I_verified: 'Verified with grep in src/App.tsx:1 and git log abc1234',
+      git_history_checked: true, confidence: 'HIGH'
+    }
+  }));
+  if (!rvFull.errors.some(e => e.includes('DIAGNOSTIC EXHAUSTION'))) {
+    pass++; results.push({ name: 'reflection-validate: R22 passes with full coverage (4/4)', status: 'PASS' });
+  } else {
+    fail++; results.push({ name: 'reflection-validate: R22 passes with full coverage (4/4)', status: 'FAIL', issues: JSON.stringify(rvFull.errors) });
+  }
+
+  // Cleanup test preflight token
+  try { fs.unlinkSync(PREFLIGHT_PATH); } catch {}
+
+} catch (e) {
+  fail++;
+  results.push({ name: 'reflection-validate diagnostic cross-ref: MODULE LOAD', status: 'ERROR', issues: e.message });
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1534,6 +1746,8 @@ else { fail++; results.push({ name: 'bandaid-gate: non-empty function allows', s
 console.log(`\n  TOTAL: ${results.length} tests — ${pass} pass, ${fail} fail`);
 
 if (fail > 0) {
+  console.log('\n  FAILURES:');
+  for (const r of results) { if (r.status !== 'PASS') console.log('    ✗ ' + r.name + (r.issues ? ' — ' + r.issues.slice(0, 200) : '')); }
   console.log(`\n  \x1b[31mRESULT: FAIL\x1b[0m`);
   console.log('==================================================\n');
   process.exit(1);

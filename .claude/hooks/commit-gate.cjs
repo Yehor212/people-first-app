@@ -253,6 +253,48 @@ process.stdin.on('end', () => {
         }
       }
 
+      // Layer 5d: Mandatory Verifier in full-cycle mode (Two-Person Rule, Nuclear safety)
+      // Research: ICE ensemble (+7-15pp), IMDA 2025 self-report unreliability, GitHub Required Reviewer
+      // In full-cycle mode, a separate verifier agent MUST approve before commit
+      if (isFullCycle) {
+        const VERIFICATION_DONE = path.join(ROOT, '.verification-done');
+        if (!fs.existsSync(VERIFICATION_DONE)) {
+          block(
+            'FULL CYCLE VERIFICATION REQUIRED!\n' +
+            'Two-Person Rule: a separate verifier agent must approve your changes.\n' +
+            'Run: Agent tool with .claude/agents/verifier.md → write .verification-done token.\n' +
+            'Token format: { agent: "verifier", timestamp, checks: [{name, pass, evidence}], verdict: "APPROVE" }',
+            cmd
+          );
+        } else {
+          // Validate verification token structure
+          try {
+            const vtoken = JSON.parse(fs.readFileSync(VERIFICATION_DONE, 'utf8').replace(/^\uFEFF/, ''));
+            if (vtoken.agent !== 'verifier') {
+              block('VERIFICATION TOKEN INVALID: agent field must be "verifier" (got "' + vtoken.agent + '")', cmd);
+            }
+            if (!Array.isArray(vtoken.checks) || vtoken.checks.length < 3) {
+              block('VERIFICATION TOKEN INVALID: need >= 3 checks (got ' + (vtoken.checks || []).length + ')', cmd);
+            }
+            if (vtoken.verdict !== 'APPROVE') {
+              block('VERIFICATION TOKEN: verifier did NOT approve (verdict="' + vtoken.verdict + '")', cmd);
+            }
+            // Check token freshness (< 1 hour)
+            if (vtoken.timestamp) {
+              const age = Date.now() - new Date(vtoken.timestamp).getTime();
+              if (age > 3600000) {
+                block('VERIFICATION TOKEN STALE: ' + Math.round(age / 60000) + ' min old. Re-run verifier.', cmd);
+              }
+            }
+            audit('allow', 'verifier approved (' + (vtoken.checks || []).length + ' checks)', cmd);
+          } catch (parseErr) {
+            block('VERIFICATION TOKEN NOT VALID JSON: ' + parseErr.message, cmd);
+          }
+          // Consume token
+          try { fs.unlinkSync(VERIFICATION_DONE); } catch {}
+        }
+      }
+
       // §B: Check .worktree-verify-pending — warn if worktree output not verified in main
       const WORKTREE_VERIFY = path.join(ROOT, '.worktree-verify-pending');
       if (fs.existsSync(WORKTREE_VERIFY)) {
@@ -263,6 +305,22 @@ process.stdin.on('end', () => {
 
       // §D: Staged gap detection — warn if staged TS changes exist without fresh postflight
       // (postflight already validated above, but this catches edge case of stale postflight)
+
+      // Layer 5c: Evidence Chain Challenge-Response (Aviation checklist pattern, Aegis research)
+      // Cross-reference: preflight evidence.search[] claims vs actual .evidence-chain entries
+      const EVIDENCE_CHAIN = path.join(ROOT, '.evidence-chain');
+      try {
+        if (fs.existsSync(path.join(ROOT, '.preflight-token')) && fs.existsSync(EVIDENCE_CHAIN)) {
+          const preflight = JSON.parse(fs.readFileSync(path.join(ROOT, '.preflight-token'), 'utf8').replace(/^\uFEFF/, ''));
+          const searchClaims = (preflight.evidence && Array.isArray(preflight.evidence.search)) ? preflight.evidence.search : [];
+          const chainEntries = fs.readFileSync(EVIDENCE_CHAIN, 'utf8').trim().split('\n').filter(Boolean);
+
+          if (searchClaims.length > 0 && chainEntries.length === 0) {
+            process.stderr.write('EVIDENCE CHAIN WARNING: preflight claims ' + searchClaims.length +
+              ' search entries but .evidence-chain is empty. Were searches actually performed?\n');
+          }
+        }
+      } catch { /* non-critical — advisory only */ }
 
       // All checks passed — consume tokens
       try { fs.unlinkSync(POSTFLIGHT); } catch {}

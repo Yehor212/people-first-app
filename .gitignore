@@ -137,5 +137,7 @@ docs/visual-aesthetic.md
 .worktree-verify-pending
 .user-requirements
 .claude-audit.log
+.evidence-chain
+.verification-done
 .claude-md-unlock
 .prettier-circuit-breaker

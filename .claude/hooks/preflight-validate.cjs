@@ -389,6 +389,94 @@ function validate(content) {
     }
   }
 
+  // Rule 39: Diagnostic Exhaustion — enumeration required for diagnostic/investigation claims (L2+)
+  // Anti-satisficing: if pre_mortem mentions "checked" or "verified", must list ALL sources checked
+  // UPGRADED: L2+ = ERROR (blocking), L1 = warning (advisory)
+  if (!isL1 && typeof parsed.pre_mortem === 'string') {
+    const DIAGNOSTIC_CLAIM = /\b(checked|verified|investigated|inspected|confirmed|examined|searched|looked at|reviewed)\b/i;
+    if (DIAGNOSTIC_CLAIM.test(parsed.pre_mortem)) {
+      // Must have enumeration pattern: [source] ✓ or [source] ✗ or "Sources:" list
+      const ENUMERATION = /(\bsources?\s*:|[\w-]+\s*[✓✗✅❌]|checked.*:.*,)/i;
+      if (!ENUMERATION.test(parsed.pre_mortem)) {
+        errors.push('DIAGNOSTIC EXHAUSTION BLOCKED: pre_mortem claims "checked/verified" but has no enumeration of ALL sources checked. List: "Sources: [X] ✓, [Y] ✓, [Z] ✗ reason". Satisficing = finding first hit and stopping.');
+      }
+    }
+  }
+
+  // Rule 40: diagnostic_sources array validation (CLOSED LOOP part 1)
+  // If diagnostic_sources present, must have ≥2 entries (non-empty strings)
+  // This is the PLANNING side — postflight cross-reference is the EXECUTION side
+  if (Array.isArray(parsed.diagnostic_sources)) {
+    const validSources = parsed.diagnostic_sources.filter(s => typeof s === 'string' && s.trim().length > 0);
+    if (validSources.length < 2) {
+      errors.push('DIAGNOSTIC EXHAUSTION: diagnostic_sources has ' + validSources.length + ' valid entries (need ≥2). Enumerate ALL possible sources, not just the obvious one.');
+    }
+  }
+
+  // Rule 40b: diagnostic_sources MANDATORY when pre_mortem contains investigation/audit/fix language (L2+)
+  // ANTI-BYPASS: prevents agent from simply omitting diagnostic_sources to skip the closed loop
+  if (!isL1 && !Array.isArray(parsed.diagnostic_sources) && typeof parsed.pre_mortem === 'string') {
+    const INVESTIGATION_LANGUAGE = /\b(bug|fix|audit|investigat|diagnos|debug|error|issue|problem|failure|broken|vulnerabilit|401|500|crash)/i;
+    if (INVESTIGATION_LANGUAGE.test(parsed.pre_mortem)) {
+      errors.push('DIAGNOSTIC EXHAUSTION BLOCKED: pre_mortem describes investigation/fix but no diagnostic_sources[] provided. ' +
+        'You MUST enumerate all sources to check. Omitting diagnostic_sources = bypassing the closed loop.');
+    }
+  }
+
+  // Rule 41: MECE minimum categories — for L2+ bug/audit tasks, diagnostic_sources should cover multiple dimensions
+  // Research: MECE (McKinsey) + Forced Categorical Decomposition (UBC FSE 2025, +43.67% F1)
+  // Advisory: warns if diagnostic_sources looks like a narrow single-dimension list
+  if (!isL1 && Array.isArray(parsed.diagnostic_sources) && parsed.diagnostic_sources.length >= 2) {
+    // Check if categories span multiple dimensions (not all from same domain)
+    const DIMENSION_MARKERS = {
+      logic: /logic|code|function|implementation|algorithm/i,
+      security: /secur|auth|rls|jwt|xss|inject|permiss/i,
+      state: /state|store|zustand|indexeddb|dexie|sync|hydrat/i,
+      i18n: /i18n|translat|rtl|babel|language/i,
+      ui: /visual|theme|css|tailwind|\bui\b|layout|responsive|touch|motion/i,
+      infra: /supabase|api|edge|postgres|cron|firebase|deploy/i,
+      test: /test|vitest|coverage|regression/i,
+      pattern: /pattern|other.file|same.pattern|grep|project.wide/i,
+    };
+    const coveredDimensions = Object.entries(DIMENSION_MARKERS)
+      .filter(([, regex]) => parsed.diagnostic_sources.some(s => regex.test(s)))
+      .map(([dim]) => dim);
+    if (coveredDimensions.length < 2) {
+      warnings.push('MECE WARNING: diagnostic_sources covers only ' + coveredDimensions.length +
+        ' dimension(s): [' + coveredDimensions.join(', ') + ']. ' +
+        'Consider: logic, security, state, i18n, ui, infra, test, pattern-search. ' +
+        'Research: forced categorical decomposition improves detection by 43.67% (UBC FSE 2025).');
+    }
+  }
+
+  // Rule 42: Observable Confidence — cross-check self-reported confidence against observable evidence (L2+)
+  // Research: Nuclear two-person rule, IMDA 2025 self-report unreliability, METR reward hacking
+  // Instead of trusting self-reported scores, verify that evidence.read[] and evidence.search[] counts
+  // correlate with claimed confidence. High confidence + zero searches = suspicious.
+  if (!isL1 && parsed.confidence && parsed.evidence) {
+    const readCount = Array.isArray(parsed.evidence.read) ? parsed.evidence.read.length : 0;
+    const searchCount = Array.isArray(parsed.evidence.search) ? parsed.evidence.search.length : 0;
+    const assumedCount = Array.isArray(parsed.evidence.assumed) ? parsed.evidence.assumed.length : 0;
+    const totalEvidence = readCount + searchCount;
+    const avgConfidence = typeof parsed.confidence === 'object'
+      ? Math.round(Object.values(parsed.confidence).filter(v => typeof v === 'number').reduce((a, b) => a + b, 0) /
+        Math.max(Object.values(parsed.confidence).filter(v => typeof v === 'number').length, 1))
+      : 0;
+
+    // High confidence (≥7) with very low evidence (≤1 read + 0 search) = suspicious
+    if (avgConfidence >= 7 && totalEvidence <= 1) {
+      warnings.push('OBSERVABLE CONFIDENCE MISMATCH: avg confidence ' + avgConfidence +
+        '/9 but only ' + totalEvidence + ' evidence items (read:' + readCount + ', search:' + searchCount +
+        '). High confidence requires substantial evidence. (Research: Nuclear two-person rule — trust observables, not self-reports)');
+    }
+
+    // More assumed than verified = low confidence, not high
+    if (assumedCount > totalEvidence && avgConfidence >= 6) {
+      warnings.push('OBSERVABLE CONFIDENCE MISMATCH: ' + assumedCount + ' assumptions vs ' + totalEvidence +
+        ' verified items, but confidence=' + avgConfidence + '. Assumed > Verified should lower confidence.');
+    }
+  }
+
   return { valid: errors.length === 0, errors, warnings, parsed };
 }
 
