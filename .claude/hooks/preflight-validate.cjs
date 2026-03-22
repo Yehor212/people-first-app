@@ -494,7 +494,11 @@ function validate(content) {
       const missing = LAYER_CHECKS.filter(lc => !lc.markers.test(srcJoined));
 
       if (missing.length > 0) {
-        warnings.push('CONVENIENCE BIAS (Anti-Pattern #16): goal mentions full audit but diagnostic_sources missing ' +
+        // BLOCKING (ERROR) when ≥2 layers missing — strong signal of convenience bias
+        // WARNING when 1 layer missing — might be intentionally scoped
+        const push = missing.length >= 2 ? errors : warnings;
+        const label = missing.length >= 2 ? 'BLOCKED' : 'WARNING';
+        push.push('CONVENIENCE BIAS ' + label + ' (Anti-Pattern #16): goal mentions full audit but diagnostic_sources missing ' +
           missing.length + ' layer(s): [' + missing.map(m => m.name + ': ' + m.msg).join('; ') + ']. ' +
           'Use META-LAYER template: local + backend + mobile + external + CI/CD. ' +
           'Incident: missed 401s in Supabase for 2 days because only local hooks were audited.');
