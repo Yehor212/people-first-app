@@ -270,13 +270,31 @@ function validate(content) {
         }
       }
 
-      // If user demanded "best practices" — check that research/search evidence exists
+      // If user demanded "best practices" — verify REAL web research was conducted
+      // Minimum: 3 substantive search entries, ≥30 chars each, ≥2 referencing web sources
+      // This ensures actual WebSearch/internet research, not just filling a field
       if (reqs.has_best_practices) {
         try {
           const preflightContent = fs.readFileSync(PREFLIGHT_TOKEN, 'utf8');
           const preflight = JSON.parse(preflightContent);
-          if (preflight.evidence && Array.isArray(preflight.evidence.search) && preflight.evidence.search.length === 0) {
-            push.push(modeLabel + ' BEST PRACTICES: user requested research but evidence.search[] is empty');
+          const searchEntries = (preflight.evidence && Array.isArray(preflight.evidence.search)) ? preflight.evidence.search : [];
+          const MIN_SEARCHES = 3;
+          const MIN_CHARS = 30;
+
+          if (searchEntries.length < MIN_SEARCHES) {
+            push.push(modeLabel + ' BEST PRACTICES: only ' + searchEntries.length + ' search entries. Need ≥' + MIN_SEARCHES + ' for substantive research. Use WebSearch tool for each topic.');
+          } else {
+            // Each entry must be substantive (≥30 chars — real description of what was found)
+            const shallow = searchEntries.filter(s => typeof s === 'string' && s.length < MIN_CHARS);
+            if (shallow.length > 0) {
+              push.push(modeLabel + ' BEST PRACTICES: ' + shallow.length + '/' + searchEntries.length + ' search entries too short (<' + MIN_CHARS + ' chars). Describe findings, not just keywords.');
+            }
+            // At least 2 entries must reference web/internet sources
+            const WEB_EVIDENCE = /internet|web|search|http|url|arxiv|github|stackoverflow|blog|article|docs\.|documentation|codacy|sonar|research|source|paper|guide/i;
+            const webCount = searchEntries.filter(s => typeof s === 'string' && WEB_EVIDENCE.test(s)).length;
+            if (webCount < 2) {
+              push.push(modeLabel + ' BEST PRACTICES: only ' + webCount + ' search entries reference web sources. Need ≥2 with internet evidence (URLs, article names, documentation references).');
+            }
           }
         } catch { /* skip if no preflight */ }
       }
