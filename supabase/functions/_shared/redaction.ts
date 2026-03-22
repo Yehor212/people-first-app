@@ -1,8 +1,10 @@
 export function redactEmail(email: string | null | undefined): string {
   if (!email) return "email:redacted";
-  const [local, domain] = email.split("@");
-  if (!domain) return "email:redacted";
-  const visible = local.slice(0, 2);
+  const parts = email.split("@");
+  if (parts.length < 2) return "email:redacted";
+  const domain = parts[parts.length - 1];
+  // Security fix: show only first char (was 2 chars + full domain → deanonymizable)
+  const visible = parts[0].slice(0, 1);
   return `${visible}***@${domain}`;
 }
 

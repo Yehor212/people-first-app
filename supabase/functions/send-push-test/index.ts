@@ -2,7 +2,10 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { create, getNumericDate } from "https://deno.land/x/djwt@v3.0.2/mod.ts";
 import webpush from "npm:web-push@3.6.7";
 import { extractBearerToken } from "../_shared/auth.ts";
-import { createJsonResponse, createNoContentResponse } from "../_shared/http.ts";
+import {
+  createJsonResponse,
+  createNoContentResponse,
+} from "../_shared/http.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -11,6 +14,23 @@ const VAPID_PRIVATE_KEY = Deno.env.get("VAPID_PRIVATE_KEY");
 const VAPID_SUBJECT = Deno.env.get("VAPID_SUBJECT");
 const FCM_PROJECT_ID = Deno.env.get("FCM_PROJECT_ID");
 const FCM_SERVICE_ACCOUNT_B64 = Deno.env.get("FCM_SERVICE_ACCOUNT_B64");
+
+// Security fix: add rate limiting (was missing — unlike send-push-now which has 10/min)
+const RATE_LIMIT = 10;
+const RATE_WINDOW = 60000; // 1 minute
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+
+function checkRateLimit(userId: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(userId);
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(userId, { count: 1, resetAt: now + RATE_WINDOW });
+    return true;
+  }
+  if (entry.count >= RATE_LIMIT) return false;
+  entry.count++;
+  return true;
+}
 
 const pemToArrayBuffer = (pem: string) => {
   const base64 = pem
@@ -34,7 +54,7 @@ const getFcmAccessToken = async () => {
     keyData,
     { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
     false,
-    ["sign"]
+    ["sign"],
   );
 
   const jwt = await create(
@@ -44,9 +64,9 @@ const getFcmAccessToken = async () => {
       scope: "https://www.googleapis.com/auth/firebase.messaging",
       aud: "https://oauth2.googleapis.com/token",
       iat: getNumericDate(0),
-      exp: getNumericDate(60 * 60)
+      exp: getNumericDate(60 * 60),
     },
-    key
+    key,
   );
 
   const response = await fetch("https://oauth2.googleapis.com/token", {
@@ -54,8 +74,8 @@ const getFcmAccessToken = async () => {
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
       grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
-      assertion: jwt
-    })
+      assertion: jwt,
+    }),
   });
 
   if (!response.ok) return null;
@@ -65,7 +85,7 @@ const getFcmAccessToken = async () => {
 
 const sendFcmNotifications = async (
   tokens: string[],
-  content: { title: string; body: string }
+  content: { title: string; body: string },
 ) => {
   const accessToken = await getFcmAccessToken();
   if (!accessToken || !FCM_PROJECT_ID) return 0;
@@ -77,21 +97,21 @@ const sendFcmNotifications = async (
         method: "POST",
         headers: {
           Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           message: {
             token,
             notification: {
               title: content.title,
-              body: content.body
-            }
-          }
-        })
+              body: content.body,
+            },
+          },
+        }),
       })
         .then((res) => (res.ok ? 1 : 0))
-        .catch(() => 0)
-    )
+        .catch(() => 0),
+    ),
   );
 
   return results.reduce((total, value) => total + value, 0);
@@ -109,12 +129,19 @@ Deno.serve(async (req) => {
 
   try {
     const token = extractBearerToken(req.headers.get("Authorization"));
-    if (!token) return createJsonResponse(origin, 401, { error: "Unauthorized" });
+    if (!token)
+      return createJsonResponse(origin, 401, { error: "Unauthorized" });
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     const { data, error } = await supabase.auth.getUser(token);
     if (error || !data?.user) {
       return createJsonResponse(origin, 401, { error: "Unauthorized" });
+    }
+
+    if (!checkRateLimit(data.user.id)) {
+      return createJsonResponse(origin, 429, {
+        error: "Rate limit exceeded. Max 10 requests per minute.",
+      });
     }
 
     const { data: subs, error: subsError } = await supabase
@@ -123,7 +150,9 @@ Deno.serve(async (req) => {
       .eq("user_id", data.user.id);
 
     if (subsError) {
-      return createJsonResponse(origin, 500, { error: "Failed to load subscriptions" });
+      return createJsonResponse(origin, 500, {
+        error: "Failed to load subscriptions",
+      });
     }
 
     const { data: deviceTokens, error: tokenError } = await supabase
@@ -132,38 +161,50 @@ Deno.serve(async (req) => {
       .eq("user_id", data.user.id);
 
     if (tokenError) {
-      return createJsonResponse(origin, 500, { error: "Failed to load device tokens" });
+      return createJsonResponse(origin, 500, {
+        error: "Failed to load device tokens",
+      });
     }
 
     const payload = await req.json().catch(() => ({}));
     const content = {
       title: payload.title ?? "ZenFlow",
-      body: payload.body ?? "Test notification"
+      body: payload.body ?? "Test notification",
     };
 
     let sent = 0;
 
-    if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY && VAPID_SUBJECT && subs && subs.length > 0) {
-      webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
+    if (
+      VAPID_PUBLIC_KEY &&
+      VAPID_PRIVATE_KEY &&
+      VAPID_SUBJECT &&
+      subs &&
+      subs.length > 0
+    ) {
+      webpush.setVapidDetails(
+        VAPID_SUBJECT,
+        VAPID_PUBLIC_KEY,
+        VAPID_PRIVATE_KEY,
+      );
       await Promise.all(
         subs.map((sub) =>
           webpush
             .sendNotification(
               { endpoint: sub.endpoint, keys: sub.keys },
-              JSON.stringify(content)
+              JSON.stringify(content),
             )
             .then(() => {
               sent += 1;
             })
-            .catch(() => null)
-        )
+            .catch(() => null),
+        ),
       );
     }
 
     if (deviceTokens && deviceTokens.length > 0) {
       sent += await sendFcmNotifications(
         deviceTokens.map((item) => item.token),
-        content
+        content,
       );
     }
 

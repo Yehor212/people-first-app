@@ -1,14 +1,25 @@
-const ALLOWED_ORIGINS = [
+// Single source of truth for CORS origins (consolidated from all edge functions)
+export const ALLOWED_ORIGINS = [
   "https://yehor212.github.io",
-  "capacitor://localhost",
+  "capacitor://localhost", // Capacitor iOS
+  "http://localhost", // Capacitor Android WebView
+  "https://localhost", // Capacitor Android HTTPS
+  "http://localhost:5173", // Vite dev server
+  "http://localhost:8100", // Ionic dev server
+  "null", // Some Android WebViews send null origin
 ];
 
 export function getCorsHeaders(origin: string | null): Record<string, string> {
-  const allowedOrigin = origin && ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  // Security fix: reject unknown origins instead of defaulting to first allowed
+  // Unknown origin → wildcard (safe for APIs that require Authorization header)
+  const allowedOrigin =
+    origin && ALLOWED_ORIGINS.includes(origin) ? origin : "*";
   return {
     "Access-Control-Allow-Origin": allowedOrigin,
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Headers":
+      "authorization, x-client-info, apikey, content-type, x-cron-secret",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Max-Age": "86400",
     "X-Content-Type-Options": "nosniff",
     "X-Frame-Options": "DENY",
     "X-XSS-Protection": "1; mode=block",

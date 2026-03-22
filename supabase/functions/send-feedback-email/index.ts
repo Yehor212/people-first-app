@@ -15,9 +15,14 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.6";
 import { extractBearerToken } from "../_shared/auth.ts";
-import { createJsonResponse, createNoContentResponse } from "../_shared/http.ts";
+import {
+  createJsonResponse,
+  createNoContentResponse,
+} from "../_shared/http.ts";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+const RESEND_FROM_EMAIL =
+  Deno.env.get("RESEND_FROM_EMAIL") || "ZenFlow <onboarding@resend.dev>";
 const ADMIN_EMAIL = Deno.env.get("ADMIN_EMAIL") || "zenflowtrack@gmail.com";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -60,10 +65,13 @@ Deno.serve(async (req) => {
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: { persistSession: false },
-    global: { headers: { Authorization: `Bearer ${token}` } }
+    global: { headers: { Authorization: `Bearer ${token}` } },
   });
 
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
   if (authError || !user) {
     console.warn("[FeedbackEmail] Invalid token:", authError?.message);
     return createJsonResponse(origin, 401, { error: "Invalid token" });
@@ -72,7 +80,9 @@ Deno.serve(async (req) => {
   // Check if Resend is configured
   if (!RESEND_API_KEY) {
     console.error("[FeedbackEmail] RESEND_API_KEY not configured");
-    return createJsonResponse(origin, 500, { error: "Email service not configured" });
+    return createJsonResponse(origin, 500, {
+      error: "Email service not configured",
+    });
   }
 
   try {
@@ -87,12 +97,13 @@ Deno.serve(async (req) => {
     const categoryLabels: Record<string, string> = {
       bug: "🐛 Bug Report",
       feature: "💡 Feature Request",
-      other: "❓ Other"
+      other: "❓ Other",
     };
     const categoryLabel = categoryLabels[category] || category;
 
     // Build email HTML
-    const deviceInfoHtml = device_info ? `
+    const deviceInfoHtml = device_info
+      ? `
       <h3>Device Information</h3>
       <ul style="margin: 0; padding-left: 20px; color: #666;">
         <li><strong>Platform:</strong> ${escapeHtml(device_info.platform || "Unknown")}</li>
@@ -101,7 +112,8 @@ Deno.serve(async (req) => {
         <li><strong>Language:</strong> ${escapeHtml(device_info.language || "Unknown")}</li>
         <li><strong>User Agent:</strong> ${escapeHtml(device_info.userAgent || "Unknown")}</li>
       </ul>
-    ` : "";
+    `
+      : "";
 
     const emailHtml = `
       <!DOCTYPE html>
@@ -122,12 +134,16 @@ Deno.serve(async (req) => {
             <p style="margin: 0; color: #444; white-space: pre-wrap; line-height: 1.6;">${escapeHtml(message)}</p>
           </div>
 
-          ${email ? `
+          ${
+            email
+              ? `
           <div style="margin-bottom: 20px;">
             <h3 style="margin: 0 0 8px 0; color: #333;">Reply To</h3>
             <a href="mailto:${escapeHtml(email)}" style="color: #4a9d7c; text-decoration: none;">${escapeHtml(email)}</a>
           </div>
-          ` : ""}
+          `
+              : ""
+          }
 
           ${deviceInfoHtml}
 
@@ -146,23 +162,23 @@ Deno.serve(async (req) => {
     const resendResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${RESEND_API_KEY}`,
-        "Content-Type": "application/json"
+        Authorization: `Bearer ${RESEND_API_KEY}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "ZenFlow <onboarding@resend.dev>", // Use Resend's default domain for free tier
+        from: RESEND_FROM_EMAIL,
         to: ADMIN_EMAIL,
         reply_to: email || undefined,
         subject: `[ZenFlow] ${categoryLabel}`,
-        html: emailHtml
-      })
+        html: emailHtml,
+      }),
     });
 
     if (!resendResponse.ok) {
       const errorText = await resendResponse.text();
       console.error("[FeedbackEmail] Resend API error:", errorText);
       return createJsonResponse(origin, 500, {
-        error: "Failed to send email"
+        error: "Failed to send email",
       });
     }
 
@@ -171,9 +187,8 @@ Deno.serve(async (req) => {
 
     return createJsonResponse(origin, 200, {
       success: true,
-      emailId: result.id
+      emailId: result.id,
     });
-
   } catch (error) {
     console.error("[FeedbackEmail] Error:", error);
     return createJsonResponse(origin, 500, { error: "Internal error" });

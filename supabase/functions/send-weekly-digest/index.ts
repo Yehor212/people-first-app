@@ -16,10 +16,19 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.6";
 import { isAuthorizedRequest } from "../_shared/auth.ts";
-import { createJsonResponse, createNoContentResponse } from "../_shared/http.ts";
-import { redactEmail, redactUserRef, redactError } from "../_shared/redaction.ts";
+import {
+  createJsonResponse,
+  createNoContentResponse,
+} from "../_shared/http.ts";
+import {
+  redactEmail,
+  redactUserRef,
+  redactError,
+} from "../_shared/redaction.ts";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+const RESEND_FROM_EMAIL =
+  Deno.env.get("RESEND_FROM_EMAIL") || "ZenFlow <onboarding@resend.dev>";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const CRON_SECRET = Deno.env.get("CRON_SECRET"); // Secret for cron job authentication
@@ -41,7 +50,7 @@ interface UserDigestData {
     xpEarned: number;
   };
   topHabits: string[];
-  moodTrend: 'improving' | 'stable' | 'declining' | 'unknown';
+  moodTrend: "improving" | "stable" | "declining" | "unknown";
   achievements: string[];
 }
 
@@ -49,16 +58,18 @@ interface UserDigestData {
 // DATA FETCHING
 // ============================================
 
-async function getSubscribedUsers(supabase: ReturnType<typeof createClient>): Promise<{ id: string; email: string; display_name?: string }[]> {
+async function getSubscribedUsers(
+  supabase: ReturnType<typeof createClient>,
+): Promise<{ id: string; email: string; display_name?: string }[]> {
   // Query key-value user_settings for weekly_digest_enabled = true
   const { data, error } = await supabase
-    .from('user_settings')
-    .select('user_id')
-    .eq('key', 'weekly_digest_enabled')
-    .eq('value', true);
+    .from("user_settings")
+    .select("user_id")
+    .eq("key", "weekly_digest_enabled")
+    .eq("value", true);
 
   if (error) {
-    console.error('[WeeklyDigest] Error fetching settings:', error);
+    console.error("[WeeklyDigest] Error fetching settings:", error);
     return [];
   }
 
@@ -69,15 +80,20 @@ async function getSubscribedUsers(supabase: ReturnType<typeof createClient>): Pr
   const users: { id: string; email: string; display_name?: string }[] = [];
   for (const userId of userIds) {
     try {
-      const { data: userData, error: userError } = await supabase.auth.admin.getUserById(userId);
+      const { data: userData, error: userError } =
+        await supabase.auth.admin.getUserById(userId);
       if (userError || !userData?.user?.email) continue;
       users.push({
         id: userData.user.id,
         email: userData.user.email,
-        display_name: userData.user.user_metadata?.full_name || userData.user.user_metadata?.name,
+        display_name:
+          userData.user.user_metadata?.full_name ||
+          userData.user.user_metadata?.name,
       });
     } catch {
-      console.warn(`[WeeklyDigest] Failed to fetch user ${redactUserRef(userId)}`);
+      console.warn(
+        `[WeeklyDigest] Failed to fetch user ${redactUserRef(userId)}`,
+      );
     }
   }
 
@@ -86,8 +102,11 @@ async function getSubscribedUsers(supabase: ReturnType<typeof createClient>): Pr
 
 async function getUserWeeklyStats(
   supabase: ReturnType<typeof createClient>,
-  userId: string
-): Promise<{ weeklyStats: UserDigestData['weeklyStats']; topHabits: string[] }> {
+  userId: string,
+): Promise<{
+  weeklyStats: UserDigestData["weeklyStats"];
+  topHabits: string[];
+}> {
   const oneWeekAgo = new Date();
   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
   const weekAgoStr = oneWeekAgo.toISOString();
@@ -95,13 +114,13 @@ async function getUserWeeklyStats(
 
   // Load active habits
   const { data: habits, error: habitsError } = await supabase
-    .from('habits')
-    .select('id, name')
-    .eq('user_id', userId)
-    .eq('is_archived', false);
+    .from("habits")
+    .select("id, name")
+    .eq("user_id", userId)
+    .eq("is_archived", false);
 
   if (habitsError) {
-    throw new Error('Failed to load habits');
+    throw new Error("Failed to load habits");
   }
 
   let habitsCompleted = 0;
@@ -111,13 +130,13 @@ async function getUserWeeklyStats(
 
   if (habitIds.length > 0) {
     const { data: completions, error: completionsError } = await supabase
-      .from('habit_completions')
-      .select('habit_id, count, date')
-      .eq('user_id', userId)
-      .gte('date', weekAgoDate);
+      .from("habit_completions")
+      .select("habit_id, count, date")
+      .eq("user_id", userId)
+      .gte("date", weekAgoDate);
 
     if (completionsError) {
-      throw new Error('Failed to load habit completions');
+      throw new Error("Failed to load habit completions");
     }
 
     for (const completion of completions || []) {
@@ -139,39 +158,43 @@ async function getUserWeeklyStats(
 
   // Get focus sessions this week
   const { data: focusSessions, error: focusError } = await supabase
-    .from('focus_sessions')
-    .select('duration')
-    .eq('user_id', userId)
-    .gte('created_at', weekAgoStr);
+    .from("focus_sessions")
+    .select("duration")
+    .eq("user_id", userId)
+    .gte("created_at", weekAgoStr);
 
   if (focusError) {
-    throw new Error('Failed to load focus sessions');
+    throw new Error("Failed to load focus sessions");
   }
 
-  const focusMinutes = (focusSessions || [])
-    .reduce((sum: number, s: { duration: number }) => sum + (s.duration || 0), 0);
+  const focusMinutes = (focusSessions || []).reduce(
+    (sum: number, s: { duration: number }) => sum + (s.duration || 0),
+    0,
+  );
 
   // Get moods logged this week
   const { data: moods, error: moodsError } = await supabase
-    .from('moods')
-    .select('id')
-    .eq('user_id', userId)
-    .gte('date', weekAgoDate);
+    .from("moods")
+    .select("id")
+    .eq("user_id", userId)
+    .gte("date", weekAgoDate);
 
   if (moodsError) {
-    throw new Error('Failed to load moods');
+    throw new Error("Failed to load moods");
   }
 
   // Get leaderboard data
   const { data: leaderboard, error: leaderboardError } = await supabase
-    .from('leaderboards')
-    .select('weekly_xp, current_streak')
-    .eq('user_id', userId)
+    .from("leaderboards")
+    .select("weekly_xp, current_streak")
+    .eq("user_id", userId)
     .maybeSingle();
 
   // User may not have a leaderboard row yet — use defaults
   if (leaderboardError) {
-    console.warn(`[WeeklyDigest] Leaderboard not found for ${redactUserRef(userId)}`);
+    console.warn(
+      `[WeeklyDigest] Leaderboard not found for ${redactUserRef(userId)}`,
+    );
   }
 
   return {
@@ -187,12 +210,12 @@ async function getUserWeeklyStats(
   };
 }
 
-function calculateMoodTrend(moodsLogged: number): UserDigestData['moodTrend'] {
+function calculateMoodTrend(moodsLogged: number): UserDigestData["moodTrend"] {
   // Simple heuristic - in a real app, would analyze actual mood values
-  if (moodsLogged >= 14) return 'improving';
-  if (moodsLogged >= 7) return 'stable';
-  if (moodsLogged >= 3) return 'declining';
-  return 'unknown';
+  if (moodsLogged >= 14) return "improving";
+  if (moodsLogged >= 7) return "stable";
+  if (moodsLogged >= 3) return "declining";
+  return "unknown";
 }
 
 // ============================================
@@ -200,22 +223,26 @@ function calculateMoodTrend(moodsLogged: number): UserDigestData['moodTrend'] {
 // ============================================
 
 function generateEmailHtml(data: UserDigestData): string {
-  const habitPercentage = data.weeklyStats.habitsTotal > 0
-    ? Math.round((data.weeklyStats.habitsCompleted / data.weeklyStats.habitsTotal) * 100)
-    : 0;
+  const habitPercentage =
+    data.weeklyStats.habitsTotal > 0
+      ? Math.round(
+          (data.weeklyStats.habitsCompleted / data.weeklyStats.habitsTotal) *
+            100,
+        )
+      : 0;
 
   const moodEmoji = {
-    improving: '📈',
-    stable: '➡️',
-    declining: '📉',
-    unknown: '❓'
+    improving: "📈",
+    stable: "➡️",
+    declining: "📉",
+    unknown: "❓",
   }[data.moodTrend];
 
   const moodText = {
-    improving: 'Your mood is trending up! Great work!',
-    stable: 'Your mood has been stable this week.',
-    declining: 'Consider some self-care this week.',
-    unknown: 'Log more moods to see your trends!'
+    improving: "Your mood is trending up! Great work!",
+    stable: "Your mood has been stable this week.",
+    declining: "Consider some self-care this week.",
+    unknown: "Log more moods to see your trends!",
   }[data.moodTrend];
 
   return `
@@ -231,7 +258,7 @@ function generateEmailHtml(data: UserDigestData): string {
         <!-- Header -->
         <div style="text-align: center; margin-bottom: 32px;">
           <h1 style="color: #4a9d7c; margin: 0; font-size: 28px;">Your Weekly Progress</h1>
-          <p style="color: #666; margin: 8px 0 0 0;">Hey ${escapeHtml(data.displayName || 'there')}! Here's your week in review.</p>
+          <p style="color: #666; margin: 8px 0 0 0;">Hey ${escapeHtml(data.displayName || "there")}! Here's your week in review.</p>
         </div>
 
         <!-- Stats Grid -->
@@ -282,18 +309,26 @@ function generateEmailHtml(data: UserDigestData): string {
         </div>
 
         <!-- Top Habits -->
-        ${data.topHabits.length > 0 ? `
+        ${
+          data.topHabits.length > 0
+            ? `
         <div style="margin-bottom: 24px;">
           <h3 style="color: #333; margin: 0 0 12px 0; font-size: 16px;">Your Star Habits This Week</h3>
           <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-            ${data.topHabits.map(h => `
+            ${data.topHabits
+              .map(
+                (h) => `
               <span style="background: #4a9d7c15; color: #4a9d7c; padding: 6px 12px; border-radius: 20px; font-size: 14px;">
                 ⭐ ${escapeHtml(h)}
               </span>
-            `).join('')}
+            `,
+              )
+              .join("")}
           </div>
         </div>
-        ` : ''}
+        `
+            : ""
+        }
 
         <!-- CTA -->
         <div style="text-align: center; margin-top: 32px;">
@@ -364,12 +399,14 @@ Deno.serve(async (req) => {
   // Check configuration
   if (!RESEND_API_KEY) {
     console.error("[WeeklyDigest] RESEND_API_KEY not configured");
-    return createJsonResponse(origin, 500, { error: "Email service not configured" });
+    return createJsonResponse(origin, 500, {
+      error: "Email service not configured",
+    });
   }
 
   try {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-      auth: { persistSession: false }
+      auth: { persistSession: false },
     });
 
     // Get subscribed users
@@ -377,7 +414,11 @@ Deno.serve(async (req) => {
     console.log(`[WeeklyDigest] Found ${users.length} subscribed users`);
 
     if (users.length === 0) {
-      return createJsonResponse(origin, 200, { success: true, sent: 0, message: "No subscribed users" });
+      return createJsonResponse(origin, 200, {
+        success: true,
+        sent: 0,
+        message: "No subscribed users",
+      });
     }
 
     let sentCount = 0;
@@ -387,16 +428,19 @@ Deno.serve(async (req) => {
     for (const user of users) {
       try {
         // Get user stats
-        const { weeklyStats, topHabits } = await getUserWeeklyStats(supabase, user.id);
+        const { weeklyStats, topHabits } = await getUserWeeklyStats(
+          supabase,
+          user.id,
+        );
 
         const digestData: UserDigestData = {
           userId: user.id,
           email: user.email,
-          displayName: user.display_name || 'Zen User',
+          displayName: user.display_name || "Zen User",
           weeklyStats,
           topHabits,
           moodTrend: calculateMoodTrend(weeklyStats.moodsLogged),
-          achievements: []
+          achievements: [],
         };
 
         // Generate and send email
@@ -405,20 +449,22 @@ Deno.serve(async (req) => {
         const resendResponse = await fetch("https://api.resend.com/emails", {
           method: "POST",
           headers: {
-            "Authorization": `Bearer ${RESEND_API_KEY}`,
-            "Content-Type": "application/json"
+            Authorization: `Bearer ${RESEND_API_KEY}`,
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            from: "ZenFlow <onboarding@resend.dev>",
+            from: RESEND_FROM_EMAIL,
             to: user.email,
             subject: `Your Weekly ZenFlow Progress Report`,
-            html: emailHtml
-          })
+            html: emailHtml,
+          }),
         });
 
         if (resendResponse.ok) {
           sentCount++;
-          console.log(`[WeeklyDigest] Sent to ${redactUserRef(user.id)} (${redactEmail(user.email)})`);
+          console.log(
+            `[WeeklyDigest] Sent to ${redactUserRef(user.id)} (${redactEmail(user.email)})`,
+          );
         } else {
           const errorText = await resendResponse.text();
           const userRef = redactUserRef(user.id);
@@ -427,8 +473,7 @@ Deno.serve(async (req) => {
         }
 
         // Rate limiting - wait 1 second between emails
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
+        await new Promise((resolve) => setTimeout(resolve, 1000));
       } catch (userError) {
         const userRef = redactUserRef(user.id);
         errors.push(`${userRef}: processing_failed`);
@@ -440,9 +485,8 @@ Deno.serve(async (req) => {
       success: true,
       sent: sentCount,
       total: users.length,
-      errors: errors.length > 0 ? errors : undefined
+      errors: errors.length > 0 ? errors : undefined,
     });
-
   } catch (error) {
     console.error("[WeeklyDigest] Error:", error);
     return createJsonResponse(origin, 500, {
