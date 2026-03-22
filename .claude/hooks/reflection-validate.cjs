@@ -98,6 +98,17 @@ function validate(content) {
       if (invalid.length > 0) {
         errors.push(`FULL CYCLE law_compliance has ${invalid.length} invalid entries. Each needs: {law: N, status: "pass"/"na", evidence: "file:line or reason"}`);
       }
+
+      // Law-specific deep verification: Law 21 requires abductive reasoning evidence
+      // Law 21 (Surgeon's Law) = Peirce's Abduction: "given symptoms, infer BEST explanation"
+      // Evidence must show abductive reasoning was actually used, not just claimed
+      const law21 = parsed.law_compliance.find(lc => lc.law === 21);
+      if (law21 && law21.status === 'pass') {
+        const ABDUCTION_MARKERS = /abduct|best explanation|root cause|5 whys|why.*why|symptom.*cause|because.*therefore|infer/i;
+        if (!ABDUCTION_MARKERS.test(law21.evidence)) {
+          errors.push('FULL CYCLE Law 21: evidence must show ABDUCTIVE reasoning (root cause analysis, best explanation, 5 Whys). Got: "' + law21.evidence.slice(0, 60) + '"');
+        }
+      }
     }
   }
 
