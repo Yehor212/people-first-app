@@ -101,6 +101,17 @@
         ]
       },
       {
+        "matcher": "WebSearch|WebFetch|Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/ci-tracker.cjs",
+            "timeout": 5000,
+            "statusMessage": "Research tracking..."
+          }
+        ]
+      },
+      {
         "matcher": "Grep",
         "hooks": [
           {

@@ -65,6 +65,7 @@ const STALE_TOKENS = [
   '.bugfix-pending', '.search-confirmed',
   '.ci-evidence', '.ide-ack-pending', '.ide-ack-done', '.worktree-verify-pending',
   '.snyk-pending', '.snyk-scan-done', '.control-flow-pending',
+  '.research-pending', '.research-done',
 ];
 const STALE_THRESHOLD_MS = 4 * 3600 * 1000; // 4 hours
 

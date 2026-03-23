@@ -128,6 +128,51 @@ process.stdin.on('end', () => {
       }
     }
 
+    // Research gate — Perplexity-style mandatory web search
+    const RESEARCH_PENDING = path.join(ROOT, '.research-pending');
+    const RESEARCH_DONE = path.join(ROOT, '.research-done');
+    if (fs.existsSync(RESEARCH_PENDING)) {
+      // Clean stale (>30 min)
+      try {
+        const rp = JSON.parse(fs.readFileSync(RESEARCH_PENDING, 'utf8'));
+        if (rp.expires_at && Date.now() > rp.expires_at) {
+          cleanToken(RESEARCH_PENDING);
+          cleanToken(RESEARCH_DONE);
+          auditLog('stale-cleanup', 'research-pending expired');
+        } else {
+          const minSearches = rp.min_searches || 3;
+          let doneCount = 0;
+          if (fs.existsSync(RESEARCH_DONE)) {
+            try { doneCount = JSON.parse(fs.readFileSync(RESEARCH_DONE, 'utf8')).count || 0; } catch {}
+          }
+          if (doneCount < minSearches) {
+            process.stderr.write([
+              '',
+              '══════════════════════════════════════════════════════════════',
+              doneCount === 0
+                ? '  🔬 RESEARCH REQUIRED (Perplexity-style enforcement)'
+                : '  🔬 RESEARCH INCOMPLETE (' + doneCount + '/' + minSearches + ')',
+              '══════════════════════════════════════════════════════════════',
+              '',
+              '  User requested web research. You MUST use WebSearch tool',
+              '  at least ' + minSearches + 'x before editing code.',
+              '',
+              '  Current: ' + doneCount + '/' + minSearches + ' searches completed.',
+              '',
+              '  REQUIRED: Use WebSearch or WebFetch tool to research.',
+              '  ci-tracker.cjs will automatically count your searches.',
+              '',
+              '══════════════════════════════════════════════════════════════',
+              '',
+            ].join('\n'));
+            auditLog('BLOCKED', 'research: ' + doneCount + '/' + minSearches);
+            process.exit(2);
+          }
+          // Research complete — continue to normal flow
+        }
+      } catch { cleanToken(RESEARCH_PENDING); } // parse error → clean
+    }
+
     // Case 1: No bugfix pending → normal flow
     if (!hasBugfix) {
       process.exit(0);

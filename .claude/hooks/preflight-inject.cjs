@@ -153,6 +153,16 @@ process.stdin.on('end', () => {
     if (msg.includes('полный цикл') || msg.includes('полній цикл')) {
       fs.writeFileSync(FULLCYCLE_FLAG, new Date().toISOString(), 'utf8');
       fullCycleActivated = true;
+      // Full cycle = mandatory web research (Perplexity-style)
+      const fcResearchFile = path.join(ROOT, '.research-pending');
+      if (!fs.existsSync(fcResearchFile)) {
+        fs.writeFileSync(fcResearchFile, JSON.stringify({
+          timestamp: new Date().toISOString(),
+          min_searches: 3,
+          message_excerpt: 'полный цикл trigger',
+          expires_at: Date.now() + 30 * 60 * 1000
+        }), 'utf8');
+      }
     }
 
     // 2. Clean stale preflight token (>1 hour old)
@@ -249,6 +259,28 @@ process.stdin.on('end', () => {
       };
 
       fs.writeFileSync(USER_REQ_FILE, JSON.stringify(requirements, null, 2), 'utf8');
+
+      // 5a. Research Gate — Perplexity-style mandatory web search
+      // WEB-specific patterns only. "ресерч по коду" does NOT match.
+      const RESEARCH_PATTERNS = /(?:интернет|веб[- ]?ресерч|web[- ]?search|online|источник[а-яёіїєґ]*|свежи[а-яёійїєґ]*\s*(?:ресерч|исследован)|фреш\s*(?:ресерч|research)|веб[- ]?исследован)/i;
+      const RESEARCH_CANCEL = /(?:без ресерч|не надо ресерч|skip research|just fix|просто (?:исправ|сделай))/i;
+      const RESEARCH_PENDING_FILE = path.join(ROOT, '.research-pending');
+
+      if (RESEARCH_CANCEL.test(rawMsgOriginal)) {
+        // User cancels research requirement
+        try { fs.unlinkSync(RESEARCH_PENDING_FILE); } catch {}
+      } else if (RESEARCH_PATTERNS.test(rawMsgOriginal)) {
+        // Dynamic min_searches: "по 5 источникам" → 5, default 3
+        const countMatch = rawMsgOriginal.match(/(\d+)\s*(?:источник|search|ресерч|веб)/i);
+        const minSearches = countMatch ? Math.max(1, Math.min(10, parseInt(countMatch[1]))) : 3;
+        fs.writeFileSync(RESEARCH_PENDING_FILE, JSON.stringify({
+          timestamp: new Date().toISOString(),
+          min_searches: minSearches,
+          message_excerpt: rawMsgOriginal.substring(0, 100),
+          expires_at: Date.now() + 30 * 60 * 1000
+        }), 'utf8');
+      }
+
       // 5. Tool Routing — Anti-Pattern #18: Tool Blindness
       // Multi-match: ALL matching routes activate (not first-match)
       const TOOL_ROUTES = [
@@ -262,6 +294,7 @@ process.stdin.on('end', () => {
         { pattern: /полный цикл|полній цикл/i, tools: ['ALL'], level: 'MANDATORY', desc: 'Full cycle: use ALL tools (audit-suite, AgentShield, Snyk, /tdd, /review)' },
         { pattern: /документац|docs|api.*доку|library/i, tools: ['Context7 MCP'], level: 'MANDATORY', desc: 'Use Context7 MCP for library documentation lookup' },
         { pattern: /визуал|browser|скриншот|screenshot|ui.test/i, tools: ['Playwright MCP'], level: 'MANDATORY', desc: 'Use Playwright MCP for visual/browser testing' },
+        { pattern: /(?:интернет|веб[- ]?ресерч|web[- ]?search|источник[а-яёіїєґ]*|свежи[а-яёійїєґ]*\s*(?:ресерч|исследован)|фреш\s*(?:ресерч|research))/i, tools: ['WebSearch'], level: 'MANDATORY', desc: 'Use WebSearch for web research (BLOCKING: .research-pending gate)' },
       ];
 
       const matchedTools = [];

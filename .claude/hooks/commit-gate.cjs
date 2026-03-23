@@ -425,6 +425,34 @@ process.stdin.on('end', () => {
         }
       }
 
+      // --- Layer 7b: Research completion verification ---
+      const RESEARCH_PENDING_CG = path.join(ROOT, '.research-pending');
+      const RESEARCH_DONE_CG = path.join(ROOT, '.research-done');
+      if (fs.existsSync(RESEARCH_PENDING_CG)) {
+        try {
+          const rp = JSON.parse(fs.readFileSync(RESEARCH_PENDING_CG, 'utf8'));
+          if (rp.expires_at && Date.now() > rp.expires_at) {
+            fs.unlinkSync(RESEARCH_PENDING_CG);
+            try { fs.unlinkSync(RESEARCH_DONE_CG); } catch {}
+            audit('allow', 'stale .research-pending cleaned (expired)', cmd);
+          } else if (!fs.existsSync(RESEARCH_DONE_CG)) {
+            block('RESEARCH REQUIRED but not completed! User requested web research (' + (rp.min_searches || 3) + ' searches minimum). Use WebSearch tool before commit.', cmd);
+          } else {
+            const rd = JSON.parse(fs.readFileSync(RESEARCH_DONE_CG, 'utf8'));
+            if ((rd.count || 0) < (rp.min_searches || 3)) {
+              block('RESEARCH INCOMPLETE: ' + (rd.count || 0) + '/' + (rp.min_searches || 3) + ' searches. Continue using WebSearch tool before commit.', cmd);
+            } else {
+              try { fs.unlinkSync(RESEARCH_PENDING_CG); } catch {}
+              try { fs.unlinkSync(RESEARCH_DONE_CG); } catch {}
+              audit('allow', 'Research verified: ' + rd.count + ' searches completed', cmd);
+            }
+          }
+        } catch {
+          try { fs.unlinkSync(RESEARCH_PENDING_CG); } catch {}
+          audit('allow', 'malformed .research-pending cleaned', cmd);
+        }
+      }
+
       // Clean IDE ack tokens on commit
       try { fs.unlinkSync(path.join(ROOT, '.ide-ack-pending')); } catch {}
       try { fs.unlinkSync(path.join(ROOT, '.ide-ack-done')); } catch {}
