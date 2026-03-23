@@ -409,6 +409,50 @@ function validate(content) {
     }
   } catch { /* non-critical — don't block on requirement check failure */ }
 
+  // Rule 47: Tool Usage Verification (Anti-Pattern #18 — Tool Blindness)
+  // Cross-reference: tools_recommended (MANDATORY) vs tools_used in postflight
+  try {
+    const USER_REQ_FILE = path.join(ROOT, '.user-requirements');
+    if (fs.existsSync(USER_REQ_FILE)) {
+      const reqs = JSON.parse(fs.readFileSync(USER_REQ_FILE, 'utf8'));
+      if (reqs.tools_recommended && reqs.tools_recommended.length > 0) {
+        const toolsUsed = parsed.tools_used || [];
+        const toolsUsedNames = new Set(
+          (Array.isArray(toolsUsed) ? toolsUsed : []).map(t =>
+            typeof t === 'string' ? t.toLowerCase() : (t.name || '').toLowerCase()
+          )
+        );
+
+        const mandatoryMissing = reqs.tools_recommended
+          .filter(t => t.level === 'MANDATORY' && t.name !== 'ALL')
+          .filter(t => !toolsUsedNames.has(t.name.toLowerCase()));
+
+        if (mandatoryMissing.length > 0) {
+          const names = mandatoryMissing.map(t => t.name).join(', ');
+          errors.push(
+            'TOOL BLINDNESS (Anti-Pattern #18): MANDATORY tools recommended but NOT used: ' + names + '. ' +
+            'Add tools_used: [' + mandatoryMissing.map(t => '"' + t.name + '"').join(', ') + '] to postflight, ' +
+            'or document why each was skipped with justification ≥30 chars in tools_skipped[].'
+          );
+        }
+
+        // Allow documented skip: tools_skipped: [{name, reason}] with reason ≥30 chars
+        if (mandatoryMissing.length > 0 && parsed.tools_skipped) {
+          const skipped = Array.isArray(parsed.tools_skipped) ? parsed.tools_skipped : [];
+          const allJustified = mandatoryMissing.every(missing => {
+            const skip = skipped.find(s => (s.name || '').toLowerCase() === missing.name.toLowerCase());
+            return skip && typeof skip.reason === 'string' && skip.reason.length >= 30;
+          });
+          if (allJustified) {
+            // Remove the error — all mandatory tools have documented justification for skipping
+            const idx = errors.findIndex(e => e.includes('TOOL BLINDNESS'));
+            if (idx >= 0) errors.splice(idx, 1);
+          }
+        }
+      }
+    }
+  } catch { /* non-critical */ }
+
   return { valid: errors.length === 0, errors, warnings, parsed };
 }
 

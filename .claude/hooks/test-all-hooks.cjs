@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Comprehensive test suite for ALL 32 hooks.
+ * Comprehensive test suite for ALL 33 hooks.
  * Tests every pattern, every edge case, every exit code.
  */
 const { spawnSync } = require('child_process');
@@ -21,7 +21,7 @@ function test(name, hookFile, stdin, expectMatch, expectExit) {
       timeout: 10000,
       stdio: ['pipe', 'pipe', 'pipe'],
     });
-    let stdout = result.stdout || '';
+    let stdout = (result.stdout || '') + (result.stderr || '');
     let exitCode = result.status || 0;
 
     let ok = true;
@@ -62,7 +62,7 @@ function test(name, hookFile, stdin, expectMatch, expectExit) {
 }
 
 console.log('==================================================');
-console.log('  FULL HOOK TEST SUITE (32 hooks)');
+console.log('  FULL HOOK TEST SUITE (33 hooks)');
 console.log('==================================================\n');
 
 // ============================================================
@@ -584,10 +584,10 @@ test('always injects enforcement reminder',
   '{}',
   'ENFORCEMENT SYSTEM', 0);
 
-test('reports 32 hooks in reminder',
+test('reports 33 hooks in reminder',
   'session-start.cjs',
   '{}',
-  '32 hooks', 0);
+  '33 hooks', 0);
 
 test('invalid JSON — no crash',
   'session-start.cjs',
@@ -935,6 +935,51 @@ test('invalid JSON — no crash (advisory)',
   null, 0);
 
 // ============================================================
+// 31. TOOL-GUARD (PreToolUse Bash — Anti-Pattern #18 Tool Blindness)
+// ============================================================
+console.log('  31. tool-guard.cjs\n');
+
+test('BLOCKS psql command',
+  'tool-guard.cjs',
+  '{"tool_name":"Bash","tool_input":{"command":"psql -h db.supabase.co -U postgres"}}',
+  'TOOL BLINDNESS BLOCKED', 2);
+
+test('BLOCKS curl to supabase',
+  'tool-guard.cjs',
+  '{"tool_name":"Bash","tool_input":{"command":"curl https://bwgfslmxmueyglpumkbf.supabase.co/rest/v1/profiles"}}',
+  'TOOL BLINDNESS BLOCKED', 2);
+
+test('ALLOWS curl to non-supabase URL',
+  'tool-guard.cjs',
+  '{"tool_name":"Bash","tool_input":{"command":"curl https://api.github.com/repos"}}',
+  null, 0);
+
+test('BLOCKS npx playwright',
+  'tool-guard.cjs',
+  '{"tool_name":"Bash","tool_input":{"command":"npx playwright test"}}',
+  'TOOL BLINDNESS BLOCKED', 2);
+
+test('ALLOWS npm run build',
+  'tool-guard.cjs',
+  '{"tool_name":"Bash","tool_input":{"command":"npm run build"}}',
+  null, 0);
+
+test('npm audit — advisory warning not block',
+  'tool-guard.cjs',
+  '{"tool_name":"Bash","tool_input":{"command":"npm audit"}}',
+  'TOOL SUGGESTION', 0);
+
+test('non-Bash tool — ALLOW (early exit)',
+  'tool-guard.cjs',
+  '{"tool_name":"Read","tool_input":{"file_path":"src/test.ts"}}',
+  null, 0);
+
+test('invalid JSON — fail-open',
+  'tool-guard.cjs',
+  'GARBAGE',
+  null, 0);
+
+// ============================================================
 // SUMMARY
 // ============================================================
 console.log('\n==================================================');
@@ -1043,12 +1088,19 @@ try {
 
 // --- reflection-validate.cjs ---
 try {
+  // Clean test artifacts from preflight-inject tests that create .user-requirements
+  const userReqPath = path.join(TEST_ROOT, '.user-requirements');
+  try { fs.unlinkSync(userReqPath); } catch {}
+
   const rv = require('./reflection-validate.cjs');
 
   // RV1: Invalid JSON → fail
   const rv1 = rv.validate('not json');
   if (!rv1.valid && rv1.errors[0] === 'Not valid JSON') { pass++; results.push({ name: 'reflection-validate: invalid JSON', status: 'PASS' }); }
   else { fail++; results.push({ name: 'reflection-validate: invalid JSON', status: 'FAIL', issues: JSON.stringify(rv1) }); }
+
+  // Clean .user-requirements created by preflight-inject tests (would cause Rule 47 false positive)
+  try { fs.unlinkSync(path.join(TEST_ROOT, '.user-requirements')); } catch {}
 
   // RV2: Valid POST-FLIGHT → pass (uses real file + real git hash for evidence veracity)
   const { execSync: rvExec } = require('child_process');
@@ -1057,6 +1109,7 @@ try {
   const rv2 = rv.validate(JSON.stringify({
     timestamp: new Date().toISOString(), goal: 'Test valid postflight',
     changes: ['src/App.tsx'], laws_checked: 28, mirrors_checked: 5, ci_passed: true,
+    tools_used: ['/tdd', '/review', 'codebase-audit-suite', 'AgentShield', 'Snyk', 'Supabase MCP'],
     self_reflection: {
       what_went_wrong: 'nothing major in this particular test case',
       what_I_assumed: 'nothing was assumed during this test',

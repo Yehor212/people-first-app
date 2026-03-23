@@ -367,6 +367,38 @@ process.stdin.on('end', () => {
         try { fs.unlinkSync(FULLCYCLE_LAWS); } catch {}
         try { fs.unlinkSync(FULLCYCLE_ACTIVE); } catch {}
       }
+      // --- Layer 7: Snyk scan verification (Anti-Pattern #18) ---
+      const SNYK_PENDING = path.join(ROOT, '.snyk-pending');
+      const SNYK_DONE = path.join(ROOT, '.snyk-scan-done');
+      if (fs.existsSync(SNYK_PENDING)) {
+        // Fail-open: if token is >4 hours old, auto-clean (stale from previous session)
+        try {
+          const snykData = JSON.parse(fs.readFileSync(SNYK_PENDING, 'utf8'));
+          const snykAge = Date.now() - new Date(snykData.timestamp).getTime();
+          if (snykAge > 4 * 3600000) {
+            fs.unlinkSync(SNYK_PENDING);
+            audit('allow', 'stale .snyk-pending cleaned (>4h old)', cmd);
+          } else if (!fs.existsSync(SNYK_DONE)) {
+            block(
+              'SNYK SCAN REQUIRED (Anti-Pattern #18 — Tool Blindness)!\n' +
+              'New code detected in: ' + (snykData.file || 'unknown') + '\n' +
+              'Per CLAUDE.md global rule: run snyk_code_scan before commit.\n' +
+              'After scan, create .snyk-scan-done token.',
+              cmd
+            );
+          } else {
+            // Both tokens exist — clean up
+            try { fs.unlinkSync(SNYK_PENDING); } catch {}
+            try { fs.unlinkSync(SNYK_DONE); } catch {}
+            audit('allow', 'Snyk scan verified and tokens cleaned', cmd);
+          }
+        } catch {
+          // Malformed token — clean up, don't block
+          try { fs.unlinkSync(SNYK_PENDING); } catch {}
+          audit('allow', 'malformed .snyk-pending cleaned', cmd);
+        }
+      }
+
       // Clean IDE ack tokens on commit
       try { fs.unlinkSync(path.join(ROOT, '.ide-ack-pending')); } catch {}
       try { fs.unlinkSync(path.join(ROOT, '.ide-ack-done')); } catch {}

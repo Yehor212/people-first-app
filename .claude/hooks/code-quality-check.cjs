@@ -100,6 +100,19 @@ process.stdin.on('end', () => {
         'TRACE ALL PATHS: (1) TRUE? (2) FALSE? (3) Edge cases?');
     }
 
+    // A5: New code → Snyk scan reminder (Anti-Pattern #18 + CLAUDE.md global rule)
+    const SNYK_PENDING = path.join(ROOT, '.snyk-pending');
+    if (filePath && /\.(ts|tsx)$/.test(filePath)) {
+      const oldStr = (data.tool_input && data.tool_input.old_string) || '';
+      // New file = empty old_string (Write tool) or old_string not provided
+      if (!oldStr && data.tool_name === 'Write') {
+        try {
+          fs.writeFileSync(SNYK_PENDING, JSON.stringify({ file: filePath, timestamp: new Date().toISOString() }), 'utf8');
+          warnings.push('NEW CODE DETECTED in ' + path.basename(filePath) + '. Per CLAUDE.md global rule: run snyk_code_scan before commit. (.snyk-pending created)');
+        } catch { /* best-effort */ }
+      }
+    }
+
     // Always inject self-reflection reminder after TS edits (SR8)
     const selfReflectionReminder = 'SELF-REFLECTION: After this edit, verify: (1) No IDE errors introduced (2) No regression in existing behavior (3) Change aligns with stated goal';
 

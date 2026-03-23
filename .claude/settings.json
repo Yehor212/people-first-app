@@ -41,6 +41,17 @@
         "hooks": [
           {
             "type": "command",
+            "command": "node .claude/hooks/tool-guard.cjs",
+            "timeout": 5000,
+            "statusMessage": "Tool routing check..."
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
             "command": "node .claude/hooks/commit-gate.cjs",
             "timeout": 130000,
             "statusMessage": "Checking commit/push gates..."

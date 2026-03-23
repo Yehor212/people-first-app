@@ -249,10 +249,61 @@ process.stdin.on('end', () => {
       };
 
       fs.writeFileSync(USER_REQ_FILE, JSON.stringify(requirements, null, 2), 'utf8');
+      // 5. Tool Routing — Anti-Pattern #18: Tool Blindness
+      // Multi-match: ALL matching routes activate (not first-match)
+      const TOOL_ROUTES = [
+        { pattern: /\b(баг|bug|исправ|fix|ошибк|error)\b/i, tools: ['/tdd'], level: 'MANDATORY', desc: 'Use /tdd for bug fix (Red-Green-Refactor)' },
+        { pattern: /аудит|audit|все.баг|all.bug|проверь.всё|find.all/i, tools: ['codebase-audit-suite', 'AgentShield', 'Snyk'], level: 'MANDATORY', desc: 'Use codebase-audit-suite + AgentShield + Snyk for full audit' },
+        { pattern: /supabase|база|миграц|sql|бекенд|backend/i, tools: ['Supabase MCP'], level: 'MANDATORY', desc: 'Use Supabase MCP for database operations (NOT psql/curl via Bash)' },
+        { pattern: /оптимиз|perf|скорост|bundle|slow|быстр/i, tools: ['optimization-suite'], level: 'MANDATORY', desc: 'Use optimization-suite for performance analysis' },
+        { pattern: /план|roadmap|спринт|фича|feature|декомпоз/i, tools: ['agile-workflow'], level: 'MANDATORY', desc: 'Use agile-workflow for planning and decomposition' },
+        { pattern: /тест|test|покрыт|coverage|vitest/i, tools: ['/tdd'], level: 'MANDATORY', desc: 'Use /tdd for test creation (Red-Green-Refactor)' },
+        { pattern: /ревью|review|код.ревью|code.review/i, tools: ['/review'], level: 'MANDATORY', desc: 'Use /review for forced categorical decomposition' },
+        { pattern: /полный цикл|полній цикл/i, tools: ['ALL'], level: 'MANDATORY', desc: 'Full cycle: use ALL tools (audit-suite, AgentShield, Snyk, /tdd, /review)' },
+        { pattern: /документац|docs|api.*доку|library/i, tools: ['Context7 MCP'], level: 'MANDATORY', desc: 'Use Context7 MCP for library documentation lookup' },
+        { pattern: /визуал|browser|скриншот|screenshot|ui.test/i, tools: ['Playwright MCP'], level: 'MANDATORY', desc: 'Use Playwright MCP for visual/browser testing' },
+      ];
+
+      const matchedTools = [];
+      const seen = new Set();
+      for (const route of TOOL_ROUTES) {
+        if (route.pattern.test(rawMsgOriginal)) {
+          for (const tool of route.tools) {
+            if (!seen.has(tool)) {
+              seen.add(tool);
+              matchedTools.push({ name: tool, level: route.level, desc: route.desc });
+            }
+          }
+        }
+      }
+
+      if (matchedTools.length > 0) {
+        requirements.tools_recommended = matchedTools.map(t => ({ name: t.name, level: t.level }));
+        // Re-write with tools_recommended included
+        fs.writeFileSync(USER_REQ_FILE, JSON.stringify(requirements, null, 2), 'utf8');
+      }
     } catch { /* non-critical — don't block on extraction failure */ }
 
-    // 4. Always inject protocol + optional full cycle notice + injection warnings
+    // 4. Always inject protocol + optional full cycle notice + injection warnings + tool routing
     let context = PREFLIGHT_PROTOCOL;
+
+    // 5b. Append tool routing to context
+    try {
+      const reqFile = path.join(ROOT, '.user-requirements');
+      if (fs.existsSync(reqFile)) {
+        const reqs = JSON.parse(fs.readFileSync(reqFile, 'utf8'));
+        if (reqs.tools_recommended && reqs.tools_recommended.length > 0) {
+          context += '\n\nTOOL AWARENESS (Anti-Pattern #18 — Tool Blindness):';
+          for (const t of reqs.tools_recommended) {
+            context += '\n' + t.level + ': ' + (t.name === 'ALL'
+              ? 'Full cycle: use ALL available tools (codebase-audit-suite, AgentShield, Snyk, /tdd, /review, Supabase MCP)'
+              : t.level === 'MANDATORY'
+                ? 'Use ' + t.name
+                : 'Consider ' + t.name);
+          }
+        }
+      }
+    } catch { /* non-critical */ }
     if (fullCycleActivated) {
       context += '\n\nFULL CYCLE MODE ACTIVATED. .fullcycle-active flag created. You MUST read all 14 law spec files and touch .fullcycle-laws-read before commit.';
       context += '\nBEST PRACTICES RESEARCH REQUIRED: You MUST use WebSearch or Agent(Explore) to research as much as needed to FULLY UNDERSTAND the task. No fixed minimum — research until confident. Describe findings in evidence.search[]. Commit BLOCKED without research evidence.';

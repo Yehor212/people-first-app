@@ -141,5 +141,7 @@ docs/visual-aesthetic.md
 .evidence-chain
 .verification-done
 .control-flow-pending
+.snyk-pending
+.snyk-scan-done
 .claude-md-unlock
 .prettier-circuit-breaker
