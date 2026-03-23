@@ -1008,7 +1008,7 @@ try {
 
   // PV2: Valid L2 → pass (uses real file paths to pass rule 19)
   const pv2 = pv.validate(JSON.stringify({
-    timestamp: new Date().toISOString(), goal: 'Test valid L2 token', depth: 'L2',
+    timestamp: new Date().toISOString(), goal: 'Test valid L2 token — SUCCESS: all validation rules pass with no errors', depth: 'L2',
     transmutation: 'Testing validation module works correctly',
     checks_completed: 7,
     evidence: { read: ['src/App.tsx:1'], search: ['grep pattern'], assumed: [] },
@@ -1111,8 +1111,8 @@ try {
     changes: ['src/App.tsx'], laws_checked: 28, mirrors_checked: 5, ci_passed: true,
     tools_used: ['/tdd', '/review', 'codebase-audit-suite', 'AgentShield', 'Snyk', 'Supabase MCP'],
     self_reflection: {
-      what_went_wrong: 'nothing major in this particular test case',
-      what_I_assumed: 'nothing was assumed during this test',
+      what_went_wrong: 'Nothing major because this is a test case. Root cause: test fixture designed to pass all validations.',
+      what_I_assumed: 'Assumed test fixture covers all rules — verified by running full test suite.',
       what_I_verified: 'git log --since=2w confirmed fix exists in ' + realHash + '. READ: src/App.tsx:10 verified the change',
       git_history_checked: true, confidence: 'HIGH'
     }
@@ -1163,8 +1163,8 @@ try {
       git_history_checked: true, confidence: 'HIGH'
     }
   }));
-  if (rv6.warnings && rv6.warnings.some(w => w.includes('what_went_wrong'))) { pass++; results.push({ name: 'reflection-validate: short what_went_wrong warns', status: 'PASS' }); }
-  else { fail++; results.push({ name: 'reflection-validate: short what_went_wrong warns', status: 'FAIL', issues: JSON.stringify(rv6.warnings) }); }
+  if (rv6.errors && rv6.errors.some(e => e.includes('what_went_wrong'))) { pass++; results.push({ name: 'reflection-validate: short what_went_wrong BLOCKS', status: 'PASS' }); }
+  else { fail++; results.push({ name: 'reflection-validate: short what_went_wrong BLOCKS', status: 'FAIL', issues: JSON.stringify(rv6.errors) }); }
 
   // RV7: self_reflection fields too short → warning (rule 19, uses real hash for veracity)
   const rv7 = rv.validate(JSON.stringify({
@@ -1177,8 +1177,8 @@ try {
       git_history_checked: true, confidence: 'HIGH'
     }
   }));
-  if (rv7.warnings && rv7.warnings.some(w => w.includes('too short'))) { pass++; results.push({ name: 'reflection-validate: short reflection fields warn', status: 'PASS' }); }
-  else { fail++; results.push({ name: 'reflection-validate: short reflection fields warn', status: 'FAIL', issues: JSON.stringify(rv7.warnings) }); }
+  if (rv7.errors && rv7.errors.some(e => e.includes('too short'))) { pass++; results.push({ name: 'reflection-validate: short reflection fields BLOCKS', status: 'PASS' }); }
+  else { fail++; results.push({ name: 'reflection-validate: short reflection fields BLOCKS', status: 'FAIL', issues: JSON.stringify(rv7.errors) }); }
 
 } catch (e) {
   fail++;
@@ -1290,7 +1290,7 @@ try {
 
   // PV-R19b: Real file in evidence.read[] → pass
   const pvr19b = pv.validate(JSON.stringify({
-    timestamp: new Date().toISOString(), goal: 'Test real evidence read', depth: 'L2',
+    timestamp: new Date().toISOString(), goal: 'Test real evidence read — verify rule 19 accepts existing files. SUCCESS: validation passes with real paths.', depth: 'L2',
     transmutation: 'Testing rule 19 — real file passes',
     checks_completed: 7,
     evidence: { read: ['src/App.tsx:1'], search: ['grep test'], assumed: [] },

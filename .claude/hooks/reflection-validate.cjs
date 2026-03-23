@@ -210,7 +210,7 @@ function validate(content) {
 
   // Rule 18: Proactive compliance — what_went_wrong must be substantive
   if (sr && typeof sr.what_went_wrong === 'string' && sr.what_went_wrong.trim().length < 10) {
-    warnings.push('what_went_wrong suspiciously short (<10 chars) — genuine reflection required');
+    errors.push('what_went_wrong suspiciously short (<10 chars) — genuine reflection required');
   }
 
   // Rule 19: Self-reflection structure — all 5 fields with minimum length
@@ -218,7 +218,7 @@ function validate(content) {
     const requiredFields = ['what_went_wrong', 'what_I_assumed', 'what_I_verified'];
     for (const field of requiredFields) {
       if (typeof sr[field] !== 'string' || sr[field].trim().length < 10) {
-        warnings.push(`self_reflection.${field} too short (<10 chars) — provide substantive content`);
+        errors.push(`self_reflection.${field} too short (<10 chars) — provide substantive content`);
       }
     }
   }
@@ -234,7 +234,7 @@ function validate(content) {
       wwwLower.includes('because') || wwwLower.includes('потому что') ||
       wwwLower.includes('причин');
     if (!hasRootCauseLanguage && sr.what_went_wrong.length > 20) {
-      warnings.push('what_went_wrong describes WHAT happened but not WHY (root cause). Apply 5 Whys. (Law 21)');
+      errors.push('what_went_wrong describes WHAT happened but not WHY (root cause). Apply 5 Whys. (Law 21)');
     }
   }
 
@@ -265,7 +265,7 @@ function validate(content) {
         const verified = (sr && sr.what_I_verified) || '';
         const unverified = preflight.evidence.assumed.filter(a => !verified.toLowerCase().includes(a.toLowerCase().split(' ')[0]));
         if (unverified.length > 0) {
-          warnings.push(`ASSUMPTION CHECK: PRE-FLIGHT assumed [${unverified.join(', ')}]. Did you verify these?`);
+          errors.push(`ASSUMPTION CHECK: PRE-FLIGHT assumed [${unverified.join(', ')}]. Did you verify these?`);
         }
       }
 

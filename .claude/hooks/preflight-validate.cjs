@@ -329,7 +329,7 @@ function validate(content) {
   if (!isL1 && typeof parsed.goal === 'string') {
     const HAS_CRITERION = /success|done when|done\s*:|pass|verify|result/i;
     if (!HAS_CRITERION.test(parsed.goal) && parsed.goal.length < 50) {
-      warnings.push('L2+ goal should include SUCCESS criterion or DONE WHEN clause (Law 28 transmutation)');
+      errors.push('L2+ goal should include SUCCESS criterion or DONE WHEN clause (Law 28 transmutation)');
     }
   }
 
