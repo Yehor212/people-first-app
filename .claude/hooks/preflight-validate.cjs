@@ -62,6 +62,15 @@ function validate(content) {
     errors.push('Invalid depth level (must be L1, L2, or L3)');
   }
 
+  // Rule 54: L1 Abuse Prevention — force upgrade to L2 if task is clearly not trivial
+  if (isL1) {
+    const goalLen = (parsed.goal || '').length;
+    const readCount = (parsed.evidence && Array.isArray(parsed.evidence.read)) ? parsed.evidence.read.length : 0;
+    if (goalLen > 100 || readCount > 3) {
+      errors.push('L1 DEPTH ABUSE BLOCKED: depth=L1 but goal is ' + goalLen + ' chars and ' + readCount + ' files read. Tasks this complex require L2. Change depth to L2.');
+    }
+  }
+
   // Rule 5: transmutation — non-empty string, 10+ chars (skip for L1)
   if (!isL1) {
     if (typeof parsed.transmutation !== 'string' || parsed.transmutation.trim().length < 10) {

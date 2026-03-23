@@ -39,6 +39,11 @@ const BLOCKING_RULES = [
     redirect: 'mcp__playwright__* tools (browser_navigate, browser_snapshot, etc.)',
     reason: 'Playwright MCP provides structured browser automation.',
   },
+  {
+    pattern: /\bwget\b.*supabase\.(co|in|com)/,
+    redirect: 'Supabase MCP tools (execute_sql, get_logs, list_tables)',
+    reason: 'Supabase API calls should use typed MCP tools. wget bypass blocked.',
+  },
 ];
 
 // Advisory rules — stderr warning, not blocking

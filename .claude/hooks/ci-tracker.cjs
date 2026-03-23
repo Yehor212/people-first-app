@@ -30,15 +30,32 @@ process.stdin.on('end', () => {
     const data = JSON.parse(input);
     const cmd = data.tool_input?.command || data.toolInput?.command || '';
 
+    // Only record SUCCESSFUL CI runs — failing commands should NOT create evidence
+    // PostToolUse provides tool_result with stdout/stderr. Check for failure indicators.
+    const stdout = data.tool_result?.stdout || data.stdout || '';
+    const stderr = data.tool_result?.stderr || data.stderr || '';
+    const exitCode = data.tool_result?.exit_code ?? data.exit_code ?? null;
+
+    // Skip recording if command clearly failed
+    if (exitCode !== null && exitCode !== 0) {
+      // Command failed — do NOT record as evidence
+      process.exit(0);
+    }
+    // Also check stderr for common failure patterns
+    if (/error|FAIL|failed|ERR!/i.test(stderr) && !/warning/i.test(stderr)) {
+      process.exit(0);
+    }
+
     for (const cp of CI_PATTERNS) {
       if (cp.pattern.test(cmd)) {
         const entry = JSON.stringify({
           ts: Date.now(),
-          command: cmd.slice(0, 120), // truncate for safety
+          command: cmd.slice(0, 120),
           pattern: cp.label,
+          success: true,
         });
         fs.appendFileSync(CI_EVIDENCE, entry + '\n', 'utf8');
-        break; // one match per command
+        break;
       }
     }
   } catch { /* ignore parse errors */ }
