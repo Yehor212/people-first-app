@@ -49,6 +49,7 @@ CLAUDE.md
 !.claude/hooks/
 !.claude/settings.json
 !.claude/agents/
+!.claude/skills/
 .mcp.json
 
 # ============================================
