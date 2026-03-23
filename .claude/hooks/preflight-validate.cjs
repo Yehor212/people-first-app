@@ -380,12 +380,26 @@ function validate(content) {
     }
   }
 
-  // Rule 38: Abductive Reasoning in pre_mortem — symptoms → best explanation (L2+ full cycle)
-  // Peirce: "given symptoms, infer the BEST explanation, not the first one"
-  if (!isL1 && isFullCycle && typeof parsed.pre_mortem === 'string') {
-    const ABDUCTIVE = /\b(root cause|best explanation|5 whys|why.*because|symptom|diagnos|hypothesis|most likely|evidence suggests)\b/i;
-    if (!ABDUCTIVE.test(parsed.pre_mortem)) {
-      warnings.push('FULL CYCLE pre_mortem should use ABDUCTIVE reasoning (root cause, best explanation, hypothesis). Law 21: Peirce\'s abduction.');
+  // Rule 38+45: Trimodal Reasoning Enforcement — deduction + induction + abduction (L2+)
+  // Research: Apple ML — cognitive biases reduced by trimodal; Microsoft MAR — decomposition reveals root causes
+  // Deduction (Socrates): from rules → specific. Induction: from observations → pattern. Abduction (Peirce): symptoms → best explanation.
+  if (!isL1 && typeof parsed.pre_mortem === 'string') {
+    const DEDUCTION = /\b(if\s+.{3,}\s+then|therefore|must\s+be|from\s+\w+\s+follows|by\s+definition|all\s+\w+\s+are|implies|consequently|because.*will)\b/i;
+    const INDUCTION = /\b(pattern|observed|trend|evidence\s+indicates|repeated|in\s+most\s+cases|data\s+suggests|shows\s+that|consistently|across\s+\d+)\b/i;
+    const ABDUCTION = /\b(root\s+cause|best\s+explanation|5\s+whys|hypothesis|most\s+likely|probable\s+cause|suggests\s+that|diagnos|symptom)\b/i;
+
+    const present = [];
+    if (DEDUCTION.test(parsed.pre_mortem)) present.push('deduction');
+    if (INDUCTION.test(parsed.pre_mortem)) present.push('induction');
+    if (ABDUCTION.test(parsed.pre_mortem)) present.push('abduction');
+
+    if (present.length < 2) {
+      errors.push('TRIMODAL REASONING BLOCKED: pre_mortem uses only ' + present.length +
+        '/3 reasoning types: [' + (present.join(', ') || 'none') + ']. Need ≥2 of: ' +
+        'deduction (if/then, therefore, must be), ' +
+        'induction (pattern, observed, trend, evidence indicates), ' +
+        'abduction (root cause, hypothesis, most likely, best explanation). ' +
+        '(Research: Apple ML — trimodal prevents anchoring+hindsight+confirmation bias)');
     }
   }
 
