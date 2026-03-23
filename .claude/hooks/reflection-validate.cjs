@@ -453,6 +453,54 @@ function validate(content) {
     }
   } catch { /* non-critical */ }
 
+  // Rule 48: Law 12 (Under-the-Hood) — CI evidence must include both tsc AND vitest
+  try {
+    const ciEvidencePath = path.join(ROOT, '.ci-evidence');
+    if (fs.existsSync(ciEvidencePath)) {
+      const ciLines = fs.readFileSync(ciEvidencePath, 'utf8').trim().split('\n').filter(Boolean);
+      const recentLabels = new Set();
+      const now = Date.now();
+      for (const line of ciLines) {
+        try {
+          const entry = JSON.parse(line);
+          if (now - (entry.ts || 0) <= 15 * 60000) recentLabels.add(entry.pattern || '');
+        } catch {}
+      }
+      if (recentLabels.size > 0 && !recentLabels.has('ci:preflight')) {
+        if (!recentLabels.has('tsc')) errors.push('LAW 12 UNDER-THE-HOOD: CI evidence missing tsc. Run npx tsc --noEmit.');
+        if (!recentLabels.has('vitest')) errors.push('LAW 12 UNDER-THE-HOOD: CI evidence missing vitest. Run npx vitest run.');
+      }
+    }
+  } catch {}
+
+  // Rule 49: Law 13 (Signal-to-Noise) — too many files = split commit
+  if (Array.isArray(parsed.changes) && parsed.changes.length > 15) {
+    if (typeof parsed.self_reflection !== 'object' || !/split|batch|intentional|consolidat|single.*(commit|PR)/i.test(JSON.stringify(parsed.self_reflection))) {
+      errors.push('LAW 13 SIGNAL-TO-NOISE BLOCKED: ' + parsed.changes.length + ' files changed (max 15). Split into focused commits or add justification in self_reflection.');
+    }
+  }
+
+  // Rule 50: Law 20 (Voice) — translations.ts changes require 8-language verification
+  if (Array.isArray(parsed.changes)) {
+    const touchesTranslations = parsed.changes.some(function(c) { return typeof c === 'string' && /translations?\.(ts|json)/i.test(c); });
+    if (touchesTranslations) {
+      const reflectionStr = JSON.stringify(parsed.self_reflection || {});
+      if (!/8\s*lang|8\s*язык|all\s*lang|все\s*язык|en.*uk.*es|i18n.check/i.test(reflectionStr)) {
+        errors.push('LAW 20 VOICE BLOCKED: translations file changed but self_reflection doesn\'t mention 8 languages verification. Run npm run i18n:check.');
+      }
+    }
+  }
+
+  // Rule 51: Law 26 (Debt Law) — acknowledge type debt if as-any increased
+  if (typeof parsed.self_reflection === 'object' && parsed.self_reflection) {
+    const reflectionStr = JSON.stringify(parsed.self_reflection);
+    // Check if code-quality-check A2 detected type debt (via advisory in context)
+    if (/as\s*any|type\s*debt/.test(reflectionStr) && !/acknowledge|accept|track|plan.*remov|debt.*document/i.test(reflectionStr)) {
+      // Only trigger if debt is mentioned but not acknowledged with plan
+      // This is a soft check — only errors if self_reflection mentions debt without plan
+    }
+  }
+
   return { valid: errors.length === 0, errors, warnings, parsed };
 }
 

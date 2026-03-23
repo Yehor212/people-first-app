@@ -84,6 +84,21 @@ const BANDAID_PATTERNS = [
     exemptMarker: '// VISUAL-VERIFIED:',
     tsxOnly: true,
   },
+  // Law 9 (Accessibility) B7 — onClick/onPress without aria-label nearby
+  {
+    regex: /on(?:Click|Press|Tap)\s*=\s*\{/,
+    label: 'LAW 9 ACCESSIBILITY: interactive element without aria-label — add aria-label for screen readers',
+    exemptMarker: '// A11Y-OK:',
+    tsxOnly: true,
+    nearbyExempt: /aria-label|aria-labelledby|role=|<button|<a\s|<Link/,
+  },
+  // Law 19 (Clock) B10 — Date.now() in test files = time-drift
+  {
+    regex: /Date\.now\(\)/,
+    label: 'LAW 19 CLOCK: Date.now() in test file — use fixed dates to prevent time-drift. Incident: makeTestHabit broke after 30 days',
+    exemptMarker: '// CLOCK-OK:',
+    testOnly: true,
+  },
 ];
 
 const ROOT_CAUSE_MARKER = '// ROOT-CAUSE:';
@@ -119,9 +134,15 @@ process.stdin.on('end', () => {
       // Skip tsx-only patterns on non-tsx files
       if (bp.tsxOnly && !filePath.endsWith('.tsx')) continue;
 
+      // Skip test-only patterns on non-test files (Law 19 Clock)
+      if (bp.testOnly && !/\.test\.(ts|tsx)$/.test(filePath)) continue;
+
       // Skip visual regression checks for Write tool (full file content — can't detect changes)
       // Only check Edit tool where new_string = actual change
       if (bp.tsxOnly && data.tool_input?.content) continue;
+
+      // Skip if nearby exemption found (Law 9 — aria-label within same newString)
+      if (bp.nearbyExempt && bp.nearbyExempt.test(newString)) continue;
 
       // Check file-level OR context-level exemption (e.g., setTimeout in animation files or retry contexts)
       if (bp.fileExempt) {

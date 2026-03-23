@@ -559,6 +559,48 @@ function validate(content) {
     }
   }
 
+  // Rule 48: Law 2 (Tabula Rasa) — L2+ must read code before editing
+  if (!isL1 && parsed.evidence && Array.isArray(parsed.evidence.read) && parsed.evidence.read.length === 0) {
+    errors.push('LAW 2 TABULA RASA BLOCKED: L2+ task with 0 evidence.read[] entries. Read code before planning changes.');
+  }
+
+  // Rule 49: Law 4 (Surgical) — scope_boundaries must define what NOT to touch
+  if (!isL1 && typeof parsed.scope_boundaries === 'string' && parsed.scope_boundaries.length > 0) {
+    if (!/will\s*not|won't|не\s*буд|не\s*трогаю|exclude/i.test(parsed.scope_boundaries)) {
+      errors.push('LAW 4 SURGICAL BLOCKED: scope_boundaries must say what you will NOT touch. One-sided scope = creep risk.');
+    }
+  }
+
+  // Rule 50: Law 11 (Scope Holism) — multi-component goal needs ≥3 diagnostic sources
+  if (!isL1 && typeof parsed.goal === 'string' && Array.isArray(parsed.diagnostic_sources)) {
+    if (/и\s+так|plus|also|\ball\b|вс[еёіь]|полн|entire|whole|multiple|several/i.test(parsed.goal) && parsed.diagnostic_sources.length < 3) {
+      errors.push('LAW 11 SCOPE HOLISM BLOCKED: Multi-scope goal but only ' + parsed.diagnostic_sources.length + ' diagnostic_sources. Need ≥3.');
+    }
+  }
+
+  // Rule 51: Law 19 (Clock) — Date.now() in test context = time-drift
+  if (parsed.evidence && Array.isArray(parsed.evidence.read)) {
+    const hasTestFiles = parsed.evidence.read.some(function(f) { return /\.test\.(ts|tsx)/.test(f); });
+    if (hasTestFiles && typeof parsed.pre_mortem === 'string' && /Date\.now|new\s+Date\(\)/.test(parsed.pre_mortem)) {
+      errors.push('LAW 19 CLOCK BLOCKED: Date.now()/new Date() in test context. Use fixed dates. Incident: makeTestHabit drift.');
+    }
+  }
+
+  // Rule 52: Law 22 (Artisan) — pre_mortem needs ≥2 file:line refs for L2+
+  if (!isL1 && typeof parsed.pre_mortem === 'string') {
+    var fileLineRefs = (parsed.pre_mortem.match(/[a-zA-Z0-9_/.-]+\.(ts|tsx|cjs|js|json):[0-9]+/g) || []);
+    if (fileLineRefs.length < 2) {
+      errors.push('LAW 22 ARTISAN BLOCKED: pre_mortem has ' + fileLineRefs.length + ' file:line refs (need ≥2 for L2+). Cite specific code.');
+    }
+  }
+
+  // Rule 53: Law 24 (Empathy) — user-facing tasks must state user impact in transmutation
+  if (typeof parsed.goal === 'string' && /UI|modal|button|dialog|toast|notification|error.message|пользовател/i.test(parsed.goal)) {
+    if (typeof parsed.transmutation === 'string' && !/user|пользовател|UX|experience|impact|видит|заметит/i.test(parsed.transmutation)) {
+      errors.push('LAW 24 EMPATHY BLOCKED: User-facing goal but transmutation has no user impact statement.');
+    }
+  }
+
   return { valid: errors.length === 0, errors, warnings, parsed };
 }
 
