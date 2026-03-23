@@ -65,7 +65,12 @@ export function HabitCompletionCelebration({
   }, [streakDays, onComplete]);
 
   return (
-    <div className="fixed left-1/2 -translate-x-1/2 z-[150] pointer-events-none will-change-transform bottom-[calc(6rem+env(safe-area-inset-bottom,0px))]">
+    <div
+      className="fixed left-1/2 -translate-x-1/2 z-[150] pointer-events-none will-change-transform bottom-[calc(6rem+env(safe-area-inset-bottom,0px))]"
+      role="status"
+      aria-live="polite"
+      aria-label={`${habitName} ${t.completed || "completed"}. +${xpGained} XP${streakDays && streakDays > 1 ? `. ${streakDays} ${t.dayStreak || "day streak"}` : ""}`}
+    >
       {/* Main completion toast */}
       <div
         className={cn(
