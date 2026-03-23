@@ -294,13 +294,35 @@ function validate(content) {
               'You enumerated these in preflight but never reported results. Satisficing detected.');
           }
 
-          // Each checked source must have evidence (not empty)
-          const emptyEvidence = parsed.sources_checked.filter(sc =>
-            typeof sc === 'object' && (!sc.evidence || (typeof sc.evidence === 'string' && sc.evidence.trim().length < 5))
-          );
-          if (emptyEvidence.length > 0) {
-            warnings.push('DIAGNOSTIC EXHAUSTION: ' + emptyEvidence.length + ' sources_checked entries have empty/short evidence. ' +
-              'Each source needs substantive evidence of what was found (or "no issue found + how verified").');
+          // Each checked source must have SUBSTANTIVE evidence (not just "checked" or "OK")
+          // Evidence Specificity Pyramid (research: Admiralty Scoring Model, AWS agent evaluation):
+          //   Level 0: no evidence
+          //   Level 1: vague ("checked", "OK", "looks fine")
+          //   Level 2: source reference ("checked logs")
+          //   Level 3: specific ("api logs show 200 status, 0 errors in 24h") — MINIMUM for pass
+          const SHALLOW_EVIDENCE = /^(ok|checked|done|pass|fine|good|verified|clean|no issues?|none|n\/a|na|skip|✓|✗)$/i;
+          const DEPTH_MARKERS = /\d|file|line|log|status|error|count|result|output|return|row|query|response/i;
+
+          const shallowSources = parsed.sources_checked.filter(sc => {
+            if (typeof sc !== 'object' || !sc.evidence) return true;
+            const ev = typeof sc.evidence === 'string' ? sc.evidence.trim() : '';
+            // Skip/NA sources exempt from depth check
+            if (sc.result === 'skip' || sc.result === 'na') return false;
+            // Empty or too short
+            if (ev.length < 10) return true;
+            // Matches shallow pattern with no specifics
+            if (SHALLOW_EVIDENCE.test(ev)) return true;
+            // Has some length but no depth markers (no numbers, no file refs, no specific terms)
+            if (ev.length < 30 && !DEPTH_MARKERS.test(ev)) return true;
+            return false;
+          });
+
+          if (shallowSources.length > 0) {
+            const names = shallowSources.map(sc => sc.name || 'unknown').join(', ');
+            errors.push('EVIDENCE DEPTH BLOCKED: ' + shallowSources.length + ' sources_checked entries have SHALLOW evidence: [' + names + ']. ' +
+              'Each source needs SPECIFIC evidence (numbers, file refs, command output). ' +
+              'Example: "api logs show 200 status, 0 errors in 24h" not just "checked logs". ' +
+              '(Research: Admiralty Scoring Level 3+ required — source + specifics + why it matters)');
           }
         }
       }

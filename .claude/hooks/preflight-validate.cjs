@@ -442,10 +442,13 @@ function validate(content) {
       .filter(([, regex]) => parsed.diagnostic_sources.some(s => regex.test(s)))
       .map(([dim]) => dim);
     if (coveredDimensions.length < 2) {
-      warnings.push('MECE WARNING: diagnostic_sources covers only ' + coveredDimensions.length +
-        ' dimension(s): [' + coveredDimensions.join(', ') + ']. ' +
-        'Consider: logic, security, state, i18n, ui, infra, test, pattern-search. ' +
-        'Research: forced categorical decomposition improves detection by 43.67% (UBC FSE 2025).');
+      // UPGRADED: 1 dimension = ERROR (too narrow), 0 = ERROR
+      // Research: forced categorical decomposition +43.67% F1 (UBC FSE 2025)
+      // Anti-Pattern #14 Goodhart: agent picks narrow sources to satisfy Rule 40 minimum
+      errors.push('MECE BLOCKED: diagnostic_sources covers only ' + coveredDimensions.length +
+        ' dimension(s): [' + coveredDimensions.join(', ') + ']. Need ≥2 dimensions. ' +
+        'Choose from: logic, security, state, i18n, ui, infra, test, pattern-search. ' +
+        'Research: single-dimension analysis misses 43.67% of issues (UBC FSE 2025).');
     }
   }
 
@@ -503,6 +506,28 @@ function validate(content) {
           'Use META-LAYER template: local + backend + mobile + external + CI/CD. ' +
           'Incident: missed 401s in Supabase for 2 days because only local hooks were audited.');
       }
+    }
+  }
+
+  // Rule 44: Preflight Reasoning Depth — pre_mortem must show multi-layered analysis (L2+)
+  // Research: R2A2 Responsible Agentic Reasoning — 6 layers: decision, evidence, root cause, alternative, verification, audit
+  // Anti-Pattern #14 Goodhart: agent fills pre_mortem with template text instead of genuine analysis
+  if (!isL1 && typeof parsed.pre_mortem === 'string') {
+    const REASONING_LAYERS = {
+      evidence: /\[READ:|file:|\.tsx?:|\.cjs:|line \d|grep|SEARCH/i,
+      rootCause: /root cause|5 whys|because|therefore|causes|reason/i,
+      specifics: /\d+|:\d+|error|warning|count|status|bytes|ms|rows/i,
+      alternative: /instead|vs|alternative|considered|option|could also/i,
+    };
+    const layersPresent = Object.entries(REASONING_LAYERS)
+      .filter(([, regex]) => regex.test(parsed.pre_mortem))
+      .map(([name]) => name);
+
+    if (layersPresent.length < 2) {
+      warnings.push('REASONING DEPTH: pre_mortem has only ' + layersPresent.length +
+        ' reasoning layer(s): [' + layersPresent.join(', ') + ']. ' +
+        'Need ≥2 of: evidence (file refs), rootCause (because/therefore), specifics (numbers), alternative (considered/vs). ' +
+        '(Research: R2A2 framework — multi-layered reasoning catches 43% more issues)');
     }
   }
 
