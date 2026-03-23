@@ -1,7 +1,7 @@
-import { Star, Heart, Sparkles } from 'lucide-react';
+import { Star, Heart, Sparkles } from "lucide-react";
 
 // Particle shape types for variety
-export type ParticleShape = 'circle' | 'star' | 'heart' | 'sparkle';
+export type ParticleShape = "circle" | "star" | "heart" | "sparkle";
 
 export interface Particle {
   id: number;
@@ -15,15 +15,21 @@ export interface Particle {
 
 // Generate varied particles for celebration
 export function generateParticles(baseColor: string): Particle[] {
-  const shapes: ParticleShape[] = ['circle', 'star', 'heart', 'sparkle'];
+  const shapes: ParticleShape[] = ["circle", "star", "heart", "sparkle"];
+  // Theme-aware particle colors via CSS custom properties (no hardcoded hex)
+  const root =
+    typeof document !== "undefined"
+      ? getComputedStyle(document.documentElement)
+      : null;
+  const accent = root?.getPropertyValue("--accent")?.trim() || "142 71% 45%";
+  const primary = root?.getPropertyValue("--primary")?.trim() || "152 57% 47%";
   const colors = [
-    '#FFD700', // Gold
-    '#FFA500', // Orange
-    '#FF6347', // Tomato
-    '#00CED1', // Cyan
-    '#9370DB', // Purple
-    '#32CD32', // Green
+    `hsl(${accent})`,
+    `hsl(${primary})`,
+    `hsl(${accent} / 0.8)`,
+    `hsl(${primary} / 0.7)`,
     baseColor, // Habit color
+    baseColor, // Habit color (double weight)
   ];
 
   return Array.from({ length: 20 }, (_, i) => ({
@@ -38,13 +44,31 @@ export function generateParticles(baseColor: string): Particle[] {
 }
 
 // Render different particle shapes
-export function ParticleIcon({ shape, size, color }: { shape: ParticleShape; size: number; color: string }) {
+export function ParticleIcon({
+  shape,
+  size,
+  color,
+}: {
+  shape: ParticleShape;
+  size: number;
+  color: string;
+}) {
   switch (shape) {
-    case 'star':
-      return <Star className="fill-current" style={{ width: size, height: size, color }} />;
-    case 'heart':
-      return <Heart className="fill-current" style={{ width: size, height: size, color }} />;
-    case 'sparkle':
+    case "star":
+      return (
+        <Star
+          className="fill-current"
+          style={{ width: size, height: size, color }}
+        />
+      );
+    case "heart":
+      return (
+        <Heart
+          className="fill-current"
+          style={{ width: size, height: size, color }}
+        />
+      );
+    case "sparkle":
       return <Sparkles style={{ width: size, height: size, color }} />;
     default:
       return (

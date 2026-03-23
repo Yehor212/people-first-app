@@ -5,36 +5,56 @@
  * Sections: Header → Stats → Score Chart → Heatmap → Frequency → Streaks → Notes → Actions.
  */
 
-import { memo, useState, useMemo, useCallback, useEffect, Suspense } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Archive, ArchiveRestore, Pencil, SkipForward, Trash2 } from 'lucide-react';
-import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
-import { ProgressRing } from '@/components/ui/progress-ring';
-import { computeHabitScore, computeAllStreaks, type HabitStreak } from '@/lib/habitScore';
-import { getHabitCompletedDates } from '@/lib/habits';
-import { computeEntriesWithAuto } from '@/lib/habitComputedEntries';
-import { resolveHabitColor } from '@/lib/habitColorUtils';
-import { zenMotion } from '@/lib/animationUtils';
-import { hapticTap } from '@/lib/haptics';
-import { AnimatedFire } from '@/components/compact-habit-card/AnimatedFire';
-import { HabitStatsSection } from './HabitStatsSection';
-import { HabitTargetCard } from './HabitTargetCard';
-import { HabitScoreChart } from './HabitScoreChart';
-import { HabitBarCard } from './HabitBarCard';
-import { HabitHeatmapGrid } from './HabitHeatmapGrid';
-import { HabitStreakTimeline } from './HabitStreakTimeline';
-import { HabitNotesSection } from './HabitNotesSection';
-import { cn, getToday } from '@/lib/utils';
-import { lazyWithRetry } from '@/lib/lazyWithRetry';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { useBackHandler } from '@/hooks/useBackHandler';
-import { ENTRY } from '@/types';
-import type { Habit } from '@/types';
+import {
+  memo,
+  useState,
+  useMemo,
+  useCallback,
+  useEffect,
+  Suspense,
+} from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Archive,
+  ArchiveRestore,
+  Pencil,
+  SkipForward,
+  Trash2,
+} from "lucide-react";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { ProgressRing } from "@/components/ui/progress-ring";
+import {
+  computeHabitScore,
+  computeAllStreaks,
+  type HabitStreak,
+} from "@/lib/habitScore";
+import { getHabitCompletedDates } from "@/lib/habits";
+import { computeEntriesWithAuto } from "@/lib/habitComputedEntries";
+import { resolveHabitColor } from "@/lib/habitColorUtils";
+import { zenMotion } from "@/lib/animationUtils";
+import { hapticTap } from "@/lib/haptics";
+import { AnimatedFire } from "@/components/compact-habit-card/AnimatedFire";
+import { HabitStatsSection } from "./HabitStatsSection";
+import { HabitTargetCard } from "./HabitTargetCard";
+import { HabitScoreChart } from "./HabitScoreChart";
+import { HabitBarCard } from "./HabitBarCard";
+import { HabitHeatmapGrid } from "./HabitHeatmapGrid";
+import { HabitStreakTimeline } from "./HabitStreakTimeline";
+import { HabitNotesSection } from "./HabitNotesSection";
+import { cn, getToday } from "@/lib/utils";
+import { lazyWithRetry } from "@/lib/lazyWithRetry";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useBackHandler } from "@/hooks/useBackHandler";
+import { ENTRY } from "@/types";
+import type { Habit } from "@/types";
 
 // Lazy-load HabitFrequencyChart to keep recharts out of main bundle (prevents TDZ errors)
 const LazyHabitFrequencyChart = lazyWithRetry(
-  () => import('./HabitFrequencyChart').then(m => ({ default: m.HabitFrequencyChart })),
-  'HabitFrequencyChart'
+  () =>
+    import("./HabitFrequencyChart").then((m) => ({
+      default: m.HabitFrequencyChart,
+    })),
+  "HabitFrequencyChart",
 );
 
 /** Stagger parent for sheet sections */
@@ -82,17 +102,27 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
 
   // Compute all derived data once — passed down to child components to avoid redundant computation
   const derived = useMemo(() => {
-    if (!habit) return { score: 0, streak: 0, allStreaks: [] as HabitStreak[], completedDates: [] as string[] };
+    if (!habit)
+      return {
+        score: 0,
+        streak: 0,
+        allStreaks: [] as HabitStreak[],
+        completedDates: [] as string[],
+      };
     const allStreaks = computeAllStreaks(habit);
     const todayStr = getToday();
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
+    const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, "0")}-${String(yesterday.getDate()).padStart(2, "0")}`;
     // Derive current streak from allStreaks (same logic as getCurrentStreak)
     let streak = 0;
     if (allStreaks.length > 0) {
-      const recent = allStreaks.reduce((best, s) => s.end > best.end ? s : best, allStreaks[0]);
-      if (recent.end === todayStr || recent.end === yesterdayStr) streak = recent.length;
+      const recent = allStreaks.reduce(
+        (best, s) => (s.end > best.end ? s : best),
+        allStreaks[0],
+      );
+      if (recent.end === todayStr || recent.end === yesterdayStr)
+        streak = recent.length;
     }
     // Use computed entries (YES_AUTO fills) so Total matches heatmap green cells
     const computedEntries = computeEntriesWithAuto(habit);
@@ -110,7 +140,9 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
     [habit, today],
   );
 
-  const habitColor = habit ? resolveHabitColor(habit.color) : '#8B5CF6';
+  const habitColor = habit
+    ? resolveHabitColor(habit.color)
+    : "hsl(var(--primary))";
 
   const handleArchiveToggle = useCallback(() => {
     if (!habit) return;
@@ -133,9 +165,12 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
     }
   }, [habit, isSkippedToday, today, onSkip, onUnskip]);
 
-  const handleNoteUpdate = useCallback((updatedHabit: Habit) => {
-    onUpdate(updatedHabit);
-  }, [onUpdate]);
+  const handleNoteUpdate = useCallback(
+    (updatedHabit: Habit) => {
+      onUpdate(updatedHabit);
+    },
+    [onUpdate],
+  );
 
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -157,13 +192,22 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
   }, [habit, isDeleting, onDelete, onClose]);
 
   return (
-    <Sheet open={!!habit} onOpenChange={(open) => { if (!open) { setIsDeleting(false); setShowDeleteConfirm(false); onClose(); } }}>
+    <Sheet
+      open={!!habit}
+      onOpenChange={(open) => {
+        if (!open) {
+          setIsDeleting(false);
+          setShowDeleteConfirm(false);
+          onClose();
+        }
+      }}
+    >
       <SheetContent
         side="bottom"
         className={cn(
-          'max-h-[85dvh] rounded-t-3xl overflow-y-auto',
-          'bg-card border-t border-border',
-          'p-0',
+          "max-h-[85dvh] rounded-t-3xl overflow-y-auto",
+          "bg-card border-t border-border",
+          "p-0",
         )}
       >
         {habit && (
@@ -174,10 +218,16 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
             animate="visible"
           >
             {/* ═══ HEADER ═══ */}
-            <motion.div variants={sectionEntrance} className="flex items-center gap-3">
+            <motion.div
+              variants={sectionEntrance}
+              className="flex items-center gap-3"
+            >
               <div
                 className="w-12 h-12 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
-                style={{ backgroundColor: `${habitColor}20`, color: habitColor }}
+                style={{
+                  backgroundColor: `${habitColor}20`,
+                  color: habitColor,
+                }}
               >
                 {habit.icon}
               </div>
@@ -196,35 +246,63 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
                 progress={scorePercent}
                 size="md"
                 showPercentage
-                color={scorePercent >= 60 ? 'success' : scorePercent >= 30 ? 'warning' : 'primary'}
+                color={
+                  scorePercent >= 60
+                    ? "success"
+                    : scorePercent >= 30
+                      ? "warning"
+                      : "primary"
+                }
               />
             </motion.div>
 
             {/* ═══ SCORE + STREAK SUMMARY ═══ */}
-            <motion.div variants={sectionEntrance} className="flex items-center justify-center gap-6 py-2">
+            <motion.div
+              variants={sectionEntrance}
+              className="flex items-center justify-center gap-6 py-2"
+            >
               <div className="text-center">
-                <div className={cn(
-                  'text-2xl font-bold tabular-nums',
-                  scorePercent >= 60 ? 'text-emerald-400' : scorePercent >= 30 ? 'text-amber-400' : 'text-muted-foreground',
-                )}>
+                <div
+                  className={cn(
+                    "text-2xl font-bold tabular-nums",
+                    scorePercent >= 60
+                      ? "text-emerald-400"
+                      : scorePercent >= 30
+                        ? "text-amber-400"
+                        : "text-muted-foreground",
+                  )}
+                >
                   {scorePercent}%
                 </div>
-                <div className="text-[10px] text-muted-foreground/60 mt-0.5">{ts.habitScore || 'Score'}</div>
+                <div className="text-[10px] text-muted-foreground/60 mt-0.5">
+                  {ts.habitScore || "Score"}
+                </div>
               </div>
               {streak > 0 && (
                 <div className="text-center">
                   <div className="flex items-center justify-center gap-1">
-                    <AnimatedFire intensity={Math.min(streak / 7, 3)} size="md" />
-                    <span className="text-2xl font-bold text-orange-400 tabular-nums">{streak}</span>
+                    <AnimatedFire
+                      intensity={Math.min(streak / 7, 3)}
+                      size="md"
+                    />
+                    <span className="text-2xl font-bold text-orange-400 tabular-nums">
+                      {streak}
+                    </span>
                   </div>
-                  <div className="text-[10px] text-muted-foreground/60 mt-0.5">{ts.currentStreak || 'Current Streak'}</div>
+                  <div className="text-[10px] text-muted-foreground/60 mt-0.5">
+                    {ts.currentStreak || "Current Streak"}
+                  </div>
                 </div>
               )}
             </motion.div>
 
             {/* ═══ STATISTICS ═══ */}
             <motion.div variants={sectionEntrance}>
-              <HabitStatsSection currentStreak={streak} allStreaks={allStreaks} completedDates={completedDates} />
+              <HabitStatsSection
+                currentStreak={streak}
+                allStreaks={allStreaks}
+                completedDates={completedDates}
+              />
             </motion.div>
 
             {/* ═══ TARGET PROGRESS (numerical only) ═══ */}
@@ -256,7 +334,10 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
 
             {/* ═══ STREAK TIMELINE ═══ */}
             <motion.div variants={sectionEntrance}>
-              <HabitStreakTimeline allStreaks={allStreaks} currentStreak={streak} />
+              <HabitStreakTimeline
+                allStreaks={allStreaks}
+                currentStreak={streak}
+              />
             </motion.div>
 
             {/* ═══ NOTES ═══ */}
@@ -265,35 +346,50 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
             </motion.div>
 
             {/* ═══ ACTIONS ═══ */}
-            <motion.div variants={sectionEntrance} className="space-y-2 pt-2 border-t border-border">
+            <motion.div
+              variants={sectionEntrance}
+              className="space-y-2 pt-2 border-t border-border"
+            >
               {/* Edit habit */}
               <button
-                onClick={() => { onEdit(habit); onClose(); }}
+                onClick={() => {
+                  onEdit(habit);
+                  onClose();
+                }}
                 className={cn(
-                  'w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors min-h-[44px]',
-                  'bg-white/[0.03] border border-border',
-                  'hover:bg-white/[0.06] active:scale-[0.98]',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50',
+                  "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors min-h-[44px]",
+                  "bg-white/[0.03] border border-border",
+                  "hover:bg-white/[0.06] active:scale-[0.98]",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50",
                 )}
               >
                 <Pencil className="w-4 h-4 text-violet-400" />
-                <span className="text-muted-foreground">{ts.editHabit || 'Edit Habit'}</span>
+                <span className="text-muted-foreground">
+                  {ts.editHabit || "Edit Habit"}
+                </span>
               </button>
 
               {/* Skip today */}
               <button
                 onClick={handleSkipToggle}
                 className={cn(
-                  'w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors min-h-[44px]',
-                  'bg-white/[0.03] border border-border',
-                  'hover:bg-white/[0.06] active:scale-[0.98]',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50',
-                  isSkippedToday && 'bg-blue-500/[0.08] border-blue-500/[0.15] text-blue-400',
+                  "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors min-h-[44px]",
+                  "bg-white/[0.03] border border-border",
+                  "hover:bg-white/[0.06] active:scale-[0.98]",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50",
+                  isSkippedToday &&
+                    "bg-blue-500/[0.08] border-blue-500/[0.15] text-blue-400",
                 )}
               >
                 <SkipForward className="w-4 h-4 text-blue-400" />
-                <span className={isSkippedToday ? 'text-blue-300' : 'text-muted-foreground'}>
-                  {isSkippedToday ? (ts.skipped || 'Skipped Today') : (ts.skipToday || 'Skip Today')}
+                <span
+                  className={
+                    isSkippedToday ? "text-blue-300" : "text-muted-foreground"
+                  }
+                >
+                  {isSkippedToday
+                    ? ts.skipped || "Skipped Today"
+                    : ts.skipToday || "Skip Today"}
                 </span>
               </button>
 
@@ -301,21 +397,25 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
               <button
                 onClick={handleArchiveToggle}
                 className={cn(
-                  'w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors min-h-[44px]',
-                  'bg-white/[0.03] border border-border',
-                  'hover:bg-white/[0.06] active:scale-[0.98]',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50',
+                  "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors min-h-[44px]",
+                  "bg-white/[0.03] border border-border",
+                  "hover:bg-white/[0.06] active:scale-[0.98]",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50",
                 )}
               >
                 {habit.isArchived ? (
                   <>
                     <ArchiveRestore className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">{ts.unarchiveHabit || 'Unarchive'}</span>
+                    <span className="text-muted-foreground">
+                      {ts.unarchiveHabit || "Unarchive"}
+                    </span>
                   </>
                 ) : (
                   <>
                     <Archive className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">{ts.archiveHabit || 'Archive Habit'}</span>
+                    <span className="text-muted-foreground">
+                      {ts.archiveHabit || "Archive Habit"}
+                    </span>
                   </>
                 )}
               </button>
@@ -331,56 +431,60 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
                     transition={zenMotion.exit}
                   >
                     <button
-                      onClick={() => { void hapticTap(); setShowDeleteConfirm(true); }}
+                      onClick={() => {
+                        void hapticTap();
+                        setShowDeleteConfirm(true);
+                      }}
                       className={cn(
-                        'w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors min-h-[44px]',
-                        'bg-red-500/[0.05] border border-red-500/[0.1]',
-                        'hover:bg-red-500/[0.1] active:scale-[0.98]',
-                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50',
-                        'text-red-400',
+                        "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors min-h-[44px]",
+                        "bg-red-500/[0.05] border border-red-500/[0.1]",
+                        "hover:bg-red-500/[0.1] active:scale-[0.98]",
+                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50",
+                        "text-red-400",
                       )}
                     >
                       <Trash2 className="w-4 h-4" />
-                      <span>{ts.deleteHabit || 'Delete Habit'}</span>
+                      <span>{ts.deleteHabit || "Delete Habit"}</span>
                     </button>
                   </motion.div>
                 ) : (
                   <motion.div
                     key="del-confirm"
                     initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
+                    animate={{ opacity: 1, height: "auto" }}
                     exit={{ opacity: 0, height: 0 }}
                     transition={zenMotion.snappy}
                     className="overflow-hidden"
                   >
                     <div className="space-y-2">
                       <p className="text-xs text-red-400 text-center px-2">
-                        {ts.confirmDeleteHabit || 'Are you sure? This cannot be undone.'}
+                        {ts.confirmDeleteHabit ||
+                          "Are you sure? This cannot be undone."}
                       </p>
                       <div className="flex gap-2">
                         <button
                           onClick={() => setShowDeleteConfirm(false)}
                           className={cn(
-                            'flex-1 px-4 py-3 rounded-xl text-sm font-medium transition-colors min-h-[44px]',
-                            'bg-white/[0.05] border border-border text-muted-foreground',
-                            'hover:bg-white/[0.08]',
-                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50',
+                            "flex-1 px-4 py-3 rounded-xl text-sm font-medium transition-colors min-h-[44px]",
+                            "bg-white/[0.05] border border-border text-muted-foreground",
+                            "hover:bg-white/[0.08]",
+                            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50",
                           )}
                         >
-                          {ts.cancel || 'Cancel'}
+                          {ts.cancel || "Cancel"}
                         </button>
                         <button
                           onClick={handleDelete}
                           disabled={isDeleting}
                           className={cn(
-                            'flex-1 px-4 py-3 rounded-xl text-sm font-medium transition-colors min-h-[44px]',
-                            'bg-red-600 text-white',
-                            'hover:bg-red-500 active:scale-[0.98]',
-                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50',
-                            isDeleting && 'opacity-50 cursor-not-allowed',
+                            "flex-1 px-4 py-3 rounded-xl text-sm font-medium transition-colors min-h-[44px]",
+                            "bg-red-600 text-white",
+                            "hover:bg-red-500 active:scale-[0.98]",
+                            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50",
+                            isDeleting && "opacity-50 cursor-not-allowed",
                           )}
                         >
-                          {ts.delete || 'Delete'}
+                          {ts.delete || "Delete"}
                         </button>
                       </div>
                     </div>

@@ -14,19 +14,19 @@
  * Motion: framer-motion spring on checkmark draw + scale tap. GPU-only (transform+opacity+pathLength).
  */
 
-import { memo, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from '@/lib/utils';
-import { zenMotion } from '@/lib/animationUtils';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { ENTRY } from '@/types';
+import { memo, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
+import { zenMotion } from "@/lib/animationUtils";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { ENTRY } from "@/types";
 
 interface MiniCheckmarkCellProps {
   date: string;
-  value: number;       // EntryValue
-  habitColor: string;  // resolved hex
+  value: number; // EntryValue
+  habitColor: string; // resolved hex
   isToday: boolean;
-  isFuture?: boolean;  // Future dates in ISO week — tap disabled (Law 19)
+  isFuture?: boolean; // Future dates in ISO week — tap disabled (Law 19)
   isNumerical: boolean;
   numericDisplay?: string; // "2.5" for numerical habits
   onTap: () => void;
@@ -58,13 +58,16 @@ export const MiniCheckmarkCell = memo(function MiniCheckmarkCell({
   const { t } = useLanguage();
   const ts = t as unknown as Record<string, string>;
 
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      e.stopPropagation();
-      onTap();
-    }
-  }, [onTap]);
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        e.stopPropagation();
+        onTap();
+      }
+    },
+    [onTap],
+  );
 
   const isCompleted = value === ENTRY.YES_MANUAL || value === ENTRY.YES_AUTO;
   const isSkipped = value === ENTRY.SKIP;
@@ -73,7 +76,7 @@ export const MiniCheckmarkCell = memo(function MiniCheckmarkCell({
 
   // For numerical: show the value text
   if (isNumerical) {
-    const hasValue = numericDisplay && numericDisplay !== '0';
+    const hasValue = numericDisplay && numericDisplay !== "0";
     return (
       <div
         onClick={isFuture ? undefined : onTap}
@@ -81,24 +84,29 @@ export const MiniCheckmarkCell = memo(function MiniCheckmarkCell({
         tabIndex={isFuture ? -1 : 0}
         role="button"
         aria-disabled={isFuture}
-        aria-label={`${date}: ${numericDisplay || '0'}`}
-        className={cn('min-w-[44px] min-h-[44px] flex items-center justify-center', isFuture ? 'opacity-30 cursor-default' : 'cursor-pointer')}
+        aria-label={`${date}: ${numericDisplay || "0"}`}
+        className={cn(
+          "min-w-[44px] min-h-[44px] flex items-center justify-center",
+          isFuture ? "opacity-30 cursor-default" : "cursor-pointer",
+        )}
       >
         <motion.div
           whileTap={{ scale: 0.85 }}
           transition={zenMotion.snappy}
           className={cn(
-            'w-8 h-8 rounded-lg flex items-center justify-center',
-            'text-[10px] font-semibold tabular-nums',
-            'hover:brightness-125',
-            isToday && 'ring-1 ring-foreground/30',
+            "w-8 h-8 rounded-lg flex items-center justify-center",
+            "text-[10px] font-semibold tabular-nums",
+            "hover:brightness-125",
+            isToday && "ring-1 ring-foreground/30",
           )}
           style={{
-            backgroundColor: hasValue ? `${habitColor}25` : 'hsl(var(--foreground) / 0.03)',
-            color: hasValue ? habitColor : 'hsl(var(--foreground) / 0.25)',
+            backgroundColor: hasValue
+              ? `${habitColor}25`
+              : "hsl(var(--foreground) / 0.03)",
+            color: hasValue ? habitColor : "hsl(var(--foreground) / 0.25)",
           }}
         >
-          {numericDisplay || '·'}
+          {numericDisplay || "·"}
         </motion.div>
       </div>
     );
@@ -113,25 +121,30 @@ export const MiniCheckmarkCell = memo(function MiniCheckmarkCell({
       role="checkbox"
       aria-checked={isCompleted}
       aria-disabled={isFuture}
-      aria-label={`${date}: ${isCompleted ? (ts.done || 'done') : isSkipped ? (ts.skipped || 'skipped') : isNo ? (ts.notDone || 'not done') : (ts.noData || 'no data')}`}
-      className={cn('min-w-[44px] min-h-[44px] flex items-center justify-center', isFuture ? 'opacity-30 cursor-default' : 'cursor-pointer')}
+      aria-label={`${date}: ${isCompleted ? ts.done || "done" : isSkipped ? ts.skipped || "skipped" : isNo ? ts.notDone || "not done" : ts.noData || "no data"}`}
+      className={cn(
+        "min-w-[44px] min-h-[44px] flex items-center justify-center",
+        isFuture ? "opacity-30 cursor-default" : "cursor-pointer",
+      )}
     >
       <motion.div
         whileTap={{ scale: 0.85 }}
         transition={zenMotion.snappy}
         className={cn(
-          'w-8 h-8 rounded-lg flex items-center justify-center',
-          'hover:brightness-125',
-          isToday && 'ring-1 ring-white/30',
+          "w-8 h-8 rounded-lg flex items-center justify-center",
+          "hover:brightness-125",
+          isToday && "ring-1 ring-white/30",
         )}
         style={{
           backgroundColor: isCompleted
-            ? isAuto ? `${habitColor}18` : `${habitColor}30`
+            ? isAuto
+              ? `${habitColor}18`
+              : `${habitColor}30`
             : isSkipped
-              ? 'rgba(96,165,250,0.12)'
+              ? "rgba(96,165,250,0.12)"
               : isNo
-                ? 'rgba(255,255,255,0.04)'
-                : 'rgba(255,255,255,0.02)',
+                ? "rgba(255,255,255,0.04)"
+                : "rgba(255,255,255,0.02)",
         }}
       >
         <AnimatePresence mode="wait">
@@ -192,7 +205,17 @@ export const MiniCheckmarkCell = memo(function MiniCheckmarkCell({
               exit={{ opacity: 0 }}
               transition={zenMotion.exit}
             >
-              <line x1="2" y1="5" x2="8" y2="5" stroke="#60A5FA" strokeWidth={2} strokeLinecap="round" opacity={0.6} />
+              <line
+                x1="2"
+                y1="5"
+                x2="8"
+                y2="5"
+                stroke="currentColor"
+                className="text-blue-400"
+                strokeWidth={2}
+                strokeLinecap="round"
+                opacity={0.6}
+              />
             </motion.svg>
           )}
           {isNo && (
@@ -206,8 +229,24 @@ export const MiniCheckmarkCell = memo(function MiniCheckmarkCell({
               exit={{ opacity: 0 }}
               transition={zenMotion.exit}
             >
-              <line x1="2.5" y1="2.5" x2="7.5" y2="7.5" stroke="rgba(255,255,255,0.2)" strokeWidth={1.5} strokeLinecap="round" />
-              <line x1="7.5" y1="2.5" x2="2.5" y2="7.5" stroke="rgba(255,255,255,0.2)" strokeWidth={1.5} strokeLinecap="round" />
+              <line
+                x1="2.5"
+                y1="2.5"
+                x2="7.5"
+                y2="7.5"
+                stroke="rgba(255,255,255,0.2)"
+                strokeWidth={1.5}
+                strokeLinecap="round"
+              />
+              <line
+                x1="7.5"
+                y1="2.5"
+                x2="2.5"
+                y2="7.5"
+                stroke="rgba(255,255,255,0.2)"
+                strokeWidth={1.5}
+                strokeLinecap="round"
+              />
             </motion.svg>
           )}
           {value === ENTRY.UNKNOWN && (
