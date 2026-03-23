@@ -344,18 +344,44 @@ process.stdin.on('end', () => {
           } else {
             const lines = fs.readFileSync(CI_EVIDENCE_PATH, 'utf8').trim().split('\n').filter(Boolean);
             if (lines.length > 0) {
-              try {
-                const last = JSON.parse(lines[lines.length - 1]);
-                const ageMin = Math.round((Date.now() - (last.ts || 0)) / 60000);
-                if (ageMin > 10) {
+              // Parse all entries, check freshness AND required commands
+              const now = Date.now();
+              const MAX_AGE_MS = 15 * 60000; // 15 min (vitest can take 50s+, tsc before it)
+              const recentLabels = new Set();
+              let newestTs = 0;
+
+              for (const line of lines) {
+                try {
+                  const entry = JSON.parse(line);
+                  const age = now - (entry.ts || 0);
+                  if (age <= MAX_AGE_MS) {
+                    recentLabels.add(entry.pattern || entry.label || 'unknown');
+                    if ((entry.ts || 0) > newestTs) newestTs = entry.ts;
+                  }
+                } catch { /* skip malformed */ }
+              }
+
+              if (recentLabels.size === 0) {
+                block(
+                  'CI EVIDENCE STALE! No CI runs in last 15 minutes.\n' +
+                  'Run: npm run ci:preflight (or: npx tsc --noEmit && npx vitest run)\n' +
+                  'Anti-Pattern #12: Stale Citation.',
+                  cmd
+                );
+              } else {
+                // Require BOTH tsc AND vitest for TS commits
+                const REQUIRED = ['tsc', 'vitest'];
+                const missing = REQUIRED.filter(r => !recentLabels.has(r) && !recentLabels.has('ci:preflight'));
+                if (missing.length > 0) {
                   block(
-                    'CI EVIDENCE STALE! Last CI run was ' + ageMin + ' minutes ago.\n' +
-                    'Run: npm run ci:preflight (or: npx tsc --noEmit && npx eslint src/ --max-warnings 0)\n' +
-                    'Anti-Pattern #12: Stale Citation — CI evidence must be <10 minutes old.',
+                    'CI EVIDENCE INCOMPLETE! Missing: ' + missing.join(', ') + '.\n' +
+                    'Ran: ' + [...recentLabels].join(', ') + '. Need BOTH tsc + vitest for TS commits.\n' +
+                    'Run: npm run ci:preflight (includes all checks)\n' +
+                    'Root cause: tsc alone does NOT catch test failures (incident: 3222 tests, 2 failed).',
                     cmd
                   );
                 }
-              } catch { /* parse error — allow, ci-tracker format may vary */ }
+              }
             }
           }
         }
