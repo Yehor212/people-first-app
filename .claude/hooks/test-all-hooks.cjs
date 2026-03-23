@@ -967,7 +967,7 @@ try {
     transmutation: 'Testing validation module works correctly',
     checks_completed: 7,
     evidence: { read: ['src/App.tsx:1'], search: ['grep pattern'], assumed: [] },
-    pre_mortem: 'Could fail if src/App.tsx validation rules are misconfigured or regex patterns miss edge cases in .ts files',
+    pre_mortem: 'Could fail because src/App.tsx:42 validation rules are misconfigured — 2 edge cases identified. Considered alternative regex vs string match.',
     scope_boundaries: 'WILL: test-all-hooks.cjs, preflight-validate.cjs in src/ scope. Will NOT: production code.',
     post_verification_plan: 'node .claude/hooks/test-all-hooks.cjs → ALL PASS, npm run ci:preflight → PASS',
     anti_patterns_checked: ['#5 False All-Clear'],

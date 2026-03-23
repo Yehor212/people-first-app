@@ -524,10 +524,10 @@ function validate(content) {
       .map(([name]) => name);
 
     if (layersPresent.length < 2) {
-      warnings.push('REASONING DEPTH: pre_mortem has only ' + layersPresent.length +
+      errors.push('REASONING DEPTH BLOCKED: pre_mortem has only ' + layersPresent.length +
         ' reasoning layer(s): [' + layersPresent.join(', ') + ']. ' +
         'Need ≥2 of: evidence (file refs), rootCause (because/therefore), specifics (numbers), alternative (considered/vs). ' +
-        '(Research: R2A2 framework — multi-layered reasoning catches 43% more issues)');
+        'Advisory = ignored. (R2A2 framework — multi-layered reasoning catches 43% more issues)');
     }
   }
 
