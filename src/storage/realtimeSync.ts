@@ -370,12 +370,16 @@ export const syncHabit = async (habit: Habit): Promise<void> => {
       if (reminderError) throw reminderError;
 
       // Clean up orphan reminders (non-critical - duplicates are better than data loss)
-      const currentIds = reminders.map((r) => r.id);
+      // Security fix: sanitize IDs to prevent PostgREST filter injection
+      const currentIds = reminders.map((r) =>
+        r.id.replace(/[^a-zA-Z0-9\-_]/g, ""),
+      );
+      const filterTuple = `(${currentIds.map((id) => `"${id}"`).join(",")})`;
       const { error: cleanupError } = await supabase
         .from("habit_reminders")
         .delete()
         .eq("habit_id", habit.id)
-        .not("id", "in", `(${currentIds.map((id) => `'${id}'`).join(",")})`);
+        .not("id", "in", filterTuple);
 
       if (cleanupError) {
         logger.warn(
