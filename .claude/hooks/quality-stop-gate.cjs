@@ -170,23 +170,37 @@ process.stdin.on('end', () => {
       // POST-FLIGHT done — allow stop, clean preflight token
       try { fs.unlinkSync(PREFLIGHT_TOKEN); } catch { /* ok */ }
 
-      // EMPIRICISM CHECK: verify CI evidence freshness (Anti-Pattern #12)
-      let ciWarning = '';
+      // EMPIRICISM CHECK: verify CI evidence freshness (Anti-Pattern #12 — Stale Citation)
+      // UPGRADED: advisory → BLOCKING. Cannot stop with stale/missing CI when TS changes exist.
       const CI_EVIDENCE = path.join(ROOT, '.ci-evidence');
-      try {
-        if (fs.existsSync(CI_EVIDENCE)) {
+      if (tsChanges) {
+        try {
+          if (!fs.existsSync(CI_EVIDENCE)) {
+            process.stderr.write(
+              'STALE CITATION BLOCKED (Anti-Pattern #12)!\n' +
+              'You have TS changes but no .ci-evidence file.\n' +
+              'Run: npx tsc --noEmit && npx eslint src/ --max-warnings 0\n' +
+              'CI tracker records evidence automatically.\n'
+            );
+            audit("block", "no CI evidence with TS changes");
+            process.exit(2);
+          }
           const lines = fs.readFileSync(CI_EVIDENCE, 'utf8').trim().split('\n').filter(Boolean);
           if (lines.length > 0) {
             const last = JSON.parse(lines[lines.length - 1]);
             const ageMin = Math.round((Date.now() - (last.ts || 0)) / 60000);
-            if (ageMin > 5) {
-              ciWarning = `\n⚠️ STALE CI: Last CI evidence is ${ageMin}min old. If you claimed "CI passed" — did you SHOW fresh output? (Anti-Pattern #12)\n`;
+            if (ageMin > 10) {
+              process.stderr.write(
+                'STALE CITATION BLOCKED (Anti-Pattern #12)!\n' +
+                'Last CI evidence is ' + ageMin + ' minutes old.\n' +
+                'Run: npx tsc --noEmit && npx eslint src/ --max-warnings 0\n'
+              );
+              audit("block", "stale CI evidence: " + ageMin + "min");
+              process.exit(2);
             }
           }
-        } else {
-          ciWarning = '\n⚠️ NO CI EVIDENCE: .ci-evidence file missing. If you claimed "CI passed" without running it — that is Anti-Pattern #12 (Stale Citation).\n';
-        }
-      } catch { /* parse error — skip */ }
+        } catch { /* parse error — don't block on malformed evidence */ }
+      }
 
       process.stderr.write(
         'COMPLETION SELF-CHECK (advisory):\n' +

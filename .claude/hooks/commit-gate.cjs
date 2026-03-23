@@ -389,6 +389,30 @@ process.stdin.on('end', () => {
       } catch {
         block('ESLint preflight FAILED. Run: npx eslint . --max-warnings=0 --fix', cmd);
       }
+
+      // --- Layer 6b: Remote CI check (Anti-Pattern #13 — Local All-Clear) ---
+      // Local CI passes ≠ Remote CI passes. Check GitHub Actions before push.
+      try {
+        const ghResult = execSync('gh run view --json conclusion -q .conclusion', {
+          cwd: ROOT,
+          encoding: 'utf8',
+          stdio: ['pipe', 'pipe', 'pipe'],
+          timeout: 15000,
+        }).trim();
+        if (ghResult === 'failure') {
+          process.stderr.write(
+            'LOCAL ALL-CLEAR WARNING (Anti-Pattern #13): Last GitHub Actions run FAILED.\n' +
+            'Local CI passed but remote CI failed. Check: gh run view --log-failed\n' +
+            'Pushing anyway — but verify remote CI after push.\n'
+          );
+          audit('allow', 'remote CI failed but pushing (advisory)', cmd);
+        } else if (ghResult === 'success') {
+          audit('allow', 'remote CI also green', cmd);
+        }
+      } catch {
+        // gh CLI not available or network error — don't block (fail-open for missing tool)
+        audit('allow', 'gh CLI unavailable — skipping remote CI check', cmd);
+      }
     }
   } catch (e) {
     process.stderr.write('HOOK ERROR [commit-gate]: ' + (e.message || e) + '\n');

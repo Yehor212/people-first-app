@@ -480,17 +480,18 @@ function validate(content) {
         Math.max(Object.values(parsed.confidence).filter(v => typeof v === 'number').length, 1))
       : 0;
 
-    // High confidence (≥7) with very low evidence (≤1 read + 0 search) = suspicious
+    // High confidence (≥7) with very low evidence (≤1 read + 0 search) = Goodhart Gaming (#14)
+    // UPGRADED: WARNING → ERROR. Advisory = ignored (proven 4x this session).
     if (avgConfidence >= 7 && totalEvidence <= 1) {
-      warnings.push('OBSERVABLE CONFIDENCE MISMATCH: avg confidence ' + avgConfidence +
+      errors.push('GOODHART BLOCKED (Anti-Pattern #14): avg confidence ' + avgConfidence +
         '/9 but only ' + totalEvidence + ' evidence items (read:' + readCount + ', search:' + searchCount +
-        '). High confidence requires substantial evidence. (Research: Nuclear two-person rule — trust observables, not self-reports)');
+        '). High confidence requires substantial evidence. Read more files or lower confidence.');
     }
 
     // More assumed than verified = low confidence, not high
     if (assumedCount > totalEvidence && avgConfidence >= 6) {
-      warnings.push('OBSERVABLE CONFIDENCE MISMATCH: ' + assumedCount + ' assumptions vs ' + totalEvidence +
-        ' verified items, but confidence=' + avgConfidence + '. Assumed > Verified should lower confidence.');
+      errors.push('GOODHART BLOCKED (Anti-Pattern #14): ' + assumedCount + ' assumptions vs ' + totalEvidence +
+        ' verified items, but confidence=' + avgConfidence + '. Assumed > Verified — lower confidence or verify assumptions.');
     }
   }
 
@@ -542,6 +543,19 @@ function validate(content) {
         ' reasoning layer(s): [' + layersPresent.join(', ') + ']. ' +
         'Need ≥2 of: evidence (file refs), rootCause (because/therefore), specifics (numbers), alternative (considered/vs). ' +
         'Advisory = ignored. (R2A2 framework — multi-layered reasoning catches 43% more issues)');
+    }
+  }
+
+  // Rule 46: Citing Without Reading — evidence.read[] must cover diagnostic_sources (Anti-Pattern #3)
+  // If agent claims 5 diagnostic sources but only read 2 files → citing without reading
+  if (!isL1 && Array.isArray(parsed.diagnostic_sources) && parsed.evidence && Array.isArray(parsed.evidence.read)) {
+    const sourceCount = parsed.diagnostic_sources.filter(s => typeof s === 'string' && s.trim().length > 0).length;
+    const readCount = parsed.evidence.read.length;
+    // Allow 2x ratio (reading 3 files for 5 sources is reasonable — files can cover multiple sources)
+    if (sourceCount > 0 && readCount < Math.ceil(sourceCount / 2)) {
+      errors.push('CITING WITHOUT READING BLOCKED (Anti-Pattern #3): ' + readCount + ' files read but ' +
+        sourceCount + ' diagnostic sources enumerated. Read at least ' + Math.ceil(sourceCount / 2) +
+        ' files to cover your sources. Cannot claim analysis without reading.');
     }
   }
 

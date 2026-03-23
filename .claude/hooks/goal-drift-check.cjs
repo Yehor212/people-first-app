@@ -73,16 +73,16 @@ process.stdin.on('end', () => {
       }
     }
 
-    // Inject goal anchor (advisory, never blocks)
+    // Inject goal anchor — advisory context for all edits
+    const anchorMsg = `GOAL ANCHOR: Your stated goal is: "${goal.slice(0, 200)}". ` +
+      `Current edit: ${relPath}.` +
+      (driftWarning || ' If on-track, continue. If unrelated, explain the connection.');
+
     console.log(JSON.stringify({
       hookSpecificOutput: {
         hookEventName: 'PreToolUse',
-        additionalContext:
-          `GOAL ANCHOR: Your stated goal is: "${goal.slice(0, 200)}". ` +
-          `Current edit: ${relPath}.` +
-          driftWarning +
-          (driftWarning ? '' : ' If on-track, continue. If unrelated, explain the connection.')
-      }
+        additionalContext: anchorMsg,
+      },
     }));
     process.exit(0);
   } catch (e) {
