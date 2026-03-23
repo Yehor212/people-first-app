@@ -39,11 +39,13 @@ process.stdin.on('end', () => {
     let goal = '';
     let goalFiles = [];
 
+    let depth = 'L1';
     if (content.startsWith('{')) {
       // Structured JSON format — extract goal and file paths from evidence
       try {
         const parsed = JSON.parse(content);
         goal = (parsed.goal || '').replace(/^GOAL:\s*/i, '').trim();
+        depth = parsed.depth || 'L1';
         // Extract file paths mentioned in goal or evidence.read[]
         if (parsed.evidence && Array.isArray(parsed.evidence.read)) {
           goalFiles = parsed.evidence.read.map(r => r.split(':')[0].split('/').pop()).filter(Boolean);
@@ -73,7 +75,16 @@ process.stdin.on('end', () => {
       }
     }
 
-    // Inject goal anchor — advisory context for all edits
+    // UPGRADED: advisory → BLOCKING for L2+ when drift detected (Anti-Pattern #11)
+    // L2+ editing file NOT in scope → BLOCK. L1 or no drift → advisory.
+    if (driftWarning && depth !== 'L1') {
+      console.log(JSON.stringify({ decision: 'block', reason:
+        'GOAL DRIFT BLOCKED (Anti-Pattern #11): ' + driftWarning.trim() +
+        ' Update .preflight-token with expanded scope_boundaries to unblock.' }));
+      process.exit(0);
+    }
+
+    // On-track or L1: inject advisory anchor
     const anchorMsg = `GOAL ANCHOR: Your stated goal is: "${goal.slice(0, 200)}". ` +
       `Current edit: ${relPath}.` +
       (driftWarning || ' If on-track, continue. If unrelated, explain the connection.');

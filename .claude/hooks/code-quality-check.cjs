@@ -73,13 +73,31 @@ process.stdin.on('end', () => {
     }
 
     // A4: Control flow mutation — fix verification (Anti-Pattern #15: Fix Without Trace)
-    // Research: control flow changes are #1 source of regressions from fixes
-    // Incident: bandaid-gate regression — changed break/continue logic without tracing all paths
+    // UPGRADED: if EXISTING control flow is MODIFIED (old_string has CF, new_string has DIFFERENT CF)
+    // → create .control-flow-pending token. search-gate blocks next Edit until acknowledged.
+    // New code (no old_string CF) → advisory only (writing new if/return is normal).
     const CONTROL_FLOW = /\b(if\s*\(|else\s*\{|break\b|continue\b|return\b|throw\b|process\.exit)/;
-    if (CONTROL_FLOW.test(newString)) {
-      warnings.push('CONTROL FLOW CHANGE: Edit modifies if/break/continue/return/exit. ' +
-        'TRACE ALL PATHS: (1) What happens when condition is TRUE? (2) FALSE? (3) What about edge cases (empty/null/missing)? ' +
-        '(Anti-Pattern #15: Fix Without Trace — incident: bandaid-gate regression from untested path)');
+    const oldString = data.tool_input?.old_string || '';
+    const oldHasCF = CONTROL_FLOW.test(oldString);
+    const newHasCF = CONTROL_FLOW.test(newString);
+
+    if (oldHasCF && newHasCF && oldString !== newString) {
+      // MODIFICATION of existing control flow — high regression risk
+      // Create .control-flow-pending token (consumed by path trace acknowledgment)
+      const CF_PENDING = path.join(ROOT, '.control-flow-pending');
+      try {
+        fs.writeFileSync(CF_PENDING, JSON.stringify({
+          file: filePath, timestamp: Date.now(),
+          pattern: 'EXISTING control flow MODIFIED — trace all paths before continuing'
+        }));
+      } catch { /* best-effort */ }
+      warnings.push('CONTROL FLOW FIX DETECTED (Anti-Pattern #15): You modified EXISTING if/break/return logic. ' +
+        '.control-flow-pending token created. TRACE ALL PATHS before next edit: (1) TRUE (2) FALSE (3) EDGE CASE. ' +
+        'Incident: bandaid-gate regression from untested path.');
+    } else if (newHasCF) {
+      // New control flow (writing new code) — advisory only
+      warnings.push('CONTROL FLOW CHANGE: Edit contains if/break/continue/return/exit. ' +
+        'TRACE ALL PATHS: (1) TRUE? (2) FALSE? (3) Edge cases?');
     }
 
     // Always inject self-reflection reminder after TS edits (SR8)

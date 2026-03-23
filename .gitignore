@@ -139,5 +139,6 @@ docs/visual-aesthetic.md
 .claude-audit.log
 .evidence-chain
 .verification-done
+.control-flow-pending
 .claude-md-unlock
 .prettier-circuit-breaker

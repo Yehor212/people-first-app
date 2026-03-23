@@ -400,12 +400,13 @@ process.stdin.on('end', () => {
           timeout: 15000,
         }).trim();
         if (ghResult === 'failure') {
-          process.stderr.write(
-            'LOCAL ALL-CLEAR WARNING (Anti-Pattern #13): Last GitHub Actions run FAILED.\n' +
-            'Local CI passed but remote CI failed. Check: gh run view --log-failed\n' +
-            'Pushing anyway — but verify remote CI after push.\n'
+          block(
+            'LOCAL ALL-CLEAR BLOCKED (Anti-Pattern #13)!\n' +
+            'Last GitHub Actions run FAILED. Local CI ≠ Remote CI.\n' +
+            'Check: gh run view --log-failed\n' +
+            'Fix remote CI first, or if this push IS the fix, add "fix(ci)" to commit message.',
+            cmd
           );
-          audit('allow', 'remote CI failed but pushing (advisory)', cmd);
         } else if (ghResult === 'success') {
           audit('allow', 'remote CI also green', cmd);
         }

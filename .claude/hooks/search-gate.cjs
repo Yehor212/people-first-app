@@ -29,6 +29,7 @@ function audit(event, detail) {
 
 const BUGFIX_PENDING = path.join(ROOT, '.bugfix-pending');
 const SEARCH_CONFIRMED = path.join(ROOT, '.search-confirmed');
+const CF_PENDING = path.join(ROOT, '.control-flow-pending');
 const AUDIT_LOG = path.join(ROOT, '.claude-audit.log');
 const STALE_MS = 4 * 60 * 60 * 1000; // 4 hours
 
@@ -76,6 +77,56 @@ process.stdin.on('end', () => {
 
     const hasBugfix = fs.existsSync(BUGFIX_PENDING);
     const hasSearch = fs.existsSync(SEARCH_CONFIRMED);
+
+    // Anti-Pattern #15: Control flow modification pending path trace
+    // .control-flow-pending created by code-quality-check when EXISTING control flow modified
+    // Blocks next Edit until agent acknowledges by writing new .preflight-token (which cleans token)
+    if (fs.existsSync(CF_PENDING) && !isStale(CF_PENDING)) {
+      let cfInfo = '';
+      try { cfInfo = fs.readFileSync(CF_PENDING, 'utf8').trim(); } catch {}
+      // Clean token if preflight-token was rewritten AFTER the CF pending was created
+      const TOKEN = path.join(ROOT, '.preflight-token');
+      if (fs.existsSync(TOKEN)) {
+        try {
+          const cfTs = fs.statSync(CF_PENDING).mtimeMs;
+          const pfTs = fs.statSync(TOKEN).mtimeMs;
+          if (pfTs > cfTs) {
+            // Preflight written AFTER control flow edit → agent acknowledged
+            cleanToken(CF_PENDING);
+            auditLog('cf-cleared', 'preflight-token newer than control-flow-pending');
+            // Fall through to normal flow
+          } else {
+            // Preflight is older → agent hasn't re-analyzed
+            process.stderr.write([
+              '',
+              '══════════════════════════════════════════════════════════════',
+              '  FIX WITHOUT TRACE BLOCKED (Anti-Pattern #15)',
+              '══════════════════════════════════════════════════════════════',
+              '',
+              '  You modified EXISTING control flow but have NOT written',
+              '  a new preflight-token with path trace analysis.',
+              '',
+              cfInfo ? '  Context: ' + cfInfo.slice(0, 200) : '',
+              '',
+              '  REQUIRED:',
+              '  1. Write a NEW .preflight-token with updated pre_mortem',
+              '     that traces TRUE, FALSE, and EDGE CASE paths',
+              '  2. Then your next Edit will be unblocked',
+              '',
+              '══════════════════════════════════════════════════════════════',
+              '',
+            ].filter(Boolean).join('\n'));
+            auditLog('BLOCKED', 'control-flow-pending: ' + cfInfo.slice(0, 100));
+            process.exit(2);
+          }
+        } catch { cleanToken(CF_PENDING); } // parse error → clean
+      } else {
+        // No preflight at all → block
+        process.stderr.write('FIX WITHOUT TRACE BLOCKED: Write .preflight-token with path trace before editing.\n');
+        auditLog('BLOCKED', 'no preflight after control flow change');
+        process.exit(2);
+      }
+    }
 
     // Case 1: No bugfix pending → normal flow
     if (!hasBugfix) {
