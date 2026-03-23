@@ -252,7 +252,7 @@ process.stdin.on('end', () => {
       // 5. Tool Routing — Anti-Pattern #18: Tool Blindness
       // Multi-match: ALL matching routes activate (not first-match)
       const TOOL_ROUTES = [
-        { pattern: /\b(баг|bug|исправ|fix|ошибк|error)\b/i, tools: ['/tdd'], level: 'MANDATORY', desc: 'Use /tdd for bug fix (Red-Green-Refactor)' },
+        { pattern: /баг|исправ|ошибк|\bbug\b|\bfix\b|\berror\b/i, tools: ['/tdd'], level: 'MANDATORY', desc: 'Use /tdd for bug fix (Red-Green-Refactor)' },
         { pattern: /аудит|audit|все.баг|all.bug|проверь.всё|find.all/i, tools: ['codebase-audit-suite', 'AgentShield', 'Snyk'], level: 'MANDATORY', desc: 'Use codebase-audit-suite + AgentShield + Snyk for full audit' },
         { pattern: /supabase|база|миграц|sql|бекенд|backend/i, tools: ['Supabase MCP'], level: 'MANDATORY', desc: 'Use Supabase MCP for database operations (NOT psql/curl via Bash)' },
         { pattern: /оптимиз|perf|скорост|bundle|slow|быстр/i, tools: ['optimization-suite'], level: 'MANDATORY', desc: 'Use optimization-suite for performance analysis' },
