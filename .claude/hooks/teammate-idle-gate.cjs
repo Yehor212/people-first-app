@@ -24,7 +24,7 @@ function audit(event, detail) {
   try { fs.appendFileSync(AUDIT_LOG, entry); } catch {}
 }
 
-const norm = (p) => (p || '').replace(/\\/g, '/').toLowerCase();
+const norm = (p) => (p || '').replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase();
 
 let input = '';
 process.stdin.on('data', d => input += d);

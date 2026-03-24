@@ -74,7 +74,8 @@ function validate(content) {
     errors.push('changes[] must contain non-empty strings');
   } else if (parsed.changes.length > 7) {
     // Span-level: too many changes without per-file evidence = likely surface-level review
-    const verified = (parsed.self_reflection?.what_I_verified || '').match(/READ:|file:|line \d/gi) || [];
+    // Verifier finding 3.1: "file:" matches "profile:" — tighten to require path-like context
+    const verified = (parsed.self_reflection?.what_I_verified || '').match(/READ:\s*\S|\.(?:ts|tsx|cjs|js|json)(?::\d|\s)|line\s+\d/gi) || [];
     if (verified.length < Math.ceil(parsed.changes.length / 2)) {
       errors.push('SPAN-LEVEL: ' + parsed.changes.length + ' files changed but only ' + verified.length + ' file-level evidence markers in what_I_verified. Verify at least half of changed files individually.');
     }

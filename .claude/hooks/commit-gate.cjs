@@ -393,9 +393,11 @@ process.stdin.on('end', () => {
         const stagedFiles = execSync('git diff --cached --name-only', { cwd: ROOT, stdio: 'pipe', timeout: 5000 })
           .toString().trim().split('\n').filter(f => f.trim().length > 0);
         if (stagedFiles.length > 7) {
-          // Allow if commit message contains justification
-          const commitMsg = cmd.replace(/^git commit\s*/, '');
-          const hasJustification = /batch|bulk|refactor|migration|rename|enforcement|audit/i.test(commitMsg);
+          // Allow if commit message contains EXPLICIT justification keyword at START of a word
+          // Verifier finding 2.1: regex was too permissive — "audit log" in message bypassed
+          const msgMatch = cmd.match(/-m\s+["']([^"']+)["']/);
+          const commitMsg = msgMatch ? msgMatch[1] : cmd.replace(/^git commit\s*/, '');
+          const hasJustification = /\b(batch|bulk|refactor|migration|rename|enforcement)\b/i.test(commitMsg);
           if (!hasJustification) {
             block(
               'COMMIT SIZE LIMIT: ' + stagedFiles.length + ' files staged (max 7 without justification).\n' +
@@ -408,12 +410,9 @@ process.stdin.on('end', () => {
         }
       } catch { /* git diff failed — don't block */ }
 
-      // All checks passed — consume tokens
-      try { fs.unlinkSync(POSTFLIGHT); } catch {}
-      if (isFullCycle) {
-        try { fs.unlinkSync(FULLCYCLE_LAWS); } catch {}
-        try { fs.unlinkSync(FULLCYCLE_ACTIVE); } catch {}
-      }
+      // NOTE: Token consumption moved AFTER Layer 7/7b (verifier finding 2.2)
+      // If Layer 7 blocks, tokens are preserved — no forced postflight recreation.
+
       // --- Layer 7: Snyk scan verification (Anti-Pattern #18) ---
       const SNYK_PENDING = path.join(ROOT, '.snyk-pending');
       const SNYK_DONE = path.join(ROOT, '.snyk-scan-done');
@@ -472,6 +471,13 @@ process.stdin.on('end', () => {
           try { fs.unlinkSync(RESEARCH_PENDING_CG); } catch {}
           audit('allow', 'malformed .research-pending cleaned', cmd);
         }
+      }
+
+      // All Layer 7 checks passed — NOW consume tokens (verifier finding 2.2: moved after L7/7b)
+      try { fs.unlinkSync(POSTFLIGHT); } catch {}
+      if (isFullCycle) {
+        try { fs.unlinkSync(FULLCYCLE_LAWS); } catch {}
+        try { fs.unlinkSync(FULLCYCLE_ACTIVE); } catch {}
       }
 
       // Clean IDE ack tokens on commit
