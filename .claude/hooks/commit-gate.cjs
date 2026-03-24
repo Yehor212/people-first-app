@@ -387,6 +387,27 @@ process.stdin.on('end', () => {
         }
       } catch { /* git diff failed — don't block on git errors */ }
 
+      // --- Layer 5f: Commit size limit (Small PRs principle) ---
+      // Research: "several small PRs beat one big one" (CodeRabbit, First Round Review)
+      try {
+        const stagedFiles = execSync('git diff --cached --name-only', { cwd: ROOT, stdio: 'pipe', timeout: 5000 })
+          .toString().trim().split('\n').filter(f => f.trim().length > 0);
+        if (stagedFiles.length > 7) {
+          // Allow if commit message contains justification
+          const commitMsg = cmd.replace(/^git commit\s*/, '');
+          const hasJustification = /batch|bulk|refactor|migration|rename|enforcement|audit/i.test(commitMsg);
+          if (!hasJustification) {
+            block(
+              'COMMIT SIZE LIMIT: ' + stagedFiles.length + ' files staged (max 7 without justification).\n' +
+              'Split into smaller commits for better reviewability.\n' +
+              'Override: include "batch", "refactor", "migration", "enforcement", or "audit" in commit message.\n' +
+              'Research: "several small PRs beat one big one" (CodeRabbit 2026).',
+              cmd
+            );
+          }
+        }
+      } catch { /* git diff failed — don't block */ }
+
       // All checks passed — consume tokens
       try { fs.unlinkSync(POSTFLIGHT); } catch {}
       if (isFullCycle) {

@@ -72,6 +72,12 @@ function validate(content) {
     errors.push('No changes listed');
   } else if (!parsed.changes.every(c => typeof c === 'string' && c.length > 0)) {
     errors.push('changes[] must contain non-empty strings');
+  } else if (parsed.changes.length > 7) {
+    // Span-level: too many changes without per-file evidence = likely surface-level review
+    const verified = (parsed.self_reflection?.what_I_verified || '').match(/READ:|file:|line \d/gi) || [];
+    if (verified.length < Math.ceil(parsed.changes.length / 2)) {
+      errors.push('SPAN-LEVEL: ' + parsed.changes.length + ' files changed but only ' + verified.length + ' file-level evidence markers in what_I_verified. Verify at least half of changed files individually.');
+    }
   }
 
   // Rule 5: laws_checked — must match expected count
