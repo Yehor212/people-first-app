@@ -31,6 +31,15 @@ a:nth-of-type(2) .logo {
   animation: logo-spin infinite 20s linear;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  a:nth-of-type(2) .logo {
+    animation: none;
+  }
+  .logo {
+    transition: none;
+  }
+}
+
 .card {
   padding: 2em;
 }
