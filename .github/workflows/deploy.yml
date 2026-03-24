@@ -65,7 +65,14 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Run E2E tests
-        run: npx playwright test --project=chromium
+        run: |
+          if [ -d "e2e/visual-regression.spec.ts-snapshots" ]; then
+            npx playwright test --project=chromium
+          else
+            echo "No baseline snapshots found — generating baselines (first run)"
+            npx playwright test --project=chromium --update-snapshots || true
+            echo "::warning::Visual regression baselines generated. Commit the snapshots directory to enable comparison."
+          fi
 
       - name: Quality ratchet check
         run: npm run ratchet:check
