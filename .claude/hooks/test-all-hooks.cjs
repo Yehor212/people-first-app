@@ -843,29 +843,44 @@ test('handles missing server name',
 // 29. TEAMMATE-IDLE-LOG (TeammateIdle audit logging)
 // ============================================================
 
-test('logs teammate idle with names',
-  'teammate-idle-log.cjs',
-  '{"teammate_name":"verifier","team_name":"qa-team"}',
+test('teammate-idle: cwd=projectRoot → BLOCKED (worktree required)',
+  'teammate-idle-gate.cjs',
+  '{"teammate_name":"verifier","team_name":"qa-team","cwd":"' + TEST_ROOT.replace(/\\/g, '/') + '"}',
+  'WORKTREE REQUIRED', 2);
+
+test('teammate-idle: different cwd + no transcript → BLOCKED (no evidence)',
+  'teammate-idle-gate.cjs',
+  '{"teammate_name":"verifier","team_name":"qa-team","cwd":"/tmp/worktree-test"}',
+  'QUALITY GATE', 2);
+
+test('teammate-idle: different cwd + evidence in transcript (mock) → PASS',
+  'teammate-idle-gate.cjs',
+  '{"teammate_name":"verifier","team_name":"qa-team","cwd":"/tmp/worktree-test","transcript_path":"' + TEST_ROOT.replace(/\\/g, '/') + '/package.json"}',
   null, 0);
 
-test('handles missing teammate fields',
-  'teammate-idle-log.cjs',
-  '{}',
-  null, 0);
+test('teammate-idle: crash on bad JSON → BLOCKED (fail-closed)',
+  'teammate-idle-gate.cjs',
+  'NOT_JSON',
+  'HOOK CRASH', 2);
 
 // ============================================================
 // 30. TASK-COMPLETED-LOG (TaskCompleted audit logging)
 // ============================================================
 
-test('logs task completion with id and subject',
-  'task-completed-log.cjs',
-  '{"task_id":"task-123","task_subject":"Run tests"}',
+test('task-completed: impl task without transcript → BLOCKED',
+  'task-completed-gate.cjs',
+  '{"task_id":"task-123","task_subject":"Implement feature"}',
+  'QUALITY GATE', 2);
+
+test('task-completed: review task with transcript (mock) → PASS',
+  'task-completed-gate.cjs',
+  '{"task_id":"task-456","task_subject":"Review PR for security","transcript_path":"' + TEST_ROOT.replace(/\\/g, '/') + '/package.json"}',
   null, 0);
 
-test('handles missing task fields',
-  'task-completed-log.cjs',
-  '{}',
-  null, 0);
+test('task-completed: crash on bad JSON → BLOCKED (fail-closed)',
+  'task-completed-gate.cjs',
+  'NOT_JSON',
+  'HOOK CRASH', 2);
 
 // ============================================================
 // 28. SEARCH-GATE (FIND-ONE-SEARCH-ALL blocking gate)

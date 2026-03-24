@@ -1,4 +1,7 @@
 {
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  },
   "hooks": {
     "PreToolUse": [
       {
@@ -344,9 +347,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .claude/hooks/teammate-idle-log.cjs",
-            "timeout": 5000,
-            "statusMessage": "Logging teammate idle..."
+            "command": "node .claude/hooks/teammate-idle-gate.cjs",
+            "timeout": 10000,
+            "statusMessage": "Teammate quality gate..."
           }
         ]
       }
@@ -356,9 +359,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .claude/hooks/task-completed-log.cjs",
-            "timeout": 5000,
-            "statusMessage": "Logging task completion..."
+            "command": "node .claude/hooks/task-completed-gate.cjs",
+            "timeout": 10000,
+            "statusMessage": "Task quality gate..."
           }
         ]
       }
