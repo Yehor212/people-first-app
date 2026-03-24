@@ -139,6 +139,12 @@ const PREFLIGHT_PROTOCOL = [
   'ALWAYS run the command and show FRESH output with the RESULT/PASS line visible.',
   'If user asks "did you check?" → RE-RUN the command. The question IS the requirement.',
   'No Bash output in THIS response = you CANNOT claim it passed. Wittgenstein: silence > false claim.',
+  '',
+  'SELF-CHALLENGE ✈️ (after EVERY edit/action — Equal Weight with user questions):',
+  'Q1-Q10 visible in chat. EACH answer needs Bash/Read/Grep evidence.',
+  'Q5 finding = treat as USER question (Empiricism Rule applies).',
+  'Dismiss Q5 finding without ls/grep = Anti-Pattern #5 (False All-Clear).',
+  'Self-Challenge findings have SAME FORCE as user "убедился?" questions.',
 ].join('\n');
 
 let input = '';
