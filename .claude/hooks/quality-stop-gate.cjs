@@ -130,6 +130,23 @@ process.stdin.on('end', () => {
       }
     } catch { /* non-critical */ }
 
+    // ANTI-PATTERN ROOT CAUSE FIX: remind about Self-Challenge on EVERY stop
+    // Root cause: agent reads anti-patterns but doesn't act. Self-Challenge = action trigger.
+    reqWarning += '\n** SELF-CHALLENGE ✈️ ** Did you run Q1-Q10 with Bash evidence?\n' +
+      'Q5 finding = user question (Equal Weight). Dismiss without ls/grep = Anti-Pattern #5.\n';
+
+    // ANTI-PATTERN #7: Follow-up Neglect — check if Agent Team has idle teammates
+    try {
+      const teamDir = path.join(require('os').homedir(), '.claude', 'teams');
+      if (fs.existsSync(teamDir)) {
+        const teams = fs.readdirSync(teamDir).filter(d => fs.existsSync(path.join(teamDir, d, 'config.json')));
+        if (teams.length > 0) {
+          reqWarning += '\n** FOLLOW-UP CHECK (Anti-Pattern #7) ** Active team: ' + teams[0] +
+            '. Did ALL teammates report? Check idle teammates before stopping.\n';
+        }
+      }
+    } catch { /* non-critical */ }
+
     // No TS changes → allow stop, clean token, advisory completion check
     if (!tsChanges) {
       try { fs.unlinkSync(PREFLIGHT_TOKEN); } catch { /* ok */ }

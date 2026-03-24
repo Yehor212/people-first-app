@@ -408,6 +408,24 @@ process.stdin.on('end', () => {
             );
           }
         }
+        // --- Layer 5g: Infrastructure Bias Detection (Anti-Pattern #9) ---
+        const hookFiles = stagedFiles.filter(f => f.includes('.claude/hooks/'));
+        if (hookFiles.length > 0 && stagedFiles.length > 0) {
+          const ratio = hookFiles.length / stagedFiles.length;
+          if (ratio > 0.7 && stagedFiles.length >= 3) {
+            // BLOCKING — not advisory. User: "если не blocking, ты будешь игнорить"
+            // Override: include "enforcement" in commit message for legitimate hook-only commits
+            if (!hasJustification) {
+              block(
+                'INFRASTRUCTURE BIAS BLOCKED (Anti-Pattern #9)!\n' +
+                Math.round(ratio * 100) + '% of staged files are hooks (' + hookFiles.length + '/' + stagedFiles.length + ').\n' +
+                'Include app code fixes alongside enforcement changes.\n' +
+                'Override: include "enforcement" in commit message.',
+                cmd
+              );
+            }
+          }
+        }
       } catch { /* git diff failed — don't block */ }
 
       // NOTE: Token consumption moved AFTER Layer 7/7b (verifier finding 2.2)
