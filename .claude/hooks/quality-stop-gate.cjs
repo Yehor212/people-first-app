@@ -193,9 +193,26 @@ process.stdin.on('end', () => {
               process.stderr.write(
                 'STALE CITATION BLOCKED (Anti-Pattern #12)!\n' +
                 'Last CI evidence is ' + ageMin + ' minutes old.\n' +
-                'Run: npx tsc --noEmit && npx eslint src/ --max-warnings 0\n'
+                'Run: npx tsc --noEmit && npx vitest run\n'
               );
               audit("block", "stale CI evidence: " + ageMin + "min");
+              process.exit(2);
+            }
+            // RE-RUN ENFORCEMENT: check that BOTH tsc AND vitest ran (not just one)
+            const labels = new Set(lines.map(l => { try { return JSON.parse(l).pattern; } catch { return ''; } }).filter(Boolean));
+            const hasTsc = labels.has('tsc');
+            const hasVitest = labels.has('vitest');
+            if (!hasTsc || !hasVitest) {
+              const missing = [];
+              if (!hasTsc) missing.push('tsc');
+              if (!hasVitest) missing.push('vitest');
+              process.stderr.write(
+                'RE-RUN ENFORCEMENT BLOCKED!\n' +
+                'CI evidence missing: ' + missing.join(' + ') + '\n' +
+                'Both tsc AND vitest must run before stopping.\n' +
+                'Run: npx tsc --noEmit && npx vitest run\n'
+              );
+              audit("block", "re-run: missing " + missing.join('+'));
               process.exit(2);
             }
           }
@@ -209,7 +226,7 @@ process.stdin.on('end', () => {
         '- IDE diagnostics clean?\n' +
         '- EMPIRICISM: Every "passed"/"clean" claim backed by FRESH Bash output in your response?\n' +
         '- ROOT CAUSE: For every fix in this session — documented 5 Whys? Or impossibility explained?\n' +
-        ciWarning
+        reqWarning
       );
       process.exit(0);
     }
