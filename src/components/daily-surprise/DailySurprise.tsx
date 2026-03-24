@@ -7,6 +7,7 @@ import { SK } from "@/lib/storageKeys";
 import { storageGetRaw, storageSetRaw } from "@/lib/safeJson";
 import { surprisesPool } from "./surprisesData";
 import { getTypeIcon, getTypeColor } from "./helpers";
+import { useBackHandler } from "@/hooks/useBackHandler";
 
 interface DailySurpriseProps {
   onNavigate?: (section: "mood" | "habits" | "focus" | "gratitude") => void;
@@ -16,6 +17,7 @@ export function DailySurprise({ onNavigate }: DailySurpriseProps) {
   const { t, language } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [hasSeenToday, setHasSeenToday] = useState(false);
+  useBackHandler(isOpen, () => setIsOpen(false));
 
   // Get today's surprise based on day of year
   const todaySurprise = useMemo(() => {
