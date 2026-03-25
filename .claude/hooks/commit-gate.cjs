@@ -254,15 +254,18 @@ process.stdin.on('end', () => {
         }
       }
 
-      // Layer 5d: Mandatory Verifier in full-cycle mode (Two-Person Rule, Nuclear safety)
-      // Research: ICE ensemble (+7-15pp), IMDA 2025 self-report unreliability, GitHub Required Reviewer
-      // In full-cycle mode, a separate verifier agent MUST approve before commit
-      if (isFullCycle) {
+      // Layer 5d: Mandatory Verifier for TS/TSX changes (Two-Person Rule)
+      // A separate verifier agent must approve before committing TypeScript changes
+      {
+        let stagedFiles = '';
+        try { stagedFiles = execSync('git diff --cached --name-only', { cwd: ROOT, stdio: 'pipe', timeout: 5000 }).toString(); } catch {}
+        const hasTsChanges = stagedFiles.split('\n').some(f => /\.(ts|tsx)$/.test(f.trim()));
+        if (hasTsChanges) {
         const VERIFICATION_DONE = path.join(ROOT, '.verification-done');
         if (!fs.existsSync(VERIFICATION_DONE)) {
           block(
-            'FULL CYCLE VERIFICATION REQUIRED!\n' +
-            'Two-Person Rule: a separate verifier agent must approve your changes.\n' +
+            'VERIFICATION REQUIRED!\n' +
+            'A separate verifier agent must approve TypeScript changes before commit.\n' +
             'Run: Agent tool with .claude/agents/verifier.md → write .verification-done token.\n' +
             'Token format: { agent: "verifier", timestamp, checks: [{name, pass, evidence}], verdict: "APPROVE" }',
             cmd
@@ -293,6 +296,7 @@ process.stdin.on('end', () => {
           }
           // Consume token
           try { fs.unlinkSync(VERIFICATION_DONE); } catch {}
+        }
         }
       }
 

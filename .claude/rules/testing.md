@@ -6,9 +6,9 @@ description: Testing rules — applies to **/*.test.{ts,tsx}
 
 - Vitest + React Testing Library
 - AAA pattern: Arrange → Act → Assert
-- No `any` type in test assertions — use proper typing
+- Use proper TypeScript types in test assertions — keep all assertions strongly typed
 - Test file mirrors source location (`src/hooks/useX.ts` → `src/hooks/useX.test.ts`)
-- Zero regression: existing tests must never be deleted or weakened
+- Zero regression: preserve all existing tests — maintain or strengthen coverage
 - Selective TDD approach: write tests for complex logic, edge cases, regressions
-- Mock conventions: mock external deps (Supabase, Firebase), not internal modules
+- Mock conventions: mock external deps (Supabase, Firebase), keep internal modules real
 - Run `vitest run` to verify before committing test changes

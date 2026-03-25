@@ -22,4 +22,4 @@ description: UI component rules — applies to src/components/**/*.{ts,tsx}
 - Android back handler required on all modals/drawers
 - Safe area insets respected (`env(safe-area-inset-*)`)
 - iOS/Android/Desktop must render equivalently (Law 10)
-- Component isolation (Law 15): no cross-store direct imports, use props/hooks
+- Component isolation (Law 15): access stores through props/hooks only — keep cross-store coupling indirect

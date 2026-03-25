@@ -9,6 +9,13 @@
  *   A1: Missing test file for edited source
  *   A2: New `as any` or `: any` type debt
  *   A3: Hardcoded color in .tsx
+ *   A4: Control flow mutation
+ *   A5: New code Snyk scan reminder
+ *   A6: Modal/overlay without back handler (.tsx)
+ *   A7: Fixed/absolute without safe-area (.tsx)
+ *   A8: backdropFilter without -webkit- (.tsx)
+ *   A9: Button without aria-label (.tsx)
+ *   A10: addEventListener without cleanup (.tsx)
  *
  * Research basis: SonarQube cognitive complexity, Codacy guardrails.
  */
@@ -110,6 +117,37 @@ process.stdin.on('end', () => {
           fs.writeFileSync(SNYK_PENDING, JSON.stringify({ file: filePath, timestamp: new Date().toISOString() }), 'utf8');
           warnings.push('NEW CODE DETECTED in ' + path.basename(filePath) + '. Per CLAUDE.md global rule: run snyk_code_scan before commit. (.snyk-pending created)');
         } catch { /* best-effort */ }
+      }
+    }
+
+    // A6-A10: Cross-platform & accessibility advisories (only for .tsx components)
+    if (filePath.endsWith('.tsx')) {
+      // A6: Modal/drawer/overlay without back handler
+      if (/\b(modal|Modal|drawer|Drawer|overlay|Overlay|Sheet|BottomSheet|Dialog)\b/.test(newString) &&
+          !/useBackHandler/.test(newString)) {
+        warnings.push('BACK HANDLER: New modal/drawer/overlay detected but no useBackHandler import. Android back button requires it (Law 10).');
+      }
+
+      // A7: position:fixed/absolute without safe-area
+      if (/position:\s*(fixed|absolute|sticky)/.test(newString) &&
+          !/safe-area|env\(safe-area/.test(newString)) {
+        warnings.push('SAFE AREA: Fixed/absolute/sticky positioning without safe-area inset. Add env(safe-area-inset-*) for iOS notch (Law 10).');
+      }
+
+      // A8: backdrop-filter without -webkit- in inline styles
+      if (/backdropFilter/.test(newString) && !/-webkit-backdrop-filter|webkitBackdropFilter/.test(newString)) {
+        warnings.push('WEBKIT PREFIX: backdropFilter in inline style without -webkit- variant. Add WebkitBackdropFilter for Safari (Law 10).');
+      }
+
+      // A9: Interactive element without aria-label
+      if (/<button\b/.test(newString) && !/aria-label/.test(newString)) {
+        warnings.push('ARIA LABEL: <button> without aria-label detected. Add aria-label for screen readers (Law 9).');
+      }
+
+      // A10: addEventListener in useEffect without cleanup
+      if (/addEventListener/.test(newString) && /useEffect/.test(newString) &&
+          !/removeEventListener/.test(newString)) {
+        warnings.push('EFFECT CLEANUP: addEventListener inside useEffect without matching removeEventListener in cleanup (Law 25).');
       }
     }
 

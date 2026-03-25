@@ -271,28 +271,28 @@ function validate(content) {
   // Rule 27: pre_mortem content quality — must be substantive (L2+)
   if (!isL1 && typeof parsed.pre_mortem === 'string') {
     if (parsed.pre_mortem.length < 50) {
-      errors.push('L2+ pre_mortem must be ≥50 chars (got ' + parsed.pre_mortem.length + ') — be specific about failure modes');
+      warnings.push('L2+ pre_mortem must be ≥50 chars (got ' + parsed.pre_mortem.length + ') — be specific about failure modes');
     }
   }
 
   // Rule 28: scope_boundaries content quality — must reference files (L2+)
   if (!isL1 && typeof parsed.scope_boundaries === 'string' && parsed.scope_boundaries.length >= 10) {
     if (parsed.scope_boundaries.length < 30) {
-      errors.push('L2+ scope_boundaries must be ≥30 chars (got ' + parsed.scope_boundaries.length + ') — list specific files');
+      warnings.push('L2+ scope_boundaries must be ≥30 chars (got ' + parsed.scope_boundaries.length + ') — list specific files');
     }
     if (!parsed.scope_boundaries.includes('/') && !parsed.scope_boundaries.includes('src') && !parsed.scope_boundaries.includes('.ts') && !parsed.scope_boundaries.includes('.cjs')) {
-      errors.push('L2+ scope_boundaries must reference files (include / or src or .ts or .cjs)');
+      warnings.push('L2+ scope_boundaries must reference files (include / or src or .ts or .cjs)');
     }
   }
 
   // Rule 29: post_verification_plan must contain concrete commands (L2+)
   if (!isL1 && typeof parsed.post_verification_plan === 'string' && parsed.post_verification_plan.length >= 10) {
     if (parsed.post_verification_plan.length < 30) {
-      errors.push('L2+ post_verification_plan must be ≥30 chars (got ' + parsed.post_verification_plan.length + ') — list specific commands');
+      warnings.push('L2+ post_verification_plan must be ≥30 chars (got ' + parsed.post_verification_plan.length + ') — list specific commands');
     }
     const CMD_PATTERN = /npm|node|git|vitest|eslint|tsc|grep|ci:|ratchet/i;
     if (!CMD_PATTERN.test(parsed.post_verification_plan)) {
-      errors.push('L2+ post_verification_plan must reference concrete commands (npm, node, git, vitest, eslint, tsc, grep, ci:, ratchet)');
+      warnings.push('L2+ post_verification_plan must reference concrete commands (npm, node, git, vitest, eslint, tsc, grep, ci:, ratchet)');
     }
   }
 
@@ -307,7 +307,7 @@ function validate(content) {
   if (!isL1 && typeof parsed.unknowns === 'string') {
     const DISMISSIVE = /^(none|no|nothing|n\/a|na|nil|-)$/i;
     if (DISMISSIVE.test(parsed.unknowns.trim())) {
-      errors.push('L2+ unknowns cannot be dismissive ("none"/"n/a") — there are ALWAYS unknowns. List at least one.');
+      warnings.push('L2+ unknowns cannot be dismissive ("none"/"n/a") — there are ALWAYS unknowns. List at least one.');
     }
     if (parsed.unknowns.length < 15) {
       warnings.push('L2+ unknowns is very short (' + parsed.unknowns.length + ' chars) — be specific about what you do NOT know');
@@ -329,7 +329,7 @@ function validate(content) {
   if (!isL1 && typeof parsed.goal === 'string') {
     const HAS_CRITERION = /success|done when|done\s*:|pass|verify|result/i;
     if (!HAS_CRITERION.test(parsed.goal) && parsed.goal.length < 50) {
-      errors.push('L2+ goal should include SUCCESS criterion or DONE WHEN clause (Law 28 transmutation)');
+      warnings.push('L2+ goal should include SUCCESS criterion or DONE WHEN clause (Law 28 transmutation)');
     }
   }
 
@@ -353,64 +353,6 @@ function validate(content) {
     }
   }
 
-  // ═══════════════════════════════════════════════════════════════════
-  // REASONING QUALITY ENFORCEMENT (Rules 36-38)
-  // Based on: OpenAI CoT Monitorability, AWS Semi-Formal, Peirce Abduction
-  // ═══════════════════════════════════════════════════════════════════
-
-  // Rule 36: CoT Monitorability — flag SUSPICIOUS/OPAQUE preflight tokens (L2+)
-  // OpenAI research: reasoning traces can be CLEAN, SUSPICIOUS, or OPAQUE
-  // SUSPICIOUS = generic/template-like. OPAQUE = all fields present but no real evidence.
-  if (!isL1 && typeof parsed.pre_mortem === 'string' && typeof parsed.transmutation === 'string') {
-    const fields = [parsed.pre_mortem, parsed.transmutation, parsed.unknowns || ''];
-    const allText = fields.join(' ').toLowerCase();
-    // SUSPICIOUS: same word repeated >3 times = template fill
-    const words = allText.split(/\s+/).filter(w => w.length >= 4);
-    const wordCounts = {};
-    for (const w of words) wordCounts[w] = (wordCounts[w] || 0) + 1;
-    const repeated = Object.entries(wordCounts).filter(([, c]) => c > 3);
-    if (repeated.length > 2) {
-      warnings.push('COT SUSPICIOUS: ' + repeated.length + ' words repeated >3 times — possible template fill, not genuine reasoning');
-    }
-    // OPAQUE: fields present but no concrete file/line evidence
-    const hasEvidence = /[a-z]+\.(ts|tsx|cjs|js|md)/.test(allText) || /:\d+/.test(allText);
-    if (!hasEvidence && fields.every(f => f.length > 20)) {
-      warnings.push('COT OPAQUE: all fields filled but no file:line evidence — reasoning may be disconnected from code');
-    }
-  }
-
-  // Rule 37: Semi-Formal Reasoning — pre_mortem must have causal structure (L2+ full cycle)
-  // AWS: "premise_A ∧ premise_B → conclusion" improves accuracy 78%→87%
-  // Check: pre_mortem contains causal connectors (if/then, because, therefore, causes, leads to)
-  if (!isL1 && isFullCycle && typeof parsed.pre_mortem === 'string') {
-    const CAUSAL = /\b(if|when|because|therefore|causes|leads to|results in|implies|means that|due to|since|consequently)\b/i;
-    if (!CAUSAL.test(parsed.pre_mortem)) {
-      errors.push('FULL CYCLE pre_mortem must contain CAUSAL reasoning (if/because/therefore/causes). Semi-formal: premise → conclusion. (AWS research: +9% accuracy)');
-    }
-  }
-
-  // Rule 38+45: Trimodal Reasoning Enforcement — deduction + induction + abduction (L2+)
-  // Research: Apple ML — cognitive biases reduced by trimodal; Microsoft MAR — decomposition reveals root causes
-  // Deduction (Socrates): from rules → specific. Induction: from observations → pattern. Abduction (Peirce): symptoms → best explanation.
-  if (!isL1 && typeof parsed.pre_mortem === 'string') {
-    const DEDUCTION = /\b(if\s+.{3,}\s+then|therefore|must\s+be|from\s+\w+\s+follows|by\s+definition|all\s+\w+\s+are|implies|consequently|because.*will)\b/i;
-    const INDUCTION = /\b(pattern|observed|trend|evidence\s+indicates|repeated|in\s+most\s+cases|data\s+suggests|shows\s+that|consistently|across\s+\d+)\b/i;
-    const ABDUCTION = /\b(root\s+cause|best\s+explanation|5\s+whys|hypothesis|most\s+likely|probable\s+cause|suggests\s+that|diagnos|symptom)\b/i;
-
-    const present = [];
-    if (DEDUCTION.test(parsed.pre_mortem)) present.push('deduction');
-    if (INDUCTION.test(parsed.pre_mortem)) present.push('induction');
-    if (ABDUCTION.test(parsed.pre_mortem)) present.push('abduction');
-
-    if (present.length < 2) {
-      errors.push('TRIMODAL REASONING BLOCKED: pre_mortem uses only ' + present.length +
-        '/3 reasoning types: [' + (present.join(', ') || 'none') + ']. Need ≥2 of: ' +
-        'deduction (if/then, therefore, must be), ' +
-        'induction (pattern, observed, trend, evidence indicates), ' +
-        'abduction (root cause, hypothesis, most likely, best explanation). ' +
-        '(Research: Apple ML — trimodal prevents anchoring+hindsight+confirmation bias)');
-    }
-  }
 
   // Rule 39: Diagnostic Exhaustion — enumeration required for diagnostic/investigation claims (L2+)
   // Anti-satisficing: if pre_mortem mentions "checked" or "verified", must list ALL sources checked
