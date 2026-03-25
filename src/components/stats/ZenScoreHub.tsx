@@ -5,14 +5,21 @@
  * Displays a 0-100 ZenScore combining mood, habits, focus, and streak data
  */
 
-import { useMemo, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, TrendingUp, TrendingDown, ChevronDown, ChevronUp } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { ParticleBackground } from './ParticleBackground';
-import { EmojiOrIcon } from '@/components/icons';
-import { useCountUp } from '@/hooks/useCountUp';
+import { useMemo, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Sparkles,
+  TrendingUp,
+  TrendingDown,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { ParticleBackground } from "./ParticleBackground";
+import { EmojiOrIcon } from "@/components/icons";
+import { useCountUp } from "@/hooks/useCountUp";
+import { getScoreColor, getScoreLabel, MiniSparkline } from "./ZenScoreUtils";
 
 interface WeeklyDataPoint {
   date: string;
@@ -38,67 +45,9 @@ interface ZenScoreHubProps {
     streak: WeeklyDataPoint[];
   };
   /** Callback when a ring breakdown item is tapped */
-  onRingClick?: (ringId: 'mood' | 'habits' | 'focus') => void;
+  onRingClick?: (ringId: "mood" | "habits" | "focus") => void;
   /** Optional class name */
   className?: string;
-}
-
-// Score thresholds for glow colors
-const getScoreColor = (score: number) => {
-  if (score >= 81) return { hsl: '158 60% 50%', class: 'text-[hsl(var(--mood-good))]', glow: 'hsl(158 60% 50%)' };
-  if (score >= 61) return { hsl: '217 91% 60%', class: 'text-[hsl(var(--chart-focus))]', glow: 'hsl(217 91% 60%)' };
-  if (score >= 41) return { hsl: '45 95% 55%', class: 'text-[hsl(var(--mood-okay))]', glow: 'hsl(45 95% 55%)' };
-  return { hsl: '0 72% 51%', class: 'text-destructive', glow: 'hsl(0 72% 51%)' };
-};
-
-const getScoreLabel = (score: number, t: Record<string, string>) => {
-  if (score >= 81) return t.zenScoreExcellent || 'Excellent!';
-  if (score >= 61) return t.zenScoreGood || 'Good';
-  if (score >= 41) return t.zenScoreOkay || 'Keep going';
-  return t.zenScoreNeedsWork || 'Needs work';
-};
-
-// Mini sparkline for breakdown items - compact 7-point line
-function MiniSparkline({ data, color }: { data: number[]; color: string }) {
-  if (!data || data.length < 2) return null;
-
-  const max = Math.max(...data, 1);
-  const min = Math.min(...data, 0);
-  const range = max - min || 1;
-  const height = 20;
-  const width = 40;
-  const padding = 2;
-
-  const points = data.slice(-7).map((value, i, arr) => {
-    const x = padding + (i / (arr.length - 1)) * (width - padding * 2);
-    const y = height - padding - ((value - min) / range) * (height - padding * 2);
-    return { x, y };
-  });
-
-  const pathD = points
-    .map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`)
-    .join(' ');
-
-  return (
-    <svg width={width} height={height} className="opacity-60 hover:opacity-100 transition-opacity">
-      {/* Line */}
-      <path
-        d={pathD}
-        fill="none"
-        stroke={color}
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      {/* End dot */}
-      <circle
-        cx={points[points.length - 1]?.x || 0}
-        cy={points[points.length - 1]?.y || 0}
-        r="2"
-        fill={color}
-      />
-    </svg>
-  );
 }
 
 export function ZenScoreHub({
@@ -123,12 +72,11 @@ export function ZenScoreHub({
     const streakBonus = Math.min(streakDays / 7, 1) * 15;
 
     // Weighted average
-    const score = (
-      normalizedMood * 0.30 +      // 30% mood
-      habitRate * 0.35 +           // 35% habits
-      focusScore * 0.20 +          // 20% focus
-      streakBonus                   // 15% streak bonus
-    );
+    const score =
+      normalizedMood * 0.3 + // 30% mood
+      habitRate * 0.35 + // 35% habits
+      focusScore * 0.2 + // 20% focus
+      streakBonus; // 15% streak bonus
 
     return Math.round(Math.max(0, Math.min(100, score)));
   }, [moodScore, habitRate, focusScore, streakDays]);
@@ -143,44 +91,44 @@ export function ZenScoreHub({
   // Breakdown items with premium SVG icons and sparklines
   const breakdownItems = [
     {
-      label: t.mood || 'Mood',
+      label: t.mood || "Mood",
       value: Math.round(((moodScore - 1) / 4) * 100),
-      emoji: '😊',
-      iconName: 'heart',
-      color: 'text-[hsl(var(--chart-mood))]',
-      sparkColor: 'hsl(var(--chart-mood))',
-      sparkData: weeklyData?.mood.map(d => d.value) || [],
-      ringId: 'mood' as const,
+      emoji: "😊",
+      iconName: "heart",
+      color: "text-[hsl(var(--chart-mood))]",
+      sparkColor: "hsl(var(--chart-mood))",
+      sparkData: weeklyData?.mood.map((d) => d.value) || [],
+      ringId: "mood" as const,
     },
     {
-      label: t.habits || 'Habits',
+      label: t.habits || "Habits",
       value: Math.round(habitRate),
-      emoji: '🎯',
-      iconName: 'target',
-      color: 'text-[hsl(var(--chart-habit))]',
-      sparkColor: 'hsl(var(--chart-habit))',
-      sparkData: weeklyData?.habits.map(d => d.value) || [],
-      ringId: 'habits' as const,
+      emoji: "🎯",
+      iconName: "target",
+      color: "text-[hsl(var(--chart-habit))]",
+      sparkColor: "hsl(var(--chart-habit))",
+      sparkData: weeklyData?.habits.map((d) => d.value) || [],
+      ringId: "habits" as const,
     },
     {
-      label: t.focus || 'Focus',
+      label: t.focus || "Focus",
       value: Math.round(focusScore),
-      emoji: '🧠',
-      iconName: 'brain',
-      color: 'text-[hsl(var(--chart-focus))]',
-      sparkColor: 'hsl(var(--chart-focus))',
-      sparkData: weeklyData?.focus.map(d => d.value) || [],
-      ringId: 'focus' as const,
+      emoji: "🧠",
+      iconName: "brain",
+      color: "text-[hsl(var(--chart-focus))]",
+      sparkColor: "hsl(var(--chart-focus))",
+      sparkData: weeklyData?.focus.map((d) => d.value) || [],
+      ringId: "focus" as const,
     },
     {
-      label: t.streak || 'Streak',
+      label: t.streak || "Streak",
       value: streakDays,
-      emoji: '🔥',
-      iconName: 'fire',
-      color: 'text-orange-500',
-      sparkColor: '#f97316',
-      sparkData: weeklyData?.streak.map(d => d.value) || [],
-      suffix: 'd',
+      emoji: "🔥",
+      iconName: "fire",
+      color: "text-orange-500",
+      sparkColor: "#f97316",
+      sparkData: weeklyData?.streak.map((d) => d.value) || [],
+      suffix: "d",
       ringId: undefined as undefined,
     },
   ];
@@ -191,52 +139,69 @@ export function ZenScoreHub({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
       className={cn(
-        'relative overflow-hidden rounded-2xl',
-        'bg-gradient-to-br from-card via-card to-card/80',
-        'border border-border/50',
-        'zen-shadow-lg',
-        className
+        "relative overflow-hidden rounded-2xl",
+        "bg-gradient-to-br from-card via-card to-card/80",
+        "border border-border/50",
+        "zen-shadow-lg",
+        className,
       )}
     >
       {/* Particle background */}
       <ParticleBackground
         count={10}
-        color={zenScore >= 61 ? 'primary' : zenScore >= 41 ? 'gold' : 'accent'}
+        color={zenScore >= 61 ? "primary" : zenScore >= 41 ? "gold" : "accent"}
       />
 
       {/* Gradient overlay */}
       <div
         className="absolute inset-0 opacity-20"
         style={{
-          background: `radial-gradient(circle at 50% 30%, ${scoreColor.glow}, transparent 70%)`
+          background: `radial-gradient(circle at 50% 30%, ${scoreColor.glow}, transparent 70%)`,
         }}
       />
 
       {/* Main content — entire card is tappable */}
-      <div className="relative p-6 cursor-pointer" onClick={() => setIsExpanded(!isExpanded)}>
+      <div
+        className="relative p-6 cursor-pointer"
+        role="button"
+        tabIndex={0}
+        aria-expanded={isExpanded}
+        onClick={() => setIsExpanded(!isExpanded)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            setIsExpanded(!isExpanded);
+          }
+        }}
+      >
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <Sparkles className={cn('w-5 h-5', scoreColor.class)} />
+            <Sparkles className={cn("w-5 h-5", scoreColor.class)} />
             <h2 className="text-lg font-bold text-foreground">
-              {t.zenScore || 'Zen Score'}
+              {t.zenScore || "Zen Score"}
             </h2>
           </div>
 
           {/* Weekly change badge */}
           {weeklyChange !== 0 && (
-            <div className={cn(
-              'flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium',
-              weeklyChange > 0
-                ? 'bg-[hsl(var(--mood-good))]/15 text-[hsl(var(--mood-good))]'
-                : 'bg-destructive/15 text-destructive'
-            )}>
+            <div
+              className={cn(
+                "flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium",
+                weeklyChange > 0
+                  ? "bg-[hsl(var(--mood-good))]/15 text-[hsl(var(--mood-good))]"
+                  : "bg-destructive/15 text-destructive",
+              )}
+            >
               {weeklyChange > 0 ? (
                 <TrendingUp className="w-3 h-3 animate-trend-up" />
               ) : (
                 <TrendingDown className="w-3 h-3 animate-trend-down" />
               )}
-              <span>{weeklyChange > 0 ? '+' : ''}{weeklyChange}%</span>
+              <span>
+                {weeklyChange > 0 ? "+" : ""}
+                {weeklyChange}%
+              </span>
             </div>
           )}
         </div>
@@ -245,10 +210,7 @@ export function ZenScoreHub({
         <div className="flex flex-col items-center py-4">
           <div className="relative w-40 h-40 rounded-full overflow-hidden">
             {/* Background ring */}
-            <svg
-              className="w-full h-full -rotate-90"
-              viewBox="0 0 100 100"
-            >
+            <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
               {/* Track */}
               <circle
                 cx="50"
@@ -271,9 +233,9 @@ export function ZenScoreHub({
                 strokeDasharray={circumference}
                 initial={{ strokeDashoffset: circumference }}
                 animate={{ strokeDashoffset }}
-                transition={{ duration: 1.5, ease: 'easeOut' }}
+                transition={{ duration: 1.5, ease: "easeOut" }}
                 style={{
-                  filter: `drop-shadow(0 0 8px ${scoreColor.glow})`
+                  filter: `drop-shadow(0 0 8px ${scoreColor.glow})`,
                 }}
               />
             </svg>
@@ -282,17 +244,20 @@ export function ZenScoreHub({
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <motion.span
                 className={cn(
-                  'text-5xl font-bold tabular-nums',
-                  scoreColor.class
+                  "text-5xl font-bold tabular-nums",
+                  scoreColor.class,
                 )}
                 initial={{ scale: 0.5, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: 0.3, duration: 0.5, type: 'spring' }}
+                transition={{ delay: 0.3, duration: 0.5, type: "spring" }}
               >
                 {animatedScore}
               </motion.span>
               <span className="text-xs text-muted-foreground mt-1">
-                {getScoreLabel(zenScore, t as unknown as Record<string, string>)}
+                {getScoreLabel(
+                  zenScore,
+                  t as unknown as Record<string, string>,
+                )}
               </span>
             </div>
           </div>
@@ -312,7 +277,7 @@ export function ZenScoreHub({
           {isExpanded && (
             <motion.div
               initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
+              animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               transition={{ duration: 0.3 }}
               className="overflow-hidden"
@@ -324,7 +289,11 @@ export function ZenScoreHub({
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.1 }}
-                    className={cn('text-center', item.ringId && 'cursor-pointer active:scale-95 transition-transform')}
+                    className={cn(
+                      "text-center",
+                      item.ringId &&
+                        "cursor-pointer active:scale-95 transition-transform",
+                    )}
                     onClick={(e) => {
                       if (item.ringId) {
                         e.stopPropagation();
@@ -340,14 +309,25 @@ export function ZenScoreHub({
                         animated={false}
                       />
                     </div>
-                    <p className={cn('text-lg font-bold tabular-nums', item.color)}>
-                      {item.value}{item.suffix || '%'}
+                    <p
+                      className={cn(
+                        "text-lg font-bold tabular-nums",
+                        item.color,
+                      )}
+                    >
+                      {item.value}
+                      {item.suffix || "%"}
                     </p>
-                    <p className="text-xs text-muted-foreground">{item.label}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {item.label}
+                    </p>
                     {/* Mini sparkline showing weekly trend */}
                     {item.sparkData.length >= 2 && (
                       <div className="flex justify-center mt-1">
-                        <MiniSparkline data={item.sparkData} color={item.sparkColor} />
+                        <MiniSparkline
+                          data={item.sparkData}
+                          color={item.sparkColor}
+                        />
                       </div>
                     )}
                   </motion.div>

@@ -17,20 +17,12 @@
  */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.6";
+import { getCorsHeaders } from "../_shared/http.ts";
+import { redactUserRef } from "../_shared/redaction.ts";
 
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
-
-const ALLOWED_ORIGINS = [
-  "https://yehor212.github.io",
-  "capacitor://localhost",
-  "http://localhost",
-  "https://localhost",
-  "http://localhost:5173",
-  "http://localhost:8100",
-  "null",
-];
 
 const EMBEDDING_MODEL = "text-embedding-004";
 const EMBEDDING_DIMS = 768;
@@ -57,17 +49,6 @@ function checkRateLimit(userId: string): boolean {
   return true;
 }
 
-const getCorsHeaders = (origin: string | null) => {
-  const effectiveOrigin = origin || "null";
-  const isAllowed = ALLOWED_ORIGINS.includes(effectiveOrigin);
-  return {
-    "Access-Control-Allow-Origin": isAllowed ? effectiveOrigin : ALLOWED_ORIGINS[0],
-    "Access-Control-Allow-Headers":
-      "authorization, x-client-info, apikey, content-type",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-  };
-};
-
 async function generateEmbedding(text: string): Promise<number[]> {
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${EMBEDDING_MODEL}:embedContent?key=${GEMINI_API_KEY}`,
@@ -77,13 +58,13 @@ async function generateEmbedding(text: string): Promise<number[]> {
       body: JSON.stringify({
         content: { parts: [{ text }] },
       }),
-    }
+    },
   );
 
   if (!response.ok) {
     const errText = await response.text();
     throw new Error(
-      `Gemini embedding API error: ${response.status} ${errText}`
+      `Gemini embedding API error: ${response.status} ${errText}`,
     );
   }
 
@@ -91,7 +72,7 @@ async function generateEmbedding(text: string): Promise<number[]> {
   const values = result?.embedding?.values;
   if (!Array.isArray(values) || values.length !== EMBEDDING_DIMS) {
     throw new Error(
-      `Unexpected embedding dimensions: got ${values?.length}, expected ${EMBEDDING_DIMS}`
+      `Unexpected embedding dimensions: got ${values?.length}, expected ${EMBEDDING_DIMS}`,
     );
   }
   return values;
@@ -175,7 +156,7 @@ Deno.serve(async (req) => {
     }
 
     console.log(
-      `[SearchJournal] Found ${data?.length || 0} results for user ${user.id}`
+      `[SearchJournal] Found ${data?.length || 0} results for ${redactUserRef(user.id)}`,
     );
 
     return jsonResponse(200, { results: data || [] });

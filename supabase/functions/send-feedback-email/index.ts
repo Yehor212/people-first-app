@@ -27,6 +27,40 @@ const ADMIN_EMAIL = Deno.env.get("ADMIN_EMAIL") || "zenflowtrack@gmail.com";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 
+// Rate limiting - 10 requests per minute per user
+const RATE_LIMIT = 10;
+const RATE_WINDOW = 60000; // 1 minute in ms
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+
+// Message length limit
+const MAX_MESSAGE_LENGTH = 2000;
+
+function checkRateLimit(userId: string): boolean {
+  const now = Date.now();
+  const userLimit = rateLimitMap.get(userId);
+
+  // Cleanup old entries periodically (simple garbage collection)
+  if (rateLimitMap.size > 1000) {
+    for (const [key, value] of rateLimitMap.entries()) {
+      if (now > value.resetAt) {
+        rateLimitMap.delete(key);
+      }
+    }
+  }
+
+  if (!userLimit || now > userLimit.resetAt) {
+    rateLimitMap.set(userId, { count: 1, resetAt: now + RATE_WINDOW });
+    return true;
+  }
+
+  if (userLimit.count >= RATE_LIMIT) {
+    return false;
+  }
+
+  userLimit.count++;
+  return true;
+}
+
 interface FeedbackPayload {
   category: string;
   message: string;
@@ -77,6 +111,14 @@ Deno.serve(async (req) => {
     return createJsonResponse(origin, 401, { error: "Invalid token" });
   }
 
+  // Rate limiting check
+  if (!checkRateLimit(user.id)) {
+    console.warn("[FeedbackEmail] Rate limit exceeded");
+    return createJsonResponse(origin, 429, {
+      error: "Too many requests. Please wait a minute.",
+    });
+  }
+
   // Check if Resend is configured
   if (!RESEND_API_KEY) {
     console.error("[FeedbackEmail] RESEND_API_KEY not configured");
@@ -91,6 +133,13 @@ Deno.serve(async (req) => {
 
     if (!message) {
       return createJsonResponse(origin, 400, { error: "Message is required" });
+    }
+
+    // Validate message length to prevent abuse
+    if (message.length > MAX_MESSAGE_LENGTH) {
+      return createJsonResponse(origin, 400, {
+        error: `Message too long. Maximum ${MAX_MESSAGE_LENGTH} characters.`,
+      });
     }
 
     // Format category for display

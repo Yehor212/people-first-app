@@ -1,8 +1,8 @@
-import { Achievement, getBadgeGlow } from '@/lib/gamification';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Trophy, Sparkles } from 'lucide-react';
-import { useLanguage } from '@/contexts/LanguageContext';
+import { Achievement, getBadgeGlow } from "@/lib/gamification";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Trophy, Sparkles } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface AchievementToastProps {
   achievement: Achievement;
@@ -12,7 +12,9 @@ export function AchievementToast({ achievement }: AchievementToastProps) {
   const { t } = useLanguage();
 
   return (
-    <Card className={`p-4 bg-gradient-to-r from-[#6bb5a0] to-[#4a9d7c] text-white ${getBadgeGlow(achievement.rarity)} animate-slide-up`}>
+    <Card
+      className={`p-4 bg-gradient-to-r from-primary/70 to-primary text-primary-foreground ${getBadgeGlow(achievement.rarity)} animate-slide-up`}
+    >
       <div className="flex items-center gap-4">
         <div className="relative">
           <div className="text-5xl animate-scale-in">{achievement.icon}</div>
@@ -21,10 +23,14 @@ export function AchievementToast({ achievement }: AchievementToastProps) {
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
             <Trophy className="w-4 h-4" />
-            <span className="font-bold text-sm uppercase tracking-wide">{t.achievementUnlocked || 'Achievement Unlocked!'}</span>
+            <span className="font-bold text-sm uppercase tracking-wide">
+              {t.achievementUnlocked || "Achievement Unlocked!"}
+            </span>
           </div>
           <h3 className="font-bold text-lg mb-1">{achievement.name}</h3>
-          <p className="text-sm text-foreground/80">{achievement.description}</p>
+          <p className="text-sm text-foreground/80">
+            {achievement.description}
+          </p>
           <Badge className="mt-2 bg-foreground/20 text-white border-foreground/30">
             +{achievement.points} XP
           </Badge>

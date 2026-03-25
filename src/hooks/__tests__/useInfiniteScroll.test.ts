@@ -3,9 +3,9 @@
  * Tests pagination, loading states, and Intersection Observer
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { renderHook, act, waitFor } from '@testing-library/react';
-import { useInfiniteScroll } from '../useInfiniteScroll';
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { renderHook, act, waitFor } from "@testing-library/react";
+import { useInfiniteScroll } from "../useInfiniteScroll";
 
 // Mock IntersectionObserver
 class MockIntersectionObserver {
@@ -31,7 +31,7 @@ class MockIntersectionObserver {
 
   // Helper to simulate intersection
   triggerIntersect(isIntersecting: boolean) {
-    const entries = Array.from(this.elements).map(element => ({
+    const entries = Array.from(this.elements).map((element) => ({
       target: element,
       isIntersecting,
       boundingClientRect: {} as DOMRectReadOnly,
@@ -46,26 +46,27 @@ class MockIntersectionObserver {
 
 let mockObserverInstances: MockIntersectionObserver[] = [];
 
-describe('useInfiniteScroll', () => {
+describe("useInfiniteScroll", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockObserverInstances = [];
-    global.IntersectionObserver = MockIntersectionObserver as unknown as typeof IntersectionObserver;
+    global.IntersectionObserver =
+      MockIntersectionObserver as unknown as typeof IntersectionObserver;
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
-  describe('initialization', () => {
-    it('returns initial state', () => {
+  describe("initialization", () => {
+    it("returns initial state", () => {
       const fetchFn = vi.fn(() => Promise.resolve([]));
 
       const { result } = renderHook(() =>
         useInfiniteScroll({
           fetchFn,
           autoLoad: false,
-        })
+        }),
       );
 
       expect(result.current.items).toEqual([]);
@@ -75,7 +76,7 @@ describe('useInfiniteScroll', () => {
       expect(result.current.page).toBe(0);
     });
 
-    it('uses initialData when provided', () => {
+    it("uses initialData when provided", () => {
       const fetchFn = vi.fn(() => Promise.resolve([]));
       const initialData = [{ id: 1 }, { id: 2 }];
 
@@ -84,7 +85,7 @@ describe('useInfiniteScroll', () => {
           fetchFn,
           initialData,
           autoLoad: false,
-        })
+        }),
       );
 
       expect(result.current.items).toEqual(initialData);
@@ -92,8 +93,8 @@ describe('useInfiniteScroll', () => {
     });
   });
 
-  describe('autoLoad', () => {
-    it('loads first page on mount when autoLoad is true', async () => {
+  describe("autoLoad", () => {
+    it("loads first page on mount when autoLoad is true", async () => {
       const mockData = [{ id: 1 }, { id: 2 }];
       const fetchFn = vi.fn(() => Promise.resolve(mockData));
 
@@ -101,7 +102,7 @@ describe('useInfiniteScroll', () => {
         useInfiniteScroll({
           fetchFn,
           autoLoad: true,
-        })
+        }),
       );
 
       await waitFor(() => {
@@ -113,25 +114,23 @@ describe('useInfiniteScroll', () => {
       });
     });
 
-    it('does not load on mount when autoLoad is false', () => {
+    it("does not load on mount when autoLoad is false", () => {
       const fetchFn = vi.fn(() => Promise.resolve([]));
 
       renderHook(() =>
         useInfiniteScroll({
           fetchFn,
           autoLoad: false,
-        })
+        }),
       );
 
       expect(fetchFn).not.toHaveBeenCalled();
     });
 
-    it('defaults autoLoad to true', async () => {
+    it("defaults autoLoad to true", async () => {
       const fetchFn = vi.fn(() => Promise.resolve([]));
 
-      renderHook(() =>
-        useInfiniteScroll({ fetchFn })
-      );
+      renderHook(() => useInfiniteScroll({ fetchFn }));
 
       await waitFor(() => {
         expect(fetchFn).toHaveBeenCalled();
@@ -139,11 +138,12 @@ describe('useInfiniteScroll', () => {
     });
   });
 
-  describe('loadMore', () => {
-    it('fetches next page of data', async () => {
+  describe("loadMore", () => {
+    it("fetches next page of data", async () => {
       const page1 = [{ id: 1 }, { id: 2 }];
       const page2 = [{ id: 3 }, { id: 4 }];
-      const fetchFn = vi.fn()
+      const fetchFn = vi
+        .fn()
         .mockResolvedValueOnce(page1)
         .mockResolvedValueOnce(page2);
 
@@ -152,7 +152,7 @@ describe('useInfiniteScroll', () => {
           fetchFn,
           autoLoad: false,
           pageSize: 2,
-        })
+        }),
       );
 
       // Load first page
@@ -172,17 +172,20 @@ describe('useInfiniteScroll', () => {
       expect(result.current.page).toBe(2);
     });
 
-    it('sets loading state during fetch', async () => {
+    it("sets loading state during fetch", async () => {
       let resolvePromise: (value: any[]) => void;
-      const fetchFn = vi.fn(() => new Promise<any[]>(resolve => {
-        resolvePromise = resolve;
-      }));
+      const fetchFn = vi.fn(
+        () =>
+          new Promise<any[]>((resolve) => {
+            resolvePromise = resolve;
+          }),
+      );
 
       const { result } = renderHook(() =>
         useInfiniteScroll({
           fetchFn,
           autoLoad: false,
-        })
+        }),
       );
 
       expect(result.current.loading).toBe(false);
@@ -206,20 +209,24 @@ describe('useInfiniteScroll', () => {
       expect(result.current.loading).toBe(false);
     });
 
-    it('prevents concurrent loads', async () => {
+    it("prevents concurrent loads", async () => {
+      vi.useFakeTimers();
       let resolveCount = 0;
-      const fetchFn = vi.fn(() => new Promise<any[]>(resolve => {
-        setTimeout(() => {
-          resolveCount++;
-          resolve([{ id: resolveCount }]);
-        }, 100);
-      }));
+      const fetchFn = vi.fn(
+        () =>
+          new Promise<any[]>((resolve) => {
+            const id = ++resolveCount;
+            globalThis.setTimeout(() => {
+              resolve([{ id }]);
+            }, 100);
+          }),
+      );
 
       const { result } = renderHook(() =>
         useInfiniteScroll({
           fetchFn,
           autoLoad: false,
-        })
+        }),
       );
 
       // Call loadMore multiple times quickly
@@ -227,14 +234,19 @@ describe('useInfiniteScroll', () => {
         void result.current.loadMore();
         void result.current.loadMore();
         void result.current.loadMore();
-        await new Promise(r => setTimeout(r, 150));
+      });
+
+      // Advance timers to resolve the fetch
+      await act(async () => {
+        vi.advanceTimersByTime(150);
       });
 
       // Should only have called fetch once
       expect(fetchFn).toHaveBeenCalledTimes(1);
+      vi.useRealTimers();
     });
 
-    it('does not load when hasMore is false', async () => {
+    it("does not load when hasMore is false", async () => {
       const fetchFn = vi.fn(() => Promise.resolve([])); // Empty array = no more items
 
       const { result } = renderHook(() =>
@@ -242,7 +254,7 @@ describe('useInfiniteScroll', () => {
           fetchFn,
           autoLoad: false,
           pageSize: 20,
-        })
+        }),
       );
 
       // First load returns empty, hasMore should become false
@@ -262,18 +274,24 @@ describe('useInfiniteScroll', () => {
     });
   });
 
-  describe('hasMore', () => {
-    it('is true when fetch returns pageSize items', async () => {
-      const fetchFn = vi.fn(() => Promise.resolve([
-        { id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }, { id: 5 },
-      ]));
+  describe("hasMore", () => {
+    it("is true when fetch returns pageSize items", async () => {
+      const fetchFn = vi.fn(() =>
+        Promise.resolve([
+          { id: 1 },
+          { id: 2 },
+          { id: 3 },
+          { id: 4 },
+          { id: 5 },
+        ]),
+      );
 
       const { result } = renderHook(() =>
         useInfiniteScroll({
           fetchFn,
           autoLoad: false,
           pageSize: 5,
-        })
+        }),
       );
 
       await act(async () => {
@@ -283,7 +301,7 @@ describe('useInfiniteScroll', () => {
       expect(result.current.hasMore).toBe(true);
     });
 
-    it('is false when fetch returns fewer than pageSize items', async () => {
+    it("is false when fetch returns fewer than pageSize items", async () => {
       const fetchFn = vi.fn(() => Promise.resolve([{ id: 1 }, { id: 2 }]));
 
       const { result } = renderHook(() =>
@@ -291,7 +309,7 @@ describe('useInfiniteScroll', () => {
           fetchFn,
           autoLoad: false,
           pageSize: 5,
-        })
+        }),
       );
 
       await act(async () => {
@@ -302,16 +320,16 @@ describe('useInfiniteScroll', () => {
     });
   });
 
-  describe('error handling', () => {
-    it('captures fetch errors', async () => {
-      const error = new Error('Network error');
+  describe("error handling", () => {
+    it("captures fetch errors", async () => {
+      const error = new Error("Network error");
       const fetchFn = vi.fn(() => Promise.reject(error));
 
       const { result } = renderHook(() =>
         useInfiniteScroll({
           fetchFn,
           autoLoad: false,
-        })
+        }),
       );
 
       await act(async () => {
@@ -322,14 +340,14 @@ describe('useInfiniteScroll', () => {
       expect(result.current.loading).toBe(false);
     });
 
-    it('wraps non-Error rejects in Error', async () => {
-      const fetchFn = vi.fn(() => Promise.reject(new Error('string error')));
+    it("wraps non-Error rejects in Error", async () => {
+      const fetchFn = vi.fn(() => Promise.reject(new Error("string error")));
 
       const { result } = renderHook(() =>
         useInfiniteScroll({
           fetchFn,
           autoLoad: false,
-        })
+        }),
       );
 
       await act(async () => {
@@ -337,19 +355,20 @@ describe('useInfiniteScroll', () => {
       });
 
       expect(result.current.error).toBeInstanceOf(Error);
-      expect(result.current.error?.message).toBe('string error');
+      expect(result.current.error?.message).toBe("string error");
     });
 
-    it('clears error on successful load', async () => {
-      const fetchFn = vi.fn()
-        .mockRejectedValueOnce(new Error('Error'))
+    it("clears error on successful load", async () => {
+      const fetchFn = vi
+        .fn()
+        .mockRejectedValueOnce(new Error("Error"))
         .mockResolvedValueOnce([{ id: 1 }]);
 
       const { result } = renderHook(() =>
         useInfiniteScroll({
           fetchFn,
           autoLoad: false,
-        })
+        }),
       );
 
       // First call fails
@@ -368,15 +387,15 @@ describe('useInfiniteScroll', () => {
     });
   });
 
-  describe('reset', () => {
-    it('resets all state', async () => {
+  describe("reset", () => {
+    it("resets all state", async () => {
       const fetchFn = vi.fn(() => Promise.resolve([{ id: 1 }]));
 
       const { result } = renderHook(() =>
         useInfiniteScroll({
           fetchFn,
           autoLoad: false,
-        })
+        }),
       );
 
       // Load some data
@@ -399,18 +418,18 @@ describe('useInfiniteScroll', () => {
     });
   });
 
-  describe('sentinelRef', () => {
-    it('sets up IntersectionObserver when attached', () => {
+  describe("sentinelRef", () => {
+    it("sets up IntersectionObserver when attached", () => {
       const fetchFn = vi.fn(() => Promise.resolve([]));
 
       const { result } = renderHook(() =>
         useInfiniteScroll({
           fetchFn,
           autoLoad: false,
-        })
+        }),
       );
 
-      const element = document.createElement('div');
+      const element = document.createElement("div");
 
       act(() => {
         result.current.sentinelRef(element);
@@ -420,25 +439,25 @@ describe('useInfiniteScroll', () => {
       expect(mockObserverInstances[0].elements.has(element)).toBe(true);
     });
 
-    it('disconnects previous observer when ref changes', () => {
+    it("disconnects previous observer when ref changes", () => {
       const fetchFn = vi.fn(() => Promise.resolve([]));
 
       const { result } = renderHook(() =>
         useInfiniteScroll({
           fetchFn,
           autoLoad: false,
-        })
+        }),
       );
 
-      const element1 = document.createElement('div');
-      const element2 = document.createElement('div');
+      const element1 = document.createElement("div");
+      const element2 = document.createElement("div");
 
       act(() => {
         result.current.sentinelRef(element1);
       });
 
       const firstObserver = mockObserverInstances[0];
-      const disconnectSpy = vi.spyOn(firstObserver, 'disconnect');
+      const disconnectSpy = vi.spyOn(firstObserver, "disconnect");
 
       act(() => {
         result.current.sentinelRef(element2);
@@ -447,17 +466,17 @@ describe('useInfiniteScroll', () => {
       expect(disconnectSpy).toHaveBeenCalled();
     });
 
-    it('triggers loadMore when sentinel intersects', async () => {
+    it("triggers loadMore when sentinel intersects", async () => {
       const fetchFn = vi.fn(() => Promise.resolve([{ id: 1 }]));
 
       const { result } = renderHook(() =>
         useInfiniteScroll({
           fetchFn,
           autoLoad: false,
-        })
+        }),
       );
 
-      const element = document.createElement('div');
+      const element = document.createElement("div");
 
       act(() => {
         result.current.sentinelRef(element);
@@ -472,17 +491,17 @@ describe('useInfiniteScroll', () => {
       expect(fetchFn).toHaveBeenCalled();
     });
 
-    it('does not trigger loadMore when not intersecting', () => {
+    it("does not trigger loadMore when not intersecting", () => {
       const fetchFn = vi.fn(() => Promise.resolve([]));
 
       const { result } = renderHook(() =>
         useInfiniteScroll({
           fetchFn,
           autoLoad: false,
-        })
+        }),
       );
 
-      const element = document.createElement('div');
+      const element = document.createElement("div");
 
       act(() => {
         result.current.sentinelRef(element);
@@ -495,7 +514,7 @@ describe('useInfiniteScroll', () => {
       expect(fetchFn).not.toHaveBeenCalled();
     });
 
-    it('does not observe when hasMore is false', async () => {
+    it("does not observe when hasMore is false", async () => {
       const fetchFn = vi.fn(() => Promise.resolve([])); // Empty = no more
 
       const { result } = renderHook(() =>
@@ -503,7 +522,7 @@ describe('useInfiniteScroll', () => {
           fetchFn,
           autoLoad: false,
           pageSize: 20,
-        })
+        }),
       );
 
       // Load until hasMore is false
@@ -514,7 +533,7 @@ describe('useInfiniteScroll', () => {
       expect(result.current.hasMore).toBe(false);
       mockObserverInstances = [];
 
-      const element = document.createElement('div');
+      const element = document.createElement("div");
 
       act(() => {
         result.current.sentinelRef(element);
@@ -525,24 +544,24 @@ describe('useInfiniteScroll', () => {
     });
   });
 
-  describe('cleanup', () => {
-    it('disconnects observer on unmount', () => {
+  describe("cleanup", () => {
+    it("disconnects observer on unmount", () => {
       const fetchFn = vi.fn(() => Promise.resolve([]));
 
       const { result, unmount } = renderHook(() =>
         useInfiniteScroll({
           fetchFn,
           autoLoad: false,
-        })
+        }),
       );
 
-      const element = document.createElement('div');
+      const element = document.createElement("div");
 
       act(() => {
         result.current.sentinelRef(element);
       });
 
-      const disconnectSpy = vi.spyOn(mockObserverInstances[0], 'disconnect');
+      const disconnectSpy = vi.spyOn(mockObserverInstances[0], "disconnect");
 
       unmount();
 
@@ -550,8 +569,8 @@ describe('useInfiniteScroll', () => {
     });
   });
 
-  describe('pageSize', () => {
-    it('defaults to 20', async () => {
+  describe("pageSize", () => {
+    it("defaults to 20", async () => {
       // Return 20 items to keep hasMore true
       const fetchFn = vi.fn(() => Promise.resolve(Array(20).fill({ id: 1 })));
 
@@ -559,7 +578,7 @@ describe('useInfiniteScroll', () => {
         useInfiniteScroll({
           fetchFn,
           autoLoad: false,
-        })
+        }),
       );
 
       await act(async () => {

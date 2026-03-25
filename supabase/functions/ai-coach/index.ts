@@ -11,25 +11,13 @@
  */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.6";
+import { getCorsHeaders } from "../_shared/http.ts";
+import { redactUserRef } from "../_shared/redaction.ts";
 
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
-
-// P0 Fix: Check environment for CORS
 const IS_PRODUCTION = Deno.env.get("ENVIRONMENT") === "production";
-
-// Allowed origins for CORS
-// P0 Fix: Allow all Capacitor and common development origins
-const ALLOWED_ORIGINS = [
-  "https://yehor212.github.io",
-  "capacitor://localhost",       // Capacitor iOS
-  "http://localhost",            // Capacitor Android WebView
-  "https://localhost",           // Capacitor Android HTTPS
-  "http://localhost:5173",       // Vite dev server
-  "http://localhost:8100",       // Ionic dev server
-  "null",                        // Some Android WebViews send null origin
-];
 
 // P0 Fix #5: Rate limiting - 10 requests per minute per user
 const RATE_LIMIT = 10;
@@ -65,36 +53,22 @@ function checkRateLimit(userId: string): boolean {
   return true;
 }
 
-const getCorsHeaders = (origin: string | null) => {
-  // P0 Fix: Better origin handling for Android/iOS apps
-  const effectiveOrigin = origin || "null";
-  const isAllowed = ALLOWED_ORIGINS.includes(effectiveOrigin);
-
-  // Log origin for debugging (only in non-production)
-  if (!IS_PRODUCTION) {
-    console.log(`[AICoach] Origin: ${effectiveOrigin}, Allowed: ${isAllowed}`);
-  }
-
-  // If origin is allowed, echo it back. Otherwise fall back to primary origin.
-  const allowedOrigin = isAllowed ? effectiveOrigin : ALLOWED_ORIGINS[0];
-
-  return {
-    "Access-Control-Allow-Origin": allowedOrigin,
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-  };
-};
-
 // Types
 interface CoachRequest {
   message: string;
   context: UserContext;
-  language: 'ru' | 'en' | 'uk' | 'es' | 'de' | 'fr';
+  language: "ru" | "en" | "uk" | "es" | "de" | "fr";
   trigger: CoachTrigger;
-  conversationHistory?: Array<{ role: 'user' | 'coach'; content: string }>;
+  conversationHistory?: Array<{ role: "user" | "coach"; content: string }>;
 }
 
-type CoachTrigger = 'onboarding' | 'daily_checkin' | 'low_mood' | 'streak_broken' | 'habit_skip' | 'manual';
+type CoachTrigger =
+  | "onboarding"
+  | "daily_checkin"
+  | "low_mood"
+  | "streak_broken"
+  | "habit_skip"
+  | "manual";
 
 interface UserContext {
   recentMoods?: Array<{ mood: string; emotion?: string; date: string }>;
@@ -169,6 +143,36 @@ Benutzerkontext wird bereitgestellt. Passe deine Antwort an.`,
 - Rappelle-toi: l'utilisateur peut avoir un TDAH, sois précis
 
 Le contexte de l'utilisateur sera fourni. Adapte ta réponse.`,
+
+  ja: `あなたはZenFlowアプリのプロフェッショナルコーチです。スタイル:
+- 構造的でサポーティブ
+- 力強いオープンクエスチョンを投げかける
+- 答えを与えるのではなく、振り返りを助ける
+- 簡潔に：最大2-3文
+- 絵文字は控えめに（1メッセージに1-2個）
+- ユーザーはADHDの可能性あり、具体的に
+
+ユーザーコンテキストが提供されます。回答を適応させてください。`,
+
+  ar: `أنت مدرب محترف لتطبيق ZenFlow. أسلوبك:
+- منظم وداعم
+- اطرح أسئلة مفتوحة قوية
+- ساعد على التأمل بدلاً من تقديم إجابات جاهزة
+- الإيجاز: حد أقصى 2-3 جمل
+- استخدم الرموز التعبيرية باعتدال (1-2 لكل رسالة)
+- تذكر: قد يعاني المستخدم من ADHD، كن محدداً
+
+سيتم توفير سياق المستخدم. قم بتكييف إجابتك.`,
+
+  he: `אתה מאמן מקצועי של אפליקציית ZenFlow. הסגנון שלך:
+- מובנה ותומך
+- שאל שאלות פתוחות חזקות
+- עזור לרפלקציה במקום לתת תשובות מוכנות
+- תמציתיות: מקסימום 2-3 משפטים
+- השתמש באימוג'י במתינות (1-2 להודעה)
+- זכור: למשתמש עשוי להיות ADHD, היה ספציפי
+
+הקשר המשתמש יסופק. התאם את התשובה שלך.`,
 };
 
 // Trigger-specific prompts
@@ -180,6 +184,9 @@ const TRIGGER_PROMPTS: Record<CoachTrigger, Record<string, string>> = {
     es: "El usuario acaba de registrar un estado de ánimo bajo. Muestra empatía y pregunta suavemente qué pudo haber influido.",
     de: "Der Nutzer hat gerade eine schlechte Stimmung protokolliert. Zeige Empathie und frage sanft, was den Zustand beeinflusst haben könnte.",
     fr: "L'utilisateur vient d'enregistrer une humeur basse. Montre de l'empathie et demande doucement ce qui a pu influencer son état.",
+    ja: "ユーザーが低い気分を記録しました。共感を示し、何が影響したか優しく聞いてください。アプリの具体的なテクニックを1つ提案してください。",
+    ar: "سجل المستخدم مزاجاً منخفضاً. أظهر التعاطف واسأل بلطف عما قد أثر على حالته. اقترح تقنية واحدة محددة من التطبيق.",
+    he: "המשתמש רשם מצב רוח נמוך. הפגן אמפתיה ושאל בעדינות מה עשוי להשפיע. הצע טכניקה אחת ספציפית מהאפליקציה.",
   },
   streak_broken: {
     ru: "Пользователь вернулся после {days} дней отсутствия и потерял стрик. Поддержи без осуждения. Помоги начать заново с маленького шага.",
@@ -188,6 +195,9 @@ const TRIGGER_PROMPTS: Record<CoachTrigger, Record<string, string>> = {
     es: "El usuario regresó después de {days} días y perdió su racha. Apoya sin juzgar.",
     de: "Der Nutzer kehrte nach {days} Tagen zurück und hat seinen Streak verloren. Unterstütze ohne zu urteilen.",
     fr: "L'utilisateur est revenu après {days} jours d'absence et a perdu sa série. Soutiens sans juger.",
+    ja: "ユーザーが{days}日ぶりに戻り、ストリークを失いました。判断せずにサポートし、小さな一歩から再開を手伝ってください。",
+    ar: "عاد المستخدم بعد {days} أيام وفقد سلسلته. ادعمه بدون حكم. ساعده على البدء من جديد بخطوة صغيرة.",
+    he: "המשתמש חזר אחרי {days} ימים ואיבד את הרצף. תמוך ללא שיפוטיות. עזור להתחיל מחדש עם צעד קטן.",
   },
   daily_checkin: {
     ru: "Это ежедневный чек-ин. Спроси кратко о планах на сегодня или о чём-то конкретном из контекста. Максимум 1 вопрос.",
@@ -196,6 +206,9 @@ const TRIGGER_PROMPTS: Record<CoachTrigger, Record<string, string>> = {
     es: "Este es un check-in diario. Pregunta brevemente sobre los planes de hoy.",
     de: "Das ist ein täglicher Check-in. Frage kurz nach den heutigen Plänen.",
     fr: "C'est un check-in quotidien. Demande brièvement les plans d'aujourd'hui.",
+    ja: "これはデイリーチェックインです。今日の予定について簡潔に聞いてください。質問は最大1つ。",
+    ar: "هذا فحص يومي. اسأل باختصار عن خطط اليوم. سؤال واحد كحد أقصى.",
+    he: "זהו צ'ק-אין יומי. שאל בקצרה על התוכניות להיום. מקסימום שאלה אחת.",
   },
   habit_skip: {
     ru: "Пользователь пропустил привычку. Мягко спроси что помешало и предложи уменьшить до микро-версии (1 минута вместо 10).",
@@ -204,6 +217,9 @@ const TRIGGER_PROMPTS: Record<CoachTrigger, Record<string, string>> = {
     es: "El usuario se saltó un hábito. Pregunta suavemente qué se interpuso.",
     de: "Der Nutzer hat eine Gewohnheit ausgelassen. Frage sanft, was im Weg stand.",
     fr: "L'utilisateur a sauté une habitude. Demande doucement ce qui s'est mis en travers.",
+    ja: "ユーザーが習慣をスキップしました。何が邪魔したか優しく聞き、マイクロ版への縮小を提案してください。",
+    ar: "تخطى المستخدم عادة. اسأل بلطف ما الذي منعه واقترح تقليصها إلى نسخة مصغرة.",
+    he: "המשתמש דילג על הרגל. שאל בעדינות מה הפריע והצע לצמצם לגרסה מיקרו.",
   },
   onboarding: {
     ru: "Это онбординг. Представься кратко как AI-коуч ZenFlow. Спроси одну вещь для персонализации.",
@@ -212,6 +228,9 @@ const TRIGGER_PROMPTS: Record<CoachTrigger, Record<string, string>> = {
     es: "Esto es onboarding. Preséntate brevemente como coach de IA de ZenFlow.",
     de: "Das ist das Onboarding. Stelle dich kurz als ZenFlow AI-Coach vor.",
     fr: "C'est l'onboarding. Présente-toi brièvement comme coach IA de ZenFlow.",
+    ja: "これはオンボーディングです。ZenFlow AIコーチとして簡潔に自己紹介し、パーソナライズのために1つ質問してください。",
+    ar: "هذا هو الإعداد الأولي. قدم نفسك باختصار كمدرب ذكاء اصطناعي لـ ZenFlow. اسأل شيئاً واحداً للتخصيص.",
+    he: "זהו אונבורדינג. הצג את עצמך בקצרה כמאמן AI של ZenFlow. שאל דבר אחד להתאמה אישית.",
   },
   manual: {
     ru: "Пользователь сам открыл чат. Отвечай на его запрос, используя контекст его данных.",
@@ -220,6 +239,9 @@ const TRIGGER_PROMPTS: Record<CoachTrigger, Record<string, string>> = {
     es: "El usuario abrió el chat manualmente. Responde a su solicitud.",
     de: "Der Nutzer hat den Chat manuell geöffnet. Antworte auf seine Anfrage.",
     fr: "L'utilisateur a ouvert le chat manuellement. Réponds à sa demande.",
+    ja: "ユーザーが手動でチャットを開きました。データコンテキストを使用してリクエストに応答してください。",
+    ar: "فتح المستخدم الدردشة يدوياً. استجب لطلبه باستخدام سياق بياناته.",
+    he: "המשתמש פתח את הצ'אט ידנית. הגב לבקשתו תוך שימוש בהקשר הנתונים שלו.",
   },
 };
 
@@ -255,7 +277,10 @@ Deno.serve(async (req) => {
     global: { headers: { Authorization: `Bearer ${token}` } },
   });
 
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
   if (authError || !user) {
     console.warn("[AICoach] Invalid token:", authError?.message);
     return jsonResponse(401, { error: "Invalid token" });
@@ -263,8 +288,10 @@ Deno.serve(async (req) => {
 
   // P0 Fix #5: Rate limiting check
   if (!checkRateLimit(user.id)) {
-    console.warn(`[AICoach] Rate limit exceeded for user: ${user.id}`);
-    return jsonResponse(429, { error: "Too many requests. Please wait a minute." });
+    console.warn(`[AICoach] Rate limit exceeded for ${redactUserRef(user.id)}`);
+    return jsonResponse(429, {
+      error: "Too many requests. Please wait a minute.",
+    });
   }
 
   // Check if Gemini is configured
@@ -275,7 +302,13 @@ Deno.serve(async (req) => {
 
   try {
     const body: CoachRequest = await req.json();
-    const { message, context, language, trigger, conversationHistory = [] } = body;
+    const {
+      message,
+      context,
+      language,
+      trigger,
+      conversationHistory = [],
+    } = body;
 
     if (!message) {
       return jsonResponse(400, { error: "Message is required" });
@@ -283,13 +316,18 @@ Deno.serve(async (req) => {
 
     // P0 Fix: Validate message length to prevent abuse
     if (message.length > MAX_MESSAGE_LENGTH) {
-      return jsonResponse(400, { error: `Message too long. Maximum ${MAX_MESSAGE_LENGTH} characters.` });
+      return jsonResponse(400, {
+        error: `Message too long. Maximum ${MAX_MESSAGE_LENGTH} characters.`,
+      });
     }
 
     // Build prompts
     const systemPrompt = SYSTEM_PROMPTS[language] || SYSTEM_PROMPTS.en;
-    const triggerPrompt = (TRIGGER_PROMPTS[trigger]?.[language] || TRIGGER_PROMPTS[trigger]?.en || "")
-      .replace("{days}", String(context.daysAway || 0));
+    const triggerPrompt = (
+      TRIGGER_PROMPTS[trigger]?.[language] ||
+      TRIGGER_PROMPTS[trigger]?.en ||
+      ""
+    ).replace("{days}", String(context.daysAway || 0));
 
     // Format context
     const contextString = formatUserContext(context, language);
@@ -298,7 +336,11 @@ Deno.serve(async (req) => {
     const contents = [
       {
         role: "user",
-        parts: [{ text: `${systemPrompt}\n\n${triggerPrompt}\n\nКонтекст пользователя:\n${contextString}` }],
+        parts: [
+          {
+            text: `${systemPrompt}\n\n${triggerPrompt}\n\nКонтекст пользователя:\n${contextString}`,
+          },
+        ],
       },
       {
         role: "model",
@@ -327,13 +369,25 @@ Deno.serve(async (req) => {
             topP: 0.9,
           },
           safetySettings: [
-            { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
-            { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
-            { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
-            { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
+            {
+              category: "HARM_CATEGORY_HARASSMENT",
+              threshold: "BLOCK_MEDIUM_AND_ABOVE",
+            },
+            {
+              category: "HARM_CATEGORY_HATE_SPEECH",
+              threshold: "BLOCK_MEDIUM_AND_ABOVE",
+            },
+            {
+              category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+              threshold: "BLOCK_MEDIUM_AND_ABOVE",
+            },
+            {
+              category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+              threshold: "BLOCK_MEDIUM_AND_ABOVE",
+            },
           ],
         }),
-      }
+      },
     );
 
     if (!geminiResponse.ok) {
@@ -343,7 +397,8 @@ Deno.serve(async (req) => {
     }
 
     const result = await geminiResponse.json();
-    const coachMessage = result.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    const coachMessage =
+      result.candidates?.[0]?.content?.parts?.[0]?.text || "";
 
     if (!coachMessage) {
       console.error("[AICoach] Empty response from Gemini");
@@ -353,47 +408,140 @@ Deno.serve(async (req) => {
     console.log(`[AICoach] Response generated for trigger: ${trigger}`);
 
     return jsonResponse(200, { message: coachMessage });
-
   } catch (error) {
     console.error("[AICoach] Error:", error);
     // P0 Fix: Don't leak implementation details in production
     return jsonResponse(500, {
       error: "Internal error",
       // Only include details in non-production for debugging
-      ...(IS_PRODUCTION ? {} : { details: error instanceof Error ? error.message : "Unknown error" }),
+      ...(IS_PRODUCTION
+        ? {}
+        : {
+            details: error instanceof Error ? error.message : "Unknown error",
+          }),
     });
   }
 });
 
+// Context labels for all 8 supported languages
+const CONTEXT_LABELS: Record<
+  string,
+  {
+    weekMoods: string;
+    habits: string;
+    streak: string;
+    goals: string;
+    stress: string;
+    noContext: string;
+  }
+> = {
+  ru: {
+    weekMoods: "Настроения за неделю",
+    habits: "Привычки",
+    streak: "Текущий стрик",
+    goals: "Цели",
+    stress: "Способ справляться со стрессом",
+    noContext: "Контекст не предоставлен",
+  },
+  uk: {
+    weekMoods: "Настрої за тиждень",
+    habits: "Звички",
+    streak: "Поточний стрік",
+    goals: "Цілі",
+    stress: "Спосіб справлятися зі стресом",
+    noContext: "Контекст не надано",
+  },
+  en: {
+    weekMoods: "Week moods",
+    habits: "Habits",
+    streak: "Current streak",
+    goals: "Goals",
+    stress: "Stress management",
+    noContext: "No context provided",
+  },
+  es: {
+    weekMoods: "Estados de ánimo semanales",
+    habits: "Hábitos",
+    streak: "Racha actual",
+    goals: "Metas",
+    stress: "Gestión del estrés",
+    noContext: "Sin contexto proporcionado",
+  },
+  de: {
+    weekMoods: "Wochenstimmungen",
+    habits: "Gewohnheiten",
+    streak: "Aktueller Streak",
+    goals: "Ziele",
+    stress: "Stressbewältigung",
+    noContext: "Kein Kontext bereitgestellt",
+  },
+  fr: {
+    weekMoods: "Humeurs de la semaine",
+    habits: "Habitudes",
+    streak: "Série actuelle",
+    goals: "Objectifs",
+    stress: "Gestion du stress",
+    noContext: "Aucun contexte fourni",
+  },
+  ja: {
+    weekMoods: "週の気分",
+    habits: "習慣",
+    streak: "現在のストリーク",
+    goals: "目標",
+    stress: "ストレス管理",
+    noContext: "コンテキストなし",
+  },
+  ar: {
+    weekMoods: "مزاج الأسبوع",
+    habits: "العادات",
+    streak: "السلسلة الحالية",
+    goals: "الأهداف",
+    stress: "إدارة التوتر",
+    noContext: "لم يتم توفير سياق",
+  },
+  he: {
+    weekMoods: "מצבי רוח שבועיים",
+    habits: "הרגלים",
+    streak: "רצף נוכחי",
+    goals: "מטרות",
+    stress: "ניהול לחץ",
+    noContext: "לא סופק הקשר",
+  },
+};
+
 function formatUserContext(context: UserContext, lang: string): string {
+  const labels = CONTEXT_LABELS[lang] || CONTEXT_LABELS.en;
   const lines: string[] = [];
-  const isRu = lang === "ru" || lang === "uk";
 
   if (context.recentMoods && context.recentMoods.length > 0) {
-    const moodSummary = context.recentMoods.slice(0, 7).map(m =>
-      `${m.date}: ${m.mood}${m.emotion ? ` (${m.emotion})` : ""}`
-    ).join(", ");
-    lines.push(isRu ? `Настроения за неделю: ${moodSummary}` : `Week moods: ${moodSummary}`);
+    const moodSummary = context.recentMoods
+      .slice(0, 7)
+      .map((m) => `${m.date}: ${m.mood}${m.emotion ? ` (${m.emotion})` : ""}`)
+      .join(", ");
+    lines.push(`${labels.weekMoods}: ${moodSummary}`);
   }
 
   if (context.habits && context.habits.length > 0) {
-    const habitsSummary = context.habits.map(h =>
-      `${h.name} (${h.completedToday ? "✓" : "○"}, streak: ${h.streak})`
-    ).join(", ");
-    lines.push(isRu ? `Привычки: ${habitsSummary}` : `Habits: ${habitsSummary}`);
+    const habitsSummary = context.habits
+      .map(
+        (h) =>
+          `${h.name} (${h.completedToday ? "✓" : "○"}, streak: ${h.streak})`,
+      )
+      .join(", ");
+    lines.push(`${labels.habits}: ${habitsSummary}`);
   }
 
   if (context.currentStreak !== undefined) {
-    lines.push(isRu ? `Текущий стрик: ${context.currentStreak} дней` : `Current streak: ${context.currentStreak} days`);
+    lines.push(`${labels.streak}: ${context.currentStreak}`);
   }
 
   if (context.goals && context.goals.length > 0) {
-    lines.push(isRu ? `Цели: ${context.goals.join(", ")}` : `Goals: ${context.goals.join(", ")}`);
+    lines.push(`${labels.goals}: ${context.goals.join(", ")}`);
   }
 
   if (context.stressManagement) {
-    lines.push(isRu ? `Способ справляться со стрессом: ${context.stressManagement}` : `Stress management: ${context.stressManagement}`);
+    lines.push(`${labels.stress}: ${context.stressManagement}`);
   }
 
-  return lines.length > 0 ? lines.join("\n") : (isRu ? "Контекст не предоставлен" : "No context provided");
+  return lines.length > 0 ? lines.join("\n") : labels.noContext;
 }

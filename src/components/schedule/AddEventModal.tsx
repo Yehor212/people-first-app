@@ -1,15 +1,21 @@
-import { useState, useCallback } from 'react';
-import { motion } from 'framer-motion';
-import { X, Check, Sparkles } from 'lucide-react';
-import { ScheduleEvent } from '@/types';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { cn } from '@/lib/utils';
-import { zenTap } from '@/lib/animationUtils';
-import { parseLocalDate, getToday, formatDate } from '@/lib/utils';
-import { safeParseInt } from '@/lib/validation';
-import { useModalA11y } from '@/hooks/useModalA11y';
-import { ParticleBackground } from '@/components/stats';
-import { EVENT_PRESETS, getEventColor, getEventGradient, HOURS } from './constants';
+import { useState, useCallback } from "react";
+import { motion } from "framer-motion";
+import { X, Check, Sparkles } from "lucide-react";
+import { ScheduleEvent } from "@/types";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { cn } from "@/lib/utils";
+import { zenTap } from "@/lib/animationUtils";
+import { parseLocalDate, getToday, formatDate } from "@/lib/utils";
+import { safeParseInt } from "@/lib/validation";
+import { useModalA11y } from "@/hooks/useModalA11y";
+import { useBackHandler } from "@/hooks/useBackHandler";
+import { ParticleBackground } from "@/components/stats";
+import {
+  EVENT_PRESETS,
+  getEventColor,
+  getEventGradient,
+  HOURS,
+} from "./constants";
 
 // Premium Add Event Modal
 export function AddEventModal({
@@ -21,16 +27,22 @@ export function AddEventModal({
   selectedDate: string;
   allDates: string[];
   onClose: () => void;
-  onAdd: (event: Omit<ScheduleEvent, 'id'>) => void;
+  onAdd: (event: Omit<ScheduleEvent, "id">) => void;
 }) {
   const { t, language } = useLanguage();
   const ts = t as unknown as Record<string, string>;
   useModalA11y(true, onClose);
+  useBackHandler(true, onClose);
   const [selectedPreset, setSelectedPreset] = useState(EVENT_PRESETS[0]);
   const [eventDate, setEventDate] = useState(initialDate);
-  const [time, setTime] = useState({ startHour: 9, startMinute: 0, endHour: 10, endMinute: 0 });
-  const [customTitle, setCustomTitle] = useState('');
-  const [note, setNote] = useState('');
+  const [time, setTime] = useState({
+    startHour: 9,
+    startMinute: 0,
+    endHour: 10,
+    endMinute: 0,
+  });
+  const [customTitle, setCustomTitle] = useState("");
+  const [note, setNote] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
   const formatDateOption = (dateStr: string): string => {
@@ -42,17 +54,24 @@ export function AddEventModal({
       return formatDate(d);
     })();
 
-    if (dateStr === today) return t.today || 'Today';
-    if (dateStr === tomorrow) return t.tomorrow || 'Tomorrow';
+    if (dateStr === today) return t.today || "Today";
+    if (dateStr === tomorrow) return t.tomorrow || "Tomorrow";
 
-    return date.toLocaleDateString(language, { weekday: 'short', day: 'numeric', month: 'short' });
+    return date.toLocaleDateString(language, {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+    });
   };
 
   const handleAdd = useCallback(() => {
     if (isSaving) return;
     setIsSaving(true);
     try {
-      const title = customTitle || (t as unknown as Record<string, string>)[selectedPreset.labelKey] || selectedPreset.id;
+      const title =
+        customTitle ||
+        (t as unknown as Record<string, string>)[selectedPreset.labelKey] ||
+        selectedPreset.id;
       let finalEndHour = time.endHour;
       let finalEndMinute = time.endMinute;
       const startTotal = time.startHour * 60 + time.startMinute;
@@ -121,16 +140,19 @@ export function AddEventModal({
         {/* Content */}
         <div className="relative z-10 p-5">
           <div className="flex items-center justify-between mb-4">
-            <h3 id="add-event-title" className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
+            <h3
+              id="add-event-title"
+              className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2"
+            >
               <Sparkles className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-              {t.scheduleAddEvent || 'Add Event'}
+              {t.scheduleAddEvent || "Add Event"}
             </h3>
             <motion.button
               onClick={onClose}
               whileHover={{ scale: 1.1 }}
               whileTap={zenTap.icon}
               className="p-2 hover:bg-secondary rounded-xl transition-colors"
-              aria-label={t.close || 'Close'}
+              aria-label={t.close || "Close"}
             >
               <X className="w-5 h-5 text-slate-600 dark:text-white/80" />
             </motion.button>
@@ -138,20 +160,32 @@ export function AddEventModal({
 
           {/* Date picker */}
           <div className="mb-4">
-            <label className="text-xs text-slate-600 dark:text-white/60 mb-1 block">{t.scheduleDate || 'Date'}</label>
+            <label className="text-xs text-slate-600 dark:text-white/60 mb-1 block">
+              {t.scheduleDate || "Date"}
+            </label>
             <select
               value={eventDate}
               onChange={(e) => setEventDate(e.target.value)}
               className="w-full p-3 bg-secondary backdrop-blur-sm rounded-xl text-sm text-slate-800 dark:text-white border border-border focus:border-primary/50 focus:outline-none"
             >
               {allDates.map((date) => (
-                <option key={date} value={date} className="bg-white dark:bg-slate-900 text-foreground">{formatDateOption(date)}</option>
+                <option
+                  key={date}
+                  value={date}
+                  className="bg-white dark:bg-slate-900 text-foreground"
+                >
+                  {formatDateOption(date)}
+                </option>
               ))}
             </select>
           </div>
 
           {/* Event type presets - 3D cards */}
-          <div className="grid grid-cols-3 gap-2 mb-4" role="group" aria-label={t.scheduleEventType || 'Event type'}>
+          <div
+            className="grid grid-cols-3 gap-2 mb-4"
+            role="group"
+            aria-label={t.scheduleEventType || "Event type"}
+          >
             {EVENT_PRESETS.map((preset) => {
               const label = ts[preset.labelKey] || preset.id;
               const isSelected = selectedPreset.id === preset.id;
@@ -170,18 +204,27 @@ export function AddEventModal({
                     "backdrop-blur-sm border",
                     isSelected
                       ? `bg-gradient-to-br ${gradient} border-white/30 shadow-lg`
-                      : "bg-muted border-border hover:bg-secondary"
+                      : "bg-muted border-border hover:bg-secondary",
                   )}
                 >
                   <motion.span
                     className="text-2xl"
                     animate={isSelected ? { scale: [1, 1.2, 1] } : {}}
                     transition={{ duration: 0.5 }}
-                    style={isSelected ? { filter: 'drop-shadow(0 0 8px rgba(255, 255, 255, 0.5))' } : {}}
+                    style={
+                      isSelected
+                        ? {
+                            filter:
+                              "drop-shadow(0 0 8px rgba(255, 255, 255, 0.5))",
+                          }
+                        : {}
+                    }
                   >
                     {preset.emoji}
                   </motion.span>
-                  <span className="text-xs text-slate-600 dark:text-white/80">{label}</span>
+                  <span className="text-xs text-slate-600 dark:text-white/80">
+                    {label}
+                  </span>
                 </motion.button>
               );
             })}
@@ -192,55 +235,110 @@ export function AddEventModal({
             type="text"
             value={customTitle}
             onChange={(e) => setCustomTitle(e.target.value)}
-            placeholder={t.scheduleCustomTitle || 'Custom title (optional)'}
+            placeholder={t.scheduleCustomTitle || "Custom title (optional)"}
             className="w-full p-3 bg-secondary backdrop-blur-sm rounded-xl text-sm text-slate-800 dark:text-white border border-border focus:border-primary/50 focus:outline-none mb-4 placeholder:text-slate-400 dark:placeholder:text-white/40"
-            onFocus={(e) => { const el = e.target; setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300); }}
+            onFocus={(e) => {
+              const el = e.target;
+              setTimeout(
+                () =>
+                  el.scrollIntoView({ behavior: "smooth", block: "center" }),
+                300,
+              );
+            }}
           />
 
           {/* Time pickers */}
           <div className="flex items-center gap-3 mb-4">
             <div className="flex-1">
-              <label className="text-xs text-slate-600 dark:text-white/60 mb-1 block">{t.scheduleStart || 'Start'}</label>
+              <label className="text-xs text-slate-600 dark:text-white/60 mb-1 block">
+                {t.scheduleStart || "Start"}
+              </label>
               <div className="flex gap-1">
                 <select
                   value={time.startHour}
-                  onChange={(e) => setTime(prev => ({ ...prev, startHour: safeParseInt(e.target.value, 9, 0, 23) }))}
+                  onChange={(e) =>
+                    setTime((prev) => ({
+                      ...prev,
+                      startHour: safeParseInt(e.target.value, 9, 0, 23),
+                    }))
+                  }
                   className="flex-1 p-2 bg-secondary backdrop-blur-sm rounded-lg text-sm text-slate-800 dark:text-white border border-border"
                 >
                   {HOURS.map((h) => (
-                    <option key={h} value={h} className="bg-white dark:bg-slate-900 text-foreground">{h.toString().padStart(2, '0')}</option>
+                    <option
+                      key={h}
+                      value={h}
+                      className="bg-white dark:bg-slate-900 text-foreground"
+                    >
+                      {h.toString().padStart(2, "0")}
+                    </option>
                   ))}
                 </select>
                 <select
                   value={time.startMinute}
-                  onChange={(e) => setTime(prev => ({ ...prev, startMinute: safeParseInt(e.target.value, 0, 0, 59) }))}
+                  onChange={(e) =>
+                    setTime((prev) => ({
+                      ...prev,
+                      startMinute: safeParseInt(e.target.value, 0, 0, 59),
+                    }))
+                  }
                   className="flex-1 p-2 bg-secondary backdrop-blur-sm rounded-lg text-sm text-slate-800 dark:text-white border border-border"
                 >
                   {[0, 15, 30, 45].map((m) => (
-                    <option key={m} value={m} className="bg-white dark:bg-slate-900 text-foreground">{m.toString().padStart(2, '0')}</option>
+                    <option
+                      key={m}
+                      value={m}
+                      className="bg-white dark:bg-slate-900 text-foreground"
+                    >
+                      {m.toString().padStart(2, "0")}
+                    </option>
                   ))}
                 </select>
               </div>
             </div>
             <div className="flex-1">
-              <label className="text-xs text-slate-600 dark:text-white/60 mb-1 block">{t.scheduleEnd || 'End'}</label>
+              <label className="text-xs text-slate-600 dark:text-white/60 mb-1 block">
+                {t.scheduleEnd || "End"}
+              </label>
               <div className="flex gap-1">
                 <select
                   value={time.endHour}
-                  onChange={(e) => setTime(prev => ({ ...prev, endHour: safeParseInt(e.target.value, 10, 0, 23) }))}
+                  onChange={(e) =>
+                    setTime((prev) => ({
+                      ...prev,
+                      endHour: safeParseInt(e.target.value, 10, 0, 23),
+                    }))
+                  }
                   className="flex-1 p-2 bg-secondary backdrop-blur-sm rounded-lg text-sm text-slate-800 dark:text-white border border-border"
                 >
                   {HOURS.map((h) => (
-                    <option key={h} value={h} className="bg-white dark:bg-slate-900 text-foreground">{h.toString().padStart(2, '0')}</option>
+                    <option
+                      key={h}
+                      value={h}
+                      className="bg-white dark:bg-slate-900 text-foreground"
+                    >
+                      {h.toString().padStart(2, "0")}
+                    </option>
                   ))}
                 </select>
                 <select
                   value={time.endMinute}
-                  onChange={(e) => setTime(prev => ({ ...prev, endMinute: safeParseInt(e.target.value, 0, 0, 59) }))}
+                  onChange={(e) =>
+                    setTime((prev) => ({
+                      ...prev,
+                      endMinute: safeParseInt(e.target.value, 0, 0, 59),
+                    }))
+                  }
                   className="flex-1 p-2 bg-secondary backdrop-blur-sm rounded-lg text-sm text-slate-800 dark:text-white border border-border"
                 >
                   {[0, 15, 30, 45].map((m) => (
-                    <option key={m} value={m} className="bg-white dark:bg-slate-900 text-foreground">{m.toString().padStart(2, '0')}</option>
+                    <option
+                      key={m}
+                      value={m}
+                      className="bg-white dark:bg-slate-900 text-foreground"
+                    >
+                      {m.toString().padStart(2, "0")}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -249,14 +347,25 @@ export function AddEventModal({
 
           {/* Note */}
           <div className="mb-4">
-            <label className="text-xs text-slate-600 dark:text-white/60 mb-1 block">{t.scheduleNote || 'Note (optional)'}</label>
+            <label className="text-xs text-slate-600 dark:text-white/60 mb-1 block">
+              {t.scheduleNote || "Note (optional)"}
+            </label>
             <textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              placeholder={t.scheduleNotePlaceholder || 'Add details or reminders...'}
+              placeholder={
+                t.scheduleNotePlaceholder || "Add details or reminders..."
+              }
               className="w-full p-3 bg-secondary backdrop-blur-sm rounded-xl text-sm text-slate-800 dark:text-white border border-border focus:border-primary/50 focus:outline-none resize-none placeholder:text-slate-400 dark:placeholder:text-white/40"
               rows={2}
-              onFocus={(e) => { const el = e.target; setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300); }}
+              onFocus={(e) => {
+                const el = e.target;
+                setTimeout(
+                  () =>
+                    el.scrollIntoView({ behavior: "smooth", block: "center" }),
+                  300,
+                );
+              }}
             />
           </div>
 
@@ -268,7 +377,7 @@ export function AddEventModal({
             whileTap={zenTap.card}
             className={cn(
               "w-full py-4 bg-gradient-to-r from-primary to-accent text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary/30",
-              isSaving && "opacity-50"
+              isSaving && "opacity-50",
             )}
           >
             <Check className="w-5 h-5" />

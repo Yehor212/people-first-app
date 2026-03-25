@@ -3,40 +3,36 @@
  * Professional coaching style with typing indicator
  */
 
-import { useState, useRef, useEffect } from 'react';
-import { Send, X, Sparkles, Bot, User, Trash2 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useRef, useEffect } from "react";
+import { Send, X, Sparkles, Bot, User, Trash2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
-import { useLanguage } from '@/contexts/LanguageContext';
-import { useAICoach, ChatMessage } from '@/contexts/AICoachContext';
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useAICoach, ChatMessage } from "@/contexts/AICoachContext";
 // Sheet replaced with custom bottom-sheet modal
-import { cn } from '@/lib/utils';
-import { zenTap } from '@/lib/animationUtils';
-import { haptics } from '@/lib/haptics';
-import { useBackHandler } from '@/hooks/useBackHandler';
-import { useScrollLock } from '@/hooks/useScrollLock';
+import { cn } from "@/lib/utils";
+import { zenTap } from "@/lib/animationUtils";
+import { haptics } from "@/lib/haptics";
+import { useBackHandler } from "@/hooks/useBackHandler";
+import { useScrollLock } from "@/hooks/useScrollLock";
 
 export function AICoachChat() {
   const { t } = useLanguage();
-  const {
-    isOpen,
-    isLoading,
-    messages,
-    closeCoach,
-    sendMessage,
-    clearHistory,
-  } = useAICoach();
+  const { isOpen, isLoading, messages, closeCoach, sendMessage, clearHistory } =
+    useAICoach();
 
-  useBackHandler(isOpen, () => { if (!isLoading) closeCoach(); });
+  useBackHandler(isOpen, () => {
+    if (!isLoading) closeCoach();
+  });
   useScrollLock(isOpen);
 
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Scroll to bottom on new messages
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   // Focus input when opened (minimal delay for DOM update)
@@ -51,12 +47,12 @@ export function AICoachChat() {
     if (!input.trim() || isLoading) return;
     void haptics.buttonTap();
     const message = input;
-    setInput('');
+    setInput("");
     await sendMessage(message);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       void handleSend();
     }
@@ -72,29 +68,36 @@ export function AICoachChat() {
   return (
     <>
       {/* Prevent closing while message is being sent */}
-      <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm motion-safe:animate-fade-in" onClick={() => { if (!isLoading) closeCoach(); }} />
-      <div role="dialog" aria-modal="true" className="fixed bottom-0 inset-x-0 z-[60] rounded-t-[2rem] bg-background max-h-[85dvh] overflow-hidden motion-safe:animate-slide-up flex flex-col">
-        <h2 className="sr-only">{t.aiCoachTitle || 'AI Coach'}</h2>
+      <div
+        className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm motion-safe:animate-fade-in"
+        onClick={() => {
+          if (!isLoading) closeCoach();
+        }}
+      />
+      <div
+        role="dialog"
+        aria-modal="true"
+        className="fixed bottom-0 inset-x-0 z-[60] rounded-t-[2rem] bg-background max-h-[85dvh] overflow-hidden motion-safe:animate-slide-up flex flex-col"
+      >
+        <h2 className="sr-only">{t.aiCoachTitle || "AI Coach"}</h2>
         {/* Header - Premium */}
         <div className="flex items-center justify-between p-4 border-b border-border relative">
           {/* Subtle glow */}
-          <div
-            className="absolute inset-0 pointer-events-none bg-gradient-to-b from-primary/5 to-transparent"
-          />
+          <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-primary/5 to-transparent" />
           <div className="flex items-center gap-3 relative z-10">
             <motion.div
               className="w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-primary/50 to-primary/40 shadow-zen-md"
               animate={{ scale: [1, 1.05, 1] }}
-              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
             >
               <Sparkles className="w-6 h-6 text-white" />
             </motion.div>
             <div>
               <h2 className="font-semibold text-foreground">
-                {t.aiCoachTitle || 'AI Coach'}
+                {t.aiCoachTitle || "AI Coach"}
               </h2>
               <p className="text-xs text-muted-foreground">
-                {t.aiCoachSubtitle || 'Your personal wellness guide'}
+                {t.aiCoachSubtitle || "Your personal wellness guide"}
               </p>
             </div>
           </div>
@@ -103,7 +106,7 @@ export function AICoachChat() {
               <motion.button
                 onClick={handleClear}
                 className="p-2.5 rounded-xl bg-muted border border-border text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
-                aria-label={t.clearHistory || 'Clear history'}
+                aria-label={t.clearHistory || "Clear history"}
                 whileHover={{ scale: 1.05 }}
                 whileTap={zenTap.button}
               >
@@ -111,9 +114,11 @@ export function AICoachChat() {
               </motion.button>
             )}
             <button
-              onClick={() => { if (!isLoading) closeCoach(); }}
+              onClick={() => {
+                if (!isLoading) closeCoach();
+              }}
               className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-muted transition-colors"
-              aria-label={t.close || 'Close'}
+              aria-label={t.close || "Close"}
             >
               <X className="w-5 h-5 text-muted-foreground" />
             </button>
@@ -121,37 +126,39 @@ export function AICoachChat() {
         </div>
 
         {/* Messages - Premium with cosmic background */}
-        <div
-          className="flex-1 overflow-y-auto p-4 space-y-4 bg-[radial-gradient(ellipse_at_bottom,hsl(var(--primary)/0.05)_0%,transparent_50%)]"
-        >
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[radial-gradient(ellipse_at_bottom,hsl(var(--primary)/0.05)_0%,transparent_50%)]">
           {messages.length === 0 && (
             <motion.div
               className="text-center py-8"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
             >
-              <div
-                className="w-20 h-20 mx-auto mb-4 rounded-2xl flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/10 shadow-zen-md"
-              >
+              <div className="w-20 h-20 mx-auto mb-4 rounded-2xl flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/10 shadow-zen-md">
                 <Bot className="w-10 h-10 text-violet-400" />
               </div>
               <p className="text-muted-foreground text-sm mb-1">
-                {t.aiCoachWelcome || 'Hi! How can I help you today?'}
+                {t.aiCoachWelcome || "Hi! How can I help you today?"}
               </p>
               <div className="mt-6 flex flex-wrap justify-center gap-2">
                 <QuickAction
                   label={t.aiCoachQuick1 || "I'm feeling stressed"}
-                  onClick={() => sendMessage(t.aiCoachQuick1 || "I'm feeling stressed")}
+                  onClick={() =>
+                    sendMessage(t.aiCoachQuick1 || "I'm feeling stressed")
+                  }
                   disabled={isLoading}
                 />
                 <QuickAction
                   label={t.aiCoachQuick2 || "Help me focus"}
-                  onClick={() => sendMessage(t.aiCoachQuick2 || "Help me focus")}
+                  onClick={() =>
+                    sendMessage(t.aiCoachQuick2 || "Help me focus")
+                  }
                   disabled={isLoading}
                 />
                 <QuickAction
                   label={t.aiCoachQuick3 || "Motivation needed"}
-                  onClick={() => sendMessage(t.aiCoachQuick3 || "Motivation needed")}
+                  onClick={() =>
+                    sendMessage(t.aiCoachQuick3 || "Motivation needed")
+                  }
                   disabled={isLoading}
                 />
               </div>
@@ -171,9 +178,7 @@ export function AICoachChat() {
 
         {/* Input - Premium */}
         <div className="p-4 border-t border-border pb-[env(safe-area-inset-bottom)] relative">
-          <div
-            className="absolute inset-0 pointer-events-none bg-[linear-gradient(0deg,rgba(139,92,246,0.05)_0%,transparent_100%)]"
-          />
+          <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(0deg,hsl(var(--cosmic-nebula-purple)/0.05)_0%,transparent_100%)]" />
           <div className="flex items-center gap-3 relative z-10">
             <input
               ref={inputRef}
@@ -181,12 +186,12 @@ export function AICoachChat() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyPress}
-              placeholder={t.aiCoachPlaceholder || 'Type a message...'}
+              placeholder={t.aiCoachPlaceholder || "Type a message..."}
               className={cn(
                 "flex-1 px-4 py-3.5 rounded-xl transition-all",
                 "bg-secondary backdrop-blur-sm border border-border",
                 "text-foreground placeholder:text-muted-foreground",
-                "focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/30"
+                "focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/30",
               )}
               disabled={isLoading}
             />
@@ -197,14 +202,19 @@ export function AICoachChat() {
                 "p-3.5 rounded-xl min-w-[52px] min-h-[52px] flex items-center justify-center transition-all",
                 input.trim() && !isLoading
                   ? "bg-gradient-to-r from-violet-500 to-purple-600 text-white"
-                  : "bg-secondary text-muted-foreground"
+                  : "bg-secondary text-muted-foreground",
               )}
-              style={input.trim() && !isLoading ? {
-                boxShadow: '0 0 16px rgba(139, 92, 246, 0.4)'
-              } : undefined}
+              style={
+                input.trim() && !isLoading
+                  ? {
+                      boxShadow:
+                        "0 0 16px hsl(var(--cosmic-nebula-purple) / 0.4)",
+                    }
+                  : undefined
+              }
               whileHover={input.trim() && !isLoading ? { scale: 1.05 } : {}}
               whileTap={input.trim() && !isLoading ? zenTap.button : {}}
-              aria-label={t.send || 'Send'}
+              aria-label={t.send || "Send"}
             >
               <Send className="w-5 h-5" />
             </motion.button>
@@ -216,8 +226,14 @@ export function AICoachChat() {
 }
 
 // Chat bubble component - Premium
-function ChatBubble({ message, index }: { message: ChatMessage; index: number }) {
-  const isCoach = message.role === 'coach';
+function ChatBubble({
+  message,
+  index,
+}: {
+  message: ChatMessage;
+  index: number;
+}) {
+  const isCoach = message.role === "coach";
 
   return (
     <motion.div
@@ -227,9 +243,7 @@ function ChatBubble({ message, index }: { message: ChatMessage; index: number })
       transition={{ delay: index * 0.05, duration: 0.3 }}
     >
       {isCoach && (
-        <div
-          className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-[linear-gradient(135deg,rgba(139,92,246,0.3)_0%,rgba(168,85,247,0.2)_100%)]"
-        >
+        <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-[linear-gradient(135deg,hsl(var(--cosmic-nebula-purple)/0.3)_0%,hsl(var(--cosmic-nebula-purple)/0.2)_100%)]">
           <Bot className="w-5 h-5 text-violet-400" />
         </div>
       )}
@@ -239,18 +253,21 @@ function ChatBubble({ message, index }: { message: ChatMessage; index: number })
           "max-w-[80%] px-4 py-3 rounded-2xl",
           isCoach
             ? "rounded-ss-sm bg-secondary backdrop-blur-[8px] border border-border"
-            : "rounded-se-sm bg-[linear-gradient(135deg,rgba(139,92,246,0.8)_0%,rgba(168,85,247,0.7)_100%)] shadow-[0_4px_12px_rgba(139,92,246,0.3)]"
+            : "rounded-se-sm bg-[linear-gradient(135deg,hsl(var(--cosmic-nebula-purple)/0.8)_0%,hsl(var(--cosmic-nebula-purple)/0.7)_100%)] shadow-[0_4px_12px_hsl(var(--cosmic-nebula-purple)/0.3)]",
         )}
       >
-        <p className={cn("text-sm whitespace-pre-wrap", isCoach ? "text-foreground" : "text-white")}>
+        <p
+          className={cn(
+            "text-sm whitespace-pre-wrap",
+            isCoach ? "text-foreground" : "text-white",
+          )}
+        >
           {message.content}
         </p>
       </div>
 
       {!isCoach && (
-        <div
-          className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-[linear-gradient(135deg,rgba(139,92,246,0.2)_0%,rgba(168,85,247,0.15)_100%)]"
-        >
+        <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-[linear-gradient(135deg,hsl(var(--cosmic-nebula-purple)/0.2)_0%,hsl(var(--cosmic-nebula-purple)/0.15)_100%)]">
           <User className="w-5 h-5 text-violet-400" />
         </div>
       )}
@@ -266,14 +283,10 @@ function TypingIndicator() {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
     >
-      <div
-        className="w-9 h-9 rounded-xl flex items-center justify-center bg-[linear-gradient(135deg,rgba(139,92,246,0.3)_0%,rgba(168,85,247,0.2)_100%)]"
-      >
+      <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-[linear-gradient(135deg,hsl(var(--cosmic-nebula-purple)/0.3)_0%,hsl(var(--cosmic-nebula-purple)/0.2)_100%)]">
         <Bot className="w-5 h-5 text-violet-400" />
       </div>
-      <div
-        className="px-5 py-4 rounded-2xl rounded-ss-sm bg-secondary backdrop-blur-[8px] border border-border"
-      >
+      <div className="px-5 py-4 rounded-2xl rounded-ss-sm bg-secondary backdrop-blur-[8px] border border-border">
         <div className="flex gap-1.5">
           <motion.span
             className="w-2.5 h-2.5 bg-violet-400 rounded-full"
@@ -297,7 +310,15 @@ function TypingIndicator() {
 }
 
 // Quick action button - Premium
-function QuickAction({ label, onClick, disabled }: { label: string; onClick: () => void; disabled?: boolean }) {
+function QuickAction({
+  label,
+  onClick,
+  disabled,
+}: {
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+}) {
   return (
     <motion.button
       onClick={onClick}
@@ -306,7 +327,7 @@ function QuickAction({ label, onClick, disabled }: { label: string; onClick: () 
         "px-4 py-2.5 rounded-full text-xs font-medium transition-all",
         disabled
           ? "bg-muted text-muted-foreground/50 cursor-not-allowed"
-          : "bg-muted border border-border text-muted-foreground hover:bg-secondary hover:text-foreground"
+          : "bg-muted border border-border text-muted-foreground hover:bg-secondary hover:text-foreground",
       )}
       whileHover={!disabled ? { scale: 1.02 } : {}}
       whileTap={!disabled ? zenTap.card : {}}

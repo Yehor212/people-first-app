@@ -3,16 +3,17 @@
  * On web, we redirect to the Play Store page instead.
  */
 
-import type { ReviewPlugin } from './reviewTypes';
-import { logger } from '@/lib/logger';
+import type { ReviewPlugin } from "./reviewTypes";
+import { logger } from "@/lib/logger";
 
-const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.zenflow.app';
+const PLAY_STORE_URL =
+  "https://play.google.com/store/apps/details?id=com.zenflow.app";
 
 export class ReviewWeb implements ReviewPlugin {
   async requestReview(): Promise<void> {
-    logger.log('[Review] Web fallback - opening Play Store');
+    logger.log("[Review] Web fallback - opening Play Store");
     // On web, open the Play Store page in a new tab
-    window.open(PLAY_STORE_URL, '_blank');
+    window.open(PLAY_STORE_URL, "_blank", "noopener,noreferrer");
   }
 
   async isSupported(): Promise<{ supported: boolean }> {
