@@ -32,6 +32,7 @@ const PREFLIGHT_PROTOCOL = [
   '',
   'Read affected files first. Run git log and grep on affected areas.',
   'preflight-gate.cjs validates the token — fix any errors it reports.',
+  'Verifier runs automatically on Stop. Fix any failures it reports.',
 ].join('\n');
 
 let input = '';

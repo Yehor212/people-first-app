@@ -212,12 +212,11 @@ process.stdin.on('end', () => {
   const advisoryCount = hookCount - blockingCount;
 
   const enforcementReminder = [
-    `ENFORCEMENT SYSTEM (${hookCount} hooks, ${blockingCount} blocking + ${advisoryCount} advisory):`,
-    '- PRE-FLIGHT (7 checks + VERDICT) required before TypeScript edits.',
-    '- POST-FLIGHT (28-law table + 5 mirrors + ci:preflight) required before stop/commit.',
-    '- Protected files: .env, keystore, auth.ts, CLAUDE.md, settings.json.',
-    '- .postflight-done auto-invalidated on new TS edits.',
-    '- See CLAUDE.md for full rules. See .claude/rules/ for domain-specific rules.',
+    'ENFORCEMENT: Hooks enforce rules automatically.',
+    'preflight-gate blocks edits without token.',
+    'commit-gate blocks commits without .verification-done.',
+    'PostToolUse A6-A10 warnings fire after every edit.',
+    'Agent hook on Stop runs verifier automatically.',
   ].join('\n');
 
   let context = enforcementReminder;

@@ -142,6 +142,11 @@
       {
         "hooks": [
           {
+            "type": "agent",
+            "prompt": "Check for uncommitted .ts/.tsx changes: run git diff --name-only and git diff --cached --name-only. If NO .ts/.tsx files in output, respond with decision allow. If .ts/.tsx changes exist, run these 3 commands: 1) npx tsc --noEmit 2) npx vitest run 3) grep -rn \".catch(() =>\" src/ --include=\"*.ts\" --include=\"*.tsx\". If ALL pass, write .verification-done with results and respond allow. If ANY fail, respond block with failure list.",
+            "timeout": 180000
+          },
+          {
             "type": "command",
             "command": "node .claude/hooks/quality-stop-gate.cjs",
             "timeout": 10000,

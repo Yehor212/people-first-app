@@ -1,0 +1,33 @@
+---
+name: teamlead
+description: "Orchestrate code changes: fix, add, refactor, improve, update, modify, implement, create, remove, change, optimize, enhance, migrate, build, design, style, debug, resolve, handle, configure, setup, integrate, connect, extend, extract, move, rename, delete, replace, convert, transform, upgrade, downgrade, install, uninstall, enable, disable, toggle, switch, adjust, tune, correct, repair, patch, hotfix, restore, recover, clean, format, lint, test, verify, validate, check, review, audit, scan, inspect, analyze, investigate, diagnose, troubleshoot"
+user-invocable: true
+---
+
+# Team Lead Orchestration
+
+Before writing code, consider what user may have forgotten:
+
+- Cross-platform (Android back handler, safe-area, webkit prefix)
+- Accessibility (aria-label, touch 44px, reduced-motion)
+- i18n (8 languages: en, uk, es, de, fr, ja, ar, he. RTL for ar/he)
+- Tests (vitest suite — 3224 tests, zero regression)
+- State integrity (Zustand + Dexie + Supabase sync)
+- Security (no secrets, no XSS, no injection)
+- Performance (bundle, 60 FPS orb, lazy loading)
+- Offline-first (SW, offline queue, sync)
+
+Specialized builders in .claude/agents/:
+
+- frontend-builder.md — React, Tailwind, Radix, Framer Motion, Journal, Gamification
+- backend-builder.md — Supabase, edge functions, RLS, triggers, AI Coach
+- shader-specialist.md — GLSL, orb, WebGL, superformula SDF, canvas
+- pwa-native-specialist.md — SW, offline, Capacitor, plugins, ads, push
+- design-advisor.md — styles, palettes (READ-ONLY, consult user first)
+- performance-agent.md — bundle, 60fps, re-renders (READ-ONLY)
+
+Guardians (all READ-ONLY):
+
+- platform-guardian.md, a11y-i18n-guardian.md, state-async-guardian.md, security-quality-guardian.md
+
+Verifier: verifier.md — 17 checks, runs automatically on Stop via agent hook.
