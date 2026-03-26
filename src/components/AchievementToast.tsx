@@ -14,7 +14,7 @@ export function AchievementToast({ achievement }: AchievementToastProps) {
   const { t } = useLanguage();
 
   useEffect(() => {
-    haptics.medium();
+    void haptics.medium();
   }, []);
 
   return (
