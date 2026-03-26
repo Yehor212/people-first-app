@@ -8,12 +8,17 @@
  * - Displays version info from Supabase
  */
 
-import { useState } from 'react';
-import { Download, X, ExternalLink } from 'lucide-react';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { startAppUpdate, UpdateState, dismissUpdate, openGooglePlayStore } from '@/lib/appUpdateManager';
-import { haptics } from '@/lib/haptics';
-import { logger } from '@/lib/logger';
+import { useState } from "react";
+import { Download, X, ExternalLink } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import {
+  startAppUpdate,
+  UpdateState,
+  dismissUpdate,
+  openGooglePlayStore,
+} from "@/lib/appUpdateManager";
+import { haptics } from "@/lib/haptics";
+import { logger } from "@/lib/logger";
 
 interface UpdatePromptProps {
   /** Update state from checkForAppUpdate() */
@@ -30,7 +35,8 @@ export function UpdatePrompt({ updateState, onDismiss }: UpdatePromptProps) {
   if (!updateState.available || !updateState.checked) return null;
 
   // Critical/high priority = can't dismiss (must update)
-  const isCritical = updateState.priority === 'critical' || updateState.priority === 'high';
+  const isCritical =
+    updateState.priority === "critical" || updateState.priority === "high";
 
   // Using fallback mode (Supabase check instead of Google Play In-App Updates)
   const useFallback = updateState.useFallback ?? false;
@@ -48,13 +54,15 @@ export function UpdatePrompt({ updateState, onDismiss }: UpdatePromptProps) {
         const success = await startAppUpdate(true);
         if (!success) {
           // In-App Update failed — fall back to Play Store directly
-          logger.warn('[UpdatePrompt] In-app update failed, opening Play Store');
+          logger.warn(
+            "[UpdatePrompt] In-app update failed, opening Play Store",
+          );
           await openGooglePlayStore();
         }
       }
     } catch (error) {
       // Last resort: open Play Store directly
-      logger.error('[UpdatePrompt] Update failed:', error);
+      logger.error("[UpdatePrompt] Update failed:", error);
       await openGooglePlayStore();
     } finally {
       setIsLoading(false);
@@ -68,28 +76,37 @@ export function UpdatePrompt({ updateState, onDismiss }: UpdatePromptProps) {
   };
 
   // Translations with fallbacks
-  const title = t.updateAvailable || 'Update Available';
+  const title = t.updateAvailable || "Update Available";
 
   // Build description based on mode and priority
   let description: string;
   if (isCritical) {
-    description = t.updateDescriptionCritical || 'A critical update is required to continue using the app.';
+    description =
+      t.updateDescriptionCritical ||
+      "A critical update is required to continue using the app.";
   } else if (useFallback && updateState.latestVersion) {
-    description = (t.updateDescriptionVersion || 'Version {version} is available with improvements and fixes.')
-      .replace('{version}', updateState.latestVersion);
+    description = (
+      t.updateDescriptionVersion ||
+      "Version {version} is available with improvements and fixes."
+    ).replace("{version}", updateState.latestVersion);
   } else {
-    description = t.updateDescription || 'A new version is ready to install with improvements and fixes.';
+    description =
+      t.updateDescription ||
+      "A new version is ready to install with improvements and fixes.";
   }
 
   // Button text depends on mode
   const buttonText = useFallback
-    ? (t.openGooglePlay || 'Open Google Play')
-    : (t.updateNow || 'Update Now');
+    ? t.openGooglePlay || "Open Google Play"
+    : t.updateNow || "Update Now";
 
   const ButtonIcon = useFallback ? ExternalLink : Download;
 
   return (
-    <div className="fixed inset-x-4 top-4 z-[250] animate-slide-down" style={{ top: 'calc(env(safe-area-inset-top) + 1rem)' }}>
+    <div
+      className="fixed inset-x-4 top-4 z-[250] animate-slide-down"
+      style={{ top: "calc(env(safe-area-inset-top) + 1rem)" }}
+    >
       <div className="bg-gradient-to-r from-primary to-primary/90 text-primary-foreground rounded-2xl p-4 shadow-lg">
         <div className="flex items-start gap-3">
           <div className="p-2 bg-white/20 rounded-xl">
@@ -99,20 +116,20 @@ export function UpdatePrompt({ updateState, onDismiss }: UpdatePromptProps) {
             <h3 className="font-semibold text-lg">
               {title}
               {updateState.latestVersion && (
-                <span className="text-sm opacity-80 ms-2">v{updateState.latestVersion}</span>
+                <span className="text-sm opacity-80 ms-2">
+                  v{updateState.latestVersion}
+                </span>
               )}
             </h3>
-            <p className="text-sm opacity-90 mt-0.5">
-              {description}
-            </p>
+            <p className="text-sm opacity-90 mt-0.5">{description}</p>
             {/* Show release notes if available */}
             {updateState.releaseNotes && (
               <p className="text-xs opacity-70 mt-1 line-clamp-2">
-                {typeof updateState.releaseNotes === 'string'
+                {typeof updateState.releaseNotes === "string"
                   ? updateState.releaseNotes
-                  : (updateState.releaseNotes)[language]
-                    || (updateState.releaseNotes).en
-                    || ''}
+                  : updateState.releaseNotes[language] ||
+                    updateState.releaseNotes.en ||
+                    ""}
               </p>
             )}
           </div>
@@ -120,7 +137,7 @@ export function UpdatePrompt({ updateState, onDismiss }: UpdatePromptProps) {
           {!isCritical && (
             <button
               onClick={handleDismiss}
-              className="p-1.5 hover:bg-white/20 rounded-lg transition-colors"
+              className="p-1.5 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-white/20 rounded-lg transition-colors"
               aria-label={t.dismiss}
             >
               <X className="w-5 h-5" />
@@ -133,15 +150,19 @@ export function UpdatePrompt({ updateState, onDismiss }: UpdatePromptProps) {
           disabled={isLoading}
           className="mt-3 w-full py-2.5 bg-white/20 hover:bg-white/30 disabled:opacity-50 rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
         >
-          <ButtonIcon className={`w-4 h-4 ${isLoading ? 'animate-pulse' : ''}`} />
-          {isLoading ? (t.loading || 'Loading...') : buttonText}
+          <ButtonIcon
+            className={`w-4 h-4 ${isLoading ? "animate-pulse" : ""}`}
+          />
+          {isLoading ? t.loading || "Loading..." : buttonText}
         </button>
 
         {/* Show staleness info for old updates (only for non-fallback mode) */}
         {!useFallback && updateState.stalenessDays > 0 && (
           <p className="text-xs text-center opacity-70 mt-2">
-            {t.updateAvailableFor?.replace('{days}', String(updateState.stalenessDays)) ||
-              `Available for ${updateState.stalenessDays} days`}
+            {t.updateAvailableFor?.replace(
+              "{days}",
+              String(updateState.stalenessDays),
+            ) || `Available for ${updateState.stalenessDays} days`}
           </p>
         )}
       </div>

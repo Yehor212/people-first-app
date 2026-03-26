@@ -1,17 +1,17 @@
-import { memo } from 'react';
-import { createPortal } from 'react-dom';
-import { motion } from 'framer-motion';
-import { FocusSession } from '@/types';
-import { cn } from '@/lib/utils';
-import { zenTap } from '@/lib/animationUtils';
-import { Coffee } from 'lucide-react';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { HyperfocusMode } from '../HyperfocusMode';
-import { useFocusTimer, presetColors } from '@/hooks/useFocusTimer';
-import { FocusReflectionModal } from '../FocusReflectionModal';
-import { CosmicBackground } from './CosmicBackground';
-import { TimerRing } from './TimerRing';
-import { TimerControls } from './TimerControls';
+import { memo } from "react";
+import { createPortal } from "react-dom";
+import { motion } from "framer-motion";
+import { FocusSession } from "@/types";
+import { cn } from "@/lib/utils";
+import { zenTap } from "@/lib/animationUtils";
+import { Coffee } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { HyperfocusMode } from "../HyperfocusMode";
+import { useFocusTimer, presetColors } from "@/hooks/useFocusTimer";
+import { FocusReflectionModal } from "../FocusReflectionModal";
+import { CosmicBackground } from "./CosmicBackground";
+import { TimerRing } from "./TimerRing";
+import { TimerControls } from "./TimerControls";
 
 interface FocusTimerProps {
   sessions: FocusSession[];
@@ -21,39 +21,67 @@ interface FocusTimerProps {
   onExpandToJournal?: () => void; // IA Blueprint Phase 3: Focus → Journal
 }
 
-export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession, onMinuteUpdate, isPrimaryCTA = false, onExpandToJournal }: FocusTimerProps) {
+export const FocusTimer = memo(function FocusTimer({
+  sessions,
+  onCompleteSession,
+  onMinuteUpdate,
+  isPrimaryCTA = false,
+  onExpandToJournal,
+}: FocusTimerProps) {
   const { t } = useLanguage();
 
   const {
-    preset, focusMinutes,
-    focusInputValue, breakInputValue, label,
-    setLabel, setFocusInputValue, setBreakInputValue,
-    timeLeft, isRunning, isBreak,
-    showReflection, reflectionValue, setReflectionValue,
-    showHyperfocus, setShowHyperfocus,
-    totalMinutesToday, progress, presets,
-    throttledToggle, throttledReset, handlePresetSelect,
-    handleSaveReflection, handleHyperfocusComplete,
-    handleFocusInputBlur, handleBreakInputBlur,
+    preset,
+    focusMinutes,
+    focusInputValue,
+    breakInputValue,
+    label,
+    setLabel,
+    setFocusInputValue,
+    setBreakInputValue,
+    timeLeft,
+    isRunning,
+    isBreak,
+    showReflection,
+    reflectionValue,
+    setReflectionValue,
+    showHyperfocus,
+    setShowHyperfocus,
+    totalMinutesToday,
+    progress,
+    presets,
+    throttledToggle,
+    throttledReset,
+    handlePresetSelect,
+    handleSaveReflection,
+    handleHyperfocusComplete,
+    handleFocusInputBlur,
+    handleBreakInputBlur,
   } = useFocusTimer({ sessions, onCompleteSession, onMinuteUpdate });
 
   return (
-    <div className={cn(
-      "rounded-2xl p-6 animate-fade-in transition-all relative",
-      isPrimaryCTA
-        ? "ring-2 ring-violet-500/40 shadow-lg shadow-violet-500/20"
-        : "bg-card zen-shadow-card"
-    )}>
-      {/* Cosmic Background + CTA Header */}
-      {isPrimaryCTA && (
-        <CosmicBackground startHereLabel={t.startHere} />
+    <div
+      className={cn(
+        "rounded-2xl p-6 animate-fade-in transition-all relative",
+        isPrimaryCTA
+          ? "ring-2 ring-violet-500/40 shadow-lg shadow-violet-500/20"
+          : "bg-card zen-shadow-card",
       )}
+    >
+      {/* Cosmic Background + CTA Header */}
+      {isPrimaryCTA && <CosmicBackground startHereLabel={t.startHere} />}
 
       <div className="mb-4 space-y-3 relative">
-        <label className={cn(
-          "text-sm",
-          isPrimaryCTA ? "text-slate-600 dark:text-white/60" : "text-muted-foreground"
-        )}>{t.focusLabelPrompt}</label>
+        <label
+          className={cn(
+            "text-sm",
+            isPrimaryCTA
+              ? "text-slate-600 dark:text-white/60"
+              : "text-muted-foreground",
+          )}
+        >
+          {t.focusLabelPrompt}
+        </label>
         <input
           type="text"
           value={label}
@@ -63,7 +91,7 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
             "w-full p-3 rounded-xl focus:outline-none focus:ring-2 transition-colors",
             isPrimaryCTA
               ? "bg-secondary backdrop-blur-sm border border-border text-slate-800 dark:text-white placeholder:text-slate-500 dark:placeholder:text-white/40 focus:ring-violet-500/50"
-              : "bg-secondary text-foreground placeholder:text-muted-foreground focus:ring-primary/30"
+              : "bg-secondary text-foreground placeholder:text-muted-foreground focus:ring-primary/30",
           )}
         />
         <div className="flex flex-wrap gap-2">
@@ -82,11 +110,15 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
                       : "bg-muted backdrop-blur-sm border border-border text-slate-600 dark:text-white/60 hover:bg-secondary hover:text-slate-800 dark:hover:text-white/80"
                     : isSelected
                       ? "bg-primary/10 ring-2 ring-primary text-foreground"
-                      : "bg-secondary text-muted-foreground hover:bg-muted"
+                      : "bg-secondary text-muted-foreground hover:bg-muted",
                 )}
-                style={isPrimaryCTA && isSelected ? {
-                  boxShadow: `0 0 16px ${colors.glow}`
-                } : {}}
+                style={
+                  isPrimaryCTA && isSelected
+                    ? {
+                        boxShadow: `0 0 16px ${colors.glow}`,
+                      }
+                    : {}
+                }
                 whileHover={{ scale: 1.05 }}
                 whileTap={zenTap.button}
               >
@@ -95,13 +127,19 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
             );
           })}
         </div>
-        {preset === 'custom' && (
+        {preset === "custom" && (
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className={cn(
-                "text-xs",
-                isPrimaryCTA ? "text-slate-600 dark:text-white/60" : "text-muted-foreground"
-              )}>{t.focusCustomWork}</label>
+              <label
+                className={cn(
+                  "text-xs",
+                  isPrimaryCTA
+                    ? "text-slate-600 dark:text-white/60"
+                    : "text-muted-foreground",
+                )}
+              >
+                {t.focusCustomWork}
+              </label>
               <input
                 type="number"
                 min={5}
@@ -113,15 +151,22 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
                   "w-full p-2 rounded-lg focus:outline-none focus:ring-2",
                   isPrimaryCTA
                     ? "bg-secondary backdrop-blur-sm border border-border text-slate-800 dark:text-white focus:ring-amber-500/50"
-                    : "bg-secondary text-foreground focus:ring-primary/30"
+                    : "bg-secondary text-foreground focus:ring-primary/30",
                 )}
+                aria-label={t.focusCustomWork || "Custom work minutes"}
               />
             </div>
             <div>
-              <label className={cn(
-                "text-xs",
-                isPrimaryCTA ? "text-slate-600 dark:text-white/60" : "text-muted-foreground"
-              )}>{t.focusCustomBreak}</label>
+              <label
+                className={cn(
+                  "text-xs",
+                  isPrimaryCTA
+                    ? "text-slate-600 dark:text-white/60"
+                    : "text-muted-foreground",
+                )}
+              >
+                {t.focusCustomBreak}
+              </label>
               <input
                 type="number"
                 min={1}
@@ -133,28 +178,35 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
                   "w-full p-2 rounded-lg focus:outline-none focus:ring-2",
                   isPrimaryCTA
                     ? "bg-secondary backdrop-blur-sm border border-border text-slate-800 dark:text-white focus:ring-amber-500/50"
-                    : "bg-secondary text-foreground focus:ring-primary/30"
+                    : "bg-secondary text-foreground focus:ring-primary/30",
                 )}
+                aria-label={t.focusCustomBreak || "Custom break minutes"}
               />
             </div>
           </div>
         )}
       </div>
       <div className="flex items-center justify-between mb-6 relative">
-        <h3 className={cn(
-          "text-lg font-semibold",
-          isPrimaryCTA ? "text-slate-800 dark:text-white" : "text-foreground"
-        )}>
+        <h3
+          className={cn(
+            "text-lg font-semibold",
+            isPrimaryCTA ? "text-slate-800 dark:text-white" : "text-foreground",
+          )}
+        >
           {isBreak ? t.breakTime : t.focus}
         </h3>
-        <div className={cn(
-          "flex items-center gap-2 text-sm",
-          isPrimaryCTA
-            ? "px-3 py-1.5 bg-secondary backdrop-blur-sm rounded-full text-slate-600 dark:text-white/70"
-            : "text-muted-foreground"
-        )}>
+        <div
+          className={cn(
+            "flex items-center gap-2 text-sm",
+            isPrimaryCTA
+              ? "px-3 py-1.5 bg-secondary backdrop-blur-sm rounded-full text-slate-600 dark:text-white/70"
+              : "text-muted-foreground",
+          )}
+        >
           <Coffee className="w-4 h-4" />
-          <span>{totalMinutesToday} {t.todayMinutes}</span>
+          <span>
+            {totalMinutesToday} {t.todayMinutes}
+          </span>
         </div>
       </div>
 
@@ -164,8 +216,8 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
         isRunning={isRunning}
         isBreak={isBreak}
         isPrimaryCTA={isPrimaryCTA}
-        concentrateLabel={t.concentrate || 'Focus time'}
-        takeRestLabel={t.takeRest || 'Break time'}
+        concentrateLabel={t.concentrate || "Focus time"}
+        takeRestLabel={t.takeRest || "Break time"}
       />
 
       <TimerControls
@@ -176,8 +228,8 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
         onReset={throttledReset}
         onShowHyperfocus={() => setShowHyperfocus(true)}
         labels={{
-          pause: t.pause || 'Pause timer',
-          start: t.start || 'Start timer',
+          pause: t.pause || "Pause timer",
+          start: t.start || "Start timer",
           resetTimer: t.resetTimer,
           hyperfocusMode: t.hyperfocusMode,
         }}
@@ -194,14 +246,15 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
       )}
 
       {/* Hyperfocus Mode Modal — Portal to escape PullToRefresh transform stacking context */}
-      {showHyperfocus && createPortal(
-        <HyperfocusMode
-          duration={focusMinutes}
-          onComplete={handleHyperfocusComplete}
-          onExit={() => setShowHyperfocus(false)}
-        />,
-        document.body
-      )}
+      {showHyperfocus &&
+        createPortal(
+          <HyperfocusMode
+            duration={focusMinutes}
+            onComplete={handleHyperfocusComplete}
+            onExit={() => setShowHyperfocus(false)}
+          />,
+          document.body,
+        )}
     </div>
   );
 });

@@ -182,6 +182,7 @@ export function AddGoalSheet({
                 value={habitId}
                 onChange={(e) => setHabitId(e.target.value)}
                 className="w-full p-3 rounded-xl border border-border/50 bg-muted/30 text-foreground text-sm"
+                aria-label={t.selectHabit || "Select habit"}
               >
                 <option value="">{t.allHabits || "All habits"}</option>
                 {habits.map((h) => (

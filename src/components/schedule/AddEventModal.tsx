@@ -167,6 +167,7 @@ export function AddEventModal({
               value={eventDate}
               onChange={(e) => setEventDate(e.target.value)}
               className="w-full p-3 bg-secondary backdrop-blur-sm rounded-xl text-sm text-slate-800 dark:text-white border border-border focus:border-primary/50 focus:outline-none"
+              aria-label={t.scheduleDate || "Select date"}
             >
               {allDates.map((date) => (
                 <option
@@ -263,6 +264,7 @@ export function AddEventModal({
                     }))
                   }
                   className="flex-1 p-2 bg-secondary backdrop-blur-sm rounded-lg text-sm text-slate-800 dark:text-white border border-border"
+                  aria-label="Select start hour"
                 >
                   {HOURS.map((h) => (
                     <option
@@ -283,6 +285,7 @@ export function AddEventModal({
                     }))
                   }
                   className="flex-1 p-2 bg-secondary backdrop-blur-sm rounded-lg text-sm text-slate-800 dark:text-white border border-border"
+                  aria-label="Select start minute"
                 >
                   {[0, 15, 30, 45].map((m) => (
                     <option
@@ -310,6 +313,7 @@ export function AddEventModal({
                     }))
                   }
                   className="flex-1 p-2 bg-secondary backdrop-blur-sm rounded-lg text-sm text-slate-800 dark:text-white border border-border"
+                  aria-label="Select end hour"
                 >
                   {HOURS.map((h) => (
                     <option
@@ -330,6 +334,7 @@ export function AddEventModal({
                     }))
                   }
                   className="flex-1 p-2 bg-secondary backdrop-blur-sm rounded-lg text-sm text-slate-800 dark:text-white border border-border"
+                  aria-label="Select end minute"
                 >
                   {[0, 15, 30, 45].map((m) => (
                     <option

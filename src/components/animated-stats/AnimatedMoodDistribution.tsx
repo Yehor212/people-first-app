@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
-import { MoodType } from '@/types';
-import { cn } from '@/lib/utils';
-import { Heart, Sparkles } from 'lucide-react';
-import { AnimatedMoodEmoji } from '@/components/AnimatedMoodEmoji';
-import { useLanguage } from '@/contexts/LanguageContext';
+import { useState, useEffect } from "react";
+import { MoodType } from "@/types";
+import { cn } from "@/lib/utils";
+import { Heart, Sparkles } from "lucide-react";
+import { AnimatedMoodEmoji } from "@/components/AnimatedMoodEmoji";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface MoodDistributionProps {
   moodCounts: Record<MoodType, number>;
@@ -16,12 +16,35 @@ interface MoodDistributionProps {
   allTagsLabel?: string;
 }
 
-const moodConfig: Record<MoodType, { gradient: string; bgLight: string; emoji: string }> = {
-  great: { gradient: 'from-emerald-400 to-teal-500', bgLight: 'bg-emerald-500/20', emoji: '😄' },
-  good: { gradient: 'from-green-400 to-emerald-500', bgLight: 'bg-green-500/20', emoji: '🙂' },
-  okay: { gradient: 'from-amber-400 to-yellow-500', bgLight: 'bg-amber-500/20', emoji: '😐' },
-  bad: { gradient: 'from-orange-400 to-amber-500', bgLight: 'bg-orange-500/20', emoji: '😔' },
-  terrible: { gradient: 'from-red-400 to-rose-500', bgLight: 'bg-red-500/20', emoji: '😢' },
+const moodConfig: Record<
+  MoodType,
+  { gradient: string; bgLight: string; emoji: string }
+> = {
+  great: {
+    gradient: "from-emerald-400 to-teal-500",
+    bgLight: "bg-emerald-500/20",
+    emoji: "😄",
+  },
+  good: {
+    gradient: "from-green-400 to-emerald-500",
+    bgLight: "bg-green-500/20",
+    emoji: "🙂",
+  },
+  okay: {
+    gradient: "from-amber-400 to-yellow-500",
+    bgLight: "bg-amber-500/20",
+    emoji: "😐",
+  },
+  bad: {
+    gradient: "from-orange-400 to-amber-500",
+    bgLight: "bg-orange-500/20",
+    emoji: "😔",
+  },
+  terrible: {
+    gradient: "from-red-400 to-rose-500",
+    bgLight: "bg-red-500/20",
+    emoji: "😢",
+  },
 };
 
 export function AnimatedMoodDistribution({
@@ -35,8 +58,14 @@ export function AnimatedMoodDistribution({
   allTagsLabel,
 }: MoodDistributionProps) {
   const { t } = useLanguage();
-  const [animatedCounts, setAnimatedCounts] = useState<Record<MoodType, number>>({
-    great: 0, good: 0, okay: 0, bad: 0, terrible: 0
+  const [animatedCounts, setAnimatedCounts] = useState<
+    Record<MoodType, number>
+  >({
+    great: 0,
+    good: 0,
+    okay: 0,
+    bad: 0,
+    terrible: 0,
   });
   const [isVisible, setIsVisible] = useState(false);
 
@@ -48,13 +77,15 @@ export function AnimatedMoodDistribution({
     return () => clearTimeout(timer);
   }, [moodCounts]);
 
-  const moods: MoodType[] = ['great', 'good', 'okay', 'bad', 'terrible'];
+  const moods: MoodType[] = ["great", "good", "okay", "bad", "terrible"];
 
   return (
-    <div className={cn(
-      "bg-card rounded-2xl p-6 zen-shadow-card overflow-hidden transition-all duration-500",
-      isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-    )}>
+    <div
+      className={cn(
+        "bg-card rounded-2xl p-6 zen-shadow-card overflow-hidden transition-all duration-500",
+        isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4",
+      )}
+    >
       {/* Header */}
       <div className="flex items-center gap-3 mb-5">
         <div className="relative">
@@ -66,7 +97,9 @@ export function AnimatedMoodDistribution({
         <h3 className="text-lg font-bold text-foreground flex-1">{title}</h3>
         {totalMoods > 0 && (
           <div className="px-3 py-1 bg-secondary rounded-full">
-            <span className="text-sm font-medium text-muted-foreground">{totalMoods}</span>
+            <span className="text-sm font-medium text-muted-foreground">
+              {totalMoods}
+            </span>
           </div>
         )}
       </div>
@@ -74,15 +107,20 @@ export function AnimatedMoodDistribution({
       {/* Tag Filter */}
       {allTags && allTags.length > 0 && onTagChange && (
         <div className="mb-5">
-          <label className="text-sm text-muted-foreground mb-2 block">{tagFilterLabel}</label>
+          <label className="text-sm text-muted-foreground mb-2 block">
+            {tagFilterLabel}
+          </label>
           <select
             value={selectedTag}
             onChange={(e) => onTagChange(e.target.value)}
             className="w-full p-3 bg-secondary rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+            aria-label={tagFilterLabel || "Filter by tag"}
           >
             <option value="all">{allTagsLabel}</option>
             {allTags.map((tag) => (
-              <option key={tag} value={tag}>{tag}</option>
+              <option key={tag} value={tag}>
+                {tag}
+              </option>
             ))}
           </select>
         </div>
@@ -103,11 +141,13 @@ export function AnimatedMoodDistribution({
             >
               <div className="flex items-center gap-4">
                 {/* Animated Emoji */}
-                <div className={cn(
-                  "w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300",
-                  config.bgLight,
-                  "group-hover:scale-110 group-hover:shadow-lg"
-                )}>
+                <div
+                  className={cn(
+                    "w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300",
+                    config.bgLight,
+                    "group-hover:scale-110 group-hover:shadow-lg",
+                  )}
+                >
                   <AnimatedMoodEmoji mood={mood} size="md" />
                 </div>
 
@@ -118,11 +158,11 @@ export function AnimatedMoodDistribution({
                     <div
                       className={cn(
                         "h-full rounded-full transition-all duration-1000 ease-out relative",
-                        `bg-gradient-to-r ${config.gradient}`
+                        `bg-gradient-to-r ${config.gradient}`,
                       )}
                       style={{
                         width: `${percentage}%`,
-                        transitionDelay: `${index * 150}ms`
+                        transitionDelay: `${index * 150}ms`,
                       }}
                     >
                       {/* Shimmer Effect */}
@@ -145,14 +185,18 @@ export function AnimatedMoodDistribution({
                 </div>
 
                 {/* Count */}
-                <div className={cn(
-                  "min-w-[3rem] text-end transition-all duration-300",
-                  "group-hover:scale-110"
-                )}>
-                  <span className={cn(
-                    "text-lg font-bold bg-clip-text text-transparent",
-                    `bg-gradient-to-r ${config.gradient}`
-                  )}>
+                <div
+                  className={cn(
+                    "min-w-[3rem] text-end transition-all duration-300",
+                    "group-hover:scale-110",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "text-lg font-bold bg-clip-text text-transparent",
+                      `bg-gradient-to-r ${config.gradient}`,
+                    )}
+                  >
                     {count}
                   </span>
                 </div>
@@ -166,7 +210,7 @@ export function AnimatedMoodDistribution({
       {totalMoods === 0 && (
         <div className="text-center py-8 text-muted-foreground">
           <Sparkles className="w-8 h-8 mx-auto mb-2 opacity-50" />
-          <p className="text-sm">{t.noMoodDataYet || 'No mood data yet'}</p>
+          <p className="text-sm">{t.noMoodDataYet || "No mood data yet"}</p>
         </div>
       )}
     </div>

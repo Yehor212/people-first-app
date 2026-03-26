@@ -3,13 +3,19 @@
  * 4 useState, 4 useMemo (calendar-specific only).
  */
 
-import { useState, useMemo } from 'react';
-import { Calendar, ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
-import { getDaysInMonth, cn } from '@/lib/utils';
-import { MoodEntry, Habit, GratitudeEntry } from '@/types';
-import { safeParseInt } from '@/lib/validation';
-import { CalendarGrid } from './CalendarGrid';
-import { SelectedDayPanel } from './SelectedDayPanel';
+import { useState, useMemo } from "react";
+import {
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
+import { getDaysInMonth, cn } from "@/lib/utils";
+import { MoodEntry, Habit, GratitudeEntry } from "@/types";
+import { safeParseInt } from "@/lib/validation";
+import { CalendarGrid } from "./CalendarGrid";
+import { SelectedDayPanel } from "./SelectedDayPanel";
 
 interface CalendarTabProps {
   moodsByDate: Map<string, MoodEntry[]>;
@@ -26,11 +32,24 @@ interface CalendarTabProps {
 }
 
 export function CalendarTab({
-  moodsByDate, moodByDate, focusMinutesByDate, gratitudeByDate, habitCompletionMap,
-  habits, emotionLabels, todayKey, monthNames, t, language,
+  moodsByDate,
+  moodByDate,
+  focusMinutesByDate,
+  gratitudeByDate,
+  habitCompletionMap,
+  habits,
+  emotionLabels,
+  todayKey,
+  monthNames,
+  t,
+  language,
 }: CalendarTabProps) {
-  const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
-  const [selectedMonth, setSelectedMonth] = useState(() => new Date().getMonth());
+  const [selectedYear, setSelectedYear] = useState(() =>
+    new Date().getFullYear(),
+  );
+  const [selectedMonth, setSelectedMonth] = useState(() =>
+    new Date().getMonth(),
+  );
   const [selectedDate, setSelectedDate] = useState<string | null>(todayKey);
   const [showMonthSelector, setShowMonthSelector] = useState(false);
 
@@ -38,7 +57,7 @@ export function CalendarTab({
     const set = new Set<number>();
     const currentYear = new Date().getFullYear();
     const addYear = (date: string) => {
-      const year = safeParseInt(date.split('-')[0], currentYear, 2000, 2100);
+      const year = safeParseInt(date.split("-")[0], currentYear, 2000, 2100);
       set.add(year);
     };
     [...moodByDate.keys()].forEach(addYear);
@@ -49,7 +68,13 @@ export function CalendarTab({
     set.add(selectedYear);
     const years = Array.from(set).sort((a, b) => b - a);
     return years.length > 0 ? years : [currentYear];
-  }, [moodByDate, focusMinutesByDate, gratitudeByDate, habitCompletionMap, selectedYear]);
+  }, [
+    moodByDate,
+    focusMinutesByDate,
+    gratitudeByDate,
+    habitCompletionMap,
+    selectedYear,
+  ]);
 
   const yearStats = useMemo(() => {
     const prefix = `${selectedYear}-`;
@@ -72,19 +97,25 @@ export function CalendarTab({
     });
 
     return { moodCount, focusMinutes, habitCompletions, gratitudeCount };
-  }, [selectedYear, moodByDate, focusMinutesByDate, habitCompletionMap, gratitudeByDate]);
+  }, [
+    selectedYear,
+    moodByDate,
+    focusMinutesByDate,
+    habitCompletionMap,
+    gratitudeByDate,
+  ]);
 
   const calendarDays = useMemo(() => {
     const days = getDaysInMonth(selectedYear, selectedMonth);
     const firstDay = new Date(selectedYear, selectedMonth, 1).getDay();
-    const monthKey = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}`;
+    const monthKey = `${selectedYear}-${String(selectedMonth + 1).padStart(2, "0")}`;
 
     const cells: Array<{ dateKey?: string; day?: number }> = [];
     for (let i = 0; i < firstDay; i += 1) {
       cells.push({});
     }
     for (let day = 1; day <= days; day += 1) {
-      const dateKey = `${monthKey}-${String(day).padStart(2, '0')}`;
+      const dateKey = `${monthKey}-${String(day).padStart(2, "0")}`;
       cells.push({ dateKey, day });
     }
     return cells;
@@ -97,9 +128,16 @@ export function CalendarTab({
       mood: moodByDate.get(selectedDate),
       focusMinutes: focusMinutesByDate.get(selectedDate) || 0,
       habits: habitCompletionMap.get(selectedDate) || [],
-      gratitude: gratitudeByDate.get(selectedDate) || []
+      gratitude: gratitudeByDate.get(selectedDate) || [],
     };
-  }, [selectedDate, moodsByDate, moodByDate, focusMinutesByDate, habitCompletionMap, gratitudeByDate]);
+  }, [
+    selectedDate,
+    moodsByDate,
+    moodByDate,
+    focusMinutesByDate,
+    habitCompletionMap,
+    gratitudeByDate,
+  ]);
 
   const handleMonthShift = (delta: number) => {
     setSelectedDate(null);
@@ -137,19 +175,35 @@ export function CalendarTab({
           {/* Header */}
           <div className="flex items-center gap-2.5 mb-5">
             <Calendar className="w-5 h-5 text-primary flex-shrink-0" />
-            <h3 className="text-lg font-semibold text-foreground">{t.calendarTitle}</h3>
+            <h3 className="text-lg font-semibold text-foreground">
+              {t.calendarTitle}
+            </h3>
           </div>
 
           {/* Year & Month Selector */}
           <div className="flex flex-wrap items-center gap-2 mb-5">
-            <label className="text-sm text-muted-foreground">{t.calendarYear}</label>
+            <label className="text-sm text-muted-foreground">
+              {t.calendarYear}
+            </label>
             <select
               value={selectedYear}
-              onChange={(e) => setSelectedYear(safeParseInt(e.target.value, new Date().getFullYear(), 2000, 2100))}
+              onChange={(e) =>
+                setSelectedYear(
+                  safeParseInt(
+                    e.target.value,
+                    new Date().getFullYear(),
+                    2000,
+                    2100,
+                  ),
+                )
+              }
               className="p-2 bg-secondary rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+              aria-label={t.calendarYear || "Select year"}
             >
               {availableYears.map((year) => (
-                <option key={year} value={year}>{year}</option>
+                <option key={year} value={year}>
+                  {year}
+                </option>
               ))}
             </select>
             <div className="ms-auto flex items-center gap-2">
@@ -163,11 +217,15 @@ export function CalendarTab({
               <button
                 onClick={() => setShowMonthSelector(!showMonthSelector)}
                 aria-expanded={showMonthSelector}
-                aria-label={t.calendarSelectMonth || 'Select month'}
+                aria-label={t.calendarSelectMonth || "Select month"}
                 className="px-4 py-2 rounded-xl bg-gradient-to-r from-primary/20 to-accent/20 text-sm font-medium hover:from-primary/30 hover:to-accent/30 transition-all flex items-center gap-2"
               >
                 {monthNames[selectedMonth]} {selectedYear}
-                {showMonthSelector ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                {showMonthSelector ? (
+                  <ChevronUp className="w-4 h-4" />
+                ) : (
+                  <ChevronDown className="w-4 h-4" />
+                )}
               </button>
               <button
                 onClick={() => handleMonthShift(1)}
@@ -181,7 +239,11 @@ export function CalendarTab({
 
           {/* Month Selector Grid */}
           {showMonthSelector && (
-            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mb-5 animate-fade-in" role="listbox" aria-label={t.calendarSelectMonth || 'Select month'}>
+            <div
+              className="grid grid-cols-3 sm:grid-cols-4 gap-2 mb-5 animate-fade-in"
+              role="listbox"
+              aria-label={t.calendarSelectMonth || "Select month"}
+            >
               {monthNames.map((month, index) => (
                 <button
                   key={month}
@@ -196,7 +258,7 @@ export function CalendarTab({
                     "px-2 py-2.5 rounded-xl text-xs font-medium transition-all",
                     selectedMonth === index
                       ? "bg-gradient-to-r from-primary to-accent text-white shadow-lg"
-                      : "bg-secondary text-muted-foreground hover:bg-primary/10"
+                      : "bg-secondary text-muted-foreground hover:bg-primary/10",
                   )}
                 >
                   {month}
@@ -208,20 +270,36 @@ export function CalendarTab({
           {/* Stats Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-5">
             <div className="text-center p-2 sm:p-3 bg-secondary/50 rounded-xl hover:bg-secondary transition-colors">
-              <p className="text-lg sm:text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[hsl(var(--chart-mood))] to-[hsl(var(--chart-mood)/0.7)]">{yearStats.moodCount}</p>
-              <p className="text-xs text-muted-foreground mt-1">{t.moodEntries}</p>
+              <p className="text-lg sm:text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[hsl(var(--chart-mood))] to-[hsl(var(--chart-mood)/0.7)]">
+                {yearStats.moodCount}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {t.moodEntries}
+              </p>
             </div>
             <div className="text-center p-2 sm:p-3 bg-secondary/50 rounded-xl hover:bg-secondary transition-colors">
-              <p className="text-lg sm:text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[hsl(var(--chart-focus))] to-[hsl(var(--chart-focus)/0.7)]">{yearStats.focusMinutes}</p>
-              <p className="text-xs text-muted-foreground mt-1">{t.focusMinutes}</p>
+              <p className="text-lg sm:text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[hsl(var(--chart-focus))] to-[hsl(var(--chart-focus)/0.7)]">
+                {yearStats.focusMinutes}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {t.focusMinutes}
+              </p>
             </div>
             <div className="text-center p-2 sm:p-3 bg-secondary/50 rounded-xl hover:bg-secondary transition-colors">
-              <p className="text-lg sm:text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[hsl(var(--chart-habit))] to-[hsl(var(--chart-habit)/0.7)]">{yearStats.habitCompletions}</p>
-              <p className="text-xs text-muted-foreground mt-1">{t.habitsCompleted}</p>
+              <p className="text-lg sm:text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[hsl(var(--chart-habit))] to-[hsl(var(--chart-habit)/0.7)]">
+                {yearStats.habitCompletions}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {t.habitsCompleted}
+              </p>
             </div>
             <div className="text-center p-2 sm:p-3 bg-secondary/50 rounded-xl hover:bg-secondary transition-colors">
-              <p className="text-lg sm:text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-accent to-accent/70">{yearStats.gratitudeCount}</p>
-              <p className="text-xs text-muted-foreground mt-1">{t.gratitudes}</p>
+              <p className="text-lg sm:text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-accent to-accent/70">
+                {yearStats.gratitudeCount}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {t.gratitudes}
+              </p>
             </div>
           </div>
 
@@ -248,7 +326,8 @@ export function CalendarTab({
             t={t}
             language={language}
           />
-        </div>{/* End content wrapper */}
+        </div>
+        {/* End content wrapper */}
       </div>
     </>
   );

@@ -1355,8 +1355,11 @@ export function JournalModule({
                                       else if (fmt.key === "md")
                                         await exp.exportMarkdown();
                                       setShowExportPicker(false);
-                                    } catch {
-                                      // export failed
+                                    } catch (err) {
+                                      logger.warn(
+                                        "[Journal] Export failed:",
+                                        err,
+                                      );
                                     } finally {
                                       setExporting(false);
                                     }

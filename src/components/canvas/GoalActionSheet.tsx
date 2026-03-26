@@ -9,19 +9,32 @@
  * - AnimatePresence for slide-up / slide-down transitions
  */
 
-import { useCallback, useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, CheckCircle, Trash2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { haptics } from '@/lib/haptics';
-import { zenMotion } from '@/lib/animationUtils';
-import { useModalA11y } from '@/hooks/useModalA11y';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { GOAL_ICON_MAP } from './GoalInput';
-import { GOAL_COLORS } from './GoalNode';
-import type { CanvasGoal } from '@/types';
+import { useCallback, useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Plus, CheckCircle, Trash2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { haptics } from "@/lib/haptics";
+import { zenMotion } from "@/lib/animationUtils";
+import { useModalA11y } from "@/hooks/useModalA11y";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { GOAL_ICON_MAP } from "./GoalInput";
+import { GOAL_COLORS } from "./GoalNode";
+import type { CanvasGoal } from "@/types";
 
-const CURATED_EMOJIS = ['🎯', '📚', '💪', '🏃', '💡', '🎨', '🎵', '❤️', '⭐', '🔥', '🌱', '🧘'];
+const CURATED_EMOJIS = [
+  "🎯",
+  "📚",
+  "💪",
+  "🏃",
+  "💡",
+  "🎨",
+  "🎵",
+  "❤️",
+  "⭐",
+  "🔥",
+  "🌱",
+  "🧘",
+];
 const COLOR_KEYS = Object.keys(GOAL_COLORS);
 
 const ICON_KEYS = Object.keys(GOAL_ICON_MAP);
@@ -58,13 +71,13 @@ function ActionRow({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        'w-full flex items-center gap-3 px-5 py-4',
-        'text-sm font-medium transition-colors',
+        "w-full flex items-center gap-3 px-5 py-4",
+        "text-sm font-medium transition-colors",
         disabled
-          ? 'text-muted-foreground/40 cursor-not-allowed'
+          ? "text-muted-foreground/40 cursor-not-allowed"
           : destructive
-            ? 'text-red-400 active:bg-red-400/10'
-            : 'text-foreground/80 active:bg-muted/50',
+            ? "text-red-400 active:bg-red-400/10"
+            : "text-foreground/80 active:bg-muted/50",
       )}
     >
       <Icon className="w-5 h-5 flex-shrink-0" />
@@ -74,9 +87,14 @@ function ActionRow({
 }
 
 export function GoalActionSheet({
-  goal, isBranch,
-  onAddSubtask, onToggleComplete, onDelete, onUpdateIcon,
-  onUpdateEmoji, onUpdateColor,
+  goal,
+  isBranch,
+  onAddSubtask,
+  onToggleComplete,
+  onDelete,
+  onUpdateIcon,
+  onUpdateEmoji,
+  onUpdateColor,
   onDismiss,
 }: GoalActionSheetProps) {
   const isVisible = goal !== null;
@@ -85,7 +103,9 @@ export function GoalActionSheet({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // Reset delete confirmation when switching to a different goal
-  useEffect(() => { setShowDeleteConfirm(false); }, [goal?.id]);
+  useEffect(() => {
+    setShowDeleteConfirm(false);
+  }, [goal?.id]);
 
   const { modalProps } = useModalA11y(isVisible, onDismiss);
 
@@ -113,27 +133,36 @@ export function GoalActionSheet({
     setShowDeleteConfirm(false);
   }, [goal, onDelete]);
 
-  const handleIconTap = useCallback((key: string) => {
-    if (!goal) return;
-    void haptics.light();
-    // Toggle: if already selected, clear; otherwise set
-    const newIcon = goal.icon === key ? undefined : key;
-    onUpdateIcon(goal.id, newIcon);
-  }, [goal, onUpdateIcon]);
+  const handleIconTap = useCallback(
+    (key: string) => {
+      if (!goal) return;
+      void haptics.light();
+      // Toggle: if already selected, clear; otherwise set
+      const newIcon = goal.icon === key ? undefined : key;
+      onUpdateIcon(goal.id, newIcon);
+    },
+    [goal, onUpdateIcon],
+  );
 
-  const handleEmojiTap = useCallback((emoji: string) => {
-    if (!goal) return;
-    void haptics.light();
-    const newEmoji = goal.emoji === emoji ? undefined : emoji;
-    onUpdateEmoji(goal.id, newEmoji);
-  }, [goal, onUpdateEmoji]);
+  const handleEmojiTap = useCallback(
+    (emoji: string) => {
+      if (!goal) return;
+      void haptics.light();
+      const newEmoji = goal.emoji === emoji ? undefined : emoji;
+      onUpdateEmoji(goal.id, newEmoji);
+    },
+    [goal, onUpdateEmoji],
+  );
 
-  const handleColorTap = useCallback((color: string) => {
-    if (!goal) return;
-    void haptics.light();
-    const newColor = goal.color === color ? undefined : color;
-    onUpdateColor(goal.id, newColor);
-  }, [goal, onUpdateColor]);
+  const handleColorTap = useCallback(
+    (color: string) => {
+      if (!goal) return;
+      void haptics.light();
+      const newColor = goal.color === color ? undefined : color;
+      onUpdateColor(goal.id, newColor);
+    },
+    [goal, onUpdateColor],
+  );
 
   return (
     <AnimatePresence>
@@ -157,9 +186,9 @@ export function GoalActionSheet({
             aria-modal="true"
             aria-label={`Goal: ${goal.title}`}
             className="fixed bottom-0 inset-x-0 z-[60] rounded-t-2xl overflow-hidden bg-card/95 backdrop-blur-md [-webkit-backdrop-filter:blur(12px)] pb-[env(safe-area-inset-bottom,0px)]"
-            initial={{ y: '100%' }}
+            initial={{ y: "100%" }}
             animate={{ y: 0 }}
-            exit={{ y: '100%' }}
+            exit={{ y: "100%" }}
             transition={zenMotion.snappy}
             {...modalProps}
           >
@@ -173,7 +202,7 @@ export function GoalActionSheet({
 
             {/* Icon picker row */}
             <div className="flex items-center gap-2 px-5 pb-4">
-              {ICON_KEYS.map(key => {
+              {ICON_KEYS.map((key) => {
                 const Icon = GOAL_ICON_MAP[key];
                 const isSelected = goal.icon === key;
                 return (
@@ -182,10 +211,10 @@ export function GoalActionSheet({
                     type="button"
                     onClick={() => handleIconTap(key)}
                     className={cn(
-                      'p-3 rounded-lg transition-all',
+                      "p-3 rounded-lg transition-all",
                       isSelected
-                        ? 'bg-primary/15 ring-1 ring-primary/30 text-foreground'
-                        : 'text-muted-foreground active:text-foreground active:bg-muted/50',
+                        ? "bg-primary/15 ring-1 ring-primary/30 text-foreground"
+                        : "text-muted-foreground active:text-foreground active:bg-muted/50",
                     )}
                     aria-label={`Icon: ${key}`}
                     aria-pressed={isSelected}
@@ -198,7 +227,7 @@ export function GoalActionSheet({
 
             {/* Emoji picker row */}
             <div className="flex items-center gap-2 px-5 pb-3 flex-wrap">
-              {CURATED_EMOJIS.map(emoji => {
+              {CURATED_EMOJIS.map((emoji) => {
                 const isSelected = goal.emoji === emoji;
                 return (
                   <button
@@ -206,10 +235,10 @@ export function GoalActionSheet({
                     type="button"
                     onClick={() => handleEmojiTap(emoji)}
                     className={cn(
-                      'w-9 h-9 rounded-lg flex items-center justify-center transition-all text-base',
+                      "w-9 h-9 rounded-lg flex items-center justify-center transition-all text-base",
                       isSelected
-                        ? 'bg-primary/15 ring-1 ring-primary/30'
-                        : 'active:bg-muted/50',
+                        ? "bg-primary/15 ring-1 ring-primary/30"
+                        : "active:bg-muted/50",
                     )}
                     aria-label={`Emoji: ${emoji}`}
                     aria-pressed={isSelected}
@@ -222,7 +251,7 @@ export function GoalActionSheet({
 
             {/* Color swatch row */}
             <div className="flex items-center gap-2 px-5 pb-4">
-              {COLOR_KEYS.map(key => {
+              {COLOR_KEYS.map((key) => {
                 const isSelected = goal.color === key;
                 return (
                   <button
@@ -230,10 +259,10 @@ export function GoalActionSheet({
                     type="button"
                     onClick={() => handleColorTap(key)}
                     className={cn(
-                      'w-7 h-7 rounded-full transition-all flex-shrink-0',
+                      "w-11 h-11 rounded-full transition-all flex-shrink-0",
                       isSelected
-                        ? 'ring-2 ring-white/60 ring-offset-2 ring-offset-[rgba(15,20,30,0.95)]'
-                        : 'ring-1 ring-white/10',
+                        ? "ring-2 ring-white/60 ring-offset-2 ring-offset-[rgba(15,20,30,0.95)]"
+                        : "ring-1 ring-white/10",
                     )}
                     style={{ background: GOAL_COLORS[key] }}
                     aria-label={`Color: ${key}`}
@@ -249,37 +278,43 @@ export function GoalActionSheet({
             {/* Action rows */}
             <ActionRow
               icon={Plus}
-              label={ts.goalAddSubtask || 'Add Subtask'}
+              label={ts.goalAddSubtask || "Add Subtask"}
               onClick={handleAddSubtask}
             />
             <ActionRow
               icon={CheckCircle}
-              label={goal.completed ? (ts.goalMarkIncomplete || 'Mark Incomplete') : (ts.goalMarkComplete || 'Mark Complete')}
+              label={
+                goal.completed
+                  ? ts.goalMarkIncomplete || "Mark Incomplete"
+                  : ts.goalMarkComplete || "Mark Complete"
+              }
               onClick={handleToggleComplete}
               disabled={isBranch}
             />
             {showDeleteConfirm ? (
               <div className="px-5 py-3 space-y-2">
-                <p className="text-sm text-red-300">{ts.confirmDelete || 'Delete?'}</p>
+                <p className="text-sm text-red-300">
+                  {ts.confirmDelete || "Delete?"}
+                </p>
                 <div className="flex gap-2">
                   <button
                     onClick={() => setShowDeleteConfirm(false)}
                     className="flex-1 py-2.5 rounded-xl bg-muted text-foreground/80 text-sm font-medium min-h-[44px]"
                   >
-                    {ts.cancel || 'Cancel'}
+                    {ts.cancel || "Cancel"}
                   </button>
                   <button
                     onClick={confirmDelete}
                     className="flex-1 py-2.5 rounded-xl bg-red-500/20 text-red-400 text-sm font-medium min-h-[44px]"
                   >
-                    {ts.delete || 'Delete'}
+                    {ts.delete || "Delete"}
                   </button>
                 </div>
               </div>
             ) : (
               <ActionRow
                 icon={Trash2}
-                label={ts.delete || 'Delete'}
+                label={ts.delete || "Delete"}
                 onClick={handleDelete}
                 destructive
               />

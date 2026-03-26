@@ -11,10 +11,11 @@
  * CSP-safe: Uses lottie_light.js (no expressions/eval) via Vite alias.
  */
 
-import Lottie from 'lottie-react';
-import { useEffect, useState, useRef } from 'react';
-import { shouldAnimate } from '@/lib/animationUtils';
-import { cn } from '@/lib/utils';
+import Lottie from "lottie-react";
+import { useEffect, useState, useRef } from "react";
+import { shouldAnimate } from "@/lib/animationUtils";
+import { cn } from "@/lib/utils";
+import { logger } from "@/lib/logger";
 
 interface LazyLottiePlayerProps {
   /** Dynamic import function: () => import('@/assets/animations/file.json') */
@@ -41,8 +42,8 @@ export function LazyLottiePlayer({
   animationImport,
   loop = true,
   autoplay = true,
-  width = '100%',
-  height = '100%',
+  width = "100%",
+  height = "100%",
   onComplete,
   className,
   fallback = null,
@@ -55,16 +56,18 @@ export function LazyLottiePlayer({
     mountedRef.current = true;
 
     animationImport()
-      .then(m => {
+      .then((m) => {
         if (mountedRef.current) setAnimData(m.default);
       })
-      .catch(() => {
-        // Graceful fallback — animation file missing or failed to load
+      .catch((err) => {
+        logger.warn("[Lottie] Animation load failed:", err);
       });
 
-    return () => { mountedRef.current = false; };
-  // animationImport is a factory function — stable reference expected from caller
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => {
+      mountedRef.current = false;
+    };
+    // animationImport is a factory function — stable reference expected from caller
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Respect user preferences (reduced motion / dopamine settings)
@@ -79,7 +82,7 @@ export function LazyLottiePlayer({
 
   return (
     <div
-      className={cn('pointer-events-none', className)}
+      className={cn("pointer-events-none", className)}
       style={{ width, height, opacity }}
       aria-hidden="true"
     >

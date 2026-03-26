@@ -1,12 +1,18 @@
-import { useState, useEffect } from 'react';
-import { MoodType, MoodEntry } from '@/types';
-import { cn } from '@/lib/utils';
-import { Calendar, ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
-import { AnimatedMoodEmoji } from '@/components/AnimatedMoodEmoji';
-import { AnimatedEmotionEmoji } from '@/components/AnimatedEmotionEmoji';
-import { EMOTION_GRADIENTS, getEmotionLabels } from '@/lib/emotionConstants';
-import { safeParseInt } from '@/lib/validation';
-import { useLanguage } from '@/contexts/LanguageContext';
+import { useState, useEffect } from "react";
+import { MoodType, MoodEntry } from "@/types";
+import { cn } from "@/lib/utils";
+import {
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
+import { AnimatedMoodEmoji } from "@/components/AnimatedMoodEmoji";
+import { AnimatedEmotionEmoji } from "@/components/AnimatedEmotionEmoji";
+import { EMOTION_GRADIENTS, getEmotionLabels } from "@/lib/emotionConstants";
+import { safeParseInt } from "@/lib/validation";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface CalendarDay {
   day: number | null;
@@ -55,11 +61,11 @@ interface AnimatedCalendarProps {
 }
 
 const moodGradients: Record<MoodType, string> = {
-  great: 'from-emerald-400/80 to-teal-500/80',
-  good: 'from-green-400/80 to-emerald-500/80',
-  okay: 'from-amber-400/80 to-yellow-500/80',
-  bad: 'from-orange-400/80 to-amber-500/80',
-  terrible: 'from-red-400/80 to-rose-500/80',
+  great: "from-emerald-400/80 to-teal-500/80",
+  good: "from-green-400/80 to-emerald-500/80",
+  okay: "from-amber-400/80 to-yellow-500/80",
+  bad: "from-orange-400/80 to-amber-500/80",
+  terrible: "from-red-400/80 to-rose-500/80",
 };
 
 // Helper to get gradient for mood entry (supports both emotions and legacy moods)
@@ -67,15 +73,38 @@ const getEntryGradient = (entry: MoodEntry): string => {
   if (entry.emotion?.primary) {
     return EMOTION_GRADIENTS[entry.emotion.primary];
   }
-  return moodGradients[entry.mood] || 'from-gray-400/80 to-gray-500/80';
+  return moodGradients[entry.mood] || "from-gray-400/80 to-gray-500/80";
 };
 
-const moodConfig: Record<MoodType, { gradient: string; bgLight: string; emoji: string }> = {
-  great: { gradient: 'from-emerald-400 to-teal-500', bgLight: 'bg-emerald-500/20', emoji: '😄' },
-  good: { gradient: 'from-green-400 to-emerald-500', bgLight: 'bg-green-500/20', emoji: '🙂' },
-  okay: { gradient: 'from-amber-400 to-yellow-500', bgLight: 'bg-amber-500/20', emoji: '😐' },
-  bad: { gradient: 'from-orange-400 to-amber-500', bgLight: 'bg-orange-500/20', emoji: '😔' },
-  terrible: { gradient: 'from-red-400 to-rose-500', bgLight: 'bg-red-500/20', emoji: '😢' },
+const moodConfig: Record<
+  MoodType,
+  { gradient: string; bgLight: string; emoji: string }
+> = {
+  great: {
+    gradient: "from-emerald-400 to-teal-500",
+    bgLight: "bg-emerald-500/20",
+    emoji: "😄",
+  },
+  good: {
+    gradient: "from-green-400 to-emerald-500",
+    bgLight: "bg-green-500/20",
+    emoji: "🙂",
+  },
+  okay: {
+    gradient: "from-amber-400 to-yellow-500",
+    bgLight: "bg-amber-500/20",
+    emoji: "😐",
+  },
+  bad: {
+    gradient: "from-orange-400 to-amber-500",
+    bgLight: "bg-orange-500/20",
+    emoji: "😔",
+  },
+  terrible: {
+    gradient: "from-red-400 to-rose-500",
+    bgLight: "bg-red-500/20",
+    emoji: "😢",
+  },
 };
 
 export function AnimatedCalendar({
@@ -136,17 +165,35 @@ export function AnimatedCalendar({
   const selectedDayData = selectedDate ? getDayData(selectedDate) : null;
 
   const stats = [
-    { value: moodCount, label: moodEntriesLabel, gradient: 'from-pink-500 to-rose-500' },
-    { value: focusMinutes, label: focusMinutesLabel, gradient: 'from-violet-500 to-purple-500' },
-    { value: habitCompletions, label: habitsCompletedLabel, gradient: 'from-emerald-500 to-teal-500' },
-    { value: gratitudeCount, label: gratitudesLabel, gradient: 'from-amber-500 to-orange-500' },
+    {
+      value: moodCount,
+      label: moodEntriesLabel,
+      gradient: "from-pink-500 to-rose-500",
+    },
+    {
+      value: focusMinutes,
+      label: focusMinutesLabel,
+      gradient: "from-violet-500 to-purple-500",
+    },
+    {
+      value: habitCompletions,
+      label: habitsCompletedLabel,
+      gradient: "from-emerald-500 to-teal-500",
+    },
+    {
+      value: gratitudeCount,
+      label: gratitudesLabel,
+      gradient: "from-amber-500 to-orange-500",
+    },
   ];
 
   return (
-    <div className={cn(
-      "bg-card rounded-2xl p-6 zen-shadow-card overflow-hidden transition-all duration-500",
-      isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-    )}>
+    <div
+      className={cn(
+        "bg-card rounded-2xl p-6 zen-shadow-card overflow-hidden transition-all duration-500",
+        isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4",
+      )}
+    >
       {/* Header */}
       <div className="flex items-center gap-3 mb-5">
         <div className="relative">
@@ -163,11 +210,23 @@ export function AnimatedCalendar({
         <label className="text-sm text-muted-foreground">{yearLabel}</label>
         <select
           value={selectedYear}
-          onChange={(e) => onYearChange(safeParseInt(e.target.value, new Date().getFullYear(), 2020, 2100))}
+          onChange={(e) =>
+            onYearChange(
+              safeParseInt(
+                e.target.value,
+                new Date().getFullYear(),
+                2020,
+                2100,
+              ),
+            )
+          }
           className="p-2 bg-secondary rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+          aria-label={yearLabel || "Select year"}
         >
           {availableYears.map((year) => (
-            <option key={year} value={year}>{year}</option>
+            <option key={year} value={year}>
+              {year}
+            </option>
           ))}
         </select>
 
@@ -184,7 +243,11 @@ export function AnimatedCalendar({
             className="px-4 py-2 rounded-xl bg-gradient-to-r from-primary/10 to-accent/10 text-sm font-medium hover:from-primary/20 hover:to-accent/20 transition-all flex items-center gap-2"
           >
             {monthNames[selectedMonth]} {selectedYear}
-            {showMonthSelector ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            {showMonthSelector ? (
+              <ChevronUp className="w-4 h-4" />
+            ) : (
+              <ChevronDown className="w-4 h-4" />
+            )}
           </button>
           <button
             onClick={() => handleMonthShift(1)}
@@ -211,7 +274,7 @@ export function AnimatedCalendar({
                 "px-2 py-2.5 rounded-xl text-xs font-medium transition-all",
                 selectedMonth === index
                   ? "bg-gradient-to-r from-primary to-accent text-white shadow-lg"
-                  : "bg-secondary text-muted-foreground hover:bg-primary/10"
+                  : "bg-secondary text-muted-foreground hover:bg-primary/10",
               )}
             >
               {month}
@@ -228,13 +291,17 @@ export function AnimatedCalendar({
             className="text-center p-3 bg-secondary/50 rounded-xl hover:bg-secondary transition-colors animate-fade-in"
             style={{ animationDelay: `${index * 100}ms` }}
           >
-            <p className={cn(
-              "text-xl font-bold bg-clip-text text-transparent",
-              `bg-gradient-to-r ${stat.gradient}`
-            )}>
+            <p
+              className={cn(
+                "text-xl font-bold bg-clip-text text-transparent",
+                `bg-gradient-to-r ${stat.gradient}`,
+              )}
+            >
               {stat.value}
             </p>
-            <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{stat.label}</p>
+            <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
+              {stat.label}
+            </p>
           </div>
         ))}
       </div>
@@ -252,7 +319,9 @@ export function AnimatedCalendar({
       <div className="grid grid-cols-7 gap-1.5">
         {calendarDays.map((cell, index) => {
           if (!cell.dateKey) {
-            return <div key={`empty-${index}`} className="w-full aspect-square" />;
+            return (
+              <div key={`empty-${index}`} className="w-full aspect-square" />
+            );
           }
 
           const moodEntry = getMoodForDate(cell.dateKey);
@@ -262,7 +331,7 @@ export function AnimatedCalendar({
           const isToday = cell.dateKey === todayKey;
           const isSelected = cell.dateKey === selectedDate;
 
-          const gradient = moodEntry ? getEntryGradient(moodEntry) : '';
+          const gradient = moodEntry ? getEntryGradient(moodEntry) : "";
 
           return (
             <button
@@ -271,17 +340,21 @@ export function AnimatedCalendar({
               className={cn(
                 "w-full aspect-square rounded-xl text-xs font-semibold flex items-center justify-center transition-all duration-200",
                 "hover:scale-105 hover:shadow-lg",
-                (hasEmotion || hasLegacyMood)
+                hasEmotion || hasLegacyMood
                   ? `bg-gradient-to-br ${gradient} text-white shadow-md`
                   : hasData
                     ? "bg-primary/20 text-foreground"
                     : "bg-secondary/50 text-muted-foreground hover:bg-secondary",
                 isToday && "ring-2 ring-primary ring-offset-2 ring-offset-card",
-                isSelected && "ring-2 ring-accent ring-offset-1 ring-offset-card scale-110"
+                isSelected &&
+                  "ring-2 ring-accent ring-offset-1 ring-offset-card scale-110",
               )}
             >
               {hasEmotion ? (
-                <AnimatedEmotionEmoji emotion={moodEntry.emotion.primary} size="sm" />
+                <AnimatedEmotionEmoji
+                  emotion={moodEntry.emotion.primary}
+                  size="sm"
+                />
               ) : hasLegacyMood ? (
                 <AnimatedMoodEmoji mood={moodEntry.mood} size="sm" />
               ) : (
@@ -301,9 +374,15 @@ export function AnimatedCalendar({
               {selectedDayData.mood && (
                 <div className="flex items-center gap-2">
                   {selectedDayData.mood.emotion?.primary ? (
-                    <AnimatedEmotionEmoji emotion={selectedDayData.mood.emotion.primary} size="md" />
+                    <AnimatedEmotionEmoji
+                      emotion={selectedDayData.mood.emotion.primary}
+                      size="md"
+                    />
                   ) : (
-                    <AnimatedMoodEmoji mood={selectedDayData.mood.mood} size="sm" />
+                    <AnimatedMoodEmoji
+                      mood={selectedDayData.mood.mood}
+                      size="sm"
+                    />
                   )}
                 </div>
               )}
@@ -314,34 +393,48 @@ export function AnimatedCalendar({
                 <span className="text-muted-foreground">{moodTodayLabel}</span>
                 <span className="font-medium">
                   {selectedDayData.mood
-                    ? (selectedDayData.mood.emotion?.primary
-                        ? getEmotionLabels(calT.locale || 'en')[selectedDayData.mood.emotion.primary]
-                        : moodConfig[selectedDayData.mood.mood].emoji)
-                    : '—'}
+                    ? selectedDayData.mood.emotion?.primary
+                      ? getEmotionLabels(calT.locale || "en")[
+                          selectedDayData.mood.emotion.primary
+                        ]
+                      : moodConfig[selectedDayData.mood.mood].emoji
+                    : "—"}
                 </span>
               </div>
               <div className="flex items-center justify-between p-2 bg-card/50 rounded-lg">
-                <span className="text-muted-foreground">{focusMinutesLabel}</span>
-                <span className="font-medium">{selectedDayData.focusMinutes}</span>
+                <span className="text-muted-foreground">
+                  {focusMinutesLabel}
+                </span>
+                <span className="font-medium">
+                  {selectedDayData.focusMinutes}
+                </span>
               </div>
               <div className="flex items-center justify-between p-2 bg-card/50 rounded-lg">
-                <span className="text-muted-foreground">{habitsCompletedLabel}</span>
-                <span className="font-medium">{selectedDayData.habits.length}</span>
+                <span className="text-muted-foreground">
+                  {habitsCompletedLabel}
+                </span>
+                <span className="font-medium">
+                  {selectedDayData.habits.length}
+                </span>
               </div>
               <div className="flex items-center justify-between p-2 bg-card/50 rounded-lg">
                 <span className="text-muted-foreground">{gratitudesLabel}</span>
-                <span className="font-medium">{selectedDayData.gratitude.length}</span>
+                <span className="font-medium">
+                  {selectedDayData.gratitude.length}
+                </span>
               </div>
             </div>
 
             {selectedDayData.habits.length > 0 && (
               <div className="text-xs text-muted-foreground bg-card/30 p-2 rounded-lg">
-                {selectedDayData.habits.join(', ')}
+                {selectedDayData.habits.join(", ")}
               </div>
             )}
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground text-center py-4">{selectDayLabel}</p>
+          <p className="text-sm text-muted-foreground text-center py-4">
+            {selectDayLabel}
+          </p>
         )}
       </div>
     </div>

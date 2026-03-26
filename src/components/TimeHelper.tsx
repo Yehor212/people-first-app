@@ -1,16 +1,16 @@
 // Time Blindness Helper for ADHD
 // Visual time indicators and audio pings for better time awareness
 
-import { useState, useEffect, useRef } from 'react';
-import { Clock, Bell, BellOff, Play, Pause, X } from 'lucide-react';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { cn } from '@/lib/utils';
-import { safeParseInt } from '@/lib/validation';
-import { playNotification, playLevelUp } from '@/lib/audioManager';
-import { getLocale } from '@/lib/timeUtils';
-import { useBackHandler } from '@/hooks/useBackHandler';
-import { useScrollLock } from '@/hooks/useScrollLock';
-import { useModalKeyboard } from '@/hooks/useModalKeyboard';
+import { useState, useEffect, useRef } from "react";
+import { Clock, Bell, BellOff, Play, Pause, X } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { cn } from "@/lib/utils";
+import { safeParseInt } from "@/lib/validation";
+import { playNotification, playLevelUp } from "@/lib/audioManager";
+import { getLocale } from "@/lib/timeUtils";
+import { useBackHandler } from "@/hooks/useBackHandler";
+import { useScrollLock } from "@/hooks/useScrollLock";
+import { useModalKeyboard } from "@/hooks/useModalKeyboard";
 
 interface TimeHelperProps {
   onClose: () => void;
@@ -47,7 +47,7 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
     }
 
     intervalRef.current = setInterval(() => {
-      setTimeLeft(prev => {
+      setTimeLeft((prev) => {
         if (prev <= 1) {
           clearInterval(intervalRef.current);
           if (soundEnabled) playLevelUp();
@@ -55,12 +55,17 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
         }
 
         const newTimeLeft = prev - 1;
-        const elapsed = (duration * 60) - newTimeLeft;
+        const elapsed = duration * 60 - newTimeLeft;
 
         // Play ping at intervals
-        if (soundEnabled && elapsed > 0 && elapsed % (pingInterval * 60) === 0) {
+        if (
+          soundEnabled &&
+          elapsed > 0 &&
+          elapsed % (pingInterval * 60) === 0
+        ) {
           const timeSinceLastPing = Date.now() - lastPingRef.current;
-          if (timeSinceLastPing > 1000) { // Prevent double pings
+          if (timeSinceLastPing > 1000) {
+            // Prevent double pings
             playNotification();
             lastPingRef.current = Date.now();
           }
@@ -83,9 +88,9 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
     const secs = seconds % 60;
 
     if (hours > 0) {
-      return `${hours}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+      return `${hours}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
     }
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
   const getTimeRemaining = () => {
@@ -93,22 +98,40 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
     const mins = Math.floor((timeLeft % 3600) / 60);
 
     if (hours > 0) {
-      return (t.hoursMinutesLeft || '{hours}h {mins}m left').replace('{hours}', String(hours)).replace('{mins}', String(mins));
+      return (t.hoursMinutesLeft || "{hours}h {mins}m left")
+        .replace("{hours}", String(hours))
+        .replace("{mins}", String(mins));
     }
-    return (t.minutesLeft || '{mins}m left').replace('{mins}', String(mins));
+    return (t.minutesLeft || "{mins}m left").replace("{mins}", String(mins));
   };
 
   const getEndTime = () => {
     const end = new Date(Date.now() + timeLeft * 1000);
-    return end.toLocaleTimeString(getLocale(language), { hour: '2-digit', minute: '2-digit' });
+    return end.toLocaleTimeString(getLocale(language), {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   };
 
   const progress = ((duration * 60 - timeLeft) / (duration * 60)) * 100;
-  const progressColor = timeLeft < 300 ? 'text-red-500' : timeLeft < 900 ? 'text-yellow-500' : 'text-primary';
+  const progressColor =
+    timeLeft < 300
+      ? "text-red-500"
+      : timeLeft < 900
+        ? "text-yellow-500"
+        : "text-primary";
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4" role="dialog" aria-modal="true">
-      <div ref={modalRef} onKeyDown={modalKeyDown} className="bg-card rounded-2xl shadow-2xl max-w-lg w-full p-6">
+    <div
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div
+        ref={modalRef}
+        onKeyDown={modalKeyDown}
+        className="bg-card rounded-2xl shadow-2xl max-w-lg w-full p-6"
+      >
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
@@ -116,16 +139,18 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
               <Clock className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h2 className="text-xl font-bold">{t.timeBlindnessHelper || 'Time Blindness Helper'}</h2>
+              <h2 className="text-xl font-bold">
+                {t.timeBlindnessHelper || "Time Blindness Helper"}
+              </h2>
               <p className="text-sm text-muted-foreground">
-                {t.visualTimeAwareness || 'Visual time awareness for ADHD'}
+                {t.visualTimeAwareness || "Visual time awareness for ADHD"}
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
             className="p-2 hover:bg-muted rounded-lg transition-colors"
-            aria-label={t.close || 'Close'}
+            aria-label={t.close || "Close"}
           >
             <X className="w-5 h-5" />
           </button>
@@ -156,7 +181,13 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
                 className="transition-all duration-1000"
               />
               <defs>
-                <linearGradient id="timeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <linearGradient
+                  id="timeGradient"
+                  x1="0%"
+                  y1="0%"
+                  x2="100%"
+                  y2="100%"
+                >
                   <stop offset="0%" stopColor="#8B5CF6" />
                   <stop offset="100%" stopColor="#EC4899" />
                 </linearGradient>
@@ -166,11 +197,13 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
             {/* Time Display */}
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-center">
-                <div className={cn('text-5xl font-bold mb-2', progressColor)}>
+                <div className={cn("text-5xl font-bold mb-2", progressColor)}>
                   {formatTime(timeLeft)}
                 </div>
                 <div className="text-sm text-muted-foreground">
-                  {timeLeft > 0 ? getTimeRemaining() : (t.timesUp || "Time's up!")}
+                  {timeLeft > 0
+                    ? getTimeRemaining()
+                    : t.timesUp || "Time's up!"}
                 </div>
               </div>
             </div>
@@ -182,9 +215,7 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
               <p className="text-sm text-muted-foreground mb-1">
                 {t.youllFinishAt || "🎯 You'll finish at:"}
               </p>
-              <p className="text-xl font-bold text-primary">
-                {getEndTime()}
-              </p>
+              <p className="text-xl font-bold text-primary">{getEndTime()}</p>
             </div>
           )}
         </div>
@@ -195,18 +226,18 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
             {/* Duration Selector */}
             <div className="mb-4">
               <label className="text-sm font-medium mb-2 block">
-                {t.durationMinutes || 'Duration (minutes)'}
+                {t.durationMinutes || "Duration (minutes)"}
               </label>
               <div className="grid grid-cols-4 gap-2 mb-3">
-                {[15, 30, 45, 60].map(mins => (
+                {[15, 30, 45, 60].map((mins) => (
                   <button
                     key={mins}
                     onClick={() => setDuration(mins)}
                     className={cn(
-                      'py-2 rounded-lg font-medium transition-all',
+                      "py-2 rounded-lg font-medium transition-all",
                       duration === mins
-                        ? 'zen-gradient text-white zen-shadow'
-                        : 'bg-muted hover:bg-muted/70'
+                        ? "zen-gradient text-white zen-shadow"
+                        : "bg-muted hover:bg-muted/70",
                     )}
                   >
                     {mins}m
@@ -219,29 +250,32 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
                 max="180"
                 step="5"
                 value={duration}
-                onChange={(e) => setDuration(safeParseInt(e.target.value, 60, 5, 180))}
+                onChange={(e) =>
+                  setDuration(safeParseInt(e.target.value, 60, 5, 180))
+                }
                 className="w-full"
+                aria-label="Duration in minutes"
               />
               <div className="text-center text-sm text-muted-foreground mt-1">
-                {(t.nMinutes || '{n} minutes').replace('{n}', String(duration))}
+                {(t.nMinutes || "{n} minutes").replace("{n}", String(duration))}
               </div>
             </div>
 
             {/* Ping Interval */}
             <div className="mb-4">
               <label className="text-sm font-medium mb-2 block">
-                {t.pingEveryMinutes || 'Ping Every (minutes)'}
+                {t.pingEveryMinutes || "Ping Every (minutes)"}
               </label>
               <div className="grid grid-cols-4 gap-2">
-                {[5, 10, 15, 30].map(mins => (
+                {[5, 10, 15, 30].map((mins) => (
                   <button
                     key={mins}
                     onClick={() => setPingInterval(mins)}
                     className={cn(
-                      'py-2 rounded-lg font-medium transition-all text-sm',
+                      "py-2 rounded-lg font-medium transition-all text-sm",
                       pingInterval === mins
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted hover:bg-muted/70'
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted hover:bg-muted/70",
                     )}
                   >
                     {mins}m
@@ -252,26 +286,34 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
 
             {/* Sound Toggle */}
             <div className="flex items-center justify-between mb-4">
-              <span className="text-sm font-medium">{t.audioPings || 'Audio Pings'}</span>
+              <span className="text-sm font-medium">
+                {t.audioPings || "Audio Pings"}
+              </span>
               <div className="flex gap-2">
                 <button
                   onClick={playNotification}
                   className="px-3 py-2 rounded-lg bg-muted hover:bg-muted/70 transition-colors text-sm font-medium"
                   title={t.testSound}
                 >
-                  {t.testSound || '🔊 Test'}
+                  {t.testSound || "🔊 Test"}
                 </button>
                 <button
                   onClick={() => setSoundEnabled(!soundEnabled)}
                   className={cn(
-                    'flex items-center gap-2 px-3 py-2 rounded-lg transition-colors',
+                    "flex items-center gap-2 px-3 py-2 rounded-lg transition-colors",
                     soundEnabled
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted text-muted-foreground'
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground",
                   )}
                 >
-                  {soundEnabled ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
-                  <span className="text-sm">{soundEnabled ? (t.soundOn || 'On') : (t.soundOff || 'Off')}</span>
+                  {soundEnabled ? (
+                    <Bell className="w-4 h-4" />
+                  ) : (
+                    <BellOff className="w-4 h-4" />
+                  )}
+                  <span className="text-sm">
+                    {soundEnabled ? t.soundOn || "On" : t.soundOff || "Off"}
+                  </span>
                 </button>
               </div>
             </div>
@@ -282,7 +324,7 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
               className="w-full py-3 zen-gradient text-white font-bold rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
             >
               <Play className="w-5 h-5" />
-              {t.startTimer || 'Start Timer'}
+              {t.startTimer || "Start Timer"}
             </button>
           </>
         ) : (
@@ -292,7 +334,7 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
               className="flex-1 py-3 bg-muted hover:bg-muted/70 font-medium rounded-xl transition-colors flex items-center justify-center gap-2"
             >
               <Pause className="w-5 h-5" />
-              {t.pauseTimer || 'Pause'}
+              {t.pauseTimer || "Pause"}
             </button>
             <button
               onClick={() => {
@@ -301,7 +343,7 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
               }}
               className="flex-1 py-3 bg-destructive/10 hover:bg-destructive/20 text-destructive font-medium rounded-xl transition-colors"
             >
-              {t.resetTimer || 'Reset'}
+              {t.resetTimer || "Reset"}
             </button>
           </div>
         )}
@@ -311,12 +353,14 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
           <div className="flex gap-3">
             <div className="text-2xl">💡</div>
             <div className="text-sm">
-              <div className="font-medium mb-1">{t.adhdTimeManagement || 'ADHD Time Management'}</div>
+              <div className="font-medium mb-1">
+                {t.adhdTimeManagement || "ADHD Time Management"}
+              </div>
               <ul className="text-muted-foreground space-y-1 list-disc list-inside">
-                <li>{t.adhdTip1 || 'Audio pings help track time passing'}</li>
-                <li>{t.adhdTip2 || 'Visual countdown reduces anxiety'}</li>
-                <li>{t.adhdTip3 || 'End time prediction = better planning'}</li>
-                <li>{t.adhdTip4 || 'Color changes warn when time is low'}</li>
+                <li>{t.adhdTip1 || "Audio pings help track time passing"}</li>
+                <li>{t.adhdTip2 || "Visual countdown reduces anxiety"}</li>
+                <li>{t.adhdTip3 || "End time prediction = better planning"}</li>
+                <li>{t.adhdTip4 || "Color changes warn when time is low"}</li>
               </ul>
             </div>
           </div>
