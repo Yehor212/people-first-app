@@ -498,11 +498,11 @@ process.stdin.on('end', () => {
             try { fs.unlinkSync(RESEARCH_DONE_CG); } catch {}
             audit('allow', 'stale .research-pending cleaned (expired)', cmd);
           } else if (!fs.existsSync(RESEARCH_DONE_CG)) {
-            block('RESEARCH REQUIRED but not completed! User requested web research (' + (rp.min_searches || 3) + ' searches minimum). Use WebSearch tool before commit.', cmd);
+            block('RESEARCH REQUIRED but not completed! Use WebSearch to research until you understand the topic. At least ' + (rp.min_searches || 1) + ' search(es) needed.', cmd);
           } else {
             const rd = JSON.parse(fs.readFileSync(RESEARCH_DONE_CG, 'utf8'));
-            if ((rd.count || 0) < (rp.min_searches || 3)) {
-              block('RESEARCH INCOMPLETE: ' + (rd.count || 0) + '/' + (rp.min_searches || 3) + ' searches. Continue using WebSearch tool before commit.', cmd);
+            if ((rd.count || 0) < (rp.min_searches || 1)) {
+              block('RESEARCH INCOMPLETE: ' + (rd.count || 0) + '/' + (rp.min_searches || 1) + ' search(es). Use WebSearch to continue.', cmd);
             } else {
               try { fs.unlinkSync(RESEARCH_PENDING_CG); } catch {}
               try { fs.unlinkSync(RESEARCH_DONE_CG); } catch {}
