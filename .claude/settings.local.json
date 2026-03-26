@@ -82,7 +82,31 @@
       "Bash(comm:*)",
       "Bash(wmic process:*)",
       "Bash(npm run lint:*)",
-      "WebFetch(domain:raw.githubusercontent.com)"
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(npm run:*)",
+      "WebSearch",
+      "Bash(for f:*)",
+      "Bash(do echo:*)",
+      "Read(//c/project/people-first-app/**)",
+      "Bash(xargs -I {} grep -nE 'as any' {})",
+      "Bash(grep -E '^\\\\+.*\\(#[0-9a-fA-F]{3,8}\\)\\\\b')",
+      "Bash(git merge:*)"
+    ],
+    "deny": [
+      "Bash(rm -rf:*)",
+      "Bash(sudo:*)",
+      "Bash(chmod 777:*)",
+      "Bash(del /s /q:*)",
+      "Bash(format:*)",
+      "Bash(mkfs:*)",
+      "Bash(dd if=:*)",
+      "Bash(curl * | bash:*)",
+      "Bash(wget * | bash:*)",
+      "Bash(eval:*)",
+      "Bash(ssh:*)",
+      "Bash(scp:*)",
+      "Bash(nc:*)",
+      "Bash(ncat:*)"
     ]
   }
 }
