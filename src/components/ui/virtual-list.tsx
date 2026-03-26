@@ -5,9 +5,9 @@
  * Uses @tanstack/react-virtual for efficient rendering of large lists
  */
 
-import { useRef, ReactNode } from 'react';
-import { useVirtualizer } from '@tanstack/react-virtual';
-import { cn } from '@/lib/utils';
+import { useRef, ReactNode } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
+import { cn } from "@/lib/utils";
 
 // ============================================
 // TYPES
@@ -63,12 +63,9 @@ export function VirtualList<T>({
   const virtualItems = virtualizer.getVirtualItems();
 
   return (
-    <div
-      ref={parentRef}
-      className={cn('overflow-auto', containerClassName)}
-    >
+    <div ref={parentRef} className={cn("overflow-auto", containerClassName)}>
       <div
-        className={cn('relative w-full', className)}
+        className={cn("relative w-full", className)}
         style={{
           height: `${virtualizer.getTotalSize()}px`,
         }}
@@ -78,7 +75,7 @@ export function VirtualList<T>({
           return (
             <div
               key={virtualItem.key}
-              className="absolute top-0 left-0 w-full"
+              className="absolute top-0 start-0 w-full"
               style={{
                 height: `${virtualItem.size}px`,
                 transform: `translateY(${virtualItem.start}px)`,
@@ -123,12 +120,9 @@ export function VirtualGrid<T>({
   const virtualRows = virtualizer.getVirtualItems();
 
   return (
-    <div
-      ref={parentRef}
-      className={cn('overflow-auto', containerClassName)}
-    >
+    <div ref={parentRef} className={cn("overflow-auto", containerClassName)}>
       <div
-        className={cn('relative w-full', className)}
+        className={cn("relative w-full", className)}
         style={{
           height: `${virtualizer.getTotalSize()}px`,
         }}
@@ -141,7 +135,7 @@ export function VirtualGrid<T>({
           return (
             <div
               key={virtualRow.key}
-              className="absolute top-0 left-0 w-full"
+              className="absolute top-0 start-0 w-full"
               style={{
                 height: `${virtualRow.size - gap}px`,
                 transform: `translateY(${virtualRow.start}px)`,
@@ -167,9 +161,9 @@ export function VirtualGrid<T>({
                 })}
                 {/* Fill empty columns in last row */}
                 {rowItems.length < columns &&
-                  Array.from({ length: columns - rowItems.length }).map((_, i) => (
-                    <div key={`empty-${i}`} className="h-full" />
-                  ))}
+                  Array.from({ length: columns - rowItems.length }).map(
+                    (_, i) => <div key={`empty-${i}`} className="h-full" />,
+                  )}
               </div>
             </div>
           );

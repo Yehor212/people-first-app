@@ -34,7 +34,10 @@ export function TimeInput({
       <div className="relative flex items-center">
         {/* Emoji/Icon prefix */}
         {icon && (
-          <span className="absolute left-3 text-base pointer-events-none z-10" aria-hidden="true">
+          <span
+            className="absolute left-3 text-base pointer-events-none z-10"
+            aria-hidden="true"
+          >
             {icon}
           </span>
         )}
@@ -56,12 +59,12 @@ export function TimeInput({
             // Custom styling for the time input
             "[&::-webkit-calendar-picker-indicator]:opacity-0",
             "[&::-webkit-calendar-picker-indicator]:absolute",
-            "[&::-webkit-calendar-picker-indicator]:right-0",
+            "[&::-webkit-calendar-picker-indicator]:end-0",
             "[&::-webkit-calendar-picker-indicator]:w-full",
             "[&::-webkit-calendar-picker-indicator]:h-full",
             "[&::-webkit-calendar-picker-indicator]:cursor-pointer",
             icon ? "ps-10" : "ps-4",
-            "pe-10" // Space for clock icon
+            "pe-10", // Space for clock icon
           )}
         />
 
@@ -76,7 +79,7 @@ export function TimeInput({
 }
 
 // Compact variant for settings with inline label
-interface TimeInputInlineProps extends Omit<TimeInputProps, 'label'> {
+interface TimeInputInlineProps extends Omit<TimeInputProps, "label"> {
   label: string;
 }
 
@@ -94,16 +97,24 @@ export function TimeInputInline({
   };
 
   return (
-    <div className={cn(
-      "flex items-center justify-between gap-3 p-3 bg-secondary/50 rounded-xl",
-      "hover:bg-secondary/70 transition-colors",
-      disabled && "opacity-50",
-      className
-    )}>
+    <div
+      className={cn(
+        "flex items-center justify-between gap-3 p-3 bg-secondary/50 rounded-xl",
+        "hover:bg-secondary/70 transition-colors",
+        disabled && "opacity-50",
+        className,
+      )}
+    >
       {/* Label with optional emoji */}
       <div className="flex items-center gap-2 min-w-0">
-        {icon && <span className="text-lg flex-shrink-0" aria-hidden="true">{icon}</span>}
-        <span className="text-sm font-medium text-foreground truncate">{label}</span>
+        {icon && (
+          <span className="text-lg flex-shrink-0" aria-hidden="true">
+            {icon}
+          </span>
+        )}
+        <span className="text-sm font-medium text-foreground truncate">
+          {label}
+        </span>
       </div>
 
       {/* Time input */}
@@ -124,7 +135,7 @@ export function TimeInputInline({
             "[&::-webkit-calendar-picker-indicator]:opacity-0",
             "[&::-webkit-calendar-picker-indicator]:absolute",
             "[&::-webkit-calendar-picker-indicator]:inset-0",
-            "[&::-webkit-calendar-picker-indicator]:cursor-pointer"
+            "[&::-webkit-calendar-picker-indicator]:cursor-pointer",
           )}
         />
       </div>
