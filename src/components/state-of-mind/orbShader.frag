@@ -87,7 +87,7 @@ vec4 valenceShape_p(float v) {
   // vec4(m, n1, n2, n3) per preset
   vec4 s0, s1;
   float f;
-  if      (v < -0.667) { f=(v+1.000)/0.333; s0=vec4(8,1.25,1.30,1.30); s1=vec4(7,1.40,1.35,1.35); }
+  if      (v < -0.667) { f=(v+1.000)/0.333; s0=vec4(7,1.20,1.25,1.25); s1=vec4(7,1.40,1.35,1.35); }
   else if (v < -0.333) { f=(v+0.667)/0.334; s0=vec4(7,1.40,1.35,1.35); s1=vec4(6,1.80,1.50,1.50); }
   else if (v <  0.000) { f=(v+0.333)/0.333; s0=vec4(6,1.80,1.50,1.50); s1=vec4(6,2.00,2.00,2.00); }
   else if (v <  0.333) { f=(v-0.000)/0.333; s0=vec4(6,2.00,2.00,2.00); s1=vec4(5,1.80,1.50,1.50); }
@@ -369,7 +369,7 @@ void main() {
   // ── Inner Depth Luminance (Apple Quality: -30% intensity) ──
   float depthZone1 = exp(-dist * dist / (shapeR * shapeR * 0.16)) * 0.14;
   float depthZone2 = exp(-dist * dist / (shapeR * shapeR * 0.42)) * 0.08;
-  float depthPulse = sin(uTime * 1.2) * 0.15 + 0.85;
+  float depthPulse = sin(uTime * 1.2) * 0.09 + 0.91;
   float depthGlow = (depthZone1 * depthPulse + depthZone2 * (1.0 - depthPulse * 0.3));
   float depthStr = mix(0.35, 1.0, (uValence + 1.0) * 0.5);
 
@@ -430,9 +430,9 @@ void main() {
 
   // ── Glow / Bloom / Aura (dramatic — orb clearly emits light) ──
   float darkMult = uIsDark > 0.5 ? 1.15 : 1.0;
-  float innerGlow = exp(-max(sdf, 0.0) * 14.0) * 0.45 * darkMult; // wider + 50% brighter
-  float aura = exp(-dist * 2.8) * 0.30 * darkMult;    // slower decay + 67% brighter
-  float bloom = exp(-dist * 5.0) * 0.12 * darkMult;   // wider + 85% brighter
+  float innerGlow = exp(-max(sdf, 0.0) * 14.0) * 0.27 * darkMult; // -40% pulse brightness
+  float aura = exp(-dist * 2.8) * 0.18 * darkMult;    // -40% pulse brightness
+  float bloom = exp(-dist * 5.0) * 0.07 * darkMult;   // -40% pulse brightness
 
   // Light theme: brighter aura so premultiplied pixels don't darken light backgrounds
   float auraLightBoost = uIsDark > 0.5 ? 1.0 : 1.3;
@@ -489,7 +489,7 @@ void main() {
   litColor = mix(litColor, vec3(lum * 1.5 + 0.15), uShimmer * 0.4);
 
   // ── Luminous Core (bright center — light focusing through glass stack) ──
-  float coreGlow = exp(-dist * dist / (shapeR * shapeR * 0.10)) * 0.38;
+  float coreGlow = exp(-dist * dist / (shapeR * shapeR * 0.10)) * 0.23;
   vec3 coreColor = mix(shimmerColor * 1.1, vec3(1.0), 0.35);
   litColor += coreColor * coreGlow;
 
