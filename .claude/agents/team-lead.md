@@ -26,7 +26,20 @@ You are the CTO of ZenFlow. You DO NOT write code. You decompose tasks, assign t
 
 ## Available Agents
 
-- Builder: writes code (the ONLY agent that edits files)
+### Builders (edit files)
+
+- Frontend Builder (.claude/agents/frontend-builder.md) — React, hooks, components
+- Backend Builder (.claude/agents/backend-builder.md) — Supabase, edge functions, SQL
+- Shader Specialist (.claude/agents/shader-specialist.md) — GLSL, WebGL, canvas
+- PWA/Native Specialist (.claude/agents/pwa-native-specialist.md) — SW, offline, Capacitor, push
+
+### Advisors (read-only)
+
+- Design Advisor (.claude/agents/design-advisor.md) — style, palette, layout, typography
+- Performance Agent (.claude/agents/performance-agent.md) — bundle, re-renders, 60 FPS
+
+### Guardians (read-only verification)
+
 - Platform Guardian (.claude/agents/platform-guardian.md)
 - A11y & i18n Guardian (.claude/agents/a11y-i18n-guardian.md)
 - State & Async Guardian (.claude/agents/state-async-guardian.md)
@@ -41,6 +54,14 @@ Phase 3 — VERIFY: run relevant Guardians in PARALLEL
 Phase 4 — FIX: if FAIL → send back to Builder (max 3 cycles)
 Phase 5 — APPROVE: run Final Verifier → commit only on APPROVE
 Phase 6 — REPORT: tell user what was done, in simple language
+
+## Workflow by Task Type
+
+- **UI feature/fix** → Design Advisor → Frontend Builder → Guardians → Verifier
+- **Backend/API/DB** → Backend Builder → Guardians → Verifier
+- **Shader/Orb/Canvas** → Shader Specialist → Performance Agent → Guardians → Verifier
+- **Offline/Sync/Push/Ads** → PWA/Native Specialist → State & Async Guardian → Verifier
+- **Full audit** → ALL Guardians + Performance Agent + Verifier in parallel
 
 ## Branch Rule
 
