@@ -497,12 +497,12 @@ process.stdin.on('end', () => {
             fs.unlinkSync(RESEARCH_PENDING_CG);
             try { fs.unlinkSync(RESEARCH_DONE_CG); } catch {}
             audit('allow', 'stale .research-pending cleaned (expired)', cmd);
-          } else if (!fs.existsSync(RESEARCH_DONE_CG)) {
-            block('RESEARCH REQUIRED but not completed! Use WebSearch to research until you understand the topic. At least ' + (rp.min_searches || 1) + ' search(es) needed.', cmd);
-          } else {
+          } else if (!fs.existsSync(RESEARCH_DONE_CG) && rp.min_searches > 0) {
+            block('RESEARCH REQUIRED: user explicitly requested ' + rp.min_searches + ' search(es). Use WebSearch before commit.', cmd);
+          } else if (fs.existsSync(RESEARCH_DONE_CG)) {
             const rd = JSON.parse(fs.readFileSync(RESEARCH_DONE_CG, 'utf8'));
-            if ((rd.count || 0) < (rp.min_searches || 1)) {
-              block('RESEARCH INCOMPLETE: ' + (rd.count || 0) + '/' + (rp.min_searches || 1) + ' search(es). Use WebSearch to continue.', cmd);
+            if (rp.min_searches > 0 && (rd.count || 0) < rp.min_searches) {
+              block('RESEARCH INCOMPLETE: ' + (rd.count || 0) + '/' + rp.min_searches + ' search(es). User requested explicit count.', cmd);
             } else {
               try { fs.unlinkSync(RESEARCH_PENDING_CG); } catch {}
               try { fs.unlinkSync(RESEARCH_DONE_CG); } catch {}

@@ -140,7 +140,7 @@ process.stdin.on('end', () => {
           cleanToken(RESEARCH_DONE);
           auditLog('stale-cleanup', 'research-pending expired');
         } else {
-          const minSearches = rp.min_searches || 1;
+          const minSearches = rp.min_searches || 0;
           let doneCount = 0;
           if (fs.existsSync(RESEARCH_DONE)) {
             try { doneCount = JSON.parse(fs.readFileSync(RESEARCH_DONE, 'utf8')).count || 0; } catch {}

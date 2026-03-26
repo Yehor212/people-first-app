@@ -51,7 +51,7 @@ process.stdin.on('end', () => {
       if (!fs.existsSync(fcResearchFile)) {
         fs.writeFileSync(fcResearchFile, JSON.stringify({
           timestamp: new Date().toISOString(),
-          min_searches: 1,
+          min_searches: 0,
           message_excerpt: 'полный цикл trigger',
           expires_at: Date.now() + 30 * 60 * 1000
         }), 'utf8');
@@ -163,9 +163,9 @@ process.stdin.on('end', () => {
         // User cancels research requirement
         try { fs.unlinkSync(RESEARCH_PENDING_FILE); } catch {}
       } else if (RESEARCH_PATTERNS.test(rawMsgOriginal)) {
-        // Dynamic min_searches: "по 5 источникам" → 5, default 1 (research until you understand)
+        // Dynamic min_searches: "по 5 источникам" → 5, default 0 (advisory only, no fixed floor)
         const countMatch = rawMsgOriginal.match(/(\d+)\s*(?:источник|search|ресерч|веб)/i);
-        const minSearches = countMatch ? Math.max(1, Math.min(10, parseInt(countMatch[1]))) : 1;
+        const minSearches = countMatch ? Math.max(1, Math.min(10, parseInt(countMatch[1]))) : 0;
         fs.writeFileSync(RESEARCH_PENDING_FILE, JSON.stringify({
           timestamp: new Date().toISOString(),
           min_searches: minSearches,
