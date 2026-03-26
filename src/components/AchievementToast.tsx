@@ -1,8 +1,10 @@
+import { useEffect } from "react";
 import { Achievement, getBadgeGlow } from "@/lib/gamification";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Trophy, Sparkles } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { haptics } from "@/lib/haptics";
 
 interface AchievementToastProps {
   achievement: Achievement;
@@ -11,6 +13,10 @@ interface AchievementToastProps {
 export function AchievementToast({ achievement }: AchievementToastProps) {
   const { t } = useLanguage();
 
+  useEffect(() => {
+    haptics.medium();
+  }, []);
+
   return (
     <Card
       className={`p-4 bg-gradient-to-r from-primary/70 to-primary text-primary-foreground ${getBadgeGlow(achievement.rarity)} animate-slide-up`}
@@ -18,7 +24,10 @@ export function AchievementToast({ achievement }: AchievementToastProps) {
       <div className="flex items-center gap-4">
         <div className="relative">
           <div className="text-5xl animate-scale-in">{achievement.icon}</div>
-          <Sparkles className="absolute -top-1 -end-1 w-4 h-4 text-yellow-300 animate-pulse" aria-hidden="true" />
+          <Sparkles
+            className="absolute -top-1 -end-1 w-4 h-4 text-yellow-300 animate-pulse"
+            aria-hidden="true"
+          />
         </div>
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
