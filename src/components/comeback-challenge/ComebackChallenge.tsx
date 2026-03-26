@@ -209,7 +209,7 @@ export function ComebackChallenge({
         className="absolute top-4 end-4 z-10 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-muted/50 hover:bg-muted transition-colors"
         aria-label={t.dismiss || 'Dismiss'}
       >
-        <X className="w-4 h-4 text-muted-foreground" />
+        <X className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
       </button>
 
       <div className="relative p-5">
@@ -230,7 +230,7 @@ export function ComebackChallenge({
             }}
             transition={{ duration: 2, repeat: Infinity }}
           >
-            <Gift className="w-6 h-6" style={{ color: colors.primary }} />
+            <Gift className="w-6 h-6" aria-hidden="true" style={{ color: colors.primary }} />
 
             {/* Badge for tier */}
             <motion.div
@@ -242,9 +242,9 @@ export function ComebackChallenge({
               {challengeConfig.tier === 'gold' ? (
                 <Crown className="w-3 h-3 text-black" />
               ) : challengeConfig.tier === 'silver' ? (
-                <Star className="w-3 h-3 text-white" />
+                <Star className="w-3 h-3 text-white" aria-hidden="true" />
               ) : (
-                <Zap className="w-3 h-3 text-white" />
+                <Zap className="w-3 h-3 text-white" aria-hidden="true" />
               )}
             </motion.div>
           </motion.div>
@@ -282,7 +282,7 @@ export function ComebackChallenge({
         >
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <Target className="w-4 h-4" style={{ color: colors.primary }} />
+              <Target className="w-4 h-4" aria-hidden="true" style={{ color: colors.primary }} />
               <span className="text-sm font-medium text-foreground">
                 {t.comebackChallenge || 'Comeback Challenge'}
               </span>
@@ -323,7 +323,7 @@ export function ComebackChallenge({
 
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
-                  <Flame className="w-4 h-4 text-orange-500" />
+                  <Flame className="w-4 h-4 text-orange-500" aria-hidden="true" />
                   <span className="text-xs text-muted-foreground">
                     {t.todayProgress || 'Today'}: {progress.habitsCompletedToday}/{challengeConfig.habitsRequired} {t.habits || 'habits'}
                   </span>
@@ -361,9 +361,9 @@ export function ComebackChallenge({
               whileHover={{ scale: 1.02 }}
               whileTap={zenTap.card}
             >
-              <Trophy className="w-4 h-4" />
+              <Trophy className="w-4 h-4" aria-hidden="true" />
               {t.acceptChallenge || 'Accept Challenge'}
-              <ArrowRight className="w-4 h-4 rtl:scale-x-[-1]" />
+              <ArrowRight className="w-4 h-4 rtl:scale-x-[-1]" aria-hidden="true" />
             </motion.button>
           )}
         </motion.div>

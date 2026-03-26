@@ -144,7 +144,7 @@ export function AddEventModal({
               id="add-event-title"
               className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2"
             >
-              <Sparkles className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+              <Sparkles className="w-5 h-5 text-purple-600 dark:text-purple-400" aria-hidden="true" />
               {t.scheduleAddEvent || "Add Event"}
             </h3>
             <motion.button
@@ -154,7 +154,7 @@ export function AddEventModal({
               className="p-2 hover:bg-secondary rounded-xl transition-colors"
               aria-label={t.close || "Close"}
             >
-              <X className="w-5 h-5 text-slate-600 dark:text-white/80" />
+              <X className="w-5 h-5 text-slate-600 dark:text-white/80" aria-hidden="true" />
             </motion.button>
           </div>
 
@@ -385,7 +385,7 @@ export function AddEventModal({
               isSaving && "opacity-50",
             )}
           >
-            <Check className="w-5 h-5" />
+            <Check className="w-5 h-5" aria-hidden="true" />
             {t.addToMyWorld}
           </motion.button>
         </div>

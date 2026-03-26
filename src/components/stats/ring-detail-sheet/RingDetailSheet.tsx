@@ -169,7 +169,7 @@ export function RingDetailSheet({
             className="absolute top-3 end-3 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-foreground/20 hover:bg-foreground/30 transition-colors z-10"
             aria-label={t.close || "Close"}
           >
-            <X className="w-5 h-5 text-white" />
+            <X className="w-5 h-5 text-white" aria-hidden="true" />
           </button>
 
           {/* Header content */}
@@ -187,7 +187,7 @@ export function RingDetailSheet({
                 }}
                 transition={{ duration: 2.5, repeat: Infinity }}
               >
-                <Icon className="w-7 h-7 text-white" />
+                <Icon className="w-7 h-7 text-white" aria-hidden="true" />
               </motion.div>
               <div>
                 <h2 className="text-2xl font-bold text-white tracking-tight">
@@ -237,11 +237,11 @@ export function RingDetailSheet({
                 )}
               >
                 {stats.trend > 0 ? (
-                  <TrendingUp className="w-3.5 h-3.5" />
+                  <TrendingUp className="w-3.5 h-3.5" aria-hidden="true" />
                 ) : stats.trend < 0 ? (
-                  <TrendingDown className="w-3.5 h-3.5" />
+                  <TrendingDown className="w-3.5 h-3.5" aria-hidden="true" />
                 ) : (
-                  <Minus className="w-3.5 h-3.5" />
+                  <Minus className="w-3.5 h-3.5" aria-hidden="true" />
                 )}
                 <span>
                   {stats.trend > 0 ? "+" : ""}
@@ -377,7 +377,7 @@ export function RingDetailSheet({
                   `bg-gradient-to-br ${theme.gradient}`,
                 )}
               >
-                <Zap className="w-4 h-4 text-white" />
+                <Zap className="w-4 h-4 text-white" aria-hidden="true" />
               </div>
               <div className="flex-1">
                 <h4 className="text-sm font-semibold text-foreground mb-1">
@@ -409,7 +409,7 @@ export function RingDetailSheet({
             whileTap={zenTap.card}
             onClick={() => (onAction ? onAction() : onOpenChange(false))}
           >
-            <Sparkles className="w-5 h-5" />
+            <Sparkles className="w-5 h-5" aria-hidden="true" />
             <span>
               {ringType === "mood"
                 ? t.logMood || "Log Mood"
@@ -417,7 +417,7 @@ export function RingDetailSheet({
                   ? t.viewHabits || "View Habits"
                   : t.startFocus || "Start Focus"}
             </span>
-            <ChevronRight className="w-5 h-5 rtl:scale-x-[-1]" />
+            <ChevronRight className="w-5 h-5 rtl:scale-x-[-1]" aria-hidden="true" />
           </motion.button>
         </div>
       </div>

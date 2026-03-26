@@ -1,11 +1,17 @@
-import { motion } from 'framer-motion';
-import { zenTap } from '@/lib/animationUtils';
-import { cn } from '@/lib/utils';
-import { ScheduleEvent } from '@/types';
-import { formatDayShort, getEventGradient, HOURS_PER_DAY } from './constants';
+import { motion } from "framer-motion";
+import { zenTap } from "@/lib/animationUtils";
+import { cn } from "@/lib/utils";
+import { ScheduleEvent } from "@/types";
+import { formatDayShort, getEventGradient, HOURS_PER_DAY } from "./constants";
 
 // Animated Clock Ring component
-export function AnimatedClockRing({ currentHour, currentMinute }: { currentHour: number; currentMinute: number }) {
+export function AnimatedClockRing({
+  currentHour,
+  currentMinute,
+}: {
+  currentHour: number;
+  currentMinute: number;
+}) {
   const dayProgress = ((currentHour * 60 + currentMinute) / (24 * 60)) * 100;
   const circumference = 2 * Math.PI * 42;
   const offset = circumference - (dayProgress / 100) * circumference;
@@ -17,9 +23,9 @@ export function AnimatedClockRing({ currentHour, currentMinute }: { currentHour:
         className="absolute inset-0 rounded-full"
         animate={{
           boxShadow: [
-            '0 0 20px rgba(139, 92, 246, 0.3)',
-            '0 0 40px rgba(139, 92, 246, 0.5)',
-            '0 0 20px rgba(139, 92, 246, 0.3)',
+            "0 0 20px rgba(139, 92, 246, 0.3)",
+            "0 0 40px rgba(139, 92, 246, 0.5)",
+            "0 0 20px rgba(139, 92, 246, 0.3)",
           ],
         }}
         transition={{ duration: 3, repeat: Infinity }}
@@ -27,7 +33,13 @@ export function AnimatedClockRing({ currentHour, currentMinute }: { currentHour:
 
       <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
         <defs>
-          <linearGradient id="clockGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <linearGradient
+            id="clockGradient"
+            x1="0%"
+            y1="0%"
+            x2="100%"
+            y2="100%"
+          >
             <stop offset="0%" stopColor="#8b5cf6" />
             <stop offset="50%" stopColor="#ec4899" />
             <stop offset="100%" stopColor="#f59e0b" />
@@ -58,7 +70,7 @@ export function AnimatedClockRing({ currentHour, currentMinute }: { currentHour:
           strokeDashoffset={offset}
           initial={{ strokeDashoffset: circumference }}
           animate={{ strokeDashoffset: offset }}
-          transition={{ duration: 1, ease: 'easeOut' }}
+          transition={{ duration: 1, ease: "easeOut" }}
         />
 
         {/* Hour markers - theme-aware */}
@@ -84,12 +96,13 @@ export function AnimatedClockRing({ currentHour, currentMinute }: { currentHour:
         <motion.span
           className="text-xl font-bold [text-shadow:0_0_10px_rgba(139,92,246,0.5)]"
           style={{
-            color: 'hsl(var(--cosmic-text-primary))',
+            color: "hsl(var(--cosmic-text-primary))",
           }}
           animate={{ opacity: [1, 0.8, 1] }}
           transition={{ duration: 2, repeat: Infinity }}
         >
-          {currentHour.toString().padStart(2, '0')}:{currentMinute.toString().padStart(2, '0')}
+          {currentHour.toString().padStart(2, "0")}:
+          {currentMinute.toString().padStart(2, "0")}
         </motion.span>
       </div>
     </div>
@@ -124,7 +137,7 @@ export function PremiumDayPill({
         "backdrop-blur-md border [perspective:500px]",
         isSelected
           ? "bg-gradient-to-br from-primary/40 to-accent/30 border-primary/50 shadow-lg shadow-primary/30"
-          : "bg-secondary border-border hover:bg-secondary/80 hover:border-border"
+          : "bg-secondary border-border hover:bg-secondary/80 hover:border-border",
       )}
     >
       {/* Today glow ring */}
@@ -133,9 +146,9 @@ export function PremiumDayPill({
           className="absolute inset-0 rounded-2xl pointer-events-none"
           animate={{
             boxShadow: [
-              '0 0 10px rgba(34, 197, 94, 0.3)',
-              '0 0 20px rgba(34, 197, 94, 0.5)',
-              '0 0 10px rgba(34, 197, 94, 0.3)',
+              "0 0 10px rgba(34, 197, 94, 0.3)",
+              "0 0 20px rgba(34, 197, 94, 0.5)",
+              "0 0 10px rgba(34, 197, 94, 0.3)",
             ],
           }}
           transition={{ duration: 2, repeat: Infinity }}
@@ -143,14 +156,21 @@ export function PremiumDayPill({
       )}
 
       <span
-        className={cn("text-xs font-medium uppercase", isSelected && "text-white")}
-        style={!isSelected ? { color: 'hsl(var(--cosmic-pill-text))' } : undefined}
+        className={cn(
+          "text-xs font-medium uppercase",
+          isSelected && "text-white",
+        )}
+        style={
+          !isSelected ? { color: "hsl(var(--cosmic-pill-text))" } : undefined
+        }
       >
         {weekday}
       </span>
       <span
         className={cn("text-lg font-bold", isSelected && "text-white")}
-        style={!isSelected ? { color: 'hsl(var(--cosmic-text-primary))' } : undefined}
+        style={
+          !isSelected ? { color: "hsl(var(--cosmic-text-primary))" } : undefined
+        }
       >
         {day}
       </span>
@@ -160,7 +180,7 @@ export function PremiumDayPill({
         <motion.div
           className={cn(
             "absolute -top-1 -end-1 w-3 h-3 rounded-full",
-            isSelected ? "bg-white" : "bg-accent"
+            isSelected ? "bg-white" : "bg-accent",
           )}
           animate={{ scale: [1, 1.2, 1] }}
           transition={{ duration: 1.5, repeat: Infinity }}
@@ -181,9 +201,9 @@ export function EventCard3D({
   onClick: () => void;
 }) {
   const gradient = getEventGradient(event.colorVar, event.urgent);
-  const isHabitEvent = event.source === 'habit';
-  const isTaskEvent = event.source === 'task';
-  const isGoogleEvent = event.source === 'google';
+  const isHabitEvent = event.source === "habit";
+  const isTaskEvent = event.source === "task";
+  const isGoogleEvent = event.source === "google";
   const isAutoGenerated = event.isAutoGenerated;
 
   // Calculate position and width
@@ -204,7 +224,7 @@ export function EventCard3D({
         "bg-gradient-to-br",
         gradient,
         isHabitEvent && "border-2 border-dashed border-white/40",
-        isAutoGenerated && "border-2 border-dashed border-white/50"
+        isAutoGenerated && "border-2 border-dashed border-white/50",
       )}
       style={{
         left: `${left}%`,
@@ -214,12 +234,12 @@ export function EventCard3D({
         scale: 1.03,
         rotateX: -3,
         rotateY: 3,
-        boxShadow: '0 15px 30px rgba(0, 0, 0, 0.3)',
+        boxShadow: "0 15px 30px rgba(0, 0, 0, 0.3)",
         zIndex: 20,
       }}
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
-      transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+      transition={{ type: "spring", stiffness: 300, damping: 25 }}
     >
       {/* Current event glow */}
       {isCurrent && (
@@ -262,28 +282,30 @@ export function EventCard3D({
 }
 
 // Current Time Orb indicator
-export function CurrentTimeOrb({ positionPercent }: { positionPercent: number }) {
+export function CurrentTimeOrb({
+  positionPercent,
+}: {
+  positionPercent: number;
+}) {
   return (
     <motion.div
       className="absolute top-0 bottom-0 z-20"
       style={{ left: `${positionPercent}%` }}
     >
       {/* Trailing glow line */}
-      <div
-        className="absolute right-full top-1/2 -translate-y-1/2 w-16 h-0.5 bg-[linear-gradient(to_left,rgba(239,68,68,0.8),transparent)]"
-      />
+      <div className="absolute right-full top-1/2 -translate-y-1/2 w-16 h-0.5 bg-[linear-gradient(to_left,rgba(239,68,68,0.8),transparent)]" />
 
       {/* Main line */}
-      <div className="absolute inset-y-0 left-0 w-0.5 bg-red-500" />
+      <div className="absolute inset-y-0 start-0 w-0.5 bg-red-500" />
 
       {/* Top orb */}
       <motion.div
         className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-red-500 rounded-full"
         animate={{
           boxShadow: [
-            '0 0 10px rgba(239, 68, 68, 0.5)',
-            '0 0 20px rgba(239, 68, 68, 0.8)',
-            '0 0 10px rgba(239, 68, 68, 0.5)',
+            "0 0 10px rgba(239, 68, 68, 0.5)",
+            "0 0 20px rgba(239, 68, 68, 0.8)",
+            "0 0 10px rgba(239, 68, 68, 0.5)",
           ],
           scale: [1, 1.2, 1],
         }}
@@ -295,9 +317,9 @@ export function CurrentTimeOrb({ positionPercent }: { positionPercent: number })
         className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-red-500 rounded-full"
         animate={{
           boxShadow: [
-            '0 0 10px rgba(239, 68, 68, 0.5)',
-            '0 0 20px rgba(239, 68, 68, 0.8)',
-            '0 0 10px rgba(239, 68, 68, 0.5)',
+            "0 0 10px rgba(239, 68, 68, 0.5)",
+            "0 0 20px rgba(239, 68, 68, 0.8)",
+            "0 0 10px rgba(239, 68, 68, 0.5)",
           ],
           scale: [1, 1.2, 1],
         }}

@@ -4,28 +4,38 @@
  * This file: ~390L, 2 useState, delegates data to useScheduleData hook.
  */
 
-import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Home, Sparkles, Calendar } from 'lucide-react';
-import { getToday } from '@/lib/utils';
-import { ScheduleEvent } from '@/types';
-import { EmptyState } from '@/components/EmptyState';
-import { ParticleBackground } from '@/components/stats';
-import { useBackHandler } from '@/hooks/useBackHandler';
-import { useScrollLock } from '@/hooks/useScrollLock';
-import { zenTap } from '@/lib/animationUtils';
+import { useState, useMemo, useRef, useCallback, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Plus, Home, Sparkles, Calendar } from "lucide-react";
+import { getToday } from "@/lib/utils";
+import { ScheduleEvent } from "@/types";
+import { EmptyState } from "@/components/EmptyState";
+import { ParticleBackground } from "@/components/stats";
+import { useBackHandler } from "@/hooks/useBackHandler";
+import { useScrollLock } from "@/hooks/useScrollLock";
+import { zenTap } from "@/lib/animationUtils";
 
-import { ScheduleTimelineProps, HOURS_PER_DAY, DAY_WIDTH_PX } from './constants';
-import { AnimatedClockRing, PremiumDayPill } from './ScheduleVisuals';
-import { TimelineDayColumn } from './TimelineDayColumn';
-import { useScheduleData } from './useScheduleData';
-import { AddEventModal } from './AddEventModal';
-import { EventDetailsModal } from './EventDetailsModal';
-import { TaskFocusPanel } from './TaskFocusPanel';
+import {
+  ScheduleTimelineProps,
+  HOURS_PER_DAY,
+  DAY_WIDTH_PX,
+} from "./constants";
+import { AnimatedClockRing, PremiumDayPill } from "./ScheduleVisuals";
+import { TimelineDayColumn } from "./TimelineDayColumn";
+import { useScheduleData } from "./useScheduleData";
+import { AddEventModal } from "./AddEventModal";
+import { EventDetailsModal } from "./EventDetailsModal";
+import { TaskFocusPanel } from "./TaskFocusPanel";
 
-export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: ScheduleTimelineProps) {
+export function ScheduleTimeline({
+  events,
+  onAddEvent,
+  onDeleteEvent,
+}: ScheduleTimelineProps) {
   const [showAddModal, setShowAddModal] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState<ScheduleEvent | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<ScheduleEvent | null>(
+    null,
+  );
 
   const timelineRef = useRef<HTMLDivElement>(null);
   const daySelectorRef = useRef<HTMLDivElement>(null);
@@ -38,7 +48,7 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
   useEffect(() => {
     if (!showAddModal && selectedEvent === null) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         e.preventDefault();
         if (selectedEvent !== null) {
           setSelectedEvent(null);
@@ -47,8 +57,8 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
         }
       }
     };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
   }, [showAddModal, selectedEvent]);
 
   const {
@@ -84,12 +94,21 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
       setSelectedDate(newSelectedDate);
       scrollDaySelectorToDate(newSelectedDate);
     }
-  }, [allDates, selectedDate, setSelectedDate, scrollDaySelectorToDate, isScrollingProgrammatically]);
+  }, [
+    allDates,
+    selectedDate,
+    setSelectedDate,
+    scrollDaySelectorToDate,
+    isScrollingProgrammatically,
+  ]);
 
-  const handleDayClick = useCallback((date: string) => {
-    setSelectedDate(date);
-    scrollTimelineToDate(date, date === getToday());
-  }, [setSelectedDate, scrollTimelineToDate]);
+  const handleDayClick = useCallback(
+    (date: string) => {
+      setSelectedDate(date);
+      scrollTimelineToDate(date, date === getToday());
+    },
+    [setSelectedDate, scrollTimelineToDate],
+  );
 
   const goToToday = useCallback(() => {
     const today = getToday();
@@ -117,7 +136,7 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
 
   const eventsByDate = useMemo(() => {
     const map = new Map<string, ScheduleEvent[]>();
-    safeEvents.forEach(event => {
+    safeEvents.forEach((event) => {
       const existing = map.get(event.date) || [];
       existing.push(event);
       map.set(event.date, existing);
@@ -169,13 +188,14 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
         >
           <div className="flex items-center gap-4">
             {/* Animated Clock Ring */}
-            <AnimatedClockRing currentHour={currentHour} currentMinute={currentMinute} />
+            <AnimatedClockRing
+              currentHour={currentHour}
+              currentMinute={currentMinute}
+            />
 
             <div>
               {/* Title with sparkle */}
-              <motion.h3
-                className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2 [text-shadow:0_0_10px_rgba(139,92,246,0.3)]"
-              >
+              <motion.h3 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2 [text-shadow:0_0_10px_rgba(139,92,246,0.3)]">
                 <motion.span
                   animate={{ rotate: [0, 15, -15, 0] }}
                   transition={{ duration: 2, repeat: Infinity }}
@@ -193,7 +213,9 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
                   animate={{ opacity: 1, x: 0 }}
                 >
                   <span>{currentEvent.emoji}</span>
-                  <span className="text-sm text-slate-600 dark:text-white/80">{currentEvent.title}</span>
+                  <span className="text-sm text-slate-600 dark:text-white/80">
+                    {currentEvent.title}
+                  </span>
                 </motion.div>
               )}
 
@@ -210,7 +232,7 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
                     transition={{ duration: 1, repeat: Infinity }}
                   />
                   <span className="text-[10px] text-blue-600 dark:text-blue-400">
-                    {t.googleCalendar || 'Google Calendar'}...
+                    {t.googleCalendar || "Google Calendar"}...
                   </span>
                 </motion.div>
               )}
@@ -225,7 +247,7 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
                 whileHover={{ scale: 1.1 }}
                 whileTap={zenTap.button}
                 className="p-2.5 bg-secondary hover:bg-secondary/80 backdrop-blur-sm rounded-xl border border-border transition-colors"
-                aria-label={t.today || 'Today'}
+                aria-label={t.today || "Today"}
               >
                 <Home className="w-5 h-5 text-slate-600 dark:text-white/80" />
               </motion.button>
@@ -238,7 +260,7 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
                 whileHover={{ scale: 1.1 }}
                 whileTap={zenTap.button}
                 className="p-2.5 bg-gradient-to-br from-primary/40 to-accent/40 hover:from-primary/60 hover:to-accent/60 backdrop-blur-sm rounded-xl border border-primary/30 transition-all shadow-lg shadow-primary/20"
-                aria-label={t.scheduleAddEvent || 'Add event'}
+                aria-label={t.scheduleAddEvent || "Add event"}
               >
                 <Plus className="w-5 h-5 text-white" />
               </motion.button>
@@ -295,8 +317,8 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
           </div>
 
           {/* Scroll fade indicators - Theme-aware */}
-          <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-slate-50 dark:from-[#0f0f23] to-transparent pointer-events-none" />
-          <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-slate-50 dark:from-[#0f0f23] to-transparent pointer-events-none" />
+          <div className="absolute start-0 top-0 bottom-0 w-8 bg-gradient-to-r from-slate-50 dark:from-[#0f0f23] to-transparent pointer-events-none" />
+          <div className="absolute end-0 top-0 bottom-0 w-8 bg-gradient-to-l from-slate-50 dark:from-[#0f0f23] to-transparent pointer-events-none" />
         </div>
 
         {/* Empty state */}
@@ -304,16 +326,26 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
           <div className="mt-3">
             <EmptyState
               icon={<Calendar className="w-5 h-5 text-primary" />}
-              title={isToday
-                ? (t.scheduleEmpty || 'No events planned')
-                : (t.scheduleEmptyDay || 'No events for this day')}
-              message={isToday ? (t.scheduleAddEvent || 'Tap + to add your first event') : undefined}
+              title={
+                isToday
+                  ? t.scheduleEmpty || "No events planned"
+                  : t.scheduleEmptyDay || "No events for this day"
+              }
+              message={
+                isToday
+                  ? t.scheduleAddEvent || "Tap + to add your first event"
+                  : undefined
+              }
               size="compact"
-              action={isToday && onAddEvent ? {
-                label: t.scheduleAdd || 'Add Event',
-                onClick: () => setShowAddModal(true),
-                icon: <Plus className="w-4 h-4" />,
-              } : undefined}
+              action={
+                isToday && onAddEvent
+                  ? {
+                      label: t.scheduleAdd || "Add Event",
+                      onClick: () => setShowAddModal(true),
+                      icon: <Plus className="w-4 h-4" />,
+                    }
+                  : undefined
+              }
             />
           </div>
         )}
@@ -323,9 +355,7 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
       </div>
 
       {/* Bottom glow */}
-      <div
-        className="absolute bottom-0 left-0 right-0 h-20 pointer-events-none bg-[radial-gradient(ellipse_at_bottom,rgba(139,92,246,0.15)_0%,transparent_70%)]"
-      />
+      <div className="absolute bottom-0 left-0 right-0 h-20 pointer-events-none bg-[radial-gradient(ellipse_at_bottom,rgba(139,92,246,0.15)_0%,transparent_70%)]" />
 
       {/* Modals */}
       <AnimatePresence>
@@ -345,10 +375,14 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
           <EventDetailsModal
             event={selectedEvent}
             onClose={() => setSelectedEvent(null)}
-            onDelete={onDeleteEvent ? () => {
-              onDeleteEvent(selectedEvent.id);
-              setSelectedEvent(null);
-            } : undefined}
+            onDelete={
+              onDeleteEvent
+                ? () => {
+                    onDeleteEvent(selectedEvent.id);
+                    setSelectedEvent(null);
+                  }
+                : undefined
+            }
           />
         )}
       </AnimatePresence>

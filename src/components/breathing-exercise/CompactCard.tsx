@@ -35,7 +35,7 @@ export function CompactCard({ onOpen, t }: CompactCardProps) {
           animate={{ scale: [1, 1.05, 1] }}
           transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
         >
-          <Wind className="w-6 h-6 text-cyan-400" />
+          <Wind className="w-6 h-6 text-cyan-400" aria-hidden="true" />
         </motion.div>
 
         <div className="flex-1">

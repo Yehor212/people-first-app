@@ -100,7 +100,7 @@ export function FriendsPanel({
               id="friends-panel-title"
               className="text-2xl font-bold zen-text-gradient flex items-center gap-2"
             >
-              <Users className="w-6 h-6" />
+              <Users className="w-6 h-6" aria-hidden="true" />
               {tRecord.friends || "Friends"}
             </h2>
           </div>
@@ -116,6 +116,7 @@ export function FriendsPanel({
                   "w-4 h-4",
                   actions.isRefreshing && "animate-spin",
                 )}
+                aria-hidden="true"
               />
             </button>
             <button
@@ -123,14 +124,14 @@ export function FriendsPanel({
               className="p-3 rounded-xl bg-muted hover:bg-muted/80 transition-colors"
               aria-label={tRecord.settings || "Settings"}
             >
-              <Settings className="w-4 h-4" />
+              <Settings className="w-4 h-4" aria-hidden="true" />
             </button>
             <button
               onClick={onClose}
               aria-label={tRecord.close || "Close"}
               className="p-3 rounded-xl bg-muted hover:bg-muted/80 transition-colors"
             >
-              <X className="w-5 h-5" />
+              <X className="w-5 h-5" aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -198,7 +199,7 @@ export function FriendsPanel({
                       className="shrink-0"
                       aria-label={tRecord.cancel || "Cancel"}
                     >
-                      <X className="w-4 h-4" />
+                      <X className="w-4 h-4" aria-hidden="true" />
                     </Button>
                   </div>
                   {form.addError && (
@@ -217,9 +218,12 @@ export function FriendsPanel({
                     disabled={!form.friendCode.trim() || form.isAdding}
                   >
                     {form.isAdding ? (
-                      <RefreshCw className="w-4 h-4 animate-spin me-2" />
+                      <RefreshCw
+                        className="w-4 h-4 animate-spin me-2"
+                        aria-hidden="true"
+                      />
                     ) : (
-                      <UserPlus className="w-4 h-4 me-2" />
+                      <UserPlus className="w-4 h-4 me-2" aria-hidden="true" />
                     )}
                     {tRecord.addFriend || "Add Friend"}
                   </Button>
@@ -236,7 +240,7 @@ export function FriendsPanel({
                     className="w-full"
                     onClick={() => form.setShowAddFriend(true)}
                   >
-                    <UserPlus className="w-4 h-4 me-2" />
+                    <UserPlus className="w-4 h-4 me-2" aria-hidden="true" />
                     {tRecord.addFriendByCode || "Add Friend by Code"}
                   </Button>
                 </motion.div>
@@ -286,7 +290,12 @@ export function FriendsPanel({
 
                   {data.friends.length === 0 ? (
                     <EmptyState
-                      icon={<Users className="w-6 h-6 text-primary" />}
+                      icon={
+                        <Users
+                          className="w-6 h-6 text-primary"
+                          aria-hidden="true"
+                        />
+                      }
                       title={tRecord.noFriendsYet || "No friends yet"}
                       message={
                         tRecord.addFriendsHint ||
@@ -296,7 +305,9 @@ export function FriendsPanel({
                       action={{
                         label: tRecord.addFriendByCode || "Add Friend by Code",
                         onClick: () => form.setShowAddFriend(true),
-                        icon: <UserPlus className="w-4 h-4" />,
+                        icon: (
+                          <UserPlus className="w-4 h-4" aria-hidden="true" />
+                        ),
                       }}
                     />
                   ) : (
@@ -331,22 +342,31 @@ export function FriendsPanel({
                             </p>
                             <div className="flex items-center gap-3 text-xs text-muted-foreground">
                               <span className="flex items-center gap-1">
-                                <Flame className="w-3 h-3 text-orange-500" />
+                                <Flame
+                                  className="w-3 h-3 text-orange-500"
+                                  aria-hidden="true"
+                                />
                                 {friend.streakHidden
                                   ? "—"
                                   : friend.currentStreak}
                               </span>
                               <span className="flex items-center gap-1">
-                                <Trophy className="w-3 h-3 text-yellow-500" />
+                                <Trophy
+                                  className="w-3 h-3 text-yellow-500"
+                                  aria-hidden="true"
+                                />
                                 {friend.levelHidden ? "—" : friend.level}
                               </span>
                               <span className="flex items-center gap-1">
-                                <Clock className="w-3 h-3" />
+                                <Clock className="w-3 h-3" aria-hidden="true" />
                                 {fmtLastActive(friend.lastActive)}
                               </span>
                             </div>
                           </div>
-                          <ChevronLeft className="w-4 h-4 text-muted-foreground rotate-180 rtl:scale-x-[-1] shrink-0" />
+                          <ChevronLeft
+                            className="w-4 h-4 text-muted-foreground rotate-180 rtl:scale-x-[-1] shrink-0"
+                            aria-hidden="true"
+                          />
                         </motion.div>
                       ))}
                     </div>

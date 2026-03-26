@@ -18,11 +18,11 @@ export function AchievementToast({ achievement }: AchievementToastProps) {
       <div className="flex items-center gap-4">
         <div className="relative">
           <div className="text-5xl animate-scale-in">{achievement.icon}</div>
-          <Sparkles className="absolute -top-1 -end-1 w-4 h-4 text-yellow-300 animate-pulse" />
+          <Sparkles className="absolute -top-1 -end-1 w-4 h-4 text-yellow-300 animate-pulse" aria-hidden="true" />
         </div>
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
-            <Trophy className="w-4 h-4" />
+            <Trophy className="w-4 h-4" aria-hidden="true" />
             <span className="font-bold text-sm uppercase tracking-wide">
               {t.achievementUnlocked || "Achievement Unlocked!"}
             </span>

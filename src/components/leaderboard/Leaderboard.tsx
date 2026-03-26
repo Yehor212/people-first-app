@@ -13,7 +13,6 @@ import {
   Users,
   Eye,
   EyeOff,
-  RefreshCw,
   Medal,
   X,
 } from "lucide-react";
@@ -50,17 +49,17 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
     {
       type: "weekly",
       label: t.weekly || "Weekly",
-      icon: <Trophy className="w-4 h-4" />,
+      icon: <Trophy className="w-4 h-4" aria-hidden="true" />,
     },
     {
       type: "monthly",
       label: t.monthly || "Monthly",
-      icon: <Star className="w-4 h-4" />,
+      icon: <Star className="w-4 h-4" aria-hidden="true" />,
     },
     {
       type: "streak",
       label: t.streak || "Streak",
-      icon: <Flame className="w-4 h-4" />,
+      icon: <Flame className="w-4 h-4" aria-hidden="true" />,
     },
   ];
 
@@ -75,7 +74,7 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
             className="flex items-center gap-2 px-4 py-2 bg-secondary rounded-lg hover:bg-secondary/80 transition-colors"
             aria-label={t.leaderboard || "Leaderboard"}
           >
-            <Trophy className="w-5 h-5 text-primary" />
+            <Trophy className="w-5 h-5 text-primary" aria-hidden="true" />
             <span className="font-medium">
               {t.leaderboard || "Leaderboard"}
             </span>
@@ -97,7 +96,7 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
           >
             <div className="pb-4 px-6 pt-6 flex items-center justify-between">
               <h2 className="flex items-center gap-2 text-xl font-semibold">
-                <Trophy className="w-6 h-6 text-primary" />
+                <Trophy className="w-6 h-6 text-primary" aria-hidden="true" />
                 {t.leaderboard || "Leaderboard"}
               </h2>
               <button
@@ -105,7 +104,10 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
                 className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full hover:bg-muted transition-colors"
                 aria-label={t.close || "Close"}
               >
-                <X className="w-5 h-5 text-muted-foreground" />
+                <X
+                  className="w-5 h-5 text-muted-foreground"
+                  aria-hidden="true"
+                />
               </button>
             </div>
 
@@ -150,9 +152,15 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     {data.isOptedIn ? (
-                      <Eye className="w-4 h-4 text-violet-400" />
+                      <Eye
+                        className="w-4 h-4 text-violet-400"
+                        aria-hidden="true"
+                      />
                     ) : (
-                      <EyeOff className="w-4 h-4 text-foreground/40" />
+                      <EyeOff
+                        className="w-4 h-4 text-foreground/40"
+                        aria-hidden="true"
+                      />
                     )}
                     <span className="font-medium text-sm text-foreground/80">
                       {t.showOnLeaderboard || "Show on leaderboard"}
@@ -189,7 +197,10 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                   >
-                    <Medal className="w-4 h-4 text-violet-400" />
+                    <Medal
+                      className="w-4 h-4 text-violet-400"
+                      aria-hidden="true"
+                    />
                     <span className="text-foreground/70">
                       {t.yourRank || "Your rank"}:{" "}
                       <strong className="text-violet-700 dark:text-violet-300">
@@ -223,7 +234,10 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
                     role="status"
                     aria-live="polite"
                   >
-                    <Trophy className="w-12 h-12 mx-auto mb-3 text-destructive/50" />
+                    <Trophy
+                      className="w-12 h-12 mx-auto mb-3 text-destructive/50"
+                      aria-hidden="true"
+                    />
                     <p className="text-destructive mb-3">{data.error}</p>
                     <button
                       onClick={() => void data.loadData(0)}
@@ -234,7 +248,10 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
                   </div>
                 ) : data.entries.length === 0 ? (
                   <div className="text-center py-12 text-muted-foreground">
-                    <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                    <Users
+                      className="w-12 h-12 mx-auto mb-3 opacity-50"
+                      aria-hidden="true"
+                    />
                     <p>{t.noParticipants || "No participants yet"}</p>
                     <p className="text-sm mt-1">
                       {t.beFirst || "Be the first to join!"}
@@ -266,10 +283,8 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
               whileTap={zenTap.button}
             >
               <RefreshCw
-                className={cn(
-                  "w-5 h-5 text-foreground/60",
-                  data.isLoading && "animate-spin",
-                )}
+                className={cn("w-5 h-5", data.isLoading && "animate-spin")}
+                aria-hidden="true"
               />
             </motion.button>
           </div>

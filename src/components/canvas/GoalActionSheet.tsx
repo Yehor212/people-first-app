@@ -80,7 +80,7 @@ function ActionRow({
             : "text-foreground/80 active:bg-muted/50",
       )}
     >
-      <Icon className="w-5 h-5 flex-shrink-0" />
+      <Icon className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
       <span>{label}</span>
     </button>
   );
@@ -219,7 +219,7 @@ export function GoalActionSheet({
                     aria-label={`Icon: ${key}`}
                     aria-pressed={isSelected}
                   >
-                    <Icon className="w-5 h-5" />
+                    <Icon className="w-5 h-5" aria-hidden="true" />
                   </button>
                 );
               })}

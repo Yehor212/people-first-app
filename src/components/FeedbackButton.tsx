@@ -5,36 +5,43 @@
  * Submits feedback to Supabase (if configured) or stores locally.
  */
 
-import { useState } from 'react';
-import { MessageSquarePlus, Send, X, Bug, Lightbulb, HelpCircle } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { submitQuickFeedback } from '@/lib/feedbackService';
-import { platform } from '@/lib/platform';
-import { haptics } from '@/lib/haptics';
-import { useBackHandler } from '@/hooks/useBackHandler';
+import { useState } from "react";
+import {
+  MessageSquarePlus,
+  Send,
+  X,
+  Bug,
+  Lightbulb,
+  HelpCircle,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { submitQuickFeedback } from "@/lib/feedbackService";
+import { platform } from "@/lib/platform";
+import { haptics } from "@/lib/haptics";
+import { useBackHandler } from "@/hooks/useBackHandler";
 
-import { logger } from '@/lib/logger';
-import { SK } from '@/lib/storageKeys';
-import { safeLocalStorageGet, safeLocalStorageSet } from '@/lib/safeJson';
+import { logger } from "@/lib/logger";
+import { SK } from "@/lib/storageKeys";
+import { safeLocalStorageGet, safeLocalStorageSet } from "@/lib/safeJson";
 
-type FeedbackType = 'bug' | 'feature' | 'other';
+type FeedbackType = "bug" | "feature" | "other";
 
 interface FeedbackButtonProps {
   /** Position of the button */
-  position?: 'bottom-right' | 'bottom-left';
+  position?: "bottom-right" | "bottom-left";
   /** Custom className */
   className?: string;
 }
 
 export function FeedbackButton({
-  position = 'bottom-right',
+  position = "bottom-right",
   className,
 }: FeedbackButtonProps) {
   const { t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
-  const [type, setType] = useState<FeedbackType>('bug');
-  const [message, setMessage] = useState('');
+  const [type, setType] = useState<FeedbackType>("bug");
+  const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useBackHandler(isOpen, () => setIsOpen(false));
@@ -47,8 +54,8 @@ export function FeedbackButton({
   const handleClose = () => {
     void haptics.light();
     setIsOpen(false);
-    setMessage('');
-    setType('bug');
+    setMessage("");
+    setType("bug");
   };
 
   const handleSubmit = async () => {
@@ -61,7 +68,8 @@ export function FeedbackButton({
       const feedbackData = {
         type,
         message: message.trim(),
-        app_version: (window as { __APP_VERSION__?: string }).__APP_VERSION__ || 'unknown',
+        app_version:
+          (window as { __APP_VERSION__?: string }).__APP_VERSION__ || "unknown",
         platform,
         user_agent: navigator.userAgent,
         created_at: new Date().toISOString(),
@@ -75,21 +83,28 @@ export function FeedbackButton({
 
       handleClose();
     } catch (error) {
-      logger.error('[Feedback] Error:', error);
+      logger.error("[Feedback] Error:", error);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const feedbackTypes: { value: FeedbackType; icon: typeof Bug; label: string }[] = [
-    { value: 'bug', icon: Bug, label: t.feedbackBug || 'Bug' },
-    { value: 'feature', icon: Lightbulb, label: t.feedbackFeature || 'Feature' },
-    { value: 'other', icon: HelpCircle, label: t.feedbackOther || 'Other' },
+  const feedbackTypes: {
+    value: FeedbackType;
+    icon: typeof Bug;
+    label: string;
+  }[] = [
+    { value: "bug", icon: Bug, label: t.feedbackBug || "Bug" },
+    {
+      value: "feature",
+      icon: Lightbulb,
+      label: t.feedbackFeature || "Feature",
+    },
+    { value: "other", icon: HelpCircle, label: t.feedbackOther || "Other" },
   ];
 
-  const positionClasses = position === 'bottom-right'
-    ? 'end-4 bottom-20'
-    : 'start-4 bottom-20';
+  const positionClasses =
+    position === "bottom-right" ? "end-4 bottom-20" : "start-4 bottom-20";
 
   return (
     <>
@@ -98,13 +113,13 @@ export function FeedbackButton({
         <button
           onClick={handleOpen}
           className={cn(
-            'fixed z-50 p-3 rounded-full bg-primary text-primary-foreground shadow-lg',
-            'hover:bg-primary/90 active:scale-95 transition-all',
-            'bottom-[calc(var(--nav-height)+var(--safe-bottom)+1rem)]',
+            "fixed z-50 p-3 rounded-full bg-primary text-primary-foreground shadow-lg",
+            "hover:bg-primary/90 active:scale-95 transition-all",
+            "bottom-[calc(var(--nav-height)+var(--safe-bottom)+1rem)]",
             positionClasses,
-            className
+            className,
           )}
-          aria-label={t.sendFeedback || 'Send feedback'}
+          aria-label={t.sendFeedback || "Send feedback"}
         >
           <MessageSquarePlus className="w-6 h-6" />
         </button>
@@ -112,7 +127,11 @@ export function FeedbackButton({
 
       {/* Feedback Modal */}
       {isOpen && (
-        <div className="fixed inset-0 z-[100] flex items-end justify-center p-4 bg-black/50" role="dialog" aria-modal="true">
+        <div
+          className="fixed inset-0 z-[100] flex items-end justify-center p-4 pb-[calc(1rem+var(--safe-bottom))] bg-black/50"
+          role="dialog"
+          aria-modal="true"
+        >
           <div
             className="w-full max-w-md bg-card rounded-2xl shadow-xl animate-slide-up"
             onClick={(e) => e.stopPropagation()}
@@ -120,7 +139,7 @@ export function FeedbackButton({
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b">
               <h2 className="text-lg font-semibold">
-                {t.sendFeedback || 'Send Feedback'}
+                {t.sendFeedback || "Send Feedback"}
               </h2>
               <button
                 onClick={handleClose}
@@ -140,10 +159,10 @@ export function FeedbackButton({
                     key={value}
                     onClick={() => setType(value)}
                     className={cn(
-                      'flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl border transition-all',
+                      "flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl border transition-all",
                       type === value
-                        ? 'bg-primary text-primary-foreground border-primary'
-                        : 'bg-muted/50 border-border hover:border-primary/50'
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-muted/50 border-border hover:border-primary/50",
                     )}
                   >
                     <Icon className="w-4 h-4" />
@@ -156,7 +175,9 @@ export function FeedbackButton({
               <textarea
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                placeholder={t.feedbackPlaceholder || 'Describe your feedback...'}
+                placeholder={
+                  t.feedbackPlaceholder || "Describe your feedback..."
+                }
                 className="w-full h-32 p-3 rounded-xl border bg-background resize-none focus:outline-none focus:ring-2 focus:ring-primary"
                 maxLength={1000}
               />
@@ -171,16 +192,14 @@ export function FeedbackButton({
                 onClick={handleSubmit}
                 disabled={!message.trim() || isSubmitting}
                 className={cn(
-                  'w-full py-3 rounded-xl font-medium flex items-center justify-center gap-2 transition-all',
+                  "w-full py-3 rounded-xl font-medium flex items-center justify-center gap-2 transition-all",
                   message.trim()
-                    ? 'bg-primary text-primary-foreground hover:bg-primary/90'
-                    : 'bg-muted text-muted-foreground cursor-not-allowed'
+                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                    : "bg-muted text-muted-foreground cursor-not-allowed",
                 )}
               >
                 <Send className="w-4 h-4" />
-                {isSubmitting
-                  ? (t.sending || 'Sending...')
-                  : (t.send || 'Send')}
+                {isSubmitting ? t.sending || "Sending..." : t.send || "Send"}
               </button>
             </div>
           </div>
@@ -193,10 +212,13 @@ export function FeedbackButton({
 // Store feedback locally when Supabase is unavailable
 function storeFeedbackLocally(data: Record<string, unknown>): void {
   try {
-    const pending = safeLocalStorageGet<Record<string, unknown>[]>(SK.PENDING_FEEDBACK, []);
+    const pending = safeLocalStorageGet<Record<string, unknown>[]>(
+      SK.PENDING_FEEDBACK,
+      [],
+    );
     pending.push(data);
     safeLocalStorageSet(SK.PENDING_FEEDBACK, pending);
   } catch (error) {
-    logger.error('[Feedback] Failed to store locally:', error);
+    logger.error("[Feedback] Failed to store locally:", error);
   }
 }

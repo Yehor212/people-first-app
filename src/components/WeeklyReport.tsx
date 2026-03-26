@@ -194,7 +194,7 @@ export function WeeklyReport({ moods, habits, focusSessions, gratitudeEntries, o
           className="absolute top-4 end-4 z-10 p-2 rounded-full bg-background/80 backdrop-blur-sm hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           aria-label={t.close || 'Close'}
         >
-          <X className="w-5 h-5 text-muted-foreground" />
+          <X className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
         </button>
 
         {/* Scrollable content */}
@@ -236,7 +236,7 @@ export function WeeklyReport({ moods, habits, focusSessions, gratitudeEntries, o
             className="mx-6 mb-6 p-5 bg-gradient-to-br from-primary/10 via-accent/5 to-transparent rounded-2xl border border-primary/20"
           >
             <div className="flex items-start gap-3">
-              <Sparkles className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
+              <Sparkles className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" aria-hidden="true" />
               <div>
                 <h3 className="text-lg font-bold mb-1">{motivation.title}</h3>
                 <p className="text-sm text-muted-foreground">{motivation.message}</p>
@@ -255,7 +255,7 @@ export function WeeklyReport({ moods, habits, focusSessions, gratitudeEntries, o
               className="relative overflow-hidden rounded-xl bg-card border border-border/50 p-4 shadow-[0_2px_8px_-2px_hsl(var(--foreground)/0.08)] hover:shadow-[0_8px_20px_-4px_hsl(var(--primary)/0.15)] transition-all duration-300"
             >
               <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center mb-3">
-                <Target className="w-5 h-5 text-primary" />
+                <Target className="w-5 h-5 text-primary" aria-hidden="true" />
               </div>
               <p className="text-2xl font-bold tabular-nums">{weekStats.habitsCompleted}/{weekStats.totalHabitsGoal}</p>
               <p className="text-xs text-muted-foreground">{t.habits}</p>
@@ -264,7 +264,7 @@ export function WeeklyReport({ moods, habits, focusSessions, gratitudeEntries, o
                   "absolute top-3 end-3 flex items-center gap-1 text-xs font-medium",
                   weekStats.improvement > 0 ? "text-[hsl(var(--mood-good))]" : "text-destructive"
                 )}>
-                  {weekStats.improvement > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                  {weekStats.improvement > 0 ? <TrendingUp className="w-3 h-3" aria-hidden="true" /> : <TrendingDown className="w-3 h-3" aria-hidden="true" />}
                   {Math.abs(Math.round(weekStats.improvement))}%
                 </div>
               )}
@@ -279,7 +279,7 @@ export function WeeklyReport({ moods, habits, focusSessions, gratitudeEntries, o
               className="relative overflow-hidden rounded-xl bg-card border border-border/50 p-4 shadow-[0_2px_8px_-2px_hsl(var(--foreground)/0.08)] hover:shadow-[0_8px_20px_-4px_hsl(var(--primary)/0.15)] transition-all duration-300"
             >
               <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500/20 to-cyan-500/10 flex items-center justify-center mb-3">
-                <Brain className="w-5 h-5 text-blue-500" />
+                <Brain className="w-5 h-5 text-blue-500" aria-hidden="true" />
               </div>
               <p className="text-2xl font-bold tabular-nums">{weekStats.focusMinutes}</p>
               <p className="text-xs text-muted-foreground">{t.focusMinutes || t.min}</p>
@@ -294,7 +294,7 @@ export function WeeklyReport({ moods, habits, focusSessions, gratitudeEntries, o
               className="relative overflow-hidden rounded-xl bg-card border border-border/50 p-4 shadow-[0_2px_8px_-2px_hsl(var(--foreground)/0.08)] hover:shadow-[0_8px_20px_-4px_hsl(var(--primary)/0.15)] transition-all duration-300"
             >
               <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-pink-500/20 to-rose-500/10 flex items-center justify-center mb-3">
-                <Heart className="w-5 h-5 text-pink-500" />
+                <Heart className="w-5 h-5 text-pink-500" aria-hidden="true" />
               </div>
               <p className="text-2xl font-bold tabular-nums">{weekStats.gratitudeCount}</p>
               <p className="text-xs text-muted-foreground">{t.gratitude}</p>
@@ -309,7 +309,7 @@ export function WeeklyReport({ moods, habits, focusSessions, gratitudeEntries, o
               className="relative overflow-hidden rounded-xl bg-card border border-border/50 p-4 shadow-[0_2px_8px_-2px_hsl(var(--foreground)/0.08)] hover:shadow-[0_8px_20px_-4px_hsl(var(--primary)/0.15)] transition-all duration-300"
             >
               <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-500/20 to-orange-500/10 flex items-center justify-center mb-3">
-                <Award className="w-5 h-5 text-amber-500" />
+                <Award className="w-5 h-5 text-amber-500" aria-hidden="true" />
               </div>
               <p className="text-lg font-bold capitalize truncate">{weekStats.bestDay}</p>
               <p className="text-xs text-muted-foreground">{t.bestDay}</p>

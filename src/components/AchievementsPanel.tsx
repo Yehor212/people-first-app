@@ -108,7 +108,7 @@ export const AchievementsPanel = memo(function AchievementsPanel({
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-2xl font-bold flex items-center gap-2">
-              <Star className="w-6 h-6" fill="currentColor" />
+              <Star className="w-6 h-6" fill="currentColor" aria-hidden="true" />
               {t.userLevel || "Level"} {userLevel.level}
             </h3>
             <p className="text-white/80 text-sm">{userLevel.title}</p>
@@ -138,7 +138,7 @@ export const AchievementsPanel = memo(function AchievementsPanel({
       <Card className="p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold flex items-center gap-2">
-            <Trophy className="w-5 h-5 text-primary" />
+            <Trophy className="w-5 h-5 text-primary" aria-hidden="true" />
             {t.achievements || "Achievements"}
           </h3>
           <Badge variant="secondary">
@@ -262,7 +262,7 @@ export const AchievementsPanel = memo(function AchievementsPanel({
                     {selectedAchievement.rarity.toUpperCase()}
                   </Badge>
                   <Badge variant="secondary">
-                    <TrendingUp className="w-3 h-3 me-1" />
+                    <TrendingUp className="w-3 h-3 me-1" aria-hidden="true" />
                     {selectedAchievement.points} {t.xp || "XP"}
                   </Badge>
                 </div>

@@ -6,10 +6,10 @@
  * Abstract, premium, not realistic flame.
  */
 
-import { useEffect } from 'react';
-import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
-import { FireIcon } from '@/components/icons';
-import type { StorySlide } from '@/lib/progressStories';
+import { useEffect } from "react";
+import { motion, useMotionValue, useTransform, animate } from "framer-motion";
+import { FireIcon } from "@/components/icons";
+import type { StorySlide } from "@/lib/progressStories";
 
 interface StreakSlideProps {
   slide: StorySlide;
@@ -32,7 +32,7 @@ function FireParticle({ delay, x }: { delay: number; x: number }) {
         duration: 3,
         delay,
         repeat: Infinity,
-        ease: 'easeOut',
+        ease: "easeOut",
       }}
     />
   );
@@ -49,14 +49,20 @@ function OrbitingFire({
   startAngle: number;
 }) {
   const angle = useMotionValue(startAngle);
-  const x = useTransform(angle, (a) => Math.cos((a * Math.PI) / 180) * orbitRadius);
-  const y = useTransform(angle, (a) => Math.sin((a * Math.PI) / 180) * orbitRadius);
+  const x = useTransform(
+    angle,
+    (a) => Math.cos((a * Math.PI) / 180) * orbitRadius,
+  );
+  const y = useTransform(
+    angle,
+    (a) => Math.sin((a * Math.PI) / 180) * orbitRadius,
+  );
 
   useEffect(() => {
     const controls = animate(angle, startAngle + 360, {
       duration: orbitDuration,
       repeat: Infinity,
-      ease: 'linear',
+      ease: "linear",
     });
     return () => controls.stop();
   }, [angle, orbitDuration, startAngle]);
@@ -70,9 +76,9 @@ function OrbitingFire({
         className="p-2 rounded-full bg-black/30 backdrop-blur-sm border border-orange-500/30 shadow-[0_0_20px_rgba(255,150,0,0.4)]"
         animate={{
           boxShadow: [
-            '0 0 20px rgba(255, 150, 0, 0.4)',
-            '0 0 30px rgba(255, 150, 0, 0.6)',
-            '0 0 20px rgba(255, 150, 0, 0.4)',
+            "0 0 20px rgba(255, 150, 0, 0.4)",
+            "0 0 30px rgba(255, 150, 0, 0.6)",
+            "0 0 20px rgba(255, 150, 0, 0.4)",
           ],
         }}
         transition={{ duration: 2, repeat: Infinity }}
@@ -89,9 +95,7 @@ export function StreakSlide({ slide }: StreakSlideProps) {
   return (
     <div className="relative w-full h-full overflow-hidden">
       {/* Deep fire cosmos background */}
-      <div
-        className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,#1a0a00_0%,#0d0400_50%,#000000_100%)]"
-      />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,#1a0a00_0%,#0d0400_50%,#000000_100%)]" />
 
       {/* Fire nebula accents */}
       <motion.div
@@ -119,21 +123,21 @@ export function StreakSlide({ slide }: StreakSlideProps) {
           <motion.div
             className="absolute inset-0 rounded-full border border-orange-500/20 shadow-[0_0_15px_rgba(255,100,0,0.1)]"
             animate={{ rotate: 360 }}
-            transition={{ duration: 60, repeat: Infinity, ease: 'linear' }}
+            transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
           />
 
           {/* Middle orbit ring */}
           <motion.div
             className="absolute rounded-full border border-amber-500/25 inset-[30px] shadow-[0_0_20px_rgba(255,150,0,0.15)]"
             animate={{ rotate: -360 }}
-            transition={{ duration: 40, repeat: Infinity, ease: 'linear' }}
+            transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
           />
 
           {/* Inner orbit ring */}
           <motion.div
             className="absolute rounded-full border-2 border-yellow-500/30 inset-[60px] shadow-[0_0_25px_rgba(255,200,0,0.2)]"
             animate={{ rotate: 360 }}
-            transition={{ duration: 25, repeat: Infinity, ease: 'linear' }}
+            transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
           />
 
           {/* Central fire core */}
@@ -154,19 +158,19 @@ export function StreakSlide({ slide }: StreakSlideProps) {
             animate={{
               scale: [1, 1.05, 1],
               boxShadow: [
-                '0 0 60px rgba(255, 150, 0, 0.5), 0 0 100px rgba(255, 100, 0, 0.3), inset 0 0 40px rgba(255, 200, 0, 0.3)',
-                '0 0 80px rgba(255, 150, 0, 0.7), 0 0 120px rgba(255, 100, 0, 0.4), inset 0 0 50px rgba(255, 200, 0, 0.4)',
-                '0 0 60px rgba(255, 150, 0, 0.5), 0 0 100px rgba(255, 100, 0, 0.3), inset 0 0 40px rgba(255, 200, 0, 0.3)',
+                "0 0 60px rgba(255, 150, 0, 0.5), 0 0 100px rgba(255, 100, 0, 0.3), inset 0 0 40px rgba(255, 200, 0, 0.3)",
+                "0 0 80px rgba(255, 150, 0, 0.7), 0 0 120px rgba(255, 100, 0, 0.4), inset 0 0 50px rgba(255, 200, 0, 0.4)",
+                "0 0 60px rgba(255, 150, 0, 0.5), 0 0 100px rgba(255, 100, 0, 0.3), inset 0 0 40px rgba(255, 200, 0, 0.3)",
               ],
             }}
-            transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
           >
             {/* Streak number */}
             <motion.div
               className="text-6xl font-black text-white [text-shadow:0_0_30px_rgba(255,200,0,0.8)]"
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
-              transition={{ type: 'spring', stiffness: 100, delay: 0.3 }}
+              transition={{ type: "spring", stiffness: 100, delay: 0.3 }}
             >
               {streak}
             </motion.div>
@@ -195,7 +199,7 @@ export function StreakSlide({ slide }: StreakSlideProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
       >
-        {slide.title || 'On Fire!'}
+        {slide.title || "On Fire!"}
       </motion.h2>
 
       {/* Subtitle at bottom */}
@@ -209,12 +213,8 @@ export function StreakSlide({ slide }: StreakSlideProps) {
       </motion.p>
 
       {/* Corner glows */}
-      <div
-        className="absolute top-0 left-0 w-48 h-48 pointer-events-none bg-[radial-gradient(circle_at_top_left,rgba(255,100,0,0.1)_0%,transparent_70%)]"
-      />
-      <div
-        className="absolute bottom-0 right-0 w-48 h-48 pointer-events-none bg-[radial-gradient(circle_at_bottom_right,rgba(255,150,0,0.1)_0%,transparent_70%)]"
-      />
+      <div className="absolute top-0 start-0 w-48 h-48 pointer-events-none bg-[radial-gradient(circle_at_top_left,rgba(255,100,0,0.1)_0%,transparent_70%)]" />
+      <div className="absolute bottom-0 end-0 w-48 h-48 pointer-events-none bg-[radial-gradient(circle_at_bottom_right,rgba(255,150,0,0.1)_0%,transparent_70%)]" />
     </div>
   );
 }

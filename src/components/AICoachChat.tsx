@@ -90,7 +90,7 @@ export function AICoachChat() {
               animate={{ scale: [1, 1.05, 1] }}
               transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
             >
-              <Sparkles className="w-6 h-6 text-white" />
+              <Sparkles className="w-6 h-6 text-white" aria-hidden="true" />
             </motion.div>
             <div>
               <h2 className="font-semibold text-foreground">
@@ -110,7 +110,7 @@ export function AICoachChat() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={zenTap.button}
               >
-                <Trash2 className="w-5 h-5" />
+                <Trash2 className="w-5 h-5" aria-hidden="true" />
               </motion.button>
             )}
             <button
@@ -120,7 +120,7 @@ export function AICoachChat() {
               className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-muted transition-colors"
               aria-label={t.close || "Close"}
             >
-              <X className="w-5 h-5 text-muted-foreground" />
+              <X className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -134,7 +134,7 @@ export function AICoachChat() {
               animate={{ opacity: 1, y: 0 }}
             >
               <div className="w-20 h-20 mx-auto mb-4 rounded-2xl flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/10 shadow-zen-md">
-                <Bot className="w-10 h-10 text-violet-400" />
+                <Bot className="w-10 h-10 text-violet-400" aria-hidden="true" />
               </div>
               <p className="text-muted-foreground text-sm mb-1">
                 {t.aiCoachWelcome || "Hi! How can I help you today?"}
@@ -216,7 +216,7 @@ export function AICoachChat() {
               whileTap={input.trim() && !isLoading ? zenTap.button : {}}
               aria-label={t.send || "Send"}
             >
-              <Send className="w-5 h-5" />
+              <Send className="w-5 h-5" aria-hidden="true" />
             </motion.button>
           </div>
         </div>
@@ -244,7 +244,7 @@ function ChatBubble({
     >
       {isCoach && (
         <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-[linear-gradient(135deg,hsl(var(--cosmic-nebula-purple)/0.3)_0%,hsl(var(--cosmic-nebula-purple)/0.2)_100%)]">
-          <Bot className="w-5 h-5 text-violet-400" />
+          <Bot className="w-5 h-5 text-violet-400" aria-hidden="true" />
         </div>
       )}
 
@@ -268,7 +268,7 @@ function ChatBubble({
 
       {!isCoach && (
         <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-[linear-gradient(135deg,hsl(var(--cosmic-nebula-purple)/0.2)_0%,hsl(var(--cosmic-nebula-purple)/0.15)_100%)]">
-          <User className="w-5 h-5 text-violet-400" />
+          <User className="w-5 h-5 text-violet-400" aria-hidden="true" />
         </div>
       )}
     </motion.div>
@@ -284,7 +284,7 @@ function TypingIndicator() {
       animate={{ opacity: 1, y: 0 }}
     >
       <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-[linear-gradient(135deg,hsl(var(--cosmic-nebula-purple)/0.3)_0%,hsl(var(--cosmic-nebula-purple)/0.2)_100%)]">
-        <Bot className="w-5 h-5 text-violet-400" />
+        <Bot className="w-5 h-5 text-violet-400" aria-hidden="true" />
       </div>
       <div className="px-5 py-4 rounded-2xl rounded-ss-sm bg-secondary backdrop-blur-[8px] border border-border">
         <div className="flex gap-1.5">

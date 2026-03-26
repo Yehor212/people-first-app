@@ -169,13 +169,13 @@ export function ChallengeDetailsView({
           </span>
           {challenge.status === "active" && (
             <span className="flex items-center gap-1 text-slate-500 dark:text-white/60">
-              <Clock className="w-3 h-3" />
+              <Clock className="w-3 h-3" aria-hidden="true" />
               {daysLeft} {t.daysLeft || "days left"}
             </span>
           )}
           {challenge.status === "completed" && (
             <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-amber-700 dark:text-amber-300 bg-amber-500/20">
-              <Trophy className="w-3 h-3" />
+              <Trophy className="w-3 h-3" aria-hidden="true" />
               {t.challengeCompleted || "Challenge Complete!"}
             </span>
           )}
@@ -266,9 +266,9 @@ export function ChallengeDetailsView({
             whileTap={zenTap.button}
           >
             {copied ? (
-              <Check className="w-6 h-6 text-emerald-400" />
+              <Check className="w-6 h-6 text-emerald-400" aria-hidden="true" />
             ) : (
-              <Copy className="w-6 h-6 text-slate-600 dark:text-white/70" />
+              <Copy className="w-6 h-6 text-slate-600 dark:text-white/70" aria-hidden="true" />
             )}
           </motion.button>
         </div>
@@ -277,12 +277,12 @@ export function ChallengeDetailsView({
       {/* Actions */}
       <div className="grid grid-cols-2 gap-3">
         <Button variant="outline" onClick={handleDelete} className="h-12">
-          <Trash2 className="w-4 h-4 me-2" />
+          <Trash2 className="w-4 h-4 me-2" aria-hidden="true" />
           {t.delete || "Delete"}
         </Button>
 
         <Button onClick={throttledShare} disabled={isSharing} className="h-12">
-          <Share2 className="w-4 h-4 me-2" />
+          <Share2 className="w-4 h-4 me-2" aria-hidden="true" />
           {isSharing ? t.sharing || "Sharing..." : t.shareButton || "Share"}
         </Button>
       </div>

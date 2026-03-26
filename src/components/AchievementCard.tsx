@@ -53,7 +53,7 @@ export function AchievementCard({
           {isUnlocked ? (
             achievement.icon
           ) : (
-            <Lock className="w-10 h-10 mx-auto text-muted-foreground" />
+            <Lock className="w-10 h-10 mx-auto text-muted-foreground" aria-hidden="true" />
           )}
         </div>
         <div className="min-w-0">

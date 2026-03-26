@@ -5,11 +5,11 @@
  * Stats orbit like satellites around the core.
  */
 
-import { useEffect, useState } from 'react';
-import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
-import { StarField } from '../elements/StarField';
-import { BrainIcon } from '@/components/icons';
-import type { StorySlide, FocusStatsData } from '@/lib/progressStories';
+import { useEffect, useState } from "react";
+import { motion, useMotionValue, useTransform, animate } from "framer-motion";
+import { StarField } from "../elements/StarField";
+import { BrainIcon } from "@/components/icons";
+import type { StorySlide, FocusStatsData } from "@/lib/progressStories";
 
 interface FocusSlideProps {
   slide: StorySlide;
@@ -23,7 +23,7 @@ function useAnimatedCounter(target: number, duration: number = 1.5) {
   useEffect(() => {
     const controls = animate(0, target, {
       duration,
-      ease: 'easeOut',
+      ease: "easeOut",
       onUpdate: (value) => setCurrent(Math.round(value)),
     });
     return () => controls.stop();
@@ -51,14 +51,20 @@ function OrbitingStat({
   color: string;
 }) {
   const angle = useMotionValue(startAngle);
-  const x = useTransform(angle, (a) => Math.cos((a * Math.PI) / 180) * orbitRadius);
-  const y = useTransform(angle, (a) => Math.sin((a * Math.PI) / 180) * orbitRadius);
+  const x = useTransform(
+    angle,
+    (a) => Math.cos((a * Math.PI) / 180) * orbitRadius,
+  );
+  const y = useTransform(
+    angle,
+    (a) => Math.sin((a * Math.PI) / 180) * orbitRadius,
+  );
 
   useEffect(() => {
     const controls = animate(angle, startAngle + 360, {
       duration: orbitDuration,
       repeat: Infinity,
-      ease: 'linear',
+      ease: "linear",
     });
     return () => controls.stop();
   }, [angle, orbitDuration, startAngle]);
@@ -96,9 +102,7 @@ export function FocusSlide({ slide, t }: FocusSlideProps) {
   return (
     <div className="relative w-full h-full overflow-hidden">
       {/* Deep space background */}
-      <div
-        className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,#0a1628_0%,#050a14_50%,#000000_100%)]"
-      />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,#0a1628_0%,#050a14_50%,#000000_100%)]" />
 
       {/* Animated star field */}
       <StarField count={60} speed={0.5} twinkle />
@@ -119,21 +123,21 @@ export function FocusSlide({ slide, t }: FocusSlideProps) {
           <motion.div
             className="absolute inset-0 rounded-full border border-white/10"
             animate={{ rotate: 360 }}
-            transition={{ duration: 60, repeat: Infinity, ease: 'linear' }}
+            transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
           />
 
           {/* Middle orbit ring */}
           <motion.div
             className="absolute rounded-full border border-cyan-500/20 inset-[30px] shadow-[0_0_20px_rgba(6,182,212,0.1)]"
             animate={{ rotate: -360 }}
-            transition={{ duration: 45, repeat: Infinity, ease: 'linear' }}
+            transition={{ duration: 45, repeat: Infinity, ease: "linear" }}
           />
 
           {/* Inner orbit ring */}
           <motion.div
             className="absolute rounded-full border-2 border-blue-500/30 inset-[60px] shadow-[0_0_30px_rgba(59,130,246,0.2)]"
             animate={{ rotate: 360 }}
-            transition={{ duration: 30, repeat: Infinity, ease: 'linear' }}
+            transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
           />
 
           {/* Central core */}
@@ -142,19 +146,19 @@ export function FocusSlide({ slide, t }: FocusSlideProps) {
             animate={{
               scale: [1, 1.05, 1],
               boxShadow: [
-                '0 0 60px rgba(59, 130, 246, 0.3), inset 0 0 40px rgba(59, 130, 246, 0.2)',
-                '0 0 80px rgba(59, 130, 246, 0.4), inset 0 0 50px rgba(59, 130, 246, 0.3)',
-                '0 0 60px rgba(59, 130, 246, 0.3), inset 0 0 40px rgba(59, 130, 246, 0.2)',
+                "0 0 60px rgba(59, 130, 246, 0.3), inset 0 0 40px rgba(59, 130, 246, 0.2)",
+                "0 0 80px rgba(59, 130, 246, 0.4), inset 0 0 50px rgba(59, 130, 246, 0.3)",
+                "0 0 60px rgba(59, 130, 246, 0.3), inset 0 0 40px rgba(59, 130, 246, 0.2)",
               ],
             }}
-            transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
           >
             {/* Brain icon */}
             <motion.div
               className="mb-2"
               initial={{ scale: 0, rotate: -180 }}
               animate={{ scale: 1, rotate: 0 }}
-              transition={{ type: 'spring', stiffness: 100, delay: 0.3 }}
+              transition={{ type: "spring", stiffness: 100, delay: 0.3 }}
             >
               <BrainIcon size="lg" animated />
             </motion.div>
@@ -175,7 +179,7 @@ export function FocusSlide({ slide, t }: FocusSlideProps) {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.7 }}
             >
-              {t.storyTotalFocus || 'total focus'}
+              {t.storyTotalFocus || "total focus"}
             </motion.p>
           </motion.div>
 
@@ -183,7 +187,7 @@ export function FocusSlide({ slide, t }: FocusSlideProps) {
           <OrbitingStat
             icon="⏱️"
             value={`${data?.averageSession || 0}m`}
-            label={t.storyAvgSession || 'avg'}
+            label={t.storyAvgSession || "avg"}
             orbitRadius={120}
             orbitDuration={25}
             startAngle={0}
@@ -192,7 +196,7 @@ export function FocusSlide({ slide, t }: FocusSlideProps) {
           <OrbitingStat
             icon="🏆"
             value={`${data?.longestSession || 0}m`}
-            label={t.storyLongestSession || 'best'}
+            label={t.storyLongestSession || "best"}
             orbitRadius={120}
             orbitDuration={25}
             startAngle={180}
@@ -220,18 +224,15 @@ export function FocusSlide({ slide, t }: FocusSlideProps) {
           transition={{ delay: 1 }}
         >
           <span className="text-sm text-white">
-            {t.storyMostFocusedOn || 'Most focused on:'} <span className="font-semibold">{data.topLabel}</span>
+            {t.storyMostFocusedOn || "Most focused on:"}{" "}
+            <span className="font-semibold">{data.topLabel}</span>
           </span>
         </motion.div>
       )}
 
       {/* Decorative corner glows */}
-      <div
-        className="absolute top-0 left-0 w-48 h-48 pointer-events-none bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.1)_0%,transparent_70%)]"
-      />
-      <div
-        className="absolute bottom-0 right-0 w-48 h-48 pointer-events-none bg-[radial-gradient(circle_at_bottom_right,rgba(139,92,246,0.1)_0%,transparent_70%)]"
-      />
+      <div className="absolute top-0 start-0 w-48 h-48 pointer-events-none bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.1)_0%,transparent_70%)]" />
+      <div className="absolute bottom-0 end-0 w-48 h-48 pointer-events-none bg-[radial-gradient(circle_at_bottom_right,rgba(139,92,246,0.1)_0%,transparent_70%)]" />
     </div>
   );
 }
