@@ -277,17 +277,37 @@ process.stdin.on('end', () => {
             if (vtoken.agent !== 'verifier') {
               block('VERIFICATION TOKEN INVALID: agent field must be "verifier" (got "' + vtoken.agent + '")', cmd);
             }
-            if (!Array.isArray(vtoken.checks) || vtoken.checks.length < 3) {
-              block('VERIFICATION TOKEN INVALID: need >= 3 checks (got ' + (vtoken.checks || []).length + ')', cmd);
-            }
             if (vtoken.verdict !== 'APPROVE') {
               block('VERIFICATION TOKEN: verifier did NOT approve (verdict="' + vtoken.verdict + '")', cmd);
             }
-            // Check token freshness (< 1 hour)
+
+            // Hole 1 fix: require 5 NAMED mandatory checks (not just count >= 3)
+            const REQUIRED_CHECKS = ['typescript', 'eslint', 'tests_pass', 'build_succeeds', 'i18n'];
+            const checkNames = (vtoken.checks || []).map(c => c.name);
+            const missingChecks = REQUIRED_CHECKS.filter(r => !checkNames.includes(r));
+            if (missingChecks.length > 0) {
+              block('VERIFICATION TOKEN INCOMPLETE: missing required checks: ' + missingChecks.join(', ') + '.\n' +
+                'Token must include ALL of: ' + REQUIRED_CHECKS.join(', '), cmd);
+            }
+
+            // Hole 1 fix: evidence must contain concrete results, not just "exit 0"
+            for (const check of (vtoken.checks || [])) {
+              if (check.name === 'tests_pass' && check.pass && !/\d+\s*(pass|test|spec)/i.test(check.evidence || '')) {
+                block('VERIFICATION TOKEN WEAK EVIDENCE: tests_pass evidence must include test count (e.g. "3224 passed"). Got: "' + (check.evidence || '') + '"', cmd);
+              }
+              if (check.name === 'typescript' && check.pass && !/\d+\s*(error|clean|type)/i.test(check.evidence || '')) {
+                block('VERIFICATION TOKEN WEAK EVIDENCE: typescript evidence must include error count (e.g. "0 errors"). Got: "' + (check.evidence || '') + '"', cmd);
+              }
+              if (check.name === 'build_succeeds' && check.pass && !/build|built|\d+\s*(kb|mb|ms|s\b|module|entri)/i.test(check.evidence || '')) {
+                block('VERIFICATION TOKEN WEAK EVIDENCE: build_succeeds evidence must include build details. Got: "' + (check.evidence || '') + '"', cmd);
+              }
+            }
+
+            // Check token freshness (< 30 minutes — real verification takes 2-5 min)
             if (vtoken.timestamp) {
               const age = Date.now() - new Date(vtoken.timestamp).getTime();
-              if (age > 3600000) {
-                block('VERIFICATION TOKEN STALE: ' + Math.round(age / 60000) + ' min old. Re-run verifier.', cmd);
+              if (age > 1800000) {
+                block('VERIFICATION TOKEN STALE: ' + Math.round(age / 60000) + ' min old (max 30). Re-run verifier.', cmd);
               }
             }
             audit('allow', 'verifier approved (' + (vtoken.checks || []).length + ' checks)', cmd);
