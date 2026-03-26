@@ -542,13 +542,13 @@ export function JournalEntryList({
 
       {/* Mood / tag filter pills (text mode only) */}
       {showFilters && (
-        <div className="flex gap-1.5 overflow-x-auto scrollbar-hide -mx-1 px-1 pb-1">
+        <div className="flex gap-1.5 overflow-x-auto scrollbar-hide -mx-1 px-1 pb-1 snap-x snap-mandatory">
           {Array.from(activeMoods).map((m) => (
             <button
               key={m}
               onClick={() => setSelectedMood(selectedMood === m ? null : m)}
               className={cn(
-                "flex-shrink-0 text-base px-2 py-0.5 rounded-full transition-colors min-h-[44px]",
+                "snap-start flex-shrink-0 text-base px-2 py-0.5 rounded-full transition-colors min-h-[44px]",
                 selectedMood === m
                   ? "bg-primary/15 ring-1 ring-primary/30"
                   : "hover:bg-muted/50",
@@ -567,7 +567,7 @@ export function JournalEntryList({
               key={tag}
               onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
               className={cn(
-                "flex-shrink-0 px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors min-h-[44px]",
+                "snap-start flex-shrink-0 px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors min-h-[44px]",
                 selectedTag === tag
                   ? "bg-primary/15 text-primary ring-1 ring-primary/30"
                   : "bg-muted/50 text-foreground hover:bg-muted/70",

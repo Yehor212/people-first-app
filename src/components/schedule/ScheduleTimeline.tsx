@@ -271,7 +271,7 @@ export function ScheduleTimeline({
         {/* Premium Day Selector */}
         <div
           ref={daySelectorRef}
-          className="flex gap-2 mb-4 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide"
+          className="flex gap-2 mb-4 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide snap-x snap-mandatory"
         >
           {allDates.map((date) => (
             <PremiumDayPill

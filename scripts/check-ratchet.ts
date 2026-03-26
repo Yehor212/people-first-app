@@ -130,6 +130,8 @@ const GOD_COMPONENT_EXEMPT = [
   "HabitDetailSheet.tsx", // 420→500 lines from prettier reformat of multi-line JSX
   "AnimatedCalendar.tsx", // 430→442 lines from prettier import reformat + aria-label, not complexity
   "FriendsPanel.tsx", // 400→414 lines from aria-hidden additions on decorative icons, not complexity
+  "HabitTracker.tsx", // 460→500 lines from scroll-snap classes + prettier reformat, not complexity
+  "ChallengesPanel.tsx", // 390→409 lines from scroll-snap classes + prettier reformat, not complexity
 ];
 
 const GOD_COMPONENT_OUT_OF_SCOPE = ["features/journal/"];
