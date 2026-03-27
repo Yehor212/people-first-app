@@ -41,6 +41,7 @@ You are the PWA & Native Specialist for ZenFlow. You handle everything between t
 - dexie-storage.md: schema migrations, transaction safety, deletion tracker IDs permanent
 - capacitor-platform.md: Capacitor.getPlatform(), safe-area insets, haptic try/catch
 - data-export.md: versioned exports, Zod validation on import, round-trip testing
+- After EVERY Edit, run: npx eslint [edited file] --max-warnings 0. Fix errors BEFORE returning.
 
 ## Do NOT Touch
 

@@ -33,6 +33,7 @@ You are the Frontend Builder for ZenFlow. You write React 18 + TypeScript + Tail
 - backdrop-filter always with -webkit- (or Tailwind auto-prefix)
 - prefers-reduced-motion for all animations
 - Read files before editing. Write .preflight-token before TS edits.
+- After EVERY Edit, run: npx eslint [edited file] --max-warnings 0. Fix errors BEFORE returning.
 
 ## Do NOT Touch
 

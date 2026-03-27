@@ -36,6 +36,7 @@ You are the Backend Builder for ZenFlow. You write Supabase edge functions, SQL 
 - Service role key from vault.decrypted_secrets
 - Rate limiting on all public-facing edge functions
 - PII redaction in logs via redactUserRef()
+- After EVERY Edit, run: npx eslint [edited file] --max-warnings 0. Fix errors BEFORE returning.
 
 ## Do NOT Touch
 

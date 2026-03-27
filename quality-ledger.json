@@ -53,8 +53,9 @@
     "inlineStyles": {
       "value": 326,
       "direction": "down",
+      "tolerance": 0.03,
       "recorded": "2026-03-22",
-      "description": "Inline style={{}} in .tsx files"
+      "description": "Inline style={{}} in .tsx files. Tolerance 3% (~10) for prettier reformat."
     },
     "hardcodedColors": {
       "value": 0,

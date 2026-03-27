@@ -85,8 +85,10 @@ For EVERY task:
 
 ## Model Policy
 
-ALL agents run on Opus 4.6 via `model: opus` frontmatter. No exceptions.
-Opus provides strongest reasoning for code quality, security analysis, and architectural decisions.
+- **Opus 4.6**: Team Lead, all 4 Builders, Verifier, Design Advisor, Performance Agent (7 agents)
+- **Sonnet 4.6**: all 4 Guardians (grep-based pattern checks, Sonnet is sufficient and faster)
+
+Builders need Opus for code generation. Guardians do regex/grep — Sonnet handles this well at lower cost.
 
 ## Branch Rule
 

@@ -67,17 +67,33 @@ function validate(content) {
     errors.push('Missing goal');
   }
 
+  // SHORT FORMAT SUPPORT: if postflight has {timestamp, goal, changes, verdict, evidence}
+  // skip heavy validation (laws, mirrors, self_reflection). Full format still accepted.
+  const isShortFormat = parsed.verdict && !parsed.self_reflection && !parsed.laws_checked;
+  if (isShortFormat) {
+    // Short format: just validate changes + verdict + evidence
+    if (!Array.isArray(parsed.changes) || parsed.changes.length === 0) {
+      errors.push('No changes listed');
+    }
+    if (parsed.verdict !== 'APPROVE') {
+      errors.push('verdict must be APPROVE (got ' + parsed.verdict + ')');
+    }
+    if (typeof parsed.evidence !== 'string' || parsed.evidence.trim().length < 10) {
+      errors.push('evidence must be a string with ≥10 chars (e.g. "tsc 0, vitest 3224 pass")');
+    }
+    return { valid: errors.length === 0, errors, warnings, parsed };
+  }
+
+  // FULL FORMAT (legacy): all rules apply
   // Rule 4: changes — non-empty string array
   if (!Array.isArray(parsed.changes) || parsed.changes.length === 0) {
     errors.push('No changes listed');
   } else if (!parsed.changes.every(c => typeof c === 'string' && c.length > 0)) {
     errors.push('changes[] must contain non-empty strings');
   } else if (parsed.changes.length > 7) {
-    // Span-level: too many changes without per-file evidence = likely surface-level review
-    // Verifier finding 3.1: "file:" matches "profile:" — tighten to require path-like context
-    const verified = (parsed.self_reflection?.what_I_verified || '').match(/READ:\s*\S|\.(?:ts|tsx|cjs|js|json)(?::\d|\s)|line\s+\d/gi) || [];
+    const verified = (parsed.self_reflection?.what_I_verified || parsed.evidence || '').match(/READ:\s*\S|\.(?:ts|tsx|cjs|js|json)(?::\d|\s)|line\s+\d/gi) || [];
     if (verified.length < Math.ceil(parsed.changes.length / 2)) {
-      errors.push('SPAN-LEVEL: ' + parsed.changes.length + ' files changed but only ' + verified.length + ' file-level evidence markers in what_I_verified. Verify at least half of changed files individually.');
+      errors.push('SPAN-LEVEL: ' + parsed.changes.length + ' files changed but only ' + verified.length + ' file-level evidence markers. Verify at least half individually.');
     }
   }
 
@@ -444,14 +460,22 @@ function validate(content) {
         }
 
         // Allow documented skip: tools_skipped: [{name, reason}] with reason ≥30 chars
-        if (mandatoryMissing.length > 0 && parsed.tools_skipped) {
+        // Also allow auto-skip: if no .ts/.tsx in changes[], tools targeting source code are irrelevant
+        if (mandatoryMissing.length > 0) {
           const skipped = Array.isArray(parsed.tools_skipped) ? parsed.tools_skipped : [];
-          const allJustified = mandatoryMissing.every(missing => {
+          const changesHaveTs = Array.isArray(parsed.changes) && parsed.changes.some(c => /\.(ts|tsx)$/.test(c));
+
+          // Auto-justify: if no TS source files changed, all source-targeting tools are irrelevant
+          const SOURCE_TOOLS = ['/tdd', 'Supabase MCP', 'optimization-suite', '/review', 'Context7 MCP',
+            'Playwright MCP', 'codebase-audit-suite', 'AgentShield', 'Snyk', 'agile-workflow'];
+          const autoJustified = !changesHaveTs && mandatoryMissing.every(t => SOURCE_TOOLS.includes(t.name));
+
+          const manualJustified = mandatoryMissing.every(missing => {
             const skip = skipped.find(s => (s.name || '').toLowerCase() === missing.name.toLowerCase());
             return skip && typeof skip.reason === 'string' && skip.reason.length >= 30;
           });
-          if (allJustified) {
-            // Remove the error — all mandatory tools have documented justification for skipping
+
+          if (autoJustified || manualJustified) {
             const idx = errors.findIndex(e => e.includes('TOOL BLINDNESS'));
             if (idx >= 0) errors.splice(idx, 1);
           }

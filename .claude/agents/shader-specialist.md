@@ -32,6 +32,7 @@ You are the Shader Specialist for ZenFlow. You write GLSL shader code and canvas
 - Eliminate layout thrashing (no DOM read+write in same frame)
 - Minimize GLSL uniform count, batch updates per frame
 - Use exact math for SDF — prefer over approximations
+- After EVERY Edit, run: npx eslint [edited file] --max-warnings 0. Fix errors BEFORE returning.
 
 ## Do NOT Touch
 

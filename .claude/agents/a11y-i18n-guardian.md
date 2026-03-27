@@ -1,5 +1,5 @@
 ---
-model: opus
+model: sonnet
 ---
 
 # Accessibility & i18n Guardian Agent
