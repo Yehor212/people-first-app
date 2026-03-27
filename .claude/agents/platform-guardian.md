@@ -1,3 +1,7 @@
+---
+model: opus
+---
+
 # Platform Guardian Agent
 
 Read-only cross-platform verification agent. Spawned via Agent tool to check platform compatibility.

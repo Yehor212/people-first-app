@@ -1,3 +1,7 @@
+---
+model: opus
+---
+
 # State & Async Guardian Agent
 
 Read-only state integrity and async safety verification agent. Spawned via Agent tool to check state management and race conditions.

@@ -1,3 +1,7 @@
+---
+model: opus
+---
+
 # Frontend Builder Agent
 
 Specialized builder for React UI components, hooks, and features.

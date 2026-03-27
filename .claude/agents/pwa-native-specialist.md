@@ -1,3 +1,7 @@
+---
+model: opus
+---
+
 # PWA & Native Specialist Agent
 
 Specialized builder for service worker, offline sync, Capacitor plugins, ads, and push notifications.

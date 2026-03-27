@@ -1,3 +1,7 @@
+---
+model: opus
+---
+
 # Backend Builder Agent
 
 Specialized builder for Supabase backend: PostgreSQL, edge functions, auth, sync.

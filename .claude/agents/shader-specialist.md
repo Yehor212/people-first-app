@@ -1,3 +1,7 @@
+---
+model: opus
+---
+
 # Shader Specialist Agent
 
 Specialized builder for GLSL shaders, WebGL, and canvas rendering.

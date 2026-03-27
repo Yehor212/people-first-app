@@ -1,3 +1,7 @@
+---
+model: opus
+---
+
 # Security & Quality Guardian Agent
 
 Read-only security, quality, and test verification agent. Spawned via Agent tool to check security, code quality, and test integrity.

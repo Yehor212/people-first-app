@@ -1,3 +1,7 @@
+---
+model: opus
+---
+
 # Performance Agent
 
 Read-only performance analysis and optimization advisory agent.

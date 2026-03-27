@@ -1,3 +1,7 @@
+---
+model: opus
+---
+
 # QA Verifier Agent
 
 Read-only quality assurance agent. Spawned via Agent tool to verify code quality without edit permissions.

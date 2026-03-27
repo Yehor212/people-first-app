@@ -1,3 +1,7 @@
+---
+model: opus
+---
+
 # Accessibility & i18n Guardian Agent
 
 Read-only accessibility and internationalization verification agent. Spawned via Agent tool to check a11y and i18n compliance.
