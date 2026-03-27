@@ -631,9 +631,15 @@ function checkRatchet(): void {
       continue;
     }
 
+    // Tolerance: optional per-metric percentage (e.g. 0.005 = 0.5%) from quality-ledger.json
+    // Only applied to metrics with explicit tolerance field (BundleMon maxPercentIncrease pattern)
+    // Count metrics (tests, errors) keep zero tolerance by default
+    const tolerance = floor.tolerance || 0;
+    const toleranceValue =
+      tolerance > 0 ? Math.ceil(floor.value * tolerance) : 0;
     const isPass =
       (floor.direction === "up" && value >= floor.value) ||
-      (floor.direction === "down" && value <= floor.value);
+      (floor.direction === "down" && value <= floor.value + toleranceValue);
 
     const isBetter =
       (floor.direction === "up" && value > floor.value) ||
@@ -665,7 +671,10 @@ function checkRatchet(): void {
         `  X  ${metric.padEnd(22)} ${String(value).padStart(5)} VIOLATED floor ${floor.value} (${floor.direction === "up" ? "must increase" : "must decrease"})`,
       );
       result.violations.push(
-        `RATCHET VIOLATION: ${metric} regressed from ${floor.value} to ${value}`,
+        `RATCHET VIOLATION: ${metric} regressed from ${floor.value} to ${value}` +
+          (toleranceValue > 0
+            ? ` (tolerance: +${toleranceValue}, max: ${floor.value + toleranceValue})`
+            : ``),
       );
     }
   }
