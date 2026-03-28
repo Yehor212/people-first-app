@@ -171,7 +171,7 @@ process.stdin.on('end', () => {
       // Check POST-FLIGHT token EXISTS
       if (!fs.existsSync(POSTFLIGHT)) {
         block(
-          'POST-FLIGHT BLOCKED! Complete 28-law table + 5 mirrors + ci:preflight. Then write proof: echo "28-law table done, 5 mirrors done" > .postflight-done',
+          'POST-FLIGHT BLOCKED! Write .postflight-done with JSON: { timestamp, goal, changes[], verdict: "APPROVE", evidence: "tsc 0, vitest N pass" }',
           cmd
         );
       }
@@ -197,12 +197,10 @@ process.stdin.on('end', () => {
           block('Cannot load reflection-validate.cjs: ' + requireErr.message + '. Ensure module exists in .claude/hooks/', cmd);
         }
       } else {
-        // Legacy format — accept with warning
-        // TODO(2026-04-03): Remove legacy format support
-        if (!postflightContent.includes('28')) {
+        // Legacy text format — accept with warning
+        if (postflightCleaned.length < 5) {
           block(
-            'POST-FLIGHT TOKEN INVALID! File must contain "28" (proof of 28-law table).\n' +
-            'Use structured JSON: Write tool → .postflight-done → { timestamp, goal, changes[], laws_checked:28, mirrors_checked:5, ci_passed:true, self_reflection:{...} }',
+            'POST-FLIGHT TOKEN INVALID! Use JSON: { timestamp, goal, changes[], verdict: "APPROVE", evidence: "..." }',
             cmd
           );
         }

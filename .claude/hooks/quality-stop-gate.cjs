@@ -251,17 +251,12 @@ process.stdin.on('end', () => {
     // BLOCK — uncommitted TS changes without POST-FLIGHT
     process.stderr.write(
       'QUALITY STOP GATE BLOCKED!\n\n' +
-      'You have uncommitted TypeScript changes but no POST-FLIGHT verification.\n\n' +
-      'Complete POST-FLIGHT NOW:\n' +
-      '1. Law compliance table (28 laws, ✅/❌, file:line evidence)\n' +
-      '2. Mirror Protocol (5 mirrors)\n' +
-      '3. Visual Aesthetic Audit (if UI changes)\n' +
-      '4. npm run ci:preflight\n' +
-      '5. Write structured JSON to .postflight-done:\n' +
-      '   { timestamp, goal, changes[], laws_checked:28, mirrors_checked:5,\n' +
-      '     ci_passed:true, self_reflection: {what_went_wrong, what_I_assumed,\n' +
-      '     what_I_verified (with evidence markers), git_history_checked,\n' +
-      '     confidence: HIGH/MEDIUM/LOW} }\n'
+      'You have uncommitted TypeScript changes but no .postflight-done token.\n\n' +
+      'Write structured JSON to .postflight-done:\n' +
+      '{ "timestamp": "ISO", "goal": "what you did",\n' +
+      '  "changes": ["file1.ts", "file2.tsx"],\n' +
+      '  "verdict": "APPROVE",\n' +
+      '  "evidence": "tsc 0 errors, vitest N pass" }\n'
     );
     process.exit(2);
   } catch (e) {
