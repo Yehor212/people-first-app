@@ -1,33 +1,33 @@
-import { isNative } from '@/lib/platform';
+import { isNative } from "@/lib/platform";
 import { logger } from "./logger";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { BASE_URL } from '@/lib/env';
+import { BASE_URL } from "@/lib/env";
 
 const NATIVE_REDIRECT_URL = "com.zenflow.app://login-callback";
 
 // Known OAuth error codes for safe display
 const KNOWN_ERROR_CODES = [
-  'access_denied',
-  'invalid_request',
-  'unauthorized_client',
-  'server_error',
-  'temporarily_unavailable'
+  "access_denied",
+  "invalid_request",
+  "unauthorized_client",
+  "server_error",
+  "temporarily_unavailable",
 ];
 
 // Sanitize error message - only allow known patterns
 const sanitizeErrorMessage = (message: string): string => {
   // Remove any HTML/script tags
-  const cleaned = message.replace(/<[^>]*>/g, '').trim();
+  const cleaned = message.replace(/<[^>]*>/g, "").trim();
   // Limit length
   if (cleaned.length > 200) {
-    return 'Authentication error occurred';
+    return "Authentication error occurred";
   }
   // Check for known safe patterns
-  if (KNOWN_ERROR_CODES.some(code => cleaned.toLowerCase().includes(code))) {
+  if (KNOWN_ERROR_CODES.some((code) => cleaned.toLowerCase().includes(code))) {
     return cleaned;
   }
   // Generic fallback for unknown errors
-  return 'Authentication failed. Please try again.';
+  return "Authentication failed. Please try again.";
 };
 
 export const getAuthRedirectUrl = () => {
@@ -40,32 +40,37 @@ export const getAuthRedirectUrl = () => {
   const basePath = BASE_URL;
 
   // Ensure proper path format (no double slashes)
-  const cleanBase = basePath.startsWith('/') ? basePath : `/${basePath}`;
-  const finalPath = cleanBase.endsWith('/') ? cleanBase : `${cleanBase}/`;
+  const cleanBase = basePath.startsWith("/") ? basePath : `/${basePath}`;
+  const finalPath = cleanBase.endsWith("/") ? cleanBase : `${cleanBase}/`;
 
   const redirectUrl = `${origin}${finalPath}`;
-  logger.log('[Auth] Generated redirect URL:', redirectUrl);
+  logger.log("[Auth] Generated redirect URL:", redirectUrl);
 
   return redirectUrl;
 };
 
 export const isNativePlatform = () => isNative;
 
-export const handleAuthCallback = async (supabaseClient: SupabaseClient, url: string) => {
+export const handleAuthCallback = async (
+  supabaseClient: SupabaseClient,
+  url: string,
+) => {
   if (!supabaseClient || !url) return;
 
   let parsed: URL;
   try {
     parsed = new URL(url);
   } catch {
-    throw new Error('Invalid callback URL');
+    throw new Error("Invalid callback URL");
   }
 
   const searchParams = new URLSearchParams(parsed.search);
   const hashParams = new URLSearchParams(parsed.hash.replace(/^#/, ""));
 
   // Handle errors with sanitized messages
-  const errorDescription = searchParams.get("error_description") || hashParams.get("error_description");
+  const errorDescription =
+    searchParams.get("error_description") ||
+    hashParams.get("error_description");
   if (errorDescription) {
     throw new Error(sanitizeErrorMessage(errorDescription));
   }
@@ -75,22 +80,26 @@ export const handleAuthCallback = async (supabaseClient: SupabaseClient, url: st
   if (code) {
     const normalizedCode = code.trim();
     if (normalizedCode.length === 0 || normalizedCode.length > 2048) {
-      throw new Error('Invalid authorization code');
+      throw new Error("Invalid authorization code");
     }
 
-    const { data, error } = await supabaseClient.auth.exchangeCodeForSession(normalizedCode);
+    const { data, error } =
+      await supabaseClient.auth.exchangeCodeForSession(normalizedCode);
 
     if (error) {
-      logger.error('[Auth] exchangeCodeForSession error:', error.message);
+      logger.error("[Auth] exchangeCodeForSession error:", error.message);
       throw new Error(`Session exchange failed: ${error.message}`);
     }
 
     if (!data.session) {
-      throw new Error('Session exchange succeeded but no session returned');
+      throw new Error("Session exchange succeeded but no session returned");
     }
 
     // Don't log email (PII) - log user ID instead
-    logger.log('[Auth] PKCE session exchange successful, user ID:', data.session.user.id);
+    logger.log(
+      "[Auth] PKCE session exchange successful, user:",
+      `user:${data.session.user.id.slice(0, 8)}`,
+    );
     return;
   }
 
@@ -99,7 +108,7 @@ export const handleAuthCallback = async (supabaseClient: SupabaseClient, url: st
   const refreshToken = hashParams.get("refresh_token");
 
   if (accessToken && refreshToken) {
-    logger.log('[Auth] Implicit flow detected, setting session from tokens');
+    logger.log("[Auth] Implicit flow detected, setting session from tokens");
 
     const { data, error } = await supabaseClient.auth.setSession({
       access_token: accessToken,
@@ -107,25 +116,28 @@ export const handleAuthCallback = async (supabaseClient: SupabaseClient, url: st
     });
 
     if (error) {
-      logger.error('[Auth] setSession error:', error.message);
+      logger.error("[Auth] setSession error:", error.message);
       throw new Error(`Session setup failed: ${error.message}`);
     }
 
     if (!data.session) {
-      throw new Error('Session setup succeeded but no session returned');
+      throw new Error("Session setup succeeded but no session returned");
     }
 
     // Don't log email (PII) - log user ID instead
-    logger.log('[Auth] Implicit flow session set, user ID:', data.session.user.id);
+    logger.log(
+      "[Auth] Implicit flow session set, user:",
+      `user:${data.session.user.id.slice(0, 8)}`,
+    );
     return;
   }
 
   // No valid authentication method found
-  throw new Error('No valid authentication code or tokens found');
+  throw new Error("No valid authentication code or tokens found");
 };
 
 // Event name for OAuth completion notification
-export const AUTH_COMPLETE_EVENT = 'zenflow-auth-complete';
+export const AUTH_COMPLETE_EVENT = "zenflow-auth-complete";
 
 // Notify GoogleAuthScreen that auth completed in Index.tsx
 export const notifyAuthComplete = () => {
@@ -137,7 +149,7 @@ let pendingAuthUrl: string | null = null;
 
 export const setPendingAuthUrl = (url: string | null) => {
   pendingAuthUrl = url;
-  logger.log('[Auth] Pending auth URL set:', url ? 'yes' : 'null');
+  logger.log("[Auth] Pending auth URL set:", url ? "yes" : "null");
 };
 
 export const getPendingAuthUrl = (): string | null => {

@@ -10,10 +10,9 @@ export const ALLOWED_ORIGINS = [
 ];
 
 export function getCorsHeaders(origin: string | null): Record<string, string> {
-  // Security fix: reject unknown origins instead of defaulting to first allowed
-  // Unknown origin → wildcard (safe for APIs that require Authorization header)
+  // Security: only allow known origins, reject unknown
   const allowedOrigin =
-    origin && ALLOWED_ORIGINS.includes(origin) ? origin : "*";
+    origin && ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
   return {
     "Access-Control-Allow-Origin": allowedOrigin,
     "Access-Control-Allow-Headers":

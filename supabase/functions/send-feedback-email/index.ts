@@ -108,7 +108,7 @@ Deno.serve(async (req) => {
     error: authError,
   } = await supabase.auth.getUser();
   if (authError || !user) {
-    console.warn("[FeedbackEmail] Invalid token:", authError?.message);
+    console.warn("[FeedbackEmail] Invalid token:", redactError(authError));
     return createJsonResponse(origin, 401, { error: "Invalid token" });
   }
 

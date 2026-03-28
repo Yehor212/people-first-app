@@ -12,14 +12,15 @@
  * 5. Pass token to Supabase signInWithIdToken()
  */
 
-import { SocialLogin } from '@capgo/capacitor-social-login';
-import type { GoogleLoginOptions } from '@capgo/capacitor-social-login';
-import { supabase } from './supabaseClient';
-import { logger } from './logger';
+import { SocialLogin } from "@capgo/capacitor-social-login";
+import type { GoogleLoginOptions } from "@capgo/capacitor-social-login";
+import { supabase } from "./supabaseClient";
+import { logger } from "./logger";
 
 // Web Client ID from Supabase Auth → Google → Client IDs
 // This MUST match the Client ID configured in Supabase dashboard
-const GOOGLE_WEB_CLIENT_ID = '830119095963-krjibmbag0tuastn4sk0sf58m1c4v4qa.apps.googleusercontent.com';
+const GOOGLE_WEB_CLIENT_ID =
+  "830119095963-krjibmbag0tuastn4sk0sf58m1c4v4qa.apps.googleusercontent.com";
 
 /**
  * Generate a URL-safe random nonce (64 hex characters)
@@ -27,7 +28,9 @@ const GOOGLE_WEB_CLIENT_ID = '830119095963-krjibmbag0tuastn4sk0sf58m1c4v4qa.apps
 function getUrlSafeNonce(): string {
   const array = new Uint8Array(32);
   crypto.getRandomValues(array);
-  return Array.from(array, (byte) => byte.toString(16).padStart(2, '0')).join('');
+  return Array.from(array, (byte) => byte.toString(16).padStart(2, "0")).join(
+    "",
+  );
 }
 
 /**
@@ -36,9 +39,9 @@ function getUrlSafeNonce(): string {
 async function sha256Hash(message: string): Promise<string> {
   const encoder = new TextEncoder();
   const data = encoder.encode(message);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 /**
@@ -55,17 +58,17 @@ async function getNonce(): Promise<{ rawNonce: string; nonceDigest: string }> {
  */
 function decodeJWT(token: string): Record<string, unknown> | null {
   try {
-    const base64Url = token.split('.')[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const base64Url = token.split(".")[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
     const jsonPayload = decodeURIComponent(
       atob(base64)
-        .split('')
-        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-        .join('')
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join(""),
     );
     return JSON.parse(jsonPayload);
   } catch (error) {
-    logger.error('[NativeAuth] Error decoding JWT:', error);
+    logger.error("[NativeAuth] Error decoding JWT:", error);
     return null;
   }
 }
@@ -81,11 +84,11 @@ async function ensureInitialized(): Promise<void> {
   await SocialLogin.initialize({
     google: {
       webClientId: GOOGLE_WEB_CLIENT_ID,
-      mode: 'online',
+      mode: "online",
     },
   });
   initialized = true;
-  logger.log('[NativeAuth] SocialLogin initialized');
+  logger.log("[NativeAuth] SocialLogin initialized");
 }
 
 /**
@@ -95,10 +98,14 @@ async function ensureInitialized(): Promise<void> {
  * @returns Object with success status, optional user data, or error message
  */
 export async function authenticateWithGoogleNative(
-  retry = false
-): Promise<{ success: boolean; error?: string; user?: { name: string; email: string } }> {
+  retry = false,
+): Promise<{
+  success: boolean;
+  error?: string;
+  user?: { name: string; email: string };
+}> {
   if (!supabase) {
-    return { success: false, error: 'Supabase not configured' };
+    return { success: false, error: "Supabase not configured" };
   }
 
   try {
@@ -106,24 +113,27 @@ export async function authenticateWithGoogleNative(
 
     await ensureInitialized();
 
-    logger.log('[NativeAuth] Starting native Google Sign-In...');
+    logger.log("[NativeAuth] Starting native Google Sign-In...");
 
     const response = await SocialLogin.login({
-      provider: 'google',
+      provider: "google",
       options: {
-        scopes: ['email', 'profile'],
+        scopes: ["email", "profile"],
         nonce: nonceDigest,
       } as GoogleLoginOptions,
     });
 
-    if (response.result.responseType !== 'online') {
-      return { success: false, error: 'Offline mode not supported' };
+    if (response.result.responseType !== "online") {
+      return { success: false, error: "Offline mode not supported" };
     }
 
-    const googleResponse = response.result as { idToken?: string; responseType: string };
+    const googleResponse = response.result as {
+      idToken?: string;
+      responseType: string;
+    };
 
     if (!googleResponse.idToken) {
-      return { success: false, error: 'Failed to get Google ID token' };
+      return { success: false, error: "Failed to get Google ID token" };
     }
 
     // Validate token audience matches our Web Client ID
@@ -131,82 +141,102 @@ export async function authenticateWithGoogleNative(
     if (decoded) {
       const aud = decoded.aud as string;
       if (aud && aud !== GOOGLE_WEB_CLIENT_ID) {
-        logger.warn('[NativeAuth] Token audience mismatch:', aud);
+        logger.warn("[NativeAuth] Token audience mismatch:", aud);
 
         // On first attempt, logout and retry (cached token from different client)
         if (!retry) {
-          logger.log('[NativeAuth] Retrying after logout...');
+          logger.log("[NativeAuth] Retrying after logout...");
           try {
-            await SocialLogin.logout({ provider: 'google' });
+            await SocialLogin.logout({ provider: "google" });
           } catch {
             // Ignore logout errors
           }
           initialized = false;
           return authenticateWithGoogleNative(true);
         }
-        return { success: false, error: 'Token audience mismatch' };
+        return { success: false, error: "Token audience mismatch" };
       }
 
       // Validate nonce if present
       const tokenNonce = decoded.nonce as string;
       if (tokenNonce && tokenNonce !== nonceDigest) {
-        logger.warn('[NativeAuth] Nonce mismatch, retrying...');
+        logger.warn("[NativeAuth] Nonce mismatch, retrying...");
 
         if (!retry) {
           try {
-            await SocialLogin.logout({ provider: 'google' });
+            await SocialLogin.logout({ provider: "google" });
           } catch {
             // Ignore logout errors
           }
           initialized = false;
           return authenticateWithGoogleNative(true);
         }
-        return { success: false, error: 'Nonce validation failed' };
+        return { success: false, error: "Nonce validation failed" };
       }
     }
 
     // Sign in to Supabase with the Google ID token
-    const signInOptions: { provider: 'google'; token: string; nonce?: string } = {
-      provider: 'google',
-      token: googleResponse.idToken,
-    };
+    const signInOptions: { provider: "google"; token: string; nonce?: string } =
+      {
+        provider: "google",
+        token: googleResponse.idToken,
+      };
 
     // Only pass nonce if Google included it in the token
     if (decoded?.nonce) {
       signInOptions.nonce = rawNonce;
     }
 
-    const { data, error } = await supabase.auth.signInWithIdToken(signInOptions);
+    const { data, error } =
+      await supabase.auth.signInWithIdToken(signInOptions);
 
     if (error) {
-      logger.error('[NativeAuth] Supabase signInWithIdToken error:', error.message);
+      logger.error(
+        "[NativeAuth] Supabase signInWithIdToken error:",
+        error.message,
+      );
       return { success: false, error: error.message };
     }
 
     if (!data.user) {
-      return { success: false, error: 'Sign-in succeeded but no user returned' };
+      return {
+        success: false,
+        error: "Sign-in succeeded but no user returned",
+      };
     }
 
     const metadata = data.user.user_metadata;
-    const name = metadata?.full_name || metadata?.name || data.user.email?.split('@')[0] || 'Friend';
-    const email = data.user.email || '';
+    const name =
+      metadata?.full_name ||
+      metadata?.name ||
+      data.user.email?.split("@")[0] ||
+      "Friend";
+    const email = data.user.email || "";
 
-    logger.log('[NativeAuth] Successfully signed in, user ID:', data.user.id);
+    logger.log(
+      "[NativeAuth] Successfully signed in, user:",
+      `user:${data.user.id.slice(0, 8)}`,
+    );
 
     return {
       success: true,
       user: { name, email },
     };
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Google authentication failed';
+    const message =
+      error instanceof Error ? error.message : "Google authentication failed";
 
     // User cancelled the sign-in dialog
-    if (message.includes('cancel') || message.includes('Cancel') || message.includes('CANCELED')) {
-      logger.log('[NativeAuth] User cancelled sign-in');
-      return { success: false, error: 'cancelled' };
+    if (
+      message.includes("cancel") ||
+      message.includes("Cancel") ||
+      message.includes("CANCELED")
+    ) {
+      logger.log("[NativeAuth] User cancelled sign-in");
+      return { success: false, error: "cancelled" };
     }
 
-    logger.error('[NativeAuth] Google authentication error:', String(message));
+    logger.error("[NativeAuth] Google authentication error:", String(message));
     return { success: false, error: message };
   }
 }
