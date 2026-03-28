@@ -19,15 +19,19 @@ Before writing code, consider what user may have forgotten:
 
 Specialized builders in .claude/agents/:
 
-- frontend-builder.md — React, Tailwind, Radix, Framer Motion, Journal, Gamification
+- frontend-builder.md — React, Tailwind, Radix, Framer Motion, Gamification (NOT journal)
+- journal-builder.md — Journal/Diary module (src/features/journal/)
 - backend-builder.md — Supabase, edge functions, RLS, triggers, AI Coach
 - shader-specialist.md — GLSL, orb, WebGL, superformula SDF, canvas
 - pwa-native-specialist.md — SW, offline, Capacitor, plugins, ads, push
+- test-engineer.md — Vitest tests, coverage, regression tests
 - design-advisor.md — styles, palettes (READ-ONLY, consult user first)
 - performance-agent.md — bundle, 60fps, re-renders (READ-ONLY)
 
 Guardians (all READ-ONLY):
 
-- platform-guardian.md, a11y-i18n-guardian.md, state-async-guardian.md, security-quality-guardian.md
+- platform-guardian.md, a11y-i18n-guardian.md (11 checks), state-async-guardian.md, security-quality-guardian.md
 
 Verifier: verifier.md — 17 checks, runs automatically on Stop via agent hook.
+
+ZERO VISUAL REGRESSION: Never change styles/layout/colors/animations without explicit user approval.
