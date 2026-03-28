@@ -19,6 +19,7 @@ import {
   createJsonResponse,
   createNoContentResponse,
 } from "../_shared/http.ts";
+import { redactError } from "../_shared/redaction.ts";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const RESEND_FROM_EMAIL =

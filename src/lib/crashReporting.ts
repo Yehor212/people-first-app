@@ -5,10 +5,10 @@
  * On Web, errors are logged to console and localStorage.
  */
 
-import { isNative } from '@/lib/platform';
-import { logger } from './logger';
-import { safeLocalStorageGet, safeLocalStorageSet } from './safeJson';
-import { SK } from '@/lib/storageKeys';
+import { isNative } from "@/lib/platform";
+import { logger } from "./logger";
+import { safeLocalStorageGet, safeLocalStorageSet } from "./safeJson";
+import { SK } from "@/lib/storageKeys";
 
 interface CrashReportingInterface {
   log: (message: string) => void;
@@ -25,23 +25,30 @@ interface CrashReportingInterface {
 
 const webFallback: CrashReportingInterface = {
   log: (message: string) => {
-    logger.log('[Crash] Log:', message);
+    logger.log("[Crash] Log:", message);
   },
 
   recordError: (error: Error, context?: Record<string, string>) => {
-    logger.error('[Crash] Error recorded:', error.message);
+    logger.error("[Crash] Error recorded:", error.message);
     if (context) {
-      logger.error('[Crash] Context:', context);
+      logger.error("[Crash] Context:", context);
     }
 
     // Store in localStorage for debug reports
     try {
-      const existing = safeLocalStorageGet<{ message: string; stack?: string; context?: Record<string, string>; time: string }[]>(SK.CRASH_LOG, []);
+      const existing = safeLocalStorageGet<
+        {
+          message: string;
+          stack?: string;
+          context?: Record<string, string>;
+          time: string;
+        }[]
+      >(SK.CRASH_LOG, []);
       const entry = {
         message: error.message,
         stack: error.stack,
         context,
-        time: new Date().toISOString()
+        time: new Date().toISOString(),
       };
       const next = [...existing, entry].slice(-20);
       safeLocalStorageSet(SK.CRASH_LOG, next);
@@ -51,16 +58,16 @@ const webFallback: CrashReportingInterface = {
   },
 
   setUserId: (userId: string | null) => {
-    logger.log('[Crash] User ID set:', userId || 'null');
+    logger.log("[Crash] User ID set:", userId || "null");
   },
 
   setEnabled: (enabled: boolean) => {
-    logger.log('[Crash] Reporting enabled:', enabled);
+    logger.log("[Crash] Reporting enabled:", enabled);
   },
 
   setCustomKey: (key: string, value: string | number | boolean) => {
-    logger.log('[Crash] Custom key:', key, '=', value);
-  }
+    logger.log("[Crash] Custom key:", key, "=", value);
+  },
 };
 
 // For native platforms, we use the native Crashlytics through the WebView bridge
@@ -68,57 +75,82 @@ const webFallback: CrashReportingInterface = {
 const nativeCrashlytics: CrashReportingInterface = {
   log: (message: string) => {
     // On native, console.log messages can be captured by Crashlytics
-    console.log('[ZenFlow]', message);
+    console.log("[ZenFlow]", message);
   },
 
   recordError: (error: Error, context?: Record<string, string>) => {
     // Non-fatal errors are recorded as console errors
     // Firebase Crashlytics on Android captures these
-    console.error('[ZenFlow Error]', error.message, error.stack);
+    console.error("[ZenFlow Error]", error.message, error.stack);
     if (context) {
       // Sanitize context to avoid logging sensitive data
       const sanitizedContext = { ...context };
-      const sensitiveKeys = ['password', 'token', 'secret', 'key', 'auth', 'credential', 'email', 'phone'];
+      const sensitiveKeys = [
+        "password",
+        "token",
+        "secret",
+        "key",
+        "auth",
+        "credential",
+        "email",
+        "phone",
+      ];
       for (const key of Object.keys(sanitizedContext)) {
-        if (sensitiveKeys.some(sk => key.toLowerCase().includes(sk))) {
-          sanitizedContext[key] = '[REDACTED]';
+        if (sensitiveKeys.some((sk) => key.toLowerCase().includes(sk))) {
+          sanitizedContext[key] = "[REDACTED]";
         }
       }
-      console.error('[ZenFlow Error Context]', JSON.stringify(sanitizedContext));
+      console.error(
+        "[ZenFlow Error Context]",
+        JSON.stringify(sanitizedContext),
+      );
     }
   },
 
   setUserId: (userId: string | null) => {
     // Store user ID in session for crash reports
     if (userId) {
-      console.log('[ZenFlow User]', userId);
+      console.log(
+        "[ZenFlow User]",
+        userId ? `user:${userId.slice(0, 8)}` : "null",
+      );
     }
   },
 
   setEnabled: (enabled: boolean) => {
-    console.log('[ZenFlow Crashlytics]', enabled ? 'enabled' : 'disabled');
+    console.log("[ZenFlow Crashlytics]", enabled ? "enabled" : "disabled");
   },
 
   setCustomKey: (key: string, value: string | number | boolean) => {
     console.log(`[ZenFlow ${key}]`, value);
-  }
+  },
 };
 
-export const crashReporting: CrashReportingInterface = isNative ? nativeCrashlytics : webFallback;
+export const crashReporting: CrashReportingInterface = isNative
+  ? nativeCrashlytics
+  : webFallback;
 
 // Helper to record errors from anywhere in the app
-export const recordError = (error: unknown, context?: Record<string, string>) => {
+export const recordError = (
+  error: unknown,
+  context?: Record<string, string>,
+) => {
   if (error instanceof Error) {
     crashReporting.recordError(error, context);
   } else {
-    crashReporting.recordError(new Error(typeof error === 'string' ? error : JSON.stringify(error)), context);
+    crashReporting.recordError(
+      new Error(typeof error === "string" ? error : JSON.stringify(error)),
+      context,
+    );
   }
 };
 
 // Helper to wrap async functions with error recording
-export const withCrashReporting = <T extends (...args: unknown[]) => Promise<unknown>>(
+export const withCrashReporting = <
+  T extends (...args: unknown[]) => Promise<unknown>,
+>(
   fn: T,
-  context?: Record<string, string>
+  context?: Record<string, string>,
 ): T => {
   return (async (...args: Parameters<T>) => {
     try {

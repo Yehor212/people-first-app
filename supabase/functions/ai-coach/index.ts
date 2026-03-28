@@ -12,7 +12,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.6";
 import { getCorsHeaders } from "../_shared/http.ts";
-import { redactUserRef } from "../_shared/redaction.ts";
+import { redactUserRef, redactError } from "../_shared/redaction.ts";
 
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -282,7 +282,7 @@ Deno.serve(async (req) => {
     error: authError,
   } = await supabase.auth.getUser();
   if (authError || !user) {
-    console.warn("[AICoach] Invalid token:", authError?.message);
+    console.warn("[AICoach] Invalid token:", redactError(authError));
     return jsonResponse(401, { error: "Invalid token" });
   }
 

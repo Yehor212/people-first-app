@@ -129,7 +129,11 @@ export function useDeepLinkHandler(): void {
         handledAuthKeysRef.current.add(dedupeKey);
       }
 
-      logger.log("[Index] Auth URL received from", source, url);
+      logger.log(
+        "[Index] Auth URL received from",
+        source,
+        new URL(url).pathname,
+      );
 
       // If supabase not ready, store for later
       if (!supabase) {
@@ -222,7 +226,7 @@ export function useDeepLinkHandler(): void {
         // Check launch URL (cold start with deep link)
         const launch = await App.getLaunchUrl();
         if (launch?.url) {
-          logger.log("[Index] Launch URL found:", launch.url);
+          logger.log("[Index] Launch URL found:", new URL(launch.url).pathname);
           // Try challenge URL first, then auth URL
           if (!handleChallengeUrl(launch.url)) {
             await handleAuthUrl(launch.url, "launch");
@@ -235,7 +239,7 @@ export function useDeepLinkHandler(): void {
       // Listen for future deep links
       const listener = await App.addListener("appUrlOpen", (event) => {
         if (event?.url) {
-          logger.log("[Index] appUrlOpen event:", event.url);
+          logger.log("[Index] appUrlOpen event:", new URL(event.url).pathname);
           // Try challenge URL first, then auth URL
           if (!handleChallengeUrl(event.url)) {
             void handleAuthUrl(event.url, "appUrlOpen");

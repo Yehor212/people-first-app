@@ -6,11 +6,11 @@
  * Hides when selection is cleared or moves outside the editor.
  */
 
-import { useState, useEffect, useCallback, useRef, memo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from '@/lib/utils';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { zenMotion } from '@/lib/animationUtils';
+import { useState, useEffect, useCallback, useRef, memo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { zenMotion } from "@/lib/animationUtils";
 
 interface DiaryFormatToolbarProps {
   editorRef: React.RefObject<HTMLDivElement | null>;
@@ -18,21 +18,24 @@ interface DiaryFormatToolbarProps {
 }
 
 const FORMAT_ACTIONS = [
-  { cmd: 'bold', icon: 'B', style: 'font-bold' },
-  { cmd: 'italic', icon: 'I', style: 'italic' },
-  { cmd: 'underline', icon: 'U', style: 'underline' },
-  { cmd: 'strikeThrough', icon: 'S', style: 'line-through' },
-  { cmd: 'formatBlock:blockquote', icon: '❝', style: '' },
-  { cmd: 'insertHTML:<code>', icon: '</>', style: 'font-mono text-[11px]' },
-  { cmd: 'createLink', icon: '🔗', style: '' },
+  { cmd: "bold", icon: "B", style: "font-bold" },
+  { cmd: "italic", icon: "I", style: "italic" },
+  { cmd: "underline", icon: "U", style: "underline" },
+  { cmd: "strikeThrough", icon: "S", style: "line-through" },
+  { cmd: "formatBlock:blockquote", icon: "❝", style: "" },
+  { cmd: "insertHTML:<code>", icon: "</>", style: "font-mono text-[11px]" },
+  { cmd: "createLink", icon: "🔗", style: "" },
 ] as const;
 
 const VIEWPORT_PADDING = 12;
 const ARROW_OFFSET = 8;
-const TOP_SAFE_ZONE = 150;    // top glass toolbar height + safe margin
-const BOTTOM_SAFE_ZONE = 80;  // bottom glass toolbar height + safe margin
+const TOP_SAFE_ZONE = 150; // top glass toolbar height + safe margin
+const BOTTOM_SAFE_ZONE = 80; // bottom glass toolbar height + safe margin
 
-export const DiaryFormatToolbar = memo(function DiaryFormatToolbar({ editorRef, scrollContainerRef }: DiaryFormatToolbarProps) {
+export const DiaryFormatToolbar = memo(function DiaryFormatToolbar({
+  editorRef,
+  scrollContainerRef,
+}: DiaryFormatToolbarProps) {
   const { t } = useLanguage();
   const ts = t as unknown as Record<string, string>;
   const [activeFormats, setActiveFormats] = useState<Set<string>>(new Set());
@@ -44,10 +47,11 @@ export const DiaryFormatToolbar = memo(function DiaryFormatToolbar({ editorRef, 
   const checkActiveFormats = useCallback(() => {
     const formats = new Set<string>();
     try {
-      if (document.queryCommandState('bold')) formats.add('bold');
-      if (document.queryCommandState('italic')) formats.add('italic');
-      if (document.queryCommandState('underline')) formats.add('underline');
-      if (document.queryCommandState('strikeThrough')) formats.add('strikeThrough');
+      if (document.queryCommandState("bold")) formats.add("bold");
+      if (document.queryCommandState("italic")) formats.add("italic");
+      if (document.queryCommandState("underline")) formats.add("underline");
+      if (document.queryCommandState("strikeThrough"))
+        formats.add("strikeThrough");
     } catch {
       // queryCommandState may fail in some contexts
     }
@@ -85,8 +89,9 @@ export const DiaryFormatToolbar = memo(function DiaryFormatToolbar({ editorRef, 
 
   // Listen for selection changes
   useEffect(() => {
-    document.addEventListener('selectionchange', updateSelection);
-    return () => document.removeEventListener('selectionchange', updateSelection);
+    document.addEventListener("selectionchange", updateSelection);
+    return () =>
+      document.removeEventListener("selectionchange", updateSelection);
   }, [updateSelection]);
 
   // Mobile: also catch touchend (selection may finalize after touch handles released)
@@ -96,8 +101,8 @@ export const DiaryFormatToolbar = memo(function DiaryFormatToolbar({ editorRef, 
     const onTouchEnd = () => {
       setTimeout(updateSelection, 50);
     };
-    editorEl.addEventListener('touchend', onTouchEnd);
-    return () => editorEl.removeEventListener('touchend', onTouchEnd);
+    editorEl.addEventListener("touchend", onTouchEnd);
+    return () => editorEl.removeEventListener("touchend", onTouchEnd);
   }, [editorRef, updateSelection]);
 
   // Scroll: reposition or hide if selection scrolled off-screen
@@ -117,8 +122,8 @@ export const DiaryFormatToolbar = memo(function DiaryFormatToolbar({ editorRef, 
         }
       }
     };
-    scrollEl.addEventListener('scroll', onScroll, { passive: true });
-    return () => scrollEl.removeEventListener('scroll', onScroll);
+    scrollEl.addEventListener("scroll", onScroll, { passive: true });
+    return () => scrollEl.removeEventListener("scroll", onScroll);
   }, [scrollContainerRef, visible]);
 
   // --- Positioning ---
@@ -141,10 +146,13 @@ export const DiaryFormatToolbar = memo(function DiaryFormatToolbar({ editorRef, 
 
     // Center horizontally on selection
     let left = selectionRect.left + selectionRect.width / 2 - tbW / 2;
-    left = Math.max(VIEWPORT_PADDING, Math.min(left, window.innerWidth - tbW - VIEWPORT_PADDING));
+    left = Math.max(
+      VIEWPORT_PADDING,
+      Math.min(left, window.innerWidth - tbW - VIEWPORT_PADDING),
+    );
 
     return {
-      position: 'fixed' as const,
+      position: "fixed" as const,
       top: `${top}px`,
       left: `${left}px`,
       zIndex: 100,
@@ -152,35 +160,55 @@ export const DiaryFormatToolbar = memo(function DiaryFormatToolbar({ editorRef, 
   }, [selectionRect]);
 
   // --- Format execution ---
-  const execFormat = useCallback((cmd: string) => {
-    if (cmd === 'createLink') {
-      const url = prompt(ts.diaryFormatLinkPrompt || 'URL:');
-      if (url) document.execCommand('createLink', false, url);
-    } else if (cmd === 'insertHTML:<code>') {
-      const sel = window.getSelection();
-      if (sel && sel.rangeCount > 0) {
-        const range = sel.getRangeAt(0);
-        const parent = range.commonAncestorContainer.parentElement;
-        if (parent?.tagName === 'CODE') {
-          const text = parent.textContent || '';
-          parent.replaceWith(text);
-        } else {
-          const selectedText = range.toString();
-          if (selectedText) {
-            document.execCommand('insertHTML', false, `<code>${selectedText}</code>`);
+  const execFormat = useCallback(
+    (cmd: string) => {
+      if (cmd === "createLink") {
+        const url = prompt(ts.diaryFormatLinkPrompt || "URL:");
+        if (url) {
+          try {
+            const parsed = new URL(url);
+            if (["http:", "https:", "mailto:"].includes(parsed.protocol)) {
+              document.execCommand("createLink", false, url);
+            }
+          } catch {
+            // Invalid URL — ignore
           }
         }
+      } else if (cmd === "insertHTML:<code>") {
+        const sel = window.getSelection();
+        if (sel && sel.rangeCount > 0) {
+          const range = sel.getRangeAt(0);
+          const parent = range.commonAncestorContainer.parentElement;
+          if (parent?.tagName === "CODE") {
+            const text = parent.textContent || "";
+            parent.replaceWith(text);
+          } else {
+            const selectedText = range.toString();
+            if (selectedText) {
+              const escaped = selectedText
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;");
+              document.execCommand(
+                "insertHTML",
+                false,
+                `<code>${escaped}</code>`,
+              );
+            }
+          }
+        }
+      } else if (cmd.startsWith("formatBlock:")) {
+        document.execCommand("formatBlock", false, cmd.split(":")[1]);
+      } else {
+        document.execCommand(cmd, false);
       }
-    } else if (cmd.startsWith('formatBlock:')) {
-      document.execCommand('formatBlock', false, cmd.split(':')[1]);
-    } else {
-      document.execCommand(cmd, false);
-    }
-    editorRef.current?.focus();
-    checkActiveFormats();
-    // Re-read position after formatting (selection may shift)
-    setTimeout(updateSelection, 0);
-  }, [editorRef, checkActiveFormats, updateSelection, ts]);
+      editorRef.current?.focus();
+      checkActiveFormats();
+      // Re-read position after formatting (selection may shift)
+      setTimeout(updateSelection, 0);
+    },
+    [editorRef, checkActiveFormats, updateSelection, ts],
+  );
 
   return (
     <AnimatePresence>
@@ -195,20 +223,24 @@ export const DiaryFormatToolbar = memo(function DiaryFormatToolbar({ editorRef, 
           className="flex items-center gap-1 bg-popover/90 backdrop-blur-xl p-1.5 rounded-2xl border border-border shadow-[0_8px_32px_rgba(0,0,0,0.5)] gpu-layer"
           onPointerDown={(e) => e.preventDefault()}
         >
-          {FORMAT_ACTIONS.map(action => {
-            const baseCmdName = action.cmd.includes(':') ? action.cmd.split(':')[0] : action.cmd;
-            const isActive = activeFormats.has(baseCmdName === 'formatBlock' ? 'formatBlock' : action.cmd);
+          {FORMAT_ACTIONS.map((action) => {
+            const baseCmdName = action.cmd.includes(":")
+              ? action.cmd.split(":")[0]
+              : action.cmd;
+            const isActive = activeFormats.has(
+              baseCmdName === "formatBlock" ? "formatBlock" : action.cmd,
+            );
             return (
               <motion.button
                 key={action.cmd}
                 whileTap={{ scale: 0.9 }}
                 onClick={() => execFormat(action.cmd)}
                 className={cn(
-                  'w-10 h-10 rounded-lg flex items-center justify-center text-xs transition-all',
+                  "w-10 h-10 rounded-lg flex items-center justify-center text-xs transition-all",
                   action.style,
                   isActive
-                    ? 'bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/30'
-                    : 'text-muted-foreground hover:bg-white/10 hover:text-foreground',
+                    ? "bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/30"
+                    : "text-muted-foreground hover:bg-white/10 hover:text-foreground",
                 )}
                 aria-label={action.icon}
               >
