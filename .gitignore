@@ -50,6 +50,7 @@ CLAUDE.md
 !.claude/settings.json
 !.claude/agents/
 !.claude/skills/
+.claude-flow/
 .mcp.json
 
 # ============================================
