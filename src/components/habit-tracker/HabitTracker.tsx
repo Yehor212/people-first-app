@@ -158,15 +158,6 @@ export const HabitTracker = memo(function HabitTracker({
     return streaks;
   }, [habits]);
 
-  const categoryCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    for (const h of habits) {
-      const cat = h.category || "health";
-      counts[cat] = (counts[cat] || 0) + 1;
-    }
-    return counts;
-  }, [habits]);
-
   // Handle habit toggle with celebrations + debounce
   const handleHabitToggle = useCallback(
     (habit: Habit) => {

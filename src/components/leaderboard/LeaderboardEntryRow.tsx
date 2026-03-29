@@ -37,6 +37,10 @@ export const LeaderboardEntryRow = memo(function LeaderboardEntryRow({
       className={cn(
         "flex items-center gap-3 p-3.5 rounded-xl transition-all",
         entry.isCurrentUser && "ring-1 ring-violet-500/40",
+        !rankConfig &&
+          (entry.isCurrentUser
+            ? "bg-violet-500/10 border border-violet-500/10"
+            : "bg-foreground/5 border border-foreground/10"),
       )}
       style={
         rankConfig
@@ -45,26 +49,22 @@ export const LeaderboardEntryRow = memo(function LeaderboardEntryRow({
               border: `1px solid ${rankConfig.border}`,
               boxShadow: rankConfig.glow,
             }
-          : {
-              background: entry.isCurrentUser
-                ? "rgba(139, 92, 246, 0.1)"
-                : "hsl(var(--foreground) / 0.05)",
-              border: "1px solid hsl(var(--foreground) / 0.1)",
-            }
+          : undefined
       }
     >
-      {/* Rank */}
+      {/* Rank badge */}
       <div
-        className="w-9 h-9 flex items-center justify-center rounded-lg font-bold text-sm"
+        className={cn(
+          "w-9 h-9 flex items-center justify-center rounded-lg font-bold text-sm",
+          !rankConfig && "bg-foreground/10",
+        )}
         style={
           rankConfig
             ? {
                 background: rankConfig.rankBg,
                 boxShadow: "0 2px 8px rgba(0, 0, 0, 0.2)",
               }
-            : {
-                background: "hsl(var(--foreground) / 0.1)",
-              }
+            : undefined
         }
       >
         <span className={rankConfig ? "text-white" : "text-foreground/60"}>
@@ -80,7 +80,7 @@ export const LeaderboardEntryRow = memo(function LeaderboardEntryRow({
               "font-medium truncate",
               entry.isCurrentUser
                 ? "text-violet-700 dark:text-violet-300"
-                : "text-gray-900 dark:text-white",
+                : "text-foreground",
             )}
           >
             {entry.displayName}
@@ -108,7 +108,7 @@ export const LeaderboardEntryRow = memo(function LeaderboardEntryRow({
             rankConfig?.textColor ||
               (entry.isCurrentUser
                 ? "text-violet-700 dark:text-violet-300"
-                : "text-gray-900 dark:text-white"),
+                : "text-foreground"),
           )}
         >
           {getValue(entry, activeTab).toLocaleString(language)}

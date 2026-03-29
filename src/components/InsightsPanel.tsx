@@ -99,6 +99,12 @@ export function InsightsPanel({
     translations: insightTranslations,
   });
 
+  const displayInsights = useMemo(
+    () => (compact ? insights.slice(0, 3) : insights),
+    [compact, insights],
+  );
+  const hasMore = insights.length > 3 && compact;
+
   // Don't show panel if no data
   if (!hasEnoughData) {
     return (
@@ -178,12 +184,6 @@ export function InsightsPanel({
       </div>
     );
   }
-
-  const displayInsights = useMemo(
-    () => (compact ? insights.slice(0, 3) : insights),
-    [compact, insights],
-  );
-  const hasMore = insights.length > 3 && compact;
 
   return (
     <div className="bg-card rounded-2xl zen-shadow-card border border-border overflow-hidden">

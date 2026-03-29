@@ -139,14 +139,9 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
                       activeTab === tab.type
                         ? "bg-gradient-to-r from-violet-500/80 to-purple-600/80 text-white"
                         : "text-foreground/60 hover:text-foreground hover:bg-foreground/5",
+                      activeTab === tab.type &&
+                        "shadow-[0_0_12px_rgba(139,92,246,0.3)]",
                     )}
-                    style={
-                      activeTab === tab.type
-                        ? {
-                            boxShadow: "0 0 12px rgba(139, 92, 246, 0.3)",
-                          }
-                        : undefined
-                    }
                     whileHover={{ scale: activeTab !== tab.type ? 1.02 : 1 }}
                     whileTap={zenTap.card}
                   >
@@ -202,7 +197,7 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
 
                 {data.isOptedIn && currentRank && (
                   <motion.div
-                    className="mt-3 flex items-center gap-2 text-sm px-3 py-2 rounded-lg bg-[rgba(139,92,246,0.15)]"
+                    className="mt-3 flex items-center gap-2 text-sm px-3 py-2 rounded-lg bg-violet-500/15"
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                   >
