@@ -89,7 +89,7 @@ export function NumericalTargetSection({
               "flex-1 p-2 rounded-lg text-sm",
               "focus:outline-none focus:ring-2",
               isPrimaryCTA
-                ? "bg-foreground/10 border border-foreground/20 text-white placeholder:text-foreground/30 focus:ring-violet-500/50"
+                ? "bg-foreground/10 border border-foreground/20 text-white placeholder:text-foreground/60 focus:ring-violet-500/50"
                 : "bg-background text-foreground placeholder:text-muted-foreground focus:ring-primary/30",
             )}
           />
