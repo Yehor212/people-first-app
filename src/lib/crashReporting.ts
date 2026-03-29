@@ -94,6 +94,8 @@ const nativeCrashlytics: CrashReportingInterface = {
         "credential",
         "email",
         "phone",
+        "session",
+        "cookie",
       ];
       for (const key of Object.keys(sanitizedContext)) {
         if (sensitiveKeys.some((sk) => key.toLowerCase().includes(sk))) {

@@ -10,11 +10,7 @@ export const ALLOWED_ORIGINS = [
 ];
 
 export function getCorsHeaders(origin: string | null): Record<string, string> {
-  // Security: only allow known origins, reject unknown
-  const allowedOrigin =
-    origin && ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
-  return {
-    "Access-Control-Allow-Origin": allowedOrigin,
+  const headers: Record<string, string> = {
     "Access-Control-Allow-Headers":
       "authorization, x-client-info, apikey, content-type, x-cron-secret",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -24,6 +20,11 @@ export function getCorsHeaders(origin: string | null): Record<string, string> {
     "X-XSS-Protection": "1; mode=block",
     "Referrer-Policy": "strict-origin-when-cross-origin",
   };
+  // Only set ACAO for known origins — omit for unknown (OWASP recommendation)
+  if (origin && ALLOWED_ORIGINS.includes(origin)) {
+    headers["Access-Control-Allow-Origin"] = origin;
+  }
+  return headers;
 }
 
 export function createJsonResponse(

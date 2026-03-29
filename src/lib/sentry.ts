@@ -7,11 +7,11 @@
  * Free tier: 5,000 errors/month, 10,000 transactions/month
  */
 
-import * as Sentry from '@sentry/react';
-import type { Integration } from '@sentry/core';
-import { isNative, platform } from '@/lib/platform';
-import { logger } from '@/lib/logger';
-import { SENTRY_DSN, MODE, IS_DEV } from '@/lib/env';
+import * as Sentry from "@sentry/react";
+import type { Integration } from "@sentry/core";
+import { isNative, platform } from "@/lib/platform";
+import { logger } from "@/lib/logger";
+import { SENTRY_DSN, MODE, IS_DEV } from "@/lib/env";
 
 // Declare global app version
 declare const __APP_VERSION__: string;
@@ -25,7 +25,7 @@ export function initSentry(): void {
 
   // Skip if no DSN configured (development without Sentry)
   if (!dsn) {
-    logger.log('[Sentry] No DSN configured, skipping initialization');
+    logger.log("[Sentry] No DSN configured, skipping initialization");
     return;
   }
 
@@ -35,10 +35,10 @@ export function initSentry(): void {
   const integrations: Integration[] = [
     Sentry.browserTracingIntegration({
       shouldCreateSpanForRequest: (url) => {
-        if (url.includes('/health')) return false;
-        if (url.includes('sentry.io')) return false;
-        if (url.includes('google-analytics')) return false;
-        if (url.includes('googletagmanager')) return false;
+        if (url.includes("/health")) return false;
+        if (url.includes("sentry.io")) return false;
+        if (url.includes("google-analytics")) return false;
+        if (url.includes("googletagmanager")) return false;
         return true;
       },
     }),
@@ -65,10 +65,7 @@ export function initSentry(): void {
     tracesSampleRate: isNative ? 0.05 : 0.1,
 
     // Distributed tracing targets - MUST be at root level for SDK v8+
-    tracePropagationTargets: [
-      'localhost',
-      /^https:\/\/.*\.supabase\.co/,
-    ],
+    tracePropagationTargets: ["localhost", /^https:\/\/.*\.supabase\.co/],
 
     // Session replay rates — only effective on web (integration not added on native)
     replaysSessionSampleRate: 0.1,
@@ -85,10 +82,10 @@ export function initSentry(): void {
       // AbortError occurs during normal operation (user navigation, request cancellation)
       if (error instanceof Error) {
         const isAbortError =
-          error.name === 'AbortError' ||
+          error.name === "AbortError" ||
           (error as { code?: number }).code === 20 || // iOS DOMException code
-          error.message?.includes('aborted') ||
-          error.message?.includes('AbortError');
+          error.message?.includes("aborted") ||
+          error.message?.includes("AbortError");
 
         if (isAbortError) {
           // Don't send to Sentry - these are handled gracefully in the app
@@ -98,9 +95,11 @@ export function initSentry(): void {
         // Filter out handled chunk load errors
         // These are shown to user via UpdateRequiredDialog
         const isChunkError =
-          error.message?.includes('Failed to fetch dynamically imported module') ||
-          error.message?.includes('Loading chunk') ||
-          error.message?.includes('Loading CSS chunk');
+          error.message?.includes(
+            "Failed to fetch dynamically imported module",
+          ) ||
+          error.message?.includes("Loading chunk") ||
+          error.message?.includes("Loading CSS chunk");
 
         if (isChunkError) {
           // Handled gracefully by UpdateRequiredDialog — don't report to Sentry.
@@ -123,22 +122,25 @@ export function initSentry(): void {
         /access_token[=:]\s*["']?[A-Za-z0-9\-_.]+["']?/gi,
         /refresh_token[=:]\s*["']?[A-Za-z0-9\-_.]+["']?/gi,
         /token[=:]\s*["']?[A-Za-z0-9\-_.]{20,}["']?/gi,
+        /[#&](access_token|refresh_token|id_token|token)=[^&\s]+/gi,
       ];
 
       const scrubString = (str: string): string => {
         let result = str;
-        sensitivePatterns.forEach(pattern => {
-          result = result.replace(pattern, '[REDACTED]');
+        sensitivePatterns.forEach((pattern) => {
+          result = result.replace(pattern, "[REDACTED]");
         });
         return result;
       };
 
       // Scrub breadcrumb messages
       if (event.breadcrumbs) {
-        event.breadcrumbs = event.breadcrumbs.map(bc => ({
+        event.breadcrumbs = event.breadcrumbs.map((bc) => ({
           ...bc,
           message: bc.message ? scrubString(bc.message) : bc.message,
-          data: bc.data ? JSON.parse(scrubString(JSON.stringify(bc.data))) : bc.data,
+          data: bc.data
+            ? JSON.parse(scrubString(JSON.stringify(bc.data)))
+            : bc.data,
         }));
       }
 
@@ -149,14 +151,17 @@ export function initSentry(): void {
       if (event.request?.headers) {
         const headers: Record<string, string> = {};
         for (const [key, value] of Object.entries(event.request.headers)) {
-          headers[key] = key.toLowerCase() === 'authorization' ? '[REDACTED]' : scrubString(String(value));
+          headers[key] =
+            key.toLowerCase() === "authorization"
+              ? "[REDACTED]"
+              : scrubString(String(value));
         }
         event.request.headers = headers;
       }
 
       // Don't send events in development
       if (IS_DEV) {
-        logger.log('[Sentry] Would send event:', event);
+        logger.log("[Sentry] Would send event:", event);
         return null;
       }
 
@@ -167,26 +172,36 @@ export function initSentry(): void {
     initialScope: {
       tags: {
         platform,
-        isNative: isNative ? 'yes' : 'no',
+        isNative: isNative ? "yes" : "no",
       },
     },
   });
 
   // Only log in development
   if (IS_DEV) {
-    logger.log('[Sentry] Initialized successfully');
+    logger.log("[Sentry] Initialized successfully");
   }
 }
 
 /**
  * Error categories for filtering and analysis in Sentry dashboard
  */
-export type ErrorCategory = 'audio' | 'cache' | 'version-mismatch' | 'storage' | 'network' | 'sync' | 'general';
+export type ErrorCategory =
+  | "audio"
+  | "cache"
+  | "version-mismatch"
+  | "storage"
+  | "network"
+  | "sync"
+  | "general";
 
 /**
  * Capture a custom error with context
  */
-export function captureError(error: Error, context?: Record<string, unknown>): void {
+export function captureError(
+  error: Error,
+  context?: Record<string, unknown>,
+): void {
   Sentry.captureException(error, {
     extra: context,
   });
@@ -199,21 +214,24 @@ export function captureError(error: Error, context?: Record<string, unknown>): v
 export function captureErrorWithCategory(
   error: Error,
   category: ErrorCategory,
-  context?: Record<string, unknown>
+  context?: Record<string, unknown>,
 ): void {
   Sentry.withScope((scope) => {
-    scope.setTag('category', category);
+    scope.setTag("category", category);
 
     // Add extra context based on error type
-    if (error.name === 'AbortError') {
-      scope.setTag('error_type', 'abort');
-      scope.setExtra('abort_reason', error.message);
-    } else if (error.message.includes('Database deleted')) {
-      scope.setTag('error_type', 'database_deleted');
-      scope.setExtra('likely_cause', 'User cleared site data or Safari ITP');
-    } else if (error.message.includes('chunk') || error.message.includes('module')) {
-      scope.setTag('error_type', 'chunk_load');
-      scope.setExtra('likely_cause', 'Version mismatch after deployment');
+    if (error.name === "AbortError") {
+      scope.setTag("error_type", "abort");
+      scope.setExtra("abort_reason", error.message);
+    } else if (error.message.includes("Database deleted")) {
+      scope.setTag("error_type", "database_deleted");
+      scope.setExtra("likely_cause", "User cleared site data or Safari ITP");
+    } else if (
+      error.message.includes("chunk") ||
+      error.message.includes("module")
+    ) {
+      scope.setTag("error_type", "chunk_load");
+      scope.setExtra("likely_cause", "Version mismatch after deployment");
     }
 
     if (context) {
@@ -231,7 +249,7 @@ export function addCategorizedBreadcrumb(
   category: ErrorCategory,
   message: string,
   data?: Record<string, unknown>,
-  level: Sentry.SeverityLevel = 'info'
+  level: Sentry.SeverityLevel = "info",
 ): void {
   Sentry.addBreadcrumb({
     category,
@@ -244,7 +262,10 @@ export function addCategorizedBreadcrumb(
 /**
  * Capture a custom message
  */
-export function captureMessage(message: string, level: Sentry.SeverityLevel = 'info'): void {
+export function captureMessage(
+  message: string,
+  level: Sentry.SeverityLevel = "info",
+): void {
   Sentry.captureMessage(message, level);
 }
 
@@ -252,9 +273,13 @@ export function captureMessage(message: string, level: Sentry.SeverityLevel = 'i
  * Set user context (anonymized)
  */
 export function setUserContext(userId: string): void {
+  // Hash userId to avoid sending raw PII to Sentry (GDPR pseudonymization)
+  let hash = 5381;
+  for (let i = 0; i < userId.length; i++) {
+    hash = ((hash << 5) + hash + userId.charCodeAt(i)) >>> 0;
+  }
   Sentry.setUser({
-    id: userId,
-    // Don't send email or other PII
+    id: `u-${hash.toString(36)}`,
   });
 }
 
@@ -266,4 +291,4 @@ export function clearUserContext(): void {
 }
 
 // Re-export Sentry's ErrorBoundary for use in App.tsx
-export { ErrorBoundary } from '@sentry/react';
+export { ErrorBoundary } from "@sentry/react";

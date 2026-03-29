@@ -47,9 +47,7 @@
       "Read(/mnt/c/project/people-first-app/**)",
       "Bash(npm rebuild)",
       "Bash(gh auth)",
-      "Bash(git remote)",
-      "Bash(npm run:*)",
-      "Bash(npm rebuild:*)"
+      "Bash(git remote)"
     ],
     "deny": [
       "Bash(rm -rf)",

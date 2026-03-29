@@ -76,9 +76,7 @@ describe("supabase shared http helpers", () => {
     expect(allowed["X-Frame-Options"]).toBe("DENY");
 
     const fallback = getCorsHeaders("https://unknown.origin");
-    expect(fallback["Access-Control-Allow-Origin"]).toBe(
-      "https://yehor212.github.io",
-    );
+    expect(fallback["Access-Control-Allow-Origin"]).toBeUndefined();
   });
 
   it("builds json and no-content responses", async () => {
