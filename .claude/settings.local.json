@@ -47,7 +47,11 @@
       "Read(/mnt/c/project/people-first-app/**)",
       "Bash(npm rebuild)",
       "Bash(gh auth)",
-      "Bash(git remote)"
+      "Bash(git remote)",
+      "Bash(npm run:*)",
+      "Bash(npm rebuild:*)",
+      "Bash(find /mnt/c/project/people-first-app/supabase/functions -type f \\\\\\(-name *.ts -o -name *.js \\\\\\))",
+      "Bash(npx madge:*)"
     ],
     "deny": [
       "Bash(rm -rf)",
