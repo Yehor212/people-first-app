@@ -44,7 +44,12 @@
       "WebFetch(domain:www.jsdelivr.com)",
       "WebFetch(domain:github.com)",
       "WebFetch(domain:raw.githubusercontent.com)",
-      "Read(/mnt/c/project/people-first-app/**)"
+      "Read(/mnt/c/project/people-first-app/**)",
+      "Bash(npm rebuild)",
+      "Bash(gh auth)",
+      "Bash(git remote)",
+      "Bash(npm run:*)",
+      "Bash(npm rebuild:*)"
     ],
     "deny": [
       "Bash(rm -rf)",
