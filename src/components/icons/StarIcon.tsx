@@ -3,8 +3,8 @@
  * Part of Premium Icons Library - Phase 11.2
  */
 
-import { cn } from '@/lib/utils';
-import { IconProps } from './FireIcon';
+import { cn } from "@/lib/utils";
+import { IconProps } from "./FireIcon";
 
 const sizeMap = {
   xs: 16,
@@ -14,7 +14,11 @@ const sizeMap = {
   xl: 48,
 };
 
-export function StarIcon({ size = 'md', animated = true, className }: IconProps) {
+export function StarIcon({
+  size = "md",
+  animated = true,
+  className,
+}: IconProps) {
   const s = sizeMap[size];
 
   return (
@@ -22,7 +26,8 @@ export function StarIcon({ size = 'md', animated = true, className }: IconProps)
       viewBox="0 0 100 100"
       width={s}
       height={s}
-      className={cn('drop-shadow-md', className)}
+      aria-hidden="true"
+      className={cn("drop-shadow-md", className)}
     >
       <defs>
         <linearGradient id="starGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -91,7 +96,15 @@ export function StarIcon({ size = 'md', animated = true, className }: IconProps)
       {/* Sparkle rays */}
       {animated && (
         <>
-          <line x1="50" y1="5" x2="50" y2="0" stroke="#fff" strokeWidth="2" opacity="0.8">
+          <line
+            x1="50"
+            y1="5"
+            x2="50"
+            y2="0"
+            stroke="#fff"
+            strokeWidth="2"
+            opacity="0.8"
+          >
             <animate
               attributeName="opacity"
               values="0.8;0.2;0.8"
@@ -99,7 +112,15 @@ export function StarIcon({ size = 'md', animated = true, className }: IconProps)
               repeatCount="indefinite"
             />
           </line>
-          <line x1="95" y1="40" x2="100" y2="40" stroke="#fff" strokeWidth="2" opacity="0.8">
+          <line
+            x1="95"
+            y1="40"
+            x2="100"
+            y2="40"
+            stroke="#fff"
+            strokeWidth="2"
+            opacity="0.8"
+          >
             <animate
               attributeName="opacity"
               values="0.8;0.2;0.8"
@@ -108,7 +129,15 @@ export function StarIcon({ size = 'md', animated = true, className }: IconProps)
               begin="0.2s"
             />
           </line>
-          <line x1="78" y1="95" x2="80" y2="100" stroke="#fff" strokeWidth="2" opacity="0.8">
+          <line
+            x1="78"
+            y1="95"
+            x2="80"
+            y2="100"
+            stroke="#fff"
+            strokeWidth="2"
+            opacity="0.8"
+          >
             <animate
               attributeName="opacity"
               values="0.8;0.2;0.8"
@@ -117,7 +146,15 @@ export function StarIcon({ size = 'md', animated = true, className }: IconProps)
               begin="0.4s"
             />
           </line>
-          <line x1="22" y1="95" x2="20" y2="100" stroke="#fff" strokeWidth="2" opacity="0.8">
+          <line
+            x1="22"
+            y1="95"
+            x2="20"
+            y2="100"
+            stroke="#fff"
+            strokeWidth="2"
+            opacity="0.8"
+          >
             <animate
               attributeName="opacity"
               values="0.8;0.2;0.8"
@@ -126,7 +163,15 @@ export function StarIcon({ size = 'md', animated = true, className }: IconProps)
               begin="0.6s"
             />
           </line>
-          <line x1="5" y1="40" x2="0" y2="40" stroke="#fff" strokeWidth="2" opacity="0.8">
+          <line
+            x1="5"
+            y1="40"
+            x2="0"
+            y2="40"
+            stroke="#fff"
+            strokeWidth="2"
+            opacity="0.8"
+          >
             <animate
               attributeName="opacity"
               values="0.8;0.2;0.8"

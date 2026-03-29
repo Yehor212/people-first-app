@@ -3,8 +3,8 @@
  * Part of Premium Icons Library - Phase 11.2
  */
 
-import { cn } from '@/lib/utils';
-import { IconProps } from './FireIcon';
+import { cn } from "@/lib/utils";
+import { IconProps } from "./FireIcon";
 
 const sizeMap = {
   xs: 16,
@@ -14,7 +14,11 @@ const sizeMap = {
   xl: 48,
 };
 
-export function TrophyIcon({ size = 'md', animated = true, className }: IconProps) {
+export function TrophyIcon({
+  size = "md",
+  animated = true,
+  className,
+}: IconProps) {
   const s = sizeMap[size];
 
   return (
@@ -22,7 +26,8 @@ export function TrophyIcon({ size = 'md', animated = true, className }: IconProp
       viewBox="0 0 100 100"
       width={s}
       height={s}
-      className={cn('drop-shadow-md', className)}
+      aria-hidden="true"
+      className={cn("drop-shadow-md", className)}
     >
       <defs>
         <linearGradient id="trophyGold" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -92,13 +97,17 @@ export function TrophyIcon({ size = 'md', animated = true, className }: IconProp
       <rect x="45" y="70" width="10" height="12" fill="url(#trophyGold)" />
 
       {/* Base */}
-      <path
-        d="M30 82 L70 82 L75 95 L25 95 Z"
-        fill="url(#trophyBase)"
-      />
+      <path d="M30 82 L70 82 L75 95 L25 95 Z" fill="url(#trophyBase)" />
 
       {/* Base top */}
-      <rect x="35" y="80" width="30" height="4" rx="2" fill="url(#trophyGold)" />
+      <rect
+        x="35"
+        y="80"
+        width="30"
+        height="4"
+        rx="2"
+        fill="url(#trophyGold)"
+      />
 
       {/* Star on trophy */}
       <path

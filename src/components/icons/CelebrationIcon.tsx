@@ -18,7 +18,7 @@ export function CelebrationIcon({ size = 'md', animated = true, className }: Ico
   const s = sizeMap[size];
 
   return (
-    <svg
+    <svg aria-hidden="true"
       viewBox="0 0 100 100"
       width={s}
       height={s}

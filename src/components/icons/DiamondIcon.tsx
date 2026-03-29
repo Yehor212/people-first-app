@@ -3,8 +3,8 @@
  * Part of Premium Icons Library - Phase 11.2
  */
 
-import { cn } from '@/lib/utils';
-import { IconProps } from './FireIcon';
+import { cn } from "@/lib/utils";
+import { IconProps } from "./FireIcon";
 
 const sizeMap = {
   xs: 16,
@@ -14,7 +14,11 @@ const sizeMap = {
   xl: 48,
 };
 
-export function DiamondIcon({ size = 'md', animated = true, className }: IconProps) {
+export function DiamondIcon({
+  size = "md",
+  animated = true,
+  className,
+}: IconProps) {
   const s = sizeMap[size];
 
   return (
@@ -22,7 +26,8 @@ export function DiamondIcon({ size = 'md', animated = true, className }: IconPro
       viewBox="0 0 100 100"
       width={s}
       height={s}
-      className={cn('drop-shadow-md', className)}
+      aria-hidden="true"
+      className={cn("drop-shadow-md", className)}
     >
       <defs>
         <linearGradient id="diamondGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -67,10 +72,18 @@ export function DiamondIcon({ size = 'md', animated = true, className }: IconPro
       </path>
 
       {/* Top facet */}
-      <path d="M50 5 L85 35 L50 45 L15 35 Z" fill="url(#diamondFacet1)" opacity="0.9" />
+      <path
+        d="M50 5 L85 35 L50 45 L15 35 Z"
+        fill="url(#diamondFacet1)"
+        opacity="0.9"
+      />
 
       {/* Left facet */}
-      <path d="M15 35 L50 45 L50 95 Z" fill="url(#diamondFacet2)" opacity="0.7" />
+      <path
+        d="M15 35 L50 45 L50 95 Z"
+        fill="url(#diamondFacet2)"
+        opacity="0.7"
+      />
 
       {/* Right facet highlight */}
       <path d="M50 45 L85 35 L50 95 Z" fill="url(#diamondGrad)" opacity="0.5" />
@@ -129,7 +142,14 @@ export function DiamondIcon({ size = 'md', animated = true, className }: IconPro
           </circle>
 
           {/* Shine sweep */}
-          <rect x="0" y="0" width="20" height="100" fill="url(#diamondFacet1)" opacity="0.3">
+          <rect
+            x="0"
+            y="0"
+            width="20"
+            height="100"
+            fill="url(#diamondFacet1)"
+            opacity="0.3"
+          >
             <animateTransform
               attributeName="transform"
               type="translate"

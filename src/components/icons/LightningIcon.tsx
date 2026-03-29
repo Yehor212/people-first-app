@@ -3,8 +3,8 @@
  * Part of Premium Icons Library - Phase 11.2
  */
 
-import { cn } from '@/lib/utils';
-import { IconProps } from './FireIcon';
+import { cn } from "@/lib/utils";
+import { IconProps } from "./FireIcon";
 
 const sizeMap = {
   xs: 16,
@@ -14,7 +14,11 @@ const sizeMap = {
   xl: 48,
 };
 
-export function LightningIcon({ size = 'md', animated = true, className }: IconProps) {
+export function LightningIcon({
+  size = "md",
+  animated = true,
+  className,
+}: IconProps) {
   const s = sizeMap[size];
 
   return (
@@ -22,7 +26,8 @@ export function LightningIcon({ size = 'md', animated = true, className }: IconP
       viewBox="0 0 100 100"
       width={s}
       height={s}
-      className={cn('drop-shadow-md', className)}
+      aria-hidden="true"
+      className={cn("drop-shadow-md", className)}
     >
       <defs>
         <linearGradient id="boltGrad" x1="0%" y1="0%" x2="100%" y2="100%">

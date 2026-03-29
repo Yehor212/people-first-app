@@ -3,8 +3,8 @@
  * Part of Premium Icons Library - Phase 11.2
  */
 
-import { cn } from '@/lib/utils';
-import { IconProps } from './FireIcon';
+import { cn } from "@/lib/utils";
+import { IconProps } from "./FireIcon";
 
 const sizeMap = {
   xs: 16,
@@ -14,7 +14,11 @@ const sizeMap = {
   xl: 48,
 };
 
-export function TargetIcon({ size = 'md', animated = true, className }: IconProps) {
+export function TargetIcon({
+  size = "md",
+  animated = true,
+  className,
+}: IconProps) {
   const s = sizeMap[size];
 
   return (
@@ -22,7 +26,8 @@ export function TargetIcon({ size = 'md', animated = true, className }: IconProp
       viewBox="0 0 100 100"
       width={s}
       height={s}
-      className={cn('drop-shadow-md', className)}
+      aria-hidden="true"
+      className={cn("drop-shadow-md", className)}
     >
       <defs>
         <linearGradient id="targetRed" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -51,7 +56,13 @@ export function TargetIcon({ size = 'md', animated = true, className }: IconProp
       <circle cx="50" cy="50" r="18" fill="#fff" />
 
       {/* Bullseye - red */}
-      <circle cx="50" cy="50" r="9" fill="url(#targetRed)" filter="url(#targetGlow)">
+      <circle
+        cx="50"
+        cy="50"
+        r="9"
+        fill="url(#targetRed)"
+        filter="url(#targetGlow)"
+      >
         {animated && (
           <>
             <animate
@@ -83,10 +94,42 @@ export function TargetIcon({ size = 'md', animated = true, className }: IconProp
       </circle>
 
       {/* Crosshair lines */}
-      <line x1="50" y1="5" x2="50" y2="20" stroke="#333" strokeWidth="2" opacity="0.3" />
-      <line x1="50" y1="80" x2="50" y2="95" stroke="#333" strokeWidth="2" opacity="0.3" />
-      <line x1="5" y1="50" x2="20" y2="50" stroke="#333" strokeWidth="2" opacity="0.3" />
-      <line x1="80" y1="50" x2="95" y2="50" stroke="#333" strokeWidth="2" opacity="0.3" />
+      <line
+        x1="50"
+        y1="5"
+        x2="50"
+        y2="20"
+        stroke="#333"
+        strokeWidth="2"
+        opacity="0.3"
+      />
+      <line
+        x1="50"
+        y1="80"
+        x2="50"
+        y2="95"
+        stroke="#333"
+        strokeWidth="2"
+        opacity="0.3"
+      />
+      <line
+        x1="5"
+        y1="50"
+        x2="20"
+        y2="50"
+        stroke="#333"
+        strokeWidth="2"
+        opacity="0.3"
+      />
+      <line
+        x1="80"
+        y1="50"
+        x2="95"
+        y2="50"
+        stroke="#333"
+        strokeWidth="2"
+        opacity="0.3"
+      />
     </svg>
   );
 }

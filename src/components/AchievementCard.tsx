@@ -2,11 +2,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Lock } from "lucide-react";
-import {
-  Achievement,
-  getBadgeColor,
-  getBadgeGlow,
-} from "@/lib/gamification";
+import { Achievement, getBadgeColor, getBadgeGlow } from "@/lib/gamification";
 import { getDecorationForAchievement } from "@/lib/achievementDecorations";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -35,7 +31,7 @@ export function AchievementCard({
 
   return (
     <Card
-      className={`p-4 cursor-pointer transition-all hover:scale-105 ${
+      className={`p-4 cursor-pointer transition-all hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
         isUnlocked ? getBadgeGlow(achievement.rarity) : "opacity-60"
       }`}
       role="button"
@@ -53,7 +49,10 @@ export function AchievementCard({
           {isUnlocked ? (
             achievement.icon
           ) : (
-            <Lock className="w-10 h-10 mx-auto text-muted-foreground" aria-hidden="true" />
+            <Lock
+              className="w-10 h-10 mx-auto text-muted-foreground"
+              aria-hidden="true"
+            />
           )}
         </div>
         <div className="min-w-0">

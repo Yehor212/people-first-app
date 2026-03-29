@@ -3,8 +3,8 @@
  * Part of Premium Icons Library - Phase 11.2
  */
 
-import { cn } from '@/lib/utils';
-import { IconProps } from './FireIcon';
+import { cn } from "@/lib/utils";
+import { IconProps } from "./FireIcon";
 
 const sizeMap = {
   xs: 16,
@@ -14,7 +14,11 @@ const sizeMap = {
   xl: 48,
 };
 
-export function SeedlingIcon({ size = 'md', animated = true, className }: IconProps) {
+export function SeedlingIcon({
+  size = "md",
+  animated = true,
+  className,
+}: IconProps) {
   const s = sizeMap[size];
 
   return (
@@ -22,7 +26,8 @@ export function SeedlingIcon({ size = 'md', animated = true, className }: IconPr
       viewBox="0 0 100 100"
       width={s}
       height={s}
-      className={cn('drop-shadow-md', className)}
+      aria-hidden="true"
+      className={cn("drop-shadow-md", className)}
     >
       <defs>
         {/* Leaf gradient */}
@@ -106,12 +111,40 @@ export function SeedlingIcon({ size = 'md', animated = true, className }: IconPr
       </path>
 
       {/* Leaf veins */}
-      <path d="M50 55 Q38 48 30 38" stroke="#16a34a" strokeWidth="1" fill="none" opacity="0.5" />
-      <path d="M50 55 Q62 48 70 38" stroke="#16a34a" strokeWidth="1" fill="none" opacity="0.5" />
+      <path
+        d="M50 55 Q38 48 30 38"
+        stroke="#16a34a"
+        strokeWidth="1"
+        fill="none"
+        opacity="0.5"
+      />
+      <path
+        d="M50 55 Q62 48 70 38"
+        stroke="#16a34a"
+        strokeWidth="1"
+        fill="none"
+        opacity="0.5"
+      />
 
       {/* Shine highlights */}
-      <ellipse cx="35" cy="38" rx="4" ry="6" fill="#fff" opacity="0.3" transform="rotate(-30 35 38)" />
-      <ellipse cx="65" cy="38" rx="4" ry="6" fill="#fff" opacity="0.3" transform="rotate(30 65 38)" />
+      <ellipse
+        cx="35"
+        cy="38"
+        rx="4"
+        ry="6"
+        fill="#fff"
+        opacity="0.3"
+        transform="rotate(-30 35 38)"
+      />
+      <ellipse
+        cx="65"
+        cy="38"
+        rx="4"
+        ry="6"
+        fill="#fff"
+        opacity="0.3"
+        transform="rotate(30 65 38)"
+      />
 
       {/* Growth sparkles */}
       {animated && (

@@ -307,14 +307,14 @@ export function ConfirmDialog({
   return (
     <div
       className="fixed inset-0 z-[300] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in"
-      onClick={onCancel}
+      onClick={onCancel} onKeyDown={(e) => { if (e.key === "Escape") onCancel(); }}
     >
-      <div role="dialog" aria-modal="true" className="bg-card rounded-2xl p-6 mx-4 max-w-sm w-full shadow-2xl animate-scale-in" onClick={e => e.stopPropagation()}>
+      <div role="dialog" aria-modal="true" aria-label="Confirmation" className="bg-card rounded-2xl p-6 mx-4 max-w-sm w-full shadow-2xl animate-scale-in" onClick={e => e.stopPropagation()}>
         <h3 className="text-lg font-bold text-foreground mb-2">{title}</h3>
         <p className="text-muted-foreground mb-6">{message}</p>
         <div className="flex gap-3">
           <button
-            onClick={onCancel}
+            onClick={onCancel} onKeyDown={(e) => { if (e.key === "Escape") onCancel(); }}
             className="flex-1 py-3 bg-secondary text-foreground font-medium rounded-xl hover:bg-secondary/80 transition-colors"
           >
             {cancelText}

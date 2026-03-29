@@ -68,7 +68,17 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
   return (
     <>
       {/* Trigger */}
-      <div onClick={() => setIsOpen(true)}>
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={() => setIsOpen(true)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            setIsOpen(true);
+          }
+        }}
+      >
         {trigger || (
           <button
             className="flex items-center gap-2 px-4 py-2 bg-secondary rounded-lg hover:bg-secondary/80 transition-colors"

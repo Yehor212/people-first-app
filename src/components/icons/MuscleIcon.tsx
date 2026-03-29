@@ -3,8 +3,8 @@
  * Part of Premium Icons Library - Phase 12
  */
 
-import { cn } from '@/lib/utils';
-import { IconProps } from './FireIcon';
+import { cn } from "@/lib/utils";
+import { IconProps } from "./FireIcon";
 
 const sizeMap = {
   xs: 16,
@@ -14,7 +14,11 @@ const sizeMap = {
   xl: 48,
 };
 
-export function MuscleIcon({ size = 'md', animated = true, className }: IconProps) {
+export function MuscleIcon({
+  size = "md",
+  animated = true,
+  className,
+}: IconProps) {
   const s = sizeMap[size];
 
   return (
@@ -22,7 +26,8 @@ export function MuscleIcon({ size = 'md', animated = true, className }: IconProp
       viewBox="0 0 100 100"
       width={s}
       height={s}
-      className={cn('drop-shadow-md', className)}
+      aria-hidden="true"
+      className={cn("drop-shadow-md", className)}
     >
       <defs>
         <linearGradient id="muscleGradMain" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -30,7 +35,13 @@ export function MuscleIcon({ size = 'md', animated = true, className }: IconProp
           <stop offset="50%" stopColor="#ef4444" />
           <stop offset="100%" stopColor="#dc2626" />
         </linearGradient>
-        <linearGradient id="muscleGradHighlight" x1="0%" y1="0%" x2="100%" y2="100%">
+        <linearGradient
+          id="muscleGradHighlight"
+          x1="0%"
+          y1="0%"
+          x2="100%"
+          y2="100%"
+        >
           <stop offset="0%" stopColor="#fbbf24" stopOpacity="0.6" />
           <stop offset="100%" stopColor="#f97316" stopOpacity="0" />
         </linearGradient>
@@ -202,7 +213,15 @@ export function MuscleIcon({ size = 'md', animated = true, className }: IconProp
       {/* Power lines */}
       {animated && (
         <>
-          <line x1="30" y1="30" x2="25" y2="22" stroke="#fbbf24" strokeWidth="2" strokeLinecap="round">
+          <line
+            x1="30"
+            y1="30"
+            x2="25"
+            y2="22"
+            stroke="#fbbf24"
+            strokeWidth="2"
+            strokeLinecap="round"
+          >
             <animate
               attributeName="opacity"
               values="0;0.8;0"
@@ -210,7 +229,15 @@ export function MuscleIcon({ size = 'md', animated = true, className }: IconProp
               repeatCount="indefinite"
             />
           </line>
-          <line x1="50" y1="22" x2="50" y2="14" stroke="#fbbf24" strokeWidth="2" strokeLinecap="round">
+          <line
+            x1="50"
+            y1="22"
+            x2="50"
+            y2="14"
+            stroke="#fbbf24"
+            strokeWidth="2"
+            strokeLinecap="round"
+          >
             <animate
               attributeName="opacity"
               values="0;0.8;0"
@@ -219,7 +246,15 @@ export function MuscleIcon({ size = 'md', animated = true, className }: IconProp
               begin="0.2s"
             />
           </line>
-          <line x1="68" y1="26" x2="74" y2="18" stroke="#fbbf24" strokeWidth="2" strokeLinecap="round">
+          <line
+            x1="68"
+            y1="26"
+            x2="74"
+            y2="18"
+            stroke="#fbbf24"
+            strokeWidth="2"
+            strokeLinecap="round"
+          >
             <animate
               attributeName="opacity"
               values="0;0.8;0"

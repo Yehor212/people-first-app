@@ -209,7 +209,6 @@ export const GoalNode = memo(
                 : "0 0 15px rgba(255,255,255,0.05), 0 8px 32px rgba(0,0,0,0.5)",
           }}
           aria-label={`Goal: ${goal.title}${isComplete ? " (completed)" : ""}`}
-          role="button"
         >
           <motion.span
             style={{ opacity: textOpacity }}

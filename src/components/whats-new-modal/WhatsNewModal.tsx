@@ -5,17 +5,17 @@
  * Only displays once per version update.
  */
 
-import { useState, useEffect } from 'react';
-import { Sparkles, X } from 'lucide-react';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { useModalKeyboard } from '@/hooks/useModalKeyboard';
-import { useBackHandler } from '@/hooks/useBackHandler';
-import { APP_VERSION, wasAppUpdated } from '@/lib/appVersion';
-import { cn } from '@/lib/utils';
-import { logger } from '@/lib/logger';
-import { SK } from '@/lib/storageKeys';
-import { storageGetRaw, storageSetRaw } from '@/lib/safeJson';
-import { CHANGELOG } from './changelog';
+import { useState, useEffect } from "react";
+import { Sparkles, X } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useModalKeyboard } from "@/hooks/useModalKeyboard";
+import { useBackHandler } from "@/hooks/useBackHandler";
+import { APP_VERSION, wasAppUpdated } from "@/lib/appVersion";
+import { cn } from "@/lib/utils";
+import { logger } from "@/lib/logger";
+import { SK } from "@/lib/storageKeys";
+import { storageGetRaw, storageSetRaw } from "@/lib/safeJson";
+import { CHANGELOG } from "./changelog";
 
 interface WhatsNewModalProps {
   onClose?: () => void;
@@ -33,7 +33,7 @@ export function WhatsNewModal({ onClose }: WhatsNewModalProps) {
       storageSetRaw(SK.LAST_SEEN_VERSION, APP_VERSION);
       setIsVisible(false);
       onClose?.();
-      logger.log('[WhatsNew] Modal dismissed via keyboard');
+      logger.log("[WhatsNew] Modal dismissed via keyboard");
     },
     closeOnEscape: true,
     trapFocus: true,
@@ -52,7 +52,7 @@ export function WhatsNewModal({ onClose }: WhatsNewModalProps) {
       if (CHANGELOG[APP_VERSION]) {
         setCurrentVersion(APP_VERSION);
         setIsVisible(true);
-        logger.log('[WhatsNew] Showing modal for version:', APP_VERSION);
+        logger.log("[WhatsNew] Showing modal for version:", APP_VERSION);
       } else {
         // No changelog for this version, mark as seen
         storageSetRaw(SK.LAST_SEEN_VERSION, APP_VERSION);
@@ -65,14 +65,14 @@ export function WhatsNewModal({ onClose }: WhatsNewModalProps) {
     storageSetRaw(SK.LAST_SEEN_VERSION, APP_VERSION);
     setIsVisible(false);
     onClose?.();
-    logger.log('[WhatsNew] Modal dismissed via back button');
+    logger.log("[WhatsNew] Modal dismissed via back button");
   });
 
   const handleDismiss = () => {
     storageSetRaw(SK.LAST_SEEN_VERSION, APP_VERSION);
     setIsVisible(false);
     onClose?.();
-    logger.log('[WhatsNew] Modal dismissed');
+    logger.log("[WhatsNew] Modal dismissed");
   };
 
   if (!isVisible || !currentVersion) return null;
@@ -82,26 +82,34 @@ export function WhatsNewModal({ onClose }: WhatsNewModalProps) {
   // Get translated text or fallback to English
   const getText = (key: string, fallback: string): string => {
     // Try to get from translations using dot notation
-    const keys = key.split('.');
+    const keys = key.split(".");
     let value: unknown = t;
     for (const k of keys) {
-      if (value && typeof value === 'object' && k in value) {
+      if (value && typeof value === "object" && k in value) {
         value = (value as Record<string, unknown>)[k];
       } else {
         return fallback;
       }
     }
-    return typeof value === 'string' ? value : fallback;
+    return typeof value === "string" ? value : fallback;
   };
 
+  // A11Y-OK: backdrop is presentation-only; Escape bubbles from focused children inside the dialog
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in" onClick={handleDismiss}>
+    <div
+      role="presentation"
+      className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in"
+      onClick={handleDismiss}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") handleDismiss();
+      }}
+    >
       <div
         {...modalProps}
         aria-labelledby="whats-new-title"
         className={cn(
-          'w-full max-w-md bg-card rounded-2xl shadow-2xl',
-          'border border-border overflow-hidden'
+          "w-full max-w-md bg-card rounded-2xl shadow-2xl",
+          "border border-border overflow-hidden",
         )}
         onClick={(e) => e.stopPropagation()}
       >
@@ -120,11 +128,14 @@ export function WhatsNewModal({ onClose }: WhatsNewModalProps) {
               <Sparkles className="w-6 h-6 text-primary" />
             </div>
             <div>
-              <h2 id="whats-new-title" className="text-xl font-bold text-foreground">
-                {getText('whatsNew.title', "What's New")}
+              <h2
+                id="whats-new-title"
+                className="text-xl font-bold text-foreground"
+              >
+                {getText("whatsNew.title", "What's New")}
               </h2>
               <p className="text-sm text-muted-foreground">
-                {getText('whatsNew.version', 'Version')} {currentVersion}
+                {getText("whatsNew.version", "Version")} {currentVersion}
               </p>
             </div>
           </div>
@@ -137,8 +148,8 @@ export function WhatsNewModal({ onClose }: WhatsNewModalProps) {
               <div
                 key={index}
                 className={cn(
-                  'flex items-start gap-3 p-3 rounded-xl',
-                  'bg-muted/50 hover:bg-muted transition-colors'
+                  "flex items-start gap-3 p-3 rounded-xl",
+                  "bg-muted/50 hover:bg-muted transition-colors",
                 )}
               >
                 <div className="flex-shrink-0 p-2 rounded-lg bg-background">
@@ -162,13 +173,13 @@ export function WhatsNewModal({ onClose }: WhatsNewModalProps) {
           <button
             onClick={handleDismiss}
             className={cn(
-              'w-full py-3 px-4 rounded-xl font-medium',
-              'bg-primary text-primary-foreground',
-              'hover:bg-primary/90 transition-colors',
-              'focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2'
+              "w-full py-3 px-4 rounded-xl font-medium",
+              "bg-primary text-primary-foreground",
+              "hover:bg-primary/90 transition-colors",
+              "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2",
             )}
           >
-            {getText('whatsNew.gotIt', 'Got it!')}
+            {getText("whatsNew.gotIt", "Got it!")}
           </button>
         </div>
       </div>

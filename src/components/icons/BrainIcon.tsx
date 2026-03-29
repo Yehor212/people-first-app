@@ -3,8 +3,8 @@
  * Part of Premium Icons Library - Phase 12
  */
 
-import { cn } from '@/lib/utils';
-import { IconProps } from './FireIcon';
+import { cn } from "@/lib/utils";
+import { IconProps } from "./FireIcon";
 
 const sizeMap = {
   xs: 16,
@@ -14,7 +14,11 @@ const sizeMap = {
   xl: 48,
 };
 
-export function BrainIcon({ size = 'md', animated = true, className }: IconProps) {
+export function BrainIcon({
+  size = "md",
+  animated = true,
+  className,
+}: IconProps) {
   const s = sizeMap[size];
 
   return (
@@ -22,7 +26,8 @@ export function BrainIcon({ size = 'md', animated = true, className }: IconProps
       viewBox="0 0 100 100"
       width={s}
       height={s}
-      className={cn('drop-shadow-md', className)}
+      aria-hidden="true"
+      className={cn("drop-shadow-md", className)}
     >
       <defs>
         <linearGradient id="brainGradMain" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -30,7 +35,13 @@ export function BrainIcon({ size = 'md', animated = true, className }: IconProps
           <stop offset="50%" stopColor="#a855f7" />
           <stop offset="100%" stopColor="#6366f1" />
         </linearGradient>
-        <linearGradient id="brainGradHighlight" x1="0%" y1="0%" x2="100%" y2="100%">
+        <linearGradient
+          id="brainGradHighlight"
+          x1="0%"
+          y1="0%"
+          x2="100%"
+          y2="100%"
+        >
           <stop offset="0%" stopColor="#f9a8d4" stopOpacity="0.6" />
           <stop offset="100%" stopColor="#c4b5fd" stopOpacity="0" />
         </linearGradient>
@@ -209,7 +220,15 @@ export function BrainIcon({ size = 'md', animated = true, className }: IconProps
           </circle>
 
           {/* Neural connections - animated lines */}
-          <line x1="32" y1="45" x2="50" y2="55" stroke="#fff" strokeWidth="1" opacity="0.3">
+          <line
+            x1="32"
+            y1="45"
+            x2="50"
+            y2="55"
+            stroke="#fff"
+            strokeWidth="1"
+            opacity="0.3"
+          >
             <animate
               attributeName="opacity"
               values="0.1;0.5;0.1"
@@ -217,7 +236,15 @@ export function BrainIcon({ size = 'md', animated = true, className }: IconProps
               repeatCount="indefinite"
             />
           </line>
-          <line x1="68" y1="50" x2="50" y2="55" stroke="#fff" strokeWidth="1" opacity="0.3">
+          <line
+            x1="68"
+            y1="50"
+            x2="50"
+            y2="55"
+            stroke="#fff"
+            strokeWidth="1"
+            opacity="0.3"
+          >
             <animate
               attributeName="opacity"
               values="0.1;0.5;0.1"
@@ -226,7 +253,15 @@ export function BrainIcon({ size = 'md', animated = true, className }: IconProps
               begin="0.3s"
             />
           </line>
-          <line x1="50" y1="25" x2="50" y2="55" stroke="#fff" strokeWidth="1" opacity="0.3">
+          <line
+            x1="50"
+            y1="25"
+            x2="50"
+            y2="55"
+            stroke="#fff"
+            strokeWidth="1"
+            opacity="0.3"
+          >
             <animate
               attributeName="opacity"
               values="0.1;0.4;0.1"

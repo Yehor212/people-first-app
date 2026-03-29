@@ -172,7 +172,7 @@ export function HabitCreationForm({ form, habits, isPrimaryCTA = false }: HabitC
           "relative w-full p-3 rounded-xl mb-3 transition-all",
           "focus:outline-none focus:ring-2",
           isPrimaryCTA
-            ? "bg-foreground/10 backdrop-blur-sm border border-foreground/20 text-white placeholder:text-foreground/40 focus:ring-violet-500/50 focus:border-violet-500/30"
+            ? "bg-foreground/10 backdrop-blur-sm border border-foreground/20 text-white placeholder:text-foreground/60 focus:ring-violet-500/50 focus:border-violet-500/30"
             : "bg-background text-foreground placeholder:text-muted-foreground focus:ring-primary/30"
         )}
         style={isPrimaryCTA ? { boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)' } : undefined}
@@ -191,7 +191,7 @@ export function HabitCreationForm({ form, habits, isPrimaryCTA = false }: HabitC
           "relative w-full p-3 rounded-xl mb-3 transition-all",
           "focus:outline-none focus:ring-2",
           isPrimaryCTA
-            ? "bg-foreground/10 backdrop-blur-sm border border-foreground/20 text-white placeholder:text-foreground/40 focus:ring-violet-500/50"
+            ? "bg-foreground/10 backdrop-blur-sm border border-foreground/20 text-white placeholder:text-foreground/60 focus:ring-violet-500/50"
             : "bg-background text-foreground placeholder:text-muted-foreground focus:ring-primary/30"
         )}
       />
@@ -251,7 +251,7 @@ export function HabitCreationForm({ form, habits, isPrimaryCTA = false }: HabitC
             "w-full p-2 rounded-lg text-sm resize-none transition-all",
             "focus:outline-none focus:ring-2",
             isPrimaryCTA
-              ? "bg-foreground/10 border border-foreground/20 text-white placeholder:text-foreground/30 focus:ring-violet-500/50"
+              ? "bg-foreground/10 border border-foreground/20 text-white placeholder:text-foreground/60 focus:ring-violet-500/50"
               : "bg-background text-foreground placeholder:text-muted-foreground focus:ring-primary/30"
           )}
         />

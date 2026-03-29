@@ -5,15 +5,15 @@
  * Collapsible design to avoid overwhelming the user
  */
 
-import { useState, useMemo, useEffect } from 'react';
-import type { MoodEntry, Habit, FocusSession } from '@/types';
-import { useInsights } from '@/hooks/useInsights';
-import type { InsightTranslations } from '@/lib/insightsEngine';
-import { InsightCard } from './InsightCard';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { Sparkles, ChevronDown, ChevronUp, X, Info } from 'lucide-react';
-import { SK } from '@/lib/storageKeys';
-import { storageGetRaw, storageSetRaw } from '@/lib/safeJson';
+import { useState, useMemo, useEffect } from "react";
+import type { MoodEntry, Habit, FocusSession } from "@/types";
+import { useInsights } from "@/hooks/useInsights";
+import type { InsightTranslations } from "@/lib/insightsEngine";
+import { InsightCard } from "./InsightCard";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { Sparkles, ChevronDown, ChevronUp, X, Info } from "lucide-react";
+import { SK } from "@/lib/storageKeys";
+import { storageGetRaw, storageSetRaw } from "@/lib/safeJson";
 
 interface InsightsPanelProps {
   moods: MoodEntry[];
@@ -38,7 +38,7 @@ export function InsightsPanel({
   const [isCollapsed, setIsCollapsed] = useState(() => {
     if (!collapsible) return false;
     const stored = storageGetRaw(SK.INSIGHTS_COLLAPSED);
-    return stored === 'true';
+    return stored === "true";
   });
 
   // Persist collapsed state
@@ -48,24 +48,41 @@ export function InsightsPanel({
     }
   }, [isCollapsed, collapsible]);
 
-  const toggleCollapsed = () => setIsCollapsed(prev => !prev);
+  const toggleCollapsed = () => setIsCollapsed((prev) => !prev);
 
   // Build insight translations from current language context
-  const insightTranslations = useMemo<InsightTranslations>(() => ({
-    morning: t.insightMorning || 'in the morning',
-    afternoon: t.insightAfternoon || 'in the afternoon',
-    evening: t.insightEvening || 'in the evening',
-    habitImprovesMood: t.insightHabitImprovesMood || '{habit} improves your mood',
-    habitImprovesMoodDesc: t.insightHabitImprovesMoodDesc || 'On days when you complete "{habit}", your mood is {percent}% better on average.',
-    focusBestLabel: t.insightFocusBestLabel || 'You focus best on "{label}" tasks',
-    focusBestLabelDesc: t.insightFocusBestLabelDesc || 'Your average focus time for "{label}" is {minutes} minutes, higher than other activities.',
-    peakFocusTime: t.insightPeakFocusTime || 'Your peak focus time is {timeOfDay}',
-    peakFocusTimeDesc: t.insightPeakFocusTimeDesc || 'You achieve your best focus around {time}, with an average of {minutes} minutes.',
-    bestTimeForHabit: t.insightBestTimeForHabit || 'Best time for {habit}: {time}',
-    bestTimeForHabitDesc: t.insightBestTimeForHabitDesc || 'You\'re {percent}% more likely to complete "{habit}" {time} compared to {worstTime} ({worstPercent}%).',
-    tagBoostsMood: t.insightTagBoostsMood || '"{tag}" boosts your mood',
-    tagBoostsMoodDesc: t.insightTagBoostsMoodDesc || 'Days tagged with "{tag}" show {percent}% better mood on average.',
-  }), [t]);
+  const insightTranslations = useMemo<InsightTranslations>(
+    () => ({
+      morning: t.insightMorning || "in the morning",
+      afternoon: t.insightAfternoon || "in the afternoon",
+      evening: t.insightEvening || "in the evening",
+      habitImprovesMood:
+        t.insightHabitImprovesMood || "{habit} improves your mood",
+      habitImprovesMoodDesc:
+        t.insightHabitImprovesMoodDesc ||
+        'On days when you complete "{habit}", your mood is {percent}% better on average.',
+      focusBestLabel:
+        t.insightFocusBestLabel || 'You focus best on "{label}" tasks',
+      focusBestLabelDesc:
+        t.insightFocusBestLabelDesc ||
+        'Your average focus time for "{label}" is {minutes} minutes, higher than other activities.',
+      peakFocusTime:
+        t.insightPeakFocusTime || "Your peak focus time is {timeOfDay}",
+      peakFocusTimeDesc:
+        t.insightPeakFocusTimeDesc ||
+        "You achieve your best focus around {time}, with an average of {minutes} minutes.",
+      bestTimeForHabit:
+        t.insightBestTimeForHabit || "Best time for {habit}: {time}",
+      bestTimeForHabitDesc:
+        t.insightBestTimeForHabitDesc ||
+        'You\'re {percent}% more likely to complete "{habit}" {time} compared to {worstTime} ({worstPercent}%).',
+      tagBoostsMood: t.insightTagBoostsMood || '"{tag}" boosts your mood',
+      tagBoostsMoodDesc:
+        t.insightTagBoostsMoodDesc ||
+        'Days tagged with "{tag}" show {percent}% better mood on average.',
+    }),
+    [t],
+  );
 
   const {
     insights,
@@ -90,26 +107,47 @@ export function InsightsPanel({
           <Sparkles className="w-6 h-6 text-primary flex-shrink-0 mt-1" />
           <div>
             <h3 className="font-semibold text-lg mb-2">
-              {t.insightsTitle || 'Personal Insights'}
+              {t.insightsTitle || "Personal Insights"}
             </h3>
             <p className="text-sm text-muted-foreground">
-              {t.insightsNotEnoughData || 'Keep tracking your mood, habits, and focus for a week to unlock personalized insights about your patterns.'}
+              {t.insightsNotEnoughData ||
+                "Keep tracking your mood, habits, and focus for a week to unlock personalized insights about your patterns."}
             </p>
             <div className="mt-4 space-y-2.5">
               {[
-                { current: moods.length, target: 7, label: t.insightsMoodEntries || 'mood entries' },
-                { current: habits.length, target: 1, label: t.insightsHabitCount || 'habit' },
-                { current: focusSessions.length, target: 3, label: t.insightsFocusSessions || 'focus sessions' },
+                {
+                  current: moods.length,
+                  target: 7,
+                  label: t.insightsMoodEntries || "mood entries",
+                },
+                {
+                  current: habits.length,
+                  target: 1,
+                  label: t.insightsHabitCount || "habit",
+                },
+                {
+                  current: focusSessions.length,
+                  target: 3,
+                  label: t.insightsFocusSessions || "focus sessions",
+                },
               ].map(({ current, target, label }) => (
                 <div key={label}>
                   <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
                     <span>{label}</span>
-                    <span className={current >= target ? 'text-green-500 font-medium' : ''}>{Math.min(current, target)}/{target}</span>
+                    <span
+                      className={
+                        current >= target ? "text-green-500 font-medium" : ""
+                      }
+                    >
+                      {Math.min(current, target)}/{target}
+                    </span>
                   </div>
                   <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                     <div
-                      className={`h-full rounded-full transition-all duration-500 ${current >= target ? 'bg-green-500' : 'bg-primary/60'}`}
-                      style={{ width: `${Math.min((current / target) * 100, 100)}%` }}
+                      className={`h-full rounded-full transition-all duration-500 ${current >= target ? "bg-green-500" : "bg-primary/60"}`}
+                      style={{
+                        width: `${Math.min((current / target) * 100, 100)}%`,
+                      }}
                     />
                   </div>
                 </div>
@@ -129,10 +167,11 @@ export function InsightsPanel({
           <Sparkles className="w-6 h-6 text-muted-foreground flex-shrink-0 mt-1" />
           <div>
             <h3 className="font-semibold text-lg mb-2">
-              {t.insightsTitle || 'Personal Insights'}
+              {t.insightsTitle || "Personal Insights"}
             </h3>
             <p className="text-sm text-muted-foreground">
-              {t.insightsNoPatterns || 'No strong patterns detected yet. Keep tracking consistently to discover what works best for you!'}
+              {t.insightsNoPatterns ||
+                "No strong patterns detected yet. Keep tracking consistently to discover what works best for you!"}
             </p>
           </div>
         </div>
@@ -149,15 +188,19 @@ export function InsightsPanel({
       {collapsible ? (
         <button
           onClick={toggleCollapsed}
-          className={`w-full p-4 bg-gradient-to-r from-primary/10 to-primary/5 ${!isCollapsed ? 'border-b border-border' : ''} transition-colors hover:from-primary/15 hover:to-primary/10 active:from-primary/20`}
+          className={`w-full p-4 bg-gradient-to-r from-primary/10 to-primary/5 ${!isCollapsed ? "border-b border-border" : ""} transition-colors hover:from-primary/15 hover:to-primary/10 active:from-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring`}
           aria-expanded={!isCollapsed}
-          aria-label={isCollapsed ? (t.insightsExpand || 'Expand insights') : (t.insightsCollapse || 'Collapse insights')}
+          aria-label={
+            isCollapsed
+              ? t.insightsExpand || "Expand insights"
+              : t.insightsCollapse || "Collapse insights"
+          }
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-primary" />
               <h3 className="font-semibold text-start">
-                {t.insightsTitle || 'Personal Insights'}
+                {t.insightsTitle || "Personal Insights"}
               </h3>
               {visibleCount > 0 && (
                 <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full font-medium">
@@ -168,18 +211,24 @@ export function InsightsPanel({
 
             {/* Expand/collapse indicator */}
             <div className="flex items-center gap-2 text-muted-foreground">
-              <span className="text-xs">{isCollapsed ? (t.expand || 'Expand') : (t.collapse || 'Collapse')}</span>
-              <ChevronDown className={`w-5 h-5 transition-transform duration-200 ${isCollapsed ? '' : 'rotate-180'}`} />
+              <span className="text-xs">
+                {isCollapsed ? t.expand || "Expand" : t.collapse || "Collapse"}
+              </span>
+              <ChevronDown
+                className={`w-5 h-5 transition-transform duration-200 ${isCollapsed ? "" : "rotate-180"}`}
+              />
             </div>
           </div>
         </button>
       ) : (
-        <div className={`p-4 bg-gradient-to-r from-primary/10 to-primary/5 ${!isCollapsed ? 'border-b border-border' : ''}`}>
+        <div
+          className={`p-4 bg-gradient-to-r from-primary/10 to-primary/5 ${!isCollapsed ? "border-b border-border" : ""}`}
+        >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-primary" />
               <h3 className="font-semibold">
-                {t.insightsTitle || 'Personal Insights'}
+                {t.insightsTitle || "Personal Insights"}
               </h3>
               {visibleCount > 0 && (
                 <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full font-medium">
@@ -191,7 +240,7 @@ export function InsightsPanel({
             <button
               onClick={() => setShowHelp(!showHelp)}
               aria-expanded={showHelp}
-              aria-label={t.insightsHelpTitle || 'About Insights'}
+              aria-label={t.insightsHelpTitle || "About Insights"}
               className="text-muted-foreground hover:text-foreground transition-colors p-2 -m-2"
             >
               <Info className="w-5 h-5" />
@@ -212,13 +261,22 @@ export function InsightsPanel({
                 className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
               >
                 <Info className="w-3.5 h-3.5" />
-                <span>{t.insightsHelpTitle || 'About Insights'}</span>
+                <span>{t.insightsHelpTitle || "About Insights"}</span>
               </button>
               {showHelp && (
                 <div className="mt-2 p-3 bg-muted/50 rounded-xl text-xs text-muted-foreground space-y-1">
-                  <p>{t.insightsHelp1 || 'Insights are generated from your personal data using statistical analysis.'}</p>
-                  <p>{t.insightsHelp2 || 'All analysis happens locally on your device - your data never leaves.'}</p>
-                  <p>{t.insightsHelp3 || 'Patterns with higher confidence are shown first.'}</p>
+                  <p>
+                    {t.insightsHelp1 ||
+                      "Insights are generated from your personal data using statistical analysis."}
+                  </p>
+                  <p>
+                    {t.insightsHelp2 ||
+                      "All analysis happens locally on your device - your data never leaves."}
+                  </p>
+                  <p>
+                    {t.insightsHelp3 ||
+                      "Patterns with higher confidence are shown first."}
+                  </p>
                 </div>
               )}
             </div>
@@ -228,10 +286,21 @@ export function InsightsPanel({
           {!collapsible && showHelp && (
             <div className="px-4 pt-4">
               <div className="p-3 bg-muted/50 rounded-xl text-xs text-muted-foreground space-y-1">
-                <p className="font-medium text-foreground mb-1">{t.insightsHelpTitle || 'About Insights'}</p>
-                <p>{t.insightsHelp1 || 'Insights are generated from your personal data using statistical analysis.'}</p>
-                <p>{t.insightsHelp2 || 'All analysis happens locally on your device - your data never leaves.'}</p>
-                <p>{t.insightsHelp3 || 'Patterns with higher confidence are shown first.'}</p>
+                <p className="font-medium text-foreground mb-1">
+                  {t.insightsHelpTitle || "About Insights"}
+                </p>
+                <p>
+                  {t.insightsHelp1 ||
+                    "Insights are generated from your personal data using statistical analysis."}
+                </p>
+                <p>
+                  {t.insightsHelp2 ||
+                    "All analysis happens locally on your device - your data never leaves."}
+                </p>
+                <p>
+                  {t.insightsHelp3 ||
+                    "Patterns with higher confidence are shown first."}
+                </p>
               </div>
             </div>
           )}
@@ -244,8 +313,8 @@ export function InsightsPanel({
                 {/* Dismiss button — touch-friendly visibility */}
                 <button
                   onClick={() => dismissInsight(insight.id)}
-                  className="absolute top-2 end-2 p-1.5 rounded-lg bg-card/80 hover:bg-card text-muted-foreground hover:text-foreground transition-colors zen-shadow-sm opacity-60 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100 active:opacity-100 min-w-[44px] min-h-[44px] flex items-center justify-center"
-                  aria-label={t.insightsDismiss || 'Dismiss'}
+                  className="absolute top-2 end-2 p-1.5 rounded-lg bg-card/80 hover:bg-card text-muted-foreground hover:text-foreground transition-colors zen-shadow-sm opacity-60 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 sm:focus:opacity-100 active:opacity-100 min-w-[44px] min-h-[44px] flex items-center justify-center"
+                  aria-label={t.insightsDismiss || "Dismiss"}
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -260,13 +329,14 @@ export function InsightsPanel({
               >
                 {isExpanded ? (
                   <>
-                    <span>{t.insightsShowLess || 'Show less'}</span>
+                    <span>{t.insightsShowLess || "Show less"}</span>
                     <ChevronUp className="w-4 h-4" />
                   </>
                 ) : (
                   <>
                     <span>
-                      {t.insightsShowMore || `Show ${insights.length - 3} more insights`}
+                      {t.insightsShowMore ||
+                        `Show ${insights.length - 3} more insights`}
                     </span>
                     <ChevronDown className="w-4 h-4" />
                   </>
@@ -277,14 +347,14 @@ export function InsightsPanel({
             {/* All insights expanded */}
             {compact && isExpanded && (
               <div className="space-y-3 pt-3 border-t border-border">
-                {insights.slice(3).map(insight => (
+                {insights.slice(3).map((insight) => (
                   <div key={insight.id} className="relative group">
                     <InsightCard insight={insight} />
                     {/* Added touch-friendly visibility */}
                     <button
                       onClick={() => dismissInsight(insight.id)}
-                      className="absolute top-2 end-2 p-1.5 rounded-lg bg-card/80 hover:bg-card text-muted-foreground hover:text-foreground transition-colors zen-shadow-sm opacity-60 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100 active:opacity-100 min-w-[44px] min-h-[44px] flex items-center justify-center"
-                      aria-label={t.insightsDismiss || 'Dismiss'}
+                      className="absolute top-2 end-2 p-1.5 rounded-lg bg-card/80 hover:bg-card text-muted-foreground hover:text-foreground transition-colors zen-shadow-sm opacity-60 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 sm:focus:opacity-100 active:opacity-100 min-w-[44px] min-h-[44px] flex items-center justify-center"
+                      aria-label={t.insightsDismiss || "Dismiss"}
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -298,7 +368,8 @@ export function InsightsPanel({
           {totalGenerated > visibleCount && (
             <div className="px-4 pb-4">
               <p className="text-xs text-muted-foreground text-center">
-                {t.insightsDismissedCount || `${totalGenerated - visibleCount} insights dismissed`}
+                {t.insightsDismissedCount ||
+                  `${totalGenerated - visibleCount} insights dismissed`}
               </p>
             </div>
           )}

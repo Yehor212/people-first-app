@@ -3,8 +3,8 @@
  * Part of Premium Icons Library - Phase 11.2
  */
 
-import { cn } from '@/lib/utils';
-import { IconProps } from './FireIcon';
+import { cn } from "@/lib/utils";
+import { IconProps } from "./FireIcon";
 
 const sizeMap = {
   xs: 16,
@@ -14,7 +14,11 @@ const sizeMap = {
   xl: 48,
 };
 
-export function HeartIcon({ size = 'md', animated = true, className }: IconProps) {
+export function HeartIcon({
+  size = "md",
+  animated = true,
+  className,
+}: IconProps) {
   const s = sizeMap[size];
 
   return (
@@ -22,7 +26,8 @@ export function HeartIcon({ size = 'md', animated = true, className }: IconProps
       viewBox="0 0 100 100"
       width={s}
       height={s}
-      className={cn('drop-shadow-md', className)}
+      aria-hidden="true"
+      className={cn("drop-shadow-md", className)}
     >
       <defs>
         <linearGradient id="heartGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -68,8 +73,24 @@ export function HeartIcon({ size = 'md', animated = true, className }: IconProps
       />
 
       {/* Highlight spots */}
-      <ellipse cx="28" cy="28" rx="8" ry="10" fill="#fff" opacity="0.3" transform="rotate(-30 28 28)" />
-      <ellipse cx="72" cy="28" rx="6" ry="8" fill="#fff" opacity="0.2" transform="rotate(30 72 28)" />
+      <ellipse
+        cx="28"
+        cy="28"
+        rx="8"
+        ry="10"
+        fill="#fff"
+        opacity="0.3"
+        transform="rotate(-30 28 28)"
+      />
+      <ellipse
+        cx="72"
+        cy="28"
+        rx="6"
+        ry="8"
+        fill="#fff"
+        opacity="0.2"
+        transform="rotate(30 72 28)"
+      />
 
       {/* Sparkles */}
       {animated && (

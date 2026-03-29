@@ -3,8 +3,8 @@
  * Part of Premium Icons Library - Phase 12
  */
 
-import { cn } from '@/lib/utils';
-import { IconProps } from './FireIcon';
+import { cn } from "@/lib/utils";
+import { IconProps } from "./FireIcon";
 
 const sizeMap = {
   xs: 16,
@@ -14,7 +14,11 @@ const sizeMap = {
   xl: 48,
 };
 
-export function SparklesIcon({ size = 'md', animated = true, className }: IconProps) {
+export function SparklesIcon({
+  size = "md",
+  animated = true,
+  className,
+}: IconProps) {
   const s = sizeMap[size];
 
   return (
@@ -22,15 +26,28 @@ export function SparklesIcon({ size = 'md', animated = true, className }: IconPr
       viewBox="0 0 100 100"
       width={s}
       height={s}
-      className={cn('drop-shadow-md', className)}
+      aria-hidden="true"
+      className={cn("drop-shadow-md", className)}
     >
       <defs>
-        <linearGradient id="sparkleGradGold" x1="0%" y1="0%" x2="100%" y2="100%">
+        <linearGradient
+          id="sparkleGradGold"
+          x1="0%"
+          y1="0%"
+          x2="100%"
+          y2="100%"
+        >
           <stop offset="0%" stopColor="#fde047" />
           <stop offset="50%" stopColor="#fbbf24" />
           <stop offset="100%" stopColor="#f59e0b" />
         </linearGradient>
-        <linearGradient id="sparkleGradSilver" x1="0%" y1="0%" x2="100%" y2="100%">
+        <linearGradient
+          id="sparkleGradSilver"
+          x1="0%"
+          y1="0%"
+          x2="100%"
+          y2="100%"
+        >
           <stop offset="0%" stopColor="#ffffff" />
           <stop offset="50%" stopColor="#e5e7eb" />
           <stop offset="100%" stopColor="#d1d5db" />

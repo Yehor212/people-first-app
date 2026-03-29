@@ -3,8 +3,8 @@
  * Part of Premium Icons Library - Phase 11.2
  */
 
-import { cn } from '@/lib/utils';
-import { IconProps } from './FireIcon';
+import { cn } from "@/lib/utils";
+import { IconProps } from "./FireIcon";
 
 const sizeMap = {
   xs: 16,
@@ -14,7 +14,11 @@ const sizeMap = {
   xl: 48,
 };
 
-export function CrownIcon({ size = 'md', animated = true, className }: IconProps) {
+export function CrownIcon({
+  size = "md",
+  animated = true,
+  className,
+}: IconProps) {
   const s = sizeMap[size];
 
   return (
@@ -22,7 +26,8 @@ export function CrownIcon({ size = 'md', animated = true, className }: IconProps
       viewBox="0 0 100 100"
       width={s}
       height={s}
-      className={cn('drop-shadow-md', className)}
+      aria-hidden="true"
+      className={cn("drop-shadow-md", className)}
     >
       <defs>
         <linearGradient id="crownGold" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -100,7 +105,14 @@ export function CrownIcon({ size = 'md', animated = true, className }: IconProps
       />
 
       {/* Center ruby (large) */}
-      <ellipse cx="50" cy="45" rx="8" ry="10" fill="url(#rubyGrad)" filter="url(#jewelGlow)">
+      <ellipse
+        cx="50"
+        cy="45"
+        rx="8"
+        ry="10"
+        fill="url(#rubyGrad)"
+        filter="url(#jewelGlow)"
+      >
         {animated && (
           <>
             <animate
@@ -121,7 +133,13 @@ export function CrownIcon({ size = 'md', animated = true, className }: IconProps
       <ellipse cx="48" cy="42" rx="2" ry="3" fill="#fff" opacity="0.5" />
 
       {/* Left sapphire */}
-      <circle cx="25" cy="55" r="5" fill="url(#sapphireGrad)" filter="url(#jewelGlow)">
+      <circle
+        cx="25"
+        cy="55"
+        r="5"
+        fill="url(#sapphireGrad)"
+        filter="url(#jewelGlow)"
+      >
         {animated && (
           <animate
             attributeName="r"
@@ -135,7 +153,13 @@ export function CrownIcon({ size = 'md', animated = true, className }: IconProps
       <circle cx="24" cy="53" r="1.5" fill="#fff" opacity="0.5" />
 
       {/* Right sapphire */}
-      <circle cx="75" cy="55" r="5" fill="url(#sapphireGrad)" filter="url(#jewelGlow)">
+      <circle
+        cx="75"
+        cy="55"
+        r="5"
+        fill="url(#sapphireGrad)"
+        filter="url(#jewelGlow)"
+      >
         {animated && (
           <animate
             attributeName="r"
@@ -149,7 +173,13 @@ export function CrownIcon({ size = 'md', animated = true, className }: IconProps
       <circle cx="74" cy="53" r="1.5" fill="#fff" opacity="0.5" />
 
       {/* Peak jewels (emeralds) */}
-      <circle cx="10" cy="35" r="4" fill="url(#emeraldGrad)" filter="url(#jewelGlow)">
+      <circle
+        cx="10"
+        cy="35"
+        r="4"
+        fill="url(#emeraldGrad)"
+        filter="url(#jewelGlow)"
+      >
         {animated && (
           <animate
             attributeName="opacity"
@@ -159,7 +189,13 @@ export function CrownIcon({ size = 'md', animated = true, className }: IconProps
           />
         )}
       </circle>
-      <circle cx="50" cy="20" r="5" fill="url(#rubyGrad)" filter="url(#jewelGlow)">
+      <circle
+        cx="50"
+        cy="20"
+        r="5"
+        fill="url(#rubyGrad)"
+        filter="url(#jewelGlow)"
+      >
         {animated && (
           <animate
             attributeName="opacity"
@@ -170,7 +206,13 @@ export function CrownIcon({ size = 'md', animated = true, className }: IconProps
           />
         )}
       </circle>
-      <circle cx="90" cy="35" r="4" fill="url(#emeraldGrad)" filter="url(#jewelGlow)">
+      <circle
+        cx="90"
+        cy="35"
+        r="4"
+        fill="url(#emeraldGrad)"
+        filter="url(#jewelGlow)"
+      >
         {animated && (
           <animate
             attributeName="opacity"

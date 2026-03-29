@@ -3,8 +3,8 @@
  * Part of Premium Icons Library - Phase 11.2
  */
 
-import { cn } from '@/lib/utils';
-import { IconProps } from './FireIcon';
+import { cn } from "@/lib/utils";
+import { IconProps } from "./FireIcon";
 
 const sizeMap = {
   xs: 16,
@@ -14,7 +14,11 @@ const sizeMap = {
   xl: 48,
 };
 
-export function MedalIcon({ size = 'md', animated = true, className }: IconProps) {
+export function MedalIcon({
+  size = "md",
+  animated = true,
+  className,
+}: IconProps) {
   const s = sizeMap[size];
 
   return (
@@ -22,7 +26,8 @@ export function MedalIcon({ size = 'md', animated = true, className }: IconProps
       viewBox="0 0 100 100"
       width={s}
       height={s}
-      className={cn('drop-shadow-md', className)}
+      aria-hidden="true"
+      className={cn("drop-shadow-md", className)}
     >
       <defs>
         <linearGradient id="medalGold" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -48,22 +53,13 @@ export function MedalIcon({ size = 'md', animated = true, className }: IconProps
       </defs>
 
       {/* Ribbon left */}
-      <path
-        d="M25 5 L35 5 L45 40 L35 45 L25 40 Z"
-        fill="url(#ribbonRed)"
-      />
+      <path d="M25 5 L35 5 L45 40 L35 45 L25 40 Z" fill="url(#ribbonRed)" />
 
       {/* Ribbon right */}
-      <path
-        d="M75 5 L65 5 L55 40 L65 45 L75 40 Z"
-        fill="url(#ribbonBlue)"
-      />
+      <path d="M75 5 L65 5 L55 40 L65 45 L75 40 Z" fill="url(#ribbonBlue)" />
 
       {/* Ribbon center */}
-      <path
-        d="M35 5 L65 5 L60 35 L50 40 L40 35 Z"
-        fill="#fff"
-      />
+      <path d="M35 5 L65 5 L60 35 L50 40 L40 35 Z" fill="#fff" />
       <path
         d="M40 5 L60 5 L57 30 L50 35 L43 30 Z"
         fill="url(#ribbonRed)"
@@ -90,7 +86,14 @@ export function MedalIcon({ size = 'md', animated = true, className }: IconProps
       </circle>
 
       {/* Medal inner circle */}
-      <circle cx="50" cy="65" r="22" fill="none" stroke="#b8860b" strokeWidth="2" />
+      <circle
+        cx="50"
+        cy="65"
+        r="22"
+        fill="none"
+        stroke="#b8860b"
+        strokeWidth="2"
+      />
 
       {/* Star on medal */}
       <path

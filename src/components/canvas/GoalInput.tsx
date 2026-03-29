@@ -6,14 +6,23 @@
  * Uses useModalA11y for Escape + Android back.
  */
 
-import { useState, useRef, useCallback, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Check, X, Target, BookOpen, Heart, Zap, Star, Flame } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { haptics } from '@/lib/haptics';
-import { zenMotion } from '@/lib/animationUtils';
-import { useModalA11y } from '@/hooks/useModalA11y';
+import { useState, useRef, useCallback, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Check,
+  X,
+  Target,
+  BookOpen,
+  Heart,
+  Zap,
+  Star,
+  Flame,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { haptics } from "@/lib/haptics";
+import { zenMotion } from "@/lib/animationUtils";
+import { useModalA11y } from "@/hooks/useModalA11y";
 
 /** Available goal icons — shared with GoalNode for rendering */
 export const GOAL_ICON_MAP: Record<string, LucideIcon> = {
@@ -41,18 +50,23 @@ interface GoalInputProps {
 const INPUT_WIDTH = 220;
 
 export function GoalInput({
-  isVisible, anchorX, anchorY,
+  isVisible,
+  anchorX,
+  anchorY,
   placeholder = "What's your goal?",
-  onSubmit, onCancel,
+  onSubmit,
+  onCancel,
 }: GoalInputProps) {
-  const [value, setValue] = useState('');
-  const [selectedIcon, setSelectedIcon] = useState<string | undefined>(undefined);
+  const [value, setValue] = useState("");
+  const [selectedIcon, setSelectedIcon] = useState<string | undefined>(
+    undefined,
+  );
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Reset + auto-focus when shown
   useEffect(() => {
     if (isVisible) {
-      setValue('');
+      setValue("");
       setSelectedIcon(undefined);
       setTimeout(() => inputRef.current?.focus(), 100);
     }
@@ -66,17 +80,20 @@ export function GoalInput({
     void haptics.buttonPress();
     onSubmit(trimmed, selectedIcon);
     // Self-reset for batch entry: clear value and refocus for next input
-    setValue('');
+    setValue("");
     setSelectedIcon(undefined);
     setTimeout(() => inputRef.current?.focus(), 50);
   }, [value, selectedIcon, onSubmit]);
 
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleSubmit();
-    }
-  }, [handleSubmit]);
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        handleSubmit();
+      }
+    },
+    [handleSubmit],
+  );
 
   const handleCancel = useCallback(() => {
     void haptics.light();
@@ -85,7 +102,7 @@ export function GoalInput({
 
   const handleIconTap = useCallback((key: string) => {
     void haptics.light();
-    setSelectedIcon(prev => prev === key ? undefined : key);
+    setSelectedIcon((prev) => (prev === key ? undefined : key));
   }, []);
 
   return (
@@ -106,16 +123,16 @@ export function GoalInput({
         >
           <div
             className={cn(
-              'rounded-xl p-3',
-              'border border-white/10',
-              'shadow-zen-lg',
-              'bg-[var(--surface-glass)] backdrop-blur-[var(--surface-glass-blur,20px)] [-webkit-backdrop-filter:blur(var(--surface-glass-blur,20px))]',
+              "rounded-xl p-3",
+              "border border-white/10",
+              "shadow-zen-lg",
+              "bg-[var(--surface-glass)] backdrop-blur-[var(--surface-glass-blur,20px)] [-webkit-backdrop-filter:blur(var(--surface-glass-blur,20px))]",
             )}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Icon picker row */}
             <div className="flex items-center justify-center gap-1.5 mb-2">
-              {ICON_KEYS.map(key => {
+              {ICON_KEYS.map((key) => {
                 const Icon = GOAL_ICON_MAP[key];
                 const isSelected = selectedIcon === key;
                 return (
@@ -124,10 +141,10 @@ export function GoalInput({
                     type="button"
                     onClick={() => handleIconTap(key)}
                     className={cn(
-                      'p-2 rounded-lg transition-all',
+                      "p-2 rounded-lg transition-all",
                       isSelected
-                        ? 'bg-white/15 ring-1 ring-white/30 text-white'
-                        : 'text-white/30 hover:text-white/60 hover:bg-white/5',
+                        ? "bg-white/15 ring-1 ring-white/30 text-white"
+                        : "text-white/30 hover:text-white/60 hover:bg-white/5",
                     )}
                     aria-label={`Icon: ${key}`}
                     aria-pressed={isSelected}
@@ -147,10 +164,10 @@ export function GoalInput({
               placeholder={placeholder}
               maxLength={100}
               className={cn(
-                'w-full rounded-lg px-3 py-2 mb-2',
-                'bg-white/5 border border-white/10',
-                'text-white text-sm placeholder:text-white/30',
-                'focus:outline-none focus:ring-1 focus:ring-white/20',
+                "w-full rounded-lg px-3 py-2 mb-2",
+                "bg-white/5 border border-white/10",
+                "text-white text-sm placeholder:text-white/60",
+                "focus:outline-none focus:ring-1 focus:ring-white/20",
               )}
             />
 
@@ -160,11 +177,11 @@ export function GoalInput({
                 onClick={handleSubmit}
                 disabled={!value.trim()}
                 className={cn(
-                  'flex-1 flex items-center justify-center gap-1 py-2.5 rounded-lg text-sm font-medium',
+                  "flex-1 flex items-center justify-center gap-1 py-2.5 rounded-lg text-sm font-medium",
                   value.trim()
-                    ? 'bg-emerald-500/80 text-white hover:bg-emerald-500'
-                    : 'bg-white/5 text-white/30 cursor-not-allowed',
-                  'transition-colors',
+                    ? "bg-emerald-500/80 text-white hover:bg-emerald-500"
+                    : "bg-white/5 text-white/30 cursor-not-allowed",
+                  "transition-colors",
                 )}
                 aria-label="Create goal"
               >
@@ -175,9 +192,9 @@ export function GoalInput({
                 type="button"
                 onClick={handleCancel}
                 className={cn(
-                  'p-2.5 rounded-lg',
-                  'text-white/40 hover:text-white/70 hover:bg-white/10',
-                  'transition-colors',
+                  "p-2.5 rounded-lg",
+                  "text-white/60 hover:text-white/70 hover:bg-white/10",
+                  "transition-colors",
                 )}
                 aria-label="Cancel"
               >

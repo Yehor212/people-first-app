@@ -3,10 +3,10 @@
  * Part of Premium Icons Library - Phase 11.2
  */
 
-import { cn } from '@/lib/utils';
+import { cn } from "@/lib/utils";
 
 export interface IconProps {
-  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+  size?: "xs" | "sm" | "md" | "lg" | "xl";
   animated?: boolean;
   className?: string;
 }
@@ -19,7 +19,11 @@ const sizeMap = {
   xl: 48,
 };
 
-export function FireIcon({ size = 'md', animated = true, className }: IconProps) {
+export function FireIcon({
+  size = "md",
+  animated = true,
+  className,
+}: IconProps) {
   const s = sizeMap[size];
 
   return (
@@ -27,7 +31,8 @@ export function FireIcon({ size = 'md', animated = true, className }: IconProps)
       viewBox="0 0 100 100"
       width={s}
       height={s}
-      className={cn('drop-shadow-md', className)}
+      aria-hidden="true"
+      className={cn("drop-shadow-md", className)}
     >
       <defs>
         <linearGradient id="fireGradOuter" x1="0%" y1="100%" x2="0%" y2="0%">

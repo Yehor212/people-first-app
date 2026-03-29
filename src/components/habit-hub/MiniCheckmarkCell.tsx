@@ -86,7 +86,7 @@ export const MiniCheckmarkCell = memo(function MiniCheckmarkCell({
         aria-disabled={isFuture}
         aria-label={`${date}: ${numericDisplay || "0"}`}
         className={cn(
-          "min-w-[44px] min-h-[44px] flex items-center justify-center",
+          "min-w-[44px] min-h-[44px] flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-lg",
           isFuture ? "opacity-30 cursor-default" : "cursor-pointer",
         )}
       >
@@ -123,7 +123,7 @@ export const MiniCheckmarkCell = memo(function MiniCheckmarkCell({
       aria-disabled={isFuture}
       aria-label={`${date}: ${isCompleted ? ts.done || "done" : isSkipped ? ts.skipped || "skipped" : isNo ? ts.notDone || "not done" : ts.noData || "no data"}`}
       className={cn(
-        "min-w-[44px] min-h-[44px] flex items-center justify-center",
+        "min-w-[44px] min-h-[44px] flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-lg",
         isFuture ? "opacity-30 cursor-default" : "cursor-pointer",
       )}
     >

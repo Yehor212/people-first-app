@@ -1,13 +1,13 @@
-import { Language, languageNames, languageFlags } from '@/i18n/translations';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { cn } from '@/lib/utils';
-import { Leaf, Check } from 'lucide-react';
+import { Language, languageNames, languageFlags } from "@/i18n/translations";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { cn } from "@/lib/utils";
+import { Leaf, Check } from "lucide-react";
 
 interface LanguageSelectorProps {
   onComplete: () => void;
 }
 
-const languages: Language[] = ['en', 'uk', 'es', 'de', 'fr', 'ja', 'ar', 'he'];
+const languages: Language[] = ["en", "uk", "es", "de", "fr", "ja", "ar", "he"];
 
 export function LanguageSelector({ onComplete }: LanguageSelectorProps) {
   const { language, setLanguage, t } = useLanguage();
@@ -38,9 +38,7 @@ export function LanguageSelector({ onComplete }: LanguageSelectorProps) {
           <h1 className="text-3xl font-bold zen-text-gradient mb-2">
             {t.welcomeTitle}
           </h1>
-          <p className="text-muted-foreground">
-            {t.welcomeSubtitle}
-          </p>
+          <p className="text-muted-foreground">{t.welcomeSubtitle}</p>
         </div>
 
         {/* Language Selection */}
@@ -48,17 +46,18 @@ export function LanguageSelector({ onComplete }: LanguageSelectorProps) {
           <h2 className="text-lg font-semibold text-foreground mb-4 text-center">
             {t.selectLanguage}
           </h2>
-          
+
           <div className="grid grid-cols-2 gap-3">
             {languages.map((lang) => (
               <button
                 key={lang}
                 onClick={() => handleSelect(lang)}
+                aria-label={languageNames[lang]}
                 className={cn(
                   "flex items-center gap-3 p-4 rounded-xl transition-all",
                   language === lang
                     ? "bg-primary/10 ring-2 ring-primary zen-shadow-soft"
-                    : "bg-secondary hover:bg-muted"
+                    : "bg-secondary hover:bg-muted",
                 )}
               >
                 <span className="text-2xl">{languageFlags[lang]}</span>
@@ -86,11 +85,12 @@ export function LanguageSelector({ onComplete }: LanguageSelectorProps) {
           onClick={handleSkip}
           className="w-full py-3 bg-secondary text-secondary-foreground font-medium rounded-2xl hover:bg-muted transition-colors"
         >
-          {t.skip || 'Skip'}
+          {t.skip || "Skip"}
         </button>
 
         <p className="text-center text-sm text-muted-foreground mt-4">
-          🌐 {t.autoDetectedLanguage || 'Auto-detected'}: {languageNames[language]}
+          🌐 {t.autoDetectedLanguage || "Auto-detected"}:{" "}
+          {languageNames[language]}
         </p>
       </div>
     </div>
