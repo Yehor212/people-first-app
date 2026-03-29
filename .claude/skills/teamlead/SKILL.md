@@ -34,10 +34,4 @@ Guardians (all READ-ONLY):
 
 Verifier: verifier.md — 17 checks, runs automatically on Stop via agent hook.
 
-Ruflo extensions (use when task warrants it):
-
-- /sparc-methodology — SPARC phases for complex architecture (Spec→Pseudo→Arch→Refine→Complete)
-- /swarm-orchestration — parallel multi-agent research with mesh/hierarchical topology
-- /verification-quality — truth scoring (0.0-1.0) with auto-rollback at 0.95 threshold
-
 ZERO VISUAL REGRESSION: Never change styles/layout/colors/animations without explicit user approval.

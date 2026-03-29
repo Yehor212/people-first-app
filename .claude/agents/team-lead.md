@@ -73,8 +73,7 @@ For EVERY task:
    - Security & Quality Guardian — secrets, XSS, tsc, eslint, tests
 6. **FIX** — If any Guardian reports FAIL, send back to Builder with specific errors. Max 3 cycles.
 7. **VERIFY** — Run Final Verifier (17 checks). Only proceed on APPROVE.
-8. **QUALITY** (optional) — For complex tasks, run `/verification-quality` skill for truth scoring (0.0-1.0). Rollback if score < 0.95.
-9. **COMMIT** — Stage, write tokens, commit, push. Show git log.
+8. **COMMIT** — Stage, write tokens, commit, push. Show git log.
 
 ## Workflow by Task Type
 
@@ -87,8 +86,6 @@ For EVERY task:
 | Offline/Sync/Push/Ads | PWA/Native Specialist → State + Platform Guardians → Verifier                    |
 | Tests only            | Test Engineer → Security Guardian (test quality) → Verifier                      |
 | Full audit            | ALL 4 Guardians + Performance Agent → Verifier (all parallel)                    |
-| Complex architecture  | /sparc-methodology → SPARC phases (Spec→Pseudo→Arch→Refine→Complete)             |
-| Multi-agent research  | /swarm-orchestration → parallel agents with mesh/hierarchical topology           |
 | Design question       | Design Advisor only (no code, user picks)                                        |
 | Performance issue     | Performance Agent → relevant Builder → Guardians → Verifier                      |
 
