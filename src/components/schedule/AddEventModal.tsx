@@ -237,7 +237,7 @@ export function AddEventModal({
             value={customTitle}
             onChange={(e) => setCustomTitle(e.target.value)}
             placeholder={t.scheduleCustomTitle || "Custom title (optional)"}
-            className="w-full p-3 bg-secondary backdrop-blur-sm rounded-xl text-sm text-slate-800 dark:text-white border border-border focus:border-primary/50 focus:outline-none mb-4 placeholder:text-slate-400 dark:placeholder:text-white/40"
+            className="w-full p-3 bg-secondary backdrop-blur-sm rounded-xl text-sm text-slate-800 dark:text-white border border-border focus:border-primary/50 focus:outline-none mb-4 placeholder:text-slate-400 dark:placeholder:text-white/60"
             onFocus={(e) => {
               const el = e.target;
               setTimeout(
@@ -361,7 +361,7 @@ export function AddEventModal({
               placeholder={
                 t.scheduleNotePlaceholder || "Add details or reminders..."
               }
-              className="w-full p-3 bg-secondary backdrop-blur-sm rounded-xl text-sm text-slate-800 dark:text-white border border-border focus:border-primary/50 focus:outline-none resize-none placeholder:text-slate-400 dark:placeholder:text-white/40"
+              className="w-full p-3 bg-secondary backdrop-blur-sm rounded-xl text-sm text-slate-800 dark:text-white border border-border focus:border-primary/50 focus:outline-none resize-none placeholder:text-slate-400 dark:placeholder:text-white/60"
               rows={2}
               onFocus={(e) => {
                 const el = e.target;

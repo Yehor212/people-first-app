@@ -192,7 +192,7 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
                       onChange={(e) => data.setDisplayName(e.target.value)}
                       placeholder={t.displayName || "Display name"}
                       maxLength={20}
-                      className="flex-1 bg-foreground/10 border-foreground/10 text-foreground placeholder:text-foreground/40"
+                      className="flex-1 bg-foreground/10 border-foreground/10 text-foreground placeholder:text-foreground/60"
                       onBlur={() => void data.handleNameUpdate()}
                       onKeyDown={(e) =>
                         e.key === "Enter" && void data.handleNameUpdate()

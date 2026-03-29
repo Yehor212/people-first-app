@@ -90,7 +90,7 @@ export const FocusTimer = memo(function FocusTimer({
           className={cn(
             "w-full p-3 rounded-xl focus:outline-none focus:ring-2 transition-colors",
             isPrimaryCTA
-              ? "bg-secondary backdrop-blur-sm border border-border text-slate-800 dark:text-white placeholder:text-slate-500 dark:placeholder:text-white/40 focus:ring-violet-500/50"
+              ? "bg-secondary backdrop-blur-sm border border-border text-slate-800 dark:text-white placeholder:text-slate-500 dark:placeholder:text-white/60 focus:ring-violet-500/50"
               : "bg-secondary text-foreground placeholder:text-muted-foreground focus:ring-primary/30",
           )}
         />
