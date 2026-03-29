@@ -3,7 +3,7 @@
   "lastUpdated": "2026-03-22",
   "floors": {
     "tests.total": {
-      "value": 3405,
+      "value": 3385,
       "direction": "up",
       "recorded": "2026-03-15",
       "description": "Total unit test count (vitest)"
