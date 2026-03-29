@@ -89,17 +89,25 @@ export const AchievementsPanel = memo(function AchievementsPanel({
     }
   }, [stats, unlockedAchievements, t.achievementUnlocked, onAchievementUnlock]);
 
-  const allAchievements = Object.values(ACHIEVEMENTS);
-  const unlockedCount = unlockedAchievements.length;
-  const totalCount = allAchievements.length;
-  const completionPercentage = (unlockedCount / totalCount) * 100;
-
-  const unlockedList = allAchievements.filter((a) =>
-    unlockedAchievements.includes(a.id),
-  );
-  const lockedList = allAchievements.filter(
-    (a) => !unlockedAchievements.includes(a.id),
-  );
+  const { unlockedList, lockedList, allAchievements, completionPercentage } =
+    useMemo(() => {
+      const allAchievements = Object.values(ACHIEVEMENTS);
+      const unlockedCount = unlockedAchievements.length;
+      const totalCount = allAchievements.length;
+      const completionPercentage = (unlockedCount / totalCount) * 100;
+      const unlockedList = allAchievements.filter((a) =>
+        unlockedAchievements.includes(a.id),
+      );
+      const lockedList = allAchievements.filter(
+        (a) => !unlockedAchievements.includes(a.id),
+      );
+      return {
+        unlockedList,
+        lockedList,
+        allAchievements,
+        completionPercentage,
+      };
+    }, [unlockedAchievements]);
 
   return (
     <div className="space-y-6">
@@ -108,7 +116,11 @@ export const AchievementsPanel = memo(function AchievementsPanel({
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-2xl font-bold flex items-center gap-2">
-              <Star className="w-6 h-6" fill="currentColor" aria-hidden="true" />
+              <Star
+                className="w-6 h-6"
+                fill="currentColor"
+                aria-hidden="true"
+              />
               {t.userLevel || "Level"} {userLevel.level}
             </h3>
             <p className="text-white/80 text-sm">{userLevel.title}</p>
@@ -142,7 +154,7 @@ export const AchievementsPanel = memo(function AchievementsPanel({
             {t.achievements || "Achievements"}
           </h3>
           <Badge variant="secondary">
-            {unlockedCount} / {totalCount}
+            {unlockedAchievements.length} / {allAchievements.length}
           </Badge>
         </div>
         <Progress value={completionPercentage} className="mb-2" />

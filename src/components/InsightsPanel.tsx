@@ -179,7 +179,10 @@ export function InsightsPanel({
     );
   }
 
-  const displayInsights = compact ? insights.slice(0, 3) : insights;
+  const displayInsights = useMemo(
+    () => (compact ? insights.slice(0, 3) : insights),
+    [compact, insights],
+  );
   const hasMore = insights.length > 3 && compact;
 
   return (

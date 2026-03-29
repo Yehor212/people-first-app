@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Crown } from "lucide-react";
@@ -16,7 +17,7 @@ interface LeaderboardEntryRowProps {
   t: Record<string, string>;
 }
 
-export function LeaderboardEntryRow({
+export const LeaderboardEntryRow = memo(function LeaderboardEntryRow({
   entry,
   index,
   activeTab,
@@ -118,4 +119,4 @@ export function LeaderboardEntryRow({
       </div>
     </motion.div>
   );
-}
+});

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { zenTap } from "@/lib/animationUtils";
@@ -41,27 +41,26 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
     loadErrorLabel: t.leaderboardLoadError || "",
   });
 
-  const tabs: {
-    type: LeaderboardType;
-    label: string;
-    icon: React.ReactNode;
-  }[] = [
-    {
-      type: "weekly",
-      label: t.weekly || "Weekly",
-      icon: <Trophy className="w-4 h-4" aria-hidden="true" />,
-    },
-    {
-      type: "monthly",
-      label: t.monthly || "Monthly",
-      icon: <Star className="w-4 h-4" aria-hidden="true" />,
-    },
-    {
-      type: "streak",
-      label: t.streak || "Streak",
-      icon: <Flame className="w-4 h-4" aria-hidden="true" />,
-    },
-  ];
+  const tabs = useMemo(
+    () => [
+      {
+        type: "weekly" as const,
+        label: t.weekly || "Weekly",
+        icon: <Trophy className="w-4 h-4" aria-hidden="true" />,
+      },
+      {
+        type: "monthly" as const,
+        label: t.monthly || "Monthly",
+        icon: <Star className="w-4 h-4" aria-hidden="true" />,
+      },
+      {
+        type: "streak" as const,
+        label: t.streak || "Streak",
+        icon: <Flame className="w-4 h-4" aria-hidden="true" />,
+      },
+    ],
+    [t.weekly, t.monthly, t.streak],
+  );
 
   const currentRank = getCurrentRank(data.userRanks, activeTab);
 
