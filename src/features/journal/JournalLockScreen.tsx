@@ -1,11 +1,22 @@
-import { useState, useEffect, useRef } from 'react';
-import { Lock, Eye, EyeOff, AlertTriangle, Fingerprint } from 'lucide-react';
-import { motion } from 'framer-motion';
-import { cn } from '@/lib/utils';
-import { useLanguage } from '@/contexts/LanguageContext';
+import { useState, useEffect, useRef } from "react";
+import { Lock, Eye, EyeOff, AlertTriangle, Fingerprint } from "lucide-react";
+import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
+import { useLanguage } from "@/contexts/LanguageContext";
+
+/** Constant-time string comparison to prevent timing attacks (CWE-208) */
+function timingSafeEqual(a: string, b: string): boolean {
+  const lenMatch = a.length === b.length;
+  const target = lenMatch ? b : a;
+  let mismatch = lenMatch ? 0 : 1;
+  for (let i = 0; i < a.length; i++) {
+    mismatch |= a.charCodeAt(i) ^ target.charCodeAt(i);
+  }
+  return mismatch === 0;
+}
 
 interface JournalLockScreenProps {
-  mode: 'setup' | 'unlock' | 'change';
+  mode: "setup" | "unlock" | "change";
   cooldownRemaining: number;
   failedAttempts: number;
   onUnlock: (password: string) => Promise<boolean>;
@@ -28,14 +39,16 @@ export function JournalLockScreen({
   biometricAvailable,
 }: JournalLockScreenProps) {
   const { t } = useLanguage();
-  const [password, setPassword] = useState('');
-  const [confirm, setConfirm] = useState('');
-  const [currentPassword, setCurrentPassword] = useState('');
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [shake, setShake] = useState(false);
   const [wrongGlow, setWrongGlow] = useState(false);
-  const [step, setStep] = useState<'current' | 'enter' | 'confirm'>(mode === 'change' ? 'current' : 'enter');
+  const [step, setStep] = useState<"current" | "enter" | "confirm">(
+    mode === "change" ? "current" : "enter",
+  );
   const inputRef = useRef<HTMLInputElement>(null);
   const shakeTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
   const glowTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
@@ -52,16 +65,18 @@ export function JournalLockScreen({
   useEffect(() => {
     setCountdown(cooldownRemaining);
     if (cooldownRemaining <= 0) return;
-    const iv = setInterval(() => setCountdown(c => Math.max(0, c - 1)), 1000);
+    const iv = setInterval(() => setCountdown((c) => Math.max(0, c - 1)), 1000);
     return () => clearInterval(iv);
   }, [cooldownRemaining]);
 
-  useEffect(() => { inputRef.current?.focus(); }, [step]);
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, [step]);
 
   // Auto-clear error message after 3s
   useEffect(() => {
     if (error) {
-      const timer = setTimeout(() => setError(''), 3000);
+      const timer = setTimeout(() => setError(""), 3000);
       return () => clearTimeout(timer);
     }
   }, [error]);
@@ -77,55 +92,55 @@ export function JournalLockScreen({
     e.preventDefault();
     if (countdown > 0) return;
 
-    if (mode === 'change') {
-      if (step === 'current') {
+    if (mode === "change") {
+      if (step === "current") {
         if (!currentPassword) return;
-        setStep('enter');
-        setError('');
+        setStep("enter");
+        setError("");
         return;
       }
-      if (step === 'enter') {
+      if (step === "enter") {
         if (password.length < 4) {
-          setError(ts.journalPasswordTooShort || 'Minimum 4 characters');
+          setError(ts.journalPasswordTooShort || "Minimum 4 characters");
           triggerShake();
           return;
         }
-        setStep('confirm');
-        setError('');
+        setStep("confirm");
+        setError("");
         return;
       }
-      if (password !== confirm) {
-        setError(ts.journalPasswordMismatch || 'Passwords do not match');
-        setConfirm('');
+      if (!timingSafeEqual(password, confirm)) {
+        setError(ts.journalPasswordMismatch || "Passwords do not match");
+        setConfirm("");
         triggerShake();
         return;
       }
       const ok = await onChangePassword?.(currentPassword, password);
       if (!ok) {
-        setError(ts.journalPasswordOldWrong || 'Current password is incorrect');
-        setStep('current');
-        setCurrentPassword('');
-        setPassword('');
-        setConfirm('');
+        setError(ts.journalPasswordOldWrong || "Current password is incorrect");
+        setStep("current");
+        setCurrentPassword("");
+        setPassword("");
+        setConfirm("");
         triggerShake();
       }
       return;
     }
 
-    if (mode === 'setup') {
-      if (step === 'enter') {
+    if (mode === "setup") {
+      if (step === "enter") {
         if (password.length < 4) {
-          setError(ts.journalPasswordTooShort || 'Minimum 4 characters');
+          setError(ts.journalPasswordTooShort || "Minimum 4 characters");
           triggerShake();
           return;
         }
-        setStep('confirm');
-        setError('');
+        setStep("confirm");
+        setError("");
         return;
       }
-      if (password !== confirm) {
-        setError(ts.journalPasswordMismatch || 'Passwords do not match');
-        setConfirm('');
+      if (!timingSafeEqual(password, confirm)) {
+        setError(ts.journalPasswordMismatch || "Passwords do not match");
+        setConfirm("");
         triggerShake();
         return;
       }
@@ -133,8 +148,8 @@ export function JournalLockScreen({
     } else {
       const ok = await onUnlock(password);
       if (!ok) {
-        setError(ts.journalPasswordWrong || 'Wrong password');
-        setPassword('');
+        setError(ts.journalPasswordWrong || "Wrong password");
+        setPassword("");
         triggerShake();
       }
     }
@@ -149,16 +164,16 @@ export function JournalLockScreen({
 
       {/* Floating ambient particles */}
       {[
-        { x: '12%', y: '18%', size: 7, idx: 0 },
-        { x: '78%', y: '25%', size: 9, idx: 1 },
-        { x: '85%', y: '60%', size: 6, idx: 2 },
-        { x: '20%', y: '72%', size: 8, idx: 3 },
-        { x: '55%', y: '85%', size: 5, idx: 4 },
-      ].map(p => (
+        { x: "12%", y: "18%", size: 7, idx: 0 },
+        { x: "78%", y: "25%", size: 9, idx: 1 },
+        { x: "85%", y: "60%", size: 6, idx: 2 },
+        { x: "20%", y: "72%", size: 8, idx: 3 },
+        { x: "55%", y: "85%", size: 5, idx: 4 },
+      ].map((p) => (
         <div
           key={p.idx}
           className={cn(
-            'absolute rounded-full bg-primary/20 blur-[1px]',
+            "absolute rounded-full bg-primary/20 blur-[1px]",
             `animate-particle-float-${(p.idx % 5) + 1}`,
           )}
           style={{ left: p.x, top: p.y, width: p.size, height: p.size }}
@@ -168,20 +183,20 @@ export function JournalLockScreen({
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+        transition={{ type: "spring", stiffness: 300, damping: 25 }}
         className={cn(
-          'w-full max-w-[340px] rounded-2xl p-6 relative z-10',
-          'bg-card/60 backdrop-blur-3xl',
-          'border border-white/10 dark:border-white/5',
-          'shadow-[0_8px_40px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.06)]',
-          shake && 'animate-[shake_0.5s_ease-in-out]',
+          "w-full max-w-[340px] rounded-2xl p-6 relative z-10",
+          "bg-card/60 backdrop-blur-3xl",
+          "border border-white/10 dark:border-white/5",
+          "shadow-[0_8px_40px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.06)]",
+          shake && "animate-[shake_0.5s_ease-in-out]",
         )}
       >
         {/* Lock icon with sway + glow animation */}
         <div className="flex justify-center mb-4">
           <motion.div
             animate={{ rotate: [0, -3, 3, 0] }}
-            transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
             className="w-16 h-16 rounded-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5"
           >
             <Lock className="w-8 h-8 text-primary" />
@@ -189,40 +204,41 @@ export function JournalLockScreen({
         </div>
 
         <h2 className="text-lg font-bold text-center text-foreground mb-1">
-          {mode === 'change'
-            ? (ts.journalPasswordChange || 'Change Password')
-            : mode === 'setup'
-              ? (ts.journalPasswordSetup || 'Set Diary Password')
-              : (ts.journalLocked || 'Diary Locked')}
+          {mode === "change"
+            ? ts.journalPasswordChange || "Change Password"
+            : mode === "setup"
+              ? ts.journalPasswordSetup || "Set Diary Password"
+              : ts.journalLocked || "Diary Locked"}
         </h2>
 
-        {mode === 'change' && step === 'current' && (
+        {mode === "change" && step === "current" && (
           <p className="text-xs text-muted-foreground text-center mb-4 px-2">
-            {ts.journalPasswordOldEnter || 'Enter your current password'}
+            {ts.journalPasswordOldEnter || "Enter your current password"}
           </p>
         )}
 
-        {mode === 'change' && step === 'enter' && (
+        {mode === "change" && step === "enter" && (
           <p className="text-xs text-muted-foreground text-center mb-4 px-2">
-            {ts.journalPasswordNewEnter || 'Enter your new password'}
+            {ts.journalPasswordNewEnter || "Enter your new password"}
           </p>
         )}
 
-        {mode === 'change' && step === 'confirm' && (
+        {mode === "change" && step === "confirm" && (
           <p className="text-xs text-muted-foreground text-center mb-4">
-            {ts.journalPasswordConfirm || 'Confirm your new password'}
+            {ts.journalPasswordConfirm || "Confirm your new password"}
           </p>
         )}
 
-        {mode === 'setup' && step === 'enter' && (
+        {mode === "setup" && step === "enter" && (
           <p className="text-xs text-muted-foreground text-center mb-4 px-2">
-            {ts.journalPasswordHint || 'This password protects only your diary. There is no recovery \u2014 remember it well.'}
+            {ts.journalPasswordHint ||
+              "This password protects only your diary. There is no recovery \u2014 remember it well."}
           </p>
         )}
 
-        {mode === 'setup' && step === 'confirm' && (
+        {mode === "setup" && step === "confirm" && (
           <p className="text-xs text-muted-foreground text-center mb-4">
-            {ts.journalPasswordConfirm || 'Confirm your password'}
+            {ts.journalPasswordConfirm || "Confirm your password"}
           </p>
         )}
 
@@ -230,24 +246,39 @@ export function JournalLockScreen({
           <div className="relative">
             <input
               ref={inputRef}
-              type={showPassword ? 'text' : 'password'}
-              value={step === 'current' ? currentPassword : step === 'confirm' ? confirm : password}
-              onChange={e => step === 'current' ? setCurrentPassword(e.target.value) : step === 'confirm' ? setConfirm(e.target.value) : setPassword(e.target.value)}
-              placeholder={step === 'current'
-                ? (ts.journalPasswordOldEnter || 'Current password')
-                : step === 'confirm'
-                  ? (ts.journalPasswordConfirm || 'Confirm password')
-                  : mode === 'change'
-                    ? (ts.journalPasswordNewEnter || 'New password')
-                    : (ts.journalPasswordEnter || 'Enter password')}
+              type={showPassword ? "text" : "password"}
+              value={
+                step === "current"
+                  ? currentPassword
+                  : step === "confirm"
+                    ? confirm
+                    : password
+              }
+              onChange={(e) =>
+                step === "current"
+                  ? setCurrentPassword(e.target.value)
+                  : step === "confirm"
+                    ? setConfirm(e.target.value)
+                    : setPassword(e.target.value)
+              }
+              placeholder={
+                step === "current"
+                  ? ts.journalPasswordOldEnter || "Current password"
+                  : step === "confirm"
+                    ? ts.journalPasswordConfirm || "Confirm password"
+                    : mode === "change"
+                      ? ts.journalPasswordNewEnter || "New password"
+                      : ts.journalPasswordEnter || "Enter password"
+              }
               className={cn(
-                'w-full px-4 py-3 pe-14 rounded-xl text-sm',
-                'bg-background/80 border border-border/50',
-                'focus:outline-none focus:ring-2 focus:ring-primary/40',
-                'focus:shadow-[0_0_20px_rgba(var(--primary-rgb,99,102,241),0.15)]',
-                'placeholder:text-muted-foreground/50',
-                'transition-shadow duration-300',
-                wrongGlow && 'ring-2 ring-destructive/50 shadow-[0_0_20px_rgba(239,68,68,0.2)]',
+                "w-full px-4 py-3 pe-14 rounded-xl text-sm",
+                "bg-background/80 border border-border/50",
+                "focus:outline-none focus:ring-2 focus:ring-primary/40",
+                "focus:shadow-[0_0_20px_rgba(var(--primary-rgb,99,102,241),0.15)]",
+                "placeholder:text-muted-foreground/50",
+                "transition-shadow duration-300",
+                wrongGlow &&
+                  "ring-2 ring-destructive/50 shadow-[0_0_20px_rgba(239,68,68,0.2)]",
               )}
               disabled={countdown > 0}
               autoComplete="off"
@@ -255,10 +286,18 @@ export function JournalLockScreen({
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              aria-label={showPassword ? (ts.journalPasswordHide || 'Hide password') : (ts.journalPasswordShow || 'Show password')}
+              aria-label={
+                showPassword
+                  ? ts.journalPasswordHide || "Hide password"
+                  : ts.journalPasswordShow || "Show password"
+              }
               className="absolute end-1 top-1/2 -translate-y-1/2 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center text-muted-foreground rounded-lg hover:bg-muted/50"
             >
-              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              {showPassword ? (
+                <EyeOff className="w-4 h-4" />
+              ) : (
+                <Eye className="w-4 h-4" />
+              )}
             </button>
           </div>
 
@@ -274,65 +313,80 @@ export function JournalLockScreen({
 
           {countdown > 0 && (
             <p className="text-xs text-orange-500 text-center">
-              {ts.journalPasswordCooldown || 'Too many attempts. Wait'} {countdown}s
+              {ts.journalPasswordCooldown || "Too many attempts. Wait"}{" "}
+              {countdown}s
             </p>
           )}
 
           <button
             type="submit"
-            disabled={countdown > 0 || (step === 'current' ? !currentPassword : step === 'confirm' ? !confirm : !password)}
+            disabled={
+              countdown > 0 ||
+              (step === "current"
+                ? !currentPassword
+                : step === "confirm"
+                  ? !confirm
+                  : !password)
+            }
             className={cn(
-              'w-full py-3 rounded-xl text-sm font-semibold',
-              'bg-gradient-to-r from-primary to-primary/90',
-              'text-primary-foreground',
-              'shadow-[0_2px_15px_rgba(var(--primary-rgb,99,102,241),0.25)]',
-              'disabled:opacity-40 disabled:shadow-none',
-              'active:scale-[0.98] transition-all duration-150',
+              "w-full py-3 rounded-xl text-sm font-semibold",
+              "bg-gradient-to-r from-primary to-primary/90",
+              "text-primary-foreground",
+              "shadow-[0_2px_15px_rgba(var(--primary-rgb,99,102,241),0.25)]",
+              "disabled:opacity-40 disabled:shadow-none",
+              "active:scale-[0.98] transition-all duration-150",
             )}
           >
-            {mode === 'change'
-              ? (step === 'current' ? (ts.journalNext || 'Next') : step === 'enter' ? (ts.journalNext || 'Next') : (ts.journalPasswordChangeConfirm || 'Change Password'))
-              : mode === 'setup'
-                ? (step === 'enter' ? (ts.journalNext || 'Next') : (ts.journalSave || 'Save'))
-                : (ts.journalUnlock || 'Unlock')}
+            {mode === "change"
+              ? step === "current"
+                ? ts.journalNext || "Next"
+                : step === "enter"
+                  ? ts.journalNext || "Next"
+                  : ts.journalPasswordChangeConfirm || "Change Password"
+              : mode === "setup"
+                ? step === "enter"
+                  ? ts.journalNext || "Next"
+                  : ts.journalSave || "Save"
+                : ts.journalUnlock || "Unlock"}
           </button>
         </form>
 
         {/* Biometric unlock button */}
-        {mode === 'unlock' && biometricAvailable && onBiometricUnlock && (
+        {mode === "unlock" && biometricAvailable && onBiometricUnlock && (
           <button
             onClick={onBiometricUnlock}
             className="w-full mt-3 py-2.5 flex items-center justify-center gap-2 rounded-xl bg-muted/50 text-foreground text-sm font-medium min-h-[44px] hover:bg-muted/70 transition-colors"
           >
             <Fingerprint className="w-5 h-5 text-primary" />
-            {ts.journalBiometricUnlock || 'Unlock with biometrics'}
+            {ts.journalBiometricUnlock || "Unlock with biometrics"}
           </button>
         )}
 
-        {mode === 'unlock' && onForgotPassword && (
+        {mode === "unlock" && onForgotPassword && (
           <button
             onClick={onForgotPassword}
             className="w-full mt-3 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors text-center min-h-[44px]"
           >
-            {ts.journalPasswordForgot || 'Forgot password?'}
+            {ts.journalPasswordForgot || "Forgot password?"}
           </button>
         )}
 
-        {((mode === 'setup' && step === 'confirm') || (mode === 'change' && step !== 'current')) && (
+        {((mode === "setup" && step === "confirm") ||
+          (mode === "change" && step !== "current")) && (
           <button
             onClick={() => {
-              if (step === 'confirm') {
-                setStep('enter');
-                setConfirm('');
-              } else if (mode === 'change' && step === 'enter') {
-                setStep('current');
-                setPassword('');
+              if (step === "confirm") {
+                setStep("enter");
+                setConfirm("");
+              } else if (mode === "change" && step === "enter") {
+                setStep("current");
+                setPassword("");
               }
-              setError('');
+              setError("");
             }}
             className="w-full mt-3 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors text-center min-h-[44px]"
           >
-            {ts.journalBack || 'Back'}
+            {ts.journalBack || "Back"}
           </button>
         )}
       </motion.div>

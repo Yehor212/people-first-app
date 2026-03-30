@@ -6,7 +6,9 @@ export const ALLOWED_ORIGINS = [
   "https://localhost", // Capacitor Android HTTPS
   "http://localhost:5173", // Vite dev server
   "http://localhost:8100", // Ionic dev server
-  "null", // Some Android WebViews send null origin
+  // Security note: "null" origin required for Android WebView (Capacitor) which sends
+  // Origin: null for same-origin requests. Risk accepted: edge functions require auth token.
+  "null",
 ];
 
 export function getCorsHeaders(origin: string | null): Record<string, string> {
