@@ -17,7 +17,7 @@
  */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.6";
-import { getCorsHeaders } from "../_shared/http.ts";
+import { getCorsHeaders, parseJsonBody } from "../_shared/http.ts";
 import { redactUserRef } from "../_shared/redaction.ts";
 
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
@@ -128,7 +128,8 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const body = await req.json();
+    const [body, bodyErr] = await parseJsonBody(req, origin);
+    if (bodyErr) return bodyErr;
     const { query, limit = 10, threshold = 0.3 } = body;
 
     if (!query || typeof query !== "string") {

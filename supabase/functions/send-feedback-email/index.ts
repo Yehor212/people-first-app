@@ -18,6 +18,7 @@ import { extractBearerToken } from "../_shared/auth.ts";
 import {
   createJsonResponse,
   createNoContentResponse,
+  parseJsonBody,
 } from "../_shared/http.ts";
 import { redactError } from "../_shared/redaction.ts";
 
@@ -129,7 +130,8 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const body: FeedbackPayload = await req.json();
+    const [body, bodyErr] = await parseJsonBody<FeedbackPayload>(req, origin);
+    if (bodyErr) return bodyErr;
     const { category, message, email, device_info, app_version } = body;
 
     if (!message) {

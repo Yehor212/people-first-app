@@ -43,6 +43,35 @@ export function createJsonResponse(
   });
 }
 
+const MAX_BODY_SIZE = 512 * 1024; // 512 KB — prevents memory exhaustion (CWE-400)
+
+/**
+ * Parse JSON body with size limit and error handling.
+ * Returns [body, null] on success or [null, Response] on failure.
+ */
+export async function parseJsonBody<T = unknown>(
+  req: Request,
+  origin: string | null,
+  maxSize = MAX_BODY_SIZE,
+): Promise<[T, null] | [null, Response]> {
+  const contentLength = req.headers.get("content-length");
+  if (contentLength && parseInt(contentLength, 10) > maxSize) {
+    return [
+      null,
+      createJsonResponse(origin, 413, { error: "Request body too large" }),
+    ];
+  }
+  try {
+    const body = (await req.json()) as T;
+    return [body, null];
+  } catch {
+    return [
+      null,
+      createJsonResponse(origin, 400, { error: "Invalid JSON body" }),
+    ];
+  }
+}
+
 export function createNoContentResponse(origin: string | null): Response {
   return new Response(null, {
     status: 204,
