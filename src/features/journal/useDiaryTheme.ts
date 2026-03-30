@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
-import type { DiaryThemeName, DiaryFontName, DiaryThemeConfig } from './types';
-import { DIARY_THEMES, DIARY_FONTS } from './types';
+import { useState, useEffect, useRef, useMemo } from "react";
+import type { DiaryThemeName, DiaryFontName, DiaryThemeConfig } from "./types";
+import { DIARY_THEMES, DIARY_FONTS } from "./types";
 
 interface DiaryThemeState {
   theme: DiaryThemeName;
@@ -13,8 +13,8 @@ interface DiaryThemeState {
 }
 
 export function useDiaryTheme(
-  initialTheme: DiaryThemeName = 'dark',
-  initialFont: DiaryFontName = 'caveat',
+  initialTheme: DiaryThemeName = "dark",
+  initialFont: DiaryFontName = "caveat",
 ): DiaryThemeState {
   const [theme, setTheme] = useState(initialTheme);
   const [font, setFont] = useState(initialFont);
@@ -29,9 +29,10 @@ export function useDiaryTheme(
     const existing = document.querySelector(`link[href="${config.url}"]`);
     if (existing) return;
 
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
     link.href = config.url;
+    link.crossOrigin = "anonymous";
     document.head.appendChild(link);
     fontLinkRef.current = link;
 
@@ -45,16 +46,19 @@ export function useDiaryTheme(
 
   const themeVars = DIARY_THEMES[theme];
   const fontFamily = DIARY_FONTS[font].family;
-  const accentColor = themeVars['--diary-accent'];
+  const accentColor = themeVars["--diary-accent"];
 
   // Memoize the full return to prevent unnecessary re-renders downstream
-  return useMemo(() => ({
-    theme,
-    font,
-    themeVars,
-    fontFamily,
-    accentColor,
-    setTheme,
-    setFont,
-  }), [theme, font, themeVars, fontFamily, accentColor]);
+  return useMemo(
+    () => ({
+      theme,
+      font,
+      themeVars,
+      fontFamily,
+      accentColor,
+      setTheme,
+      setFont,
+    }),
+    [theme, font, themeVars, fontFamily, accentColor],
+  );
 }
