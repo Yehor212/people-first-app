@@ -153,11 +153,7 @@ export function useDeepLinkHandler(): void {
       const session = await waitForSession();
       if (session?.user) {
         const metadata = session.user.user_metadata;
-        const name =
-          metadata?.full_name ||
-          metadata?.name ||
-          session.user.email?.split("@")[0] ||
-          "Friend";
+        const name = metadata?.full_name || metadata?.name || "Friend";
 
         logger.log("[Auth] OAuth callback session established");
         setAuthBypassFlag(true);

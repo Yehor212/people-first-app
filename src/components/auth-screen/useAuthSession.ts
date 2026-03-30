@@ -1,11 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
-import { supabase } from '@/lib/supabaseClient';
-import { AUTH_COMPLETE_EVENT } from '@/lib/authRedirect';
-import { isNative } from '@/lib/platform';
-import { endAuthFlow } from '@/lib/authGuard';
-import { App } from '@capacitor/app';
-import { logger } from '@/lib/logger';
-import type { AuthProvider, PhoneStep } from './types';
+import { useState, useEffect, useRef } from "react";
+import { supabase } from "@/lib/supabaseClient";
+import { AUTH_COMPLETE_EVENT } from "@/lib/authRedirect";
+import { isNative } from "@/lib/platform";
+import { endAuthFlow } from "@/lib/authGuard";
+import { App } from "@capacitor/app";
+import { logger } from "@/lib/logger";
+import type { AuthProvider, PhoneStep } from "./types";
 
 interface UseAuthSessionOptions {
   onComplete: (userData: { name: string; email: string }) => void;
@@ -13,15 +13,19 @@ interface UseAuthSessionOptions {
   onClearError?: () => void;
 }
 
-export function useAuthSession({ onComplete, webOAuthError, onClearError }: UseAuthSessionOptions) {
+export function useAuthSession({
+  onComplete,
+  webOAuthError,
+  onClearError,
+}: UseAuthSessionOptions) {
   const [loadingProvider, setLoadingProvider] = useState<AuthProvider>(null);
   const [error, setError] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState<string | null>(null);
 
   // Phone auth state
-  const [phoneStep, setPhoneStep] = useState<PhoneStep>('idle');
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [otpCode, setOtpCode] = useState('');
+  const [phoneStep, setPhoneStep] = useState<PhoneStep>("idle");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [otpCode, setOtpCode] = useState("");
 
   // Prevent double onComplete calls (race condition with Index.tsx listener)
   const hasCompletedRef = useRef(false);
@@ -41,7 +45,10 @@ export function useAuthSession({ onComplete, webOAuthError, onClearError }: UseA
   }, [webOAuthError, onClearError]);
 
   // Safe completion helper - ensures onComplete is called exactly once
-  const tryComplete = (userData: { name: string; email: string }, source: string): boolean => {
+  const tryComplete = (
+    userData: { name: string; email: string },
+    source: string,
+  ): boolean => {
     if (hasCompletedRef.current) {
       logger.log(`[Auth] Completion already done, ignoring from ${source}`);
       return false;
@@ -66,36 +73,51 @@ export function useAuthSession({ onComplete, webOAuthError, onClearError }: UseA
       if (hasCompletedRef.current) return;
       try {
         const { data, error: sessionError } = await supabase.auth.getSession();
-        if (sessionError) { logger.error('[Auth] Session check error:', sessionError); setDebugInfo(`Session error: ${sessionError.message}`); return; }
+        if (sessionError) {
+          logger.error("[Auth] Session check error:", sessionError);
+          setDebugInfo(`Session error: ${sessionError.message}`);
+          return;
+        }
         if (data.session?.user) {
           const metadata = data.session.user.user_metadata;
-          const name = metadata?.full_name || metadata?.name || data.session.user.email?.split('@')[0] || 'Friend';
-          const email = data.session.user.email || '';
-          tryComplete({ name, email }, 'checkSession');
+          const name = metadata?.full_name || metadata?.name || "Friend";
+          const email = data.session.user.email || "";
+          tryComplete({ name, email }, "checkSession");
         }
-      } catch (err) { logger.error('[Auth] Unexpected error checking session:', err); setDebugInfo(`Unexpected error: ${err instanceof Error ? err.message : String(err)}`); }
+      } catch (err) {
+        logger.error("[Auth] Unexpected error checking session:", err);
+        setDebugInfo(
+          `Unexpected error: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
     };
     void checkSession();
 
     let subscription: { unsubscribe?: () => void } | undefined;
     if (supabase) {
       const { data } = supabase.auth.onAuthStateChange((event, session) => {
-        logger.log('[Auth] Auth state changed:', event);
-        if (event === 'SIGNED_IN' && session?.user) {
+        logger.log("[Auth] Auth state changed:", event);
+        if (event === "SIGNED_IN" && session?.user) {
           endAuthFlow();
           const metadata = session.user.user_metadata;
-          const name = metadata?.full_name || metadata?.name || session.user.email?.split('@')[0] || 'Friend';
-          const email = session.user.email || '';
-          tryComplete({ name, email }, 'onAuthStateChange');
-        } else if (event === 'SIGNED_OUT') { endAuthFlow(); setLoadingProvider(null); }
+          const name = metadata?.full_name || metadata?.name || "Friend";
+          const email = session.user.email || "";
+          tryComplete({ name, email }, "onAuthStateChange");
+        } else if (event === "SIGNED_OUT") {
+          endAuthFlow();
+          setLoadingProvider(null);
+        }
       });
       subscription = data?.subscription;
     }
 
     const handleAuthComplete = () => {
-      logger.log('[Auth] Received auth complete event from Index.tsx');
+      logger.log("[Auth] Received auth complete event from Index.tsx");
       setLoadingProvider(null);
-      if (oauthTimeoutRef.current) { clearTimeout(oauthTimeoutRef.current); oauthTimeoutRef.current = null; }
+      if (oauthTimeoutRef.current) {
+        clearTimeout(oauthTimeoutRef.current);
+        oauthTimeoutRef.current = null;
+      }
     };
     window.addEventListener(AUTH_COMPLETE_EVENT, handleAuthComplete);
 
@@ -116,7 +138,7 @@ export function useAuthSession({ onComplete, webOAuthError, onClearError }: UseA
     const checkSessionOnResume = async () => {
       if (!isMounted || !loadingProvider || hasCompletedRef.current) return;
 
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await new Promise((resolve) => setTimeout(resolve, 300));
       if (!isMounted || hasCompletedRef.current) return;
 
       try {
@@ -125,11 +147,11 @@ export function useAuthSession({ onComplete, webOAuthError, onClearError }: UseA
 
         if (data.session?.user) {
           const metadata = data.session.user.user_metadata;
-          const name = metadata?.full_name || metadata?.name || data.session.user.email?.split('@')[0] || 'Friend';
-          const email = data.session.user.email || '';
-          tryComplete({ name, email }, 'checkSessionOnResume');
+          const name = metadata?.full_name || metadata?.name || "Friend";
+          const email = data.session.user.email || "";
+          tryComplete({ name, email }, "checkSessionOnResume");
         } else if (!hasCompletedRef.current) {
-          logger.log('[Auth] No session on resume, user may have canceled');
+          logger.log("[Auth] No session on resume, user may have canceled");
           setLoadingProvider(null);
           if (oauthTimeoutRef.current) {
             clearTimeout(oauthTimeoutRef.current);
@@ -138,7 +160,7 @@ export function useAuthSession({ onComplete, webOAuthError, onClearError }: UseA
           endAuthFlow();
         }
       } catch (err) {
-        logger.error('[Auth] Error checking session on resume:', err);
+        logger.error("[Auth] Error checking session on resume:", err);
         if (isMounted && !hasCompletedRef.current) {
           setLoadingProvider(null);
           endAuthFlow();
@@ -147,20 +169,26 @@ export function useAuthSession({ onComplete, webOAuthError, onClearError }: UseA
     };
 
     if (isNative) {
-      App.addListener('appStateChange', ({ isActive }) => {
+      App.addListener("appStateChange", ({ isActive }) => {
         if (isActive && loadingProvider) {
           void checkSessionOnResume();
         }
-      }).then(listener => {
-        listenerHandle = listener;
-      }).catch(err => {
-        logger.error('[Auth] Failed to add appStateChange listener:', err);
-      });
+      })
+        .then((listener) => {
+          listenerHandle = listener;
+        })
+        .catch((err) => {
+          logger.error("[Auth] Failed to add appStateChange listener:", err);
+        });
 
       return () => {
         isMounted = false;
         if (listenerHandle) {
-          listenerHandle.remove().catch(err => logger.warn('[Auth]', 'Listener remove failed:', err));
+          listenerHandle
+            .remove()
+            .catch((err) =>
+              logger.warn("[Auth]", "Listener remove failed:", err),
+            );
         }
       };
     }
@@ -169,21 +197,28 @@ export function useAuthSession({ onComplete, webOAuthError, onClearError }: UseA
     const handleFocus = () => {
       if (loadingProvider) void checkSessionOnResume();
     };
-    window.addEventListener('focus', handleFocus);
+    window.addEventListener("focus", handleFocus);
     return () => {
       isMounted = false;
-      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener("focus", handleFocus);
     };
   }, [loadingProvider]);
 
   return {
-    loadingProvider, setLoadingProvider,
-    error, setError,
-    debugInfo, setDebugInfo,
-    phoneStep, setPhoneStep,
-    phoneNumber, setPhoneNumber,
-    otpCode, setOtpCode,
-    hasCompletedRef, oauthTimeoutRef,
+    loadingProvider,
+    setLoadingProvider,
+    error,
+    setError,
+    debugInfo,
+    setDebugInfo,
+    phoneStep,
+    setPhoneStep,
+    phoneNumber,
+    setPhoneNumber,
+    otpCode,
+    setOtpCode,
+    hasCompletedRef,
+    oauthTimeoutRef,
     tryComplete,
     isLoading: loadingProvider !== null,
   };

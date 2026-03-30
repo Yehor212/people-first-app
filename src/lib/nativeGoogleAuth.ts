@@ -200,11 +200,7 @@ export async function authenticateWithGoogleNative(retry = false): Promise<{
     }
 
     const metadata = data.user.user_metadata;
-    const name =
-      metadata?.full_name ||
-      metadata?.name ||
-      data.user.email?.split("@")[0] ||
-      "Friend";
+    const name = metadata?.full_name || metadata?.name || "Friend";
     const email = data.user.email || "";
 
     logger.log(

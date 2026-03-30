@@ -1,20 +1,24 @@
-import { useEffect, useRef } from 'react';
-import { useAppStore, useUserDataStore } from '@/stores';
-import { supabase } from '@/lib/supabaseClient';
+import { useEffect, useRef } from "react";
+import { useAppStore, useUserDataStore } from "@/stores";
+import { supabase } from "@/lib/supabaseClient";
 import {
   handleAuthCallback,
   isNativePlatform,
   notifyAuthComplete,
   getPendingAuthUrl,
-} from '@/lib/authRedirect';
-import { AUTH_SESSION_EXPIRED_EVENT } from '@/lib/apiClient';
-import { syncWithCloud, startAutoSync, stopAutoSync } from '@/storage/cloudSync';
-import { syncOrchestrator } from '@/lib/syncOrchestrator';
-import { joinPresence, leavePresence } from '@/lib/presenceService';
-import { migrateExistingUser } from '@/lib/cloudSyncSettings';
-import { logger } from '@/lib/logger';
-import { endAuthFlow } from '@/lib/authGuard';
-import { APP_VERSION } from '@/lib/appVersion';
+} from "@/lib/authRedirect";
+import { AUTH_SESSION_EXPIRED_EVENT } from "@/lib/apiClient";
+import {
+  syncWithCloud,
+  startAutoSync,
+  stopAutoSync,
+} from "@/storage/cloudSync";
+import { syncOrchestrator } from "@/lib/syncOrchestrator";
+import { joinPresence, leavePresence } from "@/lib/presenceService";
+import { migrateExistingUser } from "@/lib/cloudSyncSettings";
+import { logger } from "@/lib/logger";
+import { endAuthFlow } from "@/lib/authGuard";
+import { APP_VERSION } from "@/lib/appVersion";
 
 /**
  * Manages Supabase auth session lifecycle:
@@ -26,18 +30,18 @@ import { APP_VERSION } from '@/lib/appVersion';
  * - Session expired handler (401 events)
  */
 export function useAuthSession(isLoading: boolean): void {
-  const setHasValidSession = useAppStore(s => s.setHasValidSession);
-  const setAuthBypassFlag = useAppStore(s => s.setAuthBypassFlag);
-  const setIsProcessingWebOAuth = useAppStore(s => s.setIsProcessingWebOAuth);
-  const setWebOAuthError = useAppStore(s => s.setWebOAuthError);
+  const setHasValidSession = useAppStore((s) => s.setHasValidSession);
+  const setAuthBypassFlag = useAppStore((s) => s.setAuthBypassFlag);
+  const setIsProcessingWebOAuth = useAppStore((s) => s.setIsProcessingWebOAuth);
+  const setWebOAuthError = useAppStore((s) => s.setWebOAuthError);
 
-  const googleAuthChecked = useUserDataStore(s => s.googleAuthChecked);
-  const setGoogleAuthChecked = useUserDataStore(s => s.setGoogleAuthChecked);
-  const isLoadingUserData = useUserDataStore(s => s.isLoading);
-  const userName = useUserDataStore(s => s.userName);
-  const setUserName = useUserDataStore(s => s.setUserName);
-  const userNameCustom = useUserDataStore(s => s.userNameCustom);
-  const setUserNameCustom = useUserDataStore(s => s.setUserNameCustom);
+  const googleAuthChecked = useUserDataStore((s) => s.googleAuthChecked);
+  const setGoogleAuthChecked = useUserDataStore((s) => s.setGoogleAuthChecked);
+  const isLoadingUserData = useUserDataStore((s) => s.isLoading);
+  const userName = useUserDataStore((s) => s.userName);
+  const setUserName = useUserDataStore((s) => s.setUserName);
+  const userNameCustom = useUserDataStore((s) => s.userNameCustom);
+  const setUserNameCustom = useUserDataStore((s) => s.setUserNameCustom);
 
   const lastSyncedUserIdRef = useRef<string | null>(null);
   const hadSignOutRef = useRef(false);
@@ -69,12 +73,18 @@ export function useAuthSession(isLoading: boolean): void {
 
         // If session exists but googleAuthChecked is false, restore it
         // This prevents the login loop after OAuth redirect
-        if (sessionExists && !googleAuthCheckedRef.current && !isLoadingUserDataRef.current) {
-          logger.log('[Index] Session exists but auth not checked - restoring state');
+        if (
+          sessionExists &&
+          !googleAuthCheckedRef.current &&
+          !isLoadingUserDataRef.current
+        ) {
+          logger.log(
+            "[Index] Session exists but auth not checked - restoring state",
+          );
           setGoogleAuthChecked(true);
         }
       } catch (error) {
-        logger.error('[Index] Error checking session:', error);
+        logger.error("[Index] Error checking session:", error);
         if (active) {
           setHasValidSession(false);
         }
@@ -84,7 +94,9 @@ export function useAuthSession(isLoading: boolean): void {
     void checkSession();
 
     // Also listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       if (active) {
         setHasValidSession(!!session);
       }
@@ -102,33 +114,47 @@ export function useAuthSession(isLoading: boolean): void {
     if (isNativePlatform() || !supabase) return;
 
     const url = new URL(window.location.href);
-    const hasCode = url.searchParams.has('code');
-    const hasError = url.searchParams.has('error');
-    const errorDescription = url.searchParams.get('error_description');
+    const hasCode = url.searchParams.has("code");
+    const hasError = url.searchParams.has("error");
+    const errorDescription = url.searchParams.get("error_description");
 
     if (!hasCode && !hasError) return;
 
     // Handle error case immediately
     if (hasError) {
-      logger.error('[Index] OAuth error in URL:', url.searchParams.get('error'), errorDescription);
-      setWebOAuthError(errorDescription || 'Authentication failed. Please try again.');
-      window.history.replaceState({}, '', window.location.pathname);
+      logger.error(
+        "[Index] OAuth error in URL:",
+        url.searchParams.get("error"),
+        errorDescription,
+      );
+      setWebOAuthError(
+        errorDescription || "Authentication failed. Please try again.",
+      );
+      window.history.replaceState({}, "", window.location.pathname);
       return;
     }
 
     // Has ?code= — wait for Supabase to exchange it
-    logger.log('[Index] Web OAuth callback detected, waiting for code exchange...');
+    logger.log(
+      "[Index] Web OAuth callback detected, waiting for code exchange...",
+    );
     setIsProcessingWebOAuth(true);
 
     let settled = false;
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
       if (settled) return;
 
-      if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
+      if ((event === "SIGNED_IN" || event === "INITIAL_SESSION") && session) {
         settled = true;
-        logger.log('[Index] Web OAuth code exchange succeeded (event:', event, ')');
-        window.history.replaceState({}, '', window.location.pathname);
+        logger.log(
+          "[Index] Web OAuth code exchange succeeded (event:",
+          event,
+          ")",
+        );
+        window.history.replaceState({}, "", window.location.pathname);
         setIsProcessingWebOAuth(false);
       }
     });
@@ -141,12 +167,14 @@ export function useAuthSession(isLoading: boolean): void {
         if (settled) return;
         if (data.session) {
           settled = true;
-          logger.log('[Index] Web OAuth: fallback session check found valid session');
-          window.history.replaceState({}, '', window.location.pathname);
+          logger.log(
+            "[Index] Web OAuth: fallback session check found valid session",
+          );
+          window.history.replaceState({}, "", window.location.pathname);
           setIsProcessingWebOAuth(false);
         }
       } catch (e) {
-        logger.warn('[Index] Web OAuth fallback check failed:', e);
+        logger.warn("[Index] Web OAuth fallback check failed:", e);
       }
     }, 5000);
 
@@ -154,10 +182,10 @@ export function useAuthSession(isLoading: boolean): void {
     const timeout = setTimeout(() => {
       if (settled) return;
       settled = true;
-      logger.error('[Index] Web OAuth code exchange timed out after 30s');
+      logger.error("[Index] Web OAuth code exchange timed out after 30s");
       setIsProcessingWebOAuth(false);
-      setWebOAuthError('Sign-in took too long. Please try again.');
-      window.history.replaceState({}, '', window.location.pathname);
+      setWebOAuthError("Sign-in took too long. Please try again.");
+      window.history.replaceState({}, "", window.location.pathname);
     }, 30000);
 
     return () => {
@@ -166,7 +194,7 @@ export function useAuthSession(isLoading: boolean): void {
       clearTimeout(fallbackCheck);
       clearTimeout(timeout);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only: check OAuth redirect once
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only: check OAuth redirect once
   }, []); // Run once on mount
 
   // Process pending auth URL when supabase becomes ready
@@ -176,7 +204,7 @@ export function useAuthSession(isLoading: boolean): void {
     let active = true;
     const pendingUrl = getPendingAuthUrl();
     if (pendingUrl) {
-      logger.log('[Index] Processing pending auth URL');
+      logger.log("[Index] Processing pending auth URL");
 
       void (async () => {
         try {
@@ -189,9 +217,9 @@ export function useAuthSession(isLoading: boolean): void {
 
           if (data.session?.user) {
             const metadata = data.session.user.user_metadata;
-            const name = metadata?.full_name || metadata?.name || data.session.user.email?.split('@')[0] || 'Friend';
+            const name = metadata?.full_name || metadata?.name || "Friend";
 
-            logger.log('[Auth] Pending auth processed successfully');
+            logger.log("[Auth] Pending auth processed successfully");
             setAuthBypassFlag(true);
             setHasValidSession(true);
             setWebOAuthError(null);
@@ -201,13 +229,19 @@ export function useAuthSession(isLoading: boolean): void {
             setGoogleAuthChecked(true);
             endAuthFlow();
           } else {
-            logger.error('[Index] Pending auth callback had no session');
-            setWebOAuthError('Google sign-in did not complete. Please try again.');
+            logger.error("[Index] Pending auth callback had no session");
+            setWebOAuthError(
+              "Google sign-in did not complete. Please try again.",
+            );
             endAuthFlow();
           }
         } catch (error) {
-          logger.error('[Index] Failed to process pending auth:', error);
-          setWebOAuthError(error instanceof Error ? error.message : 'Google sign-in failed. Please try again.');
+          logger.error("[Index] Failed to process pending auth:", error);
+          setWebOAuthError(
+            error instanceof Error
+              ? error.message
+              : "Google sign-in failed. Please try again.",
+          );
           endAuthFlow();
         }
       })();
@@ -216,7 +250,7 @@ export function useAuthSession(isLoading: boolean): void {
     return () => {
       active = false;
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only: subscribe to auth state once
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only: subscribe to auth state once
   }, [supabase, setUserName, setUserNameCustom, setGoogleAuthChecked]);
 
   // Cloud sync on auth change
@@ -229,36 +263,45 @@ export function useAuthSession(isLoading: boolean): void {
       if (lastSyncedUserIdRef.current === userId) return;
 
       // Use 'replace' if: (a) sign-out happened, or (b) different user was synced before
-      const isAccountSwitch = hadSignOutRef.current ||
-        (lastSyncedUserIdRef.current !== null && lastSyncedUserIdRef.current !== userId);
+      const isAccountSwitch =
+        hadSignOutRef.current ||
+        (lastSyncedUserIdRef.current !== null &&
+          lastSyncedUserIdRef.current !== userId);
 
       lastSyncedUserIdRef.current = userId;
       hadSignOutRef.current = false;
 
       try {
         // Use 'replace' on account switch to avoid merging different users' data
-        await syncWithCloud(isAccountSwitch ? 'replace' : 'merge');
+        await syncWithCloud(isAccountSwitch ? "replace" : "merge");
         // Start auto-sync after successful initial sync
         startAutoSync();
         // Join Presence channel for friend online status
-        joinPresence().catch(err => logger.warn('[Auth]', 'Presence join failed:', err));
+        joinPresence().catch((err) =>
+          logger.warn("[Auth]", "Presence join failed:", err),
+        );
       } catch (error) {
-        logger.error('Cloud sync failed:', error);
+        logger.error("Cloud sync failed:", error);
       }
     };
 
-    supabase.auth.getSession().then(({ data }) => {
-      // v1.1.1 Migration: Auto-enable cloud sync for existing users
-      if (data.session) {
-        migrateExistingUser();
-      }
-      void syncIfNeeded(data.session?.user?.id ?? null);
-    }).catch(err => logger.warn('[Auth]', 'Session check failed:', err));
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        // v1.1.1 Migration: Auto-enable cloud sync for existing users
+        if (data.session) {
+          migrateExistingUser();
+        }
+        void syncIfNeeded(data.session?.user?.id ?? null);
+      })
+      .catch((err) => logger.warn("[Auth]", "Session check failed:", err));
 
     // Correct destructuring pattern for auth subscription
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
       // Reset sync refs on sign-out so next sign-in uses 'replace' mode
-      if (event === 'SIGNED_OUT') {
+      if (event === "SIGNED_OUT") {
         lastSyncedUserIdRef.current = null;
         hadSignOutRef.current = true;
       }
@@ -276,7 +319,9 @@ export function useAuthSession(isLoading: boolean): void {
       active = false;
       subscription?.unsubscribe();
       stopAutoSync();
-      leavePresence().catch(err => logger.warn('[Auth]', 'Presence leave failed:', err));
+      leavePresence().catch((err) =>
+        logger.warn("[Auth]", "Presence leave failed:", err),
+      );
     };
   }, []); // mount-only — isLoading tracked via ref
 
@@ -288,9 +333,13 @@ export function useAuthSession(isLoading: boolean): void {
     // Initial sync from cached session
     const syncNameFromSession = async () => {
       if (userNameCustomRef.current) return;
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!active || !session?.user) return;
-      const metadata = session.user.user_metadata as { full_name?: string; name?: string } | undefined;
+      const metadata = session.user.user_metadata as
+        | { full_name?: string; name?: string }
+        | undefined;
       const candidate = metadata?.full_name || metadata?.name;
       if (candidate && candidate !== userNameRef.current) {
         setUserName(candidate);
@@ -299,9 +348,13 @@ export function useAuthSession(isLoading: boolean): void {
     void syncNameFromSession();
 
     // Listen: use session directly from callback (no network call)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!active || !session?.user || userNameCustomRef.current) return;
-      const metadata = session.user.user_metadata as { full_name?: string; name?: string } | undefined;
+      const metadata = session.user.user_metadata as
+        | { full_name?: string; name?: string }
+        | undefined;
       const candidate = metadata?.full_name || metadata?.name;
       if (candidate && candidate !== userNameRef.current) {
         setUserName(candidate);
@@ -317,17 +370,22 @@ export function useAuthSession(isLoading: boolean): void {
   // Track app_version in profiles on login (last_active_at handled by server trigger)
   useEffect(() => {
     if (!supabase) return;
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        if (event === 'SIGNED_IN' && session?.user?.id) {
-          supabase.from('profiles').update({
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_IN" && session?.user?.id) {
+        supabase
+          .from("profiles")
+          .update({
             app_version: APP_VERSION,
-          }).eq('id', session.user.id).then(({ error }) => {
-            if (error) logger.warn('[Auth] Failed to track app_version:', error.message);
+          })
+          .eq("id", session.user.id)
+          .then(({ error }) => {
+            if (error)
+              logger.warn("[Auth] Failed to track app_version:", error.message);
           });
-        }
       }
-    );
+    });
     return () => subscription?.unsubscribe();
   }, []);
 
@@ -338,32 +396,38 @@ export function useAuthSession(isLoading: boolean): void {
       // Throttle - ignore if we just handled one
       const now = Date.now();
       if (now - lastSessionExpiredRef.current < 5000) {
-        logger.log('[Index] Session expired event throttled');
+        logger.log("[Index] Session expired event throttled");
         return;
       }
       lastSessionExpiredRef.current = now;
 
-      logger.warn('[Index] Session expired event received, verifying session...');
+      logger.warn(
+        "[Index] Session expired event received, verifying session...",
+      );
 
       // Check if session is actually expired before resetting
       try {
         const { data } = await supabase.auth.getSession();
         if (data.session) {
-          logger.log('[Index] Session still valid, ignoring expired event');
+          logger.log("[Index] Session still valid, ignoring expired event");
           return;
         }
       } catch (error) {
-        logger.error('[Index] Error checking session:', error);
+        logger.error("[Index] Error checking session:", error);
       }
 
       // Session truly expired - reset auth state
-      logger.warn('[Index] Session confirmed expired, resetting auth state');
+      logger.warn("[Index] Session confirmed expired, resetting auth state");
       setHasValidSession(false);
       setAuthBypassFlag(false);
       setGoogleAuthChecked(false);
     };
 
     window.addEventListener(AUTH_SESSION_EXPIRED_EVENT, handleSessionExpired);
-    return () => window.removeEventListener(AUTH_SESSION_EXPIRED_EVENT, handleSessionExpired);
+    return () =>
+      window.removeEventListener(
+        AUTH_SESSION_EXPIRED_EVENT,
+        handleSessionExpired,
+      );
   }, [setGoogleAuthChecked, setHasValidSession, setAuthBypassFlag]);
 }
