@@ -202,8 +202,7 @@ export const AchievementsPanel = memo(function AchievementsPanel({
             <Card className="p-8 text-center">
               <Trophy
                 className="w-12 h-12 mx-auto mb-3 text-muted-foreground"
-                aria-label={t.trophyIcon || "Trophy"}
-                role="img"
+                aria-hidden="true"
               />
               <p className="text-muted-foreground">
                 {t.noAchievementsYet || "No achievements yet"}

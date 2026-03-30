@@ -2,10 +2,21 @@ import js from "@eslint/js";
 import globals from "globals";
 import reactHooks from "eslint-plugin-react-hooks";
 import reactRefresh from "eslint-plugin-react-refresh";
+import jsxA11y from "eslint-plugin-jsx-a11y";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  { ignores: ["dist", "android", "coverage", "scripts", "supabase/functions/**", "*.js", "*.mjs"] },
+  {
+    ignores: [
+      "dist",
+      "android",
+      "coverage",
+      "scripts",
+      "supabase/functions/**",
+      "*.js",
+      "*.mjs",
+    ],
+  },
   {
     extends: [
       js.configs.recommended,
@@ -23,16 +34,30 @@ export default tseslint.config(
     plugins: {
       "react-hooks": reactHooks,
       "react-refresh": reactRefresh,
+      "jsx-a11y": jsxA11y,
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
+      ...Object.fromEntries(
+        Object.entries(jsxA11y.configs.recommended.rules).map(([key, val]) => [
+          key,
+          Array.isArray(val)
+            ? ["warn", ...val.slice(1)]
+            : val === "error"
+              ? "warn"
+              : val,
+        ]),
+      ),
       "react-refresh/only-export-components": "off",
       // P0 Premium Upgrade: Enable stricter rules
-      "@typescript-eslint/no-unused-vars": ["warn", {
-        argsIgnorePattern: "^_",
-        varsIgnorePattern: "^_",
-        caughtErrorsIgnorePattern: "^_",
-      }],
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+        },
+      ],
       // Catch unhandled promises (common source of silent failures)
       "@typescript-eslint/no-floating-promises": "warn",
       // Ensure React hooks dependencies are correct
@@ -44,32 +69,47 @@ export default tseslint.config(
       "@typescript-eslint/no-unsafe-return": "off",
       "@typescript-eslint/no-unsafe-argument": "off",
       "@typescript-eslint/no-explicit-any": "off",
-      "@typescript-eslint/no-misused-promises": ["warn", {
-        checksVoidReturn: false,
-      }],
+      "@typescript-eslint/no-misused-promises": [
+        "warn",
+        {
+          checksVoidReturn: false,
+        },
+      ],
       "@typescript-eslint/require-await": "off",
       "@typescript-eslint/restrict-template-expressions": "off",
       "@typescript-eslint/no-redundant-type-constituents": "off",
       "@typescript-eslint/unbound-method": "off",
       // TD-07: Ban direct localStorage access — use SK keys + safeJson accessors
-      "no-restricted-globals": ["error", {
-        "name": "localStorage",
-        "message": "Use SK keys from @/lib/storageKeys + accessors from @/lib/safeJson (storageGetRaw, safeLocalStorageGet, etc.)",
-      }],
+      "no-restricted-globals": [
+        "error",
+        {
+          name: "localStorage",
+          message:
+            "Use SK keys from @/lib/storageKeys + accessors from @/lib/safeJson (storageGetRaw, safeLocalStorageGet, etc.)",
+        },
+      ],
     },
   },
   // Enforce feature module public API boundaries outside feature folders
   {
-    files: ["src/components/**/*.{ts,tsx}", "src/hooks/**/*.{ts,tsx}", "src/pages/**/*.{ts,tsx}"],
+    files: [
+      "src/components/**/*.{ts,tsx}",
+      "src/hooks/**/*.{ts,tsx}",
+      "src/pages/**/*.{ts,tsx}",
+    ],
     rules: {
-      "no-restricted-imports": ["error", {
-        patterns: [
-          {
-            group: ["@/features/*/*"],
-            message: "Import from feature barrels only (e.g. '@/features/journal').",
-          },
-        ],
-      }],
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["@/features/*/*"],
+              message:
+                "Import from feature barrels only (e.g. '@/features/journal').",
+            },
+          ],
+        },
+      ],
     },
   },
   // Allow direct localStorage in wrapper implementations, diagnostics, and tests

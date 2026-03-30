@@ -1665,14 +1665,14 @@ export function JournalEntryEditor({
                       <div className="flex items-center gap-1">
                         <button
                           onClick={() => setPromptSeed((s) => s + 1)}
-                          className="p-1.5 rounded-lg hover:bg-white/10 min-w-[36px] min-h-[36px] flex items-center justify-center"
+                          className="p-1.5 rounded-lg hover:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center"
                           aria-label="Shuffle prompts"
                         >
                           <Shuffle className="w-3 h-3 text-foreground0" />
                         </button>
                         <button
                           onClick={() => setShowPromptsDropdown(false)}
-                          className="p-1 rounded hover:bg-white/10 min-w-[36px] min-h-[36px] flex items-center justify-center"
+                          className="p-1 rounded hover:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center"
                           aria-label={ts.close || "Close"}
                         >
                           <X className="w-3 h-3 text-foreground0" />

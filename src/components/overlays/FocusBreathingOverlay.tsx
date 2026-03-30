@@ -1,22 +1,29 @@
-import { Suspense, useEffect } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
-import { X } from 'lucide-react';
-import { LazyErrorBoundary, ModalErrorBoundary } from '@/components/ErrorBoundary';
-import { SkeletonCard } from '@/components/ui/skeleton';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { useBackHandler } from '@/hooks/useBackHandler';
-import { useScrollLock } from '@/hooks/useScrollLock';
-import { zenMotion } from '@/lib/animationUtils';
-import { lazyWithRetry } from '@/lib/lazyWithRetry';
-import type { FocusSession } from '@/types';
+import { Suspense } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { X } from "lucide-react";
+import {
+  LazyErrorBoundary,
+  ModalErrorBoundary,
+} from "@/components/ErrorBoundary";
+import { SkeletonCard } from "@/components/ui/skeleton";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useModalA11y } from "@/hooks/useModalA11y";
+import { useScrollLock } from "@/hooks/useScrollLock";
+import { zenMotion } from "@/lib/animationUtils";
+import { lazyWithRetry } from "@/lib/lazyWithRetry";
+import type { FocusSession } from "@/types";
 
 const BreathingExercise = lazyWithRetry(
-  () => import('@/components/BreathingExercise').then(m => ({ default: m.BreathingExercise })),
-  'BreathingExercise',
+  () =>
+    import("@/components/BreathingExercise").then((m) => ({
+      default: m.BreathingExercise,
+    })),
+  "BreathingExercise",
 );
 const FocusTimer = lazyWithRetry(
-  () => import('@/components/FocusTimer').then(m => ({ default: m.FocusTimer })),
-  'FocusTimer',
+  () =>
+    import("@/components/FocusTimer").then((m) => ({ default: m.FocusTimer })),
+  "FocusTimer",
 );
 
 interface FocusBreathingOverlayProps {
@@ -29,42 +36,43 @@ interface FocusBreathingOverlayProps {
 }
 
 export function FocusBreathingOverlay({
-  open, focusSessions, onCompleteFocusSession,
-  onMinuteUpdate, onBreathingComplete, onClose,
+  open,
+  focusSessions,
+  onCompleteFocusSession,
+  onMinuteUpdate,
+  onBreathingComplete,
+  onClose,
 }: FocusBreathingOverlayProps) {
   const { t } = useLanguage();
 
-  useBackHandler(open, onClose);
+  const { modalRef, handleKeyDown } = useModalA11y(open, onClose);
   useScrollLock(open);
-
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { e.preventDefault(); onClose(); }
-    };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
-  }, [open, onClose]);
 
   return (
     <AnimatePresence>
       {open && (
         <>
-          {/* Backdrop */}
+          {/* // A11Y-OK: backdrop is decorative overlay dismissed by click — aria-hidden excludes from AT tree */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={zenMotion.gentle}
             className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm"
+            aria-hidden="true"
             onClick={onClose}
           />
 
           {/* Sheet */}
           <motion.div
-            initial={{ y: '100%' }}
+            ref={modalRef}
+            onKeyDown={handleKeyDown}
+            role="dialog"
+            aria-modal="true"
+            aria-label={t.focusModeBreathingTitle || "Breathing Exercise"}
+            initial={{ y: "100%" }}
             animate={{ y: 0 }}
-            exit={{ y: '100%' }}
+            exit={{ y: "100%" }}
             transition={zenMotion.snappy}
             className="fixed bottom-0 inset-x-0 z-[61] max-h-[80dvh] rounded-t-[2rem] bg-card border-t border-border overflow-y-auto pb-[calc(env(safe-area-inset-bottom,0px)+1rem)]"
           >
@@ -79,7 +87,7 @@ export function FocusBreathingOverlay({
               <button
                 onClick={onClose}
                 className="w-8 h-8 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center hover:bg-secondary"
-                aria-label={t.close || 'Close'}
+                aria-label={t.close || "Close"}
               >
                 <X className="w-4 h-4" />
               </button>
@@ -87,7 +95,10 @@ export function FocusBreathingOverlay({
 
             <div className="px-5 space-y-4 pb-4">
               {/* Focus Timer */}
-              <ModalErrorBoundary fallbackTitle="Focus Timer Error" fallbackBody="Unable to load focus timer.">
+              <ModalErrorBoundary
+                fallbackTitle="Focus Timer Error"
+                fallbackBody="Unable to load focus timer."
+              >
                 <Suspense fallback={<SkeletonCard />}>
                   <FocusTimer
                     sessions={focusSessions}
@@ -101,10 +112,7 @@ export function FocusBreathingOverlay({
               {/* Breathing Exercise */}
               <LazyErrorBoundary componentName="Breathing Exercise">
                 <Suspense fallback={<SkeletonCard lines={1} />}>
-                  <BreathingExercise
-                    compact
-                    onComplete={onBreathingComplete}
-                  />
+                  <BreathingExercise compact onComplete={onBreathingComplete} />
                 </Suspense>
               </LazyErrorBoundary>
             </div>

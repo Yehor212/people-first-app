@@ -7,7 +7,11 @@
  * Hidden by default, visible only when focused via Tab key.
  */
 
+import { useLanguage } from "@/contexts/LanguageContext";
+
 export function SkipLink() {
+  const { t } = useLanguage();
+
   return (
     <a
       href="#main-content"
@@ -29,7 +33,7 @@ export function SkipLink() {
         focus:ring-offset-2
       "
     >
-      Skip to main content
+      {t.skipToContent || "Skip to main content"}
     </a>
   );
 }

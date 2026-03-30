@@ -7,11 +7,18 @@
  * - "Try it now" CTA
  */
 
-import { useState, useEffect, useRef } from 'react';
-import { Sparkles, Timer, Trophy, ClipboardList, Heart, Target } from 'lucide-react';
-import type { FeatureId } from '@/types';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { useBackHandler } from '@/hooks/useBackHandler';
+import { useState, useEffect, useRef } from "react";
+import {
+  Sparkles,
+  Timer,
+  Trophy,
+  ClipboardList,
+  Heart,
+  Target,
+} from "lucide-react";
+import type { FeatureId } from "@/types";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useBackHandler } from "@/hooks/useBackHandler";
 
 interface FeatureUnlockProps {
   feature: FeatureId;
@@ -30,50 +37,56 @@ const FEATURE_META: Record<
 > = {
   mood: {
     icon: Heart,
-    colorClass: 'text-pink-500',
-    bgClass: 'bg-pink-50 dark:bg-pink-950',
+    colorClass: "text-pink-500",
+    bgClass: "bg-pink-50 dark:bg-pink-950",
   },
   habits: {
     icon: Target,
-    colorClass: 'text-blue-500',
-    bgClass: 'bg-blue-50 dark:bg-blue-950',
+    colorClass: "text-blue-500",
+    bgClass: "bg-blue-50 dark:bg-blue-950",
   },
   focusTimer: {
     icon: Timer,
-    colorClass: 'text-purple-500',
-    bgClass: 'bg-purple-50 dark:bg-purple-950',
+    colorClass: "text-purple-500",
+    bgClass: "bg-purple-50 dark:bg-purple-950",
   },
   xp: {
     icon: Sparkles,
-    colorClass: 'text-yellow-500',
-    bgClass: 'bg-yellow-50 dark:bg-yellow-950',
+    colorClass: "text-yellow-500",
+    bgClass: "bg-yellow-50 dark:bg-yellow-950",
   },
   quests: {
     icon: Sparkles,
-    colorClass: 'text-yellow-500',
-    bgClass: 'bg-yellow-50 dark:bg-yellow-950',
+    colorClass: "text-yellow-500",
+    bgClass: "bg-yellow-50 dark:bg-yellow-950",
   },
   companion: {
     icon: Heart,
-    colorClass: 'text-green-500',
-    bgClass: 'bg-green-50 dark:bg-green-950',
+    colorClass: "text-green-500",
+    bgClass: "bg-green-50 dark:bg-green-950",
   },
   tasks: {
     icon: ClipboardList,
-    colorClass: 'text-emerald-500',
-    bgClass: 'bg-emerald-50 dark:bg-emerald-950',
+    colorClass: "text-emerald-500",
+    bgClass: "bg-emerald-50 dark:bg-emerald-950",
   },
   challenges: {
     icon: Trophy,
-    colorClass: 'text-primary',
-    bgClass: 'bg-primary/10',
+    colorClass: "text-primary",
+    bgClass: "bg-primary/10",
   },
 };
 
-export function FeatureUnlock({ feature, onClose, onTryNow }: FeatureUnlockProps) {
+export function FeatureUnlock({
+  feature,
+  onClose,
+  onTryNow,
+}: FeatureUnlockProps) {
   const { t } = useLanguage();
   const [isVisible, setIsVisible] = useState(false);
-  const [particles, setParticles] = useState<Array<{ id: number; x: number; y: number; delay: number }>>([]);
+  const [particles, setParticles] = useState<
+    Array<{ id: number; x: number; y: number; delay: number }>
+  >([]);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const tryNowTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
@@ -117,8 +130,11 @@ export function FeatureUnlock({ feature, onClose, onTryNow }: FeatureUnlockProps
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="feature-unlock-title"
       className={`fixed inset-0 z-[70] flex items-center justify-center bg-black/50 backdrop-blur-sm transition-opacity duration-300 ${
-        isVisible ? 'opacity-100' : 'opacity-0'
+        isVisible ? "opacity-100" : "opacity-0"
       }`}
       onClick={handleClose}
     >
@@ -131,7 +147,7 @@ export function FeatureUnlock({ feature, onClose, onTryNow }: FeatureUnlockProps
             left: `${particle.x}%`,
             top: `${particle.y}%`,
             animationDelay: `${particle.delay}s`,
-            animationDuration: '2s',
+            animationDuration: "2s",
           }}
         />
       ))}
@@ -139,7 +155,7 @@ export function FeatureUnlock({ feature, onClose, onTryNow }: FeatureUnlockProps
       {/* Main card */}
       <div
         className={`relative m-4 max-w-md w-full bg-card rounded-2xl zen-shadow-card border border-border overflow-hidden transform transition-all duration-300 ${
-          isVisible ? 'scale-100 opacity-100' : 'scale-75 opacity-0'
+          isVisible ? "scale-100 opacity-100" : "scale-75 opacity-0"
         }`}
         onClick={(e) => e.stopPropagation()}
       >
@@ -151,11 +167,18 @@ export function FeatureUnlock({ feature, onClose, onTryNow }: FeatureUnlockProps
             >
               <Icon className={`w-12 h-12 ${meta.colorClass}`} />
             </div>
-            <h2 className="text-2xl font-bold text-foreground mb-2">
-              {(t as unknown as Record<string, string>)[`onboarding${feature}UnlockTitle`] || '🎉 New Feature Unlocked!'}
+            <h2
+              id="feature-unlock-title"
+              className="text-2xl font-bold text-foreground mb-2"
+            >
+              {(t as unknown as Record<string, string>)[
+                `onboarding${feature}UnlockTitle`
+              ] || "🎉 New Feature Unlocked!"}
             </h2>
             <p className="text-muted-foreground text-sm">
-              {(t as unknown as Record<string, string>)[`onboarding${feature}UnlockSubtitle`] || "You've made great progress!"}
+              {(t as unknown as Record<string, string>)[
+                `onboarding${feature}UnlockSubtitle`
+              ] || "You've made great progress!"}
             </p>
           </div>
         </div>
@@ -163,8 +186,9 @@ export function FeatureUnlock({ feature, onClose, onTryNow }: FeatureUnlockProps
         {/* Description */}
         <div className="p-6">
           <p className="text-foreground mb-6 leading-relaxed">
-            {(t as unknown as Record<string, string>)[`onboarding${feature}Description`] ||
-              'This new feature will help you on your journey.'}
+            {(t as unknown as Record<string, string>)[
+              `onboarding${feature}Description`
+            ] || "This new feature will help you on your journey."}
           </p>
 
           {/* Action buttons */}
@@ -174,14 +198,14 @@ export function FeatureUnlock({ feature, onClose, onTryNow }: FeatureUnlockProps
                 onClick={handleTryNow}
                 className="flex-1 py-3 px-4 bg-primary text-primary-foreground rounded-xl font-medium hover:bg-primary/90 transition-colors zen-shadow-sm"
               >
-                {t.onboardingTryNow || 'Try it now'}
+                {t.onboardingTryNow || "Try it now"}
               </button>
             )}
             <button
               onClick={handleClose}
               className="flex-1 py-3 px-4 bg-card border border-border text-foreground rounded-xl font-medium hover:bg-accent transition-colors"
             >
-              {t.onboardingGotIt || 'Got it!'}
+              {t.onboardingGotIt || "Got it!"}
             </button>
           </div>
         </div>
@@ -192,4 +216,3 @@ export function FeatureUnlock({ feature, onClose, onTryNow }: FeatureUnlockProps
     </div>
   );
 }
-

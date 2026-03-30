@@ -1,14 +1,13 @@
-import { useEffect } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
-import { X, Check } from 'lucide-react';
-import { cn, getToday } from '@/lib/utils';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { useBackHandler } from '@/hooks/useBackHandler';
-import { useScrollLock } from '@/hooks/useScrollLock';
-import { haptics } from '@/lib/haptics';
-import { zenMotion } from '@/lib/animationUtils';
-import { IdentityIcon } from '@/components/IdentityIconPicker';
-import type { Habit } from '@/types';
+import { AnimatePresence, motion } from "framer-motion";
+import { X, Check } from "lucide-react";
+import { cn, getToday } from "@/lib/utils";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useModalA11y } from "@/hooks/useModalA11y";
+import { useScrollLock } from "@/hooks/useScrollLock";
+import { haptics } from "@/lib/haptics";
+import { zenMotion } from "@/lib/animationUtils";
+import { IdentityIcon } from "@/components/IdentityIconPicker";
+import type { Habit } from "@/types";
 
 interface HabitsOverlayProps {
   open: boolean;
@@ -17,41 +16,43 @@ interface HabitsOverlayProps {
   onClose: () => void;
 }
 
-export function HabitsOverlay({ open, habits, onToggleHabit, onClose }: HabitsOverlayProps) {
+export function HabitsOverlay({
+  open,
+  habits,
+  onToggleHabit,
+  onClose,
+}: HabitsOverlayProps) {
   const { t } = useLanguage();
   const today = getToday();
 
-  useBackHandler(open, onClose);
+  const { modalRef, handleKeyDown } = useModalA11y(open, onClose);
   useScrollLock(open);
-
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { e.preventDefault(); onClose(); }
-    };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
-  }, [open, onClose]);
 
   return (
     <AnimatePresence>
       {open && (
         <>
-          {/* Backdrop */}
+          {/* // A11Y-OK: backdrop is decorative overlay dismissed by click — aria-hidden excludes from AT tree */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={zenMotion.gentle}
             className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm"
+            aria-hidden="true"
             onClick={onClose}
           />
 
           {/* Sheet */}
           <motion.div
-            initial={{ y: '100%' }}
+            ref={modalRef}
+            onKeyDown={handleKeyDown}
+            role="dialog"
+            aria-modal="true"
+            aria-label={t.habits}
+            initial={{ y: "100%" }}
             animate={{ y: 0 }}
-            exit={{ y: '100%' }}
+            exit={{ y: "100%" }}
             transition={zenMotion.snappy}
             className="fixed bottom-0 inset-x-0 z-[61] max-h-[70dvh] rounded-t-[2rem] bg-card border-t border-border overflow-y-auto pb-[calc(env(safe-area-inset-bottom,0px)+1rem)]"
           >
@@ -66,7 +67,7 @@ export function HabitsOverlay({ open, habits, onToggleHabit, onClose }: HabitsOv
               <button
                 onClick={onClose}
                 className="w-8 h-8 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center hover:bg-secondary"
-                aria-label={t.close || 'Close'}
+                aria-label={t.close || "Close"}
               >
                 <X className="w-4 h-4" />
               </button>
@@ -76,10 +77,10 @@ export function HabitsOverlay({ open, habits, onToggleHabit, onClose }: HabitsOv
             <div className="px-5 space-y-2 pb-4">
               {habits.length === 0 && (
                 <p className="text-sm text-muted-foreground text-center py-6">
-                  {t.noHabitsYet || 'No habits yet'}
+                  {t.noHabitsYet || "No habits yet"}
                 </p>
               )}
-              {habits.map(habit => {
+              {habits.map((habit) => {
                 const completed = habit.entries?.[today]?.value === 2;
                 return (
                   <button
@@ -89,16 +90,26 @@ export function HabitsOverlay({ open, habits, onToggleHabit, onClose }: HabitsOv
                       onToggleHabit(habit.id, today);
                     }}
                     className={cn(
-                      'w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-colors min-h-[48px]',
-                      'bg-surface-glass border border-[var(--surface-glass-border)]',
-                      completed && 'opacity-60',
+                      "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-colors min-h-[48px]",
+                      "bg-surface-glass border border-[var(--surface-glass-border)]",
+                      completed && "opacity-60",
                     )}
                   >
-                    <IdentityIcon name={habit.icon || 'Target'} className="w-5 h-5 shrink-0" />
-                    <span className={cn('flex-1 text-start text-sm', completed && 'line-through text-muted-foreground')}>
+                    <IdentityIcon
+                      name={habit.icon || "Target"}
+                      className="w-5 h-5 shrink-0"
+                    />
+                    <span
+                      className={cn(
+                        "flex-1 text-start text-sm",
+                        completed && "line-through text-muted-foreground",
+                      )}
+                    >
                       {habit.name}
                     </span>
-                    {completed && <Check className="w-4 h-4 text-emerald-500 shrink-0" />}
+                    {completed && (
+                      <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                    )}
                   </button>
                 );
               })}

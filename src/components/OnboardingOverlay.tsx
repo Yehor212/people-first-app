@@ -12,7 +12,7 @@ import { useState, useEffect } from "react";
 import { Sparkles, X, ChevronRight } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useScrollLock } from "@/hooks/useScrollLock";
-import { useBackHandler } from "@/hooks/useBackHandler";
+import { useModalA11y } from "@/hooks/useModalA11y";
 import {
   getOnboardingState,
   shouldShowWelcome,
@@ -30,10 +30,11 @@ interface OnboardingOverlayProps {
 export function WelcomeOverlay({ onClose }: { onClose: () => void }) {
   const { t } = useLanguage();
   useScrollLock(true);
-  useBackHandler(true, () => {
+  const handleClose = () => {
     markWelcomeSeen();
     onClose();
-  });
+  };
+  const { modalRef, handleKeyDown } = useModalA11y(true, handleClose);
   const [step, setStep] = useState(0);
 
   const steps = [
@@ -73,6 +74,8 @@ export function WelcomeOverlay({ onClose }: { onClose: () => void }) {
 
   return (
     <div
+      ref={modalRef}
+      onKeyDown={handleKeyDown}
       className="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 backdrop-blur-sm motion-safe:animate-fade-in px-3 sm:px-4"
       role="dialog"
       aria-modal="true"

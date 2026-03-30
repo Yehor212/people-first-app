@@ -1,19 +1,38 @@
-import { useState, useEffect } from 'react';
-import { Download, Upload, Trash2, Loader2, FileText, FileSpreadsheet } from 'lucide-react';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { useBackHandler } from '@/hooks/useBackHandler';
-import { useScrollLock } from '@/hooks/useScrollLock';
-import { cn } from '@/lib/utils';
-import { AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { PrivacySection } from '@/components/settings/PrivacySection';
-import type { PrivacySettings, MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
-import { useDataExport } from './useDataExport';
-import { useDataImport } from './useDataImport';
+import { useState, useEffect } from "react";
+import {
+  Download,
+  Upload,
+  Trash2,
+  Loader2,
+  FileText,
+  FileSpreadsheet,
+} from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useBackHandler } from "@/hooks/useBackHandler";
+import { useScrollLock } from "@/hooks/useScrollLock";
+import { cn } from "@/lib/utils";
+import {
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { PrivacySection } from "@/components/settings/PrivacySection";
+import type {
+  PrivacySettings,
+  MoodEntry,
+  Habit,
+  FocusSession,
+  GratitudeEntry,
+} from "@/types";
+import { useDataExport } from "./useDataExport";
+import { useDataImport } from "./useDataImport";
 
 interface DataSectionProps {
   onResetData: () => void;
   privacy: PrivacySettings;
-  onPrivacyChange: (value: PrivacySettings | ((prev: PrivacySettings) => PrivacySettings)) => void;
+  onPrivacyChange: (
+    value: PrivacySettings | ((prev: PrivacySettings) => PrivacySettings),
+  ) => void;
   moods?: MoodEntry[];
   habits: Habit[];
   focusSessions?: FocusSession[];
@@ -37,7 +56,15 @@ export function DataSection({
   const [dataStatus, setDataStatus] = useState<string | null>(null);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
 
-  const exp = useDataExport({ setDataStatus, t: tRecord, moods, habits, focusSessions, gratitudeEntries, userName });
+  const exp = useDataExport({
+    setDataStatus,
+    t: tRecord,
+    moods,
+    habits,
+    focusSessions,
+    gratitudeEntries,
+    userName,
+  });
   const imp = useDataImport({ setDataStatus, t: tRecord });
 
   // Back handler + scroll lock for reset confirmation
@@ -51,7 +78,7 @@ export function DataSection({
   useEffect(() => {
     if (!showResetConfirm && !showImportConfirm) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         e.preventDefault();
         if (showImportConfirm) {
           handleImportCancel();
@@ -60,8 +87,8 @@ export function DataSection({
         }
       }
     };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
   }, [showResetConfirm, showImportConfirm, handleImportCancel]);
 
   // Auto-clear dataStatus after 3 seconds
@@ -78,13 +105,18 @@ export function DataSection({
 
   return (
     <>
-      <AccordionItem value="data" className="bg-card rounded-2xl shadow-zen-sm border overflow-hidden">
+      <AccordionItem
+        value="data"
+        className="bg-card rounded-2xl shadow-zen-sm border overflow-hidden"
+      >
         <AccordionTrigger className="px-5 py-4 hover:no-underline hover:bg-muted/30 data-[state=open]:bg-primary/5">
           <div className="flex items-center gap-3">
             <div className="p-2 zen-gradient-sunset rounded-xl shadow-[0_4px_20px_-4px_hsl(350_60%_65%/0.25)]">
               <Download className="w-5 h-5 text-primary-foreground" />
             </div>
-            <span className="text-lg font-semibold text-foreground">{t.settingsGroupData}</span>
+            <span className="text-lg font-semibold text-foreground">
+              {t.settingsGroupData}
+            </span>
           </div>
         </AccordionTrigger>
         <AccordionContent className="px-6 pb-6">
@@ -92,7 +124,8 @@ export function DataSection({
             {/* Info message */}
             <div className="p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
               <p className="text-xs text-blue-900 dark:text-blue-100">
-                {t.settingsExportDescription || 'Your data is stored locally on your device. Export backups regularly to prevent data loss.'}
+                {t.settingsExportDescription ||
+                  "Your data is stored locally on your device. Export backups regularly to prevent data loss."}
               </p>
             </div>
 
@@ -104,8 +137,19 @@ export function DataSection({
                 aria-label={t.settingsExportTitle || t.exportData}
                 className="w-full py-4 zen-gradient text-primary-foreground rounded-xl font-medium hover:opacity-90 transition-opacity zen-shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {exp.isExporting ? <Loader2 className="w-5 h-5 motion-safe:animate-spin" aria-label={t.exporting || 'Exporting...'} /> : <Download className="w-5 h-5" />}
-                <span>{exp.isExporting ? (t.exporting || 'Exporting...') : (t.settingsExportTitle || t.exportData)}</span>
+                {exp.isExporting ? (
+                  <Loader2
+                    className="w-5 h-5 motion-safe:animate-spin"
+                    aria-label={t.exporting || "Exporting..."}
+                  />
+                ) : (
+                  <Download className="w-5 h-5" />
+                )}
+                <span>
+                  {exp.isExporting
+                    ? t.exporting || "Exporting..."
+                    : t.settingsExportTitle || t.exportData}
+                </span>
               </button>
 
               {/* Export CSV and PDF buttons */}
@@ -113,49 +157,69 @@ export function DataSection({
                 <button
                   onClick={exp.handleExportCSV}
                   disabled={exp.isExportingCSV}
-                  aria-label={t.exportCSV || 'CSV'}
+                  aria-label={t.exportCSV || "CSV"}
                   className="flex-1 py-3 bg-secondary text-secondary-foreground rounded-xl font-medium hover:bg-muted transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {exp.isExportingCSV ? <Loader2 className="w-4 h-4 motion-safe:animate-spin" aria-label={t.exporting || 'Exporting...'} /> : <FileSpreadsheet className="w-4 h-4" />}
-                  <span>{t.exportCSV || 'CSV'}</span>
+                  {exp.isExportingCSV ? (
+                    <Loader2
+                      className="w-4 h-4 motion-safe:animate-spin"
+                      aria-label={t.exporting || "Exporting..."}
+                    />
+                  ) : (
+                    <FileSpreadsheet className="w-4 h-4" />
+                  )}
+                  <span>{t.exportCSV || "CSV"}</span>
                 </button>
                 <button
                   onClick={exp.handleExportPDF}
                   disabled={exp.isExportingPDF}
-                  aria-label={t.exportPDF || 'PDF Report'}
+                  aria-label={t.exportPDF || "PDF Report"}
                   className="flex-1 py-3 bg-secondary text-secondary-foreground rounded-xl font-medium hover:bg-muted transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {exp.isExportingPDF ? <Loader2 className="w-4 h-4 motion-safe:animate-spin" aria-label={t.exporting || 'Exporting...'} /> : <FileText className="w-4 h-4" />}
-                  <span>{t.exportPDF || 'PDF Report'}</span>
+                  {exp.isExportingPDF ? (
+                    <Loader2
+                      className="w-4 h-4 motion-safe:animate-spin"
+                      aria-label={t.exporting || "Exporting..."}
+                    />
+                  ) : (
+                    <FileText className="w-4 h-4" />
+                  )}
+                  <span>{t.exportPDF || "PDF Report"}</span>
                 </button>
               </div>
 
               {/* Import mode selector */}
               <div>
-                <label className="text-sm font-medium text-foreground mb-2 block">{t.importMode}</label>
-                <div className="flex gap-2 mb-2" role="group" aria-label={t.importMode}>
+                <label className="text-sm font-medium text-foreground mb-2 block">
+                  {t.importMode}
+                </label>
+                <div
+                  className="flex gap-2 mb-2"
+                  role="group"
+                  aria-label={t.importMode}
+                >
                   <button
-                    onClick={() => imp.setImportMode('merge')}
-                    aria-pressed={imp.importMode === 'merge'}
+                    onClick={() => imp.setImportMode("merge")}
+                    aria-pressed={imp.importMode === "merge"}
                     aria-label={t.importMerge}
                     className={cn(
-                      'flex-1 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-colors',
-                      imp.importMode === 'merge'
-                        ? 'bg-primary/10 ring-2 ring-primary text-foreground'
-                        : 'bg-secondary text-muted-foreground hover:bg-muted'
+                      "flex-1 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-colors",
+                      imp.importMode === "merge"
+                        ? "bg-primary/10 ring-2 ring-primary text-foreground"
+                        : "bg-secondary text-muted-foreground hover:bg-muted",
                     )}
                   >
                     {t.importMerge}
                   </button>
                   <button
-                    onClick={() => imp.setImportMode('replace')}
-                    aria-pressed={imp.importMode === 'replace'}
+                    onClick={() => imp.setImportMode("replace")}
+                    aria-pressed={imp.importMode === "replace"}
                     aria-label={t.importReplace}
                     className={cn(
-                      'flex-1 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-colors',
-                      imp.importMode === 'replace'
-                        ? 'bg-destructive/10 ring-2 ring-destructive text-destructive'
-                        : 'bg-secondary text-muted-foreground hover:bg-muted'
+                      "flex-1 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-colors",
+                      imp.importMode === "replace"
+                        ? "bg-destructive/10 ring-2 ring-destructive text-destructive"
+                        : "bg-secondary text-muted-foreground hover:bg-muted",
                     )}
                   >
                     {t.importReplace}
@@ -163,9 +227,11 @@ export function DataSection({
                 </div>
                 {/* Tooltip text */}
                 <p className="text-xs text-muted-foreground">
-                  {imp.importMode === 'merge'
-                    ? (t.settingsImportMergeTooltip || 'Imported data will be added to existing. Duplicates skipped.')
-                    : (t.settingsImportReplaceTooltip || 'All current data will be deleted and replaced with import')}
+                  {imp.importMode === "merge"
+                    ? t.settingsImportMergeTooltip ||
+                      "Imported data will be added to existing. Duplicates skipped."
+                    : t.settingsImportReplaceTooltip ||
+                      "All current data will be deleted and replaced with import"}
                 </p>
               </div>
 
@@ -184,8 +250,19 @@ export function DataSection({
                   aria-label={t.settingsImportTitle || t.importData}
                   className="w-full py-3 bg-secondary text-secondary-foreground rounded-xl font-medium hover:bg-muted transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {imp.isImporting ? <Loader2 className="w-5 h-5 motion-safe:animate-spin" aria-label={t.importing || 'Importing...'} /> : <Upload className="w-5 h-5" />}
-                  <span>{imp.isImporting ? (t.importing || 'Importing...') : (t.settingsImportTitle || t.importData)}</span>
+                  {imp.isImporting ? (
+                    <Loader2
+                      className="w-5 h-5 motion-safe:animate-spin"
+                      aria-label={t.importing || "Importing..."}
+                    />
+                  ) : (
+                    <Upload className="w-5 h-5" />
+                  )}
+                  <span>
+                    {imp.isImporting
+                      ? t.importing || "Importing..."
+                      : t.settingsImportTitle || t.importData}
+                  </span>
                 </button>
               </div>
 
@@ -197,7 +274,10 @@ export function DataSection({
               </div>
 
               {/* Privacy Section */}
-              <PrivacySection privacy={privacy} onPrivacyChange={onPrivacyChange} />
+              <PrivacySection
+                privacy={privacy}
+                onPrivacyChange={onPrivacyChange}
+              />
 
               {/* Reset All Data - at the bottom after Privacy */}
               {!showResetConfirm ? (
@@ -239,20 +319,33 @@ export function DataSection({
 
       {/* Import confirmation modal */}
       {imp.showImportConfirm && imp.pendingImportFile && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" role="dialog" aria-modal="true">
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={imp.handleImportCancel} />
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+        >
+          {/* // A11Y-OK: backdrop is decorative overlay dismissed by click — aria-hidden excludes from AT tree */}
+          <div
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+            aria-hidden="true"
+            onClick={imp.handleImportCancel}
+          />
           <div className="relative bg-card rounded-2xl p-6 w-full max-w-sm shadow-xl motion-safe:animate-scale-in">
-            <h3 className="text-lg font-semibold text-foreground mb-2">{t.importConfirmTitle || 'Import Backup'}</h3>
+            <h3 className="text-lg font-semibold text-foreground mb-2">
+              {t.importConfirmTitle || "Import Backup"}
+            </h3>
             <p className="text-sm text-muted-foreground mb-1">
-              {t.importConfirmMessage || 'Import data from this file?'}
+              {t.importConfirmMessage || "Import data from this file?"}
             </p>
             <p className="text-xs text-muted-foreground mb-4 truncate">
               {imp.pendingImportFile.name}
             </p>
             <p className="text-xs text-muted-foreground mb-4">
-              {imp.importMode === 'merge'
-                ? (t.settingsImportMergeTooltip || 'Imported data will be added to existing. Duplicates skipped.')
-                : (t.settingsImportReplaceTooltip || 'All current data will be deleted and replaced with import')}
+              {imp.importMode === "merge"
+                ? t.settingsImportMergeTooltip ||
+                  "Imported data will be added to existing. Duplicates skipped."
+                : t.settingsImportReplaceTooltip ||
+                  "All current data will be deleted and replaced with import"}
             </p>
             <div className="flex gap-2">
               <button

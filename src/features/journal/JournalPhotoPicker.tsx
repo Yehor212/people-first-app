@@ -1,11 +1,11 @@
-import { useRef, useState, useEffect } from 'react';
-import { isNative } from '@/lib/platform';
-import { Camera, Image as ImageIcon, X, Loader2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { useBackHandler } from '@/hooks/useBackHandler';
-import { useScrollLock } from '@/hooks/useScrollLock';
-import { logger } from '@/lib/logger';
+import { useRef, useState, useEffect } from "react";
+import { isNative } from "@/lib/platform";
+import { Camera, Image as ImageIcon, X, Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useBackHandler } from "@/hooks/useBackHandler";
+import { useScrollLock } from "@/hooks/useScrollLock";
+import { logger } from "@/lib/logger";
 
 interface JournalPhotoPickerProps {
   onSelectFile: (file: File) => Promise<void>;
@@ -45,8 +45,11 @@ export function JournalPhotoPicker({
     if (!file) return;
 
     if (file.size > MAX_FILE_SIZE) {
-      setError(ts.journalPhotoTooLarge || 'Image too large (max 10 MB). Try a smaller image.');
-      e.target.value = '';
+      setError(
+        ts.journalPhotoTooLarge ||
+          "Image too large (max 10 MB). Try a smaller image.",
+      );
+      e.target.value = "";
       return;
     }
 
@@ -56,11 +59,11 @@ export function JournalPhotoPicker({
       await onSelectFile(file);
       onClose();
     } catch (err) {
-      logger.error('[JournalPhotoPicker] Photo upload failed:', err);
-      setError(ts.journalPhotoError || 'Failed to add photo. Try again.');
+      logger.error("[JournalPhotoPicker] Photo upload failed:", err);
+      setError(ts.journalPhotoError || "Failed to add photo. Try again.");
     } finally {
       setLoading(false);
-      e.target.value = '';
+      e.target.value = "";
     }
   };
 
@@ -68,17 +71,21 @@ export function JournalPhotoPicker({
 
   return (
     <>
-      {/* Backdrop */}
-      <div className="fixed inset-0 z-[64] bg-black/30 animate-fade-in" onClick={onClose} />
+      {/* // A11Y-OK: backdrop is decorative overlay dismissed by click — aria-hidden excludes from AT tree */}
+      <div
+        className="fixed inset-0 z-[64] bg-black/30 animate-fade-in"
+        aria-hidden="true"
+        onClick={onClose}
+      />
 
       <div
         role="dialog"
         aria-modal="true"
         className={cn(
-          'fixed bottom-0 inset-x-0 z-[65]',
-          'bg-card/95 backdrop-blur-xl border-t border-border/40',
-          'rounded-t-2xl shadow-lg animate-slide-up',
-          'pb-[env(safe-area-inset-bottom)]',
+          "fixed bottom-0 inset-x-0 z-[65]",
+          "bg-card/95 backdrop-blur-xl border-t border-border/40",
+          "rounded-t-2xl shadow-lg animate-slide-up",
+          "pb-[env(safe-area-inset-bottom)]",
         )}
       >
         {/* Handle bar */}
@@ -90,9 +97,14 @@ export function JournalPhotoPicker({
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
             <span className="text-sm font-semibold text-foreground">
-              {ts.journalPhotoAdd || 'Add Photo'} ({remaining} {ts.journalRemaining || 'remaining'})
+              {ts.journalPhotoAdd || "Add Photo"} ({remaining}{" "}
+              {ts.journalRemaining || "remaining"})
             </span>
-            <button onClick={onClose} className="p-2 rounded-lg hover:bg-muted/50 min-w-[44px] min-h-[44px] flex items-center justify-center" aria-label={ts.close || 'Close'}>
+            <button
+              onClick={onClose}
+              className="p-2 rounded-lg hover:bg-muted/50 min-w-[44px] min-h-[44px] flex items-center justify-center"
+              aria-label={ts.close || "Close"}
+            >
               <X className="w-4 h-4 text-muted-foreground" />
             </button>
           </div>
@@ -103,8 +115,13 @@ export function JournalPhotoPicker({
 
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="w-6 h-6 text-primary animate-spin" aria-hidden="true" />
-              <span className="ms-2 text-sm text-muted-foreground">{ts.journalCompressing || 'Compressing...'}</span>
+              <Loader2
+                className="w-6 h-6 text-primary animate-spin"
+                aria-hidden="true"
+              />
+              <span className="ms-2 text-sm text-muted-foreground">
+                {ts.journalCompressing || "Compressing..."}
+              </span>
             </div>
           ) : (
             <div className="flex gap-3">
@@ -113,16 +130,16 @@ export function JournalPhotoPicker({
                   onClick={() => cameraRef.current?.click()}
                   disabled={remaining <= 0}
                   className={cn(
-                    'flex-1 flex flex-col items-center gap-2 py-6 rounded-xl',
-                    'bg-muted/50 border border-border/30',
-                    'active:scale-95 transition-transform',
-                    'disabled:opacity-40',
-                    'min-h-[80px]',
+                    "flex-1 flex flex-col items-center gap-2 py-6 rounded-xl",
+                    "bg-muted/50 border border-border/30",
+                    "active:scale-95 transition-transform",
+                    "disabled:opacity-40",
+                    "min-h-[80px]",
                   )}
                 >
                   <Camera className="w-6 h-6 text-foreground" />
                   <span className="text-xs font-medium text-foreground">
-                    {ts.journalPhotoTake || 'Take Photo'}
+                    {ts.journalPhotoTake || "Take Photo"}
                   </span>
                 </button>
               )}
@@ -131,16 +148,16 @@ export function JournalPhotoPicker({
                 onClick={() => galleryRef.current?.click()}
                 disabled={remaining <= 0}
                 className={cn(
-                  'flex-1 flex flex-col items-center gap-2 py-6 rounded-xl',
-                  'bg-muted/50 border border-border/30',
-                  'active:scale-95 transition-transform',
-                  'disabled:opacity-40',
-                  'min-h-[80px]',
+                  "flex-1 flex flex-col items-center gap-2 py-6 rounded-xl",
+                  "bg-muted/50 border border-border/30",
+                  "active:scale-95 transition-transform",
+                  "disabled:opacity-40",
+                  "min-h-[80px]",
                 )}
               >
                 <ImageIcon className="w-6 h-6 text-foreground" />
                 <span className="text-xs font-medium text-foreground">
-                  {ts.journalPhotoChoose || 'From Gallery'}
+                  {ts.journalPhotoChoose || "From Gallery"}
                 </span>
               </button>
             </div>
@@ -148,8 +165,21 @@ export function JournalPhotoPicker({
         </div>
 
         {/* Hidden file inputs */}
-        <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFile} />
-        <input ref={galleryRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
+        <input
+          ref={cameraRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          className="hidden"
+          onChange={handleFile}
+        />
+        <input
+          ref={galleryRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleFile}
+        />
       </div>
     </>
   );

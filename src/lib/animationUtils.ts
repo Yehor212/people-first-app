@@ -2,8 +2,8 @@
 // Used by non-React code (audioManager, haptics) to check user preferences
 // Also provides standard Framer Motion presets for consistent animations
 
-import { safeLocalStorageGet } from './safeJson';
-import { SK } from './storageKeys';
+import { safeLocalStorageGet } from "./safeJson";
+import { SK } from "./storageKeys";
 
 /**
  * Standard Framer Motion animation presets
@@ -22,17 +22,17 @@ export const motionPresets = {
   slideUp: {
     initial: { opacity: 0, y: 20 },
     animate: { opacity: 1, y: 0 },
-    transition: { duration: 0.3, ease: 'easeOut' },
+    transition: { duration: 0.3, ease: "easeOut" },
   },
   scaleIn: {
     initial: { opacity: 0, scale: 0.95 },
     animate: { opacity: 1, scale: 1 },
-    transition: { duration: 0.2, ease: 'easeOut' },
+    transition: { duration: 0.2, ease: "easeOut" },
   },
   modalEnter: {
     initial: { opacity: 0, scale: 0.97, y: 4 },
     animate: { opacity: 1, scale: 1, y: 0 },
-    transition: { type: 'spring', damping: 25, stiffness: 300 },
+    transition: { type: "spring", damping: 25, stiffness: 300 },
   },
 } as const;
 
@@ -46,22 +46,27 @@ export const motionPresets = {
  */
 export const zenMotion = {
   /** Quick response — buttons, toggles, checkboxes (150-200ms feel) */
-  snappy: { type: 'spring' as const, stiffness: 400, damping: 30 },
+  snappy: { type: "spring" as const, stiffness: 400, damping: 30 },
 
   /** Smooth entrance — cards, modals, panels (200-300ms feel) */
-  gentle: { type: 'spring' as const, stiffness: 260, damping: 25 },
+  gentle: { type: "spring" as const, stiffness: 260, damping: 25 },
 
   /** Bottom sheet slide — critically damped, one smooth motion */
-  sheet: { type: 'spring' as const, stiffness: 300, damping: 26 },
+  sheet: { type: "spring" as const, stiffness: 300, damping: 26 },
 
   /** Celebration — critically damped settle, no bounce (Apple Health: one smooth motion) */
-  bouncy: { type: 'spring' as const, stiffness: 300, damping: 26 },
+  bouncy: { type: "spring" as const, stiffness: 300, damping: 26 },
 
   /** Exit — always fast, linear (modals closing, toasts dismissing) */
-  exit: { duration: 0.15, ease: 'easeIn' as const },
+  exit: { duration: 0.15, ease: "easeIn" as const },
 
   /** Ambient — breathing, floating loops (slow, infinite) */
-  breathing: { duration: 3, ease: 'easeInOut' as const, repeat: Infinity, repeatType: 'reverse' as const },
+  breathing: {
+    duration: 3,
+    ease: "easeInOut" as const,
+    repeat: Infinity,
+    repeatType: "reverse" as const,
+  },
 } as const;
 
 /**
@@ -87,7 +92,7 @@ export const zenHover = {
 } as const;
 
 interface DopamineSettings {
-  intensity: 'minimal' | 'normal' | 'adhd';
+  intensity: "minimal" | "normal" | "adhd";
   animations: boolean;
   sounds: boolean;
   haptics: boolean;
@@ -97,7 +102,7 @@ interface DopamineSettings {
 }
 
 const DEFAULT_DOPAMINE_SETTINGS: DopamineSettings = {
-  intensity: 'normal',
+  intensity: "normal",
   animations: true,
   sounds: true,
   haptics: true,
@@ -111,21 +116,32 @@ const DEFAULT_DOPAMINE_SETTINGS: DopamineSettings = {
  * Works in non-React contexts (audioManager, haptics, etc.)
  */
 export function getDopamineSettings(): DopamineSettings {
-  if (typeof window === 'undefined') {
+  if (typeof window === "undefined") {
     return DEFAULT_DOPAMINE_SETTINGS;
   }
 
-  const parsed = safeLocalStorageGet<DopamineSettings | null>(SK.DOPAMINE_SETTINGS, null);
-  return parsed ? { ...DEFAULT_DOPAMINE_SETTINGS, ...parsed } : DEFAULT_DOPAMINE_SETTINGS;
+  const parsed = safeLocalStorageGet<DopamineSettings | null>(
+    SK.DOPAMINE_SETTINGS,
+    null,
+  );
+  return parsed
+    ? { ...DEFAULT_DOPAMINE_SETTINGS, ...parsed }
+    : DEFAULT_DOPAMINE_SETTINGS;
 }
 
 /**
  * Check if animations should be shown
- * Only respects in-app Dopamine Settings toggle — OS prefers-reduced-motion is ignored
- * so iOS users get full visual fidelity by default (they can use the in-app toggle).
+ * Respects in-app Dopamine Settings toggle (primary) AND OS prefers-reduced-motion (secondary).
+ * If either disables animations, animations are off — WCAG 2.3.3 compliance.
  */
 export function shouldAnimate(): boolean {
-  return getDopamineSettings().animations;
+  if (!getDopamineSettings().animations) return false;
+  if (
+    typeof window !== "undefined" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  )
+    return false;
+  return true;
 }
 
 /**
@@ -169,14 +185,14 @@ export function shouldShowMoodEffects(): boolean {
  * Call this when dopamine settings change
  */
 export function applyReduceMotionClass(): void {
-  if (typeof document === 'undefined') return;
+  if (typeof document === "undefined") return;
 
   const animate = shouldAnimate();
 
   if (animate) {
-    document.body.classList.remove('reduce-motion');
+    document.body.classList.remove("reduce-motion");
   } else {
-    document.body.classList.add('reduce-motion');
+    document.body.classList.add("reduce-motion");
   }
 }
 
@@ -185,13 +201,13 @@ export function applyReduceMotionClass(): void {
  * Call this when dopamine settings change
  */
 export function applyMoodDisabledClass(): void {
-  if (typeof document === 'undefined') return;
+  if (typeof document === "undefined") return;
 
   const showMood = shouldShowMoodEffects();
 
   if (showMood) {
-    document.body.classList.remove('mood-disabled');
+    document.body.classList.remove("mood-disabled");
   } else {
-    document.body.classList.add('mood-disabled');
+    document.body.classList.add("mood-disabled");
   }
 }
