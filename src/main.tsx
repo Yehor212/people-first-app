@@ -32,7 +32,7 @@ import { safeLocalStorageSet } from "./lib/safeJson";
 try {
   initSentry();
 } catch (e) {
-  logger.warn('[Main] Sentry init failed:', e);
+  logger.warn("[Main] Sentry init failed:", e);
 }
 
 // Setup chunk error handler EARLY to catch lazy loading failures
@@ -43,45 +43,54 @@ setupChunkErrorHandler();
 initA11y();
 
 // Listen for SW activation — new SW means new deploy, check version immediately
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.addEventListener('message', (event) => {
-    if (event.data?.type === 'SW_UPDATED') {
-      logger.log('[Main] New SW activated, checking version...');
-      checkAppVersion().then((isUpToDate) => {
-        markVersionChecked();
-        if (!isUpToDate) {
-          logger.log('[Main] Version mismatch after SW update, reloading...');
-          void forceHardReload();
-        }
-      }).catch((err) => { logger.warn('[Main] SW update version check failed:', err); });
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.addEventListener("message", (event) => {
+    // Security: validate origin for defense-in-depth (CWE-345)
+    if (event.origin && event.origin !== window.location.origin) return;
+    if (event.data?.type === "SW_UPDATED") {
+      logger.log("[Main] New SW activated, checking version...");
+      checkAppVersion()
+        .then((isUpToDate) => {
+          markVersionChecked();
+          if (!isUpToDate) {
+            logger.log("[Main] Version mismatch after SW update, reloading...");
+            void forceHardReload();
+          }
+        })
+        .catch((err) => {
+          logger.warn("[Main] SW update version check failed:", err);
+        });
     }
   });
 }
 
 // Global error handlers for unhandled exceptions and promise rejections
 // These catch errors that escape React's error boundary
-window.addEventListener('unhandledrejection', (event) => {
+window.addEventListener("unhandledrejection", (event) => {
   const reason = event.reason;
 
   // Suppress generic browser/Capacitor permission rejections (e.g. notification denied)
-  if (reason === 'Rejected' || (reason instanceof Error && reason.message === 'Rejected')) {
+  if (
+    reason === "Rejected" ||
+    (reason instanceof Error && reason.message === "Rejected")
+  ) {
     event.preventDefault();
-    logger.warn('[Global] Suppressed generic rejection:', reason);
+    logger.warn("[Global] Suppressed generic rejection:", reason);
     return;
   }
 
-  logger.error('[Global] Unhandled promise rejection:', reason);
+  logger.error("[Global] Unhandled promise rejection:", reason);
   // Send to Sentry
   if (reason instanceof Error) {
-    captureError(reason, { type: 'unhandledrejection' });
+    captureError(reason, { type: "unhandledrejection" });
   }
 });
 
-window.addEventListener('error', (event) => {
-  logger.error('[Global] Uncaught error:', event.error || event.message);
+window.addEventListener("error", (event) => {
+  logger.error("[Global] Uncaught error:", event.error || event.message);
   // Send to Sentry
   if (event.error instanceof Error) {
-    captureError(event.error, { type: 'uncaught' });
+    captureError(event.error, { type: "uncaught" });
   }
 });
 
@@ -94,7 +103,7 @@ window.addEventListener('error', (event) => {
  * Uses sendBeacon for reliable data transmission even during page unload.
  */
 // Save critical state before app closes
-window.addEventListener('beforeunload', () => {
+window.addEventListener("beforeunload", () => {
   try {
     // Save offline queue state synchronously
     const queueState = offlineQueue.getState();
@@ -105,7 +114,9 @@ window.addEventListener('beforeunload', () => {
         pendingActions: queueState.actions.length,
         queueSnapshot: queueState.actions.slice(0, 10), // Save first 10 for recovery
       });
-      logger.log(`[Main] Saved ${queueState.actions.length} pending actions before unload`);
+      logger.log(
+        `[Main] Saved ${queueState.actions.length} pending actions before unload`,
+      );
     }
   } catch (_error) {
     // Ignore errors during unload
@@ -144,7 +155,9 @@ function handleAppPause(): void {
   }
 
   // Reset flag after short delay to allow next pause event
-  setTimeout(() => { isHandlingPause = false; }, 100);
+  setTimeout(() => {
+    isHandlingPause = false;
+  }, 100);
 }
 
 async function handleAppResume(): Promise<void> {
@@ -162,7 +175,7 @@ async function handleAppResume(): Promise<void> {
     const isUpToDate = await checkAppVersion();
     markVersionChecked();
     if (!isUpToDate) {
-      logger.log('[Main] Stale version on resume, reloading...');
+      logger.log("[Main] Stale version on resume, reloading...");
       await forceHardReload();
       return; // Page will reload
     }
@@ -170,21 +183,23 @@ async function handleAppResume(): Promise<void> {
 
   // Trigger sync if online and there are pending actions
   if (navigator.onLine && offlineQueue.hasPendingActions()) {
-    logger.log('[Main] Processing pending offline queue on resume');
+    logger.log("[Main] Processing pending offline queue on resume");
     void offlineQueue.processQueue();
   }
   // Clean up stale share cache files (24+ hours old)
   void cleanupShareCache();
 
   // Reset flag after short delay to allow next resume event
-  setTimeout(() => { isHandlingResume = false; }, 100);
+  setTimeout(() => {
+    isHandlingResume = false;
+  }, 100);
 }
 
 // Handle visibility change (app going to background on mobile)
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'hidden') {
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") {
     handleAppPause();
-  } else if (document.visibilityState === 'visible') {
+  } else if (document.visibilityState === "visible") {
     void handleAppResume();
   }
 });
@@ -196,14 +211,14 @@ document.addEventListener('visibilitychange', () => {
  */
 if (isNative) {
   // App paused (going to background)
-  void CapacitorApp.addListener('pause', () => {
-    logger.log('[Main] App paused - saving state');
+  void CapacitorApp.addListener("pause", () => {
+    logger.log("[Main] App paused - saving state");
     handleAppPause();
   });
 
   // App resumed (coming back to foreground)
-  void CapacitorApp.addListener('resume', () => {
-    logger.log('[Main] App resumed - checking for pending sync');
+  void CapacitorApp.addListener("resume", () => {
+    logger.log("[Main] App resumed - checking for pending sync");
     void handleAppResume();
   });
 }
@@ -229,31 +244,44 @@ setupDeepLinks();
 
 // Only unregister service workers on Capacitor (native apps don't need PWA)
 // Web PWA keeps SW for offline support
-const isCapacitor = typeof window !== 'undefined' &&
-  (window as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.();
+const isCapacitor =
+  typeof window !== "undefined" &&
+  (
+    window as { Capacitor?: { isNativePlatform?: () => boolean } }
+  ).Capacitor?.isNativePlatform?.();
 
 if (isCapacitor) {
   try {
-    if ('serviceWorker' in navigator && navigator.serviceWorker) {
-      navigator.serviceWorker.getRegistrations().then((registrations) => {
-        registrations.forEach((registration) => registration.unregister());
-      }).catch((err) => {
-        // Log SW unregister errors in dev mode
-        logger.warn('[Main] SW unregister failed:', err);
-      });
+    if ("serviceWorker" in navigator && navigator.serviceWorker) {
+      navigator.serviceWorker
+        .getRegistrations()
+        .then((registrations) => {
+          registrations.forEach((registration) => registration.unregister());
+        })
+        .catch((err) => {
+          // Log SW unregister errors in dev mode
+          logger.warn("[Main] SW unregister failed:", err);
+        });
     }
     // Clear workbox/PWA caches on Capacitor only
-    if ('caches' in window && window.caches) {
-      window.caches.keys().then((names) => {
-        names.forEach((name) => {
-          if (name.includes('workbox') || name.includes('precache') || name.includes('runtime')) {
-            void window.caches.delete(name);
-          }
+    if ("caches" in window && window.caches) {
+      window.caches
+        .keys()
+        .then((names) => {
+          names.forEach((name) => {
+            if (
+              name.includes("workbox") ||
+              name.includes("precache") ||
+              name.includes("runtime")
+            ) {
+              void window.caches.delete(name);
+            }
+          });
+        })
+        .catch((err) => {
+          // Log cache clear errors in dev mode
+          logger.warn("[Main] Cache clear failed:", err);
         });
-      }).catch((err) => {
-        // Log cache clear errors in dev mode
-        logger.warn('[Main] Cache clear failed:', err);
-      });
     }
   } catch (_e) {
     // Ignore errors - these are non-critical cleanup operations
@@ -273,17 +301,19 @@ async function initializeApp(): Promise<boolean> {
   // Check database health early to detect IndexedDB issues
   // This runs on every app start to catch database corruption/deletion
   try {
-    logger.log('[Main] Checking database health...');
+    logger.log("[Main] Checking database health...");
     const dbHealthy = await checkDatabaseHealth();
     if (!dbHealthy) {
-      logger.warn('[Main] Database health check failed - app will use localStorage fallback');
+      logger.warn(
+        "[Main] Database health check failed - app will use localStorage fallback",
+      );
       // Don't block app startup, just log the warning
       // The useIndexedDB hook has its own fallback logic
     } else {
-      logger.log('[Main] Database is healthy');
+      logger.log("[Main] Database is healthy");
     }
   } catch (dbError) {
-    logger.warn('[Main] Database health check error:', dbError);
+    logger.warn("[Main] Database health check error:", dbError);
     // Continue anyway - app has fallbacks
   }
 
@@ -293,7 +323,9 @@ async function initializeApp(): Promise<boolean> {
   const autoCheck = shouldAutoCheckVersion();
 
   if (priorityCheck || autoCheck) {
-    logger.log(`[Main] Checking app version... (priority=${priorityCheck}, auto=${autoCheck})`);
+    logger.log(
+      `[Main] Checking app version... (priority=${priorityCheck}, auto=${autoCheck})`,
+    );
 
     const isUpToDate = await checkAppVersion();
 
@@ -301,23 +333,25 @@ async function initializeApp(): Promise<boolean> {
     markVersionChecked();
 
     if (!isUpToDate) {
-      logger.log('[Main] Outdated version detected, performing hard reload...');
+      logger.log("[Main] Outdated version detected, performing hard reload...");
       await forceHardReload();
       return false; // Don't render, page will reload
     }
 
-    logger.log('[Main] Version is up to date');
+    logger.log("[Main] Version is up to date");
   }
 
   return true;
 }
 
 // Initialize app with version check, then render
-initializeApp().then((shouldRender) => {
-  if (shouldRender) {
+initializeApp()
+  .then((shouldRender) => {
+    if (shouldRender) {
+      createRoot(document.getElementById("root")).render(<App />);
+    }
+  })
+  .catch((err) => {
+    logger.error("[Init] Fatal:", err);
     createRoot(document.getElementById("root")).render(<App />);
-  }
-}).catch(err => {
-  logger.error('[Init] Fatal:', err);
-  createRoot(document.getElementById("root")).render(<App />);
-});
+  });

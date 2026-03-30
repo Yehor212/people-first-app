@@ -13,10 +13,10 @@
  * 3. Reloads with cache-busting query param
  */
 
-import { logger } from './logger';
-import { storageGetRaw, storageSetRaw } from './safeJson';
-import { SK, SSK } from '@/lib/storageKeys';
-import { BASE_URL } from '@/lib/env';
+import { logger } from "./logger";
+import { storageGetRaw, storageSetRaw } from "./safeJson";
+import { SK, SSK } from "@/lib/storageKeys";
+import { BASE_URL } from "@/lib/env";
 
 interface VersionManifest {
   version: string;
@@ -37,16 +37,16 @@ export async function checkAppVersion(): Promise<boolean> {
     // Fetch with no-store to bypass all caches
     // Cache-bust URL with timestamp to bypass GitHub Pages CDN cache
     const response = await fetch(`${basePath}version.json?_t=${Date.now()}`, {
-      cache: 'no-store',
+      cache: "no-store",
       headers: {
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        Pragma: "no-cache",
       },
     });
 
     if (!response.ok) {
       // version.json doesn't exist yet (first deploy) - assume OK
-      logger.log('[VersionCheck] version.json not found, skipping check');
+      logger.log("[VersionCheck] version.json not found, skipping check");
       return true;
     }
 
@@ -55,7 +55,7 @@ export async function checkAppVersion(): Promise<boolean> {
 
     if (serverVersion.version !== clientVersion) {
       logger.log(
-        `[VersionCheck] Version mismatch! Client: ${clientVersion}, Server: ${serverVersion.version}`
+        `[VersionCheck] Version mismatch! Client: ${clientVersion}, Server: ${serverVersion.version}`,
       );
       return false;
     }
@@ -64,7 +64,7 @@ export async function checkAppVersion(): Promise<boolean> {
     return true;
   } catch (error) {
     // Network error or parsing error - don't block the app
-    logger.warn('[VersionCheck] Check failed, continuing anyway:', error);
+    logger.warn("[VersionCheck] Check failed, continuing anyway:", error);
     return true;
   }
 }
@@ -75,14 +75,14 @@ export async function checkAppVersion(): Promise<boolean> {
  * Must await all operations before reload to prevent stale content.
  */
 export async function forceHardReload(): Promise<void> {
-  logger.log('[VersionCheck] Performing hard reload...');
+  logger.log("[VersionCheck] Performing hard reload...");
 
   // Prevent infinite reload loops
   const lastReload = sessionStorage.getItem(SSK.HARD_RELOAD_TS);
   const now = Date.now();
 
   if (lastReload && now - parseInt(lastReload, 10) < 30000) {
-    logger.warn('[VersionCheck] Recent reload detected, preventing loop');
+    logger.warn("[VersionCheck] Recent reload detected, preventing loop");
     return;
   }
 
@@ -90,25 +90,25 @@ export async function forceHardReload(): Promise<void> {
 
   try {
     // 1. Clear ALL caches (await completion)
-    if ('caches' in window) {
+    if ("caches" in window) {
       const names = await caches.keys();
       await Promise.all(names.map((n) => caches.delete(n)));
       logger.log(`[VersionCheck] Cleared ${names.length} caches`);
     }
 
     // 2. Unregister ALL service workers (await completion)
-    if ('serviceWorker' in navigator) {
+    if ("serviceWorker" in navigator) {
       const regs = await navigator.serviceWorker.getRegistrations();
       await Promise.all(regs.map((r) => r.unregister()));
       logger.log(`[VersionCheck] Unregistered ${regs.length} service workers`);
     }
   } catch (error) {
-    logger.warn('[VersionCheck] Error clearing caches:', error);
+    logger.warn("[VersionCheck] Error clearing caches:", error);
   }
 
-  // 3. Reload with cache-busting query param
-  const url = new URL(window.location.href);
-  url.searchParams.set('_v', now.toString());
+  // 3. Reload with cache-busting query param (origin-locked to prevent open redirect CWE-601)
+  const url = new URL(window.location.pathname, window.location.origin);
+  url.searchParams.set("_v", now.toString());
   window.location.replace(url.toString());
 }
 
@@ -117,14 +117,14 @@ export async function forceHardReload(): Promise<void> {
  * Used before reload in lazyWithRetry to ensure fresh check.
  */
 export function markForVersionCheck(): void {
-  sessionStorage.setItem(SSK.VERSION_CHECK_FLAG, 'true');
+  sessionStorage.setItem(SSK.VERSION_CHECK_FLAG, "true");
 }
 
 /**
  * Check if version check was requested (and clear the flag).
  */
 export function shouldCheckVersion(): boolean {
-  const shouldCheck = sessionStorage.getItem(SSK.VERSION_CHECK_FLAG) === 'true';
+  const shouldCheck = sessionStorage.getItem(SSK.VERSION_CHECK_FLAG) === "true";
   if (shouldCheck) {
     sessionStorage.removeItem(SSK.VERSION_CHECK_FLAG);
   }
@@ -138,11 +138,11 @@ export function shouldCheckVersion(): boolean {
 export function isOAuthReturn(): boolean {
   const referrer = document.referrer.toLowerCase();
   return (
-    referrer.includes('accounts.google.com') ||
-    referrer.includes('google.com/o/oauth') ||
-    referrer.includes('supabase.co/auth') ||
-    referrer.includes('supabase.io/auth') ||
-    referrer.includes('api.zenflowapp.online/auth')
+    referrer.includes("accounts.google.com") ||
+    referrer.includes("google.com/o/oauth") ||
+    referrer.includes("supabase.co/auth") ||
+    referrer.includes("supabase.io/auth") ||
+    referrer.includes("api.zenflowapp.online/auth")
   );
 }
 
@@ -164,4 +164,3 @@ export function shouldAutoCheckVersion(): boolean {
 export function markVersionChecked(): void {
   storageSetRaw(SK.LAST_VERSION_CHECK, Date.now().toString());
 }
-

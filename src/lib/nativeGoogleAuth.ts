@@ -16,11 +16,7 @@ import { SocialLogin } from "@capgo/capacitor-social-login";
 import type { GoogleLoginOptions } from "@capgo/capacitor-social-login";
 import { supabase } from "./supabaseClient";
 import { logger } from "./logger";
-
-// Web Client ID from Supabase Auth → Google → Client IDs
-// This MUST match the Client ID configured in Supabase dashboard
-const GOOGLE_WEB_CLIENT_ID =
-  "830119095963-krjibmbag0tuastn4sk0sf58m1c4v4qa.apps.googleusercontent.com";
+import { GOOGLE_WEB_CLIENT_ID } from "./env";
 
 /**
  * Generate a URL-safe random nonce (64 hex characters)
@@ -97,9 +93,7 @@ async function ensureInitialized(): Promise<void> {
  * @param retry - Internal: whether this is a retry attempt (for cached token invalidation)
  * @returns Object with success status, optional user data, or error message
  */
-export async function authenticateWithGoogleNative(
-  retry = false,
-): Promise<{
+export async function authenticateWithGoogleNative(retry = false): Promise<{
   success: boolean;
   error?: string;
   user?: { name: string; email: string };

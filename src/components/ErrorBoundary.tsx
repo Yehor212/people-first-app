@@ -14,11 +14,14 @@ const logError = (payload: Record<string, unknown>) => {
     const enhancedPayload = {
       ...payload,
       appVersion: APP_VERSION,
-      dataSchemaVersion: metadata?.dataSchemaVersion || 'unknown',
-      time: new Date().toISOString()
+      dataSchemaVersion: metadata?.dataSchemaVersion || "unknown",
+      time: new Date().toISOString(),
     };
 
-    const existing = safeLocalStorageGet<Record<string, unknown>[]>(SK.ERROR_LOG, []);
+    const existing = safeLocalStorageGet<Record<string, unknown>[]>(
+      SK.ERROR_LOG,
+      [],
+    );
     const next = [...existing, enhancedPayload].slice(-10); // Keep last 10 errors
     safeLocalStorageSet(SK.ERROR_LOG, next);
   } catch {
@@ -31,27 +34,34 @@ const exportDebugReport = (error?: Error | null) => {
 
   const report = {
     version: APP_VERSION,
-    dataSchemaVersion: metadata?.dataSchemaVersion || 'unknown',
+    dataSchemaVersion: metadata?.dataSchemaVersion || "unknown",
     updateCount: metadata?.updateCount || 0,
-    lastUpdateDate: metadata?.lastUpdateDate || 'unknown',
+    lastUpdateDate: metadata?.lastUpdateDate || "unknown",
     timestamp: new Date().toISOString(),
-    location: window.location.href,
+    location: window.location.origin + window.location.pathname,
     userAgent: navigator.userAgent,
-    error: error ? {
-      message: error.message,
-      stack: error.stack,
-      name: error.name
-    } : null,
+    error: error
+      ? {
+          message: error.message,
+          stack: error.stack,
+          name: error.name,
+        }
+      : null,
     // Add browser storage info
     storageInfo: {
-      localStorageAvailable: typeof localStorage !== 'undefined',
-      indexedDBAvailable: typeof indexedDB !== 'undefined',
+      localStorageAvailable: typeof localStorage !== "undefined",
+      indexedDBAvailable: typeof indexedDB !== "undefined",
     },
     // Add last 10 errors from log
-    recentErrors: safeLocalStorageGet<Record<string, unknown>[]>(SK.ERROR_LOG, [])
+    recentErrors: safeLocalStorageGet<Record<string, unknown>[]>(
+      SK.ERROR_LOG,
+      [],
+    ),
   };
 
-  const blob = new Blob([JSON.stringify(report, null, 2)], { type: "application/json" });
+  const blob = new Blob([JSON.stringify(report, null, 2)], {
+    type: "application/json",
+  });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
@@ -77,7 +87,10 @@ interface ErrorBoundaryBaseState {
   error: Error | null;
 }
 
-class ErrorBoundaryBase extends React.Component<ErrorBoundaryBaseProps, ErrorBoundaryBaseState> {
+class ErrorBoundaryBase extends React.Component<
+  ErrorBoundaryBaseProps,
+  ErrorBoundaryBaseState
+> {
   state: ErrorBoundaryBaseState = { hasError: false, error: null };
 
   static getDerivedStateFromError() {
@@ -92,20 +105,20 @@ class ErrorBoundaryBase extends React.Component<ErrorBoundaryBaseProps, ErrorBou
       message: error.message,
       stack: error.stack,
       componentStack: info.componentStack,
-      time: new Date().toISOString()
+      time: new Date().toISOString(),
     });
 
     // Report to Crashlytics (native) or console (web)
     crashReporting.recordError(error, {
-      componentStack: info.componentStack || 'unknown',
-      location: window.location.href
+      componentStack: info.componentStack || "unknown",
+      location: window.location.origin + window.location.pathname,
     });
 
     // Send to Sentry for error monitoring
     captureError(error, {
-      componentStack: info.componentStack || 'unknown',
-      location: window.location.href,
-      context: 'ErrorBoundary'
+      componentStack: info.componentStack || "unknown",
+      location: window.location.origin + window.location.pathname,
+      context: "ErrorBoundary",
     });
   }
 
@@ -117,7 +130,9 @@ class ErrorBoundaryBase extends React.Component<ErrorBoundaryBaseProps, ErrorBou
     return (
       <div className="min-h-screen zen-gradient-hero flex items-center justify-center px-4 py-10">
         <div className="w-full max-w-md bg-card rounded-3xl p-6 zen-shadow-card space-y-4 text-center">
-          <h2 className="text-2xl font-bold text-foreground">{this.props.title}</h2>
+          <h2 className="text-2xl font-bold text-foreground">
+            {this.props.title}
+          </h2>
           <p className="text-sm text-muted-foreground">{this.props.body}</p>
           <div className="flex flex-col gap-3">
             <button
@@ -139,14 +154,19 @@ class ErrorBoundaryBase extends React.Component<ErrorBoundaryBaseProps, ErrorBou
   }
 }
 
-export const ErrorBoundary: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const ErrorBoundary: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const { t } = useLanguage();
   return (
     <ErrorBoundaryBase
-      title={t?.errorBoundaryTitle ?? 'Something went wrong'}
-      body={t?.errorBoundaryBody ?? 'An unexpected error occurred. Please reload the app.'}
-      exportLabel={t?.errorBoundaryExport ?? 'Export Debug Report'}
-      reloadLabel={t?.errorBoundaryReload ?? 'Reload App'}
+      title={t?.errorBoundaryTitle ?? "Something went wrong"}
+      body={
+        t?.errorBoundaryBody ??
+        "An unexpected error occurred. Please reload the app."
+      }
+      exportLabel={t?.errorBoundaryExport ?? "Export Debug Report"}
+      reloadLabel={t?.errorBoundaryReload ?? "Reload App"}
       onExport={(error) => exportDebugReport(error)}
       onReload={() => window.location.reload()}
     >
@@ -163,10 +183,10 @@ export const ErrorBoundary: React.FC<{ children: React.ReactNode }> = ({ childre
 function isChunkLoadError(error: Error | null): boolean {
   if (!error?.message) return false;
   return (
-    error.message.includes('Failed to fetch dynamically imported module') ||
-    error.message.includes('Importing a module script failed') ||
-    error.message.includes('Loading chunk') ||
-    error.message.includes('Loading CSS chunk')
+    error.message.includes("Failed to fetch dynamically imported module") ||
+    error.message.includes("Importing a module script failed") ||
+    error.message.includes("Loading chunk") ||
+    error.message.includes("Loading CSS chunk")
   );
 }
 
@@ -184,7 +204,10 @@ interface ModalErrorBoundaryState {
   error: Error | null;
 }
 
-class ModalErrorBoundaryClass extends React.Component<ModalErrorBoundaryProps, ModalErrorBoundaryState> {
+class ModalErrorBoundaryClass extends React.Component<
+  ModalErrorBoundaryProps,
+  ModalErrorBoundaryState
+> {
   state: ModalErrorBoundaryState = { hasError: false, error: null };
 
   // Refs for focus trap and container
@@ -201,32 +224,39 @@ class ModalErrorBoundaryClass extends React.Component<ModalErrorBoundaryProps, M
       message: error.message,
       stack: error.stack,
       componentStack: info.componentStack,
-      context: 'modal',
-      time: new Date().toISOString()
+      context: "modal",
+      time: new Date().toISOString(),
     });
 
     // Report to Crashlytics
     crashReporting.recordError(error, {
-      componentStack: info.componentStack || 'unknown',
-      location: window.location.href,
-      context: 'modal'
+      componentStack: info.componentStack || "unknown",
+      location: window.location.origin + window.location.pathname,
+      context: "modal",
     });
 
     // Send to Sentry for error monitoring
     captureError(error, {
-      componentStack: info.componentStack || 'unknown',
-      location: window.location.href,
-      context: 'ModalErrorBoundary'
+      componentStack: info.componentStack || "unknown",
+      location: window.location.origin + window.location.pathname,
+      context: "ModalErrorBoundary",
     });
 
     // Auto-reload on chunk load errors (stale assets after deployment)
     if (isChunkLoadError(error)) {
-      const reloadKey = 'zenflow_chunk_reload_boundary';
+      const reloadKey = "zenflow_chunk_reload_boundary";
       const lastReload = sessionStorage.getItem(reloadKey);
       if (!lastReload || Date.now() - parseInt(lastReload) > 60000) {
         sessionStorage.setItem(reloadKey, Date.now().toString());
-        logger.log('[ModalErrorBoundary] Chunk error detected, auto-reloading...');
-        caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).catch((e) => { logger.warn('[ErrorBoundary] Cache cleanup failed:', e); }); // graceful: page reloads immediately after — cleanup is best-effort
+        logger.log(
+          "[ModalErrorBoundary] Chunk error detected, auto-reloading...",
+        );
+        caches
+          .keys()
+          .then((keys) => Promise.all(keys.map((k) => caches.delete(k))))
+          .catch((e) => {
+            logger.warn("[ErrorBoundary] Cache cleanup failed:", e);
+          }); // graceful: page reloads immediately after — cleanup is best-effort
         window.location.reload();
         return;
       }
@@ -237,9 +267,16 @@ class ModalErrorBoundaryClass extends React.Component<ModalErrorBoundaryProps, M
     announceError(title);
   }
 
-  componentDidUpdate(_prevProps: ModalErrorBoundaryProps, prevState: ModalErrorBoundaryState) {
+  componentDidUpdate(
+    _prevProps: ModalErrorBoundaryProps,
+    prevState: ModalErrorBoundaryState,
+  ) {
     // Activate focus trap when error appears
-    if (this.state.hasError && !prevState.hasError && this.containerRef.current) {
+    if (
+      this.state.hasError &&
+      !prevState.hasError &&
+      this.containerRef.current
+    ) {
       this.deactivateFocusTrap = createFocusTrap(this.containerRef.current, {
         autoFocus: true,
       });
@@ -256,7 +293,7 @@ class ModalErrorBoundaryClass extends React.Component<ModalErrorBoundaryProps, M
 
     if (isChunkLoadError(error)) {
       // Force reload to get fresh assets
-      logger.log('[ErrorBoundary] Chunk error detected, reloading page...');
+      logger.log("[ErrorBoundary] Chunk error detected, reloading page...");
       window.location.reload();
       return;
     }
@@ -277,7 +314,7 @@ class ModalErrorBoundaryClass extends React.Component<ModalErrorBoundaryProps, M
 
   // Handle Escape key to close error dialog
   handleKeyDown = (event: React.KeyboardEvent) => {
-    if (event.key === 'Escape' && this.props.onClose) {
+    if (event.key === "Escape" && this.props.onClose) {
       event.preventDefault();
       this.handleClose();
     }
@@ -289,7 +326,9 @@ class ModalErrorBoundaryClass extends React.Component<ModalErrorBoundaryProps, M
     }
 
     const title = this.props.fallbackTitle || "Something went wrong";
-    const body = this.props.fallbackBody || "This feature encountered an error. Try closing and reopening.";
+    const body =
+      this.props.fallbackBody ||
+      "This feature encountered an error. Try closing and reopening.";
 
     return (
       // Add ref, role, aria-modal, and keyboard handler for a11y
@@ -303,25 +342,46 @@ class ModalErrorBoundaryClass extends React.Component<ModalErrorBoundaryProps, M
         className="flex flex-col items-center justify-center p-6 text-center min-h-[200px]"
       >
         <div className="w-16 h-16 mb-4 rounded-full bg-destructive/10 flex items-center justify-center">
-          <svg className="w-8 h-8 text-destructive" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          <svg
+            className="w-8 h-8 text-destructive"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            aria-hidden="true"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+            />
           </svg>
         </div>
-        <h3 id="error-boundary-title" className="text-lg font-semibold text-foreground mb-2">{title}</h3>
-        <p id="error-boundary-desc" className="text-sm text-muted-foreground mb-4 max-w-xs">{body}</p>
+        <h3
+          id="error-boundary-title"
+          className="text-lg font-semibold text-foreground mb-2"
+        >
+          {title}
+        </h3>
+        <p
+          id="error-boundary-desc"
+          className="text-sm text-muted-foreground mb-4 max-w-xs"
+        >
+          {body}
+        </p>
         <div className="flex gap-3">
           <button
             onClick={this.handleRetry}
             className="px-4 py-2 bg-secondary text-secondary-foreground rounded-xl text-sm font-medium hover:bg-muted transition-colors"
           >
-            {this.props.tryAgainLabel || 'Try Again'}
+            {this.props.tryAgainLabel || "Try Again"}
           </button>
           {this.props.onClose && (
             <button
               onClick={this.handleClose}
               className="px-4 py-2 zen-gradient text-primary-foreground rounded-xl text-sm font-medium hover:opacity-90 transition-opacity"
             >
-              {this.props.closeLabel || 'Close'}
+              {this.props.closeLabel || "Close"}
             </button>
           )}
         </div>
@@ -330,15 +390,23 @@ class ModalErrorBoundaryClass extends React.Component<ModalErrorBoundaryProps, M
   }
 }
 
-export const ModalErrorBoundary: React.FC<ModalErrorBoundaryProps> = (props) => {
+export const ModalErrorBoundary: React.FC<ModalErrorBoundaryProps> = (
+  props,
+) => {
   const { t } = useLanguage();
   return (
     <ModalErrorBoundaryClass
       {...props}
-      fallbackTitle={props.fallbackTitle || t?.modalErrorTitle || 'Something went wrong'}
-      fallbackBody={props.fallbackBody || t?.modalErrorBody || 'This feature encountered an error.'}
-      tryAgainLabel={props.tryAgainLabel || t?.tryAgain || 'Try Again'}
-      closeLabel={props.closeLabel || t?.close || 'Close'}
+      fallbackTitle={
+        props.fallbackTitle || t?.modalErrorTitle || "Something went wrong"
+      }
+      fallbackBody={
+        props.fallbackBody ||
+        t?.modalErrorBody ||
+        "This feature encountered an error."
+      }
+      tryAgainLabel={props.tryAgainLabel || t?.tryAgain || "Try Again"}
+      closeLabel={props.closeLabel || t?.close || "Close"}
     />
   );
 };
@@ -347,17 +415,19 @@ export const ModalErrorBoundary: React.FC<ModalErrorBoundaryProps> = (props) => 
  * LazyErrorBoundary - Error boundary specifically for lazy-loaded components.
  * Provides a minimal error state that doesn't disrupt the UI flow.
  */
-export const LazyErrorBoundary: React.FC<{ children: React.ReactNode; componentName?: string }> = ({
-  children,
-  componentName = 'component'
-}) => {
+export const LazyErrorBoundary: React.FC<{
+  children: React.ReactNode;
+  componentName?: string;
+}> = ({ children, componentName = "component" }) => {
   const { t } = useLanguage();
   return (
     <ModalErrorBoundaryClass
-      fallbackTitle={`${t?.failedToLoad || 'Failed to load'} ${componentName}`}
-      fallbackBody={t?.failedToLoadBody || 'Please try again or reload the app.'}
-      tryAgainLabel={t?.tryAgain || 'Try Again'}
-      closeLabel={t?.close || 'Close'}
+      fallbackTitle={`${t?.failedToLoad || "Failed to load"} ${componentName}`}
+      fallbackBody={
+        t?.failedToLoadBody || "Please try again or reload the app."
+      }
+      tryAgainLabel={t?.tryAgain || "Try Again"}
+      closeLabel={t?.close || "Close"}
     >
       {children}
     </ModalErrorBoundaryClass>
