@@ -159,3 +159,6 @@ docs/visual-aesthetic.md
 .research-done
 .prettier-circuit-breaker
 orb-after-fix.png
+
+# Ruflo / AgentDB local databases
+vectors.db
