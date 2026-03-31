@@ -64,9 +64,10 @@ process.stdin.on('end', () => {
     } catch {}
   }
 
-  const rufloReminder = auditActive
-    ? ' RUFLO MANDATORY (6-phase pipeline): (1) mcp__ruflo__memory_search before editing. (2) mcp__ruflo__agentdb_pattern-search for hybrid BM25+semantic. (3) mcp__ruflo__memory_store after each fix. (4) mcp__ruflo__agentdb_feedback on task completion. (5) mcp__ruflo__aidefence_scan on external inputs. (6) mcp__ruflo__analyze_diff-risk before commit. Also available: mcp__ruflo__performance_profile, mcp__ruflo__hooks_intelligence, mcp__ruflo__autopilot_predict.'
-    : '';
+  // RUFLO ALWAYS — not gated behind audit mode
+  const rufloReminder =
+    ' RUFLO MANDATORY: (1) mcp__ruflo__memory_search before editing — find existing patterns. (2) mcp__ruflo__memory_store after each fix — save solution. Also: mcp__ruflo__agentdb_pattern-search, mcp__ruflo__analyze_diff-risk.' +
+    (auditActive ? ' AUDIT MODE: Full 6-phase pipeline: +agentdb_feedback, +aidefence_scan, +performance_profile.' : '');
 
   const reminder = [
     'SUBAGENT ENFORCEMENT: Hooks apply to subagents.',

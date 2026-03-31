@@ -44,13 +44,18 @@ if (!toolName.includes('Agent')) {
 
 const prompt = input.tool_input?.prompt || '';
 
-if (!fs.existsSync(CHECKLIST)) {
+// Checklist enforcement only during audit mode
+const auditActive = fs.existsSync(AUDIT_FLAG);
+if (auditActive && !fs.existsSync(CHECKLIST)) {
   process.stderr.write(
     'AGENT DELEGATION BLOCKED: No .audit-checklist.json — create checklist before delegating.\n'
   );
   process.exit(2);
 }
+// Ruflo injection is ALWAYS (not gated behind audit mode)
 
+// Checklist item matching only during audit mode
+if (auditActive && fs.existsSync(CHECKLIST)) {
 try {
   const checklist = JSON.parse(fs.readFileSync(CHECKLIST, 'utf8'));
   const pending = (checklist.items || []).filter(i => !i.done);
@@ -88,6 +93,7 @@ try {
 } catch (err) {
   process.stderr.write(`agent-delegation-gate: ${err.message}\n`);
 }
+} // end auditActive && checklist block
 
 // Check 2: Auto-inject Ruflo instructions if missing (tool input modification v2.0.10+)
 const RUFLO_KEYWORDS = ['ruflo', 'memory_search', 'memory_store', 'pattern-search', 'agentdb'];

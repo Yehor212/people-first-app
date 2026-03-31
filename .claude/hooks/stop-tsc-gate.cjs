@@ -116,21 +116,30 @@ process.stdin.on('end', () => {
     } catch {}
   }
 
-  // Check 4: Ruflo usage (fast — <1s)
+  // Check 4: Ruflo usage — ALWAYS checked (WARNING normal, BLOCK audit)
   const RUFLO_STAMP = path.join(ROOT, '.ruflo-last-action');
-  if (fs.existsSync(AUDIT_FLAG)) {
-    if (!fs.existsSync(RUFLO_STAMP)) {
+  const isAudit = fs.existsSync(AUDIT_FLAG);
+  if (!fs.existsSync(RUFLO_STAMP)) {
+    if (isAudit) {
       writeEvidence('BLOCKED', 'no ruflo activity');
       process.stderr.write('\n❌ FAST RUFLO GATE: No Ruflo activity during audit session.\n');
       process.exit(2);
+    } else {
+      process.stderr.write('\n⚠️ RUFLO ADVISORY: No Ruflo activity this session. Use mcp__ruflo__memory_search.\n');
     }
+  }
+  if (fs.existsSync(RUFLO_STAMP)) {
     try {
       const data = JSON.parse(fs.readFileSync(RUFLO_STAMP, 'utf8'));
       const age = Date.now() - data.timestamp;
       if (age > 60 * 60 * 1000) { // 1 hour stale
-        writeEvidence('BLOCKED', 'ruflo stale >1h');
-        process.stderr.write('\n❌ FAST RUFLO GATE: Ruflo last used >1 hour ago.\n');
-        process.exit(2);
+        if (isAudit) {
+          writeEvidence('BLOCKED', 'ruflo stale >1h');
+          process.stderr.write('\n❌ FAST RUFLO GATE: Ruflo last used >1 hour ago.\n');
+          process.exit(2);
+        } else {
+          process.stderr.write('\n⚠️ RUFLO ADVISORY: Last Ruflo action >1 hour ago.\n');
+        }
       }
     } catch {}
   }

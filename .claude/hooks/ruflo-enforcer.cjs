@@ -50,17 +50,20 @@ const PHASES = {
   session_end: { tools: ['agentdb_session-end'], blocking: false, label: 'Session End (consolidation)' },
 };
 
-if (!fs.existsSync(AUDIT_FLAG)) {
-  process.exit(0);
-}
+// Ruflo enforcement is ALWAYS ON (not gated behind .audit-active)
+// .audit-active only controls: checklist-gate, satisficing-gate, agent-delegation-gate
+// Ruflo memory_search should be used EVERY session, not just audits
+const auditActive = fs.existsSync(AUDIT_FLAG);
 
 // ANTI-DEADLOCK: Auto-clean stale .audit-active (>4 hours old)
-try {
-  const auditAge = Date.now() - fs.statSync(AUDIT_FLAG).mtimeMs;
-  if (auditAge > 4 * 3600 * 1000) {
-    process.exit(0); // checklist-gate handles cleanup
-  }
-} catch {}
+if (auditActive) {
+  try {
+    const auditAge = Date.now() - fs.statSync(AUDIT_FLAG).mtimeMs;
+    if (auditAge > 4 * 3600 * 1000) {
+      // Stale — don't treat as audit but still enforce Ruflo
+    }
+  } catch {}
+}
 
 // Read stdin via stream (cross-platform: /dev/stdin doesn't exist on Windows)
 let rawInput = '';
