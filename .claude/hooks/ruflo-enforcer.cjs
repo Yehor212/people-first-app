@@ -185,5 +185,6 @@ process.exit(0);
 // Dual stdin reading: stream + timeout fallback
 process.stdin.on('data', d => rawInput += d);
 process.stdin.on('end', () => processInput());
-// Timeout: if stdin doesn't close in 2s, process with what we have
-setTimeout(() => processInput(), 2000);
+// P5 FIX: unref() prevents setTimeout from keeping Node alive after processInput exits
+const timer = setTimeout(() => processInput(), 2000);
+timer.unref();

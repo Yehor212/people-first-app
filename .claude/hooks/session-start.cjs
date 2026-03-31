@@ -199,6 +199,17 @@ process.stdin.on('end', () => {
   }
   // Always reset tool call counter on new session
   try { fs.writeFileSync(path.join(ROOT, '.tool-call-counter'), '0', 'utf8'); } catch {}
+  // P9 FIX: Reset stale .ruflo-last-action on new session so agent starts fresh
+  const rufloStamp = path.join(ROOT, '.ruflo-last-action');
+  try {
+    if (fs.existsSync(rufloStamp)) {
+      const data = JSON.parse(fs.readFileSync(rufloStamp, 'utf8'));
+      const age = Date.now() - (data.timestamp || 0);
+      if (age > 60 * 60 * 1000) { // >1 hour = stale from previous session
+        fs.unlinkSync(rufloStamp);
+      }
+    }
+  } catch {}
 
   // 2. Clean stale tokens (>4 hours old = abandoned session)
   for (const token of STALE_TOKENS) {
@@ -220,10 +231,10 @@ process.stdin.on('end', () => {
   try {
     const settingsPath = path.join(ROOT, '.claude/settings.json');
     const settingsContent = fs.readFileSync(settingsPath, 'utf8');
-    if (!settingsContent.includes('MANDATORY INDEPENDENT VERIFIER')) {
+    if (!settingsContent.includes('independent-verifier.cjs')) {
       warnings.push(
         '🚨 CRITICAL: INDEPENDENT VERIFIER MISSING from settings.json!\n' +
-        '    The mandatory Stop agent verifier has been removed or overridden.\n' +
+        '    The mandatory Stop deterministic verifier has been removed or overridden.\n' +
         '    This could mean: --settings flag override, manual deletion, or corruption.\n' +
         '    Without the verifier, the agent can claim work is done without proof.\n' +
         '    RESTORE: git checkout HEAD -- .claude/settings.json'

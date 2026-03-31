@@ -86,7 +86,17 @@
       "Bash(timeout 3 node -e \":*)",
       "Bash(__NEW_LINE_d28550f1cee78bee__ echo:*)",
       "WebFetch(domain:paddo.dev)",
-      "WebFetch(domain:claudefa.st)"
+      "WebFetch(domain:claudefa.st)",
+      "Bash(git log:*)",
+      "mcp__ruflo__agentdb_pattern-search",
+      "Bash(npx supabase:*)",
+      "Bash(supabase db:*)",
+      "Bash(supabase --help)",
+      "Bash(supabase projects:*)",
+      "Bash(supabase snippets:*)",
+      "Bash(supabase inspection:*)",
+      "mcp__ruflo__coordination_consensus",
+      "Bash(git stash:*)"
     ],
     "deny": [
       "Bash(rm -rf)",
