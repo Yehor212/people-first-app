@@ -94,6 +94,11 @@ process.stdin.on('end', () => {
   // Check 3: Audit checklist (fast — <1s)
   const AUDIT_FLAG = path.join(ROOT, '.audit-active');
   const CHECKLIST = path.join(ROOT, '.audit-checklist.json');
+  if (fs.existsSync(AUDIT_FLAG) && !fs.existsSync(CHECKLIST)) {
+    writeEvidence('BLOCKED', 'audit active but no checklist');
+    process.stderr.write('\n❌ FAST CHECKLIST GATE: Audit active but no .audit-checklist.json!\n');
+    process.exit(2);
+  }
   if (fs.existsSync(AUDIT_FLAG) && fs.existsSync(CHECKLIST)) {
     try {
       const cl = JSON.parse(fs.readFileSync(CHECKLIST, 'utf8'));
