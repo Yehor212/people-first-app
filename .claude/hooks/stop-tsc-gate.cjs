@@ -32,6 +32,29 @@ process.stdin.on('end', () => {
     }
   } catch {}
 
+  // Helper: write evidence on both BLOCK and ALLOW
+  const LAST_VERIFY = path.join(ROOT, '.last-verification');
+  function writeEvidence(status, reason) {
+    try {
+      fs.writeFileSync(LAST_VERIFY, JSON.stringify({
+        timestamp: new Date().toISOString(),
+        hook: 'stop-tsc-gate',
+        status,
+        reason: reason || '',
+      }, null, 2), 'utf8');
+    } catch {}
+  }
+
+  // EVIDENCE FIRST: Write proof that this hook STARTED (even if it blocks later)
+  try {
+    fs.writeFileSync(LAST_VERIFY, JSON.stringify({
+      timestamp: new Date().toISOString(),
+      hook: 'stop-tsc-gate',
+      status: 'RUNNING',
+      result: 'in-progress',
+    }, null, 2), 'utf8');
+  } catch {}
+
   // Check 1: Are there TS/TSX changes?
   let tsChanged = false;
   try {
@@ -48,6 +71,7 @@ process.stdin.on('end', () => {
       const entry = JSON.stringify({ ts: Date.now(), hook: 'stop-tsc-gate', event: 'BLOCKED', reason: 'tsc failed' }) + '\n';
       try { fs.appendFileSync(AUDIT_LOG, entry); } catch {}
 
+      writeEvidence('BLOCKED', 'tsc failed');
       process.stderr.write(
         '\n❌ FAST TSC GATE BLOCKED!\n' +
         'TypeScript compilation failed. Fix errors before stopping.\n' +
@@ -68,6 +92,7 @@ process.stdin.on('end', () => {
       const done = items.filter(i => i.done).length;
       const pct = total > 0 ? Math.round(done / total * 100) : 0;
       if (total >= 10 && pct < 80) {
+        writeEvidence('BLOCKED', `checklist ${done}/${total} = ${pct}%`);
         process.stderr.write(
           `\n❌ FAST CHECKLIST GATE: ${done}/${total} = ${pct}% (need ≥80%)\n`
         );
@@ -80,6 +105,7 @@ process.stdin.on('end', () => {
   const RUFLO_STAMP = path.join(ROOT, '.ruflo-last-action');
   if (fs.existsSync(AUDIT_FLAG)) {
     if (!fs.existsSync(RUFLO_STAMP)) {
+      writeEvidence('BLOCKED', 'no ruflo activity');
       process.stderr.write('\n❌ FAST RUFLO GATE: No Ruflo activity during audit session.\n');
       process.exit(2);
     }
@@ -87,16 +113,16 @@ process.stdin.on('end', () => {
       const data = JSON.parse(fs.readFileSync(RUFLO_STAMP, 'utf8'));
       const age = Date.now() - data.timestamp;
       if (age > 60 * 60 * 1000) { // 1 hour stale
+        writeEvidence('BLOCKED', 'ruflo stale >1h');
         process.stderr.write('\n❌ FAST RUFLO GATE: Ruflo last used >1 hour ago.\n');
         process.exit(2);
       }
     } catch {}
   }
 
-  // Write verification evidence for user inspection
-  const verifyFile = path.join(ROOT, '.last-verification');
+  // Update verification evidence with FINAL result
   try {
-    fs.writeFileSync(verifyFile, JSON.stringify({
+    fs.writeFileSync(LAST_VERIFY, JSON.stringify({
       timestamp: new Date().toISOString(),
       hook: 'stop-tsc-gate',
       tsChanged,
