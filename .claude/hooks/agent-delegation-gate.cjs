@@ -61,10 +61,14 @@ try {
   }
 
   // Check how many checklist items are referenced in agent prompt
+  // ID matching: only match IDs >= 3 chars to prevent false positives ("1" in "a11y")
+  // Description matching: >= 10 chars (not > 10) to include "check a11y" etc.
   const referenced = pending.filter(item => {
     const desc = (item.description || '').slice(0, 40);
     const id = item.id || '';
-    return prompt.includes(id) || (desc.length > 10 && prompt.includes(desc));
+    const idMatch = id.length >= 3 && prompt.includes(id);
+    const descMatch = desc.length >= 10 && prompt.toLowerCase().includes(desc.toLowerCase());
+    return idMatch || descMatch;
   });
 
   if (referenced.length < MIN_ITEMS_REFERENCED) {
