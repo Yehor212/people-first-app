@@ -50,9 +50,9 @@ const PHASES = {
   session_end: { tools: ['agentdb_session-end'], blocking: false, label: 'Session End (consolidation)' },
 };
 
-// Ruflo enforcement is ALWAYS ON (not gated behind .audit-active)
-// .audit-active only controls: checklist-gate, satisficing-gate, agent-delegation-gate
-// Ruflo memory_search should be used EVERY session, not just audits
+// Ruflo enforcement ALWAYS BLOCKING (exit 2) — not advisory
+// Research: "stderr warnings ignored by LLM. Only blocking enforcement works."
+// .audit-active adds: checklist-gate, satisficing-gate, stricter checks
 const auditActive = fs.existsSync(AUDIT_FLAG);
 
 // ANTI-DEADLOCK: Auto-clean stale .audit-active (>4 hours old)
@@ -65,19 +65,21 @@ if (auditActive) {
   } catch {}
 }
 
-// Read stdin via stream (cross-platform: /dev/stdin doesn't exist on Windows)
+// Read stdin with timeout fallback — prevents hanging if SDK doesn't close stdin
 let rawInput = '';
-process.stdin.on('data', d => rawInput += d);
-process.stdin.on('end', () => {
+let processed = false;
 
-let input;
-try {
-  input = JSON.parse(rawInput);
-} catch {
-  // Fail-CLOSED during audit: if we can't parse input, block
-  process.stderr.write('ruflo-enforcer: failed to parse stdin — blocking (fail-closed)\n');
-  process.exit(2);
-}
+function processInput() {
+  if (processed) return;
+  processed = true;
+
+  let input;
+  try {
+    input = JSON.parse(rawInput || '{}');
+  } catch {
+    process.stderr.write('ruflo-enforcer: failed to parse stdin\n');
+    process.exit(2);
+  }
 
 const toolName = input.tool_name || input.tool || '';
 
@@ -178,4 +180,10 @@ if (toolName === 'Edit' || toolName === 'Write') {
 }
 
 process.exit(0);
-}); // end process.stdin.on('end')
+} // end processInput()
+
+// Dual stdin reading: stream + timeout fallback
+process.stdin.on('data', d => rawInput += d);
+process.stdin.on('end', () => processInput());
+// Timeout: if stdin doesn't close in 2s, process with what we have
+setTimeout(() => processInput(), 2000);
