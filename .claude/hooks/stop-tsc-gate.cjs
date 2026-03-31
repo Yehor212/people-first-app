@@ -19,6 +19,16 @@ const { execSync } = require('child_process');
 
 const ROOT = process.cwd();
 const AUDIT_LOG = path.join(ROOT, '.claude-audit.log');
+const LAST_VERIFY = path.join(ROOT, '.last-verification');
+
+// EVIDENCE IMMEDIATELY — before stdin, before anything. Proves hook launched.
+try {
+  fs.writeFileSync(LAST_VERIFY, JSON.stringify({
+    timestamp: new Date().toISOString(),
+    hook: 'stop-tsc-gate',
+    status: 'LAUNCHED',
+  }, null, 2), 'utf8');
+} catch {}
 
 let input = '';
 process.stdin.on('data', d => input += d);
@@ -28,12 +38,12 @@ process.stdin.on('end', () => {
 
     // Anti-loop: if already in forced continuation, allow
     if (data.stop_hook_active) {
+      writeEvidence('ALLOW-RERUN', 'stop_hook_active=true');
       process.exit(0);
     }
   } catch {}
 
   // Helper: write evidence on both BLOCK and ALLOW
-  const LAST_VERIFY = path.join(ROOT, '.last-verification');
   function writeEvidence(status, reason) {
     try {
       fs.writeFileSync(LAST_VERIFY, JSON.stringify({
