@@ -140,7 +140,7 @@ export function AICoachOnboarding({
               onChange={(e) => setConcern(e.target.value)}
               placeholder={getText("concern", "placeholder", language)}
               className="w-full h-32 px-4 py-3 bg-secondary rounded-xl text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary/50"
-              autoFocus
+              autoFocus // eslint-disable-line jsx-a11y/no-autofocus
             />
           )}
 
@@ -150,7 +150,7 @@ export function AICoachOnboarding({
               onChange={(e) => setStressMethod(e.target.value)}
               placeholder={getText("stress", "placeholder", language)}
               className="w-full h-32 px-4 py-3 bg-secondary rounded-xl text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary/50"
-              autoFocus
+              autoFocus // eslint-disable-line jsx-a11y/no-autofocus
             />
           )}
         </div>

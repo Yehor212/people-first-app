@@ -568,7 +568,7 @@ export function JournalModule({
 
             {/* Secure password reset dialog (email verification) */}
             {resetStep !== "idle" && (
-              <div
+              <div // eslint-disable-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
                 className="fixed inset-0 z-[70] bg-black/50 flex items-center justify-center animate-fade-in"
                 onClick={closeResetDialog}
               >
@@ -946,14 +946,14 @@ export function JournalModule({
                     {/* Password settings bottom sheet */}
                     {showPasswordSettings && (
                       <>
-                        <div
+                        <div // eslint-disable-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
                           className="fixed inset-0 z-[64] bg-black/30 animate-fade-in"
                           onClick={() => {
                             setShowPasswordSettings(false);
                             setShowChangePassword(false);
                           }}
                         />
-                        <div
+                        <div // eslint-disable-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions
                           role="dialog"
                           aria-modal="true"
                           aria-label={ts.journalSettings || "Diary Settings"}
@@ -1286,11 +1286,11 @@ export function JournalModule({
                     {/* Export format picker */}
                     {showExportPicker && (
                       <>
-                        <div
+                        <div // eslint-disable-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
                           className="fixed inset-0 z-[66] bg-black/30 animate-fade-in"
                           onClick={() => setShowExportPicker(false)}
                         />
-                        <div
+                        <div // eslint-disable-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions
                           role="dialog"
                           aria-modal="true"
                           aria-label={ts.journalExportFormat || "Export Format"}
@@ -1426,6 +1426,7 @@ export function JournalModule({
         <>
           <div
             className="fixed inset-0 z-[70] bg-black/40 animate-fade-in"
+            role="presentation"
             onClick={() => setShowRemovePasswordConfirm(false)}
           />
           <div

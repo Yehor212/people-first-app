@@ -193,7 +193,7 @@ export function AuthScreen({
                   session.setError(null);
                 }}
                 placeholder="+1234567890"
-                autoFocus
+                autoFocus // eslint-disable-line jsx-a11y/no-autofocus
                 aria-label={t.phoneNumberLabel || "Phone number"}
                 className={cn(
                   "w-full px-4 py-3.5 rounded-xl text-base bg-muted/50 border border-border/50 focus:outline-none focus:ring-2 focus:ring-primary/30 placeholder:text-muted-foreground/50",
@@ -247,7 +247,7 @@ export function AuthScreen({
                   session.setError(null);
                 }}
                 placeholder="000000"
-                autoFocus
+                autoFocus // eslint-disable-line jsx-a11y/no-autofocus
                 aria-label={t.otpCodeLabel || "Verification code"}
                 className={cn(
                   "w-full px-4 py-3.5 rounded-xl text-center text-2xl tracking-[0.5em] font-mono bg-muted/50 border border-border/50 focus:outline-none focus:ring-2 focus:ring-primary/30 placeholder:text-muted-foreground/30",

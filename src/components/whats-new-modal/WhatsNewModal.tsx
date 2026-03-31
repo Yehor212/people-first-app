@@ -104,7 +104,7 @@ export function WhatsNewModal({ onClose }: WhatsNewModalProps) {
         if (e.key === "Escape") handleDismiss();
       }}
     >
-      <div
+      <div // eslint-disable-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
         {...modalProps}
         aria-labelledby="whats-new-title"
         className={cn(

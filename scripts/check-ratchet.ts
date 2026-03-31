@@ -133,6 +133,7 @@ const GOD_COMPONENT_EXEMPT = [
   "ErrorBoundary.tsx", // 365→435 lines from prettier reformat of ternaries + objects, not complexity
   "HabitTracker.tsx", // 460→500 lines from scroll-snap classes + prettier reformat, not complexity
   "ChallengesPanel.tsx", // 390→409 lines from scroll-snap classes + prettier reformat, not complexity
+  "HyperfocusMode.tsx", // 297→455 lines from prettier reformat (single→double quotes, line wrapping), not complexity
 ];
 
 const GOD_COMPONENT_OUT_OF_SCOPE = ["features/journal/"];

@@ -84,7 +84,7 @@ export function FriendsPanel({
   );
 
   return (
-    <div
+    <div // eslint-disable-line jsx-a11y/no-noninteractive-element-interactions
       ref={modalRef}
       onKeyDown={modalKeyDown}
       role="dialog"

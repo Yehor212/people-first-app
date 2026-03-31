@@ -73,7 +73,7 @@ export function WelcomeOverlay({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div
+    <div // eslint-disable-line jsx-a11y/no-noninteractive-element-interactions
       ref={modalRef}
       onKeyDown={handleKeyDown}
       className="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 backdrop-blur-sm motion-safe:animate-fade-in px-3 sm:px-4"

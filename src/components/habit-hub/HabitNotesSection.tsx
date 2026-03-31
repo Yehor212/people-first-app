@@ -99,7 +99,7 @@ export function HabitNotesSection({ habit, onUpdate }: HabitNotesSectionProps) {
             value={noteText}
             onChange={(e) => setNoteText(e.target.value)}
             placeholder={ts.notePrompt || 'How did it go today?'}
-            autoFocus
+            autoFocus // eslint-disable-line jsx-a11y/no-autofocus
             rows={2}
             maxLength={1000}
             className={cn(

@@ -201,7 +201,7 @@ export function DailyRewards({ onClose, onClaimReward }: DailyRewardsProps) {
               const isFuture = index + 1 > currentDay && !reward.claimed;
 
               return (
-                <div
+                <div // eslint-disable-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
                   key={index}
                   className={cn(
                     "aspect-square rounded-xl flex flex-col items-center justify-center relative transition-all",

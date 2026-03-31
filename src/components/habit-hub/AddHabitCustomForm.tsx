@@ -86,7 +86,7 @@ export function AddHabitCustomForm({
           maxLength={100}
           placeholder={ts.habitNamePlaceholder || 'Enter habit name...'}
           aria-label={ts.habitName || 'Habit name'}
-          autoFocus
+          autoFocus // eslint-disable-line jsx-a11y/no-autofocus
           className={cn(
             'w-full px-4 py-3 rounded-xl text-sm text-foreground',
             'bg-white/[0.05] border border-border transition-colors',

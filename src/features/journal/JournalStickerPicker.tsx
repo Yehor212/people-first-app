@@ -78,6 +78,7 @@ export function JournalStickerPicker({
       {/* Backdrop */}
       <div
         className="fixed inset-0 z-[64] bg-black/30 animate-fade-in"
+        role="presentation"
         onClick={onClose}
       />
 

@@ -94,6 +94,7 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
       {isOpen && (
         <>
           <div
+            role="presentation"
             className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm motion-safe:animate-fade-in"
             onClick={() => setIsOpen(false)}
           />

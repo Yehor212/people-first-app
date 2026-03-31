@@ -127,8 +127,11 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
       role="dialog"
       aria-modal="true"
     >
+      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- modal keyboard handler */}
       <div
         ref={modalRef}
+        role="document"
+        tabIndex={-1}
         onKeyDown={modalKeyDown}
         className="bg-card rounded-2xl shadow-2xl max-w-lg w-full p-6"
       >

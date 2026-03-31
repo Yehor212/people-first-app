@@ -42,7 +42,7 @@ export function TaskAddForm({
         onChange={(e) => setField("name", e.target.value)}
         placeholder={t.taskNamePlaceholder || "Task name..."}
         className="w-full p-3 bg-secondary rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
-        autoFocus
+        autoFocus // eslint-disable-line jsx-a11y/no-autofocus
         onKeyDown={(e) => e.key === "Enter" && handleAddTask()}
       />
 

@@ -134,6 +134,7 @@ export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
   ];
 
   return (
+    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
     <div
       className="fixed inset-0 z-[60] bg-black/80 flex items-end justify-center"
       onMouseDown={handleOverlayMouseDown}

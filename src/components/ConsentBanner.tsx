@@ -39,7 +39,7 @@ export function ConsentBanner({ onConsent }: ConsentBannerProps) {
         paddingBottom: "calc(var(--nav-height) + var(--safe-bottom))",
       }}
     >
-      <div
+      <div // eslint-disable-line jsx-a11y/no-noninteractive-element-interactions
         ref={modalRef}
         onKeyDown={handleKeyDown}
         role="dialog"

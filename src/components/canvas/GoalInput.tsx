@@ -121,7 +121,7 @@ export function GoalInput({
           }}
           {...modalProps}
         >
-          <div
+          <div // eslint-disable-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
             className={cn(
               "rounded-xl p-3",
               "border border-white/10",

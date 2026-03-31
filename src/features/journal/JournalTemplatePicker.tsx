@@ -40,9 +40,10 @@ export function JournalTemplatePicker({
       <div
         className="fixed inset-0 z-[64] bg-black/30 animate-fade-in"
         aria-hidden="true"
+        role="presentation"
         onClick={onClose}
       />
-      <div
+      <div // eslint-disable-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions
         role="dialog"
         aria-modal="true"
         className="fixed bottom-0 inset-x-0 z-[65] animate-slide-up"

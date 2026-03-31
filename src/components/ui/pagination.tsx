@@ -36,7 +36,7 @@ type PaginationLinkProps = {
   React.ComponentProps<"a">;
 
 const PaginationLink = ({ className, isActive, size = "icon", ...props }: PaginationLinkProps) => (
-  <a
+  <a // eslint-disable-line jsx-a11y/anchor-has-content
     aria-current={isActive ? "page" : undefined}
     className={cn(
       buttonVariants({

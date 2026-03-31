@@ -141,6 +141,7 @@ export function EmotionPanel({
               "shadow-zen-lg",
               "bg-[var(--surface-glass)] backdrop-blur-[var(--surface-glass-blur,20px)] [-webkit-backdrop-filter:blur(var(--surface-glass-blur,20px))]",
             )}
+            role="presentation"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Close button */}

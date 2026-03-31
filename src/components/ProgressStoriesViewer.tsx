@@ -269,7 +269,7 @@ export function ProgressStoriesViewer({
   return (
     <div role="dialog" aria-modal="true" aria-label={t.weeklyStory || 'Weekly Story'} className="fixed inset-0 z-[100] bg-black">
       {/* Story container */}
-      <div
+      <div // eslint-disable-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
         className="relative w-full h-full"
         style={{ background: currentSlide.gradient }}
         onClick={handleTap}

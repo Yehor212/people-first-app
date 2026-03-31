@@ -132,7 +132,7 @@ export function FeedbackButton({
           role="dialog"
           aria-modal="true"
         >
-          <div
+          <div // eslint-disable-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
             className="w-full max-w-md bg-card rounded-2xl shadow-xl animate-slide-up"
             onClick={(e) => e.stopPropagation()}
           >

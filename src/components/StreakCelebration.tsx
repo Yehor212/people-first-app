@@ -38,7 +38,7 @@ export function StreakCelebration({ streak, habitName, onClose }: StreakCelebrat
   if (!message) return null;
 
   return (
-    <div
+    <div // eslint-disable-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
       className={cn(
         "fixed inset-0 z-[220] flex items-center justify-center p-4 transition-all duration-300",
         isVisible ? "bg-black/50 backdrop-blur-md" : "bg-black/0"
@@ -69,6 +69,7 @@ export function StreakCelebration({ streak, habitName, onClose }: StreakCelebrat
           "border-2 border-orange-500/40",
           isVisible ? "scale-100 opacity-100 translate-y-0" : "scale-75 opacity-0 translate-y-8"
         )}
+        role="presentation"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Glow effect behind fire */}

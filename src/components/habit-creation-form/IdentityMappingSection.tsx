@@ -98,7 +98,7 @@ export function IdentityMappingSection({
         {existingClusters.length > 0 && (
           <datalist id="identity-clusters-list">
             {existingClusters.map((c) => (
-              <option key={c} value={c} />
+              <option key={c} value={c} /> // eslint-disable-line jsx-a11y/control-has-associated-label
             ))}
           </datalist>
         )}

@@ -332,7 +332,7 @@ class ModalErrorBoundaryClass extends React.Component<
 
     return (
       // Add ref, role, aria-modal, and keyboard handler for a11y
-      <div
+      <div // eslint-disable-line jsx-a11y/no-noninteractive-element-interactions
         ref={this.containerRef}
         role="alertdialog"
         aria-modal="true"

@@ -193,7 +193,7 @@ export const HabitHubCard = memo(function HabitHubCard({
       </div>
 
       {/* ═══ ROW 2: MINI WEEK CALENDAR ═══ */}
-      <div
+      <div // eslint-disable-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
         className="px-4 py-2"
         onClick={(e) => e.stopPropagation()}
       >

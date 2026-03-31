@@ -44,6 +44,7 @@ export function StreakCelebration({ streakDays, onClose }: StreakCelebrationProp
         showAnimations && "transition-opacity duration-300",
         show ? "opacity-100" : "opacity-0"
       )}
+      role="presentation"
       onClick={onClose}
     >
       <div
@@ -187,6 +188,7 @@ export function AllHabitsComplete({ onClose }: AllHabitsCompleteProps) {
         showAnimations && "transition-opacity duration-300",
         show ? "opacity-100" : "opacity-0"
       )}
+      role="presentation"
       onClick={onClose}
     >
       {/* Confetti - only if confetti enabled */}
@@ -307,8 +309,10 @@ export function ConfirmDialog({
   return (
     <div
       className="fixed inset-0 z-[300] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in"
-      onClick={onCancel} onKeyDown={(e) => { if (e.key === "Escape") onCancel(); }}
+      role="presentation"
+      onClick={onCancel}
     >
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions -- dialog stopPropagation handler */}
       <div role="dialog" aria-modal="true" aria-label="Confirmation" className="bg-card rounded-2xl p-6 mx-4 max-w-sm w-full shadow-2xl animate-scale-in" onClick={e => e.stopPropagation()}>
         <h3 className="text-lg font-bold text-foreground mb-2">{title}</h3>
         <p className="text-muted-foreground mb-6">{message}</p>

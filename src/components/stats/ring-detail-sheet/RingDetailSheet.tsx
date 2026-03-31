@@ -128,6 +128,7 @@ export function RingDetailSheet({
     <>
       <div
         className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm animate-fade-in"
+        role="presentation"
         onClick={() => onOpenChange(false)}
       />
       <div
@@ -417,7 +418,10 @@ export function RingDetailSheet({
                   ? t.viewHabits || "View Habits"
                   : t.startFocus || "Start Focus"}
             </span>
-            <ChevronRight className="w-5 h-5 rtl:scale-x-[-1]" aria-hidden="true" />
+            <ChevronRight
+              className="w-5 h-5 rtl:scale-x-[-1]"
+              aria-hidden="true"
+            />
           </motion.button>
         </div>
       </div>

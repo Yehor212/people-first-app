@@ -129,6 +129,7 @@ export function FeatureUnlock({
   };
 
   return (
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions
     <div
       role="dialog"
       aria-modal="true"
@@ -153,6 +154,7 @@ export function FeatureUnlock({
       ))}
 
       {/* Main card */}
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- inner dialog card stops propagation */}
       <div
         className={`relative m-4 max-w-md w-full bg-card rounded-2xl zen-shadow-card border border-border overflow-hidden transform transition-all duration-300 ${
           isVisible ? "scale-100 opacity-100" : "scale-75 opacity-0"

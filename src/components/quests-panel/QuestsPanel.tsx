@@ -149,7 +149,8 @@ export function QuestsPanel({ onClose }: QuestsPanelProps) {
   const tRecord = t as unknown as QuestCardTranslations;
 
   return (
-    <div ref={modalRef} onKeyDown={modalKeyDown} role="dialog" aria-modal="true" aria-labelledby="quests-title" className="fixed inset-0 z-[60] bg-background/95 backdrop-blur-sm overflow-y-auto">
+    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- dialog keyboard handler
+    <div ref={modalRef} onKeyDown={modalKeyDown} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="quests-title" className="fixed inset-0 z-[60] bg-background/95 backdrop-blur-sm overflow-y-auto">
       <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">

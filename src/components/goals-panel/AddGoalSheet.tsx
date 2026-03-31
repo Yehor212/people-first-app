@@ -94,7 +94,7 @@ export function AddGoalSheet({
 
   return (
     <>
-      <div
+      <div // eslint-disable-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
         className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm motion-safe:animate-fade-in"
         onClick={() => onOpenChange(false)}
       />

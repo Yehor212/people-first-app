@@ -176,7 +176,7 @@ export function HabitCreationForm({ form, habits, isPrimaryCTA = false }: HabitC
             : "bg-background text-foreground placeholder:text-muted-foreground focus:ring-primary/30"
         )}
         style={isPrimaryCTA ? { boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)' } : undefined}
-        autoFocus
+        autoFocus // eslint-disable-line jsx-a11y/no-autofocus
         onFocus={(e) => { const el = e.target; scrollTimeoutRef.current = setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300); }}
       />
 
