@@ -39,16 +39,22 @@ export function JournalPhotoPicker({
   }, []);
 
   const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+  const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"];
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > MAX_FILE_SIZE) {
+    if (!ALLOWED_MIME_TYPES.includes(file.type)) {
       setError(
-        ts.journalPhotoTooLarge ||
-          "Image too large (max 10 MB). Try a smaller image.",
+        ts.journalPhotoInvalidType || "Unsupported file type. Please use JPEG, PNG, or WebP."
       );
+      e.target.value = "";
+      return;
+    }
+
+    if (file.size > MAX_FILE_SIZE) {
+      setError(ts.journalPhotoTooLarge || "Image too large (max 10 MB). Try a smaller image.");
       e.target.value = "";
       return;
     }
@@ -85,7 +91,7 @@ export function JournalPhotoPicker({
           "fixed bottom-0 inset-x-0 z-[65]",
           "bg-card/95 backdrop-blur-xl border-t border-border/40",
           "rounded-t-2xl shadow-lg animate-slide-up",
-          "pb-[env(safe-area-inset-bottom)]",
+          "pb-[env(safe-area-inset-bottom)]"
         )}
       >
         {/* Handle bar */}
@@ -97,8 +103,7 @@ export function JournalPhotoPicker({
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
             <span className="text-sm font-semibold text-foreground">
-              {ts.journalPhotoAdd || "Add Photo"} ({remaining}{" "}
-              {ts.journalRemaining || "remaining"})
+              {ts.journalPhotoAdd || "Add Photo"} ({remaining} {ts.journalRemaining || "remaining"})
             </span>
             <button
               onClick={onClose}
@@ -109,16 +114,11 @@ export function JournalPhotoPicker({
             </button>
           </div>
 
-          {error && (
-            <p className="text-sm text-red-400 text-center py-2">{error}</p>
-          )}
+          {error && <p className="text-sm text-red-400 text-center py-2">{error}</p>}
 
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <Loader2
-                className="w-6 h-6 text-primary animate-spin"
-                aria-hidden="true"
-              />
+              <Loader2 className="w-6 h-6 text-primary animate-spin" aria-hidden="true" />
               <span className="ms-2 text-sm text-muted-foreground">
                 {ts.journalCompressing || "Compressing..."}
               </span>
@@ -134,7 +134,7 @@ export function JournalPhotoPicker({
                     "bg-muted/50 border border-border/30",
                     "active:scale-95 transition-transform",
                     "disabled:opacity-40",
-                    "min-h-[80px]",
+                    "min-h-[80px]"
                   )}
                 >
                   <Camera className="w-6 h-6 text-foreground" />
@@ -152,7 +152,7 @@ export function JournalPhotoPicker({
                   "bg-muted/50 border border-border/30",
                   "active:scale-95 transition-transform",
                   "disabled:opacity-40",
-                  "min-h-[80px]",
+                  "min-h-[80px]"
                 )}
               >
                 <ImageIcon className="w-6 h-6 text-foreground" />

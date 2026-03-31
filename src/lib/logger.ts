@@ -4,16 +4,13 @@
  * sensitive data leakage in production.
  */
 
-import { IS_DEV } from '@/lib/env';
+import { IS_DEV } from "@/lib/env";
 
 const isDev = IS_DEV;
-// Auth logging - ONLY enabled in development to prevent token leaks
-const DEBUG_AUTH = IS_DEV;
 
 export const logger = {
   log: (...args: unknown[]) => {
-    // Allow auth/index logs in production for debugging
-    if (isDev || (DEBUG_AUTH && typeof args[0] === 'string' && (args[0].includes('[Auth]') || args[0].includes('[Index]')))) {
+    if (isDev) {
       console.log(...args);
     }
   },
@@ -26,11 +23,11 @@ export const logger = {
 
   error: (...args: unknown[]) => {
     // Always log errors, but sanitize in production
-    if (isDev || DEBUG_AUTH) {
+    if (isDev) {
       console.error(...args);
     } else {
       // In production, only log generic error message
-      console.error('[Error]', args[0] instanceof Error ? args[0].message : 'An error occurred');
+      console.error("[Error]", args[0] instanceof Error ? args[0].message : "An error occurred");
     }
   },
 
@@ -48,18 +45,26 @@ export const logger = {
     if (isDev) {
       console.log(`[Auth] ${message}`);
     }
-  }
+  },
 };
 
 // Remove sensitive fields from log data
 const sanitizeLogData = (data: Record<string, unknown>): Record<string, unknown> => {
-  const sensitiveKeys = ['user_id', 'userId', 'token', 'access_token', 'refresh_token', 'password', 'email'];
+  const sensitiveKeys = [
+    "user_id",
+    "userId",
+    "token",
+    "access_token",
+    "refresh_token",
+    "password",
+    "email",
+  ];
   const safe: Record<string, unknown> = {};
 
   for (const [key, value] of Object.entries(data)) {
-    if (sensitiveKeys.some(sk => key.toLowerCase().includes(sk.toLowerCase()))) {
-      safe[key] = '[REDACTED]';
-    } else if (typeof value === 'object' && value !== null) {
+    if (sensitiveKeys.some((sk) => key.toLowerCase().includes(sk.toLowerCase()))) {
+      safe[key] = "[REDACTED]";
+    } else if (typeof value === "object" && value !== null) {
       safe[key] = sanitizeLogData(value as Record<string, unknown>);
     } else {
       safe[key] = value;

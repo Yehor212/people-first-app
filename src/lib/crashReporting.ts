@@ -102,21 +102,13 @@ const nativeCrashlytics: CrashReportingInterface = {
           sanitizedContext[key] = "[REDACTED]";
         }
       }
-      console.error(
-        "[ZenFlow Error Context]",
-        JSON.stringify(sanitizedContext),
-      );
+      console.error("[ZenFlow Error Context]", JSON.stringify(sanitizedContext));
     }
   },
 
-  setUserId: (userId: string | null) => {
-    // Store user ID in session for crash reports
-    if (userId) {
-      console.log(
-        "[ZenFlow User]",
-        userId ? `user:${userId.slice(0, 8)}` : "null",
-      );
-    }
+  setUserId: (_userId: string | null) => {
+    // User ID is set via Firebase Crashlytics SDK internally.
+    // Do not log any part of userId to console (PII leak in production).
   },
 
   setEnabled: (enabled: boolean) => {
@@ -128,31 +120,24 @@ const nativeCrashlytics: CrashReportingInterface = {
   },
 };
 
-export const crashReporting: CrashReportingInterface = isNative
-  ? nativeCrashlytics
-  : webFallback;
+export const crashReporting: CrashReportingInterface = isNative ? nativeCrashlytics : webFallback;
 
 // Helper to record errors from anywhere in the app
-export const recordError = (
-  error: unknown,
-  context?: Record<string, string>,
-) => {
+export const recordError = (error: unknown, context?: Record<string, string>) => {
   if (error instanceof Error) {
     crashReporting.recordError(error, context);
   } else {
     crashReporting.recordError(
       new Error(typeof error === "string" ? error : JSON.stringify(error)),
-      context,
+      context
     );
   }
 };
 
 // Helper to wrap async functions with error recording
-export const withCrashReporting = <
-  T extends (...args: unknown[]) => Promise<unknown>,
->(
+export const withCrashReporting = <T extends (...args: unknown[]) => Promise<unknown>>(
   fn: T,
-  context?: Record<string, string>,
+  context?: Record<string, string>
 ): T => {
   return (async (...args: Parameters<T>) => {
     try {
