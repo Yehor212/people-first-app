@@ -131,7 +131,46 @@ readStdin((data) => {
     }
   }
 
-  // 8. i18n check
+  // 8. SEMANTIC: Goal alignment (deterministic keyword matching, no LLM)
+  const GOAL_FILE = path.join(ROOT, '.user-goal-contract');
+  if (fs.existsSync(GOAL_FILE) && changedFiles.length > 0) {
+    try {
+      const goal = fs.readFileSync(GOAL_FILE, 'utf8').toLowerCase();
+      const stopwords = new Set(['this','that','with','from','have','will','been','were','about','would','could','should','after','before','these','those','other','very','just','also','only','each','such','make','like','over','even','most','more','much','still','take','come','know','need','want','find','give','tell']);
+      const goalWords = [...new Set(goal.match(/[a-z]{5,}/g) || [])].filter(w => !stopwords.has(w)).slice(0, 30);
+      if (goalWords.length >= 5) {
+        const diffContent = changedFiles.join(' ').toLowerCase();
+        const matched = goalWords.filter(w => diffContent.includes(w));
+        const coverage = Math.round(matched.length / goalWords.length * 100);
+        results.checks.goal_alignment = { pass: coverage >= 20 || !isAudit, coverage_pct: coverage, matched: matched.length, total: goalWords.length };
+        if (isAudit && coverage < 20) results.blockers.push('goal alignment ' + coverage + '%');
+      }
+    } catch {}
+  }
+
+  // 9. SEMANTIC: Test quality ratio warning
+  if (tsChanged) {
+    const testFiles = changedFiles.filter(f => f.includes('.test.') || f.includes('__tests__'));
+    const srcFiles = changedFiles.filter(f => !f.includes('.test.') && !f.includes('__tests__') && (f.endsWith('.ts') || f.endsWith('.tsx')));
+    results.checks.test_ratio = { pass: true, tests: testFiles.length, sources: srcFiles.length,
+      warning: (testFiles.length > srcFiles.length * 2 && testFiles.length > 3) ? 'More tests than source — verify not gaming' : undefined };
+  }
+
+  // 10. SEMANTIC: Checklist legitimacy — items should match user goal keywords
+  if (isAudit && fs.existsSync(CHECKLIST) && fs.existsSync(GOAL_FILE)) {
+    try {
+      const goal = fs.readFileSync(GOAL_FILE, 'utf8').toLowerCase();
+      const cl = safeReadJson(CHECKLIST, { items: [] });
+      const goalWords = [...new Set(goal.match(/[a-z]{5,}/g) || [])].slice(0, 20);
+      const itemText = (cl.items || []).map(i => (i.description || '').toLowerCase()).join(' ');
+      const matched = goalWords.filter(w => itemText.includes(w));
+      const pct = goalWords.length > 0 ? Math.round(matched.length / goalWords.length * 100) : 100;
+      results.checks.checklist_legitimacy = { pass: pct >= 30, pct };
+      if (pct < 30) results.blockers.push('checklist legitimacy ' + pct + '%');
+    } catch {}
+  }
+
+  // 11. i18n check
   if (i18nChanged) {
     try {
       execSync('npm run i18n:check', { cwd: ROOT, stdio: 'pipe', timeout: 30000 });
