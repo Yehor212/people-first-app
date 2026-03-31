@@ -41,7 +41,7 @@ export function FriendsPanel({
   currentStreak = 0,
   level = 1,
 }: FriendsPanelProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const tRecord = t as unknown as Record<string, string>;
 
   // --- Orchestrator-owned state (2 useState) ---
@@ -76,12 +76,8 @@ export function FriendsPanel({
   const fmtLastActive = (dateStr: string) => formatLastActive(dateStr, tRecord);
 
   // Filter visible activities for global feed
-  const hiddenFriendIds = new Set(
-    data.friends.filter((f) => f.activityHidden).map((f) => f.id),
-  );
-  const visibleActivities = data.activities.filter(
-    (a) => !hiddenFriendIds.has(a.friendId),
-  );
+  const hiddenFriendIds = new Set(data.friends.filter((f) => f.activityHidden).map((f) => f.id));
+  const visibleActivities = data.activities.filter((a) => !hiddenFriendIds.has(a.friendId));
 
   return (
     <div
@@ -112,10 +108,7 @@ export function FriendsPanel({
               aria-label={tRecord.refresh || "Refresh"}
             >
               <RefreshCw
-                className={cn(
-                  "w-4 h-4",
-                  actions.isRefreshing && "animate-spin",
-                )}
+                className={cn("w-4 h-4", actions.isRefreshing && "animate-spin")}
                 aria-hidden="true"
               />
             </button>
@@ -171,10 +164,7 @@ export function FriendsPanel({
                         form.setAddError(null);
                       }}
                       placeholder="ZF-XXXXXXXX"
-                      className={cn(
-                        "font-mono text-center",
-                        form.addError && "input-error",
-                      )}
+                      className={cn("font-mono text-center", form.addError && "input-error")}
                       maxLength={11}
                       onFocus={(e) => {
                         const el = e.target;
@@ -184,7 +174,7 @@ export function FriendsPanel({
                               behavior: "smooth",
                               block: "center",
                             }),
-                          300,
+                          300
                         );
                       }}
                     />
@@ -203,11 +193,7 @@ export function FriendsPanel({
                     </Button>
                   </div>
                   {form.addError && (
-                    <p
-                      className="text-sm text-destructive"
-                      role="status"
-                      aria-live="polite"
-                    >
+                    <p className="text-sm text-destructive" role="status" aria-live="polite">
                       {form.addError}
                     </p>
                   )}
@@ -218,10 +204,7 @@ export function FriendsPanel({
                     disabled={!form.friendCode.trim() || form.isAdding}
                   >
                     {form.isAdding ? (
-                      <RefreshCw
-                        className="w-4 h-4 animate-spin me-2"
-                        aria-hidden="true"
-                      />
+                      <RefreshCw className="w-4 h-4 animate-spin me-2" aria-hidden="true" />
                     ) : (
                       <UserPlus className="w-4 h-4 me-2" aria-hidden="true" />
                     )}
@@ -273,6 +256,7 @@ export function FriendsPanel({
                     onCancelRemove={() => actions.setConfirmRemoveFriend(null)}
                     formatLastActive={fmtLastActive}
                     t={tRecord}
+                    language={language}
                   />
                 </motion.div>
               ) : (
@@ -284,30 +268,21 @@ export function FriendsPanel({
                   transition={{ duration: 0.2 }}
                 >
                   <h3 className="text-sm font-medium text-muted-foreground mb-3">
-                    {tRecord.yourFriends || "Your Friends"} (
-                    {data.friends.length})
+                    {tRecord.yourFriends || "Your Friends"} ({data.friends.length})
                   </h3>
 
                   {data.friends.length === 0 ? (
                     <EmptyState
-                      icon={
-                        <Users
-                          className="w-6 h-6 text-primary"
-                          aria-hidden="true"
-                        />
-                      }
+                      icon={<Users className="w-6 h-6 text-primary" aria-hidden="true" />}
                       title={tRecord.noFriendsYet || "No friends yet"}
                       message={
-                        tRecord.addFriendsHint ||
-                        "Share your code or add friends by their code"
+                        tRecord.addFriendsHint || "Share your code or add friends by their code"
                       }
                       size="compact"
                       action={{
                         label: tRecord.addFriendByCode || "Add Friend by Code",
                         onClick: () => form.setShowAddFriend(true),
-                        icon: (
-                          <UserPlus className="w-4 h-4" aria-hidden="true" />
-                        ),
+                        icon: <UserPlus className="w-4 h-4" aria-hidden="true" />,
                       }}
                     />
                   ) : (
@@ -342,19 +317,11 @@ export function FriendsPanel({
                             </p>
                             <div className="flex items-center gap-3 text-xs text-muted-foreground">
                               <span className="flex items-center gap-1">
-                                <Flame
-                                  className="w-3 h-3 text-orange-500"
-                                  aria-hidden="true"
-                                />
-                                {friend.streakHidden
-                                  ? "—"
-                                  : friend.currentStreak}
+                                <Flame className="w-3 h-3 text-orange-500" aria-hidden="true" />
+                                {friend.streakHidden ? "—" : friend.currentStreak}
                               </span>
                               <span className="flex items-center gap-1">
-                                <Trophy
-                                  className="w-3 h-3 text-yellow-500"
-                                  aria-hidden="true"
-                                />
+                                <Trophy className="w-3 h-3 text-yellow-500" aria-hidden="true" />
                                 {friend.levelHidden ? "—" : friend.level}
                               </span>
                               <span className="flex items-center gap-1">
@@ -391,9 +358,7 @@ export function FriendsPanel({
                     <span className="text-lg">{activity.icon}</span>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-foreground truncate">
-                        <span className="font-medium">
-                          {activity.friendName}
-                        </span>{" "}
+                        <span className="font-medium">{activity.friendName}</span>{" "}
                         {activity.description}
                       </p>
                       <p className="text-xs text-muted-foreground">

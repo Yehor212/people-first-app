@@ -1,37 +1,60 @@
-import type { Language, Translations } from './types';
-import { en } from './languages/en';
-import { uk } from './languages/uk';
-import { es } from './languages/es';
-import { de } from './languages/de';
-import { fr } from './languages/fr';
-import { ja } from './languages/ja';
-import { ar } from './languages/ar';
-import { he } from './languages/he';
+import type { Language, Translations } from "./types";
+import { en } from "./languages/en";
 
 export type { Language, Translations };
 
-export const translations: Record<Language, Translations> = {
-  en, uk, es, de, fr, ja, ar, he,
+// Mutable cache — starts with English (always available), populated on demand
+export const translations: Record<string, Translations> = { en };
+
+// Dynamic loaders for code-split per-language chunks
+const languageLoaders: Record<string, () => Promise<Record<string, Translations>>> = {
+  uk: () => import("./languages/uk") as Promise<Record<string, Translations>>,
+  es: () => import("./languages/es") as Promise<Record<string, Translations>>,
+  de: () => import("./languages/de") as Promise<Record<string, Translations>>,
+  fr: () => import("./languages/fr") as Promise<Record<string, Translations>>,
+  ja: () => import("./languages/ja") as Promise<Record<string, Translations>>,
+  ar: () => import("./languages/ar") as Promise<Record<string, Translations>>,
+  he: () => import("./languages/he") as Promise<Record<string, Translations>>,
 };
 
+/** Load a language dynamically and cache it. Returns English as fallback. */
+export async function loadLanguage(code: Language): Promise<Translations> {
+  if (translations[code]) return translations[code];
+  const loader = languageLoaders[code];
+  if (!loader) return en;
+  try {
+    const module = await loader();
+    const loaded = module[code] || Object.values(module)[0];
+    translations[code] = loaded;
+    return loaded;
+  } catch {
+    return en;
+  }
+}
+
+/** Synchronous access — returns cached translation or English fallback. */
+export function getTranslations(code: Language): Translations {
+  return translations[code] || en;
+}
+
 export const languageNames: Record<Language, string> = {
-  en: 'English',
-  uk: 'Українська',
-  es: 'Español',
-  de: 'Deutsch',
-  fr: 'Français',
-  ja: '日本語',
-  ar: 'العربية',
-  he: 'עברית',
+  en: "English",
+  uk: "Українська",
+  es: "Español",
+  de: "Deutsch",
+  fr: "Français",
+  ja: "日本語",
+  ar: "العربية",
+  he: "עברית",
 };
 
 export const languageFlags: Record<Language, string> = {
-  en: '🇬🇧',
-  uk: '🇺🇦',
-  es: '🇪🇸',
-  de: '🇩🇪',
-  fr: '🇫🇷',
-  ja: '🇯🇵',
-  ar: '🇸🇦',
-  he: '🇮🇱',
+  en: "🇬🇧",
+  uk: "🇺🇦",
+  es: "🇪🇸",
+  de: "🇩🇪",
+  fr: "🇫🇷",
+  ja: "🇯🇵",
+  ar: "🇸🇦",
+  he: "🇮🇱",
 };

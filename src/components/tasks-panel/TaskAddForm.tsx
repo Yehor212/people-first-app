@@ -12,10 +12,7 @@ interface TaskFormState {
 
 interface TaskAddFormProps {
   form: TaskFormState;
-  setField: <K extends keyof TaskFormState>(
-    key: K,
-    value: TaskFormState[K],
-  ) => void;
+  setField: <K extends keyof TaskFormState>(key: K, value: TaskFormState[K]) => void;
   handleBlurMinutes: (value: string) => void;
   handleBlurBreak: (value: string) => void;
   handleBlurInterest: (value: string) => void;
@@ -41,6 +38,7 @@ export function TaskAddForm({
         value={form.name}
         onChange={(e) => setField("name", e.target.value)}
         placeholder={t.taskNamePlaceholder || "Task name..."}
+        aria-label={t.addTask || "Add task"}
         className="w-full p-3 bg-secondary rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
         autoFocus
         onKeyDown={(e) => e.key === "Enter" && handleAddTask()}
@@ -101,9 +99,7 @@ export function TaskAddForm({
           onChange={(e) => setField("urgent", e.target.checked)}
           className="w-4 h-4"
         />
-        <span className="text-sm text-foreground">
-          {t.markAsUrgent || "Mark as urgent"}
-        </span>
+        <span className="text-sm text-foreground">{t.markAsUrgent || "Mark as urgent"}</span>
       </label>
 
       <div className="flex gap-2">

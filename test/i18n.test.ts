@@ -1,14 +1,19 @@
-import { describe, it, expect } from 'vitest';
-import { translations, Language, Translations } from '../src/i18n/translations';
+import { describe, it, expect, beforeAll } from "vitest";
+import { translations, loadLanguage, Language, Translations } from "../src/i18n/translations";
 
 // Get all supported languages
-const MAIN_LANGUAGES: Language[] = ['en', 'uk', 'es', 'de', 'fr', 'ja', 'ar', 'he'];
+const MAIN_LANGUAGES: Language[] = ["en", "uk", "es", "de", "fr", "ja", "ar", "he"];
 
 // Reference language (English) - all other languages should have the same keys
-const REFERENCE_LANG: Language = 'en';
+const REFERENCE_LANG: Language = "en";
 
-describe('i18n Translations', () => {
-  describe('Key parity between languages', () => {
+describe("i18n Translations", () => {
+  // Pre-load all languages (dynamically imported since i18n code-splitting)
+  beforeAll(async () => {
+    await Promise.all(MAIN_LANGUAGES.map((lang) => loadLanguage(lang)));
+  });
+
+  describe("Key parity between languages", () => {
     const referenceKeys = Object.keys(translations[REFERENCE_LANG] || {}).sort();
 
     MAIN_LANGUAGES.forEach((lang) => {
@@ -30,7 +35,10 @@ describe('i18n Translations', () => {
         }
 
         if (extraKeys.length > 0) {
-          console.warn(`\n⚠️ Extra keys in ${lang} (not in ${REFERENCE_LANG}):`, extraKeys.slice(0, 5));
+          console.warn(
+            `\n⚠️ Extra keys in ${lang} (not in ${REFERENCE_LANG}):`,
+            extraKeys.slice(0, 5)
+          );
         }
 
         expect(missingKeys).toEqual([]);
@@ -38,7 +46,7 @@ describe('i18n Translations', () => {
     });
   });
 
-  describe('No empty values', () => {
+  describe("No empty values", () => {
     MAIN_LANGUAGES.forEach((lang) => {
       it(`${lang} should not have empty string values`, () => {
         const langTranslations = translations[lang];
@@ -49,7 +57,7 @@ describe('i18n Translations', () => {
         const emptyKeys: string[] = [];
 
         for (const [key, value] of Object.entries(langTranslations)) {
-          if (typeof value === 'string' && value.trim() === '') {
+          if (typeof value === "string" && value.trim() === "") {
             emptyKeys.push(key);
           }
         }
@@ -63,8 +71,8 @@ describe('i18n Translations', () => {
     });
   });
 
-  describe('Key count consistency', () => {
-    it('all main languages should have the same number of keys', () => {
+  describe("Key count consistency", () => {
+    it("all main languages should have the same number of keys", () => {
       const keyCounts: Record<string, number> = {};
 
       MAIN_LANGUAGES.forEach((lang) => {
@@ -78,14 +86,14 @@ describe('i18n Translations', () => {
       const allSame = counts.every((count) => count === counts[0]);
 
       if (!allSame) {
-        console.error('\n❌ Key count mismatch:', keyCounts);
+        console.error("\n❌ Key count mismatch:", keyCounts);
       }
 
       expect(allSame).toBe(true);
     });
   });
 
-  describe('No duplicate keys with different casing', () => {
+  describe("No duplicate keys with different casing", () => {
     MAIN_LANGUAGES.forEach((lang) => {
       it(`${lang} should not have keys that differ only by case`, () => {
         const langTranslations = translations[lang];
@@ -104,11 +112,11 @@ describe('i18n Translations', () => {
     });
   });
 
-  describe('Placeholder consistency', () => {
+  describe("Placeholder consistency", () => {
     // Keys that use placeholders like {name}, {count}, etc.
     const placeholderPattern = /\{(\w+)\}/g;
 
-    it('placeholder patterns should be consistent across languages', () => {
+    it("placeholder patterns should be consistent across languages", () => {
       const referenceTranslations = translations[REFERENCE_LANG];
       if (!referenceTranslations) {
         throw new Error(`Reference translations for ${REFERENCE_LANG} not found`);
@@ -117,7 +125,7 @@ describe('i18n Translations', () => {
       const inconsistencies: string[] = [];
 
       for (const [key, refValue] of Object.entries(referenceTranslations)) {
-        if (typeof refValue !== 'string') continue;
+        if (typeof refValue !== "string") continue;
 
         const refPlaceholders = [...refValue.matchAll(placeholderPattern)].map((m) => m[1]).sort();
 
@@ -128,7 +136,7 @@ describe('i18n Translations', () => {
           if (!langTranslations) return;
 
           const langValue = langTranslations[key as keyof Translations];
-          if (typeof langValue !== 'string') return;
+          if (typeof langValue !== "string") return;
 
           const langPlaceholders = [...langValue.matchAll(placeholderPattern)]
             .map((m) => m[1])
@@ -142,14 +150,14 @@ describe('i18n Translations', () => {
 
           if (missing.length > 0 || extra.length > 0) {
             inconsistencies.push(
-              `${key} in ${lang}: missing=[${missing.join(',')}], extra=[${extra.join(',')}]`
+              `${key} in ${lang}: missing=[${missing.join(",")}], extra=[${extra.join(",")}]`
             );
           }
         });
       }
 
       if (inconsistencies.length > 0) {
-        console.warn('\n⚠️ Placeholder inconsistencies:', inconsistencies.slice(0, 10));
+        console.warn("\n⚠️ Placeholder inconsistencies:", inconsistencies.slice(0, 10));
       }
 
       // This is a warning, not a failure - placeholders might legitimately differ
@@ -157,26 +165,26 @@ describe('i18n Translations', () => {
     });
   });
 
-  describe('Translation sanity checks', () => {
-    it('should have appName defined for all languages', () => {
+  describe("Translation sanity checks", () => {
+    it("should have appName defined for all languages", () => {
       MAIN_LANGUAGES.forEach((lang) => {
         const langTranslations = translations[lang];
         expect(langTranslations?.appName).toBeDefined();
-        expect(langTranslations?.appName).not.toBe('');
+        expect(langTranslations?.appName).not.toBe("");
       });
     });
 
-    it('should have common UI keys defined', () => {
+    it("should have common UI keys defined", () => {
       const requiredKeys: (keyof Translations)[] = [
-        'save',
-        'cancel',
-        'close',
-        'delete',
-        'confirm',
-        'retry',
-        'dismiss',
-        'next',
-        'skip',
+        "save",
+        "cancel",
+        "close",
+        "delete",
+        "confirm",
+        "retry",
+        "dismiss",
+        "next",
+        "skip",
       ];
 
       MAIN_LANGUAGES.forEach((lang) => {
@@ -185,7 +193,7 @@ describe('i18n Translations', () => {
 
         requiredKeys.forEach((key) => {
           expect(langTranslations[key]).toBeDefined();
-          expect(langTranslations[key]).not.toBe('');
+          expect(langTranslations[key]).not.toBe("");
         });
       });
     });

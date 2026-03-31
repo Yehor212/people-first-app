@@ -151,6 +151,12 @@
             "command": "node .claude/hooks/quality-stop-gate.cjs",
             "timeout": 10000,
             "statusMessage": "Quality stop gate..."
+          },
+          {
+            "type": "command",
+            "command": "node .claude/hooks/evolve-gate.cjs",
+            "timeout": 5000,
+            "statusMessage": "A-Evolve gate..."
           }
         ]
       }

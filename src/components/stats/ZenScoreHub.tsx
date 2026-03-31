@@ -7,13 +7,7 @@
 
 import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  Sparkles,
-  TrendingUp,
-  TrendingDown,
-  ChevronDown,
-  ChevronUp,
-} from "lucide-react";
+import { Sparkles, TrendingUp, TrendingDown, ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { ParticleBackground } from "./ParticleBackground";
@@ -129,7 +123,7 @@ export function ZenScoreHub({
       sparkColor: "#f97316",
       sparkData: weeklyData?.streak.map((d) => d.value) || [],
       suffix: "d",
-      ringId: undefined as undefined,
+      ringId: undefined,
     },
   ];
 
@@ -143,7 +137,7 @@ export function ZenScoreHub({
         "bg-gradient-to-br from-card via-card to-card/80",
         "border border-border/50",
         "zen-shadow-lg",
-        className,
+        className
       )}
     >
       {/* Particle background */}
@@ -178,9 +172,7 @@ export function ZenScoreHub({
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Sparkles aria-hidden="true" className={cn("w-5 h-5", scoreColor.class)} />
-            <h2 className="text-lg font-bold text-foreground">
-              {t.zenScore || "Zen Score"}
-            </h2>
+            <h2 className="text-lg font-bold text-foreground">{t.zenScore || "Zen Score"}</h2>
           </div>
 
           {/* Weekly change badge */}
@@ -190,7 +182,7 @@ export function ZenScoreHub({
                 "flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium",
                 weeklyChange > 0
                   ? "bg-[hsl(var(--mood-good))]/15 text-[hsl(var(--mood-good))]"
-                  : "bg-destructive/15 text-destructive",
+                  : "bg-destructive/15 text-destructive"
               )}
             >
               {weeklyChange > 0 ? (
@@ -243,10 +235,7 @@ export function ZenScoreHub({
             {/* Center content */}
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <motion.span
-                className={cn(
-                  "text-5xl font-bold tabular-nums",
-                  scoreColor.class,
-                )}
+                className={cn("text-5xl font-bold tabular-nums", scoreColor.class)}
                 initial={{ scale: 0.5, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ delay: 0.3, duration: 0.5, type: "spring" }}
@@ -254,10 +243,7 @@ export function ZenScoreHub({
                 {animatedScore}
               </motion.span>
               <span className="text-xs text-muted-foreground mt-1">
-                {getScoreLabel(
-                  zenScore,
-                  t as unknown as Record<string, string>,
-                )}
+                {getScoreLabel(zenScore, t as unknown as Record<string, string>)}
               </span>
             </div>
           </div>
@@ -291,8 +277,7 @@ export function ZenScoreHub({
                     transition={{ delay: index * 0.1 }}
                     className={cn(
                       "text-center",
-                      item.ringId &&
-                        "cursor-pointer active:scale-95 transition-transform",
+                      item.ringId && "cursor-pointer active:scale-95 transition-transform"
                     )}
                     onClick={(e) => {
                       if (item.ringId) {
@@ -309,25 +294,15 @@ export function ZenScoreHub({
                         animated={false}
                       />
                     </div>
-                    <p
-                      className={cn(
-                        "text-lg font-bold tabular-nums",
-                        item.color,
-                      )}
-                    >
+                    <p className={cn("text-lg font-bold tabular-nums", item.color)}>
                       {item.value}
                       {item.suffix || "%"}
                     </p>
-                    <p className="text-xs text-muted-foreground">
-                      {item.label}
-                    </p>
+                    <p className="text-xs text-muted-foreground">{item.label}</p>
                     {/* Mini sparkline showing weekly trend */}
                     {item.sparkData.length >= 2 && (
                       <div className="flex justify-center mt-1">
-                        <MiniSparkline
-                          data={item.sparkData}
-                          color={item.sparkColor}
-                        />
+                        <MiniSparkline data={item.sparkData} color={item.sparkColor} />
                       </div>
                     )}
                   </motion.div>

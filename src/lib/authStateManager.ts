@@ -10,7 +10,7 @@
  * Solution: Single point of auth completion with mutex-style locking.
  */
 
-import { logger } from './logger';
+import { logger } from "./logger";
 
 type AuthCompletionCallback = () => void | Promise<void>;
 
@@ -34,18 +34,16 @@ class AuthStateManager {
    * @param source - Identifier for where this call originated (for debugging)
    * @returns true if this call completed auth, false if already completed
    */
-  async tryComplete(
-    callback: AuthCompletionCallback,
-    source: string
-  ): Promise<boolean> {
+  async tryComplete(callback: AuthCompletionCallback, source: string): Promise<boolean> {
     // Fast path: already completed
     if (this.isCompleted) {
-      logger.log(`[AuthStateManager] Auth already completed by ${this.completionSource}, ignoring call from ${source}`);
+      logger.log(
+        `[AuthStateManager] Auth already completed by ${this.completionSource}, ignoring call from ${source}`
+      );
       return false;
     }
 
     // If completion is in progress, wait for it
-    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     if (this.completionPromise) {
       logger.log(`[AuthStateManager] Completion in progress, waiting (source: ${source})`);
       await this.completionPromise;
@@ -104,7 +102,7 @@ class AuthStateManager {
    * Reset the auth state. Use with caution - only for sign-out or error recovery.
    */
   reset(): void {
-    logger.log('[AuthStateManager] Resetting auth state');
+    logger.log("[AuthStateManager] Resetting auth state");
     this.isCompleted = false;
     this.completionPromise = null;
     this.completionSource = null;
@@ -117,7 +115,9 @@ class AuthStateManager {
    */
   markCompleted(source: string): void {
     if (this.isCompleted) {
-      logger.log(`[AuthStateManager] Already completed by ${this.completionSource}, ignoring mark from ${source}`);
+      logger.log(
+        `[AuthStateManager] Already completed by ${this.completionSource}, ignoring mark from ${source}`
+      );
       return;
     }
     logger.log(`[AuthStateManager] Marking auth as completed from ${source}`);

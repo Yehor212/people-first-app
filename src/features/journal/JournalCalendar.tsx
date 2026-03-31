@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, Info, CalendarRange } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn, getToday } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { getLocale } from "@/lib/timeUtils";
 import { SK } from "@/lib/storageKeys";
 import { storageGetRaw, storageSetRaw } from "@/lib/safeJson";
 import type { MoodType } from "@/types";
@@ -35,9 +36,7 @@ const MOOD_LEGEND: { mood: MoodType; color: string; key: string }[] = [
 function getLocalizedDayNames(locale: string): string[] {
   const formatter = new Intl.DateTimeFormat(locale, { weekday: "narrow" });
   // Jan 5 2025 = Sunday, Jan 6 = Monday, ... Jan 11 = Saturday
-  return Array.from({ length: 7 }, (_, i) =>
-    formatter.format(new Date(2025, 0, 5 + i)),
-  );
+  return Array.from({ length: 7 }, (_, i) => formatter.format(new Date(2025, 0, 5 + i)));
 }
 
 interface JournalCalendarProps {
@@ -82,11 +81,12 @@ export function JournalCalendar({
     const first = new Date(days[0].date + "T00:00:00");
     const last = new Date(days[days.length - 1].date + "T00:00:00");
     const opts: Intl.DateTimeFormatOptions = { month: "long", year: "numeric" };
-    const firstMonth = first.toLocaleDateString(undefined, opts);
-    const lastMonth = last.toLocaleDateString(undefined, opts);
+    const locale = getLocale(language);
+    const firstMonth = first.toLocaleDateString(locale, opts);
+    const lastMonth = last.toLocaleDateString(locale, opts);
     if (firstMonth === lastMonth) return firstMonth;
-    return `${first.toLocaleDateString(undefined, { month: "short" })} \u2014 ${last.toLocaleDateString(undefined, { month: "short", year: "numeric" })}`;
-  }, [days]);
+    return `${first.toLocaleDateString(locale, { month: "short" })} \u2014 ${last.toLocaleDateString(locale, { month: "short", year: "numeric" })}`;
+  }, [days, language]);
 
   const canGoForward = startOffset > 0;
 
@@ -116,9 +116,7 @@ export function JournalCalendar({
         </button>
 
         <div className="flex items-center gap-2">
-          <span className="text-xs font-medium text-foreground capitalize">
-            {monthLabel}
-          </span>
+          <span className="text-xs font-medium text-foreground capitalize">{monthLabel}</span>
           {startOffset > 0 && (
             <button
               onClick={() => {
@@ -189,7 +187,7 @@ export function JournalCalendar({
                 isSelected
                   ? "bg-gradient-to-b from-primary/20 to-primary/10 shadow-sm"
                   : "hover:bg-muted/50",
-                isToday && !isSelected && "ring-1 ring-primary/40",
+                isToday && !isSelected && "ring-1 ring-primary/40"
               )}
             >
               <span className="text-[10px] text-muted-foreground leading-none">
@@ -198,7 +196,7 @@ export function JournalCalendar({
               <span
                 className={cn(
                   "text-xs font-semibold leading-none",
-                  isToday ? "text-primary" : "text-foreground",
+                  isToday ? "text-primary" : "text-foreground"
                 )}
               >
                 {d.day}
@@ -212,7 +210,7 @@ export function JournalCalendar({
                     "w-2 h-2 rounded-full ring-2",
                     mood ? MOOD_COLORS[mood] : "bg-primary/60",
                     mood ? MOOD_RING[mood] : "ring-primary/20",
-                    isToday && "animate-pulse-subtle",
+                    isToday && "animate-pulse-subtle"
                   )}
                 />
               ) : (

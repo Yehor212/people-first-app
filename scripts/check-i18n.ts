@@ -9,10 +9,13 @@
  * Usage: npx tsx scripts/check-i18n.ts
  */
 
-import { translations, Language, Translations } from '../src/i18n/translations';
+import { translations, loadLanguage, Language, Translations } from "../src/i18n/translations";
 
-const MAIN_LANGUAGES: Language[] = ['en', 'uk', 'es', 'de', 'fr', 'ja', 'ar', 'he'];
-const REFERENCE_LANG: Language = 'en';
+const MAIN_LANGUAGES: Language[] = ["en", "uk", "es", "de", "fr", "ja", "ar", "he"];
+const REFERENCE_LANG: Language = "en";
+
+// Pre-load all languages (dynamically imported since i18n code-splitting)
+await Promise.all(MAIN_LANGUAGES.map((lang) => loadLanguage(lang)));
 
 interface ValidationResult {
   errors: string[];
@@ -43,13 +46,13 @@ function validateTranslations(): ValidationResult {
     const langKeys = Object.keys(langTranslations).sort();
 
     // Check for missing keys
-    const missingKeys = referenceKeys.filter(key => !langKeys.includes(key));
-    const extraKeys = langKeys.filter(key => !referenceKeys.includes(key));
+    const missingKeys = referenceKeys.filter((key) => !langKeys.includes(key));
+    const extraKeys = langKeys.filter((key) => !referenceKeys.includes(key));
 
     // Check for empty values
     const emptyKeys: string[] = [];
     for (const [key, value] of Object.entries(langTranslations)) {
-      if (typeof value === 'string' && value.trim() === '') {
+      if (typeof value === "string" && value.trim() === "") {
         emptyKeys.push(key);
       }
     }
@@ -62,13 +65,13 @@ function validateTranslations(): ValidationResult {
 
       if (missingKeys.length > 0) {
         result.errors.push(`${lang}: ${missingKeys.length} missing keys`);
-        console.log(`   Missing (${missingKeys.length}):`, missingKeys.slice(0, 5).join(', '));
+        console.log(`   Missing (${missingKeys.length}):`, missingKeys.slice(0, 5).join(", "));
         if (missingKeys.length > 5) console.log(`   ... and ${missingKeys.length - 5} more`);
       }
 
       if (emptyKeys.length > 0) {
         result.errors.push(`${lang}: ${emptyKeys.length} empty values`);
-        console.log(`   Empty (${emptyKeys.length}):`, emptyKeys.slice(0, 5).join(', '));
+        console.log(`   Empty (${emptyKeys.length}):`, emptyKeys.slice(0, 5).join(", "));
       }
     }
 
@@ -78,22 +81,22 @@ function validateTranslations(): ValidationResult {
   }
 
   // Summary
-  console.log('\n' + '='.repeat(50));
-  console.log('📋 SUMMARY');
-  console.log('='.repeat(50));
+  console.log("\n" + "=".repeat(50));
+  console.log("📋 SUMMARY");
+  console.log("=".repeat(50));
 
   if (result.errors.length === 0) {
-    console.log('\n✅ All translations are valid!\n');
+    console.log("\n✅ All translations are valid!\n");
   } else {
     console.log(`\n❌ Found ${result.errors.length} error(s):\n`);
-    result.errors.forEach(err => console.log(`   - ${err}`));
-    console.log('');
+    result.errors.forEach((err) => console.log(`   - ${err}`));
+    console.log("");
   }
 
   if (result.warnings.length > 0) {
     console.log(`⚠️  ${result.warnings.length} warning(s):\n`);
-    result.warnings.forEach(warn => console.log(`   - ${warn}`));
-    console.log('');
+    result.warnings.forEach((warn) => console.log(`   - ${warn}`));
+    console.log("");
   }
 
   return result;

@@ -3,12 +3,12 @@
  * Implements double-tap-to-exit functionality and proper navigation handling
  */
 
-import { App } from '@capacitor/app';
-import type { PluginListenerHandle } from '@capacitor/core';
-import { isNative, isAndroid } from '@/lib/platform';
-import { logger } from './logger';
-import { SK } from './storageKeys';
-import { storageGetRaw } from './safeJson';
+import { App } from "@capacitor/app";
+import type { PluginListenerHandle } from "@capacitor/core";
+import { isNative, isAndroid } from "@/lib/platform";
+import { logger } from "./logger";
+import { SK } from "./storageKeys";
+import { storageGetRaw } from "./safeJson";
 
 // Track last back button press timestamp
 let lastBackPress = 0;
@@ -49,23 +49,23 @@ function showExitToast(message: string) {
   isShowingExitToast = true;
 
   // Create toast element
-  const toast = document.createElement('div');
-  toast.className = 'android-exit-toast';
+  const toast = document.createElement("div");
+  toast.className = "android-exit-toast";
   toast.textContent = message;
   toast.style.cssText = `
     position: fixed;
     bottom: calc(80px + env(safe-area-inset-bottom, 0px));
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(0, 0, 0, 0.85);
-    color: white;
+    background: hsl(var(--popover));
+    color: hsl(var(--popover-foreground));
     padding: 12px 24px;
     border-radius: 24px;
     font-size: 14px;
     font-weight: 500;
     z-index: 310;
     animation: toast-slide-up 0.3s ease-out;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 4px 12px hsl(var(--popover) / 0.3);
   `;
 
   document.body.appendChild(toast);
@@ -81,7 +81,7 @@ function showExitToast(message: string) {
       isShowingExitToast = false;
       return;
     }
-    toast.style.animation = 'toast-fade-out 0.2s ease-out';
+    toast.style.animation = "toast-fade-out 0.2s ease-out";
     toastFadeTimeoutId = setTimeout(() => {
       if (toast.parentNode) {
         toast.parentNode.removeChild(toast);
@@ -96,7 +96,7 @@ function showExitToast(message: string) {
  */
 function isOnRootRoute(): boolean {
   const path = window.location.pathname;
-  return path === '/' || path === '/index.html';
+  return path === "/" || path === "/index.html";
 }
 
 /**
@@ -115,17 +115,16 @@ function isElementVisible(element: Element): boolean {
   const styles = window.getComputedStyle(element);
 
   // Must not be hidden
-  if (styles.display === 'none') return false;
-  if (styles.visibility === 'hidden') return false;
-  if (styles.opacity === '0') return false;
+  if (styles.display === "none") return false;
+  if (styles.visibility === "hidden") return false;
+  if (styles.opacity === "0") return false;
 
   // Check if element is within viewport (not scrolled away)
-  const inViewport = (
+  const inViewport =
     rect.top < window.innerHeight &&
     rect.bottom > 0 &&
     rect.left < window.innerWidth &&
-    rect.right > 0
-  );
+    rect.right > 0;
 
   return inViewport;
 }
@@ -141,16 +140,16 @@ function isModalOpen(): boolean {
   const modalSelectors = [
     '[role="dialog"]',
     '[role="alertdialog"]',
-    '.modal',
-    '.dialog',
-    '.drawer',
+    ".modal",
+    ".dialog",
+    ".drawer",
     // Radix UI specific - more targeted than generic [data-state="open"]
-    '[data-radix-dialog-content]',
-    '[data-radix-alert-dialog-content]',
-    '[data-radix-sheet-content]',
-    '[data-radix-drawer-content]',
+    "[data-radix-dialog-content]",
+    "[data-radix-alert-dialog-content]",
+    "[data-radix-sheet-content]",
+    "[data-radix-drawer-content]",
     // Radix popover/dropdown only if they have overlay (true modals)
-    '[data-radix-popper-content-wrapper][data-side]',
+    "[data-radix-popper-content-wrapper][data-side]",
   ];
 
   for (const selector of modalSelectors) {
@@ -174,7 +173,7 @@ function closeTopModal(): boolean {
   // Iterate in reverse order (LIFO) so the most recently opened modal closes first
   for (let i = modalCloseCallbacks.length - 1; i >= 0; i--) {
     if (modalCloseCallbacks[i]()) {
-      logger.log('[AndroidBackHandler] Modal closed via registered callback');
+      logger.log("[AndroidBackHandler] Modal closed via registered callback");
       return true;
     }
   }
@@ -185,9 +184,9 @@ function closeTopModal(): boolean {
     '[role="dialog"] button[aria-label*="close" i]',
     '[role="dialog"] button[aria-label*="закрыть" i]',
     '[role="dialog"] button:first-child', // Usually close button
-    '.dialog-close',
-    '.modal-close',
-    '[data-close-button]',
+    ".dialog-close",
+    ".modal-close",
+    "[data-close-button]",
   ];
 
   for (const selector of closeButtonSelectors) {
@@ -199,9 +198,9 @@ function closeTopModal(): boolean {
   }
 
   // Try ESC key as fallback
-  const escEvent = new KeyboardEvent('keydown', {
-    key: 'Escape',
-    code: 'Escape',
+  const escEvent = new KeyboardEvent("keydown", {
+    key: "Escape",
+    code: "Escape",
     keyCode: 27,
     bubbles: true,
     cancelable: true,
@@ -216,20 +215,20 @@ function closeTopModal(): boolean {
  */
 function getExitMessage(): string {
   try {
-    const lang = storageGetRaw(SK.LANGUAGE, 'en');
+    const lang = storageGetRaw(SK.LANGUAGE, "en");
     const messages: Record<string, string> = {
-      en: 'Press again to exit',
-      uk: 'Натисніть ще раз для виходу',
-      es: 'Presiona de nuevo para salir',
-      de: 'Erneut drücken zum Beenden',
-      fr: 'Appuyez à nouveau pour quitter',
-      ja: 'もう一度押すと終了します',
-      ar: 'اضغط مرة أخرى للخروج',
-      he: 'לחץ שוב כדי לצאת',
+      en: "Press again to exit",
+      uk: "Натисніть ще раз для виходу",
+      es: "Presiona de nuevo para salir",
+      de: "Erneut drücken zum Beenden",
+      fr: "Appuyez à nouveau pour quitter",
+      ja: "もう一度押すと終了します",
+      ar: "اضغط مرة أخرى للخروج",
+      he: "לחץ שוב כדי לצאת",
     };
     return messages[lang] || messages.en;
   } catch {
-    return 'Press again to exit';
+    return "Press again to exit";
   }
 }
 
@@ -244,20 +243,20 @@ export async function initAndroidBackHandler(): Promise<void> {
 
   // Prevent double registration
   if (backButtonListenerHandle) {
-    logger.log('[AndroidBackHandler] Already initialized, skipping');
+    logger.log("[AndroidBackHandler] Already initialized, skipping");
     return;
   }
 
-  logger.log('[AndroidBackHandler] Initializing...');
+  logger.log("[AndroidBackHandler] Initializing...");
 
   // Store handle for targeted removal later
-  backButtonListenerHandle = await App.addListener('backButton', ({ canGoBack }) => {
-    logger.log('[AndroidBackHandler] Back button pressed, canGoBack:', canGoBack);
+  backButtonListenerHandle = await App.addListener("backButton", ({ canGoBack }) => {
+    logger.log("[AndroidBackHandler] Back button pressed, canGoBack:", canGoBack);
 
     // Priority 1: Try to close modal via callbacks or DOM detection
     // closeTopModal() first tries registered callbacks, then DOM-based closing
     if (modalCloseCallbacks.length > 0 || isModalOpen()) {
-      logger.log('[AndroidBackHandler] Modal/panel may be open, attempting to close');
+      logger.log("[AndroidBackHandler] Modal/panel may be open, attempting to close");
       if (closeTopModal()) {
         return;
       }
@@ -265,7 +264,7 @@ export async function initAndroidBackHandler(): Promise<void> {
 
     // Priority 2: Navigate back if not on root route
     if (!isOnRootRoute()) {
-      logger.log('[AndroidBackHandler] Not on root route, navigating back');
+      logger.log("[AndroidBackHandler] Not on root route, navigating back");
       window.history.back();
       return;
     }
@@ -276,17 +275,17 @@ export async function initAndroidBackHandler(): Promise<void> {
 
     if (timeSinceLastPress < DOUBLE_TAP_DELAY) {
       // Second tap within delay - exit app
-      logger.log('[AndroidBackHandler] Double tap detected, exiting app');
+      logger.log("[AndroidBackHandler] Double tap detected, exiting app");
       void App.exitApp();
     } else {
       // First tap - show toast and update timestamp
-      logger.log('[AndroidBackHandler] First tap, showing exit toast');
+      logger.log("[AndroidBackHandler] First tap, showing exit toast");
       lastBackPress = now;
       showExitToast(getExitMessage());
     }
   });
 
-  logger.log('[AndroidBackHandler] Back button handler registered');
+  logger.log("[AndroidBackHandler] Back button handler registered");
 }
 
 /**
@@ -302,6 +301,6 @@ export async function removeAndroidBackHandler(): Promise<void> {
   if (backButtonListenerHandle) {
     await backButtonListenerHandle.remove();
     backButtonListenerHandle = null;
-    logger.log('[AndroidBackHandler] Back button handler removed');
+    logger.log("[AndroidBackHandler] Back button handler removed");
   }
 }

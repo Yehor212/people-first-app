@@ -7,11 +7,7 @@ import { useBackHandler } from "@/hooks/useBackHandler";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { SK } from "@/lib/storageKeys";
 import { safeLocalStorageGet, safeLocalStorageSet } from "@/lib/safeJson";
-import {
-  STICKER_CATEGORIES,
-  MOOD_STICKER_SUGGESTIONS,
-  searchStickers,
-} from "./stickerUtils";
+import { STICKER_CATEGORIES, MOOD_STICKER_SUGGESTIONS, searchStickers } from "./stickerUtils";
 import { StickerRenderer } from "./StickerRenderer";
 import { JournalStickerPackManager } from "./JournalStickerPackManager";
 import { useStickerPacks } from "./useStickerPacks";
@@ -23,24 +19,13 @@ interface JournalStickerPickerProps {
   mood?: MoodType;
 }
 
-export function JournalStickerPicker({
-  onSelect,
-  onClose,
-  mood,
-}: JournalStickerPickerProps) {
+export function JournalStickerPicker({ onSelect, onClose, mood }: JournalStickerPickerProps) {
   const { t } = useLanguage();
   const ts = t as unknown as Record<string, string>;
   useBackHandler(true, onClose);
   useScrollLock(true);
 
-  const {
-    prefs,
-    enabledCategories,
-    enabledCount,
-    togglePack,
-    isNew,
-    markSeen,
-  } = useStickerPacks();
+  const { prefs, enabledCategories, enabledCount, togglePack, isNew, markSeen } = useStickerPacks();
 
   // -1 = suggested (mood), 0+ = index in enabledCategories
   const [activeCategory, setActiveCategory] = useState(mood ? -1 : 0);
@@ -59,16 +44,12 @@ export function JournalStickerPicker({
   const handleSelect = (sticker: string) => {
     onSelect(sticker);
     const prev = safeLocalStorageGet<string[]>(SK.JOURNAL_RECENT_STICKERS, []);
-    const updated = [sticker, ...prev.filter((s) => s !== sticker)].slice(
-      0,
-      16,
-    );
+    const updated = [sticker, ...prev.filter((s) => s !== sticker)].slice(0, 16);
     safeLocalStorageSet(SK.JOURNAL_RECENT_STICKERS, updated);
   };
 
   // Ensure activeCategory is within bounds when packs change
-  const safeActiveCategory =
-    activeCategory >= enabledCategories.length ? 0 : activeCategory;
+  const safeActiveCategory = activeCategory >= enabledCategories.length ? 0 : activeCategory;
 
   const stickerButton =
     "p-1.5 rounded-xl hover:bg-muted/50 active:scale-90 transition-transform min-h-[44px] flex items-center justify-center";
@@ -76,10 +57,7 @@ export function JournalStickerPicker({
   return (
     <>
       {/* Backdrop */}
-      <div
-        className="fixed inset-0 z-[64] bg-black/30 animate-fade-in"
-        onClick={onClose}
-      />
+      <div className="fixed inset-0 z-[64] bg-black/30 animate-fade-in" onClick={onClose} />
 
       <div
         role="dialog"
@@ -89,7 +67,7 @@ export function JournalStickerPicker({
           "bg-card/95 backdrop-blur-xl border-t border-border/40",
           "rounded-t-2xl shadow-lg animate-slide-up",
           "max-h-[55dvh] flex flex-col",
-          "pb-[env(safe-area-inset-bottom)]",
+          "pb-[env(safe-area-inset-bottom)]"
         )}
       >
         {/* Handle bar */}
@@ -130,7 +108,7 @@ export function JournalStickerPicker({
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={ts.journalStickerSearch || "Search stickers..."}
               aria-label="Search stickers"
-              className="w-full ps-8 pe-8 py-2 rounded-lg bg-muted/30 border border-border/20 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary/30 min-h-[40px]"
+              className="w-full ps-8 pe-8 py-2 rounded-lg bg-muted/30 border border-border/20 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary/30 min-h-[44px]"
             />
             {searchQuery && (
               <button
@@ -155,16 +133,14 @@ export function JournalStickerPicker({
                   "snap-start flex-shrink-0 px-2.5 py-1 rounded-lg text-sm transition-colors min-h-[40px] flex flex-col items-center justify-center gap-0.5",
                   safeActiveCategory === -1 && activeCategory === -1
                     ? "bg-primary/15"
-                    : "hover:bg-muted/50",
+                    : "hover:bg-muted/50"
                 )}
               >
                 <span className="text-base">{"\u2728"}</span>
                 <span
                   className={cn(
                     "text-[10px] truncate max-w-[52px]",
-                    activeCategory === -1
-                      ? "text-primary/80"
-                      : "text-muted-foreground/50",
+                    activeCategory === -1 ? "text-primary/80" : "text-muted-foreground/50"
                   )}
                 >
                   {ts.journalStickerSuggested || "Suggested"}
@@ -179,7 +155,7 @@ export function JournalStickerPicker({
                   "snap-start flex-shrink-0 px-2.5 py-1 rounded-lg text-sm transition-colors min-h-[40px] flex flex-col items-center justify-center gap-0.5",
                   safeActiveCategory === i && activeCategory >= 0
                     ? "bg-primary/15"
-                    : "hover:bg-muted/50",
+                    : "hover:bg-muted/50"
                 )}
               >
                 <StickerRenderer emoji={cat.icon} size="sm" />
@@ -188,7 +164,7 @@ export function JournalStickerPicker({
                     "text-[10px] truncate max-w-[52px]",
                     safeActiveCategory === i && activeCategory >= 0
                       ? "text-primary/80"
-                      : "text-muted-foreground/50",
+                      : "text-muted-foreground/50"
                   )}
                 >
                   {ts[cat.labelKey] || cat.key}
@@ -214,19 +190,14 @@ export function JournalStickerPicker({
                   <div className="grid grid-cols-6 gap-1.5">
                     {searchResults.map((r, i) => (
                       <div key={`sr-${i}`} className="relative">
-                        <button
-                          onClick={() => handleSelect(r.emoji)}
-                          className={stickerButton}
-                        >
+                        <button onClick={() => handleSelect(r.emoji)} className={stickerButton}>
                           <StickerRenderer emoji={r.emoji} size="lg" />
                         </button>
                         {/* Show pack hint for disabled packs */}
                         {!prefs.enabled[r.packKey] && (
                           <span className="absolute -bottom-0.5 inset-x-0 text-center text-[8px] text-muted-foreground/40 truncate">
                             {ts[
-                              STICKER_CATEGORIES.find(
-                                (c) => c.key === r.packKey,
-                              )?.labelKey || ""
+                              STICKER_CATEGORIES.find((c) => c.key === r.packKey)?.labelKey || ""
                             ] || r.packKey}
                           </span>
                         )}
@@ -270,8 +241,7 @@ export function JournalStickerPicker({
                 className="text-center py-8"
               >
                 <p className="text-xs text-muted-foreground/50 mb-3">
-                  {ts.journalStickerPackEnable ||
-                    "Enable at least one sticker pack"}
+                  {ts.journalStickerPackEnable || "Enable at least one sticker pack"}
                 </p>
                 <button
                   onClick={() => setShowPackManager(true)}
@@ -310,17 +280,11 @@ export function JournalStickerPicker({
                 )}
 
                 <div className="grid grid-cols-6 gap-1.5">
-                  {enabledCategories[safeActiveCategory]?.stickers.map(
-                    (s, i) => (
-                      <button
-                        key={i}
-                        onClick={() => handleSelect(s)}
-                        className={stickerButton}
-                      >
-                        <StickerRenderer emoji={s} size="lg" />
-                      </button>
-                    ),
-                  )}
+                  {enabledCategories[safeActiveCategory]?.stickers.map((s, i) => (
+                    <button key={i} onClick={() => handleSelect(s)} className={stickerButton}>
+                      <StickerRenderer emoji={s} size="lg" />
+                    </button>
+                  ))}
                 </div>
               </motion.div>
             )}

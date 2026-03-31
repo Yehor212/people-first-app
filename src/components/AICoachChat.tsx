@@ -18,8 +18,7 @@ import { useScrollLock } from "@/hooks/useScrollLock";
 
 export function AICoachChat() {
   const { t } = useLanguage();
-  const { isOpen, isLoading, messages, closeCoach, sendMessage, clearHistory } =
-    useAICoach();
+  const { isOpen, isLoading, messages, closeCoach, sendMessage, clearHistory } = useAICoach();
 
   useBackHandler(isOpen, () => {
     if (!isLoading) closeCoach();
@@ -67,12 +66,13 @@ export function AICoachChat() {
 
   return (
     <>
-      {/* Prevent closing while message is being sent */}
+      {/* A11Y-OK: backdrop is decorative overlay dismissed by click — keyboard users dismiss via Escape in the dialog */}
       <div
         className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm motion-safe:animate-fade-in"
         onClick={() => {
           if (!isLoading) closeCoach();
         }}
+        role="presentation"
       />
       <div
         role="dialog"
@@ -93,9 +93,7 @@ export function AICoachChat() {
               <Sparkles className="w-6 h-6 text-white" aria-hidden="true" />
             </motion.div>
             <div>
-              <h2 className="font-semibold text-foreground">
-                {t.aiCoachTitle || "AI Coach"}
-              </h2>
+              <h2 className="font-semibold text-foreground">{t.aiCoachTitle || "AI Coach"}</h2>
               <p className="text-xs text-muted-foreground">
                 {t.aiCoachSubtitle || "Your personal wellness guide"}
               </p>
@@ -142,23 +140,17 @@ export function AICoachChat() {
               <div className="mt-6 flex flex-wrap justify-center gap-2">
                 <QuickAction
                   label={t.aiCoachQuick1 || "I'm feeling stressed"}
-                  onClick={() =>
-                    sendMessage(t.aiCoachQuick1 || "I'm feeling stressed")
-                  }
+                  onClick={() => sendMessage(t.aiCoachQuick1 || "I'm feeling stressed")}
                   disabled={isLoading}
                 />
                 <QuickAction
                   label={t.aiCoachQuick2 || "Help me focus"}
-                  onClick={() =>
-                    sendMessage(t.aiCoachQuick2 || "Help me focus")
-                  }
+                  onClick={() => sendMessage(t.aiCoachQuick2 || "Help me focus")}
                   disabled={isLoading}
                 />
                 <QuickAction
                   label={t.aiCoachQuick3 || "Motivation needed"}
-                  onClick={() =>
-                    sendMessage(t.aiCoachQuick3 || "Motivation needed")
-                  }
+                  onClick={() => sendMessage(t.aiCoachQuick3 || "Motivation needed")}
                   disabled={isLoading}
                 />
               </div>
@@ -191,7 +183,7 @@ export function AICoachChat() {
                 "flex-1 px-4 py-3.5 rounded-xl transition-all",
                 "bg-secondary backdrop-blur-sm border border-border",
                 "text-foreground placeholder:text-muted-foreground",
-                "focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/30",
+                "focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/30"
               )}
               disabled={isLoading}
             />
@@ -202,13 +194,12 @@ export function AICoachChat() {
                 "p-3.5 rounded-xl min-w-[52px] min-h-[52px] flex items-center justify-center transition-all",
                 input.trim() && !isLoading
                   ? "bg-gradient-to-r from-violet-500 to-purple-600 text-white"
-                  : "bg-secondary text-muted-foreground",
+                  : "bg-secondary text-muted-foreground"
               )}
               style={
                 input.trim() && !isLoading
                   ? {
-                      boxShadow:
-                        "0 0 16px hsl(var(--cosmic-nebula-purple) / 0.4)",
+                      boxShadow: "0 0 16px hsl(var(--cosmic-nebula-purple) / 0.4)",
                     }
                   : undefined
               }
@@ -226,13 +217,7 @@ export function AICoachChat() {
 }
 
 // Chat bubble component - Premium
-function ChatBubble({
-  message,
-  index,
-}: {
-  message: ChatMessage;
-  index: number;
-}) {
+function ChatBubble({ message, index }: { message: ChatMessage; index: number }) {
   const isCoach = message.role === "coach";
 
   return (
@@ -253,14 +238,11 @@ function ChatBubble({
           "max-w-[80%] px-4 py-3 rounded-2xl",
           isCoach
             ? "rounded-ss-sm bg-secondary backdrop-blur-[8px] border border-border"
-            : "rounded-se-sm bg-[linear-gradient(135deg,hsl(var(--cosmic-nebula-purple)/0.8)_0%,hsl(var(--cosmic-nebula-purple)/0.7)_100%)] shadow-[0_4px_12px_hsl(var(--cosmic-nebula-purple)/0.3)]",
+            : "rounded-se-sm bg-[linear-gradient(135deg,hsl(var(--cosmic-nebula-purple)/0.8)_0%,hsl(var(--cosmic-nebula-purple)/0.7)_100%)] shadow-[0_4px_12px_hsl(var(--cosmic-nebula-purple)/0.3)]"
         )}
       >
         <p
-          className={cn(
-            "text-sm whitespace-pre-wrap",
-            isCoach ? "text-foreground" : "text-white",
-          )}
+          className={cn("text-sm whitespace-pre-wrap", isCoach ? "text-foreground" : "text-white")}
         >
           {message.content}
         </p>
@@ -327,7 +309,7 @@ function QuickAction({
         "px-4 py-2.5 rounded-full text-xs font-medium transition-all",
         disabled
           ? "bg-muted text-muted-foreground/50 cursor-not-allowed"
-          : "bg-muted border border-border text-muted-foreground hover:bg-secondary hover:text-foreground",
+          : "bg-muted border border-border text-muted-foreground hover:bg-secondary hover:text-foreground"
       )}
       whileHover={!disabled ? { scale: 1.02 } : {}}
       whileTap={!disabled ? zenTap.card : {}}

@@ -1,16 +1,16 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#4a9d7c">
-  <title>Оффлайн — ZenFlow</title>
+  <title>Offline — ZenFlow</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: linear-gradient(135deg, #6bb5a0 0%, #4a9d7c 100%);
-      color: white;
+      background: var(--bg, linear-gradient(135deg, hsl(158, 30%, 56%) 0%, hsl(158, 35%, 45%) 100%));
+      color: var(--fg, hsl(0, 0%, 100%));
       display: flex;
       align-items: center;
       justify-content: center;
@@ -24,6 +24,9 @@
       margin-bottom: 20px;
       animation: float 3s ease-in-out infinite;
     }
+    @media (prefers-reduced-motion: reduce) {
+      .icon { animation: none; }
+    }
     @keyframes float {
       0%, 100% { transform: translateY(0); }
       50% { transform: translateY(-10px); }
@@ -33,27 +36,52 @@
     .btn {
       display: inline-block;
       padding: 12px 24px;
-      background: rgba(255, 255, 255, 0.2);
-      border: 2px solid white;
+      min-height: 44px;
+      min-width: 44px;
+      background: hsla(0, 0%, 100%, 0.2);
+      border: 2px solid currentColor;
       border-radius: 8px;
-      color: white;
+      color: inherit;
       text-decoration: none;
       font-weight: 600;
       transition: all 0.3s;
+      cursor: pointer;
     }
-    .btn:hover { background: white; color: #4a9d7c; }
+    .btn:hover { background: hsla(0, 0%, 100%, 0.35); }
+    .btn:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="icon">🌿</div>
-    <h1>Вы оффлайн</h1>
-    <p>ZenFlow работает в автономном режиме. Все ваши данные сохранены локально и синхронизируются при подключении к интернету.</p>
-    <a href="/" class="btn" onclick="window.location.reload(); return false;">Повторить попытку</a>
+  <div class="container" role="main">
+    <div class="icon" aria-hidden="true">🌿</div>
+    <h1 id="offline-title">You are offline</h1>
+    <p id="offline-desc">ZenFlow works in offline mode. All your data is saved locally and will sync when you reconnect.</p>
+    <button class="btn" onclick="window.location.reload();" id="offline-retry" aria-label="Retry connection">Try again</button>
   </div>
   <script>
-    window.addEventListener('online', () => {
-      setTimeout(() => window.location.reload(), 500);
+    // Detect language from localStorage (same key as app uses)
+    try {
+      var lang = localStorage.getItem('zenflow-language') || navigator.language.slice(0, 2);
+      var t = {
+        en: { title: 'You are offline', desc: 'ZenFlow works in offline mode. All your data is saved locally and will sync when you reconnect.', btn: 'Try again' },
+        uk: { title: 'Ви офлайн', desc: 'ZenFlow працює в автономному режимі. Всі ваші дані збережені локально та синхронізуються при підключенні.', btn: 'Спробувати знову' },
+        es: { title: 'Sin conexión', desc: 'ZenFlow funciona sin conexión. Todos tus datos se guardan localmente y se sincronizarán cuando te reconectes.', btn: 'Reintentar' },
+        de: { title: 'Offline', desc: 'ZenFlow funktioniert im Offline-Modus. Alle Daten werden lokal gespeichert und bei erneuter Verbindung synchronisiert.', btn: 'Erneut versuchen' },
+        fr: { title: 'Hors ligne', desc: 'ZenFlow fonctionne hors ligne. Toutes vos données sont sauvegardées localement et seront synchronisées à la reconnexion.', btn: 'Réessayer' },
+        ja: { title: 'オフライン', desc: 'ZenFlowはオフラインモードで動作しています。すべてのデータはローカルに保存され、接続時に同期されます。', btn: '再試行' },
+        ar: { title: 'أنت غير متصل', desc: 'يعمل ZenFlow في وضع عدم الاتصال. يتم حفظ جميع بياناتك محليًا وستتم مزامنتها عند إعادة الاتصال.', btn: 'إعادة المحاولة' },
+        he: { title: 'אתה במצב לא מקוון', desc: 'ZenFlow עובד במצב לא מקוון. כל הנתונים שלך נשמרים מקומית ויסונכרנו כשתתחבר מחדש.', btn: 'נסה שוב' }
+      };
+      var msgs = t[lang] || t.en;
+      document.getElementById('offline-title').textContent = msgs.title;
+      document.getElementById('offline-desc').textContent = msgs.desc;
+      document.getElementById('offline-retry').textContent = msgs.btn;
+      document.documentElement.lang = lang;
+      if (lang === 'ar' || lang === 'he') document.documentElement.dir = 'rtl';
+    } catch(e) { /* fallback to English */ }
+
+    window.addEventListener('online', function() {
+      setTimeout(function() { window.location.reload(); }, 500);
     });
   </script>
 </body>

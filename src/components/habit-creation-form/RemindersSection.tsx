@@ -26,16 +26,14 @@ export function RemindersSection({
         "relative mb-4 p-4 rounded-xl",
         isPrimaryCTA
           ? "bg-foreground/5 backdrop-blur-sm border border-foreground/10"
-          : "bg-secondary/50",
+          : "bg-secondary/50"
       )}
     >
       <div className="flex items-center justify-between mb-2">
         <label
           className={cn(
             "text-sm",
-            isPrimaryCTA
-              ? "text-slate-600 dark:text-foreground/70"
-              : "text-muted-foreground",
+            isPrimaryCTA ? "text-slate-600 dark:text-foreground/70" : "text-muted-foreground"
           )}
         >
           {t.reminders || "Reminders"}
@@ -50,7 +48,7 @@ export function RemindersSection({
             "text-xs px-3 py-1.5 rounded-lg transition-colors",
             isPrimaryCTA
               ? "bg-violet-500/20 text-violet-300 border border-violet-500/30 hover:bg-violet-500/30"
-              : "bg-primary/10 text-primary hover:bg-primary/20",
+              : "bg-primary/10 text-primary hover:bg-primary/20"
           )}
           whileHover={{ scale: 1.02 }}
           whileTap={zenTap.card}
@@ -63,9 +61,7 @@ export function RemindersSection({
         <p
           className={cn(
             "text-xs italic",
-            isPrimaryCTA
-              ? "text-slate-400 dark:text-foreground/40"
-              : "text-muted-foreground",
+            isPrimaryCTA ? "text-slate-400 dark:text-foreground/40" : "text-muted-foreground"
           )}
         >
           {t.noReminders || "No reminders set"}
@@ -77,24 +73,20 @@ export function RemindersSection({
               key={index}
               className={cn(
                 "flex items-center gap-2 p-2 rounded-lg",
-                isPrimaryCTA
-                  ? "bg-foreground/5 border border-foreground/10"
-                  : "bg-background",
+                isPrimaryCTA ? "bg-foreground/5 border border-foreground/10" : "bg-background"
               )}
             >
               <input
                 type="time"
                 value={reminder.time}
-                onChange={(e) =>
-                  handleReminderChange(index, "time", e.target.value)
-                }
+                onChange={(e) => handleReminderChange(index, "time", e.target.value)}
                 className={cn(
                   "flex-1 p-1 rounded text-sm focus:outline-none focus:ring-1",
                   isPrimaryCTA
                     ? "bg-foreground/10 border border-foreground/20 text-white focus:ring-violet-500/50"
-                    : "bg-secondary text-foreground focus:ring-primary/30",
+                    : "bg-secondary text-foreground focus:ring-primary/30"
                 )}
-                aria-label="Reminder time"
+                aria-label={t.reminderTime || "Reminder time"}
               />
               <div className="flex gap-1">
                 {[
@@ -126,7 +118,7 @@ export function RemindersSection({
                           : "bg-foreground/5 text-foreground/50 hover:bg-foreground/10"
                         : reminder.days.includes(day)
                           ? "bg-primary text-primary-foreground"
-                          : "bg-secondary text-muted-foreground hover:bg-muted",
+                          : "bg-secondary text-muted-foreground hover:bg-muted"
                     )}
                     style={
                       isPrimaryCTA && reminder.days.includes(day)
@@ -150,7 +142,7 @@ export function RemindersSection({
                   "p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg transition-colors",
                   isPrimaryCTA
                     ? "text-red-400 hover:bg-red-500/20"
-                    : "text-destructive hover:bg-destructive/10",
+                    : "text-destructive hover:bg-destructive/10"
                 )}
                 whileTap={zenTap.button}
               >

@@ -6,6 +6,7 @@
  */
 
 import { motion } from "framer-motion";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { zenTap } from "@/lib/animationUtils";
 import {
   Brain,
@@ -62,13 +63,7 @@ const iconMap = new Map(IDENTITY_ICONS.map((i) => [i.name, i.Icon]));
  * Renders a stored identity icon name as a lucide component.
  * Falls back to Target if name not found.
  */
-export function IdentityIcon({
-  name,
-  className,
-}: {
-  name: string;
-  className?: string;
-}) {
+export function IdentityIcon({ name, className }: { name: string; className?: string }) {
   const Icon = iconMap.get(name) || Target;
   return <Icon className={className} />;
 }
@@ -84,11 +79,12 @@ export function IdentityIconPicker({
   onChange,
   isPrimaryCTA = false,
 }: IdentityIconPickerProps) {
+  const { t } = useLanguage();
   return (
     <div
       className="flex gap-1.5 flex-wrap"
       role="radiogroup"
-      aria-label="Identity icon"
+      aria-label={t.identityIcon || "Identity icon"}
     >
       {IDENTITY_ICONS.map(({ name, Icon }) => (
         <motion.button
@@ -110,7 +106,7 @@ export function IdentityIconPicker({
                 : "bg-foreground/5 border border-foreground/10 hover:bg-foreground/10"
               : value === name
                 ? "bg-primary/20 ring-2 ring-primary scale-105"
-                : "bg-background hover:bg-muted hover:scale-105 border border-border/30",
+                : "bg-background hover:bg-muted hover:scale-105 border border-border/30"
           )}
           whileHover={{ scale: 1.05 }}
           whileTap={zenTap.button}
@@ -124,7 +120,7 @@ export function IdentityIconPicker({
                   : "text-primary"
                 : isPrimaryCTA
                   ? "text-foreground/50"
-                  : "text-muted-foreground",
+                  : "text-muted-foreground"
             )}
           />
         </motion.button>

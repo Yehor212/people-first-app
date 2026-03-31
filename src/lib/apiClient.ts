@@ -11,12 +11,12 @@
  * Prevents cascading 401s when one tab refreshes the token.
  */
 
-import { supabase } from './supabaseClient';
-import { logger } from './logger';
-import { isNative } from '@/lib/platform';
+import { supabase } from "./supabaseClient";
+import { logger } from "./logger";
+import { isNative } from "@/lib/platform";
 
 // Event name for session expiration
-export const AUTH_SESSION_EXPIRED_EVENT = 'auth:session-expired';
+export const AUTH_SESSION_EXPIRED_EVENT = "auth:session-expired";
 
 // Track if refresh is in progress to prevent concurrent refreshes
 let refreshInProgress = false;
@@ -24,7 +24,7 @@ let refreshPromise: Promise<boolean> | null = null;
 
 // BroadcastChannel for multi-tab coordination
 // Only used on web platform (not native)
-const REFRESH_CHANNEL_NAME = 'zenflow-auth-refresh';
+const REFRESH_CHANNEL_NAME = "zenflow-auth-refresh";
 let refreshChannel: BroadcastChannel | null = null;
 let waitingForRefresh = false;
 let refreshResolvers: Array<(success: boolean) => void> = [];
@@ -42,23 +42,23 @@ const initRefreshChannel = (): void => {
     refreshChannel.onmessage = (event) => {
       const { type, success } = event.data;
 
-      if (type === 'REFRESH_START') {
+      if (type === "REFRESH_START") {
         // Another tab started refresh - we should wait
-        logger.log('[API] Another tab started token refresh');
+        logger.log("[API] Another tab started token refresh");
         waitingForRefresh = true;
-      } else if (type === 'REFRESH_COMPLETE') {
+      } else if (type === "REFRESH_COMPLETE") {
         // Another tab completed refresh
-        logger.log(`[API] Another tab completed refresh: ${success ? 'success' : 'failed'}`);
+        logger.log(`[API] Another tab completed refresh: ${success ? "success" : "failed"}`);
         waitingForRefresh = false;
         // Resolve all waiting promises
-        refreshResolvers.forEach(resolve => resolve(success));
+        refreshResolvers.forEach((resolve) => resolve(success));
         refreshResolvers = [];
       }
     };
-    logger.log('[API] BroadcastChannel initialized for multi-tab coordination');
+    logger.log("[API] BroadcastChannel initialized for multi-tab coordination");
   } catch (error) {
     // BroadcastChannel not supported (older browsers)
-    logger.warn('[API] BroadcastChannel not available:', error);
+    logger.warn("[API] BroadcastChannel not available:", error);
   }
 };
 
@@ -68,7 +68,10 @@ initRefreshChannel();
 /**
  * Broadcast refresh status to other tabs
  */
-const broadcastRefreshStatus = (type: 'REFRESH_START' | 'REFRESH_COMPLETE', success?: boolean): void => {
+const broadcastRefreshStatus = (
+  type: "REFRESH_START" | "REFRESH_COMPLETE",
+  success?: boolean
+): void => {
   if (!refreshChannel) return;
   try {
     refreshChannel.postMessage({ type, success });
@@ -87,7 +90,7 @@ const waitForOtherTabRefresh = (): Promise<boolean> => {
     if (refreshResolvers.length >= MAX_REFRESH_RESOLVERS) {
       const oldest = refreshResolvers.shift();
       oldest?.(false); // Resolve oldest with failure
-      logger.warn('[API] Resolver queue overflow, rejected oldest resolver');
+      logger.warn("[API] Resolver queue overflow, rejected oldest resolver");
     }
 
     // Timeout after 10 seconds
@@ -107,19 +110,19 @@ const waitForOtherTabRefresh = (): Promise<boolean> => {
  * Type guard to check if error has status property
  */
 const hasStatus = (error: unknown): error is { status: number } =>
-  typeof error === 'object' && error !== null && 'status' in error;
+  typeof error === "object" && error !== null && "status" in error;
 
 /**
  * Type guard to check if error has code property
  */
 const hasCode = (error: unknown): error is { code: string } =>
-  typeof error === 'object' && error !== null && 'code' in error;
+  typeof error === "object" && error !== null && "code" in error;
 
 /**
  * Type guard to check if error has message property
  */
 const hasMessage = (error: unknown): error is { message: string } =>
-  typeof error === 'object' && error !== null && 'message' in error;
+  typeof error === "object" && error !== null && "message" in error;
 
 /**
  * Check if an error is a 401/authentication error
@@ -132,17 +135,17 @@ export const is401Error = (error: unknown): boolean => {
 
   // Supabase/PostgREST error codes
   if (hasCode(error)) {
-    if (error.code === 'PGRST301') return true; // JWT expired
-    if (error.code === 'PGRST302') return true; // JWT invalid
+    if (error.code === "PGRST301") return true; // JWT expired
+    if (error.code === "PGRST302") return true; // JWT invalid
   }
 
   // Error message patterns
-  const message = hasMessage(error) ? error.message.toLowerCase() : '';
-  if (message.includes('jwt expired')) return true;
-  if (message.includes('jwt invalid')) return true;
-  if (message.includes('not authenticated')) return true;
-  if (message.includes('invalid token')) return true;
-  if (message.includes('token expired')) return true;
+  const message = hasMessage(error) ? error.message.toLowerCase() : "";
+  if (message.includes("jwt expired")) return true;
+  if (message.includes("jwt invalid")) return true;
+  if (message.includes("not authenticated")) return true;
+  if (message.includes("invalid token")) return true;
+  if (message.includes("token expired")) return true;
 
   return false;
 };
@@ -156,52 +159,51 @@ export const is401Error = (error: unknown): boolean => {
  */
 const tryRefreshSession = async (): Promise<boolean> => {
   if (!supabase) {
-    logger.error('[API] Cannot refresh - Supabase not initialized');
+    logger.error("[API] Cannot refresh - Supabase not initialized");
     return false;
   }
 
   // If another tab is refreshing, wait for it instead of doing our own refresh
   if (waitingForRefresh) {
-    logger.log('[API] Another tab is refreshing, waiting...');
+    logger.log("[API] Another tab is refreshing, waiting...");
     return waitForOtherTabRefresh();
   }
 
   // If refresh already in progress in this tab, wait for it
-  // eslint-disable-next-line @typescript-eslint/no-misused-promises
   if (refreshInProgress && refreshPromise) {
-    logger.log('[API] Refresh already in progress, waiting...');
+    logger.log("[API] Refresh already in progress, waiting...");
     return refreshPromise;
   }
 
   refreshInProgress = true;
   // Notify other tabs that we're starting refresh
-  broadcastRefreshStatus('REFRESH_START');
+  broadcastRefreshStatus("REFRESH_START");
 
   refreshPromise = (async () => {
     try {
-      logger.log('[API] Attempting token refresh...');
+      logger.log("[API] Attempting token refresh...");
       const { data, error } = await supabase.auth.refreshSession();
 
       if (error) {
-        logger.error('[API] Token refresh failed:', error.message);
+        logger.error("[API] Token refresh failed:", error.message);
         // Notify other tabs of failure
-        broadcastRefreshStatus('REFRESH_COMPLETE', false);
+        broadcastRefreshStatus("REFRESH_COMPLETE", false);
         return false;
       }
 
       if (data.session) {
-        logger.log('[API] Token refresh successful');
+        logger.log("[API] Token refresh successful");
         // Notify other tabs of success
-        broadcastRefreshStatus('REFRESH_COMPLETE', true);
+        broadcastRefreshStatus("REFRESH_COMPLETE", true);
         return true;
       }
 
-      logger.warn('[API] Refresh returned no session');
-      broadcastRefreshStatus('REFRESH_COMPLETE', false);
+      logger.warn("[API] Refresh returned no session");
+      broadcastRefreshStatus("REFRESH_COMPLETE", false);
       return false;
     } catch (err) {
-      logger.error('[API] Token refresh error:', err);
-      broadcastRefreshStatus('REFRESH_COMPLETE', false);
+      logger.error("[API] Token refresh error:", err);
+      broadcastRefreshStatus("REFRESH_COMPLETE", false);
       return false;
     } finally {
       refreshInProgress = false;
@@ -217,21 +219,21 @@ const tryRefreshSession = async (): Promise<boolean> => {
  * Verify session is truly expired before notifying
  */
 const notifySessionExpired = async (): Promise<void> => {
-  logger.warn('[API] Checking session before notifying expired...');
+  logger.warn("[API] Checking session before notifying expired...");
 
   // Double-check session state before triggering logout
   try {
     const { data } = await supabase.auth.getSession();
     if (data.session) {
-      logger.log('[API] Session still valid despite errors, not notifying expired');
+      logger.log("[API] Session still valid despite errors, not notifying expired");
       return; // Don't dispatch - session is still valid
     }
   } catch (error) {
-    logger.error('[API] Error verifying session:', error);
+    logger.error("[API] Error verifying session:", error);
     // Fall through to notify expired
   }
 
-  logger.warn('[API] Session confirmed expired - notifying UI');
+  logger.warn("[API] Session confirmed expired - notifying UI");
   window.dispatchEvent(new CustomEvent(AUTH_SESSION_EXPIRED_EVENT));
 };
 
@@ -245,7 +247,7 @@ const notifySessionExpired = async (): Promise<void> => {
  */
 export const withAuthRetry = async <T>(
   operation: () => Promise<T>,
-  operationName: string = 'operation'
+  operationName: string = "operation"
 ): Promise<T> => {
   try {
     return await operation();
@@ -260,7 +262,7 @@ export const withAuthRetry = async <T>(
       if (!refreshed) {
         logger.error(`[API] Refresh failed for ${operationName}`);
         await notifySessionExpired();
-        throw new Error('Session expired. Please sign in again.');
+        throw new Error("Session expired. Please sign in again.");
       }
 
       // Retry the operation once
@@ -272,7 +274,7 @@ export const withAuthRetry = async <T>(
         if (is401Error(retryError)) {
           logger.error(`[API] Retry failed with 401 for ${operationName}`);
           await notifySessionExpired();
-          throw new Error('Session expired. Please sign in again.');
+          throw new Error("Session expired. Please sign in again.");
         }
         throw retryError;
       }
@@ -291,14 +293,19 @@ export const ensureAuthenticated = async (): Promise<string | null> => {
   if (!supabase) return null;
 
   try {
-    const { data: { user }, error } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
 
     if (error) {
       if (is401Error(error)) {
         // Try refresh
         const refreshed = await tryRefreshSession();
         if (refreshed) {
-          const { data: { user: refreshedUser } } = await supabase.auth.getUser();
+          const {
+            data: { user: refreshedUser },
+          } = await supabase.auth.getUser();
           return refreshedUser?.id ?? null;
         }
       }
@@ -307,7 +314,7 @@ export const ensureAuthenticated = async (): Promise<string | null> => {
 
     return user?.id ?? null;
   } catch (err) {
-    logger.error('[API] ensureAuthenticated error:', err);
+    logger.error("[API] ensureAuthenticated error:", err);
     return null;
   }
 };

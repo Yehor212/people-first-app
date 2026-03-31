@@ -17,6 +17,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn, getToday } from "@/lib/utils";
 import { zenMotion } from "@/lib/animationUtils";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { getLocale } from "@/lib/timeUtils";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { usePanicGesture } from "@/hooks/usePanicGesture";
 import { registerModalCloseCallback } from "@/lib/androidBackHandler";
@@ -45,11 +46,7 @@ import {
   PAPER_COLORS,
   PAPER_TEXTURE_NAMES,
 } from "./types";
-import {
-  BG_PATTERN_LIST,
-  getBgPatternStyle,
-  getPaperTextureStyle,
-} from "./diaryBgPatterns";
+import { BG_PATTERN_LIST, getBgPatternStyle, getPaperTextureStyle } from "./diaryBgPatterns";
 import { JournalStickerPicker } from "./JournalStickerPicker";
 import { JournalPhotoPicker } from "./JournalPhotoPicker";
 import { JournalPhotoGallery } from "./JournalPhotoGallery";
@@ -361,7 +358,7 @@ interface JournalEntryEditorProps {
     data: string,
     duration: number,
     mimeType: string,
-    entryId: string,
+    entryId: string
   ) => Promise<JournalAudio>;
   onRemoveAudio: (audioId: string, entryId: string) => Promise<void>;
   onDelete?: () => void;
@@ -419,7 +416,7 @@ export function JournalEntryEditor({
   >(entry?.habitSnapshot || []);
   const completedHabitCount = useMemo(
     () => habitSnapshot.filter((s) => s.completed).length,
-    [habitSnapshot],
+    [habitSnapshot]
   );
   const [tagInput, setTagInput] = useState("");
   const [saving, setSaving] = useState(false);
@@ -437,43 +434,28 @@ export function JournalEntryEditor({
   const [draftSavedAt, setDraftSavedAt] = useState(0);
 
   // ── Diary premium features ──
-  const diaryTheme = useDiaryTheme(
-    entry?.theme || "dark",
-    entry?.font || "caveat",
-  );
+  const diaryTheme = useDiaryTheme(entry?.theme || "dark", entry?.font || "caveat");
   const [showStyleBar, setShowStyleBar] = useState(false);
   const [showBurnWidget, setShowBurnWidget] = useState(false);
   const [showGratitudeWidget, setShowGratitudeWidget] = useState(false);
   const [zenFocusActive, setZenFocusActive] = useState(false);
   const [, setShowActionSheet] = useState(false);
   const [, setToolbarHidden] = useState(false);
-  const [bgIntensity, setBgIntensity] = useState<BackgroundIntensity>(
-    entry?.bgIntensity || "full",
-  );
-  const [particleSpeed, setParticleSpeed] = useState<ParticleSpeed>(
-    entry?.particleSpeed || "slow",
-  );
+  const [bgIntensity, setBgIntensity] = useState<BackgroundIntensity>(entry?.bgIntensity || "full");
+  const [particleSpeed, setParticleSpeed] = useState<ParticleSpeed>(entry?.particleSpeed || "slow");
   const [showBreathe, setShowBreathe] = useState(false);
   const [showHabits, setShowHabits] = useState(false);
   const [privacyShieldActive, setPrivacyShieldActive] = useState(false);
   const [panicLocked, setPanicLocked] = useState(false);
   const [inkColor, setInkColor] = useState(entry?.inkColor || "#ffffff");
-  const [paperTexture, setPaperTexture] = useState<PaperTexture>(
-    entry?.paperTexture || "clean",
-  );
-  const [paperColor, setPaperColor] = useState<PaperColor>(
-    entry?.paperColor || "dark",
-  );
-  const [bgPattern, setBgPattern] = useState<DiaryBgPattern>(
-    entry?.bgPattern || "none",
-  );
+  const [paperTexture, setPaperTexture] = useState<PaperTexture>(entry?.paperTexture || "clean");
+  const [paperColor, setPaperColor] = useState<PaperColor>(entry?.paperColor || "dark");
+  const [bgPattern, setBgPattern] = useState<DiaryBgPattern>(entry?.bgPattern || "none");
   const paperColors = PAPER_COLORS[paperColor];
-  const [fontSize, setFontSize] = useState<FontSizeName>(
-    entry?.fontSize || "medium",
-  );
+  const [fontSize, setFontSize] = useState<FontSizeName>(entry?.fontSize || "medium");
   const [showPromptsDropdown, setShowPromptsDropdown] = useState(false);
   const [formatHintDismissed, setFormatHintDismissed] = useState(
-    () => !!storageGetRaw(SK.DIARY_FORMAT_HINT_SEEN),
+    () => !!storageGetRaw(SK.DIARY_FORMAT_HINT_SEEN)
   );
   const [photoLayout, setPhotoLayout] = useState<
     Record<string, { x: number; y: number; width: number }>
@@ -485,13 +467,7 @@ export function JournalEntryEditor({
   // Voice dictation + audio recording hooks
   const voice = useJournalVoice(language);
   const recorder = useAudioRecorder();
-  const {
-    audioData,
-    isRecording,
-    duration,
-    mimeType,
-    reset: resetRecorder,
-  } = recorder;
+  const { audioData, isRecording, duration, mimeType, reset: resetRecorder } = recorder;
   const wasListeningRef = useRef(false);
 
   // Initial values for isDirty check
@@ -610,8 +586,7 @@ export function JournalEntryEditor({
 
   useEffect(() => {
     return () => {
-      if (navigationTimeoutRef.current)
-        clearTimeout(navigationTimeoutRef.current);
+      if (navigationTimeoutRef.current) clearTimeout(navigationTimeoutRef.current);
       if (focusTimeoutRef.current) clearTimeout(focusTimeoutRef.current);
       if (contentSyncRef.current) clearTimeout(contentSyncRef.current);
     };
@@ -682,8 +657,7 @@ export function JournalEntryEditor({
         particleSpeed: particleSpeed !== "slow" ? particleSpeed : undefined,
         bgPattern: bgPattern !== "none" ? bgPattern : undefined,
         fontSize: fontSize !== "medium" ? fontSize : undefined,
-        photoLayout:
-          Object.keys(photoLayout).length > 0 ? photoLayout : undefined,
+        photoLayout: Object.keys(photoLayout).length > 0 ? photoLayout : undefined,
       });
       void clearDraft(draftKey);
       announceSuccess(ts.journalEntrySaved || "Entry saved");
@@ -781,12 +755,7 @@ export function JournalEntryEditor({
         }
         handleBack();
       }
-      if (
-        (e.ctrlKey || e.metaKey) &&
-        e.key === "Enter" &&
-        hasContent &&
-        !saving
-      ) {
+      if ((e.ctrlKey || e.metaKey) && e.key === "Enter" && hasContent && !saving) {
         e.preventDefault();
         void handleSave();
       }
@@ -821,9 +790,7 @@ export function JournalEntryEditor({
               setAudioRecordings([]);
             });
         })
-        .catch((err) =>
-          logger.warn("[Journal]", "Audio module load failed:", err),
-        );
+        .catch((err) => logger.warn("[Journal]", "Audio module load failed:", err));
     }
   }, [entry]);
 
@@ -831,8 +798,7 @@ export function JournalEntryEditor({
   useEffect(() => {
     if (wasListeningRef.current && !voice.isListening && voice.transcript) {
       setContent((prev) => {
-        const separator =
-          prev && !prev.endsWith("\n") && !prev.endsWith(" ") ? " " : "";
+        const separator = prev && !prev.endsWith("\n") && !prev.endsWith(" ") ? " " : "";
         const next = prev + separator + voice.transcript;
         contentRef.current = next;
         return next;
@@ -865,15 +831,7 @@ export function JournalEntryEditor({
         cancelled = true;
       };
     }
-  }, [
-    audioData,
-    isRecording,
-    onAddAudio,
-    entryId,
-    duration,
-    mimeType,
-    resetRecorder,
-  ]);
+  }, [audioData, isRecording, onAddAudio, entryId, duration, mimeType, resetRecorder]);
 
   // Android back button (priority order)
   useEffect(() => {
@@ -950,12 +908,10 @@ export function JournalEntryEditor({
     if (draftAvailable.theme) diaryTheme.setTheme(draftAvailable.theme);
     if (draftAvailable.font) diaryTheme.setFont(draftAvailable.font);
     if (draftAvailable.inkColor) setInkColor(draftAvailable.inkColor);
-    if (draftAvailable.paperTexture)
-      setPaperTexture(draftAvailable.paperTexture);
+    if (draftAvailable.paperTexture) setPaperTexture(draftAvailable.paperTexture);
     if (draftAvailable.paperColor) setPaperColor(draftAvailable.paperColor);
     if (draftAvailable.bgIntensity) setBgIntensity(draftAvailable.bgIntensity);
-    if (draftAvailable.particleSpeed)
-      setParticleSpeed(draftAvailable.particleSpeed);
+    if (draftAvailable.particleSpeed) setParticleSpeed(draftAvailable.particleSpeed);
     if (draftAvailable.bgPattern) setBgPattern(draftAvailable.bgPattern);
     if (draftAvailable.fontSize) setFontSize(draftAvailable.fontSize);
     if (draftAvailable.photoLayout) setPhotoLayout(draftAvailable.photoLayout);
@@ -991,7 +947,7 @@ export function JournalEntryEditor({
       await onRemovePhoto(photoId, entryId);
       setPhotoIds((prev) => prev.filter((id) => id !== photoId));
     },
-    [onRemovePhoto, entryId],
+    [onRemovePhoto, entryId]
   );
 
   const handleReturnToGallery = useCallback((photoId: string) => {
@@ -1010,17 +966,14 @@ export function JournalEntryEditor({
   }, []);
 
   const handleCloseBurn = useCallback(() => setShowBurnWidget(false), []);
-  const handleCloseGratitude = useCallback(
-    () => setShowGratitudeWidget(false),
-    [],
-  );
+  const handleCloseGratitude = useCallback(() => setShowGratitudeWidget(false), []);
 
   const handleAddTag = () => {
     const tag = tagInput
       .trim()
       .replace(
         /[^a-zA-Z\u0430-\u044f\u0410-\u042f\u0451\u0401\u0456\u0406\u0457\u0407\u0454\u0404\u0491\u04900-9_-]/g,
-        "",
+        ""
       );
     if (tag && !tags.includes(tag)) {
       setTags((prev) => [...prev, tag]);
@@ -1082,18 +1035,12 @@ export function JournalEntryEditor({
   useEffect(() => {
     if (!showPromptsDropdown) return;
     const handler = (e: PointerEvent) => {
-      if (
-        promptsDropdownRef.current &&
-        !promptsDropdownRef.current.contains(e.target as Node)
-      ) {
+      if (promptsDropdownRef.current && !promptsDropdownRef.current.contains(e.target as Node)) {
         setShowPromptsDropdown(false);
       }
     };
     // Delay to avoid catching the opening click
-    const timer = setTimeout(
-      () => document.addEventListener("pointerdown", handler),
-      50,
-    );
+    const timer = setTimeout(() => document.addEventListener("pointerdown", handler), 50);
     return () => {
       clearTimeout(timer);
       document.removeEventListener("pointerdown", handler);
@@ -1111,27 +1058,22 @@ export function JournalEntryEditor({
   }, []);
 
   const cycleFontSize = useCallback(() => {
-    setFontSize((s) =>
-      s === "small" ? "medium" : s === "medium" ? "large" : "small",
-    );
+    setFontSize((s) => (s === "small" ? "medium" : s === "medium" ? "large" : "small"));
   }, []);
 
   // ── Scroll-to-hide toolbar ──
   const scrollThreshold = 12;
-  const handleContentScroll = useCallback(
-    (e: React.UIEvent<HTMLDivElement>) => {
-      const el = e.currentTarget;
-      const delta = el.scrollTop - lastScrollTopRef.current;
-      lastScrollTopRef.current = el.scrollTop;
-      scrollYRef.current = el.scrollTop;
-      if (delta > scrollThreshold && el.scrollTop > 60) {
-        setToolbarHidden(true);
-      } else if (delta < -scrollThreshold) {
-        setToolbarHidden(false);
-      }
-    },
-    [],
-  );
+  const handleContentScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    const el = e.currentTarget;
+    const delta = el.scrollTop - lastScrollTopRef.current;
+    lastScrollTopRef.current = el.scrollTop;
+    scrollYRef.current = el.scrollTop;
+    if (delta > scrollThreshold && el.scrollTop > 60) {
+      setToolbarHidden(true);
+    } else if (delta < -scrollThreshold) {
+      setToolbarHidden(false);
+    }
+  }, []);
 
   useEffect(() => {
     const vv = window.visualViewport;
@@ -1153,7 +1095,7 @@ export function JournalEntryEditor({
         backgroundColor: diaryTheme.themeVars["--diary-bg"],
         color: diaryTheme.themeVars["--diary-text"],
       }) as React.CSSProperties,
-    [diaryTheme.themeVars],
+    [diaryTheme.themeVars]
   );
 
   return (
@@ -1211,7 +1153,7 @@ export function JournalEntryEditor({
                   className="text-[11px] flex items-center gap-1 text-foreground0 hover:text-muted-foreground transition-colors"
                 >
                   <Calendar className="w-3 h-3" />
-                  {new Date(date + "T00:00:00").toLocaleDateString(undefined, {
+                  {new Date(date + "T00:00:00").toLocaleDateString(getLocale(language), {
                     month: "short",
                     day: "numeric",
                     year: "numeric",
@@ -1242,7 +1184,7 @@ export function JournalEntryEditor({
                 "p-2 rounded-lg transition-all min-w-[44px] min-h-[44px] flex items-center justify-center",
                 showStyleBar
                   ? "bg-emerald-500/15 text-emerald-400"
-                  : "hover:bg-white/10 text-muted-foreground",
+                  : "hover:bg-white/10 text-muted-foreground"
               )}
               aria-label={ts.diaryStyle || "Style"}
             >
@@ -1268,15 +1210,11 @@ export function JournalEntryEditor({
                 "p-2 rounded-lg transition-all min-w-[44px] min-h-[44px] flex items-center justify-center",
                 privacyShieldActive
                   ? "bg-violet-500/15 text-violet-400"
-                  : "hover:bg-white/10 text-muted-foreground",
+                  : "hover:bg-white/10 text-muted-foreground"
               )}
               aria-label={ts.diaryPrivacyShield || "Privacy"}
             >
-              {privacyShieldActive ? (
-                <EyeOff className="w-4 h-4" />
-              ) : (
-                <Eye className="w-4 h-4" />
-              )}
+              {privacyShieldActive ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </motion.button>
 
             <motion.button
@@ -1288,7 +1226,7 @@ export function JournalEntryEditor({
                 saveSuccess
                   ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
                   : "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25",
-                "disabled:opacity-40",
+                "disabled:opacity-40"
               )}
             >
               <AnimatePresence mode="wait">
@@ -1345,7 +1283,7 @@ export function JournalEntryEditor({
                           "px-3 py-1.5 rounded-lg text-xs font-medium border transition-all",
                           isActive
                             ? `${at.activeBg} ${at.activeText} ${at.activeBorder}`
-                            : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 hover:text-foreground",
+                            : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 hover:text-foreground"
                         )}
                       >
                         {ts[at.i18nKey] || at.label}
@@ -1375,7 +1313,7 @@ export function JournalEntryEditor({
                           "px-4 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-1.5",
                           isActive
                             ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
-                            : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 hover:text-foreground",
+                            : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 hover:text-foreground"
                         )}
                         style={{ fontFamily: DIARY_FONTS_LOCAL[name].family }}
                       >
@@ -1389,10 +1327,7 @@ export function JournalEntryEditor({
                     className="px-3 py-2 rounded-lg text-sm font-medium border border-transparent text-muted-foreground hover:bg-white/10 hover:text-foreground transition-all"
                     aria-label="Font size"
                   >
-                    A
-                    <span className="text-[10px] ms-0.5 opacity-60">
-                      {FONT_SIZES[fontSize]}
-                    </span>
+                    A<span className="text-[10px] ms-0.5 opacity-60">{FONT_SIZES[fontSize]}</span>
                   </motion.button>
                 </div>
 
@@ -1401,14 +1336,12 @@ export function JournalEntryEditor({
                   <div className="relative flex-shrink-0">
                     <motion.button
                       whileTap={{ scale: 0.95 }}
-                      onClick={() =>
-                        setShowPromptsDropdown(!showPromptsDropdown)
-                      }
+                      onClick={() => setShowPromptsDropdown(!showPromptsDropdown)}
                       className={cn(
                         "px-3 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-1.5",
                         showPromptsDropdown
                           ? "bg-amber-500/15 text-amber-400 border-amber-500/30"
-                          : "bg-black/30 text-muted-foreground border-white/5 hover:bg-white/10 hover:text-foreground",
+                          : "bg-black/30 text-muted-foreground border-white/5 hover:bg-white/10 hover:text-foreground"
                       )}
                     >
                       💡{" "}
@@ -1425,20 +1358,18 @@ export function JournalEntryEditor({
                     <motion.button
                       key={opt.mood}
                       whileTap={{ scale: 0.85 }}
-                      onClick={() =>
-                        setMood(mood === opt.mood ? undefined : opt.mood)
-                      }
+                      onClick={() => setMood(mood === opt.mood ? undefined : opt.mood)}
                       className={cn(
                         "w-9 h-9 rounded-full flex items-center justify-center transition-all",
                         mood === opt.mood
                           ? `${opt.activeBg} ring-2 ${opt.activeRing}`
-                          : "hover:bg-white/10",
+                          : "hover:bg-white/10"
                       )}
                     >
                       <span
                         className={cn(
                           "text-base transition-transform",
-                          mood === opt.mood && "scale-110",
+                          mood === opt.mood && "scale-110"
                         )}
                       >
                         {opt.emoji}
@@ -1452,7 +1383,7 @@ export function JournalEntryEditor({
                       "px-3 py-2 rounded-lg text-sm font-medium border transition-all",
                       showTags
                         ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
-                        : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 hover:text-foreground",
+                        : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 hover:text-foreground"
                     )}
                   >
                     #
@@ -1476,9 +1407,7 @@ export function JournalEntryEditor({
                       onClick={() => setPaperColor(pc)}
                       className={cn(
                         "w-7 h-7 rounded-full border-2 transition-all",
-                        paperColor === pc
-                          ? "border-white/60 scale-110"
-                          : "border-white/10",
+                        paperColor === pc ? "border-white/60 scale-110" : "border-white/10"
                       )}
                       style={{ background: PAPER_COLORS[pc].bg }}
                       aria-label={PAPER_COLORS[pc].label}
@@ -1495,9 +1424,7 @@ export function JournalEntryEditor({
                       onClick={() => setInkColor(c.hex)}
                       className={cn(
                         "w-7 h-7 rounded-full border-2 transition-all",
-                        inkColor === c.hex
-                          ? "border-white/60 scale-110"
-                          : "border-white/10",
+                        inkColor === c.hex ? "border-white/60 scale-110" : "border-white/10"
                       )}
                       style={{ background: c.hex }}
                       aria-label={c.label}
@@ -1522,13 +1449,11 @@ export function JournalEntryEditor({
                       "px-4 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-2",
                       voice.isListening
                         ? "bg-red-500/15 text-red-400 border-red-500/30"
-                        : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 hover:text-foreground",
+                        : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 hover:text-foreground"
                     )}
                   >
                     🎙️{" "}
-                    {voice.isListening
-                      ? ts.journalDictateStop || "Stop"
-                      : ts.diaryVoice || "Voice"}
+                    {voice.isListening ? ts.journalDictateStop || "Stop" : ts.diaryVoice || "Voice"}
                   </motion.button>
                 </div>
 
@@ -1538,11 +1463,7 @@ export function JournalEntryEditor({
                     whileTap={{ scale: 0.95 }}
                     onClick={() =>
                       setBgIntensity((prev) =>
-                        prev === "full"
-                          ? "dim"
-                          : prev === "dim"
-                            ? "off"
-                            : "full",
+                        prev === "full" ? "dim" : prev === "dim" ? "off" : "full"
                       )
                     }
                     className={cn(
@@ -1551,25 +1472,16 @@ export function JournalEntryEditor({
                         ? "bg-purple-500/15 text-purple-400 border-purple-500/30"
                         : bgIntensity === "dim"
                           ? "bg-muted-foreground/15 text-muted-foreground border-muted-foreground/30"
-                          : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 hover:text-foreground",
+                          : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 hover:text-foreground"
                     )}
                   >
-                    {bgIntensity === "full"
-                      ? "🌌"
-                      : bgIntensity === "dim"
-                        ? "🌑"
-                        : "⊘"}{" "}
-                    BG
+                    {bgIntensity === "full" ? "🌌" : bgIntensity === "dim" ? "🌑" : "⊘"} BG
                   </motion.button>
                   <motion.button
                     whileTap={{ scale: 0.95 }}
                     onClick={() =>
                       setParticleSpeed((prev) =>
-                        prev === "slow"
-                          ? "drift"
-                          : prev === "drift"
-                            ? "off"
-                            : "slow",
+                        prev === "slow" ? "drift" : prev === "drift" ? "off" : "slow"
                       )
                     }
                     className={cn(
@@ -1578,37 +1490,26 @@ export function JournalEntryEditor({
                         ? "bg-cyan-500/15 text-cyan-400 border-cyan-500/30"
                         : particleSpeed === "slow"
                           ? "bg-indigo-500/15 text-indigo-300 border-indigo-500/30"
-                          : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 hover:text-foreground",
+                          : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 hover:text-foreground"
                     )}
                   >
-                    {particleSpeed === "slow"
-                      ? "🐌"
-                      : particleSpeed === "drift"
-                        ? "🌊"
-                        : "⊘"}{" "}
+                    {particleSpeed === "slow" ? "🐌" : particleSpeed === "drift" ? "🌊" : "⊘"}{" "}
                     {ts.diaryParticleSpeed || "Speed"}
                   </motion.button>
                   <motion.button
                     whileTap={{ scale: 0.95 }}
                     onClick={() => {
                       const idx = PAPER_TEXTURE_NAMES.indexOf(paperTexture);
-                      setPaperTexture(
-                        PAPER_TEXTURE_NAMES[
-                          (idx + 1) % PAPER_TEXTURE_NAMES.length
-                        ],
-                      );
+                      setPaperTexture(PAPER_TEXTURE_NAMES[(idx + 1) % PAPER_TEXTURE_NAMES.length]);
                     }}
                     className={cn(
                       "px-3 py-1.5 rounded-lg text-xs font-medium border transition-all flex items-center gap-1.5",
                       paperTexture !== "clean"
                         ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
-                        : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 hover:text-foreground",
+                        : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 hover:text-foreground"
                     )}
                   >
-                    ⏺{" "}
-                    {paperTexture === "clean"
-                      ? ts.diaryTexture || "Texture"
-                      : paperTexture}
+                    ⏺ {paperTexture === "clean" ? ts.diaryTexture || "Texture" : paperTexture}
                   </motion.button>
                 </div>
 
@@ -1627,19 +1528,13 @@ export function JournalEntryEditor({
                           isActive
                             ? "border-white/60 scale-110 shadow-lg"
                             : "border-white/10 hover:border-white/25",
-                          isNone &&
-                            !isActive &&
-                            "border-dashed border-white/20",
+                          isNone && !isActive && "border-dashed border-white/20"
                         )}
                         style={isNone ? undefined : { background: pat.swatch }}
                         aria-label={ts[pat.i18nKey] || pat.name}
                         title={ts[pat.i18nKey] || pat.name}
                       >
-                        {isNone && (
-                          <span className="text-xs text-muted-foreground">
-                            ⊘
-                          </span>
-                        )}
+                        {isNone && <span className="text-xs text-muted-foreground">⊘</span>}
                       </motion.button>
                     );
                   })}
@@ -1659,8 +1554,7 @@ export function JournalEntryEditor({
                   >
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-[11px] font-semibold uppercase tracking-[0.15em] text-foreground0 flex items-center gap-1.5">
-                        {"\u{270F}\uFE0F"}{" "}
-                        {ts.journalWritingPrompts || "Writing prompts"}
+                        {"\u{270F}\uFE0F"} {ts.journalWritingPrompts || "Writing prompts"}
                       </span>
                       <div className="flex items-center gap-1">
                         <button
@@ -1726,7 +1620,7 @@ export function JournalEntryEditor({
           <div
             className={cn(
               "max-w-4xl mx-auto rounded-2xl border shadow-[0_0_80px_rgba(0,0,0,0.5)] p-4 sm:p-6 md:p-8 min-h-[60dvh] space-y-4 [contain:layout_style_paint]",
-              zenFocusActive && "zen-focus-active",
+              zenFocusActive && "zen-focus-active"
             )}
             style={{
               backgroundColor: paperColors.bg,
@@ -1782,11 +1676,7 @@ export function JournalEntryEditor({
               maxLength={100}
               onFocus={(e) => {
                 const el = e.target;
-                setTimeout(
-                  () =>
-                    el.scrollIntoView({ behavior: "smooth", block: "center" }),
-                  300,
-                );
+                setTimeout(() => el.scrollIntoView({ behavior: "smooth", block: "center" }), 300);
               }}
             />
 
@@ -1833,14 +1723,11 @@ export function JournalEntryEditor({
                 {audioRecordings.map((audio) => (
                   <div key={audio.id} className="flex items-center gap-1.5">
                     <div className="flex-1">
-                      <JournalAudioPlayer
-                        src={audio.data}
-                        duration={audio.duration}
-                      />
+                      <JournalAudioPlayer src={audio.data} duration={audio.duration} />
                     </div>
                     <button
                       onClick={() => handleRemoveAudio(audio.id)}
-                      className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground/50 hover:text-destructive transition-colors min-w-[32px] min-h-[32px] flex items-center justify-center"
+                      className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground/50 hover:text-destructive transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
                       aria-label={ts.delete || "Remove"}
                     >
                       <X className="w-3.5 h-3.5" />
@@ -1885,9 +1772,7 @@ export function JournalEntryEditor({
                 {tags.map((tag) => (
                   <button
                     key={tag}
-                    onClick={() =>
-                      setTags((prev) => prev.filter((t2) => t2 !== tag))
-                    }
+                    onClick={() => setTags((prev) => prev.filter((t2) => t2 !== tag))}
                     className="text-xs px-2.5 py-1 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors min-h-[32px]"
                   >
                     #{tag} &times;
@@ -1935,18 +1820,13 @@ export function JournalEntryEditor({
 
             {/* Burn-a-thought widget (inline, above textarea) */}
             <AnimatePresence>
-              {showBurnWidget && (
-                <BurnThoughtWidget onClose={handleCloseBurn} />
-              )}
+              {showBurnWidget && <BurnThoughtWidget onClose={handleCloseBurn} />}
             </AnimatePresence>
 
             {/* Gratitude bloom widget (inline, above textarea) */}
             <AnimatePresence>
               {showGratitudeWidget && onAddGratitude && (
-                <GratitudeBloomWidget
-                  onClose={handleCloseGratitude}
-                  onPlant={onAddGratitude}
-                />
+                <GratitudeBloomWidget onClose={handleCloseGratitude} onPlant={onAddGratitude} />
               )}
             </AnimatePresence>
 
@@ -2011,24 +1891,15 @@ export function JournalEntryEditor({
               onInput={handleEditorInput}
               onFocus={(e) => {
                 const el = e.target;
-                setTimeout(
-                  () =>
-                    el.scrollIntoView({ behavior: "smooth", block: "center" }),
-                  300,
-                );
+                setTimeout(() => el.scrollIntoView({ behavior: "smooth", block: "center" }), 300);
               }}
-              data-placeholder={
-                ts.journalEntryPlaceholder || "What's on your mind?"
-              }
+              data-placeholder={ts.journalEntryPlaceholder || "What's on your mind?"}
             />
 
             {/* Word count + char count + reading time + auto-save indicator */}
             <div className="flex items-center gap-3 pt-2">
               {wordCount > 0 && (
-                <div
-                  className="flex items-center gap-2"
-                  style={{ color: paperColors.muted }}
-                >
+                <div className="flex items-center gap-2" style={{ color: paperColors.muted }}>
                   <span className="text-[10px] opacity-60">
                     {wordCount} {ts.journalWords || "words"}
                   </span>
@@ -2037,8 +1908,7 @@ export function JournalEntryEditor({
                   </span>
                   {wordCount >= 50 && (
                     <span className="text-[10px] opacity-40">
-                      ~{Math.ceil(wordCount / 200)}{" "}
-                      {ts.journalMinRead || "min read"}
+                      ~{Math.ceil(wordCount / 200)} {ts.journalMinRead || "min read"}
                     </span>
                   )}
                 </div>
@@ -2051,8 +1921,7 @@ export function JournalEntryEditor({
                     exit={{ opacity: 0 }}
                     className="text-[10px] text-green-500/60 flex items-center gap-0.5"
                   >
-                    <Check className="w-2.5 h-2.5" />{" "}
-                    {ts.journalDraftSaved || "Saved"}
+                    <Check className="w-2.5 h-2.5" /> {ts.journalDraftSaved || "Saved"}
                   </motion.span>
                 )}
               </AnimatePresence>
@@ -2083,11 +1952,10 @@ export function JournalEntryEditor({
               "px-4 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-2 flex-shrink-0 min-h-[44px]",
               showBurnWidget
                 ? "bg-orange-500/15 text-orange-400 border-orange-500/30"
-                : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 hover:text-foreground",
+                : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 hover:text-foreground"
             )}
           >
-            🔥{" "}
-            {ts.journalBurnTitle ? ts.journalBurnTitle.split(" ")[0] : "Burn"}
+            🔥 {ts.journalBurnTitle ? ts.journalBurnTitle.split(" ")[0] : "Burn"}
           </motion.button>
           {onAddGratitude && (
             <motion.button
@@ -2100,13 +1968,10 @@ export function JournalEntryEditor({
                 "px-4 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-2 flex-shrink-0 min-h-[44px]",
                 showGratitudeWidget
                   ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
-                  : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 hover:text-foreground",
+                  : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 hover:text-foreground"
               )}
             >
-              🌱{" "}
-              {ts.journalGratitudeAction
-                ? ts.journalGratitudeAction.split(" ")[0]
-                : "Gratitude"}
+              🌱 {ts.journalGratitudeAction ? ts.journalGratitudeAction.split(" ")[0] : "Gratitude"}
             </motion.button>
           )}
           <motion.button
@@ -2116,7 +1981,7 @@ export function JournalEntryEditor({
               "px-4 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-2 flex-shrink-0 min-h-[44px]",
               showBreathe
                 ? "bg-teal-500/15 text-teal-400 border-teal-500/30"
-                : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 hover:text-foreground",
+                : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 hover:text-foreground"
             )}
           >
             🧘 {ts.diaryBreathe || "Breathe"}
@@ -2128,7 +1993,7 @@ export function JournalEntryEditor({
               "px-4 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-2 flex-shrink-0 min-h-[44px]",
               zenFocusActive
                 ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
-                : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 hover:text-foreground",
+                : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 hover:text-foreground"
             )}
           >
             ✍️ {ts.diaryFocusRay || "Focus"}
@@ -2140,7 +2005,7 @@ export function JournalEntryEditor({
               "px-4 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-2 flex-shrink-0 min-h-[44px]",
               showHabits
                 ? "bg-green-500/15 text-green-400 border-green-500/30"
-                : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 hover:text-foreground",
+                : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 hover:text-foreground"
             )}
           >
             ✅ {ts.journalHabitsSection || "Habits"}
@@ -2180,17 +2045,11 @@ export function JournalEntryEditor({
               setContent(templateContent);
             }
             setShowTemplatePicker(false);
-            focusTimeoutRef.current = setTimeout(
-              () => editorRef.current?.focus(),
-              100,
-            );
+            focusTimeoutRef.current = setTimeout(() => editorRef.current?.focus(), 100);
           }}
           onClose={() => {
             setShowTemplatePicker(false);
-            focusTimeoutRef.current = setTimeout(
-              () => editorRef.current?.focus(),
-              100,
-            );
+            focusTimeoutRef.current = setTimeout(() => editorRef.current?.focus(), 100);
           }}
         />
       )}
@@ -2247,7 +2106,7 @@ export function JournalEntryEditor({
                   "w-full py-3 rounded-xl text-sm font-semibold",
                   "bg-red-500 text-white",
                   "flex items-center justify-center gap-2",
-                  "active:scale-[0.98] transition-transform min-h-[44px]",
+                  "active:scale-[0.98] transition-transform min-h-[44px]"
                 )}
               >
                 <Square className="w-4 h-4" />
@@ -2324,7 +2183,7 @@ export function JournalEntryEditor({
                 className={cn(
                   "w-full py-2.5 rounded-xl text-sm font-medium min-h-[44px]",
                   "bg-gradient-to-r from-primary to-primary/90 text-primary-foreground",
-                  "disabled:opacity-50",
+                  "disabled:opacity-50"
                 )}
               >
                 {ts.journalSaveClose || "Save & Close"}
@@ -2375,10 +2234,7 @@ export function JournalEntryEditor({
       </AnimatePresence>
 
       {/* Floating format toolbar (Telegram-style — appears on text selection) */}
-      <DiaryFormatToolbar
-        editorRef={editorRef}
-        scrollContainerRef={scrollAreaRef}
-      />
+      <DiaryFormatToolbar editorRef={editorRef} scrollContainerRef={scrollAreaRef} />
     </div>
   );
 }

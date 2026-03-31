@@ -9,38 +9,38 @@
  * - User-facing sync status
  */
 
-import { useState, useEffect } from 'react';
-import { logger } from '@/lib/logger';
-import { addCategorizedBreadcrumb } from '@/lib/sentry';
-import { isCloudSyncEnabled } from '@/lib/cloudSyncSettings';
-import { generateSecureRandom } from '@/lib/validation';
-import { is401Error, AUTH_SESSION_EXPIRED_EVENT } from '@/lib/apiClient';
-import { supabase } from '@/lib/supabaseClient';
+import { useState, useEffect } from "react";
+import { logger } from "@/lib/logger";
+import { addCategorizedBreadcrumb } from "@/lib/sentry";
+import { isCloudSyncEnabled } from "@/lib/cloudSyncSettings";
+import { generateSecureRandom } from "@/lib/validation";
+import { is401Error, AUTH_SESSION_EXPIRED_EVENT } from "@/lib/apiClient";
+import { supabase } from "@/lib/supabaseClient";
 
 // Sync operation types
 export type SyncOperationType =
-  | 'backup'           // Full backup sync (cloudSync)
-  | 'reminders'        // Reminder settings sync
-  | 'challenges'       // Challenges sync
-  | 'tasks'            // Tasks sync
-  | 'quests'           // Quests sync
-  | 'innerWorld'       // Inner world sync
-  | 'badges';          // Badges sync
+  | "backup" // Full backup sync (cloudSync)
+  | "reminders" // Reminder settings sync
+  | "challenges" // Challenges sync
+  | "tasks" // Tasks sync
+  | "quests" // Quests sync
+  | "innerWorld" // Inner world sync
+  | "badges"; // Badges sync
 
 export type SyncStatus =
-  | 'idle'             // No sync in progress
-  | 'syncing'          // Sync in progress
-  | 'success'          // Last sync succeeded
-  | 'error'            // Last sync failed
-  | 'conflict';        // Conflict detected
+  | "idle" // No sync in progress
+  | "syncing" // Sync in progress
+  | "success" // Last sync succeeded
+  | "error" // Last sync failed
+  | "conflict"; // Conflict detected
 
 export interface SyncOperation {
   id: string;
   type: SyncOperationType;
-  priority: number;          // Higher = higher priority (0-10)
+  priority: number; // Higher = higher priority (0-10)
   executor: () => Promise<void>;
-  retries: number;           // Number of retries attempted
-  maxRetries: number;        // Maximum retries allowed
+  retries: number; // Number of retries attempted
+  maxRetries: number; // Maximum retries allowed
   createdAt: number;
   startedAt?: number;
   completedAt?: number;
@@ -65,7 +65,7 @@ class SyncOrchestrator {
   private processingPromise: Promise<void> | null = null; // Mutex lock for process queue
   private listeners: Set<SyncStateListener> = new Set();
   private state: SyncState = {
-    status: 'idle',
+    status: "idle",
     queueLength: 0,
     isOnline: navigator.onLine,
   };
@@ -90,16 +90,16 @@ class SyncOrchestrator {
 
   constructor() {
     // Listen to online/offline events
-    window.addEventListener('online', this.onlineHandler);
-    window.addEventListener('offline', this.offlineHandler);
+    window.addEventListener("online", this.onlineHandler);
+    window.addEventListener("offline", this.offlineHandler);
   }
 
   /**
    * Cleanup event listeners (call when destroying the orchestrator)
    */
   destroy(): void {
-    window.removeEventListener('online', this.onlineHandler);
-    window.removeEventListener('offline', this.offlineHandler);
+    window.removeEventListener("online", this.onlineHandler);
+    window.removeEventListener("offline", this.offlineHandler);
     this.listeners.clear();
   }
 
@@ -137,18 +137,22 @@ class SyncOrchestrator {
     // Drop lowest-priority operation if queue exceeds limit
     if (this.queue.length > this.MAX_QUEUE_SIZE) {
       const dropped = this.queue.pop();
-      logger.warn(`[SyncOrchestrator] Queue overflow (>${this.MAX_QUEUE_SIZE}), dropped: ${dropped?.type}`);
+      logger.warn(
+        `[SyncOrchestrator] Queue overflow (>${this.MAX_QUEUE_SIZE}), dropped: ${dropped?.type}`
+      );
 
       // Notify UI so user knows their action may not sync (Law 5: Loud Failure)
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('zenflow:offline-queue-full', {
-          detail: {
-            queueSize: this.queue.length,
-            maxSize: this.MAX_QUEUE_SIZE,
-            message: 'Sync queue is full. Some changes may not be saved to cloud.',
-            actionType: dropped?.type,
-          }
-        }));
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("zenflow:offline-queue-full", {
+            detail: {
+              queueSize: this.queue.length,
+              maxSize: this.MAX_QUEUE_SIZE,
+              message: "Sync queue is full. Some changes may not be saved to cloud.",
+              actionType: dropped?.type,
+            },
+          })
+        );
       }
     }
 
@@ -167,7 +171,6 @@ class SyncOrchestrator {
    */
   private async startProcessing(): Promise<void> {
     // If already processing, wait for it to complete
-    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     if (this.processingPromise) {
       await this.processingPromise;
       // After waiting, recursively check if we need to process more
@@ -195,170 +198,192 @@ class SyncOrchestrator {
 
     // Check if online
     if (!this.state.isOnline) {
-      logger.sync('Offline - pausing sync queue');
-      this.updateState({ status: 'error', lastError: 'Device is offline' });
+      logger.sync("Offline - pausing sync queue");
+      this.updateState({ status: "error", lastError: "Device is offline" });
       return;
     }
 
     this.isProcessing = true;
-    this.updateState({ status: 'syncing' });
+    this.updateState({ status: "syncing" });
 
     try {
-    while (this.queue.length > 0) {
-      const operation = this.queue[0];
+      while (this.queue.length > 0) {
+        const operation = this.queue[0];
 
-      try {
-        addCategorizedBreadcrumb('sync', `Starting ${operation.type} sync`, { operationId: operation.id, priority: operation.priority });
-        logger.sync(`Starting ${operation.type} sync`);
-        operation.startedAt = Date.now();
+        try {
+          addCategorizedBreadcrumb("sync", `Starting ${operation.type} sync`, {
+            operationId: operation.id,
+            priority: operation.priority,
+          });
+          logger.sync(`Starting ${operation.type} sync`);
+          operation.startedAt = Date.now();
 
-        this.updateState({
-          currentOperation: operation.type,
-          status: 'syncing',
-        });
+          this.updateState({
+            currentOperation: operation.type,
+            status: "syncing",
+          });
 
-        // P2-5 Fix: Execute the sync operation with timeout protection
-        await this.executeWithTimeout(operation.executor, operation.type);
+          // P2-5 Fix: Execute the sync operation with timeout protection
+          await this.executeWithTimeout(operation.executor, operation.type);
 
-        operation.completedAt = Date.now();
-        const duration = operation.completedAt - operation.startedAt;
+          operation.completedAt = Date.now();
+          const duration = operation.completedAt - operation.startedAt;
 
-        addCategorizedBreadcrumb('sync', `Completed ${operation.type} sync`, { duration, operationId: operation.id });
-        logger.sync(`Completed ${operation.type} sync in ${duration}ms`);
+          addCategorizedBreadcrumb("sync", `Completed ${operation.type} sync`, {
+            duration,
+            operationId: operation.id,
+          });
+          logger.sync(`Completed ${operation.type} sync in ${duration}ms`);
 
-        // Remove from queue
-        this.queue.shift();
+          // Remove from queue
+          this.queue.shift();
 
-        this.updateState({
-          status: 'success',
-          lastSyncTime: Date.now(),
-          lastSyncType: operation.type,
-          queueLength: this.queue.length,
-          currentOperation: undefined,
-          lastError: undefined, // Clear previous errors on success
-        });
+          this.updateState({
+            status: "success",
+            lastSyncTime: Date.now(),
+            lastSyncType: operation.type,
+            queueLength: this.queue.length,
+            currentOperation: undefined,
+            lastError: undefined, // Clear previous errors on success
+          });
+        } catch (error) {
+          addCategorizedBreadcrumb(
+            "sync",
+            `Sync error for ${operation.type}`,
+            {
+              error: (error as Error).message,
+              retries: operation.retries,
+            },
+            "error"
+          );
+          logger.error(`Sync error for ${operation.type}:`, error);
 
-      } catch (error) {
-        addCategorizedBreadcrumb('sync', `Sync error for ${operation.type}`, {
-          error: (error as Error).message,
-          retries: operation.retries,
-        }, 'error');
-        logger.error(`Sync error for ${operation.type}:`, error);
+          operation.error = error as Error;
+          operation.retries++;
 
-        operation.error = error as Error;
-        operation.retries++;
+          // Check for 401 authentication errors - these need special handling
+          if (is401Error(error)) {
+            logger.warn(
+              `[SyncOrchestrator] 401 error on ${operation.type} - checking if session truly expired`
+            );
 
-        // Check for 401 authentication errors - these need special handling
-        if (is401Error(error)) {
-          logger.warn(`[SyncOrchestrator] 401 error on ${operation.type} - checking if session truly expired`);
+            // If we already emitted session expired, just clear and stop
+            if (this.sessionExpiredEmitted) {
+              logger.log(`[SyncOrchestrator] Session already expired, clearing remaining queue`);
+              this.clearQueue();
+              break;
+            }
 
-          // If we already emitted session expired, just clear and stop
-          if (this.sessionExpiredEmitted) {
-            logger.log(`[SyncOrchestrator] Session already expired, clearing remaining queue`);
+            // Verify session before notifying UI
+            // 401 might be a transient error, check actual session state
+            let sessionValid = false;
+            try {
+              const { data } = await supabase.auth.getSession();
+              sessionValid = !!data.session;
+            } catch (sessionError) {
+              logger.error("[SyncOrchestrator] Error checking session:", sessionError);
+            }
+
+            if (sessionValid) {
+              // Session is still valid - treat as transient error, retry later
+              logger.log(
+                `[SyncOrchestrator] Session valid despite 401, will retry ${operation.type}`
+              );
+              // Don't dispatch expired event, just retry with other errors
+              // Note: retries was already incremented above (line 216), so check against maxRetries
+              if (operation.retries < operation.maxRetries) {
+                const delay = this.calculateRetryDelay(operation.retries);
+                this.queue.shift();
+                await this.sleep(delay);
+                this.queue.push(operation);
+                this.queue.sort((a, b) => b.priority - a.priority);
+                continue;
+              }
+            }
+
+            // Session truly expired
+            addCategorizedBreadcrumb(
+              "sync",
+              "Session expired - clearing queue",
+              { operation: operation.type },
+              "warning"
+            );
+            logger.warn(`[SyncOrchestrator] Session confirmed expired for ${operation.type}`);
+
+            // Set flag BEFORE dispatching to prevent race condition
+            this.sessionExpiredEmitted = true;
+
+            // Clear entire queue - no point retrying with expired session
             this.clearQueue();
+
+            // Notify UI that session has expired (only once due to flag)
+            window.dispatchEvent(new CustomEvent(AUTH_SESSION_EXPIRED_EVENT));
+
+            this.updateState({
+              status: "error",
+              lastError: "Session expired. Please sign in again.",
+              queueLength: 0,
+              currentOperation: undefined,
+            });
+            // Stop processing the queue
             break;
           }
 
-          // Verify session before notifying UI
-          // 401 might be a transient error, check actual session state
-          let sessionValid = false;
-          try {
-            const { data } = await supabase.auth.getSession();
-            sessionValid = !!data.session;
-          } catch (sessionError) {
-            logger.error('[SyncOrchestrator] Error checking session:', sessionError);
+          // Don't retry on client errors (400, 404, 422) - these won't succeed on retry
+          // Also check for Supabase/Postgres-specific error messages
+          const errorMessage = (error as Error).message || "";
+          const isClientError =
+            errorMessage.includes("400") ||
+            errorMessage.includes("404") ||
+            errorMessage.includes("422") ||
+            errorMessage.includes("Bad Request") ||
+            errorMessage.includes("Not Found") ||
+            errorMessage.includes("duplicate key") ||
+            errorMessage.includes("violates unique constraint") ||
+            errorMessage.includes("already exists") ||
+            errorMessage.includes("invalid input syntax") ||
+            errorMessage.includes("PGRST") || // PostgREST errors (except auth)
+            errorMessage.includes("relation") || // Table not found
+            errorMessage.includes("column"); // Column not found
+
+          // Check if we should retry (skip retry for client errors)
+          if (!isClientError && operation.retries < operation.maxRetries) {
+            const delay = this.calculateRetryDelay(operation.retries);
+            logger.sync(
+              `Retrying ${operation.type} in ${delay}ms (attempt ${operation.retries + 1}/${operation.maxRetries})`
+            );
+
+            // P1-7 Fix: Reduce priority on retry to prevent starvation
+            // Without this, high-priority failing operations could block lower-priority ones indefinitely
+            operation.priority = Math.max(0, operation.priority - 1);
+
+            // Move to end of queue and retry after delay
+            this.queue.shift();
+            await this.sleep(delay);
+            this.queue.push(operation);
+            this.queue.sort((a, b) => b.priority - a.priority);
+          } else {
+            logger.error(`Max retries exceeded for ${operation.type}`);
+
+            // Remove failed operation from queue
+            this.queue.shift();
+
+            this.updateState({
+              status: "error",
+              lastError: (error as Error).message,
+              queueLength: this.queue.length,
+              currentOperation: undefined,
+            });
           }
-
-          if (sessionValid) {
-            // Session is still valid - treat as transient error, retry later
-            logger.log(`[SyncOrchestrator] Session valid despite 401, will retry ${operation.type}`);
-            // Don't dispatch expired event, just retry with other errors
-            // Note: retries was already incremented above (line 216), so check against maxRetries
-            if (operation.retries < operation.maxRetries) {
-              const delay = this.calculateRetryDelay(operation.retries);
-              this.queue.shift();
-              await this.sleep(delay);
-              this.queue.push(operation);
-              this.queue.sort((a, b) => b.priority - a.priority);
-              continue;
-            }
-          }
-
-          // Session truly expired
-          addCategorizedBreadcrumb('sync', 'Session expired - clearing queue', { operation: operation.type }, 'warning');
-          logger.warn(`[SyncOrchestrator] Session confirmed expired for ${operation.type}`);
-
-          // Set flag BEFORE dispatching to prevent race condition
-          this.sessionExpiredEmitted = true;
-
-          // Clear entire queue - no point retrying with expired session
-          this.clearQueue();
-
-          // Notify UI that session has expired (only once due to flag)
-          window.dispatchEvent(new CustomEvent(AUTH_SESSION_EXPIRED_EVENT));
-
-          this.updateState({
-            status: 'error',
-            lastError: 'Session expired. Please sign in again.',
-            queueLength: 0,
-            currentOperation: undefined,
-          });
-          // Stop processing the queue
-          break;
-        }
-
-        // Don't retry on client errors (400, 404, 422) - these won't succeed on retry
-        // Also check for Supabase/Postgres-specific error messages
-        const errorMessage = (error as Error).message || '';
-        const isClientError = errorMessage.includes('400') ||
-          errorMessage.includes('404') ||
-          errorMessage.includes('422') ||
-          errorMessage.includes('Bad Request') ||
-          errorMessage.includes('Not Found') ||
-          errorMessage.includes('duplicate key') ||
-          errorMessage.includes('violates unique constraint') ||
-          errorMessage.includes('already exists') ||
-          errorMessage.includes('invalid input syntax') ||
-          errorMessage.includes('PGRST') || // PostgREST errors (except auth)
-          errorMessage.includes('relation') || // Table not found
-          errorMessage.includes('column'); // Column not found
-
-        // Check if we should retry (skip retry for client errors)
-        if (!isClientError && operation.retries < operation.maxRetries) {
-          const delay = this.calculateRetryDelay(operation.retries);
-          logger.sync(`Retrying ${operation.type} in ${delay}ms (attempt ${operation.retries + 1}/${operation.maxRetries})`);
-
-          // P1-7 Fix: Reduce priority on retry to prevent starvation
-          // Without this, high-priority failing operations could block lower-priority ones indefinitely
-          operation.priority = Math.max(0, operation.priority - 1);
-
-          // Move to end of queue and retry after delay
-          this.queue.shift();
-          await this.sleep(delay);
-          this.queue.push(operation);
-          this.queue.sort((a, b) => b.priority - a.priority);
-        } else {
-          logger.error(`Max retries exceeded for ${operation.type}`);
-
-          // Remove failed operation from queue
-          this.queue.shift();
-
-          this.updateState({
-            status: 'error',
-            lastError: (error as Error).message,
-            queueLength: this.queue.length,
-            currentOperation: undefined,
-          });
         }
       }
-    }
 
-    if (this.queue.length === 0) {
-      this.updateState({
-        status: 'idle', // Queue empty - return to idle state
-        currentOperation: undefined,
-      });
-    }
+      if (this.queue.length === 0) {
+        this.updateState({
+          status: "idle", // Queue empty - return to idle state
+          currentOperation: undefined,
+        });
+      }
     } finally {
       // Release both flags atomically to prevent race condition
       // where another caller sees processingPromise = null but isProcessing = true
@@ -371,10 +396,7 @@ class SyncOrchestrator {
    * Calculate exponential backoff delay
    */
   private calculateRetryDelay(retryCount: number): number {
-    const delay = Math.min(
-      this.RETRY_DELAY_BASE * Math.pow(2, retryCount),
-      this.RETRY_DELAY_MAX
-    );
+    const delay = Math.min(this.RETRY_DELAY_BASE * Math.pow(2, retryCount), this.RETRY_DELAY_MAX);
     // Add jitter to avoid thundering herd
     return delay + Math.random() * 1000;
   }
@@ -383,7 +405,7 @@ class SyncOrchestrator {
    * Sleep utility
    */
   private sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   /**
@@ -402,14 +424,22 @@ class SyncOrchestrator {
       timeoutId = setTimeout(() => {
         if (!settled) {
           settled = true;
-          logger.warn(`[SyncOrchestrator] ${operationType} operation timed out after ${this.OPERATION_TIMEOUT}ms`);
+          logger.warn(
+            `[SyncOrchestrator] ${operationType} operation timed out after ${this.OPERATION_TIMEOUT}ms`
+          );
           // Emit event for UI awareness
-          if (typeof window !== 'undefined') {
-            window.dispatchEvent(new CustomEvent('zenflow:sync-operation-timeout', {
-              detail: { operationType, timeoutMs: this.OPERATION_TIMEOUT }
-            }));
+          if (typeof window !== "undefined") {
+            window.dispatchEvent(
+              new CustomEvent("zenflow:sync-operation-timeout", {
+                detail: { operationType, timeoutMs: this.OPERATION_TIMEOUT },
+              })
+            );
           }
-          reject(new Error(`Sync operation '${operationType}' timed out after ${this.OPERATION_TIMEOUT}ms`));
+          reject(
+            new Error(
+              `Sync operation '${operationType}' timed out after ${this.OPERATION_TIMEOUT}ms`
+            )
+          );
         }
       }, this.OPERATION_TIMEOUT);
 
@@ -426,7 +456,11 @@ class SyncOrchestrator {
           if (!settled) {
             settled = true;
             if (timeoutId) clearTimeout(timeoutId);
-            reject(error instanceof Error ? error : new Error(typeof error === 'string' ? error : 'Sync error'));
+            reject(
+              error instanceof Error
+                ? error
+                : new Error(typeof error === "string" ? error : "Sync error")
+            );
           }
         });
     });
@@ -436,7 +470,7 @@ class SyncOrchestrator {
    * Handle online/offline status changes
    */
   private handleOnlineStatusChange(isOnline: boolean): void {
-    logger.sync(`Network status changed: ${isOnline ? 'online' : 'offline'}`);
+    logger.sync(`Network status changed: ${isOnline ? "online" : "offline"}`);
     this.updateState({ isOnline });
 
     // Resume processing when back online using mutex-protected method
@@ -471,7 +505,7 @@ class SyncOrchestrator {
    * Notify all listeners
    */
   private notifyListeners(): void {
-    this.listeners.forEach(listener => listener(this.state));
+    this.listeners.forEach((listener) => listener(this.state));
   }
 
   /**
@@ -485,11 +519,11 @@ class SyncOrchestrator {
    * Clear the queue (emergency stop)
    */
   clearQueue(): void {
-    logger.sync('Clearing sync queue');
+    logger.sync("Clearing sync queue");
     this.queue = [];
     this.updateState({
       queueLength: 0,
-      status: 'idle',
+      status: "idle",
       currentOperation: undefined,
     });
   }
@@ -499,14 +533,14 @@ class SyncOrchestrator {
    */
   resetSessionExpired(): void {
     this.sessionExpiredEmitted = false;
-    logger.sync('Session expired flag reset');
+    logger.sync("Session expired flag reset");
   }
 
   /**
    * Get queue info for debugging
    */
   getQueueInfo(): Array<{ type: SyncOperationType; priority: number; retries: number }> {
-    return this.queue.map(op => ({
+    return this.queue.map((op) => ({
       type: op.type,
       priority: op.priority,
       retries: op.retries,

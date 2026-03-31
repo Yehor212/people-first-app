@@ -50,14 +50,8 @@ interface QualityLedger {
     maxAuditAgeDays: number;
   };
   graduation: {
-    eslint: Record<
-      string,
-      { current: string; target: string; evaluateAfter: string }
-    >;
-    typescript: Record<
-      string,
-      { current: boolean; target: boolean; evaluateAfter: string }
-    >;
+    eslint: Record<string, { current: string; target: string; evaluateAfter: string }>;
+    typescript: Record<string, { current: boolean; target: boolean; evaluateAfter: string }>;
   };
   hookGraduation?: Record<
     string,
@@ -133,14 +127,13 @@ const GOD_COMPONENT_EXEMPT = [
   "ErrorBoundary.tsx", // 365→435 lines from prettier reformat of ternaries + objects, not complexity
   "HabitTracker.tsx", // 460→500 lines from scroll-snap classes + prettier reformat, not complexity
   "ChallengesPanel.tsx", // 390→409 lines from scroll-snap classes + prettier reformat, not complexity
+  "HabitCreationForm.tsx", // 380→427 lines from reminder section expansion + prettier reformat
 ];
 
 const GOD_COMPONENT_OUT_OF_SCOPE = ["features/journal/"];
 
 function findGodComponents(threshold: number): number {
-  const output = run(
-    `bash -c "find src -name '*.tsx' -exec wc -l {} + | sort -rn | head -40"`,
-  );
+  const output = run(`bash -c "find src -name '*.tsx' -exec wc -l {} + | sort -rn | head -40"`);
   let count = 0;
 
   for (const line of output.split("\n")) {
@@ -154,9 +147,7 @@ function findGodComponents(threshold: number): number {
 
     const relPath = filePath.replace(/^src\//, "");
     const isExempt = GOD_COMPONENT_EXEMPT.some((e) => relPath.includes(e));
-    const isOutOfScope = GOD_COMPONENT_OUT_OF_SCOPE.some((e) =>
-      relPath.includes(e),
-    );
+    const isOutOfScope = GOD_COMPONENT_OUT_OF_SCOPE.some((e) => relPath.includes(e));
 
     if (!isExempt && !isOutOfScope) {
       count++;
@@ -172,21 +163,17 @@ function measureMetrics(): Record<string, number> {
   return {
     "tests.total": getTestTotal(),
     "tests.files": runCount(
-      `bash -c "find src test -name '*.test.*' -o -name '*.spec.*' 2>/dev/null | wc -l"`,
+      `bash -c "find src test -name '*.test.*' -o -name '*.spec.*' 2>/dev/null | wc -l"`
     ),
     "eslint.maxWarnings": 0, // enforced by eslint --max-warnings=0 before this script runs
     "tsc.errors": 0, // enforced by tsc --noEmit before this script runs
     "i18n.languages": 8, // enforced by i18n:check before this script runs
     silentCatches: runCount(
-      `bash -c "grep -rn '.catch.*=> {}' src/ --include='*.ts' --include='*.tsx' | wc -l"`,
+      `bash -c "grep -rn '.catch.*=> {}' src/ --include='*.ts' --include='*.tsx' | wc -l"`
     ),
     godComponents: findGodComponents(400),
-    exhaustiveDeps: runCount(
-      `bash -c "grep -rn 'eslint-disable.*exhaustive-deps' src/ | wc -l"`,
-    ),
-    inlineStyles: runCount(
-      `bash -c "grep -rn 'style={{' src/ --include='*.tsx' | wc -l"`,
-    ),
+    exhaustiveDeps: runCount(`bash -c "grep -rn 'eslint-disable.*exhaustive-deps' src/ | wc -l"`),
+    inlineStyles: runCount(`bash -c "grep -rn 'style={{' src/ --include='*.tsx' | wc -l"`),
     hardcodedColors: countHardcodedColors(),
     consoleLogs: countConsoleLogs(),
     todoFixme: countTodoFixme(),
@@ -204,9 +191,7 @@ function measureMetrics(): Record<string, number> {
  *  Returns -1 if .claude/hooks/ doesn't exist (remote CI: hooks are gitignored). */
 function countBlockingHooks(): number {
   if (!fs.existsSync(path.join(ROOT, ".claude/hooks"))) return -1;
-  return runCount(
-    `bash -c "grep -rl 'process.exit(2)' .claude/hooks/*.cjs | wc -l"`,
-  );
+  return runCount(`bash -c "grep -rl 'process.exit(2)' .claude/hooks/*.cjs | wc -l"`);
 }
 
 /** Count total hook .cjs files in .claude/hooks/.
@@ -214,7 +199,7 @@ function countBlockingHooks(): number {
 function countHookFiles(): number {
   if (!fs.existsSync(path.join(ROOT, ".claude/hooks"))) return -1;
   return runCount(
-    `bash -c "grep -rl 'process.stdin' .claude/hooks/*.cjs 2>/dev/null | grep -v 'test-' | grep -v 'validate.cjs' | wc -l"`,
+    `bash -c "grep -rl 'process.stdin' .claude/hooks/*.cjs 2>/dev/null | grep -v 'test-' | grep -v 'validate.cjs' | wc -l"`
   );
 }
 
@@ -231,14 +216,14 @@ function countNpmOutdated(): number {
 /** Count console.log/warn/debug in production source (not logger.ts, not tests) */
 function countConsoleLogs(): number {
   return runCount(
-    `bash -c "grep -rn 'console\\.\\(log\\|warn\\|debug\\)' src/ --include='*.ts' --include='*.tsx' | grep -v '__tests__' | grep -v '.test.' | grep -v 'logger\\.ts' | grep -v 'crashReporting' | wc -l"`,
+    `bash -c "grep -rn 'console\\.\\(log\\|warn\\|debug\\)' src/ --include='*.ts' --include='*.tsx' | grep -v '__tests__' | grep -v '.test.' | grep -v 'logger\\.ts' | grep -v 'crashReporting' | wc -l"`
   );
 }
 
 /** Count TODO/FIXME/HACK/XXX comments in production source */
 function countTodoFixme(): number {
   return runCount(
-    `bash -c "grep -rn 'TODO\\|FIXME\\|HACK\\|XXX' src/ --include='*.ts' --include='*.tsx' | grep -v '__tests__' | grep -v '.test.' | wc -l"`,
+    `bash -c "grep -rn 'TODO\\|FIXME\\|HACK\\|XXX' src/ --include='*.ts' --include='*.tsx' | grep -v '__tests__' | grep -v '.test.' | wc -l"`
   );
 }
 
@@ -246,7 +231,7 @@ function countTodoFixme(): number {
 function measureBundleSizeKB(): number {
   try {
     const bytes = runCount(
-      `bash -c "find dist/assets -name '*.js' -exec cat {} + 2>/dev/null | wc -c"`,
+      `bash -c "find dist/assets -name '*.js' -exec cat {} + 2>/dev/null | wc -c"`
     );
     return Math.ceil(bytes / 1024);
   } catch {
@@ -279,17 +264,16 @@ function measureBundleSizeKB(): number {
  */
 function countHardcodedColors(): number {
   // Shared exclude pipeline suffix
-  const shared =
-    "grep -v 'dark:' | grep -v '__tests__' | grep -v 'state-of-mind/'";
+  const shared = "grep -v 'dark:' | grep -v '__tests__' | grep -v 'state-of-mind/'";
 
   // 1. Tailwind slate/gray utility classes (text-*, bg-*, border-*, ring-*, divide-*, placeholder-*)
   const slateGray = runCount(
-    `bash -c "grep -rn 'text-slate-[1-9]\\|bg-slate-[1-9]\\|bg-gray-\\|text-gray-\\|border-slate-\\|border-gray-\\|ring-slate-\\|ring-gray-\\|divide-slate-\\|divide-gray-\\|placeholder-slate-\\|placeholder-gray-' src/ --include='*.tsx' | ${shared} | grep -v 'ThemeToggle' | grep -v 'AuthScreen' | wc -l"`,
+    `bash -c "grep -rn 'text-slate-[1-9]\\|bg-slate-[1-9]\\|bg-gray-\\|text-gray-\\|border-slate-\\|border-gray-\\|ring-slate-\\|ring-gray-\\|divide-slate-\\|divide-gray-\\|placeholder-slate-\\|placeholder-gray-' src/ --include='*.tsx' | ${shared} | grep -v 'ThemeToggle' | grep -v 'AuthScreen' | wc -l"`
   );
 
   // 2. Arbitrary hex values: bg-[#hex], text-[#hex], from-[#hex], to-[#hex], via-[#hex]
   const hexArbitrary = runCount(
-    `bash -c "grep -rn 'bg-\\[#[0-9a-fA-F]\\|text-\\[#[0-9a-fA-F]\\|from-\\[#[0-9a-fA-F]\\|to-\\[#[0-9a-fA-F]\\|via-\\[#[0-9a-fA-F]' src/ --include='*.tsx' | ${shared} | grep -v '1877F2\\|166FE5' | grep -v 'coolEmojis' | grep -v 'AchievementsPanel\\|AchievementToast' | grep -v 'OutroSlide' | grep -v 'ChallengeDetailsView' | grep -v 'HabitCompletionCelebration' | wc -l"`,
+    `bash -c "grep -rn 'bg-\\[#[0-9a-fA-F]\\|text-\\[#[0-9a-fA-F]\\|from-\\[#[0-9a-fA-F]\\|to-\\[#[0-9a-fA-F]\\|via-\\[#[0-9a-fA-F]' src/ --include='*.tsx' | ${shared} | grep -v '1877F2\\|166FE5' | grep -v 'coolEmojis' | grep -v 'AchievementsPanel\\|AchievementToast' | grep -v 'OutroSlide' | grep -v 'ChallengeDetailsView' | grep -v 'HabitCompletionCelebration' | wc -l"`
   );
 
   return slateGray + hexArbitrary;
@@ -300,7 +284,7 @@ function getTestTotal(): number {
   // Since vitest runs before us in ci:preflight, we can count test files * avg tests
   // But more reliable: count test('...') and it('...') calls
   const testCalls = runCount(
-    `bash -c "grep -rn '\\(test\\|it\\)(' src/ test/ --include='*.test.*' --include='*.spec.*' | grep -v 'import\\|require\\|describe\\|//' | wc -l"`,
+    `bash -c "grep -rn '\\(test\\|it\\)(' src/ test/ --include='*.test.*' --include='*.spec.*' | grep -v 'import\\|require\\|describe\\|//' | wc -l"`
   );
   // If grep-based count fails or is wildly off, fall back to known floor
   return testCalls > 0 ? testCalls : 0;
@@ -324,7 +308,7 @@ function computeQualityScore(
   actual: Record<string, number>,
   sourceFiles: number,
   _ledgerAgeDays: number,
-  _auditAgeDays: number,
+  _auditAgeDays: number
 ): ScoreResult {
   const dimensions: ScoreDimension[] = [];
 
@@ -393,14 +377,13 @@ function computeQualityScore(
   // Formula: 10 - (moderate*0.5 + high*2 + critical*4), floor 0
   const securityScore = (() => {
     try {
-      const auditOut = require("child_process").execSync(
-        "npm audit --json 2>/dev/null",
-        { encoding: "utf8", timeout: 30000 },
-      );
+      const auditOut = require("child_process").execSync("npm audit --json 2>/dev/null", {
+        encoding: "utf8",
+        timeout: 30000,
+      });
       const audit = JSON.parse(auditOut);
       const v = audit.metadata?.vulnerabilities || {};
-      const penalty =
-        (v.moderate || 0) * 0.5 + (v.high || 0) * 2 + (v.critical || 0) * 4;
+      const penalty = (v.moderate || 0) * 0.5 + (v.high || 0) * 2 + (v.critical || 0) * 4;
       return Math.max(0, Math.min(10, 10 - penalty));
     } catch {
       return 10; // npm audit unavailable — don't penalize CI
@@ -435,7 +418,7 @@ function computeQualityScore(
     try {
       const jscpdOut = require("child_process").execSync(
         "npx jscpd src/ --min-lines 5 --reporters json --silent 2>/dev/null",
-        { encoding: "utf8", timeout: 60000 },
+        { encoding: "utf8", timeout: 60000 }
       );
       const result = JSON.parse(jscpdOut);
       const pct = result.statistics?.total?.percentage || 0;
@@ -459,16 +442,12 @@ function computeQualityScore(
   const blockingHooks = actual["enforcement.blockingHooks"];
   const totalHooks = actual["enforcement.totalHooks"];
   const hooksAbsent = blockingHooks === -1 || totalHooks === -1;
-  const enforcementScore = hooksAbsent
-    ? 10
-    : Math.min(10, (blockingHooks || 0) * 1.7);
+  const enforcementScore = hooksAbsent ? 10 : Math.min(10, (blockingHooks || 0) * 1.7);
   dimensions.push({
     name: "Enforcement",
     weight: 0.03,
     score: enforcementScore,
-    detail: hooksAbsent
-      ? "skipped (hooks gitignored)"
-      : `${blockingHooks}/${totalHooks} blocking`,
+    detail: hooksAbsent ? "skipped (hooks gitignored)" : `${blockingHooks}/${totalHooks} blocking`,
   });
 
   const total = dimensions.reduce((sum, d) => sum + d.score * d.weight, 0);
@@ -485,18 +464,14 @@ function checkCanaries(
   actual: Record<string, number>,
   sourceFiles: number,
   ledger: QualityLedger,
-  result: CheckResult,
+  result: CheckResult
 ): void {
   // 1. Test-to-source ratio
   const testRatio = sourceFiles > 0 ? actual["tests.files"] / sourceFiles : 0;
   if (testRatio < 0.15) {
-    result.violations.push(
-      `CANARY CRITICAL: test-to-source ratio ${testRatio.toFixed(3)} < 0.15`,
-    );
+    result.violations.push(`CANARY CRITICAL: test-to-source ratio ${testRatio.toFixed(3)} < 0.15`);
   } else if (testRatio < 0.17) {
-    result.warnings.push(
-      `CANARY: test-to-source ratio declining ${testRatio.toFixed(3)} < 0.17`,
-    );
+    result.warnings.push(`CANARY: test-to-source ratio declining ${testRatio.toFixed(3)} < 0.17`);
   }
 
   // 2. Build size delta (% growth from floor)
@@ -505,12 +480,10 @@ function checkCanaries(
     const delta = (actual["bundleSizeKB"] - bundleFloor) / bundleFloor;
     if (delta > 0.2) {
       result.violations.push(
-        `CANARY CRITICAL: bundle +${(delta * 100).toFixed(0)}% > 20% from floor`,
+        `CANARY CRITICAL: bundle +${(delta * 100).toFixed(0)}% > 20% from floor`
       );
     } else if (delta > 0.1) {
-      result.warnings.push(
-        `CANARY: bundle growing +${(delta * 100).toFixed(0)}% > 10% from floor`,
-      );
+      result.warnings.push(`CANARY: bundle growing +${(delta * 100).toFixed(0)}% > 10% from floor`);
     }
   }
 
@@ -518,20 +491,16 @@ function checkCanaries(
   const depsFloor = ledger.floors["exhaustiveDeps"]?.value || 0;
   const depsGrowth = actual["exhaustiveDeps"] - depsFloor;
   if (depsGrowth >= 5) {
-    result.violations.push(
-      `CANARY CRITICAL: exhaustive-deps +${depsGrowth} from floor`,
-    );
+    result.violations.push(`CANARY CRITICAL: exhaustive-deps +${depsGrowth} from floor`);
   } else if (depsGrowth >= 3) {
-    result.warnings.push(
-      `CANARY: exhaustive-deps growing +${depsGrowth} from floor`,
-    );
+    result.warnings.push(`CANARY: exhaustive-deps growing +${depsGrowth} from floor`);
   }
 
   // 4. God component growth (pre-warning at 350 LOC threshold)
   const nearGodCount = findGodComponents(350) - findGodComponents(400);
   if (nearGodCount > 0) {
     result.warnings.push(
-      `CANARY: ${nearGodCount} file(s) approaching god-component threshold (350-400 LOC)`,
+      `CANARY: ${nearGodCount} file(s) approaching god-component threshold (350-400 LOC)`
     );
   }
 
@@ -544,11 +513,11 @@ function checkCanaries(
     const drop = first - last;
     if (drop >= 0.5) {
       result.violations.push(
-        `CANARY CRITICAL: score dropped ${drop.toFixed(1)} over last ${recent.length} checks`,
+        `CANARY CRITICAL: score dropped ${drop.toFixed(1)} over last ${recent.length} checks`
       );
     } else if (drop >= 0.3) {
       result.warnings.push(
-        `CANARY: score declining ${drop.toFixed(1)} over last ${recent.length} checks`,
+        `CANARY: score declining ${drop.toFixed(1)} over last ${recent.length} checks`
       );
     }
   }
@@ -563,9 +532,7 @@ function checkRatchet(): void {
     process.exit(2);
   }
 
-  const ledger: QualityLedger = JSON.parse(
-    fs.readFileSync(ledgerPath, "utf-8"),
-  );
+  const ledger: QualityLedger = JSON.parse(fs.readFileSync(ledgerPath, "utf-8"));
   const args = process.argv.slice(2);
   const doUpdate = args.includes("--update");
 
@@ -605,7 +572,7 @@ function checkRatchet(): void {
 
   const actual = measureMetrics();
   const sourceFiles = runCount(
-    `bash -c "find src -name '*.ts' -o -name '*.tsx' | grep -v test | grep -v __tests__ | grep -v '.spec.' | wc -l"`,
+    `bash -c "find src -name '*.ts' -o -name '*.tsx' | grep -v test | grep -v __tests__ | grep -v '.spec.' | wc -l"`
   );
 
   // ═══════════════════════════════════════════
@@ -626,9 +593,7 @@ function checkRatchet(): void {
 
     // Skip enforcement metrics when .claude/hooks/ doesn't exist (remote CI — hooks gitignored)
     if (value === -1 && metric.startsWith("enforcement.")) {
-      console.log(
-        `  ~  ${metric.padEnd(22)} skipped (hooks dir not present — gitignored)`,
-      );
+      console.log(`  ~  ${metric.padEnd(22)} skipped (hooks dir not present — gitignored)`);
       continue;
     }
 
@@ -636,8 +601,7 @@ function checkRatchet(): void {
     // Only applied to metrics with explicit tolerance field (BundleMon maxPercentIncrease pattern)
     // Count metrics (tests, errors) keep zero tolerance by default
     const tolerance = floor.tolerance || 0;
-    const toleranceValue =
-      tolerance > 0 ? Math.ceil(floor.value * tolerance) : 0;
+    const toleranceValue = tolerance > 0 ? Math.ceil(floor.value * tolerance) : 0;
     const isPass =
       (floor.direction === "up" && value >= floor.value) ||
       (floor.direction === "down" && value <= floor.value + toleranceValue);
@@ -661,7 +625,7 @@ function checkRatchet(): void {
     if (isPass) {
       const suffix = isBetter ? `  ${arrow}` : "";
       console.log(
-        `  \u2713  ${metric.padEnd(22)} ${String(value).padStart(5)} ${comparison} ${String(floor.value).padStart(5)}${suffix}`,
+        `  \u2713  ${metric.padEnd(22)} ${String(value).padStart(5)} ${comparison} ${String(floor.value).padStart(5)}${suffix}`
       );
       result.passes.push(`${metric}: ${value} ${comparison} ${floor.value}`);
       if (isBetter) {
@@ -669,19 +633,19 @@ function checkRatchet(): void {
       }
     } else {
       console.log(
-        `  X  ${metric.padEnd(22)} ${String(value).padStart(5)} VIOLATED floor ${floor.value} (${floor.direction === "up" ? "must increase" : "must decrease"})`,
+        `  X  ${metric.padEnd(22)} ${String(value).padStart(5)} VIOLATED floor ${floor.value} (${floor.direction === "up" ? "must increase" : "must decrease"})`
       );
       result.violations.push(
         `RATCHET VIOLATION: ${metric} regressed from ${floor.value} to ${value}` +
           (toleranceValue > 0
             ? ` (tolerance: +${toleranceValue}, max: ${floor.value + toleranceValue})`
-            : ``),
+            : ``)
       );
     }
   }
 
   console.log(
-    `\n  SCOPE: ${result.metricsChecked}/${result.metricsTotal} metrics checked (${Math.round((result.metricsChecked / result.metricsTotal) * 100)}%)`,
+    `\n  SCOPE: ${result.metricsChecked}/${result.metricsTotal} metrics checked (${Math.round((result.metricsChecked / result.metricsTotal) * 100)}%)`
   );
 
   // ═══════════════════════════════════════════
@@ -695,10 +659,10 @@ function checkRatchet(): void {
 
   if (ledgerAge > ledger.staleness.maxLedgerAgeDays) {
     console.log(
-      `  X  Ledger age: ${ledgerAge} days (max: ${ledger.staleness.maxLedgerAgeDays}) \u2014 STALE`,
+      `  X  Ledger age: ${ledgerAge} days (max: ${ledger.staleness.maxLedgerAgeDays}) \u2014 STALE`
     );
     result.violations.push(
-      `STALE LEDGER: not updated in ${ledgerAge} days (max: ${ledger.staleness.maxLedgerAgeDays})`,
+      `STALE LEDGER: not updated in ${ledgerAge} days (max: ${ledger.staleness.maxLedgerAgeDays})`
     );
   } else if (ledgerAge > 14) {
     console.log(`  ~  Ledger age: ${ledgerAge} days \u2014 getting stale`);
@@ -709,10 +673,10 @@ function checkRatchet(): void {
 
   if (auditAge > ledger.staleness.maxAuditAgeDays) {
     console.log(
-      `  X  Audit age: ${auditAge} days (max: ${ledger.staleness.maxAuditAgeDays}) \u2014 STALE`,
+      `  X  Audit age: ${auditAge} days (max: ${ledger.staleness.maxAuditAgeDays}) \u2014 STALE`
     );
     result.violations.push(
-      `STALE AUDIT: last full audit was ${auditAge} days ago (max: ${ledger.staleness.maxAuditAgeDays})`,
+      `STALE AUDIT: last full audit was ${auditAge} days ago (max: ${ledger.staleness.maxAuditAgeDays})`
     );
   } else if (auditAge > 30) {
     console.log(`  ~  Audit age: ${auditAge} days \u2014 getting stale`);
@@ -726,15 +690,11 @@ function checkRatchet(): void {
   const drift = Math.abs(sourceFiles - docSourceFiles);
   if (drift > 20) {
     console.log(
-      `  X  Source file drift: ${drift} files (${sourceFiles} actual, ${docSourceFiles} documented)`,
+      `  X  Source file drift: ${drift} files (${sourceFiles} actual, ${docSourceFiles} documented)`
     );
-    result.violations.push(
-      `SOURCE DRIFT: ${drift} files differ from documented count`,
-    );
+    result.violations.push(`SOURCE DRIFT: ${drift} files differ from documented count`);
   } else if (drift > 10) {
-    console.log(
-      `  ~  Source file drift: ${drift} files \u2014 consider constitution:check`,
-    );
+    console.log(`  ~  Source file drift: ${drift} files \u2014 consider constitution:check`);
     result.warnings.push(`Source file drift: ${drift} files`);
   } else {
     console.log(`  \u2713  Source file drift: ${drift} files`);
@@ -753,12 +713,8 @@ function checkRatchet(): void {
       if (age > oldestDays) oldestDays = age;
     }
     if (oldestDays > 60) {
-      console.log(
-        `  X  Hook staleness: oldest hook ${oldestDays}d — review needed`,
-      );
-      result.warnings.push(
-        `STALE ENFORCEMENT: oldest hook file ${oldestDays}d old`,
-      );
+      console.log(`  X  Hook staleness: oldest hook ${oldestDays}d — review needed`);
+      result.warnings.push(`STALE ENFORCEMENT: oldest hook file ${oldestDays}d old`);
     } else {
       console.log(`  \u2713  Hook staleness: ${oldestDays}d (< 60d limit)`);
     }
@@ -770,19 +726,14 @@ function checkRatchet(): void {
   // QUALITY SCORE (Pillar 2)
   // ═══════════════════════════════════════════
 
-  const scoreResult = computeQualityScore(
-    actual,
-    sourceFiles,
-    ledgerAge,
-    auditAge,
-  );
+  const scoreResult = computeQualityScore(actual, sourceFiles, ledgerAge, auditAge);
   const score = scoreResult.total;
 
   console.log(
     `\n  QUALITY SCORE: ${score.toFixed(1)} / 10.0` +
       (ledger.qualityScore.floor !== null
         ? ` (floor: ${ledger.qualityScore.floor.toFixed(1)})`
-        : " (floor: \u2014)"),
+        : " (floor: \u2014)")
   );
 
   // Dimension breakdown — shows which areas drag the score down
@@ -791,13 +742,13 @@ function checkRatchet(): void {
     const pct = Math.round(d.weight * 100);
     const bar = d.score >= 9 ? "\u2713" : d.score >= 5 ? "~" : "X";
     console.log(
-      `  ${bar}  ${d.name.padEnd(14)} ${d.score.toFixed(1).padStart(5)}/10  (${pct}%)  ${d.detail}`,
+      `  ${bar}  ${d.name.padEnd(14)} ${d.score.toFixed(1).padStart(5)}/10  (${pct}%)  ${d.detail}`
     );
   }
 
   if (ledger.qualityScore.floor !== null && score < ledger.qualityScore.floor) {
     result.violations.push(
-      `SCORE REGRESSION: ${score.toFixed(1)} < floor ${ledger.qualityScore.floor.toFixed(1)}`,
+      `SCORE REGRESSION: ${score.toFixed(1)} < floor ${ledger.qualityScore.floor.toFixed(1)}`
     );
   }
 
@@ -814,9 +765,7 @@ function checkRatchet(): void {
         console.log("\n  GRADUATION READINESS\n");
         hasGraduation = true;
       }
-      console.log(
-        `  ~  ${rule}: evaluate now (target: ${config.current} \u2192 ${config.target})`,
-      );
+      console.log(`  ~  ${rule}: evaluate now (target: ${config.current} \u2192 ${config.target})`);
     }
   }
 
@@ -827,7 +776,7 @@ function checkRatchet(): void {
         hasGraduation = true;
       }
       console.log(
-        `  ~  TypeScript ${flag}: evaluate now (${config.current} \u2192 ${config.target})`,
+        `  ~  TypeScript ${flag}: evaluate now (${config.current} \u2192 ${config.target})`
       );
     }
   }
@@ -856,20 +805,13 @@ function checkRatchet(): void {
   if (ledger.hookGraduation) {
     let hasHookGrad = false;
     for (const [hook, config] of Object.entries(ledger.hookGraduation)) {
-      if (
-        new Date(config.evaluateAfter) <= nowDate &&
-        config.current === "WARNING"
-      ) {
+      if (new Date(config.evaluateAfter) <= nowDate && config.current === "WARNING") {
         if (!hasHookGrad) {
           console.log("\n  HOOK GRADUATION\n");
           hasHookGrad = true;
         }
-        console.log(
-          `  ~  Hook ${hook}: READY TO GRADUATE (${config.current} → ${config.target})`,
-        );
-        result.warnings.push(
-          `GRADUATION: Hook ${hook} ready for promotion to BLOCKING`,
-        );
+        console.log(`  ~  Hook ${hook}: READY TO GRADUATE (${config.current} → ${config.target})`);
+        result.warnings.push(`GRADUATION: Hook ${hook} ready for promotion to BLOCKING`);
       }
     }
   }
@@ -902,28 +844,21 @@ function checkRatchet(): void {
           console.log("\n  AUTO-TIGHTEN\n");
           tightened = true;
         }
-        console.log(
-          `  \u2191  ${metric}: ${old} \u2192 ${value} (floor tightened)`,
-        );
+        console.log(`  \u2191  ${metric}: ${old} \u2192 ${value} (floor tightened)`);
       }
     }
 
     // Update score
     ledger.qualityScore.current = score;
-    if (
-      ledger.qualityScore.floor === null ||
-      score > ledger.qualityScore.floor
-    ) {
+    if (ledger.qualityScore.floor === null || score > ledger.qualityScore.floor) {
       const oldFloor = ledger.qualityScore.floor;
       ledger.qualityScore.floor = score;
       if (oldFloor !== null) {
         console.log(
-          `  \u2191  qualityScore.floor: ${oldFloor.toFixed(1)} \u2192 ${score.toFixed(1)}`,
+          `  \u2191  qualityScore.floor: ${oldFloor.toFixed(1)} \u2192 ${score.toFixed(1)}`
         );
       } else {
-        console.log(
-          `  \u2191  qualityScore.floor: \u2014 \u2192 ${score.toFixed(1)} (initial)`,
-        );
+        console.log(`  \u2191  qualityScore.floor: \u2014 \u2192 ${score.toFixed(1)} (initial)`);
       }
     }
 
@@ -962,12 +897,10 @@ function checkRatchet(): void {
       ledger.lastUpdated = today();
       fs.writeFileSync(ledgerPath, JSON.stringify(ledger, null, 2) + "\n");
       console.log(
-        `\n  OVERRIDE: ${overrideMetric} ${oldValue} \u2192 ${overrideValue} (reason: ${overrideReason})`,
+        `\n  OVERRIDE: ${overrideMetric} ${oldValue} \u2192 ${overrideValue} (reason: ${overrideReason})`
       );
       // Re-check after override
-      const overriddenViolation = result.violations.findIndex((v) =>
-        v.includes(overrideMetric!),
-      );
+      const overriddenViolation = result.violations.findIndex((v) => v.includes(overrideMetric!));
       if (overriddenViolation !== -1) {
         result.violations.splice(overriddenViolation, 1);
       }
@@ -991,13 +924,8 @@ function checkRatchet(): void {
 
   if (result.violations.length === 0) {
     const improvStr =
-      result.improvements.length > 0
-        ? `, ${result.improvements.length} improvement(s)`
-        : "";
-    const warnStr =
-      result.warnings.length > 0
-        ? `, ${result.warnings.length} warning(s)`
-        : "";
+      result.improvements.length > 0 ? `, ${result.improvements.length} improvement(s)` : "";
+    const warnStr = result.warnings.length > 0 ? `, ${result.warnings.length} warning(s)` : "";
     console.log(`  RESULT: PASS (0 violations${improvStr}${warnStr})`);
     if (result.warnings.length > 0) {
       console.log("");

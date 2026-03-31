@@ -1,7 +1,7 @@
-import { lazy, ComponentType } from 'react';
-import { forceHardReload, markForVersionCheck } from './versionCheck';
-import { logger } from '@/lib/logger';
-import { SSK } from '@/lib/storageKeys';
+import { lazy, ComponentType } from "react";
+import { forceHardReload, markForVersionCheck } from "./versionCheck";
+import { logger } from "@/lib/logger";
+import { SSK } from "@/lib/storageKeys";
 
 type ImportFn<T> = () => Promise<{ default: T }>;
 
@@ -33,10 +33,10 @@ export function lazyWithRetry<T extends ComponentType<any>>(
         // Detect ChunkLoadError pattern
         const isChunkError =
           error instanceof TypeError &&
-          (error.message.includes('Failed to fetch dynamically imported module') ||
-           error.message.includes('Importing a module script failed') ||
-           error.message.includes('Loading chunk') ||
-           error.message.includes('Loading CSS chunk'));
+          (error.message.includes("Failed to fetch dynamically imported module") ||
+            error.message.includes("Importing a module script failed") ||
+            error.message.includes("Loading chunk") ||
+            error.message.includes("Loading CSS chunk"));
 
         if (!isChunkError) {
           throw error; // Non-chunk errors should not retry
@@ -47,7 +47,7 @@ export function lazyWithRetry<T extends ComponentType<any>>(
         );
 
         if (attempt < MAX_RETRIES) {
-          await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+          await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
         }
       }
     }
@@ -66,7 +66,7 @@ export function lazyWithRetry<T extends ComponentType<any>>(
       // Clear all caches to ensure fresh HTML/chunks on reload
       try {
         const keys = await caches.keys();
-        await Promise.all(keys.map(key => caches.delete(key)));
+        await Promise.all(keys.map((key) => caches.delete(key)));
       } catch {
         // Ignore — caches API may not be available
       }
@@ -78,6 +78,6 @@ export function lazyWithRetry<T extends ComponentType<any>>(
     }
 
     // If we already reloaded recently, throw the error instead of infinite loop
-    throw lastError;
+    throw lastError ?? new Error(`Failed to load module: ${moduleName}`);
   });
 }

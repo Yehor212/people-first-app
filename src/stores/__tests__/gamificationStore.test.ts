@@ -1,20 +1,12 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from "vitest";
 
-vi.mock('@/components/XpPopup', () => ({
-  triggerXpPopup: vi.fn(),
-}));
-vi.mock('@/storage/cloudSync', () => ({
-  triggerSync: vi.fn(),
-}));
-vi.mock('@/lib/logger', () => ({
+vi.mock("@/lib/logger", () => ({
   logger: { log: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }));
 
-import { useGamificationStore } from '@/stores/gamificationStore';
-import type { RewardOptions } from '@/stores/gamificationStore';
-import { triggerXpPopup } from '@/components/XpPopup';
-import { triggerSync } from '@/storage/cloudSync';
-import { logger } from '@/lib/logger';
+import { useGamificationStore } from "@/stores/gamificationStore";
+import type { RewardOptions } from "@/stores/gamificationStore";
+import { logger } from "@/lib/logger";
 
 const initialState = useGamificationStore.getState();
 
@@ -24,13 +16,15 @@ function createMockHooks() {
     earnTreats: vi.fn().mockReturnValue({ earned: 5 }),
     plantSeed: vi.fn(),
     waterPlants: vi.fn(),
+    showPopup: vi.fn(),
+    sync: vi.fn(),
   };
 }
 
 function defaultOptions(overrides: Partial<RewardOptions> = {}): RewardOptions {
   return {
     treats: 3,
-    treatReason: 'test-reason',
+    treatReason: "test-reason",
     ...overrides,
   };
 }
@@ -43,8 +37,8 @@ beforeEach(() => {
 // =========================================================================
 // 1. Initial state
 // =========================================================================
-describe('gamificationStore initial state', () => {
-  it('_hooks defaults to null', () => {
+describe("gamificationStore initial state", () => {
+  it("_hooks defaults to null", () => {
     expect(useGamificationStore.getState()._hooks).toBeNull();
   });
 });
@@ -52,14 +46,14 @@ describe('gamificationStore initial state', () => {
 // =========================================================================
 // 2. _registerHooks
 // =========================================================================
-describe('_registerHooks', () => {
-  it('stores hooks object in state', () => {
+describe("_registerHooks", () => {
+  it("stores hooks object in state", () => {
     const hooks = createMockHooks();
     useGamificationStore.getState()._registerHooks(hooks);
     expect(useGamificationStore.getState()._hooks).toBe(hooks);
   });
 
-  it('replaces previously registered hooks', () => {
+  it("replaces previously registered hooks", () => {
     const hooks1 = createMockHooks();
     const hooks2 = createMockHooks();
     useGamificationStore.getState()._registerHooks(hooks1);
@@ -71,80 +65,84 @@ describe('_registerHooks', () => {
 // =========================================================================
 // 3. rewardUser without hooks
 // =========================================================================
-describe('rewardUser without hooks', () => {
-  it('logs a warning when hooks are not registered', () => {
-    useGamificationStore.getState().rewardUser('test-activity', defaultOptions());
-    expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('before hooks registered'));
+describe("rewardUser without hooks", () => {
+  it("logs a warning when hooks are not registered", () => {
+    useGamificationStore.getState().rewardUser("test-activity", defaultOptions());
+    expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining("before hooks registered"));
   });
 
-  it('returns { treatsEarned: 0 }', () => {
-    const result = useGamificationStore.getState().rewardUser('test-activity', defaultOptions());
+  it("returns { treatsEarned: 0 }", () => {
+    const result = useGamificationStore.getState().rewardUser("test-activity", defaultOptions());
     expect(result).toEqual({ treatsEarned: 0 });
   });
 
-  it('does NOT call triggerXpPopup', () => {
-    useGamificationStore.getState().rewardUser('test-activity', defaultOptions());
-    expect(triggerXpPopup).not.toHaveBeenCalled();
+  it("does not call showPopup without hooks registered", () => {
+    useGamificationStore.getState().rewardUser("test-activity", defaultOptions());
+    // No hooks registered = early return, showPopup never called
+    expect(logger.warn).toHaveBeenCalled();
   });
 
-  it('does NOT call triggerSync', () => {
-    useGamificationStore.getState().rewardUser('test-activity', defaultOptions());
-    expect(triggerSync).not.toHaveBeenCalled();
+  it("does not call sync without hooks registered", () => {
+    useGamificationStore.getState().rewardUser("test-activity", defaultOptions());
+    // No hooks registered = early return, sync never called
+    expect(logger.warn).toHaveBeenCalled();
   });
 });
 
 // =========================================================================
 // 4. rewardUser with hooks — full flow
 // =========================================================================
-describe('rewardUser with hooks (full flow)', () => {
-  it('calls awardXp with activity', () => {
+describe("rewardUser with hooks (full flow)", () => {
+  it("calls awardXp with activity", () => {
     const hooks = createMockHooks();
     useGamificationStore.getState()._registerHooks(hooks);
-    useGamificationStore.getState().rewardUser('mood', defaultOptions());
-    expect(hooks.awardXp).toHaveBeenCalledWith('mood');
+    useGamificationStore.getState().rewardUser("mood", defaultOptions());
+    expect(hooks.awardXp).toHaveBeenCalledWith("mood");
   });
 
-  it('calls earnTreats with activity, treats, and treatReason', () => {
+  it("calls earnTreats with activity, treats, and treatReason", () => {
     const hooks = createMockHooks();
     useGamificationStore.getState()._registerHooks(hooks);
-    useGamificationStore.getState().rewardUser('focus', defaultOptions({ treats: 10, treatReason: 'focused' }));
-    expect(hooks.earnTreats).toHaveBeenCalledWith('focus', 10, 'focused');
+    useGamificationStore
+      .getState()
+      .rewardUser("focus", defaultOptions({ treats: 10, treatReason: "focused" }));
+    expect(hooks.earnTreats).toHaveBeenCalledWith("focus", 10, "focused");
   });
 
-  it('calls triggerXpPopup with earned amount and activity', () => {
+  it("calls hooks.showPopup with earned amount and activity", () => {
     const hooks = createMockHooks();
     hooks.earnTreats.mockReturnValue({ earned: 7 });
     useGamificationStore.getState()._registerHooks(hooks);
-    useGamificationStore.getState().rewardUser('habit', defaultOptions());
-    expect(triggerXpPopup).toHaveBeenCalledWith(7, 'habit');
+    useGamificationStore.getState().rewardUser("habit", defaultOptions());
+    expect(hooks.showPopup).toHaveBeenCalledWith(7, "habit");
   });
 
-  it('calls triggerSync', () => {
+  it("calls hooks.sync", () => {
     const hooks = createMockHooks();
     useGamificationStore.getState()._registerHooks(hooks);
-    useGamificationStore.getState().rewardUser('mood', defaultOptions());
-    expect(triggerSync).toHaveBeenCalled();
+    useGamificationStore.getState().rewardUser("mood", defaultOptions());
+    expect(hooks.sync).toHaveBeenCalled();
   });
 
-  it('calls plantSeed with activity and seedExtra', () => {
+  it("calls plantSeed with activity and seedExtra", () => {
     const hooks = createMockHooks();
     useGamificationStore.getState()._registerHooks(hooks);
-    useGamificationStore.getState().rewardUser('mood', defaultOptions({ seedExtra: 'bonus' }));
-    expect(hooks.plantSeed).toHaveBeenCalledWith('mood', 'bonus');
+    useGamificationStore.getState().rewardUser("mood", defaultOptions({ seedExtra: "bonus" }));
+    expect(hooks.plantSeed).toHaveBeenCalledWith("mood", "bonus");
   });
 
-  it('calls waterPlants with activity', () => {
+  it("calls waterPlants with activity", () => {
     const hooks = createMockHooks();
     useGamificationStore.getState()._registerHooks(hooks);
-    useGamificationStore.getState().rewardUser('habit', defaultOptions());
-    expect(hooks.waterPlants).toHaveBeenCalledWith('habit');
+    useGamificationStore.getState().rewardUser("habit", defaultOptions());
+    expect(hooks.waterPlants).toHaveBeenCalledWith("habit");
   });
 
-  it('returns { treatsEarned } from earnTreats result', () => {
+  it("returns { treatsEarned } from earnTreats result", () => {
     const hooks = createMockHooks();
     hooks.earnTreats.mockReturnValue({ earned: 12 });
     useGamificationStore.getState()._registerHooks(hooks);
-    const result = useGamificationStore.getState().rewardUser('mood', defaultOptions());
+    const result = useGamificationStore.getState().rewardUser("mood", defaultOptions());
     expect(result).toEqual({ treatsEarned: 12 });
   });
 });
@@ -152,48 +150,51 @@ describe('rewardUser with hooks (full flow)', () => {
 // =========================================================================
 // 5. Skip flags
 // =========================================================================
-describe('skip flags', () => {
-  it('skipXp=true prevents awardXp from being called', () => {
+describe("skip flags", () => {
+  it("skipXp=true prevents awardXp from being called", () => {
     const hooks = createMockHooks();
     useGamificationStore.getState()._registerHooks(hooks);
-    useGamificationStore.getState().rewardUser('mood', defaultOptions({ skipXp: true }));
+    useGamificationStore.getState().rewardUser("mood", defaultOptions({ skipXp: true }));
     expect(hooks.awardXp).not.toHaveBeenCalled();
   });
 
-  it('skipPopup=true prevents triggerXpPopup from being called', () => {
+  it("skipPopup=true prevents hooks.showPopup from being called", () => {
     const hooks = createMockHooks();
     useGamificationStore.getState()._registerHooks(hooks);
-    useGamificationStore.getState().rewardUser('mood', defaultOptions({ skipPopup: true }));
-    expect(triggerXpPopup).not.toHaveBeenCalled();
+    useGamificationStore.getState().rewardUser("mood", defaultOptions({ skipPopup: true }));
+    expect(hooks.showPopup).not.toHaveBeenCalled();
   });
 
-  it('skipSync=true prevents triggerSync from being called', () => {
+  it("skipSync=true prevents hooks.sync from being called", () => {
     const hooks = createMockHooks();
     useGamificationStore.getState()._registerHooks(hooks);
-    useGamificationStore.getState().rewardUser('mood', defaultOptions({ skipSync: true }));
-    expect(triggerSync).not.toHaveBeenCalled();
+    useGamificationStore.getState().rewardUser("mood", defaultOptions({ skipSync: true }));
+    expect(hooks.sync).not.toHaveBeenCalled();
   });
 
-  it('skipGarden=true prevents plantSeed and waterPlants from being called', () => {
+  it("skipGarden=true prevents plantSeed and waterPlants from being called", () => {
     const hooks = createMockHooks();
     useGamificationStore.getState()._registerHooks(hooks);
-    useGamificationStore.getState().rewardUser('mood', defaultOptions({ skipGarden: true }));
+    useGamificationStore.getState().rewardUser("mood", defaultOptions({ skipGarden: true }));
     expect(hooks.plantSeed).not.toHaveBeenCalled();
     expect(hooks.waterPlants).not.toHaveBeenCalled();
   });
 
-  it('all skip flags together: only earnTreats is called', () => {
+  it("all skip flags together: only earnTreats is called", () => {
     const hooks = createMockHooks();
     useGamificationStore.getState()._registerHooks(hooks);
-    useGamificationStore.getState().rewardUser('mood', defaultOptions({
-      skipXp: true,
-      skipPopup: true,
-      skipSync: true,
-      skipGarden: true,
-    }));
+    useGamificationStore.getState().rewardUser(
+      "mood",
+      defaultOptions({
+        skipXp: true,
+        skipPopup: true,
+        skipSync: true,
+        skipGarden: true,
+      })
+    );
     expect(hooks.awardXp).not.toHaveBeenCalled();
-    expect(triggerXpPopup).not.toHaveBeenCalled();
-    expect(triggerSync).not.toHaveBeenCalled();
+    expect(hooks.showPopup).not.toHaveBeenCalled();
+    expect(hooks.sync).not.toHaveBeenCalled();
     expect(hooks.plantSeed).not.toHaveBeenCalled();
     expect(hooks.waterPlants).not.toHaveBeenCalled();
     // earnTreats is always called
@@ -204,20 +205,20 @@ describe('skip flags', () => {
 // =========================================================================
 // 6. Haptic
 // =========================================================================
-describe('haptic callback', () => {
-  it('calls haptic function when provided', () => {
+describe("haptic callback", () => {
+  it("calls haptic function when provided", () => {
     const hooks = createMockHooks();
     const haptic = vi.fn().mockResolvedValue(undefined);
     useGamificationStore.getState()._registerHooks(hooks);
-    useGamificationStore.getState().rewardUser('mood', defaultOptions({ haptic }));
+    useGamificationStore.getState().rewardUser("mood", defaultOptions({ haptic }));
     expect(haptic).toHaveBeenCalled();
   });
 
-  it('does not crash when haptic is not provided', () => {
+  it("does not crash when haptic is not provided", () => {
     const hooks = createMockHooks();
     useGamificationStore.getState()._registerHooks(hooks);
     expect(() => {
-      useGamificationStore.getState().rewardUser('mood', defaultOptions());
+      useGamificationStore.getState().rewardUser("mood", defaultOptions());
     }).not.toThrow();
   });
 });

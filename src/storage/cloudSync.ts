@@ -39,23 +39,24 @@ const generateOperationId = (): string => {
 let visibilityChangeHandler: (() => void) | null = null;
 let beforeUnloadHandler: (() => void) | null = null;
 
-export const syncWithCloud = async (mode: "merge" | "replace" = "merge"): Promise<{ status: string }> => {
-  addCategorizedBreadcrumb('sync', 'syncWithCloud called', { mode });
+export const syncWithCloud = async (
+  mode: "merge" | "replace" = "merge"
+): Promise<{ status: string }> => {
+  addCategorizedBreadcrumb("sync", "syncWithCloud called", { mode });
 
   // P1-11 Fix: If sync is already in progress, wait for it and return the same result
   // This prevents "skipped" status and ensures all callers get consistent data
-  // eslint-disable-next-line @typescript-eslint/no-misused-promises
   if (currentSyncPromise) {
-    logger.sync('Sync already in progress, waiting for completion...');
-    addCategorizedBreadcrumb('sync', 'Waiting for existing sync');
+    logger.sync("Sync already in progress, waiting for completion...");
+    addCategorizedBreadcrumb("sync", "Waiting for existing sync");
     try {
       return await currentSyncPromise;
     } catch (error) {
       // Handle AbortError gracefully - don't re-throw aborts
       if (isAbortError(error)) {
-        addCategorizedBreadcrumb('sync', 'Sync wait aborted', {}, 'warning');
-        logger.warn('[Sync] Sync wait aborted');
-        return { status: 'aborted' };
+        addCategorizedBreadcrumb("sync", "Sync wait aborted", {}, "warning");
+        logger.warn("[Sync] Sync wait aborted");
+        return { status: "aborted" };
       }
       // Re-throw so caller knows sync failed
       throw error;
@@ -93,7 +94,6 @@ const doSyncWithCloud = async (
   operationId: string,
   abortSignal: AbortSignal
 ): Promise<{ status: string }> => {
-
   // Set timeout to abort operation if it takes too long
   // P1-11 Fix: Simplified - just abort the controller, Promise-based lock handles cleanup
   // P0-7 Fix: Capture controller reference to avoid race condition where timeout fires
@@ -101,7 +101,9 @@ const doSyncWithCloud = async (
   const controllerRef = syncAbortController;
   syncLockTimeout = setTimeout(() => {
     const duration = syncLockStartTime ? Date.now() - syncLockStartTime : 0;
-    logger.warn(`[Sync] Timeout exceeded after ${duration}ms, aborting operation (operation: ${operationId})`);
+    logger.warn(
+      `[Sync] Timeout exceeded after ${duration}ms, aborting operation (operation: ${operationId})`
+    );
     // P0-7 Fix: Use captured reference instead of global variable
     controllerRef?.abort();
   }, SYNC_LOCK_TIMEOUT);
@@ -112,7 +114,9 @@ const doSyncWithCloud = async (
       throw new Error("Sync operation aborted due to timeout");
     }
 
-    const { data: { session } } = await supabase.auth.getSession();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
     const user = session?.user;
 
     if (!user) {
@@ -173,15 +177,15 @@ const doSyncWithCloud = async (
       // ALWAYS merge if remote has any data - this ensures cross-device sync works
       // The importBackup with mode="merge" will use bulkPut which updates existing or adds new
       if (remoteItemCount > 0) {
-        logger.sync('Merging remote data into local...');
+        logger.sync("Merging remote data into local...");
         await importBackup(remotePayload as unknown as BackupPayload, mode);
         syncStatus = localItemCount === 0 ? "pulled" : "merged";
         // Trigger React state refresh after importing cloud data
         triggerDataRefresh();
-        logger.sync('Data refreshed after cloud merge');
+        logger.sync("Data refreshed after cloud merge");
       }
     } else {
-      logger.sync('No remote data found, will push local data');
+      logger.sync("No remote data found, will push local data");
     }
 
     // Check abort status before final operations
@@ -191,9 +195,8 @@ const doSyncWithCloud = async (
 
     // Only re-export if we actually merged remote data into local
     // For single-device users (most common), this saves a full IndexedDB scan
-    const finalBackup = syncStatus === "merged" || syncStatus === "pulled"
-      ? await exportBackup()
-      : localBackup;
+    const finalBackup =
+      syncStatus === "merged" || syncStatus === "pulled" ? await exportBackup() : localBackup;
 
     // Final abort check before upsert
     if (abortSignal.aborted) {
@@ -204,7 +207,7 @@ const doSyncWithCloud = async (
       {
         user_id: user.id,
         payload: finalBackup as unknown as Json,
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       },
       { onConflict: "user_id" }
     );
@@ -237,52 +240,63 @@ const MAX_FAILURES_BEFORE_NOTIFY = 3; // Notify user after 3 consecutive failure
 
 // Emit sync failure event for UI notification
 const emitSyncFailureEvent = (error: unknown, failureCount: number) => {
-  if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('zenflow:sync-failure', {
-      detail: {
-        error: error instanceof Error ? error.message : 'Sync failed',
-        consecutiveFailures: failureCount,
-        shouldNotify: failureCount >= MAX_FAILURES_BEFORE_NOTIFY,
-      }
-    }));
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(
+      new CustomEvent("zenflow:sync-failure", {
+        detail: {
+          error: error instanceof Error ? error.message : "Sync failed",
+          consecutiveFailures: failureCount,
+          shouldNotify: failureCount >= MAX_FAILURES_BEFORE_NOTIFY,
+        },
+      })
+    );
   }
 };
 
 // Emit sync success event to clear UI notification
 const emitSyncSuccessEvent = () => {
-  if (typeof window !== 'undefined' && consecutiveSyncFailures > 0) {
-    window.dispatchEvent(new CustomEvent('zenflow:sync-success'));
+  if (typeof window !== "undefined" && consecutiveSyncFailures > 0) {
+    window.dispatchEvent(new CustomEvent("zenflow:sync-success"));
   }
 };
 
 // Silent sync (no errors thrown, just logs)
 export const silentSync = async () => {
   // Use orchestrator for queue-based sync
-  await syncOrchestrator.sync('backup', async () => {
-    try {
-      await syncWithCloud('merge');
-      logger.sync('Auto-sync completed');
-      addCategorizedBreadcrumb('sync', 'Auto-sync completed');
-      // Reset failure counter and emit success on successful sync
-      if (consecutiveSyncFailures > 0) {
-        consecutiveSyncFailures = 0;
-        emitSyncSuccessEvent();
+  await syncOrchestrator.sync(
+    "backup",
+    async () => {
+      try {
+        await syncWithCloud("merge");
+        logger.sync("Auto-sync completed");
+        addCategorizedBreadcrumb("sync", "Auto-sync completed");
+        // Reset failure counter and emit success on successful sync
+        if (consecutiveSyncFailures > 0) {
+          consecutiveSyncFailures = 0;
+          emitSyncSuccessEvent();
+        }
+      } catch (error) {
+        // Don't count aborts as failures - they're intentional
+        if (isAbortError(error)) {
+          addCategorizedBreadcrumb("sync", "Auto-sync aborted (intentional)", {}, "info");
+          logger.log("[Sync] Auto-sync aborted (intentional)");
+          return; // Don't throw, don't count as failure
+        }
+        addCategorizedBreadcrumb(
+          "sync",
+          "Auto-sync failed",
+          { error: (error as Error).message },
+          "error"
+        );
+        logger.warn("[Sync] Auto-sync failed:", error);
+        // Track failures and emit event for monitoring
+        consecutiveSyncFailures++;
+        emitSyncFailureEvent(error, consecutiveSyncFailures);
+        throw error; // Re-throw for orchestrator retry logic
       }
-    } catch (error) {
-      // Don't count aborts as failures - they're intentional
-      if (isAbortError(error)) {
-        addCategorizedBreadcrumb('sync', 'Auto-sync aborted (intentional)', {}, 'info');
-        logger.log('[Sync] Auto-sync aborted (intentional)');
-        return; // Don't throw, don't count as failure
-      }
-      addCategorizedBreadcrumb('sync', 'Auto-sync failed', { error: (error as Error).message }, 'error');
-      logger.warn('[Sync] Auto-sync failed:', error);
-      // Track failures and emit event for monitoring
-      consecutiveSyncFailures++;
-      emitSyncFailureEvent(error, consecutiveSyncFailures);
-      throw error; // Re-throw for orchestrator retry logic
-    }
-  }, { priority: 5, maxRetries: 3 });
+    },
+    { priority: 5, maxRetries: 3 }
+  );
 };
 
 // Start periodic sync
@@ -291,7 +305,7 @@ export const startAutoSync = () => {
 
   // Prevent duplicate listener registration
   if (autoSyncStarted) {
-    logger.sync('Auto-sync already started, skipping');
+    logger.sync("Auto-sync already started, skipping");
     return;
   }
 
@@ -305,9 +319,9 @@ export const startAutoSync = () => {
 
   // Create and store listener references for later cleanup
   visibilityChangeHandler = () => {
-    if (document.visibilityState === 'visible' && Date.now() - lastSyncTime > 60000) {
+    if (document.visibilityState === "visible" && Date.now() - lastSyncTime > 60000) {
       silentSync().catch((error) => {
-        logger.warn('[Sync] Visibility change sync failed:', error);
+        logger.warn("[Sync] Visibility change sync failed:", error);
       });
     }
   };
@@ -317,17 +331,17 @@ export const startAutoSync = () => {
     // This is a best-effort sync attempt
     if (navigator.sendBeacon && supabase) {
       silentSync().catch((error) => {
-        logger.warn('[Sync] Beforeunload sync failed:', error);
+        logger.warn("[Sync] Beforeunload sync failed:", error);
       });
     }
   };
 
   // Add listeners
-  document.addEventListener('visibilitychange', visibilityChangeHandler);
-  window.addEventListener('beforeunload', beforeUnloadHandler);
+  document.addEventListener("visibilitychange", visibilityChangeHandler);
+  window.addEventListener("beforeunload", beforeUnloadHandler);
 
   autoSyncStarted = true;
-  logger.sync('Auto-sync started');
+  logger.sync("Auto-sync started");
 };
 
 // Stop periodic sync and cleanup listeners
@@ -343,11 +357,11 @@ export const stopAutoSync = () => {
 
   // Remove event listeners
   if (visibilityChangeHandler) {
-    document.removeEventListener('visibilitychange', visibilityChangeHandler);
+    document.removeEventListener("visibilitychange", visibilityChangeHandler);
     visibilityChangeHandler = null;
   }
   if (beforeUnloadHandler) {
-    window.removeEventListener('beforeunload', beforeUnloadHandler);
+    window.removeEventListener("beforeunload", beforeUnloadHandler);
     beforeUnloadHandler = null;
   }
 
@@ -355,7 +369,7 @@ export const stopAutoSync = () => {
   consecutiveSyncFailures = 0;
 
   autoSyncStarted = false;
-  logger.sync('Auto-sync stopped');
+  logger.sync("Auto-sync stopped");
 };
 
 // Trigger debounced sync (call after data changes)
@@ -414,5 +428,5 @@ export const destroyCloudSync = () => {
   // Reset failure counter
   consecutiveSyncFailures = 0;
 
-  logger.sync('CloudSync destroyed and cleaned up');
+  logger.sync("CloudSync destroyed and cleaned up");
 };

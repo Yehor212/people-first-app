@@ -4,24 +4,28 @@
  * Supports: JSON (full backup), CSV, PDF, Markdown
  */
 
-import type { JournalEntry, JournalPhoto, JournalAudio } from './types';
-import * as storage from './journalStorage';
-import { getToday } from '@/lib/utils';
+import type { JournalEntry, JournalPhoto, JournalAudio } from "./types";
+import * as storage from "./journalStorage";
+import { getToday } from "@/lib/utils";
+import { getLocale } from "@/lib/timeUtils";
+import type { Language } from "@/i18n/translations";
 
 // ── Helpers ──
 
 function sanitizeFilename(name: string): string {
-  return name
-    .replace(/[<>:"/\\|?*]/g, '_')
-    // eslint-disable-next-line no-control-regex
-    .replace(/[\x00-\x1f]/g, '')
-    .replace(/^\.+/, '')
-    .slice(0, 200);
+  return (
+    name
+      .replace(/[<>:"/\\|?*]/g, "_")
+      // eslint-disable-next-line no-control-regex
+      .replace(/[\x00-\x1f]/g, "")
+      .replace(/^\.+/, "")
+      .slice(0, 200)
+  );
 }
 
 function downloadBlob(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
+  const link = document.createElement("a");
   link.href = url;
   link.download = sanitizeFilename(filename);
   document.body.appendChild(link);
@@ -31,12 +35,16 @@ function downloadBlob(blob: Blob, filename: string): void {
 }
 
 function downloadText(content: string, filename: string, mimeType: string): void {
-  const blob = new Blob(['\ufeff' + content], { type: `${mimeType};charset=utf-8;` });
+  const blob = new Blob(["\ufeff" + content], { type: `${mimeType};charset=utf-8;` });
   downloadBlob(blob, filename);
 }
 
 const MOOD_LABEL: Record<string, string> = {
-  great: 'Great', good: 'Good', okay: 'Okay', bad: 'Bad', terrible: 'Terrible',
+  great: "Great",
+  good: "Good",
+  okay: "Okay",
+  bad: "Bad",
+  terrible: "Terrible",
 };
 
 // ── JSON Export (full backup) ──
@@ -49,13 +57,11 @@ interface JournalBackup {
   audio: JournalAudio[];
 }
 
-export async function exportJSON(
-  onProgress?: (step: string) => void,
-): Promise<void> {
-  onProgress?.('Loading entries...');
+export async function exportJSON(onProgress?: (step: string) => void): Promise<void> {
+  onProgress?.("Loading entries...");
   const entries = await storage.getAllEntries();
 
-  onProgress?.('Loading photos...');
+  onProgress?.("Loading photos...");
   const photos: JournalPhoto[] = [];
   for (const entry of entries) {
     if (entry.photoIds.length > 0) {
@@ -64,7 +70,7 @@ export async function exportJSON(
     }
   }
 
-  onProgress?.('Loading audio...');
+  onProgress?.("Loading audio...");
   const audio: JournalAudio[] = [];
   for (const entry of entries) {
     if (entry.audioIds && entry.audioIds.length > 0) {
@@ -81,58 +87,76 @@ export async function exportJSON(
     audio,
   };
 
-  onProgress?.('Generating file...');
+  onProgress?.("Generating file...");
   const json = JSON.stringify(backup, null, 2);
   const dateStr = getToday();
-  downloadText(json, `journal-backup-${dateStr}.json`, 'application/json');
+  downloadText(json, `journal-backup-${dateStr}.json`, "application/json");
 }
 
 // ── CSV Export ──
 
-export async function exportCSV(): Promise<void> {
+export async function exportCSV(language: Language = "en"): Promise<void> {
   const entries = await storage.getAllEntries();
+  const locale = getLocale(language);
 
-  const headers = ['Date', 'Time', 'Title', 'Content', 'Mood', 'Tags', 'Stickers', 'Word Count', 'Photos', 'Audio'];
-  const rows = entries.map(e => {
+  const headers = [
+    "Date",
+    "Time",
+    "Title",
+    "Content",
+    "Mood",
+    "Tags",
+    "Stickers",
+    "Word Count",
+    "Photos",
+    "Audio",
+  ];
+  const rows = entries.map((e) => {
     const dt = new Date(e.createdAt);
-    const time = dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const time = dt.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
     const wordCount = e.content.trim() ? e.content.trim().split(/\s+/).filter(Boolean).length : 0;
     return [
       e.date,
       time,
       csvEscape(e.title),
       csvEscape(e.content.slice(0, 500)),
-      e.mood ? MOOD_LABEL[e.mood] || e.mood : '',
-      csvEscape(e.tags.join(', ')),
-      e.stickers.join(' '),
+      e.mood ? MOOD_LABEL[e.mood] || e.mood : "",
+      csvEscape(e.tags.join(", ")),
+      e.stickers.join(" "),
       String(wordCount),
       String(e.photoIds.length),
       String(e.audioIds?.length || 0),
     ];
   });
 
-  const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+  const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
   const dateStr = getToday();
-  downloadText(csv, `journal-${dateStr}.csv`, 'text/csv');
+  downloadText(csv, `journal-${dateStr}.csv`, "text/csv");
 }
 
 function csvEscape(str: string): string {
   if (!str) return '""';
-  const escaped = str.replace(/"/g, '""').replace(/\n/g, ' ');
+  const escaped = str.replace(/"/g, '""').replace(/\n/g, " ");
   return `"${escaped}"`;
 }
 
 // ── Markdown Export ──
 
-export async function exportMarkdown(): Promise<void> {
+export async function exportMarkdown(language: Language = "en"): Promise<void> {
   const entries = await storage.getAllEntries();
+  const locale = getLocale(language);
 
-  const lines: string[] = ['# Diary\n'];
+  const lines: string[] = ["# Diary\n"];
 
   for (const entry of entries) {
     const dt = new Date(entry.createdAt);
-    const dateStr = dt.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-    const title = entry.title || 'Untitled';
+    const dateStr = dt.toLocaleDateString(locale, {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+    const title = entry.title || "Untitled";
 
     lines.push(`## ${dateStr} — ${title}\n`);
 
@@ -141,15 +165,15 @@ export async function exportMarkdown(): Promise<void> {
     }
 
     if (entry.content) {
-      lines.push(entry.content + '\n');
+      lines.push(entry.content + "\n");
     }
 
     if (entry.tags.length > 0) {
-      lines.push(`**Tags:** ${entry.tags.map(t => `#${t}`).join(' ')}\n`);
+      lines.push(`**Tags:** ${entry.tags.map((t) => `#${t}`).join(" ")}\n`);
     }
 
     if (entry.stickers.length > 0) {
-      lines.push(`**Stickers:** ${entry.stickers.join(' ')}\n`);
+      lines.push(`**Stickers:** ${entry.stickers.join(" ")}\n`);
     }
 
     if (entry.photoIds.length > 0) {
@@ -160,25 +184,26 @@ export async function exportMarkdown(): Promise<void> {
       lines.push(`*${entry.audioIds.length} audio recording(s) attached*\n`);
     }
 
-    lines.push('---\n');
+    lines.push("---\n");
   }
 
-  const md = lines.join('\n');
+  const md = lines.join("\n");
   const dateStr = getToday();
-  downloadText(md, `journal-${dateStr}.md`, 'text/markdown');
+  downloadText(md, `journal-${dateStr}.md`, "text/markdown");
 }
 
 // ── PDF Export ──
 
 export async function exportPDF(
   onProgress?: (step: string) => void,
+  language: Language = "en"
 ): Promise<void> {
-  onProgress?.('Loading entries...');
+  onProgress?.("Loading entries...");
   const entries = await storage.getAllEntries();
 
   // Lazy import jsPDF to avoid CJS TDZ
-  const { jsPDF } = await import('jspdf');
-  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const { jsPDF } = await import("jspdf");
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
 
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -196,24 +221,25 @@ export async function exportPDF(
   // Cover page
   doc.setFontSize(24);
   doc.setTextColor(60, 60, 60);
-  doc.text('Diary', pageWidth / 2, 60, { align: 'center' });
+  doc.text("Diary", pageWidth / 2, 60, { align: "center" });
 
   doc.setFontSize(12);
   doc.setTextColor(120, 120, 120);
-  doc.text(`${entries.length} entries`, pageWidth / 2, 72, { align: 'center' });
+  doc.text(`${entries.length} entries`, pageWidth / 2, 72, { align: "center" });
 
-  const dateRange = entries.length > 0
-    ? `${entries[entries.length - 1].date} — ${entries[0].date}`
-    : '';
+  const dateRange =
+    entries.length > 0 ? `${entries[entries.length - 1].date} — ${entries[0].date}` : "";
   if (dateRange) {
-    doc.text(dateRange, pageWidth / 2, 80, { align: 'center' });
+    doc.text(dateRange, pageWidth / 2, 80, { align: "center" });
   }
 
   doc.setFontSize(9);
-  doc.text(`Exported ${new Date().toLocaleString()}`, pageWidth / 2, 95, { align: 'center' });
+  doc.text(`Exported ${new Date().toLocaleString(getLocale(language))}`, pageWidth / 2, 95, {
+    align: "center",
+  });
 
   // Entries
-  onProgress?.('Generating pages...');
+  onProgress?.("Generating pages...");
   for (let i = 0; i < entries.length; i++) {
     const entry = entries[i];
     doc.addPage();
@@ -224,8 +250,14 @@ export async function exportPDF(
     doc.setFontSize(10);
     doc.setTextColor(100, 100, 100);
     doc.text(
-      dt.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
-      margin, y,
+      dt.toLocaleDateString(getLocale(language), {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      }),
+      margin,
+      y
     );
     y += 6;
 
@@ -264,7 +296,7 @@ export async function exportPDF(
       checkPage(6);
       doc.setFontSize(8);
       doc.setTextColor(100, 100, 220);
-      doc.text(`Tags: ${entry.tags.map(t => '#' + t).join(' ')}`, margin, y);
+      doc.text(`Tags: ${entry.tags.map((t) => "#" + t).join(" ")}`, margin, y);
       y += 5;
     }
 
@@ -275,7 +307,7 @@ export async function exportPDF(
       for (const photo of photos) {
         checkPage(55);
         try {
-          doc.addImage(photo.data, 'JPEG', margin, y, 50, 50 * (photo.height / photo.width));
+          doc.addImage(photo.data, "JPEG", margin, y, 50, 50 * (photo.height / photo.width));
           y += 50 * (photo.height / photo.width) + 5;
         } catch {
           // Skip photo if addImage fails

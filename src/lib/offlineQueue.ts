@@ -32,27 +32,27 @@ declare global {
   }
 }
 
-import { logger } from './logger';
-import { generateSecureRandom } from './validation';
-import { safeLocalStorageGet, safeLocalStorageSet, storageRemove } from './safeJson';
-import { SK } from './storageKeys';
-import { db, OfflineQueueItem } from '@/storage/db';
+import { logger } from "./logger";
+import { generateSecureRandom } from "./validation";
+import { safeLocalStorageGet, safeLocalStorageSet, storageRemove } from "./safeJson";
+import { SK } from "./storageKeys";
+import { db, OfflineQueueItem } from "@/storage/db";
 
 // Action types that can be queued
 export type OfflineActionType =
-  | 'CREATE_MOOD'
-  | 'UPDATE_MOOD'
-  | 'DELETE_MOOD'
-  | 'CREATE_HABIT'
-  | 'UPDATE_HABIT'
-  | 'DELETE_HABIT'
-  | 'TOGGLE_HABIT'
-  | 'CREATE_FOCUS_SESSION'
-  | 'CREATE_GRATITUDE'
-  | 'DELETE_GRATITUDE'
-  | 'UPDATE_SETTINGS'
-  | 'SYNC_JOURNAL_ENTRY'
-  | 'DELETE_JOURNAL_ENTRY';
+  | "CREATE_MOOD"
+  | "UPDATE_MOOD"
+  | "DELETE_MOOD"
+  | "CREATE_HABIT"
+  | "UPDATE_HABIT"
+  | "DELETE_HABIT"
+  | "TOGGLE_HABIT"
+  | "CREATE_FOCUS_SESSION"
+  | "CREATE_GRATITUDE"
+  | "DELETE_GRATITUDE"
+  | "UPDATE_SETTINGS"
+  | "SYNC_JOURNAL_ENTRY"
+  | "DELETE_JOURNAL_ENTRY";
 
 export interface OfflineAction {
   id: string;
@@ -83,7 +83,8 @@ class OfflineQueue {
     isProcessing: false,
   };
   private listeners: Set<(state: QueueState) => void> = new Set();
-  private syncHandlers: Map<OfflineActionType, (action: OfflineAction) => Promise<void>> = new Map();
+  private syncHandlers: Map<OfflineActionType, (action: OfflineAction) => Promise<void>> =
+    new Map();
   private processingPromise: Promise<void> | null = null;
 
   // Promise to track initialization - operations must await this before modifying queue
@@ -104,13 +105,13 @@ class OfflineQueue {
     this.initPromise = this.initializeStorage();
 
     // Listen for online/offline events
-    if (typeof window !== 'undefined') {
-      window.addEventListener('online', this.boundHandleOnline);
-      window.addEventListener('offline', this.boundHandleOffline);
+    if (typeof window !== "undefined") {
+      window.addEventListener("online", this.boundHandleOnline);
+      window.addEventListener("offline", this.boundHandleOffline);
 
       // Listen for Background Sync messages from Service Worker
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.addEventListener('message', this.boundHandleSWMessage);
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.addEventListener("message", this.boundHandleSWMessage);
       }
     }
   }
@@ -119,8 +120,8 @@ class OfflineQueue {
    * Handle messages from Service Worker (e.g., Background Sync trigger)
    */
   private handleSWMessage(event: MessageEvent): void {
-    if (event.data?.type === 'SYNC_REQUESTED') {
-      logger.log('[OfflineQueue] Background Sync triggered by SW');
+    if (event.data?.type === "SYNC_REQUESTED") {
+      logger.log("[OfflineQueue] Background Sync triggered by SW");
       void this.processQueue();
     }
   }
@@ -130,24 +131,27 @@ class OfflineQueue {
    * Now properly removes ALL listeners including SW message handler
    */
   destroy(): void {
-    if (typeof window !== 'undefined') {
-      window.removeEventListener('online', this.boundHandleOnline);
-      window.removeEventListener('offline', this.boundHandleOffline);
+    if (typeof window !== "undefined") {
+      window.removeEventListener("online", this.boundHandleOnline);
+      window.removeEventListener("offline", this.boundHandleOffline);
 
       // Remove SW message listener to prevent memory leak
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.removeEventListener('message', this.boundHandleSWMessage);
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.removeEventListener("message", this.boundHandleSWMessage);
       }
     }
     this.listeners.clear();
     this.syncHandlers.clear();
-    logger.log('[OfflineQueue] Destroyed');
+    logger.log("[OfflineQueue] Destroyed");
   }
 
   /**
    * Register a handler for a specific action type
    */
-  registerHandler(type: OfflineActionType, handler: (action: OfflineAction) => Promise<void>): void {
+  registerHandler(
+    type: OfflineActionType,
+    handler: (action: OfflineAction) => Promise<void>
+  ): void {
     this.syncHandlers.set(type, handler);
   }
 
@@ -163,7 +167,6 @@ class OfflineQueue {
     options: { maxRetries?: number; deduplicate?: boolean } = {}
   ): Promise<void> {
     // Wait for initialization to complete before modifying queue
-    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     if (this.initPromise) {
       await this.initPromise;
     }
@@ -172,14 +175,13 @@ class OfflineQueue {
     // This prevents race conditions where two concurrent enqueue() calls
     // both read the same state, both decide the action doesn't exist,
     // and both create duplicates (bypassing deduplication logic)
-    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     if (this.enqueueLock) {
       await this.enqueueLock;
     }
 
     // Create a new lock promise for this operation
     let releaseLock: () => void;
-    this.enqueueLock = new Promise<void>(resolve => {
+    this.enqueueLock = new Promise<void>((resolve) => {
       releaseLock = resolve;
     });
 
@@ -208,19 +210,21 @@ class OfflineQueue {
     const QUEUE_WARNING_THRESHOLD = MAX_QUEUE_SIZE - 10; // Warn at 90%
 
     if (this.state.actions.length >= MAX_QUEUE_SIZE) {
-      logger.error('[OfflineQueue] Queue FULL - blocking new action to prevent data loss');
+      logger.error("[OfflineQueue] Queue FULL - blocking new action to prevent data loss");
 
       // Emit blocking event - UI MUST show prompt to user
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('zenflow:offline-queue-full', {
-          detail: {
-            queueSize: this.state.actions.length,
-            maxSize: MAX_QUEUE_SIZE,
-            message: 'Offline queue full. Please connect to internet to sync your data.',
-            actionType: type,
-            entityId,
-          }
-        }));
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("zenflow:offline-queue-full", {
+            detail: {
+              queueSize: this.state.actions.length,
+              maxSize: MAX_QUEUE_SIZE,
+              message: "Offline queue full. Please connect to internet to sync your data.",
+              actionType: type,
+              entityId,
+            },
+          })
+        );
       }
 
       // Don't drop data - throw error so caller knows enqueue failed
@@ -229,22 +233,26 @@ class OfflineQueue {
 
     // Emit warning when approaching limit (90%)
     if (this.state.actions.length >= QUEUE_WARNING_THRESHOLD) {
-      logger.warn(`[OfflineQueue] Queue at ${this.state.actions.length}/${MAX_QUEUE_SIZE} - approaching limit`);
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('zenflow:offline-queue-warning', {
-          detail: {
-            queueSize: this.state.actions.length,
-            maxSize: MAX_QUEUE_SIZE,
-            remaining: MAX_QUEUE_SIZE - this.state.actions.length,
-          }
-        }));
+      logger.warn(
+        `[OfflineQueue] Queue at ${this.state.actions.length}/${MAX_QUEUE_SIZE} - approaching limit`
+      );
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("zenflow:offline-queue-warning", {
+            detail: {
+              queueSize: this.state.actions.length,
+              maxSize: MAX_QUEUE_SIZE,
+              remaining: MAX_QUEUE_SIZE - this.state.actions.length,
+            },
+          })
+        );
       }
     }
 
     // Deduplicate: update existing action in-place to preserve queue order
     if (deduplicate) {
       const existingIndex = this.state.actions.findIndex(
-        a => a.entityId === entityId && a.type === type
+        (a) => a.entityId === entityId && a.type === type
       );
 
       if (existingIndex !== -1) {
@@ -254,7 +262,7 @@ class OfflineQueue {
         existing.timestamp = Date.now();
         existing.retries = 0; // Reset retries for updated action
         existing.lastError = undefined;
-        logger.log('[OfflineQueue] Action deduplicated in-place:', type, entityId);
+        logger.log("[OfflineQueue] Action deduplicated in-place:", type, entityId);
         this.persistToStorage();
         this.notifyListeners();
 
@@ -282,7 +290,7 @@ class OfflineQueue {
     this.persistToStorage();
     this.notifyListeners();
 
-    logger.log('[OfflineQueue] Action queued:', type, entityId);
+    logger.log("[OfflineQueue] Action queued:", type, entityId);
 
     // If online, try to process immediately
     if (navigator.onLine) {
@@ -300,35 +308,37 @@ class OfflineQueue {
    */
   private requestBackgroundSync(): void {
     // Check if Background Sync API is available
-    if (!('serviceWorker' in navigator)) {
-      logger.log('[OfflineQueue] Service Worker not supported, skipping Background Sync');
+    if (!("serviceWorker" in navigator)) {
+      logger.log("[OfflineQueue] Service Worker not supported, skipping Background Sync");
       return;
     }
 
     // Check for SyncManager support
-    if (!('SyncManager' in window)) {
-      logger.log('[OfflineQueue] Background Sync API not supported');
+    if (!("SyncManager" in window)) {
+      logger.log("[OfflineQueue] Background Sync API not supported");
       return;
     }
 
     navigator.serviceWorker.ready
       .then((registration) => {
-        return registration.sync.register('zenflow-sync');
+        return registration.sync.register("zenflow-sync");
       })
       .then(() => {
-        logger.log('[OfflineQueue] Background Sync registered');
+        logger.log("[OfflineQueue] Background Sync registered");
       })
       .catch((err) => {
         // P2-6 Fix: Emit event so UI can inform user about sync status
-        logger.warn('[OfflineQueue] Background Sync registration failed:', err);
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('zenflow:background-sync-failed', {
-            detail: {
-              error: err instanceof Error ? err.message : String(err),
-              pendingActions: this.state.actions.length,
-              message: 'Background sync unavailable. Data will sync when you return to the app.',
-            }
-          }));
+        logger.warn("[OfflineQueue] Background Sync registration failed:", err);
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("zenflow:background-sync-failed", {
+              detail: {
+                error: err instanceof Error ? err.message : String(err),
+                pendingActions: this.state.actions.length,
+                message: "Background sync unavailable. Data will sync when you return to the app.",
+              },
+            })
+          );
         }
       });
   }
@@ -337,7 +347,7 @@ class OfflineQueue {
    * Remove an action from the queue (e.g., after successful sync)
    */
   private removeAction(actionId: string): void {
-    this.state.actions = this.state.actions.filter(a => a.id !== actionId);
+    this.state.actions = this.state.actions.filter((a) => a.id !== actionId);
     this.persistToStorage();
     this.notifyListeners();
   }
@@ -348,17 +358,14 @@ class OfflineQueue {
    */
   async processQueue(): Promise<void> {
     // Wait for initialization to complete before processing
-    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     if (this.initPromise) {
       await this.initPromise;
     }
 
     // Mutex: prevent concurrent processing
-    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     if (this.processingPromise) {
       await this.processingPromise;
       // After waiting, check if there are still items to process (may have been added during wait)
-      // eslint-disable-next-line @typescript-eslint/no-misused-promises
       if (navigator.onLine && this.state.actions.length > 0 && !this.processingPromise) {
         // Recursively process new items
         return this.processQueue();
@@ -389,20 +396,20 @@ class OfflineQueue {
     this.state.isProcessing = true;
     this.notifyListeners();
 
-    logger.log('[OfflineQueue] Processing queue, actions:', this.state.actions.length);
+    logger.log("[OfflineQueue] Processing queue, actions:", this.state.actions.length);
 
     // Process actions in order (FIFO)
     const actionsToProcess = [...this.state.actions];
 
     for (const action of actionsToProcess) {
       if (!navigator.onLine) {
-        logger.log('[OfflineQueue] Went offline during processing, pausing');
+        logger.log("[OfflineQueue] Went offline during processing, pausing");
         break;
       }
 
       const handler = this.syncHandlers.get(action.type);
       if (!handler) {
-        logger.warn('[OfflineQueue] No handler for action type:', action.type);
+        logger.warn("[OfflineQueue] No handler for action type:", action.type);
         this.removeAction(action.id);
         continue;
       }
@@ -410,22 +417,19 @@ class OfflineQueue {
       try {
         await handler(action);
         this.removeAction(action.id);
-        logger.log('[OfflineQueue] Action processed:', action.type, action.entityId);
+        logger.log("[OfflineQueue] Action processed:", action.type, action.entityId);
       } catch (error) {
-        logger.error('[OfflineQueue] Action failed:', action.type, error);
+        logger.error("[OfflineQueue] Action failed:", action.type, error);
 
         action.retries++;
         action.lastError = error instanceof Error ? error.message : String(error);
 
         if (action.retries >= action.maxRetries) {
-          logger.error('[OfflineQueue] Max retries reached, discarding action:', action.id);
+          logger.error("[OfflineQueue] Max retries reached, discarding action:", action.id);
           this.removeAction(action.id);
         } else {
           // Exponential backoff before retry
-          const delay = Math.min(
-            RETRY_BASE_DELAY * Math.pow(2, action.retries),
-            RETRY_MAX_DELAY
-          );
+          const delay = Math.min(RETRY_BASE_DELAY * Math.pow(2, action.retries), RETRY_MAX_DELAY);
           logger.log(`[OfflineQueue] Will retry in ${delay}ms`);
           await this.sleep(delay);
         }
@@ -439,7 +443,7 @@ class OfflineQueue {
     this.persistToStorage();
     this.notifyListeners();
 
-    logger.log('[OfflineQueue] Queue processing complete, remaining:', this.state.actions.length);
+    logger.log("[OfflineQueue] Queue processing complete, remaining:", this.state.actions.length);
   }
 
   /**
@@ -478,25 +482,24 @@ class OfflineQueue {
    */
   async clearQueue(): Promise<void> {
     // Wait for initialization before clearing
-    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     if (this.initPromise) {
       await this.initPromise;
     }
     this.state.actions = [];
     this.persistToStorage();
     this.notifyListeners();
-    logger.log('[OfflineQueue] Queue cleared');
+    logger.log("[OfflineQueue] Queue cleared");
   }
 
   // Private methods
 
   private handleOnline(): void {
-    logger.log('[OfflineQueue] Device came online');
+    logger.log("[OfflineQueue] Device came online");
     void this.processQueue();
   }
 
   private handleOffline(): void {
-    logger.log('[OfflineQueue] Device went offline');
+    logger.log("[OfflineQueue] Device went offline");
   }
 
   /**
@@ -508,7 +511,7 @@ class OfflineQueue {
       // Try IndexedDB first
       const items = await db.offlineQueue.toArray();
       if (items.length > 0) {
-        this.state.actions = items.map(item => ({
+        this.state.actions = items.map((item) => ({
           id: item.id,
           type: item.type as OfflineActionType,
           entityId: item.entityId,
@@ -518,14 +521,14 @@ class OfflineQueue {
           maxRetries: item.maxRetries,
           lastError: item.lastError,
         }));
-        logger.log('[OfflineQueue] Loaded from IndexedDB:', this.state.actions.length, 'actions');
+        logger.log("[OfflineQueue] Loaded from IndexedDB:", this.state.actions.length, "actions");
 
         // Migrate localStorage data if any (one-time migration)
         await this.migrateFromLocalStorage();
         return;
       }
     } catch (idbError) {
-      logger.warn('[OfflineQueue] IndexedDB load failed, trying localStorage:', idbError);
+      logger.warn("[OfflineQueue] IndexedDB load failed, trying localStorage:", idbError);
     }
 
     // Fallback to localStorage
@@ -533,10 +536,12 @@ class OfflineQueue {
   }
 
   private loadFromLocalStorage(): void {
-    const data = safeLocalStorageGet<{ actions: OfflineAction[] }>(SK.OFFLINE_QUEUE, { actions: [] });
+    const data = safeLocalStorageGet<{ actions: OfflineAction[] }>(SK.OFFLINE_QUEUE, {
+      actions: [],
+    });
     if (data.actions && data.actions.length > 0) {
       this.state.actions = data.actions;
-      logger.log('[OfflineQueue] Loaded from localStorage:', this.state.actions.length, 'actions');
+      logger.log("[OfflineQueue] Loaded from localStorage:", this.state.actions.length, "actions");
     }
   }
 
@@ -557,14 +562,13 @@ class OfflineQueue {
     await this.loadFromStorageAsync();
     // Keep initPromise as resolved promise instead of nulling it
     // This ensures all callers properly await, even if it resolves immediately
-    logger.log('[OfflineQueue] Initialization complete');
+    logger.log("[OfflineQueue] Initialization complete");
   }
 
   /**
    * Wait for initialization to complete (for external callers)
    */
   async waitForInit(): Promise<void> {
-    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     if (this.initPromise) {
       await this.initPromise;
     }
@@ -575,11 +579,13 @@ class OfflineQueue {
    */
   private async migrateFromLocalStorage(): Promise<void> {
     try {
-      const data = safeLocalStorageGet<{ actions: OfflineAction[] }>(SK.OFFLINE_QUEUE, { actions: [] });
+      const data = safeLocalStorageGet<{ actions: OfflineAction[] }>(SK.OFFLINE_QUEUE, {
+        actions: [],
+      });
       if (data.actions && data.actions.length > 0) {
         // Data already in IndexedDB, remove from localStorage
         storageRemove(SK.OFFLINE_QUEUE);
-        logger.log('[OfflineQueue] Cleared localStorage after IndexedDB migration');
+        logger.log("[OfflineQueue] Cleared localStorage after IndexedDB migration");
       }
     } catch (_error) {
       // Ignore migration errors
@@ -598,10 +604,10 @@ class OfflineQueue {
   private async persistToIndexedDB(): Promise<void> {
     try {
       // Clear and repopulate for simplicity
-      await db.transaction('rw', db.offlineQueue, async () => {
+      await db.transaction("rw", db.offlineQueue, async () => {
         await db.offlineQueue.clear();
         if (this.state.actions.length > 0) {
-          const items: OfflineQueueItem[] = this.state.actions.map(action => ({
+          const items: OfflineQueueItem[] = this.state.actions.map((action) => ({
             id: action.id,
             type: action.type,
             entityId: action.entityId,
@@ -615,7 +621,10 @@ class OfflineQueue {
         }
       });
     } catch (idbError) {
-      logger.warn('[OfflineQueue] IndexedDB persist failed, using localStorage fallback:', idbError);
+      logger.warn(
+        "[OfflineQueue] IndexedDB persist failed, using localStorage fallback:",
+        idbError
+      );
       // Fallback to localStorage
       this.persistToLocalStorage();
     }
@@ -628,30 +637,32 @@ class OfflineQueue {
     });
 
     if (!success) {
-      logger.error('[OfflineQueue] Failed to persist to localStorage');
+      logger.error("[OfflineQueue] Failed to persist to localStorage");
 
       // CRITICAL - Both IndexedDB AND localStorage failed!
       // Emit storage error event so UI can warn user about potential data loss
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('zenflow:storage-error', {
-          detail: {
-            type: 'persist_failed',
-            queueSize: this.state.actions.length,
-            message: 'Unable to save your changes. Data may be lost if you close the app.',
-            recoverable: false,
-          }
-        }));
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("zenflow:storage-error", {
+            detail: {
+              type: "persist_failed",
+              queueSize: this.state.actions.length,
+              message: "Unable to save your changes. Data may be lost if you close the app.",
+              recoverable: false,
+            },
+          })
+        );
       }
     }
   }
 
   private notifyListeners(): void {
     const state = this.getState();
-    this.listeners.forEach(listener => listener(state));
+    this.listeners.forEach((listener) => listener(state));
   }
 
   private sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }
 

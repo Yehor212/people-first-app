@@ -1,38 +1,48 @@
 // Inner World Cloud Synchronization with Supabase
 
-import { logger } from '@/lib/logger';
-import { safeLocalStorageSet } from '@/lib/safeJson';
-import { SK } from '@/lib/storageKeys';
-import { supabase } from '@/lib/supabaseClient';
-import { InnerWorld } from '@/types';
-import { Json } from '@/types/supabase';
-import { z } from 'zod';
+import { logger } from "@/lib/logger";
+import { safeLocalStorageSet } from "@/lib/safeJson";
+import { SK } from "@/lib/storageKeys";
+import { supabase } from "@/lib/supabaseClient";
+import { InnerWorld } from "@/types";
+import { Json } from "@/types/supabase";
+import { z } from "zod";
 
 /**
  * P2-8 Fix: Zod schema for validating InnerWorld cloud data
  * Validates critical fields to prevent data corruption
  */
-const innerWorldSchema = z.object({
-  treats: z.object({
-    balance: z.number(),
-    lifetimeEarned: z.number().optional(),
-    lifetimeSpent: z.number().optional(),
-  }),
-  plants: z.array(z.object({
-    id: z.string(),
-    type: z.string(),
-    stage: z.string(),
-  })).optional().default([]),
-  creatures: z.array(z.unknown()).optional().default([]),
-  currentActiveStreak: z.number().optional().default(0),
-  longestActiveStreak: z.number().optional().default(0),
-  lastActiveDate: z.string().optional().default(''),
-  daysActive: z.number().optional().default(0),
-  companion: z.object({
-    level: z.number().optional(),
-    experience: z.number().optional(),
-  }).passthrough().optional(),
-}).passthrough(); // Allow additional fields for forward compatibility
+const innerWorldSchema = z
+  .object({
+    treats: z.object({
+      balance: z.number(),
+      lifetimeEarned: z.number().optional(),
+      lifetimeSpent: z.number().optional(),
+    }),
+    plants: z
+      .array(
+        z.object({
+          id: z.string(),
+          type: z.string(),
+          stage: z.string(),
+        })
+      )
+      .optional()
+      .default([]),
+    creatures: z.array(z.unknown()).optional().default([]),
+    currentActiveStreak: z.number().optional().default(0),
+    longestActiveStreak: z.number().optional().default(0),
+    lastActiveDate: z.string().optional().default(""),
+    daysActive: z.number().optional().default(0),
+    companion: z
+      .object({
+        level: z.number().optional(),
+        experience: z.number().optional(),
+      })
+      .passthrough()
+      .optional(),
+  })
+  .passthrough(); // Allow additional fields for forward compatibility
 
 /**
  * P2-8 Fix: Validate InnerWorld data from cloud
@@ -40,7 +50,7 @@ const innerWorldSchema = z.object({
 function validateInnerWorldData(data: unknown): InnerWorld | null {
   const result = innerWorldSchema.safeParse(data);
   if (!result.success) {
-    logger.warn('[InnerWorld] Cloud data validation failed:', result.error.issues);
+    logger.warn("[InnerWorld] Cloud data validation failed:", result.error.issues);
     return null;
   }
   return data as InnerWorld;
@@ -58,29 +68,33 @@ let syncInnerWorldPromise: Promise<InnerWorld> | null = null;
 export async function pushInnerWorldToCloud(world: InnerWorld): Promise<void> {
   if (!supabase) return;
 
-  const { data: { session } } = await supabase.auth.getSession();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
   if (!session?.user) return;
   const user = session.user;
 
   try {
-    const { error } = await supabase
-      .from('user_inner_world')
-      .upsert({
+    const { error } = await supabase.from("user_inner_world").upsert(
+      {
         user_id: user.id,
         world_data: world as unknown as Json,
         updated_at: new Date().toISOString(),
-      }, {
-        onConflict: 'user_id',
-      });
+      },
+      {
+        onConflict: "user_id",
+      }
+    );
 
     if (error) {
       // Table might not exist yet - that's ok, we'll just use local storage
-      if (error.code !== '42P01') { // relation does not exist
-        logger.error('[InnerWorld] Error pushing to cloud:', error);
+      if (error.code !== "42P01") {
+        // relation does not exist
+        logger.error("[InnerWorld] Error pushing to cloud:", error);
       }
     }
   } catch (err) {
-    logger.error('[InnerWorld] Push error:', err);
+    logger.error("[InnerWorld] Push error:", err);
   }
 }
 
@@ -90,21 +104,23 @@ export async function pushInnerWorldToCloud(world: InnerWorld): Promise<void> {
 export async function pullInnerWorldFromCloud(): Promise<InnerWorld | null> {
   if (!supabase) return null;
 
-  const { data: { session } } = await supabase.auth.getSession();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
   if (!session?.user) return null;
   const user = session.user;
 
   try {
     const { data, error } = await supabase
-      .from('user_inner_world')
-      .select('world_data')
-      .eq('user_id', user.id)
+      .from("user_inner_world")
+      .select("world_data")
+      .eq("user_id", user.id)
       .maybeSingle();
 
     if (error) {
       // Table might not exist - that's ok
-      if (error.code !== '42P01') {
-        logger.error('[InnerWorld] Error pulling from cloud:', error);
+      if (error.code !== "42P01") {
+        logger.error("[InnerWorld] Error pulling from cloud:", error);
       }
       return null;
     }
@@ -115,7 +131,7 @@ export async function pullInnerWorldFromCloud(): Promise<InnerWorld | null> {
     const worldData = data.world_data;
     return validateInnerWorldData(worldData);
   } catch (err) {
-    logger.error('[InnerWorld] Pull error:', err);
+    logger.error("[InnerWorld] Pull error:", err);
     return null;
   }
 }
@@ -128,7 +144,6 @@ export async function pullInnerWorldFromCloud(): Promise<InnerWorld | null> {
 export async function syncInnerWorld(localWorld: InnerWorld): Promise<InnerWorld> {
   // P1-8 Fix: If sync is already in progress, wait for it and return its result
   // This prevents duplicate syncs and ensures all callers get consistent data
-  // eslint-disable-next-line @typescript-eslint/no-misused-promises
   if (syncInnerWorldPromise) {
     try {
       return await syncInnerWorldPromise;
@@ -175,7 +190,9 @@ async function doSyncInnerWorld(localWorld: InnerWorld): Promise<InnerWorld> {
     const localDate = localWorld.lastActiveDate ? new Date(localWorld.lastActiveDate).getTime() : 0;
     const cloudDate = cloudWorld.lastActiveDate ? new Date(cloudWorld.lastActiveDate).getTime() : 0;
     winner = cloudDate > localDate ? cloudWorld : localWorld;
-    logger.log(`[InnerWorld] Tie (score=${localScore}), using ${cloudDate > localDate ? 'cloud' : 'local'} (more recent)`);
+    logger.log(
+      `[InnerWorld] Tie (score=${localScore}), using ${cloudDate > localDate ? "cloud" : "local"} (more recent)`
+    );
   }
 
   // Save merged state (use safe wrapper for Safari Private Mode)

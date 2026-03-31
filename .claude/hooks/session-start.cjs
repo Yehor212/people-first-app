@@ -217,6 +217,7 @@ process.stdin.on('end', () => {
     'commit-gate blocks commits without .verification-done.',
     'PostToolUse A6-A10 warnings fire after every edit.',
     'Agent hook on Stop runs verifier automatically.',
+    'RUFLO MCP: Use mcp__ruflo__memory_store to save solution patterns after non-trivial fixes. Use mcp__ruflo__memory_search before complex tasks to find similar past solutions.',
   ].join('\n');
 
   let context = enforcementReminder;

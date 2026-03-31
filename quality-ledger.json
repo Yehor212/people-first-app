@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-03-22",
+  "lastUpdated": "2026-03-30",
   "floors": {
     "tests.total": {
       "value": 3385,
@@ -76,10 +76,10 @@
       "description": "TODO/FIXME/HACK/XXX comments in source"
     },
     "bundleSizeKB": {
-      "value": 4799,
+      "value": 4832,
       "direction": "down",
       "tolerance": 0.005,
-      "recorded": "2026-03-27",
+      "recorded": "2026-03-30",
       "description": "Total JS bundle size in KB (dist/assets/*.js). Tolerance 0.5% (~24KB) for legitimate feature imports."
     },
     "enforcement.blockingHooks": {

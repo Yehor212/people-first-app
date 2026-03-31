@@ -1,25 +1,25 @@
 // Random Quest Generator for ADHD engagement
 // Generates daily/weekly quests with XP rewards and badge unlocks
 
-import { logger } from './logger';
-import { safeLocalStorageGet, safeLocalStorageSet, storageGetRaw } from './safeJson';
-import { SK } from '@/lib/storageKeys';
-import { translations } from '@/i18n/translations';
-
+import { logger } from "./logger";
+import { safeLocalStorageGet, safeLocalStorageSet, storageGetRaw } from "./safeJson";
+import { SK } from "@/lib/storageKeys";
+import { getTranslations } from "@/i18n/translations";
+import type { Language, Translations } from "@/i18n/translations";
 
 // Helper to get current language from localStorage
 function getCurrentLanguage(): string {
-  return storageGetRaw(SK.LANGUAGE, 'en');
+  return storageGetRaw(SK.LANGUAGE, "en");
 }
 
 // Helper to get translations for current language
 function getQuestTranslations(language?: string) {
-  const lang = (language || getCurrentLanguage()) as keyof typeof translations;
-  return translations[lang] || translations.en;
+  const lang = (language || getCurrentLanguage()) as Language;
+  return getTranslations(lang);
 }
 
-export type QuestType = 'daily' | 'weekly' | 'bonus';
-export type QuestCategory = 'habits' | 'focus' | 'streak' | 'gratitude' | 'speed' | 'consistency';
+export type QuestType = "daily" | "weekly" | "bonus";
+export type QuestCategory = "habits" | "focus" | "streak" | "gratitude" | "speed" | "consistency";
 
 export interface Quest {
   id: string;
@@ -27,8 +27,8 @@ export interface Quest {
   category: QuestCategory;
   title: string;
   description: string;
-  titleKey?: string;        // translation key — resolve at render time
-  descriptionKey?: string;  // translation key — resolve at render time
+  titleKey?: string; // translation key — resolve at render time
+  descriptionKey?: string; // translation key — resolve at render time
   condition: QuestCondition;
   reward: QuestReward;
   progress: number;
@@ -39,7 +39,13 @@ export interface Quest {
 }
 
 export interface QuestCondition {
-  type: 'complete_habits' | 'focus_minutes' | 'maintain_streak' | 'gratitude_count' | 'speed_challenge' | 'consecutive_days';
+  type:
+    | "complete_habits"
+    | "focus_minutes"
+    | "maintain_streak"
+    | "gratitude_count"
+    | "speed_challenge"
+    | "consecutive_days";
   count: number;
   timeLimit?: number; // in minutes
   beforeTime?: string; // "12:00" format
@@ -54,11 +60,11 @@ export interface QuestReward {
 
 export interface QuestTemplate {
   category: QuestCategory;
-  difficulty: 'easy' | 'medium' | 'hard';
+  difficulty: "easy" | "medium" | "hard";
   templates: {
-    titleKey: keyof typeof translations.en;
-    descriptionKey: keyof typeof translations.en;
-    condition: Omit<QuestCondition, 'count'> & { count?: number };
+    titleKey: keyof Translations;
+    descriptionKey: keyof Translations;
+    condition: Omit<QuestCondition, "count"> & { count?: number };
     baseReward: number;
     badgeReward?: string;
   }[];
@@ -68,123 +74,123 @@ export interface QuestTemplate {
 const QUEST_TEMPLATES: QuestTemplate[] = [
   // Habits Category
   {
-    category: 'habits',
-    difficulty: 'easy',
+    category: "habits",
+    difficulty: "easy",
     templates: [
       {
-        titleKey: 'questMorningMomentum',
-        descriptionKey: 'questMorningMomentumDesc',
-        condition: { type: 'complete_habits', beforeTime: '12:00' },
+        titleKey: "questMorningMomentum",
+        descriptionKey: "questMorningMomentumDesc",
+        condition: { type: "complete_habits", beforeTime: "12:00" },
         baseReward: 50,
       },
       {
-        titleKey: 'questHabitMaster',
-        descriptionKey: 'questHabitMasterDesc',
-        condition: { type: 'complete_habits' },
+        titleKey: "questHabitMaster",
+        descriptionKey: "questHabitMasterDesc",
+        condition: { type: "complete_habits" },
         baseReward: 75,
       },
       {
-        titleKey: 'questSpeedDemon',
-        descriptionKey: 'questSpeedDemonDesc',
-        condition: { type: 'complete_habits', timeLimit: 30 },
+        titleKey: "questSpeedDemon",
+        descriptionKey: "questSpeedDemonDesc",
+        condition: { type: "complete_habits", timeLimit: 30 },
         baseReward: 100,
-        badgeReward: 'questSpeedDemon',
+        badgeReward: "questSpeedDemon",
       },
     ],
   },
   // Focus Category
   {
-    category: 'focus',
-    difficulty: 'medium',
+    category: "focus",
+    difficulty: "medium",
     templates: [
       {
-        titleKey: 'questFocusFlow',
-        descriptionKey: 'questFocusFlowDesc',
-        condition: { type: 'focus_minutes', count: 30 },
+        titleKey: "questFocusFlow",
+        descriptionKey: "questFocusFlowDesc",
+        condition: { type: "focus_minutes", count: 30 },
         baseReward: 75,
       },
       {
-        titleKey: 'questDeepWork',
-        descriptionKey: 'questDeepWorkDesc',
-        condition: { type: 'focus_minutes', count: 60 },
+        titleKey: "questDeepWork",
+        descriptionKey: "questDeepWorkDesc",
+        condition: { type: "focus_minutes", count: 60 },
         baseReward: 150,
-        badgeReward: 'questBadgeDeepFocus',
+        badgeReward: "questBadgeDeepFocus",
       },
       {
-        titleKey: 'questHyperfocusHero',
-        descriptionKey: 'questHyperfocusHeroDesc',
-        condition: { type: 'focus_minutes', count: 90 },
+        titleKey: "questHyperfocusHero",
+        descriptionKey: "questHyperfocusHeroDesc",
+        condition: { type: "focus_minutes", count: 90 },
         baseReward: 250,
-        badgeReward: 'questHyperfocusHero',
+        badgeReward: "questHyperfocusHero",
       },
     ],
   },
   // Streak Category
   {
-    category: 'streak',
-    difficulty: 'hard',
+    category: "streak",
+    difficulty: "hard",
     templates: [
       {
-        titleKey: 'questStreakKeeper',
-        descriptionKey: 'questStreakKeeperDesc',
-        condition: { type: 'maintain_streak', count: 7 },
+        titleKey: "questStreakKeeper",
+        descriptionKey: "questStreakKeeperDesc",
+        condition: { type: "maintain_streak", count: 7 },
         baseReward: 200,
-        badgeReward: 'questStreakKeeper',
+        badgeReward: "questStreakKeeper",
       },
       {
-        titleKey: 'questConsistencyKing',
-        descriptionKey: 'questConsistencyKingDesc',
-        condition: { type: 'maintain_streak', count: 14 },
+        titleKey: "questConsistencyKing",
+        descriptionKey: "questConsistencyKingDesc",
+        condition: { type: "maintain_streak", count: 14 },
         baseReward: 500,
-        badgeReward: 'questConsistencyKing',
+        badgeReward: "questConsistencyKing",
       },
     ],
   },
   // Gratitude Category
   {
-    category: 'gratitude',
-    difficulty: 'easy',
+    category: "gratitude",
+    difficulty: "easy",
     templates: [
       {
-        titleKey: 'questGratitudeSprint',
-        descriptionKey: 'questGratitudeSprintDesc',
-        condition: { type: 'gratitude_count', count: 5, timeLimit: 5 },
+        titleKey: "questGratitudeSprint",
+        descriptionKey: "questGratitudeSprintDesc",
+        condition: { type: "gratitude_count", count: 5, timeLimit: 5 },
         baseReward: 50,
       },
       {
-        titleKey: 'questThankfulHeart',
-        descriptionKey: 'questThankfulHeartDesc',
-        condition: { type: 'gratitude_count', count: 10 },
+        titleKey: "questThankfulHeart",
+        descriptionKey: "questThankfulHeartDesc",
+        condition: { type: "gratitude_count", count: 10 },
         baseReward: 100,
-        badgeReward: 'questThankfulHeart',
+        badgeReward: "questThankfulHeart",
       },
     ],
   },
   // Speed Category
   {
-    category: 'speed',
-    difficulty: 'medium',
+    category: "speed",
+    difficulty: "medium",
     templates: [
       {
-        titleKey: 'questLightningRound',
-        descriptionKey: 'questLightningRoundDesc',
-        condition: { type: 'speed_challenge', timeLimit: 15 },
+        titleKey: "questLightningRound",
+        descriptionKey: "questLightningRoundDesc",
+        condition: { type: "speed_challenge", timeLimit: 15 },
         baseReward: 125,
-        badgeReward: 'questBadgeLightningFast',
+        badgeReward: "questBadgeLightningFast",
       },
     ],
   },
   // Consistency Category
   {
-    category: 'consistency',
-    difficulty: 'hard',
+    category: "consistency",
+    difficulty: "hard",
     templates: [
       {
-        titleKey: 'questWeeklyWarrior',
-        descriptionKey: 'questWeeklyWarriorDesc',
-        condition: { type: 'consecutive_days' },
+        titleKey: "questWeeklyWarrior",
+        descriptionKey: "questWeeklyWarriorDesc",
+        condition: { type: "consecutive_days" },
         baseReward: 300,
-        badgeReward: 'questWeeklyWarrior',
+        badgeReward: "questWeeklyWarrior",
       },
     ],
   },
@@ -198,11 +204,14 @@ export function generateDailyQuest(): Quest {
   const t = getQuestTranslations();
 
   // Pick random category (favor easier categories for daily quests)
-  const easyCategories = QUEST_TEMPLATES.filter(t => t.difficulty === 'easy' || t.difficulty === 'medium');
+  const easyCategories = QUEST_TEMPLATES.filter(
+    (t) => t.difficulty === "easy" || t.difficulty === "medium"
+  );
   const categoryTemplate = easyCategories[Math.floor(Math.random() * easyCategories.length)];
 
   // Pick random template from category
-  const template = categoryTemplate.templates[Math.floor(Math.random() * categoryTemplate.templates.length)];
+  const template =
+    categoryTemplate.templates[Math.floor(Math.random() * categoryTemplate.templates.length)];
 
   // Get translated title and description (for backward compat in stored quests)
   const title = t[template.titleKey] as string;
@@ -210,7 +219,7 @@ export function generateDailyQuest(): Quest {
 
   // Determine count from template or fallback
   let count = template.condition.count || 3;
-  if (!template.condition.count && template.condition.type === 'complete_habits') {
+  if (!template.condition.count && template.condition.type === "complete_habits") {
     count = template.condition.beforeTime ? 3 : 5;
   }
   const total = count;
@@ -222,7 +231,7 @@ export function generateDailyQuest(): Quest {
 
   return {
     id: `quest-daily-${now}`,
-    type: 'daily',
+    type: "daily",
     category: categoryTemplate.category,
     title,
     description,
@@ -256,7 +265,8 @@ export function generateWeeklyQuest(): Quest {
   const categoryTemplate = QUEST_TEMPLATES[Math.floor(Math.random() * QUEST_TEMPLATES.length)];
 
   // Pick random template from category
-  const template = categoryTemplate.templates[Math.floor(Math.random() * categoryTemplate.templates.length)];
+  const template =
+    categoryTemplate.templates[Math.floor(Math.random() * categoryTemplate.templates.length)];
 
   // Get translated title and description (for backward compat in stored quests)
   const title = t[template.titleKey] as string;
@@ -265,9 +275,9 @@ export function generateWeeklyQuest(): Quest {
   // Determine count from template or fallback
   let count = template.condition.count || 7;
   if (!template.condition.count) {
-    if (template.condition.type === 'focus_minutes') {
+    if (template.condition.type === "focus_minutes") {
       count = 300; // 5 hours total for weekly
-    } else if (template.condition.type === 'consecutive_days') {
+    } else if (template.condition.type === "consecutive_days") {
       count = 7;
     }
   }
@@ -281,7 +291,7 @@ export function generateWeeklyQuest(): Quest {
 
   return {
     id: `quest-weekly-${now}`,
-    type: 'weekly',
+    type: "weekly",
     category: categoryTemplate.category,
     title, // No prefix — added at render time by QuestsPanel
     description,
@@ -312,12 +322,13 @@ export function generateBonusQuest(): Quest {
   const t = getQuestTranslations();
 
   // Only hard quests with badges
-  const hardTemplates = QUEST_TEMPLATES
-    .flatMap(cat => cat.templates.filter(t => t.badgeReward));
+  const hardTemplates = QUEST_TEMPLATES.flatMap((cat) =>
+    cat.templates.filter((t) => t.badgeReward)
+  );
 
   const template = hardTemplates[Math.floor(Math.random() * hardTemplates.length)];
-  const categoryTemplate = QUEST_TEMPLATES.find(cat =>
-    cat.templates.some(t => t.titleKey === template.titleKey)
+  const categoryTemplate = QUEST_TEMPLATES.find((cat) =>
+    cat.templates.some((t) => t.titleKey === template.titleKey)
   );
 
   // Get translated title and description (for backward compat in stored quests)
@@ -327,22 +338,22 @@ export function generateBonusQuest(): Quest {
   let count = 10;
   let total = 10;
 
-  if (template.condition.type === 'focus_minutes') {
+  if (template.condition.type === "focus_minutes") {
     count = 120; // 2 hours
     total = 120;
-  } else if (template.condition.type === 'complete_habits') {
+  } else if (template.condition.type === "complete_habits") {
     count = 10;
     total = 10;
   }
 
   // Bonus quests expire in 24 hours
   const now = Date.now();
-  const expires = now + (24 * 60 * 60 * 1000);
+  const expires = now + 24 * 60 * 60 * 1000;
 
   return {
     id: `quest-bonus-${now}`,
-    type: 'bonus',
-    category: categoryTemplate?.category ?? 'habits',
+    type: "bonus",
+    category: categoryTemplate?.category ?? "habits",
     title, // No prefix — added at render time by QuestsPanel
     description, // No suffix — added at render time
     titleKey: template.titleKey,
@@ -370,7 +381,7 @@ export function generateBonusQuest(): Quest {
 export function updateQuestProgress(
   quest: Quest,
   action: {
-    type: 'habit_completed' | 'focus_completed' | 'gratitude_added' | 'streak_updated';
+    type: "habit_completed" | "focus_completed" | "gratitude_added" | "streak_updated";
     value: number;
     timestamp?: number;
   }
@@ -382,13 +393,13 @@ export function updateQuestProgress(
   let newProgress = quest.progress;
 
   // Match action to quest condition
-  if (action.type === 'habit_completed' && quest.condition.type === 'complete_habits') {
+  if (action.type === "habit_completed" && quest.condition.type === "complete_habits") {
     newProgress += action.value;
-  } else if (action.type === 'focus_completed' && quest.condition.type === 'focus_minutes') {
+  } else if (action.type === "focus_completed" && quest.condition.type === "focus_minutes") {
     newProgress += action.value;
-  } else if (action.type === 'gratitude_added' && quest.condition.type === 'gratitude_count') {
+  } else if (action.type === "gratitude_added" && quest.condition.type === "gratitude_count") {
     newProgress += action.value;
-  } else if (action.type === 'streak_updated' && quest.condition.type === 'maintain_streak') {
+  } else if (action.type === "streak_updated" && quest.condition.type === "maintain_streak") {
     newProgress = action.value;
   }
 
@@ -417,7 +428,7 @@ export function getQuestTimeRemaining(quest: Quest): string {
   const remaining = quest.expiresAt - now;
 
   if (remaining <= 0) {
-    return 'Expired';
+    return "Expired";
   }
 
   const hours = Math.floor(remaining / (1000 * 60 * 60));
@@ -440,12 +451,12 @@ export function getQuestTimeRemaining(quest: Quest): string {
  */
 export function getQuestCategoryEmoji(category: QuestCategory): string {
   const emojis: Record<QuestCategory, string> = {
-    habits: '✅',
-    focus: '🎯',
-    streak: '🔥',
-    gratitude: '💖',
-    speed: '⚡',
-    consistency: '💪',
+    habits: "✅",
+    focus: "🎯",
+    streak: "🔥",
+    gratitude: "💖",
+    speed: "⚡",
+    consistency: "💪",
   };
 
   return emojis[category];
@@ -456,9 +467,9 @@ export function getQuestCategoryEmoji(category: QuestCategory): string {
  */
 export function getQuestDifficultyColor(type: QuestType): string {
   const colors: Record<QuestType, string> = {
-    daily: 'text-blue-500',
-    weekly: 'text-purple-500',
-    bonus: 'text-yellow-500',
+    daily: "text-blue-500",
+    weekly: "text-purple-500",
+    bonus: "text-yellow-500",
   };
 
   return colors[type];
@@ -468,20 +479,22 @@ export function getQuestDifficultyColor(type: QuestType): string {
  * Update all quests progress from localStorage and return newly completed quests
  * Call this from Index.tsx when user performs actions
  */
-export function updateAllQuestsProgress(
-  action: {
-    type: 'habit_completed' | 'focus_completed' | 'gratitude_added' | 'streak_updated';
-    value: number;
-  }
-): Quest[] {
+export function updateAllQuestsProgress(action: {
+  type: "habit_completed" | "focus_completed" | "gratitude_added" | "streak_updated";
+  value: number;
+}): Quest[] {
   try {
-    const data = safeLocalStorageGet<{ daily?: Quest | null; weekly?: Quest | null; bonus?: Quest | null }>(SK.QUESTS, null);
+    const data = safeLocalStorageGet<{
+      daily?: Quest | null;
+      weekly?: Quest | null;
+      bonus?: Quest | null;
+    }>(SK.QUESTS, null);
     if (!data) return [];
 
     const newlyCompleted: Quest[] = [];
 
     // Update each quest type
-    ['daily', 'weekly', 'bonus'].forEach(questType => {
+    ["daily", "weekly", "bonus"].forEach((questType) => {
       const quest = data[questType] as Quest | null;
       if (!quest || quest.completed || Date.now() > quest.expiresAt) return;
 
@@ -501,7 +514,7 @@ export function updateAllQuestsProgress(
 
     return newlyCompleted;
   } catch (error) {
-    logger.error('Failed to update quests progress:', error);
+    logger.error("Failed to update quests progress:", error);
     return [];
   }
 }

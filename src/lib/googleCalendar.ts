@@ -10,11 +10,13 @@
  * Uses existing Supabase Google OAuth for authentication.
  */
 
-import { supabase } from './supabaseClient';
-import { logger } from './logger';
-import { safeLocalStorageGet, safeLocalStorageSet, storageRemove } from './safeJson';
-import { SK } from '@/lib/storageKeys';
-import { rateLimiter, RateLimitError } from './rateLimiter';
+import { supabase } from "./supabaseClient";
+import { logger } from "./logger";
+import { safeLocalStorageGet, safeLocalStorageSet, storageRemove } from "./safeJson";
+import { SK } from "@/lib/storageKeys";
+import { rateLimiter, RateLimitError } from "./rateLimiter";
+import { getLocale } from "./timeUtils";
+import type { Language } from "@/i18n/translations";
 
 // ============================================
 // TYPES
@@ -59,16 +61,16 @@ interface GoogleCalendarEventItem {
 // ============================================
 
 const CACHE_DURATION_MS = 15 * 60 * 1000; // 15 minutes
-const CALENDAR_API_BASE = 'https://www.googleapis.com/calendar/v3';
+const CALENDAR_API_BASE = "https://www.googleapis.com/calendar/v3";
 
 /**
  * Rate-limited fetch for Google Calendar API
  * Prevents hitting Google's rate limits
  */
 async function calendarFetch(url: string, options?: RequestInit): Promise<Response> {
-  if (!rateLimiter.checkAndRecord('googleCalendar')) {
-    const retryAfter = rateLimiter.getTimeUntilReset('googleCalendar');
-    throw new RateLimitError('googleCalendar', retryAfter);
+  if (!rateLimiter.checkAndRecord("googleCalendar")) {
+    const retryAfter = rateLimiter.getTimeUntilReset("googleCalendar");
+    throw new RateLimitError("googleCalendar", retryAfter);
   }
   return fetch(url, options);
 }
@@ -110,7 +112,7 @@ export function setCalendarEnabled(enabled: boolean): void {
   };
   state.enabled = enabled;
   saveCacheState(state);
-  logger.log('[Calendar] Integration', enabled ? 'enabled' : 'disabled');
+  logger.log("[Calendar] Integration", enabled ? "enabled" : "disabled");
 }
 
 // ============================================
@@ -124,17 +126,20 @@ export async function isCalendarConnected(): Promise<boolean> {
   if (!supabase) return false;
 
   try {
-    const { data: { session } } = await supabase.auth.getSession();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
     if (!session?.provider_token) return false;
 
     // Check if the provider is Google
     const user = session.user;
-    const isGoogle = user?.app_metadata?.provider === 'google' ||
-                     user?.identities?.some(i => i.provider === 'google');
+    const isGoogle =
+      user?.app_metadata?.provider === "google" ||
+      user?.identities?.some((i) => i.provider === "google");
 
     return isGoogle && !!session.provider_token;
   } catch (error) {
-    logger.error('[Calendar] Connection check failed:', error);
+    logger.error("[Calendar] Connection check failed:", error);
     return false;
   }
 }
@@ -146,10 +151,12 @@ async function getAccessToken(): Promise<string | null> {
   if (!supabase) return null;
 
   try {
-    const { data: { session } } = await supabase.auth.getSession();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
     return session?.provider_token || null;
   } catch (error) {
-    logger.error('[Calendar] Failed to get access token:', error);
+    logger.error("[Calendar] Failed to get access token:", error);
     return null;
   }
 }
@@ -161,12 +168,10 @@ async function getAccessToken(): Promise<string | null> {
 /**
  * Fetch events from Google Calendar
  */
-export async function fetchCalendarEvents(
-  date: Date = new Date()
-): Promise<CalendarEvent[]> {
+export async function fetchCalendarEvents(date: Date = new Date()): Promise<CalendarEvent[]> {
   const token = await getAccessToken();
   if (!token) {
-    logger.warn('[Calendar] No access token available');
+    logger.warn("[Calendar] No access token available");
     return [];
   }
 
@@ -181,9 +186,9 @@ export async function fetchCalendarEvents(
     const params = new URLSearchParams({
       timeMin: startOfDay.toISOString(),
       timeMax: endOfDay.toISOString(),
-      singleEvents: 'true',
-      orderBy: 'startTime',
-      maxResults: '50',
+      singleEvents: "true",
+      orderBy: "startTime",
+      maxResults: "50",
     });
 
     const response = await calendarFetch(
@@ -197,7 +202,7 @@ export async function fetchCalendarEvents(
 
     if (!response.ok) {
       if (response.status === 401) {
-        logger.warn('[Calendar] Token expired or invalid');
+        logger.warn("[Calendar] Token expired or invalid");
         return [];
       }
       throw new Error(`Calendar API error: ${response.status}`);
@@ -215,7 +220,7 @@ export async function fetchCalendarEvents(
       })
       .map((item) => ({
         id: item.id,
-        title: item.summary || 'Untitled Event',
+        title: item.summary || "Untitled Event",
         description: item.description,
         startTime: new Date(item.start.dateTime || item.start.date),
         endTime: new Date(item.end.dateTime || item.end.date),
@@ -224,10 +229,10 @@ export async function fetchCalendarEvents(
         color: item.colorId ? getColorForId(item.colorId) : undefined,
       }));
 
-    logger.log('[Calendar] Fetched', events.length, 'events');
+    logger.log("[Calendar] Fetched", events.length, "events");
     return events;
   } catch (error) {
-    logger.error('[Calendar] Fetch events failed:', error);
+    logger.error("[Calendar] Fetch events failed:", error);
     return [];
   }
 }
@@ -235,9 +240,7 @@ export async function fetchCalendarEvents(
 /**
  * Sync calendar events (with caching)
  */
-export async function syncCalendarEvents(
-  forceRefresh: boolean = false
-): Promise<CalendarEvent[]> {
+export async function syncCalendarEvents(forceRefresh: boolean = false): Promise<CalendarEvent[]> {
   // Check if enabled
   if (!isCalendarEnabled()) {
     return [];
@@ -246,7 +249,7 @@ export async function syncCalendarEvents(
   // Check if connected
   const connected = await isCalendarConnected();
   if (!connected) {
-    logger.warn('[Calendar] Not connected to Google');
+    logger.warn("[Calendar] Not connected to Google");
     return [];
   }
 
@@ -254,8 +257,8 @@ export async function syncCalendarEvents(
   const state = getCachedState();
   const now = Date.now();
 
-  if (!forceRefresh && state && (now - state.lastSyncAt) < CACHE_DURATION_MS) {
-    logger.log('[Calendar] Using cached events');
+  if (!forceRefresh && state && now - state.lastSyncAt < CACHE_DURATION_MS) {
+    logger.log("[Calendar] Using cached events");
     return state.events;
   }
 
@@ -296,15 +299,11 @@ export function getEventsInRange(
 /**
  * Get current or next upcoming event
  */
-export function getCurrentOrNextEvent(
-  events: CalendarEvent[]
-): CalendarEvent | null {
+export function getCurrentOrNextEvent(events: CalendarEvent[]): CalendarEvent | null {
   const now = new Date();
 
   // Find current event (happening now)
-  const current = events.find(
-    (e) => e.startTime <= now && e.endTime > now
-  );
+  const current = events.find((e) => e.startTime <= now && e.endTime > now);
   if (current) return current;
 
   // Find next upcoming event
@@ -322,15 +321,16 @@ export function getCurrentOrNextEvent(
 /**
  * Format event time for display
  */
-export function formatEventTime(event: CalendarEvent): string {
+export function formatEventTime(event: CalendarEvent, language: Language = "en"): string {
   if (event.isAllDay) {
-    return 'All day';
+    return "All day";
   }
 
+  const locale = getLocale(language);
   const formatTime = (date: Date) => {
-    return date.toLocaleTimeString([], {
-      hour: '2-digit',
-      minute: '2-digit',
+    return date.toLocaleTimeString(locale, {
+      hour: "2-digit",
+      minute: "2-digit",
       hour12: false,
     });
   };
@@ -342,9 +342,7 @@ export function formatEventTime(event: CalendarEvent): string {
  * Get duration in minutes
  */
 export function getEventDuration(event: CalendarEvent): number {
-  return Math.round(
-    (event.endTime.getTime() - event.startTime.getTime()) / (1000 * 60)
-  );
+  return Math.round((event.endTime.getTime() - event.startTime.getTime()) / (1000 * 60));
 }
 
 /**
@@ -352,19 +350,19 @@ export function getEventDuration(event: CalendarEvent): number {
  */
 function getColorForId(colorId: string): string {
   const colors: Record<string, string> = {
-    '1': '#7986cb', // Lavender
-    '2': '#33b679', // Sage
-    '3': '#8e24aa', // Grape
-    '4': '#e67c73', // Flamingo
-    '5': '#f6bf26', // Banana
-    '6': '#f4511e', // Tangerine
-    '7': '#039be5', // Peacock
-    '8': '#616161', // Graphite
-    '9': '#3f51b5', // Blueberry
-    '10': '#0b8043', // Basil
-    '11': '#d50000', // Tomato
+    "1": "#7986cb", // Lavender
+    "2": "#33b679", // Sage
+    "3": "#8e24aa", // Grape
+    "4": "#e67c73", // Flamingo
+    "5": "#f6bf26", // Banana
+    "6": "#f4511e", // Tangerine
+    "7": "#039be5", // Peacock
+    "8": "#616161", // Graphite
+    "9": "#3f51b5", // Blueberry
+    "10": "#0b8043", // Basil
+    "11": "#d50000", // Tomato
   };
-  return colors[colorId] || '#4285f4';
+  return colors[colorId] || "#4285f4";
 }
 
 /**
@@ -377,16 +375,14 @@ const dateCache = new Map<string, { events: CalendarEvent[]; fetchedAt: number }
  * Fetch calendar events with per-date caching (15-minute TTL).
  * Use this instead of fetchCalendarEvents for repeated calls.
  */
-export async function fetchCalendarEventsWithCache(
-  date: Date
-): Promise<CalendarEvent[]> {
+export async function fetchCalendarEventsWithCache(date: Date): Promise<CalendarEvent[]> {
   if (!isCalendarEnabled()) return [];
 
-  const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
   const cached = dateCache.get(key);
 
-  if (cached && (Date.now() - cached.fetchedAt) < CACHE_DURATION_MS) {
-    logger.log('[Calendar] Using per-date cache for', key);
+  if (cached && Date.now() - cached.fetchedAt < CACHE_DURATION_MS) {
+    logger.log("[Calendar] Using per-date cache for", key);
     return cached.events;
   }
 
@@ -401,7 +397,7 @@ export async function fetchCalendarEventsWithCache(
 export function clearCalendarCache(): void {
   storageRemove(SK.CALENDAR_CACHE);
   dateCache.clear();
-  logger.log('[Calendar] Cache cleared');
+  logger.log("[Calendar] Cache cleared");
 }
 
 export default {

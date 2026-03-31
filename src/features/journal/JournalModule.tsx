@@ -1,11 +1,4 @@
-import {
-  useState,
-  useEffect,
-  useCallback,
-  useRef,
-  useMemo,
-  Suspense,
-} from "react";
+import { useState, useEffect, useCallback, useRef, useMemo, Suspense } from "react";
 import {
   Lock,
   ChevronRight,
@@ -41,10 +34,7 @@ import { logger } from "@/lib/logger";
 import { SK } from "@/lib/storageKeys";
 import { storageGetRaw, storageSetRaw, storageRemove } from "@/lib/safeJson";
 import { StickerRenderer } from "./StickerRenderer";
-import {
-  useJournalReminder,
-  getDaysSinceLastEntry,
-} from "./useJournalReminder";
+import { useJournalReminder, getDaysSinceLastEntry } from "./useJournalReminder";
 import { useScreenSecurity } from "./useScreenSecurity";
 import { ParticleBackground } from "@/components/stats/ParticleBackground";
 import { useGamificationStore } from "@/stores";
@@ -54,7 +44,7 @@ import { lazyWithRetry } from "@/lib/lazyWithRetry";
 // Lazy-load JournalStats to avoid CJS TDZ (Recharts)
 const LazyJournalStats = lazyWithRetry(
   () => import("./JournalStats").then((m) => ({ default: m.JournalStats })),
-  "JournalStats",
+  "JournalStats"
 );
 
 type ModuleState = "card" | "open";
@@ -64,11 +54,8 @@ interface JournalModuleProps {
   onAddGratitude?: (entry: import("@/types").GratitudeEntry) => void;
 }
 
-export function JournalModule({
-  onToggleHabit,
-  onAddGratitude,
-}: JournalModuleProps = {}) {
-  const { t, isRTL } = useLanguage();
+export function JournalModule({ onToggleHabit, onAddGratitude }: JournalModuleProps = {}) {
+  const { t, isRTL, language } = useLanguage();
   const ts = t as unknown as Record<string, string>;
   const rewardUser = useGamificationStore((s) => s.rewardUser);
   const [moduleState, setModuleState] = useState<ModuleState>("card");
@@ -91,19 +78,11 @@ export function JournalModule({
     message: string;
   } | null>(null);
   const [hasDraft, setHasDraft] = useState(false);
-  const [showRemovePasswordConfirm, setShowRemovePasswordConfirm] =
-    useState(false);
+  const [showRemovePasswordConfirm, setShowRemovePasswordConfirm] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Secure password reset via email verification
-  type ResetStep =
-    | "idle"
-    | "checking"
-    | "no-account"
-    | "confirm"
-    | "sending"
-    | "sent"
-    | "success";
+  type ResetStep = "idle" | "checking" | "no-account" | "confirm" | "sending" | "sent" | "success";
   const [resetStep, setResetStep] = useState<ResetStep>("idle");
   const [resetEmail, setResetEmail] = useState("");
   const [resetError, setResetError] = useState("");
@@ -113,8 +92,7 @@ export function JournalModule({
   const reminder = useJournalReminder({
     reminderTitle: ts.journalReminderNotifTitle || "Time to Write",
     reminderBody:
-      ts.journalReminderNotifBody ||
-      "Take a moment to capture your thoughts and feelings.",
+      ts.journalReminderNotifBody || "Take a moment to capture your thoughts and feelings.",
   });
   const screenSecurity = useScreenSecurity(moduleState === "open");
 
@@ -134,13 +112,11 @@ export function JournalModule({
       if (pendingDeleteRef.current) {
         journal
           .commitDeleteEntry(pendingDeleteRef.current.id)
-          .catch((err) =>
-            logger.warn("[Journal]", "Cleanup commitDelete failed:", err),
-          );
+          .catch((err) => logger.warn("[Journal]", "Cleanup commitDelete failed:", err));
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps -- unmount-only: journal ref is stable, intentionally excluded to avoid re-running cleanup
-    [],
+    []
   );
 
   // Streak calculation from all entry dates
@@ -167,7 +143,7 @@ export function JournalModule({
 
   const daysSinceLastEntry = useMemo(
     () => getDaysSinceLastEntry(journal.entryDates),
-    [journal.entryDates],
+    [journal.entryDates]
   );
 
   const todayMood = useMemo(() => {
@@ -302,8 +278,7 @@ export function JournalModule({
           const milestones = [7, 14, 30, 60, 100];
           if (milestones.includes(newStreak)) {
             try {
-              const { playStreakMilestone } =
-                await import("@/lib/audioManager");
+              const { playStreakMilestone } = await import("@/lib/audioManager");
               playStreakMilestone();
             } catch {
               /* graceful: celebration audio is decorative */
@@ -312,7 +287,7 @@ export function JournalModule({
         }
       }
     },
-    [journal, streak, hasTodayEntry, rewardUser],
+    [journal, streak, hasTodayEntry, rewardUser]
   );
 
   const handleDeleteEntry = useCallback(
@@ -322,9 +297,7 @@ export function JournalModule({
         clearTimeout(deleteTimerRef.current);
         journal
           .commitDeleteEntry(pendingDelete.id)
-          .catch((err) =>
-            logger.warn("[Journal]", "commitDelete failed:", err),
-          );
+          .catch((err) => logger.warn("[Journal]", "commitDelete failed:", err));
       }
       // Soft-delete: remove from UI, keep in storage for 5s
       const entry = journal.softDeleteEntry(id);
@@ -333,13 +306,11 @@ export function JournalModule({
       deleteTimerRef.current = setTimeout(() => {
         journal
           .commitDeleteEntry(id)
-          .catch((err) =>
-            logger.warn("[Journal]", "commitDelete failed:", err),
-          );
+          .catch((err) => logger.warn("[Journal]", "commitDelete failed:", err));
         setPendingDelete(null);
       }, 5000);
     },
-    [journal, pendingDelete],
+    [journal, pendingDelete]
   );
 
   const handleUndoDelete = useCallback(() => {
@@ -395,10 +366,7 @@ export function JournalModule({
       storageSetRaw(SK.JOURNAL_PASSWORD_RESET, String(Date.now()));
       setResetStep("sent");
     } catch {
-      setResetError(
-        ts.journalResetSendFailed ||
-          "Failed to send link. Check your connection.",
-      );
+      setResetError(ts.journalResetSendFailed || "Failed to send link. Check your connection.");
       setResetStep("confirm");
     }
   };
@@ -447,7 +415,7 @@ export function JournalModule({
           "backdrop-blur-md border border-purple-500/15 dark:border-purple-500/10",
           "shadow-[0_2px_20px_rgba(139,92,246,0.08)]",
           "transition-all duration-300",
-          "hover:shadow-[0_4px_25px_rgba(139,92,246,0.15)]",
+          "hover:shadow-[0_4px_25px_rgba(139,92,246,0.15)]"
         )}
       >
         {/* Row 1: Title + status badge */}
@@ -456,7 +424,7 @@ export function JournalModule({
             <div
               className={cn(
                 "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
-                "bg-gradient-to-br from-purple-500/20 to-violet-500/10",
+                "bg-gradient-to-br from-purple-500/20 to-violet-500/10"
               )}
             >
               {todayMood ? (
@@ -504,9 +472,7 @@ export function JournalModule({
         <div className="flex items-center gap-3">
           {entryCount > 0 && (
             <span className="text-xs text-muted-foreground">
-              <span className="font-semibold text-foreground">
-                {entryCount}
-              </span>{" "}
+              <span className="font-semibold text-foreground">{entryCount}</span>{" "}
               {ts.journalEntries || "entries"}
             </span>
           )}
@@ -538,9 +504,7 @@ export function JournalModule({
           <>
             {/* Header with close */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-border/30">
-              <h2 className="text-base font-bold text-foreground">
-                {ts.journalTitle || "Diary"}
-              </h2>
+              <h2 className="text-base font-bold text-foreground">{ts.journalTitle || "Diary"}</h2>
               <button
                 onClick={handleClose}
                 className="p-2 rounded-lg hover:bg-muted/50 min-w-[44px] min-h-[44px] flex items-center justify-center"
@@ -557,13 +521,9 @@ export function JournalModule({
               onSetPassword={security.setPassword}
               onForgotPassword={handleForgotPassword}
               onBiometricUnlock={
-                security.biometricEnabled
-                  ? security.unlockWithBiometric
-                  : undefined
+                security.biometricEnabled ? security.unlockWithBiometric : undefined
               }
-              biometricAvailable={
-                security.biometricAvailable && security.biometricEnabled
-              }
+              biometricAvailable={security.biometricAvailable && security.biometricEnabled}
             />
 
             {/* Secure password reset dialog (email verification) */}
@@ -624,16 +584,13 @@ export function JournalModule({
                         {ts.journalResetViaEmail || "Reset via email"}
                       </h3>
                       <p className="text-sm text-muted-foreground text-center mb-1">
-                        {ts.journalResetConfirm ||
-                          "We'll send a verification link to"}
+                        {ts.journalResetConfirm || "We'll send a verification link to"}
                       </p>
                       <p className="text-sm font-medium text-foreground text-center mb-4">
                         {maskEmail(resetEmail)}
                       </p>
                       {resetError && (
-                        <p className="text-xs text-destructive text-center mb-3">
-                          {resetError}
-                        </p>
+                        <p className="text-xs text-destructive text-center mb-3">{resetError}</p>
                       )}
                       <div className="flex gap-2">
                         <button
@@ -649,14 +606,11 @@ export function JournalModule({
                           className={cn(
                             "flex-1 py-2.5 rounded-xl text-sm font-medium min-h-[44px]",
                             "bg-primary text-primary-foreground",
-                            "disabled:opacity-50 flex items-center justify-center gap-2",
+                            "disabled:opacity-50 flex items-center justify-center gap-2"
                           )}
                         >
                           {resetStep === "sending" && (
-                            <Loader2
-                              className="w-4 h-4 animate-spin"
-                              aria-hidden="true"
-                            />
+                            <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
                           )}
                           {ts.journalResetSendLink || "Send Link"}
                         </button>
@@ -676,8 +630,7 @@ export function JournalModule({
                         {ts.journalResetLinkSent || "Check your email"}
                       </h3>
                       <p className="text-xs text-muted-foreground text-center mb-2">
-                        {ts.journalResetLinkHint ||
-                          "We sent a verification link to"}
+                        {ts.journalResetLinkHint || "We sent a verification link to"}
                       </p>
                       <p className="text-sm font-medium text-foreground text-center mb-4">
                         {maskEmail(resetEmail)}
@@ -687,18 +640,12 @@ export function JournalModule({
                           "Click the link in your email to remove the diary password. This page will update automatically."}
                       </p>
                       {resetError && (
-                        <p className="text-xs text-destructive text-center mb-3">
-                          {resetError}
-                        </p>
+                        <p className="text-xs text-destructive text-center mb-3">{resetError}</p>
                       )}
                       <div className="flex items-center justify-center gap-2 mb-3">
-                        <Loader2
-                          className="w-4 h-4 animate-spin text-primary"
-                          aria-hidden="true"
-                        />
+                        <Loader2 className="w-4 h-4 animate-spin text-primary" aria-hidden="true" />
                         <span className="text-xs text-muted-foreground">
-                          {ts.journalResetWaiting ||
-                            "Waiting for verification..."}
+                          {ts.journalResetWaiting || "Waiting for verification..."}
                         </span>
                       </div>
                       <button
@@ -777,11 +724,7 @@ export function JournalModule({
         {/* Main content (unlocked or no password) */}
         {!security.isLocked &&
           !security.loading &&
-          !(
-            showPasswordSettings &&
-            security.hasPassword === false &&
-            journal.totalCount === 0
-          ) && (
+          !(showPasswordSettings && security.hasPassword === false && journal.totalCount === 0) && (
             <>
               {/* Editor overlays on top with its own fixed positioning */}
               {journal.view === "editing" && (
@@ -824,10 +767,7 @@ export function JournalModule({
                         </div>
                       }
                     >
-                      <LazyJournalStats
-                        entries={journal.allEntries}
-                        onBack={journal.goBack}
-                      />
+                      <LazyJournalStats entries={journal.allEntries} onBack={journal.goBack} />
                     </Suspense>
                   </motion.div>
                 )}
@@ -844,9 +784,7 @@ export function JournalModule({
                     <JournalEntryViewer
                       entry={journal.activeEntry}
                       onEdit={() => journal.editEntry(journal.activeEntryId)}
-                      onDelete={() =>
-                        handleDeleteEntry(journal.activeEntry?.id || "")
-                      }
+                      onDelete={() => handleDeleteEntry(journal.activeEntry?.id || "")}
                       onBack={journal.goBack}
                     />
                   </motion.div>
@@ -978,10 +916,7 @@ export function JournalModule({
                                     onUnlock={async () => false}
                                     onSetPassword={async () => {}}
                                     onChangePassword={async (oldPw, newPw) => {
-                                      const ok = await security.changePassword(
-                                        oldPw,
-                                        newPw,
-                                      );
+                                      const ok = await security.changePassword(oldPw, newPw);
                                       if (ok) {
                                         setShowChangePassword(false);
                                         setShowPasswordSettings(false);
@@ -1002,25 +937,20 @@ export function JournalModule({
                                     onClick={() => setShowChangePassword(true)}
                                     className="w-full py-3 rounded-xl bg-primary/10 text-primary text-sm font-medium min-h-[44px]"
                                   >
-                                    {ts.journalPasswordChange ||
-                                      "Change Password"}
+                                    {ts.journalPasswordChange || "Change Password"}
                                   </button>
                                   <button
-                                    onClick={() =>
-                                      setShowRemovePasswordConfirm(true)
-                                    }
+                                    onClick={() => setShowRemovePasswordConfirm(true)}
                                     className="w-full py-3 rounded-xl bg-destructive/10 text-destructive text-sm font-medium min-h-[44px]"
                                   >
-                                    {ts.journalPasswordRemove ||
-                                      "Remove Password Lock"}
+                                    {ts.journalPasswordRemove || "Remove Password Lock"}
                                   </button>
                                 </div>
                               )
                             ) : (
                               <div>
                                 <p className="text-sm text-muted-foreground mb-3">
-                                  {ts.journalPasswordHint ||
-                                    "Protect your diary with a password"}
+                                  {ts.journalPasswordHint || "Protect your diary with a password"}
                                 </p>
                                 <JournalLockScreen
                                   mode="setup"
@@ -1035,34 +965,27 @@ export function JournalModule({
                               </div>
                             )}
                             {/* Biometric toggle (only if password set + biometric available) */}
-                            {security.hasPassword &&
-                              security.biometricAvailable && (
-                                <div className="mt-4 pt-4 border-t border-border/20">
-                                  <div className="flex items-center justify-between min-h-[44px]">
-                                    <div>
-                                      <p className="text-sm font-medium text-foreground">
-                                        {ts.journalBiometricEnable ||
-                                          "Biometric Unlock"}
-                                      </p>
-                                      <p className="text-xs text-muted-foreground">
-                                        {ts.journalBiometricSubtitle ||
-                                          "Use fingerprint or face to unlock"}
-                                      </p>
-                                    </div>
-                                    <Switch
-                                      checked={security.biometricEnabled}
-                                      onCheckedChange={
-                                        security.setBiometricEnabled
-                                      }
-                                      aria-label={
-                                        ts.journalBiometricEnable ||
-                                        "Biometric Unlock"
-                                      }
-                                      className="mt-0.5 shrink-0"
-                                    />
+                            {security.hasPassword && security.biometricAvailable && (
+                              <div className="mt-4 pt-4 border-t border-border/20">
+                                <div className="flex items-center justify-between min-h-[44px]">
+                                  <div>
+                                    <p className="text-sm font-medium text-foreground">
+                                      {ts.journalBiometricEnable || "Biometric Unlock"}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {ts.journalBiometricSubtitle ||
+                                        "Use fingerprint or face to unlock"}
+                                    </p>
                                   </div>
+                                  <Switch
+                                    checked={security.biometricEnabled}
+                                    onCheckedChange={security.setBiometricEnabled}
+                                    aria-label={ts.journalBiometricEnable || "Biometric Unlock"}
+                                    className="mt-0.5 shrink-0"
+                                  />
                                 </div>
-                              )}
+                              </div>
+                            )}
 
                             {/* Screenshot blocking (native only) */}
                             {screenSecurity.isNative && (
@@ -1070,8 +993,7 @@ export function JournalModule({
                                 <div className="flex items-center justify-between min-h-[44px]">
                                   <div>
                                     <p className="text-sm font-medium text-foreground">
-                                      {ts.journalScreenshotBlock ||
-                                        "Block Screenshots"}
+                                      {ts.journalScreenshotBlock || "Block Screenshots"}
                                     </p>
                                     <p className="text-xs text-muted-foreground">
                                       {ts.journalScreenshotBlockSubtitle ||
@@ -1081,10 +1003,7 @@ export function JournalModule({
                                   <Switch
                                     checked={screenSecurity.enabled}
                                     onCheckedChange={screenSecurity.setEnabled}
-                                    aria-label={
-                                      ts.journalScreenshotBlock ||
-                                      "Block Screenshots"
-                                    }
+                                    aria-label={ts.journalScreenshotBlock || "Block Screenshots"}
                                     className="mt-0.5 shrink-0"
                                   />
                                 </div>
@@ -1099,22 +1018,16 @@ export function JournalModule({
                                     {ts.journalPrivateMode || "Hide previews"}
                                   </p>
                                   <p className="text-xs text-muted-foreground">
-                                    {ts.journalPrivateModeHint ||
-                                      "Show only titles in entry list"}
+                                    {ts.journalPrivateModeHint || "Show only titles in entry list"}
                                   </p>
                                 </div>
                                 <Switch
                                   checked={privateMode}
                                   onCheckedChange={(checked) => {
                                     setPrivateMode(checked);
-                                    storageSetRaw(
-                                      SK.JOURNAL_PRIVATE_MODE,
-                                      String(checked),
-                                    );
+                                    storageSetRaw(SK.JOURNAL_PRIVATE_MODE, String(checked));
                                   }}
-                                  aria-label={
-                                    ts.journalPrivateMode || "Hide previews"
-                                  }
+                                  aria-label={ts.journalPrivateMode || "Hide previews"}
                                   className="mt-0.5 shrink-0"
                                 />
                               </div>
@@ -1125,21 +1038,16 @@ export function JournalModule({
                               <div className="flex items-center justify-between min-h-[44px]">
                                 <div>
                                   <p className="text-sm font-medium text-foreground">
-                                    {ts.journalReminderEnabled ||
-                                      "Daily reminder"}
+                                    {ts.journalReminderEnabled || "Daily reminder"}
                                   </p>
                                   <p className="text-xs text-muted-foreground">
-                                    {ts.journalReminderSubtitle ||
-                                      "Get reminded to write"}
+                                    {ts.journalReminderSubtitle || "Get reminded to write"}
                                   </p>
                                 </div>
                                 <Switch
                                   checked={reminder.enabled}
                                   onCheckedChange={reminder.setEnabled}
-                                  aria-label={
-                                    ts.journalReminderEnabled ||
-                                    "Daily reminder"
-                                  }
+                                  aria-label={ts.journalReminderEnabled || "Daily reminder"}
                                   className="mt-0.5 shrink-0"
                                 />
                               </div>
@@ -1152,11 +1060,8 @@ export function JournalModule({
                                     type="time"
                                     value={`${String(reminder.hour).padStart(2, "0")}:${String(reminder.minute).padStart(2, "0")}`}
                                     onChange={(e) => {
-                                      const [h, m] = e.target.value
-                                        .split(":")
-                                        .map(Number);
-                                      if (!isNaN(h) && !isNaN(m))
-                                        void reminder.setTime(h, m);
+                                      const [h, m] = e.target.value.split(":").map(Number);
+                                      if (!isNaN(h) && !isNaN(m)) void reminder.setTime(h, m);
                                     }}
                                     className="px-2 py-1 rounded-lg bg-muted/50 border border-border/30 text-sm text-foreground min-h-[36px]"
                                   />
@@ -1213,10 +1118,8 @@ export function JournalModule({
                                   setImporting(true);
                                   setImportFeedback(null);
                                   try {
-                                    const { importJournalBackup } =
-                                      await import("./journalImport");
-                                    const result =
-                                      await importJournalBackup(file);
+                                    const { importJournalBackup } = await import("./journalImport");
+                                    const result = await importJournalBackup(file);
                                     void journal.refresh();
                                     if (result.errors.length > 0) {
                                       const msg = `${ts.journalImportPartial || "Imported with errors"}: ${result.imported} ${ts.journalImportEntries || "entries"}, ${result.errors.length} ${ts.journalImportErrors || "errors"}`;
@@ -1233,22 +1136,15 @@ export function JournalModule({
                                       });
                                       announceSuccess(msg);
                                     }
-                                    setTimeout(
-                                      () => setImportFeedback(null),
-                                      5000,
-                                    );
+                                    setTimeout(() => setImportFeedback(null), 5000);
                                   } catch {
-                                    const msg =
-                                      ts.journalImportFailed || "Import failed";
+                                    const msg = ts.journalImportFailed || "Import failed";
                                     setImportFeedback({
                                       type: "error",
                                       message: msg,
                                     });
                                     announceError(msg);
-                                    setTimeout(
-                                      () => setImportFeedback(null),
-                                      5000,
-                                    );
+                                    setTimeout(() => setImportFeedback(null), 5000);
                                   } finally {
                                     setImporting(false);
                                   }
@@ -1260,7 +1156,7 @@ export function JournalModule({
                                     "text-xs mt-2 px-3 py-2 rounded-lg text-center",
                                     importFeedback.type === "success"
                                       ? "bg-green-500/10 text-green-600 dark:text-green-400"
-                                      : "bg-destructive/10 text-destructive",
+                                      : "bg-destructive/10 text-destructive"
                                   )}
                                 >
                                   {importFeedback.message}
@@ -1309,32 +1205,24 @@ export function JournalModule({
                                 [
                                   {
                                     key: "json",
-                                    label:
-                                      ts.journalExportJSON || "JSON Backup",
+                                    label: ts.journalExportJSON || "JSON Backup",
                                     desc:
-                                      ts.journalExportJSONDesc ||
-                                      "Full backup with photos & audio",
+                                      ts.journalExportJSONDesc || "Full backup with photos & audio",
                                   },
                                   {
                                     key: "csv",
                                     label: ts.journalExportCSV || "CSV",
-                                    desc:
-                                      ts.journalExportCSVDesc ||
-                                      "Spreadsheet format",
+                                    desc: ts.journalExportCSVDesc || "Spreadsheet format",
                                   },
                                   {
                                     key: "pdf",
                                     label: ts.journalExportPDF || "PDF",
-                                    desc:
-                                      ts.journalExportPDFDesc ||
-                                      "Printable document",
+                                    desc: ts.journalExportPDFDesc || "Printable document",
                                   },
                                   {
                                     key: "md",
                                     label: ts.journalExportText || "Markdown",
-                                    desc:
-                                      ts.journalExportTextDesc ||
-                                      "Plain text format",
+                                    desc: ts.journalExportTextDesc || "Plain text format",
                                   },
                                 ] as const
                               ).map((fmt) => (
@@ -1344,22 +1232,15 @@ export function JournalModule({
                                   onClick={async () => {
                                     setExporting(true);
                                     try {
-                                      const exp =
-                                        await import("./journalExport");
-                                      if (fmt.key === "json")
-                                        await exp.exportJSON();
-                                      else if (fmt.key === "csv")
-                                        await exp.exportCSV();
+                                      const exp = await import("./journalExport");
+                                      if (fmt.key === "json") await exp.exportJSON();
+                                      else if (fmt.key === "csv") await exp.exportCSV(language);
                                       else if (fmt.key === "pdf")
-                                        await exp.exportPDF();
-                                      else if (fmt.key === "md")
-                                        await exp.exportMarkdown();
+                                        await exp.exportPDF(undefined, language);
+                                      else if (fmt.key === "md") await exp.exportMarkdown(language);
                                       setShowExportPicker(false);
                                     } catch (err) {
-                                      logger.warn(
-                                        "[Journal] Export failed:",
-                                        err,
-                                      );
+                                      logger.warn("[Journal] Export failed:", err);
                                     } finally {
                                       setExporting(false);
                                     }
@@ -1368,12 +1249,10 @@ export function JournalModule({
                                     "p-3 rounded-xl text-start transition-all min-h-[44px]",
                                     "bg-muted/30 border border-border/15",
                                     "hover:bg-muted/50 active:scale-[0.98]",
-                                    "disabled:opacity-50",
+                                    "disabled:opacity-50"
                                   )}
                                 >
-                                  <p className="text-sm font-medium text-foreground">
-                                    {fmt.label}
-                                  </p>
+                                  <p className="text-sm font-medium text-foreground">{fmt.label}</p>
                                   <p className="text-[10px] text-muted-foreground/60 mt-0.5">
                                     {fmt.desc}
                                   </p>
@@ -1407,9 +1286,7 @@ export function JournalModule({
             className="fixed bottom-20 inset-x-4 z-[55] flex justify-center pointer-events-none"
           >
             <div className="bg-foreground text-background rounded-xl px-4 py-3 flex items-center gap-3 shadow-lg max-w-sm w-full pointer-events-auto">
-              <span className="text-sm flex-1">
-                {ts.entryDeleted || "Entry deleted"}
-              </span>
+              <span className="text-sm flex-1">{ts.entryDeleted || "Entry deleted"}</span>
               <button
                 onClick={handleUndoDelete}
                 className="text-sm font-semibold text-primary min-w-[44px] min-h-[44px] flex items-center justify-center"

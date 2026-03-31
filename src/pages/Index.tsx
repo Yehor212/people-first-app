@@ -41,44 +41,43 @@ import { AuthGate } from "@/components/AuthGate";
 import { useDeepLinkHandler } from "@/hooks/useDeepLinkHandler";
 import { HomeTab } from "@/components/tabs/HomeTab";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
+import { LazyErrorBoundary } from "@/components/ErrorBoundary";
 
 const GardenTab = lazyWithRetry(
   () =>
     import("@/components/tabs/GardenTab").then((m) => ({
       default: m.GardenTab,
     })),
-  "GardenTab",
+  "GardenTab"
 );
 const StatsTab = lazyWithRetry(
-  () =>
-    import("@/components/tabs/StatsTab").then((m) => ({ default: m.StatsTab })),
-  "StatsTab",
+  () => import("@/components/tabs/StatsTab").then((m) => ({ default: m.StatsTab })),
+  "StatsTab"
 );
 const AchievementsTab = lazyWithRetry(
   () =>
     import("@/components/tabs/AchievementsTab").then((m) => ({
       default: m.AchievementsTab,
     })),
-  "AchievementsTab",
+  "AchievementsTab"
 );
 const SettingsTab = lazyWithRetry(
   () =>
     import("@/components/tabs/SettingsTab").then((m) => ({
       default: m.SettingsTab,
     })),
-  "SettingsTab",
+  "SettingsTab"
 );
 const MindMapTab = lazyWithRetry(
   () =>
     import("@/components/tabs/MindMapTab").then((m) => ({
       default: m.MindMapTab,
     })),
-  "MindMapTab",
+  "MindMapTab"
 );
 const HabitHubTab = lazyWithRetry(
-  () =>
-    import("@/components/habit-hub").then((m) => ({ default: m.HabitHubTab })),
-  "HabitHubTab",
+  () => import("@/components/habit-hub").then((m) => ({ default: m.HabitHubTab })),
+  "HabitHubTab"
 );
 import { useCanvasHandlers } from "@/hooks/useCanvasHandlers";
 import { useGamification } from "@/hooks/useGamification";
@@ -111,13 +110,12 @@ export function Index() {
       }
       setActiveTab(tab);
     },
-    [activeTab, setActiveTab],
+    [activeTab, setActiveTab]
   );
 
   useEffect(() => {
     return () => {
-      if (quickActionTimeoutRef.current)
-        clearTimeout(quickActionTimeoutRef.current);
+      if (quickActionTimeoutRef.current) clearTimeout(quickActionTimeoutRef.current);
     };
   }, []);
 
@@ -133,16 +131,15 @@ export function Index() {
     "stats",
     "settings",
   ];
-  const { containerProps: swipeProps, containerRef: swipeContainerRef } =
-    useSwipeNavigation({
-      activeTab,
-      onTabChange: (tab: TabType) => setActiveTab(tab),
-      tabs: SWIPE_TABS,
-      threshold: 50,
-      velocityThreshold: 0.3,
-      isRTL,
-      enabled: HABIT_HUB_ENABLED || activeTab !== "mindmap",
-    });
+  const { containerProps: swipeProps, containerRef: swipeContainerRef } = useSwipeNavigation({
+    activeTab,
+    onTabChange: (tab: TabType) => setActiveTab(tab),
+    tabs: SWIPE_TABS,
+    threshold: 50,
+    velocityThreshold: 0.3,
+    isRTL,
+    enabled: HABIT_HUB_ENABLED || activeTab !== "mindmap",
+  });
 
   // Extracted lifecycle hooks (from Step 1 decomposition)
   useAppLifecycle();
@@ -163,20 +160,18 @@ export function Index() {
         block: "center",
       });
     },
-    [setActiveTab],
+    [setActiveTab]
   );
 
   const handleQuickAction = useCallback(
     (action: string) => {
       setActiveTab("home");
       quickActionTimeoutRef.current = setTimeout(() => {
-        if (action === "logMood")
-          moodRef.current?.scrollIntoView({ behavior: "smooth" });
-        if (action === "startFocus")
-          focusRef.current?.scrollIntoView({ behavior: "smooth" });
+        if (action === "logMood") moodRef.current?.scrollIntoView({ behavior: "smooth" });
+        if (action === "startFocus") focusRef.current?.scrollIntoView({ behavior: "smooth" });
       }, 100);
     },
-    [setActiveTab],
+    [setActiveTab]
   );
 
   // Gamification system
@@ -202,9 +197,7 @@ export function Index() {
 
   // Current focus minutes (real-time) from UI store
   const currentFocusMinutes = useUIStore((s) => s.currentFocusMinutes);
-  const focusMiniPlayerActive = useUIStore(
-    (s) => s.focusIsRunning || s.focusEndTime !== null,
-  );
+  const focusMiniPlayerActive = useUIStore((s) => s.focusIsRunning || s.focusEndTime !== null);
 
   const [challenges, setChallenges] = useState(() => getChallenges());
   const [badges, setBadges] = useState(() => getBadges());
@@ -237,16 +230,15 @@ export function Index() {
   useAuthSession(isLoading);
 
   // Challenge/feature unlock handlers (used by mood/habit/focus/gratitude handlers)
-  const { checkForFeatureUnlocks, updateChallengeProgress } =
-    useChallengeHandlers({
-      safeMoods: moods,
-      safeHabits: habits,
-      safeFocusSessions: focusSessions,
-      safeGratitudeEntries: gratitudeEntries,
-      currentActiveStreak: innerWorld.currentActiveStreak,
-      setChallenges,
-      setBadges,
-    });
+  const { checkForFeatureUnlocks, updateChallengeProgress } = useChallengeHandlers({
+    safeMoods: moods,
+    safeHabits: habits,
+    safeFocusSessions: focusSessions,
+    safeGratitudeEntries: gratitudeEntries,
+    currentActiveStreak: innerWorld.currentActiveStreak,
+    setChallenges,
+    setBadges,
+  });
 
   // Feature handlers (extracted from Index.tsx body)
   const { handleAddMood, handleQuickMood } = useMoodHandlers({
@@ -290,12 +282,11 @@ export function Index() {
     updateChallengeProgress,
     checkForFeatureUnlocks,
   });
-  const { handleCompleteFocusSession, handleMindfulMomentComplete } =
-    useFocusHandlers({
-      earnTreats,
-      updateChallengeProgress,
-      checkForFeatureUnlocks,
-    });
+  const { handleCompleteFocusSession, handleMindfulMomentComplete } = useFocusHandlers({
+    earnTreats,
+    updateChallengeProgress,
+    checkForFeatureUnlocks,
+  });
   const { handleAddGratitude } = useGratitudeHandlers({
     earnTreats,
     attractCreature,
@@ -328,13 +319,7 @@ export function Index() {
   // Sync widget with calculated streak (same as StreakBanner shows)
   // Wait for all data that affects streak to be loaded
   const isWidgetDataLoading = isLoadingUserData || isLoadingInnerWorld;
-  useWidgetSync(
-    widgetStreak,
-    habits,
-    todayFocusMinutes,
-    lastBadgeName,
-    isWidgetDataLoading,
-  );
+  useWidgetSync(widgetStreak, habits, todayFocusMinutes, lastBadgeName, isWidgetDataLoading);
 
   // Settings/data management handlers
   const {
@@ -396,11 +381,7 @@ export function Index() {
             <OverlayLayer awardXp={awardXp} earnTreats={earnTreats} />
 
             {/* Swipe container for tab navigation on mobile */}
-            <div
-              ref={swipeContainerRef}
-              {...swipeProps}
-              className="min-h-screen"
-            >
+            <div ref={swipeContainerRef} {...swipeProps} className="min-h-screen">
               <main
                 id="main-content"
                 role="main"
@@ -424,136 +405,148 @@ export function Index() {
                     </div>
                   )}
 
-                <Suspense fallback={null}>
-                  <AnimatePresence mode="wait" initial={false}>
-                    <motion.div
-                      key={activeTab}
-                      initial={shouldAnimate() ? { opacity: 0 } : false}
-                      animate={{ opacity: 1 }}
-                      exit={shouldAnimate() ? { opacity: 0 } : undefined}
-                      transition={{ duration: 0.1 }}
-                    >
-                      {activeTab === "home" && (
-                        <HomeTab
-                          safeMoods={moods}
-                          safeHabits={habits}
-                          safeFocusSessions={focusSessions}
-                          currentActiveStreak={innerWorld.currentActiveStreak}
-                          isRestMode={isRestMode}
-                          activateRestMode={activateRestMode}
-                          deactivateRestMode={deactivateRestMode}
-                          canActivateRestMode={canActivateRestMode}
-                          completedTodayCount={completedTodayCount}
-                          currentPrimaryCTA={currentPrimaryCTA}
-                          handleAddMood={handleAddMood}
-                          handlePullToRefresh={handlePullToRefresh}
-                          moodRef={moodRef}
-                        />
-                      )}
+                <LazyErrorBoundary componentName="TabContent">
+                  <Suspense
+                    fallback={
+                      <div className="flex items-center justify-center p-8">
+                        <div className="animate-pulse h-64 w-full rounded-xl bg-muted" />
+                      </div>
+                    }
+                  >
+                    <AnimatePresence mode="wait" initial={false}>
+                      <motion.div
+                        key={activeTab}
+                        initial={shouldAnimate() ? { opacity: 0 } : false}
+                        animate={{ opacity: 1 }}
+                        exit={shouldAnimate() ? { opacity: 0 } : undefined}
+                        transition={{ duration: 0.1 }}
+                      >
+                        {activeTab === "home" && (
+                          <HomeTab
+                            safeMoods={moods}
+                            safeHabits={habits}
+                            safeFocusSessions={focusSessions}
+                            currentActiveStreak={innerWorld.currentActiveStreak}
+                            isRestMode={isRestMode}
+                            activateRestMode={activateRestMode}
+                            deactivateRestMode={deactivateRestMode}
+                            canActivateRestMode={canActivateRestMode}
+                            completedTodayCount={completedTodayCount}
+                            currentPrimaryCTA={currentPrimaryCTA}
+                            handleAddMood={handleAddMood}
+                            handlePullToRefresh={handlePullToRefresh}
+                            moodRef={moodRef}
+                          />
+                        )}
 
-                      {activeTab === "garden" && (
-                        <GardenTab
-                          safeMoods={moods}
-                          safeHabits={habits}
-                          safeFocusSessions={focusSessions}
-                          safeGratitudeEntries={gratitudeEntries}
-                          todayAllEvents={todayAllEvents}
-                          handleAddScheduleEvent={handleAddScheduleEvent}
-                          handleDeleteScheduleEvent={handleDeleteScheduleEvent}
-                          handleCompleteFocusSession={
-                            handleCompleteFocusSession
-                          }
-                          onToggleHabit={handleToggleHabit}
-                          onAddGratitude={handleAddGratitude}
-                          handlePullToRefresh={handlePullToRefresh}
-                        />
-                      )}
+                        {activeTab === "garden" && (
+                          <GardenTab
+                            safeMoods={moods}
+                            safeHabits={habits}
+                            safeFocusSessions={focusSessions}
+                            safeGratitudeEntries={gratitudeEntries}
+                            todayAllEvents={todayAllEvents}
+                            handleAddScheduleEvent={handleAddScheduleEvent}
+                            handleDeleteScheduleEvent={handleDeleteScheduleEvent}
+                            handleCompleteFocusSession={handleCompleteFocusSession}
+                            onToggleHabit={handleToggleHabit}
+                            onAddGratitude={handleAddGratitude}
+                            handlePullToRefresh={handlePullToRefresh}
+                          />
+                        )}
 
-                      {activeTab === "stats" && (
-                        <StatsTab
-                          safeMoods={moods}
-                          safeHabits={habits}
-                          safeFocusSessions={focusSessions}
-                          safeGratitudeEntries={gratitudeEntries}
-                          restDays={innerWorld.restDays}
-                          currentFocusMinutes={currentFocusMinutes}
-                          onQuickAction={handleQuickAction}
-                          handlePullToRefresh={handlePullToRefresh}
-                        />
-                      )}
+                        {activeTab === "stats" && (
+                          <StatsTab
+                            safeMoods={moods}
+                            safeHabits={habits}
+                            safeFocusSessions={focusSessions}
+                            safeGratitudeEntries={gratitudeEntries}
+                            restDays={innerWorld.restDays}
+                            currentFocusMinutes={currentFocusMinutes}
+                            onQuickAction={handleQuickAction}
+                            handlePullToRefresh={handlePullToRefresh}
+                          />
+                        )}
 
-                      {activeTab === "achievements" && (
-                        <AchievementsTab
-                          stats={stats}
-                          unlockedAchievements={
-                            gamificationState.unlockedAchievements
-                          }
-                          handlePullToRefresh={handlePullToRefresh}
-                        />
-                      )}
+                        {activeTab === "achievements" && (
+                          <AchievementsTab
+                            stats={stats}
+                            unlockedAchievements={gamificationState.unlockedAchievements}
+                            handlePullToRefresh={handlePullToRefresh}
+                          />
+                        )}
 
-                      {activeTab === "settings" && (
-                        <SettingsTab
-                          userName={userName}
-                          onNameChange={handleNameChange}
-                          onResetData={handleResetData}
-                          reminders={reminders}
-                          onRemindersChange={setReminders}
-                          safeHabits={habits}
-                          safeMoods={moods}
-                          safeFocusSessions={focusSessions}
-                          safeGratitudeEntries={gratitudeEntries}
-                          privacy={privacy}
-                          onPrivacyChange={setPrivacy}
-                          initialOpenSection={settingsOpenSection}
-                        />
-                      )}
+                        {activeTab === "settings" && (
+                          <SettingsTab
+                            userName={userName}
+                            onNameChange={handleNameChange}
+                            onResetData={handleResetData}
+                            reminders={reminders}
+                            onRemindersChange={setReminders}
+                            safeHabits={habits}
+                            safeMoods={moods}
+                            safeFocusSessions={focusSessions}
+                            safeGratitudeEntries={gratitudeEntries}
+                            privacy={privacy}
+                            onPrivacyChange={setPrivacy}
+                            initialOpenSection={settingsOpenSection}
+                          />
+                        )}
 
-                      {activeTab === "mindmap" && HABIT_HUB_ENABLED && (
-                        <HabitHubTab
-                          habits={habits}
-                          onToggleHabit={handleToggleHabit}
-                          onAdjustHabit={handleAdjustHabit}
-                          onAddHabit={handleAddHabit}
-                          onDeleteHabit={handleDeleteHabit}
-                          onUpdateHabit={handleUpdateHabit}
-                          onArchiveHabit={handleArchiveHabit}
-                          onUnarchiveHabit={handleUnarchiveHabit}
-                          onSkipHabit={handleSkipHabit}
-                          onUnskipHabit={handleUnskipHabit}
-                        />
-                      )}
-                    </motion.div>
-                  </AnimatePresence>
-                </Suspense>
+                        {activeTab === "mindmap" && HABIT_HUB_ENABLED && (
+                          <HabitHubTab
+                            habits={habits}
+                            onToggleHabit={handleToggleHabit}
+                            onAdjustHabit={handleAdjustHabit}
+                            onAddHabit={handleAddHabit}
+                            onDeleteHabit={handleDeleteHabit}
+                            onUpdateHabit={handleUpdateHabit}
+                            onArchiveHabit={handleArchiveHabit}
+                            onUnarchiveHabit={handleUnarchiveHabit}
+                            onSkipHabit={handleSkipHabit}
+                            onUnskipHabit={handleUnskipHabit}
+                          />
+                        )}
+                      </motion.div>
+                    </AnimatePresence>
+                  </Suspense>
+                </LazyErrorBoundary>
               </main>
             </div>
 
             {/* MindMapTab — full-bleed canvas, outside swipe container */}
             {activeTab === "mindmap" && CANVAS_ENABLED && (
-              <Suspense fallback={null}>
-                <div className="fixed inset-0 z-30">
-                  <MindMapTab
-                    safeMoods={moods}
-                    canvasGoals={canvasGoals}
-                    canvasMode={canvasMode}
-                    onRootTap={onRootTap}
-                    onCanvasBackgroundTap={onCanvasBackgroundTap}
-                    onEmotionSelect={onEmotionSelect}
-                    onGoalSelect={onGoalSelect}
-                    onEmotionSave={onEmotionSave}
-                    onEmotionCancel={onEmotionCancel}
-                    onGoalCreate={onGoalCreate}
-                    onGoalToggle={onGoalToggle}
-                    onGoalDelete={onGoalDelete}
-                    onGoalUpdateIcon={onGoalUpdateIcon}
-                    onGoalUpdateEmoji={onGoalUpdateEmoji}
-                    onGoalUpdateColor={onGoalUpdateColor}
-                    onGoalCancel={onGoalCancel}
-                    canvasRef={canvasRef}
-                  />
-                </div>
-              </Suspense>
+              <LazyErrorBoundary componentName="MindMapTab">
+                <Suspense
+                  fallback={
+                    <div className="flex items-center justify-center p-8">
+                      <div className="animate-pulse h-64 w-full rounded-xl bg-muted" />
+                    </div>
+                  }
+                >
+                  <div className="fixed inset-0 z-30">
+                    <MindMapTab
+                      safeMoods={moods}
+                      canvasGoals={canvasGoals}
+                      canvasMode={canvasMode}
+                      onRootTap={onRootTap}
+                      onCanvasBackgroundTap={onCanvasBackgroundTap}
+                      onEmotionSelect={onEmotionSelect}
+                      onGoalSelect={onGoalSelect}
+                      onEmotionSave={onEmotionSave}
+                      onEmotionCancel={onEmotionCancel}
+                      onGoalCreate={onGoalCreate}
+                      onGoalToggle={onGoalToggle}
+                      onGoalDelete={onGoalDelete}
+                      onGoalUpdateIcon={onGoalUpdateIcon}
+                      onGoalUpdateEmoji={onGoalUpdateEmoji}
+                      onGoalUpdateColor={onGoalUpdateColor}
+                      onGoalCancel={onGoalCancel}
+                      canvasRef={canvasRef}
+                    />
+                  </div>
+                </Suspense>
+              </LazyErrorBoundary>
             )}
 
             <FocusMiniPlayer onNavigateToTimer={() => setActiveTab("garden")} />

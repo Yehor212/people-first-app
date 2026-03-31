@@ -17,7 +17,14 @@ import Index from "./pages/Index";
 import { preloadShareCardAssets } from "@/lib/shareCards";
 import { useDopamineSettings } from "@/components/DopamineSettings";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000,
+      gcTime: 10 * 60 * 1000,
+    },
+  },
+});
 
 // Preload DOMPurify in the background to speed up share card sanitization
 void preloadShareCardAssets();
@@ -32,17 +39,15 @@ function AnimationGate({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (dopamine.animations) {
-      document.body.classList.remove('reduce-motion');
+      document.body.classList.remove("reduce-motion");
     } else {
-      document.body.classList.add('reduce-motion');
+      document.body.classList.add("reduce-motion");
     }
-    return () => document.body.classList.remove('reduce-motion');
+    return () => document.body.classList.remove("reduce-motion");
   }, [dopamine.animations]);
 
   return (
-    <MotionConfig reducedMotion={dopamine.animations ? 'never' : 'always'}>
-      {children}
-    </MotionConfig>
+    <MotionConfig reducedMotion={dopamine.animations ? "never" : "always"}>{children}</MotionConfig>
   );
 }
 

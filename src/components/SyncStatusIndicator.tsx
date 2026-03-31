@@ -8,26 +8,27 @@
  * - Current sync operation
  */
 
-import { useState, useEffect } from 'react';
-import { useSyncOrchestrator } from '@/lib/syncOrchestrator';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { isCloudSyncEnabled } from '@/lib/cloudSyncSettings';
-import { useOfflineQueue } from '@/hooks/useOfflineQueue';
-import { supabase } from '@/lib/supabaseClient';
-import { logger } from '@/lib/logger';
-import { Cloud, CloudOff, AlertCircle, CheckCircle, Loader, WifiOff } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
-import { ru, enUS, uk, es, de, fr, ja } from 'date-fns/locale';
-import { getLocale } from '@/lib/timeUtils';
+import { useState, useEffect } from "react";
+import { useSyncOrchestrator } from "@/lib/syncOrchestrator";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { isCloudSyncEnabled } from "@/lib/cloudSyncSettings";
+import { useOfflineQueue } from "@/hooks/useOfflineQueue";
+import { supabase } from "@/lib/supabaseClient";
+import { logger } from "@/lib/logger";
+import { Cloud, CloudOff, AlertCircle, CheckCircle, Loader, WifiOff } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import { enUS, uk, es, de, fr, ja, ar, he } from "date-fns/locale";
+import { getLocale } from "@/lib/timeUtils";
 
 const localeMap = {
-  ru,
   en: enUS,
   uk,
   es,
   de,
   fr,
   ja,
+  ar,
+  he,
 };
 
 export function SyncStatusIndicator() {
@@ -35,7 +36,7 @@ export function SyncStatusIndicator() {
   const { t, language } = useLanguage();
 
   // Don't show if never synced and queue is empty
-  if (!state.lastSyncTime && state.queueLength === 0 && state.status === 'idle') {
+  if (!state.lastSyncTime && state.queueLength === 0 && state.status === "idle") {
     return null;
   }
 
@@ -43,23 +44,36 @@ export function SyncStatusIndicator() {
   const getStatusIcon = () => {
     // Check if cloud sync is disabled by user
     if (!isCloudSyncEnabled()) {
-      return { Icon: CloudOff, color: 'text-muted-foreground', bgColor: 'bg-muted/50' };
+      return { Icon: CloudOff, color: "text-muted-foreground", bgColor: "bg-muted/50" };
     }
 
     if (!state.isOnline) {
-      return { Icon: CloudOff, color: 'text-muted-foreground', bgColor: 'bg-muted' };
+      return { Icon: CloudOff, color: "text-muted-foreground", bgColor: "bg-muted" };
     }
 
     switch (state.status) {
-      case 'syncing':
-        return { Icon: Loader, color: 'text-blue-500 dark:text-blue-400', bgColor: 'bg-blue-50 dark:bg-blue-500/10', animate: true };
-      case 'success':
-        return { Icon: CheckCircle, color: 'text-green-500 dark:text-green-400', bgColor: 'bg-green-50 dark:bg-green-500/10' };
-      case 'error':
-      case 'conflict':
-        return { Icon: AlertCircle, color: 'text-red-500 dark:text-red-400', bgColor: 'bg-red-50 dark:bg-red-500/10' };
+      case "syncing":
+        return {
+          Icon: Loader,
+          color: "text-blue-500 dark:text-blue-400",
+          bgColor: "bg-blue-50 dark:bg-blue-500/10",
+          animate: true,
+        };
+      case "success":
+        return {
+          Icon: CheckCircle,
+          color: "text-green-500 dark:text-green-400",
+          bgColor: "bg-green-50 dark:bg-green-500/10",
+        };
+      case "error":
+      case "conflict":
+        return {
+          Icon: AlertCircle,
+          color: "text-red-500 dark:text-red-400",
+          bgColor: "bg-red-50 dark:bg-red-500/10",
+        };
       default:
-        return { Icon: Cloud, color: 'text-muted-foreground', bgColor: 'bg-muted' };
+        return { Icon: Cloud, color: "text-muted-foreground", bgColor: "bg-muted" };
     }
   };
 
@@ -81,39 +95,39 @@ export function SyncStatusIndicator() {
   const getStatusText = () => {
     // Check if cloud sync is disabled by user
     if (!isCloudSyncEnabled()) {
-      return t.settingsCloudSyncDisabledByUser || 'Sync disabled';
+      return t.settingsCloudSyncDisabledByUser || "Sync disabled";
     }
 
     if (!state.isOnline) {
-      return t.syncOffline || 'Offline';
+      return t.syncOffline || "Offline";
     }
 
-    if (state.status === 'syncing' && state.currentOperation) {
+    if (state.status === "syncing" && state.currentOperation) {
       const operationName = getSyncOperationName(state.currentOperation);
       return t.syncSyncing || `Syncing ${operationName}...`;
     }
 
-    if (state.status === 'error') {
-      return t.syncError || 'Sync error';
+    if (state.status === "error") {
+      return t.syncError || "Sync error";
     }
 
     if (state.lastSyncTime) {
       const timeText = getLastSyncText();
-      return `${t.syncLastSync || 'Synced'} ${timeText}`;
+      return `${t.syncLastSync || "Synced"} ${timeText}`;
     }
 
-    return t.syncReady || 'Ready to sync';
+    return t.syncReady || "Ready to sync";
   };
 
   // Get friendly sync operation names
   const getSyncOperationName = (operation: string) => {
     const names: Record<string, string> = {
-      backup: t.syncBackup || 'backup',
-      reminders: t.syncReminders || 'reminders',
-      challenges: t.syncChallenges || 'challenges',
-      tasks: t.syncTasks || 'tasks',
-      innerWorld: t.syncInnerWorld || 'progress',
-      badges: t.syncBadges || 'badges',
+      backup: t.syncBackup || "backup",
+      reminders: t.syncReminders || "reminders",
+      challenges: t.syncChallenges || "challenges",
+      tasks: t.syncTasks || "tasks",
+      innerWorld: t.syncInnerWorld || "progress",
+      badges: t.syncBadges || "badges",
     };
     return names[operation] || operation;
   };
@@ -122,29 +136,23 @@ export function SyncStatusIndicator() {
     <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-card border border-border zen-shadow-sm">
       {/* Icon */}
       <div className={`p-1 rounded-md ${bgColor}`}>
-        <Icon
-          className={`w-4 h-4 ${color} ${animate ? 'animate-spin' : ''}`}
-        />
+        <Icon className={`w-4 h-4 ${color} ${animate ? "animate-spin" : ""}`} />
       </div>
 
       {/* Status text */}
       <div className="flex flex-col">
-        <span className="text-xs font-medium text-foreground">
-          {getStatusText()}
-        </span>
+        <span className="text-xs font-medium text-foreground">{getStatusText()}</span>
 
         {/* Queue info */}
         {state.queueLength > 0 && (
           <span className="text-xs text-muted-foreground">
-            {state.queueLength} {t.syncPending || 'pending'}
+            {state.queueLength} {t.syncPending || "pending"}
           </span>
         )}
 
         {/* Error message */}
-        {state.status === 'error' && state.lastError && (
-          <span className="text-xs text-red-500 line-clamp-1">
-            {state.lastError}
-          </span>
+        {state.status === "error" && state.lastError && (
+          <span className="text-xs text-red-500 line-clamp-1">{state.lastError}</span>
         )}
       </div>
     </div>
@@ -164,13 +172,18 @@ export function SyncStatusIndicatorCompact() {
   useEffect(() => {
     if (!supabase) return;
     let isMounted = true;
-    supabase.auth.getSession().then(({ data }) => {
-      if (isMounted) setHasSession(!!data.session);
-    }).catch(err => {
-      logger.warn('[Sync]', 'Session check failed:', err);
-      if (isMounted) setHasSession(false);
-    });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        if (isMounted) setHasSession(!!data.session);
+      })
+      .catch((err) => {
+        logger.warn("[Sync]", "Session check failed:", err);
+        if (isMounted) setHasSession(false);
+      });
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       if (isMounted) setHasSession(!!session);
     });
     return () => {
@@ -182,9 +195,14 @@ export function SyncStatusIndicatorCompact() {
   // Session expired: sync is enabled but no valid session
   if (isCloudSyncEnabled() && hasSession === false) {
     return (
-      <div className="relative" aria-label={t.sessionExpired || 'Cloud sync paused'}>
+      <div className="relative" aria-label={t.sessionExpired || "Cloud sync paused"}>
         <CloudOff className="w-5 h-5 text-amber-500" />
-        <span className="absolute -top-1 -end-1 bg-amber-500 text-white text-[10px] rounded-full w-3.5 h-3.5 flex items-center justify-center font-bold" aria-hidden="true">!</span>
+        <span
+          className="absolute -top-1 -end-1 bg-amber-500 text-white text-[10px] rounded-full w-3.5 h-3.5 flex items-center justify-center font-bold"
+          aria-hidden="true"
+        >
+          !
+        </span>
       </div>
     );
   }
@@ -192,17 +210,23 @@ export function SyncStatusIndicatorCompact() {
   // Check if cloud sync is disabled by user
   if (!isCloudSyncEnabled()) {
     return (
-      <CloudOff className="w-5 h-5 text-muted-foreground" aria-label={t.cloudSyncDisabled || 'Sync disabled'} />
+      <CloudOff
+        className="w-5 h-5 text-muted-foreground"
+        aria-label={t.cloudSyncDisabled || "Sync disabled"}
+      />
     );
   }
 
   // Offline with pending actions
   if (!isOnline && pendingCount > 0) {
     return (
-      <div className="relative" aria-label={`${t.syncOffline || 'Offline'} - ${pendingCount}`}>
+      <div className="relative" aria-label={`${t.syncOffline || "Offline"} - ${pendingCount}`}>
         <WifiOff className="w-5 h-5 text-amber-500" />
-        <span className="absolute -top-1 -end-1 bg-amber-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center font-bold" aria-hidden="true">
-          {pendingCount > 9 ? '9+' : pendingCount}
+        <span
+          className="absolute -top-1 -end-1 bg-amber-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center font-bold"
+          aria-hidden="true"
+        >
+          {pendingCount > 9 ? "9+" : pendingCount}
         </span>
       </div>
     );
@@ -211,18 +235,21 @@ export function SyncStatusIndicatorCompact() {
   // Offline without pending
   if (!isOnline || !state.isOnline) {
     return (
-      <WifiOff className="w-5 h-5 text-muted-foreground" aria-label={t.syncOffline || 'Offline'} />
+      <WifiOff className="w-5 h-5 text-muted-foreground" aria-label={t.syncOffline || "Offline"} />
     );
   }
 
   // Processing offline queue
   if (isProcessing) {
     return (
-      <div className="relative" aria-label={`${t.syncSyncing || 'Syncing'} ${pendingCount}`}>
+      <div className="relative" aria-label={`${t.syncSyncing || "Syncing"} ${pendingCount}`}>
         <Loader className="w-5 h-5 text-blue-500 animate-spin" />
         {pendingCount > 0 && (
-          <span className="absolute -top-1 -end-1 bg-blue-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center font-bold" aria-hidden="true">
-            {pendingCount > 9 ? '9+' : pendingCount}
+          <span
+            className="absolute -top-1 -end-1 bg-blue-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center font-bold"
+            aria-hidden="true"
+          >
+            {pendingCount > 9 ? "9+" : pendingCount}
           </span>
         )}
       </div>
@@ -230,22 +257,23 @@ export function SyncStatusIndicatorCompact() {
   }
 
   switch (state.status) {
-    case 'syncing':
+    case "syncing":
       return (
-        <Loader className="w-5 h-5 text-blue-500 animate-spin" aria-label={t.syncSyncing || 'Syncing'} />
+        <Loader
+          className="w-5 h-5 text-blue-500 animate-spin"
+          aria-label={t.syncSyncing || "Syncing"}
+        />
       );
-    case 'success':
+    case "success":
+      return <Cloud className="w-5 h-5 text-green-500" aria-label={t.syncSuccess || "Synced"} />;
+    case "error":
+    case "conflict":
       return (
-        <Cloud className="w-5 h-5 text-green-500" aria-label={t.syncSuccess || 'Synced'} />
-      );
-    case 'error':
-    case 'conflict':
-      return (
-        <AlertCircle className="w-5 h-5 text-red-500" aria-label={t.syncError || 'Sync error'} />
+        <AlertCircle className="w-5 h-5 text-red-500" aria-label={t.syncError || "Sync error"} />
       );
     default:
       return (
-        <Cloud className="w-5 h-5 text-muted-foreground" aria-label={t.syncReady || 'Ready'} />
+        <Cloud className="w-5 h-5 text-muted-foreground" aria-label={t.syncReady || "Ready"} />
       );
   }
 }

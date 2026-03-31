@@ -1,8 +1,8 @@
-import { createContext, useContext, ReactNode, useEffect, useRef, useMemo } from 'react';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
-import { Language, Translations, translations } from '@/i18n/translations';
-import { SK } from '@/lib/storageKeys';
-import { storageGetRaw } from '@/lib/safeJson';
+import { createContext, useContext, ReactNode, useEffect, useRef, useMemo, useState } from "react";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { Language, Translations, translations, loadLanguage } from "@/i18n/translations";
+import { SK } from "@/lib/storageKeys";
+import { storageGetRaw } from "@/lib/safeJson";
 
 // Extend Navigator for IE compatibility (userLanguage property)
 declare global {
@@ -20,10 +20,10 @@ interface LanguageContextType {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
-const SUPPORTED_LANGUAGES: Language[] = ['en', 'uk', 'es', 'de', 'fr', 'ja', 'ar', 'he'];
+const SUPPORTED_LANGUAGES: Language[] = ["en", "uk", "es", "de", "fr", "ja", "ar", "he"];
 
 // RTL languages
-const RTL_LANGUAGES: Language[] = ['ar', 'he'];
+const RTL_LANGUAGES: Language[] = ["ar", "he"];
 
 function detectBrowserLanguage(): Language {
   try {
@@ -31,12 +31,12 @@ function detectBrowserLanguage(): Language {
     const browserLang = navigator.language || navigator.userLanguage;
 
     // Guard against null/undefined browserLang
-    if (!browserLang || typeof browserLang !== 'string') {
-      return 'en';
+    if (!browserLang || typeof browserLang !== "string") {
+      return "en";
     }
 
     // Extract language code (e.g., "en-US" -> "en")
-    const langCode = browserLang.split('-')[0]?.toLowerCase() || 'en';
+    const langCode = browserLang.split("-")[0]?.toLowerCase() || "en";
 
     // Check if it's in our supported languages
     if (SUPPORTED_LANGUAGES.includes(langCode as Language)) {
@@ -44,23 +44,26 @@ function detectBrowserLanguage(): Language {
     }
 
     // Fallback to English
-    return 'en';
+    return "en";
   } catch {
-    return 'en';
+    return "en";
   }
 }
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const detectedLang = detectBrowserLanguage();
-  const [language, setLanguageRaw] = useLocalStorage<Language>('zenflow-language', detectedLang);
+  const [language, setLanguageRaw] = useLocalStorage<Language>("zenflow-language", detectedLang);
 
   // Guard: if stored language was removed (e.g. 'ru' after v1.7.0), fall back to English
-  const validLanguage = SUPPORTED_LANGUAGES.includes(language) ? language : 'en';
+  const validLanguage = SUPPORTED_LANGUAGES.includes(language) ? language : "en";
 
   // Wrap setLanguage to also persist the validated value if it was corrected
-  const setLanguage = useMemo(() => (lang: Language) => {
-    setLanguageRaw(lang);
-  }, [setLanguageRaw]);
+  const setLanguage = useMemo(
+    () => (lang: Language) => {
+      setLanguageRaw(lang);
+    },
+    [setLanguageRaw]
+  );
 
   // Ref to ensure auto-detection only runs once
   const hasAutoDetectedRef = useRef(false);
@@ -77,9 +80,9 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
   // Apply RTL direction to document
   useEffect(() => {
-    const dir = isRTL ? 'rtl' : 'ltr';
-    document.documentElement.setAttribute('dir', dir);
-    document.documentElement.setAttribute('lang', validLanguage);
+    const dir = isRTL ? "rtl" : "ltr";
+    document.documentElement.setAttribute("dir", dir);
+    document.documentElement.setAttribute("lang", validLanguage);
   }, [validLanguage, isRTL]);
 
   // Auto-detect language on first load
@@ -98,27 +101,35 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     }
   }, [validLanguage, setLanguageRaw]);
 
-  const t = translations[validLanguage];
+  // Dynamic language loading — English is always sync, others load on demand
+  const [t, setT] = useState<Translations>(translations[validLanguage] || translations.en);
+
+  useEffect(() => {
+    if (translations[validLanguage]) {
+      setT(translations[validLanguage]);
+    } else {
+      void loadLanguage(validLanguage).then((loaded) => setT(loaded));
+    }
+  }, [validLanguage]);
 
   // Memoize provider value to prevent unnecessary re-renders
-  const value = useMemo(() => ({
-    language: validLanguage,
-    setLanguage,
-    t,
-    isRTL,
-  }), [validLanguage, setLanguage, t, isRTL]);
-
-  return (
-    <LanguageContext.Provider value={value}>
-      {children}
-    </LanguageContext.Provider>
+  const value = useMemo(
+    () => ({
+      language: validLanguage,
+      setLanguage,
+      t,
+      isRTL,
+    }),
+    [validLanguage, setLanguage, t, isRTL]
   );
+
+  return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 }
 
 export function useLanguage() {
   const context = useContext(LanguageContext);
   if (!context) {
-    throw new Error('useLanguage must be used within a LanguageProvider');
+    throw new Error("useLanguage must be used within a LanguageProvider");
   }
   return context;
 }

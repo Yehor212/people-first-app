@@ -16,7 +16,7 @@ export function WidgetSettings({ onBack }: WidgetSettingsProps) {
   const isNativePlatform = isNative;
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-background pb-20 scroll-pt-[120px]">
       {/* Header */}
       <div className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
         <div className="flex items-center gap-4 px-4 py-4 pt-safe">
@@ -29,9 +29,7 @@ export function WidgetSettings({ onBack }: WidgetSettingsProps) {
           </button>
           <div>
             <h1 className="text-2xl font-bold">{t.widgetSettings}</h1>
-            <p className="text-sm text-muted-foreground">
-              {t.widgetSettingsDesc}
-            </p>
+            <p className="text-sm text-muted-foreground">{t.widgetSettingsDesc}</p>
           </div>
         </div>
 
@@ -72,9 +70,7 @@ export function WidgetSettings({ onBack }: WidgetSettingsProps) {
                 <Info className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
                 <div className="space-y-1">
                   <p className="text-sm font-medium">{t.widgetInfo}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {t.widgetInfoDesc}
-                  </p>
+                  <p className="text-xs text-muted-foreground">{t.widgetInfoDesc}</p>
                 </div>
               </div>
             </div>
@@ -87,17 +83,13 @@ export function WidgetSettings({ onBack }: WidgetSettingsProps) {
               <h2 className="text-sm font-semibold mb-3">{t.widgetStatus}</h2>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">
-                    {t.widgetPlatform}:
-                  </span>
+                  <span className="text-sm text-muted-foreground">{t.widgetPlatform}:</span>
                   <span className="text-sm font-medium">
                     {isNativePlatform ? platform : t.widgetWeb}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">
-                    {t.widgetSupport}:
-                  </span>
+                  <span className="text-sm text-muted-foreground">{t.widgetSupport}:</span>
                   <span
                     className={`text-sm font-medium ${
                       isNativePlatform ? "text-green-500" : "text-orange-500"
@@ -170,9 +162,7 @@ export function WidgetSettings({ onBack }: WidgetSettingsProps) {
 
                 {isAndroid && (
                   <div className="space-y-4">
-                    <h2 className="text-lg font-bold">
-                      {t.widgetSetupAndroid}
-                    </h2>
+                    <h2 className="text-lg font-bold">{t.widgetSetupAndroid}</h2>
                     <div className="bg-muted rounded-2xl p-6 space-y-4">
                       <div className="space-y-2">
                         <div className="flex items-start gap-3">
@@ -216,13 +206,9 @@ export function WidgetSettings({ onBack }: WidgetSettingsProps) {
             ) : (
               <div className="bg-orange-500/10 border-2 border-orange-500/20 rounded-2xl p-6">
                 <h3 className="text-lg font-bold mb-3">{t.widgetWebWarning}</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  {t.widgetWebWarningDesc}
-                </p>
+                <p className="text-sm text-muted-foreground mb-4">{t.widgetWebWarningDesc}</p>
                 <div className="bg-muted rounded-xl p-4">
-                  <p className="text-xs text-muted-foreground">
-                    💡 {t.widgetWebTip}
-                  </p>
+                  <p className="text-xs text-muted-foreground">💡 {t.widgetWebTip}</p>
                 </div>
               </div>
             )}

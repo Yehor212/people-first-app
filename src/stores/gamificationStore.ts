@@ -1,17 +1,30 @@
-import { create } from 'zustand';
-import { triggerXpPopup } from '@/components/XpPopup';
-import { triggerSync } from '@/storage/cloudSync';
-import { logger } from '@/lib/logger';
+import { create } from "zustand";
+import { logger } from "@/lib/logger";
+
+type PopupType =
+  | "mood"
+  | "habit"
+  | "focus"
+  | "gratitude"
+  | "breathing"
+  | "streak"
+  | "bonus"
+  | "mindful";
 
 // Hook functions registered by bridge (from useGamification + useInnerWorld)
+// showPopup + sync registered via bridge to eliminate inverted deps (C2: store→component, C3: store→storage)
 interface RegisteredHooks {
   awardXp: (activity: string) => void;
-  earnTreats: (source: string, amount: number, reason?: string) => { earned: number };
+  earnTreats: (
+    source: string,
+    amount: number,
+    reason?: string,
+  ) => { earned: number };
   plantSeed: (activity: string, extra?: string) => unknown;
   waterPlants: (activity: string) => void;
+  showPopup: (amount: number, type: PopupType) => void;
+  sync: () => void;
 }
-
-type PopupType = Parameters<typeof triggerXpPopup>[1];
 
 export interface RewardOptions {
   treats: number;
@@ -37,7 +50,9 @@ interface GamificationActions {
   rewardUser: (activity: string, options: RewardOptions) => RewardResult;
 }
 
-export const useGamificationStore = create<GamificationState & GamificationActions>((set, get) => ({
+export const useGamificationStore = create<
+  GamificationState & GamificationActions
+>((set, get) => ({
   _hooks: null,
 
   _registerHooks: (hooks) => set({ _hooks: hooks }),
@@ -45,7 +60,7 @@ export const useGamificationStore = create<GamificationState & GamificationActio
   rewardUser: (activity, options) => {
     const hooks = get()._hooks;
     if (!hooks) {
-      logger.warn('[rewardUser] called before hooks registered');
+      logger.warn("[rewardUser] called before hooks registered");
       return { treatsEarned: 0 };
     }
 
@@ -53,13 +68,18 @@ export const useGamificationStore = create<GamificationState & GamificationActio
     if (!options.skipXp) hooks.awardXp(activity);
 
     // 2. Earn treats (companion reward system)
-    const treatResult = hooks.earnTreats(activity, options.treats, options.treatReason);
+    const treatResult = hooks.earnTreats(
+      activity,
+      options.treats,
+      options.treatReason,
+    );
 
-    // 3. Show treats popup
-    if (!options.skipPopup) triggerXpPopup(treatResult.earned, activity as PopupType);
+    // 3. Show treats popup (via bridge — no direct component import)
+    if (!options.skipPopup)
+      hooks.showPopup(treatResult.earned, activity as PopupType);
 
-    // 4. Sync to cloud
-    if (!options.skipSync) triggerSync();
+    // 4. Sync to cloud (via bridge — no direct storage import)
+    if (!options.skipSync) hooks.sync();
 
     // 5. Haptic feedback
     if (options.haptic) void options.haptic();

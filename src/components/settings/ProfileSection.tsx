@@ -1,24 +1,24 @@
-import { useEffect, useState } from 'react';
-import { User, Globe, Palette, Moon, Sun, Smartphone } from 'lucide-react';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { Language, languageNames, languageFlags } from '@/i18n/translations';
-import { cn } from '@/lib/utils';
-import { logger } from '@/lib/logger';
-import { Switch } from '@/components/ui/switch';
-import { AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { updateProfileName } from '@/lib/accountService';
-import { userNameSchema } from '@/lib/validation';
-import { sanitizeUserName } from '@/lib/sanitize';
-import { useTheme, ThemeOption } from '@/components/ThemeToggle';
-import { SK } from '@/lib/storageKeys';
-import { storageGetRaw, storageSetRaw } from '@/lib/safeJson';
+import { useEffect, useState } from "react";
+import { User, Globe, Palette, Moon, Sun, Smartphone } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { Language, languageNames, languageFlags } from "@/i18n/translations";
+import { cn } from "@/lib/utils";
+import { logger } from "@/lib/logger";
+import { Switch } from "@/components/ui/switch";
+import { AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { updateProfileName } from "@/lib/accountService";
+import { userNameSchema } from "@/lib/validation";
+import { sanitizeUserName } from "@/lib/sanitize";
+import { useTheme, ThemeOption } from "@/components/ThemeToggle";
+import { SK } from "@/lib/storageKeys";
+import { storageGetRaw, storageSetRaw } from "@/lib/safeJson";
 
 interface ProfileSectionProps {
   userName: string;
   onNameChange: (name: string) => void;
 }
 
-const languages: Language[] = ['en', 'uk', 'es', 'de', 'fr', 'ja', 'ar', 'he'];
+const languages: Language[] = ["en", "uk", "es", "de", "fr", "ja", "ar", "he"];
 
 export function ProfileSection({ userName, onNameChange }: ProfileSectionProps) {
   const { t, language, setLanguage } = useLanguage();
@@ -27,7 +27,7 @@ export function ProfileSection({ userName, onNameChange }: ProfileSectionProps) 
   const [name, setName] = useState(userName);
   const [nameStatus, setNameStatus] = useState<string | null>(null);
   const [oledMode, setOledMode] = useState(() => {
-    return storageGetRaw(SK.OLED_MODE) === 'true';
+    return storageGetRaw(SK.OLED_MODE) === "true";
   });
 
   useEffect(() => {
@@ -44,9 +44,9 @@ export function ProfileSection({ userName, onNameChange }: ProfileSectionProps) 
   // Apply OLED mode on mount and when changed
   useEffect(() => {
     if (oledMode) {
-      document.documentElement.classList.add('oled');
+      document.documentElement.classList.add("oled");
     } else {
-      document.documentElement.classList.remove('oled');
+      document.documentElement.classList.remove("oled");
     }
   }, [oledMode]);
 
@@ -57,7 +57,7 @@ export function ProfileSection({ userName, onNameChange }: ProfileSectionProps) 
     try {
       userNameSchema.parse(sanitized);
     } catch {
-      setNameStatus(t.invalidNameFormat || 'Invalid name format');
+      setNameStatus(t.invalidNameFormat || "Invalid name format");
       return;
     }
 
@@ -67,11 +67,11 @@ export function ProfileSection({ userName, onNameChange }: ProfileSectionProps) 
     try {
       const success = await updateProfileName(sanitized);
       if (!success) {
-        setNameStatus(t.nameSavedLocally || 'Saved locally');
+        setNameStatus(t.nameSavedLocally || "Saved locally");
       }
     } catch (error) {
       logger.error("Failed to update profile name:", error);
-      setNameStatus(t.nameSavedLocally || 'Saved locally');
+      setNameStatus(t.nameSavedLocally || "Saved locally");
     }
   };
 
@@ -81,7 +81,10 @@ export function ProfileSection({ userName, onNameChange }: ProfileSectionProps) 
   };
 
   return (
-    <AccordionItem value="profile" className="bg-card rounded-2xl shadow-zen-sm border overflow-hidden">
+    <AccordionItem
+      value="profile"
+      className="bg-card rounded-2xl shadow-zen-sm border overflow-hidden"
+    >
       <AccordionTrigger className="px-5 py-4 hover:no-underline hover:bg-muted/30 data-[state=open]:bg-primary/5">
         <div className="flex items-center gap-3">
           <div className="p-2 zen-gradient rounded-xl shadow-zen-soft">
@@ -100,7 +103,8 @@ export function ProfileSection({ userName, onNameChange }: ProfileSectionProps) 
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                aria-label={t.yourName || 'Your name'}
+                aria-label={t.yourName || "Your name"}
+                autoComplete="name"
                 className="flex-1 p-3 bg-secondary rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
               />
               <button
@@ -110,9 +114,7 @@ export function ProfileSection({ userName, onNameChange }: ProfileSectionProps) 
                 {t.save}
               </button>
             </div>
-            {nameStatus && (
-              <p className="text-sm text-muted-foreground mt-2">{nameStatus}</p>
-            )}
+            {nameStatus && <p className="text-sm text-muted-foreground mt-2">{nameStatus}</p>}
           </div>
 
           {/* Language */}
@@ -135,10 +137,10 @@ export function ProfileSection({ userName, onNameChange }: ProfileSectionProps) 
                       : "bg-secondary hover:bg-muted"
                   )}
                 >
-                  <span className="text-xl" aria-hidden="true">{languageFlags[lang]}</span>
-                  <span className="font-medium text-foreground text-sm">
-                    {languageNames[lang]}
+                  <span className="text-xl" aria-hidden="true">
+                    {languageFlags[lang]}
                   </span>
+                  <span className="font-medium text-foreground text-sm">{languageNames[lang]}</span>
                 </button>
               ))}
             </div>
@@ -148,18 +150,24 @@ export function ProfileSection({ userName, onNameChange }: ProfileSectionProps) 
           <div className="space-y-4">
             <div className="flex items-center gap-2 mb-3">
               <Palette className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm font-medium text-foreground">{t.appearance || 'Appearance'}</span>
+              <span className="text-sm font-medium text-foreground">
+                {t.appearance || "Appearance"}
+              </span>
             </div>
 
             {/* Theme Options: Light / Dark / System */}
             <div className="space-y-2">
-              <label className="text-xs text-muted-foreground">{t.themeLabel || 'Theme'}</label>
+              <label className="text-xs text-muted-foreground">{t.themeLabel || "Theme"}</label>
               <div className="grid grid-cols-3 gap-2">
-                {([
-                  { value: 'light' as ThemeOption, icon: Sun, label: t.themeLight || 'Light' },
-                  { value: 'dark' as ThemeOption, icon: Moon, label: t.themeDark || 'Dark' },
-                  { value: 'system' as ThemeOption, icon: Smartphone, label: t.themeSystem || 'System' },
-                ]).map((option) => (
+                {[
+                  { value: "light" as ThemeOption, icon: Sun, label: t.themeLight || "Light" },
+                  { value: "dark" as ThemeOption, icon: Moon, label: t.themeDark || "Dark" },
+                  {
+                    value: "system" as ThemeOption,
+                    icon: Smartphone,
+                    label: t.themeSystem || "System",
+                  },
+                ].map((option) => (
                   <button
                     key={option.value}
                     onClick={() => changeTheme(option.value)}
@@ -171,14 +179,18 @@ export function ProfileSection({ userName, onNameChange }: ProfileSectionProps) 
                         : "border-border hover:border-primary/50 bg-secondary/30"
                     )}
                   >
-                    <option.icon className={cn(
-                      "w-5 h-5",
-                      currentTheme === option.value ? "text-primary" : "text-muted-foreground"
-                    )} />
-                    <span className={cn(
-                      "text-xs font-medium",
-                      currentTheme === option.value ? "text-primary" : "text-foreground"
-                    )}>
+                    <option.icon
+                      className={cn(
+                        "w-5 h-5",
+                        currentTheme === option.value ? "text-primary" : "text-muted-foreground"
+                      )}
+                    />
+                    <span
+                      className={cn(
+                        "text-xs font-medium",
+                        currentTheme === option.value ? "text-primary" : "text-foreground"
+                      )}
+                    >
                       {option.label}
                     </span>
                   </button>
@@ -191,13 +203,20 @@ export function ProfileSection({ userName, onNameChange }: ProfileSectionProps) 
               <div>
                 <div className="flex items-center gap-2">
                   <Moon className="w-4 h-4 text-muted-foreground" />
-                  <p className="text-sm font-medium text-foreground">{t.oledDarkMode || 'OLED Dark Mode'}</p>
+                  <p className="text-sm font-medium text-foreground">
+                    {t.oledDarkMode || "OLED Dark Mode"}
+                  </p>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {t.oledDarkModeHint || 'Pure black theme for OLED screens. Saves battery.'}
+                  {t.oledDarkModeHint || "Pure black theme for OLED screens. Saves battery."}
                 </p>
               </div>
-              <Switch checked={oledMode} onCheckedChange={handleOledModeChange} aria-label={t.oledDarkMode} className="mt-0.5 shrink-0" />
+              <Switch
+                checked={oledMode}
+                onCheckedChange={handleOledModeChange}
+                aria-label={t.oledDarkMode}
+                className="mt-0.5 shrink-0"
+              />
             </div>
           </div>
         </div>

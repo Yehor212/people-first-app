@@ -11,16 +11,16 @@
  * - playsInline attribute required for inline playback
  */
 
-import { logger } from './logger';
-import { isAbortError } from './validation';
-import * as Sentry from '@sentry/react';
-import { BASE_URL } from '@/lib/env';
+import { logger } from "./logger";
+import { isAbortError } from "./validation";
+import * as Sentry from "@sentry/react";
+import { BASE_URL } from "@/lib/env";
 
 // ============================================
 // AUDIO STATUS TRACKING
 // ============================================
 
-export type AudioState = 'idle' | 'loading' | 'playing' | 'paused' | 'blocked' | 'error';
+export type AudioState = "idle" | "loading" | "playing" | "paused" | "blocked" | "error";
 
 export interface AudioError {
   code: string;
@@ -49,7 +49,14 @@ declare global {
 }
 
 // Sound categories based on actual available files
-export type AmbientSoundType = 'none' | 'underwater' | 'thunderstorm' | 'ocean' | 'river' | 'cafe' | 'fireplace';
+export type AmbientSoundType =
+  | "none"
+  | "underwater"
+  | "thunderstorm"
+  | "ocean"
+  | "river"
+  | "cafe"
+  | "fireplace";
 
 // Audio unlock state for mobile browsers
 let audioUnlocked = false;
@@ -66,8 +73,8 @@ function getOrCreateBlessedElement(): HTMLAudioElement {
   if (!blessedAudioElement) {
     blessedAudioElement = new Audio();
     blessedAudioElement.playsInline = true;
-    blessedAudioElement.setAttribute('playsinline', '');
-    blessedAudioElement.setAttribute('webkit-playsinline', '');
+    blessedAudioElement.setAttribute("playsinline", "");
+    blessedAudioElement.setAttribute("webkit-playsinline", "");
   }
   return blessedAudioElement;
 }
@@ -78,11 +85,12 @@ function getOrCreateBlessedElement(): HTMLAudioElement {
  * that also requires resume() — not just 'suspended'.
  */
 function needsResume(ctx: AudioContext): boolean {
-  return ctx.state === 'suspended' || (ctx.state as string) === 'interrupted';
+  return ctx.state === "suspended" || (ctx.state as string) === "interrupted";
 }
 
 // Silent MP3 - more iOS compatible than WAV (0.5 second silence)
-const SILENT_MP3 = 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABhgC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAAAAYYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABhgC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAAAAYYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+const SILENT_MP3 =
+  "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABhgC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAAAAYYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABhgC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAAAAYYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 
 /**
  * Get or create a global AudioContext
@@ -120,9 +128,9 @@ async function unlockWithOscillator(): Promise<void> {
     oscillator.start(0);
     oscillator.stop(ctx.currentTime + 0.001);
 
-    logger.log('[AmbientSounds] Oscillator trick completed');
+    logger.log("[AmbientSounds] Oscillator trick completed");
   } catch (e) {
-    logger.warn('[AmbientSounds] Oscillator unlock failed:', e);
+    logger.warn("[AmbientSounds] Oscillator unlock failed:", e);
   }
 }
 
@@ -146,9 +154,9 @@ async function unlockWithAudioElement(): Promise<void> {
     audio.pause();
     // DON'T clear src or destroy — keep element blessed for future playback
 
-    logger.log('[AmbientSounds] Audio element unlock completed (blessed element)');
+    logger.log("[AmbientSounds] Audio element unlock completed (blessed element)");
   } catch (e) {
-    logger.warn('[AmbientSounds] Audio element unlock failed:', e);
+    logger.warn("[AmbientSounds] Audio element unlock failed:", e);
   }
 }
 
@@ -165,19 +173,17 @@ export async function unlockAudio(): Promise<void> {
       if (ctx && needsResume(ctx)) {
         await ctx.resume();
       }
-    } catch { /* graceful: audio resume is best-effort, silent failure invisible to user */ }
+    } catch {
+      /* graceful: audio resume is best-effort, silent failure invisible to user */
+    }
     return;
   }
-  // eslint-disable-next-line @typescript-eslint/no-misused-promises
   if (unlockPromise) return unlockPromise;
 
   unlockPromise = (async () => {
     try {
       // Run all unlock methods in parallel for best results
-      await Promise.all([
-        unlockWithAudioElement(),
-        unlockWithOscillator(),
-      ]);
+      await Promise.all([unlockWithAudioElement(), unlockWithOscillator()]);
 
       // Also ensure AudioContext is running
       const ctx = getAudioContext();
@@ -186,23 +192,23 @@ export async function unlockAudio(): Promise<void> {
       }
 
       audioUnlocked = true;
-      logger.log('[AmbientSounds] Audio fully unlocked for mobile browser');
+      logger.log("[AmbientSounds] Audio fully unlocked for mobile browser");
 
       // Sentry breadcrumb for unlock success
       Sentry.addBreadcrumb({
-        category: 'audio',
-        message: 'Audio unlocked successfully',
-        level: 'info',
+        category: "audio",
+        message: "Audio unlocked successfully",
+        level: "info",
       });
     } catch (e) {
-      logger.warn('[AmbientSounds] Audio unlock had issues:', e);
+      logger.warn("[AmbientSounds] Audio unlock had issues:", e);
       // Don't mark as unlocked on failure — allow retry on next user gesture
 
       // Sentry breadcrumb for unlock issues
       Sentry.addBreadcrumb({
-        category: 'audio',
-        message: 'Audio unlock had issues',
-        level: 'warning',
+        category: "audio",
+        message: "Audio unlock had issues",
+        level: "warning",
         data: { error: String(e) },
       });
     } finally {
@@ -243,7 +249,9 @@ export function setupAudioUnlock(): void {
     } catch {
       // Give up after MAX_UNLOCK_ATTEMPTS to avoid performance overhead
       if (unlockAttempts >= MAX_UNLOCK_ATTEMPTS && audioUnlockCleanup) {
-        logger.warn(`[AmbientSounds] Audio unlock failed after ${MAX_UNLOCK_ATTEMPTS} attempts, removing listeners`);
+        logger.warn(
+          `[AmbientSounds] Audio unlock failed after ${MAX_UNLOCK_ATTEMPTS} attempts, removing listeners`
+        );
         audioUnlockCleanup();
       }
     }
@@ -260,26 +268,26 @@ export function setupAudioUnlock(): void {
       audioUnlockTimeoutId = null;
     }
 
-    document.removeEventListener('touchstart', audioUnlockHandler, true);
-    document.removeEventListener('touchend', audioUnlockHandler, true);
-    document.removeEventListener('click', audioUnlockHandler, true);
-    document.removeEventListener('keydown', audioUnlockHandler, true);
-    logger.log('[AmbientSounds] Audio unlock listeners removed');
+    document.removeEventListener("touchstart", audioUnlockHandler, true);
+    document.removeEventListener("touchend", audioUnlockHandler, true);
+    document.removeEventListener("click", audioUnlockHandler, true);
+    document.removeEventListener("keydown", audioUnlockHandler, true);
+    logger.log("[AmbientSounds] Audio unlock listeners removed");
 
     // Clear references
     audioUnlockHandler = null;
   };
 
   // Use capture phase to catch events before they're handled
-  document.addEventListener('touchstart', audioUnlockHandler, { capture: true, passive: true });
-  document.addEventListener('touchend', audioUnlockHandler, { capture: true, passive: true });
-  document.addEventListener('click', audioUnlockHandler, { capture: true, passive: true });
-  document.addEventListener('keydown', audioUnlockHandler, { capture: true, passive: true });
+  document.addEventListener("touchstart", audioUnlockHandler, { capture: true, passive: true });
+  document.addEventListener("touchend", audioUnlockHandler, { capture: true, passive: true });
+  document.addEventListener("click", audioUnlockHandler, { capture: true, passive: true });
+  document.addEventListener("keydown", audioUnlockHandler, { capture: true, passive: true });
 
   // Note: No safety timeout — listeners are cleaned up on successful unlock (line above).
   // A 30-second timeout would remove listeners before the user interacts on iOS PWA.
 
-  logger.log('[AmbientSounds] Audio unlock listeners set up');
+  logger.log("[AmbientSounds] Audio unlock listeners set up");
 }
 
 /**
@@ -294,9 +302,9 @@ export function isAudioUnlocked(): boolean {
  */
 export async function forceUnlockAudio(): Promise<void> {
   Sentry.addBreadcrumb({
-    category: 'audio',
-    message: 'Force re-unlocking audio (app resume)',
-    level: 'info',
+    category: "audio",
+    message: "Force re-unlocking audio (app resume)",
+    level: "info",
   });
 
   audioUnlocked = false;
@@ -328,68 +336,68 @@ const BASE_PATH = BASE_URL;
  */
 export const SOUNDS: SoundInfo[] = [
   {
-    id: 'underwater',
-    type: 'underwater',
+    id: "underwater",
+    type: "underwater",
 
-    nameEn: 'Underwater Hum',
+    nameEn: "Underwater Hum",
     file: `${BASE_PATH}sounds/mixkit-underwater-transmitter-hum-2135.wav`,
-    description: 'Deep underwater ambient sound'
+    description: "Deep underwater ambient sound",
   },
   {
-    id: 'thunderstorm',
-    type: 'thunderstorm',
+    id: "thunderstorm",
+    type: "thunderstorm",
 
-    nameEn: 'Jungle Thunderstorm',
+    nameEn: "Jungle Thunderstorm",
     file: `${BASE_PATH}sounds/mixkit-calm-thunderstorm-in-the-jungle-2415.wav`,
-    description: 'Thunder and rain in tropical jungle'
+    description: "Thunder and rain in tropical jungle",
   },
   {
-    id: 'ocean',
-    type: 'ocean',
+    id: "ocean",
+    type: "ocean",
 
-    nameEn: 'Waves on Rocks',
+    nameEn: "Waves on Rocks",
     file: `${BASE_PATH}sounds/mixkit-small-waves-harbor-rocks-1208.wav`,
-    description: 'Small waves hitting harbor rocks'
+    description: "Small waves hitting harbor rocks",
   },
   {
-    id: 'river',
-    type: 'river',
+    id: "river",
+    type: "river",
 
-    nameEn: 'River Wildlife',
+    nameEn: "River Wildlife",
     file: `${BASE_PATH}sounds/mixkit-wildlife-environment-in-a-river-2456.wav`,
-    description: 'River sounds with wildlife'
+    description: "River sounds with wildlife",
   },
   {
-    id: 'cafe',
-    type: 'cafe',
+    id: "cafe",
+    type: "cafe",
 
-    nameEn: 'Cafe Ambience',
+    nameEn: "Cafe Ambience",
     file: `${BASE_PATH}sounds/cafe-noise-32940.mp3`,
-    description: 'Coffee shop background noise'
+    description: "Coffee shop background noise",
   },
   {
-    id: 'fireplace',
-    type: 'fireplace',
+    id: "fireplace",
+    type: "fireplace",
 
-    nameEn: 'Fireplace Crackling',
+    nameEn: "Fireplace Crackling",
     file: `${BASE_PATH}sounds/fireplace-fx-56636.mp3`,
-    description: 'Cozy fireplace crackling'
-  }
+    description: "Cozy fireplace crackling",
+  },
 ];
 
 /**
  * Get sound by ID
  */
 export function getSoundById(id: string): SoundInfo | undefined {
-  return SOUNDS.find(s => s.id === id);
+  return SOUNDS.find((s) => s.id === id);
 }
 
 /**
  * Get sound by type
  */
 export function getSoundByType(type: AmbientSoundType): SoundInfo | undefined {
-  if (type === 'none') return undefined;
-  return SOUNDS.find(s => s.type === type);
+  if (type === "none") return undefined;
+  return SOUNDS.find((s) => s.type === type);
 }
 
 export class AmbientSoundGenerator {
@@ -408,7 +416,7 @@ export class AmbientSoundGenerator {
 
   // Status tracking
   private status: AudioStatus = {
-    state: 'idle',
+    state: "idle",
     soundId: null,
     isUnlocked: false,
   };
@@ -435,21 +443,21 @@ export class AmbientSoundGenerator {
   private setStatus(updates: Partial<AudioStatus>): void {
     const prevState = this.status.state;
     this.status = { ...this.status, ...updates };
-    this.statusListeners.forEach(listener => {
+    this.statusListeners.forEach((listener) => {
       try {
         listener(this.status);
       } catch (e) {
-        logger.warn('[AmbientSounds] Status listener error:', e);
+        logger.warn("[AmbientSounds] Status listener error:", e);
       }
     });
-    logger.log('[AmbientSounds] Status updated:', this.status.state, this.status.soundId);
+    logger.log("[AmbientSounds] Status updated:", this.status.state, this.status.soundId);
 
     // Sentry breadcrumb for state changes
     if (this.status.state !== prevState) {
       Sentry.addBreadcrumb({
-        category: 'audio',
+        category: "audio",
         message: `Audio state: ${prevState} → ${this.status.state}`,
-        level: this.status.error ? 'error' : 'info',
+        level: this.status.error ? "error" : "info",
         data: {
           soundId: this.status.soundId,
           isUnlocked: this.status.isUnlocked,
@@ -473,24 +481,26 @@ export class AmbientSoundGenerator {
     const ctx = globalAudioContext;
     return {
       status: this.status,
-      audioContextState: ctx?.state ?? 'not created',
+      audioContextState: ctx?.state ?? "not created",
       audioUnlocked,
       currentSoundId: this.currentSoundId,
       isPlaying: this.isPlaying,
       isTransitioning: this.isTransitioning,
       volume: this.volume,
       usedFallback: this.usedFallback,
-      audioElementState: this.audioElement ? {
-        paused: this.audioElement.paused,
-        readyState: this.audioElement.readyState,
-        networkState: this.audioElement.networkState,
-        error: this.audioElement.error?.message,
-      } : null,
+      audioElementState: this.audioElement
+        ? {
+            paused: this.audioElement.paused,
+            readyState: this.audioElement.readyState,
+            networkState: this.audioElement.networkState,
+            error: this.audioElement.error?.message,
+          }
+        : null,
     };
   }
 
   async play(soundId: string): Promise<void> {
-    if (soundId === 'none') {
+    if (soundId === "none") {
       this.stop();
       return;
     }
@@ -499,9 +509,13 @@ export class AmbientSoundGenerator {
     if (!sound) {
       logger.error(`[AmbientSounds] Sound not found: ${soundId}`);
       this.setStatus({
-        state: 'error',
+        state: "error",
         soundId: null,
-        error: { code: 'SOUND_NOT_FOUND', message: `Sound "${soundId}" not found`, recoverable: false },
+        error: {
+          code: "SOUND_NOT_FOUND",
+          message: `Sound "${soundId}" not found`,
+          recoverable: false,
+        },
       });
       return;
     }
@@ -519,12 +533,12 @@ export class AmbientSoundGenerator {
     }
 
     // Set loading status
-    this.setStatus({ state: 'loading', soundId, error: undefined });
+    this.setStatus({ state: "loading", soundId, error: undefined });
 
     // Wait if another transition is in progress (mutex)
     let waitCount = 0;
     while (this.isTransitioning && waitCount < 20) {
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 50));
       waitCount++;
     }
 
@@ -542,37 +556,42 @@ export class AmbientSoundGenerator {
 
       // Check abort before async operations
       if (abortController.signal.aborted) {
-        logger.log('[AmbientSounds] Playback aborted before start');
-        this.setStatus({ state: 'idle', soundId: null });
+        logger.log("[AmbientSounds] Playback aborted before start");
+        this.setStatus({ state: "idle", soundId: null });
         return;
       }
 
       // Check if audio is blocked by browser policy
       if (!audioUnlocked) {
         this.setStatus({
-          state: 'blocked',
+          state: "blocked",
           soundId,
           isUnlocked: false,
-          error: { code: 'AUDIO_BLOCKED', message: 'Tap to enable sound', recoverable: true },
+          error: { code: "AUDIO_BLOCKED", message: "Tap to enable sound", recoverable: true },
         });
         // Still try to unlock
         await unlockAudio();
         if (audioUnlocked) {
-          this.setStatus({ state: 'loading', soundId, isUnlocked: true, error: undefined });
+          this.setStatus({ state: "loading", soundId, isUnlocked: true, error: undefined });
         }
       }
 
       // Load and play audio (async) - pass abort signal and sound info for fallback
-      await this.playAudioFile(sound.file, myPlaybackId, abortController.signal, sound.fallbackFile);
+      await this.playAudioFile(
+        sound.file,
+        myPlaybackId,
+        abortController.signal,
+        sound.fallbackFile
+      );
 
       // Final check after async load
       if (abortController.signal.aborted || myPlaybackId !== this.playbackId) {
-        logger.log('[AmbientSounds] Playback superseded after load');
+        logger.log("[AmbientSounds] Playback superseded after load");
         if (this.audioElement) {
           this.audioElement.pause();
-          this.audioElement.src = '';
+          this.audioElement.src = "";
         }
-        this.setStatus({ state: 'idle', soundId: null });
+        this.setStatus({ state: "idle", soundId: null });
         return;
       }
 
@@ -581,28 +600,28 @@ export class AmbientSoundGenerator {
       this.isPlaying = true;
 
       // Set playing status
-      this.setStatus({ state: 'playing', soundId, isUnlocked: true, error: undefined });
+      this.setStatus({ state: "playing", soundId, isUnlocked: true, error: undefined });
 
       logger.log(`[AmbientSounds] Playing: ${sound.nameEn}`);
     } catch (error) {
       // Use isAbortError helper to catch all abort variants (including iOS code 20)
       if (isAbortError(error)) {
-        logger.log('[AmbientSounds] Playback cancelled (abort)');
-        this.setStatus({ state: 'idle', soundId: null });
+        logger.log("[AmbientSounds] Playback cancelled (abort)");
+        this.setStatus({ state: "idle", soundId: null });
       } else if (myPlaybackId === this.playbackId) {
         logger.error(`[AmbientSounds] Failed to play:`, error);
         this.isPlaying = false;
         this.currentSoundId = null;
 
         // Set error status with helpful message
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        const isNetworkError = errorMessage.includes('load') || errorMessage.includes('network');
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        const isNetworkError = errorMessage.includes("load") || errorMessage.includes("network");
         this.setStatus({
-          state: 'error',
+          state: "error",
           soundId,
           error: {
-            code: isNetworkError ? 'LOAD_ERROR' : 'PLAYBACK_ERROR',
-            message: isNetworkError ? 'Failed to load audio file' : errorMessage,
+            code: isNetworkError ? "LOAD_ERROR" : "PLAYBACK_ERROR",
+            message: isNetworkError ? "Failed to load audio file" : errorMessage,
             recoverable: true,
           },
         });
@@ -619,7 +638,7 @@ export class AmbientSoundGenerator {
    * Play by type (convenience method)
    */
   async playByType(type: AmbientSoundType): Promise<void> {
-    if (type === 'none') {
+    if (type === "none") {
       this.stop();
       return;
     }
@@ -641,7 +660,7 @@ export class AmbientSoundGenerator {
    * - Sets audioUnlocked directly (no race condition)
    */
   playDirect(soundId: string): void {
-    if (soundId === 'none') {
+    if (soundId === "none") {
       this.stop();
       return;
     }
@@ -650,9 +669,13 @@ export class AmbientSoundGenerator {
     if (!sound) {
       logger.error(`[AmbientSounds] Sound not found: ${soundId}`);
       this.setStatus({
-        state: 'error',
+        state: "error",
         soundId: null,
-        error: { code: 'SOUND_NOT_FOUND', message: `Sound "${soundId}" not found`, recoverable: false },
+        error: {
+          code: "SOUND_NOT_FOUND",
+          message: `Sound "${soundId}" not found`,
+          recoverable: false,
+        },
       });
       return;
     }
@@ -678,7 +701,7 @@ export class AmbientSoundGenerator {
     this.audioElement = getOrCreateBlessedElement();
     this.audioElement.loop = true;
     this.audioElement.volume = this.volume;
-    this.audioElement.preload = 'auto';
+    this.audioElement.preload = "auto";
     // Set src — browser auto-loads. Do NOT call .load() (resets iOS blessing)
     this.audioElement.src = sound.file;
 
@@ -692,26 +715,26 @@ export class AmbientSoundGenerator {
     this.currentSoundId = soundId;
     this.isPlaying = true;
     this.isTransitioning = false;
-    this.setStatus({ state: 'loading', soundId, isUnlocked: true, error: undefined });
+    this.setStatus({ state: "loading", soundId, isUnlocked: true, error: undefined });
 
     logger.log(`[AmbientSounds] playDirect: ${sound.nameEn} (gesture-context play)`);
 
     // Track actual playback start via event listener (reliable for streaming)
     this.audioElement.onplaying = () => {
       if (myPlaybackId !== this.playbackId) return;
-      this.setStatus({ state: 'playing', soundId, isUnlocked: true, error: undefined });
+      this.setStatus({ state: "playing", soundId, isUnlocked: true, error: undefined });
       logger.log(`[AmbientSounds] playDirect: now playing ${soundId}`);
     };
 
     this.audioElement.onerror = () => {
       if (myPlaybackId !== this.playbackId) return;
       const errCode = this.audioElement?.error?.code;
-      const errMsg = this.audioElement?.error?.message || 'Load error';
+      const errMsg = this.audioElement?.error?.message || "Load error";
       logger.error(`[AmbientSounds] playDirect error:`, { errCode, errMsg, soundId });
       this.isPlaying = false;
       this.currentSoundId = null;
       this.setStatus({
-        state: 'error',
+        state: "error",
         soundId,
         error: { code: `MEDIA_ERROR_${errCode}`, message: errMsg, recoverable: true },
       });
@@ -720,16 +743,16 @@ export class AmbientSoundGenerator {
     // Promise catch for NotAllowedError (play blocked by browser policy)
     // eslint-disable-next-line @typescript-eslint/no-misused-promises
     if (playPromise) {
-      playPromise.catch(err => {
+      playPromise.catch((err) => {
         if (myPlaybackId !== this.playbackId) return;
         if (isAbortError(err)) return;
-        logger.warn('[AmbientSounds] playDirect promise rejected:', err);
+        logger.warn("[AmbientSounds] playDirect promise rejected:", err);
         this.isPlaying = false;
         this.currentSoundId = null;
         this.setStatus({
-          state: 'error',
+          state: "error",
           soundId,
-          error: { code: 'PLAY_BLOCKED', message: err.message, recoverable: true },
+          error: { code: "PLAY_BLOCKED", message: err.message, recoverable: true },
         });
       });
     }
@@ -744,23 +767,25 @@ export class AmbientSoundGenerator {
 
     const soundId = this.currentSoundId;
     const playPromise = this.audioElement.play();
-    this.setStatus({ state: 'loading' });
+    this.setStatus({ state: "loading" });
 
     logger.log(`[AmbientSounds] resumeDirect: ${soundId}`);
 
     // eslint-disable-next-line @typescript-eslint/no-misused-promises
     if (playPromise) {
-      playPromise.then(() => {
-        this.setStatus({ state: 'playing', error: undefined });
-        logger.log(`[AmbientSounds] resumeDirect: now playing ${soundId}`);
-      }).catch(err => {
-        if (isAbortError(err)) return;
-        logger.warn('[AmbientSounds] resumeDirect failed:', err);
-        this.setStatus({
-          state: 'error',
-          error: { code: 'RESUME_ERROR', message: err.message, recoverable: true },
+      playPromise
+        .then(() => {
+          this.setStatus({ state: "playing", error: undefined });
+          logger.log(`[AmbientSounds] resumeDirect: now playing ${soundId}`);
+        })
+        .catch((err) => {
+          if (isAbortError(err)) return;
+          logger.warn("[AmbientSounds] resumeDirect failed:", err);
+          this.setStatus({
+            state: "error",
+            error: { code: "RESUME_ERROR", message: err.message, recoverable: true },
+          });
         });
-      });
     }
   }
 
@@ -785,7 +810,7 @@ export class AmbientSoundGenerator {
         // DON'T destroy the blessed element — iOS needs it alive for future playback.
         // Don't clear src or call load() — just pause and clear handlers.
       } catch (e) {
-        logger.warn('[AmbientSounds] Error during stopImmediate:', e);
+        logger.warn("[AmbientSounds] Error during stopImmediate:", e);
       }
       this.audioElement = null; // Clear reference only; blessed element lives on globally
     }
@@ -799,34 +824,34 @@ export class AmbientSoundGenerator {
     signal: AbortSignal,
     fallbackUrl?: string
   ): Promise<void> {
-    logger.log('[AmbientSounds] playAudioFile called with URL:', url);
+    logger.log("[AmbientSounds] playAudioFile called with URL:", url);
     this.usedFallback = false;
 
     // Check abort signal
-    if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
+    if (signal.aborted) throw new DOMException("Aborted", "AbortError");
 
     // Try to unlock audio if not already done
     await unlockAudio();
     this.setStatus({ isUnlocked: audioUnlocked });
 
     // Check after async operation
-    if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
-    if (playbackId !== this.playbackId) throw new DOMException('Superseded', 'AbortError');
+    if (signal.aborted) throw new DOMException("Aborted", "AbortError");
+    if (playbackId !== this.playbackId) throw new DOMException("Superseded", "AbortError");
 
     // Ensure global AudioContext is running (helps iOS)
     try {
       const ctx = getAudioContext();
       if (ctx && needsResume(ctx)) {
         await ctx.resume();
-        logger.log('[AmbientSounds] AudioContext resumed');
+        logger.log("[AmbientSounds] AudioContext resumed");
       }
     } catch (e) {
-      logger.warn('[AmbientSounds] AudioContext resume failed:', e);
+      logger.warn("[AmbientSounds] AudioContext resume failed:", e);
     }
 
     // Check after context resume
-    if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
-    if (playbackId !== this.playbackId) throw new DOMException('Superseded', 'AbortError');
+    if (signal.aborted) throw new DOMException("Aborted", "AbortError");
+    if (playbackId !== this.playbackId) throw new DOMException("Superseded", "AbortError");
 
     // Try primary URL, then fallback if it fails
     let loadError: Error | null = null;
@@ -840,7 +865,7 @@ export class AmbientSoundGenerator {
       const isFallback = i > 0;
 
       if (isFallback) {
-        logger.log('[AmbientSounds] Primary file failed, trying fallback:', currentUrl);
+        logger.log("[AmbientSounds] Primary file failed, trying fallback:", currentUrl);
         this.usedFallback = true;
       }
 
@@ -848,7 +873,7 @@ export class AmbientSoundGenerator {
         await this.loadAndPlayUrl(currentUrl, playbackId, signal);
         // Success - exit loop
         if (isFallback) {
-          logger.log('[AmbientSounds] Fallback file loaded successfully');
+          logger.log("[AmbientSounds] Fallback file loaded successfully");
         }
         return;
       } catch (error) {
@@ -861,38 +886,42 @@ export class AmbientSoundGenerator {
 
         // If there's a fallback, continue to next iteration
         if (i < urlsToTry.length - 1) {
-          logger.warn('[AmbientSounds] Failed to load, will try fallback:', loadError.message);
+          logger.warn("[AmbientSounds] Failed to load, will try fallback:", loadError.message);
           continue;
         }
       }
     }
 
     // All URLs failed
-    throw loadError || new Error('Failed to load audio');
+    throw loadError || new Error("Failed to load audio");
   }
 
   /**
    * Extracted URL loading logic for reuse with fallback
    */
-  private async loadAndPlayUrl(url: string, playbackId: number, signal: AbortSignal): Promise<void> {
+  private async loadAndPlayUrl(
+    url: string,
+    playbackId: number,
+    signal: AbortSignal
+  ): Promise<void> {
     // Reuse the blessed element (created during unlock gesture) for iOS compatibility.
     // iOS keeps the "user-initiated play" blessing on the element even when src changes.
     this.audioElement = getOrCreateBlessedElement();
     this.audioElement.loop = true;
     this.audioElement.volume = this.volume;
-    this.audioElement.preload = 'auto';
+    this.audioElement.preload = "auto";
     this.audioElement.webkitPreservesPitch = true; // Safari
     this.audioElement.src = url;
 
-    logger.log('[AmbientSounds] Reusing blessed audio element, volume:', this.volume, 'url:', url);
+    logger.log("[AmbientSounds] Reusing blessed audio element, volume:", this.volume, "url:", url);
 
     // Determine timeout based on file type (WAV files are larger, need more time)
-    const isWavFile = url.toLowerCase().endsWith('.wav');
+    const isWavFile = url.toLowerCase().endsWith(".wav");
     const loadTimeout = isWavFile ? 30000 : 15000; // 30s for WAV, 15s for MP3
 
     // Wait for audio to be ready with proper cleanup
     await new Promise<void>((resolve, reject) => {
-      if (!this.audioElement) return reject(new Error('No audio element'));
+      if (!this.audioElement) return reject(new Error("No audio element"));
 
       let timeoutId: number | null = null;
       let resolved = false;
@@ -920,13 +949,21 @@ export class AmbientSoundGenerator {
         if (resolved) return;
         resolved = true;
         cleanup();
-        reject(error instanceof Error ? error : new Error(typeof error === 'string' ? error : 'Unknown audio error'));
+        reject(
+          error instanceof Error
+            ? error
+            : new Error(typeof error === "string" ? error : "Unknown audio error")
+        );
       };
 
       // Abort listener
-      signal.addEventListener('abort', () => {
-        handleReject(new DOMException('Aborted during load', 'AbortError'));
-      }, { once: true });
+      signal.addEventListener(
+        "abort",
+        () => {
+          handleReject(new DOMException("Aborted during load", "AbortError"));
+        },
+        { once: true }
+      );
 
       // Timeout: reject so fallback mechanism can try next URL
       timeoutId = window.setTimeout(() => {
@@ -936,12 +973,12 @@ export class AmbientSoundGenerator {
 
       // Ready listeners
       this.audioElement.oncanplaythrough = () => {
-        logger.log('[AmbientSounds] Audio canplaythrough event');
+        logger.log("[AmbientSounds] Audio canplaythrough event");
         handleResolve();
       };
 
       this.audioElement.oncanplay = () => {
-        logger.log('[AmbientSounds] Audio canplay event');
+        logger.log("[AmbientSounds] Audio canplay event");
         handleResolve();
       };
 
@@ -950,7 +987,7 @@ export class AmbientSoundGenerator {
         const audioEl = this.audioElement;
         const errorCode = audioEl?.error?.code;
         const errorMsg = audioEl?.error?.message;
-        logger.error('[AmbientSounds] Audio load error:', { errorCode, errorMsg, url, event: e });
+        logger.error("[AmbientSounds] Audio load error:", { errorCode, errorMsg, url, event: e });
         handleReject(new Error(`Failed to load audio: ${url} (code: ${errorCode})`));
       };
 
@@ -958,13 +995,13 @@ export class AmbientSoundGenerator {
     });
 
     // Final check before play
-    if (signal.aborted) throw new DOMException('Aborted before play', 'AbortError');
+    if (signal.aborted) throw new DOMException("Aborted before play", "AbortError");
     if (playbackId !== this.playbackId) {
       if (this.audioElement) {
         this.audioElement.pause();
-        this.audioElement.src = '';
+        this.audioElement.src = "";
       }
-      throw new DOMException('Superseded before play', 'AbortError');
+      throw new DOMException("Superseded before play", "AbortError");
     }
 
     // iOS: Resume AudioContext right before play (it can re-suspend between earlier resume and now)
@@ -972,23 +1009,23 @@ export class AmbientSoundGenerator {
       const ctx = getAudioContext();
       if (ctx && needsResume(ctx)) {
         await ctx.resume();
-        logger.log('[AmbientSounds] AudioContext re-resumed before play');
+        logger.log("[AmbientSounds] AudioContext re-resumed before play");
       }
     } catch (e) {
-      logger.warn('[AmbientSounds] AudioContext resume before play failed:', e);
+      logger.warn("[AmbientSounds] AudioContext resume before play failed:", e);
     }
 
     // Play the audio with retry for iOS
     try {
       await this.audioElement.play();
     } catch (playError) {
-      logger.warn('[AmbientSounds] First play attempt failed, retrying...', playError);
+      logger.warn("[AmbientSounds] First play attempt failed, retrying...", playError);
       // iOS sometimes needs a second attempt
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Check again before retry
       if (signal.aborted || playbackId !== this.playbackId) {
-        throw new DOMException('Aborted before retry', 'AbortError');
+        throw new DOMException("Aborted before retry", "AbortError");
       }
 
       if (this.audioElement) {
@@ -1009,7 +1046,7 @@ export class AmbientSoundGenerator {
     this.stopImmediate();
 
     // Update status
-    this.setStatus({ state: 'idle', soundId: null, error: undefined });
+    this.setStatus({ state: "idle", soundId: null, error: undefined });
   }
 
   setVolume(volume: number): void {
@@ -1027,7 +1064,7 @@ export class AmbientSoundGenerator {
     if (this.audioElement) {
       this.audioElement.pause();
       // Update status
-      this.setStatus({ state: 'paused' });
+      this.setStatus({ state: "paused" });
     }
   }
 
@@ -1036,12 +1073,12 @@ export class AmbientSoundGenerator {
 
     // Check retry limit before attempting
     if (this.resumeRetryCount >= AmbientSoundGenerator.MAX_RESUME_RETRIES) {
-      logger.warn('[AmbientSounds] Max resume retries reached, giving up');
+      logger.warn("[AmbientSounds] Max resume retries reached, giving up");
       this.setStatus({
-        state: 'error',
+        state: "error",
         error: {
-          code: 'MAX_RETRIES_EXCEEDED',
-          message: 'Unable to resume audio after multiple attempts',
+          code: "MAX_RETRIES_EXCEEDED",
+          message: "Unable to resume audio after multiple attempts",
           recoverable: false,
         },
       });
@@ -1050,7 +1087,7 @@ export class AmbientSoundGenerator {
     }
 
     // Set loading while resuming
-    this.setStatus({ state: 'loading' });
+    this.setStatus({ state: "loading" });
 
     try {
       // Re-unlock audio for mobile (iOS especially needs this after pause)
@@ -1061,46 +1098,52 @@ export class AmbientSoundGenerator {
       const ctx = getAudioContext();
       if (ctx && needsResume(ctx)) {
         await ctx.resume();
-        logger.log('[AmbientSounds] AudioContext resumed for playback');
+        logger.log("[AmbientSounds] AudioContext resumed for playback");
       }
 
       // Try to play with retry for iOS
       try {
         await this.audioElement.play();
         // Update status on success and reset retry counter
-        this.setStatus({ state: 'playing', error: undefined });
+        this.setStatus({ state: "playing", error: undefined });
         this.resumeRetryCount = 0;
       } catch (firstError) {
         this.resumeRetryCount++;
-        logger.warn(`[AmbientSounds] Resume attempt ${this.resumeRetryCount} failed, retrying...`, firstError);
-        await new Promise(resolve => setTimeout(resolve, 100));
+        logger.warn(
+          `[AmbientSounds] Resume attempt ${this.resumeRetryCount} failed, retrying...`,
+          firstError
+        );
+        await new Promise((resolve) => setTimeout(resolve, 100));
 
         // Check again after delay
         if (this.audioElement) {
           await this.audioElement.play();
           // Update status on success and reset retry counter
-          this.setStatus({ state: 'playing', error: undefined });
+          this.setStatus({ state: "playing", error: undefined });
           this.resumeRetryCount = 0;
         }
       }
     } catch (err) {
       // Don't log abort errors as failures
       if (isAbortError(err)) {
-        logger.log('[AmbientSounds] Resume cancelled (abort)');
-        this.setStatus({ state: 'paused' });
+        logger.log("[AmbientSounds] Resume cancelled (abort)");
+        this.setStatus({ state: "paused" });
         this.resumeRetryCount = 0; // Reset on abort
         return;
       }
 
       this.resumeRetryCount++;
-      logger.error(`[AmbientSounds] Failed to resume audio (attempt ${this.resumeRetryCount}):`, err);
+      logger.error(
+        `[AmbientSounds] Failed to resume audio (attempt ${this.resumeRetryCount}):`,
+        err
+      );
 
       // Update status on error
       this.setStatus({
-        state: 'error',
+        state: "error",
         error: {
-          code: 'RESUME_ERROR',
-          message: 'Failed to resume audio',
+          code: "RESUME_ERROR",
+          message: "Failed to resume audio",
           recoverable: this.resumeRetryCount < AmbientSoundGenerator.MAX_RESUME_RETRIES,
         },
       });
@@ -1146,20 +1189,20 @@ export function getAmbientSoundGenerator(): AmbientSoundGenerator {
  */
 export function preloadAmbientSounds(): void {
   // Only preload MP3 files (cafe, fireplace) - WAV files are too large
-  const mp3Sounds = SOUNDS.filter(s => s.file.endsWith('.mp3'));
+  const mp3Sounds = SOUNDS.filter((s) => s.file.endsWith(".mp3"));
 
-  mp3Sounds.forEach(sound => {
+  mp3Sounds.forEach((sound) => {
     try {
       // Use link prefetch for non-blocking background loading
-      const link = document.createElement('link');
-      link.rel = 'prefetch';
-      link.as = 'audio';
+      const link = document.createElement("link");
+      link.rel = "prefetch";
+      link.as = "audio";
       link.href = sound.file;
       document.head.appendChild(link);
-      logger.log('[AmbientSounds] Prefetch queued:', sound.id);
+      logger.log("[AmbientSounds] Prefetch queued:", sound.id);
     } catch (e) {
       // Prefetch is best-effort, don't fail on errors
-      logger.warn('[AmbientSounds] Prefetch failed:', sound.id, e);
+      logger.warn("[AmbientSounds] Prefetch failed:", sound.id, e);
     }
   });
 }
@@ -1169,16 +1212,18 @@ export function preloadAmbientSounds(): void {
  * Useful for diagnostics and detecting CDN/path issues.
  * Returns list of sounds with their load status.
  */
-export async function checkSoundFilesAccessibility(): Promise<Array<{
-  id: string;
-  file: string;
-  accessible: boolean;
-  error?: string;
-}>> {
+export async function checkSoundFilesAccessibility(): Promise<
+  Array<{
+    id: string;
+    file: string;
+    accessible: boolean;
+    error?: string;
+  }>
+> {
   const results = await Promise.all(
     SOUNDS.map(async (sound) => {
       try {
-        const response = await fetch(sound.file, { method: 'HEAD' });
+        const response = await fetch(sound.file, { method: "HEAD" });
         return {
           id: sound.id,
           file: sound.file,
@@ -1192,25 +1237,25 @@ export async function checkSoundFilesAccessibility(): Promise<Array<{
             id: sound.id,
             file: sound.file,
             accessible: false,
-            error: 'Request aborted',
+            error: "Request aborted",
           };
         }
         return {
           id: sound.id,
           file: sound.file,
           accessible: false,
-          error: e instanceof Error ? e.message : 'Unknown error',
+          error: e instanceof Error ? e.message : "Unknown error",
         };
       }
     })
   );
 
   // Log summary
-  const inaccessible = results.filter(r => !r.accessible);
+  const inaccessible = results.filter((r) => !r.accessible);
   if (inaccessible.length > 0) {
-    logger.warn('[AmbientSounds] Some sound files are inaccessible:', inaccessible);
+    logger.warn("[AmbientSounds] Some sound files are inaccessible:", inaccessible);
   } else {
-    logger.log('[AmbientSounds] All sound files accessible');
+    logger.log("[AmbientSounds] All sound files accessible");
   }
 
   return results;

@@ -7,17 +7,9 @@
  */
 
 import { useState, useRef, useCallback, useEffect } from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  Check,
-  X,
-  Target,
-  BookOpen,
-  Heart,
-  Zap,
-  Star,
-  Flame,
-} from "lucide-react";
+import { Check, X, Target, BookOpen, Heart, Zap, Star, Flame } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { haptics } from "@/lib/haptics";
@@ -57,10 +49,9 @@ export function GoalInput({
   onSubmit,
   onCancel,
 }: GoalInputProps) {
+  const { t } = useLanguage();
   const [value, setValue] = useState("");
-  const [selectedIcon, setSelectedIcon] = useState<string | undefined>(
-    undefined,
-  );
+  const [selectedIcon, setSelectedIcon] = useState<string | undefined>(undefined);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Reset + auto-focus when shown
@@ -92,7 +83,7 @@ export function GoalInput({
         handleSubmit();
       }
     },
-    [handleSubmit],
+    [handleSubmit]
   );
 
   const handleCancel = useCallback(() => {
@@ -126,7 +117,7 @@ export function GoalInput({
               "rounded-xl p-3",
               "border border-white/10",
               "shadow-zen-lg",
-              "bg-[var(--surface-glass)] backdrop-blur-[var(--surface-glass-blur,20px)] [-webkit-backdrop-filter:blur(var(--surface-glass-blur,20px))]",
+              "bg-[var(--surface-glass)] backdrop-blur-[var(--surface-glass-blur,20px)] [-webkit-backdrop-filter:blur(var(--surface-glass-blur,20px))]"
             )}
             onClick={(e) => e.stopPropagation()}
           >
@@ -144,7 +135,7 @@ export function GoalInput({
                       "p-2 rounded-lg transition-all",
                       isSelected
                         ? "bg-white/15 ring-1 ring-white/30 text-white"
-                        : "text-white/30 hover:text-white/60 hover:bg-white/5",
+                        : "text-white/30 hover:text-white/60 hover:bg-white/5"
                     )}
                     aria-label={`Icon: ${key}`}
                     aria-pressed={isSelected}
@@ -167,7 +158,7 @@ export function GoalInput({
                 "w-full rounded-lg px-3 py-2 mb-2",
                 "bg-white/5 border border-white/10",
                 "text-white text-sm placeholder:text-white/60",
-                "focus:outline-none focus:ring-1 focus:ring-white/20",
+                "focus:outline-none focus:ring-1 focus:ring-white/20"
               )}
             />
 
@@ -181,9 +172,9 @@ export function GoalInput({
                   value.trim()
                     ? "bg-emerald-500/80 text-white hover:bg-emerald-500"
                     : "bg-white/5 text-white/30 cursor-not-allowed",
-                  "transition-colors",
+                  "transition-colors"
                 )}
-                aria-label="Create goal"
+                aria-label={t.createGoal || "Create goal"}
               >
                 <Check className="w-3.5 h-3.5" />
                 Create
@@ -194,7 +185,7 @@ export function GoalInput({
                 className={cn(
                   "p-2.5 rounded-lg",
                   "text-white/60 hover:text-white/70 hover:bg-white/10",
-                  "transition-colors",
+                  "transition-colors"
                 )}
                 aria-label="Cancel"
               >
