@@ -182,6 +182,24 @@ process.stdin.on('end', () => {
     }
   } catch { /* test file not found — skip */ }
 
+  // 1f. AUDIT STATE INIT: Clean stale audit tokens from previous sessions, reset counters
+  const AUDIT_TOKENS = ['.tool-call-counter', '.user-goal-contract', '.ruflo-last-action', '.audit-active', '.audit-checklist.json'];
+  for (const token of AUDIT_TOKENS) {
+    const tokenPath = path.join(ROOT, token);
+    try {
+      if (fs.existsSync(tokenPath)) {
+        const stat = fs.statSync(tokenPath);
+        const ageMs = Date.now() - stat.mtimeMs;
+        if (ageMs > STALE_THRESHOLD_MS) {
+          fs.unlinkSync(tokenPath);
+          warnings.push('CLEANED stale audit token: ' + token + ' (age: ' + Math.round(ageMs / 3600000) + 'h)');
+        }
+      }
+    } catch {}
+  }
+  // Always reset tool call counter on new session
+  try { fs.writeFileSync(path.join(ROOT, '.tool-call-counter'), '0', 'utf8'); } catch {}
+
   // 2. Clean stale tokens (>4 hours old = abandoned session)
   for (const token of STALE_TOKENS) {
     const tokenPath = path.join(ROOT, token);

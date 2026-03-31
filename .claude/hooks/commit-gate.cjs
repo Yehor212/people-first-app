@@ -83,6 +83,11 @@ process.stdin.on('end', () => {
       { pattern: /\bwget\s+.*-O\s/, label: 'wget download to file' },
       { pattern: /\bawk\b[^|]*>/, label: 'awk redirect to file' },
       { pattern: /\bln\s+/, label: 'ln hardlink/symlink to file' },
+      { pattern: /\bcat\s+.*>/, label: 'cat redirect to file' },
+      { pattern: /\becho\s+.*>/, label: 'echo redirect to file' },
+      { pattern: /\bprintf\s+.*>/, label: 'printf redirect to file' },
+      { pattern: /\bnode\s+-e\s.*writeFile/, label: 'node -e writeFile' },
+      { pattern: /\bperl\s+-.*>/, label: 'perl redirect to file' },
     ];
     for (const pp of PROTECTED_PATHS) {
       // Path-boundary-aware matching: avoid .env matching .env.example
@@ -566,6 +571,25 @@ process.stdin.on('end', () => {
       } catch {
         // gh CLI not available or network error — don't block (fail-open for missing tool)
         audit('allow', 'gh CLI unavailable — skipping remote CI check', cmd);
+      }
+    }
+
+    // --- Layer 8: Ruflo diff-risk advisory (Anti-Pattern #18 Tool Blindness) ---
+    // Remind to use mcp__ruflo__analyze_diff-risk before push
+    if (cmd.includes('git push') || cmd.includes('git commit')) {
+      const RUFLO_STAMP = path.join(ROOT, '.ruflo-last-action');
+      let rufloUsed = false;
+      try {
+        const data = JSON.parse(fs.readFileSync(RUFLO_STAMP, 'utf8'));
+        rufloUsed = (Date.now() - data.timestamp) < 30 * 60 * 1000;
+      } catch {}
+      if (!rufloUsed) {
+        process.stderr.write(
+          '\n⚠️ RUFLO DIFF-RISK ADVISORY: No recent Ruflo activity.\n' +
+          'Consider running mcp__ruflo__analyze_diff-risk before push\n' +
+          'to assess change risk and get recommended reviewers.\n\n'
+        );
+        audit('advisory', 'ruflo diff-risk not run', cmd);
       }
     }
   } catch (e) {

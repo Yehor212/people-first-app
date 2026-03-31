@@ -35,12 +35,47 @@ process.stdin.on('end', () => {
   }) + '\n';
   try { fs.appendFileSync(AUDIT_LOG, entry); } catch {}
 
-  // Inject enforcement context for subagent
+  // Inject FULL enforcement context for subagent including Ruflo pipeline + checklist items
+  const auditActive = fs.existsSync(path.join(ROOT, '.audit-active'));
+  const CHECKLIST = path.join(ROOT, '.audit-checklist.json');
+  const GOAL_FILE = path.join(ROOT, '.user-goal-contract');
+
+  // Build checklist context — give agent its SPECIFIC assigned items
+  let checklistContext = '';
+  if (auditActive && fs.existsSync(CHECKLIST)) {
+    try {
+      const cl = JSON.parse(fs.readFileSync(CHECKLIST, 'utf8'));
+      const pending = (cl.items || []).filter(i => !i.done);
+      const done = (cl.items || []).filter(i => i.done).length;
+      const total = (cl.items || []).length;
+      checklistContext = ` AUDIT CHECKLIST (${done}/${total} done). Your PENDING items: ` +
+        pending.slice(0, 10).map(i => `[${i.id}] ${(i.description || '').slice(0, 50)}`).join('; ') +
+        (pending.length > 10 ? ` ... +${pending.length - 10} more` : '') +
+        '. Mark items done by updating .audit-checklist.json after completing each.';
+    } catch {}
+  }
+
+  // Build goal context — give agent the original user prompt
+  let goalContext = '';
+  if (auditActive && fs.existsSync(GOAL_FILE)) {
+    try {
+      const goal = fs.readFileSync(GOAL_FILE, 'utf8').slice(0, 400);
+      goalContext = ` ORIGINAL USER GOAL: ${goal}`;
+    } catch {}
+  }
+
+  const rufloReminder = auditActive
+    ? ' RUFLO MANDATORY (6-phase pipeline): (1) mcp__ruflo__memory_search before editing. (2) mcp__ruflo__agentdb_pattern-search for hybrid BM25+semantic. (3) mcp__ruflo__memory_store after each fix. (4) mcp__ruflo__agentdb_feedback on task completion. (5) mcp__ruflo__aidefence_scan on external inputs. (6) mcp__ruflo__analyze_diff-risk before commit. Also available: mcp__ruflo__performance_profile, mcp__ruflo__hooks_intelligence, mcp__ruflo__autopilot_predict.'
+    : '';
+
   const reminder = [
     'SUBAGENT ENFORCEMENT: Hooks apply to subagents.',
     'Protected files: .env, keystore, auth.ts, CLAUDE.md, settings.json.',
     'PRE-FLIGHT required before TS edits. POST-FLIGHT before stop.',
-  ].join(' ');
+    rufloReminder,
+    checklistContext,
+    goalContext,
+  ].join('');
 
   console.log(JSON.stringify({
     hookSpecificOutput: {

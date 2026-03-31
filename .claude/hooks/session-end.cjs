@@ -44,6 +44,26 @@ process.stdin.on('end', () => {
     } catch { /* ignore cleanup errors */ }
   }
 
+  // Save audit checklist progress to .ruflo-session-snapshot for cross-session persistence
+  const CHECKLIST = path.join(ROOT, '.audit-checklist.json');
+  const SNAPSHOT = path.join(ROOT, '.ruflo-session-snapshot');
+  if (fs.existsSync(CHECKLIST)) {
+    try {
+      const checklist = JSON.parse(fs.readFileSync(CHECKLIST, 'utf8'));
+      const items = checklist.items || [];
+      const done = items.filter(i => i.done).length;
+      const snapshot = {
+        timestamp: new Date().toISOString(),
+        checklist_total: items.length,
+        checklist_done: done,
+        checklist_pct: items.length > 0 ? Math.round(done / items.length * 100) : 0,
+        pending_items: items.filter(i => !i.done).map(i => ({ id: i.id, desc: (i.description || '').slice(0, 60) })).slice(0, 20),
+        session_reason: reason,
+      };
+      fs.writeFileSync(SNAPSHOT, JSON.stringify(snapshot, null, 2), 'utf8');
+    } catch {}
+  }
+
   // Log session end to audit trail
   const entry = JSON.stringify({
     ts: Date.now(),

@@ -36,6 +36,29 @@
             "command": "node .claude/hooks/bandaid-gate.cjs",
             "timeout": 5000,
             "statusMessage": "Bandaid detection (Law 21)..."
+          },
+          {
+            "type": "command",
+            "command": "node .claude/hooks/checklist-gate.cjs",
+            "timeout": 5000,
+            "statusMessage": "Audit checklist gate..."
+          },
+          {
+            "type": "command",
+            "command": "node .claude/hooks/ruflo-enforcer.cjs",
+            "timeout": 5000,
+            "statusMessage": "Ruflo pipeline enforcer..."
+          }
+        ]
+      },
+      {
+        "matcher": "Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/agent-delegation-gate.cjs",
+            "timeout": 5000,
+            "statusMessage": "Agent delegation gate..."
           }
         ]
       },
@@ -47,6 +70,12 @@
             "command": "node .claude/hooks/tool-guard.cjs",
             "timeout": 5000,
             "statusMessage": "Tool routing check..."
+          },
+          {
+            "type": "command",
+            "command": "node .claude/hooks/checklist-gate.cjs",
+            "timeout": 5000,
+            "statusMessage": "Audit checklist gate..."
           }
         ]
       },
@@ -83,6 +112,12 @@
             "command": "node .claude/hooks/auto-format.cjs",
             "timeout": 15000,
             "statusMessage": "Auto-formatting..."
+          },
+          {
+            "type": "command",
+            "command": "node .claude/hooks/goal-reinjection.cjs",
+            "timeout": 5000,
+            "statusMessage": "Goal re-injection check..."
           }
         ]
       },
@@ -100,6 +135,12 @@
             "command": "node .claude/hooks/ci-tracker.cjs",
             "timeout": 5000,
             "statusMessage": "CI execution tracking..."
+          },
+          {
+            "type": "command",
+            "command": "node .claude/hooks/goal-reinjection.cjs",
+            "timeout": 5000,
+            "statusMessage": "Goal re-injection check..."
           }
         ]
       },
@@ -111,6 +152,23 @@
             "command": "node .claude/hooks/ci-tracker.cjs",
             "timeout": 5000,
             "statusMessage": "Research tracking..."
+          },
+          {
+            "type": "command",
+            "command": "node .claude/hooks/goal-reinjection.cjs",
+            "timeout": 5000,
+            "statusMessage": "Goal re-injection check..."
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__ruflo__",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/ruflo-enforcer.cjs",
+            "timeout": 5000,
+            "statusMessage": "Ruflo pipeline tracking..."
           }
         ]
       },
@@ -157,6 +215,12 @@
             "command": "node .claude/hooks/evolve-gate.cjs",
             "timeout": 5000,
             "statusMessage": "A-Evolve gate..."
+          },
+          {
+            "type": "command",
+            "command": "node .claude/hooks/satisficing-gate.cjs",
+            "timeout": 5000,
+            "statusMessage": "Satisficing detector..."
           }
         ]
       }

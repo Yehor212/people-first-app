@@ -59,6 +59,30 @@ process.stdin.on('end', () => {
       }
     }
 
+    // 1a-2. Audit mode trigger detection → creates .audit-active flag
+    const AUDIT_FLAG = path.join(ROOT, '.audit-active');
+    if (
+      msg.includes('аудит') || msg.includes('audit') ||
+      msg.includes('полный аудит') || msg.includes('full audit') ||
+      msg.includes('14 категори') || msg.includes('14 categories') ||
+      msg.includes('повторный анализ') || msg.includes('re-audit')
+    ) {
+      if (!fs.existsSync(AUDIT_FLAG)) {
+        fs.writeFileSync(AUDIT_FLAG, new Date().toISOString(), 'utf8');
+        process.stderr.write('🔍 AUDIT MODE ACTIVATED — .audit-active created. All enforcement hooks engaged.\n');
+      }
+    }
+
+    // 1b. Save user goal contract for goal-reinjection hook
+    const GOAL_CONTRACT = path.join(ROOT, '.user-goal-contract');
+    const TOOL_COUNTER = path.join(ROOT, '.tool-call-counter');
+    if (rawMsgOriginal.length > 50) {
+      // Only save substantial prompts (not "да", "ок", "продолжай")
+      fs.writeFileSync(GOAL_CONTRACT, rawMsgOriginal.slice(0, 2000), 'utf8');
+      // Reset tool call counter on new substantial prompt
+      fs.writeFileSync(TOOL_COUNTER, '0', 'utf8');
+    }
+
     // 2. Clean stale preflight token (>1 hour old)
     if (fs.existsSync(PREFLIGHT_TOKEN)) {
       try {

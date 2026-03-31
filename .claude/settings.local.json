@@ -79,7 +79,10 @@
       "Bash(npm uninstall:*)",
       "Bash(sed -i 's/\"\"\"\"strict\"\"\"\": false/\"\"\"\"strict\"\"\"\": false, \"\"\"\"strictNullChecks\"\"\"\": true/' tsconfig.app.json)",
       "Bash(npm update:*)",
-      "mcp__ruflo__agentdb_pattern-store"
+      "mcp__ruflo__agentdb_pattern-store",
+      "mcp__ruflo__agentdb_context-synthesize",
+      "Bash(grep -l 'process.exit\\(2\\)' .claude/hooks/*.cjs)",
+      "Bash(grep -l 'process.exit\\(1\\)' .claude/hooks/*.cjs)"
     ],
     "deny": [
       "Bash(rm -rf)",
