@@ -22,11 +22,58 @@ if (!fs.existsSync(AUDIT_FLAG)) {
   process.exit(0);
 }
 
+// ANTI-DEADLOCK: Auto-clean stale .audit-active (>4 hours old)
+try {
+  const auditAge = Date.now() - fs.statSync(AUDIT_FLAG).mtimeMs;
+  if (auditAge > 4 * 3600 * 1000) {
+    fs.unlinkSync(AUDIT_FLAG);
+    process.stderr.write('🧹 Stale .audit-active removed (>4h old). Audit enforcement disabled.\n');
+    process.exit(0);
+  }
+} catch {}
+
 // Shared: log blocks for pattern analysis
 function logBlock(hook, reason) {
   const AUDIT_LOG = path.join(process.cwd(), '.claude-audit.log');
   const entry = JSON.stringify({ ts: Date.now(), hook, event: 'BLOCKED', reason }) + '\n';
   try { fs.appendFileSync(AUDIT_LOG, entry); } catch {}
+}
+
+// BOOTSTRAP EXCEPTION: Allow creating .audit-checklist.json itself
+// and allow deleting .audit-active (cleanup). Without this = DEADLOCK.
+let input;
+try {
+  let raw = '';
+  // Sync stdin read attempt (may not work on all platforms)
+  try { raw = require('fs').readFileSync(0, 'utf8'); } catch {
+    // If sync read fails, allow through (non-blocking for bootstrap)
+    if (!fs.existsSync(CHECKLIST)) {
+      process.stderr.write(
+        '📋 CHECKLIST REQUIRED: Write .audit-checklist.json before other edits.\n' +
+        '   Allowing this operation for bootstrap.\n'
+      );
+      process.exit(0);
+    }
+  }
+  input = JSON.parse(raw);
+} catch {
+  // Can't parse stdin — allow for bootstrap
+  if (!fs.existsSync(CHECKLIST)) {
+    process.stderr.write('📋 CHECKLIST REQUIRED: Write .audit-checklist.json before other edits.\n');
+    process.exit(0);
+  }
+}
+
+// Check if this operation is creating the checklist itself
+if (input) {
+  const filePath = input.tool_input?.file_path || '';
+  const command = input.tool_input?.command || '';
+  const isChecklistWrite = filePath.includes('audit-checklist');
+  const isAuditCleanup = command.includes('audit-active') || command.includes('audit-checklist');
+  if (isChecklistWrite || isAuditCleanup) {
+    process.stderr.write('📋 Bootstrap: allowing checklist creation / audit cleanup.\n');
+    process.exit(0);
+  }
 }
 
 if (!fs.existsSync(CHECKLIST)) {

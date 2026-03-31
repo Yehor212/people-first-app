@@ -54,6 +54,14 @@ if (!fs.existsSync(AUDIT_FLAG)) {
   process.exit(0);
 }
 
+// ANTI-DEADLOCK: Auto-clean stale .audit-active (>4 hours old)
+try {
+  const auditAge = Date.now() - fs.statSync(AUDIT_FLAG).mtimeMs;
+  if (auditAge > 4 * 3600 * 1000) {
+    process.exit(0); // checklist-gate handles cleanup
+  }
+} catch {}
+
 // Read stdin via stream (cross-platform: /dev/stdin doesn't exist on Windows)
 let rawInput = '';
 process.stdin.on('data', d => rawInput += d);
@@ -101,6 +109,13 @@ if (isRufloTool) {
 
 // PreToolUse:Edit — enforce blocking phases
 if (toolName === 'Edit' || toolName === 'Write') {
+  // BOOTSTRAP EXCEPTION: Allow audit infrastructure files without Ruflo
+  const filePath = input.tool_input?.file_path || '';
+  if (filePath.includes('audit-checklist') || filePath.includes('audit-active') ||
+      filePath.includes('.postflight-done') || filePath.includes('.preflight-token') ||
+      filePath.includes('.verification-done') || filePath.includes('.ide-ack')) {
+    process.exit(0);
+  }
   const missingBlocking = [];
   const missingAdvisory = [];
 
