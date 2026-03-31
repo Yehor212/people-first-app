@@ -23,11 +23,17 @@ if (!fs.existsSync(AUDIT_FLAG)) {
   process.exit(0);
 }
 
+// Read stdin via stream (cross-platform: /dev/stdin doesn't exist on Windows)
+let rawInput = '';
+process.stdin.on('data', d => rawInput += d);
+process.stdin.on('end', () => {
+
 let input;
 try {
-  input = JSON.parse(fs.readFileSync('/dev/stdin', 'utf8'));
+  input = JSON.parse(rawInput);
 } catch {
-  process.exit(0);
+  process.stderr.write('agent-delegation-gate: failed to parse stdin — blocking (fail-closed)\n');
+  process.exit(2);
 }
 
 // Only check Agent tool
@@ -143,12 +149,16 @@ if (injections.length > 0) {
   const modified = JSON.parse(JSON.stringify(input.tool_input || {}));
   modified.prompt = (modified.prompt || '') + injections.join('\n');
 
+  // Use updatedInput (SDK standard) + permissionDecision: allow (required for input modification)
   console.log(JSON.stringify({
     hookSpecificOutput: {
-      tool_input: modified,
+      hookEventName: 'PreToolUse',
+      permissionDecision: 'allow',
+      updatedInput: modified,
     },
   }));
   process.exit(0);
 }
 
 process.exit(0);
+}); // end process.stdin.on('end')

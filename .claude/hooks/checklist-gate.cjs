@@ -48,6 +48,29 @@ try {
   const done = items.filter(i => i.done).length;
   const pct = total > 0 ? Math.round(done / total * 100) : 0;
 
+  // ANTI-GAMING: Minimum item count (prevent trivial 3-item checklists)
+  const MIN_ITEMS = 10;
+  if (total < MIN_ITEMS) {
+    logBlock('checklist-gate', `Checklist too small: ${total} items (need ≥${MIN_ITEMS})`);
+    process.stderr.write(
+      `CHECKLIST GATE BLOCKED: Only ${total} items (need ≥${MIN_ITEMS}).\n` +
+      `A real audit checklist should have 10+ items from the user prompt.\n` +
+      `Add more items from the original request before editing.\n`
+    );
+    process.exit(2);
+  }
+
+  // ANTI-GAMING: Items must have descriptions (prevent empty placeholders)
+  const emptyItems = items.filter(i => !i.description || i.description.length < 10);
+  if (emptyItems.length > total * 0.3) {
+    logBlock('checklist-gate', `${emptyItems.length}/${total} items have empty/short descriptions`);
+    process.stderr.write(
+      `CHECKLIST GATE BLOCKED: ${emptyItems.length}/${total} items have no description (<10 chars).\n` +
+      `Each item must describe a specific check from the user's original request.\n`
+    );
+    process.exit(2);
+  }
+
   process.stderr.write(`📋 Audit checklist: ${done}/${total} (${pct}%)\n`);
 } catch (err) {
   process.stderr.write(`checklist-gate: parse error: ${err.message}\n`);

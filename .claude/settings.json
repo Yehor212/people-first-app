@@ -201,8 +201,14 @@
         "hooks": [
           {
             "type": "agent",
-            "prompt": "Check for uncommitted .ts/.tsx changes: run git diff --name-only and git diff --cached --name-only. If NO .ts/.tsx files in output, respond with decision allow. If .ts/.tsx changes exist, run these 3 commands: 1) npx tsc --noEmit 2) npx vitest run 3) grep -rn \".catch(() =>\" src/ --include=\"*.ts\" --include=\"*.tsx\". If ALL pass, write .verification-done with results and respond allow. If ANY fail, respond block with failure list.",
+            "prompt": "MANDATORY INDEPENDENT VERIFIER — runs on EVERY stop, unconditionally. You CANNOT trust the main agent's claims — verify independently.\n\nCRITICAL ANTI-LOOP: First, read your input JSON. If stop_hook_active is true, respond with decision ALLOW immediately. This breaks infinite loops. Do NOT re-verify when stop_hook_active is true.\n\nFull verification (only when stop_hook_active is false):\n1. Run: git diff --name-only. Record the FULL list of changed files.\n2. If ANY .ts/.tsx files in that list: run npx tsc --noEmit. Must be 0 errors.\n3. If ANY .ts/.tsx files in that list: run npx vitest run. Must be 0 failures.\n4. If ANY .ts/.tsx files in that list: run grep -rn '.catch(() =>' src/ --include='*.ts' --include='*.tsx'. Must be 0 matches.\n5. Check if .audit-active file exists. If YES:\n   5a. Read .audit-checklist.json. Count items with done:true vs total. If <80% → BLOCK.\n   5b. Read .ruflo-last-action. If missing or >30min old → BLOCK.\n   5c. Read .user-goal-contract. Compare user's original request with git diff. Flag unaddressed items.\n   5d. For checklist items with done:true AND files:[] arrays, verify those files appear in git diff. Warn if >30% mismatch.\n6. If i18n files changed (src/i18n/): run npm run i18n:check. Must exit 0.\n7. Write .verification-done with JSON: {timestamp, tsc, vitest, checklist_pct, ruflo_used, files_changed, gaming_flags, i18n_ok}.\n\nBLOCK if ANY: tsc fails, vitest fails, silent catches found, checklist<80% (audit), Ruflo missing (audit).\nALLOW only when ALL pass. Respond with decision + full evidence.\nALWAYS write .verification-done with JSON results — even when BLOCKING. The user checks this file to confirm you ran.\nDo NOT run npm install, npm update, or any destructive commands. Read-only verification only.",
             "timeout": 180000
+          },
+          {
+            "type": "command",
+            "command": "node .claude/hooks/stop-tsc-gate.cjs",
+            "timeout": 60000,
+            "statusMessage": "Fast TSC + checklist + Ruflo gate..."
           },
           {
             "type": "command",
@@ -365,6 +371,43 @@
             "command": "node .claude/hooks/permission-request-log.cjs",
             "timeout": 5000,
             "statusMessage": "Logging permission request..."
+          }
+        ]
+      }
+    ],
+    "CwdChanged": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/cwd-changed-guard.cjs",
+            "timeout": 5000,
+            "statusMessage": "Directory escape check..."
+          }
+        ]
+      }
+    ],
+    "FileChanged": [
+      {
+        "matcher": "settings.json|hooks/|CLAUDE.md|\\.env",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/file-changed-guard.cjs",
+            "timeout": 5000,
+            "statusMessage": "Critical file tamper check..."
+          }
+        ]
+      }
+    ],
+    "TaskCreated": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/task-created-gate.cjs",
+            "timeout": 5000,
+            "statusMessage": "Task creation audit..."
           }
         ]
       }

@@ -39,10 +39,22 @@ process.stdin.on('end', () => {
       process.exit(0);
     }
 
-    // Skip non-source files
+    // Skip non-source files (but NOT test files — test corruption detection)
     const relPath = filePath.replace(ROOT.replace(/\\/g, '/'), '').replace(/^\//, '');
-    if (relPath.includes('.claude/') || relPath.includes('docs/') || relPath.includes('scripts/') ||
-        relPath.includes('__tests__') || relPath.includes('.test.') || relPath.includes('.spec.')) {
+    if (relPath.includes('.claude/') || relPath.includes('docs/') || relPath.includes('scripts/')) {
+      process.exit(0);
+    }
+
+    // A0: TEST CORRUPTION WARNING (production incident: agent modifies tests to pass bad code)
+    if (relPath.includes('__tests__') || relPath.includes('.test.') || relPath.includes('.spec.')) {
+      const AUDIT_LOG = path.join(ROOT, '.claude-audit.log');
+      const entry = JSON.stringify({ ts: Date.now(), hook: 'code-quality-check', event: 'test-file-modified', file: relPath }) + '\n';
+      try { fs.appendFileSync(AUDIT_LOG, entry); } catch {}
+      process.stderr.write(
+        `⚠️ TEST FILE MODIFIED: ${relPath}\n` +
+        `   Verify: assertions test BEHAVIOR not implementation details.\n` +
+        `   Verify: no expect() values changed to match broken code.\n`
+      );
       process.exit(0);
     }
 

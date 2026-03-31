@@ -215,6 +215,34 @@ process.stdin.on('end', () => {
     } catch { /* ignore cleanup errors */ }
   }
 
+  // 2b. CRITICAL WATCHDOG: Verify Stop agent verifier is present in settings.json
+  // Protects against: settings override via --settings, accidental deletion, corruption
+  try {
+    const settingsPath = path.join(ROOT, '.claude/settings.json');
+    const settingsContent = fs.readFileSync(settingsPath, 'utf8');
+    if (!settingsContent.includes('MANDATORY INDEPENDENT VERIFIER')) {
+      warnings.push(
+        '🚨 CRITICAL: INDEPENDENT VERIFIER MISSING from settings.json!\n' +
+        '    The mandatory Stop agent verifier has been removed or overridden.\n' +
+        '    This could mean: --settings flag override, manual deletion, or corruption.\n' +
+        '    Without the verifier, the agent can claim work is done without proof.\n' +
+        '    RESTORE: git checkout HEAD -- .claude/settings.json'
+      );
+    }
+    if (!settingsContent.includes('stop-tsc-gate.cjs')) {
+      warnings.push(
+        '⚠️ WARNING: stop-tsc-gate.cjs not registered in settings.json.\n' +
+        '    Fast TSC backup gate is missing. Agent verifier timeout = unblocked tsc errors.'
+      );
+    }
+    if (!settingsContent.includes('satisficing-gate.cjs')) {
+      warnings.push(
+        '⚠️ WARNING: satisficing-gate.cjs not registered in settings.json.\n' +
+        '    Satisficing detector is missing. Agent can stop at <80% checklist.'
+      );
+    }
+  } catch {}
+
   // 3. Build context — ALWAYS inject enforcement reminder (survives compaction via source="compact")
   // Dynamic counts — future-proof: adding hooks auto-updates the numbers
   // Uses JS file reading (not grep) to avoid self-matching meta-bug
@@ -229,6 +257,9 @@ process.stdin.on('end', () => {
   } catch { blockingCount = 5; /* fallback */ }
   const advisoryCount = hookCount - blockingCount;
 
+  // Detect audit mode
+  const auditActive = fs.existsSync(path.join(ROOT, '.audit-active'));
+
   const enforcementReminder = [
     'ENFORCEMENT: Hooks enforce rules automatically.',
     'preflight-gate blocks edits without token.',
@@ -236,6 +267,12 @@ process.stdin.on('end', () => {
     'PostToolUse A6-A10 warnings fire after every edit.',
     'Agent hook on Stop runs verifier automatically.',
     'RUFLO MCP: Use mcp__ruflo__memory_store to save solution patterns after non-trivial fixes. Use mcp__ruflo__memory_search before complex tasks to find similar past solutions.',
+    '',
+    `🛡️ INDEPENDENT VERIFIER: ACTIVE (${hookCount} hooks, ${blockingCount} blocking)`,
+    '  Stop → agent verifier (tsc + vitest + checklist + ruflo + goal cross-check)',
+    '  Stop → stop-tsc-gate (fast parallel backup: tsc + checklist + ruflo)',
+    '  Stop → satisficing-gate (anti-gaming: min 10 items, evidence cross-check)',
+    auditActive ? '  🔍 AUDIT MODE ON — all enforcement gates engaged' : '  Audit mode OFF — basic enforcement only',
   ].join('\n');
 
   let context = enforcementReminder;

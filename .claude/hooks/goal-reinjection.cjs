@@ -17,7 +17,10 @@ const path = require('path');
 
 const COUNTER_FILE = path.join(process.cwd(), '.tool-call-counter');
 const GOAL_FILE = path.join(process.cwd(), '.user-goal-contract');
-const REINJECTION_INTERVAL = 10;
+const AUDIT_FLAG = path.join(process.cwd(), '.audit-active');
+// During audit: reinject every 5 steps (research: decay starts at step 10, catch it at 5)
+// Normal: every 10 steps
+const REINJECTION_INTERVAL = fs.existsSync(AUDIT_FLAG) ? 5 : 10;
 
 try {
   // Increment counter

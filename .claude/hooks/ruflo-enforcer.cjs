@@ -54,11 +54,18 @@ if (!fs.existsSync(AUDIT_FLAG)) {
   process.exit(0);
 }
 
+// Read stdin via stream (cross-platform: /dev/stdin doesn't exist on Windows)
+let rawInput = '';
+process.stdin.on('data', d => rawInput += d);
+process.stdin.on('end', () => {
+
 let input;
 try {
-  input = JSON.parse(fs.readFileSync('/dev/stdin', 'utf8'));
+  input = JSON.parse(rawInput);
 } catch {
-  process.exit(0);
+  // Fail-CLOSED during audit: if we can't parse input, block
+  process.stderr.write('ruflo-enforcer: failed to parse stdin — blocking (fail-closed)\n');
+  process.exit(2);
 }
 
 const toolName = input.tool_name || input.tool || '';
@@ -153,3 +160,4 @@ if (toolName === 'Edit' || toolName === 'Write') {
 }
 
 process.exit(0);
+}); // end process.stdin.on('end')

@@ -82,7 +82,11 @@
       "mcp__ruflo__agentdb_pattern-store",
       "mcp__ruflo__agentdb_context-synthesize",
       "Bash(grep -l 'process.exit\\(2\\)' .claude/hooks/*.cjs)",
-      "Bash(grep -l 'process.exit\\(1\\)' .claude/hooks/*.cjs)"
+      "Bash(grep -l 'process.exit\\(1\\)' .claude/hooks/*.cjs)",
+      "Bash(timeout 3 node -e \":*)",
+      "Bash(__NEW_LINE_d28550f1cee78bee__ echo:*)",
+      "WebFetch(domain:paddo.dev)",
+      "WebFetch(domain:claudefa.st)"
     ],
     "deny": [
       "Bash(rm -rf)",

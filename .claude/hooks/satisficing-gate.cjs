@@ -69,8 +69,44 @@ try {
     process.exit(2);
   }
 
+  // ANTI-GAMING: Verify checklist items have EVIDENCE (git diff, not just "done: true")
+  const { execSync } = require('child_process');
+  let changedFiles = [];
+  try {
+    changedFiles = execSync('git diff --name-only', { cwd: process.cwd(), encoding: 'utf8', timeout: 10000 })
+      .trim().split('\n').filter(Boolean);
+  } catch {}
+
+  const doneItems = items.filter(i => i.done);
+  const noEvidence = doneItems.filter(i => {
+    // Check if item has file evidence (items should reference files they changed)
+    const itemFiles = i.files || [];
+    if (itemFiles.length === 0) return true; // No files listed = no evidence
+    // Verify at least one listed file is actually in git diff
+    return !itemFiles.some(f => changedFiles.some(cf => cf.includes(f)));
+  });
+
+  if (noEvidence.length > 0 && noEvidence.length > doneItems.length * 0.3) {
+    process.stderr.write(
+      `\n⚠️ ANTI-GAMING WARNING: ${noEvidence.length}/${doneItems.length} "done" items have NO file evidence in git diff.\n` +
+      `Items marked done should have "files": ["path"] matching actual changed files.\n` +
+      `This prevents gaming by marking items done without actual changes.\n\n`
+    );
+  }
+
+  // ANTI-GAMING: Check minimum items (prevent trivial 3-item checklist)
+  const MIN_ITEMS = 10;
+  if (total < MIN_ITEMS) {
+    process.stderr.write(
+      `\n⚠️ CHECKLIST TOO SMALL: ${total} items (minimum ${MIN_ITEMS} for audit).\n` +
+      `A real audit should have 10+ items covering multiple categories.\n` +
+      `This prevents gaming by creating trivially small checklists.\n\n`
+    );
+    process.exit(2);
+  }
+
   process.stderr.write(
-    `✅ Satisficing check passed: ${done}/${total} = ${pct}% (≥${BLOCK_THRESHOLD}%) | Time: ${elapsedMin}min\n`
+    `✅ Satisficing check passed: ${done}/${total} = ${pct}% (≥${BLOCK_THRESHOLD}%) | Time: ${elapsedMin}min | Evidence: ${doneItems.length - noEvidence.length}/${doneItems.length} verified\n`
   );
 } catch (err) {
   process.stderr.write(`satisficing-gate: ${err.message}\n`);
