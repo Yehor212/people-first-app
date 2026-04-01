@@ -2,6 +2,7 @@ import { Leaf, Loader2, AlertCircle, Phone, ArrowLeft } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
+import { IS_DEV } from "@/lib/env";
 import type { AuthScreenProps } from "./types";
 import { SHOW_APPLE_AUTH, SHOW_FACEBOOK_AUTH, SHOW_PHONE_AUTH } from "./types";
 import { useAuthSession } from "./useAuthSession";
@@ -259,16 +260,18 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
               />
               <div className="flex-1">
                 <p className="text-sm text-destructive whitespace-pre-wrap">{session.error}</p>
-                {session.debugInfo && (
+                {IS_DEV && session.debugInfo && (
                   <p className="text-xs text-muted-foreground mt-2">{session.debugInfo}</p>
                 )}
-                <button
-                  onClick={handlers.exportDebugInfo}
-                  aria-label={t.authExportDebugInfo}
-                  className="text-xs text-primary underline mt-2"
-                >
-                  {t.authExportDebugInfo}
-                </button>
+                {IS_DEV && (
+                  <button
+                    onClick={handlers.exportDebugInfo}
+                    aria-label={t.authExportDebugInfo}
+                    className="text-xs text-primary underline mt-2"
+                  >
+                    {t.authExportDebugInfo}
+                  </button>
+                )}
               </div>
             </div>
           )}

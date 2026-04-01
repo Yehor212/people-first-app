@@ -5,17 +5,32 @@
  * Uses generated challenge codes that encode habit info for sharing
  */
 
-import { Habit } from '@/types';
-import { safeJsonParse, safeLocalStorageGet, safeLocalStorageSet } from './safeJson';
-import { SK } from '@/lib/storageKeys';
-import { generateSecureId } from './validation';
-import { parseLocalDate, getToday } from '@/lib/utils';
-import { logger } from './logger';
+import { z } from "zod";
+import { Habit } from "@/types";
+import { safeJsonParse, safeLocalStorageGet, safeLocalStorageSet } from "./safeJson";
+import { SK } from "@/lib/storageKeys";
+import { generateSecureId } from "./validation";
+import { sanitizeString } from "./sanitize";
+import { parseLocalDate, getToday } from "@/lib/utils";
+import { logger } from "./logger";
 import {
   isCloudChallengesAvailable,
   syncLocalChallengeToCloud,
   updateMyProgress as updateCloudProgress,
-} from './challengeService';
+} from "./challengeService";
+
+// Zod schema for decoded invite data — validates fields from untrusted deep links (CWE-20)
+const invitePayloadSchema = z.object({
+  cd: z.string().min(1).max(100),
+  n: z.string().min(1).max(100),
+  i: z.string().min(1).max(100),
+  d: z.number().int().min(1).max(365),
+  c: z.string().max(100).optional(),
+  sd: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+});
 
 // ============================================
 // TYPES
@@ -32,7 +47,7 @@ export interface Challenge {
   creatorName?: string;
   myProgress: number; // days completed
   isCreator: boolean;
-  status: 'active' | 'completed' | 'expired';
+  status: "active" | "completed" | "expired";
 }
 
 export interface ChallengeInvite {
@@ -48,15 +63,15 @@ export interface ChallengeInvite {
 // CONSTANTS
 // ============================================
 
-const CODE_PREFIX = 'ZEN';
-const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // No confusing chars (0, O, I, 1)
+const CODE_PREFIX = "ZEN";
+const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // No confusing chars (0, O, I, 1)
 
 // Duration options in days
 export const CHALLENGE_DURATIONS = [
-  { value: 7, label: '7 days' },
-  { value: 14, label: '14 days' },
-  { value: 21, label: '21 days' },
-  { value: 30, label: '30 days' },
+  { value: 7, label: "7 days" },
+  { value: 14, label: "14 days" },
+  { value: 21, label: "21 days" },
+  { value: 30, label: "30 days" },
 ] as const;
 
 // ============================================
@@ -68,7 +83,7 @@ export const CHALLENGE_DURATIONS = [
  */
 function generateCode(): string {
   const values = crypto.getRandomValues(new Uint8Array(6));
-  const code = Array.from(values, v => CODE_CHARS[v % CODE_CHARS.length]).join('');
+  const code = Array.from(values, (v) => CODE_CHARS[v % CODE_CHARS.length]).join("");
   return `${CODE_PREFIX}-${code}`;
 }
 
@@ -76,7 +91,7 @@ function generateCode(): string {
  * Generate unique ID for challenge
  */
 function generateId(): string {
-  return generateSecureId('challenge');
+  return generateSecureId("challenge");
 }
 
 /**
@@ -85,7 +100,7 @@ function generateId(): string {
 function calculateEndDate(startDate: string, duration: number): string {
   const start = new Date(startDate);
   start.setDate(start.getDate() + duration);
-  return start.toISOString().split('T')[0];
+  return start.toISOString().split("T")[0];
 }
 
 // getToday imported from @/lib/utils (uses local time, not UTC)
@@ -111,11 +126,7 @@ function saveChallenges(challenges: Challenge[]): void {
 /**
  * Create a new challenge from a habit
  */
-export function createChallenge(
-  habit: Habit,
-  duration: number,
-  creatorName?: string
-): Challenge {
+export function createChallenge(habit: Habit, duration: number, creatorName?: string): Challenge {
   const today = getToday();
 
   const challenge: Challenge = {
@@ -129,7 +140,7 @@ export function createChallenge(
     creatorName,
     myProgress: 0,
     isCreator: true,
-    status: 'active',
+    status: "active",
   };
 
   // Save to local storage
@@ -145,8 +156,8 @@ export function createChallenge(
       challenge.habitIcon,
       challenge.duration,
       challenge.startDate,
-      creatorName || 'Zen User'
-    ).catch(err => logger.warn('[FriendChallenge] Cloud sync failed:', err));
+      creatorName || "Zen User"
+    ).catch((err) => logger.warn("[FriendChallenge] Cloud sync failed:", err));
   }
 
   return challenge;
@@ -161,7 +172,7 @@ export function encodeInviteData(challenge: Challenge): string {
     n: challenge.habitName,
     i: challenge.habitIcon,
     d: challenge.duration,
-    c: challenge.creatorName || '',
+    c: challenge.creatorName || "",
     cd: challenge.code,
     sd: challenge.startDate, // Include start date for synced timing
   };
@@ -176,7 +187,7 @@ export function encodeInviteData(challenge: Challenge): string {
 export function decodeInviteData(encoded: string): ChallengeInvite | null {
   try {
     // Input length validation to prevent DoS (reasonable max: 10KB)
-    if (!encoded || typeof encoded !== 'string' || encoded.length > 10000) {
+    if (!encoded || typeof encoded !== "string" || encoded.length > 10000) {
       return null;
     }
 
@@ -188,15 +199,21 @@ export function decodeInviteData(encoded: string): ChallengeInvite | null {
       // Fall back to old format (btoa only)
       jsonStr = atob(encoded);
     }
-    const data = safeJsonParse<{ cd: string; n: string; i: string; d: number; c?: string; sd?: string } | null>(jsonStr, null);
-    if (!data) return null;
+    const raw = safeJsonParse<Record<string, unknown> | null>(jsonStr, null);
+    if (!raw) return null;
+
+    // Validate structure and types with Zod (CWE-20: deep link field sanitization)
+    const parsed = invitePayloadSchema.safeParse(raw);
+    if (!parsed.success) return null;
+    const data = parsed.data;
+
     return {
-      code: data.cd,
-      habitName: data.n,
-      habitIcon: data.i,
+      code: sanitizeString(data.cd),
+      habitName: sanitizeString(data.n),
+      habitIcon: sanitizeString(data.i),
       duration: data.d,
-      creatorName: data.c || undefined,
-      startDate: data.sd, // Optional: start date from creator
+      creatorName: data.c ? sanitizeString(data.c) : undefined,
+      startDate: data.sd, // Already validated as YYYY-MM-DD by Zod regex
     };
   } catch {
     return null;
@@ -221,14 +238,14 @@ export function joinChallenge(invite: ChallengeInvite): Challenge {
     creatorName: invite.creatorName,
     myProgress: 0,
     isCreator: false,
-    status: 'active',
+    status: "active",
   };
 
   // Save to local storage
   const challenges = loadChallenges();
 
   // Check if already joined this challenge
-  const existing = challenges.find(c => c.code === invite.code);
+  const existing = challenges.find((c) => c.code === invite.code);
   if (existing) {
     return existing;
   }
@@ -244,8 +261,8 @@ export function joinChallenge(invite: ChallengeInvite): Challenge {
       challenge.habitIcon,
       challenge.duration,
       challenge.startDate,
-      'Zen User'
-    ).catch(err => logger.warn('[FriendChallenge] Cloud sync failed:', err));
+      "Zen User"
+    ).catch((err) => logger.warn("[FriendChallenge] Cloud sync failed:", err));
   }
 
   return challenge;
@@ -266,7 +283,7 @@ export function joinChallengeByCode(code: string): Challenge | null {
   const challenges = loadChallenges();
 
   // Check if already joined
-  const existing = challenges.find(c => c.code === normalizedCode);
+  const existing = challenges.find((c) => c.code === normalizedCode);
   if (existing) {
     return existing;
   }
@@ -277,15 +294,15 @@ export function joinChallengeByCode(code: string): Challenge | null {
   const challenge: Challenge = {
     id: generateId(),
     code: normalizedCode,
-    habitName: 'Friend Challenge',
-    habitIcon: '🤝',
+    habitName: "Friend Challenge",
+    habitIcon: "🤝",
     duration: 7, // Default 7 days
     startDate: today,
     endDate: calculateEndDate(today, 7),
     creatorName: undefined,
     myProgress: 0,
     isCreator: false,
-    status: 'active',
+    status: "active",
   };
 
   challenges.push(challenge);
@@ -301,12 +318,12 @@ export function getActiveChallenges(): Challenge[] {
   const challenges = loadChallenges();
   const today = getToday();
 
-  return challenges.filter(c => {
+  return challenges.filter((c) => {
     // Update status based on dates
     if (c.endDate < today) {
-      c.status = c.myProgress >= c.duration ? 'completed' : 'expired';
+      c.status = c.myProgress >= c.duration ? "completed" : "expired";
     }
-    return c.status === 'active';
+    return c.status === "active";
   });
 }
 
@@ -318,11 +335,11 @@ export function getAllChallenges(): Challenge[] {
   const today = getToday();
 
   // Update statuses
-  return challenges.map(c => {
-    if (c.status === 'active' && c.endDate < today) {
+  return challenges.map((c) => {
+    if (c.status === "active" && c.endDate < today) {
       return {
         ...c,
-        status: c.myProgress >= c.duration ? 'completed' : 'expired' as const,
+        status: c.myProgress >= c.duration ? "completed" : ("expired" as const),
       };
     }
     return c;
@@ -337,28 +354,25 @@ export function updateChallengeProgress(
   increment: number = 1
 ): Challenge | null {
   const challenges = loadChallenges();
-  const index = challenges.findIndex(c => c.id === challengeId);
+  const index = challenges.findIndex((c) => c.id === challengeId);
 
   if (index === -1) return null;
 
   const challenge = challenges[index];
-  challenge.myProgress = Math.min(
-    challenge.myProgress + increment,
-    challenge.duration
-  );
+  challenge.myProgress = Math.min(challenge.myProgress + increment, challenge.duration);
 
   // Check if completed
   if (challenge.myProgress >= challenge.duration) {
-    challenge.status = 'completed';
+    challenge.status = "completed";
   }
 
   saveChallenges(challenges);
 
   // Sync progress to cloud (non-blocking)
   if (isCloudChallengesAvailable()) {
-    syncProgressToCloud(challenge).catch(err =>
+    syncProgressToCloud(challenge).catch((err) =>
       // graceful: local progress saved; cloud sync is secondary
-      logger.warn('[FriendChallenge] Cloud progress sync failed:', err)
+      logger.warn("[FriendChallenge] Cloud progress sync failed:", err)
     );
   }
 
@@ -376,7 +390,7 @@ async function syncProgressToCloud(challenge: Challenge): Promise<void> {
     challenge.habitIcon,
     challenge.duration,
     challenge.startDate,
-    'Zen User'
+    "Zen User"
   );
 
   if (!cloudChallenge) return;
@@ -394,7 +408,7 @@ async function syncProgressToCloud(challenge: Challenge): Promise<void> {
  */
 export function deleteChallenge(challengeId: string): boolean {
   const challenges = loadChallenges();
-  const filtered = challenges.filter(c => c.id !== challengeId);
+  const filtered = challenges.filter((c) => c.id !== challengeId);
 
   if (filtered.length === challenges.length) return false;
 
@@ -421,14 +435,14 @@ export function generateShareText(
   const t = translations;
 
   return [
-    `${challenge.habitIcon} ${t.challengeInvite || 'Join my challenge!'}`,
-    '',
-    `${t.habit || 'Habit'}: ${challenge.habitName}`,
-    `${t.duration || 'Duration'}: ${challenge.duration} ${t.days || 'days'}`,
-    `${t.code || 'Code'}: ${challenge.code}`,
-    '',
-    t.challengeJoinPrompt || 'Join me on ZenFlow!',
-  ].join('\n');
+    `${challenge.habitIcon} ${t.challengeInvite || "Join my challenge!"}`,
+    "",
+    `${t.habit || "Habit"}: ${challenge.habitName}`,
+    `${t.duration || "Duration"}: ${challenge.duration} ${t.days || "days"}`,
+    `${t.code || "Code"}: ${challenge.code}`,
+    "",
+    t.challengeJoinPrompt || "Join me on ZenFlow!",
+  ].join("\n");
 }
 
 /**
@@ -450,8 +464,8 @@ export async function shareChallenge(
       });
       return true;
     } catch (error) {
-      if ((error as Error).name !== 'AbortError') {
-        logger.error('Share failed:', error);
+      if ((error as Error).name !== "AbortError") {
+        logger.error("Share failed:", error);
       }
       return false;
     }
@@ -471,9 +485,7 @@ export async function shareChallenge(
  */
 export function findChallengeForHabit(habitName: string): Challenge | null {
   const challenges = getActiveChallenges();
-  return challenges.find(c =>
-    c.habitName.toLowerCase() === habitName.toLowerCase()
-  ) || null;
+  return challenges.find((c) => c.habitName.toLowerCase() === habitName.toLowerCase()) || null;
 }
 
 /**

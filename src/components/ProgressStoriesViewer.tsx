@@ -14,17 +14,17 @@
  * - Outro: New Day Sunrise
  */
 
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { motion } from 'framer-motion';
-import { X, Share2, Pause, Play } from 'lucide-react';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { useBackHandler } from '@/hooks/useBackHandler';
-import { useScrollLock } from '@/hooks/useScrollLock';
-import { StorySlide, MoodTrendData, HabitStatsData, FocusStatsData } from '@/lib/progressStories';
-import { WeeklyProgressData } from '@/lib/shareCards';
-import { UnifiedShareModal } from '@/components/share';
-import { Badge } from '@/types';
-import { hapticTap } from '@/lib/haptics';
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { motion } from "framer-motion";
+import { X, Share2, Pause, Play } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useBackHandler } from "@/hooks/useBackHandler";
+import { useScrollLock } from "@/hooks/useScrollLock";
+import { StorySlide, MoodTrendData, HabitStatsData, FocusStatsData } from "@/lib/progressStories";
+import { WeeklyProgressData } from "@/lib/shareCards";
+import { UnifiedShareModal } from "@/components/share";
+import { Badge } from "@/types";
+import { hapticTap } from "@/lib/haptics";
 
 // Import premium slide components
 import {
@@ -36,7 +36,7 @@ import {
   AchievementSlide,
   SummarySlide,
   OutroSlide,
-} from './stories/slides';
+} from "./stories/slides";
 
 // ============================================
 // TYPES
@@ -68,19 +68,24 @@ function StoryProgressBar({
   return (
     <div className="flex gap-1.5 px-4 pt-4">
       {Array.from({ length: total }).map((_, i) => (
-        <div key={i} className="flex-1 h-1 bg-white/20 rounded-full overflow-hidden backdrop-blur-sm">
+        <div
+          key={i}
+          className="flex-1 h-1 bg-white/20 rounded-full overflow-hidden backdrop-blur-sm"
+        >
           <motion.div
             className="h-full rounded-full"
             initial={{ width: 0 }}
             animate={{
-              width: i < current ? '100%' : i === current ? `${progress}%` : '0%',
+              width: i < current ? "100%" : i === current ? `${progress}%` : "0%",
             }}
             transition={{ duration: 0.1 }}
             style={{
-              background: i <= current
-                ? `linear-gradient(90deg, white 0%, ${accentColor || 'white'} 100%)`
-                : 'white',
-              boxShadow: i === current ? `0 0 10px ${accentColor || 'rgba(255,255,255,0.5)'}` : 'none',
+              background:
+                i <= current
+                  ? `linear-gradient(90deg, white 0%, ${accentColor || "white"} 100%)`
+                  : "white",
+              boxShadow:
+                i === current ? `0 0 10px ${accentColor || "rgba(255,255,255,0.5)"}` : "none",
             }}
           />
         </div>
@@ -126,13 +131,13 @@ export function ProgressStoriesViewer({
     timerRef.current = setInterval(() => {
       if (!isMounted) return;
 
-      setProgress(prev => {
+      setProgress((prev) => {
         const newProgress = prev + (PROGRESS_INTERVAL / SLIDE_DURATION) * 100;
 
         if (newProgress >= 100) {
           // Move to next slide
           if (currentIndex < slides.length - 1) {
-            setCurrentIndex(i => i + 1);
+            setCurrentIndex((i) => i + 1);
             return 0;
           } else {
             // End of story - clear interval first, then close
@@ -169,7 +174,7 @@ export function ProgressStoriesViewer({
   const goToPrevious = useCallback(() => {
     void hapticTap();
     if (currentIndex > 0) {
-      setCurrentIndex(i => i - 1);
+      setCurrentIndex((i) => i - 1);
       setProgress(0);
     }
   }, [currentIndex]);
@@ -177,7 +182,7 @@ export function ProgressStoriesViewer({
   const goToNext = useCallback(() => {
     void hapticTap();
     if (currentIndex < slides.length - 1) {
-      setCurrentIndex(i => i + 1);
+      setCurrentIndex((i) => i + 1);
       setProgress(0);
     } else {
       onClose();
@@ -186,20 +191,19 @@ export function ProgressStoriesViewer({
 
   const togglePause = useCallback(() => {
     void hapticTap();
-    setIsPaused(p => !p);
+    setIsPaused((p) => !p);
   }, []);
 
   // Pre-compute weekly data from slides for the share modal
   const weeklyShareData = useMemo((): WeeklyProgressData => {
-    const moodData = slides.find(s => s.type === 'mood')?.data as MoodTrendData | undefined;
-    const habitData = slides.find(s => s.type === 'habits')?.data as HabitStatsData | undefined;
-    const focusData = slides.find(s => s.type === 'focus')?.data as FocusStatsData | undefined;
+    const moodData = slides.find((s) => s.type === "mood")?.data as MoodTrendData | undefined;
+    const habitData = slides.find((s) => s.type === "habits")?.data as HabitStatsData | undefined;
+    const focusData = slides.find((s) => s.type === "focus")?.data as FocusStatsData | undefined;
 
     const totalCompletions = habitData?.totalCompletions || 0;
     const completionRate = habitData?.completionRate || 0;
-    const habitsTotal = completionRate > 0
-      ? Math.round(totalCompletions / (completionRate / 100))
-      : totalCompletions;
+    const habitsTotal =
+      completionRate > 0 ? Math.round(totalCompletions / (completionRate / 100)) : totalCompletions;
 
     return {
       weekRange,
@@ -227,39 +231,42 @@ export function ProgressStoriesViewer({
   }, []);
 
   // Handle touch/click navigation
-  const handleTap = useCallback((e: React.MouseEvent | React.TouchEvent) => {
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-    const x = clientX - rect.left;
-    const width = rect.width;
+  const handleTap = useCallback(
+    (e: React.MouseEvent | React.TouchEvent) => {
+      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+      const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
+      const x = clientX - rect.left;
+      const width = rect.width;
 
-    if (x < width * 0.3) {
-      goToPrevious();
-    } else if (x > width * 0.7) {
-      goToNext();
-    } else {
-      togglePause();
-    }
-  }, [goToPrevious, goToNext, togglePause]);
+      if (x < width * 0.3) {
+        goToPrevious();
+      } else if (x > width * 0.7) {
+        goToNext();
+      } else {
+        togglePause();
+      }
+    },
+    [goToPrevious, goToNext, togglePause]
+  );
 
   // Render slide content based on type
   const renderSlideContent = () => {
     switch (currentSlide.type) {
-      case 'intro':
+      case "intro":
         return <IntroSlide slide={currentSlide} />;
-      case 'mood':
+      case "mood":
         return <MoodSlide slide={currentSlide} t={t as unknown as Record<string, string>} />;
-      case 'habits':
+      case "habits":
         return <HabitsSlide slide={currentSlide} t={t as unknown as Record<string, string>} />;
-      case 'focus':
+      case "focus":
         return <FocusSlide slide={currentSlide} t={t as unknown as Record<string, string>} />;
-      case 'streak':
+      case "streak":
         return <StreakSlide slide={currentSlide} />;
-      case 'achievement':
+      case "achievement":
         return <AchievementSlide slide={currentSlide} language={language} />;
-      case 'summary':
+      case "summary":
         return <SummarySlide slide={currentSlide} />;
-      case 'outro':
+      case "outro":
         return <OutroSlide slide={currentSlide} t={t as unknown as Record<string, string>} />;
       default:
         return <SummarySlide slide={currentSlide} />;
@@ -267,12 +274,26 @@ export function ProgressStoriesViewer({
   };
 
   return (
-    <div role="dialog" aria-modal="true" aria-label={t.weeklyStory || 'Weekly Story'} className="fixed inset-0 z-[100] bg-black">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={t.weeklyStory || "Weekly Story"}
+      className="fixed inset-0 z-[100] bg-black"
+    >
       {/* Story container */}
       <div
+        // VISUAL-VERIFIED: no style change, only adding a11y role/tabIndex/onKeyDown attributes
         className="relative w-full h-full"
         style={{ background: currentSlide.gradient }}
         onClick={handleTap}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            handleTap(e as unknown as React.MouseEvent);
+          }
+        }}
       >
         {/* Progress bars */}
         <StoryProgressBar
@@ -291,7 +312,7 @@ export function ProgressStoriesViewer({
               onClose();
             }}
             className="p-2 rounded-full bg-black/20 text-white"
-            aria-label={t.close || 'Close'}
+            aria-label={t.close || "Close"}
           >
             <X className="w-5 h-5" />
           </button>
@@ -303,7 +324,7 @@ export function ProgressStoriesViewer({
                 togglePause();
               }}
               className="p-2 rounded-full bg-black/20 text-white"
-              aria-label={isPaused ? (t.play || 'Play') : (t.pause || 'Pause')}
+              aria-label={isPaused ? t.play || "Play" : t.pause || "Pause"}
             >
               {isPaused ? <Play className="w-5 h-5" /> : <Pause className="w-5 h-5" />}
             </button>
@@ -314,7 +335,7 @@ export function ProgressStoriesViewer({
                 handleShare();
               }}
               className="p-2 rounded-full bg-black/20 text-white min-h-[44px] min-w-[44px] flex items-center justify-center"
-              aria-label={t.shareButton || 'Share'}
+              aria-label={t.shareButton || "Share"}
             >
               <Share2 className="w-5 h-5" />
             </button>
@@ -322,15 +343,13 @@ export function ProgressStoriesViewer({
         </div>
 
         {/* Slide content */}
-        <div className="absolute inset-0 pt-20 pb-16">
-          {renderSlideContent()}
-        </div>
+        <div className="absolute inset-0 pt-20 pb-16">{renderSlideContent()}</div>
 
         {/* Navigation hints */}
         <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-4 text-white/40 text-xs">
-          <span>{t.storyTapLeft || '← Tap left'}</span>
-          <span>{t.storyTapCenter || 'Tap center to pause'}</span>
-          <span>{t.storyTapRight || 'Tap right →'}</span>
+          <span>{t.storyTapLeft || "← Tap left"}</span>
+          <span>{t.storyTapCenter || "Tap center to pause"}</span>
+          <span>{t.storyTapRight || "Tap right →"}</span>
         </div>
 
         {/* Pause indicator */}

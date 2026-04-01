@@ -349,8 +349,22 @@ export function JournalModule({ onToggleHabit, onAddGratitude }: JournalModulePr
     }
   };
 
+  const lastResetOtpRef = useRef(0);
+
   const handleSendResetLink = async () => {
     if (!supabase || !resetEmail) return;
+
+    // M2: OTP cooldown — prevent abuse by enforcing 60s between sends
+    const now = Date.now();
+    if (now - lastResetOtpRef.current < 60_000) {
+      const remaining = Math.ceil((60_000 - (now - lastResetOtpRef.current)) / 1000);
+      setResetError(
+        ts.journalResetCooldown || `Please wait ${remaining}s before requesting another link.`
+      );
+      return;
+    }
+    lastResetOtpRef.current = now;
+
     setResetStep("sending");
     setResetError("");
     try {

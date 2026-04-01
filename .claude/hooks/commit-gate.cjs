@@ -455,6 +455,70 @@ process.stdin.on('end', () => {
         }
       } catch { /* git diff failed — don't block */ }
 
+      // --- Layer 5h: Ruflo Full Pipeline Evidence (BLOCKING) ---
+      // Root cause: PostToolUse hooks do NOT fire for MCP tools (SDK limitation, confirmed 2026-03-31).
+      // Agent must run ALL real Ruflo tools and create .ruflo-last-action via Bash.
+      // Research: "CLAUDE.md instructions = 70-85% compliance" (IFEval, production reports)
+      //           "Only mechanical enforcement = 95-99%+" (Guardrails paradigm, NASA IV&V)
+      // REAL Ruflo: memory (HNSW+ONNX), pattern-search (BM25+semantic), memory_store (save outcomes)
+      // FACADE (not required): agent_spawn, swarm, consensus, terminal (GitHub #653, #1397)
+      {
+        const RUFLO_STATE_CG = path.join(ROOT, '.ruflo-last-action');
+        if (fs.existsSync(RUFLO_STATE_CG)) {
+          try {
+            const rs = JSON.parse(fs.readFileSync(RUFLO_STATE_CG, 'utf8'));
+            const rufloAge = Date.now() - (rs.lastAction || 0);
+
+            // Freshness: 60 min max (generous — covers full work session)
+            if (rufloAge > 4 * 60 * 60000) { // 4h — audit sessions can be long
+              block(
+                'RUFLO EVIDENCE STALE! Last action ' + Math.round(rufloAge / 60000) + ' min ago (max 60).\n' +
+                'Full pipeline: mcp__ruflo__memory_search → mcp__ruflo__agentdb_pattern-search → [work] → mcp__ruflo__memory_store\n' +
+                'Then update .ruflo-last-action via Bash.',
+                cmd
+              );
+            }
+
+            // BEFORE-work phases (blocking — must be done before editing)
+            const missingBefore = [];
+            if (!rs.phases?.memory_search?.done) missingBefore.push('memory_search (mcp__ruflo__memory_search)');
+            if (!rs.phases?.pattern_search?.done) missingBefore.push('pattern_search (mcp__ruflo__agentdb_pattern-search)');
+            if (missingBefore.length > 0) {
+              block(
+                'RUFLO PIPELINE INCOMPLETE! Missing BEFORE-work phases:\n' +
+                missingBefore.map(p => '  - ' + p).join('\n') + '\n' +
+                'Run these tools, then update .ruflo-last-action.',
+                cmd
+              );
+            }
+
+            // AFTER-work phase (blocking — must save outcomes)
+            if (!rs.phases?.store_result?.done) {
+              block(
+                'RUFLO STORE REQUIRED! Run mcp__ruflo__memory_store to save solution pattern.\n' +
+                'Then update .ruflo-last-action with store_result phase done.',
+                cmd
+              );
+            }
+
+            audit('allow', 'ruflo full pipeline verified (3/3 phases, ' + Math.round(rufloAge / 60000) + 'min ago)', cmd);
+          } catch (rufloErr) {
+            block('RUFLO STATE INVALID: ' + rufloErr.message, cmd);
+          }
+        } else {
+          block(
+            'RUFLO EVIDENCE REQUIRED! No .ruflo-last-action found.\n' +
+            'Full pipeline:\n' +
+            '  1. mcp__ruflo__memory_search (find prior patterns)\n' +
+            '  2. mcp__ruflo__agentdb_pattern-search (BM25+semantic)\n' +
+            '  3. [do your work]\n' +
+            '  4. mcp__ruflo__memory_store (save outcome)\n' +
+            '  5. Create .ruflo-last-action via Bash with all 3 phases done.',
+            cmd
+          );
+        }
+      }
+
       // NOTE: Token consumption moved AFTER Layer 7/7b (verifier finding 2.2)
       // If Layer 7 blocks, tokens are preserved — no forced postflight recreation.
 

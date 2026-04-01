@@ -58,11 +58,7 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
         const elapsed = duration * 60 - newTimeLeft;
 
         // Play ping at intervals
-        if (
-          soundEnabled &&
-          elapsed > 0 &&
-          elapsed % (pingInterval * 60) === 0
-        ) {
+        if (soundEnabled && elapsed > 0 && elapsed % (pingInterval * 60) === 0) {
           const timeSinceLastPing = Date.now() - lastPingRef.current;
           if (timeSinceLastPing > 1000) {
             // Prevent double pings
@@ -115,11 +111,7 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
 
   const progress = ((duration * 60 - timeLeft) / (duration * 60)) * 100;
   const progressColor =
-    timeLeft < 300
-      ? "text-red-500"
-      : timeLeft < 900
-        ? "text-yellow-500"
-        : "text-primary";
+    timeLeft < 300 ? "text-red-500" : timeLeft < 900 ? "text-yellow-500" : "text-primary";
 
   return (
     <div
@@ -130,6 +122,8 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
       <div
         ref={modalRef}
         onKeyDown={modalKeyDown}
+        tabIndex={-1}
+        role="document"
         className="bg-card rounded-2xl shadow-2xl max-w-lg w-full p-6"
       >
         {/* Header */}
@@ -181,13 +175,7 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
                 className="transition-all duration-1000"
               />
               <defs>
-                <linearGradient
-                  id="timeGradient"
-                  x1="0%"
-                  y1="0%"
-                  x2="100%"
-                  y2="100%"
-                >
+                <linearGradient id="timeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                   <stop offset="0%" stopColor="#8B5CF6" />
                   <stop offset="100%" stopColor="#EC4899" />
                 </linearGradient>
@@ -201,9 +189,7 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
                   {formatTime(timeLeft)}
                 </div>
                 <div className="text-sm text-muted-foreground">
-                  {timeLeft > 0
-                    ? getTimeRemaining()
-                    : t.timesUp || "Time's up!"}
+                  {timeLeft > 0 ? getTimeRemaining() : t.timesUp || "Time's up!"}
                 </div>
               </div>
             </div>
@@ -237,7 +223,7 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
                       "py-2 rounded-lg font-medium transition-all",
                       duration === mins
                         ? "zen-gradient text-white zen-shadow"
-                        : "bg-muted hover:bg-muted/70",
+                        : "bg-muted hover:bg-muted/70"
                     )}
                   >
                     {mins}m
@@ -250,9 +236,7 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
                 max="180"
                 step="5"
                 value={duration}
-                onChange={(e) =>
-                  setDuration(safeParseInt(e.target.value, 60, 5, 180))
-                }
+                onChange={(e) => setDuration(safeParseInt(e.target.value, 60, 5, 180))}
                 className="w-full"
                 aria-label="Duration in minutes"
               />
@@ -275,7 +259,7 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
                       "py-2 rounded-lg font-medium transition-all text-sm",
                       pingInterval === mins
                         ? "bg-primary text-primary-foreground"
-                        : "bg-muted hover:bg-muted/70",
+                        : "bg-muted hover:bg-muted/70"
                     )}
                   >
                     {mins}m
@@ -286,9 +270,7 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
 
             {/* Sound Toggle */}
             <div className="flex items-center justify-between mb-4">
-              <span className="text-sm font-medium">
-                {t.audioPings || "Audio Pings"}
-              </span>
+              <span className="text-sm font-medium">{t.audioPings || "Audio Pings"}</span>
               <div className="flex gap-2">
                 <button
                   onClick={playNotification}
@@ -303,14 +285,10 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
                     "flex items-center gap-2 px-3 py-2 rounded-lg transition-colors",
                     soundEnabled
                       ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-muted-foreground",
+                      : "bg-muted text-muted-foreground"
                   )}
                 >
-                  {soundEnabled ? (
-                    <Bell className="w-4 h-4" />
-                  ) : (
-                    <BellOff className="w-4 h-4" />
-                  )}
+                  {soundEnabled ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
                   <span className="text-sm">
                     {soundEnabled ? t.soundOn || "On" : t.soundOff || "Off"}
                   </span>

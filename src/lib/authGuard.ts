@@ -5,15 +5,55 @@
  * 1. Tracking if auth flow is in progress
  * 2. Limiting redirects per minute
  * 3. Timeout for stuck auth flows
+ * 4. Persisting rate limit state in sessionStorage (survives page reloads)
  */
 
-import { logger } from './logger';
+import { logger } from "./logger";
 
-// State
+// ── sessionStorage persistence helpers ──────────────────────────
+const STORAGE_KEY = "zenflow_auth_guard";
+
+interface AuthGuardPersistedState {
+  redirectCount: number;
+  lastRedirectResetTime: number;
+}
+
+function loadPersistedState(): AuthGuardPersistedState {
+  try {
+    const raw = sessionStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as AuthGuardPersistedState;
+      if (
+        typeof parsed.redirectCount === "number" &&
+        typeof parsed.lastRedirectResetTime === "number"
+      ) {
+        return parsed;
+      }
+    }
+  } catch {
+    // sessionStorage unavailable or corrupt — start fresh
+    logger.warn("[AuthGuard] Failed to load persisted state, starting fresh");
+  }
+  return { redirectCount: 0, lastRedirectResetTime: Date.now() };
+}
+
+function persistState(): void {
+  try {
+    sessionStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ redirectCount, lastRedirectResetTime } satisfies AuthGuardPersistedState)
+    );
+  } catch {
+    // sessionStorage full or unavailable — non-critical
+  }
+}
+
+// ── State (in-progress is volatile; counts survive reload) ──────
+const persisted = loadPersistedState();
 let authFlowInProgress = false;
 let authFlowStartTime = 0;
-let redirectCount = 0;
-let lastRedirectResetTime = Date.now();
+let redirectCount = persisted.redirectCount;
+let lastRedirectResetTime = persisted.lastRedirectResetTime;
 
 // Constants
 const MAX_REDIRECTS_PER_MINUTE = 3;
@@ -33,23 +73,24 @@ export const canStartAuthFlow = (): boolean => {
   if (now - lastRedirectResetTime > REDIRECT_RESET_INTERVAL) {
     redirectCount = 0;
     lastRedirectResetTime = now;
-    logger.log('[AuthGuard] Redirect counter reset');
+    persistState();
+    logger.log("[AuthGuard] Redirect counter reset");
   }
 
   // Check for redirect loop
   if (redirectCount >= MAX_REDIRECTS_PER_MINUTE) {
-    logger.error('[AuthGuard] Too many auth redirects detected - possible loop');
+    logger.error("[AuthGuard] Too many auth redirects detected - possible loop");
     return false;
   }
 
   // Check if already in progress (with timeout escape hatch)
   if (authFlowInProgress) {
     if (now - authFlowStartTime < AUTH_FLOW_TIMEOUT) {
-      logger.warn('[AuthGuard] Auth flow already in progress');
+      logger.warn("[AuthGuard] Auth flow already in progress");
       return false;
     } else {
       // Timeout - allow retry
-      logger.warn('[AuthGuard] Auth flow timed out, allowing new attempt');
+      logger.warn("[AuthGuard] Auth flow timed out, allowing new attempt");
       endAuthFlow();
     }
   }
@@ -64,7 +105,10 @@ export const startAuthFlow = (): void => {
   authFlowInProgress = true;
   authFlowStartTime = Date.now();
   redirectCount++;
-  logger.log(`[AuthGuard] Auth flow started (attempt ${redirectCount}/${MAX_REDIRECTS_PER_MINUTE})`);
+  persistState();
+  logger.log(
+    `[AuthGuard] Auth flow started (attempt ${redirectCount}/${MAX_REDIRECTS_PER_MINUTE})`
+  );
 };
 
 /**
@@ -72,7 +116,7 @@ export const startAuthFlow = (): void => {
  */
 export const endAuthFlow = (): void => {
   authFlowInProgress = false;
-  logger.log('[AuthGuard] Auth flow ended');
+  logger.log("[AuthGuard] Auth flow ended");
 };
 
 /**
@@ -93,5 +137,6 @@ export const resetAuthGuard = (): void => {
   authFlowStartTime = 0;
   redirectCount = 0;
   lastRedirectResetTime = Date.now();
-  logger.log('[AuthGuard] State reset');
+  persistState();
+  logger.log("[AuthGuard] State reset");
 };

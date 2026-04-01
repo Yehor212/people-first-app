@@ -18,10 +18,7 @@ const logError = (payload: Record<string, unknown>) => {
       time: new Date().toISOString(),
     };
 
-    const existing = safeLocalStorageGet<Record<string, unknown>[]>(
-      SK.ERROR_LOG,
-      [],
-    );
+    const existing = safeLocalStorageGet<Record<string, unknown>[]>(SK.ERROR_LOG, []);
     const next = [...existing, enhancedPayload].slice(-10); // Keep last 10 errors
     safeLocalStorageSet(SK.ERROR_LOG, next);
   } catch {
@@ -38,8 +35,8 @@ const exportDebugReport = (error?: Error | null) => {
     updateCount: metadata?.updateCount || 0,
     lastUpdateDate: metadata?.lastUpdateDate || "unknown",
     timestamp: new Date().toISOString(),
-    location: window.location.origin + window.location.pathname,
-    userAgent: navigator.userAgent,
+    location: (window.location.origin + window.location.pathname).replace(/[<>"'&]/g, ""),
+    userAgent: navigator.userAgent.slice(0, 200),
     error: error
       ? {
           message: error.message,
@@ -53,10 +50,7 @@ const exportDebugReport = (error?: Error | null) => {
       indexedDBAvailable: typeof indexedDB !== "undefined",
     },
     // Add last 10 errors from log
-    recentErrors: safeLocalStorageGet<Record<string, unknown>[]>(
-      SK.ERROR_LOG,
-      [],
-    ),
+    recentErrors: safeLocalStorageGet<Record<string, unknown>[]>(SK.ERROR_LOG, []),
   };
 
   const blob = new Blob([JSON.stringify(report, null, 2)], {
@@ -87,10 +81,7 @@ interface ErrorBoundaryBaseState {
   error: Error | null;
 }
 
-class ErrorBoundaryBase extends React.Component<
-  ErrorBoundaryBaseProps,
-  ErrorBoundaryBaseState
-> {
+class ErrorBoundaryBase extends React.Component<ErrorBoundaryBaseProps, ErrorBoundaryBaseState> {
   state: ErrorBoundaryBaseState = { hasError: false, error: null };
 
   static getDerivedStateFromError() {
@@ -130,9 +121,7 @@ class ErrorBoundaryBase extends React.Component<
     return (
       <div className="min-h-screen zen-gradient-hero flex items-center justify-center px-4 py-10">
         <div className="w-full max-w-md bg-card rounded-3xl p-6 zen-shadow-card space-y-4 text-center">
-          <h2 className="text-2xl font-bold text-foreground">
-            {this.props.title}
-          </h2>
+          <h2 className="text-2xl font-bold text-foreground">{this.props.title}</h2>
           <p className="text-sm text-muted-foreground">{this.props.body}</p>
           <div className="flex flex-col gap-3">
             <button
@@ -154,17 +143,12 @@ class ErrorBoundaryBase extends React.Component<
   }
 }
 
-export const ErrorBoundary: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
+export const ErrorBoundary: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { t } = useLanguage();
   return (
     <ErrorBoundaryBase
       title={t?.errorBoundaryTitle ?? "Something went wrong"}
-      body={
-        t?.errorBoundaryBody ??
-        "An unexpected error occurred. Please reload the app."
-      }
+      body={t?.errorBoundaryBody ?? "An unexpected error occurred. Please reload the app."}
       exportLabel={t?.errorBoundaryExport ?? "Export Debug Report"}
       reloadLabel={t?.errorBoundaryReload ?? "Reload App"}
       onExport={(error) => exportDebugReport(error)}
@@ -248,9 +232,7 @@ class ModalErrorBoundaryClass extends React.Component<
       const lastReload = sessionStorage.getItem(reloadKey);
       if (!lastReload || Date.now() - parseInt(lastReload) > 60000) {
         sessionStorage.setItem(reloadKey, Date.now().toString());
-        logger.log(
-          "[ModalErrorBoundary] Chunk error detected, auto-reloading...",
-        );
+        logger.log("[ModalErrorBoundary] Chunk error detected, auto-reloading...");
         caches
           .keys()
           .then((keys) => Promise.all(keys.map((k) => caches.delete(k))))
@@ -267,16 +249,9 @@ class ModalErrorBoundaryClass extends React.Component<
     announceError(title);
   }
 
-  componentDidUpdate(
-    _prevProps: ModalErrorBoundaryProps,
-    prevState: ModalErrorBoundaryState,
-  ) {
+  componentDidUpdate(_prevProps: ModalErrorBoundaryProps, prevState: ModalErrorBoundaryState) {
     // Activate focus trap when error appears
-    if (
-      this.state.hasError &&
-      !prevState.hasError &&
-      this.containerRef.current
-    ) {
+    if (this.state.hasError && !prevState.hasError && this.containerRef.current) {
       this.deactivateFocusTrap = createFocusTrap(this.containerRef.current, {
         autoFocus: true,
       });
@@ -327,17 +302,16 @@ class ModalErrorBoundaryClass extends React.Component<
 
     const title = this.props.fallbackTitle || "Something went wrong";
     const body =
-      this.props.fallbackBody ||
-      "This feature encountered an error. Try closing and reopening.";
+      this.props.fallbackBody || "This feature encountered an error. Try closing and reopening.";
 
     return (
-      // Add ref, role, aria-modal, and keyboard handler for a11y
       <div
         ref={this.containerRef}
         role="alertdialog"
         aria-modal="true"
         aria-labelledby="error-boundary-title"
         aria-describedby="error-boundary-desc"
+        tabIndex={-1}
         onKeyDown={this.handleKeyDown}
         className="flex flex-col items-center justify-center p-6 text-center min-h-[200px]"
       >
@@ -357,16 +331,10 @@ class ModalErrorBoundaryClass extends React.Component<
             />
           </svg>
         </div>
-        <h3
-          id="error-boundary-title"
-          className="text-lg font-semibold text-foreground mb-2"
-        >
+        <h3 id="error-boundary-title" className="text-lg font-semibold text-foreground mb-2">
           {title}
         </h3>
-        <p
-          id="error-boundary-desc"
-          className="text-sm text-muted-foreground mb-4 max-w-xs"
-        >
+        <p id="error-boundary-desc" className="text-sm text-muted-foreground mb-4 max-w-xs">
           {body}
         </p>
         <div className="flex gap-3">
@@ -390,21 +358,13 @@ class ModalErrorBoundaryClass extends React.Component<
   }
 }
 
-export const ModalErrorBoundary: React.FC<ModalErrorBoundaryProps> = (
-  props,
-) => {
+export const ModalErrorBoundary: React.FC<ModalErrorBoundaryProps> = (props) => {
   const { t } = useLanguage();
   return (
     <ModalErrorBoundaryClass
       {...props}
-      fallbackTitle={
-        props.fallbackTitle || t?.modalErrorTitle || "Something went wrong"
-      }
-      fallbackBody={
-        props.fallbackBody ||
-        t?.modalErrorBody ||
-        "This feature encountered an error."
-      }
+      fallbackTitle={props.fallbackTitle || t?.modalErrorTitle || "Something went wrong"}
+      fallbackBody={props.fallbackBody || t?.modalErrorBody || "This feature encountered an error."}
       tryAgainLabel={props.tryAgainLabel || t?.tryAgain || "Try Again"}
       closeLabel={props.closeLabel || t?.close || "Close"}
     />
@@ -423,9 +383,7 @@ export const LazyErrorBoundary: React.FC<{
   return (
     <ModalErrorBoundaryClass
       fallbackTitle={`${t?.failedToLoad || "Failed to load"} ${componentName}`}
-      fallbackBody={
-        t?.failedToLoadBody || "Please try again or reload the app."
-      }
+      fallbackBody={t?.failedToLoadBody || "Please try again or reload the app."}
       tryAgainLabel={t?.tryAgain || "Try Again"}
       closeLabel={t?.close || "Close"}
     >

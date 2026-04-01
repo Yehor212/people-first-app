@@ -366,7 +366,7 @@ class OfflineQueue {
     if (this.processingPromise) {
       await this.processingPromise;
       // After waiting, check if there are still items to process (may have been added during wait)
-      if (navigator.onLine && this.state.actions.length > 0 && !this.processingPromise) {
+      if (navigator.onLine && this.state.actions.length > 0 && this.processingPromise === null) {
         // Recursively process new items
         return this.processQueue();
       }

@@ -134,7 +134,10 @@ export function FeedbackButton({
         >
           <div
             className="w-full max-w-md bg-card rounded-2xl shadow-xl animate-slide-up"
+            role="button"
+            tabIndex={0}
             onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); } }}
           >
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b">

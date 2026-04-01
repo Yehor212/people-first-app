@@ -76,6 +76,7 @@ export function WelcomeOverlay({ onClose }: { onClose: () => void }) {
     <div
       ref={modalRef}
       onKeyDown={handleKeyDown}
+      tabIndex={-1}
       className="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 backdrop-blur-sm motion-safe:animate-fade-in px-3 sm:px-4"
       role="dialog"
       aria-modal="true"
@@ -103,9 +104,7 @@ export function WelcomeOverlay({ onClose }: { onClose: () => void }) {
           >
             {currentStep.title}
           </h2>
-          <p className="text-sm sm:text-base text-muted-foreground">
-            {currentStep.description}
-          </p>
+          <p className="text-sm sm:text-base text-muted-foreground">{currentStep.description}</p>
         </div>
 
         {/* Progress dots - responsive */}

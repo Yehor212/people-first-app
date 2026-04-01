@@ -52,6 +52,17 @@
         ]
       },
       {
+        "matcher": "mcp__ruflo__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/ruflo-enforcer.cjs",
+            "timeout": 5000,
+            "statusMessage": "Ruflo pipeline tracking (PreToolUse)..."
+          }
+        ]
+      },
+      {
         "matcher": "Agent",
         "hooks": [
           {
@@ -162,7 +173,7 @@
         ]
       },
       {
-        "matcher": "mcp__ruflo__",
+        "matcher": "mcp__ruflo__.*",
         "hooks": [
           {
             "type": "command",

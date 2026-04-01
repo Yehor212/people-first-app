@@ -110,13 +110,17 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
+      onKeyDown={(e) => { if (e.key === 'Escape') onClose(); }}
       onTouchEnd={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
       <div
         className="bg-card rounded-2xl shadow-2xl max-w-md w-full max-h-[90dvh] overflow-y-auto scroll-pt-[80px]"
+        role="button"
+        tabIndex={0}
         onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); } }}
         onTouchEnd={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -156,6 +160,7 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
             <div className="grid grid-cols-3 gap-2">
               <button
                 onClick={() => handleIntensityChange("minimal")}
+                aria-label={t.dopamineMinimal || "Minimal"}
                 aria-pressed={settings.intensity === "minimal"}
                 className={cn(
                   "p-3 rounded-xl text-sm font-medium transition-all",
@@ -172,6 +177,7 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
 
               <button
                 onClick={() => handleIntensityChange("normal")}
+                aria-label={t.dopamineNormal || "Normal"}
                 aria-pressed={settings.intensity === "normal"}
                 className={cn(
                   "p-3 rounded-xl text-sm font-medium transition-all",
@@ -188,6 +194,7 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
 
               <button
                 onClick={() => handleIntensityChange("adhd")}
+                aria-label={t.dopamineADHD || "ADHD"}
                 aria-pressed={settings.intensity === "adhd"}
                 className={cn(
                   "p-3 rounded-xl text-sm font-medium transition-all",

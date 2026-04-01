@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { getAuthRedirectUrl } from "@/lib/authRedirect";
 import { isNative } from "@/lib/platform";
@@ -6,16 +7,17 @@ import { authenticateWithGoogleNative } from "@/lib/nativeGoogleAuth";
 import { logger } from "@/lib/logger";
 import { analytics } from "@/lib/analytics";
 import { hapticError } from "@/lib/haptics";
-import { PHONE_REGEX } from "./types";
+import { phoneSchema } from "@/lib/schemas";
 import type { useAuthSession } from "./useAuthSession";
 
 type Session = ReturnType<typeof useAuthSession>;
 
+const OTP_COOLDOWN_MS = 60_000; // 60 seconds between OTP sends
+
 export function useAuthHandlers(session: Session, t: Record<string, string>) {
+  const lastOtpSendRef = useRef(0);
   // Generic OAuth sign-in handler
-  const handleOAuthSignIn = async (
-    provider: "google" | "apple" | "facebook",
-  ) => {
+  const handleOAuthSignIn = async (provider: "google" | "apple" | "facebook") => {
     if (!supabase) {
       session.setError(t.authSupabaseNotConfigured);
       return;
@@ -33,8 +35,7 @@ export function useAuthHandlers(session: Session, t: Record<string, string>) {
     session.setDebugInfo(null);
 
     // OAuth timeout (60 seconds)
-    if (session.oauthTimeoutRef.current)
-      clearTimeout(session.oauthTimeoutRef.current);
+    if (session.oauthTimeoutRef.current) clearTimeout(session.oauthTimeoutRef.current);
     session.oauthTimeoutRef.current = setTimeout(() => {
       if (!session.hasCompletedRef.current) {
         logger.warn(`[Auth] ${provider} OAuth timeout after 60s`);
@@ -45,10 +46,7 @@ export function useAuthHandlers(session: Session, t: Record<string, string>) {
 
     try {
       const redirectUrl = getAuthRedirectUrl();
-      logger.log(
-        `[Auth] Starting ${provider} sign-in with redirect URL:`,
-        redirectUrl,
-      );
+      logger.log(`[Auth] Starting ${provider} sign-in with redirect URL:`, redirectUrl);
 
       const platform = isNative ? "native" : "web";
       logger.log("[Auth] Platform:", platform);
@@ -82,13 +80,10 @@ export function useAuthHandlers(session: Session, t: Record<string, string>) {
       if (signInError) {
         logger.error(`[Auth] ${provider} sign-in error:`, signInError);
 
-        let errorMessage =
-          t.authUnexpectedError || `Failed to sign in with ${provider}.`;
+        let errorMessage = t.authUnexpectedError || `Failed to sign in with ${provider}.`;
 
         if (signInError.message.includes("invalid_client")) {
-          errorMessage =
-            t.authNotConfigured ||
-            `${provider} OAuth not configured correctly.`;
+          errorMessage = t.authNotConfigured || `${provider} OAuth not configured correctly.`;
         } else if (signInError.message.includes("redirect_uri")) {
           errorMessage = t.authNotConfigured || "Redirect URI mismatch.";
         } else if (signInError.message.includes("unauthorized")) {
@@ -97,10 +92,9 @@ export function useAuthHandlers(session: Session, t: Record<string, string>) {
 
         session.setError(errorMessage);
         session.setDebugInfo(
-          `Error code: ${signInError.status || "unknown"}, Message: ${signInError.message}`,
+          `Error code: ${signInError.status || "unknown"}, Message: ${signInError.message}`
         );
-        if (session.oauthTimeoutRef.current)
-          clearTimeout(session.oauthTimeoutRef.current);
+        if (session.oauthTimeoutRef.current) clearTimeout(session.oauthTimeoutRef.current);
         endAuthFlow();
         session.setLoadingProvider(null);
         return;
@@ -115,23 +109,17 @@ export function useAuthHandlers(session: Session, t: Record<string, string>) {
         }
       } else if (isNative) {
         logger.error(`[Auth] ${provider} OAuth URL missing on native platform`);
-        session.setError(
-          t.authUnexpectedError || `Failed to sign in with ${provider}.`,
-        );
+        session.setError(t.authUnexpectedError || `Failed to sign in with ${provider}.`);
         session.setDebugInfo("OAuth URL was not returned by Supabase");
-        if (session.oauthTimeoutRef.current)
-          clearTimeout(session.oauthTimeoutRef.current);
+        if (session.oauthTimeoutRef.current) clearTimeout(session.oauthTimeoutRef.current);
         endAuthFlow();
         session.setLoadingProvider(null);
       }
     } catch (err) {
       logger.error(`[Auth] Unexpected error during ${provider} sign-in:`, err);
       session.setError(t.authUnexpectedError);
-      session.setDebugInfo(
-        `Exception: ${err instanceof Error ? err.message : String(err)}`,
-      );
-      if (session.oauthTimeoutRef.current)
-        clearTimeout(session.oauthTimeoutRef.current);
+      session.setDebugInfo(`Exception: ${err instanceof Error ? err.message : String(err)}`);
+      if (session.oauthTimeoutRef.current) clearTimeout(session.oauthTimeoutRef.current);
       endAuthFlow();
       session.setLoadingProvider(null);
     }
@@ -157,7 +145,7 @@ export function useAuthHandlers(session: Session, t: Record<string, string>) {
           analytics.signIn();
           session.tryComplete(
             { name: result.user.name, email: result.user.email },
-            "nativeGoogleAuth",
+            "nativeGoogleAuth"
           );
         } else if (result.error === "cancelled") {
           session.setLoadingProvider(null);
@@ -168,9 +156,7 @@ export function useAuthHandlers(session: Session, t: Record<string, string>) {
       } catch (err) {
         logger.error("[Auth] Native Google auth exception:", err);
         session.setError(t.authUnexpectedError);
-        session.setDebugInfo(
-          `Exception: ${err instanceof Error ? err.message : String(err)}`,
-        );
+        session.setDebugInfo(`Exception: ${err instanceof Error ? err.message : String(err)}`);
       } finally {
         endAuthFlow();
         session.setLoadingProvider(null);
@@ -195,15 +181,36 @@ export function useAuthHandlers(session: Session, t: Record<string, string>) {
   const handleSendOtp = async () => {
     if (!supabase) return;
 
-    const normalized = session.phoneNumber.trim();
-    if (!PHONE_REGEX.test(normalized)) {
+    // Rate limit: auth guard (3 per minute)
+    if (!canStartAuthFlow()) {
+      session.setError(t.authTooManyAttempts || "Too many attempts. Please wait.");
+      logger.warn("[Auth] OTP send blocked by auth guard");
+      return;
+    }
+
+    // Cooldown: 60 seconds between OTP sends
+    const now = Date.now();
+    const elapsed = now - lastOtpSendRef.current;
+    if (lastOtpSendRef.current > 0 && elapsed < OTP_COOLDOWN_MS) {
+      const remaining = Math.ceil((OTP_COOLDOWN_MS - elapsed) / 1000);
       session.setError(
-        "Enter a valid phone number with country code (e.g. +1234567890)",
+        t.authOtpCooldown || `Please wait ${remaining}s before requesting another code.`
       );
       void hapticError();
       return;
     }
 
+    // Validate phone with Zod schema (E.164 format)
+    const normalized = session.phoneNumber.trim();
+    if (!phoneSchema.safeParse(normalized).success) {
+      session.setError(
+        t.authInvalidPhone || "Enter a valid phone number with country code (e.g. +1234567890)"
+      );
+      void hapticError();
+      return;
+    }
+
+    startAuthFlow();
     session.setLoadingProvider("phone");
     session.setError(null);
 
@@ -216,16 +223,20 @@ export function useAuthHandlers(session: Session, t: Record<string, string>) {
         logger.warn("[Auth] OTP send error:", otpError.message);
         session.setError(otpError.message);
         session.setLoadingProvider(null);
+        endAuthFlow();
         return;
       }
 
+      lastOtpSendRef.current = Date.now();
       logger.log("[Auth] OTP sent to phone");
       session.setPhoneStep("otp");
       session.setLoadingProvider(null);
+      endAuthFlow();
     } catch (err) {
       logger.error("[Auth] OTP send failed:", err);
-      session.setError("Failed to send code. Please try again.");
+      session.setError(t.authOtpSendFailed || "Failed to send code. Please try again.");
       session.setLoadingProvider(null);
+      endAuthFlow();
     }
   };
 
@@ -261,10 +272,7 @@ export function useAuthHandlers(session: Session, t: Record<string, string>) {
         const metadata = data.session.user.user_metadata || {};
         const name = metadata.full_name || metadata.name || phone;
         analytics.signIn();
-        session.tryComplete(
-          { name, email: data.session.user.email || "" },
-          "phoneOtp",
-        );
+        session.tryComplete({ name, email: data.session.user.email || "" }, "phoneOtp");
       }
     } catch (err) {
       logger.error("[Auth] OTP verify failed:", err);

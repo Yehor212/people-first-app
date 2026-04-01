@@ -24,7 +24,7 @@ const path = require('path');
 
 const AUDIT_FLAG = path.join(process.cwd(), '.audit-active');
 const RUFLO_STATE = path.join(process.cwd(), '.ruflo-last-action');
-const MAX_AGE_MS = 30 * 60 * 1000; // 30 minutes
+const MAX_AGE_MS = 4 * 60 * 60 * 1000; // 4 hours — audit/long sessions need generous TTL
 
 // All Ruflo tool prefixes that count as pipeline activity
 const RUFLO_TOOLS = [
@@ -40,14 +40,15 @@ const RUFLO_TOOLS = [
   'ruflo__embeddings',   // generate, search, compare
 ];
 
-// Phase tracking
+// Phase tracking — REAL Ruflo tools only (facade tools removed, see audit 2026-03-31)
+// Research: "85% of ruflo MCP tools are mock/stub" (GitHub #653)
+// Only track tools with REAL functionality (HNSW memory, neural, embeddings, analyze)
 const PHASES = {
-  session_start: { tools: ['agentdb_session-start'], blocking: false, label: 'Session Start (episodic replay)' },
-  memory_search: { tools: ['memory_search', 'memory_retrieve'], blocking: true, label: 'Memory Search (existing patterns)' },
-  pattern_search: { tools: ['agentdb_pattern-search', 'agentdb_hierarchical-recall', 'agentdb_context-synthesize'], blocking: true, label: 'Pattern Search (BM25+semantic)' },
-  store_result: { tools: ['memory_store', 'agentdb_pattern-store', 'agentdb_hierarchical-store'], blocking: false, label: 'Store Result (save pattern)' },
-  feedback: { tools: ['agentdb_feedback'], blocking: false, label: 'Feedback (record outcome)' },
-  session_end: { tools: ['agentdb_session-end'], blocking: false, label: 'Session End (consolidation)' },
+  // BEFORE work (blocking — must complete before first Edit)
+  memory_search: { tools: ['memory_search', 'memory_retrieve', 'memory_list'], blocking: true, label: 'Memory Search — find prior patterns (REAL: HNSW+ONNX)' },
+  pattern_search: { tools: ['agentdb_pattern-search', 'agentdb_hierarchical-recall'], blocking: true, label: 'Pattern Search — BM25+semantic hybrid (REAL)' },
+  // AFTER work (advisory — should complete before commit, commit-gate enforces)
+  store_result: { tools: ['memory_store', 'agentdb_pattern-store'], blocking: false, label: 'Memory Store — save outcome for future sessions (REAL)' },
 };
 
 // Ruflo enforcement ALWAYS BLOCKING (exit 2) — not advisory
@@ -85,11 +86,16 @@ const toolName = input.tool_name || input.tool || '';
 
 // Load current state
 let state = { phases: {}, lastAction: 0, toolLog: [] };
+const stateFileExists = fs.existsSync(RUFLO_STATE);
 try {
-  state = JSON.parse(fs.readFileSync(RUFLO_STATE, 'utf8'));
+  if (stateFileExists) state = JSON.parse(fs.readFileSync(RUFLO_STATE, 'utf8'));
 } catch {}
 
-// PostToolUse: record Ruflo tool usage and update phase tracking
+// PreToolUse OR PostToolUse: record Ruflo tool usage and update phase tracking
+// This fires via PreToolUse:mcp__ruflo__.* (reliable) and PostToolUse:mcp__ruflo__.* (unreliable).
+// PreToolUse for MCP = confirmed working. PostToolUse for MCP = may not fire (SDK issue).
+// Using PreToolUse ensures state file is written BEFORE the MCP call completes,
+// so subsequent Edit/Write calls see fresh ruflo activity.
 const isRufloTool = RUFLO_TOOLS.some(prefix => toolName.includes(prefix));
 if (isRufloTool) {
   state.lastAction = Date.now();
@@ -114,11 +120,13 @@ if (isRufloTool) {
 
 // PreToolUse:Edit — enforce blocking phases
 if (toolName === 'Edit' || toolName === 'Write') {
-  // BOOTSTRAP EXCEPTION: Allow audit infrastructure files without Ruflo
+  // BOOTSTRAP EXCEPTION: Allow infrastructure + memory files without Ruflo
   const filePath = input.tool_input?.file_path || '';
   if (filePath.includes('audit-checklist') || filePath.includes('audit-active') ||
       filePath.includes('.postflight-done') || filePath.includes('.preflight-token') ||
-      filePath.includes('.verification-done') || filePath.includes('.ide-ack')) {
+      filePath.includes('.verification-done') || filePath.includes('.ide-ack') ||
+      filePath.includes('.ruflo-last-action') ||
+      filePath.includes('memory/') || filePath.includes('memory\\')) {
     process.exit(0);
   }
   const missingBlocking = [];
@@ -138,6 +146,15 @@ if (toolName === 'Edit' || toolName === 'Write') {
   // Check age of last action
   const age = Date.now() - (state.lastAction || 0);
   const stale = age > MAX_AGE_MS;
+
+  // If no state file exists, advisory only (prevents deadlock).
+  // BLOCKING enforcement is at commit-gate Layer 5h — that's the real gate.
+  // This advisory ensures the agent gets early warning to create the state file.
+  if (!stateFileExists) {
+    process.stderr.write('⚠️ RUFLO: no .ruflo-last-action. Run memory_search + pattern-search, then create state via Bash.\n');
+    process.stderr.write('  Commit will be BLOCKED without ruflo evidence (commit-gate Layer 5h).\n');
+    process.exit(0);
+  }
 
   if (missingBlocking.length > 0 || (stale && state.lastAction > 0)) {
     process.stderr.write('\nRUFLO FULL ARSENAL ENFORCER BLOCKED!\n\n');

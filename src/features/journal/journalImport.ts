@@ -54,6 +54,13 @@ export async function importJournalBackup(
     errors: [],
   };
 
+  // L21: Enforce file size limit before reading entire file into memory
+  const MAX_IMPORT_SIZE = 50 * 1024 * 1024; // 50 MB
+  if (file.size > MAX_IMPORT_SIZE) {
+    result.errors.push('Import file too large (max 50 MB)');
+    return result;
+  }
+
   onProgress?.('Reading file...');
   const text = await file.text();
 

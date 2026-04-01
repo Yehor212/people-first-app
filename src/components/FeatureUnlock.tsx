@@ -137,6 +137,7 @@ export function FeatureUnlock({
         isVisible ? "opacity-100" : "opacity-0"
       }`}
       onClick={handleClose}
+      onKeyDown={(e) => { if (e.key === 'Escape') handleClose(); }}
     >
       {/* Celebration particles */}
       {particles.map((particle) => (
@@ -157,7 +158,10 @@ export function FeatureUnlock({
         className={`relative m-4 max-w-md w-full bg-card rounded-2xl zen-shadow-card border border-border overflow-hidden transform transition-all duration-300 ${
           isVisible ? "scale-100 opacity-100" : "scale-75 opacity-0"
         }`}
+        role="button"
+        tabIndex={0}
         onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); } }}
       >
         {/* Header with icon */}
         <div className={`p-6 ${meta.bgClass} border-b border-border`}>

@@ -3,9 +3,10 @@
  * Provides tactile confirmation for actions, helping with focus and engagement
  */
 
-import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics';
-import { isNative } from '@/lib/platform';
-import { shouldTriggerHaptics } from './animationUtils';
+import { Haptics, ImpactStyle, NotificationType } from "@capacitor/haptics";
+import { isNative } from "@/lib/platform";
+import { shouldTriggerHaptics } from "./animationUtils";
+import { logger } from "@/lib/logger";
 
 // Check if haptics are available (native platform only)
 const isHapticsAvailable = isNative;
@@ -23,7 +24,7 @@ export async function hapticTap(): Promise<void> {
   try {
     await Haptics.impact({ style: ImpactStyle.Light });
   } catch (error) {
-    console.debug('Haptic tap failed:', error);
+    logger.log("Haptic tap failed:", error);
   }
 }
 
@@ -35,7 +36,7 @@ export async function hapticMedium(): Promise<void> {
   try {
     await Haptics.impact({ style: ImpactStyle.Medium });
   } catch (error) {
-    console.debug('Haptic medium failed:', error);
+    logger.log("Haptic medium failed:", error);
   }
 }
 
@@ -47,7 +48,7 @@ export async function hapticHeavy(): Promise<void> {
   try {
     await Haptics.impact({ style: ImpactStyle.Heavy });
   } catch (error) {
-    console.debug('Haptic heavy failed:', error);
+    logger.log("Haptic heavy failed:", error);
   }
 }
 
@@ -59,7 +60,7 @@ export async function hapticSuccess(): Promise<void> {
   try {
     await Haptics.notification({ type: NotificationType.Success });
   } catch (error) {
-    console.debug('Haptic success failed:', error);
+    logger.log("Haptic success failed:", error);
   }
 }
 
@@ -71,7 +72,7 @@ export async function hapticWarning(): Promise<void> {
   try {
     await Haptics.notification({ type: NotificationType.Warning });
   } catch (error) {
-    console.debug('Haptic warning failed:', error);
+    logger.log("Haptic warning failed:", error);
   }
 }
 
@@ -83,7 +84,7 @@ export async function hapticError(): Promise<void> {
   try {
     await Haptics.notification({ type: NotificationType.Error });
   } catch (error) {
-    console.debug('Haptic error failed:', error);
+    logger.log("Haptic error failed:", error);
   }
 }
 
@@ -95,7 +96,7 @@ export async function hapticSelection(): Promise<void> {
   try {
     await Haptics.selectionChanged();
   } catch (error) {
-    console.debug('Haptic selection failed:', error);
+    logger.log("Haptic selection failed:", error);
   }
 }
 
@@ -107,7 +108,7 @@ export async function hapticSelectionStart(): Promise<void> {
   try {
     await Haptics.selectionStart();
   } catch (error) {
-    console.debug('Haptic selection start failed:', error);
+    logger.log("Haptic selection start failed:", error);
   }
 }
 
@@ -119,7 +120,7 @@ export async function hapticSelectionEnd(): Promise<void> {
   try {
     await Haptics.selectionEnd();
   } catch (error) {
-    console.debug('Haptic selection end failed:', error);
+    logger.log("Haptic selection end failed:", error);
   }
 }
 
@@ -160,7 +161,7 @@ export const haptics = {
 
   // Navigation & UI
   buttonPress: hapticTap,
-  buttonTap: hapticTap,  // Alias for AI Coach compatibility
+  buttonTap: hapticTap, // Alias for AI Coach compatibility
   tabChanged: hapticSelection,
   panelOpened: hapticTap,
   panelClosed: hapticTap,

@@ -12,15 +12,7 @@
 import { useMemo } from "react";
 import { motion } from "framer-motion";
 import { zenTap } from "@/lib/animationUtils";
-import {
-  TrendingUp,
-  TrendingDown,
-  Minus,
-  Sparkles,
-  Zap,
-  ChevronRight,
-  X,
-} from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, Sparkles, Zap, ChevronRight, X } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useBackHandler } from "@/hooks/useBackHandler";
 import { useScrollLock } from "@/hooks/useScrollLock";
@@ -48,14 +40,12 @@ export function RingDetailSheet({
 
   // Calculate stats with week-over-week trend
   const stats = useMemo(() => {
-    if (weeklyData.length === 0)
-      return { trend: 0, weekHigh: 0, weekLow: 0, avg: 0 };
+    if (weeklyData.length === 0) return { trend: 0, weekHigh: 0, weekLow: 0, avg: 0 };
 
     const values = weeklyData.map((d) => d.value);
     const avg = values.reduce((a, b) => a + b, 0) / values.length;
     // Week-over-week trend: current week avg vs previous week avg
-    const trend =
-      previousAverage != null ? Math.round(avg - previousAverage) : 0;
+    const trend = previousAverage != null ? Math.round(avg - previousAverage) : 0;
 
     return {
       trend,
@@ -76,8 +66,7 @@ export function RingDetailSheet({
         );
       if (currentValue >= 50)
         return (
-          t.ringRecommendationMoodMid ||
-          "Try a 3-minute gratitude practice to boost your mood."
+          t.ringRecommendationMoodMid || "Try a 3-minute gratitude practice to boost your mood."
         );
       return (
         t.ringRecommendationMoodLow ||
@@ -106,14 +95,8 @@ export function RingDetailSheet({
         "Deep work mastery! Your focused sessions are paying dividends."
       );
     if (currentValue >= 50)
-      return (
-        t.ringRecommendationFocusMid ||
-        "Try a 25-minute Pomodoro session for your next task."
-      );
-    return (
-      t.ringRecommendationFocusLow ||
-      "Start with just 10 focused minutes. You've got this."
-    );
+      return t.ringRecommendationFocusMid || "Try a 25-minute Pomodoro session for your next task.";
+    return t.ringRecommendationFocusLow || "Start with just 10 focused minutes. You've got this.";
   };
 
   const dayNames = [t.sun, t.mon, t.tue, t.wed, t.thu, t.fri, t.sat];
@@ -129,6 +112,15 @@ export function RingDetailSheet({
       <div
         className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm animate-fade-in"
         onClick={() => onOpenChange(false)}
+        role="button"
+        tabIndex={0}
+        aria-label={t.close || "Close"}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onOpenChange(false);
+          }
+        }}
       />
       <div
         role="dialog"
@@ -139,10 +131,7 @@ export function RingDetailSheet({
 
         {/* Premium Header with Gradient */}
         <div
-          className={cn(
-            "relative h-36 overflow-hidden",
-            `bg-gradient-to-br ${theme.bgGradient}`,
-          )}
+          className={cn("relative h-36 overflow-hidden", `bg-gradient-to-br ${theme.bgGradient}`)}
         >
           {/* Sparkle particles */}
           <SparkleParticles color={theme.particleColor} />
@@ -151,7 +140,7 @@ export function RingDetailSheet({
           <motion.div
             className={cn(
               "absolute -top-24 -end-24 w-72 h-72 rounded-full blur-3xl",
-              `bg-gradient-to-br ${theme.gradient}`,
+              `bg-gradient-to-br ${theme.gradient}`
             )}
             animate={{
               scale: [1, 1.15, 1],
@@ -193,9 +182,7 @@ export function RingDetailSheet({
                 <h2 className="text-2xl font-bold text-white tracking-tight">
                   {t[ringType] || theme.label}
                 </h2>
-                <p className="text-sm text-white/70">
-                  {t.last7Days || "Last 7 days"}
-                </p>
+                <p className="text-sm text-white/70">{t.last7Days || "Last 7 days"}</p>
               </div>
             </div>
             <motion.div
@@ -233,7 +220,7 @@ export function RingDetailSheet({
                     ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
                     : stats.trend < 0
                       ? "bg-red-500/15 text-red-600 dark:text-red-400"
-                      : "bg-muted text-muted-foreground",
+                      : "bg-muted text-muted-foreground"
                 )}
               >
                 {stats.trend > 0 ? (
@@ -291,12 +278,8 @@ export function RingDetailSheet({
                 transition={{ delay: 0.25 + i * 0.08 }}
               >
                 <span className="text-xl">{stat.emoji}</span>
-                <p className="text-lg font-bold text-foreground mt-1">
-                  {stat.value}
-                </p>
-                <p className="text-xs text-muted-foreground font-medium">
-                  {stat.label}
-                </p>
+                <p className="text-lg font-bold text-foreground mt-1">{stat.value}</p>
+                <p className="text-xs text-muted-foreground font-medium">{stat.label}</p>
               </motion.div>
             ))}
           </motion.div>
@@ -321,12 +304,11 @@ export function RingDetailSheet({
                     key={day.date}
                     className={cn(
                       "flex flex-col items-center py-2 rounded-xl transition-all",
-                      isToday &&
-                        "ring-2 ring-primary ring-offset-2 ring-offset-background",
+                      isToday && "ring-2 ring-primary ring-offset-2 ring-offset-background"
                     )}
                     style={{
                       background: `linear-gradient(135deg, ${theme.chartColor}${Math.round(
-                        intensity * 40,
+                        intensity * 40
                       )
                         .toString(16)
                         .padStart(2, "0")}, transparent)`,
@@ -343,10 +325,7 @@ export function RingDetailSheet({
                       style={{
                         background: `linear-gradient(180deg, ${theme.chartColor}, ${theme.chartColor}aa)`,
                         opacity: 0.3 + intensity * 0.7,
-                        boxShadow:
-                          intensity > 0.6
-                            ? `0 0 8px ${theme.glowColor}`
-                            : "none",
+                        boxShadow: intensity > 0.6 ? `0 0 8px ${theme.glowColor}` : "none",
                       }}
                     >
                       <span className="text-[10px] font-bold text-white">
@@ -364,19 +343,14 @@ export function RingDetailSheet({
             className={cn(
               "relative overflow-hidden rounded-2xl p-4",
               `bg-gradient-to-br ${theme.bgGradient}`,
-              "border border-border/40",
+              "border border-border/40"
             )}
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.4 }}
           >
             <div className="flex items-start gap-3">
-              <div
-                className={cn(
-                  "p-2 rounded-xl",
-                  `bg-gradient-to-br ${theme.gradient}`,
-                )}
-              >
+              <div className={cn("p-2 rounded-xl", `bg-gradient-to-br ${theme.gradient}`)}>
                 <Zap className="w-4 h-4 text-white" aria-hidden="true" />
               </div>
               <div className="flex-1">
@@ -396,7 +370,7 @@ export function RingDetailSheet({
               "w-full py-4 px-5 rounded-2xl font-semibold",
               "flex items-center justify-center gap-2",
               `bg-gradient-to-r ${theme.gradient}`,
-              "text-white shadow-xl transition-all active:scale-[0.98]",
+              "text-white shadow-xl transition-all active:scale-[0.98]"
             )}
             style={{ boxShadow: `0 8px 32px ${theme.glowColor}` }}
             initial={{ y: 20, opacity: 0 }}

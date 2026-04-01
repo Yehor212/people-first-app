@@ -33,24 +33,15 @@ export function IdentityMappingSection({
     <div
       className={cn(
         "relative mb-4 rounded-xl p-3 space-y-3",
-        isPrimaryCTA
-          ? "bg-foreground/5 border border-foreground/10"
-          : "bg-card",
+        isPrimaryCTA ? "bg-foreground/5 border border-foreground/10" : "bg-card"
       )}
     >
       <div className="flex items-center gap-2">
-        <Fingerprint
-          className={cn(
-            "w-4 h-4",
-            isPrimaryCTA ? "text-violet-400" : "text-primary",
-          )}
-        />
+        <Fingerprint className={cn("w-4 h-4", isPrimaryCTA ? "text-violet-400" : "text-primary")} />
         <p
           className={cn(
             "text-sm font-medium",
-            isPrimaryCTA
-              ? "text-slate-700 dark:text-foreground/80"
-              : "text-foreground",
+            isPrimaryCTA ? "text-slate-700 dark:text-foreground/80" : "text-foreground"
           )}
         >
           {ts.identityMapping || "Identity Mapping"}
@@ -59,13 +50,10 @@ export function IdentityMappingSection({
       <p
         className={cn(
           "text-xs",
-          isPrimaryCTA
-            ? "text-slate-500 dark:text-foreground/40"
-            : "text-muted-foreground",
+          isPrimaryCTA ? "text-slate-500 dark:text-foreground/40" : "text-muted-foreground"
         )}
       >
-        {ts.identityMappingHint ||
-          "Optional — connect this habit to who you're becoming"}
+        {ts.identityMappingHint || "Optional — connect this habit to who you're becoming"}
       </p>
 
       {/* Cluster name */}
@@ -73,9 +61,7 @@ export function IdentityMappingSection({
         <label
           className={cn(
             "text-xs mb-1 block",
-            isPrimaryCTA
-              ? "text-slate-500 dark:text-foreground/50"
-              : "text-muted-foreground",
+            isPrimaryCTA ? "text-slate-500 dark:text-foreground/50" : "text-muted-foreground"
           )}
         >
           {ts.identityCluster || "Cluster"}
@@ -92,13 +78,13 @@ export function IdentityMappingSection({
             "focus:outline-none focus:ring-2",
             isPrimaryCTA
               ? "bg-foreground/10 border border-foreground/20 text-white placeholder:text-foreground/60 focus:ring-violet-500/50"
-              : "bg-background text-foreground placeholder:text-muted-foreground focus:ring-primary/30",
+              : "bg-background text-foreground placeholder:text-muted-foreground focus:ring-primary/30"
           )}
         />
         {existingClusters.length > 0 && (
           <datalist id="identity-clusters-list">
             {existingClusters.map((c) => (
-              <option key={c} value={c} />
+              <option key={c} value={c} aria-label={c} />
             ))}
           </datalist>
         )}
@@ -109,9 +95,7 @@ export function IdentityMappingSection({
         <label
           className={cn(
             "text-xs mb-1 block",
-            isPrimaryCTA
-              ? "text-slate-500 dark:text-foreground/50"
-              : "text-muted-foreground",
+            isPrimaryCTA ? "text-slate-500 dark:text-foreground/50" : "text-muted-foreground"
           )}
         >
           {ts.identityVerb || "Affirmation"}
@@ -127,7 +111,7 @@ export function IdentityMappingSection({
             "focus:outline-none focus:ring-2",
             isPrimaryCTA
               ? "bg-foreground/10 border border-foreground/20 text-white placeholder:text-foreground/60 focus:ring-violet-500/50"
-              : "bg-background text-foreground placeholder:text-muted-foreground focus:ring-primary/30",
+              : "bg-background text-foreground placeholder:text-muted-foreground focus:ring-primary/30"
           )}
         />
       </div>
@@ -137,9 +121,7 @@ export function IdentityMappingSection({
         <label
           className={cn(
             "text-xs mb-1.5 block",
-            isPrimaryCTA
-              ? "text-slate-500 dark:text-foreground/50"
-              : "text-muted-foreground",
+            isPrimaryCTA ? "text-slate-500 dark:text-foreground/50" : "text-muted-foreground"
           )}
         >
           {ts.identityIcon || "Icon"}

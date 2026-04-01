@@ -1,9 +1,9 @@
-import { useEffect, useState, useRef } from 'react';
-import { X, Flame } from 'lucide-react';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { getStreakMessage } from '@/lib/motivationalMessages';
-import { cn } from '@/lib/utils';
-import { useBackHandler } from '@/hooks/useBackHandler';
+import { useEffect, useState, useRef } from "react";
+import { X, Flame } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { getStreakMessage } from "@/lib/motivationalMessages";
+import { cn } from "@/lib/utils";
+import { useBackHandler } from "@/hooks/useBackHandler";
 
 interface StreakCelebrationProps {
   streak: number;
@@ -44,6 +44,14 @@ export function StreakCelebration({ streak, habitName, onClose }: StreakCelebrat
         isVisible ? "bg-black/50 backdrop-blur-md" : "bg-black/0"
       )}
       onClick={handleClose}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          handleClose();
+        }
+      }}
     >
       {/* Floating particles */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -54,7 +62,7 @@ export function StreakCelebration({ streak, habitName, onClose }: StreakCelebrat
             style={{
               left: `${Math.random() * 100}%`,
               top: `${Math.random() * 100}%`,
-              backgroundColor: i % 3 === 0 ? '#FF6B35' : i % 3 === 1 ? '#FFD700' : '#FF4500',
+              backgroundColor: i % 3 === 0 ? "#FF6B35" : i % 3 === 1 ? "#FFD700" : "#FF4500",
               animationDelay: `${Math.random() * 2}s`,
               animationDuration: `${1.5 + Math.random()}s`,
             }}
@@ -78,7 +86,7 @@ export function StreakCelebration({ streak, habitName, onClose }: StreakCelebrat
         <button
           onClick={handleClose}
           className="absolute top-4 end-4 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors z-10"
-          aria-label={t.close || 'Close'}
+          aria-label={t.close || "Close"}
         >
           <X className="w-5 h-5 text-white/70" />
         </button>
@@ -128,9 +136,7 @@ export function StreakCelebration({ streak, habitName, onClose }: StreakCelebrat
 
         {/* Habit name if provided */}
         {habitName && (
-          <p className="text-center text-lg text-orange-200/70 mb-3 font-medium">
-            {habitName}
-          </p>
+          <p className="text-center text-lg text-orange-200/70 mb-3 font-medium">{habitName}</p>
         )}
 
         {/* Message */}

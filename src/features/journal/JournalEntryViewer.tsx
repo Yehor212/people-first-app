@@ -4,7 +4,6 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getLocale } from "@/lib/timeUtils";
-import type { Language } from "@/i18n/translations";
 import type { JournalEntry, JournalAudio } from "./types";
 import { countWords, DIARY_THEMES, DIARY_FONTS } from "./types";
 import { getBgPatternStyle, getPaperTextureStyle } from "./diaryBgPatterns";
