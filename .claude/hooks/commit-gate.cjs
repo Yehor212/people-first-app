@@ -317,8 +317,7 @@ process.stdin.on('end', () => {
           } catch (parseErr) {
             block('VERIFICATION TOKEN NOT VALID JSON: ' + parseErr.message, cmd);
           }
-          // Consume token
-          try { fs.unlinkSync(VERIFICATION_DONE); } catch {}
+          // Token consumed AFTER all layers pass (moved to end — Bug fix: early deletion caused re-generation on Layer 5f/5g/5h block)
         }
         }
       }
@@ -422,8 +421,10 @@ process.stdin.on('end', () => {
         if (stagedFiles.length > 7) {
           // Allow if commit message contains EXPLICIT justification keyword at START of a word
           // Verifier finding 2.1: regex was too permissive — "audit log" in message bypassed
+          // Bug fix: also handle HEREDOC format: -m "$(cat <<'EOF'\n...\nEOF\n)"
           const msgMatch = cmd.match(/-m\s+["']([^"']+)["']/);
-          const commitMsg = msgMatch ? msgMatch[1] : cmd.replace(/^git commit\s*/, '');
+          const heredocMatch = !msgMatch && cmd.match(/<<'?EOF'?[\s\S]*?\n([\s\S]*?)\n\s*EOF/);
+          const commitMsg = msgMatch ? msgMatch[1] : heredocMatch ? heredocMatch[1] : cmd.replace(/^git commit\s*/, '');
           const hasJustification = /\b(batch|bulk|refactor|migration|rename|enforcement)\b/i.test(commitMsg);
           if (!hasJustification) {
             block(
@@ -582,8 +583,10 @@ process.stdin.on('end', () => {
         }
       }
 
-      // All Layer 7 checks passed — NOW consume tokens (verifier finding 2.2: moved after L7/7b)
+      // All layers passed — NOW consume tokens (verifier finding 2.2: moved after L7/7b)
+      // Bug fix: verification token also moved here (was at L5d, causing re-generation on L5f block)
       try { fs.unlinkSync(POSTFLIGHT); } catch {}
+      try { fs.unlinkSync(VERIFICATION_DONE); } catch {}
       if (isFullCycle) {
         try { fs.unlinkSync(FULLCYCLE_LAWS); } catch {}
         try { fs.unlinkSync(FULLCYCLE_ACTIVE); } catch {}
