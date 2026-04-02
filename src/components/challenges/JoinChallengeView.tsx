@@ -133,7 +133,7 @@ export function JoinChallengeView({
           placeholder="ZEN-XXXXXX"
           className={cn(
             "w-full px-4 py-4 rounded-xl border-2 text-center text-xl font-mono tracking-widest",
-            "bg-card focus:outline-none transition-colors",
+            "bg-card focus-visible:outline-none transition-colors",
             error
               ? "border-destructive focus:border-destructive"
               : isValidCode

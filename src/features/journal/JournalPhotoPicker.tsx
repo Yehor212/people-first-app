@@ -4,6 +4,7 @@ import { Camera, Image as ImageIcon, X, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useBackHandler } from "@/hooks/useBackHandler";
+import { useModalA11y } from "@/hooks/useModalA11y";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { logger } from "@/lib/logger";
 
@@ -23,6 +24,7 @@ export function JournalPhotoPicker({
   const { t } = useLanguage();
   const ts = t as unknown as Record<string, string>;
   useBackHandler(true, onClose);
+  useModalA11y(true, onClose);
   useScrollLock(true);
   const cameraRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
@@ -87,6 +89,7 @@ export function JournalPhotoPicker({
       <div
         role="dialog"
         aria-modal="true"
+        aria-label="Photo picker"
         className={cn(
           "fixed bottom-0 inset-x-0 z-[65]",
           "bg-card/95 backdrop-blur-xl border-t border-border/40",

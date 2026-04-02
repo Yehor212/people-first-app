@@ -113,7 +113,7 @@ export function AnimatedMoodDistribution({
           <select
             value={selectedTag}
             onChange={(e) => onTagChange(e.target.value)}
-            className="w-full p-3 bg-secondary rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+            className="w-full p-3 bg-secondary rounded-xl text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 transition-all"
             aria-label={tagFilterLabel || "Filter by tag"}
           >
             <option value="all">{allTagsLabel}</option>

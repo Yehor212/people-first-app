@@ -28,7 +28,7 @@ export function WidgetSettings({ onBack }: WidgetSettingsProps) {
             <ArrowLeft className="w-6 h-6 rtl:scale-x-[-1]" />
           </button>
           <div>
-            <h1 className="text-2xl font-bold">{t.widgetSettings}</h1>
+            <h2 className="text-2xl font-bold">{t.widgetSettings}</h2>
             <p className="text-sm text-muted-foreground">{t.widgetSettingsDesc}</p>
           </div>
         </div>

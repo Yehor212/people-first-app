@@ -9,15 +9,15 @@
  * - Unique ID generation
  */
 
-import { nanoid } from 'nanoid';
-import { logger } from '@/lib/logger';
-import { IS_DEV } from '@/lib/env';
+import { nanoid } from "nanoid";
+import { logger } from "@/lib/logger";
+import { IS_DEV } from "@/lib/env";
 
 // ============================================
 // TYPES
 // ============================================
 
-export type AnnouncementPriority = 'polite' | 'assertive';
+export type AnnouncementPriority = "polite" | "assertive";
 
 export interface FocusTrapOptions {
   /** Initial element to focus when trap is activated */
@@ -33,46 +33,66 @@ export interface FocusTrapOptions {
 // ============================================
 
 const FOCUSABLE_SELECTORS = [
-  'button:not([disabled])',
-  'input:not([disabled])',
-  'select:not([disabled])',
-  'textarea:not([disabled])',
-  'a[href]',
+  "button:not([disabled])",
+  "input:not([disabled])",
+  "select:not([disabled])",
+  "textarea:not([disabled])",
+  "a[href]",
   '[tabindex]:not([tabindex="-1"])',
   '[contenteditable="true"]',
-].join(', ');
+].join(", ");
 
-// Live region element for screen reader announcements
+// Two separate live regions — one per priority (WCAG best practice).
+// Some screen readers miss announcements when aria-live priority changes dynamically,
+// so we create a dedicated region for each priority level.
+let politeRegion: HTMLElement | null = null;
+let assertiveRegion: HTMLElement | null = null;
+
+// Backward-compatible alias used by initA11y() guard
 let liveRegion: HTMLElement | null = null;
 
 // ============================================
 // SCREEN READER ANNOUNCEMENTS
 // ============================================
 
+/** Shared CSS for visually-hidden live regions */
+const SR_ONLY_STYLE = `
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+`;
+
+function createLiveRegion(id: string, priority: AnnouncementPriority): HTMLElement {
+  const el = document.createElement("div");
+  el.id = id;
+  el.setAttribute("aria-live", priority);
+  el.setAttribute("aria-atomic", "true");
+  el.setAttribute("role", priority === "assertive" ? "alert" : "status");
+  el.className = "sr-only";
+  el.style.cssText = SR_ONLY_STYLE;
+  document.body.appendChild(el);
+  return el;
+}
+
 /**
- * Initialize the live region for screen reader announcements
- * Should be called once when the app starts
+ * Initialize the live regions for screen reader announcements.
+ * Creates two regions: one polite (waits for silence) and one assertive (interrupts).
+ * Should be called once when the app starts.
  */
 export function initLiveRegion(): void {
-  if (liveRegion) return;
+  if (liveRegion) return; // Already initialized
 
-  liveRegion = document.createElement('div');
-  liveRegion.setAttribute('aria-live', 'polite');
-  liveRegion.setAttribute('aria-atomic', 'true');
-  liveRegion.setAttribute('role', 'status');
-  liveRegion.className = 'sr-only'; // Visually hidden but accessible
-  liveRegion.style.cssText = `
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
-  `;
-  document.body.appendChild(liveRegion);
+  politeRegion = createLiveRegion("a11y-polite", "polite");
+  assertiveRegion = createLiveRegion("a11y-assertive", "assertive");
+
+  // Set backward-compatible guard so initLiveRegion() is idempotent
+  liveRegion = politeRegion;
 }
 
 /**
@@ -85,23 +105,21 @@ export function initLiveRegion(): void {
  * announce('Habit completed!', 'polite');
  * announce('Error: Please enter a valid email', 'assertive');
  */
-export function announce(message: string, priority: AnnouncementPriority = 'polite'): void {
-  if (!liveRegion) {
+export function announce(message: string, priority: AnnouncementPriority = "polite"): void {
+  if (!politeRegion || !assertiveRegion) {
     initLiveRegion();
   }
 
-  if (!liveRegion) return;
-
-  // Update priority if needed
-  liveRegion.setAttribute('aria-live', priority);
+  const region = priority === "assertive" ? assertiveRegion : politeRegion;
+  if (!region) return;
 
   // Clear and set message (this triggers the announcement)
-  liveRegion.textContent = '';
+  region.textContent = "";
 
   // Use requestAnimationFrame to ensure the clear takes effect
   requestAnimationFrame(() => {
-    if (liveRegion) {
-      liveRegion.textContent = message;
+    if (region) {
+      region.textContent = message;
     }
   });
 }
@@ -110,14 +128,14 @@ export function announce(message: string, priority: AnnouncementPriority = 'poli
  * Announce a success message
  */
 export function announceSuccess(message: string): void {
-  announce(message, 'polite');
+  announce(message, "polite");
 }
 
 /**
  * Announce an error message (interrupts current speech)
  */
 export function announceError(message: string): void {
-  announce(message, 'assertive');
+  announce(message, "assertive");
 }
 
 // ============================================
@@ -129,10 +147,10 @@ export function announceError(message: string): void {
  */
 export function getFocusableElements(container: HTMLElement): HTMLElement[] {
   const elements = container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTORS);
-  return Array.from(elements).filter(el => {
+  return Array.from(elements).filter((el) => {
     // Check if element is visible
     const style = window.getComputedStyle(el);
-    return style.display !== 'none' && style.visibility !== 'hidden';
+    return style.display !== "none" && style.visibility !== "hidden";
   });
 }
 
@@ -163,7 +181,7 @@ export function createFocusTrap(
 
   if (focusableElements.length === 0) {
     if (IS_DEV) {
-      logger.warn('[A11y] Focus trap: No focusable elements found in container');
+      logger.warn("[A11y] Focus trap: No focusable elements found in container");
     }
     return () => {};
   }
@@ -179,7 +197,7 @@ export function createFocusTrap(
 
   // Handle Tab key to trap focus
   const handleKeyDown = (event: KeyboardEvent) => {
-    if (event.key !== 'Tab') return;
+    if (event.key !== "Tab") return;
 
     // Refresh focusable elements in case DOM changed
     const currentFocusable = getFocusableElements(container);
@@ -203,11 +221,11 @@ export function createFocusTrap(
     }
   };
 
-  container.addEventListener('keydown', handleKeyDown);
+  container.addEventListener("keydown", handleKeyDown);
 
   // Return cleanup function
   return () => {
-    container.removeEventListener('keydown', handleKeyDown);
+    container.removeEventListener("keydown", handleKeyDown);
     previouslyFocused?.focus();
   };
 }
@@ -229,7 +247,7 @@ export function moveFocus(element: HTMLElement | null, announcement?: string): v
 // KEYBOARD NAVIGATION
 // ============================================
 
-export type NavigationDirection = 'next' | 'prev' | 'first' | 'last';
+export type NavigationDirection = "next" | "prev" | "first" | "last";
 
 /**
  * Handle arrow key navigation within a list of elements
@@ -252,23 +270,23 @@ export function handleArrowNavigation(
 
   // Determine direction from key
   switch (event.key) {
-    case 'ArrowRight':
-      if (horizontal) direction = 'next';
+    case "ArrowRight":
+      if (horizontal) direction = "next";
       break;
-    case 'ArrowLeft':
-      if (horizontal) direction = 'prev';
+    case "ArrowLeft":
+      if (horizontal) direction = "prev";
       break;
-    case 'ArrowDown':
-      if (vertical) direction = 'next';
+    case "ArrowDown":
+      if (vertical) direction = "next";
       break;
-    case 'ArrowUp':
-      if (vertical) direction = 'prev';
+    case "ArrowUp":
+      if (vertical) direction = "prev";
       break;
-    case 'Home':
-      direction = 'first';
+    case "Home":
+      direction = "first";
       break;
-    case 'End':
-      direction = 'last';
+    case "End":
+      direction = "last";
       break;
     default:
       return;
@@ -279,20 +297,20 @@ export function handleArrowNavigation(
   let newIndex = currentIndex;
 
   switch (direction) {
-    case 'next':
+    case "next":
       newIndex = loop
         ? (currentIndex + 1) % elements.length
         : Math.min(currentIndex + 1, elements.length - 1);
       break;
-    case 'prev':
+    case "prev":
       newIndex = loop
         ? (currentIndex - 1 + elements.length) % elements.length
         : Math.max(currentIndex - 1, 0);
       break;
-    case 'first':
+    case "first":
       newIndex = 0;
       break;
-    case 'last':
+    case "last":
       newIndex = elements.length - 1;
       break;
   }
@@ -306,11 +324,8 @@ export function handleArrowNavigation(
 /**
  * Handle selection with Space/Enter keys
  */
-export function handleSelectionKeys(
-  event: KeyboardEvent,
-  onSelect: () => void
-): void {
-  if (event.key === ' ' || event.key === 'Enter') {
+export function handleSelectionKeys(event: KeyboardEvent, onSelect: () => void): void {
+  if (event.key === " " || event.key === "Enter") {
     event.preventDefault();
     onSelect();
   }
@@ -328,7 +343,7 @@ export function handleSelectionKeys(
  * const inputId = generateA11yId('mood-input');
  * // Returns: 'mood-input-a1b2c3d4'
  */
-export function generateA11yId(prefix: string = 'a11y'): string {
+export function generateA11yId(prefix: string = "a11y"): string {
   return `${prefix}-${nanoid(8)}`;
 }
 
@@ -358,13 +373,13 @@ export function generateLabelledPair(prefix: string): { inputId: string; labelId
  */
 export function isAccessible(element: HTMLElement): boolean {
   // Check aria-hidden
-  if (element.getAttribute('aria-hidden') === 'true') {
+  if (element.getAttribute("aria-hidden") === "true") {
     return false;
   }
 
   // Check computed styles
   const style = window.getComputedStyle(element);
-  if (style.display === 'none' || style.visibility === 'hidden') {
+  if (style.display === "none" || style.visibility === "hidden") {
     return false;
   }
 
@@ -394,8 +409,8 @@ export function getSelectableProps(
   onSelect: () => void
 ): Record<string, unknown> {
   return {
-    role: 'option',
-    'aria-selected': isSelected,
+    role: "option",
+    "aria-selected": isSelected,
     tabIndex: isSelected ? 0 : -1,
     onClick: onSelect,
     onKeyDown: (e: KeyboardEvent) => handleSelectionKeys(e, onSelect),
@@ -405,13 +420,10 @@ export function getSelectableProps(
 /**
  * Props for a button that toggles something
  */
-export function getToggleButtonProps(
-  isPressed: boolean,
-  label: string
-): Record<string, unknown> {
+export function getToggleButtonProps(isPressed: boolean, label: string): Record<string, unknown> {
   return {
-    'aria-pressed': isPressed,
-    'aria-label': label,
+    "aria-pressed": isPressed,
+    "aria-label": label,
   };
 }
 

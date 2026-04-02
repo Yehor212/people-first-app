@@ -6,20 +6,14 @@
  */
 
 import { useState } from "react";
-import {
-  MessageSquarePlus,
-  Send,
-  X,
-  Bug,
-  Lightbulb,
-  HelpCircle,
-} from "lucide-react";
+import { MessageSquarePlus, Send, X, Bug, Lightbulb, HelpCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { submitQuickFeedback } from "@/lib/feedbackService";
 import { platform } from "@/lib/platform";
 import { haptics } from "@/lib/haptics";
 import { useBackHandler } from "@/hooks/useBackHandler";
+import { useModalA11y } from "@/hooks/useModalA11y";
 
 import { logger } from "@/lib/logger";
 import { SK } from "@/lib/storageKeys";
@@ -34,10 +28,7 @@ interface FeedbackButtonProps {
   className?: string;
 }
 
-export function FeedbackButton({
-  position = "bottom-right",
-  className,
-}: FeedbackButtonProps) {
+export function FeedbackButton({ position = "bottom-right", className }: FeedbackButtonProps) {
   const { t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [type, setType] = useState<FeedbackType>("bug");
@@ -45,6 +36,7 @@ export function FeedbackButton({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useBackHandler(isOpen, () => setIsOpen(false));
+  useModalA11y(isOpen, handleClose);
 
   const handleOpen = () => {
     void haptics.light();
@@ -68,8 +60,7 @@ export function FeedbackButton({
       const feedbackData = {
         type,
         message: message.trim(),
-        app_version:
-          (window as { __APP_VERSION__?: string }).__APP_VERSION__ || "unknown",
+        app_version: (window as { __APP_VERSION__?: string }).__APP_VERSION__ || "unknown",
         platform,
         user_agent: navigator.userAgent,
         created_at: new Date().toISOString(),
@@ -103,8 +94,7 @@ export function FeedbackButton({
     { value: "other", icon: HelpCircle, label: t.feedbackOther || "Other" },
   ];
 
-  const positionClasses =
-    position === "bottom-right" ? "end-4 bottom-20" : "start-4 bottom-20";
+  const positionClasses = position === "bottom-right" ? "end-4 bottom-20" : "start-4 bottom-20";
 
   return (
     <>
@@ -117,7 +107,7 @@ export function FeedbackButton({
             "hover:bg-primary/90 active:scale-95 transition-all",
             "bottom-[calc(var(--nav-height)+var(--safe-bottom)+1rem)]",
             positionClasses,
-            className,
+            className
           )}
           aria-label={t.sendFeedback || "Send feedback"}
         >
@@ -131,19 +121,15 @@ export function FeedbackButton({
           className="fixed inset-0 z-[100] flex items-end justify-center p-4 pb-[calc(1rem+var(--safe-bottom))] bg-black/50"
           role="dialog"
           aria-modal="true"
+          aria-label="Feedback"
         >
           <div
             className="w-full max-w-md bg-card rounded-2xl shadow-xl animate-slide-up"
-            role="button"
-            tabIndex={0}
             onClick={(e) => e.stopPropagation()}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); } }}
           >
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b">
-              <h2 className="text-lg font-semibold">
-                {t.sendFeedback || "Send Feedback"}
-              </h2>
+              <h2 className="text-lg font-semibold">{t.sendFeedback || "Send Feedback"}</h2>
               <button
                 onClick={handleClose}
                 className="p-2 rounded-lg hover:bg-muted transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
@@ -165,7 +151,7 @@ export function FeedbackButton({
                       "flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl border transition-all",
                       type === value
                         ? "bg-primary text-primary-foreground border-primary"
-                        : "bg-muted/50 border-border hover:border-primary/50",
+                        : "bg-muted/50 border-border hover:border-primary/50"
                     )}
                   >
                     <Icon className="w-4 h-4" />
@@ -178,17 +164,13 @@ export function FeedbackButton({
               <textarea
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                placeholder={
-                  t.feedbackPlaceholder || "Describe your feedback..."
-                }
-                className="w-full h-32 p-3 rounded-xl border bg-background resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder={t.feedbackPlaceholder || "Describe your feedback..."}
+                className="w-full h-32 p-3 rounded-xl border bg-background resize-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 maxLength={1000}
               />
 
               {/* Character count */}
-              <p className="text-xs text-muted-foreground text-end">
-                {message.length}/1000
-              </p>
+              <p className="text-xs text-muted-foreground text-end">{message.length}/1000</p>
 
               {/* Submit Button */}
               <button
@@ -198,7 +180,7 @@ export function FeedbackButton({
                   "w-full py-3 rounded-xl font-medium flex items-center justify-center gap-2 transition-all",
                   message.trim()
                     ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                    : "bg-muted text-muted-foreground cursor-not-allowed",
+                    : "bg-muted text-muted-foreground cursor-not-allowed"
                 )}
               >
                 <Send className="w-4 h-4" />
@@ -215,10 +197,7 @@ export function FeedbackButton({
 // Store feedback locally when Supabase is unavailable
 function storeFeedbackLocally(data: Record<string, unknown>): void {
   try {
-    const pending = safeLocalStorageGet<Record<string, unknown>[]>(
-      SK.PENDING_FEEDBACK,
-      [],
-    );
+    const pending = safeLocalStorageGet<Record<string, unknown>[]>(SK.PENDING_FEEDBACK, []);
     pending.push(data);
     safeLocalStorageSet(SK.PENDING_FEEDBACK, pending);
   } catch (error) {

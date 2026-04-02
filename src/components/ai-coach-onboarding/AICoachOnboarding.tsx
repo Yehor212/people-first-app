@@ -17,10 +17,7 @@ interface AICoachOnboardingProps {
   onSkip: () => void;
 }
 
-export function AICoachOnboarding({
-  onComplete,
-  onSkip,
-}: AICoachOnboardingProps) {
+export function AICoachOnboarding({ onComplete, onSkip }: AICoachOnboardingProps) {
   const { t: _t, language } = useLanguage();
   const { saveOnboardingAnswer } = useAICoach();
   useBackHandler(true, onSkip);
@@ -71,7 +68,7 @@ export function AICoachOnboarding({
           <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center motion-safe:animate-scale-in">
             <Sparkles className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-foreground mb-2">
+          <h2 className="text-2xl font-bold text-foreground mb-2">
             {step === "intro"
               ? getText("intro", "title", language)
               : step === "goal"
@@ -79,7 +76,7 @@ export function AICoachOnboarding({
                 : step === "concern"
                   ? getText("concern", "title", language)
                   : getText("stress", "title", language)}
-          </h1>
+          </h2>
           <p className="text-muted-foreground">
             {step === "intro"
               ? getText("intro", "subtitle", language)
@@ -122,7 +119,7 @@ export function AICoachOnboarding({
                     "p-4 rounded-xl flex flex-col items-center gap-2 transition-all active:scale-95",
                     selectedGoal === goal.id
                       ? "bg-primary text-primary-foreground ring-2 ring-primary"
-                      : "bg-secondary hover:bg-secondary/80",
+                      : "bg-secondary hover:bg-secondary/80"
                   )}
                 >
                   <span className="text-3xl">{goal.emoji}</span>
@@ -170,7 +167,7 @@ export function AICoachOnboarding({
               "flex-1 py-4 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all active:scale-[0.98]",
               step !== "goal" || selectedGoal
                 ? "bg-gradient-to-r from-primary to-accent text-primary-foreground hover:opacity-90"
-                : "bg-secondary text-muted-foreground",
+                : "bg-secondary text-muted-foreground"
             )}
           >
             {step === "intro"
@@ -193,7 +190,7 @@ export function AICoachOnboarding({
                   ? "w-6 bg-primary"
                   : i < currentStepIndex
                     ? "w-2 bg-primary/50"
-                    : "w-2 bg-muted",
+                    : "w-2 bg-muted"
               )}
             />
           ))}

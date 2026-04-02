@@ -170,8 +170,9 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
                 autoFocus
                 autoComplete="tel"
                 aria-label={t.phoneNumberLabel || "Phone number"}
+                aria-describedby={session.error ? "auth-error" : undefined}
                 className={cn(
-                  "w-full px-4 py-3.5 rounded-xl text-base bg-muted/50 border border-border/50 focus:outline-none focus:ring-2 focus:ring-primary/30 placeholder:text-muted-foreground/50",
+                  "w-full px-4 py-3.5 rounded-xl text-base bg-muted/50 border border-border/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 placeholder:text-muted-foreground/50",
                   session.error && "input-error"
                 )}
               />
@@ -219,8 +220,9 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
                 placeholder="000000"
                 autoFocus
                 aria-label={t.otpCodeLabel || "Verification code"}
+                aria-describedby={session.error ? "auth-error" : undefined}
                 className={cn(
-                  "w-full px-4 py-3.5 rounded-xl text-center text-2xl tracking-[0.5em] font-mono bg-muted/50 border border-border/50 focus:outline-none focus:ring-2 focus:ring-primary/30 placeholder:text-muted-foreground/30",
+                  "w-full px-4 py-3.5 rounded-xl text-center text-2xl tracking-[0.5em] font-mono bg-muted/50 border border-border/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 placeholder:text-muted-foreground/60",
                   session.error && "input-error"
                 )}
               />
@@ -250,6 +252,7 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
 
           {session.error && (
             <div
+              id="auth-error"
               role="alert"
               aria-live="polite"
               className="p-3 bg-destructive/10 rounded-xl flex items-start gap-2"

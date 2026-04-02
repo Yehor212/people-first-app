@@ -412,7 +412,7 @@ export function JournalStats({ entries, onBack }: JournalStatsProps) {
                       setPixelYear((y) => Math.min(y + 1, currentYear))
                     }
                     disabled={pixelYear >= currentYear}
-                    className="p-1.5 rounded-lg hover:bg-muted/50 disabled:opacity-30 min-w-[32px] min-h-[32px] flex items-center justify-center"
+                    className="p-1.5 rounded-lg hover:bg-muted/50 disabled:opacity-50 min-w-[32px] min-h-[32px] flex items-center justify-center"
                     aria-label={ts.next || "Next"}
                   >
                     <ChevronRight className="w-3.5 h-3.5 text-muted-foreground rtl:scale-x-[-1]" />
@@ -489,7 +489,7 @@ export function JournalStats({ entries, onBack }: JournalStatsProps) {
                     {ts.journalStatsNoMood || "No mood"}
                   </span>
                 </div>
-                <span className="text-[9px] text-muted-foreground/40 tabular-nums flex-shrink-0">
+                <span className="text-[9px] text-muted-foreground/60 tabular-nums flex-shrink-0">
                   {pixelData.totalDaysWithEntry} {ts.journalStatsDays || "days"}
                 </span>
               </div>

@@ -380,7 +380,7 @@ export function HabitCreationForm({ form, habits, isPrimaryCTA = false }: HabitC
               ? editingHabit
                 ? "bg-gradient-to-r from-blue-500 to-indigo-500"
                 : "bg-gradient-to-r from-emerald-500 to-teal-500"
-              : "bg-foreground/10 text-foreground/40 cursor-not-allowed"
+              : "bg-foreground/10 text-foreground/60 cursor-not-allowed"
           )}
           style={
             newHabitName.trim()

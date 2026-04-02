@@ -50,7 +50,7 @@ export function IdentityMappingSection({
       <p
         className={cn(
           "text-xs",
-          isPrimaryCTA ? "text-slate-500 dark:text-foreground/40" : "text-muted-foreground"
+          isPrimaryCTA ? "text-slate-500 dark:text-foreground/60" : "text-muted-foreground"
         )}
       >
         {ts.identityMappingHint || "Optional — connect this habit to who you're becoming"}

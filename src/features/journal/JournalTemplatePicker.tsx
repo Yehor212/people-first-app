@@ -3,6 +3,7 @@ import { X, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useBackHandler } from "@/hooks/useBackHandler";
+import { useModalA11y } from "@/hooks/useModalA11y";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import {
   BUILTIN_TEMPLATES,
@@ -23,6 +24,7 @@ export function JournalTemplatePicker({
   const { t } = useLanguage();
   const ts = t as unknown as Record<string, string>;
   useBackHandler(true, onClose);
+  useModalA11y(true, onClose);
   useScrollLock(true);
 
   const handleSelectTemplate = (template: JournalTemplate) => {

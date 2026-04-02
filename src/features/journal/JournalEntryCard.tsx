@@ -283,7 +283,15 @@ export const JournalEntryCard = memo(function JournalEntryCard({
   return (
     <motion.div
       ref={cardRef}
+      role="button"
+      tabIndex={0}
       onClick={handleCardClick}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handleCardClick();
+        }
+      }}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -354,7 +362,7 @@ export const JournalEntryCard = memo(function JournalEntryCard({
             ) : /* Photo placeholder (no hero) or bookmark icon */
             !privateMode && !thumbnail && hasPhoto ? (
               <div className="w-10 h-10 rounded-full flex-shrink-0 bg-muted/30 ring-1 ring-border/10 flex items-center justify-center">
-                <ImageIcon className="w-4 h-4 text-muted-foreground/40" />
+                <ImageIcon className="w-4 h-4 text-muted-foreground/60" />
               </div>
             ) : (
               <div className="w-10 h-10 rounded-full flex-shrink-0 bg-primary/5 ring-1 ring-primary/10 flex items-center justify-center">
@@ -415,7 +423,7 @@ export const JournalEntryCard = memo(function JournalEntryCard({
                     </span>
                   )}
                   {wordCount > 0 && (
-                    <span className="text-[10px] text-muted-foreground/40 ms-auto tabular-nums">
+                    <span className="text-[10px] text-muted-foreground/60 ms-auto tabular-nums">
                       {wordCount}w
                     </span>
                   )}
@@ -437,7 +445,7 @@ export const JournalEntryCard = memo(function JournalEntryCard({
                   void hapticTap();
                   onDelete();
                 }}
-                className="p-2.5 -m-1 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-destructive/10 text-muted-foreground/40 hover:text-destructive transition-all min-w-[44px] min-h-[44px] flex items-center justify-center"
+                className="p-2.5 -m-1 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-destructive/10 text-muted-foreground/60 hover:text-destructive transition-all min-w-[44px] min-h-[44px] flex items-center justify-center"
                 aria-label={ts.delete || "Delete"}
               >
                 <Trash2 className="w-4 h-4" />

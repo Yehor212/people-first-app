@@ -88,10 +88,10 @@ export const FocusTimer = memo(function FocusTimer({
           onChange={(e) => setLabel(e.target.value)}
           placeholder={t.focusLabelPlaceholder}
           className={cn(
-            "w-full p-3 rounded-xl focus:outline-none focus:ring-2 transition-colors",
+            "w-full p-3 rounded-xl focus-visible:outline-none focus-visible:ring-2 transition-colors",
             isPrimaryCTA
-              ? "bg-secondary backdrop-blur-sm border border-border text-slate-800 dark:text-white placeholder:text-slate-500 dark:placeholder:text-white/60 focus:ring-violet-500/50"
-              : "bg-secondary text-foreground placeholder:text-muted-foreground focus:ring-primary/30",
+              ? "bg-secondary backdrop-blur-sm border border-border text-slate-800 dark:text-white placeholder:text-slate-500 dark:placeholder:text-white/60 focus-visible:ring-violet-500/50"
+              : "bg-secondary text-foreground placeholder:text-muted-foreground focus-visible:ring-primary/30",
           )}
         />
         <div className="flex flex-wrap gap-2">
@@ -148,10 +148,10 @@ export const FocusTimer = memo(function FocusTimer({
                 onChange={(e) => setFocusInputValue(e.target.value)}
                 onBlur={(e) => handleFocusInputBlur(e.target.value)}
                 className={cn(
-                  "w-full p-2 rounded-lg focus:outline-none focus:ring-2",
+                  "w-full p-2 rounded-lg focus-visible:outline-none focus-visible:ring-2",
                   isPrimaryCTA
-                    ? "bg-secondary backdrop-blur-sm border border-border text-slate-800 dark:text-white focus:ring-amber-500/50"
-                    : "bg-secondary text-foreground focus:ring-primary/30",
+                    ? "bg-secondary backdrop-blur-sm border border-border text-slate-800 dark:text-white focus-visible:ring-amber-500/50"
+                    : "bg-secondary text-foreground focus-visible:ring-primary/30",
                 )}
                 aria-label={t.focusCustomWork || "Custom work minutes"}
               />
@@ -175,10 +175,10 @@ export const FocusTimer = memo(function FocusTimer({
                 onChange={(e) => setBreakInputValue(e.target.value)}
                 onBlur={(e) => handleBreakInputBlur(e.target.value)}
                 className={cn(
-                  "w-full p-2 rounded-lg focus:outline-none focus:ring-2",
+                  "w-full p-2 rounded-lg focus-visible:outline-none focus-visible:ring-2",
                   isPrimaryCTA
-                    ? "bg-secondary backdrop-blur-sm border border-border text-slate-800 dark:text-white focus:ring-amber-500/50"
-                    : "bg-secondary text-foreground focus:ring-primary/30",
+                    ? "bg-secondary backdrop-blur-sm border border-border text-slate-800 dark:text-white focus-visible:ring-amber-500/50"
+                    : "bg-secondary text-foreground focus-visible:ring-primary/30",
                 )}
                 aria-label={t.focusCustomBreak || "Custom break minutes"}
               />

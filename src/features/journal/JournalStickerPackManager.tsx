@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useBackHandler } from "@/hooks/useBackHandler";
+import { useModalA11y } from "@/hooks/useModalA11y";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { hapticTap } from "@/lib/haptics";
 import { STICKER_CATEGORIES } from "./stickerUtils";
@@ -27,6 +28,7 @@ export function JournalStickerPackManager({
   const { t } = useLanguage();
   const ts = t as unknown as Record<string, string>;
   useBackHandler(true, onClose);
+  useModalA11y(true, onClose);
   useScrollLock(true);
 
   return (
@@ -169,7 +171,7 @@ export function JournalStickerPackManager({
                     </div>
                   ))}
                   {cat.stickers.length > 8 && (
-                    <span className="text-[10px] text-muted-foreground/40 self-center ms-1 flex-shrink-0">
+                    <span className="text-[10px] text-muted-foreground/60 self-center ms-1 flex-shrink-0">
                       +{cat.stickers.length - 8}
                     </span>
                   )}

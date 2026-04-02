@@ -10,12 +10,7 @@ import { safeParseInt } from "@/lib/validation";
 import { useModalA11y } from "@/hooks/useModalA11y";
 import { useBackHandler } from "@/hooks/useBackHandler";
 import { ParticleBackground } from "@/components/stats";
-import {
-  EVENT_PRESETS,
-  getEventColor,
-  getEventGradient,
-  HOURS,
-} from "./constants";
+import { EVENT_PRESETS, getEventColor, getEventGradient, HOURS } from "./constants";
 
 // Premium Add Event Modal
 export function AddEventModal({
@@ -144,7 +139,10 @@ export function AddEventModal({
               id="add-event-title"
               className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2"
             >
-              <Sparkles className="w-5 h-5 text-purple-600 dark:text-purple-400" aria-hidden="true" />
+              <Sparkles
+                className="w-5 h-5 text-purple-600 dark:text-purple-400"
+                aria-hidden="true"
+              />
               {t.scheduleAddEvent || "Add Event"}
             </h3>
             <motion.button
@@ -205,7 +203,7 @@ export function AddEventModal({
                     "backdrop-blur-sm border",
                     isSelected
                       ? `bg-gradient-to-br ${gradient} border-white/30 shadow-lg`
-                      : "bg-muted border-border hover:bg-secondary",
+                      : "bg-muted border-border hover:bg-secondary"
                   )}
                 >
                   <motion.span
@@ -215,17 +213,14 @@ export function AddEventModal({
                     style={
                       isSelected
                         ? {
-                            filter:
-                              "drop-shadow(0 0 8px rgba(255, 255, 255, 0.5))",
+                            filter: "drop-shadow(0 0 8px rgba(255, 255, 255, 0.5))",
                           }
                         : {}
                     }
                   >
                     {preset.emoji}
                   </motion.span>
-                  <span className="text-xs text-slate-600 dark:text-white/80">
-                    {label}
-                  </span>
+                  <span className="text-xs text-slate-600 dark:text-white/80">{label}</span>
                 </motion.button>
               );
             })}
@@ -237,14 +232,11 @@ export function AddEventModal({
             value={customTitle}
             onChange={(e) => setCustomTitle(e.target.value)}
             placeholder={t.scheduleCustomTitle || "Custom title (optional)"}
+            aria-label={t.scheduleCustomTitle || "Event title"}
             className="w-full p-3 bg-secondary backdrop-blur-sm rounded-xl text-sm text-slate-800 dark:text-white border border-border focus:border-primary/50 focus:outline-none mb-4 placeholder:text-slate-400 dark:placeholder:text-white/60"
             onFocus={(e) => {
               const el = e.target;
-              setTimeout(
-                () =>
-                  el.scrollIntoView({ behavior: "smooth", block: "center" }),
-                300,
-              );
+              setTimeout(() => el.scrollIntoView({ behavior: "smooth", block: "center" }), 300);
             }}
           />
 
@@ -358,18 +350,12 @@ export function AddEventModal({
             <textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              placeholder={
-                t.scheduleNotePlaceholder || "Add details or reminders..."
-              }
+              placeholder={t.scheduleNotePlaceholder || "Add details or reminders..."}
               className="w-full p-3 bg-secondary backdrop-blur-sm rounded-xl text-sm text-slate-800 dark:text-white border border-border focus:border-primary/50 focus:outline-none resize-none placeholder:text-slate-400 dark:placeholder:text-white/60"
               rows={2}
               onFocus={(e) => {
                 const el = e.target;
-                setTimeout(
-                  () =>
-                    el.scrollIntoView({ behavior: "smooth", block: "center" }),
-                  300,
-                );
+                setTimeout(() => el.scrollIntoView({ behavior: "smooth", block: "center" }), 300);
               }}
             />
           </div>
@@ -382,7 +368,7 @@ export function AddEventModal({
             whileTap={zenTap.card}
             className={cn(
               "w-full py-4 bg-gradient-to-r from-primary to-accent text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary/30",
-              isSaving && "opacity-50",
+              isSaving && "opacity-50"
             )}
           >
             <Check className="w-5 h-5" aria-hidden="true" />

@@ -301,7 +301,7 @@ export const GratitudeBloomWidget = memo(function GratitudeBloomWidget({ onClose
               value={text}
               onChange={(e) => setText(e.target.value)}
               placeholder={ts.journalGratitudePlaceholder || 'What are you grateful for?'}
-              className="w-full rounded-xl px-4 py-3 text-sm outline-none resize-none bg-white/[0.03] text-foreground/90 ring-1 ring-white/[0.06] focus:ring-emerald-500/20 placeholder:text-muted-foreground/40 transition-shadow min-h-16"
+              className="w-full rounded-xl px-4 py-3 text-sm outline-none resize-none bg-white/[0.03] text-foreground/90 ring-1 ring-white/[0.06] focus:ring-emerald-500/20 placeholder:text-muted-foreground/60 transition-shadow min-h-16"
               rows={2}
               maxLength={500}
               aria-label={ts.journalGratitudePlaceholder || 'What are you grateful for?'}

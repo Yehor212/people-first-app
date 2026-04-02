@@ -164,6 +164,7 @@ export function FriendsPanel({
                         form.setAddError(null);
                       }}
                       placeholder="ZF-XXXXXXXX"
+                      aria-label={t.friendCode || "Friend code"}
                       className={cn("font-mono text-center", form.addError && "input-error")}
                       maxLength={11}
                       onFocus={(e) => {

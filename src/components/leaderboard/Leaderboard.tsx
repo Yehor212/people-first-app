@@ -6,16 +6,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useModalA11y } from "@/hooks/useModalA11y";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { useBackHandler } from "@/hooks/useBackHandler";
-import {
-  Trophy,
-  Flame,
-  Star,
-  Users,
-  Eye,
-  EyeOff,
-  Medal,
-  X,
-} from "lucide-react";
+import { Trophy, Flame, Star, Users, Eye, EyeOff, Medal, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { SkeletonList } from "@/components/ui/skeleton";
@@ -59,7 +50,7 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
         icon: <Flame className="w-4 h-4" aria-hidden="true" />,
       },
     ],
-    [t.weekly, t.monthly, t.streak],
+    [t.weekly, t.monthly, t.streak]
   );
 
   const currentRank = getCurrentRank(data.userRanks, activeTab);
@@ -84,9 +75,7 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
             aria-label={t.leaderboard || "Leaderboard"}
           >
             <Trophy className="w-5 h-5 text-primary" aria-hidden="true" />
-            <span className="font-medium">
-              {t.leaderboard || "Leaderboard"}
-            </span>
+            <span className="font-medium">{t.leaderboard || "Leaderboard"}</span>
           </button>
         )}
       </div>
@@ -113,10 +102,7 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
                 className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full hover:bg-muted transition-colors"
                 aria-label={t.close || "Close"}
               >
-                <X
-                  className="w-5 h-5 text-muted-foreground"
-                  aria-hidden="true"
-                />
+                <X className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
               </button>
             </div>
 
@@ -139,8 +125,7 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
                       activeTab === tab.type
                         ? "bg-gradient-to-r from-violet-500/80 to-purple-600/80 text-white"
                         : "text-foreground/60 hover:text-foreground hover:bg-foreground/5",
-                      activeTab === tab.type &&
-                        "shadow-[0_0_12px_rgba(139,92,246,0.3)]",
+                      activeTab === tab.type && "shadow-[0_0_12px_rgba(139,92,246,0.3)]"
                     )}
                     whileHover={{ scale: activeTab !== tab.type ? 1.02 : 1 }}
                     whileTap={zenTap.card}
@@ -156,15 +141,9 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     {data.isOptedIn ? (
-                      <Eye
-                        className="w-4 h-4 text-violet-400"
-                        aria-hidden="true"
-                      />
+                      <Eye className="w-4 h-4 text-violet-400" aria-hidden="true" />
                     ) : (
-                      <EyeOff
-                        className="w-4 h-4 text-foreground/40"
-                        aria-hidden="true"
-                      />
+                      <EyeOff className="w-4 h-4 text-foreground/60" aria-hidden="true" />
                     )}
                     <span className="font-medium text-sm text-foreground/80">
                       {t.showOnLeaderboard || "Show on leaderboard"}
@@ -172,9 +151,7 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
                   </div>
                   <Switch
                     checked={data.isOptedIn}
-                    onCheckedChange={(checked) =>
-                      void data.handleOptInToggle(checked)
-                    }
+                    onCheckedChange={(checked) => void data.handleOptInToggle(checked)}
                     aria-label={t.showOnLeaderboard || "Show on leaderboard"}
                   />
                 </div>
@@ -185,12 +162,11 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
                       value={data.displayName}
                       onChange={(e) => data.setDisplayName(e.target.value)}
                       placeholder={t.displayName || "Display name"}
+                      aria-label={t.displayName || "Display name"}
                       maxLength={20}
                       className="flex-1 bg-foreground/10 border-foreground/10 text-foreground placeholder:text-foreground/60"
                       onBlur={() => void data.handleNameUpdate()}
-                      onKeyDown={(e) =>
-                        e.key === "Enter" && void data.handleNameUpdate()
-                      }
+                      onKeyDown={(e) => e.key === "Enter" && void data.handleNameUpdate()}
                     />
                   </div>
                 )}
@@ -201,17 +177,14 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                   >
-                    <Medal
-                      className="w-4 h-4 text-violet-400"
-                      aria-hidden="true"
-                    />
+                    <Medal className="w-4 h-4 text-violet-400" aria-hidden="true" />
                     <span className="text-foreground/70">
                       {t.yourRank || "Your rank"}:{" "}
                       <strong className="text-violet-700 dark:text-violet-300">
                         {formatRank(currentRank)}
                       </strong>
                       {data.userRanks && (
-                        <span className="text-foreground/40">
+                        <span className="text-foreground/60">
                           {" "}
                           / {data.userRanks.totalParticipants}
                         </span>
@@ -233,11 +206,7 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
                     <SkeletonList count={5} />
                   </div>
                 ) : data.error ? (
-                  <div
-                    className="text-center py-12"
-                    role="status"
-                    aria-live="polite"
-                  >
+                  <div className="text-center py-12" role="status" aria-live="polite">
                     <Trophy
                       className="w-12 h-12 mx-auto mb-3 text-destructive/50"
                       aria-hidden="true"
@@ -252,14 +221,9 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
                   </div>
                 ) : data.entries.length === 0 ? (
                   <div className="text-center py-12 text-muted-foreground">
-                    <Users
-                      className="w-12 h-12 mx-auto mb-3 opacity-50"
-                      aria-hidden="true"
-                    />
+                    <Users className="w-12 h-12 mx-auto mb-3 opacity-50" aria-hidden="true" />
                     <p>{t.noParticipants || "No participants yet"}</p>
-                    <p className="text-sm mt-1">
-                      {t.beFirst || "Be the first to join!"}
-                    </p>
+                    <p className="text-sm mt-1">{t.beFirst || "Be the first to join!"}</p>
                   </div>
                 ) : (
                   <AnimatePresence>

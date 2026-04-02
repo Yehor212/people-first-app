@@ -19,6 +19,17 @@ export interface DopamineSettings {
   moodDrivenUI: boolean;
 }
 
+/**
+ * Respect OS prefers-reduced-motion as the baseline default (WCAG 2.1 §2.3.3).
+ * When the user has NOT explicitly saved dopamine settings, the OS preference
+ * determines the animations default. Once saved, the user's choice takes over.
+ */
+function getOSPrefersReducedMotion(): boolean {
+  return (
+    typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+}
+
 const DEFAULT_SETTINGS: DopamineSettings = {
   intensity: "normal",
   animations: true,
@@ -28,6 +39,14 @@ const DEFAULT_SETTINGS: DopamineSettings = {
   streakFire: true,
   moodDrivenUI: true,
 };
+
+/** Returns defaults with OS prefers-reduced-motion applied when no user preference is stored */
+function getDefaultsWithOSPreference(): DopamineSettings {
+  if (getOSPrefersReducedMotion()) {
+    return { ...DEFAULT_SETTINGS, animations: false, confetti: false, streakFire: false };
+  }
+  return DEFAULT_SETTINGS;
+}
 
 interface DopamineSettingsProps {
   onClose: () => void;
@@ -40,13 +59,16 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
   useScrollLock(true);
   useBackHandler(true, onClose);
 
-  const [settings, setSettings] = useState<DopamineSettings>(DEFAULT_SETTINGS);
+  const [settings, setSettings] = useState<DopamineSettings>(getDefaultsWithOSPreference);
 
   // Load settings from localStorage
   useEffect(() => {
     const parsed = safeLocalStorageGet<DopamineSettings | null>(SK.DOPAMINE_SETTINGS, null);
     if (parsed) {
       setSettings({ ...DEFAULT_SETTINGS, ...parsed });
+    } else {
+      // No stored preference — apply OS prefers-reduced-motion as baseline
+      setSettings(getDefaultsWithOSPreference());
     }
   }, []);
 
@@ -110,7 +132,9 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
-      onKeyDown={(e) => { if (e.key === 'Escape') onClose(); }}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") onClose();
+      }}
       onTouchEnd={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -120,7 +144,12 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
         role="button"
         tabIndex={0}
         onClick={(e) => e.stopPropagation()}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); } }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+        }}
         onTouchEnd={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -398,7 +427,8 @@ export function useDopamineSettings(): DopamineSettings {
         return { ...DEFAULT_SETTINGS, ...parsed };
       }
     }
-    return DEFAULT_SETTINGS;
+    // No stored preference — respect OS prefers-reduced-motion as baseline (WCAG 2.1 §2.3.3)
+    return getDefaultsWithOSPreference();
   });
 
   useEffect(() => {

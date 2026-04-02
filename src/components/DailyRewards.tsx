@@ -19,11 +19,7 @@ import { RewardedAdPrompt } from "@/components/ads/RewardedAdPrompt";
 import { useModalA11y } from "@/hooks/useModalA11y";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { useBackHandler } from "@/hooks/useBackHandler";
-import {
-  getDailyLoginRewards,
-  getLoginStreakBonus,
-  DailyLoginReward,
-} from "@/lib/adhdHooks";
+import { getDailyLoginRewards, getLoginStreakBonus, DailyLoginReward } from "@/lib/adhdHooks";
 
 interface DailyRewardsProps {
   onClose: () => void;
@@ -36,9 +32,7 @@ export function DailyRewards({ onClose, onClaimReward }: DailyRewardsProps) {
   useScrollLock(true);
   useBackHandler(true, onClose);
 
-  const [rewards, setRewards] = useState<DailyLoginReward[]>(
-    getDailyLoginRewards(),
-  );
+  const [rewards, setRewards] = useState<DailyLoginReward[]>(getDailyLoginRewards());
   const [currentDay, setCurrentDay] = useState(1);
   const [loginStreak, setLoginStreak] = useState(0);
   const [canClaim, setCanClaim] = useState(false);
@@ -112,7 +106,7 @@ export function DailyRewards({ onClose, onClaimReward }: DailyRewardsProps) {
 
     // Mark as claimed
     const updatedRewards = rewards.map((r, i) =>
-      i === currentDay - 1 ? { ...r, claimed: true } : r,
+      i === currentDay - 1 ? { ...r, claimed: true } : r
     );
     setRewards(updatedRewards);
 
@@ -141,6 +135,7 @@ export function DailyRewards({ onClose, onClaimReward }: DailyRewardsProps) {
       className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
       role="dialog"
       aria-modal="true"
+      aria-label="Daily rewards"
     >
       {/* Confetti Effect */}
       {showConfetti && (
@@ -178,12 +173,9 @@ export function DailyRewards({ onClose, onClaimReward }: DailyRewardsProps) {
               <Gift className="w-8 h-8" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold">
-                {t.dailyRewards || "Daily Rewards"}
-              </h2>
+              <h2 className="text-2xl font-bold">{t.dailyRewards || "Daily Rewards"}</h2>
               <p className="text-foreground/80 text-sm">
-                {t.loginStreak || "Login Streak"}: {loginStreak}{" "}
-                {t.days || "days"} 🔥
+                {t.loginStreak || "Login Streak"}: {loginStreak} {t.days || "days"} 🔥
               </p>
             </div>
           </div>
@@ -205,15 +197,11 @@ export function DailyRewards({ onClose, onClaimReward }: DailyRewardsProps) {
                   key={index}
                   className={cn(
                     "aspect-square rounded-xl flex flex-col items-center justify-center relative transition-all",
-                    isToday &&
-                      canClaim &&
-                      "ring-2 ring-primary ring-offset-2 animate-pulse",
+                    isToday && canClaim && "ring-2 ring-primary ring-offset-2 animate-pulse",
                     isPast && "bg-primary/10",
                     isFuture && "bg-muted opacity-60",
                     isToday && !canClaim && "bg-primary/20",
-                    isToday &&
-                      canClaim &&
-                      "bg-primary/30 cursor-pointer hover:scale-105",
+                    isToday && canClaim && "bg-primary/30 cursor-pointer hover:scale-105"
                   )}
                   onClick={isToday && canClaim ? handleClaim : undefined}
                 >
@@ -238,18 +226,14 @@ export function DailyRewards({ onClose, onClaimReward }: DailyRewardsProps) {
           <div
             className={cn(
               "bg-gradient-to-r from-primary/10 to-accent/10 rounded-2xl p-4 mb-4",
-              canClaim && "animate-pulse",
+              canClaim && "animate-pulse"
             )}
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <span className="text-3xl">
-                  {rewards[currentDay - 1]?.reward.icon}
-                </span>
+                <span className="text-3xl">{rewards[currentDay - 1]?.reward.icon}</span>
                 <div>
-                  <div className="font-bold">
-                    {rewards[currentDay - 1]?.reward.label}
-                  </div>
+                  <div className="font-bold">{rewards[currentDay - 1]?.reward.label}</div>
                   <div className="text-sm text-muted-foreground">
                     {t.day || "Day"} {currentDay} {t.reward || "Reward"}
                   </div>
@@ -261,28 +245,20 @@ export function DailyRewards({ onClose, onClaimReward }: DailyRewardsProps) {
                   disabled={claiming}
                   className={cn(
                     "px-4 py-2 zen-gradient text-white rounded-xl font-medium transition-all",
-                    claiming ? "opacity-50" : "hover:scale-105 active:scale-95",
+                    claiming ? "opacity-50" : "hover:scale-105 active:scale-95"
                   )}
                 >
                   {claiming ? "..." : t.claim || "Claim!"}
                 </button>
               )}
               {!canClaim && (
-                <div className="text-sm text-muted-foreground">
-                  ✅ {t.claimed || "Claimed"}
-                </div>
+                <div className="text-sm text-muted-foreground">✅ {t.claimed || "Claimed"}</div>
               )}
             </div>
           </div>
 
           {/* Watch ad to earn bonus treats (only after claiming) */}
-          {!canClaim && (
-            <RewardedAdPrompt
-              context="daily_rewards"
-              compact
-              className="mb-4"
-            />
-          )}
+          {!canClaim && <RewardedAdPrompt context="daily_rewards" compact className="mb-4" />}
 
           {/* Streak Bonus */}
           {bonusXp > 0 && (

@@ -183,7 +183,7 @@ export function AICoachChat() {
                 "flex-1 px-4 py-3.5 rounded-xl transition-all",
                 "bg-secondary backdrop-blur-sm border border-border",
                 "text-foreground placeholder:text-muted-foreground",
-                "focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/30"
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50 focus:border-violet-500/30"
               )}
               disabled={isLoading}
             />

@@ -12,10 +12,7 @@ import {
   Flower2,
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
-import {
-  useFeatureFlags,
-  ToggleableFeature,
-} from "@/contexts/FeatureFlagsContext";
+import { useFeatureFlags, ToggleableFeature } from "@/contexts/FeatureFlagsContext";
 import { cn } from "@/lib/utils";
 import { logger } from "@/lib/logger";
 
@@ -47,13 +44,7 @@ function FloatingParticles() {
           style={{
             left: `${Math.random() * 100}%`,
             top: `${Math.random() * 100}%`,
-            backgroundColor: [
-              "#4a9d7c",
-              "#e8a849",
-              "#6366f1",
-              "#ec4899",
-              "#22c55e",
-            ][i % 5],
+            backgroundColor: ["#4a9d7c", "#e8a849", "#6366f1", "#ec4899", "#22c55e"][i % 5],
             animationDelay: `${Math.random() * 5}s`,
             animationDuration: `${8 + Math.random() * 4}s`,
           }}
@@ -79,20 +70,14 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   ]);
   const [animatingModule, setAnimatingModule] = useState<string | null>(null);
   const [clickAttempts, setClickAttempts] = useState(0);
-  const completionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null,
-  );
+  const completionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const animatingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lockResetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null,
-  );
+  const lockResetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Fallback: If user clicks multiple times and nothing happens, force complete
   useEffect(() => {
     if (clickAttempts >= 3) {
-      logger.log(
-        "[OnboardingFlow] Multiple click attempts detected, forcing completion",
-      );
+      logger.log("[OnboardingFlow] Multiple click attempts detected, forcing completion");
       // Clear any pending timeout
       if (completionTimeoutRef.current) {
         clearTimeout(completionTimeoutRef.current);
@@ -166,14 +151,11 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const getModuleName = (id: ToggleableFeature): string => {
     const names: Record<ToggleableFeature, string> = {
       focusTimer: t.moduleFocus || t.settingsModuleFocus || "Focus Timer",
-      breathingExercise:
-        t.moduleBreathing || t.settingsModuleBreathing || "Breathing",
-      gratitudeJournal:
-        t.moduleGratitude || t.settingsModuleGratitude || "Gratitude",
+      breathingExercise: t.moduleBreathing || t.settingsModuleBreathing || "Breathing",
+      gratitudeJournal: t.moduleGratitude || t.settingsModuleGratitude || "Gratitude",
       quests: t.moduleQuests || t.settingsModuleQuests || "Quests",
       tasks: t.moduleTasks || t.settingsModuleTasks || "Tasks",
-      challenges:
-        t.moduleChallenges || t.settingsModuleChallenges || "Challenges",
+      challenges: t.moduleChallenges || t.settingsModuleChallenges || "Challenges",
       innerWorld: t.moduleGarden || t.settingsModuleGarden || "Garden",
       aiCoach: "AI Coach", // Not shown
     };
@@ -183,32 +165,16 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   // Get module description translation
   const getModuleDesc = (id: ToggleableFeature): string => {
     const descs: Record<ToggleableFeature, string> = {
-      focusTimer:
-        t.moduleFocusDesc ||
-        t.settingsModuleFocusDesc ||
-        "Pomodoro timer for deep work",
+      focusTimer: t.moduleFocusDesc || t.settingsModuleFocusDesc || "Pomodoro timer for deep work",
       breathingExercise:
-        t.moduleBreathingDesc ||
-        t.settingsModuleBreathingDesc ||
-        "Relaxation techniques",
+        t.moduleBreathingDesc || t.settingsModuleBreathingDesc || "Relaxation techniques",
       gratitudeJournal:
-        t.moduleGratitudeDesc ||
-        t.settingsModuleGratitudeDesc ||
-        "Daily gratitude practice",
-      quests:
-        t.moduleQuestsDesc ||
-        t.settingsModuleQuestsDesc ||
-        "Daily challenges & goals",
-      tasks:
-        t.moduleTasksDesc || t.settingsModuleTasksDesc || "Task management",
+        t.moduleGratitudeDesc || t.settingsModuleGratitudeDesc || "Daily gratitude practice",
+      quests: t.moduleQuestsDesc || t.settingsModuleQuestsDesc || "Daily challenges & goals",
+      tasks: t.moduleTasksDesc || t.settingsModuleTasksDesc || "Task management",
       challenges:
-        t.moduleChallengesDesc ||
-        t.settingsModuleChallengesDesc ||
-        "Compete with friends",
-      innerWorld:
-        t.moduleGardenDesc ||
-        t.settingsModuleGardenDesc ||
-        "Virtual companion & garden",
+        t.moduleChallengesDesc || t.settingsModuleChallengesDesc || "Compete with friends",
+      innerWorld: t.moduleGardenDesc || t.settingsModuleGardenDesc || "Virtual companion & garden",
       aiCoach: "", // Not shown
     };
     return descs[id];
@@ -220,19 +186,14 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     animatingTimerRef.current = setTimeout(() => setAnimatingModule(null), 400);
 
     setSelectedModules((prev) =>
-      prev.includes(moduleId)
-        ? prev.filter((id) => id !== moduleId)
-        : [...prev, moduleId],
+      prev.includes(moduleId) ? prev.filter((id) => id !== moduleId) : [...prev, moduleId]
     );
   };
 
   const transitionLockRef = useRef(false);
 
   const handleSkip = () => {
-    logger.log(
-      "[OnboardingFlow] handleSkip called, transitionLockRef:",
-      transitionLockRef.current,
-    );
+    logger.log("[OnboardingFlow] handleSkip called, transitionLockRef:", transitionLockRef.current);
     setClickAttempts((prev) => prev + 1);
 
     if (transitionLockRef.current) {
@@ -256,22 +217,19 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     } catch (error) {
       logger.error("[OnboardingFlow] Error in handleSkip:", error);
       transitionLockRef.current = false;
-      if (lockResetTimeoutRef.current)
-        clearTimeout(lockResetTimeoutRef.current);
+      if (lockResetTimeoutRef.current) clearTimeout(lockResetTimeoutRef.current);
     }
   };
 
   const handleComplete = () => {
     logger.log(
       "[OnboardingFlow] handleComplete called, transitionLockRef:",
-      transitionLockRef.current,
+      transitionLockRef.current
     );
     setClickAttempts((prev) => prev + 1);
 
     if (transitionLockRef.current) {
-      logger.log(
-        "[OnboardingFlow] handleComplete blocked by transitionLockRef",
-      );
+      logger.log("[OnboardingFlow] handleComplete blocked by transitionLockRef");
       return;
     }
     transitionLockRef.current = true;
@@ -283,25 +241,18 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     }, 2000);
 
     try {
-      logger.log(
-        "[OnboardingFlow] Setting flags for selected modules:",
-        selectedModules,
-      );
+      logger.log("[OnboardingFlow] Setting flags for selected modules:", selectedModules);
       modules.forEach((m) => {
         setFlag(m.id, selectedModules.includes(m.id));
       });
 
-      logger.log(
-        "[OnboardingFlow] Calling onComplete with modules:",
-        selectedModules,
-      );
+      logger.log("[OnboardingFlow] Calling onComplete with modules:", selectedModules);
       onComplete({ modules: selectedModules });
       logger.log("[OnboardingFlow] onComplete called successfully");
     } catch (error) {
       logger.error("[OnboardingFlow] Error in handleComplete:", error);
       transitionLockRef.current = false;
-      if (lockResetTimeoutRef.current)
-        clearTimeout(lockResetTimeoutRef.current);
+      if (lockResetTimeoutRef.current) clearTimeout(lockResetTimeoutRef.current);
     }
   };
 
@@ -316,12 +267,11 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-accent shadow-lg shadow-primary/30 mb-4">
               <Sparkles className="w-8 h-8 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-foreground mb-2">
+            <h2 className="text-2xl font-bold text-foreground mb-2">
               {t.modulesOnboardingTitle || "Choose Features"}
-            </h1>
+            </h2>
             <p className="text-muted-foreground text-sm">
-              {t.modulesOnboardingSubtitle ||
-                "You can change this later in settings"}
+              {t.modulesOnboardingSubtitle || "You can change this later in settings"}
             </p>
           </div>
 
@@ -344,16 +294,13 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
                       isSelected
                         ? `bg-gradient-to-br ${module.gradient} shadow-lg`
                         : "bg-secondary/50 hover:bg-secondary",
-                      isAnimating && "motion-safe:animate-selection-pop",
+                      isAnimating && "motion-safe:animate-selection-pop"
                     )}
                     style={{ animationDelay: `${index * 50}ms` }}
                   >
                     {/* Emoji */}
                     <span
-                      className={cn(
-                        "text-3xl transition-transform",
-                        isSelected && "scale-110",
-                      )}
+                      className={cn("text-3xl transition-transform", isSelected && "scale-110")}
                     >
                       {module.emoji}
                     </span>
@@ -362,7 +309,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
                     <span
                       className={cn(
                         "text-sm font-semibold",
-                        isSelected ? "text-white" : "text-foreground",
+                        isSelected ? "text-white" : "text-foreground"
                       )}
                     >
                       {getModuleName(module.id)}
@@ -372,7 +319,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
                     <span
                       className={cn(
                         "text-[10px] leading-tight",
-                        isSelected ? "text-white/80" : "text-muted-foreground",
+                        isSelected ? "text-white/80" : "text-muted-foreground"
                       )}
                     >
                       {getModuleDesc(module.id)}
@@ -392,8 +339,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
             {/* Selection count */}
             <div className="mt-4 flex items-center justify-center gap-2 py-2 bg-primary/10 rounded-xl">
               <span className="text-sm font-medium text-primary">
-                {selectedModules.length}{" "}
-                {t.modulesSelected || "features selected"}
+                {selectedModules.length} {t.modulesSelected || "features selected"}
               </span>
             </div>
           </div>

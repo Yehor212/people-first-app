@@ -35,9 +35,7 @@ export function LanguageSelector({ onComplete }: LanguageSelectorProps) {
               <Leaf className="w-8 h-8 text-primary-foreground" />
             </div>
           </div>
-          <h1 className="text-3xl font-bold zen-text-gradient mb-2">
-            {t.welcomeTitle}
-          </h1>
+          <h2 className="text-3xl font-bold zen-text-gradient mb-2">{t.welcomeTitle}</h2>
           <p className="text-muted-foreground">{t.welcomeSubtitle}</p>
         </div>
 
@@ -57,16 +55,14 @@ export function LanguageSelector({ onComplete }: LanguageSelectorProps) {
                   "flex items-center gap-3 p-4 rounded-xl transition-all",
                   language === lang
                     ? "bg-primary/10 ring-2 ring-primary zen-shadow-soft"
-                    : "bg-secondary hover:bg-muted",
+                    : "bg-secondary hover:bg-muted"
                 )}
               >
                 <span className="text-2xl">{languageFlags[lang]}</span>
                 <span className="font-medium text-foreground flex-1 text-start">
                   {languageNames[lang]}
                 </span>
-                {language === lang && (
-                  <Check className="w-5 h-5 text-primary" />
-                )}
+                {language === lang && <Check className="w-5 h-5 text-primary" />}
               </button>
             ))}
           </div>
@@ -89,8 +85,7 @@ export function LanguageSelector({ onComplete }: LanguageSelectorProps) {
         </button>
 
         <p className="text-center text-sm text-muted-foreground mt-4">
-          🌐 {t.autoDetectedLanguage || "Auto-detected"}:{" "}
-          {languageNames[language]}
+          🌐 {t.autoDetectedLanguage || "Auto-detected"}: {languageNames[language]}
         </p>
       </div>
     </div>

@@ -199,7 +199,7 @@ export const StreakBanner = memo(function StreakBanner({ moods, habits, focusSes
                   {activity.done ? (
                     <Check className="w-3.5 h-3.5 text-white" />
                   ) : (
-                    <activity.Icon className="w-3.5 h-3.5 text-foreground/40" />
+                    <activity.Icon className="w-3.5 h-3.5 text-foreground/60" />
                   )}
 
                   {/* Pulse ring animation when done */}
@@ -236,7 +236,7 @@ export const StreakBanner = memo(function StreakBanner({ moods, habits, focusSes
                   {activity.done ? (
                     <Check className="w-3.5 h-3.5 text-white" />
                   ) : (
-                    <activity.Icon className="w-3.5 h-3.5 text-foreground/40" />
+                    <activity.Icon className="w-3.5 h-3.5 text-foreground/60" />
                   )}
                 </div>
               )

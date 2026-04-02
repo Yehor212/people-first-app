@@ -77,13 +77,7 @@ const SELECTED_BG: Record<MoodType, string> = {
 
 const PANEL_WIDTH = 280;
 
-export function EmotionPanel({
-  isVisible,
-  anchorX,
-  anchorY,
-  onSave,
-  onCancel,
-}: EmotionPanelProps) {
+export function EmotionPanel({ isVisible, anchorX, anchorY, onSave, onCancel }: EmotionPanelProps) {
   const { t } = useLanguage();
   const [selectedMood, setSelectedMood] = useState<MoodType | null>(null);
   const [text, setText] = useState("");
@@ -139,7 +133,7 @@ export function EmotionPanel({
               "rounded-2xl p-4",
               "border border-white/10",
               "shadow-zen-lg",
-              "bg-[var(--surface-glass)] backdrop-blur-[var(--surface-glass-blur,20px)] [-webkit-backdrop-filter:blur(var(--surface-glass-blur,20px))]",
+              "bg-[var(--surface-glass)] backdrop-blur-[var(--surface-glass-blur,20px)] [-webkit-backdrop-filter:blur(var(--surface-glass-blur,20px))]"
             )}
             onClick={(e) => e.stopPropagation()}
           >
@@ -164,7 +158,7 @@ export function EmotionPanel({
                     "w-11 h-11 rounded-full flex items-center justify-center transition-all duration-200",
                     color,
                     selectedMood === mood && SELECTED_BG[mood],
-                    !selectedMood && "hover:scale-110",
+                    !selectedMood && "hover:scale-110"
                   )}
                   aria-label={t[mood] || label}
                   aria-pressed={selectedMood === mood}
@@ -189,13 +183,14 @@ export function EmotionPanel({
                     value={text}
                     onChange={(e) => setText(e.target.value)}
                     placeholder={t.moodNotes || "What's on your mind?"}
+                    aria-label={t.moodNotes || "Mood notes"}
                     rows={2}
                     className={cn(
                       "w-full rounded-xl px-3 py-2 mb-3",
                       "bg-white/5 border border-white/10",
                       "text-white text-sm placeholder:text-white/60",
                       "resize-none",
-                      "focus:outline-none focus:ring-1 focus:ring-white/20",
+                      "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/20"
                     )}
                     maxLength={500}
                   />
@@ -207,7 +202,7 @@ export function EmotionPanel({
                       className={cn(
                         "flex-1 py-2 rounded-xl text-sm font-medium",
                         "bg-emerald-500/80 text-white",
-                        "hover:bg-emerald-500 transition-colors",
+                        "hover:bg-emerald-500 transition-colors"
                       )}
                     >
                       {t.save || "Save"}
@@ -218,7 +213,7 @@ export function EmotionPanel({
                       className={cn(
                         "px-4 py-2 rounded-xl text-sm",
                         "text-white/50 hover:text-white/70",
-                        "hover:bg-white/5 transition-colors",
+                        "hover:bg-white/5 transition-colors"
                       )}
                     >
                       {t.cancel || "Cancel"}

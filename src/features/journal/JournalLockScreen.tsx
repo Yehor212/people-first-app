@@ -47,7 +47,7 @@ export function JournalLockScreen({
   const [shake, setShake] = useState(false);
   const [wrongGlow, setWrongGlow] = useState(false);
   const [step, setStep] = useState<"current" | "enter" | "confirm">(
-    mode === "change" ? "current" : "enter",
+    mode === "change" ? "current" : "enter"
   );
   const inputRef = useRef<HTMLInputElement>(null);
   const shakeTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
@@ -174,7 +174,7 @@ export function JournalLockScreen({
           key={p.idx}
           className={cn(
             "absolute rounded-full bg-primary/20 blur-[1px]",
-            `animate-particle-float-${(p.idx % 5) + 1}`,
+            `animate-particle-float-${(p.idx % 5) + 1}`
           )}
           style={{ left: p.x, top: p.y, width: p.size, height: p.size }}
         />
@@ -189,7 +189,7 @@ export function JournalLockScreen({
           "bg-card/60 backdrop-blur-3xl",
           "border border-white/10 dark:border-white/5",
           "shadow-[0_8px_40px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.06)]",
-          shake && "animate-[shake_0.5s_ease-in-out]",
+          shake && "animate-[shake_0.5s_ease-in-out]"
         )}
       >
         {/* Lock icon with sway + glow animation */}
@@ -247,13 +247,7 @@ export function JournalLockScreen({
             <input
               ref={inputRef}
               type={showPassword ? "text" : "password"}
-              value={
-                step === "current"
-                  ? currentPassword
-                  : step === "confirm"
-                    ? confirm
-                    : password
-              }
+              value={step === "current" ? currentPassword : step === "confirm" ? confirm : password}
               onChange={(e) =>
                 step === "current"
                   ? setCurrentPassword(e.target.value)
@@ -273,15 +267,15 @@ export function JournalLockScreen({
               className={cn(
                 "w-full px-4 py-3 pe-14 rounded-xl text-sm",
                 "bg-background/80 border border-border/50",
-                "focus:outline-none focus:ring-2 focus:ring-primary/40",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
                 "focus:shadow-[0_0_20px_rgba(var(--primary-rgb,99,102,241),0.15)]",
                 "placeholder:text-muted-foreground/50",
                 "transition-shadow duration-300",
-                wrongGlow &&
-                  "ring-2 ring-destructive/50 shadow-[0_0_20px_rgba(239,68,68,0.2)]",
+                wrongGlow && "ring-2 ring-destructive/50 shadow-[0_0_20px_rgba(239,68,68,0.2)]"
               )}
               disabled={countdown > 0}
               autoComplete="off"
+              aria-describedby={error ? "lock-error" : undefined}
             />
             <button
               type="button"
@@ -293,16 +287,14 @@ export function JournalLockScreen({
               }
               className="absolute end-1 top-1/2 -translate-y-1/2 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center text-muted-foreground rounded-lg hover:bg-muted/50"
             >
-              {showPassword ? (
-                <EyeOff className="w-4 h-4" />
-              ) : (
-                <Eye className="w-4 h-4" />
-              )}
+              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
           </div>
 
           {error && (
             <motion.p
+              id="lock-error"
+              role="alert"
               initial={{ opacity: 0, y: -5 }}
               animate={{ opacity: 1, y: 0 }}
               className="text-xs text-destructive text-center flex items-center justify-center gap-1"
@@ -313,8 +305,7 @@ export function JournalLockScreen({
 
           {countdown > 0 && (
             <p className="text-xs text-orange-500 text-center">
-              {ts.journalPasswordCooldown || "Too many attempts. Wait"}{" "}
-              {countdown}s
+              {ts.journalPasswordCooldown || "Too many attempts. Wait"} {countdown}s
             </p>
           )}
 
@@ -322,11 +313,7 @@ export function JournalLockScreen({
             type="submit"
             disabled={
               countdown > 0 ||
-              (step === "current"
-                ? !currentPassword
-                : step === "confirm"
-                  ? !confirm
-                  : !password)
+              (step === "current" ? !currentPassword : step === "confirm" ? !confirm : !password)
             }
             className={cn(
               "w-full py-3 rounded-xl text-sm font-semibold",
@@ -334,7 +321,7 @@ export function JournalLockScreen({
               "text-primary-foreground",
               "shadow-[0_2px_15px_rgba(var(--primary-rgb,99,102,241),0.25)]",
               "disabled:opacity-40 disabled:shadow-none",
-              "active:scale-[0.98] transition-all duration-150",
+              "active:scale-[0.98] transition-all duration-150"
             )}
           >
             {mode === "change"

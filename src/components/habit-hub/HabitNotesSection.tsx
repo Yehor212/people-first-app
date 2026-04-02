@@ -5,14 +5,14 @@
  * Deep Space aesthetic.
  */
 
-import { useState, useCallback, useMemo, useEffect } from 'react';
-import { ENTRY } from '@/types';
-import { MessageSquarePlus, ChevronDown } from 'lucide-react';
-import { cn, getToday } from '@/lib/utils';
-import { getEntryNote, getDatesWithNotes } from '@/lib/habits';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { useBackHandler } from '@/hooks/useBackHandler';
-import type { Habit } from '@/types';
+import { useState, useCallback, useMemo, useEffect } from "react";
+import { ENTRY } from "@/types";
+import { MessageSquarePlus, ChevronDown } from "lucide-react";
+import { cn, getToday } from "@/lib/utils";
+import { getEntryNote, getDatesWithNotes } from "@/lib/habits";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useBackHandler } from "@/hooks/useBackHandler";
+import type { Habit } from "@/types";
 
 interface HabitNotesSectionProps {
   habit: Habit;
@@ -26,11 +26,15 @@ export function HabitNotesSection({ habit, onUpdate }: HabitNotesSectionProps) {
   const ts = t as unknown as Record<string, string>;
   const today = getToday();
   const formatNoteDate = (dateStr: string) => {
-    const [y, m, d] = dateStr.split('-').map(Number);
-    return new Intl.DateTimeFormat(language, { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(y, m - 1, d));
+    const [y, m, d] = dateStr.split("-").map(Number);
+    return new Intl.DateTimeFormat(language, {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    }).format(new Date(y, m - 1, d));
   };
 
-  const todayNote = getEntryNote(habit, today) ?? '';
+  const todayNote = getEntryNote(habit, today) ?? "";
   const [isEditing, setIsEditing] = useState(false);
   useBackHandler(isEditing, () => setIsEditing(false));
   const [noteText, setNoteText] = useState(todayNote);
@@ -40,7 +44,7 @@ export function HabitNotesSection({ habit, onUpdate }: HabitNotesSectionProps) {
   // Depends on habit.id (reset on habit switch), today, and the actual note value.
   const todayEntryNotes = habit.entries?.[today]?.notes;
   useEffect(() => {
-    setNoteText(getEntryNote(habit, today) ?? '');
+    setNoteText(getEntryNote(habit, today) ?? "");
     setIsEditing(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [habit.id, today, todayEntryNotes]);
@@ -69,7 +73,7 @@ export function HabitNotesSection({ habit, onUpdate }: HabitNotesSectionProps) {
   }, [habit, noteText, today, onUpdate]);
 
   const handleCancel = useCallback(() => {
-    setNoteText(getEntryNote(habit, today) ?? '');
+    setNoteText(getEntryNote(habit, today) ?? "");
     setIsEditing(false);
   }, [habit, today]);
 
@@ -79,15 +83,18 @@ export function HabitNotesSection({ habit, onUpdate }: HabitNotesSectionProps) {
     <div>
       <div className="flex items-center justify-between mb-2">
         <label className="text-xs font-medium text-muted-foreground">
-          {ts.habitNotes || 'Notes'}
+          {ts.habitNotes || "Notes"}
         </label>
         {!isEditing && (
           <button
-            onClick={() => { setNoteText(getEntryNote(habit, today) ?? ''); setIsEditing(true); }}
+            onClick={() => {
+              setNoteText(getEntryNote(habit, today) ?? "");
+              setIsEditing(true);
+            }}
             className="flex items-center gap-1 text-[10px] text-violet-400 hover:text-violet-300 transition-colors min-h-[44px] min-w-[44px] justify-center"
           >
             <MessageSquarePlus className="w-3 h-3" />
-            {todayHasNote ? (ts.editNote || 'Edit') : (ts.addNote || 'Add note')}
+            {todayHasNote ? ts.editNote || "Edit" : ts.addNote || "Add note"}
           </button>
         )}
       </div>
@@ -98,15 +105,16 @@ export function HabitNotesSection({ habit, onUpdate }: HabitNotesSectionProps) {
           <textarea
             value={noteText}
             onChange={(e) => setNoteText(e.target.value)}
-            placeholder={ts.notePrompt || 'How did it go today?'}
+            placeholder={ts.notePrompt || "How did it go today?"}
+            aria-label={ts.notePrompt || "How did it go today?"}
             autoFocus
             rows={2}
             maxLength={1000}
             className={cn(
-              'w-full px-3 py-2 rounded-xl text-sm text-foreground resize-none',
-              'bg-white/[0.05] border border-white/[0.08]',
-              'placeholder:text-muted-foreground/60',
-              'focus:outline-none focus:ring-2 focus:ring-violet-500/50',
+              "w-full px-3 py-2 rounded-xl text-sm text-foreground resize-none",
+              "bg-white/[0.05] border border-white/[0.08]",
+              "placeholder:text-muted-foreground/60",
+              "focus:outline-none focus:ring-2 focus:ring-violet-500/50"
             )}
           />
           {noteText.length > 800 && (
@@ -117,13 +125,13 @@ export function HabitNotesSection({ habit, onUpdate }: HabitNotesSectionProps) {
               onClick={handleCancel}
               className="flex-1 px-3 py-1.5 rounded-xl text-xs text-muted-foreground bg-white/[0.05] border border-white/[0.08] min-h-[44px]"
             >
-              {ts.cancel || 'Cancel'}
+              {ts.cancel || "Cancel"}
             </button>
             <button
               onClick={handleSave}
               className="flex-1 px-3 py-1.5 rounded-xl text-xs text-white bg-violet-600 hover:bg-violet-500 min-h-[44px]"
             >
-              {ts.save || 'Save'}
+              {ts.save || "Save"}
             </button>
           </div>
         </div>
@@ -136,8 +144,8 @@ export function HabitNotesSection({ habit, onUpdate }: HabitNotesSectionProps) {
             <div
               key={date}
               className={cn(
-                'px-3 py-2 rounded-xl text-xs',
-                'bg-white/[0.02] border border-white/[0.04]',
+                "px-3 py-2 rounded-xl text-xs",
+                "bg-white/[0.02] border border-white/[0.04]"
               )}
             >
               <span className="text-muted-foreground tabular-nums">{formatNoteDate(date)}</span>
@@ -151,13 +159,13 @@ export function HabitNotesSection({ habit, onUpdate }: HabitNotesSectionProps) {
               className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-muted-foreground mx-auto min-h-[44px]"
             >
               <ChevronDown className="w-3 h-3" />
-              {`${ts.showAll || 'Show all'} (${sortedNotes.length})`}
+              {`${ts.showAll || "Show all"} (${sortedNotes.length})`}
             </button>
           )}
         </div>
       ) : !isEditing ? (
         <p className="text-[10px] text-muted-foreground/60 text-center py-2">
-          {ts.noNotes || 'No notes yet'}
+          {ts.noNotes || "No notes yet"}
         </p>
       ) : null}
     </div>

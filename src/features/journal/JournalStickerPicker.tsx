@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useBackHandler } from "@/hooks/useBackHandler";
+import { useModalA11y } from "@/hooks/useModalA11y";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { SK } from "@/lib/storageKeys";
 import { safeLocalStorageGet, safeLocalStorageSet } from "@/lib/safeJson";
@@ -23,6 +24,7 @@ export function JournalStickerPicker({ onSelect, onClose, mood }: JournalSticker
   const { t } = useLanguage();
   const ts = t as unknown as Record<string, string>;
   useBackHandler(true, onClose);
+  useModalA11y(true, onClose);
   useScrollLock(true);
 
   const { prefs, enabledCategories, enabledCount, togglePack, isNew, markSeen } = useStickerPacks();
@@ -108,7 +110,7 @@ export function JournalStickerPicker({ onSelect, onClose, mood }: JournalSticker
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={ts.journalStickerSearch || "Search stickers..."}
               aria-label="Search stickers"
-              className="w-full ps-8 pe-8 py-2 rounded-lg bg-muted/30 border border-border/20 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary/30 min-h-[44px]"
+              className="w-full ps-8 pe-8 py-2 rounded-lg bg-muted/30 border border-border/20 text-sm text-foreground placeholder:text-muted-foreground/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/30 min-h-[44px]"
             />
             {searchQuery && (
               <button
@@ -195,7 +197,7 @@ export function JournalStickerPicker({ onSelect, onClose, mood }: JournalSticker
                         </button>
                         {/* Show pack hint for disabled packs */}
                         {!prefs.enabled[r.packKey] && (
-                          <span className="absolute -bottom-0.5 inset-x-0 text-center text-[8px] text-muted-foreground/40 truncate">
+                          <span className="absolute -bottom-0.5 inset-x-0 text-center text-[8px] text-muted-foreground/60 truncate">
                             {ts[
                               STICKER_CATEGORIES.find((c) => c.key === r.packKey)?.labelKey || ""
                             ] || r.packKey}

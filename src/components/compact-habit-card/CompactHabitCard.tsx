@@ -271,7 +271,7 @@ export const CompactHabitCard = memo(function CompactHabitCard({
               {habit.name}
             </p>
             {!isDueToday && (
-              <span className="text-[10px] text-muted-foreground/40 italic">
+              <span className="text-[10px] text-muted-foreground/60 italic">
                 {(t as unknown as Record<string, string>).habitRestDay || 'Rest day'}
               </span>
             )}

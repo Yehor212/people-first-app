@@ -9,16 +9,16 @@
  * Persists responses as MicroReflection records via userDataStore.
  */
 
-import { useState, useCallback } from 'react';
-import { motion } from 'framer-motion';
-import { Sparkles, MessageCircle, BookOpen, Send } from 'lucide-react';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { useAppStore, useUserDataStore } from '@/stores';
-import { motionPresets } from '@/lib/animationUtils';
-import { haptics } from '@/lib/haptics';
-import { getToday } from '@/lib/utils';
-import type { ReflectionPrompt } from '@/hooks/useReflectionPrompts';
-import type { MicroReflection } from '@/types';
+import { useState, useCallback } from "react";
+import { motion } from "framer-motion";
+import { Sparkles, MessageCircle, BookOpen, Send } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useAppStore, useUserDataStore } from "@/stores";
+import { motionPresets } from "@/lib/animationUtils";
+import { haptics } from "@/lib/haptics";
+import { getToday } from "@/lib/utils";
+import type { ReflectionPrompt } from "@/hooks/useReflectionPrompts";
+import type { MicroReflection } from "@/types";
 
 interface ReflectionPromptCardProps {
   prompt: ReflectionPrompt;
@@ -26,10 +26,10 @@ interface ReflectionPromptCardProps {
 
 export function ReflectionPromptCard({ prompt }: ReflectionPromptCardProps) {
   const { t } = useLanguage();
-  const [text, setText] = useState('');
+  const [text, setText] = useState("");
   const [submitted, setSubmitted] = useState(false);
-  const setActiveTab = useAppStore(s => s.setActiveTab);
-  const setMicroReflections = useUserDataStore(s => s.setMicroReflections);
+  const setActiveTab = useAppStore((s) => s.setActiveTab);
+  const setMicroReflections = useUserDataStore((s) => s.setMicroReflections);
 
   const handleSubmit = useCallback(() => {
     const trimmed = text.trim();
@@ -54,52 +54,47 @@ export function ReflectionPromptCard({ prompt }: ReflectionPromptCardProps) {
 
   const handleExpandToJournal = useCallback(() => {
     void haptics.light();
-    setActiveTab('garden');
+    setActiveTab("garden");
     // After tab switch, scroll to journal section
     requestAnimationFrame(() => {
       setTimeout(() => {
-        document.getElementById('journal-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        document
+          .getElementById("journal-section")
+          ?.scrollIntoView({ behavior: "smooth", block: "center" });
       }, 300);
     });
   }, [setActiveTab]);
 
-  const DepthIcon = prompt.depth === 'nano' ? Sparkles : MessageCircle;
+  const DepthIcon = prompt.depth === "nano" ? Sparkles : MessageCircle;
 
   if (submitted) {
     return (
-      <motion.div
-        {...motionPresets.scaleIn}
-        className="rounded-xl bg-card p-4"
-      >
+      <motion.div {...motionPresets.scaleIn} className="rounded-xl bg-card p-4">
         <p className="text-sm text-emerald-600 dark:text-emerald-400 text-center">
-          {t.reflectionNoted || 'Noted. Keep growing.'}
+          {t.reflectionNoted || "Noted. Keep growing."}
         </p>
       </motion.div>
     );
   }
 
   return (
-    <motion.div
-      {...motionPresets.slideUp}
-      className="rounded-xl bg-card p-4 space-y-3"
-    >
+    <motion.div {...motionPresets.slideUp} className="rounded-xl bg-card p-4 space-y-3">
       {/* Prompt text */}
       <div className="flex items-start gap-2">
         <DepthIcon className="w-4 h-4 text-violet-500 mt-0.5 shrink-0" />
-        <p className="text-sm text-foreground leading-relaxed">
-          {prompt.text}
-        </p>
+        <p className="text-sm text-foreground leading-relaxed">{prompt.text}</p>
       </div>
 
       {/* Input area */}
       <div className="flex gap-2">
-        {prompt.depth === 'nano' ? (
+        {prompt.depth === "nano" ? (
           <input
             type="text"
             value={text}
             onChange={(e) => setText(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-            placeholder={t.reflectionPlaceholderNano || 'One word...'}
+            onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+            placeholder={t.reflectionPlaceholderNano || "One word..."}
+            aria-label={t.reflectionPlaceholderNano || "One word reflection"}
             maxLength={50}
             className="flex-1 rounded-lg bg-secondary/60 border border-border px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-violet-500/30"
           />
@@ -107,7 +102,8 @@ export function ReflectionPromptCard({ prompt }: ReflectionPromptCardProps) {
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder={t.reflectionPlaceholderMicro || '1-2 sentences...'}
+            placeholder={t.reflectionPlaceholderMicro || "1-2 sentences..."}
+            aria-label={t.reflectionPlaceholderMicro || "Reflection response"}
             maxLength={280}
             rows={2}
             className="flex-1 rounded-lg bg-secondary/60 border border-border px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-violet-500/30 resize-none"
@@ -117,7 +113,7 @@ export function ReflectionPromptCard({ prompt }: ReflectionPromptCardProps) {
           onClick={handleSubmit}
           disabled={!text.trim()}
           className="self-end rounded-lg bg-violet-500 hover:bg-violet-600 disabled:opacity-40 disabled:cursor-not-allowed p-2 transition-colors"
-          aria-label={t.reflectionSubmitLabel || 'Submit reflection'}
+          aria-label={t.reflectionSubmitLabel || "Submit reflection"}
         >
           <Send className="w-4 h-4 text-white rtl:scale-x-[-1]" />
         </button>
@@ -129,7 +125,7 @@ export function ReflectionPromptCard({ prompt }: ReflectionPromptCardProps) {
         className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
       >
         <BookOpen className="w-3.5 h-3.5" />
-        {t.reflectionExpandJournal || 'Expand to journal'}
+        {t.reflectionExpandJournal || "Expand to journal"}
       </button>
     </motion.div>
   );

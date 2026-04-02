@@ -220,7 +220,7 @@ export function AnimatedCalendar({
               ),
             )
           }
-          className="p-2 bg-secondary rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+          className="p-2 bg-secondary rounded-xl text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
           aria-label={yearLabel || "Select year"}
         >
           {availableYears.map((year) => (

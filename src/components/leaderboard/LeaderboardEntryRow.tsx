@@ -94,7 +94,7 @@ export const LeaderboardEntryRow = memo(function LeaderboardEntryRow({
         </div>
         {activeTab === "streak" &&
           entry.longestStreak > entry.currentStreak && (
-            <span className="text-xs text-foreground/40">
+            <span className="text-xs text-foreground/60">
               {t.best || "Best"}: {entry.longestStreak} {t.days || "days"}
             </span>
           )}
@@ -113,7 +113,7 @@ export const LeaderboardEntryRow = memo(function LeaderboardEntryRow({
         >
           {getValue(entry, activeTab).toLocaleString(language)}
         </span>
-        <span className="text-xs text-foreground/40 ms-1">
+        <span className="text-xs text-foreground/60 ms-1">
           {getUnit(activeTab, t)}
         </span>
       </div>

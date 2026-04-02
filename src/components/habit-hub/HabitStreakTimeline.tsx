@@ -89,7 +89,7 @@ export const HabitStreakTimeline = memo(function HabitStreakTimeline({
                 {isCurrent ? (
                   <AnimatedFire intensity={Math.min(streak.length / 7, 3)} size="sm" />
                 ) : (
-                  <span className="text-xs text-muted-foreground/40">—</span>
+                  <span className="text-xs text-muted-foreground/60">—</span>
                 )}
               </div>
 

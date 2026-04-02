@@ -111,6 +111,7 @@ export default tseslint.config(
       "src/hooks/useIndexedDB.ts",
       "src/components/StorageErrorBanner.tsx",
       "src/components/ErrorBoundary.tsx",
+      "src/main.tsx",
       "**/__tests__/**",
       "test/**",
       "e2e/**",

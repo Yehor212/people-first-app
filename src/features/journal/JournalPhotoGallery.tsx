@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useScrollLock } from '@/hooks/useScrollLock';
 import { useBackHandler } from '@/hooks/useBackHandler';
+import { useModalA11y } from '@/hooks/useModalA11y';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { JournalPhoto } from './types';
 import { getPhotosForEntry, getPhotoById } from './journalStorage';
@@ -37,6 +38,7 @@ export const JournalPhotoGallery = memo(function JournalPhotoGallery({
 
   useScrollLock(!!lightboxPhoto);
   useBackHandler(!!lightboxPhoto, closeLightbox);
+  useModalA11y(!!lightboxPhoto, closeLightbox);
 
   useEffect(() => {
     if (photoIds.length === 0) { setPhotos([]); return; }
@@ -104,6 +106,9 @@ export const JournalPhotoGallery = memo(function JournalPhotoGallery({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Photo lightbox"
             className="fixed inset-0 z-[70] bg-black/90 flex items-center justify-center"
             onClick={closeLightbox}
           >

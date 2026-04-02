@@ -1,24 +1,24 @@
-import { useState, useCallback } from 'react';
-import { useThrottledCallback } from '@/hooks/useThrottledCallback';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { Button } from '@/components/ui/button';
-import { MessageSquare, Bug, Lightbulb, HelpCircle, Send, Loader2, X } from 'lucide-react';
-import { APP_VERSION } from '@/lib/appVersion';
-import { platform } from '@/lib/platform';
-import { logger } from '@/lib/logger';
-import { useModalA11y } from '@/hooks/useModalA11y';
-import { useScrollLock } from '@/hooks/useScrollLock';
-import { safeLocalStorageGet, safeLocalStorageSet } from '@/lib/safeJson';
-import { SK } from '@/lib/storageKeys';
-import { submitDetailedFeedback } from '@/lib/feedbackService';
-import { emailSchema } from '@/lib/validation';
+import { useState, useCallback } from "react";
+import { useThrottledCallback } from "@/hooks/useThrottledCallback";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { Button } from "@/components/ui/button";
+import { MessageSquare, Bug, Lightbulb, HelpCircle, Send, Loader2, X } from "lucide-react";
+import { APP_VERSION } from "@/lib/appVersion";
+import { platform } from "@/lib/platform";
+import { logger } from "@/lib/logger";
+import { useModalA11y } from "@/hooks/useModalA11y";
+import { useScrollLock } from "@/hooks/useScrollLock";
+import { safeLocalStorageGet, safeLocalStorageSet } from "@/lib/safeJson";
+import { SK } from "@/lib/storageKeys";
+import { submitDetailedFeedback } from "@/lib/feedbackService";
+import { emailSchema } from "@/lib/validation";
 
 interface FeedbackFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-type FeedbackCategory = 'bug' | 'feature' | 'other';
+type FeedbackCategory = "bug" | "feature" | "other";
 
 export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
   const { t } = useLanguage();
@@ -26,11 +26,11 @@ export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
   useModalA11y(open, closeFeedback);
   useScrollLock(open);
 
-  const [category, setCategory] = useState<FeedbackCategory>('bug');
-  const [message, setMessage] = useState('');
-  const [email, setEmail] = useState('');
+  const [category, setCategory] = useState<FeedbackCategory>("bug");
+  const [message, setMessage] = useState("");
+  const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState<string | null>(null);
-  const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
+  const [status, setStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
 
   const handleSubmit = async () => {
     if (!message.trim()) return;
@@ -39,13 +39,13 @@ export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
     if (email.trim()) {
       const emailValidation = emailSchema.safeParse(email.trim());
       if (!emailValidation.success) {
-        setEmailError(t.feedbackInvalidEmail || 'Invalid email format');
+        setEmailError(t.feedbackInvalidEmail || "Invalid email format");
         return;
       }
     }
     setEmailError(null);
 
-    setStatus('sending');
+    setStatus("sending");
 
     try {
       // Collect device info
@@ -54,7 +54,7 @@ export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
         appVersion: APP_VERSION,
         userAgent: navigator.userAgent,
         screenSize: `${window.innerWidth}x${window.innerHeight}`,
-        language: navigator.language
+        language: navigator.language,
       };
 
       const feedbackData = {
@@ -62,10 +62,10 @@ export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
         message: message.trim(),
         email: email.trim() || null,
         device_info: deviceInfo,
-        app_version: APP_VERSION
+        app_version: APP_VERSION,
       };
 
-      logger.log('[Feedback] Submitting:', feedbackData);
+      logger.log("[Feedback] Submitting:", feedbackData);
 
       // Always save to localStorage as backup first
       const saveToLocalStorage = () => {
@@ -73,9 +73,9 @@ export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
           const stored = safeLocalStorageGet<Record<string, unknown>[]>(SK.FEEDBACK, []);
           stored.push({ ...feedbackData, created_at: new Date().toISOString() });
           safeLocalStorageSet(SK.FEEDBACK, stored.slice(-20));
-          logger.log('[Feedback] Saved to localStorage backup');
+          logger.log("[Feedback] Saved to localStorage backup");
         } catch (e) {
-          logger.warn('[Feedback] Failed to save to localStorage:', e);
+          logger.warn("[Feedback] Failed to save to localStorage:", e);
         }
       };
 
@@ -87,21 +87,20 @@ export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
 
       // Always show success if we saved at least locally
       // Feedback is captured even if cloud sync failed
-      setStatus('success');
+      setStatus("success");
 
       // Reset form after success
       setTimeout(() => {
-        setMessage('');
-        setEmail('');
-        setCategory('bug');
-        setStatus('idle');
+        setMessage("");
+        setEmail("");
+        setCategory("bug");
+        setStatus("idle");
         onOpenChange(false);
       }, 2000);
-
     } catch (error) {
-      logger.error('[Feedback] Failed to submit:', error);
-      setStatus('error');
-      setTimeout(() => setStatus('idle'), 3000);
+      logger.error("[Feedback] Failed to submit:", error);
+      setStatus("error");
+      setTimeout(() => setStatus("idle"), 3000);
     }
   };
 
@@ -128,9 +127,9 @@ export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
   };
 
   const categories: { value: FeedbackCategory; icon: React.ReactNode; label: string }[] = [
-    { value: 'bug', icon: <Bug className="w-4 h-4" />, label: t.feedbackCategoryBug },
-    { value: 'feature', icon: <Lightbulb className="w-4 h-4" />, label: t.feedbackCategoryFeature },
-    { value: 'other', icon: <HelpCircle className="w-4 h-4" />, label: t.feedbackCategoryOther },
+    { value: "bug", icon: <Bug className="w-4 h-4" />, label: t.feedbackCategoryBug },
+    { value: "feature", icon: <Lightbulb className="w-4 h-4" />, label: t.feedbackCategoryFeature },
+    { value: "other", icon: <HelpCircle className="w-4 h-4" />, label: t.feedbackCategoryOther },
   ];
 
   return (
@@ -153,13 +152,11 @@ export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
               <MessageSquare className="w-5 h-5 text-primary" />
               {t.feedbackTitle}
             </h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              {t.feedbackSubtitle}
-            </p>
+            <p className="text-sm text-muted-foreground mt-1">{t.feedbackSubtitle}</p>
           </div>
           <button
             onClick={handleClose}
-            aria-label={t.close || 'Close'}
+            aria-label={t.close || "Close"}
             className="p-2 rounded-lg hover:bg-muted transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
           >
             <X className="w-5 h-5" />
@@ -177,8 +174,8 @@ export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
                 aria-label={cat.label}
                 className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-sm font-medium transition-all ${
                   category === cat.value
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-secondary text-secondary-foreground hover:bg-muted'
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-secondary text-secondary-foreground hover:bg-muted"
                 }`}
               >
                 {cat.icon}
@@ -192,9 +189,9 @@ export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             placeholder={t.feedbackMessagePlaceholder}
-            aria-label={t.feedbackMessagePlaceholder || 'Message'}
-            className="w-full h-32 p-3 rounded-xl bg-secondary text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary"
-            disabled={status === 'sending'}
+            aria-label={t.feedbackMessagePlaceholder || "Message"}
+            className="w-full h-32 p-3 rounded-xl bg-secondary text-foreground placeholder:text-muted-foreground resize-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            disabled={status === "sending"}
           />
 
           {/* Email Input (Optional) */}
@@ -207,31 +204,32 @@ export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
                 setEmailError(null); // Clear error when user types
               }}
               placeholder={t.feedbackEmailPlaceholder}
-              aria-label={t.feedbackEmailPlaceholder || 'Email (optional)'}
-              className={`w-full p-3 rounded-xl bg-secondary text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 ${
-                emailError ? 'ring-2 ring-red-500 focus:ring-red-500' : 'focus:ring-primary'
+              aria-label={t.feedbackEmailPlaceholder || "Email (optional)"}
+              autoComplete="email"
+              className={`w-full p-3 rounded-xl bg-secondary text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 ${
+                emailError
+                  ? "ring-2 ring-red-500 focus-visible:ring-red-500"
+                  : "focus-visible:ring-primary"
               }`}
-              disabled={status === 'sending'}
+              disabled={status === "sending"}
             />
-            {emailError && (
-              <p className="text-sm text-red-500 mt-1">{emailError}</p>
-            )}
+            {emailError && <p className="text-sm text-red-500 mt-1">{emailError}</p>}
           </div>
 
           {/* Submit Button */}
           <Button
             onClick={throttledSubmit}
-            disabled={!message.trim() || status === 'sending'}
+            disabled={!message.trim() || status === "sending"}
             className="w-full py-6 rounded-xl text-base font-semibold"
           >
-            {status === 'sending' ? (
+            {status === "sending" ? (
               <>
                 <Loader2 className="w-5 h-5 me-2 motion-safe:animate-spin" aria-hidden="true" />
                 {t.feedbackSending}
               </>
-            ) : status === 'success' ? (
+            ) : status === "success" ? (
               t.feedbackSuccess
-            ) : status === 'error' ? (
+            ) : status === "error" ? (
               t.feedbackError
             ) : (
               <>

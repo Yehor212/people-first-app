@@ -101,6 +101,16 @@ export function Index() {
   const setActiveTab = useAppStore((s) => s.setActiveTab);
   const settingsOpenSection = useAppStore((s) => s.settingsOpenSection);
   const quickActionTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
+
+  // Focus management: move focus to main content on tab change (WCAG 2.1 §2.4.3)
+  const mainRef = useRef<HTMLElement>(null);
+  const prevTabRef = useRef(activeTab);
+  useEffect(() => {
+    if (prevTabRef.current !== activeTab && mainRef.current) {
+      mainRef.current.focus();
+      prevTabRef.current = activeTab;
+    }
+  }, [activeTab]);
   // Scroll-to-top on re-tap of active tab (iOS / Telegram convention)
   const handleTabChange = useCallback(
     (tab: TabType) => {
@@ -383,9 +393,11 @@ export function Index() {
             {/* Swipe container for tab navigation on mobile */}
             <div ref={swipeContainerRef} {...swipeProps} className="min-h-screen">
               <main
+                ref={mainRef}
                 id="main-content"
                 role="main"
-                className="mx-auto px-4 py-6 max-w-[var(--container-max-width)]"
+                tabIndex={-1}
+                className="mx-auto px-4 py-6 max-w-[var(--container-max-width)] outline-none"
                 style={{
                   paddingBottom: focusMiniPlayerActive
                     ? "calc(var(--nav-height) + var(--safe-bottom) + 3.5rem)"

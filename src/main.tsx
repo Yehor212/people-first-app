@@ -42,6 +42,21 @@ setupChunkErrorHandler();
 // Initialize accessibility features (aria-live regions for screen readers)
 initA11y();
 
+// Set html lang attribute early (before React hydrates) for non-EN users (WCAG 3.1.1)
+// CSP blocks inline scripts in index.html, so we do it here in the module entry point.
+// useLocalStorage stores values as JSON strings, so we parse accordingly.
+try {
+  const storedLang = localStorage.getItem("zenflow-language");
+  if (storedLang) {
+    const parsed = JSON.parse(storedLang);
+    if (typeof parsed === "string" && parsed.length >= 2) {
+      document.documentElement.lang = parsed;
+    }
+  }
+} catch {
+  // Ignore — React LanguageContext will set it once mounted
+}
+
 // Listen for SW activation — new SW means new deploy, check version immediately
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.addEventListener("message", (event) => {
@@ -70,10 +85,7 @@ window.addEventListener("unhandledrejection", (event) => {
   const reason = event.reason;
 
   // Suppress generic browser/Capacitor permission rejections (e.g. notification denied)
-  if (
-    reason === "Rejected" ||
-    (reason instanceof Error && reason.message === "Rejected")
-  ) {
+  if (reason === "Rejected" || (reason instanceof Error && reason.message === "Rejected")) {
     event.preventDefault();
     logger.warn("[Global] Suppressed generic rejection:", reason);
     return;
@@ -114,9 +126,7 @@ window.addEventListener("beforeunload", () => {
         pendingActions: queueState.actions.length,
         queueSnapshot: queueState.actions.slice(0, 10), // Save first 10 for recovery
       });
-      logger.log(
-        `[Main] Saved ${queueState.actions.length} pending actions before unload`,
-      );
+      logger.log(`[Main] Saved ${queueState.actions.length} pending actions before unload`);
     }
   } catch (_error) {
     // Ignore errors during unload
@@ -246,9 +256,7 @@ setupDeepLinks();
 // Web PWA keeps SW for offline support
 const isCapacitor =
   typeof window !== "undefined" &&
-  (
-    window as { Capacitor?: { isNativePlatform?: () => boolean } }
-  ).Capacitor?.isNativePlatform?.();
+  (window as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.();
 
 if (isCapacitor) {
   try {
@@ -269,11 +277,7 @@ if (isCapacitor) {
         .keys()
         .then((names) => {
           names.forEach((name) => {
-            if (
-              name.includes("workbox") ||
-              name.includes("precache") ||
-              name.includes("runtime")
-            ) {
+            if (name.includes("workbox") || name.includes("precache") || name.includes("runtime")) {
               void window.caches.delete(name);
             }
           });
@@ -304,9 +308,7 @@ async function initializeApp(): Promise<boolean> {
     logger.log("[Main] Checking database health...");
     const dbHealthy = await checkDatabaseHealth();
     if (!dbHealthy) {
-      logger.warn(
-        "[Main] Database health check failed - app will use localStorage fallback",
-      );
+      logger.warn("[Main] Database health check failed - app will use localStorage fallback");
       // Don't block app startup, just log the warning
       // The useIndexedDB hook has its own fallback logic
     } else {
@@ -323,9 +325,7 @@ async function initializeApp(): Promise<boolean> {
   const autoCheck = shouldAutoCheckVersion();
 
   if (priorityCheck || autoCheck) {
-    logger.log(
-      `[Main] Checking app version... (priority=${priorityCheck}, auto=${autoCheck})`,
-    );
+    logger.log(`[Main] Checking app version... (priority=${priorityCheck}, auto=${autoCheck})`);
 
     const isUpToDate = await checkAppVersion();
 
@@ -348,7 +348,7 @@ async function initializeApp(): Promise<boolean> {
 initializeApp()
   .then((shouldRender) => {
     if (shouldRender) {
-      createRoot(document.getElementById("root")).render(<App />);
+      createRoot(document.getElementById("root")!).render(<App />);
     }
   })
   .catch((err) => {

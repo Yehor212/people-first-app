@@ -105,7 +105,7 @@ export const RootNode = memo(function RootNode({ latestMood, canvasCenter, compl
           'border-2', borderColor,
           'flex items-center justify-center',
           'text-white text-xl font-bold',
-          'cursor-pointer focus:outline-none focus:ring-2 focus:ring-white/30 focus:ring-offset-0',
+          'cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 focus-visible:ring-offset-0',
           'bg-[radial-gradient(circle,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.04)_50%,rgba(15,20,30,0.8)_100%)]'
         )}
         style={{

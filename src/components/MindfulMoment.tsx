@@ -47,9 +47,7 @@ export function MindfulMoment({
   useScrollLock(isOpen);
   useModalA11y(isOpen, onClose);
   useBackHandler(isOpen, onClose);
-  const [currentPrompt, setCurrentPrompt] = useState<MindfulPrompt | null>(
-    null,
-  );
+  const [currentPrompt, setCurrentPrompt] = useState<MindfulPrompt | null>(null);
   const [countdown, setCountdown] = useState(0);
   const [showResponse, setShowResponse] = useState(false);
 
@@ -58,9 +56,7 @@ export function MindfulMoment({
     if (isOpen) {
       const prompt =
         providedPrompt ||
-        (trigger === "focus"
-          ? getRandomPostFocusPrompt()
-          : getRandomMindfulPrompt());
+        (trigger === "focus" ? getRandomPostFocusPrompt() : getRandomMindfulPrompt());
       setCurrentPrompt(prompt);
       setCountdown(prompt.duration);
       setShowResponse(false);
@@ -99,14 +95,14 @@ export function MindfulMoment({
 
   const promptText = getMindfulPromptText(currentPrompt, language);
   const typeLabel =
-    MINDFUL_TYPE_LABELS[currentPrompt.type][language] ||
-    MINDFUL_TYPE_LABELS[currentPrompt.type].en;
+    MINDFUL_TYPE_LABELS[currentPrompt.type][language] || MINDFUL_TYPE_LABELS[currentPrompt.type].en;
 
   return (
     <div
       className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[70] p-4 animate-fade-in"
       role="dialog"
       aria-modal="true"
+      aria-label="Mindful moment"
     >
       <div className="bg-card rounded-3xl p-6 w-full max-w-sm animate-scale-in shadow-2xl">
         {/* Header */}
@@ -134,13 +130,9 @@ export function MindfulMoment({
         {/* Prompt */}
         <div className="text-center mb-6">
           {currentPrompt.emoji && (
-            <div className="text-5xl mb-4 animate-pulse">
-              {currentPrompt.emoji}
-            </div>
+            <div className="text-5xl mb-4 animate-pulse">{currentPrompt.emoji}</div>
           )}
-          <p className="text-xl font-medium text-foreground leading-relaxed">
-            {promptText}
-          </p>
+          <p className="text-xl font-medium text-foreground leading-relaxed">{promptText}</p>
         </div>
 
         {/* Timer or Response */}

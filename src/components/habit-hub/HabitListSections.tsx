@@ -122,7 +122,7 @@ export function HabitListSections({
           >
             <Archive className="w-3.5 h-3.5" />
             <span>{ts.archivedHabits || 'Archived'}</span>
-            <span className="text-muted-foreground/40">({archivedHabits.length})</span>
+            <span className="text-muted-foreground/60">({archivedHabits.length})</span>
             <ChevronDown className={cn('w-3.5 h-3.5 transition-transform ms-auto', showArchived && 'rotate-180')} />
           </button>
           <AnimatePresence>

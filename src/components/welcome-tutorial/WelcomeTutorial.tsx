@@ -26,9 +26,7 @@ export function WelcomeTutorial({ onComplete, onSkip }: WelcomeTutorialProps) {
   const isSwipingRef = useRef(false);
 
   // Refs for timeout cleanup and race condition prevention
-  const animationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null,
-  );
+  const animationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const transitionLockRef = useRef(false);
 
   // Get slides array inside component to avoid TDZ issues
@@ -88,8 +86,7 @@ export function WelcomeTutorial({ onComplete, onSkip }: WelcomeTutorialProps) {
 
   const handleDotClick = (index: number) => {
     // Double protection with both state and ref
-    if (isAnimating || transitionLockRef.current || index === currentSlide)
-      return;
+    if (isAnimating || transitionLockRef.current || index === currentSlide) return;
     transitionLockRef.current = true;
     setDirection(index > currentSlide ? "next" : "prev");
     setIsAnimating(true);
@@ -179,9 +176,7 @@ export function WelcomeTutorial({ onComplete, onSkip }: WelcomeTutorialProps) {
             "relative w-24 h-24 sm:w-28 sm:h-28 md:w-36 md:h-36 lg:w-44 lg:h-44 rounded-2xl sm:rounded-3xl flex items-center justify-center mb-6 sm:mb-8 md:mb-10 transition-all duration-500",
             `bg-gradient-to-br ${slide.gradient}`,
             isAnimating &&
-              (direction === "next"
-                ? "translate-x-10 opacity-0"
-                : "-translate-x-10 opacity-0"),
+              (direction === "next" ? "translate-x-10 opacity-0" : "-translate-x-10 opacity-0")
           )}
         >
           <Icon
@@ -194,7 +189,7 @@ export function WelcomeTutorial({ onComplete, onSkip }: WelcomeTutorialProps) {
               slide.animation === "heartbeat" && "animate-heartbeat",
               slide.animation === "spin-slow" && "animate-spin-slow",
               slide.animation === "zap" && "animate-zap",
-              slide.animation === "color-shift" && "animate-color-shift",
+              slide.animation === "color-shift" && "animate-color-shift"
             )}
           />
 
@@ -208,14 +203,12 @@ export function WelcomeTutorial({ onComplete, onSkip }: WelcomeTutorialProps) {
           className={cn(
             "text-center max-w-sm md:max-w-md lg:max-w-lg transition-all duration-300 px-2",
             isAnimating &&
-              (direction === "next"
-                ? "translate-x-10 opacity-0"
-                : "-translate-x-10 opacity-0"),
+              (direction === "next" ? "translate-x-10 opacity-0" : "-translate-x-10 opacity-0")
           )}
         >
-          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-2 md:mb-3">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-2 md:mb-3">
             {content.title}
-          </h1>
+          </h2>
           <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-primary font-medium mb-3 sm:mb-4 md:mb-5">
             {content.subtitle}
           </p>
@@ -258,7 +251,7 @@ export function WelcomeTutorial({ onComplete, onSkip }: WelcomeTutorialProps) {
                   "h-1.5 sm:h-2 rounded-full transition-all duration-300",
                   index === currentSlide
                     ? "w-6 sm:w-8 bg-primary"
-                    : "w-1.5 sm:w-2 bg-muted hover:bg-muted-foreground/50",
+                    : "w-1.5 sm:w-2 bg-muted hover:bg-muted-foreground/50"
                 )}
               />
             </button>
@@ -283,12 +276,10 @@ export function WelcomeTutorial({ onComplete, onSkip }: WelcomeTutorialProps) {
               "flex-1 py-3 sm:py-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 text-sm sm:text-base",
               currentSlide === slides.length - 1
                 ? "zen-gradient text-primary-foreground hover:opacity-90"
-                : "zen-gradient text-primary-foreground hover:opacity-90",
+                : "zen-gradient text-primary-foreground hover:opacity-90"
             )}
           >
-            {currentSlide === slides.length - 1
-              ? t.tutorialStart || "Let's Go!"
-              : t.next || "Next"}
+            {currentSlide === slides.length - 1 ? t.tutorialStart || "Let's Go!" : t.next || "Next"}
             <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 rtl:scale-x-[-1]" />
           </button>
         </div>

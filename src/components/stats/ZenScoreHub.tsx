@@ -275,12 +275,21 @@ export function ZenScoreHub({
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.1 }}
+                    role={item.ringId ? "button" : undefined}
+                    tabIndex={item.ringId ? 0 : undefined}
                     className={cn(
                       "text-center",
                       item.ringId && "cursor-pointer active:scale-95 transition-transform"
                     )}
                     onClick={(e) => {
                       if (item.ringId) {
+                        e.stopPropagation();
+                        onRingClick?.(item.ringId);
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (item.ringId && (e.key === 'Enter' || e.key === ' ')) {
+                        e.preventDefault();
                         e.stopPropagation();
                         onRingClick?.(item.ringId);
                       }

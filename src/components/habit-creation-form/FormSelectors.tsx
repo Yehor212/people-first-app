@@ -234,7 +234,7 @@ export function TypeSelector({
                 isPrimaryCTA
                   ? habitType === type
                     ? "text-foreground/50"
-                    : "text-foreground/30"
+                    : "text-foreground/60"
                   : habitType === type
                     ? "text-primary-foreground/60"
                     : "text-muted-foreground/60",

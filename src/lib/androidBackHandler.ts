@@ -52,6 +52,8 @@ function showExitToast(message: string) {
   const toast = document.createElement("div");
   toast.className = "android-exit-toast";
   toast.textContent = message;
+  toast.setAttribute("role", "status");
+  toast.setAttribute("aria-live", "polite");
   toast.style.cssText = `
     position: fixed;
     bottom: calc(80px + env(safe-area-inset-bottom, 0px));

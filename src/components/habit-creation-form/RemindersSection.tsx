@@ -61,7 +61,7 @@ export function RemindersSection({
         <p
           className={cn(
             "text-xs italic",
-            isPrimaryCTA ? "text-slate-400 dark:text-foreground/40" : "text-muted-foreground"
+            isPrimaryCTA ? "text-slate-400 dark:text-foreground/60" : "text-muted-foreground"
           )}
         >
           {t.noReminders || "No reminders set"}

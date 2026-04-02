@@ -194,7 +194,7 @@ export const GoalNode = memo(
                 ? "border-border"
                 : "",
             "cursor-pointer",
-            "focus:outline-none focus:ring-2 focus:ring-ring/30 focus:ring-offset-0",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 focus-visible:ring-offset-0",
             "transition-colors duration-200",
             "bg-card/80 backdrop-blur-sm [-webkit-backdrop-filter:blur(8px)]",
           )}

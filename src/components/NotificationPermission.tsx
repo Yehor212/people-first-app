@@ -14,9 +14,7 @@ interface NotificationPermissionProps {
   onComplete: () => void;
 }
 
-export function NotificationPermission({
-  onComplete,
-}: NotificationPermissionProps) {
+export function NotificationPermission({ onComplete }: NotificationPermissionProps) {
   const { t } = useLanguage();
   const [showPrompt, setShowPrompt] = useState(false);
   useScrollLock(showPrompt);
@@ -92,6 +90,7 @@ export function NotificationPermission({
       className="fixed inset-0 bg-background/95 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-fade-in"
       role="dialog"
       aria-modal="true"
+      aria-label="Notification permission"
     >
       <div className="w-full max-w-md bg-card rounded-2xl p-4 sm:p-6 zen-shadow-card animate-scale-in">
         {/* Close button */}
@@ -130,8 +129,7 @@ export function NotificationPermission({
                 {t.notificationFeature1Title || "Daily Mood Reminders"}
               </p>
               <p className="text-sm text-muted-foreground">
-                {t.notificationFeature1Desc ||
-                  "Check in with yourself every day"}
+                {t.notificationFeature1Desc || "Check in with yourself every day"}
               </p>
             </div>
           </div>
@@ -142,8 +140,7 @@ export function NotificationPermission({
                 {t.notificationFeature2Title || "Habit Tracking"}
               </p>
               <p className="text-sm text-muted-foreground">
-                {t.notificationFeature2Desc ||
-                  "Stay consistent with your goals"}
+                {t.notificationFeature2Desc || "Stay consistent with your goals"}
               </p>
             </div>
           </div>
@@ -154,8 +151,7 @@ export function NotificationPermission({
                 {t.notificationFeature3Title || "Focus Sessions"}
               </p>
               <p className="text-sm text-muted-foreground">
-                {t.notificationFeature3Desc ||
-                  "Get reminded to take productive breaks"}
+                {t.notificationFeature3Desc || "Get reminded to take productive breaks"}
               </p>
             </div>
           </div>

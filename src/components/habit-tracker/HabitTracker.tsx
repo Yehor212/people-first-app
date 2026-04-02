@@ -464,7 +464,7 @@ export const HabitTracker = memo(function HabitTracker({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 1 }}
-              className="text-center text-[10px] text-muted-foreground/40 py-2"
+              className="text-center text-[10px] text-muted-foreground/60 py-2"
               ref={(el) => {
                 if (el && !swipeHintTimerRef.current) {
                   swipeHintTimerRef.current = setTimeout(() => {

@@ -97,7 +97,15 @@ export function WeekCrystal({
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
+      role={dailyScores && dailyScores.length > 0 ? "button" : undefined}
+      tabIndex={dailyScores && dailyScores.length > 0 ? 0 : undefined}
       onClick={() => dailyScores && dailyScores.length > 0 && setIsExpanded(!isExpanded)}
+      onKeyDown={(e) => {
+        if ((e.key === 'Enter' || e.key === ' ') && dailyScores && dailyScores.length > 0) {
+          e.preventDefault();
+          setIsExpanded(!isExpanded);
+        }
+      }}
       className={cn(
         'relative flex flex-col items-center p-4',
         'rounded-2xl',

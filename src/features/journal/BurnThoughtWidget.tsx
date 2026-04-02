@@ -823,7 +823,7 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 placeholder={ts.journalBurnPlaceholder || 'Write what worries you...'}
-                className={`w-full rounded-xl px-4 py-3 text-sm outline-none resize-none bg-white/[0.03] ring-1 ring-white/[0.06] focus:ring-red-500/20 placeholder:text-muted-foreground/40 transition-colors duration-150 min-h-16 max-h-[200px] ${burning ? 'text-orange-400/80' : 'text-foreground/90'}`}
+                className={`w-full rounded-xl px-4 py-3 text-sm outline-none resize-none bg-white/[0.03] ring-1 ring-white/[0.06] focus:ring-red-500/20 placeholder:text-muted-foreground/60 transition-colors duration-150 min-h-16 max-h-[200px] ${burning ? 'text-orange-400/80' : 'text-foreground/90'}`}
                 rows={2}
                 maxLength={500}
                 disabled={burning}
@@ -832,7 +832,7 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
 
               {/* Character counter */}
               {text.length > 0 && !burning && (
-                <div className={`text-end text-xs mt-1 transition-opacity duration-200 ${text.length > 450 ? 'text-red-400/70' : 'text-muted-foreground/30'}`}>
+                <div className={`text-end text-xs mt-1 transition-opacity duration-200 ${text.length > 450 ? 'text-red-400/70' : 'text-muted-foreground/60'}`}>
                   {text.length}/500
                 </div>
               )}

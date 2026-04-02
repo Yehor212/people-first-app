@@ -74,7 +74,7 @@ function ActionRow({
         "w-full flex items-center gap-3 px-5 py-4",
         "text-sm font-medium transition-colors",
         disabled
-          ? "text-muted-foreground/40 cursor-not-allowed"
+          ? "text-muted-foreground/60 cursor-not-allowed"
           : destructive
             ? "text-red-400 active:bg-red-400/10"
             : "text-foreground/80 active:bg-muted/50",

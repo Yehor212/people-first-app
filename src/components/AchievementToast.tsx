@@ -19,6 +19,8 @@ export function AchievementToast({ achievement }: AchievementToastProps) {
 
   return (
     <Card
+      role="status"
+      aria-live="polite"
       className={`p-4 bg-gradient-to-r from-primary/70 to-primary text-primary-foreground ${getBadgeGlow(achievement.rarity)} animate-slide-up`}
     >
       <div className="flex items-center gap-4">
@@ -37,9 +39,7 @@ export function AchievementToast({ achievement }: AchievementToastProps) {
             </span>
           </div>
           <h3 className="font-bold text-lg mb-1">{achievement.name}</h3>
-          <p className="text-sm text-foreground/80">
-            {achievement.description}
-          </p>
+          <p className="text-sm text-foreground/80">{achievement.description}</p>
           <Badge className="mt-2 bg-foreground/20 text-white border-foreground/30">
             +{achievement.points} XP
           </Badge>

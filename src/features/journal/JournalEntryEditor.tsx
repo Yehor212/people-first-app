@@ -1667,6 +1667,7 @@ export function JournalEntryEditor({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder={ts.journalEntryTitle || "Title (optional)"}
+              aria-label={ts.journalEntryTitle || "Entry title"}
               autoFocus={!entry}
               className="w-full text-2xl font-bold tracking-tight bg-transparent border-none outline-none"
               style={{
@@ -1802,6 +1803,7 @@ export function JournalEntryEditor({
                       value={tagInput}
                       onChange={(e) => setTagInput(e.target.value)}
                       placeholder={ts.journalTagPlaceholder || "Add tag..."}
+                      aria-label={ts.journalTagPlaceholder || "Add tag"}
                       className="flex-1 px-3 py-2.5 rounded-lg bg-white/5 border border-white/10 text-sm text-foreground outline-none placeholder:text-foreground0 min-h-[44px]"
                       autoFocus
                       maxLength={30}

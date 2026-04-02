@@ -153,12 +153,13 @@ export function GoalInput({
               onChange={(e) => setValue(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={placeholder}
+              aria-label={placeholder}
               maxLength={100}
               className={cn(
                 "w-full rounded-lg px-3 py-2 mb-2",
                 "bg-white/5 border border-white/10",
                 "text-white text-sm placeholder:text-white/60",
-                "focus:outline-none focus:ring-1 focus:ring-white/20"
+                "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/20"
               )}
             />
 

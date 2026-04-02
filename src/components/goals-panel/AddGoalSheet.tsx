@@ -31,6 +31,7 @@ export function AddGoalSheet({
   const [isSaving, setIsSaving] = useState(false);
 
   useBackHandler(open, () => onOpenChange(false));
+  useModalA11y(open, () => onOpenChange(false));
 
   const handleSubmit = () => {
     if (isSaving) return;

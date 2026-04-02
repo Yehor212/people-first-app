@@ -1,10 +1,10 @@
-import { useEffect, useCallback, useState, useRef } from 'react';
-import { cn } from '@/lib/utils';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { EmojiOrIcon } from '@/components/icons';
-import { useDopamineSettings } from './DopamineSettings';
-import { useModalA11y } from '@/hooks/useModalA11y';
-import { useBackHandler } from '@/hooks/useBackHandler';
+import { useEffect, useCallback, useState, useRef } from "react";
+import { cn } from "@/lib/utils";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { EmojiOrIcon } from "@/components/icons";
+import { useDopamineSettings } from "./DopamineSettings";
+import { useModalA11y } from "@/hooks/useModalA11y";
+import { useBackHandler } from "@/hooks/useBackHandler";
 
 /**
  * Streak Celebration - Duolingo-style fire animation
@@ -27,10 +27,13 @@ export function StreakCelebration({ streakDays, onClose }: StreakCelebrationProp
 
   useEffect(() => {
     setShow(true);
-    const timer = setTimeout(() => {
-      setShow(false);
-      innerTimerRef.current = setTimeout(onClose, showAnimations ? 300 : 0);
-    }, showAnimations ? 3000 : 1500);
+    const timer = setTimeout(
+      () => {
+        setShow(false);
+        innerTimerRef.current = setTimeout(onClose, showAnimations ? 300 : 0);
+      },
+      showAnimations ? 3000 : 1500
+    );
     return () => {
       clearTimeout(timer);
       clearTimeout(innerTimerRef.current);
@@ -50,7 +53,7 @@ export function StreakCelebration({ streakDays, onClose }: StreakCelebrationProp
         className={cn(
           "relative flex flex-col items-center",
           showAnimations && "transition-all duration-500",
-          show ? "scale-100 opacity-100" : (showAnimations ? "scale-50 opacity-0" : "opacity-0")
+          show ? "scale-100 opacity-100" : showAnimations ? "scale-50 opacity-0" : "opacity-0"
         )}
       >
         {/* Fire animation - only if streakFire enabled */}
@@ -71,17 +74,18 @@ export function StreakCelebration({ streakDays, onClose }: StreakCelebrationProp
         </div>
 
         {/* Streak number */}
-        <div className={cn("mt-4 text-6xl font-black text-white", showAnimations && "animate-scale-in")}>
+        <div
+          className={cn(
+            "mt-4 text-6xl font-black text-white",
+            showAnimations && "animate-scale-in"
+          )}
+        >
           {streakDays}
         </div>
 
         {/* Text */}
-        <p className="mt-2 text-2xl font-bold text-white">
-          {t.streakDays || 'Day Streak'}!
-        </p>
-        <p className="mt-1 text-lg text-white/70">
-          {t.keepItUp || 'Keep it up!'}
-        </p>
+        <p className="mt-2 text-2xl font-bold text-white">{t.streakDays || "Day Streak"}!</p>
+        <p className="mt-1 text-lg text-white/70">{t.keepItUp || "Keep it up!"}</p>
 
         {/* Sparkles - only if animations enabled */}
         {showAnimations && (
@@ -137,7 +141,11 @@ export function HabitCompletion({ habitName, onClose }: HabitCompletionProps) {
       className={cn(
         "fixed left-1/2 -translate-x-1/2 z-[150] bottom-[calc(6rem+env(safe-area-inset-bottom,0px))]",
         showAnimations && "transition-all duration-300",
-        show ? "opacity-100 translate-y-0" : (showAnimations ? "opacity-0 translate-y-4" : "opacity-0")
+        show
+          ? "opacity-100 translate-y-0"
+          : showAnimations
+            ? "opacity-0 translate-y-4"
+            : "opacity-0"
       )}
     >
       <div className="flex items-center gap-3 px-6 py-3 bg-mood-good text-white rounded-full shadow-lg">
@@ -168,17 +176,28 @@ export function AllHabitsComplete({ onClose }: AllHabitsCompleteProps) {
 
   useEffect(() => {
     setShow(true);
-    const timer = setTimeout(() => {
-      setShow(false);
-      innerTimerRef.current = setTimeout(onClose, showAnimations ? 300 : 0);
-    }, showAnimations ? 3500 : 1500);
+    const timer = setTimeout(
+      () => {
+        setShow(false);
+        innerTimerRef.current = setTimeout(onClose, showAnimations ? 300 : 0);
+      },
+      showAnimations ? 3500 : 1500
+    );
     return () => {
       clearTimeout(timer);
       clearTimeout(innerTimerRef.current);
     };
   }, [onClose, showAnimations]);
 
-  const confettiColors = ['#FF6B6B', '#4ECDC4', '#FFE66D', '#95E1D3', '#F38181', '#AA96DA', '#FCBAD3'];
+  const confettiColors = [
+    "#FF6B6B",
+    "#4ECDC4",
+    "#FFE66D",
+    "#95E1D3",
+    "#F38181",
+    "#AA96DA",
+    "#FCBAD3",
+  ];
 
   return (
     <div
@@ -213,18 +232,16 @@ export function AllHabitsComplete({ onClose }: AllHabitsCompleteProps) {
         className={cn(
           "relative flex flex-col items-center",
           showAnimations && "transition-all duration-500",
-          show ? "scale-100 opacity-100" : (showAnimations ? "scale-50 opacity-0" : "opacity-0")
+          show ? "scale-100 opacity-100" : showAnimations ? "scale-50 opacity-0" : "opacity-0"
         )}
       >
         <div className={showAnimations ? "animate-bounce" : ""}>
           <EmojiOrIcon emoji="🎉" iconName="celebration" size="xl" className="w-16 h-16" />
         </div>
         <p className="mt-4 text-3xl font-black text-white text-center">
-          {t.allHabitsComplete || 'All Habits Done!'}
+          {t.allHabitsComplete || "All Habits Done!"}
         </p>
-        <p className="mt-2 text-lg text-white/70">
-          {t.amazingWork || 'Amazing work today!'}
-        </p>
+        <p className="mt-2 text-lg text-white/70">{t.amazingWork || "Amazing work today!"}</p>
       </div>
     </div>
   );
@@ -262,18 +279,26 @@ export function MoodChangedToast({ emoji, message, onClose }: MoodChangedToastPr
 
   return (
     <div
+      role="status"
+      aria-live="polite"
       className={cn(
         "fixed left-1/2 -translate-x-1/2 z-[150] bottom-[calc(6rem+env(safe-area-inset-bottom,0px))]",
         showAnimations && "transition-all duration-300",
-        show ? "opacity-100 translate-y-0" : (showAnimations ? "opacity-0 translate-y-4" : "opacity-0")
+        show
+          ? "opacity-100 translate-y-0"
+          : showAnimations
+            ? "opacity-0 translate-y-4"
+            : "opacity-0"
       )}
     >
-      <div className={cn(
-        "flex items-center gap-3 px-6 py-3 bg-primary text-white rounded-full shadow-lg",
-        showAnimations && "animate-success-pulse"
-      )}>
+      <div
+        className={cn(
+          "flex items-center gap-3 px-6 py-3 bg-primary text-white rounded-full shadow-lg",
+          showAnimations && "animate-success-pulse"
+        )}
+      >
         <EmojiOrIcon emoji={emoji} size="sm" />
-        <span className="font-semibold">{message || t.moodUpdated || 'Mood updated'}</span>
+        <span className="font-semibold">{message || t.moodUpdated || "Mood updated"}</span>
       </div>
     </div>
   );
@@ -289,7 +314,7 @@ interface ConfirmDialogProps {
   cancelText: string;
   onConfirm: () => void;
   onCancel: () => void;
-  variant?: 'default' | 'destructive';
+  variant?: "default" | "destructive";
 }
 
 export function ConfirmDialog({
@@ -299,7 +324,7 @@ export function ConfirmDialog({
   cancelText,
   onConfirm,
   onCancel,
-  variant = 'default'
+  variant = "default",
 }: ConfirmDialogProps) {
   const stableOnCancel = useCallback(() => onCancel(), [onCancel]);
   useModalA11y(true, stableOnCancel);
@@ -307,14 +332,26 @@ export function ConfirmDialog({
   return (
     <div
       className="fixed inset-0 z-[300] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in"
-      onClick={onCancel} onKeyDown={(e) => { if (e.key === "Escape") onCancel(); }}
+      onClick={onCancel}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") onCancel();
+      }}
     >
-      <div role="dialog" aria-modal="true" aria-label="Confirmation" className="bg-card rounded-2xl p-6 mx-4 max-w-sm w-full shadow-2xl animate-scale-in" onClick={e => e.stopPropagation()}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Confirmation"
+        className="bg-card rounded-2xl p-6 mx-4 max-w-sm w-full shadow-2xl animate-scale-in"
+        onClick={(e) => e.stopPropagation()}
+      >
         <h3 className="text-lg font-bold text-foreground mb-2">{title}</h3>
         <p className="text-muted-foreground mb-6">{message}</p>
         <div className="flex gap-3">
           <button
-            onClick={onCancel} onKeyDown={(e) => { if (e.key === "Escape") onCancel(); }}
+            onClick={onCancel}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") onCancel();
+            }}
             className="flex-1 py-3 bg-secondary text-foreground font-medium rounded-xl hover:bg-secondary/80 transition-colors"
           >
             {cancelText}
@@ -323,7 +360,7 @@ export function ConfirmDialog({
             onClick={onConfirm}
             className={cn(
               "flex-1 py-3 font-medium rounded-xl transition-colors",
-              variant === 'destructive'
+              variant === "destructive"
                 ? "bg-destructive text-white hover:bg-destructive/90"
                 : "bg-primary text-white hover:bg-primary/90"
             )}

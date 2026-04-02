@@ -37,7 +37,9 @@ export function ChallengesPanel({
   const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
 
   useBackHandler(!showShareModal, onClose);
+  useModalA11y(!showShareModal, onClose);
   useBackHandler(showShareModal, () => setShowShareModal(false));
+  useModalA11y(showShareModal, () => setShowShareModal(false));
   useScrollLock(true);
 
   const handleShareBadge = (badge: Badge) => {

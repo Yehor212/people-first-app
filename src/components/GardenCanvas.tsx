@@ -148,7 +148,7 @@ export function GardenCanvas({ world, atmosphere }: GardenCanvasProps) {
         {plants.length === 0 && creatures.length === 0 && (
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center space-y-2">
-              <Sprout className="w-8 h-8 text-muted-foreground/40 mx-auto" />
+              <Sprout className="w-8 h-8 text-muted-foreground/60 mx-auto" />
               <p className="text-xs text-muted-foreground/60">
                 {t.gardenGrowsHint || 'Your garden grows with every action'}
               </p>

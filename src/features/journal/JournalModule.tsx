@@ -18,6 +18,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { registerModalCloseCallback } from "@/lib/androidBackHandler";
 import { useBackHandler } from "@/hooks/useBackHandler";
+import { useModalA11y } from "@/hooks/useModalA11y";
 import { createFocusTrap, announceSuccess, announceError } from "@/lib/a11y";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/lib/supabaseClient";
@@ -72,6 +73,28 @@ export function JournalModule({ onToggleHabit, onAddGratitude }: JournalModulePr
   const [showExportPicker, setShowExportPicker] = useState(false);
   const [exporting, setExporting] = useState(false);
   useBackHandler(showExportPicker, () => setShowExportPicker(false));
+
+  // Escape key handlers for inline sub-dialogs
+  useEffect(() => {
+    if (!showPasswordSettings) return;
+    const h = (e: KeyboardEvent) => { if (e.key === "Escape") { setShowPasswordSettings(false); setShowChangePassword(false); } };
+    document.addEventListener("keydown", h);
+    return () => document.removeEventListener("keydown", h);
+  }, [showPasswordSettings]);
+
+  useEffect(() => {
+    if (!showExportPicker) return;
+    const h = (e: KeyboardEvent) => { if (e.key === "Escape") setShowExportPicker(false); };
+    document.addEventListener("keydown", h);
+    return () => document.removeEventListener("keydown", h);
+  }, [showExportPicker]);
+
+  useEffect(() => {
+    if (!showRemovePasswordConfirm) return;
+    const h = (e: KeyboardEvent) => { if (e.key === "Escape") setShowRemovePasswordConfirm(false); };
+    document.addEventListener("keydown", h);
+    return () => document.removeEventListener("keydown", h);
+  }, [showRemovePasswordConfirm]);
   const [importing, setImporting] = useState(false);
   const [importFeedback, setImportFeedback] = useState<{
     type: "success" | "error";
@@ -166,6 +189,7 @@ export function JournalModule({ onToggleHabit, onAddGratitude }: JournalModulePr
 
   // Scroll lock when journal is open
   useScrollLock(moduleState === "open");
+  useModalA11y(moduleState === "open", handleClose);
 
   // Focus trap for main overlay
   const overlayRef = useRef<HTMLDivElement>(null);

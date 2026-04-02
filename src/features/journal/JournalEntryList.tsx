@@ -1,14 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef, memo } from "react";
-import {
-  Plus,
-  Search,
-  X,
-  Sparkles,
-  Loader2,
-  PenLine,
-  Sprout,
-  Flame,
-} from "lucide-react";
+import { Plus, Search, X, Sparkles, Loader2, PenLine, Sprout, Flame } from "lucide-react";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { zenMotion } from "@/lib/animationUtils";
@@ -103,14 +94,12 @@ const DAILY_QUOTES: { key: string; fallback: string; author: string }[] = [
   },
   {
     key: "quoteJournal13",
-    fallback:
-      "There is no greater agony than bearing an untold story inside you.",
+    fallback: "There is no greater agony than bearing an untold story inside you.",
     author: "Maya Angelou",
   },
   {
     key: "quoteJournal14",
-    fallback:
-      "Your journal is like your best friend. You don't have to pretend with it.",
+    fallback: "Your journal is like your best friend. You don't have to pretend with it.",
     author: "Oprah Winfrey",
   },
 ];
@@ -118,8 +107,7 @@ const DAILY_QUOTES: { key: string; fallback: string; author: string }[] = [
 function getDailyQuote(): (typeof DAILY_QUOTES)[0] {
   const today = new Date();
   const dayOfYear = Math.floor(
-    (today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) /
-      86400000,
+    (today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / 86400000
   );
   return DAILY_QUOTES[dayOfYear % DAILY_QUOTES.length];
 }
@@ -236,16 +224,14 @@ export function JournalEntryList({
     groupedEntries.forEach((g) =>
       g.entries.forEach((e) => {
         if (e.mood) moods.add(e.mood);
-      }),
+      })
     );
     return moods;
   }, [groupedEntries]);
 
   const allTags = useMemo(() => {
     const tags = new Set<string>();
-    groupedEntries.forEach((g) =>
-      g.entries.forEach((e) => e.tags.forEach((t2) => tags.add(t2))),
-    );
+    groupedEntries.forEach((g) => g.entries.forEach((e) => e.tags.forEach((t2) => tags.add(t2))));
     return Array.from(tags).sort();
   }, [groupedEntries]);
 
@@ -257,7 +243,7 @@ export function JournalEntryList({
     groupedEntries.forEach((g) =>
       g.entries.forEach((e) => {
         if (e.createdAt >= weekAgo.getTime()) count++;
-      }),
+      })
     );
     return count;
   }, [groupedEntries]);
@@ -277,9 +263,7 @@ export function JournalEntryList({
         const entry = entriesById.get(r.entry_id);
         return entry ? { entry, similarity: r.similarity } : null;
       })
-      .filter(
-        (r): r is { entry: JournalEntry; similarity: number } => r !== null,
-      );
+      .filter((r): r is { entry: JournalEntry; similarity: number } => r !== null);
   }, [aiMode, aiResults, entriesById]);
 
   // Filter entries by debounced search + mood + tag (text mode only)
@@ -350,7 +334,7 @@ export function JournalEntryList({
             key={p.idx}
             className={cn(
               "absolute rounded-full bg-primary/15 blur-[1px]",
-              `animate-particle-float-${(p.idx % 5) + 1}`,
+              `animate-particle-float-${(p.idx % 5) + 1}`
             )}
             style={{ left: p.x, top: p.y, width: p.size, height: p.size }}
           />
@@ -392,10 +376,9 @@ export function JournalEntryList({
           {ts.journalEmpty || "Your diary is empty"}
         </h3>
         <p className="text-sm text-muted-foreground text-center mb-2 max-w-[260px]">
-          {ts.journalEmptyHint ||
-            "Start writing to capture your thoughts, feelings, and memories."}
+          {ts.journalEmptyHint || "Start writing to capture your thoughts, feelings, and memories."}
         </p>
-        <p className="text-[10px] text-muted-foreground/40 text-center mb-6 italic">
+        <p className="text-[10px] text-muted-foreground/60 text-center mb-6 italic">
           {ts.journalEmptyQuote || "Your thoughts are worth preserving"}
         </p>
         <motion.button
@@ -406,7 +389,7 @@ export function JournalEntryList({
             "bg-gradient-to-r from-primary to-primary/90 text-primary-foreground text-sm font-semibold",
             "shadow-md",
             "hover:shadow-lg",
-            "transition-shadow duration-300",
+            "transition-shadow duration-300"
           )}
         >
           <Plus className="w-4 h-4" />
@@ -419,28 +402,26 @@ export function JournalEntryList({
   return (
     <div className="space-y-3 pb-24">
       {/* Inactivity banner */}
-      {daysSinceLastEntry != null &&
-        daysSinceLastEntry >= 2 &&
-        !bannerDismissed && (
-          <div className="flex items-center gap-3 p-3 rounded-xl bg-primary/5 border border-primary/15">
-            <span className="text-xl flex-shrink-0">{"\u{1F4AD}"}</span>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs text-foreground">
-                {(
-                  ts.journalInactiveBanner ||
-                  "You haven't written in {days} days. How about a quick entry?"
-                ).replace("{days}", String(daysSinceLastEntry))}
-              </p>
-            </div>
-            <button
-              onClick={() => setBannerDismissed(true)}
-              className="p-1 rounded text-muted-foreground hover:bg-muted/50 flex-shrink-0"
-              aria-label={ts.dismiss || "Dismiss"}
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
+      {daysSinceLastEntry != null && daysSinceLastEntry >= 2 && !bannerDismissed && (
+        <div className="flex items-center gap-3 p-3 rounded-xl bg-primary/5 border border-primary/15">
+          <span className="text-xl flex-shrink-0">{"\u{1F4AD}"}</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs text-foreground">
+              {(
+                ts.journalInactiveBanner ||
+                "You haven't written in {days} days. How about a quick entry?"
+              ).replace("{days}", String(daysSinceLastEntry))}
+            </p>
           </div>
-        )}
+          <button
+            onClick={() => setBannerDismissed(true)}
+            className="p-1 rounded text-muted-foreground hover:bg-muted/50 flex-shrink-0"
+            aria-label={ts.dismiss || "Dismiss"}
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* Daily inspirational quote */}
       {(() => {
@@ -451,9 +432,7 @@ export function JournalEntryList({
             <p className="text-xs text-foreground/80 italic leading-relaxed pe-6">
               {ts[quote.key] || quote.fallback}
             </p>
-            <p className="text-[10px] text-muted-foreground/50 mt-1.5">
-              — {quote.author}
-            </p>
+            <p className="text-[10px] text-muted-foreground/50 mt-1.5">— {quote.author}</p>
           </div>
         );
       })()}
@@ -480,17 +459,17 @@ export function JournalEntryList({
           onChange={(e) => setSearchInput(e.target.value)}
           placeholder={
             aiMode
-              ? ts.journalAiSearchPlaceholder ||
-                "Describe what you're looking for..."
+              ? ts.journalAiSearchPlaceholder || "Describe what you're looking for..."
               : ts.journalSearch || "Search entries..."
           }
+          aria-label={ts.journalSearch || "Search entries"}
           className={cn(
             "w-full ps-9 py-2.5 rounded-xl text-sm",
             "bg-muted/50 border border-border/30",
-            "focus:outline-none focus:ring-2 focus:ring-primary/30",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30",
             "placeholder:text-muted-foreground/50",
             showAiToggle ? "pe-20" : "pe-9",
-            aiMode && "border-purple-500/30 ring-1 ring-purple-500/20",
+            aiMode && "border-purple-500/30 ring-1 ring-purple-500/20"
           )}
         />
         <div className="absolute end-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
@@ -517,11 +496,9 @@ export function JournalEntryList({
                 "p-2 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center",
                 aiMode
                   ? "bg-purple-500/15 text-purple-500"
-                  : "hover:bg-muted/50 text-muted-foreground",
+                  : "hover:bg-muted/50 text-muted-foreground"
               )}
-              aria-label={
-                aiMode ? "Switch to text search" : "Switch to AI search"
-              }
+              aria-label={aiMode ? "Switch to text search" : "Switch to AI search"}
               title={aiMode ? "AI Search ON" : "AI Search"}
             >
               <Sparkles className="w-4 h-4" />
@@ -549,9 +526,7 @@ export function JournalEntryList({
               onClick={() => setSelectedMood(selectedMood === m ? null : m)}
               className={cn(
                 "snap-start flex-shrink-0 text-base px-2 py-0.5 rounded-full transition-colors min-h-[44px]",
-                selectedMood === m
-                  ? "bg-primary/15 ring-1 ring-primary/30"
-                  : "hover:bg-muted/50",
+                selectedMood === m ? "bg-primary/15 ring-1 ring-primary/30" : "hover:bg-muted/50"
               )}
             >
               {MOOD_EMOJIS[m]}
@@ -570,7 +545,7 @@ export function JournalEntryList({
                 "snap-start flex-shrink-0 px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors min-h-[44px]",
                 selectedTag === tag
                   ? "bg-primary/15 text-primary ring-1 ring-primary/30"
-                  : "bg-muted/50 text-foreground hover:bg-muted/70",
+                  : "bg-muted/50 text-foreground hover:bg-muted/70"
               )}
             >
               #{tag}
@@ -590,11 +565,7 @@ export function JournalEntryList({
               className="space-y-2"
             >
               {aiMatchedEntries.map(({ entry, similarity }) => (
-                <motion.div
-                  key={entry.id}
-                  variants={itemVariants}
-                  className="relative"
-                >
+                <motion.div key={entry.id} variants={itemVariants} className="relative">
                   <div className="absolute top-2 end-2 z-10 px-1.5 py-0.5 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400 text-[10px] font-medium">
                     {Math.round(similarity * 100)}%
                   </div>
@@ -615,8 +586,7 @@ export function JournalEntryList({
                 {ts.journalNoAiResults || "No similar entries found"}
               </p>
               <p className="text-[10px] text-muted-foreground/50 mb-3 max-w-[220px]">
-                {ts.journalNoAiResultsHint ||
-                  "Try describing your thoughts differently"}
+                {ts.journalNoAiResultsHint || "Try describing your thoughts differently"}
               </p>
             </div>
           )}
@@ -632,9 +602,7 @@ export function JournalEntryList({
                 {ts[group.label] || group.label}
               </h3>
               <div className="flex-1 h-px bg-gradient-to-r from-border/30 to-transparent" />
-              <span className="text-[10px] text-muted-foreground/30">
-                {group.entries.length}
-              </span>
+              <span className="text-[10px] text-muted-foreground/60">{group.entries.length}</span>
             </div>
             <motion.div
               variants={containerVariants}
@@ -665,8 +633,7 @@ export function JournalEntryList({
             {ts.journalNoMatchingEntries || "No entries match your search"}
           </p>
           <p className="text-[10px] text-muted-foreground/50 mb-3 max-w-[220px]">
-            {ts.journalNoMatchingHint ||
-              "Try a different keyword or clear your filters"}
+            {ts.journalNoMatchingHint || "Try a different keyword or clear your filters"}
           </p>
           <button
             onClick={() => {
@@ -694,13 +661,18 @@ interface SpeedDialFabProps {
   onAddGratitude?: (entry: GratitudeEntry) => void;
 }
 
-const SpeedDialFab = memo(function SpeedDialFab({
-  onNewEntry,
-  onAddGratitude,
-}: SpeedDialFabProps) {
+const SpeedDialFab = memo(function SpeedDialFab({ onNewEntry, onAddGratitude }: SpeedDialFabProps) {
   const { t } = useLanguage();
   const ts = t as unknown as Record<string, string>;
   const [open, setOpen] = useState(false);
+
+  // Escape key to close FAB menu
+  useEffect(() => {
+    if (!open) return;
+    const handleEsc = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("keydown", handleEsc);
+    return () => document.removeEventListener("keydown", handleEsc);
+  }, [open]);
   const [showQuickGratitude, setShowQuickGratitude] = useState(false);
   const [showQuickBurn, setShowQuickBurn] = useState(false);
 
@@ -787,7 +759,7 @@ const SpeedDialFab = memo(function SpeedDialFab({
               className={cn(
                 "fixed end-5 z-[56] min-h-[44px]",
                 fabBottom,
-                "flex items-center gap-3 rtl:flex-row flex-row-reverse",
+                "flex items-center gap-3 rtl:flex-row flex-row-reverse"
               )}
               style={{
                 ["bottom" as string]: `calc(6rem + env(safe-area-inset-bottom) + ${(i + 1) * 56}px)`,
@@ -796,7 +768,7 @@ const SpeedDialFab = memo(function SpeedDialFab({
               <div
                 className={cn(
                   "w-11 h-11 rounded-full flex items-center justify-center shadow-lg",
-                  item.color,
+                  item.color
                 )}
               >
                 <item.icon className="w-5 h-5" />
@@ -821,9 +793,7 @@ const SpeedDialFab = memo(function SpeedDialFab({
             setOpen((prev) => !prev);
           }
         }}
-        aria-label={
-          open ? ts.close || "Close" : ts.journalFabNewEntry || "New entry"
-        }
+        aria-label={open ? ts.close || "Close" : ts.journalFabNewEntry || "New entry"}
         className={cn(
           "fixed end-5 z-[56]",
           fabBottom,
@@ -831,13 +801,10 @@ const SpeedDialFab = memo(function SpeedDialFab({
           "bg-gradient-to-br from-primary to-primary/80",
           "text-primary-foreground",
           "flex items-center justify-center",
-          "shadow-[0_4px_20px_rgba(var(--primary-rgb,99,102,241),0.35)]",
+          "shadow-[0_4px_20px_rgba(var(--primary-rgb,99,102,241),0.35)]"
         )}
       >
-        <motion.div
-          animate={{ rotate: open ? 45 : 0 }}
-          transition={zenMotion.snappy}
-        >
+        <motion.div animate={{ rotate: open ? 45 : 0 }} transition={zenMotion.snappy}>
           <Plus className="w-6 h-6" />
         </motion.div>
       </motion.button>

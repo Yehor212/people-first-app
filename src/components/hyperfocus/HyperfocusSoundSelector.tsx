@@ -48,34 +48,36 @@ export function HyperfocusSoundSelector({
               </motion.div>
             )}
             {audioStatus.state === 'blocked' && selectedSoundId && (
-              <motion.div
+              <motion.button
                 key="blocked"
+                type="button"
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8 }}
-                className="flex items-center gap-1.5 px-2 py-1 bg-amber-500/20 border border-amber-500/30 rounded-lg cursor-pointer"
+                className="flex items-center gap-1.5 px-2 py-1 bg-amber-500/20 border border-amber-500/30 rounded-lg cursor-pointer min-h-[44px]"
                 onClick={() => selectedSoundId && onPlaySound(selectedSoundId)}
               >
                 <AlertCircle className="w-4 h-4 text-amber-500" />
                 <span className="text-xs text-amber-600 dark:text-amber-400">
                   {t.audioTapToEnable || 'Tap to enable'}
                 </span>
-              </motion.div>
+              </motion.button>
             )}
             {audioStatus.state === 'error' && selectedSoundId && (
-              <motion.div
+              <motion.button
                 key="error"
+                type="button"
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8 }}
-                className="flex items-center gap-1.5 px-2 py-1 bg-red-500/20 border border-red-500/30 rounded-lg cursor-pointer"
+                className="flex items-center gap-1.5 px-2 py-1 bg-red-500/20 border border-red-500/30 rounded-lg cursor-pointer min-h-[44px]"
                 onClick={() => selectedSoundId && onPlaySound(selectedSoundId)}
               >
                 <RotateCcw className="w-4 h-4 text-red-500" />
                 <span className="text-xs text-red-600 dark:text-red-400">
                   {t.audioRetry || 'Retry'}
                 </span>
-              </motion.div>
+              </motion.button>
             )}
           </AnimatePresence>
 

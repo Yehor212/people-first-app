@@ -77,6 +77,7 @@ export function FocusReflectionModal({
       className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center px-4 z-[60]"
       role="dialog"
       aria-modal="true"
+      aria-label="Focus reflection"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       onClick={(e) => {
@@ -143,7 +144,7 @@ export function FocusReflectionModal({
                     "w-11 h-11 rounded-full text-sm font-bold transition-all",
                     isSelected
                       ? `bg-gradient-to-br ${colors[value - 1]} text-white shadow-[0_0_16px_hsl(var(--focus-violet)/0.5)]`
-                      : "bg-secondary text-muted-foreground hover:bg-secondary/80 hover:text-foreground",
+                      : "bg-secondary text-muted-foreground hover:bg-secondary/80 hover:text-foreground"
                   )}
                   whileHover={{ scale: 1.1 }}
                   whileTap={zenTap.button}
@@ -172,7 +173,7 @@ export function FocusReflectionModal({
               className={cn(
                 "flex-1 py-3 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 text-white font-medium",
                 "shadow-[0_0_16px_hsl(var(--focus-violet)/0.4)]",
-                isSaving && "opacity-50 cursor-not-allowed",
+                isSaving && "opacity-50 cursor-not-allowed"
               )}
               whileHover={isSaving ? {} : { scale: 1.02 }}
               whileTap={isSaving ? {} : zenTap.card}
