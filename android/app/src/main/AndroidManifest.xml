@@ -34,7 +34,7 @@
                     android:host="login-callback" />
             </intent-filter>
 
-            <!-- Custom scheme for challenge invites (no domain verification needed) -->
+            <!-- Custom scheme for challenge invites (legacy — kept for backward compatibility) -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -42,6 +42,18 @@
                 <data
                     android:scheme="zenflow"
                     android:host="challenge" />
+            </intent-filter>
+
+            <!-- OWASP L22: Android App Links for verified challenge invites -->
+            <!-- Requires hosting /.well-known/assetlinks.json on zenflow.app with SHA256 fingerprint -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="zenflow.app"
+                    android:pathPrefix="/challenge" />
             </intent-filter>
 
         </activity>

@@ -104,6 +104,27 @@ export function useAuthHandlers(session: Session, t: Record<string, string>) {
         logger.log(`[Auth] ${provider} OAuth URL generated`);
         session.setDebugInfo(`OAuth URL generated successfully`);
         if (isNative) {
+          // OWASP L19: validate OAuth redirect domain before navigation
+          try {
+            const oauthUrl = new URL(data.url);
+            const trustedDomains = [
+              ".supabase.co",
+              "accounts.google.com",
+              "appleid.apple.com",
+              ".facebook.com",
+            ];
+            if (
+              !trustedDomains.some((d) => oauthUrl.hostname === d || oauthUrl.hostname.endsWith(d))
+            ) {
+              logger.error("[Auth] Untrusted OAuth redirect domain:", oauthUrl.hostname);
+              session.setError("Authentication service unavailable.");
+              return;
+            }
+          } catch {
+            logger.error("[Auth] Invalid OAuth URL format");
+            session.setError("Authentication service unavailable.");
+            return;
+          }
           window.location.assign(data.url);
           logger.log(`[Auth] ${provider} OAuth URL navigation started`);
         }

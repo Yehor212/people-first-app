@@ -1,11 +1,12 @@
-import { useState } from 'react';
-import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
-import { Share } from '@capacitor/share';
-import { isNative } from '@/lib/platform';
-import { logger } from '@/lib/logger';
-import { exportBackup } from '@/storage/backup';
-import { exportAllToCSV, exportProgressReportPDF } from '@/lib/exportService';
-import type { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
+import { useState } from "react";
+import { Filesystem, Directory, Encoding } from "@capacitor/filesystem";
+import { Share } from "@capacitor/share";
+import { isNative } from "@/lib/platform";
+import { logger } from "@/lib/logger";
+import { analytics } from "@/lib/analytics";
+import { exportBackup } from "@/storage/backup";
+import { exportAllToCSV, exportProgressReportPDF } from "@/lib/exportService";
+import type { MoodEntry, Habit, FocusSession, GratitudeEntry } from "@/types";
 
 interface UseDataExportOptions {
   setDataStatus: (status: string | null) => void;
@@ -17,7 +18,15 @@ interface UseDataExportOptions {
   userName: string;
 }
 
-export function useDataExport({ setDataStatus, t, moods, habits, focusSessions, gratitudeEntries, userName }: UseDataExportOptions) {
+export function useDataExport({
+  setDataStatus,
+  t,
+  moods,
+  habits,
+  focusSessions,
+  gratitudeEntries,
+  userName,
+}: UseDataExportOptions) {
   const [isExporting, setIsExporting] = useState(false);
   const [isExportingCSV, setIsExportingCSV] = useState(false);
   const [isExportingPDF, setIsExportingPDF] = useState(false);
@@ -29,7 +38,7 @@ export function useDataExport({ setDataStatus, t, moods, habits, focusSessions, 
       const payload = await exportBackup();
       const json = JSON.stringify(payload, null, 2);
       const now = new Date();
-      const dateStr = now.toISOString().split('T')[0];
+      const dateStr = now.toISOString().split("T")[0];
       const filename = `ZenFlow_Backup_${dateStr}_${now.getTime()}.json`;
 
       if (isNative) {
@@ -40,27 +49,29 @@ export function useDataExport({ setDataStatus, t, moods, habits, focusSessions, 
           encoding: Encoding.UTF8,
         });
         await Share.share({
-          title: 'ZenFlow backup',
+          title: "ZenFlow backup",
           text: filename,
           url: file.uri,
-          dialogTitle: 'Share backup',
+          dialogTitle: "Share backup",
         });
+        analytics.dataExported();
         setDataStatus(t.exportSuccess);
         return;
       }
 
-      const blob = new Blob([json], { type: 'application/json' });
+      const blob = new Blob([json], { type: "application/json" });
       const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
       link.download = filename;
       document.body.appendChild(link);
       link.click();
       link.remove();
       URL.revokeObjectURL(url);
+      analytics.dataExported();
       setDataStatus(t.exportSuccess);
     } catch (error) {
-      logger.error('Export failed:', error);
+      logger.error("Export failed:", error);
       setDataStatus(t.exportError);
     } finally {
       setIsExporting(false);
@@ -72,8 +83,8 @@ export function useDataExport({ setDataStatus, t, moods, habits, focusSessions, 
     try {
       exportAllToCSV({ moods, habits, focusSessions, gratitudeEntries });
     } catch (e) {
-      logger.error('[Settings] CSV export error:', e);
-      setDataStatus(t.exportError || 'Export failed');
+      logger.error("[Settings] CSV export error:", e);
+      setDataStatus(t.exportError || "Export failed");
     } finally {
       setIsExportingCSV(false);
     }
@@ -84,8 +95,8 @@ export function useDataExport({ setDataStatus, t, moods, habits, focusSessions, 
     try {
       await exportProgressReportPDF({ moods, habits, focusSessions, gratitudeEntries, userName });
     } catch (e) {
-      logger.error('[Settings] PDF export error:', e);
-      setDataStatus(t.exportError || 'Export failed');
+      logger.error("[Settings] PDF export error:", e);
+      setDataStatus(t.exportError || "Export failed");
     } finally {
       setIsExportingPDF(false);
     }

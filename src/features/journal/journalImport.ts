@@ -5,8 +5,9 @@
  * Deduplicates by entry ID (skips existing).
  */
 
-import { db } from '@/storage/db';
-import type { JournalEntry, JournalPhoto, JournalAudio } from './types';
+import { db } from "@/storage/db";
+import { sanitizeObject } from "@/lib/validation";
+import type { JournalEntry, JournalPhoto, JournalAudio } from "./types";
 
 interface JournalBackup {
   version: number;
@@ -25,26 +26,28 @@ export interface ImportResult {
 }
 
 function validateBackup(data: unknown): data is JournalBackup {
-  if (!data || typeof data !== 'object') return false;
+  if (!data || typeof data !== "object") return false;
   const obj = data as Record<string, unknown>;
-  if (typeof obj.version !== 'number') return false;
+  if (typeof obj.version !== "number") return false;
   if (!Array.isArray(obj.entries)) return false;
   if (!Array.isArray(obj.photos)) return false;
   return true;
 }
 
 function validateEntry(entry: unknown): entry is JournalEntry {
-  if (!entry || typeof entry !== 'object') return false;
+  if (!entry || typeof entry !== "object") return false;
   const e = entry as Record<string, unknown>;
-  return typeof e.id === 'string' &&
-    typeof e.date === 'string' &&
-    typeof e.content === 'string' &&
-    typeof e.createdAt === 'number';
+  return (
+    typeof e.id === "string" &&
+    typeof e.date === "string" &&
+    typeof e.content === "string" &&
+    typeof e.createdAt === "number"
+  );
 }
 
 export async function importJournalBackup(
   file: File,
-  onProgress?: (step: string) => void,
+  onProgress?: (step: string) => void
 ): Promise<ImportResult> {
   const result: ImportResult = {
     imported: 0,
@@ -57,40 +60,38 @@ export async function importJournalBackup(
   // L21: Enforce file size limit before reading entire file into memory
   const MAX_IMPORT_SIZE = 50 * 1024 * 1024; // 50 MB
   if (file.size > MAX_IMPORT_SIZE) {
-    result.errors.push('Import file too large (max 50 MB)');
+    result.errors.push("Import file too large (max 50 MB)");
     return result;
   }
 
-  onProgress?.('Reading file...');
+  onProgress?.("Reading file...");
   const text = await file.text();
 
   let data: unknown;
   try {
-    data = JSON.parse(text);
+    data = sanitizeObject(JSON.parse(text));
   } catch {
-    result.errors.push('Invalid JSON file');
+    result.errors.push("Invalid JSON file");
     return result;
   }
 
   if (!validateBackup(data)) {
-    result.errors.push('Invalid backup format');
+    result.errors.push("Invalid backup format");
     return result;
   }
 
   const backup = data;
 
   // Get existing entry IDs for deduplication
-  onProgress?.('Checking existing entries...');
-  const existingIds = new Set(
-    (await db.journalEntries.toArray()).map(e => e.id)
-  );
+  onProgress?.("Checking existing entries...");
+  const existingIds = new Set((await db.journalEntries.toArray()).map((e) => e.id));
 
   // Import entries
-  onProgress?.('Importing entries...');
+  onProgress?.("Importing entries...");
   for (const entry of backup.entries) {
     if (!validateEntry(entry)) {
       const entryId = (entry as Record<string, unknown>).id;
-      result.errors.push(`Invalid entry: ${typeof entryId === 'string' ? entryId : 'unknown'}`);
+      result.errors.push(`Invalid entry: ${typeof entryId === "string" ? entryId : "unknown"}`);
       continue;
     }
 
@@ -104,8 +105,8 @@ export async function importJournalBackup(
       const safeEntry: JournalEntry = {
         id: entry.id,
         date: entry.date,
-        title: entry.title || '',
-        content: entry.content || '',
+        title: entry.title || "",
+        content: entry.content || "",
         stickers: Array.isArray(entry.stickers) ? entry.stickers : [],
         photoIds: Array.isArray(entry.photoIds) ? entry.photoIds : [],
         audioIds: Array.isArray(entry.audioIds) ? entry.audioIds : undefined,
@@ -119,16 +120,16 @@ export async function importJournalBackup(
       await db.journalEntries.add(safeEntry);
       result.imported++;
     } catch (err) {
-      result.errors.push(`Failed to import entry ${entry.id}: ${err instanceof Error ? err.message : 'unknown'}`);
+      result.errors.push(
+        `Failed to import entry ${entry.id}: ${err instanceof Error ? err.message : "unknown"}`
+      );
     }
   }
 
   // Import photos
   if (backup.photos.length > 0) {
-    onProgress?.('Importing photos...');
-    const existingPhotoIds = new Set(
-      (await db.journalPhotos.toArray()).map(p => p.id)
-    );
+    onProgress?.("Importing photos...");
+    const existingPhotoIds = new Set((await db.journalPhotos.toArray()).map((p) => p.id));
 
     for (const photo of backup.photos) {
       if (!photo.id || existingPhotoIds.has(photo.id)) continue;
@@ -143,10 +144,8 @@ export async function importJournalBackup(
 
   // Import audio
   if (backup.audio && backup.audio.length > 0) {
-    onProgress?.('Importing audio...');
-    const existingAudioIds = new Set(
-      (await db.journalAudio.toArray()).map(a => a.id)
-    );
+    onProgress?.("Importing audio...");
+    const existingAudioIds = new Set((await db.journalAudio.toArray()).map((a) => a.id));
 
     for (const audio of backup.audio) {
       if (!audio.id || existingAudioIds.has(audio.id)) continue;

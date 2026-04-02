@@ -1,9 +1,9 @@
-import { createClient, SupabaseClient, User } from '@supabase/supabase-js';
-import { isNative } from '@/lib/platform';
-import { Database } from '@/types/supabase';
-import { z } from 'zod';
-import { logger } from '@/lib/logger';
-import { SUPABASE_URL, SUPABASE_ANON_KEY, IS_DEV } from '@/lib/env';
+import { createClient, SupabaseClient, User } from "@supabase/supabase-js";
+import { isNative } from "@/lib/platform";
+import { Database } from "@/types/supabase";
+import { z } from "zod";
+import { logger } from "@/lib/logger";
+import { SUPABASE_URL, SUPABASE_ANON_KEY, IS_DEV } from "@/lib/env";
 
 /**
  * Zod schema for validating Supabase user object
@@ -28,7 +28,7 @@ export function validateSupabaseUser(user: unknown): User | null {
   if (!result.success) {
     // Log validation error in development
     if (IS_DEV) {
-      logger.warn('[Supabase] User validation failed:', result.error.issues);
+      logger.warn("[Supabase] User validation failed:", result.error.issues);
     }
     return null;
   }
@@ -36,7 +36,6 @@ export function validateSupabaseUser(user: unknown): User | null {
   // Return the original user (with full Supabase type) since it passed validation
   return user as User;
 }
-
 
 /**
  * Validate Supabase environment variables
@@ -49,8 +48,10 @@ export interface SupabaseConfigStatus {
 }
 
 export function getSupabaseConfigStatus(): SupabaseConfigStatus {
-  const missingUrl = !SUPABASE_URL || typeof SUPABASE_URL !== 'string' || SUPABASE_URL.trim() === '';
-  const missingKey = !SUPABASE_ANON_KEY || typeof SUPABASE_ANON_KEY !== 'string' || SUPABASE_ANON_KEY.trim() === '';
+  const missingUrl =
+    !SUPABASE_URL || typeof SUPABASE_URL !== "string" || SUPABASE_URL.trim() === "";
+  const missingKey =
+    !SUPABASE_ANON_KEY || typeof SUPABASE_ANON_KEY !== "string" || SUPABASE_ANON_KEY.trim() === "";
 
   return {
     isConfigured: !missingUrl && !missingKey,
@@ -61,29 +62,34 @@ export function getSupabaseConfigStatus(): SupabaseConfigStatus {
 
 // Emit event if Supabase is not configured so UI can show notification
 const configStatus = getSupabaseConfigStatus();
-if (!configStatus.isConfigured && typeof window !== 'undefined') {
+if (!configStatus.isConfigured && typeof window !== "undefined") {
   // Log warning in development
   if (IS_DEV) {
     logger.warn(
-      '[Supabase] Cloud sync disabled - environment variables not configured.',
-      configStatus.missingUrl ? 'Missing VITE_SUPABASE_URL.' : '',
-      configStatus.missingKey ? 'Missing VITE_SUPABASE_ANON_KEY.' : ''
+      "[Supabase] Cloud sync disabled - environment variables not configured.",
+      configStatus.missingUrl ? "Missing VITE_SUPABASE_URL." : "",
+      configStatus.missingKey ? "Missing VITE_SUPABASE_ANON_KEY." : ""
     );
   }
   // Emit event for UI to show notification (async to not block initialization)
   setTimeout(() => {
-    window.dispatchEvent(new CustomEvent('zenflow:supabase-not-configured', {
-      detail: configStatus
-    }));
+    window.dispatchEvent(
+      new CustomEvent("zenflow:supabase-not-configured", {
+        detail: configStatus,
+      })
+    );
   }, 0);
 }
 
 /**
- * Get storage adapter for auth persistence
- * Uses localStorage which works well in both web and Capacitor
+ * Get storage adapter for auth persistence.
+ * SECURITY (OWASP M9): Auth tokens stored in localStorage on web.
+ * Risk: XSS could exfiltrate tokens. Mitigated by CSP (script-src 'self' — no inline/eval).
+ * On native Capacitor: WebView sandbox provides OS-level protection.
+ * Future hardening: migrate to @capacitor-community/secure-storage for Android Keystore / iOS Keychain.
  */
 const getAuthStorage = () => {
-  if (typeof window === 'undefined') return undefined;
+  if (typeof window === "undefined") return undefined;
   return window.localStorage;
 };
 
@@ -105,7 +111,7 @@ export const supabase: SupabaseClient<Database> | null =
           autoRefreshToken: true,
           detectSessionInUrl: shouldDetectSessionInUrl(),
           storage: getAuthStorage(),
-          flowType: 'pkce',
+          flowType: "pkce",
         },
       })
     : null;
@@ -114,12 +120,15 @@ export const supabase: SupabaseClient<Database> | null =
 // Validates user object shape before returning
 export const getCurrentUser = async () => {
   if (!supabase) return null;
-  const { data: { user }, error } = await supabase.auth.getUser();
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
 
   // Log errors for debugging
   if (error) {
     if (IS_DEV) {
-      logger.warn('[Supabase] getUser error:', error.message);
+      logger.warn("[Supabase] getUser error:", error.message);
     }
     return null;
   }

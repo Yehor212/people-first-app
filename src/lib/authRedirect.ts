@@ -35,8 +35,18 @@ export const getAuthRedirectUrl = () => {
     return NATIVE_REDIRECT_URL;
   }
 
-  // Web: construct clean redirect URL
-  const origin = window.location.origin;
+  // Web: construct clean redirect URL with origin allowlist (OWASP L18)
+  const ALLOWED_ORIGINS = [
+    "https://yehor212.github.io",
+    "capacitor://localhost",
+    "https://zenflow.app",
+    "http://localhost:3000",
+    "http://localhost:5173",
+  ] as const;
+  const rawOrigin = window.location.origin;
+  const origin = (ALLOWED_ORIGINS as readonly string[]).includes(rawOrigin)
+    ? rawOrigin
+    : ALLOWED_ORIGINS[0];
   const basePath = BASE_URL;
 
   // Ensure proper path format (no double slashes)
@@ -51,10 +61,7 @@ export const getAuthRedirectUrl = () => {
 
 export const isNativePlatform = () => isNative;
 
-export const handleAuthCallback = async (
-  supabaseClient: SupabaseClient,
-  url: string,
-) => {
+export const handleAuthCallback = async (supabaseClient: SupabaseClient, url: string) => {
   if (!supabaseClient || !url) return;
 
   let parsed: URL;
@@ -69,8 +76,7 @@ export const handleAuthCallback = async (
 
   // Handle errors with sanitized messages
   const errorDescription =
-    searchParams.get("error_description") ||
-    hashParams.get("error_description");
+    searchParams.get("error_description") || hashParams.get("error_description");
   if (errorDescription) {
     throw new Error(sanitizeErrorMessage(errorDescription));
   }
@@ -83,8 +89,7 @@ export const handleAuthCallback = async (
       throw new Error("Invalid authorization code");
     }
 
-    const { data, error } =
-      await supabaseClient.auth.exchangeCodeForSession(normalizedCode);
+    const { data, error } = await supabaseClient.auth.exchangeCodeForSession(normalizedCode);
 
     if (error) {
       logger.error("[Auth] exchangeCodeForSession error:", error.message);
@@ -98,7 +103,7 @@ export const handleAuthCallback = async (
     // Don't log email (PII) - log user ID instead
     logger.log(
       "[Auth] PKCE session exchange successful, user:",
-      `user:${data.session.user.id.slice(0, 8)}`,
+      `user:${data.session.user.id.slice(0, 8)}`
     );
     return;
   }
@@ -127,7 +132,7 @@ export const handleAuthCallback = async (
     // Don't log email (PII) - log user ID instead
     logger.log(
       "[Auth] Implicit flow session set, user:",
-      `user:${data.session.user.id.slice(0, 8)}`,
+      `user:${data.session.user.id.slice(0, 8)}`
     );
     return;
   }
