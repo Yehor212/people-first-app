@@ -2,10 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { create, getNumericDate } from "https://deno.land/x/djwt@v3.0.2/mod.ts";
 import webpush from "npm:web-push@3.6.7";
 import { extractBearerToken } from "../_shared/auth.ts";
-import {
-  createJsonResponse,
-  createNoContentResponse,
-} from "../_shared/http.ts";
+import { createJsonResponse, createNoContentResponse, parseJsonBody } from "../_shared/http.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -54,7 +51,7 @@ const getFcmAccessToken = async () => {
     keyData,
     { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
     false,
-    ["sign"],
+    ["sign"]
   );
 
   const jwt = await create(
@@ -66,7 +63,7 @@ const getFcmAccessToken = async () => {
       iat: getNumericDate(0),
       exp: getNumericDate(60 * 60),
     },
-    key,
+    key
   );
 
   const response = await fetch("https://oauth2.googleapis.com/token", {
@@ -83,10 +80,7 @@ const getFcmAccessToken = async () => {
   return data.access_token as string | undefined;
 };
 
-const sendFcmNotifications = async (
-  tokens: string[],
-  content: { title: string; body: string },
-) => {
+const sendFcmNotifications = async (tokens: string[], content: { title: string; body: string }) => {
   const accessToken = await getFcmAccessToken();
   if (!accessToken || !FCM_PROJECT_ID) return 0;
 
@@ -110,8 +104,8 @@ const sendFcmNotifications = async (
         }),
       })
         .then((res) => (res.ok ? 1 : 0))
-        .catch(() => 0),
-    ),
+        .catch(() => 0)
+    )
   );
 
   return results.reduce((total, value) => total + value, 0);
@@ -129,8 +123,7 @@ Deno.serve(async (req) => {
 
   try {
     const token = extractBearerToken(req.headers.get("Authorization"));
-    if (!token)
-      return createJsonResponse(origin, 401, { error: "Unauthorized" });
+    if (!token) return createJsonResponse(origin, 401, { error: "Unauthorized" });
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     const { data, error } = await supabase.auth.getUser(token);
@@ -166,45 +159,35 @@ Deno.serve(async (req) => {
       });
     }
 
-    const payload = await req.json().catch(() => ({}));
+    const [payload, bodyErr] = await parseJsonBody(req, origin);
+    if (bodyErr) return bodyErr;
+    const rawTitle = typeof payload.title === "string" ? payload.title.slice(0, 100) : "ZenFlow";
+    const rawBody =
+      typeof payload.body === "string" ? payload.body.slice(0, 500) : "Test notification";
     const content = {
-      title: payload.title ?? "ZenFlow",
-      body: payload.body ?? "Test notification",
+      title: rawTitle.replace(/[<>]/g, ""),
+      body: rawBody.replace(/[<>]/g, ""),
     };
 
     let sent = 0;
 
-    if (
-      VAPID_PUBLIC_KEY &&
-      VAPID_PRIVATE_KEY &&
-      VAPID_SUBJECT &&
-      subs &&
-      subs.length > 0
-    ) {
-      webpush.setVapidDetails(
-        VAPID_SUBJECT,
-        VAPID_PUBLIC_KEY,
-        VAPID_PRIVATE_KEY,
-      );
-      await Promise.all(
+    if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY && VAPID_SUBJECT && subs && subs.length > 0) {
+      webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
+      const results = await Promise.all(
         subs.map((sub) =>
           webpush
-            .sendNotification(
-              { endpoint: sub.endpoint, keys: sub.keys },
-              JSON.stringify(content),
-            )
-            .then(() => {
-              sent += 1;
-            })
-            .catch(() => null),
-        ),
+            .sendNotification({ endpoint: sub.endpoint, keys: sub.keys }, JSON.stringify(content))
+            .then(() => true)
+            .catch(() => false)
+        )
       );
+      sent += results.filter(Boolean).length;
     }
 
     if (deviceTokens && deviceTokens.length > 0) {
       sent += await sendFcmNotifications(
         deviceTokens.map((item) => item.token),
-        content,
+        content
       );
     }
 

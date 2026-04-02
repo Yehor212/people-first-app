@@ -51,28 +51,26 @@ function checkRateLimit(userId: string): boolean {
 
 async function generateEmbedding(text: string): Promise<number[]> {
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${EMBEDDING_MODEL}:embedContent?key=${GEMINI_API_KEY}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${EMBEDDING_MODEL}:embedContent`,
     {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "x-goog-api-key": GEMINI_API_KEY! },
       body: JSON.stringify({
         content: { parts: [{ text }] },
       }),
-    },
+    }
   );
 
   if (!response.ok) {
     const errText = await response.text();
-    throw new Error(
-      `Gemini embedding API error: ${response.status} ${errText}`,
-    );
+    throw new Error(`Gemini embedding API error: ${response.status} ${errText}`);
   }
 
   const result = await response.json();
   const values = result?.embedding?.values;
   if (!Array.isArray(values) || values.length !== EMBEDDING_DIMS) {
     throw new Error(
-      `Unexpected embedding dimensions: got ${values?.length}, expected ${EMBEDDING_DIMS}`,
+      `Unexpected embedding dimensions: got ${values?.length}, expected ${EMBEDDING_DIMS}`
     );
   }
   return values;
@@ -156,9 +154,7 @@ Deno.serve(async (req) => {
       return jsonResponse(500, { error: "Search failed" });
     }
 
-    console.log(
-      `[SearchJournal] Found ${data?.length || 0} results for ${redactUserRef(user.id)}`,
-    );
+    console.log(`[SearchJournal] Found ${data?.length || 0} results for ${redactUserRef(user.id)}`);
 
     return jsonResponse(200, { results: data || [] });
   } catch (error) {

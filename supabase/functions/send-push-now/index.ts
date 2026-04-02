@@ -2,7 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { create, getNumericDate } from "https://deno.land/x/djwt@v3.0.2/mod.ts";
 import webpush from "npm:web-push@3.6.7";
 import { extractBearerToken } from "../_shared/auth.ts";
-import { createJsonResponse, createNoContentResponse } from "../_shared/http.ts";
+import { createJsonResponse, createNoContentResponse, parseJsonBody } from "../_shared/http.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -87,7 +87,7 @@ const getFcmAccessToken = async () => {
       scope: "https://www.googleapis.com/auth/firebase.messaging",
       aud: "https://oauth2.googleapis.com/token",
       iat: getNumericDate(0),
-      exp: getNumericDate(60 * 60)
+      exp: getNumericDate(60 * 60),
     },
     key
   );
@@ -97,8 +97,8 @@ const getFcmAccessToken = async () => {
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
       grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
-      assertion: jwt
-    })
+      assertion: jwt,
+    }),
   });
 
   if (!response.ok) return null;
@@ -117,17 +117,17 @@ const sendFcmNotifications = async (tokens: string[], content: { title: string; 
         method: "POST",
         headers: {
           Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           message: {
             token,
             notification: {
               title: content.title,
-              body: content.body
-            }
-          }
-        })
+              body: content.body,
+            },
+          },
+        }),
       })
         .then((res) => (res.ok ? 1 : 0))
         .catch(() => 0)
@@ -191,7 +191,8 @@ Deno.serve(async (req) => {
       return createJsonResponse(origin, 500, { error: "Failed to load device tokens" });
     }
 
-    const payload = await req.json().catch(() => ({} as { type?: string }));
+    const [payload, bodyErr] = await parseJsonBody<{ type?: string }>(req, origin);
+    if (bodyErr) return bodyErr;
     const type = payload.type || "mood";
     const content = getTitleBody(type, settings?.language || "en");
 
@@ -202,10 +203,7 @@ Deno.serve(async (req) => {
       const results = await Promise.all(
         subs.map((sub) =>
           webpush
-            .sendNotification(
-              { endpoint: sub.endpoint, keys: sub.keys },
-              JSON.stringify(content)
-            )
+            .sendNotification({ endpoint: sub.endpoint, keys: sub.keys }, JSON.stringify(content))
             .then(() => true)
             .catch(() => false)
         )

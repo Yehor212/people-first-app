@@ -80,28 +80,26 @@ function buildEmbeddingText(entry: EntryRow): string {
 
 async function generateEmbedding(text: string): Promise<number[]> {
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${EMBEDDING_MODEL}:embedContent?key=${GEMINI_API_KEY}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${EMBEDDING_MODEL}:embedContent`,
     {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "x-goog-api-key": GEMINI_API_KEY! },
       body: JSON.stringify({
         content: { parts: [{ text }] },
       }),
-    },
+    }
   );
 
   if (!response.ok) {
     const errText = await response.text();
-    throw new Error(
-      `Gemini embedding API error: ${response.status} ${errText}`,
-    );
+    throw new Error(`Gemini embedding API error: ${response.status} ${errText}`);
   }
 
   const result = await response.json();
   const values = result?.embedding?.values;
   if (!Array.isArray(values) || values.length !== EMBEDDING_DIMS) {
     throw new Error(
-      `Unexpected embedding dimensions: got ${values?.length}, expected ${EMBEDDING_DIMS}`,
+      `Unexpected embedding dimensions: got ${values?.length}, expected ${EMBEDDING_DIMS}`
     );
   }
   return values;
@@ -109,24 +107,22 @@ async function generateEmbedding(text: string): Promise<number[]> {
 
 async function generateBatchEmbeddings(texts: string[]): Promise<number[][]> {
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${EMBEDDING_MODEL}:batchEmbedContents?key=${GEMINI_API_KEY}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${EMBEDDING_MODEL}:batchEmbedContents`,
     {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "x-goog-api-key": GEMINI_API_KEY! },
       body: JSON.stringify({
         requests: texts.map((text) => ({
           model: `models/${EMBEDDING_MODEL}`,
           content: { parts: [{ text }] },
         })),
       }),
-    },
+    }
   );
 
   if (!response.ok) {
     const errText = await response.text();
-    throw new Error(
-      `Gemini batch embedding API error: ${response.status} ${errText}`,
-    );
+    throw new Error(`Gemini batch embedding API error: ${response.status} ${errText}`);
   }
 
   const result = await response.json();
@@ -215,14 +211,14 @@ Deno.serve(async (req) => {
       .select("entry_id, content_hash")
       .in(
         "entry_id",
-        entries.map((e: EntryRow) => e.id),
+        entries.map((e: EntryRow) => e.id)
       );
 
     const hashMap = new Map(
       (existing || []).map((e: { entry_id: string; content_hash: string }) => [
         e.entry_id,
         e.content_hash,
-      ]),
+      ])
     );
 
     // 3. Filter to entries needing new/updated embeddings
@@ -266,7 +262,7 @@ Deno.serve(async (req) => {
     }
 
     console.log(
-      `[GenerateEmbedding] Processed ${toProcess.length} entries for ${redactUserRef(user.id)}`,
+      `[GenerateEmbedding] Processed ${toProcess.length} entries for ${redactUserRef(user.id)}`
     );
     return jsonResponse(200, { processed: toProcess.length });
   } catch (error) {

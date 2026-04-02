@@ -303,13 +303,7 @@ Deno.serve(async (req) => {
   try {
     const [body, bodyErr] = await parseJsonBody<CoachRequest>(req, origin);
     if (bodyErr) return bodyErr;
-    const {
-      message,
-      context,
-      language,
-      trigger,
-      conversationHistory = [],
-    } = body;
+    const { message, context, language, trigger, conversationHistory = [] } = body;
 
     if (!message) {
       return jsonResponse(400, { error: "Message is required" });
@@ -358,10 +352,10 @@ Deno.serve(async (req) => {
 
     // Call Gemini API
     const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-goog-api-key": GEMINI_API_KEY! },
         body: JSON.stringify({
           contents,
           generationConfig: {
@@ -388,7 +382,7 @@ Deno.serve(async (req) => {
             },
           ],
         }),
-      },
+      }
     );
 
     if (!geminiResponse.ok) {
@@ -398,8 +392,7 @@ Deno.serve(async (req) => {
     }
 
     const result = await geminiResponse.json();
-    const coachMessage =
-      result.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    const coachMessage = result.candidates?.[0]?.content?.parts?.[0]?.text || "";
 
     if (!coachMessage) {
       console.error("[AICoach] Empty response from Gemini");
@@ -524,10 +517,7 @@ function formatUserContext(context: UserContext, lang: string): string {
 
   if (context.habits && context.habits.length > 0) {
     const habitsSummary = context.habits
-      .map(
-        (h) =>
-          `${h.name} (${h.completedToday ? "✓" : "○"}, streak: ${h.streak})`,
-      )
+      .map((h) => `${h.name} (${h.completedToday ? "✓" : "○"}, streak: ${h.streak})`)
       .join(", ");
     lines.push(`${labels.habits}: ${habitsSummary}`);
   }
