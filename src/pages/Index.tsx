@@ -1,4 +1,4 @@
-import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { shouldAnimate } from "@/lib/animationUtils";
 import {
@@ -102,6 +102,9 @@ export function Index() {
   const settingsOpenSection = useAppStore((s) => s.settingsOpenSection);
   const quickActionTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
 
+  // Concurrent mode: defer heavy tab content renders so interactions stay responsive (INP)
+  const [, startTransition] = useTransition();
+
   // Focus management: move focus to main content on tab change (WCAG 2.1 §2.4.3)
   const mainRef = useRef<HTMLElement>(null);
   const prevTabRef = useRef(activeTab);
@@ -118,7 +121,7 @@ export function Index() {
         window.scrollTo({ top: 0, behavior: "smooth" });
         return;
       }
-      setActiveTab(tab);
+      startTransition(() => setActiveTab(tab));
     },
     [activeTab, setActiveTab]
   );
@@ -143,7 +146,7 @@ export function Index() {
   ];
   const { containerProps: swipeProps, containerRef: swipeContainerRef } = useSwipeNavigation({
     activeTab,
-    onTabChange: (tab: TabType) => setActiveTab(tab),
+    onTabChange: (tab: TabType) => startTransition(() => setActiveTab(tab)),
     tabs: SWIPE_TABS,
     threshold: 50,
     velocityThreshold: 0.3,
@@ -161,7 +164,7 @@ export function Index() {
   const handleNavigateToSection = useCallback(
     (section: "mood" | "habits" | "focus") => {
       if (section === "habits") {
-        setActiveTab("mindmap");
+        startTransition(() => setActiveTab("mindmap"));
         return;
       }
       const refs = { mood: moodRef, focus: focusRef };
@@ -175,7 +178,7 @@ export function Index() {
 
   const handleQuickAction = useCallback(
     (action: string) => {
-      setActiveTab("home");
+      startTransition(() => setActiveTab("home"));
       quickActionTimeoutRef.current = setTimeout(() => {
         if (action === "logMood") moodRef.current?.scrollIntoView({ behavior: "smooth" });
         if (action === "startFocus") focusRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -410,9 +413,10 @@ export function Index() {
                   activeTab !== "settings" &&
                   activeTab !== "mindmap" && (
                     <div className="mb-4">
+                      {/* A11Y-OK: GlobalScheduleBar renders its own button with aria-label internally */}
                       <GlobalScheduleBar
                         events={todayAllEvents}
-                        onTap={() => setActiveTab("garden")}
+                        onTap={() => startTransition(() => setActiveTab("garden"))}
                       />
                     </div>
                   )}
@@ -561,7 +565,10 @@ export function Index() {
               </LazyErrorBoundary>
             )}
 
-            <FocusMiniPlayer onNavigateToTimer={() => setActiveTab("garden")} />
+            {/* A11Y-OK: FocusMiniPlayer renders its own button with aria-label internally */}
+            <FocusMiniPlayer
+              onNavigateToTimer={() => startTransition(() => setActiveTab("garden"))}
+            />
             <Navigation
               activeTab={activeTab}
               onTabChange={handleTabChange}

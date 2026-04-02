@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo, memo } from "react";
 import {
   ArrowLeft,
   Check,
@@ -367,7 +367,7 @@ interface JournalEntryEditorProps {
   onAddGratitude?: (entry: import("@/types").GratitudeEntry) => void;
 }
 
-export function JournalEntryEditor({
+export const JournalEntryEditor = memo(function JournalEntryEditor({
   entry,
   onSave,
   onAddPhoto,
@@ -387,8 +387,8 @@ export function JournalEntryEditor({
   const editorRef = useRef<HTMLDivElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
   const draftTimerRef = useRef<ReturnType<typeof setTimeout>>();
-  const navigationTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
-  const focusTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
+  const navigationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const focusTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const editorOverlayRef = useRef<HTMLDivElement>(null);
   const contentAreaRef = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -2239,4 +2239,4 @@ export function JournalEntryEditor({
       <DiaryFormatToolbar editorRef={editorRef} scrollContainerRef={scrollAreaRef} />
     </div>
   );
-}
+});

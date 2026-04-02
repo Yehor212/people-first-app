@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, memo } from 'react';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
 import { safeAverage } from '@/lib/validation';
 import { isHabitCompletedOnDate, getHabitCompletedDates } from '@/lib/habits';
@@ -68,7 +68,7 @@ function getWeekBeforeLastDates() {
   return dates;
 }
 
-export function WeeklyReport({ moods, habits, focusSessions, gratitudeEntries, onClose }: WeeklyReportProps) {
+export const WeeklyReport = memo(function WeeklyReport({ moods, habits, focusSessions, gratitudeEntries, onClose }: WeeklyReportProps) {
   const { t, language } = useLanguage();
 
   useBackHandler(true, onClose);
@@ -332,4 +332,4 @@ export function WeeklyReport({ moods, habits, focusSessions, gratitudeEntries, o
       </motion.div>
     </motion.div>
   );
-}
+});

@@ -1,4 +1,4 @@
-import { useMemo, useEffect, useRef } from "react";
+import { useMemo, useEffect, useRef, memo } from "react";
 import { MoodEntry, Habit, FocusSession, GratitudeEntry } from "@/types";
 import { getToday } from "@/lib/utils";
 import { isHabitCompletedOnDate } from "@/lib/habits";
@@ -28,7 +28,7 @@ interface ProgressItem {
   onClick?: () => void;
 }
 
-export function DailyProgress({
+export const DailyProgress = memo(function DailyProgress({
   moods,
   habits,
   focusSessions,
@@ -225,4 +225,4 @@ export function DailyProgress({
       )}
     </div>
   );
-}
+});

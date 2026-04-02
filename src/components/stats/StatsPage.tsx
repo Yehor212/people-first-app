@@ -4,7 +4,7 @@
  * This file: ~200L, 5 useState, delegates data to useStatsPageData hook.
  */
 
-import { useState, useRef, useCallback, memo, Suspense } from 'react';
+import { useState, useRef, useCallback, useMemo, memo, Suspense } from 'react';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
 import { getToday } from '@/lib/utils';
 import { useStatsCalculations } from '@/hooks/useStatsCalculations';
@@ -85,6 +85,29 @@ export const StatsPage = memo(function StatsPage({
     setStatsTab(tab);
     statsContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, []);
+
+  // Memoize ring detail values to avoid inline .reduce() in JSX
+  const ringCurrentValue = useMemo(() => {
+    if (!selectedRing) return 0;
+    const data = selectedRing === 'mood' ? pageData.ringWeeklyData.mood :
+      selectedRing === 'habits' ? pageData.ringWeeklyData.habits :
+      selectedRing === 'focus' ? pageData.ringWeeklyData.focus : [];
+    return Math.round(data.reduce((a, b) => a + b.value, 0) / 7);
+  }, [selectedRing, pageData.ringWeeklyData]);
+
+  const ringWeeklyData = useMemo(() => {
+    if (!selectedRing) return [];
+    return selectedRing === 'mood' ? pageData.ringWeeklyData.mood :
+      selectedRing === 'habits' ? pageData.ringWeeklyData.habits :
+      selectedRing === 'focus' ? pageData.ringWeeklyData.focus : [];
+  }, [selectedRing, pageData.ringWeeklyData]);
+
+  const ringPreviousAverage = useMemo(() => {
+    if (!selectedRing) return 0;
+    return selectedRing === 'mood' ? pageData.ringWeeklyData.prevMoodAvg :
+      selectedRing === 'habits' ? pageData.ringWeeklyData.prevHabitsAvg :
+      selectedRing === 'focus' ? pageData.ringWeeklyData.prevFocusAvg : 0;
+  }, [selectedRing, pageData.ringWeeklyData]);
 
   // --- JSX ---
   return (
@@ -218,21 +241,9 @@ export const StatsPage = memo(function StatsPage({
         open={selectedRing !== null}
         onOpenChange={(open) => !open && setSelectedRing(null)}
         ringType={selectedRing}
-        currentValue={
-          selectedRing === 'mood' ? Math.round(pageData.ringWeeklyData.mood.reduce((a, b) => a + b.value, 0) / 7) :
-          selectedRing === 'habits' ? Math.round(pageData.ringWeeklyData.habits.reduce((a, b) => a + b.value, 0) / 7) :
-          selectedRing === 'focus' ? Math.round(pageData.ringWeeklyData.focus.reduce((a, b) => a + b.value, 0) / 7) : 0
-        }
-        weeklyData={
-          selectedRing === 'mood' ? pageData.ringWeeklyData.mood :
-          selectedRing === 'habits' ? pageData.ringWeeklyData.habits :
-          selectedRing === 'focus' ? pageData.ringWeeklyData.focus : []
-        }
-        previousAverage={
-          selectedRing === 'mood' ? pageData.ringWeeklyData.prevMoodAvg :
-          selectedRing === 'habits' ? pageData.ringWeeklyData.prevHabitsAvg :
-          selectedRing === 'focus' ? pageData.ringWeeklyData.prevFocusAvg : 0
-        }
+        currentValue={ringCurrentValue}
+        weeklyData={ringWeeklyData}
+        previousAverage={ringPreviousAverage}
         onAction={() => {
           const ring = selectedRing;
           setSelectedRing(null);

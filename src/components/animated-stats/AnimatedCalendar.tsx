@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo } from "react";
 import { MoodType, MoodEntry } from "@/types";
 import { cn } from "@/lib/utils";
 import {
@@ -107,7 +107,7 @@ const moodConfig: Record<
   },
 };
 
-export function AnimatedCalendar({
+export const AnimatedCalendar = memo(function AnimatedCalendar({
   title,
   yearLabel,
   selectedYear,
@@ -439,4 +439,4 @@ export function AnimatedCalendar({
       </div>
     </div>
   );
-}
+});

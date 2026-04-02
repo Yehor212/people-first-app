@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef, memo } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef, memo, useDeferredValue } from "react";
 import { Plus, Search, X, Sparkles, Loader2, PenLine, Sprout, Flame } from "lucide-react";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -139,7 +139,7 @@ interface JournalEntryListProps {
   privateMode?: boolean;
 }
 
-export function JournalEntryList({
+export const JournalEntryList = memo(function JournalEntryList({
   groupedEntries,
   onOpenEntry,
   onDeleteEntry,
@@ -152,8 +152,14 @@ export function JournalEntryList({
 }: JournalEntryListProps) {
   const { t } = useLanguage();
   const ts = t as unknown as Record<string, string>;
+
+  // Stable handlers that accept ID — prevents inline arrows from defeating memo on JournalEntryCard
+  const handleTap = useCallback((id: string) => onOpenEntry(id), [onOpenEntry]);
+  const handleDelete = useCallback((id: string) => onDeleteEntry(id), [onDeleteEntry]);
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  // Defer the debounced value so list filtering doesn't block input responsiveness (INP)
+  const deferredSearch = useDeferredValue(debouncedSearch);
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [selectedMood, setSelectedMood] = useState<MoodType | null>(null);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
@@ -266,10 +272,11 @@ export function JournalEntryList({
       .filter((r): r is { entry: JournalEntry; similarity: number } => r !== null);
   }, [aiMode, aiResults, entriesById]);
 
-  // Filter entries by debounced search + mood + tag (text mode only)
+  // Filter entries by deferred search + mood + tag (text mode only)
+  // Uses deferredSearch so the list filters in the background without blocking input
   const filteredGroups = useMemo(() => {
     if (aiMode) return []; // AI mode uses aiMatchedEntries instead
-    const q = debouncedSearch.toLowerCase().trim();
+    const q = deferredSearch.toLowerCase().trim();
     return groupedEntries
       .map((group) => ({
         ...group,
@@ -290,9 +297,9 @@ export function JournalEntryList({
         }),
       }))
       .filter((g) => g.entries.length > 0);
-  }, [groupedEntries, debouncedSearch, selectedMood, selectedTag, aiMode]);
+  }, [groupedEntries, deferredSearch, selectedMood, selectedTag, aiMode]);
 
-  const hasActiveFilters = debouncedSearch || selectedMood || selectedTag;
+  const hasActiveFilters = deferredSearch || selectedMood || selectedTag;
   const showFilters = !aiMode && (activeMoods.size > 0 || allTags.length > 0);
   const showAiToggle = !!supabase; // Only show AI toggle when cloud is available
 
@@ -571,8 +578,8 @@ export function JournalEntryList({
                   </div>
                   <JournalEntryCard
                     entry={entry}
-                    onTap={() => onOpenEntry(entry.id)}
-                    onDelete={() => onDeleteEntry(entry.id)}
+                    onTap={handleTap}
+                    onDelete={handleDelete}
                     privateMode={privateMode}
                     searchQuery={debouncedSearch}
                   />
@@ -614,8 +621,8 @@ export function JournalEntryList({
                 <motion.div key={entry.id} variants={itemVariants}>
                   <JournalEntryCard
                     entry={entry}
-                    onTap={() => onOpenEntry(entry.id)}
-                    onDelete={() => onDeleteEntry(entry.id)}
+                    onTap={handleTap}
+                    onDelete={handleDelete}
                     privateMode={privateMode}
                     searchQuery={debouncedSearch}
                   />
@@ -652,7 +659,7 @@ export function JournalEntryList({
       <SpeedDialFab onNewEntry={onNewEntry} onAddGratitude={onAddGratitude} />
     </div>
   );
-}
+});
 
 // ── Speed-dial FAB ────────────────────────────────────────────────
 
@@ -669,7 +676,9 @@ const SpeedDialFab = memo(function SpeedDialFab({ onNewEntry, onAddGratitude }: 
   // Escape key to close FAB menu
   useEffect(() => {
     if (!open) return;
-    const handleEsc = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
     document.addEventListener("keydown", handleEsc);
     return () => document.removeEventListener("keydown", handleEsc);
   }, [open]);

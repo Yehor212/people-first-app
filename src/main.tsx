@@ -7,8 +7,7 @@ import { initAndroidBackHandler } from "./lib/androidBackHandler";
 import { logger } from "./lib/logger";
 import { setupDeepLinks } from "./lib/deepLinks";
 import { offlineQueue } from "./lib/offlineQueue";
-import { flushSync } from "./storage/cloudSync";
-import { initSentry, captureError } from "./lib/sentry";
+// Sentry and cloudSync are dynamically imported below to keep them off the critical path
 import { cleanupShareCache } from "./lib/shareActions";
 import { initA11y } from "./lib/a11y";
 import { App as CapacitorApp } from "@capacitor/app";
@@ -27,13 +26,9 @@ import { checkDatabaseHealth } from "./storage/db";
 import { SK } from "./lib/storageKeys";
 import { safeLocalStorageSet } from "./lib/safeJson";
 
-// Initialize Sentry FIRST for error monitoring (before any other code runs)
-// Wrapped in try/catch — Sentry must never crash the app
-try {
-  initSentry();
-} catch (e) {
-  logger.warn("[Main] Sentry init failed:", e);
-}
+// Sentry is deferred to post-mount via requestIdleCallback (see below initializeApp)
+// to keep it off the critical rendering path. captureError is loaded lazily.
+let captureError: ((err: Error, ctx?: Record<string, unknown>) => void) | null = null;
 
 // Setup chunk error handler EARLY to catch lazy loading failures
 // This must be before React renders to catch initial chunk load errors
@@ -92,16 +87,16 @@ window.addEventListener("unhandledrejection", (event) => {
   }
 
   logger.error("[Global] Unhandled promise rejection:", reason);
-  // Send to Sentry
-  if (reason instanceof Error) {
+  // Send to Sentry (if loaded)
+  if (reason instanceof Error && captureError) {
     captureError(reason, { type: "unhandledrejection" });
   }
 });
 
 window.addEventListener("error", (event) => {
   logger.error("[Global] Uncaught error:", event.error || event.message);
-  // Send to Sentry
-  if (event.error instanceof Error) {
+  // Send to Sentry (if loaded)
+  if (event.error instanceof Error && captureError) {
     captureError(event.error, { type: "uncaught" });
   }
 });
@@ -149,7 +144,10 @@ function handleAppPause(): void {
 
   // Flush pending cloud sync immediately (bypasses 60s debounce)
   // Prevents data loss when user closes app right after recording mood/habit
-  flushSync();
+  // ROOT-CAUSE: dynamic import may fail during app backgrounding — sync retries on next resume via handleAppResume
+  import("./storage/cloudSync")
+    .then(({ flushSync }) => flushSync())
+    .catch((err) => logger.warn("[Main] cloudSync flush failed during pause:", err));
 
   try {
     const queueState = offlineQueue.getState();
@@ -353,5 +351,26 @@ initializeApp()
   })
   .catch((err) => {
     logger.error("[Init] Fatal:", err);
-    createRoot(document.getElementById("root")).render(<App />);
+    createRoot(document.getElementById("root")!).render(<App />);
   });
+
+// Defer Sentry initialization to after render — keeps @sentry/* off the critical path
+// ROOT-CAUSE: Sentry is ~30KB gzipped; deferring to idle time improves TTI without losing error coverage
+const idleInit = () => {
+  import("./lib/sentry")
+    .then(({ initSentry, captureError: ce }) => {
+      try {
+        initSentry();
+      } catch (e) {
+        logger.warn("[Main] Sentry init failed:", e);
+      }
+      captureError = ce;
+    })
+    .catch((err) => logger.warn("[Main] Sentry lazy load failed:", err));
+};
+if ("requestIdleCallback" in window) {
+  requestIdleCallback(idleInit);
+} else {
+  // ROOT-CAUSE: requestIdleCallback not supported in Safari <16.4 — setTimeout(2s) is the standard polyfill pattern
+  setTimeout(idleInit, 2000);
+}

@@ -5,7 +5,7 @@
  * to avoid TDZ errors. Use lazyWithRetry() or React.lazy() from the parent.
  */
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, memo } from "react";
 import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
 import {
@@ -57,7 +57,7 @@ interface JournalStatsProps {
   onBack: () => void;
 }
 
-export function JournalStats({ entries, onBack }: JournalStatsProps) {
+export const JournalStats = memo(function JournalStats({ entries, onBack }: JournalStatsProps) {
   const { t, language } = useLanguage();
   const ts = t as unknown as Record<string, string>;
   const [pixelYear, setPixelYear] = useState(() => new Date().getFullYear());
@@ -245,17 +245,20 @@ export function JournalStats({ entries, onBack }: JournalStatsProps) {
 
   // Year in Pixels — build month×day grid with mood colors
   const pixelData = useMemo(() => {
-    // Map date → mood for selected year
+    // Build map of date -> max createdAt in one pass (O(n) instead of O(n²))
+    const dateMaxCreatedAt = new Map<string, number>();
+    for (const e of entries) {
+      if (e.mood && e.date.startsWith(String(pixelYear))) {
+        const current = dateMaxCreatedAt.get(e.date) ?? 0;
+        if (e.createdAt > current) dateMaxCreatedAt.set(e.date, e.createdAt);
+      }
+    }
+
+    // Map date → mood for selected year, keeping only the entry with max createdAt
     const moodByDate = new Map<string, MoodType>();
     for (const e of entries) {
       if (e.mood && e.date.startsWith(String(pixelYear))) {
-        // If multiple entries same day, keep the latest
-        if (
-          !moodByDate.has(e.date) ||
-          e.createdAt >
-            (entries.find((x) => x.date === e.date && x.id !== e.id)
-              ?.createdAt ?? 0)
-        ) {
+        if (e.createdAt === dateMaxCreatedAt.get(e.date)) {
           moodByDate.set(e.date, e.mood);
         }
       }
@@ -706,4 +709,4 @@ export function JournalStats({ entries, onBack }: JournalStatsProps) {
       </div>
     </>
   );
-}
+});

@@ -83,8 +83,8 @@ function getRelativeTime(
 
 interface JournalEntryCardProps {
   entry: JournalEntry;
-  onTap: () => void;
-  onDelete: () => void;
+  onTap: (id: string) => void;
+  onDelete: (id: string) => void;
   onEdit?: (entry: JournalEntry) => void;
   privateMode?: boolean;
   searchQuery?: string;
@@ -216,7 +216,7 @@ export const JournalEntryCard = memo(function JournalEntryCard({
     if (isSwiping.current && deleteDelta > 80) {
       // Delete threshold reached
       void hapticTap();
-      onDelete();
+      onDelete(entry.id);
     }
 
     // Reset card position
@@ -227,7 +227,7 @@ export const JournalEntryCard = memo(function JournalEntryCard({
 
     swipeDeltaX.current = 0;
     isSwiping.current = false;
-  }, [clearLongPress, isRTL, onDelete]);
+  }, [clearLongPress, isRTL, onDelete, entry.id]);
 
   const handleContextMenu = useCallback(
     (e: React.MouseEvent) => {
@@ -242,8 +242,8 @@ export const JournalEntryCard = memo(function JournalEntryCard({
       longPressTriggered.current = false;
       return;
     }
-    onTap();
-  }, [onTap]);
+    onTap(entry.id);
+  }, [onTap, entry.id]);
 
   // Strip markdown ** for cleaner preview
   const rawPreview = entry.content.replace(/\*\*/g, "").slice(0, 140);
@@ -287,7 +287,7 @@ export const JournalEntryCard = memo(function JournalEntryCard({
       tabIndex={0}
       onClick={handleCardClick}
       onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
+        if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
           handleCardClick();
         }
@@ -318,7 +318,14 @@ export const JournalEntryCard = memo(function JournalEntryCard({
       {/* Hero photo banner (when photo exists) */}
       {!privateMode && hasPhoto && thumbnail && (
         <div className="relative h-28 overflow-hidden">
-          <img src={thumbnail} alt="" className="w-full h-full object-cover" loading="lazy" />
+          <img
+            src={thumbnail}
+            alt=""
+            width={320}
+            height={112}
+            className="w-full h-full object-cover"
+            loading="lazy"
+          />
           <div className="absolute inset-0 bg-gradient-to-t from-card/90 via-card/30 to-transparent" />
           {/* Photo count badge */}
           {entry.photoIds.length > 1 && (
@@ -443,7 +450,7 @@ export const JournalEntryCard = memo(function JournalEntryCard({
                 onClick={(e) => {
                   e.stopPropagation();
                   void hapticTap();
-                  onDelete();
+                  onDelete(entry.id);
                 }}
                 className="p-2.5 -m-1 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-destructive/10 text-muted-foreground/60 hover:text-destructive transition-all min-w-[44px] min-h-[44px] flex items-center justify-center"
                 aria-label={ts.delete || "Delete"}

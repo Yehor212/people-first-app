@@ -268,7 +268,7 @@ export function ChallengesPanel({
 
                 return (
                   <div
-                    key={index}
+                    key={`${template.type}-${template.target}`}
                     className={`bg-secondary rounded-2xl p-4 zen-shadow-card transition-all ${
                       isActive ? "opacity-50" : "hover:zen-shadow-hover"
                     }`}

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo, Suspense } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo, Suspense, memo } from "react";
 import {
   Lock,
   ChevronRight,
@@ -55,7 +55,18 @@ interface JournalModuleProps {
   onAddGratitude?: (entry: import("@/types").GratitudeEntry) => void;
 }
 
-export function JournalModule({ onToggleHabit, onAddGratitude }: JournalModuleProps = {}) {
+const MOOD_EMOJI: Record<string, string> = {
+  great: "\u{1F604}",
+  good: "\u{1F642}",
+  okay: "\u{1F610}",
+  bad: "\u{1F614}",
+  terrible: "\u{1F622}",
+};
+
+export const JournalModule = memo(function JournalModule({
+  onToggleHabit,
+  onAddGratitude,
+}: JournalModuleProps = {}) {
   const { t, isRTL, language } = useLanguage();
   const ts = t as unknown as Record<string, string>;
   const rewardUser = useGamificationStore((s) => s.rewardUser);
@@ -74,27 +85,30 @@ export function JournalModule({ onToggleHabit, onAddGratitude }: JournalModulePr
   const [exporting, setExporting] = useState(false);
   useBackHandler(showExportPicker, () => setShowExportPicker(false));
 
-  // Escape key handlers for inline sub-dialogs
+  // Consolidated Escape key handler for inline sub-dialogs (password, export, remove-confirm)
   useEffect(() => {
-    if (!showPasswordSettings) return;
-    const h = (e: KeyboardEvent) => { if (e.key === "Escape") { setShowPasswordSettings(false); setShowChangePassword(false); } };
-    document.addEventListener("keydown", h);
-    return () => document.removeEventListener("keydown", h);
-  }, [showPasswordSettings]);
-
-  useEffect(() => {
-    if (!showExportPicker) return;
-    const h = (e: KeyboardEvent) => { if (e.key === "Escape") setShowExportPicker(false); };
-    document.addEventListener("keydown", h);
-    return () => document.removeEventListener("keydown", h);
-  }, [showExportPicker]);
-
-  useEffect(() => {
-    if (!showRemovePasswordConfirm) return;
-    const h = (e: KeyboardEvent) => { if (e.key === "Escape") setShowRemovePasswordConfirm(false); };
-    document.addEventListener("keydown", h);
-    return () => document.removeEventListener("keydown", h);
-  }, [showRemovePasswordConfirm]);
+    const activeDialog = showPasswordSettings
+      ? "password"
+      : showExportPicker
+        ? "export"
+        : showRemovePasswordConfirm
+          ? "remove"
+          : null;
+    if (!activeDialog) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      if (activeDialog === "password") {
+        setShowPasswordSettings(false);
+        setShowChangePassword(false);
+      } else if (activeDialog === "export") {
+        setShowExportPicker(false);
+      } else if (activeDialog === "remove") {
+        setShowRemovePasswordConfirm(false);
+      }
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [showPasswordSettings, showExportPicker, showRemovePasswordConfirm]);
   const [importing, setImporting] = useState(false);
   const [importFeedback, setImportFeedback] = useState<{
     type: "success" | "error";
@@ -178,14 +192,6 @@ export function JournalModule({ onToggleHabit, onAddGratitude }: JournalModulePr
     const today = getToday();
     return journal.entryDates.has(today);
   }, [journal.entryDates]);
-
-  const MOOD_EMOJI: Record<string, string> = {
-    great: "\u{1F604}",
-    good: "\u{1F642}",
-    okay: "\u{1F610}",
-    bad: "\u{1F614}",
-    terrible: "\u{1F622}",
-  };
 
   // Scroll lock when journal is open
   useScrollLock(moduleState === "open");
@@ -1378,4 +1384,4 @@ export function JournalModule({ onToggleHabit, onAddGratitude }: JournalModulePr
       )}
     </div>
   );
-}
+});

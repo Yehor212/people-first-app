@@ -1,14 +1,14 @@
-import { useState, useEffect, memo } from 'react';
-import { X, Trash2, ZoomIn } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from '@/lib/utils';
-import { useScrollLock } from '@/hooks/useScrollLock';
-import { useBackHandler } from '@/hooks/useBackHandler';
-import { useModalA11y } from '@/hooks/useModalA11y';
-import { useLanguage } from '@/contexts/LanguageContext';
-import type { JournalPhoto } from './types';
-import { getPhotosForEntry, getPhotoById } from './journalStorage';
-import { logger } from '@/lib/logger';
+import { useState, useEffect, memo } from "react";
+import { X, Trash2, ZoomIn } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
+import { useScrollLock } from "@/hooks/useScrollLock";
+import { useBackHandler } from "@/hooks/useBackHandler";
+import { useModalA11y } from "@/hooks/useModalA11y";
+import { useLanguage } from "@/contexts/LanguageContext";
+import type { JournalPhoto } from "./types";
+import { getPhotosForEntry, getPhotoById } from "./journalStorage";
+import { logger } from "@/lib/logger";
 
 interface JournalPhotoGalleryProps {
   entryId: string;
@@ -41,10 +41,18 @@ export const JournalPhotoGallery = memo(function JournalPhotoGallery({
   useModalA11y(!!lightboxPhoto, closeLightbox);
 
   useEffect(() => {
-    if (photoIds.length === 0) { setPhotos([]); return; }
-    getPhotosForEntry(entryId).then(all => {
-      setPhotos(all.filter(p => photoIds.includes(p.id)));
-    }).catch(err => { logger.warn('[Journal]', 'Photos load failed:', err); setPhotos([]); }); // graceful: photo display, not data mutation
+    if (photoIds.length === 0) {
+      setPhotos([]);
+      return;
+    }
+    getPhotosForEntry(entryId)
+      .then((all) => {
+        setPhotos(all.filter((p) => photoIds.includes(p.id)));
+      })
+      .catch((err) => {
+        logger.warn("[Journal]", "Photos load failed:", err);
+        setPhotos([]);
+      }); // graceful: photo display, not data mutation
   }, [entryId, photoIds]);
 
   const openLightbox = async (photo: JournalPhoto) => {
@@ -59,7 +67,7 @@ export const JournalPhotoGallery = memo(function JournalPhotoGallery({
     <>
       {/* Thumbnail grid */}
       <div className="flex gap-2 overflow-x-auto scrollbar-hide py-1">
-        {photos.map(photo => (
+        {photos.map((photo) => (
           <div key={photo.id} className="relative flex-shrink-0 group">
             <button
               onClick={() => openLightbox(photo)}
@@ -68,6 +76,8 @@ export const JournalPhotoGallery = memo(function JournalPhotoGallery({
               <img
                 src={photo.thumbnail}
                 alt=""
+                width={64}
+                height={64}
                 className="w-16 h-16 object-cover rounded-xl"
                 loading="lazy"
               />
@@ -79,7 +89,7 @@ export const JournalPhotoGallery = memo(function JournalPhotoGallery({
               <button
                 onClick={() => onRemovePhoto(photo.id)}
                 className="absolute -top-3 -end-3 min-w-[44px] min-h-[44px] flex items-center justify-center"
-                aria-label={ts.delete || 'Remove'}
+                aria-label={ts.delete || "Remove"}
               >
                 <span className="w-7 h-7 bg-destructive rounded-full flex items-center justify-center shadow-md">
                   <X className="w-3.5 h-3.5 text-white" />
@@ -115,7 +125,7 @@ export const JournalPhotoGallery = memo(function JournalPhotoGallery({
             <button
               onClick={closeLightbox}
               className="absolute top-[max(1rem,env(safe-area-inset-top))] end-4 p-2.5 bg-white/10 rounded-full z-10 min-w-[44px] min-h-[44px] flex items-center justify-center"
-              aria-label={ts.close || 'Close'}
+              aria-label={ts.close || "Close"}
             >
               <X className="w-5 h-5 text-white" />
             </button>
@@ -128,7 +138,7 @@ export const JournalPhotoGallery = memo(function JournalPhotoGallery({
                   closeLightbox();
                 }}
                 className="absolute top-[max(1rem,env(safe-area-inset-top))] start-4 p-2.5 bg-destructive/80 rounded-full z-10 min-w-[44px] min-h-[44px] flex items-center justify-center"
-                aria-label={ts.delete || 'Delete'}
+                aria-label={ts.delete || "Delete"}
               >
                 <Trash2 className="w-5 h-5 text-white" />
               </button>
@@ -138,14 +148,14 @@ export const JournalPhotoGallery = memo(function JournalPhotoGallery({
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+              transition={{ type: "spring", stiffness: 300, damping: 25 }}
               src={fullData || lightboxPhoto.thumbnail}
               alt=""
               className={cn(
-                'max-w-[95vw] max-h-[90dvh] object-contain rounded-lg',
-                !fullData && 'blur-sm',
+                "max-w-[95vw] max-h-[90dvh] object-contain rounded-lg",
+                !fullData && "blur-sm"
               )}
-              onClick={e => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
             />
           </motion.div>
         )}

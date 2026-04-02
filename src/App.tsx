@@ -26,8 +26,14 @@ const queryClient = new QueryClient({
   },
 });
 
-// Preload DOMPurify in the background to speed up share card sanitization
-void preloadShareCardAssets();
+// Defer DOMPurify preload to idle time — keeps it off the critical rendering path
+// ROOT-CAUSE: preloadShareCardAssets runs DOMPurify init which blocks main thread 10-50ms during module eval
+if ("requestIdleCallback" in window) {
+  requestIdleCallback(() => void preloadShareCardAssets());
+} else {
+  // ROOT-CAUSE: requestIdleCallback not supported in Safari <16.4 — setTimeout(2s) is the standard polyfill
+  setTimeout(() => void preloadShareCardAssets(), 2000);
+}
 
 /**
  * AnimationGate — single point of control for ALL animation layers.

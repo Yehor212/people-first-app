@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, memo } from "react";
 import { ArrowLeft, Pencil, Trash2, Share2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -153,7 +153,7 @@ interface JournalEntryViewerProps {
   onBack: () => void;
 }
 
-export function JournalEntryViewer({ entry, onEdit, onDelete, onBack }: JournalEntryViewerProps) {
+export const JournalEntryViewer = memo(function JournalEntryViewer({ entry, onEdit, onDelete, onBack }: JournalEntryViewerProps) {
   const { t, language } = useLanguage();
   const ts = t as unknown as Record<string, string>;
 
@@ -409,4 +409,4 @@ export function JournalEntryViewer({ entry, onEdit, onDelete, onBack }: JournalE
       </motion.div>
     </div>
   );
-}
+});
