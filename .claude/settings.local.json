@@ -96,7 +96,8 @@
       "Bash(supabase snippets:*)",
       "Bash(supabase inspection:*)",
       "mcp__ruflo__coordination_consensus",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "Bash(kill %1)"
     ],
     "deny": [
       "Bash(rm -rf)",

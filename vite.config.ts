@@ -156,13 +156,16 @@ export default defineConfig(({ mode }) => {
               return undefined;
             }
 
-            // Core React libraries
-            if (id.includes("react-dom") || id.includes("scheduler")) {
-              return "react-vendor";
-            }
-            // React core (match 'react/' but not 'react-*' packages)
-            if (/[\\/]node_modules[\\/]react[\\/]/.test(id)) {
-              return "react-vendor";
+            // React: let Vite handle chunk placement automatically
+            // ROOT-CAUSE: manualChunks for react-dom/react/scheduler caused TDZ errors
+            // ("Cannot access 'V' before initialization" in production — Sentry 10+ events)
+            // Vite default splitting respects module init order, avoiding cross-chunk TDZ
+            if (
+              id.includes("react-dom") ||
+              id.includes("scheduler") ||
+              /[\\/]node_modules[\\/]react[\\/]/.test(id)
+            ) {
+              return undefined;
             }
 
             // UI library (Radix components)
