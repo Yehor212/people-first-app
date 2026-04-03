@@ -256,7 +256,7 @@ export function AddEventModal({
                     }))
                   }
                   className="flex-1 p-2 bg-secondary backdrop-blur-sm rounded-lg text-sm text-slate-800 dark:text-white border border-border"
-                  aria-label="Select start hour"
+                  aria-label={t.ariaSelectStartHour}
                 >
                   {HOURS.map((h) => (
                     <option
@@ -277,7 +277,7 @@ export function AddEventModal({
                     }))
                   }
                   className="flex-1 p-2 bg-secondary backdrop-blur-sm rounded-lg text-sm text-slate-800 dark:text-white border border-border"
-                  aria-label="Select start minute"
+                  aria-label={t.ariaSelectStartMinute}
                 >
                   {[0, 15, 30, 45].map((m) => (
                     <option
@@ -305,7 +305,7 @@ export function AddEventModal({
                     }))
                   }
                   className="flex-1 p-2 bg-secondary backdrop-blur-sm rounded-lg text-sm text-slate-800 dark:text-white border border-border"
-                  aria-label="Select end hour"
+                  aria-label={t.ariaSelectEndHour}
                 >
                   {HOURS.map((h) => (
                     <option
@@ -326,7 +326,7 @@ export function AddEventModal({
                     }))
                   }
                   className="flex-1 p-2 bg-secondary backdrop-blur-sm rounded-lg text-sm text-slate-800 dark:text-white border border-border"
-                  aria-label="Select end minute"
+                  aria-label={t.ariaSelectEndMinute}
                 >
                   {[0, 15, 30, 45].map((m) => (
                     <option

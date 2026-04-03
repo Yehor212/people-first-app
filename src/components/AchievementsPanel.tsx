@@ -26,8 +26,8 @@ import { getDecorationForAchievement } from "@/lib/achievementDecorations";
 import { Trophy, Star, TrendingUp } from "lucide-react";
 import { AchievementCard } from "./AchievementCard";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Language } from "@/i18n/translations";
 import { announceSuccess } from "@/lib/a11y";
+import { getLocale } from "@/lib/timeUtils";
 
 interface AchievementsPanelProps {
   stats: UserStats;
@@ -35,41 +35,22 @@ interface AchievementsPanelProps {
   onAchievementUnlock?: (achievement: Achievement) => void;
 }
 
-// Locale mapping for date formatting
-const localeMap: Record<Language, string> = {
-  en: "en-US",
-  uk: "uk-UA",
-  es: "es-ES",
-  de: "de-DE",
-  fr: "fr-FR",
-  ja: "ja-JP",
-  ar: "ar-SA",
-  he: "he-IL",
-};
-
 export const AchievementsPanel = memo(function AchievementsPanel({
   stats,
   unlockedAchievements,
   onAchievementUnlock,
 }: AchievementsPanelProps) {
   const { t, language } = useLanguage();
-  const [selectedAchievement, setSelectedAchievement] =
-    useState<Achievement | null>(null);
-  const [achievementProgress, setAchievementProgress] = useState<
-    Record<AchievementId, number>
-  >({} as Record<AchievementId, number>);
-  const clearSelectedAchievement = useCallback(
-    () => setSelectedAchievement(null),
-    [],
+  const [selectedAchievement, setSelectedAchievement] = useState<Achievement | null>(null);
+  const [achievementProgress, setAchievementProgress] = useState<Record<AchievementId, number>>(
+    {} as Record<AchievementId, number>
   );
+  const clearSelectedAchievement = useCallback(() => setSelectedAchievement(null), []);
   useBackHandler(!!selectedAchievement, clearSelectedAchievement);
   const userLevel = calculateLevel(stats.totalXp);
 
   useEffect(() => {
-    const { newAchievements, updatedProgress } = checkAchievements(
-      stats,
-      unlockedAchievements,
-    );
+    const { newAchievements, updatedProgress } = checkAchievements(stats, unlockedAchievements);
 
     // Update progress
     setAchievementProgress(updatedProgress);
@@ -78,9 +59,7 @@ export const AchievementsPanel = memo(function AchievementsPanel({
     if (newAchievements.length > 0) {
       newAchievements.forEach((achievement) => {
         // Announce to screen readers
-        announceSuccess(
-          `${t.achievementUnlocked || "Achievement unlocked!"} ${achievement.name}`,
-        );
+        announceSuccess(`${t.achievementUnlocked || "Achievement unlocked!"} ${achievement.name}`);
 
         if (onAchievementUnlock) {
           onAchievementUnlock(achievement);
@@ -89,25 +68,20 @@ export const AchievementsPanel = memo(function AchievementsPanel({
     }
   }, [stats, unlockedAchievements, t.achievementUnlocked, onAchievementUnlock]);
 
-  const { unlockedList, lockedList, allAchievements, completionPercentage } =
-    useMemo(() => {
-      const allAchievements = Object.values(ACHIEVEMENTS);
-      const unlockedCount = unlockedAchievements.length;
-      const totalCount = allAchievements.length;
-      const completionPercentage = (unlockedCount / totalCount) * 100;
-      const unlockedList = allAchievements.filter((a) =>
-        unlockedAchievements.includes(a.id),
-      );
-      const lockedList = allAchievements.filter(
-        (a) => !unlockedAchievements.includes(a.id),
-      );
-      return {
-        unlockedList,
-        lockedList,
-        allAchievements,
-        completionPercentage,
-      };
-    }, [unlockedAchievements]);
+  const { unlockedList, lockedList, allAchievements, completionPercentage } = useMemo(() => {
+    const allAchievements = Object.values(ACHIEVEMENTS);
+    const unlockedCount = unlockedAchievements.length;
+    const totalCount = allAchievements.length;
+    const completionPercentage = (unlockedCount / totalCount) * 100;
+    const unlockedList = allAchievements.filter((a) => unlockedAchievements.includes(a.id));
+    const lockedList = allAchievements.filter((a) => !unlockedAchievements.includes(a.id));
+    return {
+      unlockedList,
+      lockedList,
+      allAchievements,
+      completionPercentage,
+    };
+  }, [unlockedAchievements]);
 
   return (
     <div className="space-y-6">
@@ -116,11 +90,7 @@ export const AchievementsPanel = memo(function AchievementsPanel({
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-2xl font-bold flex items-center gap-2">
-              <Star
-                className="w-6 h-6"
-                fill="currentColor"
-                aria-hidden="true"
-              />
+              <Star className="w-6 h-6" fill="currentColor" aria-hidden="true" />
               {t.userLevel || "Level"} {userLevel.level}
             </h3>
             <p className="text-white/80 text-sm">{userLevel.title}</p>
@@ -139,10 +109,7 @@ export const AchievementsPanel = memo(function AchievementsPanel({
               {userLevel.nextLevelXp - stats.totalXp} {t.xp || "XP"}
             </span>
           </div>
-          <Progress
-            value={(stats.totalXp / userLevel.nextLevelXp) * 100}
-            className="bg-white/20"
-          />
+          <Progress value={(stats.totalXp / userLevel.nextLevelXp) * 100} className="bg-white/20" />
         </div>
       </Card>
 
@@ -159,10 +126,8 @@ export const AchievementsPanel = memo(function AchievementsPanel({
         </div>
         <Progress value={completionPercentage} className="mb-2" />
         <p className="text-sm text-muted-foreground">
-          {t.unlockedPercent?.replace(
-            "{percent}",
-            String(Math.round(completionPercentage)),
-          ) || `${Math.round(completionPercentage)}% unlocked`}
+          {t.unlockedPercent?.replace("{percent}", String(Math.round(completionPercentage))) ||
+            `${Math.round(completionPercentage)}% unlocked`}
         </p>
       </Card>
 
@@ -186,9 +151,7 @@ export const AchievementsPanel = memo(function AchievementsPanel({
                   achievement={achievement}
                   isUnlocked={isUnlocked}
                   progress={progress}
-                  onClick={() =>
-                    setSelectedAchievement({ ...achievement, progress })
-                  }
+                  onClick={() => setSelectedAchievement({ ...achievement, progress })}
                   hiddenText={t.hidden || "Hidden"}
                   hiddenTitle={t.hiddenAchievement || "???"}
                 />
@@ -200,10 +163,7 @@ export const AchievementsPanel = memo(function AchievementsPanel({
         <TabsContent value="unlocked" className="mt-4 overflow-visible">
           {unlockedList.length === 0 ? (
             <Card className="p-8 text-center">
-              <Trophy
-                className="w-12 h-12 mx-auto mb-3 text-muted-foreground"
-                aria-hidden="true"
-              />
+              <Trophy className="w-12 h-12 mx-auto mb-3 text-muted-foreground" aria-hidden="true" />
               <p className="text-muted-foreground">
                 {t.noAchievementsYet || "No achievements yet"}
               </p>
@@ -237,9 +197,7 @@ export const AchievementsPanel = memo(function AchievementsPanel({
                   achievement={achievement}
                   isUnlocked={false}
                   progress={progress}
-                  onClick={() =>
-                    setSelectedAchievement({ ...achievement, progress })
-                  }
+                  onClick={() => setSelectedAchievement({ ...achievement, progress })}
                   hiddenText={t.hidden || "Hidden"}
                   hiddenTitle={t.hiddenAchievement || "???"}
                 />
@@ -250,10 +208,7 @@ export const AchievementsPanel = memo(function AchievementsPanel({
       </Tabs>
 
       {/* Achievement Detail Dialog */}
-      <Dialog
-        open={!!selectedAchievement}
-        onOpenChange={() => setSelectedAchievement(null)}
-      >
+      <Dialog open={!!selectedAchievement} onOpenChange={() => setSelectedAchievement(null)}>
         <DialogContent className="max-h-[80dvh] overflow-y-auto mx-4 sm:mx-auto">
           <DialogHeader>
             <div
@@ -261,9 +216,7 @@ export const AchievementsPanel = memo(function AchievementsPanel({
             >
               {selectedAchievement?.icon}
             </div>
-            <DialogTitle className="text-center text-2xl">
-              {selectedAchievement?.name}
-            </DialogTitle>
+            <DialogTitle className="text-center text-2xl">{selectedAchievement?.name}</DialogTitle>
             <DialogDescription className="text-center space-y-4">
               <p className="text-base">{selectedAchievement?.description}</p>
 
@@ -279,33 +232,25 @@ export const AchievementsPanel = memo(function AchievementsPanel({
                 </div>
               )}
 
-              {selectedAchievement?.total &&
-                selectedAchievement.progress !== undefined && (
-                  <div className="space-y-2 pt-4">
-                    <div className="flex justify-between text-sm">
-                      <span>{t.progress || "Progress"}</span>
-                      <span>
-                        {selectedAchievement.progress} /{" "}
-                        {selectedAchievement.total}
-                      </span>
-                    </div>
-                    <Progress
-                      value={
-                        (selectedAchievement.progress /
-                          selectedAchievement.total) *
-                        100
-                      }
-                    />
+              {selectedAchievement?.total && selectedAchievement.progress !== undefined && (
+                <div className="space-y-2 pt-4">
+                  <div className="flex justify-between text-sm">
+                    <span>{t.progress || "Progress"}</span>
+                    <span>
+                      {selectedAchievement.progress} / {selectedAchievement.total}
+                    </span>
                   </div>
-                )}
+                  <Progress
+                    value={(selectedAchievement.progress / selectedAchievement.total) * 100}
+                  />
+                </div>
+              )}
 
               {/* Garden decoration info (IA Blueprint Phase 4) */}
               {selectedAchievement &&
                 unlockedAchievements.includes(selectedAchievement.id) &&
                 (() => {
-                  const deco = getDecorationForAchievement(
-                    selectedAchievement.id,
-                  );
+                  const deco = getDecorationForAchievement(selectedAchievement.id);
                   return deco ? (
                     <div className="pt-4 text-center">
                       <Badge
@@ -314,9 +259,7 @@ export const AchievementsPanel = memo(function AchievementsPanel({
                       >
                         🌿 Unlocks: {deco.name} ({deco.rarity})
                       </Badge>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {deco.description}
-                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">{deco.description}</p>
                     </div>
                   ) : null;
                 })()}
@@ -324,13 +267,14 @@ export const AchievementsPanel = memo(function AchievementsPanel({
               {selectedAchievement?.unlockedAt && (
                 <p className="text-xs text-muted-foreground pt-4">
                   {interpolate(t.unlockedOn || "Unlocked on {date}", {
-                    date: new Date(
-                      selectedAchievement.unlockedAt,
-                    ).toLocaleDateString(localeMap[language], {
-                      day: "numeric",
-                      month: "long",
-                      year: "numeric",
-                    }),
+                    date: new Date(selectedAchievement.unlockedAt).toLocaleDateString(
+                      getLocale(language),
+                      {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      }
+                    ),
                   })}
                 </p>
               )}

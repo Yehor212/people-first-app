@@ -10,17 +10,11 @@
  * - Pop-in animation via framer-motion
  */
 
-import {
-  memo,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  Suspense,
-} from "react";
+import { memo, useCallback, useEffect, useRef, useState, Suspense } from "react";
 import { motion, useTransform, type MotionValue } from "framer-motion";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { haptics } from "@/lib/haptics";
 import { zenMotion } from "@/lib/animationUtils";
 import { GOAL_ICON_MAP } from "./GoalInput";
@@ -33,7 +27,7 @@ const CompletionBurstLottie = lazyWithRetry(
     import("./CompletionBurstLottie").then((m) => ({
       default: m.CompletionBurstLottie,
     })),
-  "CompletionBurstLottie",
+  "CompletionBurstLottie"
 );
 
 /** Preset color palette for goal customization. Key = stored in CanvasGoal.color */
@@ -59,8 +53,7 @@ const RX = RING_W / 2;
 const RY = RING_H / 2;
 
 // Approximate ellipse perimeter (Ramanujan's formula) for stroke-dasharray
-const RING_PERIMETER =
-  Math.PI * (3 * (RX + RY) - Math.sqrt((3 * RX + RY) * (RX + 3 * RY)));
+const RING_PERIMETER = Math.PI * (3 * (RX + RY) - Math.sqrt((3 * RX + RY) * (RX + 3 * RY)));
 
 /** Progress ring color based on completion percentage and optional goal color */
 function ringColor(percent: number, goalColor?: string): string {
@@ -80,14 +73,8 @@ interface GoalNodeProps {
 }
 
 export const GoalNode = memo(
-  function GoalNode({
-    goal,
-    x,
-    y,
-    progressPercent,
-    onTap,
-    zoom,
-  }: GoalNodeProps) {
+  function GoalNode({ goal, x, y, progressPercent, onTap, zoom }: GoalNodeProps) {
+    const { t } = useLanguage();
     const textOpacity = useTransform(zoom, [0.65, 0.85], [0, 1]);
     const filled = progressPercent * RING_PERIMETER;
     const isComplete = goal.completed || progressPercent >= 1;
@@ -188,20 +175,14 @@ export const GoalNode = memo(
             "w-full h-full rounded-full",
             "flex items-center justify-center gap-1.5 px-3",
             "border",
-            isComplete
-              ? "border-emerald-400/50 opacity-70"
-              : !goal.color
-                ? "border-border"
-                : "",
+            isComplete ? "border-emerald-400/50 opacity-70" : !goal.color ? "border-border" : "",
             "cursor-pointer",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 focus-visible:ring-offset-0",
             "transition-colors duration-200",
-            "bg-card/80 backdrop-blur-sm [-webkit-backdrop-filter:blur(8px)]",
+            "bg-card/80 backdrop-blur-sm [-webkit-backdrop-filter:blur(8px)]"
           )}
           style={{
-            ...(!isComplete && goal.color
-              ? { borderColor: rColor + "80" }
-              : {}),
+            ...(!isComplete && goal.color ? { borderColor: rColor + "80" } : {}),
             boxShadow: isComplete
               ? "0 0 20px rgba(52,211,153,0.3), 0 8px 32px rgba(0,0,0,0.5)"
               : goal.color
@@ -220,7 +201,7 @@ export const GoalNode = memo(
               <span
                 className="text-sm flex-shrink-0 leading-none"
                 role="img"
-                aria-label="goal emoji"
+                aria-label={t.ariaGoalEmoji}
               >
                 {goal.emoji}
               </span>
@@ -232,7 +213,7 @@ export const GoalNode = memo(
                 "text-xs font-medium truncate",
                 isComplete
                   ? "text-emerald-500 dark:text-emerald-300 line-through"
-                  : "text-foreground",
+                  : "text-foreground"
               )}
             >
               {goal.title}
@@ -252,5 +233,5 @@ export const GoalNode = memo(
     prev.x === next.x &&
     prev.y === next.y &&
     prev.progressPercent === next.progressPercent &&
-    prev.onTap === next.onTap,
+    prev.onTap === next.onTap
 );

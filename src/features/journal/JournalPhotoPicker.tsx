@@ -89,7 +89,7 @@ export function JournalPhotoPicker({
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Photo picker"
+        aria-label={t.ariaPhotoPicker}
         className={cn(
           "fixed bottom-0 inset-x-0 z-[65]",
           "bg-card/95 backdrop-blur-xl border-t border-border/40",

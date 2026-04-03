@@ -1138,7 +1138,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
               aria-label={ts.back || "Back"}
             >
               <ArrowLeft className="w-4 h-4 rtl:scale-x-[-1]" />
-              <span className="text-sm">Map</span>
+              <span className="text-sm">{t.journalMapLabel}</span>
             </motion.button>
             <div className="min-w-0">
               <div
@@ -1325,7 +1325,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                     whileTap={{ scale: 0.95 }}
                     onClick={cycleFontSize}
                     className="px-3 py-2 rounded-lg text-sm font-medium border border-transparent text-muted-foreground hover:bg-white/10 hover:text-foreground transition-all"
-                    aria-label="Font size"
+                    aria-label={t.ariaFontSize}
                   >
                     A<span className="text-[10px] ms-0.5 opacity-60">{FONT_SIZES[fontSize]}</span>
                   </motion.button>
@@ -1560,7 +1560,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                         <button
                           onClick={() => setPromptSeed((s) => s + 1)}
                           className="p-1.5 rounded-lg hover:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center"
-                          aria-label="Shuffle prompts"
+                          aria-label={t.ariaShufflePrompts}
                         >
                           <Shuffle className="w-3 h-3 text-foreground0" />
                         </button>
@@ -2065,7 +2065,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
             exit={{ opacity: 0 }}
             role="dialog"
             aria-modal="true"
-            aria-label="Recording"
+            aria-label={t.ariaRecording}
             className="fixed inset-0 z-[70] bg-black/60 flex items-center justify-center"
           >
             <motion.div

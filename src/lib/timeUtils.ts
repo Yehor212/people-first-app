@@ -19,11 +19,11 @@ export function parseTime(
   defaultHour: number = 9,
   defaultMinute: number = 0
 ): { hour: number; minute: number } {
-  if (!time || typeof time !== 'string') {
+  if (!time || typeof time !== "string") {
     return { hour: defaultHour, minute: defaultMinute };
   }
 
-  const parts = time.split(':');
+  const parts = time.split(":");
 
   if (parts.length === 0) {
     return { hour: defaultHour, minute: defaultMinute };
@@ -48,7 +48,7 @@ export function parseTime(
 export function formatTime(hour: number, minute: number): string {
   const h = Math.max(0, Math.min(23, hour));
   const m = Math.max(0, Math.min(59, minute));
-  return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+  return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
 }
 
 /**
@@ -58,7 +58,7 @@ export function formatTime(hour: number, minute: number): string {
  * @returns true if valid, false otherwise
  */
 export function isValidTimeFormat(time: string | undefined | null): boolean {
-  if (!time || typeof time !== 'string') {
+  if (!time || typeof time !== "string") {
     return false;
   }
 
@@ -77,27 +77,27 @@ export function isValidTimeFormat(time: string | undefined | null): boolean {
 // LOCALE UTILITIES
 // ============================================
 
-import type { Language } from '@/i18n/translations';
+import type { Language } from "@/i18n/translations";
 
 /**
  * Map language codes to locale strings for Intl APIs
  */
 export const localeMap: Record<Language, string> = {
-  en: 'en-US',
-  uk: 'uk-UA',
-  es: 'es-ES',
-  de: 'de-DE',
-  fr: 'fr-FR',
-  ja: 'ja-JP',
-  ar: 'ar-SA',
-  he: 'he-IL',
+  en: "en-US",
+  uk: "uk-UA",
+  es: "es-ES",
+  de: "de-DE",
+  fr: "fr-FR",
+  ja: "ja-JP",
+  ar: "ar-SA",
+  he: "he-IL",
 };
 
 /**
  * Get locale string from language code
  */
 export function getLocale(language: Language): string {
-  return localeMap[language] || 'en-US';
+  return localeMap[language] || "en-US";
 }
 
 /**
@@ -120,4 +120,27 @@ export function formatLocalizedTime(
   options?: Intl.DateTimeFormatOptions
 ): string {
   return date.toLocaleTimeString(getLocale(language), options);
+}
+
+/**
+ * Format number with locale-aware decimal separator.
+ * Replaces toFixed() for user-visible numbers.
+ */
+export function formatLocalizedNumber(
+  value: number,
+  language: Language,
+  options?: Intl.NumberFormatOptions
+): string {
+  return new Intl.NumberFormat(getLocale(language), options).format(value);
+}
+
+/**
+ * Format number with 1 decimal place, locale-aware.
+ * Drop-in replacement for value.toFixed(1) in UI display.
+ */
+export function formatDecimal(value: number, language: Language): string {
+  return new Intl.NumberFormat(getLocale(language), {
+    minimumFractionDigits: value % 1 === 0 ? 0 : 1,
+    maximumFractionDigits: 1,
+  }).format(value);
 }

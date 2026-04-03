@@ -3,14 +3,19 @@
  * Extracts cross-tab useMemo computations from the original 1,281L monolith.
  */
 
-import { useMemo } from 'react';
-import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
-import { getToday, formatDate } from '@/lib/utils';
-import { getHabitCompletedDates, isHabitCompletedOnDate } from '@/lib/habits';
-import { computeEntriesWithAuto } from '@/lib/habitComputedEntries';
-import { getEmotionScore, getEmotionLabels, MOOD_TO_EMOTION_MAP } from '@/lib/emotionConstants';
-import { deriveCurrentWeather } from '@/lib/weatherMoodConfig';
-import { generateWeeklyStory, hasEnoughDataForStory, getCurrentWeekRange } from '@/lib/progressStories';
+import { useMemo } from "react";
+import { MoodEntry, Habit, FocusSession, GratitudeEntry } from "@/types";
+import type { Language } from "@/i18n/translations";
+import { getToday, formatDate } from "@/lib/utils";
+import { getHabitCompletedDates, isHabitCompletedOnDate } from "@/lib/habits";
+import { computeEntriesWithAuto } from "@/lib/habitComputedEntries";
+import { getEmotionScore, getEmotionLabels, MOOD_TO_EMOTION_MAP } from "@/lib/emotionConstants";
+import { deriveCurrentWeather } from "@/lib/weatherMoodConfig";
+import {
+  generateWeeklyStory,
+  hasEnoughDataForStory,
+  getCurrentWeekRange,
+} from "@/lib/progressStories";
 
 interface UseStatsPageDataProps {
   moods: MoodEntry[];
@@ -35,12 +40,18 @@ function entryScore(m: MoodEntry): number {
   }
   // Legacy 5-emoji mood
   switch (m.mood) {
-    case 'great': return 5;
-    case 'good': return 4;
-    case 'okay': return 3;
-    case 'bad': return 2;
-    case 'terrible': return 1;
-    default: return 3; // Neutral fallback
+    case "great":
+      return 5;
+    case "good":
+      return 4;
+    case "okay":
+      return 3;
+    case "bad":
+      return 2;
+    case "terrible":
+      return 1;
+    default:
+      return 3; // Neutral fallback
   }
 }
 
@@ -52,7 +63,7 @@ export function useStatsPageData({
   completedFocusSessions,
   stats,
   t,
-  language = 'en',
+  language = "en",
 }: UseStatsPageDataProps) {
   // Get emotion labels for current language
   const emotionLabels = useMemo(() => getEmotionLabels(language), [language]);
@@ -126,21 +137,33 @@ export function useStatsPageData({
   // Phase 13: EmotionGalaxy data - ONLY TODAY'S emotions
   const todayMoods = useMemo(() => {
     const today = getToday();
-    return moods.filter(m => m.date === today);
+    return moods.filter((m) => m.date === today);
   }, [moods]);
 
   const emotionGalaxyData = useMemo(() => {
     const emotionColors: Record<string, string> = {
-      joy: '#fbbf24', trust: '#22c55e', fear: '#6366f1', surprise: '#f97316',
-      sadness: '#3b82f6', disgust: '#a855f7', anger: '#ef4444', anticipation: '#ec4899',
+      joy: "#fbbf24",
+      trust: "#22c55e",
+      fear: "#6366f1",
+      surprise: "#f97316",
+      sadness: "#3b82f6",
+      disgust: "#a855f7",
+      anger: "#ef4444",
+      anticipation: "#ec4899",
     };
     const emotionEmojis: Record<string, string> = {
-      joy: '😊', trust: '🤝', fear: '😨', surprise: '😲',
-      sadness: '😢', disgust: '🤢', anger: '😠', anticipation: '🤩',
+      joy: "😊",
+      trust: "🤝",
+      fear: "😨",
+      surprise: "😲",
+      sadness: "😢",
+      disgust: "🤢",
+      anger: "😠",
+      anticipation: "🤩",
     };
 
     const todayCounts: Record<string, number> = {};
-    todayMoods.forEach(m => {
+    todayMoods.forEach((m) => {
       if (m.emotion?.primary) {
         todayCounts[m.emotion.primary] = (todayCounts[m.emotion.primary] || 0) + 1;
       } else if (m.mood) {
@@ -155,9 +178,9 @@ export function useStatsPageData({
       .filter(([_, count]) => count > 0)
       .map(([emotion, count]) => ({
         emotion,
-        emoji: emotionEmojis[emotion] || '😐',
+        emoji: emotionEmojis[emotion] || "😐",
         count,
-        color: emotionColors[emotion] || '#9ca3af',
+        color: emotionColors[emotion] || "#9ca3af",
       }));
   }, [todayMoods]);
 
@@ -178,43 +201,44 @@ export function useStatsPageData({
       prevWeekDays.push(formatDate(d));
     }
 
-    const moodData = weekDays.map(date => {
-      const dayMoods = moods.filter(m => m.date === date);
+    const moodData = weekDays.map((date) => {
+      const dayMoods = moods.filter((m) => m.date === date);
       if (dayMoods.length === 0) return { date, value: 0 };
       const avgScore = dayMoods.reduce((sum, m) => sum + entryScore(m), 0) / dayMoods.length;
       return { date, value: Math.round((avgScore / 5) * 100) };
     });
 
-    const habitsData = weekDays.map(date => {
+    const habitsData = weekDays.map((date) => {
       if (habits.length === 0) return { date, value: 0 };
-      const completed = habits.filter(h => isHabitCompletedOnDate(h, date)).length;
+      const completed = habits.filter((h) => isHabitCompletedOnDate(h, date)).length;
       return { date, value: Math.round((completed / habits.length) * 100) };
     });
 
-    const focusData = weekDays.map(date => {
+    const focusData = weekDays.map((date) => {
       const mins = focusMinutesByDate.get(date) || 0;
       return { date, value: Math.min(Math.round((mins / 60) * 100), 100) };
     });
 
-    const prevMoodValues = prevWeekDays.map(date => {
-      const dayMoods = moods.filter(m => m.date === date);
+    const prevMoodValues = prevWeekDays.map((date) => {
+      const dayMoods = moods.filter((m) => m.date === date);
       if (dayMoods.length === 0) return 0;
       const avgScore = dayMoods.reduce((sum, m) => sum + entryScore(m), 0) / dayMoods.length;
       return Math.round((avgScore / 5) * 100);
     });
 
-    const prevHabitsValues = prevWeekDays.map(date => {
+    const prevHabitsValues = prevWeekDays.map((date) => {
       if (habits.length === 0) return 0;
-      const completed = habits.filter(h => isHabitCompletedOnDate(h, date)).length;
+      const completed = habits.filter((h) => isHabitCompletedOnDate(h, date)).length;
       return Math.round((completed / habits.length) * 100);
     });
 
-    const prevFocusValues = prevWeekDays.map(date => {
+    const prevFocusValues = prevWeekDays.map((date) => {
       const mins = focusMinutesByDate.get(date) || 0;
       return Math.min(Math.round((mins / 60) * 100), 100);
     });
 
-    const avg = (arr: number[]) => arr.length === 0 ? 0 : arr.reduce((a, b) => a + b, 0) / arr.length;
+    const avg = (arr: number[]) =>
+      arr.length === 0 ? 0 : arr.reduce((a, b) => a + b, 0) / arr.length;
 
     return {
       mood: moodData,
@@ -233,8 +257,26 @@ export function useStatsPageData({
 
   const storySlides = useMemo(() => {
     if (!canShowStory) return [];
-    return generateWeeklyStory(moods, habits, focusSessions, gratitudeEntries, [], stats.currentStreak, t);
-  }, [moods, habits, focusSessions, gratitudeEntries, stats.currentStreak, canShowStory, t]);
+    return generateWeeklyStory(
+      moods,
+      habits,
+      focusSessions,
+      gratitudeEntries,
+      [],
+      stats.currentStreak,
+      t,
+      language as Language
+    );
+  }, [
+    moods,
+    habits,
+    focusSessions,
+    gratitudeEntries,
+    stats.currentStreak,
+    canShowStory,
+    t,
+    language,
+  ]);
 
   const weekRange = useMemo(() => getCurrentWeekRange().range, []);
 

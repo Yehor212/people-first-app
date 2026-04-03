@@ -151,7 +151,7 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
                 <button
                   onClick={handlers.handlePhoneBack}
                   className="p-1.5 rounded-lg hover:bg-muted/50 text-muted-foreground min-w-[44px] min-h-[44px] flex items-center justify-center"
-                  aria-label="Back"
+                  aria-label={t.ariaBack}
                 >
                   <ArrowLeft className="w-4 h-4 rtl:scale-x-[-1]" />
                 </button>
@@ -197,7 +197,7 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
                 <button
                   onClick={() => session.setPhoneStep("input")}
                   className="p-1.5 rounded-lg hover:bg-muted/50 text-muted-foreground min-w-[44px] min-h-[44px] flex items-center justify-center"
-                  aria-label="Back"
+                  aria-label={t.ariaBack}
                 >
                   <ArrowLeft className="w-4 h-4 rtl:scale-x-[-1]" />
                 </button>

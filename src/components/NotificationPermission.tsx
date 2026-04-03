@@ -90,7 +90,7 @@ export function NotificationPermission({ onComplete }: NotificationPermissionPro
       className="fixed inset-0 bg-background/95 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-fade-in"
       role="dialog"
       aria-modal="true"
-      aria-label="Notification permission"
+      aria-label={t.ariaNotificationPermission}
     >
       <div className="w-full max-w-md bg-card rounded-2xl p-4 sm:p-6 zen-shadow-card animate-scale-in">
         {/* Close button */}

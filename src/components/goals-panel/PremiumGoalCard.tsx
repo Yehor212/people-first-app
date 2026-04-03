@@ -1,11 +1,13 @@
-import { memo } from 'react';
-import { motion } from 'framer-motion';
-import { Check, X, Trophy } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { hapticTap } from '@/lib/haptics';
-import type { Goal, GoalType } from '@/types';
-import { GOAL_THEMES } from './types';
-import { ProgressRing } from './ProgressRing';
+import { memo } from "react";
+import { motion } from "framer-motion";
+import { Check, X, Trophy } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { hapticTap } from "@/lib/haptics";
+import { formatDecimal } from "@/lib/timeUtils";
+import { useLanguage } from "@/contexts/LanguageContext";
+import type { Goal, GoalType } from "@/types";
+import { GOAL_THEMES } from "./types";
+import { ProgressRing } from "./ProgressRing";
 
 interface PremiumGoalCardProps {
   goal: Goal;
@@ -15,16 +17,26 @@ interface PremiumGoalCardProps {
   t: Record<string, string>;
 }
 
-export const PremiumGoalCard = memo(function PremiumGoalCard({ goal, progress, onComplete, onDelete, t }: PremiumGoalCardProps) {
+export const PremiumGoalCard = memo(function PremiumGoalCard({
+  goal,
+  progress,
+  onComplete,
+  onDelete,
+  t,
+}: PremiumGoalCardProps) {
+  const { language } = useLanguage();
   const theme = GOAL_THEMES[goal.type];
   const Icon = theme.icon;
-  const isComplete = progress.percent >= 100 || goal.status === 'completed';
+  const isComplete = progress.percent >= 100 || goal.status === "completed";
 
   const formatValue = (type: GoalType, value: number) => {
     switch (type) {
-      case 'focus': return `${value}${t.minuteShort || 'm'}`;
-      case 'mood': return value.toFixed(1);
-      default: return value.toString();
+      case "focus":
+        return `${value}${t.minuteShort || "m"}`;
+      case "mood":
+        return formatDecimal(value, language);
+      default:
+        return value.toString();
     }
   };
 
@@ -34,19 +46,20 @@ export const PremiumGoalCard = memo(function PremiumGoalCard({ goal, progress, o
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, x: -20, scale: 0.95 }}
       className={cn(
-        'relative overflow-hidden rounded-2xl border border-border/40',
-        'bg-card backdrop-blur-sm transition-all',
-        isComplete && 'ring-1 ring-emerald-500/40',
+        "relative overflow-hidden rounded-2xl border border-border/40",
+        "bg-card backdrop-blur-sm transition-all",
+        isComplete && "ring-1 ring-emerald-500/40"
       )}
-      style={isComplete ? {
-        boxShadow: '0 0 24px rgba(16, 185, 129, 0.15)',
-      } : undefined}
+      style={
+        isComplete
+          ? {
+              boxShadow: "0 0 24px rgba(16, 185, 129, 0.15)",
+            }
+          : undefined
+      }
     >
       {/* Subtle gradient background */}
-      <div className={cn(
-        'absolute inset-0 opacity-60',
-        `bg-gradient-to-br ${theme.bgGradient}`,
-      )} />
+      <div className={cn("absolute inset-0 opacity-60", `bg-gradient-to-br ${theme.bgGradient}`)} />
 
       {/* Completion sparkles */}
       {isComplete && (
@@ -78,14 +91,14 @@ export const PremiumGoalCard = memo(function PremiumGoalCard({ goal, progress, o
         {/* Progress Ring */}
         <ProgressRing
           percent={progress.percent}
-          color={isComplete ? '#10b981' : theme.ringColor}
-          glowColor={isComplete ? 'rgba(16, 185, 129, 0.4)' : theme.glowColor}
+          color={isComplete ? "#10b981" : theme.ringColor}
+          glowColor={isComplete ? "rgba(16, 185, 129, 0.4)" : theme.glowColor}
         >
           {isComplete ? (
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
-              transition={{ type: 'spring', stiffness: 500 }}
+              transition={{ type: "spring", stiffness: 500 }}
             >
               <Check className="w-5 h-5 text-emerald-500" />
             </motion.div>
@@ -99,36 +112,49 @@ export const PremiumGoalCard = memo(function PremiumGoalCard({ goal, progress, o
         {/* Goal info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-0.5">
-            <Icon className={cn('w-3.5 h-3.5', isComplete ? 'text-emerald-500' : `text-[${theme.ringColor}]`)} style={{ color: isComplete ? undefined : theme.ringColor }} />
+            <Icon
+              className={cn(
+                "w-3.5 h-3.5",
+                isComplete ? "text-emerald-500" : `text-[${theme.ringColor}]`
+              )}
+              style={{ color: isComplete ? undefined : theme.ringColor }}
+            />
             <h4 className="font-semibold text-sm text-foreground truncate">{goal.title}</h4>
           </div>
           <div className="flex items-center gap-2">
-            <span className={cn(
-              'text-xs font-medium px-2 py-0.5 rounded-full',
-              'bg-muted/50 text-muted-foreground',
-            )}>
-              {goal.period === 'week' ? (t.thisWeek || 'This week') : (t.thisMonth || 'This month')}
+            <span
+              className={cn(
+                "text-xs font-medium px-2 py-0.5 rounded-full",
+                "bg-muted/50 text-muted-foreground"
+              )}
+            >
+              {goal.period === "week" ? t.thisWeek || "This week" : t.thisMonth || "This month"}
             </span>
-            <span className={cn(
-              'text-xs font-bold',
-              isComplete ? 'text-emerald-500' : 'text-muted-foreground',
-            )}>
+            <span
+              className={cn(
+                "text-xs font-bold",
+                isComplete ? "text-emerald-500" : "text-muted-foreground"
+              )}
+            >
               {formatValue(goal.type, progress.current)}/{formatValue(goal.type, progress.target)}
             </span>
           </div>
         </div>
 
         {/* Action */}
-        {isComplete && goal.status !== 'completed' ? (
+        {isComplete && goal.status !== "completed" ? (
           <motion.button
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            onClick={() => { void hapticTap(); onComplete(); }}
-            aria-label={t.claimReward || 'Claim reward'}
+            onClick={() => {
+              void hapticTap();
+              onComplete();
+            }}
+            aria-label={t.claimReward || "Claim reward"}
             className={cn(
-              'p-2.5 rounded-xl min-w-[44px] min-h-[44px] flex items-center justify-center',
-              'bg-gradient-to-br from-emerald-400 to-teal-500',
-              'text-white shadow-[0_4px_16px_rgba(16,185,129,0.4)] active:scale-95 transition-transform',
+              "p-2.5 rounded-xl min-w-[44px] min-h-[44px] flex items-center justify-center",
+              "bg-gradient-to-br from-emerald-400 to-teal-500",
+              "text-white shadow-[0_4px_16px_rgba(16,185,129,0.4)] active:scale-95 transition-transform"
             )}
           >
             <Trophy className="w-4 h-4" />
@@ -137,7 +163,7 @@ export const PremiumGoalCard = memo(function PremiumGoalCard({ goal, progress, o
           <button
             onClick={() => onDelete()}
             className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-destructive/10 transition-colors"
-            aria-label={t.delete || 'Delete'}
+            aria-label={t.delete || "Delete"}
           >
             <X className="w-4 h-4 text-muted-foreground" />
           </button>

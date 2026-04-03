@@ -1,5 +1,6 @@
-import { motion } from 'framer-motion';
-import { PremiumLoader } from './PremiumLoader';
+import { motion } from "framer-motion";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { PremiumLoader } from "./PremiumLoader";
 
 interface SplashScreenProps {
   loadingFadeOut: boolean;
@@ -7,6 +8,7 @@ interface SplashScreenProps {
 }
 
 export function SplashScreen({ loadingFadeOut, subtitle }: SplashScreenProps) {
+  const { t } = useLanguage();
   return (
     <motion.div
       key="loading"
@@ -15,24 +17,28 @@ export function SplashScreen({ loadingFadeOut, subtitle }: SplashScreenProps) {
         opacity: loadingFadeOut ? 0 : 1,
         scale: loadingFadeOut ? 1.02 : 1,
       }}
-      transition={{ duration: 0.5, ease: 'easeInOut' }}
+      transition={{ duration: 0.5, ease: "easeInOut" }}
     >
       {/* Aurora ambient layer 1 — CSS-driven for battery savings */}
       <div
         className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_60%_50%_at_50%_30%,hsl(var(--primary)/0.10)_0%,transparent_70%)] [animation:zen-glow-breathe_4s_ease-in-out_infinite]"
-        style={{
-          '--zen-glow-min': '0.4',
-          '--zen-glow-max': '0.8',
-        } as React.CSSProperties}
+        style={
+          {
+            "--zen-glow-min": "0.4",
+            "--zen-glow-max": "0.8",
+          } as React.CSSProperties
+        }
       />
 
       {/* Aurora ambient layer 2 — CSS-driven */}
       <div
         className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_50%_40%_at_50%_70%,hsl(var(--accent)/0.05)_0%,transparent_70%)] [animation:zen-glow-breathe_5s_ease-in-out_1.5s_infinite]"
-        style={{
-          '--zen-glow-min': '0.3',
-          '--zen-glow-max': '0.6',
-        } as React.CSSProperties}
+        style={
+          {
+            "--zen-glow-min": "0.3",
+            "--zen-glow-max": "0.6",
+          } as React.CSSProperties
+        }
       />
 
       {/* Floating bokeh orbs */}
@@ -46,11 +52,13 @@ export function SplashScreen({ loadingFadeOut, subtitle }: SplashScreenProps) {
       {/* Glow ring behind logo — CSS-driven pulse for battery savings */}
       <div
         className="absolute rounded-full w-[120px] h-[120px] blur-[10px] bg-[radial-gradient(circle,hsl(var(--primary)/0.15)_0%,transparent_70%)] [animation:zen-pulse_3s_ease-in-out_0.3s_infinite,zen-glow-breathe_3s_ease-in-out_0.3s_infinite]"
-        style={{
-          '--zen-pulse-scale': '1.15',
-          '--zen-glow-min': '0.15',
-          '--zen-glow-max': '0.25',
-        } as React.CSSProperties}
+        style={
+          {
+            "--zen-pulse-scale": "1.15",
+            "--zen-glow-min": "0.15",
+            "--zen-glow-max": "0.25",
+          } as React.CSSProperties
+        }
       />
 
       {/* Logo SVG */}
@@ -58,9 +66,17 @@ export function SplashScreen({ loadingFadeOut, subtitle }: SplashScreenProps) {
         className="mb-6 relative"
         initial={{ scale: 0, rotate: -15 }}
         animate={{ scale: 1, rotate: 0 }}
-        transition={{ type: 'spring', stiffness: 180, damping: 14, delay: 0.1 }}
+        transition={{ type: "spring", stiffness: 180, damping: 14, delay: 0.1 }}
       >
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="80" height="80" className="drop-shadow-lg" role="img" aria-label="ZenFlow">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 512 512"
+          width="80"
+          height="80"
+          className="drop-shadow-lg"
+          role="img"
+          aria-label="ZenFlow"
+        >
           <defs>
             <linearGradient id="splashBgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#1a6b52" />
@@ -76,14 +92,43 @@ export function SplashScreen({ loadingFadeOut, subtitle }: SplashScreenProps) {
               <stop offset="100%" stopColor="white" stopOpacity="0" />
             </radialGradient>
           </defs>
-          <rect x="16" y="16" width="480" height="480" rx="100" ry="100" fill="url(#splashBgGrad)" />
-          <rect x="16" y="16" width="480" height="480" rx="100" ry="100" fill="url(#splashHighlight)" />
+          <rect
+            x="16"
+            y="16"
+            width="480"
+            height="480"
+            rx="100"
+            ry="100"
+            fill="url(#splashBgGrad)"
+          />
+          <rect
+            x="16"
+            y="16"
+            width="480"
+            height="480"
+            rx="100"
+            ry="100"
+            fill="url(#splashHighlight)"
+          />
           <ellipse cx="256" cy="240" rx="130" ry="130" fill="url(#splashLeafGlow)" />
           <g transform="translate(106, 96) scale(12.5)">
-            <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"
-              fill="white" fillOpacity="0.2" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"
-              fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            <path
+              d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"
+              fill="white"
+              fillOpacity="0.2"
+              stroke="white"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"
+              fill="none"
+              stroke="white"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           </g>
           <circle cx="340" cy="140" r="3" fill="white" opacity="0.4" />
           <circle cx="345" cy="135" r="1.5" fill="white" opacity="0.6" />
@@ -95,7 +140,7 @@ export function SplashScreen({ loadingFadeOut, subtitle }: SplashScreenProps) {
         className="text-3xl font-bold text-foreground tracking-[0.15em]"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5, duration: 0.5, ease: 'easeOut' }}
+        transition={{ delay: 0.5, duration: 0.5, ease: "easeOut" }}
       >
         ZenFlow
       </motion.h1>
@@ -117,7 +162,7 @@ export function SplashScreen({ loadingFadeOut, subtitle }: SplashScreenProps) {
         animate={{ opacity: 1 }}
         transition={{ delay: 1.0 }}
       >
-        <PremiumLoader size="xl" label="Loading" />
+        <PremiumLoader size="xl" label={t.loading} />
       </motion.div>
     </motion.div>
   );

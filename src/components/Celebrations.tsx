@@ -340,7 +340,7 @@ export function ConfirmDialog({
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Confirmation"
+        aria-label={t.ariaConfirmation}
         className="bg-card rounded-2xl p-6 mx-4 max-w-sm w-full shadow-2xl animate-scale-in"
         onClick={(e) => e.stopPropagation()}
       >

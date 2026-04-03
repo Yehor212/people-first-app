@@ -238,7 +238,7 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
                 value={duration}
                 onChange={(e) => setDuration(safeParseInt(e.target.value, 60, 5, 180))}
                 className="w-full"
-                aria-label="Duration in minutes"
+                aria-label={t.ariaDurationMinutes}
               />
               <div className="text-center text-sm text-muted-foreground mt-1">
                 {(t.nMinutes || "{n} minutes").replace("{n}", String(duration))}

@@ -46,10 +46,7 @@ export function DailySurprise({ onNavigate }: DailySurpriseProps) {
 
   const handleAction = () => {
     if (todaySurprise.action && onNavigate) {
-      const sectionMap: Record<
-        string,
-        "mood" | "habits" | "focus" | "gratitude"
-      > = {
+      const sectionMap: Record<string, "mood" | "habits" | "focus" | "gratitude"> = {
         mood: "mood",
         habit: "habits",
         focus: "focus",
@@ -72,7 +69,7 @@ export function DailySurprise({ onNavigate }: DailySurpriseProps) {
           "bg-gradient-to-r",
           getTypeColor(todaySurprise.type),
           "hover:scale-[1.02] active:scale-[0.98]",
-          "animate-pulse-subtle",
+          "animate-pulse-subtle"
         )}
       >
         <div className="flex items-center gap-3">
@@ -80,40 +77,8 @@ export function DailySurprise({ onNavigate }: DailySurpriseProps) {
             <Gift className="w-6 h-6 text-primary" />
           </div>
           <div className="flex-1 text-start">
-            <p className="font-semibold text-foreground">
-              {language === "uk"
-                ? "Сюрприз дня"
-                : language === "es"
-                  ? "Sorpresa del día"
-                  : language === "de"
-                    ? "Tagesüberraschung"
-                    : language === "fr"
-                      ? "Surprise du jour"
-                      : language === "ja"
-                        ? "今日のサプライズ"
-                        : language === "ar"
-                          ? "مفاجأة اليوم"
-                          : language === "he"
-                            ? "ההפתעה היומית"
-                            : "Daily Surprise"}
-            </p>
-            <p className="text-sm text-muted-foreground">
-              {language === "uk"
-                ? "Натисни, щоб відкрити!"
-                : language === "es"
-                  ? "¡Toca para abrir!"
-                  : language === "de"
-                    ? "Tippe zum Öffnen!"
-                    : language === "fr"
-                      ? "Appuie pour ouvrir!"
-                      : language === "ja"
-                        ? "タップして開こう！"
-                        : language === "ar"
-                          ? "انقر للكشف!"
-                          : language === "he"
-                            ? "לחץ לגילוי!"
-                            : "Tap to reveal!"}
-            </p>
+            <p className="font-semibold text-foreground">{t.dailySurpriseTitle}</p>
+            <p className="text-sm text-muted-foreground">{t.dailySurpriseTap}</p>
           </div>
           <Sparkles className="w-5 h-5 text-amber-400 animate-pulse" />
         </div>
@@ -129,7 +94,7 @@ export function DailySurprise({ onNavigate }: DailySurpriseProps) {
         className={cn(
           "w-full p-3 rounded-xl border transition-all opacity-70 hover:opacity-100",
           "bg-gradient-to-r",
-          getTypeColor(todaySurprise.type),
+          getTypeColor(todaySurprise.type)
         )}
       >
         <div className="flex items-center gap-2">
@@ -149,7 +114,7 @@ export function DailySurprise({ onNavigate }: DailySurpriseProps) {
       className={cn(
         "relative p-5 rounded-2xl border transition-all animate-scale-in",
         "bg-gradient-to-br",
-        getTypeColor(todaySurprise.type),
+        getTypeColor(todaySurprise.type)
       )}
     >
       {/* Close button */}
@@ -187,13 +152,10 @@ export function DailySurprise({ onNavigate }: DailySurpriseProps) {
           className={cn(
             "w-full py-2.5 rounded-xl font-medium transition-all",
             "bg-primary/20 hover:bg-primary/30 text-primary",
-            "flex items-center justify-center gap-2",
+            "flex items-center justify-center gap-2"
           )}
         >
-          <span>
-            {todaySurprise.action.label[language] ||
-              todaySurprise.action.label.en}
-          </span>
+          <span>{todaySurprise.action.label[language] || todaySurprise.action.label.en}</span>
           <ChevronRight className="w-4 h-4 rtl:scale-x-[-1]" />
         </button>
       )}

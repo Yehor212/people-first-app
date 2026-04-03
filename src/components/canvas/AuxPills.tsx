@@ -9,13 +9,14 @@
  * Auto-collapse: 5s timeout → back to idle
  */
 
-import { memo, useCallback, useEffect, useRef } from 'react';
-import { motion, AnimatePresence, useTransform, type MotionValue } from 'framer-motion';
-import { Heart, Target } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { haptics } from '@/lib/haptics';
-import { ROOT_SIZE } from './mindMapLayout';
-import type { CanvasMode } from '@/stores/uiStore';
+import { memo, useCallback, useEffect, useRef } from "react";
+import { motion, AnimatePresence, useTransform, type MotionValue } from "framer-motion";
+import { Heart, Target } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { haptics } from "@/lib/haptics";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { ROOT_SIZE } from "./mindMapLayout";
+import type { CanvasMode } from "@/stores/uiStore";
 
 interface AuxPillsProps {
   canvasCenter: { x: number; y: number };
@@ -28,13 +29,20 @@ interface AuxPillsProps {
 const PILL_OFFSET = 100; // px from center
 
 const pillSpring = {
-  type: 'spring' as const,
+  type: "spring" as const,
   stiffness: 400,
   damping: 25,
 };
 
-export const AuxPills = memo(function AuxPills({ canvasCenter, canvasMode, onEmotionSelect, onGoalSelect, zoom }: AuxPillsProps) {
-  const isVisible = canvasMode === 'split';
+export const AuxPills = memo(function AuxPills({
+  canvasCenter,
+  canvasMode,
+  onEmotionSelect,
+  onGoalSelect,
+  zoom,
+}: AuxPillsProps) {
+  const { t } = useLanguage();
+  const isVisible = canvasMode === "split";
   const textOpacity = useTransform(zoom, [0.65, 0.85], [0, 1]);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -72,18 +80,18 @@ export const AuxPills = memo(function AuxPills({ canvasCenter, canvasMode, onEmo
             transition={pillSpring}
             onPointerUp={handleEmotionTap}
             className={cn(
-              'absolute flex items-center gap-2 px-4 py-3 rounded-full',
-              'bg-white/5 backdrop-blur-md',
-              'border border-white/10',
-              'text-white text-sm font-medium',
-              'cursor-pointer z-20',
-              'hover:bg-white/10 transition-colors',
-              'origin-right',
+              "absolute flex items-center gap-2 px-4 py-3 rounded-full",
+              "bg-white/5 backdrop-blur-md",
+              "border border-white/10",
+              "text-white text-sm font-medium",
+              "cursor-pointer z-20",
+              "hover:bg-white/10 transition-colors",
+              "origin-right"
             )}
-            aria-label="Emotions"
+            aria-label={t.emotionsLabel}
           >
             <Heart className="w-4 h-4 text-rose-400" />
-            <motion.span style={{ opacity: textOpacity }}>Эмоции</motion.span>
+            <motion.span style={{ opacity: textOpacity }}>{t.emotionsLabel}</motion.span>
           </motion.button>
 
           {/* Right pill: Goals */}
@@ -95,18 +103,18 @@ export const AuxPills = memo(function AuxPills({ canvasCenter, canvasMode, onEmo
             transition={pillSpring}
             onPointerUp={handleGoalTap}
             className={cn(
-              'absolute flex items-center gap-2 px-4 py-3 rounded-full',
-              'bg-white/5 backdrop-blur-md',
-              'border border-white/10',
-              'text-white text-sm font-medium',
-              'cursor-pointer z-20',
-              'hover:bg-white/10 transition-colors',
-              'origin-left',
+              "absolute flex items-center gap-2 px-4 py-3 rounded-full",
+              "bg-white/5 backdrop-blur-md",
+              "border border-white/10",
+              "text-white text-sm font-medium",
+              "cursor-pointer z-20",
+              "hover:bg-white/10 transition-colors",
+              "origin-left"
             )}
-            aria-label="Goals"
+            aria-label={t.goalsLabel}
           >
             <Target className="w-4 h-4 text-emerald-400" />
-            <motion.span style={{ opacity: textOpacity }}>Цели</motion.span>
+            <motion.span style={{ opacity: textOpacity }}>{t.goalsLabel}</motion.span>
           </motion.button>
         </>
       )}

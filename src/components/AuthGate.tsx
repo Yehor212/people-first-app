@@ -1,15 +1,15 @@
-import { ReactNode } from 'react';
-import { useAppStore, useUserDataStore } from '@/stores';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { logger } from '@/lib/logger';
-import { safeLocalStorageSet } from '@/lib/safeJson';
-import { SplashScreen } from '@/components/SplashScreen';
-import { LanguageSelector } from '@/components/LanguageSelector';
-import { AuthScreen } from '@/components/AuthScreen';
-import { WelcomeTutorial } from '@/components/WelcomeTutorial';
-import { OnboardingFlow } from '@/components/OnboardingFlow';
-import { PremiumLoader } from '@/components/PremiumLoader';
-import { NotificationPermission } from '@/components/NotificationPermission';
+import { ReactNode } from "react";
+import { useAppStore, useUserDataStore } from "@/stores";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { logger } from "@/lib/logger";
+import { safeLocalStorageSet } from "@/lib/safeJson";
+import { SplashScreen } from "@/components/SplashScreen";
+import { LanguageSelector } from "@/components/LanguageSelector";
+import { AuthScreen } from "@/components/AuthScreen";
+import { WelcomeTutorial } from "@/components/WelcomeTutorial";
+import { OnboardingFlow } from "@/components/OnboardingFlow";
+import { PremiumLoader } from "@/components/PremiumLoader";
+import { NotificationPermission } from "@/components/NotificationPermission";
 
 interface AuthGateProps {
   isLoading: boolean;
@@ -27,36 +27,38 @@ export function AuthGate({ isLoading, children }: AuthGateProps) {
   const { t } = useLanguage();
 
   // App initialization state
-  const initializationState = useAppStore(s => s.initializationState);
-  const loadingFadeOut = useAppStore(s => s.loadingFadeOut);
+  const initializationState = useAppStore((s) => s.initializationState);
+  const loadingFadeOut = useAppStore((s) => s.loadingFadeOut);
 
   // Auth state
-  const authBypassFlag = useAppStore(s => s.authBypassFlag);
-  const setAuthBypassFlag = useAppStore(s => s.setAuthBypassFlag);
-  const isProcessingWebOAuth = useAppStore(s => s.isProcessingWebOAuth);
-  const webOAuthError = useAppStore(s => s.webOAuthError);
-  const setWebOAuthError = useAppStore(s => s.setWebOAuthError);
-  const hasValidSession = useAppStore(s => s.hasValidSession);
+  const authBypassFlag = useAppStore((s) => s.authBypassFlag);
+  const setAuthBypassFlag = useAppStore((s) => s.setAuthBypassFlag);
+  const isProcessingWebOAuth = useAppStore((s) => s.isProcessingWebOAuth);
+  const webOAuthError = useAppStore((s) => s.webOAuthError);
+  const setWebOAuthError = useAppStore((s) => s.setWebOAuthError);
+  const hasValidSession = useAppStore((s) => s.hasValidSession);
 
   // Gate bypass flags (synchronous — survive until page refresh)
-  const tutorialBypassFlag = useAppStore(s => s.tutorialBypassFlag);
-  const setTutorialBypassFlag = useAppStore(s => s.setTutorialBypassFlag);
-  const onboardingBypassFlag = useAppStore(s => s.onboardingBypassFlag);
-  const setOnboardingBypassFlag = useAppStore(s => s.setOnboardingBypassFlag);
+  const tutorialBypassFlag = useAppStore((s) => s.tutorialBypassFlag);
+  const setTutorialBypassFlag = useAppStore((s) => s.setTutorialBypassFlag);
+  const onboardingBypassFlag = useAppStore((s) => s.onboardingBypassFlag);
+  const setOnboardingBypassFlag = useAppStore((s) => s.setOnboardingBypassFlag);
 
   // User data gate state
-  const hasSelectedLanguage = useUserDataStore(s => s.hasSelectedLanguage);
-  const setHasSelectedLanguage = useUserDataStore(s => s.setHasSelectedLanguage);
-  const setUserName = useUserDataStore(s => s.setUserName);
-  const setUserNameCustom = useUserDataStore(s => s.setUserNameCustom);
-  const tutorialComplete = useUserDataStore(s => s.tutorialComplete);
-  const setTutorialComplete = useUserDataStore(s => s.setTutorialComplete);
-  const onboardingComplete = useUserDataStore(s => s.onboardingComplete);
-  const setOnboardingComplete = useUserDataStore(s => s.setOnboardingComplete);
-  const notificationPermissionChecked = useUserDataStore(s => s.notificationPermissionChecked);
-  const setNotificationPermissionChecked = useUserDataStore(s => s.setNotificationPermissionChecked);
-  const googleAuthChecked = useUserDataStore(s => s.googleAuthChecked);
-  const setGoogleAuthChecked = useUserDataStore(s => s.setGoogleAuthChecked);
+  const hasSelectedLanguage = useUserDataStore((s) => s.hasSelectedLanguage);
+  const setHasSelectedLanguage = useUserDataStore((s) => s.setHasSelectedLanguage);
+  const setUserName = useUserDataStore((s) => s.setUserName);
+  const setUserNameCustom = useUserDataStore((s) => s.setUserNameCustom);
+  const tutorialComplete = useUserDataStore((s) => s.tutorialComplete);
+  const setTutorialComplete = useUserDataStore((s) => s.setTutorialComplete);
+  const onboardingComplete = useUserDataStore((s) => s.onboardingComplete);
+  const setOnboardingComplete = useUserDataStore((s) => s.setOnboardingComplete);
+  const notificationPermissionChecked = useUserDataStore((s) => s.notificationPermissionChecked);
+  const setNotificationPermissionChecked = useUserDataStore(
+    (s) => s.setNotificationPermissionChecked
+  );
+  const googleAuthChecked = useUserDataStore((s) => s.googleAuthChecked);
+  const setGoogleAuthChecked = useUserDataStore((s) => s.setGoogleAuthChecked);
 
   // ── Gate handlers ──
 
@@ -65,7 +67,7 @@ export function AuthGate({ isLoading, children }: AuthGateProps) {
   };
 
   const handleGoogleAuthComplete = (userData: { name: string; email: string }) => {
-    logger.log('[AuthGate] Google auth completed');
+    logger.log("[AuthGate] Google auth completed");
     // CRITICAL: Set synchronous bypass flag FIRST (immediate UI update)
     // This ensures we skip AuthScreen immediately, before IndexedDB writes
     setAuthBypassFlag(true);
@@ -75,20 +77,17 @@ export function AuthGate({ isLoading, children }: AuthGateProps) {
     setGoogleAuthChecked(true);
   };
 
-  const handleOnboardingComplete = (result: {
-    skipped?: boolean;
-    modules?: string[];
-  }) => {
-    logger.log('[AuthGate] handleOnboardingComplete called', result);
+  const handleOnboardingComplete = (result: { skipped?: boolean; modules?: string[] }) => {
+    logger.log("[AuthGate] handleOnboardingComplete called", result);
     // CRITICAL: Set synchronous bypass flag FIRST (immediate UI update)
     setOnboardingBypassFlag(true);
     // Direct localStorage write (survives page refresh even if IndexedDB fails)
-    safeLocalStorageSet('zenflow-onboarding-complete', true);
+    safeLocalStorageSet("zenflow-onboarding-complete", true);
     // Zustand + IndexedDB persistence (normal async path)
     try {
       setOnboardingComplete(true);
     } catch (error) {
-      logger.error('[AuthGate] Error in handleOnboardingComplete:', error);
+      logger.error("[AuthGate] Error in handleOnboardingComplete:", error);
     }
   };
 
@@ -102,7 +101,7 @@ export function AuthGate({ isLoading, children }: AuthGateProps) {
     return (
       <SplashScreen
         loadingFadeOut={loadingFadeOut}
-        subtitle={t.initializingApp || 'Preparing your zen space...'}
+        subtitle={t.initializingApp || "Preparing your zen space..."}
       />
     );
   }
@@ -111,13 +110,13 @@ export function AuthGate({ isLoading, children }: AuthGateProps) {
     return (
       <div className="flex items-center justify-center min-h-screen zen-gradient-hero p-4">
         <div className="max-w-md bg-card rounded-3xl p-6 zen-shadow-card space-y-4">
-          <h2 className="text-2xl font-bold text-destructive">Initialization Error</h2>
+          <h2 className="text-2xl font-bold text-destructive">{t.initializationError}</h2>
           <p className="text-muted-foreground">{initializationState.error}</p>
           <button
             onClick={() => window.location.reload()}
             className="w-full py-3 zen-gradient text-primary-foreground rounded-xl font-semibold hover:opacity-90 transition-opacity"
           >
-            {t.tryAgain || 'Try Again'}
+            {t.tryAgain || "Try Again"}
           </button>
         </div>
       </div>
@@ -164,12 +163,12 @@ export function AuthGate({ isLoading, children }: AuthGateProps) {
       <WelcomeTutorial
         onComplete={() => {
           setTutorialBypassFlag(true);
-          safeLocalStorageSet('zenflow-tutorial-complete', true);
+          safeLocalStorageSet("zenflow-tutorial-complete", true);
           setTutorialComplete(true);
         }}
         onSkip={() => {
           setTutorialBypassFlag(true);
-          safeLocalStorageSet('zenflow-tutorial-complete', true);
+          safeLocalStorageSet("zenflow-tutorial-complete", true);
           setTutorialComplete(true);
         }}
       />

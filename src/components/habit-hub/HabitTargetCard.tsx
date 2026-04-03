@@ -7,11 +7,12 @@
  * Uses existing ProgressRing component. Deep Space aesthetic.
  */
 
-import { useMemo } from 'react';
-import { ProgressRing } from '@/components/ui/progress-ring';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { ENTRY } from '@/types';
-import type { Habit } from '@/types';
+import { useMemo } from "react";
+import { ProgressRing } from "@/components/ui/progress-ring";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { formatDecimal } from "@/lib/timeUtils";
+import { ENTRY } from "@/types";
+import type { Habit } from "@/types";
 
 interface HabitTargetCardProps {
   habit: Habit;
@@ -20,8 +21,8 @@ interface HabitTargetCardProps {
 
 function toDateStr(d: Date): string {
   const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
 }
 
@@ -44,7 +45,7 @@ function computeIntervalStats(habit: Habit): IntervalStat[] {
   const weekStartStr = toDateStr(weekStart);
 
   // Month start
-  const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+  const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
 
   // Year start
   const yearStart = `${now.getFullYear()}-01-01`;
@@ -85,7 +86,7 @@ function computeIntervalStats(habit: Habit): IntervalStat[] {
 
   function pct(actual: number, expected: number): number {
     if (expected <= 0) return actual > 0 ? 100 : 0;
-    if (habit.targetType === 'atMost') {
+    if (habit.targetType === "atMost") {
       // For atMost: 100% when at/under, decreasing when over
       return Math.max(0, Math.min(100, (1 - (actual - expected) / expected) * 100));
     }
@@ -93,31 +94,46 @@ function computeIntervalStats(habit: Habit): IntervalStat[] {
   }
 
   return [
-    { label: 'Week', actual: weekActual, expected: weekExpected, percent: pct(weekActual, weekExpected) },
-    { label: 'Month', actual: monthActual, expected: monthExpected, percent: pct(monthActual, monthExpected) },
-    { label: 'Year', actual: yearActual, expected: yearExpected, percent: pct(yearActual, yearExpected) },
+    {
+      label: "Week",
+      actual: weekActual,
+      expected: weekExpected,
+      percent: pct(weekActual, weekExpected),
+    },
+    {
+      label: "Month",
+      actual: monthActual,
+      expected: monthExpected,
+      percent: pct(monthActual, monthExpected),
+    },
+    {
+      label: "Year",
+      actual: yearActual,
+      expected: yearExpected,
+      percent: pct(yearActual, yearExpected),
+    },
   ];
 }
 
 export function HabitTargetCard({ habit, className }: HabitTargetCardProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const ts = t as unknown as Record<string, string>;
 
   const stats = useMemo(() => computeIntervalStats(habit), [habit]);
 
   // Guard: only for numerical habits with target
-  if (habit.habitType !== 'numerical' || habit.targetValue <= 0) return null;
+  if (habit.habitType !== "numerical" || habit.targetValue <= 0) return null;
 
   const intervalLabels: Record<string, string> = {
-    Week: ts.thisWeek || 'Week',
-    Month: ts.thisMonth || 'Month',
-    Year: ts.thisYear || 'Year',
+    Week: ts.thisWeek || "Week",
+    Month: ts.thisMonth || "Month",
+    Year: ts.thisYear || "Year",
   };
 
   return (
     <div className={className}>
       <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-        {ts.targetProgress || 'Target Progress'}
+        {ts.targetProgress || "Target Progress"}
       </h4>
       <div className="flex items-center justify-around py-2">
         {stats.map((stat) => (
@@ -126,13 +142,12 @@ export function HabitTargetCard({ habit, className }: HabitTargetCardProps) {
               progress={stat.percent}
               size="sm"
               showPercentage
-              color={stat.percent >= 80 ? 'success' : stat.percent >= 40 ? 'warning' : 'primary'}
+              color={stat.percent >= 80 ? "success" : stat.percent >= 40 ? "warning" : "primary"}
             />
             <div className="text-center">
               <div className="text-[10px] text-muted-foreground">{intervalLabels[stat.label]}</div>
               <div className="text-[10px] font-medium text-muted-foreground tabular-nums">
-                {stat.actual % 1 === 0 ? stat.actual : stat.actual.toFixed(1)}
-                /{stat.expected % 1 === 0 ? stat.expected : stat.expected.toFixed(0)}
+                {formatDecimal(stat.actual, language)}/{formatDecimal(stat.expected, language)}
               </div>
             </div>
           </div>

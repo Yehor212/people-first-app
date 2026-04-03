@@ -135,7 +135,7 @@ export function DailyRewards({ onClose, onClaimReward }: DailyRewardsProps) {
       className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
       role="dialog"
       aria-modal="true"
-      aria-label="Daily rewards"
+      aria-label={t.ariaDailyRewards}
     >
       {/* Confetti Effect */}
       {showConfetti && (

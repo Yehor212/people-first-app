@@ -5,10 +5,11 @@
  * and cinematic title reveal. Sets the premium tone for the entire story.
  */
 
-import { motion, type Variants } from 'framer-motion';
-import { StarField } from '../elements/StarField';
-import { SparklesIcon } from '@/components/icons';
-import type { StorySlide } from '@/lib/progressStories';
+import { motion, type Variants } from "framer-motion";
+import { StarField } from "../elements/StarField";
+import { SparklesIcon } from "@/components/icons";
+import { useLanguage } from "@/contexts/LanguageContext";
+import type { StorySlide } from "@/lib/progressStories";
 
 interface IntroSlideProps {
   slide: StorySlide;
@@ -26,7 +27,7 @@ const portalVariants = {
     opacity: 1,
     rotate: 0,
     transition: {
-      type: 'spring',
+      type: "spring",
       stiffness: 60,
       damping: 12,
       duration: 1.5,
@@ -38,16 +39,16 @@ const titleVariants = {
   hidden: {
     opacity: 0,
     scale: 0.8,
-    filter: 'blur(20px)',
+    filter: "blur(20px)",
   },
   visible: {
     opacity: 1,
     scale: 1,
-    filter: 'blur(0px)',
+    filter: "blur(0px)",
     transition: {
       duration: 0.8,
       delay: 0.5,
-      ease: 'easeOut',
+      ease: "easeOut",
     },
   },
 } satisfies Variants;
@@ -71,12 +72,13 @@ const sparkleVariants: Variants = {
       duration: 2 + i * 0.2,
       repeat: Infinity,
       delay: i * 0.15,
-      ease: 'easeInOut',
+      ease: "easeInOut",
     },
   }),
 };
 
 export function IntroSlide({ slide }: IntroSlideProps) {
+  const { t } = useLanguage();
   return (
     <div className="relative w-full h-full overflow-hidden">
       {/* Deep space background gradient */}
@@ -109,32 +111,22 @@ export function IntroSlide({ slide }: IntroSlideProps) {
 
       {/* Central portal ring */}
       <div className="absolute inset-0 flex items-center justify-center">
-        <motion.div
-          className="relative"
-          variants={portalVariants}
-          initial="closed"
-          animate="open"
-        >
+        <motion.div className="relative" variants={portalVariants} initial="closed" animate="open">
           {/* Outer glow ring */}
           <motion.div
             className="absolute -inset-8 rounded-full"
             animate={{
               boxShadow: [
-                '0 0 60px 20px rgba(139, 92, 246, 0.3)',
-                '0 0 80px 30px rgba(59, 130, 246, 0.4)',
-                '0 0 60px 20px rgba(139, 92, 246, 0.3)',
+                "0 0 60px 20px rgba(139, 92, 246, 0.3)",
+                "0 0 80px 30px rgba(59, 130, 246, 0.4)",
+                "0 0 60px 20px rgba(139, 92, 246, 0.3)",
               ],
             }}
-            transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
           />
 
           {/* Portal ring SVG */}
-          <svg
-            width="280"
-            height="280"
-            viewBox="0 0 280 280"
-            className="relative z-10"
-          >
+          <svg width="280" height="280" viewBox="0 0 280 280" className="relative z-10">
             <defs>
               <linearGradient id="portalGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                 <stop offset="0%" stopColor="#8B5CF6" />
@@ -161,7 +153,7 @@ export function IntroSlide({ slide }: IntroSlideProps) {
               filter="url(#portalGlow)"
               initial={{ pathLength: 0, opacity: 0 }}
               animate={{ pathLength: 1, opacity: 1 }}
-              transition={{ duration: 1.5, ease: 'easeOut' }}
+              transition={{ duration: 1.5, ease: "easeOut" }}
             />
 
             {/* Inner ring */}
@@ -175,7 +167,7 @@ export function IntroSlide({ slide }: IntroSlideProps) {
               strokeDasharray="10 5"
               opacity={0.6}
               animate={{ rotate: 360 }}
-              transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
               className="origin-center"
             />
 
@@ -189,7 +181,7 @@ export function IntroSlide({ slide }: IntroSlideProps) {
               strokeWidth="1"
               opacity={0.4}
               animate={{ rotate: -360 }}
-              transition={{ duration: 15, repeat: Infinity, ease: 'linear' }}
+              transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
               className="origin-center"
             />
           </svg>
@@ -242,13 +234,11 @@ export function IntroSlide({ slide }: IntroSlideProps) {
         <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 backdrop-blur-sm border border-white/10">
           <motion.div
             animate={{ rotate: 360 }}
-            transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
+            transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
           >
             <SparklesIcon size="xs" />
           </motion.div>
-          <span className="text-sm text-white/60 font-medium">
-            Swipe to explore
-          </span>
+          <span className="text-sm text-white/60 font-medium">{t.swipeToExplore}</span>
         </div>
       </motion.div>
     </div>

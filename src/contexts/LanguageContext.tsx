@@ -112,6 +112,20 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     }
   }, [validLanguage]);
 
+  // Update document title and meta tags when translations change
+  useEffect(() => {
+    document.title = t.metaTitle || "ZenFlow — Daily Wellness";
+
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) metaDesc.setAttribute("content", t.metaDescription || "");
+
+    const ogTitle = document.querySelector('meta[property="og:title"]');
+    if (ogTitle) ogTitle.setAttribute("content", t.metaTitle || "");
+
+    const ogDesc = document.querySelector('meta[property="og:description"]');
+    if (ogDesc) ogDesc.setAttribute("content", t.metaDescription || "");
+  }, [t.metaTitle, t.metaDescription]);
+
   // Memoize provider value to prevent unnecessary re-renders
   const value = useMemo(
     () => ({

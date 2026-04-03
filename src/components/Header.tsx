@@ -1,8 +1,9 @@
-import { memo, useMemo } from 'react';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { Trophy, ClipboardList, Sparkles, Users, Flame } from 'lucide-react';
-import { ThemeToggle } from '@/components/ThemeToggle';
-import { SyncStatusIndicatorCompact } from '@/components/SyncStatusIndicator';
+import { memo, useMemo } from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { getLocale } from "@/lib/timeUtils";
+import { Trophy, ClipboardList, Sparkles, Users, Flame } from "lucide-react";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { SyncStatusIndicatorCompact } from "@/components/SyncStatusIndicator";
 
 interface HeaderProps {
   userName?: string;
@@ -13,7 +14,14 @@ interface HeaderProps {
   onOpenFriends?: () => void;
 }
 
-export const Header = memo(function Header({ userName = 'Friend', streak, onOpenChallenges, onOpenTasks, onOpenQuests, onOpenFriends }: HeaderProps) {
+export const Header = memo(function Header({
+  userName = "Friend",
+  streak,
+  onOpenChallenges,
+  onOpenTasks,
+  onOpenQuests,
+  onOpenFriends,
+}: HeaderProps) {
   const { t, language } = useLanguage();
 
   const greeting = useMemo(() => {
@@ -24,20 +32,10 @@ export const Header = memo(function Header({ userName = 'Friend', streak, onOpen
   }, [t.goodMorning, t.goodAfternoon, t.goodEvening]);
 
   const formattedDate = useMemo(() => {
-    const localeMap: Record<string, string> = {
-      uk: 'uk-UA',
-      es: 'es-ES',
-      de: 'de-DE',
-      fr: 'fr-FR',
-      ja: 'ja-JP',
-      ar: 'ar-SA',
-      he: 'he-IL',
-    };
-    const locale = localeMap[language] || 'en-US';
-    return new Date().toLocaleDateString(locale, {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
+    return new Date().toLocaleDateString(getLocale(language), {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
     });
   }, [language]);
 
@@ -50,7 +48,9 @@ export const Header = memo(function Header({ userName = 'Friend', streak, onOpen
           {streak != null && streak > 0 && (
             <div className="flex items-center gap-1 text-xs font-medium text-orange-500">
               <Flame className="w-3 h-3" />
-              <span>{streak} {t.daysInRow}</span>
+              <span>
+                {streak} {t.daysInRow}
+              </span>
             </div>
           )}
         </div>
@@ -102,10 +102,10 @@ export const Header = memo(function Header({ userName = 'Friend', streak, onOpen
             <button
               onClick={onOpenFriends}
               className="flex-1 min-w-0 flex items-center justify-center gap-1.5 py-2.5 px-3 bg-secondary hover:bg-secondary/80 active:scale-[0.97] text-foreground rounded-xl transition-all min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-              aria-label={t.friends || 'Friends'}
+              aria-label={t.friends || "Friends"}
             >
               <Users className="w-4 h-4 flex-shrink-0 text-muted-foreground" />
-              <span className="text-sm font-medium truncate">{t.friends || 'Friends'}</span>
+              <span className="text-sm font-medium truncate">{t.friends || "Friends"}</span>
             </button>
           )}
         </div>

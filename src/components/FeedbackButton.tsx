@@ -121,7 +121,7 @@ export function FeedbackButton({ position = "bottom-right", className }: Feedbac
           className="fixed inset-0 z-[100] flex items-end justify-center p-4 pb-[calc(1rem+var(--safe-bottom))] bg-black/50"
           role="dialog"
           aria-modal="true"
-          aria-label="Feedback"
+          aria-label={t.ariaFeedback}
         >
           <div
             className="w-full max-w-md bg-card rounded-2xl shadow-xl animate-slide-up"

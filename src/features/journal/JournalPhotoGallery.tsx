@@ -100,7 +100,7 @@ export const JournalPhotoGallery = memo(function JournalPhotoGallery({
               <button
                 onClick={() => onFloatPhoto(photo.id)}
                 className="absolute -bottom-1 -end-1 w-6 h-6 bg-emerald-500/80 rounded-full flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
-                aria-label="Float photo"
+                aria-label={t.ariaFloatPhoto}
               >
                 <span className="text-[10px]">↗</span>
               </button>
@@ -118,7 +118,7 @@ export const JournalPhotoGallery = memo(function JournalPhotoGallery({
             exit={{ opacity: 0 }}
             role="dialog"
             aria-modal="true"
-            aria-label="Photo lightbox"
+            aria-label={t.ariaPhotoLightbox}
             className="fixed inset-0 z-[70] bg-black/90 flex items-center justify-center"
             onClick={closeLightbox}
           >

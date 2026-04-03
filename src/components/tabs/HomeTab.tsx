@@ -1,30 +1,31 @@
-import { useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
-import { Header } from '@/components/Header';
-import { PullToRefresh } from '@/components/PullToRefresh';
-import { InstallBanner } from '@/components/InstallBanner';
-import { SessionExpiredBanner } from '@/components/SessionExpiredBanner';
-import { DayProgressIndicator } from '@/components/OnboardingOverlay';
-import { TodayFocusCard } from '@/components/TodayFocusCard';
-import { RestModeCard } from '@/components/RestModeCard';
-import { AllCompleteCelebration } from '@/components/AllCompleteCelebration';
-import { ReflectionPromptCard } from '@/components/ReflectionPromptCard';
-import { GrowthRingsCanvas } from '@/components/GrowthRingsCanvas';
-import { StateOfMindModal } from '@/components/state-of-mind/StateOfMindModal';
-import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { useAppStore, useUserDataStore, getModalToggle } from '@/stores';
-import { useReflectionPrompts } from '@/hooks/useReflectionPrompts';
-import { computeGrowthRings, getGrowthRingsSummary } from '@/lib/growthRings';
-import { motionPresets, zenTap } from '@/lib/animationUtils';
-import { valenceToColor } from '@/components/state-of-mind/colorUtils';
-import { isHabitCompletedOnDate } from '@/lib/habits';
-import { getToday } from '@/lib/utils';
-import type { MoodEntry, Habit, FocusSession } from '@/types';
+import { useMemo, useState } from "react";
+import { motion } from "framer-motion";
+import { Header } from "@/components/Header";
+import { PullToRefresh } from "@/components/PullToRefresh";
+import { InstallBanner } from "@/components/InstallBanner";
+import { SessionExpiredBanner } from "@/components/SessionExpiredBanner";
+import { DayProgressIndicator } from "@/components/OnboardingOverlay";
+import { TodayFocusCard } from "@/components/TodayFocusCard";
+import { RestModeCard } from "@/components/RestModeCard";
+import { AllCompleteCelebration } from "@/components/AllCompleteCelebration";
+import { ReflectionPromptCard } from "@/components/ReflectionPromptCard";
+import { GrowthRingsCanvas } from "@/components/GrowthRingsCanvas";
+import { StateOfMindModal } from "@/components/state-of-mind/StateOfMindModal";
+import { useFeatureFlags } from "@/contexts/FeatureFlagsContext";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useAppStore, useUserDataStore, getModalToggle } from "@/stores";
+import { useReflectionPrompts } from "@/hooks/useReflectionPrompts";
+import { computeGrowthRings, getGrowthRingsSummary } from "@/lib/growthRings";
+import { motionPresets, zenTap } from "@/lib/animationUtils";
+import { plural } from "@/lib/plural";
+import { valenceToColor } from "@/components/state-of-mind/colorUtils";
+import { isHabitCompletedOnDate } from "@/lib/habits";
+import { getToday } from "@/lib/utils";
+import type { MoodEntry, Habit, FocusSession } from "@/types";
 
-const setShowChallenges = getModalToggle('showChallenges');
-const setShowTasksPanel = getModalToggle('showTasksPanel');
-const setShowQuestsPanel = getModalToggle('showQuestsPanel');
+const setShowChallenges = getModalToggle("showChallenges");
+const setShowTasksPanel = getModalToggle("showTasksPanel");
+const setShowQuestsPanel = getModalToggle("showQuestsPanel");
 
 interface HomeTabProps {
   // Data arrays
@@ -41,7 +42,7 @@ interface HomeTabProps {
 
   // Derived values
   completedTodayCount: number;
-  currentPrimaryCTA: 'mood' | 'habits' | 'focus' | 'complete';
+  currentPrimaryCTA: "mood" | "habits" | "focus" | "complete";
 
   // Handlers
   handleAddMood: (entry: MoodEntry) => void;
@@ -52,54 +53,66 @@ interface HomeTabProps {
 }
 
 export function HomeTab({
-  safeMoods, safeHabits, safeFocusSessions,
-  currentActiveStreak, isRestMode, activateRestMode, deactivateRestMode,
+  safeMoods,
+  safeHabits,
+  safeFocusSessions,
+  currentActiveStreak,
+  isRestMode,
+  activateRestMode,
+  deactivateRestMode,
   canActivateRestMode,
-  completedTodayCount, currentPrimaryCTA,
+  completedTodayCount,
+  currentPrimaryCTA,
   handleAddMood,
   handlePullToRefresh,
   moodRef,
 }: HomeTabProps) {
   const { isFeatureVisible } = useFeatureFlags();
-  const { t } = useLanguage();
-  const userName = useUserDataStore(s => s.userName);
-  const hasValidSession = useAppStore(s => s.hasValidSession);
-  const googleAuthChecked = useUserDataStore(s => s.googleAuthChecked);
-  const setActiveTab = useAppStore(s => s.setActiveTab);
-  const setSettingsOpenSection = useAppStore(s => s.setSettingsOpenSection);
-  const gratitudeEntries = useUserDataStore(s => s.gratitudeEntries);
+  const { t, language } = useLanguage();
+  const userName = useUserDataStore((s) => s.userName);
+  const hasValidSession = useAppStore((s) => s.hasValidSession);
+  const googleAuthChecked = useUserDataStore((s) => s.googleAuthChecked);
+  const setActiveTab = useAppStore((s) => s.setActiveTab);
+  const setSettingsOpenSection = useAppStore((s) => s.setSettingsOpenSection);
+  const gratitudeEntries = useUserDataStore((s) => s.gratitudeEntries);
   const [showStateOfMind, setShowStateOfMind] = useState(false);
 
   // Contextual reflection prompts (IA Blueprint Phase 3)
-  const reflectionPrompts = useReflectionPrompts(safeMoods, safeHabits, safeFocusSessions, gratitudeEntries, t);
+  const reflectionPrompts = useReflectionPrompts(
+    safeMoods,
+    safeHabits,
+    safeFocusSessions,
+    gratitudeEntries,
+    t
+  );
 
   // Growth Rings — never-resetting growth visualization (IA Blueprint Phase 2.3)
   const growthData = useMemo(() => {
-    const activeHabits = safeHabits.filter(h => !h.isArchived);
-    const activeDates = activeHabits.flatMap(h =>
-      Object.keys(h.entries || {}).filter(d => isHabitCompletedOnDate(h, d)),
+    const activeHabits = safeHabits.filter((h) => !h.isArchived);
+    const activeDates = activeHabits.flatMap((h) =>
+      Object.keys(h.entries || {}).filter((d) => isHabitCompletedOnDate(h, d))
     );
     const uniqueActive = [...new Set(activeDates)];
-    const earliest = safeMoods.length > 0
-      ? safeMoods.reduce((min, m) => m.date < min ? m.date : min, safeMoods[0].date)
-      : getToday();
+    const earliest =
+      safeMoods.length > 0
+        ? safeMoods.reduce((min, m) => (m.date < min ? m.date : min), safeMoods[0].date)
+        : getToday();
     const data = computeGrowthRings(uniqueActive, [], earliest);
     const summary = getGrowthRingsSummary(data);
     return { rings: data.rings, ...summary };
   }, [safeHabits, safeMoods]);
 
   const scrollToRef = (ref: React.RefObject<HTMLDivElement | null>) => {
-    ref.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    ref.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
 
   // Today's latest mood for CTA preview color
   const todayMoods = useMemo(() => {
     const today = getToday();
-    return safeMoods.filter(m => m.date === today);
+    return safeMoods.filter((m) => m.date === today);
   }, [safeMoods]);
-  const latestValence = todayMoods.length > 0
-    ? (todayMoods[todayMoods.length - 1].valence ?? 0)
-    : 0;
+  const latestValence =
+    todayMoods.length > 0 ? (todayMoods[todayMoods.length - 1].valence ?? 0) : 0;
 
   // State of Mind CTA block — replaces EmotionWheel
   const moodBlock = (
@@ -120,7 +133,7 @@ export function HomeTab({
             <p className="text-base font-semibold text-foreground">{t.somLogFeeling}</p>
             {todayMoods.length > 0 && (
               <p className="text-xs text-muted-foreground mt-0.5">
-                {(t.somEntriesToday || '{count} logged today').replace('{count}', String(todayMoods.length))}
+                {plural(t, "somEntriesToday", todayMoods.length, language)}
               </p>
             )}
           </div>
@@ -136,14 +149,21 @@ export function HomeTab({
         <Header
           userName={userName}
           streak={currentActiveStreak}
-          onOpenChallenges={isFeatureVisible('challenges') ? () => setShowChallenges(true) : undefined}
-          onOpenTasks={isFeatureVisible('tasks') ? () => setShowTasksPanel(true) : undefined}
-          onOpenQuests={isFeatureVisible('quests') ? () => setShowQuestsPanel(true) : undefined}
+          onOpenChallenges={
+            isFeatureVisible("challenges") ? () => setShowChallenges(true) : undefined
+          }
+          onOpenTasks={isFeatureVisible("tasks") ? () => setShowTasksPanel(true) : undefined}
+          onOpenQuests={isFeatureVisible("quests") ? () => setShowQuestsPanel(true) : undefined}
         />
 
         {/* Session expired banner */}
-        {hasValidSession === false && googleAuthChecked && userName !== 'Friend' && (
-          <SessionExpiredBanner onSignIn={() => { setSettingsOpenSection('account'); setActiveTab('settings'); }} />
+        {hasValidSession === false && googleAuthChecked && userName !== "Friend" && (
+          <SessionExpiredBanner
+            onSignIn={() => {
+              setSettingsOpenSection("account");
+              setActiveTab("settings");
+            }}
+          />
         )}
 
         <div className="space-y-5">
@@ -152,8 +172,8 @@ export function HomeTab({
           <TodayFocusCard
             currentPrimaryCTA={currentPrimaryCTA}
             onScrollToMood={() => scrollToRef(moodRef)}
-            onNavigateToHabits={() => setActiveTab('mindmap')}
-            onNavigateToFocus={() => setActiveTab('garden')}
+            onNavigateToHabits={() => setActiveTab("mindmap")}
+            onNavigateToFocus={() => setActiveTab("garden")}
             canActivateRestMode={canActivateRestMode}
             onRestMode={activateRestMode}
             completedTodayCount={completedTodayCount}
@@ -168,17 +188,19 @@ export function HomeTab({
             <GrowthRingsCanvas rings={growthData.rings} size={80} />
             <div className="flex-1 min-w-0">
               <span className="text-sm font-medium text-foreground">
-                {(t.growthRingsTotal || '{count} rings of growth').replace('{count}', String(growthData.total))}
+                {plural(t, "growthRingsTotal", growthData.total, language)}
               </span>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {growthData.restLast7 > 0
-                  ? (t.growthWeekBalance || 'Grew {active} days, rested {rest}. Balance.')
-                      .replace('{active}', String(growthData.activeLast7))
-                      .replace('{rest}', String(growthData.restLast7))
+                  ? (t.growthWeekBalance || "Grew {active} days, rested {rest}. Balance.")
+                      .replace("{active}", String(growthData.activeLast7))
+                      .replace("{rest}", String(growthData.restLast7))
                   : growthData.activeLast7 === 7
-                    ? (t.growthWeekFull || 'A full week of growth!')
-                    : (t.growthWeekPartial || '{count} days of growth this week.')
-                        .replace('{count}', String(growthData.activeLast7))}
+                    ? t.growthWeekFull || "A full week of growth!"
+                    : (t.growthWeekPartial || "{count} days of growth this week.").replace(
+                        "{count}",
+                        String(growthData.activeLast7)
+                      )}
               </p>
             </div>
           </motion.div>
@@ -189,11 +211,8 @@ export function HomeTab({
           )}
 
           {isRestMode ? (
-            <RestModeCard
-              streak={currentActiveStreak}
-              onCancel={deactivateRestMode}
-            />
-          ) : currentPrimaryCTA === 'complete' ? (
+            <RestModeCard streak={currentActiveStreak} onCancel={deactivateRestMode} />
+          ) : currentPrimaryCTA === "complete" ? (
             <AllCompleteCelebration streak={currentActiveStreak} />
           ) : null}
 

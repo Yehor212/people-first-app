@@ -9,8 +9,8 @@
  * - Animated progress rings and sparkles
  */
 
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Trophy,
   TrendingUp,
@@ -24,12 +24,13 @@ import {
   Zap,
   Star,
   Crown,
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { useLanguage } from '@/contexts/LanguageContext';
-import type { WeeklyReviewProps } from './types';
-import { useWeeklyStats } from './useWeeklyStats';
-import { SparkleParticle, MiniRing, AchievementBadge } from './WeeklyReviewParts';
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { formatDecimal } from "@/lib/timeUtils";
+import type { WeeklyReviewProps } from "./types";
+import { useWeeklyStats } from "./useWeeklyStats";
+import { SparkleParticle, MiniRing, AchievementBadge } from "./WeeklyReviewParts";
 
 export function WeeklyReview({
   habits,
@@ -38,27 +39,27 @@ export function WeeklyReview({
   currentStreak,
   className,
 }: WeeklyReviewProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const {
-    weekScore,
-    thisWeekStats,
-    changes,
-    achievements,
-    getRecommendation,
-    bestDayName,
-  } = useWeeklyStats({ habits, moods, focusSessions, currentStreak, t: t as unknown as Record<string, string> });
+  const { weekScore, thisWeekStats, changes, achievements, getRecommendation, bestDayName } =
+    useWeeklyStats({
+      habits,
+      moods,
+      focusSessions,
+      currentStreak,
+      t: t as unknown as Record<string, string>,
+    });
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        'relative overflow-hidden rounded-3xl',
-        'bg-gradient-to-br from-card via-card to-card/90',
-        'border border-border/50',
-        'shadow-xl',
+        "relative overflow-hidden rounded-3xl",
+        "bg-gradient-to-br from-card via-card to-card/90",
+        "border border-border/50",
+        "shadow-xl",
         className
       )}
     >
@@ -83,7 +84,7 @@ export function WeeklyReview({
 
         {/* Sparkle particles */}
         {[0, 0.5, 1, 1.5, 2].map((delay, i) => (
-          <SparkleParticle key={i} delay={delay} color={i % 2 === 0 ? '#8b5cf6' : '#10b981'} />
+          <SparkleParticle key={i} delay={delay} color={i % 2 === 0 ? "#8b5cf6" : "#10b981"} />
         ))}
       </div>
 
@@ -102,10 +103,10 @@ export function WeeklyReview({
             </motion.div>
             <div>
               <h3 className="text-base font-bold text-foreground">
-                {t.weeklyReview || 'Weekly Review'}
+                {t.weeklyReview || "Weekly Review"}
               </h3>
               <p className="text-xs text-muted-foreground">
-                {t.thisWeekSummary || 'Your week at a glance'}
+                {t.thisWeekSummary || "Your week at a glance"}
               </p>
             </div>
           </div>
@@ -115,7 +116,7 @@ export function WeeklyReview({
             className="relative"
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            transition={{ delay: 0.2, type: 'spring' }}
+            transition={{ delay: 0.2, type: "spring" }}
           >
             <MiniRing value={weekScore} color="#8b5cf6" size={56} />
             <div className="absolute inset-0 flex items-center justify-center">
@@ -135,25 +136,25 @@ export function WeeklyReview({
         <div className="grid grid-cols-3 gap-3">
           {[
             {
-              label: t.habits || 'Habits',
+              label: t.habits || "Habits",
               value: `${thisWeekStats.habitRate}%`,
               change: changes.habitRate,
               icon: Target,
-              color: '#10b981',
+              color: "#10b981",
             },
             {
-              label: t.focus || 'Focus',
+              label: t.focus || "Focus",
               value: `${thisWeekStats.focusMinutes}m`,
               change: changes.focusMinutes,
               icon: Brain,
-              color: '#8b5cf6',
+              color: "#8b5cf6",
             },
             {
-              label: t.mood || 'Mood',
-              value: thisWeekStats.moodAvg.toFixed(1),
+              label: t.mood || "Mood",
+              value: formatDecimal(thisWeekStats.moodAvg, language),
               change: changes.moodAvg,
               icon: Heart,
-              color: '#f43f5e',
+              color: "#f43f5e",
             },
           ].map((stat, i) => (
             <motion.div
@@ -169,16 +170,26 @@ export function WeeklyReview({
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm font-bold text-foreground">{stat.value}</span>
-                <div className={cn(
-                  'flex items-center gap-0.5 text-[10px] font-medium',
-                  stat.change > 0 ? 'text-emerald-500' :
-                  stat.change < 0 ? 'text-red-500' : 'text-muted-foreground'
-                )}>
-                  {stat.change > 0 ? <TrendingUp className="w-3 h-3" /> :
-                   stat.change < 0 ? <TrendingDown className="w-3 h-3" /> :
-                   <Minus className="w-3 h-3" />}
-                  {stat.change > 0 ? '+' : ''}{typeof stat.change === 'number' && stat.label === t.mood
-                    ? stat.change.toFixed(1)
+                <div
+                  className={cn(
+                    "flex items-center gap-0.5 text-[10px] font-medium",
+                    stat.change > 0
+                      ? "text-emerald-500"
+                      : stat.change < 0
+                        ? "text-red-500"
+                        : "text-muted-foreground"
+                  )}
+                >
+                  {stat.change > 0 ? (
+                    <TrendingUp className="w-3 h-3" />
+                  ) : stat.change < 0 ? (
+                    <TrendingDown className="w-3 h-3" />
+                  ) : (
+                    <Minus className="w-3 h-3" />
+                  )}
+                  {stat.change > 0 ? "+" : ""}
+                  {typeof stat.change === "number" && stat.label === t.mood
+                    ? formatDecimal(stat.change, language)
                     : Math.round(stat.change)}
                 </div>
               </div>
@@ -192,7 +203,7 @@ export function WeeklyReview({
           className="w-full flex items-center justify-center gap-1 mt-4 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
           aria-expanded={isExpanded}
         >
-          <span>{isExpanded ? (t.showLess || 'Show less') : (t.viewDetails || 'View details')}</span>
+          <span>{isExpanded ? t.showLess || "Show less" : t.viewDetails || "View details"}</span>
           {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </button>
       </div>
@@ -202,7 +213,7 @@ export function WeeklyReview({
         {isExpanded && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
+            animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.3 }}
             className="overflow-hidden"
@@ -220,10 +231,11 @@ export function WeeklyReview({
                   </div>
                   <div>
                     <p className="text-sm font-medium text-foreground">
-                      {t.bestDayWas || 'Best day was'} <span className="text-amber-500">{bestDayName}</span>
+                      {t.bestDayWas || "Best day was"}{" "}
+                      <span className="text-amber-500">{bestDayName}</span>
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {t.bestDayDesc || 'You achieved the most on this day'}
+                      {t.bestDayDesc || "You achieved the most on this day"}
                     </p>
                   </div>
                 </motion.div>
@@ -242,10 +254,11 @@ export function WeeklyReview({
                   </div>
                   <div>
                     <p className="text-sm font-medium text-foreground">
-                      <span className="text-emerald-500">{thisWeekStats.perfectDays}</span> {t.perfectDays || 'perfect days'}
+                      <span className="text-emerald-500">{thisWeekStats.perfectDays}</span>{" "}
+                      {t.perfectDays || "perfect days"}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {t.perfectDaysDesc || 'All habits + 30min focus'}
+                      {t.perfectDaysDesc || "All habits + 30min focus"}
                     </p>
                   </div>
                 </motion.div>
@@ -264,7 +277,7 @@ export function WeeklyReview({
                   </div>
                   <div>
                     <p className="text-sm font-medium text-foreground mb-1">
-                      {t.forNextWeek || 'For next week'}
+                      {t.forNextWeek || "For next week"}
                     </p>
                     <p className="text-xs text-muted-foreground leading-relaxed">
                       {getRecommendation()}

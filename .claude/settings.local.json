@@ -97,7 +97,9 @@
       "Bash(supabase inspection:*)",
       "mcp__ruflo__coordination_consensus",
       "Bash(git stash:*)",
-      "Bash(kill %1)"
+      "Bash(kill %1)",
+      "Bash(sed -n '155,170p' src/components/UpdatePrompt.tsx)",
+      "Bash(sed -n '88,95p' src/components/UpdatePrompt.tsx)"
     ],
     "deny": [
       "Bash(rm -rf)",

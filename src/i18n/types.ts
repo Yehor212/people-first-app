@@ -1,19 +1,19 @@
-export type Language = 'en' | 'uk' | 'es' | 'de' | 'fr' | 'ja' | 'ar' | 'he';
+export type Language = "en" | "uk" | "es" | "de" | "fr" | "ja" | "ar" | "he";
 
 export interface Translations {
   // App
   appName: string;
-  
+
   // Greetings
   goodMorning: string;
   goodAfternoon: string;
   goodEvening: string;
-  
+
   // Navigation
   home: string;
   stats: string;
   settings: string;
-  
+
   // Stats overview
   streakDays: string;
   days: string;
@@ -23,7 +23,7 @@ export interface Translations {
   minutes: string;
   min: string;
   gratitudes: string;
-  
+
   // Mood tracker
   howAreYouFeeling: string;
   howAreYouNow: string;
@@ -379,7 +379,7 @@ export interface Translations {
   gratitudeTemplate3: string;
   gratitudeLimit: string;
   gratitudeMemoryJar: string;
-  
+
   // Weekly calendar
   thisWeek: string;
   thisMonth: string;
@@ -1247,7 +1247,7 @@ export interface Translations {
   companionWaiting: string;
   companionProud: string;
   companionCheersYou: string;
-  companionQuickMood: string;  // Quick mood log prompt
+  companionQuickMood: string; // Quick mood log prompt
 
   // Companion Panel UI (additional)
   pet: string;
@@ -1360,11 +1360,11 @@ export interface Translations {
   // 404 Page
   notFoundMessage: string;
   returnToHome: string;
-  
+
   // Misc
   version: string;
   tagline: string;
-  
+
   // Days of week
   sun: string;
   mon: string;
@@ -1373,7 +1373,7 @@ export interface Translations {
   thu: string;
   fri: string;
   sat: string;
-  
+
   // Months
   january: string;
   february: string;
@@ -1946,7 +1946,7 @@ export interface Translations {
   updateDescription: string;
   updateDescriptionCritical: string;
   updateNow: string;
-  updateAvailableFor: string;  // Uses {days} placeholder
+  updateAvailableFor: string; // Uses {days} placeholder
 
   // Lock Screen Quick Actions (v1.2.0)
   quickActions: string;
@@ -2686,4 +2686,54 @@ export interface Translations {
   somOverallSubtitle: string;
   somContextsAndNote: string;
   somShowMore: string;
+
+  // i18n audit — P0 hardcoded strings
+  emotionsLabel: string;
+  goalsLabel: string;
+  dailySurpriseTitle: string;
+  dailySurpriseTap: string;
+  swipeToExplore: string;
+  initializationError: string;
+  journalMapLabel: string;
+
+  // i18n audit — P1 aria-labels
+  ariaBack: string;
+  ariaCancel: string;
+  ariaGoalEmoji: string;
+  ariaConfirmation: string;
+  ariaDailyRewards: string;
+  ariaFeedback: string;
+  ariaFocusReflection: string;
+  ariaMindfulMoment: string;
+  ariaNotificationPermission: string;
+  ariaSelectStartHour: string;
+  ariaSelectStartMinute: string;
+  ariaSelectEndHour: string;
+  ariaSelectEndMinute: string;
+  ariaDurationMinutes: string;
+  ariaSwitchToStripView: string;
+  ariaFontSize: string;
+  ariaShufflePrompts: string;
+  ariaRecording: string;
+  ariaFloatPhoto: string;
+  ariaPhotoLightbox: string;
+  ariaPhotoPicker: string;
+  ariaSearchStickers: string;
+  ariaClearSearch: string;
+
+  // Pluralization variants (Intl.PluralRules)
+  // Convention: base key = "other" form, _one/_few/_many/_two/_zero = variants
+  growthRingsTotal_one: string;
+  growthRingsTotal_few: string;
+  growthRingsTotal_many: string;
+  somEntriesToday_one: string;
+  somEntriesToday_few: string;
+  somEntriesToday_many: string;
+  urgencyPendingCount_one: string;
+  urgencyPendingCount_few: string;
+  urgencyPendingCount_many: string;
+
+  // SEO meta tags
+  metaTitle: string;
+  metaDescription: string;
 }

@@ -102,7 +102,7 @@ export function MindfulMoment({
       className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[70] p-4 animate-fade-in"
       role="dialog"
       aria-modal="true"
-      aria-label="Mindful moment"
+      aria-label={t.ariaMindfulMoment}
     >
       <div className="bg-card rounded-3xl p-6 w-full max-w-sm animate-scale-in shadow-2xl">
         {/* Header */}

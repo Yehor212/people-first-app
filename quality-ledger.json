@@ -76,10 +76,10 @@
       "description": "TODO/FIXME/HACK/XXX comments in source"
     },
     "bundleSizeKB": {
-      "value": 4869,
+      "value": 4897,
       "direction": "down",
       "tolerance": 0.005,
-      "recorded": "2026-04-01",
+      "recorded": "2026-04-02",
       "description": "Total JS bundle size in KB (dist/assets/*.js). Tolerance 0.5% (~24KB) for legitimate feature imports."
     },
     "enforcement.blockingHooks": {

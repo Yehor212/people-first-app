@@ -188,7 +188,7 @@ export function GoalInput({
                   "text-white/60 hover:text-white/70 hover:bg-white/10",
                   "transition-colors"
                 )}
-                aria-label="Cancel"
+                aria-label={t.ariaCancel}
               >
                 <X className="w-4 h-4" />
               </button>

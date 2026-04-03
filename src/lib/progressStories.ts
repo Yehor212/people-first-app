@@ -5,24 +5,26 @@
  * Creates shareable story slides from weekly progress data
  */
 
-import { MoodEntry, Habit, FocusSession, GratitudeEntry, Badge } from '@/types';
-import { getHabitCompletedDates, isHabitCompletedOnDate } from '@/lib/habits';
-import { formatDate as toDateStr } from '@/lib/utils';
+import { MoodEntry, Habit, FocusSession, GratitudeEntry, Badge } from "@/types";
+import { getHabitCompletedDates, isHabitCompletedOnDate } from "@/lib/habits";
+import { formatDate as toDateStr } from "@/lib/utils";
+import { formatDecimal } from "@/lib/timeUtils";
+import type { Language } from "@/i18n/translations";
 
 // ============================================
 // TYPES
 // ============================================
 
 export type StorySlideType =
-  | 'intro'
-  | 'mood'
-  | 'habits'
-  | 'focus'
-  | 'gratitude'
-  | 'streak'
-  | 'achievement'
-  | 'summary'
-  | 'outro';
+  | "intro"
+  | "mood"
+  | "habits"
+  | "focus"
+  | "gratitude"
+  | "streak"
+  | "achievement"
+  | "summary"
+  | "outro";
 
 export interface StorySlide {
   type: StorySlideType;
@@ -49,7 +51,7 @@ export interface WeeklyStoryData {
 
 export interface MoodTrendData {
   average: number;
-  trend: 'up' | 'down' | 'stable';
+  trend: "up" | "down" | "stable";
   bestDay: string;
   worstDay: string;
   dominantMood: string;
@@ -76,15 +78,24 @@ export interface FocusStatsData {
 // ============================================
 
 const SLIDE_GRADIENTS: Record<StorySlideType, { gradient: string; accentColor: string }> = {
-  intro: { gradient: 'linear-gradient(135deg, #1E293B 0%, #334155 100%)', accentColor: '#94A3B8' },
-  mood: { gradient: 'linear-gradient(135deg, #7C3AED 0%, #A78BFA 100%)', accentColor: '#C4B5FD' },
-  habits: { gradient: 'linear-gradient(135deg, #059669 0%, #10B981 100%)', accentColor: '#6EE7B7' },
-  focus: { gradient: 'linear-gradient(135deg, #2563EB 0%, #3B82F6 100%)', accentColor: '#93C5FD' },
-  gratitude: { gradient: 'linear-gradient(135deg, #DB2777 0%, #EC4899 100%)', accentColor: '#F9A8D4' },
-  streak: { gradient: 'linear-gradient(135deg, #EA580C 0%, #F97316 100%)', accentColor: '#FDBA74' },
-  achievement: { gradient: 'linear-gradient(135deg, #CA8A04 0%, #EAB308 100%)', accentColor: '#FDE047' },
-  summary: { gradient: 'linear-gradient(135deg, #0891B2 0%, #06B6D4 100%)', accentColor: '#67E8F9' },
-  outro: { gradient: 'linear-gradient(135deg, #4F46E5 0%, #6366F1 100%)', accentColor: '#A5B4FC' },
+  intro: { gradient: "linear-gradient(135deg, #1E293B 0%, #334155 100%)", accentColor: "#94A3B8" },
+  mood: { gradient: "linear-gradient(135deg, #7C3AED 0%, #A78BFA 100%)", accentColor: "#C4B5FD" },
+  habits: { gradient: "linear-gradient(135deg, #059669 0%, #10B981 100%)", accentColor: "#6EE7B7" },
+  focus: { gradient: "linear-gradient(135deg, #2563EB 0%, #3B82F6 100%)", accentColor: "#93C5FD" },
+  gratitude: {
+    gradient: "linear-gradient(135deg, #DB2777 0%, #EC4899 100%)",
+    accentColor: "#F9A8D4",
+  },
+  streak: { gradient: "linear-gradient(135deg, #EA580C 0%, #F97316 100%)", accentColor: "#FDBA74" },
+  achievement: {
+    gradient: "linear-gradient(135deg, #CA8A04 0%, #EAB308 100%)",
+    accentColor: "#FDE047",
+  },
+  summary: {
+    gradient: "linear-gradient(135deg, #0891B2 0%, #06B6D4 100%)",
+    accentColor: "#67E8F9",
+  },
+  outro: { gradient: "linear-gradient(135deg, #4F46E5 0%, #6366F1 100%)", accentColor: "#A5B4FC" },
 };
 
 // ============================================
@@ -94,7 +105,11 @@ const SLIDE_GRADIENTS: Record<StorySlideType, { gradient: string; accentColor: s
 /**
  * Get the start and end dates for the current week (Mon-Sun)
  */
-export function getCurrentWeekRange(locale: string = 'en'): { start: Date; end: Date; range: string } {
+export function getCurrentWeekRange(locale: string = "en"): {
+  start: Date;
+  end: Date;
+  range: string;
+} {
   const today = new Date();
   const dayOfWeek = today.getDay();
   const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
@@ -107,8 +122,9 @@ export function getCurrentWeekRange(locale: string = 'en'): { start: Date; end: 
   sunday.setDate(monday.getDate() + 6);
   sunday.setHours(23, 59, 59, 999);
 
-  const fmtLocale = locale === 'uk' ? 'uk-UA' : locale === 'en' ? 'en-US' : locale;
-  const formatDate = (d: Date) => d.toLocaleDateString(fmtLocale, { month: 'short', day: 'numeric' });
+  const fmtLocale = locale === "uk" ? "uk-UA" : locale === "en" ? "en-US" : locale;
+  const formatDate = (d: Date) =>
+    d.toLocaleDateString(fmtLocale, { month: "short", day: "numeric" });
   const range = `${formatDate(monday)} - ${formatDate(sunday)}`;
 
   return { start: monday, end: sunday, range };
@@ -121,7 +137,7 @@ function filterByWeek<T extends { date: string }>(items: T[], weekStart: Date, w
   const startStr = toDateStr(weekStart);
   const endStr = toDateStr(weekEnd);
 
-  return items.filter(item => item.date >= startStr && item.date <= endStr);
+  return items.filter((item) => item.date >= startStr && item.date <= endStr);
 }
 
 /**
@@ -138,12 +154,12 @@ function calculateMoodStats(moods: MoodEntry[]): MoodTrendData {
 
   const moodCounts: Record<string, number> = { great: 0, good: 0, okay: 0, bad: 0, terrible: 0 };
   let totalScore = 0;
-  let bestDay = '';
-  let worstDay = '';
+  let bestDay = "";
+  let worstDay = "";
   let bestScore = 0;
   let worstScore = 6;
 
-  moods.forEach(m => {
+  moods.forEach((m) => {
     const score = moodScores[m.mood] || 3;
     totalScore += score;
     moodCounts[m.mood] = (moodCounts[m.mood] || 0) + 1;
@@ -163,7 +179,7 @@ function calculateMoodStats(moods: MoodEntry[]): MoodTrendData {
   // Determine dominant mood
   const dominantMood = Object.entries(moodCounts).reduce(
     (a, b) => (b[1] > a[1] ? b : a),
-    ['okay', 0]
+    ["okay", 0]
   )[0];
 
   // Determine trend (compare first half to second half)
@@ -171,12 +187,14 @@ function calculateMoodStats(moods: MoodEntry[]): MoodTrendData {
   const firstHalf = moods.slice(0, mid);
   const secondHalf = moods.slice(mid);
 
-  const firstAvg = firstHalf.reduce((sum, m) => sum + (moodScores[m.mood] || 3), 0) / (firstHalf.length || 1);
-  const secondAvg = secondHalf.reduce((sum, m) => sum + (moodScores[m.mood] || 3), 0) / (secondHalf.length || 1);
+  const firstAvg =
+    firstHalf.reduce((sum, m) => sum + (moodScores[m.mood] || 3), 0) / (firstHalf.length || 1);
+  const secondAvg =
+    secondHalf.reduce((sum, m) => sum + (moodScores[m.mood] || 3), 0) / (secondHalf.length || 1);
 
-  let trend: 'up' | 'down' | 'stable' = 'stable';
-  if (secondAvg - firstAvg > 0.3) trend = 'up';
-  else if (firstAvg - secondAvg > 0.3) trend = 'down';
+  let trend: "up" | "down" | "stable" = "stable";
+  if (secondAvg - firstAvg > 0.3) trend = "up";
+  else if (firstAvg - secondAvg > 0.3) trend = "down";
 
   return { average, trend, bestDay, worstDay, dominantMood, moodCounts };
 }
@@ -187,7 +205,7 @@ function calculateMoodStats(moods: MoodEntry[]): MoodTrendData {
 function calculateHabitStats(habits: Habit[], weekStart: Date, weekEnd: Date): HabitStatsData {
   let totalCompletions = 0;
   let totalPossible = 0;
-  let topHabit: HabitStatsData['topHabit'] = null;
+  let topHabit: HabitStatsData["topHabit"] = null;
   let topCompletions = 0;
 
   const startStr = toDateStr(weekStart);
@@ -203,15 +221,14 @@ function calculateHabitStats(habits: Habit[], weekStart: Date, weekEnd: Date): H
 
   const completionsByDay = new Map<string, number>();
 
-  habits.forEach(habit => {
+  habits.forEach((habit) => {
     const weekCompletions = getHabitCompletedDates(habit).filter(
-      d => d >= startStr && d <= endStr
+      (d) => d >= startStr && d <= endStr
     );
     totalCompletions += weekCompletions.length;
-    const freqRatio = habit.frequency.denominator > 0
-      ? habit.frequency.numerator / habit.frequency.denominator
-      : 1;
-    const activeDays = daysInWeek.filter(d => d <= endStr);
+    const freqRatio =
+      habit.frequency.denominator > 0 ? habit.frequency.numerator / habit.frequency.denominator : 1;
+    const activeDays = daysInWeek.filter((d) => d <= endStr);
     totalPossible += Math.round(activeDays.length * freqRatio);
 
     if (weekCompletions.length > topCompletions) {
@@ -223,20 +240,20 @@ function calculateHabitStats(habits: Habit[], weekStart: Date, weekEnd: Date): H
       };
     }
 
-    weekCompletions.forEach(d => {
+    weekCompletions.forEach((d) => {
       completionsByDay.set(d, (completionsByDay.get(d) || 0) + 1);
     });
   });
 
   // Count perfect days (all daily habits that existed on that day completed)
-  const perfectDays = daysInWeek.filter(day => {
-    const activeDaily = habits.filter(h => {
+  const perfectDays = daysInWeek.filter((day) => {
+    const activeDaily = habits.filter((h) => {
       const created = toDateStr(new Date(h.createdAt));
       const isDaily = h.frequency.numerator === h.frequency.denominator;
       return created <= day && isDaily;
     });
     // Check each daily habit individually (not count-based, which mixes non-daily completions)
-    return activeDaily.length > 0 && activeDaily.every(h => isHabitCompletedOnDate(h, day));
+    return activeDaily.length > 0 && activeDaily.every((h) => isHabitCompletedOnDate(h, day));
   }).length;
 
   const completionRate = totalPossible > 0 ? (totalCompletions / totalPossible) * 100 : 0;
@@ -248,7 +265,7 @@ function calculateHabitStats(habits: Habit[], weekStart: Date, weekEnd: Date): H
  * Calculate focus statistics for the week
  */
 function calculateFocusStats(sessions: FocusSession[]): FocusStatsData {
-  const completedSessions = sessions.filter(s => s.status !== 'aborted');
+  const completedSessions = sessions.filter((s) => s.status !== "aborted");
   const totalMinutes = completedSessions.reduce((sum, s) => sum + s.duration, 0);
   const sessionsCount = completedSessions.length;
   const averageSession = sessionsCount > 0 ? Math.round(totalMinutes / sessionsCount) : 0;
@@ -256,7 +273,7 @@ function calculateFocusStats(sessions: FocusSession[]): FocusStatsData {
 
   // Find most common label
   const labelCounts = new Map<string, number>();
-  completedSessions.forEach(s => {
+  completedSessions.forEach((s) => {
     if (s.label) {
       labelCounts.set(s.label, (labelCounts.get(s.label) || 0) + 1);
     }
@@ -288,7 +305,8 @@ export function generateWeeklyStory(
   gratitudeEntries: GratitudeEntry[],
   newBadges: Badge[] = [],
   streak: number = 0,
-  translations: Record<string, string> = {}
+  translations: Record<string, string> = {},
+  language: Language = "en"
 ): StorySlide[] {
   const { start: weekStart, end: weekEnd, range: weekRange } = getCurrentWeekRange();
 
@@ -306,35 +324,36 @@ export function generateWeeklyStory(
 
   // 1. Intro slide
   slides.push({
-    type: 'intro',
-    title: translations.weeklyReview || 'Your Week in Review',
+    type: "intro",
+    title: translations.weeklyReview || "Your Week in Review",
     subtitle: weekRange,
-    icon: '📊',
+    icon: "📊",
     ...SLIDE_GRADIENTS.intro,
   });
 
   // 2. Mood slide (if there are moods)
   if (weekMoods.length > 0) {
-    const moodEmoji = {
-      great: '😄',
-      good: '🙂',
-      okay: '😐',
-      bad: '😔',
-      terrible: '😢',
-    }[moodStats.dominantMood] || '🙂';
+    const moodEmoji =
+      {
+        great: "😄",
+        good: "🙂",
+        okay: "😐",
+        bad: "😔",
+        terrible: "😢",
+      }[moodStats.dominantMood] || "🙂";
 
     const trendText = {
-      up: translations.moodTrendUp || 'Improving! ↗️',
-      down: translations.moodTrendDown || 'Challenging week ↘️',
-      stable: translations.moodTrendStable || 'Steady week →',
+      up: translations.moodTrendUp || "Improving! ↗️",
+      down: translations.moodTrendDown || "Challenging week ↘️",
+      stable: translations.moodTrendStable || "Steady week →",
     }[moodStats.trend];
 
     slides.push({
-      type: 'mood',
-      title: translations.moodJourney || 'Mood Journey',
+      type: "mood",
+      title: translations.moodJourney || "Mood Journey",
       subtitle: trendText,
       icon: moodEmoji,
-      value: `${moodStats.average.toFixed(1)}/5`,
+      value: `${formatDecimal(moodStats.average, language)}/5`,
       data: moodStats,
       ...SLIDE_GRADIENTS.mood,
     });
@@ -343,12 +362,12 @@ export function generateWeeklyStory(
   // 3. Habits slide (if there are habits)
   if (habits.length > 0 && habitStats.totalCompletions > 0) {
     slides.push({
-      type: 'habits',
-      title: translations.habitChampions || 'Habit Champions',
+      type: "habits",
+      title: translations.habitChampions || "Habit Champions",
       subtitle: habitStats.topHabit
         ? `${habitStats.topHabit.icon} ${habitStats.topHabit.name}`
         : undefined,
-      icon: '🎯',
+      icon: "🎯",
       value: `${Math.round(habitStats.completionRate)}%`,
       data: habitStats,
       ...SLIDE_GRADIENTS.habits,
@@ -359,15 +378,13 @@ export function generateWeeklyStory(
   if (focusStats.sessionsCount > 0) {
     const hours = Math.floor(focusStats.totalMinutes / 60);
     const mins = focusStats.totalMinutes % 60;
-    const timeStr = hours > 0
-      ? `${hours}h ${mins}m`
-      : `${mins}m`;
+    const timeStr = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
 
     slides.push({
-      type: 'focus',
-      title: translations.deepWork || 'Deep Work',
-      subtitle: `${focusStats.sessionsCount} ${translations.sessions || 'sessions'}`,
-      icon: '🧠',
+      type: "focus",
+      title: translations.deepWork || "Deep Work",
+      subtitle: `${focusStats.sessionsCount} ${translations.sessions || "sessions"}`,
+      icon: "🧠",
       value: timeStr,
       data: focusStats,
       ...SLIDE_GRADIENTS.focus,
@@ -377,10 +394,10 @@ export function generateWeeklyStory(
   // 5. Gratitude slide (if there are entries)
   if (weekGratitude.length > 0) {
     slides.push({
-      type: 'gratitude',
-      title: translations.gratitudeMoments || 'Gratitude Moments',
-      subtitle: translations.thingsToBeThankfulFor || 'Things to be thankful for',
-      icon: '💖',
+      type: "gratitude",
+      title: translations.gratitudeMoments || "Gratitude Moments",
+      subtitle: translations.thingsToBeThankfulFor || "Things to be thankful for",
+      icon: "💖",
       value: weekGratitude.length,
       data: weekGratitude.slice(0, 3),
       ...SLIDE_GRADIENTS.gratitude,
@@ -389,19 +406,20 @@ export function generateWeeklyStory(
 
   // 6. Streak slide (if streak > 0)
   if (streak > 0) {
-    const streakText = streak >= 30
-      ? translations.legendaryStreak || 'Legendary! 👑'
-      : streak >= 14
-        ? translations.amazingStreak || 'Amazing! 💎'
-        : streak >= 7
-          ? translations.onFire || 'On Fire! 🔥'
-          : translations.keepGoing || 'Keep Going!';
+    const streakText =
+      streak >= 30
+        ? translations.legendaryStreak || "Legendary! 👑"
+        : streak >= 14
+          ? translations.amazingStreak || "Amazing! 💎"
+          : streak >= 7
+            ? translations.onFire || "On Fire! 🔥"
+            : translations.keepGoing || "Keep Going!";
 
     slides.push({
-      type: 'streak',
-      title: `${streak} ${translations.dayStreak || 'Day Streak'}`,
+      type: "streak",
+      title: `${streak} ${translations.dayStreak || "Day Streak"}`,
       subtitle: streakText,
-      icon: '🔥',
+      icon: "🔥",
       value: streak,
       ...SLIDE_GRADIENTS.streak,
     });
@@ -410,10 +428,10 @@ export function generateWeeklyStory(
   // 7. Achievement slide (if new badges)
   if (newBadges.length > 0) {
     slides.push({
-      type: 'achievement',
-      title: translations.achievementsUnlocked || 'Achievements Unlocked',
-      subtitle: `${newBadges.length} ${translations.newBadges || 'new'}`,
-      icon: '🏆',
+      type: "achievement",
+      title: translations.achievementsUnlocked || "Achievements Unlocked",
+      subtitle: `${newBadges.length} ${translations.newBadges || "new"}`,
+      icon: "🏆",
       value: newBadges.length,
       data: newBadges,
       ...SLIDE_GRADIENTS.achievement,
@@ -422,16 +440,21 @@ export function generateWeeklyStory(
 
   // 8. Summary slide
   const summaryPoints = [];
-  if (weekMoods.length > 0) summaryPoints.push(`${moodStats.average.toFixed(1)} ${translations.avgMood || 'avg mood'}`);
-  if (habitStats.totalCompletions > 0) summaryPoints.push(`${habitStats.totalCompletions} ${translations.habits || 'habits'}`);
-  if (focusStats.totalMinutes > 0) summaryPoints.push(`${focusStats.totalMinutes}${translations.minFocus || 'm focus'}`);
+  if (weekMoods.length > 0)
+    summaryPoints.push(
+      `${formatDecimal(moodStats.average, language)} ${translations.avgMood || "avg mood"}`
+    );
+  if (habitStats.totalCompletions > 0)
+    summaryPoints.push(`${habitStats.totalCompletions} ${translations.habits || "habits"}`);
+  if (focusStats.totalMinutes > 0)
+    summaryPoints.push(`${focusStats.totalMinutes}${translations.minFocus || "m focus"}`);
 
   if (summaryPoints.length > 0) {
     slides.push({
-      type: 'summary',
-      title: translations.weekSummary || 'Week Summary',
-      subtitle: summaryPoints.join(' • '),
-      icon: '✨',
+      type: "summary",
+      title: translations.weekSummary || "Week Summary",
+      subtitle: summaryPoints.join(" • "),
+      icon: "✨",
       data: { moodStats, habitStats, focusStats },
       ...SLIDE_GRADIENTS.summary,
     });
@@ -439,10 +462,10 @@ export function generateWeeklyStory(
 
   // 9. Outro slide
   slides.push({
-    type: 'outro',
-    title: translations.keepGrowing || 'Keep Growing!',
-    subtitle: translations.seeYouNextWeek || 'See you next week',
-    icon: '🌱',
+    type: "outro",
+    title: translations.keepGrowing || "Keep Growing!",
+    subtitle: translations.seeYouNextWeek || "See you next week",
+    icon: "🌱",
     ...SLIDE_GRADIENTS.outro,
   });
 

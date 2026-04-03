@@ -109,13 +109,13 @@ export function JournalStickerPicker({ onSelect, onClose, mood }: JournalSticker
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={ts.journalStickerSearch || "Search stickers..."}
-              aria-label="Search stickers"
+              aria-label={t.ariaSearchStickers}
               className="w-full ps-8 pe-8 py-2 rounded-lg bg-muted/30 border border-border/20 text-sm text-foreground placeholder:text-muted-foreground/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/30 min-h-[44px]"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery("")}
-                aria-label="Clear search"
+                aria-label={t.ariaClearSearch}
                 className="absolute end-2 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-muted/50 min-w-[28px] min-h-[28px] flex items-center justify-center"
               >
                 <X className="w-3 h-3 text-muted-foreground/50" />

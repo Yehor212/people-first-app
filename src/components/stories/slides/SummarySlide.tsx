@@ -5,11 +5,17 @@
  * and orbiting metrics for mood, habits, and focus.
  */
 
-import { useMemo } from 'react';
-import { motion } from 'framer-motion';
-import { SparklesIcon } from '@/components/icons';
-import { useLanguage } from '@/contexts/LanguageContext';
-import type { StorySlide, MoodTrendData, HabitStatsData, FocusStatsData } from '@/lib/progressStories';
+import { useMemo } from "react";
+import { motion } from "framer-motion";
+import { SparklesIcon } from "@/components/icons";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { formatDecimal } from "@/lib/timeUtils";
+import type {
+  StorySlide,
+  MoodTrendData,
+  HabitStatsData,
+  FocusStatsData,
+} from "@/lib/progressStories";
 
 interface SummarySlideProps {
   slide: StorySlide;
@@ -37,7 +43,7 @@ function CrystalSparkle({ delay }: { delay: number }) {
         duration: 3,
         delay,
         repeat: Infinity,
-        ease: 'easeInOut',
+        ease: "easeInOut",
       }}
     />
   );
@@ -74,17 +80,15 @@ function OrbitingMetric({
       animate={{ opacity: 1, rotate: angle + 360 }}
       transition={{
         opacity: { delay, duration: 0.5 },
-        rotate: { duration: 40, repeat: Infinity, ease: 'linear', delay },
+        rotate: { duration: 40, repeat: Infinity, ease: "linear", delay },
       }}
     >
       {/* Positioned at the edge of the orbit */}
-      <div
-        className="absolute left-1/2 top-0 -translate-x-1/2"
-      >
+      <div className="absolute left-1/2 top-0 -translate-x-1/2">
         {/* Counter-rotate to keep content upright */}
         <motion.div
           animate={{ rotate: -360 }}
-          transition={{ duration: 40, repeat: Infinity, ease: 'linear' }}
+          transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
         >
           <motion.div
             className="flex flex-col items-center px-3 py-2 rounded-xl"
@@ -95,11 +99,7 @@ function OrbitingMetric({
             }}
             whileHover={{ scale: 1.1 }}
             animate={{
-              boxShadow: [
-                `0 0 20px ${color}30`,
-                `0 0 30px ${color}50`,
-                `0 0 20px ${color}30`,
-              ],
+              boxShadow: [`0 0 20px ${color}30`, `0 0 30px ${color}50`, `0 0 20px ${color}30`],
             }}
             transition={{ duration: 3, repeat: Infinity }}
           >
@@ -114,32 +114,42 @@ function OrbitingMetric({
 }
 
 export function SummarySlide({ slide }: SummarySlideProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   // Generate sparkles
   const sparkles = useMemo(() => Array.from({ length: 8 }, (_, i) => i * 0.3), []);
 
   // Extract real data from slide.data
-  const slideData = slide.data as { moodStats?: MoodTrendData; habitStats?: HabitStatsData; focusStats?: FocusStatsData } | undefined;
-  const moodValue = slideData?.moodStats ? slideData.moodStats.average.toFixed(1) : '–';
-  const habitsValue = slideData?.habitStats ? `${Math.round(slideData.habitStats.completionRate)}%` : '–';
+  const slideData = slide.data as
+    | { moodStats?: MoodTrendData; habitStats?: HabitStatsData; focusStats?: FocusStatsData }
+    | undefined;
+  const moodValue = slideData?.moodStats
+    ? formatDecimal(slideData.moodStats.average, language)
+    : "–";
+  const habitsValue = slideData?.habitStats
+    ? `${Math.round(slideData.habitStats.completionRate)}%`
+    : "–";
   const focusValue = slideData?.focusStats
-    ? (slideData.focusStats.totalMinutes >= 60
-        ? `${Math.round(slideData.focusStats.totalMinutes / 60)}h`
-        : `${slideData.focusStats.totalMinutes}m`)
-    : '–';
+    ? slideData.focusStats.totalMinutes >= 60
+      ? `${Math.round(slideData.focusStats.totalMinutes / 60)}h`
+      : `${slideData.focusStats.totalMinutes}m`
+    : "–";
 
   const metrics = [
-    { icon: '😊', label: t.storyMood || 'Mood', value: moodValue, angle: -60, color: '#a855f7' },
-    { icon: '✅', label: t.storyHabits || 'Habits', value: habitsValue, angle: 60, color: '#22c55e' },
-    { icon: '⏱️', label: t.storyFocus || 'Focus', value: focusValue, angle: 180, color: '#3b82f6' },
+    { icon: "😊", label: t.storyMood || "Mood", value: moodValue, angle: -60, color: "#a855f7" },
+    {
+      icon: "✅",
+      label: t.storyHabits || "Habits",
+      value: habitsValue,
+      angle: 60,
+      color: "#22c55e",
+    },
+    { icon: "⏱️", label: t.storyFocus || "Focus", value: focusValue, angle: 180, color: "#3b82f6" },
   ];
 
   return (
     <div className="relative w-full h-full overflow-hidden">
       {/* Cosmic gradient background */}
-      <div
-        className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,#1a1a3e_0%,#0d0d2a_40%,#050510_100%)]"
-      />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,#1a1a3e_0%,#0d0d2a_40%,#050510_100%)]" />
 
       {/* Ambient glow */}
       <motion.div
@@ -158,9 +168,9 @@ export function SummarySlide({ slide }: SummarySlideProps) {
             className="absolute inset-0 rounded-full"
             animate={{
               boxShadow: [
-                '0 0 60px 20px rgba(139, 92, 246, 0.2)',
-                '0 0 80px 30px rgba(139, 92, 246, 0.3)',
-                '0 0 60px 20px rgba(139, 92, 246, 0.2)',
+                "0 0 60px 20px rgba(139, 92, 246, 0.2)",
+                "0 0 80px 30px rgba(139, 92, 246, 0.3)",
+                "0 0 60px 20px rgba(139, 92, 246, 0.2)",
               ],
             }}
             transition={{ duration: 4, repeat: Infinity }}
@@ -170,21 +180,21 @@ export function SummarySlide({ slide }: SummarySlideProps) {
           <motion.div
             className="absolute inset-4 rounded-full border border-purple-500/30"
             animate={{ rotate: 360 }}
-            transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
           />
 
           {/* Rotating ring 2 (reverse) */}
           <motion.div
             className="absolute inset-10 rounded-full border border-blue-500/20"
             animate={{ rotate: -360 }}
-            transition={{ duration: 15, repeat: Infinity, ease: 'linear' }}
+            transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
           />
 
           {/* Rotating ring 3 - innermost, fastest */}
           <motion.div
             className="absolute inset-16 rounded-full border border-cyan-400/25"
             animate={{ rotate: 360 }}
-            transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}
+            transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
           />
 
           {/* Crystal sphere */}
@@ -193,7 +203,7 @@ export function SummarySlide({ slide }: SummarySlideProps) {
             animate={{
               scale: [1, 1.03, 1],
             }}
-            transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
           >
             {/* Sparkles inside crystal */}
             {sparkles.map((delay, i) => (
@@ -205,7 +215,7 @@ export function SummarySlide({ slide }: SummarySlideProps) {
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                transition={{ delay: 0.5, type: 'spring' }}
+                transition={{ delay: 0.5, type: "spring" }}
               >
                 <SparklesIcon size="md" animated />
               </motion.div>
@@ -244,7 +254,7 @@ export function SummarySlide({ slide }: SummarySlideProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
       >
-        <p className="text-white/60 text-sm">{t.storyWeekAtGlance || 'Your week at a glance'}</p>
+        <p className="text-white/60 text-sm">{t.storyWeekAtGlance || "Your week at a glance"}</p>
       </motion.div>
 
       {/* Subtitle */}
