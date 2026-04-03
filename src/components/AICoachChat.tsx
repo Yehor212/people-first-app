@@ -3,7 +3,7 @@
  * Professional coaching style with typing indicator
  */
 
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Send, X, Sparkles, Bot, User, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -29,10 +29,6 @@ export function AICoachChat() {
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  // Show only the last few messages — older ones disappear from view
-  const MAX_VISIBLE = 20;
-  const visibleMessages = useMemo(() => messages.slice(-MAX_VISIBLE), [messages]);
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -163,7 +159,7 @@ export function AICoachChat() {
           )}
 
           <AnimatePresence>
-            {visibleMessages.map((msg, index) => (
+            {messages.map((msg, index) => (
               <ChatBubble key={msg.id} message={msg} index={index} />
             ))}
           </AnimatePresence>

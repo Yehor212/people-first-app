@@ -24,7 +24,6 @@ import { sendAICoachMessage } from "@/lib/aiCoachService";
 
 // Constants
 const API_TIMEOUT = 30000; // 30 seconds timeout for API calls
-const MAX_MESSAGES = 50; // Limit stored messages to prevent unbounded growth
 
 // Types
 export type CoachTrigger =
@@ -224,7 +223,7 @@ export function AICoachProvider({ children }: AICoachProviderProps) {
         timestamp: Date.now(),
       };
 
-      setMessages((prev) => [...prev, userMessage].slice(-MAX_MESSAGES));
+      setMessages((prev) => [...prev, userMessage]);
       setIsLoading(true);
 
       // AbortController for timeout - stored in refs for cleanup on unmount
@@ -263,7 +262,7 @@ export function AICoachProvider({ children }: AICoachProviderProps) {
           timestamp: Date.now(),
         };
 
-        setMessages((prev) => [...prev, coachMessage].slice(-MAX_MESSAGES));
+        setMessages((prev) => [...prev, coachMessage]);
       } catch (error) {
         // Clear timeout and controller refs on error
         if (timeoutIdRef.current) {
@@ -327,7 +326,7 @@ export function AICoachProvider({ children }: AICoachProviderProps) {
           content: getFallbackMessage(),
           timestamp: Date.now(),
         };
-        setMessages((prev) => [...prev, fallbackMessage].slice(-MAX_MESSAGES));
+        setMessages((prev) => [...prev, fallbackMessage]);
       } finally {
         setIsLoading(false);
         sendingRef.current = false; // Reset sending flag
@@ -351,7 +350,7 @@ export function AICoachProvider({ children }: AICoachProviderProps) {
           content: initialMessage,
           timestamp: Date.now(),
         };
-        setMessages((prev) => [...prev, greetingMessage].slice(-MAX_MESSAGES));
+        setMessages((prev) => [...prev, greetingMessage]);
       }
     },
     [setMessages]
