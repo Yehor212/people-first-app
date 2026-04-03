@@ -156,90 +156,47 @@ export default defineConfig(({ mode }) => {
               return undefined;
             }
 
-            // React: let Vite handle chunk placement automatically
-            // ROOT-CAUSE: manualChunks for react-dom/react/scheduler caused TDZ errors
-            // ("Cannot access 'V' before initialization" in production — Sentry 10+ events)
-            // Vite default splitting respects module init order, avoiding cross-chunk TDZ
-            if (
-              id.includes("react-dom") ||
-              id.includes("scheduler") ||
-              /[\\/]node_modules[\\/]react[\\/]/.test(id)
-            ) {
-              return undefined;
-            }
+            // TDZ FIX (Sentry: "Cannot access 'V' before initialization"):
+            // Libraries that import React (radix-ui, framer-motion, sonner, tanstack,
+            // lottie-react, react-hook-form, react-day-picker, cmdk, vaul, input-otp)
+            // MUST NOT be in manual chunks. When React internals get split across
+            // chunks, browser module init order is non-deterministic and causes TDZ.
+            // Only chunk libraries with ZERO React dependency.
+            // Research: vitejs/vite#12209, vitejs/vite#9686, nuxt/nuxt#23354
 
-            // UI library (Radix components)
-            if (id.includes("@radix-ui")) {
-              return "ui-vendor";
-            }
-
-            // Note: recharts NOT manually chunked — its CJS interop helpers
-            // get shared across chunks, creating circular deps + TDZ errors.
-            // Vite auto-splits it into the StatsPage lazy chunk instead.
-
-            // Supabase client
+            // Supabase client (no React dependency)
             if (id.includes("@supabase")) {
               return "supabase";
             }
 
-            // Dexie (IndexedDB)
+            // Dexie / IndexedDB (no React dependency)
             if (id.includes("dexie")) {
               return "dexie";
             }
 
-            // Framer Motion
-            if (id.includes("framer-motion")) {
-              return "framer-motion";
-            }
-
-            // TanStack Query + Virtual
-            if (id.includes("@tanstack")) {
-              return "tanstack";
-            }
-
-            // Lucide icons
-            if (id.includes("lucide-react")) {
-              return "lucide-icons";
-            }
-
-            // Capacitor native bridge
+            // Capacitor native bridge (no React dependency)
             if (id.includes("@capacitor")) {
               return "capacitor";
             }
 
-            // Lottie animations (lottie-react + lottie-web)
-            if (id.includes("lottie-react") || id.includes("lottie-web")) {
-              return "lottie";
-            }
-
-            // Sentry error tracking
-            if (id.includes("@sentry")) {
+            // Sentry error tracking (no React dependency in core)
+            if (id.includes("@sentry") && !id.includes("react")) {
               return "sentry";
             }
 
-            // Form utilities (zod, react-hook-form)
-            if (id.includes("zod") || id.includes("react-hook-form")) {
-              return "forms";
+            // Lucide icons (tree-shakeable, no runtime React dep)
+            if (id.includes("lucide-react")) {
+              return "lucide-icons";
             }
 
-            // Remaining small UI libs (sonner, vaul, cmdk, etc.)
-            if (
-              id.includes("sonner") ||
-              id.includes("vaul") ||
-              id.includes("cmdk") ||
-              id.includes("input-otp") ||
-              id.includes("react-day-picker")
-            ) {
-              return "ui-extras";
-            }
-
-            // Utility libs (clsx, class-variance-authority, tailwind-merge, nanoid, dompurify)
+            // Pure utility libs (no React dependency)
             if (
               id.includes("class-variance-authority") ||
               id.includes("clsx") ||
               id.includes("tailwind-merge") ||
               id.includes("nanoid") ||
-              id.includes("dompurify")
+              id.includes("dompurify") ||
+              id.includes("zod")
             ) {
               return "utils-vendor";
             }
