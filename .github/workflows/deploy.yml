@@ -24,10 +24,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Setup Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
@@ -58,7 +58,7 @@ jobs:
         run: npm run build
 
       - name: Cache Playwright browsers
-        uses: actions/cache@v6
+        uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ hashFiles('package-lock.json') }}
@@ -82,7 +82,7 @@ jobs:
 
       - name: Upload artifact
         if: github.event_name == 'push'
-        uses: actions/upload-pages-artifact@v5
+        uses: actions/upload-pages-artifact@v4
         with:
           path: dist
 
@@ -91,16 +91,16 @@ jobs:
     continue-on-error: true
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Setup Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
 
       - name: Setup Java
-        uses: actions/setup-java@v6
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
@@ -131,7 +131,7 @@ jobs:
         run: cd android && ./gradlew lintDebug --console=plain
 
       - name: Upload Android lint report
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         with:
           name: android-lint-report
           path: android/app/build/reports/lint-results-debug.html
@@ -146,6 +146,6 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v6
+        uses: actions/deploy-pages@v4
         with:
           timeout: 600000 # 10 minutes (max allowed)
