@@ -3,12 +3,12 @@
  * Professional coaching style with typing indicator
  */
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { Send, X, Sparkles, Bot, User, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useAICoach, ChatMessage } from "@/contexts/AICoachContext";
+import { useAICoachConversation, ChatMessage } from "@/contexts/AICoachContext";
 // Sheet replaced with custom bottom-sheet modal
 import { cn } from "@/lib/utils";
 import { zenTap } from "@/lib/animationUtils";
@@ -18,7 +18,8 @@ import { useScrollLock } from "@/hooks/useScrollLock";
 
 export function AICoachChat() {
   const { t } = useLanguage();
-  const { isOpen, isLoading, messages, closeCoach, sendMessage, clearHistory } = useAICoach();
+  const { isOpen, isLoading, messages, closeCoach, sendMessage, clearHistory } =
+    useAICoachConversation();
 
   useBackHandler(isOpen, () => {
     if (!isLoading) closeCoach();
@@ -28,6 +29,10 @@ export function AICoachChat() {
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Show only the last few messages — older ones disappear from view
+  const MAX_VISIBLE = 20;
+  const visibleMessages = useMemo(() => messages.slice(-MAX_VISIBLE), [messages]);
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -103,7 +108,7 @@ export function AICoachChat() {
             {messages.length > 0 && (
               <motion.button
                 onClick={handleClear}
-                className="p-2.5 rounded-xl bg-muted border border-border text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+                className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-muted border border-border text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
                 aria-label={t.clearHistory || "Clear history"}
                 whileHover={{ scale: 1.05 }}
                 whileTap={zenTap.button}
@@ -158,7 +163,7 @@ export function AICoachChat() {
           )}
 
           <AnimatePresence>
-            {messages.map((msg, index) => (
+            {visibleMessages.map((msg, index) => (
               <ChatBubble key={msg.id} message={msg} index={index} />
             ))}
           </AnimatePresence>
@@ -306,7 +311,7 @@ function QuickAction({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "px-4 py-2.5 rounded-full text-xs font-medium transition-all",
+        "px-4 py-2.5 min-h-[44px] rounded-full text-xs font-medium transition-all",
         disabled
           ? "bg-muted text-muted-foreground/50 cursor-not-allowed"
           : "bg-muted border border-border text-muted-foreground hover:bg-secondary hover:text-foreground"

@@ -439,9 +439,6 @@ export function Index() {
                       >
                         {activeTab === "home" && (
                           <HomeTab
-                            safeMoods={moods}
-                            safeHabits={habits}
-                            safeFocusSessions={focusSessions}
                             currentActiveStreak={innerWorld.currentActiveStreak}
                             isRestMode={isRestMode}
                             activateRestMode={activateRestMode}
@@ -457,10 +454,6 @@ export function Index() {
 
                         {activeTab === "garden" && (
                           <GardenTab
-                            safeMoods={moods}
-                            safeHabits={habits}
-                            safeFocusSessions={focusSessions}
-                            safeGratitudeEntries={gratitudeEntries}
                             todayAllEvents={todayAllEvents}
                             handleAddScheduleEvent={handleAddScheduleEvent}
                             handleDeleteScheduleEvent={handleDeleteScheduleEvent}
@@ -473,10 +466,6 @@ export function Index() {
 
                         {activeTab === "stats" && (
                           <StatsTab
-                            safeMoods={moods}
-                            safeHabits={habits}
-                            safeFocusSessions={focusSessions}
-                            safeGratitudeEntries={gratitudeEntries}
                             restDays={innerWorld.restDays}
                             currentFocusMinutes={currentFocusMinutes}
                             onQuickAction={handleQuickAction}
@@ -499,10 +488,6 @@ export function Index() {
                             onResetData={handleResetData}
                             reminders={reminders}
                             onRemindersChange={setReminders}
-                            safeHabits={habits}
-                            safeMoods={moods}
-                            safeFocusSessions={focusSessions}
-                            safeGratitudeEntries={gratitudeEntries}
                             privacy={privacy}
                             onPrivacyChange={setPrivacy}
                             initialOpenSection={settingsOpenSection}
@@ -542,7 +527,6 @@ export function Index() {
                 >
                   <div className="fixed inset-0 z-30">
                     <MindMapTab
-                      safeMoods={moods}
                       canvasGoals={canvasGoals}
                       canvasMode={canvasMode}
                       onRootTap={onRootTap}

@@ -19,11 +19,12 @@ import { MoodEntry, Habit, InnerWorld } from "@/types";
 import { supabase } from "@/lib/supabaseClient";
 import { logger } from "@/lib/logger";
 import { SK } from "@/lib/storageKeys";
-import { SUPABASE_URL } from "@/lib/env";
 import { getToday } from "@/lib/utils";
+import { sendAICoachMessage } from "@/lib/aiCoachService";
 
 // Constants
 const API_TIMEOUT = 30000; // 30 seconds timeout for API calls
+const MAX_MESSAGES = 50; // Limit stored messages to prevent unbounded growth
 
 // Types
 export type CoachTrigger =
@@ -79,11 +80,7 @@ interface AICoachContextType {
   clearHistory: () => void;
   restoreHistory: (msgs: ChatMessage[]) => void;
   saveOnboardingAnswer: (key: keyof OnboardingData, value: string) => void;
-  setUserData: (
-    moods: MoodEntry[],
-    habits: Habit[],
-    innerWorld: InnerWorld,
-  ) => void;
+  setUserData: (moods: MoodEntry[], habits: Habit[], innerWorld: InnerWorld) => void;
 
   // Trigger helpers
   triggerLowMoodCheck: (mood: MoodEntry) => void;
@@ -103,13 +100,10 @@ export function AICoachProvider({ children }: AICoachProviderProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [currentTrigger, setCurrentTrigger] = useState<CoachTrigger>("manual");
   const [daysAwayContext, setDaysAwayContext] = useState(0);
-  const [messages, setMessages] = useLocalStorage<ChatMessage[]>(
-    SK.COACH_HISTORY,
-    [],
-  );
+  const [messages, setMessages] = useLocalStorage<ChatMessage[]>(SK.COACH_HISTORY, []);
   const [onboardingData, setOnboardingData] = useLocalStorage<OnboardingData>(
     SK.COACH_ONBOARDING,
-    {},
+    {}
   );
 
   // Store user data in ref to avoid re-renders
@@ -152,6 +146,7 @@ export function AICoachProvider({ children }: AICoachProviderProps) {
 
   // Clear user data on logout - use refs to avoid re-subscription
   useEffect(() => {
+    if (!supabase) return;
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event) => {
@@ -169,12 +164,9 @@ export function AICoachProvider({ children }: AICoachProviderProps) {
   }, []); // Empty deps - effect runs once, uses refs for setters
 
   // Set user data (called from Index)
-  const setUserData = useCallback(
-    (moods: MoodEntry[], habits: Habit[], innerWorld: InnerWorld) => {
-      userDataRef.current = { moods, habits, innerWorld };
-    },
-    [],
-  );
+  const setUserData = useCallback((moods: MoodEntry[], habits: Habit[], innerWorld: InnerWorld) => {
+    userDataRef.current = { moods, habits, innerWorld };
+  }, []);
 
   // Build context for API (async to fetch journal entries from IndexedDB)
   const buildUserContext = useCallback(async (): Promise<UserContext> => {
@@ -184,12 +176,9 @@ export function AICoachProvider({ children }: AICoachProviderProps) {
     // Fetch recent journal entries for coach context
     let journalEntries: UserContext["journalEntries"];
     try {
-      const { getAllEntries } =
-        await import("@/features/journal/journalStorage");
+      const { getAllEntries } = await import("@/features/journal/journalStorage");
       const entries = await getAllEntries();
-      const recent = entries
-        .sort((a, b) => b.createdAt - a.createdAt)
-        .slice(0, 3);
+      const recent = entries.sort((a, b) => b.createdAt - a.createdAt).slice(0, 3);
       if (recent.length > 0) {
         journalEntries = recent.map((e) => ({
           date: e.date,
@@ -210,8 +199,7 @@ export function AICoachProvider({ children }: AICoachProviderProps) {
       habits: habits.map((h) => ({
         name: h.name,
         completedToday: h.entries?.[today]?.value === 2,
-        streak: Object.values(h.entries || {}).filter((e) => e.value === 2)
-          .length,
+        streak: Object.values(h.entries || {}).filter((e) => e.value === 2).length,
       })),
       currentStreak: innerWorld?.currentActiveStreak || 0,
       lastActiveDate: innerWorld?.lastActiveDate,
@@ -236,44 +224,30 @@ export function AICoachProvider({ children }: AICoachProviderProps) {
         timestamp: Date.now(),
       };
 
-      setMessages((prev) => [...prev, userMessage]);
+      setMessages((prev) => [...prev, userMessage].slice(-MAX_MESSAGES));
       setIsLoading(true);
 
       // AbortController for timeout - stored in refs for cleanup on unmount
       abortControllerRef.current = new AbortController();
-      timeoutIdRef.current = setTimeout(
-        () => abortControllerRef.current?.abort(),
-        API_TIMEOUT,
-      );
+      timeoutIdRef.current = setTimeout(() => abortControllerRef.current?.abort(), API_TIMEOUT);
 
       try {
-        const session = await supabase.auth.getSession();
-        const token = session.data.session?.access_token;
-
-        if (!token) {
-          throw new Error("Not authenticated");
-        }
-
-        const supabaseUrl = SUPABASE_URL;
-
-        const response = await fetch(`${supabaseUrl}/functions/v1/ai-coach`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
+        const { reply } = await sendAICoachMessage(
+          {
             message,
             context: await buildUserContext(),
             language,
             trigger: currentTrigger,
-            conversationHistory: messages.slice(-10).map((m) => ({
-              role: m.role,
-              content: m.content,
-            })),
-          }),
-          signal: abortControllerRef.current?.signal,
-        });
+            conversationHistory: [
+              ...messages.slice(-9).map((m) => ({
+                role: m.role,
+                content: m.content,
+              })),
+              { role: "user" as const, content: message },
+            ],
+          },
+          abortControllerRef.current?.signal
+        );
 
         // Clear timeout and controller refs on success
         if (timeoutIdRef.current) {
@@ -282,21 +256,14 @@ export function AICoachProvider({ children }: AICoachProviderProps) {
         }
         abortControllerRef.current = null;
 
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({})); // graceful: response may not be JSON (e.g. 502 proxy error)
-          throw new Error(errorData.error || "API error");
-        }
-
-        const data = await response.json();
-
         const coachMessage: ChatMessage = {
           id: `msg_${Date.now()}_coach`,
           role: "coach",
-          content: data.message,
+          content: reply,
           timestamp: Date.now(),
         };
 
-        setMessages((prev) => [...prev, coachMessage]);
+        setMessages((prev) => [...prev, coachMessage].slice(-MAX_MESSAGES));
       } catch (error) {
         // Clear timeout and controller refs on error
         if (timeoutIdRef.current) {
@@ -307,15 +274,10 @@ export function AICoachProvider({ children }: AICoachProviderProps) {
 
         // Handle different error types
         const isTimeout = error instanceof Error && error.name === "AbortError";
-        const isAuthError =
-          error instanceof Error && error.message === "Not authenticated";
+        const isAuthError = error instanceof Error && error.message === "Not authenticated";
         logger.error(
           "[AICoach] Send message error:",
-          isTimeout
-            ? "Request timeout"
-            : isAuthError
-              ? "Not authenticated"
-              : error,
+          isTimeout ? "Request timeout" : isAuthError ? "Not authenticated" : error
         );
 
         // Better fallback messages for different error types
@@ -365,13 +327,13 @@ export function AICoachProvider({ children }: AICoachProviderProps) {
           content: getFallbackMessage(),
           timestamp: Date.now(),
         };
-        setMessages((prev) => [...prev, fallbackMessage]);
+        setMessages((prev) => [...prev, fallbackMessage].slice(-MAX_MESSAGES));
       } finally {
         setIsLoading(false);
         sendingRef.current = false; // Reset sending flag
       }
     },
-    [buildUserContext, language, currentTrigger, messages, setMessages],
+    [buildUserContext, language, currentTrigger, messages, setMessages]
   );
 
   // Open coach with trigger
@@ -389,10 +351,10 @@ export function AICoachProvider({ children }: AICoachProviderProps) {
           content: initialMessage,
           timestamp: Date.now(),
         };
-        setMessages((prev) => [...prev, greetingMessage]);
+        setMessages((prev) => [...prev, greetingMessage].slice(-MAX_MESSAGES));
       }
     },
-    [setMessages],
+    [setMessages]
   );
 
   // Close coach
@@ -410,7 +372,7 @@ export function AICoachProvider({ children }: AICoachProviderProps) {
     (msgs: ChatMessage[]) => {
       setMessages(msgs);
     },
-    [setMessages],
+    [setMessages]
   );
 
   // Save onboarding answer
@@ -418,7 +380,7 @@ export function AICoachProvider({ children }: AICoachProviderProps) {
     (key: keyof OnboardingData, value: string) => {
       setOnboardingData((prev) => ({ ...prev, [key]: value }));
     },
-    [setOnboardingData],
+    [setOnboardingData]
   );
 
   // Trigger helpers
@@ -438,7 +400,7 @@ export function AICoachProvider({ children }: AICoachProviderProps) {
         openCoach("low_mood", greetings[language] || greetings.en);
       }
     },
-    [openCoach, language],
+    [openCoach, language]
   );
 
   const triggerStreakBroken = useCallback(
@@ -456,7 +418,7 @@ export function AICoachProvider({ children }: AICoachProviderProps) {
       };
       openCoach("streak_broken", greetings[language] || greetings.en);
     },
-    [openCoach, language],
+    [openCoach, language]
   );
 
   const triggerHabitSkip = useCallback(
@@ -473,7 +435,7 @@ export function AICoachProvider({ children }: AICoachProviderProps) {
       };
       openCoach("habit_skip", messages[language] || messages.en);
     },
-    [openCoach, language],
+    [openCoach, language]
   );
 
   const value = useMemo(
@@ -508,12 +470,10 @@ export function AICoachProvider({ children }: AICoachProviderProps) {
       triggerLowMoodCheck,
       triggerStreakBroken,
       triggerHabitSkip,
-    ],
+    ]
   );
 
-  return (
-    <AICoachContext.Provider value={value}>{children}</AICoachContext.Provider>
-  );
+  return <AICoachContext.Provider value={value}>{children}</AICoachContext.Provider>;
 }
 
 export function useAICoach() {
@@ -522,4 +482,64 @@ export function useAICoach() {
     throw new Error("useAICoach must be used within AICoachProvider");
   }
   return context;
+}
+
+/** Use only conversation state — for AICoachChat */
+export function useAICoachConversation() {
+  const ctx = useAICoach();
+  return useMemo(
+    () => ({
+      isOpen: ctx.isOpen,
+      isLoading: ctx.isLoading,
+      messages: ctx.messages,
+      openCoach: ctx.openCoach,
+      closeCoach: ctx.closeCoach,
+      sendMessage: ctx.sendMessage,
+      clearHistory: ctx.clearHistory,
+      restoreHistory: ctx.restoreHistory,
+    }),
+    [
+      ctx.isOpen,
+      ctx.isLoading,
+      ctx.messages,
+      ctx.openCoach,
+      ctx.closeCoach,
+      ctx.sendMessage,
+      ctx.clearHistory,
+      ctx.restoreHistory,
+    ]
+  );
+}
+
+/** Use only onboarding state — for AICoachOnboarding */
+export function useAICoachOnboarding() {
+  const ctx = useAICoach();
+  return useMemo(
+    () => ({
+      onboardingData: ctx.onboardingData,
+      saveOnboardingAnswer: ctx.saveOnboardingAnswer,
+    }),
+    [ctx.onboardingData, ctx.saveOnboardingAnswer]
+  );
+}
+
+/** Use only trigger functions — for Index.tsx */
+export function useAICoachTriggers() {
+  const ctx = useAICoach();
+  return useMemo(
+    () => ({
+      openCoach: ctx.openCoach,
+      setUserData: ctx.setUserData,
+      triggerLowMoodCheck: ctx.triggerLowMoodCheck,
+      triggerStreakBroken: ctx.triggerStreakBroken,
+      triggerHabitSkip: ctx.triggerHabitSkip,
+    }),
+    [
+      ctx.openCoach,
+      ctx.setUserData,
+      ctx.triggerLowMoodCheck,
+      ctx.triggerStreakBroken,
+      ctx.triggerHabitSkip,
+    ]
+  );
 }

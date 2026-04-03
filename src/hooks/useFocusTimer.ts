@@ -1,27 +1,31 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { logger } from '@/lib/logger';
-import { FocusSession } from '@/types';
-import { getToday } from '@/lib/utils';
-import { safeLocalStorageSet, storageRemove } from '@/lib/safeJson';
-import { SK } from '@/lib/storageKeys';
-import { useBackHandler } from '@/hooks/useBackHandler';
-import { useThrottledCallback } from '@/hooks/useThrottledCallback';
-import { useScrollLock } from '@/hooks/useScrollLock';
-import { haptics } from '@/lib/haptics';
-import { announceSuccess } from '@/lib/a11y';
-import { LocalNotifications } from '@capacitor/local-notifications';
-import { isNative } from '@/lib/platform';
-import { getCurrentChannelId } from '@/lib/notificationSounds';
+import { useState, useEffect, useRef, useCallback } from "react";
+import { logger } from "@/lib/logger";
+import { FocusSession } from "@/types";
+import { getToday } from "@/lib/utils";
+import { safeLocalStorageSet, storageRemove } from "@/lib/safeJson";
+import { SK } from "@/lib/storageKeys";
+import { useBackHandler } from "@/hooks/useBackHandler";
+import { useThrottledCallback } from "@/hooks/useThrottledCallback";
+import { useScrollLock } from "@/hooks/useScrollLock";
+import { haptics } from "@/lib/haptics";
+import { announceSuccess } from "@/lib/a11y";
+import { LocalNotifications } from "@capacitor/local-notifications";
+import { isNative } from "@/lib/platform";
+import { getCurrentChannelId } from "@/lib/notificationSounds";
 
-import { useUIStore, setFocusControls } from '@/stores';
-import { DEFAULT_FOCUS_MINUTES, loadTimerState, createFocusSession } from './focusTimerTypes';
-import type { TimerState, UseFocusTimerOptions } from './focusTimerTypes';
-import { useFocusTimerConfig } from './useFocusTimerConfig';
+import { useUIStore, setFocusControls } from "@/stores";
+import { DEFAULT_FOCUS_MINUTES, loadTimerState, createFocusSession } from "@/types/focusTimerTypes";
+import type { TimerState, UseFocusTimerOptions } from "@/types/focusTimerTypes";
+import { useFocusTimerConfig } from "./useFocusTimerConfig";
 
 // Re-export for backward compatibility
-export { presetColors } from './focusTimerTypes';
+export { presetColors } from "@/types/focusTimerTypes";
 
-export function useFocusTimer({ sessions, onCompleteSession, onMinuteUpdate }: UseFocusTimerOptions) {
+export function useFocusTimer({
+  sessions,
+  onCompleteSession,
+  onMinuteUpdate,
+}: UseFocusTimerOptions) {
   // Hyperfocus Mode state
   const [showHyperfocus, setShowHyperfocus] = useState(false);
 
@@ -35,18 +39,28 @@ export function useFocusTimer({ sessions, onCompleteSession, onMinuteUpdate }: U
   // Config sub-hook (preset, minutes, durations, presets, input handlers)
   const {
     t,
-    preset, focusMinutes, breakMinutes,
-    focusInputValue, setFocusInputValue,
-    breakInputValue, setBreakInputValue,
-    focusDuration, breakDuration, presets,
-    handlePresetSelect, handleFocusInputBlur, handleBreakInputBlur,
+    preset,
+    focusMinutes,
+    breakMinutes,
+    focusInputValue,
+    setFocusInputValue,
+    breakInputValue,
+    setBreakInputValue,
+    focusDuration,
+    breakDuration,
+    presets,
+    handlePresetSelect,
+    handleFocusInputBlur,
+    handleBreakInputBlur,
   } = useFocusTimerConfig(savedState);
 
   // Session recovery: detect if a focus session expired while app was closed
   const expiredSessionRef = useRef<FocusSession | null>(
-    savedState?.endTime && savedState.isRunning && !savedState.isBreak &&
-    Math.ceil((savedState.endTime - Date.now()) / 1000) <= 0
-      ? createFocusSession(savedState.focusMinutes, savedState.label || '', 'completed')
+    savedState?.endTime &&
+      savedState.isRunning &&
+      !savedState.isBreak &&
+      Math.ceil((savedState.endTime - Date.now()) / 1000) <= 0
+      ? createFocusSession(savedState.focusMinutes, savedState.label || "", "completed")
       : null
   );
 
@@ -65,7 +79,7 @@ export function useFocusTimer({ sessions, onCompleteSession, onMinuteUpdate }: U
   });
   const [isRunning, setIsRunning] = useState(savedState?.isRunning || false);
   const [isBreak, setIsBreak] = useState(savedState?.isBreak || false);
-  const [label, setLabel] = useState(savedState?.label || '');
+  const [label, setLabel] = useState(savedState?.label || "");
 
   // Reflection state
   const [showReflection, setShowReflection] = useState(false);
@@ -91,7 +105,7 @@ export function useFocusTimer({ sessions, onCompleteSession, onMinuteUpdate }: U
   const prevFocusDurationRef = useRef(focusDuration);
   const prevBreakDurationRef = useRef(breakDuration);
 
-  const todaySessions = sessions.filter(s => s.date === getToday() && s.status !== 'aborted');
+  const todaySessions = sessions.filter((s) => s.date === getToday() && s.status !== "aborted");
   const todayMinutes = todaySessions.reduce((acc, s) => acc + s.duration, 0);
 
   const getCurrentRunningMinutes = () => {
@@ -128,7 +142,7 @@ export function useFocusTimer({ sessions, onCompleteSession, onMinuteUpdate }: U
       setShowReflection(true);
       setIsRunning(false);
       setIsBreak(false);
-      logger.log('[FocusTimer] Recovered expired session:', expired.duration, 'min');
+      logger.log("[FocusTimer] Recovered expired session:", expired.duration, "min");
     }
   }, []);
 
@@ -165,7 +179,7 @@ export function useFocusTimer({ sessions, onCompleteSession, onMinuteUpdate }: U
       preset,
     };
     if (!safeLocalStorageSet(SK.TIMER_STATE, state)) {
-      logger.error('Failed to save timer state');
+      logger.error("Failed to save timer state");
     }
   }, [focusMinutes, breakMinutes, isRunning, isBreak, label, preset]);
 
@@ -253,21 +267,23 @@ export function useFocusTimer({ sessions, onCompleteSession, onMinuteUpdate }: U
         endTimeRef.current = null;
         if (!isBreak) {
           // Focus session completed
-          const session = createFocusSession(focusMinutes, label, 'completed');
+          const session = createFocusSession(focusMinutes, label, "completed");
           setPendingSession(session);
           setShowReflection(true);
 
-          announceSuccess(t.focusCompletedShort || 'Focus session complete');
+          announceSuccess(t.focusCompletedShort || "Focus session complete");
 
           if (isNative) {
             LocalNotifications.schedule({
-              notifications: [{
-                title: 'ZenFlow',
-                body: t.focusCompletedShort || 'Focus session complete',
-                id: Date.now(),
-                channelId: getCurrentChannelId(),
-              }],
-            }).catch(err => logger.warn('[Focus]', 'Notification failed:', err));
+              notifications: [
+                {
+                  title: "ZenFlow",
+                  body: t.focusCompletedShort || "Focus session complete",
+                  id: Date.now(),
+                  channelId: getCurrentChannelId(),
+                },
+              ],
+            }).catch((err) => logger.warn("[Focus]", "Notification failed:", err));
           }
 
           // Switch to break mode
@@ -277,7 +293,9 @@ export function useFocusTimer({ sessions, onCompleteSession, onMinuteUpdate }: U
           setIsBreak(true);
           setTimeLeft(breakDuration);
           lastMinuteRef.current = 0;
-          useUIStore.getState().setFocusTimerBridge({ endTime: null, isRunning: false, isBreak: true, label });
+          useUIStore
+            .getState()
+            .setFocusTimerBridge({ endTime: null, isRunning: false, isBreak: true, label });
 
           if (onMinuteUpdate) {
             onMinuteUpdate(0);
@@ -307,7 +325,18 @@ export function useFocusTimer({ sessions, onCompleteSession, onMinuteUpdate }: U
         clearInterval(intervalRef.current);
       }
     };
-  }, [isRunning, isBreak, focusMinutes, focusDuration, breakDuration, label, todayMinutes, onMinuteUpdate, saveTimerState, t]);
+  }, [
+    isRunning,
+    isBreak,
+    focusMinutes,
+    focusDuration,
+    breakDuration,
+    label,
+    todayMinutes,
+    onMinuteUpdate,
+    saveTimerState,
+    t,
+  ]);
 
   // ============================================
   // HANDLERS
@@ -325,7 +354,9 @@ export function useFocusTimer({ sessions, onCompleteSession, onMinuteUpdate }: U
         focusStartRef.current = null;
       }
       setIsRunning(false);
-      useUIStore.getState().setFocusTimerBridge({ endTime: null, isRunning: false, isBreak, label });
+      useUIStore
+        .getState()
+        .setFocusTimerBridge({ endTime: null, isRunning: false, isBreak, label });
       void haptics.focusPaused();
       return;
     }
@@ -333,13 +364,16 @@ export function useFocusTimer({ sessions, onCompleteSession, onMinuteUpdate }: U
     if (timeLeft <= 0) {
       setTimeLeft(isBreak ? breakDuration : focusDuration);
     }
-    endTimeRef.current = Date.now() + (timeLeft > 0 ? timeLeft : (isBreak ? breakDuration : focusDuration)) * 1000;
+    endTimeRef.current =
+      Date.now() + (timeLeft > 0 ? timeLeft : isBreak ? breakDuration : focusDuration) * 1000;
     if (!isBreak) {
       focusStartRef.current = Date.now();
       void haptics.focusStarted();
     }
     setIsRunning(true);
-    useUIStore.getState().setFocusTimerBridge({ endTime: endTimeRef.current, isRunning: true, isBreak, label });
+    useUIStore
+      .getState()
+      .setFocusTimerBridge({ endTime: endTimeRef.current, isRunning: true, isBreak, label });
   };
 
   const resetTimer = () => {
@@ -347,7 +381,7 @@ export function useFocusTimer({ sessions, onCompleteSession, onMinuteUpdate }: U
       const runningElapsed = focusStartRef.current ? Date.now() - focusStartRef.current : 0;
       const totalElapsed = focusAccumulatedRef.current + runningElapsed;
       const minutes = Math.max(1, Math.round(totalElapsed / 60000));
-      const session = createFocusSession(minutes, label, 'aborted');
+      const session = createFocusSession(minutes, label, "aborted");
       onCompleteSession(session);
     }
     endTimeRef.current = null;
@@ -376,7 +410,7 @@ export function useFocusTimer({ sessions, onCompleteSession, onMinuteUpdate }: U
 
   const handleHyperfocusComplete = () => {
     setShowHyperfocus(false);
-    const session = createFocusSession(focusMinutes, label, 'completed');
+    const session = createFocusSession(focusMinutes, label, "completed");
     onCompleteSession(session);
   };
 
@@ -390,7 +424,10 @@ export function useFocusTimer({ sessions, onCompleteSession, onMinuteUpdate }: U
     // Sync initial state if timer was running from localStorage restore
     if (isRunning && endTimeRef.current) {
       useUIStore.getState().setFocusTimerBridge({
-        endTime: endTimeRef.current, isRunning: true, isBreak, label,
+        endTime: endTimeRef.current,
+        isRunning: true,
+        isBreak,
+        label,
       });
     }
     return () => {
@@ -400,20 +437,39 @@ export function useFocusTimer({ sessions, onCompleteSession, onMinuteUpdate }: U
 
   return {
     // Config
-    preset, focusMinutes, breakMinutes,
-    focusInputValue, breakInputValue, label,
-    setLabel, setFocusInputValue, setBreakInputValue,
+    preset,
+    focusMinutes,
+    breakMinutes,
+    focusInputValue,
+    breakInputValue,
+    label,
+    setLabel,
+    setFocusInputValue,
+    setBreakInputValue,
     // Timer
-    timeLeft, isRunning, isBreak,
+    timeLeft,
+    isRunning,
+    isBreak,
     // Reflection
-    showReflection, reflectionValue, setReflectionValue,
+    showReflection,
+    reflectionValue,
+    setReflectionValue,
     // UI
-    showHyperfocus, setShowHyperfocus,
+    showHyperfocus,
+    setShowHyperfocus,
     // Derived
-    totalMinutesToday, progress, focusDuration, breakDuration, presets,
+    totalMinutesToday,
+    progress,
+    focusDuration,
+    breakDuration,
+    presets,
     // Actions
-    throttledToggle, throttledReset, handlePresetSelect,
-    handleSaveReflection, handleHyperfocusComplete,
-    handleFocusInputBlur, handleBreakInputBlur,
+    throttledToggle,
+    throttledReset,
+    handlePresetSelect,
+    handleSaveReflection,
+    handleHyperfocusComplete,
+    handleFocusInputBlur,
+    handleBreakInputBlur,
   };
 }

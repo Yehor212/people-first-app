@@ -1,9 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // ─── Raw storage mock ──────────────────────────────────────────
 let rawStorage: Record<string, string> = {};
 
-vi.mock('@/lib/safeJson', () => ({
+vi.mock("@/lib/safeJson", () => ({
   storageGetRaw: vi.fn((key: string) => rawStorage[key] ?? null),
   safeJsonParse: vi.fn(<T>(str: string, def: T): T => {
     try {
@@ -14,19 +14,19 @@ vi.mock('@/lib/safeJson', () => ({
   }),
 }));
 
-vi.mock('@/lib/utils', () => ({
-  generateId: vi.fn(() => 'test-id-123'),
-  getToday: vi.fn(() => '2026-02-17'),
+vi.mock("@/lib/utils", () => ({
+  generateId: vi.fn(() => "test-id-123"),
+  getToday: vi.fn(() => "2026-02-17"),
 }));
 
-import { SK } from '@/lib/storageKeys';
+import { SK } from "@/lib/storageKeys";
 import {
   DEFAULT_FOCUS_MINUTES,
   DEFAULT_BREAK_MINUTES,
   presetColors,
   loadTimerState,
   createFocusSession,
-} from '../../hooks/focusTimerTypes';
+} from "@/types/focusTimerTypes";
 
 // ─── Setup ─────────────────────────────────────────────────────
 
@@ -38,12 +38,12 @@ beforeEach(() => {
 // ============================================================
 // Constants
 // ============================================================
-describe('constants', () => {
-  it('DEFAULT_FOCUS_MINUTES is 25', () => {
+describe("constants", () => {
+  it("DEFAULT_FOCUS_MINUTES is 25", () => {
     expect(DEFAULT_FOCUS_MINUTES).toBe(25);
   });
 
-  it('DEFAULT_BREAK_MINUTES is 5', () => {
+  it("DEFAULT_BREAK_MINUTES is 5", () => {
     expect(DEFAULT_BREAK_MINUTES).toBe(5);
   });
 });
@@ -51,18 +51,18 @@ describe('constants', () => {
 // ============================================================
 // presetColors
 // ============================================================
-describe('presetColors', () => {
-  it('has entries for 25, 50, and custom presets', () => {
-    expect(presetColors).toHaveProperty('25');
-    expect(presetColors).toHaveProperty('50');
-    expect(presetColors).toHaveProperty('custom');
+describe("presetColors", () => {
+  it("has entries for 25, 50, and custom presets", () => {
+    expect(presetColors).toHaveProperty("25");
+    expect(presetColors).toHaveProperty("50");
+    expect(presetColors).toHaveProperty("custom");
   });
 
-  it('each preset has glow, ring, and bg properties', () => {
-    for (const key of ['25', '50', 'custom'] as const) {
-      expect(presetColors[key]).toHaveProperty('glow');
-      expect(presetColors[key]).toHaveProperty('ring');
-      expect(presetColors[key]).toHaveProperty('bg');
+  it("each preset has glow, ring, and bg properties", () => {
+    for (const key of ["25", "50", "custom"] as const) {
+      expect(presetColors[key]).toHaveProperty("glow");
+      expect(presetColors[key]).toHaveProperty("ring");
+      expect(presetColors[key]).toHaveProperty("bg");
     }
   });
 });
@@ -70,33 +70,33 @@ describe('presetColors', () => {
 // ============================================================
 // loadTimerState
 // ============================================================
-describe('loadTimerState', () => {
-  it('returns null when nothing stored', () => {
+describe("loadTimerState", () => {
+  it("returns null when nothing stored", () => {
     expect(loadTimerState()).toBeNull();
   });
 
-  it('returns parsed timer state from storage', () => {
+  it("returns parsed timer state from storage", () => {
     const state = {
       endTime: 1000,
       focusMinutes: 25,
       breakMinutes: 5,
       isRunning: true,
       isBreak: false,
-      label: 'Work',
+      label: "Work",
       focusStartTime: 500,
       focusAccumulated: 0,
-      preset: '25',
+      preset: "25",
     };
     rawStorage[SK.TIMER_STATE] = JSON.stringify(state);
     const result = loadTimerState();
     expect(result).not.toBeNull();
     expect(result.focusMinutes).toBe(25);
     expect(result.isRunning).toBe(true);
-    expect(result.label).toBe('Work');
+    expect(result.label).toBe("Work");
   });
 
-  it('returns null when stored value is invalid JSON', () => {
-    rawStorage[SK.TIMER_STATE] = '{broken json';
+  it("returns null when stored value is invalid JSON", () => {
+    rawStorage[SK.TIMER_STATE] = "{broken json";
     expect(loadTimerState()).toBeNull();
   });
 });
@@ -104,35 +104,35 @@ describe('loadTimerState', () => {
 // ============================================================
 // createFocusSession
 // ============================================================
-describe('createFocusSession', () => {
-  it('creates a session with correct fields', () => {
-    const session = createFocusSession(25, 'Deep work', 'completed');
-    expect(session.id).toBe('test-id-123');
+describe("createFocusSession", () => {
+  it("creates a session with correct fields", () => {
+    const session = createFocusSession(25, "Deep work", "completed");
+    expect(session.id).toBe("test-id-123");
     expect(session.duration).toBe(25);
-    expect(session.date).toBe('2026-02-17');
-    expect(session.label).toBe('Deep work');
-    expect(session.status).toBe('completed');
-    expect(typeof session.completedAt).toBe('number');
+    expect(session.date).toBe("2026-02-17");
+    expect(session.label).toBe("Deep work");
+    expect(session.status).toBe("completed");
+    expect(typeof session.completedAt).toBe("number");
   });
 
-  it('trims label whitespace', () => {
-    const session = createFocusSession(25, '  Study  ', 'completed');
-    expect(session.label).toBe('Study');
+  it("trims label whitespace", () => {
+    const session = createFocusSession(25, "  Study  ", "completed");
+    expect(session.label).toBe("Study");
   });
 
-  it('sets label to undefined when empty string', () => {
-    const session = createFocusSession(25, '', 'completed');
+  it("sets label to undefined when empty string", () => {
+    const session = createFocusSession(25, "", "completed");
     expect(session.label).toBeUndefined();
   });
 
-  it('sets label to undefined when only whitespace', () => {
-    const session = createFocusSession(25, '   ', 'aborted');
+  it("sets label to undefined when only whitespace", () => {
+    const session = createFocusSession(25, "   ", "aborted");
     expect(session.label).toBeUndefined();
   });
 
-  it('supports aborted status', () => {
-    const session = createFocusSession(10, 'Quick', 'aborted');
-    expect(session.status).toBe('aborted');
+  it("supports aborted status", () => {
+    const session = createFocusSession(10, "Quick", "aborted");
+    expect(session.status).toBe("aborted");
     expect(session.duration).toBe(10);
   });
 });

@@ -1,11 +1,11 @@
-import type { RefObject } from 'react';
-import { MindMapCanvas } from '@/components/canvas/MindMapCanvas';
-import type { MindMapCanvasRef } from '@/components/canvas/MindMapCanvas';
-import type { MoodEntry, MoodType, CanvasGoal } from '@/types';
-import type { CanvasMode } from '@/stores/uiStore';
+import type { RefObject } from "react";
+import { MindMapCanvas } from "@/components/canvas/MindMapCanvas";
+import type { MindMapCanvasRef } from "@/components/canvas/MindMapCanvas";
+import { useUserDataStore } from "@/stores";
+import type { MoodType, CanvasGoal } from "@/types";
+import type { CanvasMode } from "@/stores/uiStore";
 
 interface MindMapTabProps {
-  safeMoods: MoodEntry[];
   canvasGoals: CanvasGoal[];
   canvasMode: CanvasMode;
   onRootTap: () => void;
@@ -25,14 +25,25 @@ interface MindMapTabProps {
 }
 
 export function MindMapTab({
-  safeMoods, canvasGoals, canvasMode,
-  onRootTap, onCanvasBackgroundTap,
-  onEmotionSelect, onGoalSelect,
-  onEmotionSave, onEmotionCancel,
-  onGoalCreate, onGoalToggle, onGoalDelete, onGoalUpdateIcon, onGoalUpdateEmoji, onGoalUpdateColor, onGoalCancel,
+  canvasGoals,
+  canvasMode,
+  onRootTap,
+  onCanvasBackgroundTap,
+  onEmotionSelect,
+  onGoalSelect,
+  onEmotionSave,
+  onEmotionCancel,
+  onGoalCreate,
+  onGoalToggle,
+  onGoalDelete,
+  onGoalUpdateIcon,
+  onGoalUpdateEmoji,
+  onGoalUpdateColor,
+  onGoalCancel,
   canvasRef,
 }: MindMapTabProps) {
-  const latestMood = safeMoods.length > 0 ? safeMoods[safeMoods.length - 1].mood : null;
+  const moods = useUserDataStore((s) => s.moods);
+  const latestMood = moods.length > 0 ? moods[moods.length - 1].mood : null;
 
   return (
     <MindMapCanvas

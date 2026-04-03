@@ -6,7 +6,7 @@
 import { useState } from "react";
 import { Sparkles, ChevronRight } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useAICoach } from "@/contexts/AICoachContext";
+import { useAICoachOnboarding as useAICoachOnboardingCtx } from "@/contexts/AICoachContext";
 import { cn } from "@/lib/utils";
 import { haptics } from "@/lib/haptics";
 import { useBackHandler } from "@/hooks/useBackHandler";
@@ -19,7 +19,7 @@ interface AICoachOnboardingProps {
 
 export function AICoachOnboarding({ onComplete, onSkip }: AICoachOnboardingProps) {
   const { t: _t, language } = useLanguage();
-  const { saveOnboardingAnswer } = useAICoach();
+  const { saveOnboardingAnswer } = useAICoachOnboardingCtx();
   useBackHandler(true, onSkip);
 
   const [step, setStep] = useState<Step>("intro");

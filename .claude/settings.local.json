@@ -99,7 +99,11 @@
       "Bash(git stash:*)",
       "Bash(kill %1)",
       "Bash(sed -n '155,170p' src/components/UpdatePrompt.tsx)",
-      "Bash(sed -n '88,95p' src/components/UpdatePrompt.tsx)"
+      "Bash(sed -n '88,95p' src/components/UpdatePrompt.tsx)",
+      "Bash(xargs -I {} basename {})",
+      "Bash(git mv:*)",
+      "WebFetch(domain:addyosmani.com)",
+      "WebFetch(domain:arxiv.org)"
     ],
     "deny": [
       "Bash(rm -rf)",

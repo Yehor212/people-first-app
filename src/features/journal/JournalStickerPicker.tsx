@@ -116,7 +116,7 @@ export function JournalStickerPicker({ onSelect, onClose, mood }: JournalSticker
               <button
                 onClick={() => setSearchQuery("")}
                 aria-label={t.ariaClearSearch}
-                className="absolute end-2 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-muted/50 min-w-[28px] min-h-[28px] flex items-center justify-center"
+                className="absolute end-2 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-muted/50 min-w-[44px] min-h-[44px] flex items-center justify-center"
               >
                 <X className="w-3 h-3 text-muted-foreground/50" />
               </button>

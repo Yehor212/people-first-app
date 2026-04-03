@@ -10,7 +10,7 @@ import { Heart, Target, PlayCircle, TreePine, Star, TrendingUp } from "lucide-re
 import { cn } from "@/lib/utils";
 import { formatDecimal } from "@/lib/timeUtils";
 import { useLanguage } from "@/contexts/LanguageContext";
-import type { MoodInsights } from "@/hooks/statsTypes";
+import type { MoodInsights } from "@/types/statsTypes";
 import { motionPresets } from "@/lib/animationUtils";
 import { ZenScoreHub, EmotionGalaxy } from "@/components/stats";
 import { WeeklyInsightsCard } from "@/components/WeeklyInsightsCard";

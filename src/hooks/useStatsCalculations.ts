@@ -3,15 +3,20 @@
  * Extracts stats calculation logic from StatsPage for better maintainability
  */
 
-import { useMemo } from 'react';
-import { MoodEntry, PrimaryEmotion, GratitudeEntry } from '@/types';
-import { calculateStreak, formatDate, getToday, parseLocalDate } from '@/lib/utils';
-import { getHabitCompletedDates } from '@/lib/habits';
-import { computeEntriesWithAuto } from '@/lib/habitComputedEntries';
-import { getEmotionScore, MOOD_TO_EMOTION_MAP } from '@/lib/emotionConstants';
-import type { UseStatsCalculationsProps, Stats, PremiumStats, MoodInsights } from './statsTypes';
+import { useMemo } from "react";
+import { MoodEntry, PrimaryEmotion, GratitudeEntry } from "@/types";
+import { calculateStreak, formatDate, getToday, parseLocalDate } from "@/lib/utils";
+import { getHabitCompletedDates } from "@/lib/habits";
+import { computeEntriesWithAuto } from "@/lib/habitComputedEntries";
+import { getEmotionScore, MOOD_TO_EMOTION_MAP } from "@/lib/emotionConstants";
+import type {
+  UseStatsCalculationsProps,
+  Stats,
+  PremiumStats,
+  MoodInsights,
+} from "@/types/statsTypes";
 
-export type { StatsRange } from './statsTypes';
+export type { StatsRange } from "@/types/statsTypes";
 
 export function useStatsCalculations({
   moods,
@@ -26,7 +31,7 @@ export function useStatsCalculations({
 }: UseStatsCalculationsProps) {
   // Filter completed focus sessions
   const completedFocusSessions = useMemo(
-    () => focusSessions.filter((session) => session.status !== 'aborted'),
+    () => focusSessions.filter((session) => session.status !== "aborted"),
     [focusSessions]
   );
 
@@ -34,16 +39,16 @@ export function useStatsCalculations({
   const filteredMoods = useMemo(() => {
     let filtered = moods;
 
-    if (selectedTag !== 'all') {
+    if (selectedTag !== "all") {
       filtered = filtered.filter((m) => m.tags?.includes(selectedTag));
     }
 
-    if (range === 'week') {
+    if (range === "week") {
       const weekAgo = new Date();
       weekAgo.setDate(weekAgo.getDate() - 6);
       weekAgo.setHours(0, 0, 0, 0);
       filtered = filtered.filter((m) => parseLocalDate(m.date) >= weekAgo);
-    } else if (range === 'month') {
+    } else if (range === "month") {
       const thisMonth = getToday().slice(0, 7);
       filtered = filtered.filter((m) => m.date.startsWith(thisMonth));
     }
@@ -54,18 +59,18 @@ export function useStatsCalculations({
   // Main stats calculation
   const stats = useMemo((): Stats => {
     // Use actual date range boundaries (not mood dates) to filter habits & focus
-    let rangeStartStr = '';
-    if (range === 'week') {
+    let rangeStartStr = "";
+    if (range === "week") {
       const weekAgo = new Date();
       weekAgo.setDate(weekAgo.getDate() - 6);
       weekAgo.setHours(0, 0, 0, 0);
       rangeStartStr = formatDate(weekAgo);
-    } else if (range === 'month') {
-      rangeStartStr = getToday().slice(0, 7) + '-01';
+    } else if (range === "month") {
+      rangeStartStr = getToday().slice(0, 7) + "-01";
     }
     const rangeEndStr = getToday();
     const isInRange = (date: string) =>
-      range === 'all' || (date >= rangeStartStr && date <= rangeEndStr);
+      range === "all" || (date >= rangeStartStr && date <= rangeEndStr);
 
     const totalFocusMinutes = completedFocusSessions
       .filter((session) => isInRange(session.date))
@@ -75,8 +80,8 @@ export function useStatsCalculations({
     const allTimeFocusMinutes = completedMinutes + (currentFocusMinutes || 0);
 
     const totalHabitCompletions = habits.reduce((acc, habit) => {
-      const count = getHabitCompletedDates(habit, computeEntriesWithAuto(habit)).filter(
-        (date) => isInRange(date)
+      const count = getHabitCompletedDates(habit, computeEntriesWithAuto(habit)).filter((date) =>
+        isInRange(date)
       ).length;
       return acc + count;
     }, 0);
@@ -92,27 +97,33 @@ export function useStatsCalculations({
     const uniqueDates = [...new Set(allActivityDates)].sort();
     const currentStreak = calculateStreak(uniqueDates);
 
-    const moodCounts = filteredMoods.reduce((acc, m) => {
-      acc[m.mood] = (acc[m.mood] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    const moodCounts = filteredMoods.reduce(
+      (acc, m) => {
+        acc[m.mood] = (acc[m.mood] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
 
-    const emotionCounts = filteredMoods.reduce((acc, m) => {
-      if (m.emotion?.primary) {
-        acc[m.emotion.primary] = (acc[m.emotion.primary] || 0) + 1;
-      } else if (m.mood) {
-        const mappedEmotion = MOOD_TO_EMOTION_MAP[m.mood];
-        if (mappedEmotion) {
-          acc[mappedEmotion] = (acc[mappedEmotion] || 0) + 1;
+    const emotionCounts = filteredMoods.reduce(
+      (acc, m) => {
+        if (m.emotion?.primary) {
+          acc[m.emotion.primary] = (acc[m.emotion.primary] || 0) + 1;
+        } else if (m.mood) {
+          const mappedEmotion = MOOD_TO_EMOTION_MAP[m.mood];
+          if (mappedEmotion) {
+            acc[mappedEmotion] = (acc[mappedEmotion] || 0) + 1;
+          }
         }
-      }
-      return acc;
-    }, {} as Record<PrimaryEmotion, number>);
+        return acc;
+      },
+      {} as Record<PrimaryEmotion, number>
+    );
 
     const totalEmotionEntries = Object.values(emotionCounts).reduce((a, b) => a + b, 0);
 
     const now = new Date();
-    const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
     const today = getToday();
 
     const weekStart = new Date(now);
@@ -120,10 +131,10 @@ export function useStatsCalculations({
     weekStart.setHours(0, 0, 0, 0);
 
     const filterByRange = <T extends { date: string }>(data: T[]): T[] => {
-      if (range === 'week') {
+      if (range === "week") {
         return data.filter((item) => parseLocalDate(item.date) >= weekStart);
       }
-      if (range === 'month') {
+      if (range === "month") {
         return data.filter((item) => item.date.startsWith(thisMonth));
       }
       return data;
@@ -135,20 +146,16 @@ export function useStatsCalculations({
 
     const rangeBaseFocusMinutes = rangeFocus.reduce((acc, s) => acc + s.duration, 0);
     const isCurrentInRange =
-      range === 'all' ||
-      (range === 'month' && today.startsWith(thisMonth)) ||
-      (range === 'week' && parseLocalDate(today) >= weekStart);
+      range === "all" ||
+      (range === "month" && today.startsWith(thisMonth)) ||
+      (range === "week" && parseLocalDate(today) >= weekStart);
     const finalRangeFocusMinutes =
       currentFocusMinutes !== undefined && isCurrentInRange
         ? rangeBaseFocusMinutes + currentFocusMinutes
         : rangeBaseFocusMinutes;
 
     const rangeTitle =
-      range === 'week'
-        ? 'This Week'
-        : range === 'month'
-          ? monthNames[now.getMonth()]
-          : 'All Time';
+      range === "week" ? "This Week" : range === "month" ? monthNames[now.getMonth()] : "All Time";
 
     return {
       totalFocusMinutes,
@@ -181,12 +188,18 @@ export function useStatsCalculations({
     const getScore = (m: MoodEntry): number => {
       if (m.emotion?.primary) return getEmotionScore(m.emotion.primary, m.emotion.intensity);
       switch (m.mood) {
-        case 'great': return 5;
-        case 'good': return 4;
-        case 'okay': return 3;
-        case 'bad': return 2;
-        case 'terrible': return 1;
-        default: return 3;
+        case "great":
+          return 5;
+        case "good":
+          return 4;
+        case "okay":
+          return 3;
+        case "bad":
+          return 2;
+        case "terrible":
+          return 1;
+        default:
+          return 3;
       }
     };
 
@@ -196,14 +209,14 @@ export function useStatsCalculations({
 
     const now = new Date();
     const actualDaysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    const daysInRange = range === 'week' ? 7 : range === 'month' ? actualDaysInMonth : 90;
+    const daysInRange = range === "week" ? 7 : range === "month" ? actualDaysInMonth : 90;
 
     // Calculate range start date string for per-habit filtering
     const rangeEnd = new Date();
     const rangeStart = new Date();
-    if (range === 'week') {
+    if (range === "week") {
       rangeStart.setDate(rangeEnd.getDate() - 6);
-    } else if (range === 'month') {
+    } else if (range === "month") {
       rangeStart.setDate(1); // first of current month
     } else {
       rangeStart.setDate(rangeEnd.getDate() - 89); // 90-day window
@@ -220,12 +233,12 @@ export function useStatsCalculations({
       if (effectiveStart > rangeEndStr) return sum; // habit created after range
       const effectiveDays =
         Math.floor(
-          (parseLocalDate(rangeEndStr).getTime() - parseLocalDate(effectiveStart).getTime()) / 86400000
+          (parseLocalDate(rangeEndStr).getTime() - parseLocalDate(effectiveStart).getTime()) /
+            86400000
         ) + 1;
       // Apply frequency ratio: a 3/7 habit expects 3 completions per 7 days
-      const freqRatio = h.frequency.denominator > 0
-        ? h.frequency.numerator / h.frequency.denominator
-        : 1;
+      const freqRatio =
+        h.frequency.denominator > 0 ? h.frequency.numerator / h.frequency.denominator : 1;
       return sum + Math.max(0, effectiveDays) * freqRatio;
     }, 0);
 
@@ -238,7 +251,7 @@ export function useStatsCalculations({
     const avgDailyFocus = stats.totalFocusMinutes / Math.max(1, daysInRange);
     const focusScore = Math.min(100, (avgDailyFocus / dailyFocusTarget) * 100);
 
-    const latestMood = moods.length > 0 ? moods[moods.length - 1]?.mood : 'okay';
+    const latestMood = moods.length > 0 ? moods[moods.length - 1]?.mood : "okay";
 
     const weekScore = Math.round(
       ((avgMoodScore - 1) / 4) * 100 * 0.3 + habitRate * 0.4 + focusScore * 0.3
@@ -272,7 +285,7 @@ export function useStatsCalculations({
       focusScore,
       weekScore,
       weeklyChange,
-      currentMood: latestMood || 'okay',
+      currentMood: latestMood || "okay",
     };
   }, [filteredMoods, habits, moods, range, stats.totalHabitCompletions, stats.totalFocusMinutes]);
 
@@ -291,22 +304,22 @@ export function useStatsCalculations({
         return getEmotionScore(entry.emotion.primary, entry.emotion.intensity);
       }
       switch (entry.mood) {
-        case 'great':
+        case "great":
           return 5;
-        case 'good':
+        case "good":
           return 4;
-        case 'okay':
+        case "okay":
           return 3;
-        case 'bad':
+        case "bad":
           return 2;
-        case 'terrible':
+        case "terrible":
           return 1;
         default:
           return 0;
       }
     };
 
-    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
     const moodByDay: Record<number, { total: number; count: number }> = {};
 
     filteredMoods.forEach((entry) => {

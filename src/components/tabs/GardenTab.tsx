@@ -1,8 +1,5 @@
 import { Suspense, useCallback } from "react";
-import {
-  LazyErrorBoundary,
-  ModalErrorBoundary,
-} from "@/components/ErrorBoundary";
+import { LazyErrorBoundary, ModalErrorBoundary } from "@/components/ErrorBoundary";
 import { Header } from "@/components/Header";
 import { PullToRefresh } from "@/components/PullToRefresh";
 import { MoodInsights } from "@/components/MoodInsights";
@@ -10,44 +7,31 @@ import { SkeletonCard, SkeletonList } from "@/components/ui/skeleton";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
 import { useFeatureFlags } from "@/contexts/FeatureFlagsContext";
 import { useLanguage } from "@/contexts/LanguageContext";
-import {
-  useUIStore,
-  useUserDataStore,
-  useGamificationStore,
-  getModalToggle,
-} from "@/stores";
+import { useUIStore, useUserDataStore, useGamificationStore, getModalToggle } from "@/stores";
 import { haptics } from "@/lib/haptics";
-import type {
-  MoodEntry,
-  Habit,
-  FocusSession,
-  GratitudeEntry,
-  ScheduleEvent,
-} from "@/types";
+import type { FocusSession, GratitudeEntry, ScheduleEvent } from "@/types";
 
 const ScheduleTimeline = lazyWithRetry(
   () =>
     import("@/components/ScheduleTimeline").then((m) => ({
       default: m.ScheduleTimeline,
     })),
-  "ScheduleTimeline",
+  "ScheduleTimeline"
 );
 const JournalModule = lazyWithRetry(
-  () =>
-    import("@/features/journal").then((m) => ({ default: m.JournalModule })),
-  "JournalModule",
+  () => import("@/features/journal").then((m) => ({ default: m.JournalModule })),
+  "JournalModule"
 );
 const BreathingExercise = lazyWithRetry(
   () =>
     import("@/components/BreathingExercise").then((m) => ({
       default: m.BreathingExercise,
     })),
-  "BreathingExercise",
+  "BreathingExercise"
 );
 const FocusTimer = lazyWithRetry(
-  () =>
-    import("@/components/FocusTimer").then((m) => ({ default: m.FocusTimer })),
-  "FocusTimer",
+  () => import("@/components/FocusTimer").then((m) => ({ default: m.FocusTimer })),
+  "FocusTimer"
 );
 
 const setShowChallenges = getModalToggle("showChallenges");
@@ -56,10 +40,6 @@ const setShowQuestsPanel = getModalToggle("showQuestsPanel");
 const setShowFriendsPanel = getModalToggle("showFriendsPanel");
 
 interface GardenTabProps {
-  safeMoods: MoodEntry[];
-  safeHabits: Habit[];
-  safeFocusSessions: FocusSession[];
-  safeGratitudeEntries: GratitudeEntry[];
   todayAllEvents: ScheduleEvent[];
   handleAddScheduleEvent: (event: Omit<ScheduleEvent, "id">) => void;
   handleDeleteScheduleEvent: (id: string) => void;
@@ -70,10 +50,6 @@ interface GardenTabProps {
 }
 
 export function GardenTab({
-  safeMoods,
-  safeHabits,
-  safeFocusSessions,
-  safeGratitudeEntries,
   todayAllEvents,
   handleAddScheduleEvent,
   handleDeleteScheduleEvent,
@@ -84,6 +60,10 @@ export function GardenTab({
 }: GardenTabProps) {
   const { t } = useLanguage();
   const { isFeatureVisible } = useFeatureFlags();
+  const moods = useUserDataStore((s) => s.moods);
+  const habits = useUserDataStore((s) => s.habits);
+  const focusSessions = useUserDataStore((s) => s.focusSessions);
+  const gratitudeEntries = useUserDataStore((s) => s.gratitudeEntries);
   const userName = useUserDataStore((s) => s.userName);
   const setCurrentFocusMinutes = useUIStore((s) => s.setCurrentFocusMinutes);
   const rewardUser = useGamificationStore((s) => s.rewardUser);
@@ -101,29 +81,16 @@ export function GardenTab({
         <Header
           userName={userName}
           onOpenChallenges={
-            isFeatureVisible("challenges")
-              ? () => setShowChallenges(true)
-              : undefined
+            isFeatureVisible("challenges") ? () => setShowChallenges(true) : undefined
           }
-          onOpenTasks={
-            isFeatureVisible("tasks")
-              ? () => setShowTasksPanel(true)
-              : undefined
-          }
-          onOpenQuests={
-            isFeatureVisible("quests")
-              ? () => setShowQuestsPanel(true)
-              : undefined
-          }
+          onOpenTasks={isFeatureVisible("tasks") ? () => setShowTasksPanel(true) : undefined}
+          onOpenQuests={isFeatureVisible("quests") ? () => setShowQuestsPanel(true) : undefined}
           onOpenFriends={() => setShowFriendsPanel(true)}
         />
 
         <PullToRefresh onRefresh={handlePullToRefresh}>
           {/* Schedule Timeline — min-h prevents CLS on lazy load */}
-          <section
-            aria-label={t.scheduleTitle || "Your Schedule"}
-            className="min-h-[200px]"
-          >
+          <section aria-label={t.scheduleTitle || "Your Schedule"} className="min-h-[200px]">
             <LazyErrorBoundary componentName="Schedule Timeline">
               <Suspense fallback={<SkeletonList />}>
                 <ScheduleTimeline
@@ -143,20 +110,14 @@ export function GardenTab({
           >
             <LazyErrorBoundary componentName="Journal">
               <Suspense fallback={<SkeletonCard />}>
-                <JournalModule
-                  onToggleHabit={onToggleHabit}
-                  onAddGratitude={onAddGratitude}
-                />
+                <JournalModule onToggleHabit={onToggleHabit} onAddGratitude={onAddGratitude} />
               </Suspense>
             </LazyErrorBoundary>
           </section>
 
           {/* Breathing Exercise */}
           {isFeatureVisible("breathingExercise") && (
-            <section
-              aria-label={t.moduleBreathing || "Breathing"}
-              className="min-h-[100px]"
-            >
+            <section aria-label={t.moduleBreathing || "Breathing"} className="min-h-[100px]">
               <LazyErrorBoundary componentName="Breathing Exercise">
                 <Suspense fallback={<SkeletonCard lines={1} />}>
                   <BreathingExercise
@@ -176,17 +137,14 @@ export function GardenTab({
 
           {/* Focus Timer — min-h prevents CLS */}
           {isFeatureVisible("focusTimer") && (
-            <section
-              aria-label={t.moduleFocus || "Focus Timer"}
-              className="min-h-[200px]"
-            >
+            <section aria-label={t.moduleFocus || "Focus Timer"} className="min-h-[200px]">
               <ModalErrorBoundary
                 fallbackTitle="Focus Timer Error"
                 fallbackBody="Unable to load focus timer. Try refreshing."
               >
                 <Suspense fallback={<SkeletonCard />}>
                   <FocusTimer
-                    sessions={safeFocusSessions}
+                    sessions={focusSessions}
                     onCompleteSession={handleCompleteFocusSession}
                     onMinuteUpdate={setCurrentFocusMinutes}
                     isPrimaryCTA={true}
@@ -200,10 +158,10 @@ export function GardenTab({
           {/* Insights */}
           <LazyErrorBoundary componentName="Insights">
             <MoodInsights
-              moods={safeMoods}
-              habits={safeHabits}
-              focusSessions={safeFocusSessions}
-              gratitudeEntries={safeGratitudeEntries}
+              moods={moods}
+              habits={habits}
+              focusSessions={focusSessions}
+              gratitudeEntries={gratitudeEntries}
             />
           </LazyErrorBoundary>
         </PullToRefresh>

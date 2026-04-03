@@ -8,13 +8,11 @@
  * - Current sync operation
  */
 
-import { useState, useEffect } from "react";
 import { useSyncOrchestrator } from "@/lib/syncOrchestrator";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { isCloudSyncEnabled } from "@/lib/cloudSyncSettings";
 import { useOfflineQueue } from "@/hooks/useOfflineQueue";
-import { supabase } from "@/lib/supabaseClient";
-import { logger } from "@/lib/logger";
+import { useAppStore } from "@/stores";
 import { Cloud, CloudOff, AlertCircle, CheckCircle, Loader, WifiOff } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { enUS, uk, es, de, fr, ja, ar, he } from "date-fns/locale";
@@ -167,30 +165,7 @@ export function SyncStatusIndicatorCompact() {
   const { state } = useSyncOrchestrator();
   const { pendingCount, isOnline, isProcessing } = useOfflineQueue();
   const { t } = useLanguage();
-  const [hasSession, setHasSession] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    if (!supabase) return;
-    let isMounted = true;
-    supabase.auth
-      .getSession()
-      .then(({ data }) => {
-        if (isMounted) setHasSession(!!data.session);
-      })
-      .catch((err) => {
-        logger.warn("[Sync]", "Session check failed:", err);
-        if (isMounted) setHasSession(false);
-      });
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (isMounted) setHasSession(!!session);
-    });
-    return () => {
-      isMounted = false;
-      subscription?.unsubscribe();
-    };
-  }, []);
+  const hasSession = useAppStore((s) => s.hasValidSession);
 
   // Session expired: sync is enabled but no valid session
   if (isCloudSyncEnabled() && hasSession === false) {

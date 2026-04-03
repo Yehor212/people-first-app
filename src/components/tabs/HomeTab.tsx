@@ -21,18 +21,13 @@ import { plural } from "@/lib/plural";
 import { valenceToColor } from "@/components/state-of-mind/colorUtils";
 import { isHabitCompletedOnDate } from "@/lib/habits";
 import { getToday } from "@/lib/utils";
-import type { MoodEntry, Habit, FocusSession } from "@/types";
+import type { MoodEntry } from "@/types";
 
 const setShowChallenges = getModalToggle("showChallenges");
 const setShowTasksPanel = getModalToggle("showTasksPanel");
 const setShowQuestsPanel = getModalToggle("showQuestsPanel");
 
 interface HomeTabProps {
-  // Data arrays
-  safeMoods: MoodEntry[];
-  safeHabits: Habit[];
-  safeFocusSessions: FocusSession[];
-
   // Inner World
   currentActiveStreak: number;
   isRestMode: boolean;
@@ -53,9 +48,6 @@ interface HomeTabProps {
 }
 
 export function HomeTab({
-  safeMoods,
-  safeHabits,
-  safeFocusSessions,
   currentActiveStreak,
   isRestMode,
   activateRestMode,
@@ -69,6 +61,9 @@ export function HomeTab({
 }: HomeTabProps) {
   const { isFeatureVisible } = useFeatureFlags();
   const { t, language } = useLanguage();
+  const moods = useUserDataStore((s) => s.moods);
+  const habits = useUserDataStore((s) => s.habits);
+  const focusSessions = useUserDataStore((s) => s.focusSessions);
   const userName = useUserDataStore((s) => s.userName);
   const hasValidSession = useAppStore((s) => s.hasValidSession);
   const googleAuthChecked = useUserDataStore((s) => s.googleAuthChecked);
@@ -78,29 +73,23 @@ export function HomeTab({
   const [showStateOfMind, setShowStateOfMind] = useState(false);
 
   // Contextual reflection prompts (IA Blueprint Phase 3)
-  const reflectionPrompts = useReflectionPrompts(
-    safeMoods,
-    safeHabits,
-    safeFocusSessions,
-    gratitudeEntries,
-    t
-  );
+  const reflectionPrompts = useReflectionPrompts(moods, habits, focusSessions, gratitudeEntries, t);
 
   // Growth Rings — never-resetting growth visualization (IA Blueprint Phase 2.3)
   const growthData = useMemo(() => {
-    const activeHabits = safeHabits.filter((h) => !h.isArchived);
+    const activeHabits = habits.filter((h) => !h.isArchived);
     const activeDates = activeHabits.flatMap((h) =>
       Object.keys(h.entries || {}).filter((d) => isHabitCompletedOnDate(h, d))
     );
     const uniqueActive = [...new Set(activeDates)];
     const earliest =
-      safeMoods.length > 0
-        ? safeMoods.reduce((min, m) => (m.date < min ? m.date : min), safeMoods[0].date)
+      moods.length > 0
+        ? moods.reduce((min, m) => (m.date < min ? m.date : min), moods[0].date)
         : getToday();
     const data = computeGrowthRings(uniqueActive, [], earliest);
     const summary = getGrowthRingsSummary(data);
     return { rings: data.rings, ...summary };
-  }, [safeHabits, safeMoods]);
+  }, [habits, moods]);
 
   const scrollToRef = (ref: React.RefObject<HTMLDivElement | null>) => {
     ref.current?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -109,8 +98,8 @@ export function HomeTab({
   // Today's latest mood for CTA preview color
   const todayMoods = useMemo(() => {
     const today = getToday();
-    return safeMoods.filter((m) => m.date === today);
-  }, [safeMoods]);
+    return moods.filter((m) => m.date === today);
+  }, [moods]);
   const latestValence =
     todayMoods.length > 0 ? (todayMoods[todayMoods.length - 1].valence ?? 0) : 0;
 

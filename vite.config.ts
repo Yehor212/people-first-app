@@ -146,10 +146,12 @@ export default defineConfig(({ mode }) => {
         output: {
           // Enable code splitting for better performance
           manualChunks(id) {
-            // Translations are huge (~16K lines) — separate chunk
-            if (id.includes("translations")) {
-              return "i18n";
-            }
+            // TDZ FIX: translations.ts and i18n/index.ts MUST stay in the main chunk
+            // because LanguageContext imports from them. If they get split into a
+            // separate chunk, module init order becomes non-deterministic → TDZ crash.
+            // Language files (uk, es, de, fr, ja, ar, he) are dynamic imports — Vite
+            // code-splits them automatically. en.ts is statically imported → stays in main.
+            // DO NOT add a manualChunks rule for i18n/translations/languages here.
 
             // Only split node_modules below this point
             if (!id.includes("node_modules")) {
@@ -182,11 +184,6 @@ export default defineConfig(({ mode }) => {
             // Sentry error tracking (no React dependency in core)
             if (id.includes("@sentry") && !id.includes("react")) {
               return "sentry";
-            }
-
-            // Lucide icons (tree-shakeable, no runtime React dep)
-            if (id.includes("lucide-react")) {
-              return "lucide-icons";
             }
 
             // Pure utility libs (no React dependency)

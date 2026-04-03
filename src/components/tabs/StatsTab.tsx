@@ -5,19 +5,13 @@ import { PullToRefresh } from "@/components/PullToRefresh";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
 import { SkeletonStats } from "@/components/ui/skeleton";
 import { useUserDataStore } from "@/stores";
-import type { MoodEntry, Habit, FocusSession, GratitudeEntry } from "@/types";
 
 const StatsPage = lazyWithRetry(
-  () =>
-    import("@/components/StatsPage").then((m) => ({ default: m.StatsPage })),
-  "StatsPage",
+  () => import("@/components/StatsPage").then((m) => ({ default: m.StatsPage })),
+  "StatsPage"
 );
 
 interface StatsTabProps {
-  safeMoods: MoodEntry[];
-  safeHabits: Habit[];
-  safeFocusSessions: FocusSession[];
-  safeGratitudeEntries: GratitudeEntry[];
   restDays: string[];
   currentFocusMinutes: number | undefined;
   onQuickAction: (action: string) => void;
@@ -25,15 +19,15 @@ interface StatsTabProps {
 }
 
 export function StatsTab({
-  safeMoods,
-  safeHabits,
-  safeFocusSessions,
-  safeGratitudeEntries,
   restDays,
   currentFocusMinutes,
   onQuickAction,
   handlePullToRefresh,
 }: StatsTabProps) {
+  const moods = useUserDataStore((s) => s.moods);
+  const habits = useUserDataStore((s) => s.habits);
+  const focusSessions = useUserDataStore((s) => s.focusSessions);
+  const gratitudeEntries = useUserDataStore((s) => s.gratitudeEntries);
   const userName = useUserDataStore((s) => s.userName);
 
   return (
@@ -41,14 +35,12 @@ export function StatsTab({
       <Header userName={userName} />
       <PullToRefresh onRefresh={handlePullToRefresh}>
         <LazyErrorBoundary componentName="Stats">
-          <Suspense
-            fallback={<SkeletonStats count={4} className="px-4 pt-8" />}
-          >
+          <Suspense fallback={<SkeletonStats count={4} className="px-4 pt-8" />}>
             <StatsPage
-              moods={safeMoods}
-              habits={safeHabits}
-              focusSessions={safeFocusSessions}
-              gratitudeEntries={safeGratitudeEntries}
+              moods={moods}
+              habits={habits}
+              focusSessions={focusSessions}
+              gratitudeEntries={gratitudeEntries}
               restDays={restDays}
               currentFocusMinutes={currentFocusMinutes}
               onQuickAction={onQuickAction}

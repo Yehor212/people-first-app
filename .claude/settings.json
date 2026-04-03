@@ -56,6 +56,26 @@
             "statusMessage": "Independent verifier (tsc + vitest + eslint + build + ratchet)..."
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/stop-tsc-gate.cjs",
+            "timeout": 30000,
+            "statusMessage": "Fast TSC backup gate..."
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/satisficing-gate.cjs",
+            "timeout": 10000,
+            "statusMessage": "Satisficing detector (anti-gaming)..."
+          }
+        ]
       }
     ],
     "SessionStart": [

@@ -3,14 +3,14 @@
  * Manages the growth of plants, creatures, and companion in the Inner World
  */
 
-import { useCallback, useEffect, useRef } from 'react';
-import { logger } from '@/lib/logger';
-import { useIndexedDB } from './useIndexedDB';
-import { db } from '@/storage/db';
-import { innerWorldSchema } from '@/lib/schemas';
-import { generateId, getToday } from '@/lib/utils';
-import { pushInnerWorldToCloud } from '@/storage/innerWorldCloudSync';
-import { updateMyStreak } from '@/storage/friendsSync';
+import { useCallback, useEffect, useRef } from "react";
+import { logger } from "@/lib/logger";
+import { useIndexedDB } from "./useIndexedDB";
+import { db } from "@/storage/db";
+import { innerWorldSchema } from "@/lib/schemas";
+import { generateId, getToday } from "@/lib/utils";
+import { pushInnerWorldToCloud } from "@/storage/innerWorldCloudSync";
+import { updateMyStreak } from "@/storage/friendsSync";
 import {
   InnerWorld,
   GardenPlant,
@@ -20,9 +20,9 @@ import {
   MoodType,
   TreatSource,
   TreatTransaction,
-} from '@/types';
-import { MOOD_COLORS } from '@/lib/innerWorldConstants';
-import { calculateTreatsEarned } from '@/lib/treatConstants';
+} from "@/types";
+import { MOOD_COLORS } from "@/lib/innerWorldConstants";
+import { calculateTreatsEarned } from "@/lib/treatConstants";
 import {
   createDefaultInnerWorld,
   getCurrentSeason,
@@ -31,8 +31,8 @@ import {
   getGardenStage,
   getRandomPosition,
   getCompanionMood,
-} from './innerWorldHelpers';
-import { useRestMode } from './useRestMode';
+} from "@/lib/innerWorldHelpers";
+import { useRestMode } from "./useRestMode";
 
 // ============================================
 // HOOK
@@ -41,21 +41,24 @@ import { useRestMode } from './useRestMode';
 export function useInnerWorld() {
   const [world, setWorld, isLoading] = useIndexedDB<InnerWorld>({
     table: db.settings,
-    localStorageKey: 'zenflow-inner-world',
+    localStorageKey: "zenflow-inner-world",
     initialValue: createDefaultInnerWorld(),
-    idField: 'key',
+    idField: "key",
     objectSchema: innerWorldSchema,
   });
 
   // Rest mode (extracted hook)
-  const { isRestMode, restModeStatus, activateRestMode, deactivateRestMode } = useRestMode(world.restDays, setWorld);
+  const { isRestMode, restModeStatus, activateRestMode, deactivateRestMode } = useRestMode(
+    world.restDays,
+    setWorld
+  );
 
   // Update season if needed
   // Use functional update to prevent stale closure
   useEffect(() => {
     const currentSeason = getCurrentSeason();
     if (world.season !== currentSeason) {
-      setWorld(prev => ({ ...prev, season: currentSeason }));
+      setWorld((prev) => ({ ...prev, season: currentSeason }));
     }
   }, [world.season, setWorld]);
 
@@ -68,18 +71,20 @@ export function useInnerWorld() {
     if (world.lastActiveDate && world.lastActiveDate !== today) {
       const lastDate = new Date(world.lastActiveDate);
       const todayDate = new Date(today);
-      const daysDiff = Math.floor((todayDate.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+      const daysDiff = Math.floor(
+        (todayDate.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24)
+      );
 
       if (daysDiff > 1) {
         // User was away - set supportive mode + auto-forage (IA Blueprint Phase 6)
-        setWorld(prev => {
+        setWorld((prev) => {
           // Companion auto-forages if unfed for 2+ days (guilt-free hunger)
           const shouldAutoForage = daysDiff >= 2 && prev.companion.fullness < 30;
           return {
             ...prev,
             companion: {
               ...prev.companion,
-              mood: 'supportive',
+              mood: "supportive",
               fullness: shouldAutoForage ? 50 : prev.companion.fullness,
             },
             pendingGrowth: {
@@ -109,7 +114,9 @@ export function useInnerWorld() {
     }
 
     syncTimeoutRef.current = setTimeout(() => {
-      pushInnerWorldToCloud(world).catch(err => logger.error('Failed to push inner world to cloud:', err));
+      pushInnerWorldToCloud(world).catch((err) =>
+        logger.error("Failed to push inner world to cloud:", err)
+      );
     }, 5000); // Sync 5 seconds after last change
 
     return () => {
@@ -121,109 +128,130 @@ export function useInnerWorld() {
 
   // Plant a new plant from an activity
   // Use functional update to prevent race conditions with stale world state
-  const plantSeed = useCallback((
-    sourceActivity: 'mood' | 'habit' | 'focus' | 'gratitude' | 'journal' | 'breathing' | 'rest',
-    mood?: MoodType
-  ) => {
-    const plantType: PlantType =
-      sourceActivity === 'mood' ? 'flower' :
-      sourceActivity === 'habit' ? 'tree' :
-      sourceActivity === 'focus' ? 'crystal' :
-      sourceActivity === 'journal' ? 'story' :
-      sourceActivity === 'breathing' ? 'air_plant' :
-      sourceActivity === 'rest' ? 'rest_flower' : 'mushroom';
+  const plantSeed = useCallback(
+    (
+      sourceActivity: "mood" | "habit" | "focus" | "gratitude" | "journal" | "breathing" | "rest",
+      mood?: MoodType
+    ) => {
+      const plantType: PlantType =
+        sourceActivity === "mood"
+          ? "flower"
+          : sourceActivity === "habit"
+            ? "tree"
+            : sourceActivity === "focus"
+              ? "crystal"
+              : sourceActivity === "journal"
+                ? "story"
+                : sourceActivity === "breathing"
+                  ? "air_plant"
+                  : sourceActivity === "rest"
+                    ? "rest_flower"
+                    : "mushroom";
 
-    const color = mood ? MOOD_COLORS[mood] : '#22c55e';
-    const plantId = generateId();
-    const plantedAt = Date.now();
-    const today = getToday();
-    const isSpecial = Math.random() < 0.05; // 5% chance of special
+      const color = mood ? MOOD_COLORS[mood] : "#22c55e";
+      const plantId = generateId();
+      const plantedAt = Date.now();
+      const today = getToday();
+      const isSpecial = Math.random() < 0.05; // 5% chance of special
 
-    let newPlantRef: GardenPlant | null = null;
+      let newPlantRef: GardenPlant | null = null;
 
-    setWorld(prev => {
-      const existingPositions = prev.plants.map(p => p.position);
+      setWorld((prev) => {
+        const existingPositions = prev.plants.map((p) => p.position);
 
-      const newPlant: GardenPlant = {
-        id: plantId,
-        type: plantType,
-        stage: 'seed',
-        color,
-        plantedAt,
-        lastWateredAt: plantedAt,
-        growthPoints: 0,
-        position: getRandomPosition(existingPositions),
-        sourceActivity,
-        isSpecial,
-      };
-      newPlantRef = newPlant;
+        const newPlant: GardenPlant = {
+          id: plantId,
+          type: plantType,
+          stage: "seed",
+          color,
+          plantedAt,
+          lastWateredAt: plantedAt,
+          growthPoints: 0,
+          position: getRandomPosition(existingPositions),
+          sourceActivity,
+          isSpecial,
+        };
+        newPlantRef = newPlant;
 
-      const isNewDay = prev.lastActiveDate !== today;
-      const newStreak = isNewDay
-        ? (prev.lastActiveDate && new Date(today).getTime() - new Date(prev.lastActiveDate).getTime() < 2 * 24 * 60 * 60 * 1000
+        const isNewDay = prev.lastActiveDate !== today;
+        const newStreak = isNewDay
+          ? prev.lastActiveDate &&
+            new Date(today).getTime() - new Date(prev.lastActiveDate).getTime() <
+              2 * 24 * 60 * 60 * 1000
             ? prev.currentActiveStreak + 1
-            : 1)
-        : prev.currentActiveStreak;
+            : 1
+          : prev.currentActiveStreak;
 
-      let newExperience = prev.companion.experience + 10;
-      let newLevel = prev.companion.level;
-      const xpNeeded = newLevel * 100;
-      if (newExperience >= xpNeeded) {
-        newLevel += 1;
-        newExperience -= xpNeeded;
-      }
+        let newExperience = prev.companion.experience + 10;
+        let newLevel = prev.companion.level;
+        const xpNeeded = newLevel * 100;
+        if (newExperience >= xpNeeded) {
+          newLevel += 1;
+          newExperience -= xpNeeded;
+        }
 
-      return {
-        ...prev,
-        plants: [...prev.plants, newPlant],
-        totalPlantsGrown: prev.totalPlantsGrown + 1,
-        gardenStage: getGardenStage(prev.totalPlantsGrown + 1),
-        lastActiveDate: today,
-        daysActive: isNewDay ? prev.daysActive + 1 : prev.daysActive,
-        currentActiveStreak: newStreak,
-        longestActiveStreak: Math.max(prev.longestActiveStreak, newStreak),
-        companion: {
-          ...prev.companion,
-          mood: getCompanionMood({ ...prev, currentActiveStreak: newStreak, lastActiveDate: today }),
-          experience: newExperience,
-          level: newLevel,
-        },
-        pendingGrowth: {
-          plantsToGrow: 0,
-          creaturesArrived: 0,
-          companionMissedYou: false,
-        },
-      };
-    });
+        return {
+          ...prev,
+          plants: [...prev.plants, newPlant],
+          totalPlantsGrown: prev.totalPlantsGrown + 1,
+          gardenStage: getGardenStage(prev.totalPlantsGrown + 1),
+          lastActiveDate: today,
+          daysActive: isNewDay ? prev.daysActive + 1 : prev.daysActive,
+          currentActiveStreak: newStreak,
+          longestActiveStreak: Math.max(prev.longestActiveStreak, newStreak),
+          companion: {
+            ...prev.companion,
+            mood: getCompanionMood({
+              ...prev,
+              currentActiveStreak: newStreak,
+              lastActiveDate: today,
+            }),
+            experience: newExperience,
+            level: newLevel,
+          },
+          pendingGrowth: {
+            plantsToGrow: 0,
+            creaturesArrived: 0,
+            companionMissedYou: false,
+          },
+        };
+      });
 
-    return newPlantRef;
-  }, [setWorld]);
+      return newPlantRef;
+    },
+    [setWorld]
+  );
 
   // Water plants (called when doing activities)
   // Use functional update to prevent race conditions
-  const waterPlants = useCallback((sourceActivity: 'mood' | 'habit' | 'focus' | 'gratitude' | 'journal' | 'breathing' | 'rest') => {
-    const now = Date.now();
-    setWorld(prev => ({
-      ...prev,
-      plants: prev.plants.map(plant => {
-        if (plant.sourceActivity === sourceActivity) {
-          const newGrowthPoints = plant.growthPoints + 5;
-          return {
-            ...plant,
-            growthPoints: newGrowthPoints,
-            stage: getPlantStage(newGrowthPoints),
-            lastWateredAt: now,
-          };
-        }
-        return plant;
-      }),
-    }));
-  }, [setWorld]);
+  const waterPlants = useCallback(
+    (
+      sourceActivity: "mood" | "habit" | "focus" | "gratitude" | "journal" | "breathing" | "rest"
+    ) => {
+      const now = Date.now();
+      setWorld((prev) => ({
+        ...prev,
+        plants: prev.plants.map((plant) => {
+          if (plant.sourceActivity === sourceActivity) {
+            const newGrowthPoints = plant.growthPoints + 5;
+            return {
+              ...plant,
+              growthPoints: newGrowthPoints,
+              stage: getPlantStage(newGrowthPoints),
+              lastWateredAt: now,
+            };
+          }
+          return plant;
+        }),
+      }));
+    },
+    [setWorld]
+  );
 
   // Attract a creature (from gratitude)
   // Use functional update to prevent race conditions
   const attractCreature = useCallback(() => {
-    const creatureTypes: CreatureType[] = ['butterfly', 'bird', 'firefly', 'spirit'];
+    const creatureTypes: CreatureType[] = ["butterfly", "bird", "firefly", "spirit"];
     const type = creatureTypes[Math.floor(Math.random() * creatureTypes.length)];
     const creatureId = generateId();
     const arrivedAt = Date.now();
@@ -231,17 +259,17 @@ export function useInnerWorld() {
 
     let newCreatureRef: GardenCreature | null = null;
 
-    setWorld(prev => {
+    setWorld((prev) => {
       const existingPositions = [
-        ...prev.plants.map(p => p.position),
-        ...prev.creatures.map(c => c.position),
+        ...prev.plants.map((p) => p.position),
+        ...prev.creatures.map((c) => c.position),
       ];
 
       const newCreature: GardenCreature = {
         id: creatureId,
         type,
-        stage: 'egg',
-        color: '#fbbf24',
+        stage: "egg",
+        color: "#fbbf24",
         arrivedAt,
         happiness: 0,
         position: getRandomPosition(existingPositions),
@@ -262,9 +290,9 @@ export function useInnerWorld() {
   // Feed creatures (increases happiness)
   // Use functional update to prevent race conditions
   const feedCreatures = useCallback(() => {
-    setWorld(prev => ({
+    setWorld((prev) => ({
       ...prev,
-      creatures: prev.creatures.map(creature => {
+      creatures: prev.creatures.map((creature) => {
         const newHappiness = Math.min(100, creature.happiness + 10);
         return {
           ...creature,
@@ -281,51 +309,50 @@ export function useInnerWorld() {
 
   // Earn treats from activities
   // Use functional update to prevent race conditions
-  const earnTreats = useCallback((
-    source: TreatSource,
-    baseAmount: number,
-    description?: string
-  ) => {
-    const transactionId = generateId();
-    const now = Date.now();
-    let result = { earned: 0, bonus: 0, multiplier: 1, newBalance: 0 };
+  const earnTreats = useCallback(
+    (source: TreatSource, baseAmount: number, description?: string) => {
+      const transactionId = generateId();
+      const now = Date.now();
+      let result = { earned: 0, bonus: 0, multiplier: 1, newBalance: 0 };
 
-    setWorld(prev => {
-      const streakDays = prev.currentActiveStreak;
-      const { total, bonus, multiplier } = calculateTreatsEarned(baseAmount, streakDays);
+      setWorld((prev) => {
+        const streakDays = prev.currentActiveStreak;
+        const { total, bonus, multiplier } = calculateTreatsEarned(baseAmount, streakDays);
 
-      const transaction: TreatTransaction = {
-        id: transactionId,
-        amount: total,
-        source,
-        timestamp: now,
-        description: description || `${source} +${total}`,
-      };
+        const transaction: TreatTransaction = {
+          id: transactionId,
+          amount: total,
+          source,
+          timestamp: now,
+          description: description || `${source} +${total}`,
+        };
 
-      // Keep only last 50 transactions
-      const transactions = [transaction, ...(prev.treats?.transactions || [])].slice(0, 50);
+        // Keep only last 50 transactions
+        const transactions = [transaction, ...(prev.treats?.transactions || [])].slice(0, 50);
 
-      const newBalance = (prev.treats?.balance || 0) + total;
-      result = { earned: total, bonus, multiplier, newBalance };
+        const newBalance = (prev.treats?.balance || 0) + total;
+        result = { earned: total, bonus, multiplier, newBalance };
 
-      return {
-        ...prev,
-        treats: {
-          balance: newBalance,
-          lifetimeEarned: (prev.treats?.lifetimeEarned || 0) + total,
-          lifetimeSpent: prev.treats?.lifetimeSpent || 0,
-          lastEarnedAt: now,
-          transactions,
-        },
-      };
-    });
+        return {
+          ...prev,
+          treats: {
+            balance: newBalance,
+            lifetimeEarned: (prev.treats?.lifetimeEarned || 0) + total,
+            lifetimeSpent: prev.treats?.lifetimeSpent || 0,
+            lastEarnedAt: now,
+            transactions,
+          },
+        };
+      });
 
-    return result;
-  }, [setWorld]);
+      return result;
+    },
+    [setWorld]
+  );
 
   // Plant a rest flower when rest mode is activated (IA Blueprint Phase 6.3)
   const plantRestFlower = useCallback(() => {
-    plantSeed('rest');
+    plantSeed("rest");
   }, [plantSeed]);
 
   // Wrapped activateRestMode: also plants a rest flower on success
