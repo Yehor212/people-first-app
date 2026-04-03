@@ -19,7 +19,7 @@ const ScheduleTimeline = lazyWithRetry(
   "ScheduleTimeline"
 );
 const JournalModule = lazyWithRetry(
-  () => import("@/features/journal").then((m) => ({ default: m.JournalModule })),
+  () => import("@/features/journal/JournalModule").then((m) => ({ default: m.JournalModule })),
   "JournalModule"
 );
 const BreathingExercise = lazyWithRetry(
