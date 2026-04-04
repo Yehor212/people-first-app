@@ -240,6 +240,12 @@
             "command": "node .claude/hooks/satisficing-gate.cjs",
             "timeout": 5000,
             "statusMessage": "Satisficing detector..."
+          },
+          {
+            "type": "command",
+            "command": "node .claude/hooks/anti-skip-gate.cjs",
+            "timeout": 15000,
+            "statusMessage": "Anti-skip enforcement (tasks + type assertions + plan coverage)..."
           }
         ]
       }

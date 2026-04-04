@@ -17,6 +17,7 @@ export interface MoodEntry {
   logType?: MoodLogType;     // 'momentary' | 'overall'
   emotionTags?: string[];    // e.g. ['anxious', 'hopeful']
   contexts?: string[];       // e.g. ['work', 'health']
+  updatedAt?: number;          // Sync timestamp for cross-device merge
 }
 
 // ============================================
@@ -165,6 +166,7 @@ export interface GratitudeEntry {
   text: string;
   date: string;
   timestamp: number;
+  updatedAt?: number;
 }
 
 export interface FocusSession {
@@ -175,6 +177,7 @@ export interface FocusSession {
   label?: string;
   status?: 'completed' | 'aborted';
   reflection?: number;
+  updatedAt?: number;
 }
 
 export interface UserStats {

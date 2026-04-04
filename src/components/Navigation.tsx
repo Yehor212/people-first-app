@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { memo, useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Home, Settings, BookOpen, BarChart3, Compass, Repeat } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -13,7 +13,7 @@ interface NavigationProps {
   habitHubEnabled?: boolean;
 }
 
-export function Navigation({ activeTab, onTabChange, canvasEnabled, habitHubEnabled }: NavigationProps) {
+export const Navigation = memo(function Navigation({ activeTab, onTabChange, canvasEnabled, habitHubEnabled }: NavigationProps) {
   const { t } = useLanguage();
   const [keyboardOpen, setKeyboardOpen] = useState(false);
 
@@ -81,4 +81,4 @@ export function Navigation({ activeTab, onTabChange, canvasEnabled, habitHubEnab
       </div>
     </nav>
   );
-}
+});

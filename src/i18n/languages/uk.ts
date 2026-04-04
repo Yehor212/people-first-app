@@ -1178,7 +1178,7 @@ export const uk: Translations = {
   comebackChallengeComplete: "Челендж повернення завершено!",
   questPrefix: "Квест",
 
-  dopamineSettings: "Dopamine Dashboard",
+  dopamineSettings: "Панель дофаміну",
   dopamineSettingsDesc: "Налаштуйте рівень зворотного зв'язку",
   dopamineIntensity: "Рівень інтенсивності",
   dopamineMinimal: "Мінімум",

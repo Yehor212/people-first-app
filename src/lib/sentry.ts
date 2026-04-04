@@ -52,7 +52,7 @@ export function initSentry(): void {
         maskAllText: true,
         maskAllInputs: true,
         blockAllMedia: true,
-      }),
+      })
     );
   }
 
@@ -95,9 +95,7 @@ export function initSentry(): void {
         // Filter out handled chunk load errors
         // These are shown to user via UpdateRequiredDialog
         const isChunkError =
-          error.message?.includes(
-            "Failed to fetch dynamically imported module",
-          ) ||
+          error.message?.includes("Failed to fetch dynamically imported module") ||
           error.message?.includes("Loading chunk") ||
           error.message?.includes("Loading CSS chunk");
 
@@ -138,9 +136,7 @@ export function initSentry(): void {
         event.breadcrumbs = event.breadcrumbs.map((bc) => ({
           ...bc,
           message: bc.message ? scrubString(bc.message) : bc.message,
-          data: bc.data
-            ? JSON.parse(scrubString(JSON.stringify(bc.data)))
-            : bc.data,
+          data: bc.data ? JSON.parse(scrubString(JSON.stringify(bc.data))) : bc.data,
         }));
       }
 
@@ -152,9 +148,7 @@ export function initSentry(): void {
         const headers: Record<string, string> = {};
         for (const [key, value] of Object.entries(event.request.headers)) {
           headers[key] =
-            key.toLowerCase() === "authorization"
-              ? "[REDACTED]"
-              : scrubString(String(value));
+            key.toLowerCase() === "authorization" ? "[REDACTED]" : scrubString(String(value));
         }
         event.request.headers = headers;
       }
@@ -198,10 +192,7 @@ export type ErrorCategory =
 /**
  * Capture a custom error with context
  */
-export function captureError(
-  error: Error,
-  context?: Record<string, unknown>,
-): void {
+export function captureError(error: Error, context?: Record<string, unknown>): void {
   Sentry.captureException(error, {
     extra: context,
   });
@@ -214,7 +205,7 @@ export function captureError(
 export function captureErrorWithCategory(
   error: Error,
   category: ErrorCategory,
-  context?: Record<string, unknown>,
+  context?: Record<string, unknown>
 ): void {
   Sentry.withScope((scope) => {
     scope.setTag("category", category);
@@ -226,10 +217,7 @@ export function captureErrorWithCategory(
     } else if (error.message.includes("Database deleted")) {
       scope.setTag("error_type", "database_deleted");
       scope.setExtra("likely_cause", "User cleared site data or Safari ITP");
-    } else if (
-      error.message.includes("chunk") ||
-      error.message.includes("module")
-    ) {
+    } else if (error.message.includes("chunk") || error.message.includes("module")) {
       scope.setTag("error_type", "chunk_load");
       scope.setExtra("likely_cause", "Version mismatch after deployment");
     }
@@ -249,7 +237,7 @@ export function addCategorizedBreadcrumb(
   category: ErrorCategory,
   message: string,
   data?: Record<string, unknown>,
-  level: Sentry.SeverityLevel = "info",
+  level: Sentry.SeverityLevel = "info"
 ): void {
   Sentry.addBreadcrumb({
     category,
@@ -262,10 +250,7 @@ export function addCategorizedBreadcrumb(
 /**
  * Capture a custom message
  */
-export function captureMessage(
-  message: string,
-  level: Sentry.SeverityLevel = "info",
-): void {
+export function captureMessage(message: string, level: Sentry.SeverityLevel = "info"): void {
   Sentry.captureMessage(message, level);
 }
 
@@ -292,3 +277,9 @@ export function clearUserContext(): void {
 
 // Re-export Sentry's ErrorBoundary for use in App.tsx
 export { ErrorBoundary } from "@sentry/react";
+
+/**
+ * Re-export addBreadcrumb so all consumers import from @/lib/sentry
+ * instead of @sentry/react directly (enables tree-shaking).
+ */
+export { addBreadcrumb } from "@sentry/react";

@@ -116,30 +116,34 @@ process.stdin.on('end', () => {
     } catch {}
   }
 
-  // Check 4: Ruflo usage — ALWAYS checked (WARNING normal, BLOCK audit)
+  // Check 4: Ruflo usage — ALWAYS BLOCKING (user: "ТОЛЬКО БЛОКІНГ")
   const RUFLO_STAMP = path.join(ROOT, '.ruflo-last-action');
   const isAudit = fs.existsSync(AUDIT_FLAG);
   if (!fs.existsSync(RUFLO_STAMP)) {
-    if (isAudit) {
-      writeEvidence('BLOCKED', 'no ruflo activity');
-      process.stderr.write('\n❌ FAST RUFLO GATE: No Ruflo activity during audit session.\n');
-      process.exit(2);
-    } else {
-      process.stderr.write('\n⚠️ RUFLO ADVISORY: No Ruflo activity this session. Use mcp__ruflo__memory_search.\n');
-    }
+    writeEvidence('BLOCKED', 'no ruflo activity');
+    process.stderr.write('\n❌ FAST RUFLO GATE: No Ruflo activity. Run mcp__ruflo__guidance_workflow first.\n');
+    process.exit(2);
   }
   if (fs.existsSync(RUFLO_STAMP)) {
     try {
       const data = JSON.parse(fs.readFileSync(RUFLO_STAMP, 'utf8'));
-      const age = Date.now() - data.timestamp;
+      // FIX: .ruflo-last-action uses `lastAction` not `timestamp` — was dead code (NaN comparison)
+      const age = Date.now() - (data.lastAction || data.timestamp || 0);
       if (age > 60 * 60 * 1000) { // 1 hour stale
-        if (isAudit) {
-          writeEvidence('BLOCKED', 'ruflo stale >1h');
-          process.stderr.write('\n❌ FAST RUFLO GATE: Ruflo last used >1 hour ago.\n');
-          process.exit(2);
-        } else {
-          process.stderr.write('\n⚠️ RUFLO ADVISORY: Last Ruflo action >1 hour ago.\n');
-        }
+        writeEvidence('BLOCKED', 'ruflo stale >1h');
+        process.stderr.write('\n❌ FAST RUFLO GATE: Ruflo last used >1 hour ago. Refresh with mcp__ruflo__memory_search.\n');
+        process.exit(2);
+      }
+      // CHECK 4b: ALL 16 area coverage (v3 — zero skips)
+      const { countRufloAreas, TOTAL_AREAS: TOTAL_16 } = require('./hook-utils.cjs');
+      const { usedCount: areaCount, missingAreas: areaMissing } = countRufloAreas(data);
+      if (areaCount < TOTAL_16) {
+        writeEvidence('BLOCKED', `ruflo areas ${areaCount}/${TOTAL_16}`);
+        process.stderr.write(
+          `\n❌ FAST RUFLO ALL-16 GATE: ${areaCount}/${TOTAL_16} areas (need ALL 16).\n` +
+          `  Missing ${areaMissing.length}: [${areaMissing.join(', ')}]\n`
+        );
+        process.exit(2);
       }
     } catch {}
   }

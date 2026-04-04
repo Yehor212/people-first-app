@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { useUIStore, useUserDataStore, getModalToggle } from '@/stores';
 import { ConfettiBurst } from '@/components/ConfettiBurst';
 import { ConsentBanner } from '@/components/ConsentBanner';
@@ -18,7 +19,7 @@ interface OverlayLayerProps {
 
 const setShowWelcomeOverlay = getModalToggle('showWelcomeOverlay');
 const setShowWelcomeBack = getModalToggle('showWelcomeBack');
-export function OverlayLayer({ awardXp, earnTreats }: OverlayLayerProps) {
+export const OverlayLayer = memo(function OverlayLayer({ awardXp, earnTreats }: OverlayLayerProps) {
   const confettiBurst = useUIStore(s => s.confettiBurst);
   const setConfettiBurst = useUIStore(s => s.setConfettiBurst);
   const showWelcomeOverlay = useUIStore(s => s.showWelcomeOverlay);
@@ -108,4 +109,4 @@ export function OverlayLayer({ awardXp, earnTreats }: OverlayLayerProps) {
       <StorageErrorBanner />
     </>
   );
-}
+});

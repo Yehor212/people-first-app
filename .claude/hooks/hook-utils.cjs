@@ -113,6 +113,63 @@ function truncateInjection(text, maxLen) {
   return text.slice(0, limit) + '\n... (truncated to ' + limit + ' chars)';
 }
 
+/**
+ * ALL 16 MANDATORY Ruflo areas (v3 — zero skips).
+ * Shared across: ruflo-enforcer, anti-skip-gate, stop-tsc-gate,
+ * independent-verifier, commit-gate.
+ * Verified functional 2026-04-04 (v3.5.48).
+ */
+const ALL_16_AREAS = {
+  'memory-knowledge':       ['ruflo__memory_', 'ruflo__agentdb_'],
+  'intelligence-learning':  ['ruflo__neural_', 'ruflo__daa_'],
+  'guidance':               ['ruflo__guidance_'],
+  'code-analysis':          ['ruflo__analyze_'],
+  'security':               ['ruflo__aidefence_', 'ruflo__claims_'],
+  'performance':            ['ruflo__performance_'],
+  'embeddings-vectors':     ['ruflo__embeddings_'],
+  'config-system':          ['ruflo__config_'],
+  'hooks-automation':       ['ruflo__hooks_'],
+  'session-workflow':       ['ruflo__session_', 'ruflo__workflow_'],
+  'agent-management':       ['ruflo__agent_'],
+  'swarm-orchestration':    ['ruflo__swarm_'],
+  'hive-mind':              ['ruflo__hive-mind_'],
+  'wasm-agents':            ['ruflo__wasm_'],
+  'ruvllm-inference':       ['ruflo__ruvllm_'],
+  'github-integration':     ['ruflo__github_'],
+};
+const ALL_16_NAMES = Object.keys(ALL_16_AREAS);
+const TOTAL_AREAS = ALL_16_NAMES.length; // 16
+
+/**
+ * Count used areas from .ruflo-last-action state.
+ * Returns { usedCount, missingCount, usedAreas, missingAreas }.
+ */
+function countRufloAreas(rufloState) {
+  const areas = rufloState?.areas || {};
+  const used = ALL_16_NAMES.filter(a => areas[a]?.count > 0);
+  const missing = ALL_16_NAMES.filter(a => !areas[a] || areas[a].count === 0);
+
+  // Fallback: derive from toolLog if areas field empty (backward compat)
+  if (used.length === 0 && Array.isArray(rufloState?.toolLog) && rufloState.toolLog.length > 0) {
+    const derived = new Set();
+    for (const entry of rufloState.toolLog) {
+      const tool = entry.tool || '';
+      for (const [area, prefixes] of Object.entries(ALL_16_AREAS)) {
+        if (prefixes.some(p => tool.includes(p))) derived.add(area);
+      }
+    }
+    const derivedArr = [...derived];
+    return {
+      usedCount: derivedArr.length,
+      missingCount: TOTAL_AREAS - derivedArr.length,
+      usedAreas: derivedArr,
+      missingAreas: ALL_16_NAMES.filter(a => !derived.has(a)),
+    };
+  }
+
+  return { usedCount: used.length, missingCount: missing.length, usedAreas: used, missingAreas: missing };
+}
+
 module.exports = {
   atomicWrite,
   safeJsonParse,
@@ -121,6 +178,10 @@ module.exports = {
   logBlock,
   checkStale,
   truncateInjection,
+  countRufloAreas,
+  ALL_16_AREAS,
+  ALL_16_NAMES,
+  TOTAL_AREAS,
   ROOT,
   AUDIT_LOG,
 };

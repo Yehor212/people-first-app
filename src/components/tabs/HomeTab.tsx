@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { memo, useMemo, useState } from 'react';
 import { motion } from "framer-motion";
 import { Header } from "@/components/Header";
 import { PullToRefresh } from "@/components/PullToRefresh";
@@ -47,7 +47,7 @@ interface HomeTabProps {
   moodRef: React.RefObject<HTMLDivElement | null>;
 }
 
-export function HomeTab({
+export const HomeTab = memo(function HomeTab({
   currentActiveStreak,
   isRestMode,
   activateRestMode,
@@ -218,4 +218,4 @@ export function HomeTab({
       />
     </div>
   );
-}
+});

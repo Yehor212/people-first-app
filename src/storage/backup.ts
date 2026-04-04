@@ -9,9 +9,17 @@ import {
   focusSessionSchema,
   gratitudeEntrySchema,
   settingSchema,
-  safeValidate
+  safeValidate,
 } from "@/lib/validation";
-import { getDeletedHabitIds, mergeDeletedHabitIds, getDeletedJournalEntryIds, mergeDeletedJournalEntryIds } from "@/storage/deletionTracker";
+import {
+  getDeletedHabitIds,
+  mergeDeletedHabitIds,
+  getDeletedJournalEntryIds,
+  mergeDeletedJournalEntryIds,
+  getDeletedMoodIds,
+  getDeletedFocusSessionIds,
+  getDeletedGratitudeIds,
+} from "@/storage/deletionTracker";
 
 export type ImportMode = "merge" | "replace";
 
@@ -93,7 +101,9 @@ export const BACKUP_SCHEMA_VERSION = 3;
 const getOrCreateDeviceId = async () => {
   const existing = await db.settings.get("zenflow-device-id");
   if (existing?.value) {
-    return typeof existing.value === 'string' ? existing.value : String(existing.value as string | number | boolean);
+    return typeof existing.value === "string"
+      ? existing.value
+      : String(existing.value as string | number | boolean);
   }
   const deviceId = `device_${generateId()}`;
   await db.settings.put({ key: "zenflow-device-id", value: deviceId });
@@ -110,16 +120,34 @@ export const exportBackup = async (): Promise<BackupPayloadV3> => {
   const deviceId = await getOrCreateDeviceId();
 
   // Get deleted IDs to include in backup (cross-device deletion propagation)
-  const deletedHabitIds = [...await getDeletedHabitIds()];
-  const deletedJournalEntryIds = [...await getDeletedJournalEntryIds()];
+  const deletedHabitIds = [...(await getDeletedHabitIds())];
+  const deletedJournalEntryIds = [...(await getDeletedJournalEntryIds())];
 
   // Use Dexie transaction for atomic point-in-time snapshot
   // This ensures all data is read consistently without interleaved writes
   const data = await db.transaction(
-    'r',
-    [db.moods, db.habits, db.focusSessions, db.gratitudeEntries, db.settings, db.journalEntries, db.journalPhotos, db.journalAudio],
+    "r",
+    [
+      db.moods,
+      db.habits,
+      db.focusSessions,
+      db.gratitudeEntries,
+      db.settings,
+      db.journalEntries,
+      db.journalPhotos,
+      db.journalAudio,
+    ],
     async () => {
-      const [moods, habits, focusSessions, gratitudeEntries, settings, journalEntries, journalPhotos, journalAudio] = await Promise.all([
+      const [
+        moods,
+        habits,
+        focusSessions,
+        gratitudeEntries,
+        settings,
+        journalEntries,
+        journalPhotos,
+        journalAudio,
+      ] = await Promise.all([
         db.moods.toArray(),
         db.habits.toArray(),
         db.focusSessions.toArray(),
@@ -132,17 +160,26 @@ export const exportBackup = async (): Promise<BackupPayloadV3> => {
 
       // Optimize: strip base64 data from media that has been uploaded to Storage
       // The binary data lives in Supabase Storage buckets and can be re-downloaded
-      const optimizedPhotos = journalPhotos.map(p => ({
+      const optimizedPhotos = journalPhotos.map((p) => ({
         ...p,
-        data: p.storagePath ? '' : p.data,
-        thumbnail: p.storagePath ? '' : p.thumbnail,
+        data: p.storagePath ? "" : p.data,
+        thumbnail: p.storagePath ? "" : p.thumbnail,
       }));
-      const optimizedAudio = journalAudio.map(a => ({
+      const optimizedAudio = journalAudio.map((a) => ({
         ...a,
-        data: a.storagePath ? '' : a.data,
+        data: a.storagePath ? "" : a.data,
       }));
 
-      return { moods, habits, focusSessions, gratitudeEntries, settings, journalEntries, journalPhotos: optimizedPhotos, journalAudio: optimizedAudio };
+      return {
+        moods,
+        habits,
+        focusSessions,
+        gratitudeEntries,
+        settings,
+        journalEntries,
+        journalPhotos: optimizedPhotos,
+        journalAudio: optimizedAudio,
+      };
     }
   );
 
@@ -172,7 +209,12 @@ const normalizeBackup = (payload: BackupPayload) => {
       schemaVersion: BACKUP_SCHEMA_VERSION,
       createdAt: (payload as BackupPayloadV1).exportedAt || new Date().toISOString(),
       deviceId: "legacy",
-      data: { ...payload.data, journalEntries: [] as JournalEntry[], journalPhotos: [] as JournalPhoto[], journalAudio: [] as JournalAudio[] }
+      data: {
+        ...payload.data,
+        journalEntries: [] as JournalEntry[],
+        journalPhotos: [] as JournalPhoto[],
+        journalAudio: [] as JournalAudio[],
+      },
     };
   }
   const p = payload as BackupPayloadV2 | BackupPayloadV3;
@@ -182,17 +224,62 @@ const normalizeBackup = (payload: BackupPayload) => {
     deviceId: p.deviceId || "unknown",
     data: {
       ...p.data,
-      journalEntries: ('journalEntries' in p.data ? p.data.journalEntries : undefined) || [],
-      journalPhotos: ('journalPhotos' in p.data ? p.data.journalPhotos : undefined) || [],
-      journalAudio: ('journalAudio' in p.data ? p.data.journalAudio : undefined) || [],
-    }
+      journalEntries: ("journalEntries" in p.data ? p.data.journalEntries : undefined) || [],
+      journalPhotos: ("journalPhotos" in p.data ? p.data.journalPhotos : undefined) || [],
+      journalAudio: ("journalAudio" in p.data ? p.data.journalAudio : undefined) || [],
+    },
   };
 };
 
-export const importBackup = async (payload: BackupPayload, mode: ImportMode): Promise<ImportReport> => {
+/**
+ * Merge incoming items with local by timestamp. Keeps newer per-item.
+ * Items in deletedIds are skipped (prevent re-import of deleted data).
+ */
+export async function mergeByTimestamp<T extends { id: string }>(
+  table: import("dexie").Table<T, string>,
+  incoming: T[],
+  getTime: (item: T) => number,
+  deletedIds?: Set<string>
+): Promise<void> {
+  if (!incoming.length) return;
+
+  const localItems = await table.toArray();
+  const localMap = new Map(localItems.map((item) => [item.id, item]));
+
+  const merged = incoming
+    .filter((remote) => !deletedIds?.has(remote.id))
+    .map((remote) => {
+      const local = localMap.get(remote.id);
+      if (!local) return remote;
+
+      const localTime = getTime(local);
+      const remoteTime = getTime(remote);
+
+      // Keep newer; ties go to remote (cloud authority). NaN guard: invalid timestamps default to 0.
+      const safeLocal = Number.isFinite(localTime) ? localTime : 0;
+      const safeRemote = Number.isFinite(remoteTime) ? remoteTime : 0;
+      return safeLocal > safeRemote ? local : remote;
+    });
+
+  if (merged.length) await table.bulkPut(merged);
+}
+
+export const importBackup = async (
+  payload: BackupPayload,
+  mode: ImportMode
+): Promise<ImportReport> => {
   const normalized = normalizeBackup(payload);
 
-  const { moods, habits, focusSessions, gratitudeEntries, settings, journalEntries, journalPhotos, journalAudio } = normalized.data;
+  const {
+    moods,
+    habits,
+    focusSessions,
+    gratitudeEntries,
+    settings,
+    journalEntries,
+    journalPhotos,
+    journalAudio,
+  } = normalized.data;
 
   // Type-safe validation using Zod schemas
   const validateAndSanitize = <T>(
@@ -228,51 +315,86 @@ export const importBackup = async (payload: BackupPayload, mode: ImportMode): Pr
   const validMoods = validateAndSanitize<MoodEntry>(moods, moodEntrySchema);
   const validHabits = validateAndSanitize<Habit>(habits, habitSchema);
   const validFocus = validateAndSanitize<FocusSession>(focusSessions, focusSessionSchema);
-  const validGratitude = validateAndSanitize<GratitudeEntry>(gratitudeEntries, gratitudeEntrySchema);
-  const validSettings = validateAndSanitize<{ key: string; value: unknown }>(settings, settingSchema);
+  const validGratitude = validateAndSanitize<GratitudeEntry>(
+    gratitudeEntries,
+    gratitudeEntrySchema
+  );
+  const validSettings = validateAndSanitize<{ key: string; value: unknown }>(
+    settings,
+    settingSchema
+  );
 
   // Journal entries: lightweight validation (no Zod schema, just basic shape check)
   const validJournalEntries = (journalEntries || []).filter(
-    (e) => !!e && typeof e === 'object' && typeof e.id === 'string' && typeof e.date === 'string'
+    (e) => !!e && typeof e === "object" && typeof e.id === "string" && typeof e.date === "string"
   );
   const validJournalPhotos = (journalPhotos || []).filter(
-    (p) => !!p && typeof p === 'object' && typeof p.id === 'string' && typeof p.entryId === 'string'
+    (p) => !!p && typeof p === "object" && typeof p.id === "string" && typeof p.entryId === "string"
   );
   const validJournalAudio = (journalAudio || []).filter(
-    (a) => !!a && typeof a === 'object' && typeof a.id === 'string' && typeof a.entryId === 'string'
+    (a) => !!a && typeof a === "object" && typeof a.id === "string" && typeof a.entryId === "string"
   );
 
   if (mode === "replace") {
-    await db.transaction("rw", [db.moods, db.habits, db.focusSessions, db.gratitudeEntries, db.settings, db.journalEntries, db.journalPhotos, db.journalAudio], async () => {
-      await db.moods.clear();
-      await db.habits.clear();
-      await db.focusSessions.clear();
-      await db.gratitudeEntries.clear();
-      await db.settings.clear();
-      await db.journalEntries.clear();
-      await db.journalPhotos.clear();
-      await db.journalAudio.clear();
+    await db.transaction(
+      "rw",
+      [
+        db.moods,
+        db.habits,
+        db.focusSessions,
+        db.gratitudeEntries,
+        db.settings,
+        db.journalEntries,
+        db.journalPhotos,
+        db.journalAudio,
+      ],
+      async () => {
+        await db.moods.clear();
+        await db.habits.clear();
+        await db.focusSessions.clear();
+        await db.gratitudeEntries.clear();
+        await db.settings.clear();
+        await db.journalEntries.clear();
+        await db.journalPhotos.clear();
+        await db.journalAudio.clear();
 
-      if (validMoods.valid.length) await db.moods.bulkAdd(validMoods.valid);
-      if (validHabits.valid.length) await db.habits.bulkAdd(validHabits.valid);
-      if (validFocus.valid.length) await db.focusSessions.bulkAdd(validFocus.valid);
-      if (validGratitude.valid.length) await db.gratitudeEntries.bulkAdd(validGratitude.valid);
-      if (validSettings.valid.length) await db.settings.bulkAdd(validSettings.valid);
-      if (validJournalEntries.length) await db.journalEntries.bulkAdd(validJournalEntries);
-      if (validJournalPhotos.length) await db.journalPhotos.bulkAdd(validJournalPhotos);
-      if (validJournalAudio.length) await db.journalAudio.bulkAdd(validJournalAudio);
-    });
+        if (validMoods.valid.length) await db.moods.bulkAdd(validMoods.valid);
+        if (validHabits.valid.length) await db.habits.bulkAdd(validHabits.valid);
+        if (validFocus.valid.length) await db.focusSessions.bulkAdd(validFocus.valid);
+        if (validGratitude.valid.length) await db.gratitudeEntries.bulkAdd(validGratitude.valid);
+        if (validSettings.valid.length) await db.settings.bulkAdd(validSettings.valid);
+        if (validJournalEntries.length) await db.journalEntries.bulkAdd(validJournalEntries);
+        if (validJournalPhotos.length) await db.journalPhotos.bulkAdd(validJournalPhotos);
+        if (validJournalAudio.length) await db.journalAudio.bulkAdd(validJournalAudio);
+      }
+    );
 
     return {
       mode,
       moods: { added: validMoods.valid.length, updated: 0, skipped: validMoods.skipped },
       habits: { added: validHabits.valid.length, updated: 0, skipped: validHabits.skipped },
       focusSessions: { added: validFocus.valid.length, updated: 0, skipped: validFocus.skipped },
-      gratitudeEntries: { added: validGratitude.valid.length, updated: 0, skipped: validGratitude.skipped },
+      gratitudeEntries: {
+        added: validGratitude.valid.length,
+        updated: 0,
+        skipped: validGratitude.skipped,
+      },
       settings: { added: validSettings.valid.length, updated: 0, skipped: validSettings.skipped },
-      journalEntries: { added: validJournalEntries.length, updated: 0, skipped: (journalEntries || []).length - validJournalEntries.length },
-      journalPhotos: { added: validJournalPhotos.length, updated: 0, skipped: (journalPhotos || []).length - validJournalPhotos.length },
-      journalAudio: { added: validJournalAudio.length, updated: 0, skipped: (journalAudio || []).length - validJournalAudio.length },
+      journalEntries: {
+        added: validJournalEntries.length,
+        updated: 0,
+        skipped: (journalEntries || []).length - validJournalEntries.length,
+      },
+      journalPhotos: {
+        added: validJournalPhotos.length,
+        updated: 0,
+        skipped: (journalPhotos || []).length - validJournalPhotos.length,
+      },
+      journalAudio: {
+        added: validJournalAudio.length,
+        updated: 0,
+        skipped: (journalAudio || []).length - validJournalAudio.length,
+      },
     };
   }
 
@@ -281,7 +403,7 @@ export const importBackup = async (payload: BackupPayload, mode: ImportMode): Pr
     db.habits.toCollection().primaryKeys(),
     db.focusSessions.toCollection().primaryKeys(),
     db.gratitudeEntries.toCollection().primaryKeys(),
-    db.settings.toCollection().primaryKeys()
+    db.settings.toCollection().primaryKeys(),
   ]);
 
   const moodKeySet = new Set(moodKeys);
@@ -311,95 +433,143 @@ export const importBackup = async (payload: BackupPayload, mode: ImportMode): Pr
   const journalEntryKeySet = new Set(journalEntryKeys);
   const journalPhotoKeySet = new Set(journalPhotoKeys);
   const journalAudioKeySet = new Set(journalAudioKeys);
-  const journalEntryAdds = validJournalEntries.filter(e => !journalEntryKeySet.has(e.id)).length;
-  const journalPhotoAdds = validJournalPhotos.filter(p => !journalPhotoKeySet.has(p.id)).length;
-  const journalAudioAdds = validJournalAudio.filter(a => !journalAudioKeySet.has(a.id)).length;
+  const journalEntryAdds = validJournalEntries.filter((e) => !journalEntryKeySet.has(e.id)).length;
+  const journalPhotoAdds = validJournalPhotos.filter((p) => !journalPhotoKeySet.has(p.id)).length;
+  const journalAudioAdds = validJournalAudio.filter((a) => !journalAudioKeySet.has(a.id)).length;
 
-  await db.transaction("rw", [db.moods, db.habits, db.focusSessions, db.gratitudeEntries, db.settings, db.journalEntries, db.journalPhotos, db.journalAudio], async () => {
-    if (validMoods.valid.length) await db.moods.bulkPut(validMoods.valid);
-
-    // For habits: use timestamp-based conflict resolution + deletion tracking
-    if (validHabits.valid.length) {
-      const localHabits = await db.habits.toArray();
-      const localHabitMap = new Map(localHabits.map(h => [h.id, h]));
-
-      // Get locally deleted habit IDs — never re-import these
-      const deletedIds = await getDeletedHabitIds();
-
-      const mergedHabits = validHabits.valid
-        .filter(remoteHabit => !deletedIds.has(remoteHabit.id))
-        .map(remoteHabit => {
-          const localHabit = localHabitMap.get(remoteHabit.id);
-
-          // If no local habit exists, use remote
-          if (!localHabit) return remoteHabit;
-
-          // Compare timestamps - keep the more recent version
-          const localTime = localHabit.updatedAt ? new Date(localHabit.updatedAt).getTime() : 0;
-          const remoteTime = remoteHabit.updatedAt ? new Date(remoteHabit.updatedAt).getTime() : 0;
-
-          // If local is newer, preserve local data (don't overwrite with stale remote)
-          if (localTime > remoteTime) {
-            return localHabit;
-          }
-
-          return remoteHabit;
-        });
-
-      await db.habits.bulkPut(mergedHabits);
-    }
-
-    if (validFocus.valid.length) await db.focusSessions.bulkPut(validFocus.valid);
-    if (validGratitude.valid.length) await db.gratitudeEntries.bulkPut(validGratitude.valid);
-    if (validSettings.valid.length) await db.settings.bulkPut(validSettings.valid);
-    // For journal entries: filter out locally deleted entries before merging
-    if (validJournalEntries.length) {
-      const deletedEntryIds = await getDeletedJournalEntryIds();
-      const filteredEntries = deletedEntryIds.size > 0
-        ? validJournalEntries.filter(e => !deletedEntryIds.has(e.id))
-        : validJournalEntries;
-      if (filteredEntries.length) await db.journalEntries.bulkPut(filteredEntries);
-
-      // Also filter photos/audio belonging to deleted entries
-      const deletedEntryIdSet = deletedEntryIds;
-      if (validJournalPhotos.length) {
-        const filteredPhotos = deletedEntryIdSet.size > 0
-          ? validJournalPhotos.filter(p => !deletedEntryIdSet.has(p.entryId))
-          : validJournalPhotos;
-        if (filteredPhotos.length) await db.journalPhotos.bulkPut(filteredPhotos);
+  await db.transaction(
+    "rw",
+    [
+      db.moods,
+      db.habits,
+      db.focusSessions,
+      db.gratitudeEntries,
+      db.settings,
+      db.journalEntries,
+      db.journalPhotos,
+      db.journalAudio,
+    ],
+    async () => {
+      if (validMoods.valid.length) {
+        const deletedMoodIds = await getDeletedMoodIds();
+        await mergeByTimestamp(
+          db.moods,
+          validMoods.valid,
+          (m) => m.updatedAt || m.timestamp || 0,
+          deletedMoodIds
+        );
       }
-      if (validJournalAudio.length) {
-        const filteredAudio = deletedEntryIdSet.size > 0
-          ? validJournalAudio.filter(a => !deletedEntryIdSet.has(a.entryId))
-          : validJournalAudio;
-        if (filteredAudio.length) await db.journalAudio.bulkPut(filteredAudio);
-      }
-    } else {
-      if (validJournalPhotos.length) await db.journalPhotos.bulkPut(validJournalPhotos);
-      if (validJournalAudio.length) await db.journalAudio.bulkPut(validJournalAudio);
-    }
-  });
 
-  // Handle cross-device deletion propagation:
-  // If the remote backup includes deletedHabitIds, apply them locally
+      // For habits: use timestamp-based conflict resolution + deletion tracking
+      if (validHabits.valid.length) {
+        const localHabits = await db.habits.toArray();
+        const localHabitMap = new Map(localHabits.map((h) => [h.id, h]));
+
+        // Get locally deleted habit IDs — never re-import these
+        const deletedIds = await getDeletedHabitIds();
+
+        const mergedHabits = validHabits.valid
+          .filter((remoteHabit) => !deletedIds.has(remoteHabit.id))
+          .map((remoteHabit) => {
+            const localHabit = localHabitMap.get(remoteHabit.id);
+
+            // If no local habit exists, use remote
+            if (!localHabit) return remoteHabit;
+
+            // Compare timestamps - keep the more recent version
+            const localTime = localHabit.updatedAt ? new Date(localHabit.updatedAt).getTime() : 0;
+            const remoteTime = remoteHabit.updatedAt
+              ? new Date(remoteHabit.updatedAt).getTime()
+              : 0;
+
+            // If local is newer, preserve local data (don't overwrite with stale remote)
+            if (localTime > remoteTime) {
+              return localHabit;
+            }
+
+            return remoteHabit;
+          });
+
+        await db.habits.bulkPut(mergedHabits);
+      }
+
+      if (validFocus.valid.length) {
+        const deletedFocusIds = await getDeletedFocusSessionIds();
+        await mergeByTimestamp(
+          db.focusSessions,
+          validFocus.valid,
+          (f) => f.updatedAt || f.completedAt || 0,
+          deletedFocusIds
+        );
+      }
+      if (validGratitude.valid.length) {
+        const deletedGratitudeIds = await getDeletedGratitudeIds();
+        await mergeByTimestamp(
+          db.gratitudeEntries,
+          validGratitude.valid,
+          (g) => g.updatedAt || g.timestamp || 0,
+          deletedGratitudeIds
+        );
+      }
+      if (validSettings.valid.length) await db.settings.bulkPut(validSettings.valid);
+      // For journal entries: filter out locally deleted entries before merging
+      if (validJournalEntries.length) {
+        const deletedEntryIds = await getDeletedJournalEntryIds();
+        const filteredEntries =
+          deletedEntryIds.size > 0
+            ? validJournalEntries.filter((e) => !deletedEntryIds.has(e.id))
+            : validJournalEntries;
+        if (filteredEntries.length) await db.journalEntries.bulkPut(filteredEntries);
+
+        // Also filter photos/audio belonging to deleted entries
+        const deletedEntryIdSet = deletedEntryIds;
+        if (validJournalPhotos.length) {
+          const filteredPhotos =
+            deletedEntryIdSet.size > 0
+              ? validJournalPhotos.filter((p) => !deletedEntryIdSet.has(p.entryId))
+              : validJournalPhotos;
+          if (filteredPhotos.length) await db.journalPhotos.bulkPut(filteredPhotos);
+        }
+        if (validJournalAudio.length) {
+          const filteredAudio =
+            deletedEntryIdSet.size > 0
+              ? validJournalAudio.filter((a) => !deletedEntryIdSet.has(a.entryId))
+              : validJournalAudio;
+          if (filteredAudio.length) await db.journalAudio.bulkPut(filteredAudio);
+        }
+      } else {
+        if (validJournalPhotos.length) await db.journalPhotos.bulkPut(validJournalPhotos);
+        if (validJournalAudio.length) await db.journalAudio.bulkPut(validJournalAudio);
+      }
+    }
+  );
+
+  // Handle cross-device deletion propagation atomically:
+  // Wrap in transaction so tracker update + delete happen together or not at all (C3 fix)
   const remoteDeletedIds = (payload as BackupPayloadV3).deletedHabitIds;
-  if (remoteDeletedIds?.length) {
-    await mergeDeletedHabitIds(remoteDeletedIds);
-    await db.habits.bulkDelete(remoteDeletedIds);
-  }
-
-  // Handle cross-device journal entry deletion propagation
   const remoteDeletedJournalIds = (payload as BackupPayloadV3).deletedJournalEntryIds;
-  if (remoteDeletedJournalIds?.length) {
-    await mergeDeletedJournalEntryIds(remoteDeletedJournalIds);
-    await db.journalEntries.bulkDelete(remoteDeletedJournalIds);
-    // Cascade: remove photos and audio belonging to deleted entries
-    for (const entryId of remoteDeletedJournalIds) {
-      const photos = await db.journalPhotos.where('entryId').equals(entryId).primaryKeys();
-      if (photos.length) await db.journalPhotos.bulkDelete(photos);
-      const audios = await db.journalAudio.where('entryId').equals(entryId).primaryKeys();
-      if (audios.length) await db.journalAudio.bulkDelete(audios);
-    }
+
+  if (remoteDeletedIds?.length || remoteDeletedJournalIds?.length) {
+    await db.transaction(
+      "rw",
+      [db.habits, db.journalEntries, db.journalPhotos, db.journalAudio, db.settings],
+      async () => {
+        if (remoteDeletedIds?.length) {
+          await mergeDeletedHabitIds(remoteDeletedIds);
+          await db.habits.bulkDelete(remoteDeletedIds);
+        }
+        if (remoteDeletedJournalIds?.length) {
+          await mergeDeletedJournalEntryIds(remoteDeletedJournalIds);
+          await db.journalEntries.bulkDelete(remoteDeletedJournalIds);
+          for (const entryId of remoteDeletedJournalIds) {
+            const photos = await db.journalPhotos.where("entryId").equals(entryId).primaryKeys();
+            if (photos.length) await db.journalPhotos.bulkDelete(photos);
+            const audios = await db.journalAudio.where("entryId").equals(entryId).primaryKeys();
+            if (audios.length) await db.journalAudio.bulkDelete(audios);
+          }
+        }
+      }
+    );
   }
 
   return {
@@ -407,10 +577,26 @@ export const importBackup = async (payload: BackupPayload, mode: ImportMode): Pr
     moods: { added: moodAdds, updated: moodUpdates, skipped: validMoods.skipped },
     habits: { added: habitAdds, updated: habitUpdates, skipped: validHabits.skipped },
     focusSessions: { added: focusAdds, updated: focusUpdates, skipped: validFocus.skipped },
-    gratitudeEntries: { added: gratitudeAdds, updated: gratitudeUpdates, skipped: validGratitude.skipped },
+    gratitudeEntries: {
+      added: gratitudeAdds,
+      updated: gratitudeUpdates,
+      skipped: validGratitude.skipped,
+    },
     settings: { added: settingsAdds, updated: settingsUpdates, skipped: validSettings.skipped },
-    journalEntries: { added: journalEntryAdds, updated: validJournalEntries.length - journalEntryAdds, skipped: (journalEntries || []).length - validJournalEntries.length },
-    journalPhotos: { added: journalPhotoAdds, updated: validJournalPhotos.length - journalPhotoAdds, skipped: (journalPhotos || []).length - validJournalPhotos.length },
-    journalAudio: { added: journalAudioAdds, updated: validJournalAudio.length - journalAudioAdds, skipped: (journalAudio || []).length - validJournalAudio.length },
+    journalEntries: {
+      added: journalEntryAdds,
+      updated: validJournalEntries.length - journalEntryAdds,
+      skipped: (journalEntries || []).length - validJournalEntries.length,
+    },
+    journalPhotos: {
+      added: journalPhotoAdds,
+      updated: validJournalPhotos.length - journalPhotoAdds,
+      skipped: (journalPhotos || []).length - validJournalPhotos.length,
+    },
+    journalAudio: {
+      added: journalAudioAdds,
+      updated: validJournalAudio.length - journalAudioAdds,
+      skipped: (journalAudio || []).length - validJournalAudio.length,
+    },
   };
 };

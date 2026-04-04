@@ -64,7 +64,7 @@ describe('useMoodHandlers', () => {
     expect(mockSetMoods).toHaveBeenCalledTimes(1);
     // The updater function should append the entry
     const updater = mockSetMoods.mock.calls[0][0];
-    expect(updater([])).toEqual([entry]);
+    expect(updater([])).toEqual([expect.objectContaining(entry)]);
   });
 
   it('handleAddMood calls rewardUser with mood treats', () => {

@@ -10,10 +10,10 @@
  * - Proper re-unlock of AudioContext on iOS after background
  */
 
-import { getAmbientSoundGenerator, forceUnlockAudio, type AudioStatus } from './ambientSounds';
-import { resumeOnInteraction } from './audioManager';
-import { logger } from './logger';
-import * as Sentry from '@sentry/react';
+import { getAmbientSoundGenerator, forceUnlockAudio, type AudioStatus } from "./ambientSounds";
+import { resumeOnInteraction } from "./audioManager";
+import { logger } from "./logger";
+import { addBreadcrumb } from "@/lib/sentry";
 
 interface AudioLifecycleState {
   wasPlaying: boolean;
@@ -38,25 +38,25 @@ export function pauseAllAudio(): void {
 
     // Save state for restore
     lifecycleState = {
-      wasPlaying: status.state === 'playing',
+      wasPlaying: status.state === "playing",
       soundId: status.soundId,
       pausedAt: Date.now(),
     };
 
     if (lifecycleState.wasPlaying) {
       generator.pause();
-      logger.log('[AudioLifecycle] Paused audio on app background');
+      logger.log("[AudioLifecycle] Paused audio on app background");
 
       // Sentry breadcrumb for debugging
-      Sentry.addBreadcrumb({
-        category: 'audio',
-        message: 'Audio paused on app background',
-        level: 'info',
+      addBreadcrumb({
+        category: "audio",
+        message: "Audio paused on app background",
+        level: "info",
         data: { soundId: lifecycleState.soundId },
       });
     }
   } catch (error) {
-    logger.error('[AudioLifecycle] Error pausing audio:', error);
+    logger.error("[AudioLifecycle] Error pausing audio:", error);
   }
 }
 
@@ -71,7 +71,7 @@ export async function resumeAllAudio(): Promise<void> {
   try {
     await forceUnlockAudio();
   } catch (e) {
-    logger.warn('[AudioLifecycle] Failed to re-unlock audio on resume:', e);
+    logger.warn("[AudioLifecycle] Failed to re-unlock audio on resume:", e);
   }
 
   if (!lifecycleState.wasPlaying || !lifecycleState.soundId) {
@@ -80,11 +80,9 @@ export async function resumeAllAudio(): Promise<void> {
     return;
   }
 
-  const pauseDuration = lifecycleState.pausedAt
-    ? Date.now() - lifecycleState.pausedAt
-    : 0;
+  const pauseDuration = lifecycleState.pausedAt ? Date.now() - lifecycleState.pausedAt : 0;
 
-  logger.log('[AudioLifecycle] Attempting to resume audio after', pauseDuration, 'ms');
+  logger.log("[AudioLifecycle] Attempting to resume audio after", pauseDuration, "ms");
 
   try {
     // forceUnlockAudio already called above — just ensure audioManager's context is ready
@@ -94,24 +92,24 @@ export async function resumeAllAudio(): Promise<void> {
     const generator = getAmbientSoundGenerator();
     await generator.resume();
 
-    logger.log('[AudioLifecycle] Audio resumed successfully');
+    logger.log("[AudioLifecycle] Audio resumed successfully");
 
-    Sentry.addBreadcrumb({
-      category: 'audio',
-      message: 'Audio resumed on app foreground',
-      level: 'info',
+    addBreadcrumb({
+      category: "audio",
+      message: "Audio resumed on app foreground",
+      level: "info",
       data: {
         soundId: lifecycleState.soundId,
         pauseDuration,
       },
     });
   } catch (error) {
-    logger.error('[AudioLifecycle] Failed to resume audio:', error);
+    logger.error("[AudioLifecycle] Failed to resume audio:", error);
 
-    Sentry.addBreadcrumb({
-      category: 'audio',
-      message: 'Audio resume failed',
-      level: 'error',
+    addBreadcrumb({
+      category: "audio",
+      message: "Audio resume failed",
+      level: "error",
       data: { error: String(error) },
     });
   }

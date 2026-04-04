@@ -521,20 +521,20 @@ describe('triggerSync', () => {
 
     // No timeout should be set for the debounce
     const syncTimeoutCalls = spy.mock.calls.filter(
-      (call) => call[1] === 120_000
+      (call) => call[1] === 30_000
     );
     expect(syncTimeoutCalls).toHaveLength(0);
     spy.mockRestore();
   });
 
-  it('sets a debounced timeout (120s)', () => {
+  it('sets a debounced timeout (30s)', () => {
     mockSupabase = createMockSupabase();
     const spy = vi.spyOn(globalThis, 'setTimeout');
 
     triggerSync();
 
     const syncTimeoutCalls = spy.mock.calls.filter(
-      (call) => call[1] === 120_000
+      (call) => call[1] === 30_000
     );
     expect(syncTimeoutCalls).toHaveLength(1);
     spy.mockRestore();

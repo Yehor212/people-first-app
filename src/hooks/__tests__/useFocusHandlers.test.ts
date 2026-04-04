@@ -88,7 +88,7 @@ describe('useFocusHandlers', () => {
 
     expect(mockSetFocusSessions).toHaveBeenCalledTimes(1);
     const updater = mockSetFocusSessions.mock.calls[0][0];
-    expect(updater([])).toEqual([session]);
+    expect(updater([])).toEqual([expect.objectContaining(session)]);
   });
 
   it('handleCompleteFocusSession rewards treats based on duration', () => {

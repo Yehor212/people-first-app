@@ -103,6 +103,19 @@ export class ZenFlowDB extends Dexie {
       journalPhotos: 'id, entryId, createdAt',
       journalAudio: 'id, entryId, createdAt',
     });
+
+    // Version 7: Add updatedAt index for cross-device timestamp merge
+    this.version(7).stores({
+      moods: 'id, timestamp, date, valence, updatedAt',
+      habits: 'id, createdAt, type',
+      focusSessions: 'id, startTime, date, updatedAt',
+      gratitudeEntries: 'id, timestamp, date, updatedAt',
+      settings: 'key',
+      offlineQueue: 'id, type, entityId, timestamp',
+      journalEntries: 'id, date, createdAt, updatedAt',
+      journalPhotos: 'id, entryId, createdAt',
+      journalAudio: 'id, entryId, createdAt',
+    });
   }
 }
 

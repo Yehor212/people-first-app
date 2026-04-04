@@ -36,7 +36,8 @@ export function useFocusHandlers({
   }, []);
 
   const handleCompleteFocusSession = useThrottledCallback((session: FocusSession) => {
-    setFocusSessions(prev => [...prev, session]);
+    const stamped = { ...session, updatedAt: session.updatedAt || Date.now() };
+    setFocusSessions(prev => [...prev, stamped]);
 
     const focusTreats = Math.round(session.duration * 0.5);
     rewardUser('focus', { treats: focusTreats, treatReason: `Focus ${session.duration}min`, haptic: haptics.focusCompleted });

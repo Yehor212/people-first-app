@@ -6,17 +6,22 @@
  */
 
 import { logger } from "@/lib/logger";
+import { triggerDataRefresh } from "@/hooks/useIndexedDB";
+import { broadcastChange } from "@/lib/syncBroadcast";
+import {
+  getDeletedMoodIds,
+  getDeletedFocusSessionIds,
+  getDeletedGratitudeIds,
+  getDeletedHabitIds,
+  getDeletedJournalEntryIds,
+} from "@/storage/deletionTracker";
 import { addCategorizedBreadcrumb } from "@/lib/sentry";
 import { isAbortError, isValidUUID } from "@/lib/validation";
 import { supabase, getCurrentUserId } from "@/lib/supabaseClient";
 import { db } from "@/storage/db";
 import { MoodEntry, Habit, FocusSession, GratitudeEntry } from "@/types";
 import type { Json } from "@/types/supabase";
-import type {
-  JournalEntry,
-  JournalPhoto,
-  JournalAudio,
-} from "@/features/journal/types";
+import type { JournalEntry, JournalPhoto, JournalAudio } from "@/features/journal/types";
 import { RealtimeChannel } from "@supabase/supabase-js";
 import { offlineQueue } from "@/lib/offlineQueue";
 import { generateEmbeddings } from "@/lib/journalAI";
@@ -65,9 +70,7 @@ const detectNetworkError = (error: unknown): boolean => {
   if (networkErrorNames.includes(error.name)) {
     // TypeError is only network-related if it's a fetch error
     if (error.name === "TypeError") {
-      return (
-        error.message.includes("fetch") || error.message.includes("network")
-      );
+      return error.message.includes("fetch") || error.message.includes("network");
     }
     return true;
   }
@@ -107,7 +110,7 @@ const BATCH_DELAY = 50; // ms between batches
 async function processBatched<T>(
   items: T[],
   processor: (item: T) => Promise<void>,
-  batchSize: number = BATCH_SIZE,
+  batchSize: number = BATCH_SIZE
 ): Promise<void> {
   for (let i = 0; i < items.length; i += batchSize) {
     const batch = items.slice(i, i + batchSize);
@@ -169,8 +172,11 @@ export const syncMood = async (mood: MoodEntry): Promise<void> => {
         log_type: mood.logType ?? null,
         emotion_tags: mood.emotionTags ?? [],
         contexts: mood.contexts ?? [],
+        updated_at: mood.updatedAt
+          ? new Date(mood.updatedAt).toISOString()
+          : new Date().toISOString(),
       },
-      { onConflict: "id" },
+      { onConflict: "id" }
     );
 
     if (error) throw error;
@@ -178,15 +184,11 @@ export const syncMood = async (mood: MoodEntry): Promise<void> => {
       moodId: mood.id,
     });
     logger.log("[Sync] Mood synced:", mood.id);
+    broadcastChange("moods");
   } catch (error) {
     // Handle AbortError separately - it's intentional, don't retry/queue
     if (isAbortError(error)) {
-      addCategorizedBreadcrumb(
-        "sync",
-        "Mood sync aborted",
-        { moodId: mood.id },
-        "warning",
-      );
+      addCategorizedBreadcrumb("sync", "Mood sync aborted", { moodId: mood.id }, "warning");
       logger.warn("[Sync] Mood sync aborted (timeout or navigation):", mood.id);
       return; // Don't retry, don't queue - this was intentional
     }
@@ -201,7 +203,7 @@ export const syncMood = async (mood: MoodEntry): Promise<void> => {
         "sync",
         "Mood queued (network error)",
         { moodId: mood.id },
-        "warning",
+        "warning"
       );
       logger.log("[Sync] Mood queued after network error:", mood.id);
       // Don't re-throw network errors - they're handled via offline queue
@@ -210,7 +212,7 @@ export const syncMood = async (mood: MoodEntry): Promise<void> => {
         "sync",
         "Mood sync failed",
         { moodId: mood.id, error: (error as Error).message },
-        "error",
+        "error"
       );
       logger.error("[Sync] Failed to sync mood:", error);
       // P0-4 Fix: Re-throw so callers (especially offline queue handlers) know sync failed
@@ -238,21 +240,14 @@ export const deleteMoodFromCloud = async (moodId: string): Promise<void> => {
   }
 
   try {
-    const { error } = await supabase
-      .from("moods")
-      .delete()
-      .eq("id", moodId)
-      .eq("user_id", userId);
+    const { error } = await supabase.from("moods").delete().eq("id", moodId).eq("user_id", userId);
 
     if (error) throw error;
     logger.log("[Sync] Mood deleted:", moodId);
   } catch (error) {
     // Handle AbortError separately
     if (isAbortError(error)) {
-      logger.warn(
-        "[Sync] Mood delete aborted (timeout or navigation):",
-        moodId,
-      );
+      logger.warn("[Sync] Mood delete aborted (timeout or navigation):", moodId);
       return;
     }
     logger.error("[Sync] Failed to delete mood:", error);
@@ -299,8 +294,7 @@ export const syncHabit = async (habit: Habit): Promise<void> => {
         user_id: userId,
         name: habit.name,
         icon: habit.icon,
-        color:
-          typeof habit.color === "number" ? String(habit.color) : habit.color,
+        color: typeof habit.color === "number" ? String(habit.color) : habit.color,
         type: cloudType,
         frequency: cloudFrequency,
         custom_days: [],
@@ -311,7 +305,7 @@ export const syncHabit = async (habit: Habit): Promise<void> => {
         target_count: habit.targetValue || null,
         template_id: habit.templateId || null,
       },
-      { onConflict: "id" },
+      { onConflict: "id" }
     );
 
     if (habitError) throw habitError;
@@ -319,10 +313,7 @@ export const syncHabit = async (habit: Habit): Promise<void> => {
     // Sync entries as completions (map entries → habit_completions rows)
     const entries = habit.entries || {};
     const completedDates = Object.entries(entries)
-      .filter(
-        ([, e]) =>
-          e.value === 2 || (habit.habitType === "numerical" && e.value > 0),
-      )
+      .filter(([, e]) => e.value === 2 || (habit.habitType === "numerical" && e.value > 0))
       .map(([date]) => date);
 
     if (completedDates.length > 0) {
@@ -330,10 +321,7 @@ export const syncHabit = async (habit: Habit): Promise<void> => {
         user_id: userId,
         habit_id: habit.id,
         date,
-        count:
-          habit.habitType === "numerical"
-            ? Math.round((entries[date]?.value || 0) / 1000)
-            : 1,
+        count: habit.habitType === "numerical" ? Math.round((entries[date]?.value || 0) / 1000) : 1,
         duration: null,
       }));
 
@@ -347,11 +335,8 @@ export const syncHabit = async (habit: Habit): Promise<void> => {
     // Sync reminders - use safe insert-then-delete pattern to prevent data loss
     if (habit.reminders && habit.reminders.length > 0) {
       // Generate deterministic IDs based on habit + time + days
-      const generateReminderId = (
-        habitId: string,
-        time: string,
-        days: number[],
-      ) => `${habitId}-${time}-${days.sort().join("")}`;
+      const generateReminderId = (habitId: string, time: string, days: number[]) =>
+        `${habitId}-${time}-${days.sort().join("")}`;
 
       const reminders = habit.reminders.map((r) => ({
         id: generateReminderId(habit.id, r.time, r.days),
@@ -371,9 +356,7 @@ export const syncHabit = async (habit: Habit): Promise<void> => {
 
       // Clean up orphan reminders (non-critical - duplicates are better than data loss)
       // Security fix: sanitize IDs to prevent PostgREST filter injection
-      const currentIds = reminders.map((r) =>
-        r.id.replace(/[^a-zA-Z0-9\-_]/g, ""),
-      );
+      const currentIds = reminders.map((r) => r.id.replace(/[^a-zA-Z0-9\-_]/g, ""));
       const filterTuple = `(${currentIds.map((id) => `"${id}"`).join(",")})`;
       const { error: cleanupError } = await supabase
         .from("habit_reminders")
@@ -382,11 +365,7 @@ export const syncHabit = async (habit: Habit): Promise<void> => {
         .not("id", "in", filterTuple);
 
       if (cleanupError) {
-        logger.warn(
-          "[Sync] Failed to cleanup old reminders for habit:",
-          habit.id,
-          cleanupError,
-        );
+        logger.warn("[Sync] Failed to cleanup old reminders for habit:", habit.id, cleanupError);
         // Non-critical - continue anyway
       }
     } else {
@@ -397,22 +376,16 @@ export const syncHabit = async (habit: Habit): Promise<void> => {
         .eq("habit_id", habit.id);
 
       if (deleteError) {
-        logger.warn(
-          "[Sync] Failed to delete reminders for habit:",
-          habit.id,
-          deleteError,
-        );
+        logger.warn("[Sync] Failed to delete reminders for habit:", habit.id, deleteError);
       }
     }
 
     logger.log("[Sync] Habit synced:", habit.id);
+    broadcastChange("habits");
   } catch (error) {
     // Handle AbortError separately
     if (isAbortError(error)) {
-      logger.warn(
-        "[Sync] Habit sync aborted (timeout or navigation):",
-        habit.id,
-      );
+      logger.warn("[Sync] Habit sync aborted (timeout or navigation):", habit.id);
       return;
     }
     logger.error("[Sync] Failed to sync habit:", error);
@@ -451,10 +424,7 @@ export const deleteHabitFromCloud = async (habitId: string): Promise<void> => {
   } catch (error) {
     // Handle AbortError separately
     if (isAbortError(error)) {
-      logger.warn(
-        "[Sync] Habit delete aborted (timeout or navigation):",
-        habitId,
-      );
+      logger.warn("[Sync] Habit delete aborted (timeout or navigation):", habitId);
       return;
     }
     logger.error("[Sync] Failed to delete habit:", error);
@@ -472,17 +442,14 @@ export const syncHabitCompletion = async (
   date: string,
   completed: boolean,
   count?: number,
-  duration?: number,
+  duration?: number
 ): Promise<void> => {
   const userId = await getCurrentUserId();
   if (!supabase || !userId) return;
 
   // Skip granular sync for non-UUID habit IDs (nanoid)
   if (!isValidUUID(habitId)) {
-    logger.log(
-      "[Sync] Skipping granular habit completion sync (non-UUID ID):",
-      habitId,
-    );
+    logger.log("[Sync] Skipping granular habit completion sync (non-UUID ID):", habitId);
     return;
   }
 
@@ -509,7 +476,7 @@ export const syncHabitCompletion = async (
           count: count || 1,
           duration: duration || null,
         },
-        { onConflict: "habit_id,date" },
+        { onConflict: "habit_id,date" }
       );
 
       if (error) throw error;
@@ -539,9 +506,7 @@ export const syncHabitCompletion = async (
 // FOCUS SESSION SYNC
 // ============================================
 
-export const syncFocusSession = async (
-  session: FocusSession,
-): Promise<void> => {
+export const syncFocusSession = async (session: FocusSession): Promise<void> => {
   const userId = await getCurrentUserId();
   // Explicit validation to prevent RLS violations with undefined user_id
   if (!supabase) return;
@@ -552,10 +517,7 @@ export const syncFocusSession = async (
 
   // Skip granular sync for non-UUID IDs (nanoid) — data is persisted via JSONB backup
   if (!isValidUUID(session.id)) {
-    logger.log(
-      "[Sync] Skipping granular focus session sync (non-UUID ID):",
-      session.id,
-    );
+    logger.log("[Sync] Skipping granular focus session sync (non-UUID ID):", session.id);
     return;
   }
 
@@ -574,15 +536,19 @@ export const syncFocusSession = async (
         duration: session.duration,
         label: session.label || null,
         status: session.status || "completed",
+        updated_at: session.updatedAt
+          ? new Date(session.updatedAt).toISOString()
+          : new Date().toISOString(),
         reflection: session.reflection || null,
         date: session.date,
         completed_at: session.completedAt,
       },
-      { onConflict: "id" },
+      { onConflict: "id" }
     );
 
     if (error) throw error;
     logger.log("[Sync] Focus session synced:", session.id);
+    broadcastChange("focus");
   } catch (error) {
     // Handle AbortError separately
     if (isAbortError(error)) {
@@ -610,10 +576,7 @@ export const syncGratitude = async (entry: GratitudeEntry): Promise<void> => {
 
   // Skip granular sync for non-UUID IDs (nanoid) — data is persisted via JSONB backup
   if (!isValidUUID(entry.id)) {
-    logger.log(
-      "[Sync] Skipping granular gratitude sync (non-UUID ID):",
-      entry.id,
-    );
+    logger.log("[Sync] Skipping granular gratitude sync (non-UUID ID):", entry.id);
     return;
   }
 
@@ -632,12 +595,16 @@ export const syncGratitude = async (entry: GratitudeEntry): Promise<void> => {
         text: entry.text,
         date: entry.date,
         timestamp: entry.timestamp,
+        updated_at: entry.updatedAt
+          ? new Date(entry.updatedAt).toISOString()
+          : new Date().toISOString(),
       },
-      { onConflict: "id" },
+      { onConflict: "id" }
     );
 
     if (error) throw error;
     logger.log("[Sync] Gratitude synced:", entry.id);
+    broadcastChange("gratitude");
   } catch (error) {
     // Handle AbortError separately
     if (isAbortError(error)) {
@@ -650,18 +617,13 @@ export const syncGratitude = async (entry: GratitudeEntry): Promise<void> => {
   }
 };
 
-export const deleteGratitudeFromCloud = async (
-  entryId: string,
-): Promise<void> => {
+export const deleteGratitudeFromCloud = async (entryId: string): Promise<void> => {
   const userId = await getCurrentUserId();
   if (!supabase || !userId) return;
 
   // Skip granular sync for non-UUID IDs (nanoid)
   if (!isValidUUID(entryId)) {
-    logger.log(
-      "[Sync] Skipping granular gratitude delete (non-UUID ID):",
-      entryId,
-    );
+    logger.log("[Sync] Skipping granular gratitude delete (non-UUID ID):", entryId);
     return;
   }
 
@@ -697,10 +659,7 @@ export const deleteGratitudeFromCloud = async (
 // SETTINGS SYNC
 // ============================================
 
-export const syncSetting = async (
-  key: string,
-  value: unknown,
-): Promise<void> => {
+export const syncSetting = async (key: string, value: unknown): Promise<void> => {
   const userId = await getCurrentUserId();
   // Explicit validation to prevent RLS violations with undefined user_id
   if (!supabase) return;
@@ -717,7 +676,7 @@ export const syncSetting = async (
         value: value as Json,
         updated_at: new Date().toISOString(),
       },
-      { onConflict: "user_id,key" },
+      { onConflict: "user_id,key" }
     );
 
     if (error) throw error;
@@ -769,23 +728,14 @@ export const pullFromCloud = async (): Promise<boolean> => {
         .eq("user_id", userId)
         .order("date", { ascending: false })
         .limit(1000),
-      supabase
-        .from("habits")
-        .select("*")
-        .eq("user_id", userId)
-        .eq("is_archived", false)
-        .limit(200),
+      supabase.from("habits").select("*").eq("user_id", userId).eq("is_archived", false).limit(200),
       supabase
         .from("habit_completions")
         .select("*")
         .eq("user_id", userId)
         .order("date", { ascending: false })
         .limit(2000),
-      supabase
-        .from("habit_reminders")
-        .select("*")
-        .eq("user_id", userId)
-        .limit(500),
+      supabase.from("habit_reminders").select("*").eq("user_id", userId).limit(500),
       supabase
         .from("focus_sessions")
         .select("*")
@@ -805,16 +755,8 @@ export const pullFromCloud = async (): Promise<boolean> => {
         .eq("user_id", userId)
         .order("date", { ascending: false })
         .limit(1000),
-      supabase
-        .from("journal_photos")
-        .select("*")
-        .eq("user_id", userId)
-        .limit(5000),
-      supabase
-        .from("journal_audio")
-        .select("*")
-        .eq("user_id", userId)
-        .limit(3000),
+      supabase.from("journal_photos").select("*").eq("user_id", userId).limit(5000),
+      supabase.from("journal_audio").select("*").eq("user_id", userId).limit(3000),
     ]);
 
     // Check for errors
@@ -858,7 +800,7 @@ export const pullFromCloud = async (): Promise<boolean> => {
         emotionTags: m.emotion_tags ?? undefined,
         contexts: m.contexts ?? undefined,
       })),
-      "cloud-moods",
+      "cloud-moods"
     ) as MoodEntry[];
 
     // Group completions by habit → convert to entries format
@@ -898,9 +840,7 @@ export const pullFromCloud = async (): Promise<boolean> => {
         // Map old cloud type → new habitType
         const cloudType = h.type || "daily";
         const habitType =
-          cloudType === "multiple" || cloudType === "reduce"
-            ? "numerical"
-            : "boolean";
+          cloudType === "multiple" || cloudType === "reduce" ? "numerical" : "boolean";
         // Map old cloud frequency → new ratio
         const cloudFreq = h.frequency || "daily";
         const frequency =
@@ -934,7 +874,7 @@ export const pullFromCloud = async (): Promise<boolean> => {
           unit: "",
         };
       }),
-      "cloud-habits",
+      "cloud-habits"
     ) as Habit[];
 
     const focusSessions: FocusSession[] = validateArray(
@@ -948,7 +888,7 @@ export const pullFromCloud = async (): Promise<boolean> => {
         status: f.status,
         reflection: f.reflection || undefined,
       })),
-      "cloud-focusSessions",
+      "cloud-focusSessions"
     ) as FocusSession[];
 
     const gratitudeEntries: GratitudeEntry[] = validateArray(
@@ -959,7 +899,7 @@ export const pullFromCloud = async (): Promise<boolean> => {
         date: g.date,
         timestamp: g.timestamp,
       })),
-      "cloud-gratitudeEntries",
+      "cloud-gratitudeEntries"
     ) as GratitudeEntry[];
 
     // Transform journal data from cloud to local format
@@ -974,8 +914,7 @@ export const pullFromCloud = async (): Promise<boolean> => {
       mood: e.mood as JournalEntry["mood"],
       tags: e.tags,
       templateId: e.template_id || undefined,
-      habitSnapshot:
-        (e.habit_snapshot as JournalEntry["habitSnapshot"]) || undefined,
+      habitSnapshot: (e.habit_snapshot as JournalEntry["habitSnapshot"]) || undefined,
       photoIds: e.photo_ids,
       audioIds: e.audio_ids,
       createdAt: e.created_at,
@@ -1026,24 +965,16 @@ export const pullFromCloud = async (): Promise<boolean> => {
 
           // Filter out locally deleted habits before saving — prevents resurrection
           if (habits.length) {
-            const { getDeletedHabitIds } =
-              await import("@/storage/deletionTracker");
             const deletedIds = await getDeletedHabitIds();
             const filteredHabits =
-              deletedIds.size > 0
-                ? habits.filter((h) => !deletedIds.has(h.id))
-                : habits;
+              deletedIds.size > 0 ? habits.filter((h) => !deletedIds.has(h.id)) : habits;
             if (filteredHabits.length) await db.habits.bulkPut(filteredHabits);
           }
-          if (focusSessions.length)
-            await db.focusSessions.bulkPut(focusSessions);
-          if (gratitudeEntries.length)
-            await db.gratitudeEntries.bulkPut(gratitudeEntries);
+          if (focusSessions.length) await db.focusSessions.bulkPut(focusSessions);
+          if (gratitudeEntries.length) await db.gratitudeEntries.bulkPut(gratitudeEntries);
 
           // Journal entries: use updatedAt-based conflict resolution + deletion tracking
           if (journalEntries.length) {
-            const { getDeletedJournalEntryIds } =
-              await import("@/storage/deletionTracker");
             const deletedEntryIds = await getDeletedJournalEntryIds();
 
             const localEntries = await db.journalEntries.toArray();
@@ -1066,9 +997,7 @@ export const pullFromCloud = async (): Promise<boolean> => {
                   : journalPhotos;
               if (filteredPhotos.length) {
                 const localPhotos = await db.journalPhotos.toArray();
-                const localPhotoMap = new Map(
-                  localPhotos.map((p) => [p.id, p]),
-                );
+                const localPhotoMap = new Map(localPhotos.map((p) => [p.id, p]));
                 const mergedPhotos = filteredPhotos.map((remote) => {
                   const local = localPhotoMap.get(remote.id);
                   if (local && local.data)
@@ -1087,17 +1016,14 @@ export const pullFromCloud = async (): Promise<boolean> => {
             if (journalAudioItems.length) {
               const filteredAudio =
                 deletedEntryIds.size > 0
-                  ? journalAudioItems.filter(
-                      (a) => !deletedEntryIds.has(a.entryId),
-                    )
+                  ? journalAudioItems.filter((a) => !deletedEntryIds.has(a.entryId))
                   : journalAudioItems;
               if (filteredAudio.length) {
                 const localAudio = await db.journalAudio.toArray();
                 const localAudioMap = new Map(localAudio.map((a) => [a.id, a]));
                 const mergedAudio = filteredAudio.map((remote) => {
                   const local = localAudioMap.get(remote.id);
-                  if (local && local.data)
-                    return { ...remote, data: local.data };
+                  if (local && local.data) return { ...remote, data: local.data };
                   return remote;
                 });
                 await db.journalAudio.bulkPut(mergedAudio);
@@ -1137,23 +1063,18 @@ export const pullFromCloud = async (): Promise<boolean> => {
           for (const s of settingsData) {
             await db.settings.put({ key: s.key, value: s.value });
           }
-        },
+        }
       );
     } catch (transactionError) {
       // P2-4 Fix: Emit event for UI awareness when transaction fails
-      logger.error(
-        "[Sync] Transaction failed during pullFromCloud:",
-        transactionError,
-      );
+      logger.error("[Sync] Transaction failed during pullFromCloud:", transactionError);
       if (typeof window !== "undefined") {
         window.dispatchEvent(
           new CustomEvent("zenflow:sync-transaction-failed", {
             detail: {
               operation: "pullFromCloud",
               error:
-                transactionError instanceof Error
-                  ? transactionError.message
-                  : "Transaction failed",
+                transactionError instanceof Error ? transactionError.message : "Transaction failed",
               dataAffected: {
                 moods: moods.length,
                 habits: habits.length,
@@ -1162,7 +1083,7 @@ export const pullFromCloud = async (): Promise<boolean> => {
                 journalEntries: journalEntries.length,
               },
             },
-          }),
+          })
         );
       }
       throw transactionError; // Re-throw to be caught by outer catch
@@ -1195,7 +1116,7 @@ export const pullFromCloud = async (): Promise<boolean> => {
       "sync",
       "pullFromCloud failed",
       { error: (error as Error).message },
-      "error",
+      "error"
     );
     logger.error("[Sync] Failed to pull from cloud:", error);
     logger.warn("[Sync] Operation failed, will retry via orchestrator");
@@ -1276,7 +1197,7 @@ export const pushToCloud = async (): Promise<boolean> => {
       "sync",
       "pushToCloud failed",
       { error: (error as Error).message },
-      "error",
+      "error"
     );
     logger.error("[Sync] Failed to push to cloud:", error);
     logger.warn("[Sync] Operation failed, will retry via orchestrator");
@@ -1318,7 +1239,7 @@ const _handleRealtimeChange = async (
     eventType: string;
     new: Record<string, unknown> | null;
     old: Record<string, unknown> | null;
-  },
+  }
 ) => {
   logger.log("[Realtime] Change received:", table, payload.eventType);
 
@@ -1327,8 +1248,7 @@ const _handleRealtimeChange = async (
       case "moods":
         if (payload.eventType === "DELETE") {
           const oldId = payload.old?.id;
-          if (typeof oldId === "string" && oldId.length > 0)
-            await db.moods.delete(oldId);
+          if (typeof oldId === "string" && oldId.length > 0) await db.moods.delete(oldId);
         } else if (payload.new) {
           const moodData = payload.new;
           const mapped = {
@@ -1340,17 +1260,10 @@ const _handleRealtimeChange = async (
             tags: Array.isArray(moodData.tags) ? moodData.tags : [],
             emotion: moodData.emotion || undefined,
             // State of Mind fields
-            valence:
-              typeof moodData.valence === "number"
-                ? moodData.valence
-                : undefined,
+            valence: typeof moodData.valence === "number" ? moodData.valence : undefined,
             logType: moodData.log_type || undefined,
-            emotionTags: Array.isArray(moodData.emotion_tags)
-              ? moodData.emotion_tags
-              : undefined,
-            contexts: Array.isArray(moodData.contexts)
-              ? moodData.contexts
-              : undefined,
+            emotionTags: Array.isArray(moodData.emotion_tags) ? moodData.emotion_tags : undefined,
+            contexts: Array.isArray(moodData.contexts) ? moodData.contexts : undefined,
           };
           const validated = runtimeMoodEntrySchema.safeParse(mapped);
           if (validated.success) {
@@ -1358,7 +1271,7 @@ const _handleRealtimeChange = async (
           } else {
             logger.warn(
               "[Realtime] Invalid mood data received, skipping:",
-              validated.error.issues[0],
+              validated.error.issues[0]
             );
           }
         }
@@ -1367,25 +1280,18 @@ const _handleRealtimeChange = async (
       case "focus_sessions":
         if (payload.eventType === "DELETE") {
           const oldId = payload.old?.id;
-          if (typeof oldId === "string" && oldId.length > 0)
-            await db.focusSessions.delete(oldId);
+          if (typeof oldId === "string" && oldId.length > 0) await db.focusSessions.delete(oldId);
         } else if (payload.new) {
           const focusData = payload.new;
           const mapped = {
             id: focusData.id,
-            duration:
-              typeof focusData.duration === "number" ? focusData.duration : 0,
+            duration: typeof focusData.duration === "number" ? focusData.duration : 0,
             completedAt:
-              typeof focusData.completed_at === "number"
-                ? focusData.completed_at
-                : Date.now(),
+              typeof focusData.completed_at === "number" ? focusData.completed_at : Date.now(),
             date: focusData.date,
             label: focusData.label || undefined,
             status: focusData.status || "completed",
-            reflection:
-              typeof focusData.reflection === "number"
-                ? focusData.reflection
-                : undefined,
+            reflection: typeof focusData.reflection === "number" ? focusData.reflection : undefined,
           };
           const validated = runtimeFocusSessionSchema.safeParse(mapped);
           if (validated.success) {
@@ -1393,7 +1299,7 @@ const _handleRealtimeChange = async (
           } else {
             logger.warn(
               "[Realtime] Invalid focus session data received, skipping:",
-              validated.error.issues[0],
+              validated.error.issues[0]
             );
           }
         }
@@ -1410,10 +1316,7 @@ const _handleRealtimeChange = async (
             id: gratData.id,
             text: gratData.text,
             date: gratData.date,
-            timestamp:
-              typeof gratData.timestamp === "number"
-                ? gratData.timestamp
-                : Date.now(),
+            timestamp: typeof gratData.timestamp === "number" ? gratData.timestamp : Date.now(),
           };
           const validated = runtimeGratitudeEntrySchema.safeParse(mapped);
           if (validated.success) {
@@ -1421,7 +1324,7 @@ const _handleRealtimeChange = async (
           } else {
             logger.warn(
               "[Realtime] Invalid gratitude data received, skipping:",
-              validated.error.issues[0],
+              validated.error.issues[0]
             );
           }
         }
@@ -1439,7 +1342,7 @@ const _handleRealtimeChange = async (
     window.dispatchEvent(
       new CustomEvent("realtime-sync", {
         detail: { table, event: payload.eventType },
-      }),
+      })
     );
   } catch (error) {
     logger.error("[Realtime] Failed to handle change:", error);
@@ -1486,7 +1389,7 @@ export const syncJournalEntry = async (entry: JournalEntry): Promise<void> => {
         created_at: entry.createdAt,
         updated_at: entry.updatedAt,
       },
-      { onConflict: "id" },
+      { onConflict: "id" }
     );
 
     if (error) throw error;
@@ -1494,7 +1397,7 @@ export const syncJournalEntry = async (entry: JournalEntry): Promise<void> => {
 
     // Fire-and-forget: generate vector embedding for semantic search
     generateEmbeddings([entry.id]).catch((err) =>
-      logger.warn("[Sync]", "Embedding generation failed:", err),
+      logger.warn("[Sync]", "Embedding generation failed:", err)
     );
   } catch (error) {
     if (isAbortError(error)) {
@@ -1513,9 +1416,7 @@ export const syncJournalEntry = async (entry: JournalEntry): Promise<void> => {
   }
 };
 
-export const deleteJournalEntryFromCloud = async (
-  entryId: string,
-): Promise<void> => {
+export const deleteJournalEntryFromCloud = async (entryId: string): Promise<void> => {
   const userId = await getCurrentUserId();
   if (!supabase || !userId) return;
 
@@ -1531,29 +1432,14 @@ export const deleteJournalEntryFromCloud = async (
     // Delete entry + associated photos/audio metadata from cloud tables
     // (Storage files are cleaned up separately by journalStorage.ts)
     const [entryRes, photosRes, audioRes] = await Promise.all([
-      supabase
-        .from("journal_entries")
-        .delete()
-        .eq("id", entryId)
-        .eq("user_id", userId),
-      supabase
-        .from("journal_photos")
-        .delete()
-        .eq("entry_id", entryId)
-        .eq("user_id", userId),
-      supabase
-        .from("journal_audio")
-        .delete()
-        .eq("entry_id", entryId)
-        .eq("user_id", userId),
+      supabase.from("journal_entries").delete().eq("id", entryId).eq("user_id", userId),
+      supabase.from("journal_photos").delete().eq("entry_id", entryId).eq("user_id", userId),
+      supabase.from("journal_audio").delete().eq("entry_id", entryId).eq("user_id", userId),
     ]);
 
-    if (entryRes.error)
-      logger.warn("[Sync] Journal entry delete failed:", entryRes.error);
-    if (photosRes.error)
-      logger.warn("[Sync] Journal photos delete failed:", photosRes.error);
-    if (audioRes.error)
-      logger.warn("[Sync] Journal audio delete failed:", audioRes.error);
+    if (entryRes.error) logger.warn("[Sync] Journal entry delete failed:", entryRes.error);
+    if (photosRes.error) logger.warn("[Sync] Journal photos delete failed:", photosRes.error);
+    if (audioRes.error) logger.warn("[Sync] Journal audio delete failed:", audioRes.error);
 
     logger.log("[Sync] Journal entry deleted from cloud:", entryId);
   } catch (error) {
@@ -1585,7 +1471,7 @@ export const syncJournalPhoto = async (photo: JournalPhoto): Promise<void> => {
         storage_url: photo.storageUrl || null,
         created_at: photo.createdAt,
       },
-      { onConflict: "id" },
+      { onConflict: "id" }
     );
 
     if (error) throw error;
@@ -1616,7 +1502,7 @@ export const syncJournalAudio = async (audio: JournalAudio): Promise<void> => {
         storage_url: audio.storageUrl || null,
         created_at: audio.createdAt,
       },
-      { onConflict: "id" },
+      { onConflict: "id" }
     );
 
     if (error) throw error;
@@ -1628,18 +1514,12 @@ export const syncJournalAudio = async (audio: JournalAudio): Promise<void> => {
   }
 };
 
-export const deleteJournalPhotoFromCloud = async (
-  photoId: string,
-): Promise<void> => {
+export const deleteJournalPhotoFromCloud = async (photoId: string): Promise<void> => {
   const userId = await getCurrentUserId();
   if (!supabase || !userId) return;
 
   try {
-    await supabase
-      .from("journal_photos")
-      .delete()
-      .eq("id", photoId)
-      .eq("user_id", userId);
+    await supabase.from("journal_photos").delete().eq("id", photoId).eq("user_id", userId);
   } catch (error) {
     if (!isAbortError(error)) {
       logger.warn("[Sync] Journal photo delete from cloud failed:", error);
@@ -1647,18 +1527,12 @@ export const deleteJournalPhotoFromCloud = async (
   }
 };
 
-export const deleteJournalAudioFromCloud = async (
-  audioId: string,
-): Promise<void> => {
+export const deleteJournalAudioFromCloud = async (audioId: string): Promise<void> => {
   const userId = await getCurrentUserId();
   if (!supabase || !userId) return;
 
   try {
-    await supabase
-      .from("journal_audio")
-      .delete()
-      .eq("id", audioId)
-      .eq("user_id", userId);
+    await supabase.from("journal_audio").delete().eq("id", audioId).eq("user_id", userId);
   } catch (error) {
     if (!isAbortError(error)) {
       logger.warn("[Sync] Journal audio delete from cloud failed:", error);
@@ -1684,5 +1558,147 @@ export const fetchUserStats = async () => {
   } catch (error) {
     logger.error("[Sync] Failed to fetch user stats:", error);
     return null;
+  }
+};
+
+// ============================================
+// TARGETED PER-ENTITY PULL (for Broadcast sync)
+// ============================================
+
+/** Pull moods from cloud and merge by timestamp. */
+export const pullMoodsFromCloud = async (): Promise<boolean> => {
+  if (!supabase) return false;
+  const userId = await getCurrentUserId();
+  if (!userId) return false;
+  try {
+    const { data, error } = await supabase
+      .from("moods")
+      .select("*")
+      .eq("user_id", userId)
+      .limit(10000);
+    if (error) throw error;
+    if (!data?.length) return true;
+    const mapped: MoodEntry[] = data.map((m) => ({
+      id: m.id,
+      mood: m.mood as MoodEntry["mood"],
+      note: m.note || undefined,
+      date: m.date,
+      timestamp: m.timestamp,
+      tags: m.tags as string[] | undefined,
+      emotion: (m.emotion as MoodEntry["emotion"]) || undefined,
+      valence: m.valence ?? undefined,
+      logType: (m.log_type as MoodEntry["logType"]) ?? undefined,
+      emotionTags: (m.emotion_tags as string[]) ?? undefined,
+      contexts: (m.contexts as string[]) ?? undefined,
+      updatedAt: m.updated_at ? new Date(m.updated_at).getTime() : m.timestamp,
+    }));
+    // Atomic: read + merge + write in Dexie transaction (prevents TOCTOU race)
+    const deletedMoodIds = await getDeletedMoodIds();
+    await db.transaction("rw", db.moods, async () => {
+      const local = await db.moods.toArray();
+      const localMap = new Map(local.map((m) => [m.id, m]));
+      const merged = mapped.map((remote) => {
+        const loc = localMap.get(remote.id);
+        if (!loc) return remote;
+        return (loc.updatedAt || loc.timestamp || 0) > (remote.updatedAt || remote.timestamp || 0)
+          ? loc
+          : remote;
+      });
+      const toWrite =
+        deletedMoodIds.size > 0 ? merged.filter((m) => !deletedMoodIds.has(m.id)) : merged;
+      if (toWrite.length) await db.moods.bulkPut(toWrite);
+    });
+    triggerDataRefresh();
+    return true;
+  } catch (err) {
+    logger.error("[Pull] Moods failed:", err);
+    return false;
+  }
+};
+
+/** Pull focus sessions from cloud and merge by timestamp. */
+export const pullFocusFromCloud = async (): Promise<boolean> => {
+  if (!supabase) return false;
+  const userId = await getCurrentUserId();
+  if (!userId) return false;
+  try {
+    const { data, error } = await supabase
+      .from("focus_sessions")
+      .select("*")
+      .eq("user_id", userId)
+      .limit(10000);
+    if (error) throw error;
+    if (!data?.length) return true;
+    const mapped = data.map((f) => ({
+      id: f.id,
+      duration: f.duration,
+      completedAt: f.completed_at,
+      date: f.date,
+      label: f.label || undefined,
+      status: f.status as "completed" | "aborted" | undefined,
+      reflection: f.reflection ?? undefined,
+      updatedAt: f.updated_at ? new Date(f.updated_at).getTime() : f.completed_at,
+    }));
+    const deletedFocusIds = await getDeletedFocusSessionIds();
+    await db.transaction("rw", db.focusSessions, async () => {
+      const local = await db.focusSessions.toArray();
+      const localMap = new Map(local.map((f) => [f.id, f]));
+      const merged = mapped.map((remote) => {
+        const loc = localMap.get(remote.id);
+        if (!loc) return remote;
+        const lt = (loc as any).updatedAt || loc.completedAt || 0;
+        return lt > (remote.updatedAt || remote.completedAt || 0) ? loc : remote;
+      });
+      const toWriteFocus =
+        deletedFocusIds.size > 0 ? merged.filter((f) => !deletedFocusIds.has(f.id)) : merged;
+      if (toWriteFocus.length) await db.focusSessions.bulkPut(toWriteFocus as any);
+    });
+    triggerDataRefresh();
+    return true;
+  } catch (err) {
+    logger.error("[Pull] Focus failed:", err);
+    return false;
+  }
+};
+
+/** Pull gratitude entries from cloud and merge by timestamp. */
+export const pullGratitudeFromCloud = async (): Promise<boolean> => {
+  if (!supabase) return false;
+  const userId = await getCurrentUserId();
+  if (!userId) return false;
+  try {
+    const { data, error } = await supabase
+      .from("gratitude_entries")
+      .select("*")
+      .eq("user_id", userId)
+      .limit(10000);
+    if (error) throw error;
+    if (!data?.length) return true;
+    const mapped = data.map((g) => ({
+      id: g.id,
+      text: g.text,
+      date: g.date,
+      timestamp: g.timestamp,
+      updatedAt: g.updated_at ? new Date(g.updated_at).getTime() : g.timestamp,
+    }));
+    const deletedGratIds = await getDeletedGratitudeIds();
+    await db.transaction("rw", db.gratitudeEntries, async () => {
+      const local = await db.gratitudeEntries.toArray();
+      const localMap = new Map(local.map((g) => [g.id, g]));
+      const merged = mapped.map((remote) => {
+        const loc = localMap.get(remote.id);
+        if (!loc) return remote;
+        const lt = (loc as any).updatedAt || loc.timestamp || 0;
+        return lt > (remote.updatedAt || remote.timestamp || 0) ? loc : remote;
+      });
+      const toWriteGrat =
+        deletedGratIds.size > 0 ? merged.filter((g) => !deletedGratIds.has(g.id)) : merged;
+      if (toWriteGrat.length) await db.gratitudeEntries.bulkPut(toWriteGrat as any);
+    });
+    triggerDataRefresh();
+    return true;
+  } catch (err) {
+    logger.error("[Pull] Gratitude failed:", err);
+    return false;
   }
 };

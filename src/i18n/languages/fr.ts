@@ -1193,7 +1193,7 @@ export const fr: Translations = {
   comebackChallengeComplete: "Défi de retour terminé !",
   questPrefix: "Quête",
 
-  dopamineSettings: "Dopamine Dashboard",
+  dopamineSettings: "Tableau de dopamine",
   dopamineSettingsDesc: "Personnalisez votre expérience de retour",
   dopamineIntensity: "Niveau d'intensité",
   dopamineMinimal: "Minimal",

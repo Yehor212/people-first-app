@@ -4,7 +4,7 @@ import { SK } from "@/lib/storageKeys";
 import { Volume2, VolumeX, Sparkles, Zap, Award, Music } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
-import { Switch } from "@/components/ui/switch";
+import { SettingToggle } from "@/components/SettingToggle";
 import { useModalA11y } from "@/hooks/useModalA11y";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { useBackHandler } from "@/hooks/useBackHandler";
@@ -141,14 +141,11 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
     >
       <div
         className="bg-card rounded-2xl shadow-2xl max-w-md w-full max-h-[90dvh] overflow-y-auto scroll-pt-[80px]"
-        role="button"
-        tabIndex={0}
+        // A11Y-OK: non-interactive container — stopPropagation prevents backdrop-close, outer div has role="dialog"
         onClick={(e) => e.stopPropagation()}
+        onTouchEnd={(e) => e.stopPropagation()}
         onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            e.stopPropagation();
-          }
+          e.stopPropagation();
         }}
         onTouchEnd={(e) => e.stopPropagation()}
       >
@@ -259,133 +256,54 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
               {t.dopamineCustomize || "Fine-tune Settings"}
             </h3>
 
-            {/* Animations */}
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3 min-w-0 flex-1">
-                <div className="w-9 h-9 flex-shrink-0 bg-primary/10 rounded-lg flex items-center justify-center">
-                  <Sparkles className="w-5 h-5 text-primary" />
-                </div>
-                <div className="min-w-0">
-                  <div className="font-medium truncate">{t.dopamineAnimations || "Animations"}</div>
-                  <div className="text-xs text-muted-foreground line-clamp-1">
-                    {t.dopamineAnimationsDesc || "Smooth transitions and effects"}
-                  </div>
-                </div>
-              </div>
-              <Switch
-                checked={settings.animations}
-                onCheckedChange={(checked) => updateSettings({ animations: checked })}
-                aria-label={t.dopamineAnimations || "Animations"}
-              />
-            </div>
-
-            {/* Sounds */}
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3 min-w-0 flex-1">
-                <div className="w-9 h-9 flex-shrink-0 bg-primary/10 rounded-lg flex items-center justify-center">
-                  {settings.sounds ? (
-                    <Volume2 className="w-5 h-5 text-primary" />
-                  ) : (
-                    <VolumeX className="w-5 h-5 text-muted-foreground" />
-                  )}
-                </div>
-                <div className="min-w-0">
-                  <div className="font-medium truncate">{t.dopamineSounds || "Sounds"}</div>
-                  <div className="text-xs text-muted-foreground line-clamp-1">
-                    {t.dopamineSoundsDesc || "Success sounds and audio feedback"}
-                  </div>
-                </div>
-              </div>
-              <Switch
-                checked={settings.sounds}
-                onCheckedChange={(checked) => updateSettings({ sounds: checked })}
-                aria-label={t.dopamineSounds || "Sounds"}
-              />
-            </div>
-
-            {/* Haptics */}
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3 min-w-0 flex-1">
-                <div className="w-9 h-9 flex-shrink-0 bg-primary/10 rounded-lg flex items-center justify-center">
-                  <Music className="w-5 h-5 text-primary" />
-                </div>
-                <div className="min-w-0">
-                  <div className="font-medium truncate">{t.dopamineHaptics || "Haptics"}</div>
-                  <div className="text-xs text-muted-foreground line-clamp-1">
-                    {t.dopamineHapticsDesc || "Vibration feedback (mobile only)"}
-                  </div>
-                </div>
-              </div>
-              <Switch
-                checked={settings.haptics}
-                onCheckedChange={(checked) => updateSettings({ haptics: checked })}
-                aria-label={t.dopamineHaptics || "Haptics"}
-              />
-            </div>
-
-            {/* Confetti */}
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3 min-w-0 flex-1">
-                <div className="w-9 h-9 flex-shrink-0 bg-primary/10 rounded-lg flex items-center justify-center">
-                  <span className="text-lg leading-none">🎉</span>
-                </div>
-                <div className="min-w-0">
-                  <div className="font-medium truncate">{t.dopamineConfetti || "Confetti"}</div>
-                  <div className="text-xs text-muted-foreground line-clamp-1">
-                    {t.dopamineConfettiDesc || "Celebrate habit completions"}
-                  </div>
-                </div>
-              </div>
-              <Switch
-                checked={settings.confetti}
-                onCheckedChange={(checked) => updateSettings({ confetti: checked })}
-                aria-label={t.dopamineConfetti || "Confetti"}
-              />
-            </div>
-
-            {/* Streak Fire */}
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3 min-w-0 flex-1">
-                <div className="w-9 h-9 flex-shrink-0 bg-primary/10 rounded-lg flex items-center justify-center">
-                  <span className="text-lg leading-none">🔥</span>
-                </div>
-                <div className="min-w-0">
-                  <div className="font-medium truncate">
-                    {t.dopamineStreakFire || "Streak Fire"}
-                  </div>
-                  <div className="text-xs text-muted-foreground line-clamp-1">
-                    {t.dopamineStreakFireDesc || "Animated fire for streaks"}
-                  </div>
-                </div>
-              </div>
-              <Switch
-                checked={settings.streakFire}
-                onCheckedChange={(checked) => updateSettings({ streakFire: checked })}
-                aria-label={t.dopamineStreakFire || "Streak Fire"}
-              />
-            </div>
-
-            {/* Mood-Driven UI */}
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3 min-w-0 flex-1">
-                <div className="w-9 h-9 flex-shrink-0 bg-primary/10 rounded-lg flex items-center justify-center">
-                  <span className="text-lg leading-none">🎨</span>
-                </div>
-                <div className="min-w-0">
-                  <div className="font-medium truncate">
-                    {t.dopamineMoodDrivenUI || "Mood Visuals"}
-                  </div>
-                  <div className="text-xs text-muted-foreground line-clamp-1">
-                    {t.dopamineMoodDrivenUIDesc || "UI adapts to your mood"}
-                  </div>
-                </div>
-              </div>
-              <Switch
-                checked={settings.moodDrivenUI}
-                onCheckedChange={(checked) => updateSettings({ moodDrivenUI: checked })}
-                aria-label={t.dopamineMoodDrivenUI || "Mood Visuals"}
-              />
-            </div>
+            <SettingToggle
+              icon={<Sparkles className="w-5 h-5 text-primary" />}
+              label={t.dopamineAnimations || "Animations"}
+              description={t.dopamineAnimationsDesc || "Smooth transitions and effects"}
+              checked={settings.animations}
+              onCheckedChange={(checked) => updateSettings({ animations: checked })}
+            />
+            <SettingToggle
+              icon={
+                settings.sounds ? (
+                  <Volume2 className="w-5 h-5 text-primary" />
+                ) : (
+                  <VolumeX className="w-5 h-5 text-muted-foreground" />
+                )
+              }
+              label={t.dopamineSounds || "Sounds"}
+              description={t.dopamineSoundsDesc || "Success sounds and audio feedback"}
+              checked={settings.sounds}
+              onCheckedChange={(checked) => updateSettings({ sounds: checked })}
+            />
+            <SettingToggle
+              icon={<Music className="w-5 h-5 text-primary" />}
+              label={t.dopamineHaptics || "Haptics"}
+              description={t.dopamineHapticsDesc || "Vibration feedback (mobile only)"}
+              checked={settings.haptics}
+              onCheckedChange={(checked) => updateSettings({ haptics: checked })}
+            />
+            <SettingToggle
+              icon={<span className="text-lg leading-none">🎉</span>}
+              label={t.dopamineConfetti || "Confetti"}
+              description={t.dopamineConfettiDesc || "Celebrate habit completions"}
+              checked={settings.confetti}
+              onCheckedChange={(checked) => updateSettings({ confetti: checked })}
+            />
+            <SettingToggle
+              icon={<span className="text-lg leading-none">🔥</span>}
+              label={t.dopamineStreakFire || "Streak Fire"}
+              description={t.dopamineStreakFireDesc || "Animated fire for streaks"}
+              checked={settings.streakFire}
+              onCheckedChange={(checked) => updateSettings({ streakFire: checked })}
+            />
+            <SettingToggle
+              icon={<span className="text-lg leading-none">🎨</span>}
+              label={t.dopamineMoodDrivenUI || "Mood Visuals"}
+              description={t.dopamineMoodDrivenUIDesc || "UI adapts to your mood"}
+              checked={settings.moodDrivenUI}
+              onCheckedChange={(checked) => updateSettings({ moodDrivenUI: checked })}
+            />
           </div>
 
           {/* Info Box */}

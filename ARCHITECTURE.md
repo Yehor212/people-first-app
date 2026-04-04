@@ -2,31 +2,32 @@
 
 > This document is the "constitution" of the ZenFlow codebase.
 > Every PR, every feature, every refactor MUST follow these rules.
-> Last updated: 2026-03-11 (2664 tests, Full-cycle Senior Dev Audit — 7 new TD items, 3 law refinements, metrics refresh, TD-20 reopened)
+> Last updated: 2026-04-04 (3202 tests, Team Lead Deep Assessment — metrics refresh, bundle -380kB, 5 memo additions, security fixes, CSS dedup)
 
 ---
 
-## Codebase Metrics (as of 2026-03-11)
+## Codebase Metrics (as of 2026-04-04)
 
-| Metric | Value | Command |
-|--------|-------|---------|
-| Source files | 702 (.ts/.tsx, excl. tests) | `find src -name "*.ts" -o -name "*.tsx" \| grep -v test \| wc -l` |
-| Test files | 121 | `find src test -name "*.test.*" -o -name "*.spec.*" \| wc -l` |
-| Total LOC | ~69,400 (TSX only) | `find src -name "*.tsx" -exec wc -l {} + \| tail -1` |
-| Tests passing | 2664/2664 | `npx vitest --run` |
-| ESLint errors | 0 | `npx eslint src/ --quiet` |
-| ESLint warnings | 0 | `npx eslint . --max-warnings=0` |
-| TypeScript errors | 0 | `npx tsc --noEmit` |
-| God components (>400L) | 2 contexts (AICoachContext 459L, EmotionThemeContext 404L) + 33 resolved + **7 new violations** (see TD-20) + 1 dead code deleted, 4 journal out-of-scope | See [Known Technical Debt](#known-technical-debt) |
-| Direct localStorage calls | 0 (was 199) | Enforced by ESLint `no-restricted-globals` rule. All access via `SK` + `safeJson`. |
-| Silent .catch(() => {}) | 2 (ErrorBoundary cache cleanup + OrbLottie anim load) | `grep -rn '\.catch.*=> {}' src/ \| wc -l` |
-| React.memo components | 44 / 80+ | `grep -rl 'memo(' src/ --include="*.tsx" \| wc -l` |
-| lazy() imports | 3 | `grep -rn 'lazy(' src/ \| wc -l` |
-| exhaustive-deps suppressions | 22 across ~18 files (all intentional) | `grep -rn 'eslint-disable.*exhaustive-deps' src/ \| wc -l` |
-| Hook test coverage | 36/54 (67%) | `ls src/hooks/__tests__/ \| wc -l` vs `ls src/hooks/*.ts \| wc -l` |
-| Store test coverage | 4/4 (100%) | `ls src/stores/__tests__/ \| wc -l` |
-| index.css LOC | 4,327 | `wc -l src/index.css` |
-| Inline style={{}} | 597 across 174 files | `grep -rn 'style={{' src/ --include="*.tsx" \| wc -l` |
+| Metric                       | Value                                                                                   | Command                                                                            |
+| ---------------------------- | --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Source files                 | 687 (.ts/.tsx, excl. tests)                                                             | `find src -name "*.ts" -o -name "*.tsx" \| grep -v test \| wc -l`                  |
+| Test files                   | 147                                                                                     | `find src test -name "*.test.*" -o -name "*.spec.*" \| wc -l`                      |
+| Tests passing                | 3202/3202                                                                               | `npx vitest --run`                                                                 |
+| ESLint errors                | 0                                                                                       | `npx eslint src/ --quiet`                                                          |
+| ESLint warnings              | 0                                                                                       | `npx eslint . --max-warnings=0`                                                    |
+| TypeScript errors            | 0                                                                                       | `npx tsc --noEmit`                                                                 |
+| God components (>400L)       | 13 (excl. journal features) + 33 resolved + 1 dead code deleted, 5 journal out-of-scope | See [Known Technical Debt](#known-technical-debt)                                  |
+| Direct localStorage calls    | 0 (was 199)                                                                             | Enforced by ESLint `no-restricted-globals` rule. All access via `SK` + `safeJson`. |
+| Silent .catch(() => {})      | 0 (all annotated with `// graceful:` or have logger calls)                              | `grep -rn '\.catch.*=> {}' src/ \| wc -l`                                          |
+| React.memo components        | 56 / 80+                                                                                | `grep -rl 'memo(' src/ --include="*.tsx" \| wc -l`                                 |
+| lazyWithRetry() imports      | 31                                                                                      | `grep -rn 'lazyWithRetry(' src/ \| grep -v test \| grep -v function \| wc -l`      |
+| exhaustive-deps suppressions | 21 across ~15 files (all intentional)                                                   | `grep -rn 'eslint-disable.*exhaustive-deps' src/ \| wc -l`                         |
+| Hook test coverage           | 39/51 (76%)                                                                             | `ls src/hooks/__tests__/ \| wc -l` vs `ls src/hooks/*.ts \| wc -l`                 |
+| Store test coverage          | 4/4 (100%)                                                                              | `ls src/stores/__tests__/ \| wc -l`                                                |
+| index.css LOC                | 4,480                                                                                   | `wc -l src/index.css`                                                              |
+| Inline style={{}}            | 304 across 136 files                                                                    | `grep -rn 'style={{' src/ --include="*.tsx" \| wc -l`                              |
+| i18n keys                    | 2,429 across 8 languages                                                                | `npm run i18n:check`                                                               |
+| Ratchet score                | 9.9/10.0                                                                                | `npm run ratchet:check`                                                            |
 
 > Update these metrics after each major refactor phase. Compare deltas to track progress.
 
@@ -57,20 +58,20 @@
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Framework | React 18 + TypeScript |
-| Build | Vite (SWC plugin) |
-| Styling | Tailwind CSS + shadcn/ui |
-| State (client) | Zustand |
-| State (server) | TanStack React Query |
-| Local DB | Dexie (IndexedDB) |
-| Backend | Supabase (Auth, Database, Realtime) |
-| Native | Capacitor 8 |
-| Analytics | Firebase (Crashlytics + Analytics) |
-| Ads | AdMob via @capacitor-community/admob |
-| Error Monitoring | Sentry |
-| i18n | Custom (8 languages: en, uk, es, de, fr, ja, ar, he) |
+| Layer            | Technology                                           |
+| ---------------- | ---------------------------------------------------- |
+| Framework        | React 18 + TypeScript                                |
+| Build            | Vite (SWC plugin)                                    |
+| Styling          | Tailwind CSS + shadcn/ui                             |
+| State (client)   | Zustand                                              |
+| State (server)   | TanStack React Query                                 |
+| Local DB         | Dexie (IndexedDB)                                    |
+| Backend          | Supabase (Auth, Database, Realtime)                  |
+| Native           | Capacitor 8                                          |
+| Analytics        | Firebase (Crashlytics + Analytics)                   |
+| Ads              | AdMob via @capacitor-community/admob                 |
+| Error Monitoring | Sentry                                               |
+| i18n             | Custom (8 languages: en, uk, es, de, fr, ja, ar, he) |
 
 ---
 
@@ -246,16 +247,17 @@ src/features/mood/
 
 Waves A-G replaced the punitive streak-based engagement model with an **identity-driven growth system**. The system has four interconnected pillars:
 
-| Pillar | Purpose | Key Libs/Hooks |
-|--------|---------|---------------|
-| **Identity Clusters** | Group habits by who the user is becoming ("I am an athlete") | `computeIdentityClusters()` in `src/lib/identityClusters.ts` |
-| **Growth Rings** | Never-resetting visualization of consistency over time | `computeGrowthRings()` in `src/lib/growthRings.ts` |
+| Pillar                | Purpose                                                      | Key Libs/Hooks                                                  |
+| --------------------- | ------------------------------------------------------------ | --------------------------------------------------------------- |
+| **Identity Clusters** | Group habits by who the user is becoming ("I am an athlete") | `computeIdentityClusters()` in `src/lib/identityClusters.ts`    |
+| **Growth Rings**      | Never-resetting visualization of consistency over time       | `computeGrowthRings()` in `src/lib/growthRings.ts`              |
 | **Micro-Reflections** | Contextual prompts with lightweight input (nano/micro depth) | `useReflectionPrompts()` in `src/hooks/useReflectionPrompts.ts` |
-| **Garden Atmosphere** | Dynamic environment responding to user activity patterns | `getCurrentGardenAtmosphere()` in `src/lib/gardenAtmosphere.ts` |
+| **Garden Atmosphere** | Dynamic environment responding to user activity patterns     | `getCurrentGardenAtmosphere()` in `src/lib/gardenAtmosphere.ts` |
 
 ### Data Models (added to `src/types/index.ts`)
 
 **Identity fields on Habit:**
+
 ```typescript
 identityCluster?: string;   // e.g., "Athlete", "Learner"
 identityVerb?: string;      // e.g., "I train because strength is freedom"
@@ -263,12 +265,13 @@ identityIcon?: string;      // Lucide icon name (e.g., "Dumbbell"), NOT emoji
 ```
 
 **MicroReflection** (persisted to IndexedDB via settings table):
+
 ```typescript
 interface MicroReflection {
   id: string;
   text: string;
-  depth: 'nano' | 'micro';
-  trigger: ReflectionTrigger;  // 6 triggers: daily_mindfulness, mood_joy_streak, etc.
+  depth: "nano" | "micro";
+  trigger: ReflectionTrigger; // 6 triggers: daily_mindfulness, mood_joy_streak, etc.
   date: string;
   timestamp: number;
   linkedMoodId?: string;
@@ -300,24 +303,24 @@ Render time → <IdentityIcon name="Dumbbell" /> → lucide Dumbbell component
 
 `useReflectionPrompts()` fires prompts based on 6 contextual triggers:
 
-| Trigger | Condition |
-|---------|-----------|
-| `daily_mindfulness` | Once per day, general prompt |
-| `mood_joy_streak` | 3+ consecutive days of `primary === 'joy'` |
-| `habit_streak_milestone` | 7/14/30/60/100-day streak reached |
-| `focus_session_complete` | After completing a focus session |
-| `garden_new_plant` | After planting a new seed |
-| `evening_reflection` | After 6 PM local time |
+| Trigger                  | Condition                                  |
+| ------------------------ | ------------------------------------------ |
+| `daily_mindfulness`      | Once per day, general prompt               |
+| `mood_joy_streak`        | 3+ consecutive days of `primary === 'joy'` |
+| `habit_streak_milestone` | 7/14/30/60/100-day streak reached          |
+| `focus_session_complete` | After completing a focus session           |
+| `garden_new_plant`       | After planting a new seed                  |
+| `evening_reflection`     | After 6 PM local time                      |
 
 ### UI Rendering
 
-| Feature | Location | Component |
-|---------|----------|-----------|
-| Growth Rings (30-day bar) | HomeTab, OverviewTab | Inline `motion.div` with `surface-glass` |
-| Identity Clusters (progress bars) | OverviewTab | Inline section with `IdentityIcon` |
-| Reflection Prompt (interactive) | HomeTab | `ReflectionPromptCard.tsx` |
-| Garden Atmosphere | GardenTab | Lucide icon + label |
-| Identity Mapping (habit form) | HabitCreationForm | Cluster input + verb input + `IdentityIconPicker` |
+| Feature                           | Location             | Component                                         |
+| --------------------------------- | -------------------- | ------------------------------------------------- |
+| Growth Rings (30-day bar)         | HomeTab, OverviewTab | Inline `motion.div` with `surface-glass`          |
+| Identity Clusters (progress bars) | OverviewTab          | Inline section with `IdentityIcon`                |
+| Reflection Prompt (interactive)   | HomeTab              | `ReflectionPromptCard.tsx`                        |
+| Garden Atmosphere                 | GardenTab            | Lucide icon + label                               |
+| Identity Mapping (habit form)     | HabitCreationForm    | Cluster input + verb input + `IdentityIconPicker` |
 
 ### Mind Map Canvas & Navigation (2026-02-22)
 
@@ -338,6 +341,7 @@ The Mind Map Canvas lives in a **dedicated "Map" tab** (`MindMapTab.tsx`) — se
 **Performance**: Tabs use `{activeTab === 'x' && <Tab />}` pattern — inactive tabs are UNMOUNTED from the DOM. When user navigates away from mindmap, the entire MindMapCanvas (including OrbLottie) is destroyed. No wasted resources.
 
 **Canvas Architecture:**
+
 - Dark infinite canvas (`#0D1117` background) with `<motion.div drag>` for pan + wheel/pinch for zoom
 - Layout: `computeGoalTreeLayout()` in `goalTreeLayout.ts` — goal tree with ring-based radial placement
 - Two node levels: RootNode ("Я", 80×80 circle, Lottie orb) → GoalNode (goal cards with emoji/color/icon customization)
@@ -397,11 +401,11 @@ Supporting: `src/lib/habitScore.ts` (Loop exponential smoothing score + streak +
 
 User data lives in **IndexedDB** (via Dexie + `useIndexedDB` hook) and is bridged into **Zustand** stores for fast, synchronous reads by any component.
 
-| Layer | Tool | Scope | Example |
-|-------|------|-------|---------|
-| **Persistence** | Dexie (IndexedDB) | Source of truth | Moods, habits, focus sessions, micro-reflections |
-| **Global client state** | Zustand | In-memory mirror + app state | Auth, active tab, modals, user data |
-| **Local UI state** | useState | Single component | Form input, local toggle |
+| Layer                   | Tool              | Scope                        | Example                                          |
+| ----------------------- | ----------------- | ---------------------------- | ------------------------------------------------ |
+| **Persistence**         | Dexie (IndexedDB) | Source of truth              | Moods, habits, focus sessions, micro-reflections |
+| **Global client state** | Zustand           | In-memory mirror + app state | Auth, active tab, modals, user data              |
+| **Local UI state**      | useState          | Single component             | Form input, local toggle                         |
 
 ### Bridge Pattern (how it works)
 
@@ -416,17 +420,18 @@ Zustand userDataStore
 ```
 
 The bridge hook `useHydrateUserData` (in `stores/`) calls `useIndexedDB` for each data field, then:
+
 1. Syncs loaded values into Zustand via `_hydrateFromDB()` (with `Array.isArray` validation)
 2. Registers setter functions via `_registerSetters()` so store actions persist to IndexedDB
 
 ### Stores
 
-| Store | Responsibility | Key Pattern |
-|-------|---------------|-------------|
-| `appStore` | Auth, initialization, active tab, navigation | Plain Zustand |
-| `userDataStore` | All user data (moods, habits, settings) | Bridge to IndexedDB |
-| `uiStore` | Modals, confetti, focus minutes | `getModalToggle(name)` utility |
-| `gamificationStore` | XP/treats bridge | Registers hooks from `useGamification` |
+| Store               | Responsibility                               | Key Pattern                            |
+| ------------------- | -------------------------------------------- | -------------------------------------- |
+| `appStore`          | Auth, initialization, active tab, navigation | Plain Zustand                          |
+| `userDataStore`     | All user data (moods, habits, settings)      | Bridge to IndexedDB                    |
+| `uiStore`           | Modals, confetti, focus minutes              | `getModalToggle(name)` utility         |
+| `gamificationStore` | XP/treats bridge                             | Registers hooks from `useGamification` |
 
 ### `getModalToggle` Pattern
 
@@ -434,7 +439,7 @@ Module-level cached toggle functions for modal open/close, replacing 11 `useCall
 
 ```typescript
 // In uiStore.ts — called at module scope, not inside components
-const setShowWeeklyReport = getModalToggle('showWeeklyReport');
+const setShowWeeklyReport = getModalToggle("showWeeklyReport");
 // Returns: (value: boolean) => void — stable reference, no re-renders
 ```
 
@@ -469,7 +474,7 @@ User Action
 // gamificationStore.ts
 rewardUser: (action, config) => {
   const hooks = get()._hooks;
-  if (!hooks) return { treatsEarned: 0 };  // Guard: hooks not yet registered
+  if (!hooks) return { treatsEarned: 0 }; // Guard: hooks not yet registered
   hooks.awardXp(action);
   const result = hooks.earnTreats(action, config.treats, config.reason);
   triggerXpPopup(result.earned, action);
@@ -477,7 +482,7 @@ rewardUser: (action, config) => {
   haptics[config.hapticMethod]();
   hooks.plantSeed(action, config.seedType);
   hooks.waterPlants(action);
-}
+};
 ```
 
 Hooks are registered via `useHydrateGamification({ awardXp, earnTreats, plantSeed, waterPlants })` in Index.tsx.
@@ -499,7 +504,7 @@ Hooks are registered via `useHydrateGamification({ awardXp, earnTreats, plantSee
    - Incident: 20260307 migration created `user_reminder_settings` without defaults, 20260311's `IF NOT EXISTS` skipped fix → 400 errors. Fixed by 20260316.
 7. **Effect-Sync Dedup Pattern:** Any `useEffect` that depends on a Zustand object (not primitive) and triggers async sync MUST use a `JSON.stringify` ref guard to prevent triple-fire from reference-only changes. Pattern:
    ```typescript
-   const prevRef = useRef<string>('');
+   const prevRef = useRef<string>("");
    useEffect(() => {
      const serialized = JSON.stringify(dep);
      if (serialized === prevRef.current) return;
@@ -528,11 +533,11 @@ Hooks are registered via `useHydrateGamification({ awardXp, earnTreats, plantSee
 
 **Absolutely NO system emojis** in rendered UI components. All icons MUST use `lucide-react`.
 
-| Context | Pattern | Example |
-|---------|---------|---------|
-| Inline icon | `<IconName className="w-4 h-4" />` | `<TreePine className="w-4 h-4 text-emerald-600" />` |
-| Identity icon (stored) | `<IdentityIcon name={storedName} />` | Renders stored string → lucide component |
-| Habit emoji icons | `habitIcons` array in `useHabitForm.ts` | These are **data** emojis for user selection, not UI chrome |
+| Context                | Pattern                                 | Example                                                     |
+| ---------------------- | --------------------------------------- | ----------------------------------------------------------- |
+| Inline icon            | `<IconName className="w-4 h-4" />`      | `<TreePine className="w-4 h-4 text-emerald-600" />`         |
+| Identity icon (stored) | `<IdentityIcon name={storedName} />`    | Renders stored string → lucide component                    |
+| Habit emoji icons      | `habitIcons` array in `useHabitForm.ts` | These are **data** emojis for user selection, not UI chrome |
 
 **Exception:** `habitIcons` in `useHabitForm.ts` uses emojis because users **select** them as habit identifiers (e.g., 💧 for water). These are user-facing data tokens, not UI decoration.
 
@@ -545,6 +550,7 @@ bg-surface-glass backdrop-blur-[var(--surface-glass-blur)] border border-[var(--
 ```
 
 **CSS vars** (defined in `src/index.css` for light, dark, and OLED themes):
+
 - `--surface-glass` — translucent background color
 - `--surface-glass-blur` — blur radius (8-12px)
 - `--surface-glass-border` — subtle border color
@@ -573,20 +579,21 @@ Current guards: HomeTab (3 sections: 200px, 180px, 120px), GardenTab (4 sections
 
 Full z-index map for overlapping UI elements (ascending order):
 
-| Element | Z-Index | File |
-|---------|---------|------|
-| Navigation bar | `z-50` | `Navigation.tsx` |
-| Habit Hub FAB | `z-[55]` | `HabitHubList.tsx` |
-| Sort dropdown backdrop | `z-[56]` | `HabitHubList.tsx` |
-| Sort dropdown menu | `z-[57]` | `HabitHubList.tsx` |
-| Sheet overlay | `z-[60]` | `ui/sheet.tsx` |
-| Sheet content | `z-[80]` | `ui/sheet.tsx` |
-| Heatmap tooltip | `z-[100]` | `HabitHeatmapGrid.tsx` |
-| Offline banner | `z-[250]` | `OfflineBanner.tsx` |
+| Element                | Z-Index   | File                   |
+| ---------------------- | --------- | ---------------------- |
+| Navigation bar         | `z-50`    | `Navigation.tsx`       |
+| Habit Hub FAB          | `z-[55]`  | `HabitHubList.tsx`     |
+| Sort dropdown backdrop | `z-[56]`  | `HabitHubList.tsx`     |
+| Sort dropdown menu     | `z-[57]`  | `HabitHubList.tsx`     |
+| Sheet overlay          | `z-[60]`  | `ui/sheet.tsx`         |
+| Sheet content          | `z-[80]`  | `ui/sheet.tsx`         |
+| Heatmap tooltip        | `z-[100]` | `HabitHeatmapGrid.tsx` |
+| Offline banner         | `z-[250]` | `OfflineBanner.tsx`    |
 
 ### Sheet Rendering (WebView Fix)
 
 Bottom sheets use defensive CSS to prevent WebView stacking context bugs:
+
 - `isolate` on SheetContent (creates own stacking context, prevents `backdrop-filter` on overlay from hiding content)
 - `will-change-transform` on bottom variant (forces GPU compositing layer)
 - Inline `style` fallback for `side="bottom"`: `{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 80 }` (highest specificity, bypasses CSS class purging)
@@ -602,6 +609,7 @@ Bottom sheets use defensive CSS to prevent WebView stacking context bugs:
 ### Rules
 
 1. **Never empty catch blocks.** Every catch must log with context:
+
    ```typescript
    // BAD
    catch (e) {}
@@ -637,11 +645,12 @@ Bottom sheets use defensive CSS to prevent WebView stacking context bugs:
    - Data coming from Capacitor plugins
 
 2. **Zod schemas live next to their types:**
+
    ```typescript
    // shared/types/mood.ts
    export const MoodEntrySchema = z.object({
      id: z.string().uuid(),
-     mood: z.enum(['terrible', 'bad', 'okay', 'good', 'great']),
+     mood: z.enum(["terrible", "bad", "okay", "good", "great"]),
      timestamp: z.string().datetime(),
      // ...
    });
@@ -656,13 +665,13 @@ Bottom sheets use defensive CSS to prevent WebView stacking context bugs:
 
 ### Size limits
 
-| Metric | Limit | Action if exceeded |
-|--------|-------|--------------------|
-| File lines | 400 max | Extract hooks, split into sub-components |
-| useState hooks | 5 max per component | Extract into custom hook or Zustand store |
-| useEffect hooks | 3 max per component | Extract into custom hook |
-| Props | 7 max | Use composition, context, or store |
-| Imports | 15 max | Component is doing too much — split |
+| Metric          | Limit               | Action if exceeded                        |
+| --------------- | ------------------- | ----------------------------------------- |
+| File lines      | 400 max             | Extract hooks, split into sub-components  |
+| useState hooks  | 5 max per component | Extract into custom hook or Zustand store |
+| useEffect hooks | 3 max per component | Extract into custom hook                  |
+| Props           | 7 max               | Use composition, context, or store        |
+| Imports         | 15 max              | Component is doing too much — split       |
 
 ### Patterns
 
@@ -671,6 +680,7 @@ Bottom sheets use defensive CSS to prevent WebView stacking context bugs:
    - Presenter: pure UI, receives props
 
 2. **Custom hooks for logic extraction:**
+
    ```typescript
    // Instead of 5 useEffects in a component:
    function useMoodSync(moods: MoodEntry[]) {
@@ -679,6 +689,7 @@ Bottom sheets use defensive CSS to prevent WebView stacking context bugs:
    ```
 
 3. **No business logic in JSX.** Extract to functions or hooks.
+
    ```typescript
    // BAD
    {moods.filter(m => m.date === today && m.mood !== 'terrible').length > 0 && <Component />}
@@ -692,18 +703,18 @@ Bottom sheets use defensive CSS to prevent WebView stacking context bugs:
 
 ## Naming Conventions
 
-| Entity | Convention | Example |
-|--------|-----------|---------|
-| Components | PascalCase | `MoodTracker.tsx` |
-| Hooks | camelCase + `use` prefix | `useMoodData.ts` |
-| Stores | camelCase + `Store` suffix | `userDataStore.ts` |
-| Types/Interfaces | PascalCase, no `I` prefix | `MoodEntry` (not `IMoodEntry`) |
-| Zod schemas | PascalCase + `Schema` suffix | `MoodEntrySchema` |
-| Constants | UPPER_SNAKE_CASE | `MAX_STREAK_DAYS` |
-| Config objects | camelCase | `adConfig`, `rewardConfig` |
-| Event handlers | `handle` + noun + verb | `handleMoodSave`, `handleHabitToggle` |
-| Boolean props/state | `is`/`has`/`should` prefix | `isLoading`, `hasStreak`, `shouldSync` |
-| Files (non-component) | camelCase | `challengeService.ts` |
+| Entity                | Convention                   | Example                                |
+| --------------------- | ---------------------------- | -------------------------------------- |
+| Components            | PascalCase                   | `MoodTracker.tsx`                      |
+| Hooks                 | camelCase + `use` prefix     | `useMoodData.ts`                       |
+| Stores                | camelCase + `Store` suffix   | `userDataStore.ts`                     |
+| Types/Interfaces      | PascalCase, no `I` prefix    | `MoodEntry` (not `IMoodEntry`)         |
+| Zod schemas           | PascalCase + `Schema` suffix | `MoodEntrySchema`                      |
+| Constants             | UPPER_SNAKE_CASE             | `MAX_STREAK_DAYS`                      |
+| Config objects        | camelCase                    | `adConfig`, `rewardConfig`             |
+| Event handlers        | `handle` + noun + verb       | `handleMoodSave`, `handleHabitToggle`  |
+| Boolean props/state   | `is`/`has`/`should` prefix   | `isLoading`, `hasStreak`, `shouldSync` |
+| Files (non-component) | camelCase                    | `challengeService.ts`                  |
 
 ---
 
@@ -721,11 +732,11 @@ Visual components (Canvas, CSS, animations) are NOT tested via TDD — they use 
 
 ### Strategy
 
-| Layer | Tool | What to test |
-|-------|------|-------------|
-| Unit | Vitest | Pure functions, utilities, store logic |
-| Integration | Vitest + Testing Library | Hooks, store interactions |
-| E2E | Playwright (chromium) | Critical user flows — `e2e/smoke.spec.ts` |
+| Layer       | Tool                     | What to test                              |
+| ----------- | ------------------------ | ----------------------------------------- |
+| Unit        | Vitest                   | Pure functions, utilities, store logic    |
+| Integration | Vitest + Testing Library | Hooks, store interactions                 |
+| E2E         | Playwright (chromium)    | Critical user flows — `e2e/smoke.spec.ts` |
 
 ### Playwright E2E
 
@@ -737,14 +748,14 @@ Visual components (Canvas, CSS, animations) are NOT tested via TDD — they use 
 
 ### CI Preflight vs Full CI
 
-| Check | `npm run ci:preflight` (local) | GitHub Actions `build` job |
-|-------|-------------------------------|---------------------------|
-| ESLint | ✅ | ✅ |
-| TypeScript | ✅ | ✅ |
-| i18n check | ✅ | ✅ |
-| Vitest | ✅ | ✅ |
-| Vite build | ✅ | ✅ |
-| **Playwright E2E** | ❌ (must run manually) | ✅ |
+| Check              | `npm run ci:preflight` (local) | GitHub Actions `build` job |
+| ------------------ | ------------------------------ | -------------------------- |
+| ESLint             | ✅                             | ✅                         |
+| TypeScript         | ✅                             | ✅                         |
+| i18n check         | ✅                             | ✅                         |
+| Vitest             | ✅                             | ✅                         |
+| Vite build         | ✅                             | ✅                         |
+| **Playwright E2E** | ❌ (must run manually)         | ✅                         |
 
 **IMPORTANT**: `ci:preflight` does NOT run Playwright. Before pushing changes that add modals/overlays, ALWAYS also run `npx playwright test --project=chromium`.
 
@@ -768,7 +779,7 @@ Visual components (Canvas, CSS, animations) are NOT tested via TDD — they use 
 2. **useMemo/useCallback** for expensive computations and stable references passed to children.
 3. **Lazy load** feature modules:
    ```typescript
-   const MoodTracker = lazy(() => import('@/features/mood'));
+   const MoodTracker = lazy(() => import("@/features/mood"));
    ```
 4. **Image optimization:** Use WebP, lazy loading, proper sizing.
 5. **Bundle splitting:** Each feature module = separate chunk.
@@ -780,26 +791,27 @@ All framer-motion animations MUST use standardized presets from `src/lib/animati
 
 **Motion presets** (spread onto `motion.div`):
 
-| Preset | Use case | Duration feel |
-|--------|----------|--------------|
-| `motionPresets.fadeIn` | Ambient reveals | 200ms ease |
-| `motionPresets.slideUp` | Card entrances | 300ms ease-out |
-| `motionPresets.scaleIn` | Success states, badges | 200ms ease-out |
+| Preset                     | Use case               | Duration feel       |
+| -------------------------- | ---------------------- | ------------------- |
+| `motionPresets.fadeIn`     | Ambient reveals        | 200ms ease          |
+| `motionPresets.slideUp`    | Card entrances         | 300ms ease-out      |
+| `motionPresets.scaleIn`    | Success states, badges | 200ms ease-out      |
 | `motionPresets.modalEnter` | Modal/sheet appearance | Spring (damping 25) |
 
 **Spring tokens** (pass as `transition` prop):
 
-| Token | Use case | Physics |
-|-------|----------|---------|
-| `zenMotion.snappy` | Buttons, toggles, checkboxes | stiffness: 400, damping: 30 |
-| `zenMotion.gentle` | Cards, modals, panels | stiffness: 260, damping: 25 |
-| `zenMotion.bouncy` | Celebrations, achievements | stiffness: 300, damping: 15 |
-| `zenMotion.exit` | Closing, dismissing | 150ms ease-in |
-| `zenMotion.breathing` | Infinite ambient loops | 3s ease-in-out, reverse |
+| Token                 | Use case                     | Physics                     |
+| --------------------- | ---------------------------- | --------------------------- |
+| `zenMotion.snappy`    | Buttons, toggles, checkboxes | stiffness: 400, damping: 30 |
+| `zenMotion.gentle`    | Cards, modals, panels        | stiffness: 260, damping: 25 |
+| `zenMotion.bouncy`    | Celebrations, achievements   | stiffness: 300, damping: 15 |
+| `zenMotion.exit`      | Closing, dismissing          | 150ms ease-in               |
+| `zenMotion.breathing` | Infinite ambient loops       | 3s ease-in-out, reverse     |
 
 ### Animation Respect (Visual Fidelity First)
 
 All animations are controlled **solely** by the in-app Dopamine Settings toggle:
+
 - `shouldAnimate()` checks **only** `getDopamineSettings().animations` — OS `prefers-reduced-motion` is intentionally ignored
 - `AnimationGate` in `App.tsx` wraps the entire app in `<MotionConfig reducedMotion={...}>`:
   - `animations: true` → `reducedMotion="never"` (forces framer-motion to always animate, even on iOS)
@@ -823,11 +835,11 @@ All animations are controlled **solely** by the in-app Dopamine Settings toggle:
 
 `src/components/PremiumLoader.tsx` — breathing concentric rings, replaces basic CSS spinners.
 
-| Size | Diameter | Use case |
-|------|----------|----------|
-| `sm` | 24px | Inline loading (SuspenseFallback InlineSpinner) |
-| `md` | 48px | Section loading (AuthGate secondary) |
-| `lg` | 96px | Full-page loading (AuthGate, ModalLayer, SuspenseFallback PageSpinner) |
+| Size | Diameter | Use case                                                               |
+| ---- | -------- | ---------------------------------------------------------------------- |
+| `sm` | 24px     | Inline loading (SuspenseFallback InlineSpinner)                        |
+| `md` | 48px     | Section loading (AuthGate secondary)                                   |
+| `lg` | 96px     | Full-page loading (AuthGate, ModalLayer, SuspenseFallback PageSpinner) |
 
 - Uses CSS `@keyframes zen-loader-breathe` in `index.css` (not JS — 60fps Android rule)
 - `shouldAnimate()` check — static rings when disabled
@@ -861,12 +873,12 @@ All animations are controlled **solely** by the in-app Dopamine Settings toggle:
 
 Thin wrapper components in `src/components/animations/`:
 
-| Component | Asset | Type |
-|-----------|-------|------|
-| `EmptyDiaryAnimation` | `empty-diary.json` | Loop (empty diary state) |
-| `EmptyStatsAnimation` | `empty-stats.json` | Loop (empty stats state) |
-| `AllHabitsDoneAnimation` | `all-habits-done.json` | Loop (celebration) |
-| `GoalReachedAnimation` | `goal-complete.json` | Single-shot (success burst) |
+| Component                | Asset                  | Type                        |
+| ------------------------ | ---------------------- | --------------------------- |
+| `EmptyDiaryAnimation`    | `empty-diary.json`     | Loop (empty diary state)    |
+| `EmptyStatsAnimation`    | `empty-stats.json`     | Loop (empty stats state)    |
+| `AllHabitsDoneAnimation` | `all-habits-done.json` | Loop (celebration)          |
+| `GoalReachedAnimation`   | `goal-complete.json`   | Single-shot (success burst) |
 
 **Lottie JSON requirements**: <40KB, 60fps, 2-3s loop, no expressions (CSP: no unsafe-eval).
 Stub JSONs ship as minimal breathing circles — replace with premium assets from LottieFiles.com.
@@ -909,11 +921,13 @@ Split into per-language files (TD-08, 2026-02-16): `src/i18n/types.ts` (2,280L s
 ## Git & CI/CD
 
 ### Branch strategy
+
 - `main` — production, always deployable
 - `feature/*` — feature branches, PR to main
 - `fix/*` — bug fix branches
 
 ### Commit messages
+
 ```
 type: brief description
 
@@ -921,6 +935,7 @@ type = feat | fix | refactor | chore | docs | test | perf
 ```
 
 ### CI pipeline (GitHub Actions)
+
 ```
 On PR to main:
   1. npm ci
@@ -931,6 +946,7 @@ On PR to main:
 ```
 
 ### Pre-commit hooks
+
 - Lint staged files (ESLint)
 - Type check
 - Format (Prettier)
@@ -944,51 +960,51 @@ On PR to main:
 
 ### Resolved
 
-| ID | Was | Resolution | Date |
-|----|-----|-----------|------|
-| TD-12 | React Router vestigial (only 1 route `/`) | Removed entirely. SPA renders `<Index />` directly. `NavLink.tsx` (dead code) + `NotFound.tsx` deleted. Cleaned vite.config.ts manualChunks/optimizeDeps. | Phase 5 |
-| TD-13 | No React Error Boundary | `ErrorBoundary.tsx` with `LazyErrorBoundary` + `ModalErrorBoundary` wrapping all lazy components | Pre-Phase 2 |
-| TD-14 | Unused dependencies in package.json | `react-router-dom`, `@hookform/resolvers`, `embla-carousel-react`, `react-resizable-panels` removed. 3 dead shadcn/ui wrappers deleted (`carousel.tsx`, `resizable.tsx`, `chart.tsx`). 8 packages removed total. | Phase 5 |
+| ID    | Was                                       | Resolution                                                                                                                                                                                                       | Date        |
+| ----- | ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| TD-12 | React Router vestigial (only 1 route `/`) | Removed entirely. SPA renders `<Index />` directly. `NavLink.tsx` (dead code) + `NotFound.tsx` deleted. Cleaned vite.config.ts manualChunks/optimizeDeps.                                                        | Phase 5     |
+| TD-13 | No React Error Boundary                   | `ErrorBoundary.tsx` with `LazyErrorBoundary` + `ModalErrorBoundary` wrapping all lazy components                                                                                                                 | Pre-Phase 2 |
+| TD-14 | Unused dependencies in package.json       | `react-router-dom`, `@hookform/resolvers`, `embla-carousel-react`, `react-resizable-panels` removed. 3 dead shadcn/ui wrappers deleted (`carousel.tsx`, `resizable.tsx`, `chart.tsx`). 8 packages removed total. | Phase 5     |
 
 ### Partially Resolved
 
-| ID | Severity | Description | Before | After | Status |
-|----|----------|-------------|--------|-------|--------|
-| TD-01 | ~~CRITICAL~~ → LOW | Index.tsx god component | 2,800 lines, 46 useState, 29 useEffect | **407 lines**, 4 useState, 4 useEffect, 47 imports | Slightly over 400-line limit (MindMapTab integration added canvas overlays). AuthGate, useSettingsHandlers, useReminderMigration, useEmotionSync extracted. |
-| TD-02 | ~~CRITICAL~~ → LOW | No state management | All prop drilling | **4 Zustand stores** + bridge hooks. Tab components still receive handler props. | Feature handlers not yet in stores. |
-| TD-06 | ~~HIGH~~ → **DONE** | exhaustive-deps eslint suppressions | **41** across 28 files | **17 remaining** across 15 files (all legitimate mount-only/cleanup/ref patterns). +2 from useReflectionPrompts, UserProgressBar added post-IA Blueprint. Codex 5.3 fixed several (2026-02-18). 1 bug fixed: `JournalEntryEditor` prompts now update on language change (`ts` added to useMemo deps). | Audited all suppressions; only intentional patterns remain. |
-| TD-10 | ~~HIGH~~ → DONE | ~~No runtime validation~~ | **Fixed 2026-02-16**: Created `src/lib/schemas.ts` with 9 Zod runtime schemas + `validateArray`/`validateObject` helpers. Added `itemSchema`/`objectSchema` params to `useIndexedDB` — eliminated 7 unvalidated `as T` casts. Wired schemas into `useHydrateUserData` (7 calls), `useInnerWorld`, `useGamification`. Replaced 6 ad-hoc validators in `realtimeSync.ts` with Zod `safeParse()`. Fixed 2 bugs: `'abandoned'→'aborted'` focus status, `emotion` string→object. All schemas use `.passthrough()` + `.default()` for forward/backward compat. 25 new tests (568 total). | src/lib/schemas.ts |
+| ID    | Severity            | Description                         | Before                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | After                                                                                                                                                                                                                                                                                                 | Status                                                                                                                                                      |
+| ----- | ------------------- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| TD-01 | ~~CRITICAL~~ → LOW  | Index.tsx god component             | 2,800 lines, 46 useState, 29 useEffect                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | **407 lines**, 4 useState, 4 useEffect, 47 imports                                                                                                                                                                                                                                                    | Slightly over 400-line limit (MindMapTab integration added canvas overlays). AuthGate, useSettingsHandlers, useReminderMigration, useEmotionSync extracted. |
+| TD-02 | ~~CRITICAL~~ → LOW  | No state management                 | All prop drilling                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | **4 Zustand stores** + bridge hooks. Tab components still receive handler props.                                                                                                                                                                                                                      | Feature handlers not yet in stores.                                                                                                                         |
+| TD-06 | ~~HIGH~~ → **DONE** | exhaustive-deps eslint suppressions | **41** across 28 files                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | **17 remaining** across 15 files (all legitimate mount-only/cleanup/ref patterns). +2 from useReflectionPrompts, UserProgressBar added post-IA Blueprint. Codex 5.3 fixed several (2026-02-18). 1 bug fixed: `JournalEntryEditor` prompts now update on language change (`ts` added to useMemo deps). | Audited all suppressions; only intentional patterns remain.                                                                                                 |
+| TD-10 | ~~HIGH~~ → DONE     | ~~No runtime validation~~           | **Fixed 2026-02-16**: Created `src/lib/schemas.ts` with 9 Zod runtime schemas + `validateArray`/`validateObject` helpers. Added `itemSchema`/`objectSchema` params to `useIndexedDB` — eliminated 7 unvalidated `as T` casts. Wired schemas into `useHydrateUserData` (7 calls), `useInnerWorld`, `useGamification`. Replaced 6 ad-hoc validators in `realtimeSync.ts` with Zod `safeParse()`. Fixed 2 bugs: `'abandoned'→'aborted'` focus status, `emotion` string→object. All schemas use `.passthrough()` + `.default()` for forward/backward compat. 25 new tests (568 total). | src/lib/schemas.ts                                                                                                                                                                                                                                                                                    |
 
 ### Open
 
-| ID | Severity | Description | Current Measurement | File |
-|----|----------|-------------|-------------------|------|
-| TD-03 | ~~CRITICAL~~ → DONE | ~~Non-atomic IndexedDB writes (read-modify-write race)~~ | **Fixed 2026-02-16**: Wrapped `clear()` + `bulkPut()` in `table.db.transaction('rw', table, ...)` for atomic array writes. Single `put()` calls (settings) were already atomic. Follows existing pattern from `clearLocalUserData()` in db.ts. | src/hooks/useIndexedDB.ts |
-| TD-04 | ~~CRITICAL~~ → DONE | ~~CSP `unsafe-inline` for scripts and styles~~ | **Fixed 2026-02-16**: Removed `'unsafe-inline'` from both `script-src` and `style-src`. Moved 3 runtime `@keyframes` to index.css, externalized version check to `version-check.js` (Vite plugin). CSSOM property assignments (`style.cssText`, `setProperty`) are CSP-safe. | index.html, vite-plugin-version.ts, src/index.css |
-| TD-05 | ~~CRITICAL~~ → DONE | ~~Web Locks API bypass in auth (causes AbortError on reload)~~ | **Fixed 2026-02-16**, **updated 2026-02-18 by Codex 5.3**: Lock disabled entirely (`lock` option removed from Supabase config). The original `resilientNavigatorLock` was removed — Supabase GoTrue handles tab coordination internally. Dead code (48L) cleaned up 2026-02-19. | src/lib/supabaseClient.ts |
-| TD-07 | ~~HIGH~~ → DONE | ~~Direct `localStorage` calls~~ | **Fixed 2026-02-16**: Central `SK` registry (src/lib/storageKeys.ts) + safeJson accessors + ESLint `no-restricted-globals` rule. 199 raw calls → 0 across 50+ files. | src/lib/storageKeys.ts |
-| TD-08 | ~~HIGH~~ → DONE | ~~translations.ts monolith (all languages in one file)~~ | **Fixed 2026-02-16**: Split 19,879-line monolith into per-language files. `types.ts` (2,280L), 8 language files in `languages/` (~2,200L each), `index.ts` (37L assembler), `translations.ts` (3L re-export). Zero import changes needed. | src/i18n/ |
-| TD-09 | ~~HIGH~~ → LOW | Low test coverage | **Phase 7 done 2026-02-19**: 2313 → 2460 tests. **Waves A-G (2026-02-20)**: 2460 → 2632 → **2650 tests**. **121 test files total**. Remaining: ~59 untested modules (mostly Capacitor/Supabase/audio-dependent). | src/**/__tests__/ |
-| TD-11 | ~~HIGH~~ → DONE | ~~CI pipeline missing lint + typecheck~~ | **Fixed 2026-02-16**, **hardened 2026-02-18 by Codex 5.3**: `npx eslint . --max-warnings=0` + `tsc --noEmit` + mandatory Android gate before deploy. Still missing: `playwright`, `npm audit`. | .github/workflows/deploy.yml |
-| TD-15 | ~~MEDIUM~~ → DONE | useInnerWorld.ts monolith | ~~780+ lines~~ → **338 lines** (extracted innerWorldHelpers.ts + useRestMode.ts) | src/hooks/useInnerWorld.ts |
-| TD-16 | LOW | Prop drilling in HomeTab (~30 props) | Handlers + inner world values passed as props | src/components/tabs/HomeTab.tsx |
-| TD-17 | ~~HIGH~~ → DONE | ~~Silent `.catch(() => {})` swallowing errors~~ | **Fixed 2026-02-16**: All 34 instances replaced with `logger.warn`/`logger.error` across 20 files. Categorized by risk: fire-and-forget (warn), data ops (error), with-fallback (warn + fallback). | Various |
-| TD-18 | ~~HIGH~~ → DONE | ~~Memory leaks: uncleaned setTimeout in contexts~~ | **Fixed 2026-02-16**: MoodThemeContext — added useRef + clearTimeout cleanup (EmotionThemeContext already correct). | src/contexts/MoodThemeContext.tsx |
-| TD-19 | ~~HIGH~~ → DONE | ~~Raw console.* calls bypassing logger.ts~~ | **Fixed 2026-02-16**: 16 calls replaced with logger.* in 4 files (main.tsx, sw.ts, sentry.ts, gamificationStore.ts). Remaining: logger.ts (6, implementation) + crashReporting.ts (7, implementation). | Various |
-| TD-20 | ~~HIGH~~ → **PARTIALLY RESOLVED** | God components violating 400-line / 5-useState / 3-useEffect rules | **33 components + 3 hooks + 3 hook-only resolved**, DayClock deleted, 1 SKIP (sidebar). **7 new violations appeared** post-audit (HabitCreationForm grew, new components added). | See God Components table below |
-| TD-21 | ~~MEDIUM~~ → DONE | ~~Scattered Capacitor platform checks~~ | **Fixed 2026-02-16**: Created `src/lib/platform.ts` — single source of truth for isNative, platform, isAndroid, isIos, isWeb. ~58 scattered calls → 0 outside platform.ts. 44 files updated, 3 test files migrated to mock `@/lib/platform`. | src/lib/platform.ts |
-| TD-22 | ~~MEDIUM~~ → DONE | ~~Scattered import.meta.env access~~ | **Fixed 2026-02-16**: Created `src/lib/env.ts` — single source of truth for 11 env vars. 26 scattered calls → 0 outside env.ts. 15 files updated. | src/lib/env.ts |
-| TD-23 | ~~MEDIUM~~ → DONE | ~~Direct Supabase calls in UI components~~ | **Fixed 2026-02-17**: Created `feedbackService.ts` + `accountService.ts`. Extracted 10 data/function operations from 5 UI files. 14 auth-only calls remain in place (by design). Original "71 calls" was inflated by grep matching imports/comments; actual was 21. | src/lib/feedbackService.ts, src/lib/accountService.ts |
-| TD-24 | LOW | Low memoization + lazy loading coverage | React.memo improved: **44/80+** (was 12). Only **3** lazy() imports (was 6). Heavy components not lazy-loaded. | Various |
-| TD-25 | P2 | index.css monolith | **4,327 lines** in a single CSS file. Split plan needed (per-feature partials or CSS modules). | src/index.css |
-| TD-26 | P2 | Feature flags hardcoded | `CANVAS_ENABLED`, `HABIT_HUB_ENABLED` are `const` in Index.tsx (lines 79-80). Extract to central registry with name, default, description per flag. | src/pages/Index.tsx |
-| TD-27 | P2 | Inline style={{}} proliferation | **597 instances** across 174 files. On `React.memo` components, inline objects break memoization. Extract to `useMemo` or module-level constants. | Various |
-| TD-28 | P3 | Feature module migration stalled | Only `features/journal/` migrated. Planned domains (mood, habits, focus, challenges, mindfulness, canvas) remain in `components/` + `hooks/`. | src/components/, src/hooks/ |
-| TD-29 | P3 | Multi-tab sync coordination | `BroadcastChannel` only used for token refresh (`apiClient.ts`). Sync operations lack multi-tab coordination — concurrent tabs can create conflicts. | src/storage/cloudSync.ts |
-| TD-30 | P3 | Missing aria-labels on SVG emojis | 20+ SVG emoji components (coolEmojis.tsx, warmEmojis.tsx) lack `role="img"` + `aria-label`. Screen readers see empty icons. | src/components/animated-emotion-emoji/ |
-| TD-31 | ~~P2~~ → DONE | Silent `.catch(() => {})` reappeared | **Fixed 2026-03-16**: Standardized `// graceful:` annotations across 14 catch blocks in 11 files. All silent catches now explain WHY silence is acceptable per Law 5. | Various |
-| TD-32 | P2 | i18n `as unknown as Record<string, string>` pattern | **122 instances** in 45+ files. Translation object `t` from `useLanguage()` is double-cast to bypass type inference. Root cause: `LanguageContext.tsx` generic typing. Fix: refactor i18n types to export properly indexed type. | src/contexts/LanguageContext.tsx |
-| TD-33 | P3 | DOM type assertions without justification | 31 instances of `e.target as HTMLElement`, `as EventListener`, `as CustomEvent` without runtime guard or `// any:` comment. | Various |
+| ID    | Severity                          | Description                                                        | Current Measurement                                                                                                                                                                                                                                                             | File                                                  |
+| ----- | --------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| TD-03 | ~~CRITICAL~~ → DONE               | ~~Non-atomic IndexedDB writes (read-modify-write race)~~           | **Fixed 2026-02-16**: Wrapped `clear()` + `bulkPut()` in `table.db.transaction('rw', table, ...)` for atomic array writes. Single `put()` calls (settings) were already atomic. Follows existing pattern from `clearLocalUserData()` in db.ts.                                  | src/hooks/useIndexedDB.ts                             |
+| TD-04 | ~~CRITICAL~~ → DONE               | ~~CSP `unsafe-inline` for scripts and styles~~                     | **Fixed 2026-02-16**: Removed `'unsafe-inline'` from both `script-src` and `style-src`. Moved 3 runtime `@keyframes` to index.css, externalized version check to `version-check.js` (Vite plugin). CSSOM property assignments (`style.cssText`, `setProperty`) are CSP-safe.    | index.html, vite-plugin-version.ts, src/index.css     |
+| TD-05 | ~~CRITICAL~~ → DONE               | ~~Web Locks API bypass in auth (causes AbortError on reload)~~     | **Fixed 2026-02-16**, **updated 2026-02-18 by Codex 5.3**: Lock disabled entirely (`lock` option removed from Supabase config). The original `resilientNavigatorLock` was removed — Supabase GoTrue handles tab coordination internally. Dead code (48L) cleaned up 2026-02-19. | src/lib/supabaseClient.ts                             |
+| TD-07 | ~~HIGH~~ → DONE                   | ~~Direct `localStorage` calls~~                                    | **Fixed 2026-02-16**: Central `SK` registry (src/lib/storageKeys.ts) + safeJson accessors + ESLint `no-restricted-globals` rule. 199 raw calls → 0 across 50+ files.                                                                                                            | src/lib/storageKeys.ts                                |
+| TD-08 | ~~HIGH~~ → DONE                   | ~~translations.ts monolith (all languages in one file)~~           | **Fixed 2026-02-16**: Split 19,879-line monolith into per-language files. `types.ts` (2,280L), 8 language files in `languages/` (~2,200L each), `index.ts` (37L assembler), `translations.ts` (3L re-export). Zero import changes needed.                                       | src/i18n/                                             |
+| TD-09 | ~~HIGH~~ → LOW                    | Low test coverage                                                  | **Phase 7 done 2026-02-19**: 2313 → 2460 tests. **Waves A-G (2026-02-20)**: 2460 → 2632 → **2650 tests**. **121 test files total**. Remaining: ~59 untested modules (mostly Capacitor/Supabase/audio-dependent).                                                                | src/\*\*/**tests**/                                   |
+| TD-11 | ~~HIGH~~ → DONE                   | ~~CI pipeline missing lint + typecheck~~                           | **Fixed 2026-02-16**, **hardened 2026-02-18 by Codex 5.3**: `npx eslint . --max-warnings=0` + `tsc --noEmit` + mandatory Android gate before deploy. Still missing: `playwright`, `npm audit`.                                                                                  | .github/workflows/deploy.yml                          |
+| TD-15 | ~~MEDIUM~~ → DONE                 | useInnerWorld.ts monolith                                          | ~~780+ lines~~ → **338 lines** (extracted innerWorldHelpers.ts + useRestMode.ts)                                                                                                                                                                                                | src/hooks/useInnerWorld.ts                            |
+| TD-16 | LOW                               | Prop drilling in HomeTab (~30 props)                               | Handlers + inner world values passed as props                                                                                                                                                                                                                                   | src/components/tabs/HomeTab.tsx                       |
+| TD-17 | ~~HIGH~~ → DONE                   | ~~Silent `.catch(() => {})` swallowing errors~~                    | **Fixed 2026-02-16**: All 34 instances replaced with `logger.warn`/`logger.error` across 20 files. Categorized by risk: fire-and-forget (warn), data ops (error), with-fallback (warn + fallback).                                                                              | Various                                               |
+| TD-18 | ~~HIGH~~ → DONE                   | ~~Memory leaks: uncleaned setTimeout in contexts~~                 | **Fixed 2026-02-16**: MoodThemeContext — added useRef + clearTimeout cleanup (EmotionThemeContext already correct).                                                                                                                                                             | src/contexts/MoodThemeContext.tsx                     |
+| TD-19 | ~~HIGH~~ → DONE                   | ~~Raw console.\* calls bypassing logger.ts~~                       | **Fixed 2026-02-16**: 16 calls replaced with logger.\* in 4 files (main.tsx, sw.ts, sentry.ts, gamificationStore.ts). Remaining: logger.ts (6, implementation) + crashReporting.ts (7, implementation).                                                                         | Various                                               |
+| TD-20 | ~~HIGH~~ → **PARTIALLY RESOLVED** | God components violating 400-line / 5-useState / 3-useEffect rules | **33 components + 3 hooks + 3 hook-only resolved**, DayClock deleted, 1 SKIP (sidebar). **7 new violations appeared** post-audit (HabitCreationForm grew, new components added).                                                                                                | See God Components table below                        |
+| TD-21 | ~~MEDIUM~~ → DONE                 | ~~Scattered Capacitor platform checks~~                            | **Fixed 2026-02-16**: Created `src/lib/platform.ts` — single source of truth for isNative, platform, isAndroid, isIos, isWeb. ~58 scattered calls → 0 outside platform.ts. 44 files updated, 3 test files migrated to mock `@/lib/platform`.                                    | src/lib/platform.ts                                   |
+| TD-22 | ~~MEDIUM~~ → DONE                 | ~~Scattered import.meta.env access~~                               | **Fixed 2026-02-16**: Created `src/lib/env.ts` — single source of truth for 11 env vars. 26 scattered calls → 0 outside env.ts. 15 files updated.                                                                                                                               | src/lib/env.ts                                        |
+| TD-23 | ~~MEDIUM~~ → DONE                 | ~~Direct Supabase calls in UI components~~                         | **Fixed 2026-02-17**: Created `feedbackService.ts` + `accountService.ts`. Extracted 10 data/function operations from 5 UI files. 14 auth-only calls remain in place (by design). Original "71 calls" was inflated by grep matching imports/comments; actual was 21.             | src/lib/feedbackService.ts, src/lib/accountService.ts |
+| TD-24 | LOW                               | Low memoization + lazy loading coverage                            | React.memo improved: **44/80+** (was 12). Only **3** lazy() imports (was 6). Heavy components not lazy-loaded.                                                                                                                                                                  | Various                                               |
+| TD-25 | P2                                | index.css monolith                                                 | **4,327 lines** in a single CSS file. Split plan needed (per-feature partials or CSS modules).                                                                                                                                                                                  | src/index.css                                         |
+| TD-26 | P2                                | Feature flags hardcoded                                            | `CANVAS_ENABLED`, `HABIT_HUB_ENABLED` are `const` in Index.tsx (lines 79-80). Extract to central registry with name, default, description per flag.                                                                                                                             | src/pages/Index.tsx                                   |
+| TD-27 | P2                                | Inline style={{}} proliferation                                    | **597 instances** across 174 files. On `React.memo` components, inline objects break memoization. Extract to `useMemo` or module-level constants.                                                                                                                               | Various                                               |
+| TD-28 | P3                                | Feature module migration stalled                                   | Only `features/journal/` migrated. Planned domains (mood, habits, focus, challenges, mindfulness, canvas) remain in `components/` + `hooks/`.                                                                                                                                   | src/components/, src/hooks/                           |
+| TD-29 | P3                                | Multi-tab sync coordination                                        | `BroadcastChannel` only used for token refresh (`apiClient.ts`). Sync operations lack multi-tab coordination — concurrent tabs can create conflicts.                                                                                                                            | src/storage/cloudSync.ts                              |
+| TD-30 | P3                                | Missing aria-labels on SVG emojis                                  | 20+ SVG emoji components (coolEmojis.tsx, warmEmojis.tsx) lack `role="img"` + `aria-label`. Screen readers see empty icons.                                                                                                                                                     | src/components/animated-emotion-emoji/                |
+| TD-31 | ~~P2~~ → DONE                     | Silent `.catch(() => {})` reappeared                               | **Fixed 2026-03-16**: Standardized `// graceful:` annotations across 14 catch blocks in 11 files. All silent catches now explain WHY silence is acceptable per Law 5.                                                                                                           | Various                                               |
+| TD-32 | P2                                | i18n `as unknown as Record<string, string>` pattern                | **122 instances** in 45+ files. Translation object `t` from `useLanguage()` is double-cast to bypass type inference. Root cause: `LanguageContext.tsx` generic typing. Fix: refactor i18n types to export properly indexed type.                                                | src/contexts/LanguageContext.tsx                      |
+| TD-33 | P3                                | DOM type assertions without justification                          | 31 instances of `e.target as HTMLElement`, `as EventListener`, `as CustomEvent` without runtime guard or `// any:` comment.                                                                                                                                                     | Various                                               |
 
 ### God Components (TD-20 Detail)
 
@@ -998,95 +1014,95 @@ On PR to main:
 
 #### Resolved (33 components)
 
-| File | Was | Now | Resolution |
-|------|-----|-----|------------|
-| ScheduleTimeline.tsx | 1,653L / 17st / 6eff | max 343L / 2st | `schedule/` — 9 files |
-| StatsPage.tsx | 1,281L / 11st / 0eff | max 356L / 3st | `stats-page/` — 7 files |
-| HyperfocusMode.tsx | 1,012L / 16st / 10eff | max 271L / 2st | `hyperfocus-mode/` — 7 files |
-| MoodTracker.tsx | 712L / 15st / 3eff | max 240L / 3st | `mood-tracker/` — 7 files |
-| FriendsPanel.tsx | 694L / 15st / 4eff | max 280L / 2st | `friends-panel/` — 8 files |
-| BreathingExercise.tsx | 833L / 9st / 4eff | max 249L / 2st | `breathing-exercise/` — 8 files |
-| GoalsPanel.tsx | 815L / 6st / 0eff | max 224L / 1st | `goals-panel/` — 7 files |
-| AuthScreen.tsx | 749L / 7st / 8eff | max 271L / 0st | `auth-screen/` — 5 files |
-| TasksPanel.tsx | 501L / 9st / 0eff | max 186L / 0st | `tasks-panel/` — 7 files |
-| Leaderboard.tsx | 526L / 10st / 2eff | max 230L / 2st | `leaderboard/` — 5 files |
-| AccountSection.tsx | 548L / 14st / 5eff | max 232L / 0st | `account-section/` — 6 files |
-| DataSection.tsx | 419L / 9st / 1eff | max 260L / 2st | `data-section/` — 4 files |
-| AnimatedStatsComponents.tsx | 694L / 4st / 3eff | max 349L / 2st | `animated-stats/` — 3 files |
-| AnimatedEmotionEmoji.tsx | 650L / 0st / 0eff | max 305L / 0st | `animated-emotion-emoji/` — 3 files |
-| CompactHabitCard.tsx | 605L / 2st / 1eff | max 400L / 2st | `compact-habit-card/` — 4 files |
-| RingDetailSheet.tsx | 567L / 0st / 0eff | max 332L / 0st | `ring-detail-sheet/` — 5 files |
-| EmotionGalaxy.tsx | 559L / 2st / 1eff | max 280L / 0st | `emotion-galaxy/` — 6 files |
-| WeeklyReview.tsx | 548L / 1st / 0eff | max 294L / 1st | `weekly-review/` — 5 files (hook extracted) |
-| HabitCreationForm.tsx | 536L / 0st / 1eff | max 394L / 0st | `habit-creation-form/` — 4 files. **⚠️ Regressed to 634L** (Identity Mapping added) — see New Violations |
-| DailySurprise.tsx | 513L / 2st / 1eff | max 313L / 2st | `daily-surprise/` — 4 files (data pool extracted) |
-| ComebackChallenge.tsx | 513L / 2st / 1eff | max 384L / 2st | `comeback-challenge/` — 3 files |
-| WelcomeTutorial.tsx | 471L / 2st / 1eff | max 279L / 2st | `welcome-tutorial/` — 3 files (slides config extracted) |
-| HabitCompletionCelebration.tsx | 462L / 1st / 1eff | max 245L / 1st | `habit-completion-celebration/` — 5 files (3 exports split) |
-| FocusTimer.tsx | 448L / 0st / 0eff | max 204L / 0st | `focus-timer/` — 5 files |
-| ChallengesPanel.tsx | 431L / 3st / 0eff | max 365L / 3st | `challenges-panel/` — 3 files |
-| ~~GratitudeJournal.tsx~~ | DELETED | — | Migrated to `features/journal/GratitudeBloomWidget.tsx` + speed-dial FAB |
-| UnifiedShareModal.tsx | 427L / 0st / 0eff | max 292L / 0st | `share/` — split to 3 files |
-| WeeklyInsightsCard.tsx | 424L / 1st / 0eff | max 278L / 1st | `weekly-insights-card/` — 3 files |
-| MoodWeather.tsx | 416L / 0st / 0eff | max 249L / 0st | `mood-weather/` — 4 files |
-| HabitTracker.tsx | 416L / 2st / 1eff | max 370L / 2st | `habit-tracker/` — 4 files |
-| AICoachOnboarding.tsx | 406L / 4st / 0eff | max 234L / 4st | `ai-coach-onboarding/` — 3 files (i18n extracted) |
-| WhatsNewModal.tsx | 402L / 2st / 1eff | max 231L / 2st | `whats-new-modal/` — 3 files (changelog extracted) |
-| QuestsPanel.tsx | 401L / 4st / 4eff | max 271L / 4st | `quests-panel/` — 3 files |
+| File                           | Was                   | Now            | Resolution                                                                                               |
+| ------------------------------ | --------------------- | -------------- | -------------------------------------------------------------------------------------------------------- |
+| ScheduleTimeline.tsx           | 1,653L / 17st / 6eff  | max 343L / 2st | `schedule/` — 9 files                                                                                    |
+| StatsPage.tsx                  | 1,281L / 11st / 0eff  | max 356L / 3st | `stats-page/` — 7 files                                                                                  |
+| HyperfocusMode.tsx             | 1,012L / 16st / 10eff | max 271L / 2st | `hyperfocus-mode/` — 7 files                                                                             |
+| MoodTracker.tsx                | 712L / 15st / 3eff    | max 240L / 3st | `mood-tracker/` — 7 files                                                                                |
+| FriendsPanel.tsx               | 694L / 15st / 4eff    | max 280L / 2st | `friends-panel/` — 8 files                                                                               |
+| BreathingExercise.tsx          | 833L / 9st / 4eff     | max 249L / 2st | `breathing-exercise/` — 8 files                                                                          |
+| GoalsPanel.tsx                 | 815L / 6st / 0eff     | max 224L / 1st | `goals-panel/` — 7 files                                                                                 |
+| AuthScreen.tsx                 | 749L / 7st / 8eff     | max 271L / 0st | `auth-screen/` — 5 files                                                                                 |
+| TasksPanel.tsx                 | 501L / 9st / 0eff     | max 186L / 0st | `tasks-panel/` — 7 files                                                                                 |
+| Leaderboard.tsx                | 526L / 10st / 2eff    | max 230L / 2st | `leaderboard/` — 5 files                                                                                 |
+| AccountSection.tsx             | 548L / 14st / 5eff    | max 232L / 0st | `account-section/` — 6 files                                                                             |
+| DataSection.tsx                | 419L / 9st / 1eff     | max 260L / 2st | `data-section/` — 4 files                                                                                |
+| AnimatedStatsComponents.tsx    | 694L / 4st / 3eff     | max 349L / 2st | `animated-stats/` — 3 files                                                                              |
+| AnimatedEmotionEmoji.tsx       | 650L / 0st / 0eff     | max 305L / 0st | `animated-emotion-emoji/` — 3 files                                                                      |
+| CompactHabitCard.tsx           | 605L / 2st / 1eff     | max 400L / 2st | `compact-habit-card/` — 4 files                                                                          |
+| RingDetailSheet.tsx            | 567L / 0st / 0eff     | max 332L / 0st | `ring-detail-sheet/` — 5 files                                                                           |
+| EmotionGalaxy.tsx              | 559L / 2st / 1eff     | max 280L / 0st | `emotion-galaxy/` — 6 files                                                                              |
+| WeeklyReview.tsx               | 548L / 1st / 0eff     | max 294L / 1st | `weekly-review/` — 5 files (hook extracted)                                                              |
+| HabitCreationForm.tsx          | 536L / 0st / 1eff     | max 394L / 0st | `habit-creation-form/` — 4 files. **⚠️ Regressed to 634L** (Identity Mapping added) — see New Violations |
+| DailySurprise.tsx              | 513L / 2st / 1eff     | max 313L / 2st | `daily-surprise/` — 4 files (data pool extracted)                                                        |
+| ComebackChallenge.tsx          | 513L / 2st / 1eff     | max 384L / 2st | `comeback-challenge/` — 3 files                                                                          |
+| WelcomeTutorial.tsx            | 471L / 2st / 1eff     | max 279L / 2st | `welcome-tutorial/` — 3 files (slides config extracted)                                                  |
+| HabitCompletionCelebration.tsx | 462L / 1st / 1eff     | max 245L / 1st | `habit-completion-celebration/` — 5 files (3 exports split)                                              |
+| FocusTimer.tsx                 | 448L / 0st / 0eff     | max 204L / 0st | `focus-timer/` — 5 files                                                                                 |
+| ChallengesPanel.tsx            | 431L / 3st / 0eff     | max 365L / 3st | `challenges-panel/` — 3 files                                                                            |
+| ~~GratitudeJournal.tsx~~       | DELETED               | —              | Migrated to `features/journal/GratitudeBloomWidget.tsx` + speed-dial FAB                                 |
+| UnifiedShareModal.tsx          | 427L / 0st / 0eff     | max 292L / 0st | `share/` — split to 3 files                                                                              |
+| WeeklyInsightsCard.tsx         | 424L / 1st / 0eff     | max 278L / 1st | `weekly-insights-card/` — 3 files                                                                        |
+| MoodWeather.tsx                | 416L / 0st / 0eff     | max 249L / 0st | `mood-weather/` — 4 files                                                                                |
+| HabitTracker.tsx               | 416L / 2st / 1eff     | max 370L / 2st | `habit-tracker/` — 4 files                                                                               |
+| AICoachOnboarding.tsx          | 406L / 4st / 0eff     | max 234L / 4st | `ai-coach-onboarding/` — 3 files (i18n extracted)                                                        |
+| WhatsNewModal.tsx              | 402L / 2st / 1eff     | max 231L / 2st | `whats-new-modal/` — 3 files (changelog extracted)                                                       |
+| QuestsPanel.tsx                | 401L / 4st / 4eff     | max 271L / 4st | `quests-panel/` — 3 files                                                                                |
 
 #### Resolved — Hook LOC violations (3 hooks, Phase 6)
 
-| File | Was | Now | Resolution |
-|------|-----|-----|------------|
-| hooks/useInnerWorld.ts | 542L / 0st / 4eff | 336L | `innerWorldHelpers.ts` (161L) + `useRestMode.ts` (89L) |
-| hooks/useFocusTimer.ts | 513L / 18st / 8eff | 399L | `focusTimerTypes.ts` (68L) + `useFocusTimerConfig.ts` (85L) |
-| hooks/useStatsCalculations.ts | 413L / 0st / 0eff | 373L | `statsTypes.ts` (44L) — types extracted |
+| File                          | Was                | Now  | Resolution                                                  |
+| ----------------------------- | ------------------ | ---- | ----------------------------------------------------------- |
+| hooks/useInnerWorld.ts        | 542L / 0st / 4eff  | 336L | `innerWorldHelpers.ts` (161L) + `useRestMode.ts` (89L)      |
+| hooks/useFocusTimer.ts        | 513L / 18st / 8eff | 399L | `focusTimerTypes.ts` (68L) + `useFocusTimerConfig.ts` (85L) |
+| hooks/useStatsCalculations.ts | 413L / 0st / 0eff  | 373L | `statsTypes.ts` (44L) — types extracted                     |
 
 #### Resolved — Hook-only violations (3 files, Phase 6)
 
-| File | Was | Now | Resolution |
-|------|-----|-----|------------|
-| schedule/AddEventModal.tsx | 269L / **8**st / 0eff | 5st | Merged 4 time useState into 1 object |
-| auth-screen/useAuthSession.ts | 218L / 2st / **7**eff | 3eff | Removed ref-sync effect + merged 4 mount effects |
-| schedule/useScheduleData.ts | 283L / 3st / **4**eff | 3eff | Merged task-loading + time-interval mount effects |
+| File                          | Was                   | Now  | Resolution                                        |
+| ----------------------------- | --------------------- | ---- | ------------------------------------------------- |
+| schedule/AddEventModal.tsx    | 269L / **8**st / 0eff | 5st  | Merged 4 time useState into 1 object              |
+| auth-screen/useAuthSession.ts | 218L / 2st / **7**eff | 3eff | Removed ref-sync effect + merged 4 mount effects  |
+| schedule/useScheduleData.ts   | 283L / 3st / **4**eff | 3eff | Merged task-loading + time-interval mount effects |
 
 #### False positive (not a violation)
 
-| File | Lines | useState | useEffect | Notes |
-|------|-------|----------|-----------|-------|
-| Celebrations.tsx | 311 | 4 | 4 | 4 components × 1 useEffect each — no single component exceeds limit |
+| File             | Lines | useState | useEffect | Notes                                                               |
+| ---------------- | ----- | -------- | --------- | ------------------------------------------------------------------- |
+| Celebrations.tsx | 311   | 4        | 4         | 4 components × 1 useEffect each — no single component exceeds limit |
 
 #### New Violations (7 files >400L — identified 2026-03-11)
 
-| File | Lines | Severity | Notes |
-|------|-------|----------|-------|
-| habit-creation-form/HabitCreationForm.tsx | **634** | P2 | Regressed from 394L after Identity Mapping section added |
-| habit-hub/AddHabitSheet.tsx | **575** | P2 | New component (Habit Hub feature) |
-| canvas/MindMapCanvas.tsx | **503** | P3 | EXEMPT — `CANVAS_ENABLED=false`, dead code preserved |
-| habit-hub/HabitHubList.tsx | **457** | P3 | New component (Habit Hub feature) |
-| AnimatedMoodEmoji.tsx | **412** | P3 | New — pure presentational, no hooks |
-| stats/HabitCalendar.tsx | **403** | P3 | New — at limit |
-| GrowthRingsCanvas.tsx | **403** | P3 | New — at limit, canvas rendering |
+| File                                      | Lines   | Severity | Notes                                                    |
+| ----------------------------------------- | ------- | -------- | -------------------------------------------------------- |
+| habit-creation-form/HabitCreationForm.tsx | **634** | P2       | Regressed from 394L after Identity Mapping section added |
+| habit-hub/AddHabitSheet.tsx               | **575** | P2       | New component (Habit Hub feature)                        |
+| canvas/MindMapCanvas.tsx                  | **503** | P3       | EXEMPT — `CANVAS_ENABLED=false`, dead code preserved     |
+| habit-hub/HabitHubList.tsx                | **457** | P3       | New component (Habit Hub feature)                        |
+| AnimatedMoodEmoji.tsx                     | **412** | P3       | New — pure presentational, no hooks                      |
+| stats/HabitCalendar.tsx                   | **403** | P3       | New — at limit                                           |
+| GrowthRingsCanvas.tsx                     | **403** | P3       | New — at limit, canvas rendering                         |
 
 #### Remaining — SKIP (1 file >400L)
 
-| File | Lines | useState | useEffect | Notes |
-|------|-------|----------|-----------|-------|
-| ui/sidebar.tsx | **641** | 2 | 1 | shadcn vendored — SKIP |
+| File           | Lines   | useState | useEffect | Notes                  |
+| -------------- | ------- | -------- | --------- | ---------------------- |
+| ui/sidebar.tsx | **641** | 2        | 1         | shadcn vendored — SKIP |
 
 #### Dead code (deleted)
 
-| File | Lines | Notes |
-|------|-------|-------|
+| File             | Lines   | Notes                                           |
+| ---------------- | ------- | ----------------------------------------------- |
 | ~~DayClock.tsx~~ | ~~527~~ | Deleted — 0 component imports found in codebase |
 
 #### Out of scope
 
-| File | Lines | Notes |
-|------|-------|-------|
+| File                                    | Lines     | Notes                                                    |
+| --------------------------------------- | --------- | -------------------------------------------------------- |
 | features/journal/JournalEntryEditor.tsx | **1,477** | Separate feature module — WYSIWYG contenteditable editor |
-| features/journal/JournalModule.tsx | **1,060** | Separate feature module |
-| features/journal/JournalEntryList.tsx | **513** | Separate feature module |
+| features/journal/JournalModule.tsx      | **1,060** | Separate feature module                                  |
+| features/journal/JournalEntryList.tsx   | **513**   | Separate feature module                                  |
 
 ---
 
@@ -1094,15 +1110,15 @@ On PR to main:
 
 > `deploy.yml` exists but is incomplete vs ARCHITECTURE.md §15 requirements.
 
-| Step | Required (§15) | Actual (deploy.yml) | Status |
-|------|---------------|---------------------|--------|
-| npm ci | Yes | Yes | PASS |
-| npx eslint . --max-warnings=0 | Yes | Yes (strict mode added 2026-02-18 by Codex 5.3) | PASS |
-| npx tsc --noEmit | Yes | Yes (added 2026-02-16) | PASS |
-| npm test | Yes | Yes | PASS |
-| npm run build | Yes | Yes | PASS |
-| npm audit | Recommended | **No** | MISSING |
-| Playwright E2E | Recommended | **No** | MISSING |
+| Step                          | Required (§15) | Actual (deploy.yml)                             | Status  |
+| ----------------------------- | -------------- | ----------------------------------------------- | ------- |
+| npm ci                        | Yes            | Yes                                             | PASS    |
+| npx eslint . --max-warnings=0 | Yes            | Yes (strict mode added 2026-02-18 by Codex 5.3) | PASS    |
+| npx tsc --noEmit              | Yes            | Yes (added 2026-02-16)                          | PASS    |
+| npm test                      | Yes            | Yes                                             | PASS    |
+| npm run build                 | Yes            | Yes                                             | PASS    |
+| npm audit                     | Recommended    | **No**                                          | MISSING |
+| Playwright E2E                | Recommended    | **No**                                          | MISSING |
 
 ---
 
@@ -1141,7 +1157,7 @@ On PR to main:
   - ~15 exhaustive-deps fixes across components — CORRECT
   - Plugin type extraction (dndTypes.ts, appUpdateTypes.ts, reviewTypes.ts) — CORRECT
   - 1 issue found and fixed: dead `resilientNavigatorLock` code (48L) left in supabaseClient.ts after lock removal
-- NOTE: Codex claimed "Evidence bundle: artifacts/audit/*" but this directory does not exist in the repo
+- NOTE: Codex claimed "Evidence bundle: artifacts/audit/\*" but this directory does not exist in the repo
 
 ---
 
@@ -1242,6 +1258,7 @@ Every PASS must include evidence: command output, file path, or test checklist. 
 #### What Was Completed
 
 **Data Engine (Waves A-F):**
+
 - Identity fields on Habit type (`identityCluster`, `identityVerb`, `identityIcon`)
 - `computeIdentityClusters()` + `computeGrowthRings()` + `getGrowthRingsSummary()` pure libs with tests
 - `useReflectionPrompts()` hook (6 contextual triggers)
@@ -1254,6 +1271,7 @@ Every PASS must include evidence: command output, file path, or test checklist. 
 - CLS guards (`min-h-[Xpx]`) on all lazy-loaded tab sections
 
 **UI Surface Polish (Wave G):**
+
 - Fixed `hasRecentMoodStreak` bug (compared `EmotionData` object to string — always false)
 - Replaced all system emojis with lucide-react in HomeTab, OverviewTab, GardenTab
 - Created `ReflectionPromptCard.tsx` — interactive nano/micro input with "expand to journal"
@@ -1265,10 +1283,12 @@ Every PASS must include evidence: command output, file path, or test checklist. 
 - Identity cluster fallback icon changed from emoji `🎯` to lucide `Target`
 
 #### Files Created
+
 - `src/components/ReflectionPromptCard.tsx` (134 LOC)
 - `src/components/IdentityIconPicker.tsx` (93 LOC)
 
 #### Files Modified (key changes)
+
 - `src/types/index.ts` — identity fields, PlantType, MicroReflection, TreatsWallet
 - `src/hooks/useReflectionPrompts.ts` — bug fix + 6 trigger engine
 - `src/hooks/useHabitForm.ts` — identity state + handlers
@@ -1285,6 +1305,7 @@ Every PASS must include evidence: command output, file path, or test checklist. 
 - `src/index.css` — surface-glass CSS vars, CLS animations
 
 #### Verification
+
 - `npx tsc --noEmit` — 0 errors
 - `npx eslint . --max-warnings=0` — 0 warnings
 - `npx vitest --run` — 2650/2650 pass (121 test files)
@@ -1302,16 +1323,19 @@ Every PASS must include evidence: command output, file path, or test checklist. 
 #### What Was Completed
 
 **Wave 1 — Global `100vh` Search & Destroy:**
+
 - Tailwind config override: `h-screen`/`min-h-screen`/`max-h-screen` now emit `100vh; 100dvh` progressive enhancement (fixes 10 instances across Index.tsx, AuthGate, AuthScreen, LanguageSelector, WidgetSettings, ErrorBoundary)
 - `dialog.tsx`: `max-h-[calc(100vh-4rem)]` → `max-h-[calc(100dvh-4rem)]`
 - `MindMapCanvas.tsx`: Added `overscrollBehavior: 'none'` to prevent iOS rubber-banding
 
 **Wave 2 — Desktop / Laptop Layout:**
+
 - Responsive `--container-max-width`: `32rem` (mobile) → `42rem` (≥768px) via CSS media query
 - `Index.tsx` + `Navigation.tsx`: Hard-coded `max-w-lg` replaced with `var(--container-max-width)`
 - Global scrollbar styling: Firefox `scrollbar-width: thin` + WebKit `::-webkit-scrollbar` (6px, themed)
 
 **Wave 3 — Global Escape Hatch:**
+
 - Created `useModalA11y` composite hook (Escape + focus trap + Android back in one call)
 - Fixed `ConfirmDialog` dead end (Celebrations.tsx): Added Escape key, `useBackHandler`, and backdrop click dismiss
 - Added Escape key listeners to 12 high-priority overlays: FocusBreathingOverlay, HabitsOverlay, BreathingExercise, FeedbackForm, DailyRewards, SpinWheel, ChallengeModal, TasksPanel, QuestsPanel, AccountSection, DataSection, ScheduleTimeline
@@ -1358,6 +1382,7 @@ All `backdrop-filter`, `box-shadow` animations, SVG filter effects, and CSS
 animations on canvas elements MUST be suspended during active drag gestures.
 
 **Implementation pattern**:
+
 - `onDragStart` → add `.is-dragging` CSS class to canvas container
 - `.is-dragging` CSS overrides: `backdrop-filter: none`, `animation-play-state: paused`
 - `onDragEnd` → remove `.is-dragging`, restore full visual fidelity
@@ -1372,6 +1397,7 @@ All contextual menus / action menus on mobile MUST use a fixed BottomSheet patte
 (`position: fixed; bottom: 0`), never floating `absolute`/`relative` popovers.
 
 **Requirements**:
+
 - Rendered OUTSIDE any CSS `transform` container (fixed positioning breaks inside transforms)
 - Uses `useModalA11y` for Escape + Android back + focus trap
 - Touch targets ≥ 48dp height per action row
@@ -1387,6 +1413,7 @@ Every component that renders a modal, overlay, sheet, or full-screen takeover
 MUST call `useModalA11y(isVisible, onDismiss)` or `useBackHandler(isVisible, onDismiss)`.
 
 **Checklist before merging any modal PR**:
+
 - [ ] `useModalA11y` or `useBackHandler` is called with correct `isVisible` + `onDismiss`
 - [ ] Android hardware back dismisses the modal (test on device or emulator)
 - [ ] Escape key dismisses the modal (web fallback)
@@ -1401,6 +1428,7 @@ All interactive elements MUST have a minimum touch target of 48×48dp (CSS pixel
 vary by density — at 2x, this is 96×96px; at 3x, this is 144×144px).
 
 **Implementation pattern**:
+
 - Visual element can be smaller than 48dp, but the tappable area must meet the minimum
 - Use transparent padding, `::after` pseudo-elements, or explicit `min-h-[48px] min-w-[48px]`
 - Canvas elements at zoom < 1.0x shrink proportionally — either clamp minimum zoom or expand hit areas inversely
@@ -1419,12 +1447,14 @@ cause mis-taps, especially on mid-range phones with lower digitizer precision.
 #### What Was Completed
 
 **Phase 1 — Security:**
+
 - `jspdf` upgraded from `^4.0.0` to `^4.2.0` — fixes 3 HIGH CVE (PDF Injection, Object Injection, DoS via GIF)
 - `npm audit fix` applied — reduced total vulnerabilities from 28 to 24 (remaining are dev-only: esbuild, minimatch, workbox-build)
 - Dev server restricted to `localhost` in `vite.config.ts` — prevents external network access to dev server (was `::`)
 - `npm audit --audit-level=high` step added to CI pipeline (`.github/workflows/deploy.yml`, `continue-on-error: true`)
 
 **Phase 2 — Store Compliance (Legal Screens):**
+
 - Created `src/components/LegalModal.tsx` — in-app modal with 3 tabs: Privacy Policy, Terms of Service, Open Source Licenses
 - Uses `useModalA11y` for Escape + Android back handler (per Rule 3)
 - All touch targets meet 48dp minimum (per Rule 4)
@@ -1433,6 +1463,7 @@ cause mis-taps, especially on mid-range phones with lower digitizer precision.
 - 7 new i18n keys added to all 8 languages: `openSourceLicenses`, `legalPrivacyDescription`, `legalTermsDescription`, `legalLicensesDescription`, `legalOpenInBrowser`, `legalAgreePrefix`, `legalAnd`
 
 **Phase 3 — ASO Optimization:**
+
 - `docs/STORE_LISTING.md` rewritten with Intent Clusters approach
 - Google Play EN: Title (30 chars), Short Description (80 chars), Full Description (keyword density 2-3%)
 - Google Play RU: Полное описание с ключевыми словами
@@ -1440,21 +1471,25 @@ cause mis-taps, especially on mid-range phones with lower digitizer precision.
 - Screenshot guidelines with 3-Second Rule for designer
 
 **Phase 4 — CI/CD & Tracking:**
+
 - `tests.json` created — structured tracking of all quality gates, security status, and store readiness
 - Security audit step added to GitHub Actions (informational, non-blocking)
 
 **Phase 5 — Claude Code Hooks:**
+
 - `.claude/settings.json` created with:
   - `PreToolUse` hook: blocks writes to `.env*`, `android/keystore/*`, `supabase/functions/_shared/auth.ts`
   - `PostToolUse` hook: logs TypeScript file modifications
   - `Stop` hook: reminder to run `npm run check:all` before completing tasks
 
 #### Files Created
+
 - `src/components/LegalModal.tsx` (139 LOC)
 - `tests.json` (structured quality tracking)
 - `.claude/settings.json` (security hooks)
 
 #### Files Modified
+
 - `package.json` — jspdf version bump
 - `vite.config.ts` — dev server localhost restriction
 - `.github/workflows/deploy.yml` — npm audit CI step
@@ -1466,6 +1501,7 @@ cause mis-taps, especially on mid-range phones with lower digitizer precision.
 - `ARCHITECTURE.md` — this audit addendum
 
 #### Verification
+
 - `npx tsc --noEmit` — 0 errors
 - `npx eslint . --max-warnings=0` — 0 warnings
 - `npx vitest run` — 2650/2650 pass
@@ -1494,11 +1530,13 @@ Root cause: Journal tables + storage buckets created Feb 15 (after Feb 4 optimiz
 Migration: `supabase/migrations/20260222_optimize_journal_rls.sql`
 
 **Part A — Journal tables (15 warnings):**
+
 - DROP 12 old per-action policies (3 tables × 4 policies each)
 - CREATE 3 new `FOR ALL` policies with `(select auth.uid())` subquery
 - Safety DROP of new policy names in case of partial previous execution
 
 **Part B — Storage policies (6 warnings):**
+
 - DROP 6 old `storage.objects` policies using `auth.uid()::text`
 - CREATE 6 new policies using `(select auth.uid())::text`
 - Renamed from generic ("Users can upload own photos") to specific ("journal_photos_upload")
@@ -1507,12 +1545,12 @@ Migration: `supabase/migrations/20260222_optimize_journal_rls.sql`
 
 #### Affected Policies
 
-| Schema | Table | Old | New | Fix |
-|--------|-------|-----|-----|-----|
-| public | journal_entries | 4 per-action | `journal_entries_all` FOR ALL | auth.uid() → (select auth.uid()) |
-| public | journal_photos | 4 per-action | `journal_photos_all` FOR ALL | auth.uid() → (select auth.uid()) |
-| public | journal_audio | 4 per-action | `journal_audio_all` FOR ALL | auth.uid() → (select auth.uid()) |
-| storage | objects | 6 per-action | 6 renamed per-action | auth.uid()::text → (select auth.uid())::text |
+| Schema  | Table           | Old          | New                           | Fix                                          |
+| ------- | --------------- | ------------ | ----------------------------- | -------------------------------------------- |
+| public  | journal_entries | 4 per-action | `journal_entries_all` FOR ALL | auth.uid() → (select auth.uid())             |
+| public  | journal_photos  | 4 per-action | `journal_photos_all` FOR ALL  | auth.uid() → (select auth.uid())             |
+| public  | journal_audio   | 4 per-action | `journal_audio_all` FOR ALL   | auth.uid() → (select auth.uid())             |
+| storage | objects         | 6 per-action | 6 renamed per-action          | auth.uid()::text → (select auth.uid())::text |
 
 #### Verification
 
@@ -1551,25 +1589,26 @@ After executing: click **"Reset suggestions"** in Performance Advisor, wait 30s,
 
 #### New Files
 
-| File | Purpose |
-|------|---------|
+| File                                          | Purpose                                              |
+| --------------------------------------------- | ---------------------------------------------------- |
 | `src/features/journal/DiaryFormatToolbar.tsx` | WYSIWYG formatting toolbar (B/I/U/S/Quote/Code/Link) |
 
 #### Modified Files
 
-| File | Changes |
-|------|---------|
-| `src/features/journal/JournalEntryEditor.tsx` | contenteditable swap, paper sheet, font size, prompts dropdown |
-| `src/features/journal/BurnThoughtWidget.tsx` | Animated collapse on burned state |
-| `src/features/journal/ZenFocusMode.tsx` | **NEW** — Headless paragraph dimming + typewriter scroll (replaces SpotlightOverlay) |
-| `src/features/journal/PrivacyShield.tsx` | **NEW** — Headless text blur/masking for privacy |
-| `src/features/journal/DiaryBreatheWidget.tsx` | Dynamic phase text (i18n), haptic ticks, corrected 3.5/1/3.5s timings |
-| `src/features/journal/JournalHabitSection.tsx` | Default expanded; habits now toolbar-toggled |
-| `src/hooks/usePanicGesture.ts` | **NEW** — 3-finger swipe down → panic lock |
-| `src/features/journal/types.ts` | `fontSize` field, `countWordsHtml()`, `FONT_SIZES`, `FontSizeName` |
-| `src/lib/sanitize.ts` | `sanitizeRichContent()` — DOMPurify with formatting tag allowlist |
+| File                                           | Changes                                                                              |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `src/features/journal/JournalEntryEditor.tsx`  | contenteditable swap, paper sheet, font size, prompts dropdown                       |
+| `src/features/journal/BurnThoughtWidget.tsx`   | Animated collapse on burned state                                                    |
+| `src/features/journal/ZenFocusMode.tsx`        | **NEW** — Headless paragraph dimming + typewriter scroll (replaces SpotlightOverlay) |
+| `src/features/journal/PrivacyShield.tsx`       | **NEW** — Headless text blur/masking for privacy                                     |
+| `src/features/journal/DiaryBreatheWidget.tsx`  | Dynamic phase text (i18n), haptic ticks, corrected 3.5/1/3.5s timings                |
+| `src/features/journal/JournalHabitSection.tsx` | Default expanded; habits now toolbar-toggled                                         |
+| `src/hooks/usePanicGesture.ts`                 | **NEW** — 3-finger swipe down → panic lock                                           |
+| `src/features/journal/types.ts`                | `fontSize` field, `countWordsHtml()`, `FONT_SIZES`, `FontSizeName`                   |
+| `src/lib/sanitize.ts`                          | `sanitizeRichContent()` — DOMPurify with formatting tag allowlist                    |
 
 #### Verification
+
 - `npx tsc --noEmit` — 0 errors
 - `npm run build` — success
 
@@ -1613,16 +1652,16 @@ After executing: click **"Reset suggestions"** in Performance Advisor, wait 30s,
 
 #### New Files
 
-| File | Purpose |
-|------|---------|
-| `src/features/journal/ZenFocusMode.tsx` | Headless paragraph dimming + typewriter scroll |
-| `src/features/journal/PrivacyShield.tsx` | Headless text blur/masking |
-| `src/hooks/usePanicGesture.ts` | 3-finger swipe down detection |
+| File                                     | Purpose                                        |
+| ---------------------------------------- | ---------------------------------------------- |
+| `src/features/journal/ZenFocusMode.tsx`  | Headless paragraph dimming + typewriter scroll |
+| `src/features/journal/PrivacyShield.tsx` | Headless text blur/masking                     |
+| `src/hooks/usePanicGesture.ts`           | 3-finger swipe down detection                  |
 
 #### Deleted Files
 
-| File | Reason |
-|------|--------|
+| File                                        | Reason                   |
+| ------------------------------------------- | ------------------------ |
 | `src/features/journal/SpotlightOverlay.tsx` | Replaced by ZenFocusMode |
 
 #### Bottom Toolbar (7 buttons)
@@ -1630,6 +1669,7 @@ After executing: click **"Reset suggestions"** in Performance Advisor, wait 30s,
 `✍️ Focus` → `🔥 Burn` → `🧘 Breathe` → `✅ Habits` → `📸 Photo` → `〰️ Frames` → `⏺ Texture`
 
 #### Verification
+
 - `npx tsc --noEmit` — 0 errors
 - `npm run build` — success
 
@@ -1645,6 +1685,7 @@ After executing: click **"Reset suggestions"** in Performance Advisor, wait 30s,
 #### Audit Verdict: NO NEW LAW NEEDED
 
 From 39 findings across 3 agents:
+
 - **22** = enforcement gaps in existing laws (laws exist but not followed)
 - **6** = false positives (verified against actual code)
 - **5** = already tracked as technical debt
@@ -1653,12 +1694,12 @@ From 39 findings across 3 agents:
 
 #### False Positives Corrected
 
-| Agent Claim | Reality |
-|---|---|
-| "Zero store unit tests" | 4 test files, 1400 LOC |
-| "EmotionThemeContext no useMemo" | useMemo wraps provider value |
-| "Zustand selectors recreated every render" | All field-level selectors (correct) |
-| "37/90 hooks tested (41%)" | 36/54 tested (67%) — inflated denominator |
+| Agent Claim                                   | Reality                                             |
+| --------------------------------------------- | --------------------------------------------------- |
+| "Zero store unit tests"                       | 4 test files, 1400 LOC                              |
+| "EmotionThemeContext no useMemo"              | useMemo wraps provider value                        |
+| "Zustand selectors recreated every render"    | All field-level selectors (correct)                 |
+| "37/90 hooks tested (41%)"                    | 36/54 tested (67%) — inflated denominator           |
 | "useIndexedDB writePendingRef race condition" | Correct pattern — stale read protection, not TOCTOU |
 
 #### Green Flags (Professional Standards Present)
@@ -1691,6 +1732,7 @@ From 39 findings across 3 agents:
 4. Fire-and-forget journal deletes without cloud escalation (Law 25)
 
 #### Verification
+
 - `npx tsc --noEmit` — 0 errors
 - `npx eslint . --max-warnings=0` — 0 warnings
 - `npx vitest --run` — 2664/2664 pass

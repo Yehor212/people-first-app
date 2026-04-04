@@ -104,7 +104,7 @@ readStdin((data) => {
     }
   }
 
-  // 5. Audit checklist
+  // 5. Audit checklist (audit-only)
   const isAudit = fs.existsSync(AUDIT_FLAG);
   if (isAudit) {
     if (fs.existsSync(CHECKLIST)) {
@@ -120,12 +120,7 @@ readStdin((data) => {
       results.blockers.push('audit active but no checklist');
     }
 
-    // 6. Ruflo usage
-    const rufloCheck = checkStale(RUFLO_STAMP, 4 * 60 * 60 * 1000); // 4h — audit sessions can be long
-    results.checks.ruflo = { pass: !rufloCheck.stale, ageMin: Math.round(rufloCheck.ageMs / 60000) };
-    if (rufloCheck.stale) results.blockers.push('ruflo not used or stale');
-
-    // 7. Gaming cross-check
+    // 7. Gaming cross-check (audit-only)
     if (fs.existsSync(CHECKLIST)) {
       const cl = safeReadJson(CHECKLIST, { items: [] });
       const doneItems = (cl.items || []).filter(i => i.done && i.files && i.files.length > 0);
@@ -136,6 +131,33 @@ readStdin((data) => {
         total: doneItems.length,
       };
     }
+  }
+
+  // 6. Ruflo usage + ALL 16 area coverage (v3 — zero skips, ALL sessions)
+  const { countRufloAreas, TOTAL_AREAS: TOTAL_16_IV } = require('./hook-utils.cjs');
+  if (fs.existsSync(RUFLO_STAMP)) {
+    const rufloData = safeReadJson(RUFLO_STAMP, {});
+    const rufloAge = Date.now() - (rufloData.lastAction || rufloData.timestamp || 0);
+    const rufloFresh = rufloAge < 4 * 60 * 60 * 1000;
+    results.checks.ruflo = { pass: rufloFresh, ageMin: Math.round(rufloAge / 60000) };
+    if (!rufloFresh) results.blockers.push('ruflo not used or stale');
+
+    // 6b. ALL 16 area coverage — BLOCKING (zero skips)
+    const { usedCount, missingAreas } = countRufloAreas(rufloData);
+    results.checks.ruflo_areas = {
+      pass: usedCount >= TOTAL_16_IV,
+      usedCount,
+      totalAreas: TOTAL_16_IV,
+      missing: missingAreas,
+    };
+    if (usedCount < TOTAL_16_IV) {
+      results.blockers.push('ruflo areas: ' + usedCount + '/' + TOTAL_16_IV + ' (need ALL 16). Missing: [' + missingAreas.join(', ') + ']');
+    }
+  } else {
+    // No ruflo state file — ALWAYS BLOCKING
+    results.checks.ruflo = { pass: false, ageMin: Infinity, missing: true };
+    results.checks.ruflo_areas = { pass: false, usedCount: 0, totalAreas: TOTAL_16_IV, missing: [] };
+    results.blockers.push('ruflo not used (no .ruflo-last-action)');
   }
 
   // 8. SEMANTIC: Goal alignment (deterministic keyword matching, no LLM)

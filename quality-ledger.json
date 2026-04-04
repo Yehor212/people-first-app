@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-03-30",
+  "lastUpdated": "2026-04-04",
   "floors": {
     "tests.total": {
       "value": 3385,
@@ -9,9 +9,9 @@
       "description": "Total unit test count (vitest)"
     },
     "tests.files": {
-      "value": 144,
+      "value": 147,
       "direction": "up",
-      "recorded": "2026-03-15",
+      "recorded": "2026-04-04",
       "description": "Test file count"
     },
     "eslint.maxWarnings": {
@@ -45,16 +45,16 @@
       "description": "Components >400 LOC (excluding exemptions)"
     },
     "exhaustiveDeps": {
-      "value": 22,
+      "value": 21,
       "direction": "down",
-      "recorded": "2026-03-14",
+      "recorded": "2026-04-04",
       "description": "eslint-disable exhaustive-deps suppressions"
     },
     "inlineStyles": {
-      "value": 326,
+      "value": 304,
       "direction": "down",
       "tolerance": 0.03,
-      "recorded": "2026-03-22",
+      "recorded": "2026-04-04",
       "description": "Inline style={{}} in .tsx files. Tolerance 3% (~10) for prettier reformat."
     },
     "hardcodedColors": {
@@ -64,9 +64,9 @@
       "description": "Theme-blind hardcoded colors (Visual Aesthetic Part 6)"
     },
     "consoleLogs": {
-      "value": 9,
+      "value": 0,
       "direction": "down",
-      "recorded": "2026-03-22",
+      "recorded": "2026-04-04",
       "description": "console.log/warn/debug in production source (use logger.ts)"
     },
     "todoFixme": {
@@ -76,22 +76,22 @@
       "description": "TODO/FIXME/HACK/XXX comments in source"
     },
     "bundleSizeKB": {
-      "value": 4897,
+      "value": 4707,
       "direction": "down",
       "tolerance": 0.005,
-      "recorded": "2026-04-02",
+      "recorded": "2026-04-04",
       "description": "Total JS bundle size in KB (dist/assets/*.js). Tolerance 0.5% (~24KB) for legitimate feature imports."
     },
     "enforcement.blockingHooks": {
-      "value": 6,
+      "value": 15,
       "direction": "up",
-      "recorded": "2026-03-21",
+      "recorded": "2026-04-04",
       "description": "BLOCKING hooks (exit 2 fail-closed): preflight-gate, protected-files, commit-gate, quality-stop-gate, search-gate, bandaid-gate"
     },
     "enforcement.totalHooks": {
-      "value": 32,
+      "value": 41,
       "direction": "up",
-      "recorded": "2026-03-21",
+      "recorded": "2026-04-04",
       "description": "Total enforcement hooks"
     },
     "enforcement.uncoveredAntiPatterns": {
@@ -101,9 +101,9 @@
       "description": "Anti-patterns without BLOCK or WARN enforcement"
     },
     "npmOutdated": {
-      "value": 999,
+      "value": 53,
       "direction": "down",
-      "recorded": "2026-03-23",
+      "recorded": "2026-04-04",
       "description": "Outdated npm packages — CANARY ONLY (external dependency, not code-controlled). Floor=999 disables blocking. Actual count tracked as canary only."
     }
   },
@@ -131,6 +131,10 @@
       },
       {
         "date": "2026-03-22",
+        "value": 9.9
+      },
+      {
+        "date": "2026-04-04",
         "value": 9.9
       }
     ]

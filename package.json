@@ -72,8 +72,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
-    "date-fns": "^3.6.0",
-    "dexie": "^4.2.1",
+    "dexie": "^4.4.2",
     "dompurify": "^3.3.1",
     "framer-motion": "^12.26.2",
     "jspdf": "^4.2.0",
@@ -88,7 +87,7 @@
     "tailwindcss-animate": "^1.0.7",
     "vaul": "^0.9.9",
     "zod": "^3.25.76",
-    "zustand": "^5.0.11"
+    "zustand": "^5.0.12"
   },
   "devDependencies": {
     "@emotion/is-prop-valid": "^1.4.0",

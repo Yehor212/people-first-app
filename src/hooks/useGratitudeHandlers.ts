@@ -25,7 +25,8 @@ export function useGratitudeHandlers({
   const rewardUser = useGamificationStore(s => s.rewardUser);
 
   const handleAddGratitude = useThrottledCallback((entry: GratitudeEntry) => {
-    setGratitudeEntries(prev => [...prev, entry]);
+    const stamped = { ...entry, updatedAt: entry.updatedAt || Date.now() };
+    setGratitudeEntries(prev => [...prev, stamped]);
     rewardUser('gratitude', { treats: 8, treatReason: 'Gratitude entry', haptic: haptics.gratitudeSaved });
 
     // Gratitude-specific: attract creatures

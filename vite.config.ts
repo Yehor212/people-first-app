@@ -135,6 +135,10 @@ export default defineConfig(({ mode }) => {
           __dirname,
           "node_modules/lottie-web/build/player/lottie_light.js"
         ),
+        // Exclude unused jspdf optional dep from bundle (-202 kB).
+        // jspdf loads html2canvas dynamically only for .html() method,
+        // which ZenFlow never calls (verified: 0 .html() calls in codebase).
+        "html2canvas": path.resolve(__dirname, "src/lib/noop.ts"),
       },
     },
 

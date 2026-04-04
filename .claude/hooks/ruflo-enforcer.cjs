@@ -1,72 +1,93 @@
 #!/usr/bin/env node
 /**
- * RUFLO FULL ARSENAL ENFORCER
+ * RUFLO FULL ARSENAL ENFORCER (v3 — ALL 16 areas, ZERO skips)
  *
- * During audit sessions, enforces the complete Ruflo 6-phase pipeline:
+ * ALL 16 areas are MANDATORY. No REAL/FACADE distinction.
+ * Every area was verified functional on 2026-04-04 (v3.5.48).
  *
- * PHASE 1 (Session Start): agentdb_session-start → episodic replay
- * PHASE 2 (Before Edit):   memory_search → find existing patterns
- * PHASE 3 (Before Edit):   agentdb_pattern-search → hybrid BM25+semantic
- * PHASE 4 (After Fix):     memory_store → save solution pattern
- * PHASE 5 (After Fix):     agentdb_feedback → record task outcome
- * PHASE 6 (Session End):   agentdb_session-end → consolidation
+ * 16 enforceable MCP areas (sparc-methodology has no MCP tools,
+ * replaced by guidance which is cross-cutting):
  *
- * Tracks which phases were completed. Blocks edits if Phase 2 or 3
- * not done within 30 minutes. Advisory warnings for other phases.
+ *   1. agent-management     2. swarm-orchestration  3. memory-knowledge
+ *   4. intelligence-learning 5. hooks-automation     6. hive-mind
+ *   7. security              8. performance          9. github-integration
+ *  10. session-workflow     11. embeddings-vectors  12. wasm-agents
+ *  13. ruvllm-inference     14. code-analysis       15. config-system
+ *  16. guidance
  *
- * Full arsenal: 16 areas, 100+ tools. This hook enforces the pipeline
- * so the agent cannot skip Ruflo even if "simpler tools are enough."
+ * Tracking: PreToolUse:mcp__ruflo__.* records area + tool.
+ * Enforcement:
+ *   - Edit gate: min 3 areas (allows incremental work)
+ *   - Stop gates: ALL 16 areas (blocks session completion)
+ *   - Commit gate: ALL 16 areas (blocks commits)
+ *
+ * Research:
+ *   "CLAUDE.md instructions = 70-85% compliance" (IFEval)
+ *   "Only mechanical enforcement = 95-99%+" (NASA IV&V)
+ *   METR 2025: "Models know they are cheating" — must enforce ALL
  */
 'use strict';
 
 const fs = require('fs');
 const path = require('path');
 
-const AUDIT_FLAG = path.join(process.cwd(), '.audit-active');
 const RUFLO_STATE = path.join(process.cwd(), '.ruflo-last-action');
-const MAX_AGE_MS = 4 * 60 * 60 * 1000; // 4 hours — audit/long sessions need generous TTL
+const MAX_AGE_MS = 4 * 60 * 60 * 1000; // 4 hours
 
-// All Ruflo tool prefixes that count as pipeline activity
-const RUFLO_TOOLS = [
-  'ruflo__memory',       // memory_search, memory_store, memory_list, etc.
-  'ruflo__agentdb',      // pattern-search, pattern-store, session-start, feedback, etc.
-  'ruflo__neural',       // train, predict, optimize, patterns
-  'ruflo__performance',  // benchmark, profile, metrics, bottleneck
-  'ruflo__analyze',      // diff, diff-risk, diff-classify, file-risk
-  'ruflo__aidefence',    // scan, analyze, has_pii, is_safe
-  'ruflo__hooks',        // intelligence, pattern-store, trajectory
-  'ruflo__autopilot',    // status, predict, learn, progress
-  'ruflo__guidance',     // capabilities, discover, recommend, workflow
-  'ruflo__embeddings',   // generate, search, compare
+// ─── ALL 16 MANDATORY AREAS (verified 2026-04-04, v3.5.48) ───
+// No REAL/FACADE — ALL count, ALL required. Zero skips.
+const ALL_AREAS = {
+  'memory-knowledge':       ['ruflo__memory_', 'ruflo__agentdb_'],
+  'intelligence-learning':  ['ruflo__neural_', 'ruflo__daa_'],
+  'guidance':               ['ruflo__guidance_'],
+  'code-analysis':          ['ruflo__analyze_'],
+  'security':               ['ruflo__aidefence_', 'ruflo__claims_'],
+  'performance':            ['ruflo__performance_'],
+  'embeddings-vectors':     ['ruflo__embeddings_'],
+  'config-system':          ['ruflo__config_'],
+  'hooks-automation':       ['ruflo__hooks_'],
+  'session-workflow':       ['ruflo__session_', 'ruflo__workflow_'],
+  'agent-management':       ['ruflo__agent_'],
+  'swarm-orchestration':    ['ruflo__swarm_'],
+  'hive-mind':              ['ruflo__hive-mind_'],
+  'wasm-agents':            ['ruflo__wasm_'],
+  'ruvllm-inference':       ['ruflo__ruvllm_'],
+  'github-integration':     ['ruflo__github_'],
+};
+const TOTAL_AREAS = Object.keys(ALL_AREAS).length; // 16
+
+// All known Ruflo prefixes (for tracking any Ruflo tool call)
+const ALL_PREFIXES = [
+  ...Object.values(ALL_AREAS).flat(),
+  'ruflo__transfer_', 'ruflo__coordination_',
+  'ruflo__browser_', 'ruflo__terminal_',
+  'ruflo__progress_', 'ruflo__system_', 'ruflo__mcp_',
+  'ruflo__autopilot_',
 ];
 
-// Phase tracking — REAL Ruflo tools only (facade tools removed, see audit 2026-03-31)
-// Research: "85% of ruflo MCP tools are mock/stub" (GitHub #653)
-// Only track tools with REAL functionality (HNSW memory, neural, embeddings, analyze)
+// Phase tracking — core pipeline phases (backward compatible)
 const PHASES = {
-  // BEFORE work (blocking — must complete before first Edit)
-  memory_search: { tools: ['memory_search', 'memory_retrieve', 'memory_list'], blocking: true, label: 'Memory Search — find prior patterns (REAL: HNSW+ONNX)' },
-  pattern_search: { tools: ['agentdb_pattern-search', 'agentdb_hierarchical-recall'], blocking: true, label: 'Pattern Search — BM25+semantic hybrid (REAL)' },
-  // AFTER work (advisory — should complete before commit, commit-gate enforces)
-  store_result: { tools: ['memory_store', 'agentdb_pattern-store'], blocking: false, label: 'Memory Store — save outcome for future sessions (REAL)' },
+  memory_search:  { tools: ['memory_search', 'memory_retrieve', 'memory_list'], blocking: true, label: 'Memory Search (HNSW+ONNX)' },
+  pattern_search: { tools: ['agentdb_pattern-search', 'agentdb_hierarchical-recall'], blocking: true, label: 'Pattern Search (BM25+semantic)' },
+  store_result:   { tools: ['memory_store', 'agentdb_pattern-store'], blocking: false, label: 'Memory Store (save outcome)' },
 };
 
-// Ruflo enforcement ALWAYS BLOCKING (exit 2) — not advisory
-// Research: "stderr warnings ignored by LLM. Only blocking enforcement works."
-// .audit-active adds: checklist-gate, satisficing-gate, stricter checks
-const auditActive = fs.existsSync(AUDIT_FLAG);
-
-// ANTI-DEADLOCK: Auto-clean stale .audit-active (>4 hours old)
-if (auditActive) {
-  try {
-    const auditAge = Date.now() - fs.statSync(AUDIT_FLAG).mtimeMs;
-    if (auditAge > 4 * 3600 * 1000) {
-      // Stale — don't treat as audit but still enforce Ruflo
-    }
-  } catch {}
+// ─── HELPERS ───
+function classifyTool(toolName) {
+  for (const [area, prefixes] of Object.entries(ALL_AREAS)) {
+    if (prefixes.some(p => toolName.includes(p))) return { area };
+  }
+  return { area: 'unknown' };
 }
 
-// Read stdin with timeout fallback — prevents hanging if SDK doesn't close stdin
+function countAreas(state) {
+  const areas = state.areas || {};
+  const used = Object.keys(ALL_AREAS).filter(a => areas[a]?.count > 0);
+  const missing = Object.keys(ALL_AREAS).filter(a => !areas[a] || areas[a].count === 0);
+  return { usedCount: used.length, total: TOTAL_AREAS, usedAreas: used, missingAreas: missing };
+}
+
+// ─── MAIN ───
 let rawInput = '';
 let processed = false;
 
@@ -82,126 +103,157 @@ function processInput() {
     process.exit(2);
   }
 
-const toolName = input.tool_name || input.tool || '';
+  const toolName = input.tool_name || input.tool || '';
 
-// Load current state
-let state = { phases: {}, lastAction: 0, toolLog: [] };
-const stateFileExists = fs.existsSync(RUFLO_STATE);
-try {
-  if (stateFileExists) state = JSON.parse(fs.readFileSync(RUFLO_STATE, 'utf8'));
-} catch {}
-
-// PreToolUse OR PostToolUse: record Ruflo tool usage and update phase tracking
-// This fires via PreToolUse:mcp__ruflo__.* (reliable) and PostToolUse:mcp__ruflo__.* (unreliable).
-// PreToolUse for MCP = confirmed working. PostToolUse for MCP = may not fire (SDK issue).
-// Using PreToolUse ensures state file is written BEFORE the MCP call completes,
-// so subsequent Edit/Write calls see fresh ruflo activity.
-const isRufloTool = RUFLO_TOOLS.some(prefix => toolName.includes(prefix));
-if (isRufloTool) {
-  state.lastAction = Date.now();
-  state.toolLog = (state.toolLog || []).slice(-50); // keep last 50
-  state.toolLog.push({ tool: toolName, time: Date.now() });
-
-  // Check which phase this satisfies
-  for (const [phaseId, phase] of Object.entries(PHASES)) {
-    if (phase.tools.some(t => toolName.includes(t))) {
-      state.phases[phaseId] = { done: true, tool: toolName, time: Date.now() };
+  // Load current state
+  let state = { phases: {}, areas: {}, lastAction: 0, toolLog: [], facadeWarnings: [] };
+  try {
+    if (fs.existsSync(RUFLO_STATE)) {
+      const loaded = JSON.parse(fs.readFileSync(RUFLO_STATE, 'utf8'));
+      state = { ...state, ...loaded };
+      // Ensure areas object exists (backward compat)
+      if (!state.areas) state.areas = {};
+      if (!state.facadeWarnings) state.facadeWarnings = [];
     }
-  }
+  } catch {}
 
-  fs.writeFileSync(RUFLO_STATE, JSON.stringify(state, null, 2));
+  // ─── TRACK: Record Ruflo tool usage with area classification ───
+  const isRufloTool = ALL_PREFIXES.some(prefix => toolName.includes(prefix));
+  if (isRufloTool) {
+    state.lastAction = Date.now();
+    state.toolLog = (state.toolLog || []).slice(-50);
+    state.toolLog.push({ tool: toolName, time: Date.now() });
 
-  // Show pipeline status
-  const doneCount = Object.values(state.phases).filter(p => p.done).length;
-  const totalPhases = Object.keys(PHASES).length;
-  process.stderr.write(`📦 Ruflo pipeline: ${doneCount}/${totalPhases} phases | Tool: ${toolName}\n`);
-  process.exit(0);
-}
+    // Classify and record area
+    const { area } = classifyTool(toolName);
+    if (!state.areas[area]) {
+      state.areas[area] = { count: 0, firstUsed: Date.now(), tools: [] };
+    }
+    state.areas[area].count++;
+    state.areas[area].lastUsed = Date.now();
+    const areaTools = state.areas[area].tools || [];
+    if (!areaTools.includes(toolName)) {
+      areaTools.push(toolName);
+      state.areas[area].tools = areaTools.slice(-10);
+    }
 
-// PreToolUse:Edit — enforce blocking phases
-if (toolName === 'Edit' || toolName === 'Write') {
-  // BOOTSTRAP EXCEPTION: Allow infrastructure + memory files without Ruflo
-  const filePath = input.tool_input?.file_path || '';
-  if (filePath.includes('audit-checklist') || filePath.includes('audit-active') ||
-      filePath.includes('.postflight-done') || filePath.includes('.preflight-token') ||
-      filePath.includes('.verification-done') || filePath.includes('.ide-ack') ||
-      filePath.includes('.ruflo-last-action') ||
-      filePath.includes('memory/') || filePath.includes('memory\\')) {
-    process.exit(0);
-  }
-  const missingBlocking = [];
-  const missingAdvisory = [];
-
-  for (const [phaseId, phase] of Object.entries(PHASES)) {
-    const phaseDone = state.phases[phaseId]?.done;
-    if (!phaseDone) {
-      if (phase.blocking) {
-        missingBlocking.push({ id: phaseId, ...phase });
-      } else {
-        missingAdvisory.push({ id: phaseId, ...phase });
+    // Check which phase this satisfies
+    for (const [phaseId, phase] of Object.entries(PHASES)) {
+      if (phase.tools.some(t => toolName.includes(t))) {
+        state.phases[phaseId] = { done: true, tool: toolName, time: Date.now() };
       }
     }
-  }
 
-  // Check age of last action
-  const age = Date.now() - (state.lastAction || 0);
-  const stale = age > MAX_AGE_MS;
+    fs.writeFileSync(RUFLO_STATE, JSON.stringify(state, null, 2));
 
-  // If no state file exists, advisory only (prevents deadlock).
-  // BLOCKING enforcement is at commit-gate Layer 5h — that's the real gate.
-  // This advisory ensures the agent gets early warning to create the state file.
-  if (!stateFileExists) {
-    process.stderr.write('⚠️ RUFLO: no .ruflo-last-action. Run memory_search + pattern-search, then create state via Bash.\n');
-    process.stderr.write('  Commit will be BLOCKED without ruflo evidence (commit-gate Layer 5h).\n');
+    // Show ALL-16 area progress
+    const { usedCount, missingAreas } = countAreas(state);
+    const donePhases = Object.values(state.phases).filter(p => p.done).length;
+
+    process.stderr.write(
+      `\n📦 Ruflo: ${donePhases}/${Object.keys(PHASES).length} phases | ` +
+      `${usedCount}/${TOTAL_AREAS} areas | Tool: ${toolName}\n`
+    );
+    if (missingAreas.length > 0 && missingAreas.length <= 8) {
+      process.stderr.write(`   Missing: [${missingAreas.join(', ')}]\n`);
+    }
     process.exit(0);
   }
 
-  if (missingBlocking.length > 0 || (stale && state.lastAction > 0)) {
-    process.stderr.write('\nRUFLO FULL ARSENAL ENFORCER BLOCKED!\n\n');
-
-    if (missingBlocking.length > 0) {
-      process.stderr.write('Missing REQUIRED phases (must complete before editing):\n');
-      missingBlocking.forEach(p => {
-        process.stderr.write(`  ❌ ${p.label}\n`);
-        process.stderr.write(`     → Run: mcp__ruflo__${p.tools[0]}\n`);
-      });
+  // ─── ENFORCE: PreToolUse:Edit|Write — check pipeline before edits ───
+  if (toolName === 'Edit' || toolName === 'Write') {
+    // BOOTSTRAP EXCEPTION: Allow infrastructure + memory files without Ruflo
+    const filePath = input.tool_input?.file_path || '';
+    if (filePath.includes('audit-checklist') || filePath.includes('audit-active') ||
+        filePath.includes('.postflight-done') || filePath.includes('.preflight-token') ||
+        filePath.includes('.verification-done') || filePath.includes('.ide-ack') ||
+        filePath.includes('.ruflo-last-action') || filePath.includes('.evolve-done') ||
+        filePath.includes('.ruflo-') || filePath.includes('.ci-evidence') ||
+        filePath.includes('.evidence-chain') || filePath.includes('.user-goal') ||
+        filePath.includes('.user-requirements') ||
+        filePath.includes('memory/') || filePath.includes('memory\\')) {
+      process.exit(0);
     }
 
-    if (stale) {
-      const mins = Math.round(age / 60000);
-      process.stderr.write(`\n  ⏰ Last Ruflo action was ${mins}min ago (limit: 30min)\n`);
-      process.stderr.write('     → Run mcp__ruflo__memory_search to refresh\n');
+    const stateFileExists = fs.existsSync(RUFLO_STATE);
+
+    // BLOCKING when no state file (user: "ТОЛЬКО БЛОКІНГ")
+    if (!stateFileExists) {
+      process.stderr.write(
+        '\n❌ RUFLO ENFORCER BLOCKED!\n' +
+        '  No .ruflo-last-action found. Run Ruflo tools BEFORE editing:\n' +
+        '  1. mcp__ruflo__guidance_workflow\n' +
+        '  2. mcp__ruflo__memory_search\n' +
+        '  3. mcp__ruflo__agentdb_pattern-search\n\n'
+      );
+      process.exit(2);
     }
 
-    process.stderr.write('\nFull Ruflo pipeline (6 phases):\n');
+    // Check blocking phases
+    const missingBlocking = [];
     for (const [phaseId, phase] of Object.entries(PHASES)) {
-      const done = state.phases[phaseId]?.done;
-      const icon = done ? '✅' : (phase.blocking ? '❌' : '⬜');
-      process.stderr.write(`  ${icon} Phase ${phaseId}: ${phase.label}\n`);
+      if (phase.blocking && !state.phases[phaseId]?.done) {
+        missingBlocking.push({ id: phaseId, ...phase });
+      }
     }
-    process.stderr.write('\n');
-    process.exit(2);
+
+    // Check freshness
+    const age = Date.now() - (state.lastAction || 0);
+    const stale = age > MAX_AGE_MS;
+
+    if (missingBlocking.length > 0 || stale) {
+      process.stderr.write('\n❌ RUFLO ENFORCER BLOCKED!\n\n');
+
+      if (missingBlocking.length > 0) {
+        process.stderr.write('Missing REQUIRED phases:\n');
+        missingBlocking.forEach(p => {
+          process.stderr.write(`  ❌ ${p.label}\n`);
+          process.stderr.write(`     → Run: mcp__ruflo__${p.tools[0]}\n`);
+        });
+      }
+
+      if (stale) {
+        process.stderr.write(`\n  ⏰ Last action: ${Math.round(age / 60000)}min ago (max: ${MAX_AGE_MS / 60000}min)\n`);
+      }
+
+      // Show area coverage status
+      const { usedCount, usedAreas, missingAreas } = countAreas(state);
+      process.stderr.write(`\n📊 Area coverage: ${usedCount}/${TOTAL_AREAS} areas\n`);
+      if (usedAreas.length > 0) {
+        process.stderr.write(`   Used: [${usedAreas.join(', ')}]\n`);
+      }
+      process.stderr.write(`   Missing: [${missingAreas.slice(0, 5).join(', ')}${missingAreas.length > 5 ? '...' : ''}]\n\n`);
+
+      process.exit(2);
+    }
+
+    // BLOCKING area coverage on Edit/Write — min 3 to start work
+    const { usedCount, missingAreas } = countAreas(state);
+    const donePhases = Object.values(state.phases).filter(p => p.done).length;
+    const MIN_AREAS_EDIT = 3;
+
+    if (usedCount < MIN_AREAS_EDIT) {
+      process.stderr.write(
+        `\n❌ RUFLO AREA COVERAGE BLOCKED!\n` +
+        `  ${usedCount}/${TOTAL_AREAS} areas (need ≥${MIN_AREAS_EDIT} to edit, ALL 16 to stop/commit)\n` +
+        `  Missing: [${missingAreas.slice(0, 5).join(', ')}]\n` +
+        `  Run: mcp__ruflo__guidance_workflow, mcp__ruflo__agent_list, mcp__ruflo__neural_status\n\n`
+      );
+      process.exit(2);
+    } else {
+      process.stderr.write(
+        `📦 Ruflo: ${donePhases}/${Object.keys(PHASES).length} phases | ` +
+        `${usedCount}/${TOTAL_AREAS} areas` +
+        (usedCount >= TOTAL_AREAS ? ' ✅ ALL' : ` (${TOTAL_AREAS - usedCount} remaining)`) + '\n'
+      );
+    }
   }
 
-  // Advisory warnings for non-blocking phases
-  if (missingAdvisory.length > 0) {
-    process.stderr.write(`📦 Ruflo advisory: ${missingAdvisory.length} optional phases pending:\n`);
-    missingAdvisory.forEach(p => {
-      process.stderr.write(`  ⬜ ${p.label}\n`);
-    });
-  }
-
-  // Show pipeline summary
-  const doneCount = Object.values(state.phases).filter(p => p.done).length;
-  process.stderr.write(`📦 Ruflo pipeline: ${doneCount}/${Object.keys(PHASES).length} phases complete\n`);
+  process.exit(0);
 }
-
-process.exit(0);
-} // end processInput()
 
 // Dual stdin reading: stream + timeout fallback
 process.stdin.on('data', d => rawInput += d);
 process.stdin.on('end', () => processInput());
-// P5 FIX: unref() prevents setTimeout from keeping Node alive after processInput exits
 const timer = setTimeout(() => processInput(), 2000);
 timer.unref();

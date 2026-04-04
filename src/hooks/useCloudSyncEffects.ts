@@ -1,22 +1,46 @@
-import { useEffect, useRef, type Dispatch, type SetStateAction, type MutableRefObject } from 'react';
-import { useAppStore, useUserDataStore } from '@/stores';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { useQuickActions, type QuickActionType } from '@/hooks/useQuickActions';
-import { supabase } from '@/lib/supabaseClient';
-import { syncReminderSettings } from '@/storage/reminderSync';
+import {
+  useEffect,
+  useRef,
+  type Dispatch,
+  type SetStateAction,
+  type MutableRefObject,
+} from "react";
+import { useAppStore, useUserDataStore } from "@/stores";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useQuickActions, type QuickActionType } from "@/hooks/useQuickActions";
+import { supabase } from "@/lib/supabaseClient";
+import { syncReminderSettings } from "@/storage/reminderSync";
 import {
   syncChallengesWithCloud,
   syncBadgesWithCloud,
   subscribeToChallengeUpdates,
   subscribeToBadgeUpdates,
-} from '@/storage/challengeCloudSync';
-import { syncTasks, syncQuests, subscribeToTaskUpdates, subscribeToQuestUpdates } from '@/storage/tasksCloudSync';
-import { logger } from '@/lib/logger';
+} from "@/storage/challengeCloudSync";
+import {
+  syncTasks,
+  syncQuests,
+  subscribeToTaskUpdates,
+  subscribeToQuestUpdates,
+} from "@/storage/tasksCloudSync";
+import { logger } from "@/lib/logger";
+import { initSyncBroadcast, onRemoteChange, destroySyncBroadcast } from "@/lib/syncBroadcast";
+import {
+  pullMoodsFromCloud,
+  pullFocusFromCloud,
+  pullGratitudeFromCloud,
+} from "@/storage/realtimeSync";
+import { silentSync } from "@/storage/cloudSync";
+import { isNative } from "@/lib/platform";
+import { App } from "@capacitor/app";
 
 interface UseCloudSyncEffectsParams {
-  setChallenges: Dispatch<SetStateAction<ReturnType<typeof import('@/lib/challengeStorage').getChallenges>>>;
-  setBadges: Dispatch<SetStateAction<ReturnType<typeof import('@/lib/challengeStorage').getBadges>>>;
-  handleNavigateToSection: (section: 'mood' | 'habits' | 'focus') => void;
+  setChallenges: Dispatch<
+    SetStateAction<ReturnType<typeof import("@/lib/challengeStorage").getChallenges>>
+  >;
+  setBadges: Dispatch<
+    SetStateAction<ReturnType<typeof import("@/lib/challengeStorage").getBadges>>
+  >;
+  handleNavigateToSection: (section: "mood" | "habits" | "focus") => void;
   quickActionTimeoutRef: MutableRefObject<ReturnType<typeof setTimeout> | null>;
 }
 
@@ -33,18 +57,18 @@ export function useCloudSyncEffects({
   quickActionTimeoutRef,
 }: UseCloudSyncEffectsParams): void {
   const { language } = useLanguage();
-  const reminders = useUserDataStore(s => s.reminders);
-  const setActiveTab = useAppStore(s => s.setActiveTab);
+  const reminders = useUserDataStore((s) => s.reminders);
+  const setActiveTab = useAppStore((s) => s.setActiveTab);
   const { onAction: onQuickAction } = useQuickActions();
 
   // Guard against concurrent reminder syncs (prevents infinite loop on 400 error)
   const reminderSyncPendingRef = useRef(false);
   // Prevent duplicate syncs when Zustand emits a new object reference without actual data change
-  const prevRemindersRef = useRef<string>('');
+  const prevRemindersRef = useRef<string>("");
 
   // Reminder sync to cloud
   useEffect(() => {
-    const serialized = JSON.stringify(reminders) + '|' + language;
+    const serialized = JSON.stringify(reminders) + "|" + language;
     if (serialized === prevRemindersRef.current) return;
     prevRemindersRef.current = serialized;
 
@@ -70,22 +94,22 @@ export function useCloudSyncEffects({
   // Lock screen quick actions handler
   useEffect(() => {
     onQuickAction((action: QuickActionType) => {
-      logger.log('[Index] Quick action triggered:', action);
+      logger.log("[Index] Quick action triggered:", action);
 
       // Switch to home tab first
-      setActiveTab('home');
+      setActiveTab("home");
 
       // Small delay to ensure tab switch is complete before scrolling
       quickActionTimeoutRef.current = setTimeout(() => {
         switch (action) {
-          case 'mood':
-            handleNavigateToSection('mood');
+          case "mood":
+            handleNavigateToSection("mood");
             break;
-          case 'focus':
-            handleNavigateToSection('focus');
+          case "focus":
+            handleNavigateToSection("focus");
             break;
-          case 'habits':
-            handleNavigateToSection('habits');
+          case "habits":
+            handleNavigateToSection("habits");
             break;
         }
       }, 100);
@@ -111,7 +135,9 @@ export function useCloudSyncEffects({
       if (!supabase) return;
 
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
 
         if (!active) return;
 
@@ -140,8 +166,8 @@ export function useCloudSyncEffects({
           // Subscribe to real-time updates
           challengeSub = subscribeToChallengeUpdates(user.id, (updatedChallenge) => {
             if (!active) return;
-            setChallenges(prev => {
-              const index = prev.findIndex(c => c.id === updatedChallenge.id);
+            setChallenges((prev) => {
+              const index = prev.findIndex((c) => c.id === updatedChallenge.id);
               if (index !== -1) {
                 const updated = [...prev];
                 updated[index] = updatedChallenge;
@@ -153,8 +179,8 @@ export function useCloudSyncEffects({
 
           badgeSub = subscribeToBadgeUpdates(user.id, (updatedBadge) => {
             if (!active) return;
-            setBadges(prev => {
-              const index = prev.findIndex(b => b.id === updatedBadge.id);
+            setBadges((prev) => {
+              const index = prev.findIndex((b) => b.id === updatedBadge.id);
               if (index !== -1) {
                 const updated = [...prev];
                 updated[index] = updatedBadge;
@@ -167,16 +193,16 @@ export function useCloudSyncEffects({
           // Subscribe to tasks/quests updates to keep localStorage fresh
           taskSub = subscribeToTaskUpdates(user.id, () => {
             if (!active) return;
-            logger.log('[Index] Tasks updated from cloud');
+            logger.log("[Index] Tasks updated from cloud");
           });
 
           questSub = subscribeToQuestUpdates(user.id, () => {
             if (!active) return;
-            logger.log('[Index] Quests updated from cloud');
+            logger.log("[Index] Quests updated from cloud");
           });
         }
       } catch (error) {
-        logger.error('[Index] Cloud sync error:', error);
+        logger.error("[Index] Cloud sync error:", error);
       }
     };
 
@@ -190,4 +216,73 @@ export function useCloudSyncEffects({
       questSub?.();
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps -- mount-only: set up sync subscriptions once
+
+  // Cross-device sync broadcast: instant notification when other device changes data
+  useEffect(() => {
+    if (!supabase) return;
+
+    let unsubRemote: (() => void) | null = null;
+
+    const initBroadcast = async () => {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (!session?.user) return;
+
+        initSyncBroadcast(session.user.id);
+
+        unsubRemote = onRemoteChange((signal) => {
+          logger.sync("[Broadcast] Pulling " + signal.entity + " from remote change");
+          switch (signal.entity) {
+            case "moods":
+              void pullMoodsFromCloud();
+              break;
+            case "focus":
+              void pullFocusFromCloud();
+              break;
+            case "gratitude":
+              void pullGratitudeFromCloud();
+              break;
+            default:
+              void silentSync();
+              break;
+          }
+        });
+      } catch (err) {
+        logger.warn("[Broadcast] Init failed:", err);
+      }
+    };
+
+    void initBroadcast();
+
+    return () => {
+      unsubRemote?.();
+      destroySyncBroadcast();
+    };
+  }, []);
+
+  // Capacitor: sync immediately when app resumes from background
+  useEffect(() => {
+    if (!isNative) return;
+
+    let listenerHandle: { remove: () => void } | null = null;
+
+    App.addListener("appStateChange", ({ isActive }) => {
+      if (isActive) {
+        logger.sync("[AppState] Resumed — triggering sync");
+        void silentSync();
+      }
+    })
+      .then((handle) => {
+        listenerHandle = handle;
+      })
+      .catch((err) => {
+        logger.warn("[AppState] Listener setup failed:", err);
+      });
+
+    return () => {
+      listenerHandle?.remove();
+    };
+  }, []);
 }

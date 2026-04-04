@@ -8,13 +8,13 @@
  * - Activity sharing with friends
  */
 
-import { supabase } from '@/lib/supabaseClient';
-import { logger } from '@/lib/logger';
-import { generateSecureId } from '@/lib/validation';
-import { safeLocalStorageGet, safeLocalStorageSet } from '@/lib/safeJson';
-import { SK } from '@/lib/storageKeys';
-import { isAbortError } from '@/lib/validation';
-import * as Sentry from '@sentry/react';
+import { supabase } from "@/lib/supabaseClient";
+import { logger } from "@/lib/logger";
+import { generateSecureId } from "@/lib/validation";
+import { safeLocalStorageGet, safeLocalStorageSet } from "@/lib/safeJson";
+import { SK } from "@/lib/storageKeys";
+import { isAbortError } from "@/lib/validation";
+import { addBreadcrumb } from "@/lib/sentry";
 
 // ============================================
 // TIMEOUT
@@ -65,7 +65,7 @@ export interface FriendActivity {
   id: string;
   friendId: string;
   friendName: string;
-  activityType: 'habit_completed' | 'streak_milestone' | 'achievement_unlocked' | 'level_up';
+  activityType: "habit_completed" | "streak_milestone" | "achievement_unlocked" | "level_up";
   description: string;
   icon: string;
   timestamp: string;
@@ -86,8 +86,8 @@ export interface MyProfile {
 // CONSTANTS
 // ============================================
 
-const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-const CODE_PREFIX = 'ZF';
+const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+const CODE_PREFIX = "ZF";
 
 // ============================================
 // LOCAL STORAGE HELPERS
@@ -129,7 +129,7 @@ export function saveFriendActivities(activities: FriendActivity[]): void {
  */
 export function generateFriendCode(): string {
   const values = crypto.getRandomValues(new Uint8Array(8));
-  const code = Array.from(values, v => CODE_CHARS[v % CODE_CHARS.length]).join('');
+  const code = Array.from(values, (v) => CODE_CHARS[v % CODE_CHARS.length]).join("");
   return `${CODE_PREFIX}-${code}`;
 }
 
@@ -137,7 +137,7 @@ export function generateFriendCode(): string {
  * Validate friend code format
  */
 export function isValidFriendCode(code: string): boolean {
-  if (!code || typeof code !== 'string') return false;
+  if (!code || typeof code !== "string") return false;
   const normalized = code.trim().toUpperCase();
   return /^ZF-[A-Z0-9]{8}$/.test(normalized);
 }
@@ -156,7 +156,10 @@ export function normalizeFriendCode(code: string): string {
 /**
  * Initialize or get user's friend profile
  */
-export function initializeMyProfile(displayName: string = 'Zen User', avatarEmoji: string = '🧘'): MyProfile {
+export function initializeMyProfile(
+  displayName: string = "Zen User",
+  avatarEmoji: string = "🧘"
+): MyProfile {
   let profile = loadMyProfile();
 
   if (!profile) {
@@ -197,7 +200,7 @@ export function updateMyStreak(streak: number): void {
 
     // Sync to cloud if available
     syncMyProfileToCloud(profile).catch((err) => {
-      logger.warn('[FriendsSync] Failed to sync profile to cloud:', err);
+      logger.warn("[FriendsSync] Failed to sync profile to cloud:", err);
     });
   }
 }
@@ -213,7 +216,7 @@ export function updateMyLevel(level: number): void {
 
     // Sync to cloud if available
     syncMyProfileToCloud(profile).catch((err) => {
-      logger.warn('[FriendsSync] Failed to sync profile to cloud:', err);
+      logger.warn("[FriendsSync] Failed to sync profile to cloud:", err);
     });
   }
 }
@@ -233,20 +236,20 @@ export async function addFriendByCode(friendCode: string): Promise<{
   const normalizedCode = normalizeFriendCode(friendCode);
 
   if (!isValidFriendCode(normalizedCode)) {
-    return { success: false, error: 'Invalid friend code format' };
+    return { success: false, error: "Invalid friend code format" };
   }
 
   // Check if already friends
   const friends = loadFriends();
-  const existing = friends.find(f => f.friendCode === normalizedCode);
+  const existing = friends.find((f) => f.friendCode === normalizedCode);
   if (existing) {
-    return { success: false, error: 'Already friends with this user' };
+    return { success: false, error: "Already friends with this user" };
   }
 
   // Check if it's own code
   const myProfile = loadMyProfile();
   if (myProfile?.friendCode === normalizedCode) {
-    return { success: false, error: 'Cannot add yourself as a friend' };
+    return { success: false, error: "Cannot add yourself as a friend" };
   }
 
   // Try to find friend in cloud
@@ -255,7 +258,7 @@ export async function addFriendByCode(friendCode: string): Promise<{
       const friendData = await findFriendByCode(normalizedCode);
       if (friendData) {
         const friend: Friend = {
-          id: generateSecureId('friend'),
+          id: generateSecureId("friend"),
           userId: friendData.userId,
           friendCode: normalizedCode,
           displayName: friendData.displayName,
@@ -274,17 +277,17 @@ export async function addFriendByCode(friendCode: string): Promise<{
       }
     } catch (error) {
       if (!isAbortError(error)) {
-        logger.warn('[FriendsSync] Error finding friend in cloud:', error);
+        logger.warn("[FriendsSync] Error finding friend in cloud:", error);
       }
     }
   }
 
   // If no cloud data, create with defaults
   const friend: Friend = {
-    id: generateSecureId('friend'),
+    id: generateSecureId("friend"),
     friendCode: normalizedCode,
-    displayName: 'Zen Friend',
-    avatarEmoji: '🧘',
+    displayName: "Zen Friend",
+    avatarEmoji: "🧘",
     currentStreak: 0,
     lastActive: new Date().toISOString(),
     level: 1,
@@ -302,7 +305,7 @@ export async function addFriendByCode(friendCode: string): Promise<{
  */
 export function removeFriend(friendId: string): boolean {
   const friends = loadFriends();
-  const filtered = friends.filter(f => f.id !== friendId);
+  const filtered = friends.filter((f) => f.id !== friendId);
 
   if (filtered.length === friends.length) {
     return false;
@@ -312,7 +315,7 @@ export function removeFriend(friendId: string): boolean {
 
   // Also remove their activities
   const activities = loadFriendActivities();
-  const filteredActivities = activities.filter(a => a.friendId !== friendId);
+  const filteredActivities = activities.filter((a) => a.friendId !== friendId);
   saveFriendActivities(filteredActivities);
 
   return true;
@@ -323,8 +326,8 @@ export function removeFriend(friendId: string): boolean {
  */
 export function getFriendsSortedByActivity(): Friend[] {
   const friends = loadFriends();
-  return friends.sort((a, b) =>
-    new Date(b.lastActive).getTime() - new Date(a.lastActive).getTime()
+  return friends.sort(
+    (a, b) => new Date(b.lastActive).getTime() - new Date(a.lastActive).getTime()
   );
 }
 
@@ -345,14 +348,15 @@ export function isCloudSyncAvailable(): boolean {
 async function syncMyProfileToCloud(profile: MyProfile): Promise<void> {
   if (!supabase) return;
 
-  const { data: { session } } = await supabase.auth.getSession();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
   if (!session?.user) return;
   const user = session.user;
 
   try {
-    const query = supabase
-      .from('user_profiles')
-      .upsert({
+    const query = supabase.from("user_profiles").upsert(
+      {
         user_id: user.id,
         friend_code: profile.friendCode,
         display_name: profile.displayName,
@@ -361,18 +365,20 @@ async function syncMyProfileToCloud(profile: MyProfile): Promise<void> {
         level: profile.shareLevel ? profile.level : null,
         share_activity: profile.shareActivity,
         updated_at: new Date().toISOString(),
-      }, {
-        onConflict: 'user_id',
-      });
-    const { error } = await withTimeout(query, FRIEND_SYNC_TIMEOUT, 'syncMyProfileToCloud');
+      },
+      {
+        onConflict: "user_id",
+      }
+    );
+    const { error } = await withTimeout(query, FRIEND_SYNC_TIMEOUT, "syncMyProfileToCloud");
 
     if (error) {
       // Silently fail - table might not exist yet
-      logger.log('[FriendsSync] Profile sync skipped:', error.code);
+      logger.log("[FriendsSync] Profile sync skipped:", error.code);
     }
   } catch (error) {
     if (!isAbortError(error)) {
-      logger.log('[FriendsSync] Profile sync failed:', error);
+      logger.log("[FriendsSync] Profile sync failed:", error);
     }
   }
 }
@@ -393,18 +399,18 @@ async function findFriendByCode(friendCode: string): Promise<{
 
   try {
     const query = supabase
-      .from('user_profiles')
-      .select('user_id, display_name, avatar_emoji, current_streak, level, updated_at, status')
-      .eq('friend_code', friendCode)
+      .from("user_profiles")
+      .select("user_id, display_name, avatar_emoji, current_streak, level, updated_at, status")
+      .eq("friend_code", friendCode)
       .maybeSingle();
-    const { data, error } = await withTimeout(query, FRIEND_SYNC_TIMEOUT, 'findFriendByCode');
+    const { data, error } = await withTimeout(query, FRIEND_SYNC_TIMEOUT, "findFriendByCode");
 
     if (error || !data) return null;
 
     return {
       userId: data.user_id,
-      displayName: data.display_name || 'Zen Friend',
-      avatarEmoji: data.avatar_emoji || '🧘',
+      displayName: data.display_name || "Zen Friend",
+      avatarEmoji: data.avatar_emoji || "🧘",
       currentStreak: data.current_streak || 0,
       level: data.level || 1,
       lastActive: data.updated_at,
@@ -412,7 +418,7 @@ async function findFriendByCode(friendCode: string): Promise<{
     };
   } catch (error) {
     if (!isAbortError(error)) {
-      logger.log('[FriendsSync] Find friend failed:', error);
+      logger.log("[FriendsSync] Find friend failed:", error);
     }
     return null;
   }
@@ -427,27 +433,29 @@ export async function refreshFriendsData(): Promise<void> {
   const friends = loadFriends();
   if (friends.length === 0) return;
 
-  Sentry.addBreadcrumb({
-    category: 'friends',
-    message: 'Refreshing friends data',
-    level: 'info',
+  addBreadcrumb({
+    category: "friends",
+    message: "Refreshing friends data",
+    level: "info",
     data: { count: friends.length },
   });
 
   try {
-    const friendCodes = friends.map(f => f.friendCode);
+    const friendCodes = friends.map((f) => f.friendCode);
 
     const query = supabase
-      .from('user_profiles')
-      .select('user_id, friend_code, display_name, avatar_emoji, current_streak, level, updated_at, status, share_activity')
-      .in('friend_code', friendCodes);
-    const { data, error } = await withTimeout(query, FRIEND_SYNC_TIMEOUT, 'refreshFriendsData');
+      .from("user_profiles")
+      .select(
+        "user_id, friend_code, display_name, avatar_emoji, current_streak, level, updated_at, status, share_activity"
+      )
+      .in("friend_code", friendCodes);
+    const { data, error } = await withTimeout(query, FRIEND_SYNC_TIMEOUT, "refreshFriendsData");
 
     if (error || !data) return;
 
     // Update local friends with cloud data, respecting privacy flags
-    const updatedFriends = friends.map(friend => {
-      const cloudData = data.find(d => d.friend_code === friend.friendCode);
+    const updatedFriends = friends.map((friend) => {
+      const cloudData = data.find((d) => d.friend_code === friend.friendCode);
       if (cloudData) {
         return {
           ...friend,
@@ -469,7 +477,7 @@ export async function refreshFriendsData(): Promise<void> {
     saveFriends(updatedFriends);
   } catch (error) {
     if (!isAbortError(error)) {
-      logger.warn('[FriendsSync] Refresh failed:', error);
+      logger.warn("[FriendsSync] Refresh failed:", error);
     }
   }
 }
@@ -481,12 +489,12 @@ export async function refreshFriendsData(): Promise<void> {
 /**
  * Add a friend activity notification
  */
-export function addFriendActivity(activity: Omit<FriendActivity, 'id' | 'timestamp'>): void {
+export function addFriendActivity(activity: Omit<FriendActivity, "id" | "timestamp">): void {
   const activities = loadFriendActivities();
 
   const newActivity: FriendActivity = {
     ...activity,
-    id: generateSecureId('activity'),
+    id: generateSecureId("activity"),
     timestamp: new Date().toISOString(),
   };
 
@@ -523,12 +531,12 @@ export function generateFriendCodeShareText(
   const t = translations;
 
   return [
-    `${profile.avatarEmoji} ${t.addMeOnZenFlow || 'Add me on ZenFlow!'}`,
-    '',
-    `${t.friendCode || 'Friend Code'}: ${profile.friendCode}`,
-    '',
-    t.friendCodeJoinPrompt || 'Track habits together!',
-  ].join('\n');
+    `${profile.avatarEmoji} ${t.addMeOnZenFlow || "Add me on ZenFlow!"}`,
+    "",
+    `${t.friendCode || "Friend Code"}: ${profile.friendCode}`,
+    "",
+    t.friendCodeJoinPrompt || "Track habits together!",
+  ].join("\n");
 }
 
 /**
@@ -543,13 +551,13 @@ export async function shareFriendCode(
   if (navigator.share) {
     try {
       await navigator.share({
-        title: `${profile.avatarEmoji} ${translations.addFriend || 'Add Friend'}`,
+        title: `${profile.avatarEmoji} ${translations.addFriend || "Add Friend"}`,
         text,
       });
       return true;
     } catch (error) {
-      if ((error as Error).name !== 'AbortError') {
-        logger.warn('[FriendsSync] Share failed:', error);
+      if ((error as Error).name !== "AbortError") {
+        logger.warn("[FriendsSync] Share failed:", error);
       }
       return false;
     }

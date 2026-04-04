@@ -3,7 +3,7 @@
  * Shows current time and upcoming/current event
  */
 
-import { useState, useEffect, useMemo } from "react";
+import { memo, useState, useEffect, useMemo } from 'react';
 import { Clock, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -14,7 +14,7 @@ interface GlobalScheduleBarProps {
   onTap?: () => void;
 }
 
-export function GlobalScheduleBar({ events, onTap }: GlobalScheduleBarProps) {
+export const GlobalScheduleBar = memo(function GlobalScheduleBar({ events, onTap }: GlobalScheduleBarProps) {
   const { t } = useLanguage();
   const [currentTime, setCurrentTime] = useState(new Date());
 
@@ -144,4 +144,4 @@ export function GlobalScheduleBar({ events, onTap }: GlobalScheduleBarProps) {
       <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0 rtl:scale-x-[-1]" />
     </button>
   );
-}
+});

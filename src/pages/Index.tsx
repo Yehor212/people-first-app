@@ -1,14 +1,12 @@
-import { Suspense, useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { shouldAnimate } from "@/lib/animationUtils";
 import {
-  useAppStore,
   useUIStore,
   selectAnyModalOpen,
   useHydrateGamification,
   useUserDataStore,
   useHydrateUserData,
-  type TabType,
 } from "@/stores";
 import { useAppLifecycle } from "@/hooks/useAppLifecycle";
 import { useDateTracking } from "@/hooks/useDateTracking";
@@ -31,7 +29,8 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { AdProvider } from "@/contexts/AdContext";
 import { MoodBackgroundOverlay } from "@/components/MoodBackgroundOverlay";
 import { supabase } from "@/lib/supabaseClient";
-import { useSwipeNavigation } from "@/hooks/useSwipeNavigation";
+import { useTabNavigation } from "@/hooks/useTabNavigation";
+import { useSectionNavigation } from "@/hooks/useSectionNavigation";
 import { registerModalCloseCallback } from "@/lib/androidBackHandler";
 import { ModalLayer } from "@/components/ModalLayer";
 import { Navigation } from "@/components/Navigation";
@@ -91,101 +90,36 @@ import { useScrollLock } from "@/hooks/useScrollLock";
 import { analytics } from "@/lib/analytics";
 
 export function Index() {
-  const { t, isRTL } = useLanguage();
+  const { t } = useLanguage();
 
   // Security: Auto-logout after 24h inactivity on web (disabled on native)
   useSessionTimeout(!!supabase);
 
-  // Navigation state from Zustand (replaces useState + useEffect for settings clearing)
-  const activeTab = useAppStore((s) => s.activeTab);
-  const setActiveTab = useAppStore((s) => s.setActiveTab);
-  const settingsOpenSection = useAppStore((s) => s.settingsOpenSection);
-  const quickActionTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
-
-  // Concurrent mode: defer heavy tab content renders so interactions stay responsive (INP)
-  const [, startTransition] = useTransition();
-
-  // Focus management: move focus to main content on tab change (WCAG 2.1 §2.4.3)
-  const mainRef = useRef<HTMLElement>(null);
-  const prevTabRef = useRef(activeTab);
-  useEffect(() => {
-    if (prevTabRef.current !== activeTab && mainRef.current) {
-      mainRef.current.focus();
-      prevTabRef.current = activeTab;
-    }
-  }, [activeTab]);
-  // Scroll-to-top on re-tap of active tab (iOS / Telegram convention)
-  const handleTabChange = useCallback(
-    (tab: TabType) => {
-      if (tab === activeTab) {
-        window.scrollTo({ top: 0, behavior: "smooth" });
-        return;
-      }
-      startTransition(() => setActiveTab(tab));
-    },
-    [activeTab, setActiveTab]
-  );
-
-  useEffect(() => {
-    return () => {
-      if (quickActionTimeoutRef.current) clearTimeout(quickActionTimeoutRef.current);
-    };
-  }, []);
-
-  // Feature flags (must be before any usage)
-  const CANVAS_ENABLED = false; // Kill-switch for mindmap tab rollout
-  const HABIT_HUB_ENABLED = true; // Habit Hub replaces the Map tab
-
-  // Swipe navigation for mobile tab switching (disabled on mindmap tab — canvas handles its own gestures)
-  const SWIPE_TABS: TabType[] = [
-    "home",
-    ...(HABIT_HUB_ENABLED ? ["mindmap" as TabType] : []),
-    "garden",
-    "stats",
-    "settings",
-  ];
-  const { containerProps: swipeProps, containerRef: swipeContainerRef } = useSwipeNavigation({
+  // Tab navigation (state, focus management, swipe gestures, feature flags)
+  const {
     activeTab,
-    onTabChange: (tab: TabType) => startTransition(() => setActiveTab(tab)),
-    tabs: SWIPE_TABS,
-    threshold: 50,
-    velocityThreshold: 0.3,
-    isRTL,
-    enabled: HABIT_HUB_ENABLED || activeTab !== "mindmap",
-  });
+    setActiveTab,
+    settingsOpenSection,
+    handleTabChange,
+    startTransition,
+    mainRef,
+    swipeProps,
+    swipeContainerRef,
+    quickActionTimeoutRef,
+    CANVAS_ENABLED,
+    HABIT_HUB_ENABLED,
+  } = useTabNavigation();
 
   // Extracted lifecycle hooks (from Step 1 decomposition)
   useAppLifecycle();
   useDateTracking();
 
-  // Section refs for navigation
-  const moodRef = useRef<HTMLDivElement>(null);
-  const focusRef = useRef<HTMLDivElement>(null);
-  const handleNavigateToSection = useCallback(
-    (section: "mood" | "habits" | "focus") => {
-      if (section === "habits") {
-        startTransition(() => setActiveTab("mindmap"));
-        return;
-      }
-      const refs = { mood: moodRef, focus: focusRef };
-      refs[section]?.current?.scrollIntoView({
-        behavior: "smooth",
-        block: "center",
-      });
-    },
-    [setActiveTab]
-  );
-
-  const handleQuickAction = useCallback(
-    (action: string) => {
-      startTransition(() => setActiveTab("home"));
-      quickActionTimeoutRef.current = setTimeout(() => {
-        if (action === "logMood") moodRef.current?.scrollIntoView({ behavior: "smooth" });
-        if (action === "startFocus") focusRef.current?.scrollIntoView({ behavior: "smooth" });
-      }, 100);
-    },
-    [setActiveTab]
-  );
+  // Section-level navigation (scroll-to-section, quick actions)
+  const { moodRef, handleNavigateToSection, handleQuickAction } = useSectionNavigation({
+    setActiveTab,
+    startTransition,
+    quickActionTimeoutRef,
+  });
 
   // Gamification system
   const { stats, gamificationState, userLevel, awardXp } = useGamification();

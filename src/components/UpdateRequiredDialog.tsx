@@ -6,7 +6,7 @@
  * Prompts user to refresh the app to get the latest version.
  */
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,15 +15,15 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { useBackHandler } from '@/hooks/useBackHandler';
-import { RefreshCw, Download } from 'lucide-react';
-import * as Sentry from '@sentry/react';
-import { logger } from '@/lib/logger';
+} from "@/components/ui/alert-dialog";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useBackHandler } from "@/hooks/useBackHandler";
+import { RefreshCw, Download } from "lucide-react";
+import { addBreadcrumb } from "@/lib/sentry";
+import { logger } from "@/lib/logger";
 
 // Event name for chunk load failures
-export const CHUNK_LOAD_ERROR_EVENT = 'zenflow:chunk-load-error';
+export const CHUNK_LOAD_ERROR_EVENT = "zenflow:chunk-load-error";
 
 export function UpdateRequiredDialog() {
   const { t } = useLanguage();
@@ -35,17 +35,17 @@ export function UpdateRequiredDialog() {
 
   const handleChunkError = useCallback((e: Event) => {
     const detail = (e as CustomEvent).detail;
-    logger.warn('[UpdateRequired] Chunk load error detected:', detail);
+    logger.warn("[UpdateRequired] Chunk load error detected:", detail);
 
     // Track in Sentry as handled (not an error anymore)
-    Sentry.addBreadcrumb({
-      category: 'app',
-      message: 'Chunk load error - update required dialog shown',
-      level: 'warning',
+    addBreadcrumb({
+      category: "app",
+      message: "Chunk load error - update required dialog shown",
+      level: "warning",
       data: detail,
     });
 
-    setFailedChunk(detail?.chunk || 'unknown');
+    setFailedChunk(detail?.chunk || "unknown");
     setIsOpen(true);
   }, []);
 
@@ -59,10 +59,10 @@ export function UpdateRequiredDialog() {
 
   const handleRefresh = useCallback(() => {
     // Track the refresh action
-    Sentry.addBreadcrumb({
-      category: 'app',
-      message: 'User clicked refresh after chunk load error',
-      level: 'info',
+    addBreadcrumb({
+      category: "app",
+      message: "User clicked refresh after chunk load error",
+      level: "info",
       data: { failedChunk },
     });
 
@@ -78,13 +78,11 @@ export function UpdateRequiredDialog() {
             <div className="p-2 rounded-full bg-primary/10">
               <Download className="h-6 w-6 text-primary" />
             </div>
-            <AlertDialogTitle>
-              {t.updateRequiredTitle || 'Update Available'}
-            </AlertDialogTitle>
+            <AlertDialogTitle>{t.updateRequiredTitle || "Update Available"}</AlertDialogTitle>
           </div>
           <AlertDialogDescription className="text-start">
             {t.updateRequiredDesc ||
-              'A new version of the app is available. Please refresh to get the latest features and fixes.'}
+              "A new version of the app is available. Please refresh to get the latest features and fixes."}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -93,7 +91,7 @@ export function UpdateRequiredDialog() {
             className="flex items-center gap-2 w-full sm:w-auto"
           >
             <RefreshCw className="h-4 w-4" />
-            {t.updateRequiredRefresh || 'Refresh App'}
+            {t.updateRequiredRefresh || "Refresh App"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -107,17 +105,17 @@ export function UpdateRequiredDialog() {
  */
 export function setupChunkErrorHandler(): void {
   // Handle errors from dynamic imports
-  window.addEventListener('error', (event) => {
-    const message = event.message || '';
-    const filename = event.filename || '';
+  window.addEventListener("error", (event) => {
+    const message = event.message || "";
+    const filename = event.filename || "";
 
     // Check if this is a chunk load failure
     const isChunkError =
-      message.includes('Failed to fetch dynamically imported module') ||
-      message.includes('Loading chunk') ||
-      message.includes('Loading CSS chunk') ||
-      message.includes('ChunkLoadError') ||
-      (message.includes('Importing a module script failed') && filename.includes('.js'));
+      message.includes("Failed to fetch dynamically imported module") ||
+      message.includes("Loading chunk") ||
+      message.includes("Loading CSS chunk") ||
+      message.includes("ChunkLoadError") ||
+      (message.includes("Importing a module script failed") && filename.includes(".js"));
 
     if (isChunkError) {
       // Prevent the error from being logged to console as unhandled
@@ -125,7 +123,7 @@ export function setupChunkErrorHandler(): void {
 
       // Extract chunk name from filename if possible
       const chunkMatch = filename.match(/\/([^/]+\.js)$/);
-      const chunk = chunkMatch ? chunkMatch[1] : 'unknown';
+      const chunk = chunkMatch ? chunkMatch[1] : "unknown";
 
       // Dispatch custom event for the dialog
       window.dispatchEvent(
@@ -140,22 +138,22 @@ export function setupChunkErrorHandler(): void {
       );
 
       // Log as warning, not error (since we're handling it)
-      logger.warn('[ChunkError] Handled chunk load failure:', chunk);
+      logger.warn("[ChunkError] Handled chunk load failure:", chunk);
 
       return true; // Prevent default error handling
     }
   });
 
   // Handle unhandled promise rejections (dynamic import failures)
-  window.addEventListener('unhandledrejection', (event) => {
+  window.addEventListener("unhandledrejection", (event) => {
     const reason = event.reason;
     const message = reason?.message || String(reason);
 
     const isChunkError =
-      message.includes('Failed to fetch dynamically imported module') ||
-      message.includes('Loading chunk') ||
-      message.includes('ChunkLoadError') ||
-      message.includes('Importing a module script failed');
+      message.includes("Failed to fetch dynamically imported module") ||
+      message.includes("Loading chunk") ||
+      message.includes("ChunkLoadError") ||
+      message.includes("Importing a module script failed");
 
     if (isChunkError) {
       // Prevent the rejection from being logged as unhandled
@@ -163,9 +161,9 @@ export function setupChunkErrorHandler(): void {
 
       // Extract chunk info
       const urlMatch = message.match(/https?:\/\/[^\s]+/);
-      const url = urlMatch ? urlMatch[0] : '';
+      const url = urlMatch ? urlMatch[0] : "";
       const chunkMatch = url.match(/\/([^/]+\.js)$/);
-      const chunk = chunkMatch ? chunkMatch[1] : 'unknown';
+      const chunk = chunkMatch ? chunkMatch[1] : "unknown";
 
       // Dispatch custom event
       window.dispatchEvent(
@@ -179,7 +177,7 @@ export function setupChunkErrorHandler(): void {
         })
       );
 
-      logger.warn('[ChunkError] Handled chunk load rejection:', chunk);
+      logger.warn("[ChunkError] Handled chunk load rejection:", chunk);
     }
   });
 }

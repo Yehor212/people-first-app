@@ -13,7 +13,7 @@
 
 import { logger } from "./logger";
 import { isAbortError } from "./validation";
-import * as Sentry from "@sentry/react";
+import { addBreadcrumb } from "@/lib/sentry";
 import { BASE_URL } from "@/lib/env";
 
 // ============================================
@@ -96,7 +96,7 @@ const SILENT_MP3 =
  * Get or create a global AudioContext
  * Keeping it alive helps with iOS audio issues
  */
-function getAudioContext(): AudioContext {
+function getAudioContext(): AudioContext | null {
   if (!globalAudioContext) {
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
     if (AudioContextClass) {
@@ -195,7 +195,7 @@ export async function unlockAudio(): Promise<void> {
       logger.log("[AmbientSounds] Audio fully unlocked for mobile browser");
 
       // Sentry breadcrumb for unlock success
-      Sentry.addBreadcrumb({
+      addBreadcrumb({
         category: "audio",
         message: "Audio unlocked successfully",
         level: "info",
@@ -205,7 +205,7 @@ export async function unlockAudio(): Promise<void> {
       // Don't mark as unlocked on failure — allow retry on next user gesture
 
       // Sentry breadcrumb for unlock issues
-      Sentry.addBreadcrumb({
+      addBreadcrumb({
         category: "audio",
         message: "Audio unlock had issues",
         level: "warning",
@@ -301,7 +301,7 @@ export function isAudioUnlocked(): boolean {
  * Force re-unlock audio (useful after app resume on iOS)
  */
 export async function forceUnlockAudio(): Promise<void> {
-  Sentry.addBreadcrumb({
+  addBreadcrumb({
     category: "audio",
     message: "Force re-unlocking audio (app resume)",
     level: "info",
@@ -454,7 +454,7 @@ export class AmbientSoundGenerator {
 
     // Sentry breadcrumb for state changes
     if (this.status.state !== prevState) {
-      Sentry.addBreadcrumb({
+      addBreadcrumb({
         category: "audio",
         message: `Audio state: ${prevState} → ${this.status.state}`,
         level: this.status.error ? "error" : "info",

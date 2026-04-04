@@ -6,7 +6,7 @@
  * Controls (play/pause/stop) call non-reactive module-level refs registered by useFocusTimer.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Play, Pause, Square, Timer } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -25,7 +25,7 @@ interface FocusMiniPlayerProps {
   onNavigateToTimer: () => void;
 }
 
-export function FocusMiniPlayer({ onNavigateToTimer }: FocusMiniPlayerProps) {
+export const FocusMiniPlayer = memo(function FocusMiniPlayer({ onNavigateToTimer }: FocusMiniPlayerProps) {
   const { t } = useLanguage();
   const endTime = useUIStore(s => s.focusEndTime);
   const isRunning = useUIStore(s => s.focusIsRunning);
@@ -136,4 +136,4 @@ export function FocusMiniPlayer({ onNavigateToTimer }: FocusMiniPlayerProps) {
       )}
     </AnimatePresence>
   );
-}
+});

@@ -73,7 +73,7 @@ describe('useGratitudeHandlers', () => {
 
     expect(mockSetGratitudeEntries).toHaveBeenCalledTimes(1);
     const updater = mockSetGratitudeEntries.mock.calls[0][0];
-    expect(updater([])).toEqual([entry]);
+    expect(updater([])).toEqual([expect.objectContaining(entry)]);
   });
 
   it('handleAddGratitude rewards user with treats', () => {

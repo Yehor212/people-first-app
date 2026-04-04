@@ -71,6 +71,7 @@ process.stdin.on('end', () => {
       'android/keystore', 'supabase/functions/_shared/auth.ts',
       '.claude-audit.log', '.claude/settings.json', 'CLAUDE.md',
       '.evidence-chain', '.verification-done',
+      '.ruflo-last-action', // v2: prevent fake area coverage via Bash (METR reward hacking)
     ];
     const bashFileWritePatterns = [
       { pattern: /\bsed\s+-i\b/, label: 'sed in-place edit' },
@@ -456,65 +457,71 @@ process.stdin.on('end', () => {
         }
       } catch { /* git diff failed — don't block */ }
 
-      // --- Layer 5h: Ruflo Full Pipeline Evidence (BLOCKING) ---
-      // Root cause: PostToolUse hooks do NOT fire for MCP tools (SDK limitation, confirmed 2026-03-31).
-      // Agent must run ALL real Ruflo tools and create .ruflo-last-action via Bash.
-      // Research: "CLAUDE.md instructions = 70-85% compliance" (IFEval, production reports)
-      //           "Only mechanical enforcement = 95-99%+" (Guardrails paradigm, NASA IV&V)
-      // REAL Ruflo: memory (HNSW+ONNX), pattern-search (BM25+semantic), memory_store (save outcomes)
-      // FACADE (not required): agent_spawn, swarm, consensus, terminal (GitHub #653, #1397)
+      // --- Layer 5h: Ruflo Full Pipeline + Area Coverage (BLOCKING) ---
+      // v2: Now checks AREA BREADTH in addition to 3 core phases.
+      // Root cause of v1 bypass: agent ran 3 tools from 1 area → all gates passed.
+      // Research: METR 2025 "Models know they are cheating" — must enforce ALL areas
+      //           "Only mechanical enforcement = 95-99%+" (NASA IV&V)
+      // v3: ALL 16 areas mandatory. Zero skips.
       {
         const RUFLO_STATE_CG = path.join(ROOT, '.ruflo-last-action');
+        const { countRufloAreas, TOTAL_AREAS: TOTAL_16_CG } = require('./hook-utils.cjs');
+
         if (fs.existsSync(RUFLO_STATE_CG)) {
           try {
             const rs = JSON.parse(fs.readFileSync(RUFLO_STATE_CG, 'utf8'));
             const rufloAge = Date.now() - (rs.lastAction || 0);
 
-            // Freshness: 60 min max (generous — covers full work session)
-            if (rufloAge > 4 * 60 * 60000) { // 4h — audit sessions can be long
+            // Freshness: 4h max
+            if (rufloAge > 4 * 60 * 60000) {
               block(
-                'RUFLO EVIDENCE STALE! Last action ' + Math.round(rufloAge / 60000) + ' min ago (max 60).\n' +
-                'Full pipeline: mcp__ruflo__memory_search → mcp__ruflo__agentdb_pattern-search → [work] → mcp__ruflo__memory_store\n' +
-                'Then update .ruflo-last-action via Bash.',
+                'RUFLO EVIDENCE STALE! Last action ' + Math.round(rufloAge / 60000) + 'min ago (max 240).\n' +
+                'Use ALL 16 Ruflo areas, then ruflo-enforcer auto-updates state.',
                 cmd
               );
             }
 
-            // BEFORE-work phases (blocking — must be done before editing)
+            // BEFORE-work phases
             const missingBefore = [];
             if (!rs.phases?.memory_search?.done) missingBefore.push('memory_search (mcp__ruflo__memory_search)');
             if (!rs.phases?.pattern_search?.done) missingBefore.push('pattern_search (mcp__ruflo__agentdb_pattern-search)');
             if (missingBefore.length > 0) {
               block(
                 'RUFLO PIPELINE INCOMPLETE! Missing BEFORE-work phases:\n' +
-                missingBefore.map(p => '  - ' + p).join('\n') + '\n' +
-                'Run these tools, then update .ruflo-last-action.',
+                missingBefore.map(p => '  - ' + p).join('\n'),
                 cmd
               );
             }
 
-            // AFTER-work phase (blocking — must save outcomes)
+            // AFTER-work phase
             if (!rs.phases?.store_result?.done) {
+              block('RUFLO STORE REQUIRED! Run mcp__ruflo__memory_store to save solution pattern.', cmd);
+            }
+
+            // ALL 16 AREA CHECK (v3 — zero skips)
+            const { usedCount, missingAreas } = countRufloAreas(rs);
+            if (usedCount < TOTAL_16_CG) {
               block(
-                'RUFLO STORE REQUIRED! Run mcp__ruflo__memory_store to save solution pattern.\n' +
-                'Then update .ruflo-last-action with store_result phase done.',
+                'RUFLO ALL-16 COVERAGE BLOCKED!\n' +
+                '  Areas used: ' + usedCount + '/' + TOTAL_16_CG + ' (need ALL 16)\n' +
+                '  Missing ' + missingAreas.length + ': [' + missingAreas.join(', ') + ']\n' +
+                '  Call 1 tool from each missing area. Examples:\n' +
+                missingAreas.slice(0, 5).map(a => '    - mcp__ruflo__' + a.replace(/-/g, '_').split('_')[0] + '_status/list').join('\n'),
                 cmd
               );
             }
 
-            audit('allow', 'ruflo full pipeline verified (3/3 phases, ' + Math.round(rufloAge / 60000) + 'min ago)', cmd);
+            audit('allow', 'ruflo verified: 3/3 phases + ' + usedCount + '/' + TOTAL_16_CG + ' areas (' + Math.round(rufloAge / 60000) + 'min ago)', cmd);
           } catch (rufloErr) {
             block('RUFLO STATE INVALID: ' + rufloErr.message, cmd);
           }
         } else {
           block(
             'RUFLO EVIDENCE REQUIRED! No .ruflo-last-action found.\n' +
-            'Full pipeline:\n' +
-            '  1. mcp__ruflo__memory_search (find prior patterns)\n' +
-            '  2. mcp__ruflo__agentdb_pattern-search (BM25+semantic)\n' +
-            '  3. [do your work]\n' +
-            '  4. mcp__ruflo__memory_store (save outcome)\n' +
-            '  5. Create .ruflo-last-action via Bash with all 3 phases done.',
+            'Full pipeline (v3 — ALL 16 areas):\n' +
+            '  1. Call tools from ALL 16 areas (ruflo-enforcer auto-tracks)\n' +
+            '  2. mcp__ruflo__memory_store (save outcome)\n' +
+            '  3. State file auto-created by PreToolUse tracking.',
             cmd
           );
         }
@@ -648,7 +655,8 @@ process.stdin.on('end', () => {
       let rufloUsed = false;
       try {
         const data = JSON.parse(fs.readFileSync(RUFLO_STAMP, 'utf8'));
-        rufloUsed = (Date.now() - data.timestamp) < 30 * 60 * 1000;
+        // FIX: use lastAction (not timestamp) — matches .ruflo-last-action schema
+        rufloUsed = (Date.now() - (data.lastAction || data.timestamp || 0)) < 30 * 60 * 1000;
       } catch {}
       if (!rufloUsed) {
         process.stderr.write(

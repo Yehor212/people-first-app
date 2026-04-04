@@ -14,20 +14,7 @@ import { isCloudSyncEnabled } from "@/lib/cloudSyncSettings";
 import { useOfflineQueue } from "@/hooks/useOfflineQueue";
 import { useAppStore } from "@/stores";
 import { Cloud, CloudOff, AlertCircle, CheckCircle, Loader, WifiOff } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
-import { enUS, uk, es, de, fr, ja, ar, he } from "date-fns/locale";
 import { getLocale } from "@/lib/timeUtils";
-
-const localeMap = {
-  en: enUS,
-  uk,
-  es,
-  de,
-  fr,
-  ja,
-  ar,
-  he,
-};
 
 export function SyncStatusIndicator() {
   const { state } = useSyncOrchestrator();
@@ -77,13 +64,32 @@ export function SyncStatusIndicator() {
 
   const { Icon, color, bgColor, animate } = getStatusIcon();
 
-  // Format last sync time
+  // Format last sync time using native Intl (eliminates 178kB date-fns dep)
   const getLastSyncText = () => {
     if (!state.lastSyncTime) return null;
 
     try {
-      const locale = localeMap[language as keyof typeof localeMap] || enUS;
-      return formatDistanceToNow(state.lastSyncTime, { addSuffix: true, locale });
+      const seconds = Math.round((state.lastSyncTime - Date.now()) / 1000);
+      const absSeconds = Math.abs(seconds);
+      let value: number;
+      let unit: Intl.RelativeTimeFormatUnit;
+
+      if (absSeconds < 60) {
+        value = seconds;
+        unit = "second";
+      } else if (absSeconds < 3600) {
+        value = Math.round(seconds / 60);
+        unit = "minute";
+      } else if (absSeconds < 86400) {
+        value = Math.round(seconds / 3600);
+        unit = "hour";
+      } else {
+        value = Math.round(seconds / 86400);
+        unit = "day";
+      }
+
+      const rtf = new Intl.RelativeTimeFormat(getLocale(language), { numeric: "auto" });
+      return rtf.format(value, unit);
     } catch {
       return new Date(state.lastSyncTime).toLocaleTimeString(getLocale(language));
     }
@@ -149,8 +155,8 @@ export function SyncStatusIndicator() {
         )}
 
         {/* Error message */}
-        {state.status === "error" && state.lastError && (
-          <span className="text-xs text-red-500 line-clamp-1">{state.lastError}</span>
+        {state.status === "error" && (
+          <span className="text-xs text-red-500 line-clamp-1">{t.syncError}</span>
         )}
       </div>
     </div>

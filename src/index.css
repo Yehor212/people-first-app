@@ -49,26 +49,10 @@
 
     /* Custom ZenFlow tokens */
     --zen-gradient: linear-gradient(135deg, hsl(158 45% 42%), hsl(158 55% 55%));
-    --zen-gradient-warm: linear-gradient(
-      135deg,
-      hsl(28 75% 65%),
-      hsl(38 80% 70%)
-    );
-    --zen-gradient-calm: linear-gradient(
-      135deg,
-      hsl(200 40% 50%),
-      hsl(180 45% 55%)
-    );
-    --zen-gradient-sunset: linear-gradient(
-      135deg,
-      hsl(350 60% 65%),
-      hsl(28 75% 65%)
-    );
-    --zen-gradient-hero: linear-gradient(
-      180deg,
-      hsl(240 5% 96%) 0%,
-      hsl(240 5% 96%) 100%
-    );
+    --zen-gradient-warm: linear-gradient(135deg, hsl(28 75% 65%), hsl(38 80% 70%));
+    --zen-gradient-calm: linear-gradient(135deg, hsl(200 40% 50%), hsl(180 45% 55%));
+    --zen-gradient-sunset: linear-gradient(135deg, hsl(350 60% 65%), hsl(28 75% 65%));
+    --zen-gradient-hero: linear-gradient(180deg, hsl(240 5% 96%) 0%, hsl(240 5% 96%) 100%);
 
     --zen-shadow-soft: 0 1px 3px 0 hsl(0 0% 0% / 0.04);
     --zen-shadow-card: 0 1px 2px 0 hsl(0 0% 0% / 0.03);
@@ -178,31 +162,11 @@
     --mood-terrible: 0 60% 58%;
 
     /* Mood gradients for emoji and UI elements (P0 Premium Upgrade) */
-    --gradient-mood-great: linear-gradient(
-      135deg,
-      hsl(158 60% 50%),
-      hsl(142 55% 45%)
-    );
-    --gradient-mood-good: linear-gradient(
-      135deg,
-      hsl(142 50% 55%),
-      hsl(120 45% 50%)
-    );
-    --gradient-mood-okay: linear-gradient(
-      135deg,
-      hsl(45 75% 60%),
-      hsl(38 70% 55%)
-    );
-    --gradient-mood-bad: linear-gradient(
-      135deg,
-      hsl(25 70% 58%),
-      hsl(15 65% 52%)
-    );
-    --gradient-mood-terrible: linear-gradient(
-      135deg,
-      hsl(0 60% 58%),
-      hsl(350 55% 52%)
-    );
+    --gradient-mood-great: linear-gradient(135deg, hsl(158 60% 50%), hsl(142 55% 45%));
+    --gradient-mood-good: linear-gradient(135deg, hsl(142 50% 55%), hsl(120 45% 50%));
+    --gradient-mood-okay: linear-gradient(135deg, hsl(45 75% 60%), hsl(38 70% 55%));
+    --gradient-mood-bad: linear-gradient(135deg, hsl(25 70% 58%), hsl(15 65% 52%));
+    --gradient-mood-terrible: linear-gradient(135deg, hsl(0 60% 58%), hsl(350 55% 52%));
 
     /* ===== FOCUS TIMER COLORS (P0 Premium Upgrade) ===== */
     /* Cosmic theme colors for focus mode */
@@ -383,21 +347,9 @@
     --chart-skip: #64748b;
 
     /* Dark mode gradients */
-    --zen-gradient: linear-gradient(
-      135deg,
-      hsl(158 55% 45%) 0%,
-      hsl(180 50% 35%) 100%
-    );
-    --zen-gradient-warm: linear-gradient(
-      135deg,
-      hsl(28 80% 55%) 0%,
-      hsl(38 75% 60%) 100%
-    );
-    --zen-gradient-hero: linear-gradient(
-      180deg,
-      hsl(0 0% 0%) 0%,
-      hsl(0 0% 0%) 100%
-    );
+    --zen-gradient: linear-gradient(135deg, hsl(158 55% 45%) 0%, hsl(180 50% 35%) 100%);
+    --zen-gradient-warm: linear-gradient(135deg, hsl(28 80% 55%) 0%, hsl(38 75% 60%) 100%);
+    --zen-gradient-hero: linear-gradient(180deg, hsl(0 0% 0%) 0%, hsl(0 0% 0%) 100%);
 
     /* Improved shadows for dark mode */
     --zen-shadow-soft: 0 4px 20px -4px hsl(158 55% 55% / 0.25);
@@ -582,21 +534,9 @@
     --ring: 158 60% 50%;
 
     /* OLED-optimized gradients - subtle glow instead of gradient */
-    --zen-gradient: linear-gradient(
-      135deg,
-      hsl(158 60% 40%) 0%,
-      hsl(180 55% 30%) 100%
-    );
-    --zen-gradient-warm: linear-gradient(
-      135deg,
-      hsl(28 85% 50%) 0%,
-      hsl(38 80% 55%) 100%
-    );
-    --zen-gradient-hero: linear-gradient(
-      180deg,
-      hsl(0 0% 0%) 0%,
-      hsl(0 0% 3%) 100%
-    );
+    --zen-gradient: linear-gradient(135deg, hsl(158 60% 40%) 0%, hsl(180 55% 30%) 100%);
+    --zen-gradient-warm: linear-gradient(135deg, hsl(28 85% 50%) 0%, hsl(38 80% 55%) 100%);
+    --zen-gradient-hero: linear-gradient(180deg, hsl(0 0% 0%) 0%, hsl(0 0% 3%) 100%);
 
     /* OLED shadows - subtle glow effects */
     --zen-shadow-soft: 0 0 1px hsl(var(--primary) / 0.3);
@@ -767,9 +707,7 @@
     overscroll-behavior-y: contain; /* native bounce (iOS rubber-band, Android glow), no browser PTR */
     touch-action: manipulation; /* kill 300ms tap delay */
     scroll-padding-top: calc(var(--safe-top, 0px) + 1rem);
-    scroll-padding-bottom: calc(
-      var(--nav-height) + var(--safe-bottom, 0px) + 1rem
-    );
+    scroll-padding-bottom: calc(var(--nav-height) + var(--safe-bottom, 0px) + 1rem);
   }
 
   body {
@@ -1139,10 +1077,6 @@
     animation: float 6s ease-in-out infinite;
   }
 
-  .animate-pulse-soft {
-    animation: pulse-soft 3s ease-in-out infinite;
-  }
-
   .animate-fade-in {
     animation: fade-in 0.25s ease-out;
   }
@@ -1217,16 +1151,6 @@
   }
   50% {
     transform: translateY(-10px);
-  }
-}
-
-@keyframes pulse-soft {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.7;
   }
 }
 
@@ -1952,8 +1876,7 @@
 }
 
 .mood-jump-animation {
-  animation: mood-jump-to-calendar 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)
-    forwards;
+  animation: mood-jump-to-calendar 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
 /* Calendar day highlight when mood lands — GPU-only */
@@ -2181,8 +2104,7 @@
 /* Particle burst */
 @keyframes particle-burst {
   0% {
-    transform: translate(-50%, -50%) rotate(var(--particle-angle, 0deg))
-      translateX(0);
+    transform: translate(-50%, -50%) rotate(var(--particle-angle, 0deg)) translateX(0);
     opacity: 1;
   }
   100% {
@@ -2408,14 +2330,12 @@
 /* Selection burst effect */
 @keyframes selection-burst {
   0% {
-    transform: translate(-50%, -50%) rotate(var(--burst-angle, 0deg))
-      translateX(0);
+    transform: translate(-50%, -50%) rotate(var(--burst-angle, 0deg)) translateX(0);
     opacity: 1;
     scale: 1;
   }
   100% {
-    transform: translate(-50%, -50%) rotate(var(--burst-angle, 0deg))
-      translateX(30px);
+    transform: translate(-50%, -50%) rotate(var(--burst-angle, 0deg)) translateX(30px);
     opacity: 0;
     scale: 0.5;
   }
@@ -2514,34 +2434,14 @@ body.mood-great {
 body.mood-great .mood-background-overlay {
   opacity: 1;
   background:
-    radial-gradient(
-      ellipse at top left,
-      rgba(168, 85, 247, 0.25) 0%,
-      transparent 50%
-    ),
-    radial-gradient(
-      ellipse at bottom right,
-      rgba(251, 191, 36, 0.2) 0%,
-      transparent 50%
-    ),
-    radial-gradient(
-      ellipse at top right,
-      rgba(236, 72, 153, 0.15) 0%,
-      transparent 40%
-    ),
-    radial-gradient(
-      ellipse at center,
-      rgba(34, 211, 238, 0.1) 0%,
-      transparent 60%
-    );
+    radial-gradient(ellipse at top left, rgba(168, 85, 247, 0.25) 0%, transparent 50%),
+    radial-gradient(ellipse at bottom right, rgba(251, 191, 36, 0.2) 0%, transparent 50%),
+    radial-gradient(ellipse at top right, rgba(236, 72, 153, 0.15) 0%, transparent 40%),
+    radial-gradient(ellipse at center, rgba(34, 211, 238, 0.1) 0%, transparent 60%);
 }
 
 body.mood-great .bg-card {
-  background: linear-gradient(
-    135deg,
-    hsl(280 30% 98%) 0%,
-    hsl(45 30% 97%) 100%
-  ) !important;
+  background: linear-gradient(135deg, hsl(280 30% 98%) 0%, hsl(45 30% 97%) 100%) !important;
   border: 1px solid hsl(280 50% 85% / 0.5) !important;
   box-shadow:
     0 8px 32px hsl(280 70% 60% / 0.15),
@@ -2550,11 +2450,7 @@ body.mood-great .bg-card {
 
 .dark body.mood-great .bg-card,
 body.mood-great.dark .bg-card {
-  background: linear-gradient(
-    135deg,
-    hsl(280 40% 15%) 0%,
-    hsl(45 30% 12%) 100%
-  ) !important;
+  background: linear-gradient(135deg, hsl(280 40% 15%) 0%, hsl(45 30% 12%) 100%) !important;
   border: 1px solid hsl(280 50% 40% / 0.4) !important;
   box-shadow:
     0 8px 32px hsl(280 70% 30% / 0.3),
@@ -2603,58 +2499,30 @@ body.mood-good {
 body.mood-good .mood-background-overlay {
   opacity: 1;
   background:
-    radial-gradient(
-      ellipse at top,
-      rgba(74, 222, 128, 0.2) 0%,
-      transparent 50%
-    ),
-    radial-gradient(
-      ellipse at bottom left,
-      rgba(56, 189, 248, 0.15) 0%,
-      transparent 50%
-    ),
-    radial-gradient(
-      ellipse at bottom right,
-      rgba(167, 243, 208, 0.15) 0%,
-      transparent 50%
-    );
+    radial-gradient(ellipse at top, rgba(74, 222, 128, 0.2) 0%, transparent 50%),
+    radial-gradient(ellipse at bottom left, rgba(56, 189, 248, 0.15) 0%, transparent 50%),
+    radial-gradient(ellipse at bottom right, rgba(167, 243, 208, 0.15) 0%, transparent 50%);
 }
 
 body.mood-good .bg-card {
-  background: linear-gradient(
-    135deg,
-    hsl(150 25% 98%) 0%,
-    hsl(180 20% 97%) 100%
-  ) !important;
+  background: linear-gradient(135deg, hsl(150 25% 98%) 0%, hsl(180 20% 97%) 100%) !important;
   border: 1px solid hsl(150 40% 85% / 0.5) !important;
   box-shadow: 0 6px 25px hsl(150 50% 50% / 0.12) !important;
 }
 
 .dark body.mood-good .bg-card,
 body.mood-good.dark .bg-card {
-  background: linear-gradient(
-    135deg,
-    hsl(150 35% 12%) 0%,
-    hsl(180 30% 10%) 100%
-  ) !important;
+  background: linear-gradient(135deg, hsl(150 35% 12%) 0%, hsl(180 30% 10%) 100%) !important;
   border: 1px solid hsl(150 40% 35% / 0.4) !important;
 }
 
 body.mood-good .zen-gradient-hero {
-  background: linear-gradient(
-    180deg,
-    hsl(150 30% 96%) 0%,
-    hsl(180 25% 95%) 100%
-  ) !important;
+  background: linear-gradient(180deg, hsl(150 30% 96%) 0%, hsl(180 25% 95%) 100%) !important;
 }
 
 .dark body.mood-good .zen-gradient-hero,
 body.mood-good.dark .zen-gradient-hero {
-  background: linear-gradient(
-    180deg,
-    hsl(150 40% 6%) 0%,
-    hsl(180 35% 5%) 100%
-  ) !important;
+  background: linear-gradient(180deg, hsl(150 40% 6%) 0%, hsl(180 35% 5%) 100%) !important;
 }
 
 /* ========================================
@@ -2669,11 +2537,7 @@ body.mood-okay {
 
 body.mood-okay .mood-background-overlay {
   opacity: 0.6;
-  background: radial-gradient(
-    ellipse at center,
-    rgba(148, 163, 184, 0.15) 0%,
-    transparent 60%
-  );
+  background: radial-gradient(ellipse at center, rgba(148, 163, 184, 0.15) 0%, transparent 60%);
 }
 
 body.mood-okay .bg-card {
@@ -2700,24 +2564,12 @@ body.mood-bad {
 body.mood-bad .mood-background-overlay {
   opacity: 1;
   background:
-    radial-gradient(
-      ellipse at top,
-      rgba(125, 211, 252, 0.18) 0%,
-      transparent 50%
-    ),
-    radial-gradient(
-      ellipse at bottom,
-      rgba(165, 180, 252, 0.15) 0%,
-      transparent 50%
-    );
+    radial-gradient(ellipse at top, rgba(125, 211, 252, 0.18) 0%, transparent 50%),
+    radial-gradient(ellipse at bottom, rgba(165, 180, 252, 0.15) 0%, transparent 50%);
 }
 
 body.mood-bad .bg-card {
-  background: linear-gradient(
-    135deg,
-    hsl(200 30% 98%) 0%,
-    hsl(220 25% 97%) 100%
-  ) !important;
+  background: linear-gradient(135deg, hsl(200 30% 98%) 0%, hsl(220 25% 97%) 100%) !important;
   border: 1px solid hsl(200 30% 88% / 0.4) !important;
   border-radius: 1.5rem !important;
   box-shadow: 0 4px 20px hsl(200 40% 50% / 0.08) !important;
@@ -2725,29 +2577,17 @@ body.mood-bad .bg-card {
 
 .dark body.mood-bad .bg-card,
 body.mood-bad.dark .bg-card {
-  background: linear-gradient(
-    135deg,
-    hsl(200 30% 12%) 0%,
-    hsl(220 25% 10%) 100%
-  ) !important;
+  background: linear-gradient(135deg, hsl(200 30% 12%) 0%, hsl(220 25% 10%) 100%) !important;
   border: 1px solid hsl(200 30% 30% / 0.3) !important;
 }
 
 body.mood-bad .zen-gradient-hero {
-  background: linear-gradient(
-    180deg,
-    hsl(200 35% 96%) 0%,
-    hsl(220 30% 95%) 100%
-  ) !important;
+  background: linear-gradient(180deg, hsl(200 35% 96%) 0%, hsl(220 30% 95%) 100%) !important;
 }
 
 .dark body.mood-bad .zen-gradient-hero,
 body.mood-bad.dark .zen-gradient-hero {
-  background: linear-gradient(
-    180deg,
-    hsl(200 30% 6%) 0%,
-    hsl(220 25% 5%) 100%
-  ) !important;
+  background: linear-gradient(180deg, hsl(200 30% 6%) 0%, hsl(220 25% 5%) 100%) !important;
 }
 
 /* Slower, softer animations for bad mood */
@@ -2767,19 +2607,11 @@ body.mood-terrible {
 
 body.mood-terrible .mood-background-overlay {
   opacity: 0.7;
-  background: radial-gradient(
-    ellipse at center,
-    rgba(139, 92, 246, 0.1) 0%,
-    transparent 70%
-  );
+  background: radial-gradient(ellipse at center, rgba(139, 92, 246, 0.1) 0%, transparent 70%);
 }
 
 body.mood-terrible .bg-card {
-  background: linear-gradient(
-    135deg,
-    hsl(250 20% 98%) 0%,
-    hsl(270 15% 97%) 100%
-  ) !important;
+  background: linear-gradient(135deg, hsl(250 20% 98%) 0%, hsl(270 15% 97%) 100%) !important;
   border: 1px solid hsl(250 20% 90% / 0.3) !important;
   border-radius: 2rem !important;
   box-shadow: 0 3px 15px hsl(250 25% 50% / 0.06) !important;
@@ -2787,30 +2619,18 @@ body.mood-terrible .bg-card {
 
 .dark body.mood-terrible .bg-card,
 body.mood-terrible.dark .bg-card {
-  background: linear-gradient(
-    135deg,
-    hsl(250 25% 11%) 0%,
-    hsl(270 20% 9%) 100%
-  ) !important;
+  background: linear-gradient(135deg, hsl(250 25% 11%) 0%, hsl(270 20% 9%) 100%) !important;
   border: 1px solid hsl(250 20% 25% / 0.25) !important;
 }
 
 body.mood-terrible .zen-gradient-hero {
-  background: linear-gradient(
-    180deg,
-    hsl(250 25% 96%) 0%,
-    hsl(270 20% 95%) 100%
-  ) !important;
+  background: linear-gradient(180deg, hsl(250 25% 96%) 0%, hsl(270 20% 95%) 100%) !important;
   filter: saturate(0.85);
 }
 
 .dark body.mood-terrible .zen-gradient-hero,
 body.mood-terrible.dark .zen-gradient-hero {
-  background: linear-gradient(
-    180deg,
-    hsl(250 20% 5%) 0%,
-    hsl(270 15% 4%) 100%
-  ) !important;
+  background: linear-gradient(180deg, hsl(250 20% 5%) 0%, hsl(270 15% 4%) 100%) !important;
 }
 
 /* Very slow, minimal animations */
@@ -2837,11 +2657,7 @@ body.mood-terrible span[role="img"] {
    ======================================== */
 body.mood-neutral .mood-background-overlay {
   opacity: 0.4;
-  background: radial-gradient(
-    ellipse at top right,
-    rgba(139, 92, 246, 0.1) 0%,
-    transparent 50%
-  );
+  background: radial-gradient(ellipse at top right, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
 }
 
 /* ========================================
@@ -2929,8 +2745,7 @@ body.mood-bad .animate-float {
     hsl(var(--mood-primary-hue) var(--mood-saturation) 95% / 0.9),
     hsl(var(--mood-accent-hue) calc(var(--mood-saturation) - 10%) 96% / 0.9)
   );
-  border: 1px solid
-    hsl(var(--mood-primary-hue) var(--mood-saturation) 80% / 0.3);
+  border: 1px solid hsl(var(--mood-primary-hue) var(--mood-saturation) 80% / 0.3);
   animation: support-banner-enter 0.6s ease-out;
 }
 
@@ -2940,8 +2755,7 @@ body.mood-bad .animate-float {
     hsl(var(--mood-primary-hue) calc(var(--mood-saturation) - 20%) 20% / 0.9),
     hsl(var(--mood-accent-hue) calc(var(--mood-saturation) - 25%) 18% / 0.9)
   );
-  border: 1px solid
-    hsl(var(--mood-primary-hue) var(--mood-saturation) 40% / 0.3);
+  border: 1px solid hsl(var(--mood-primary-hue) var(--mood-saturation) 40% / 0.3);
 }
 
 @keyframes support-banner-enter {
@@ -3142,21 +2956,8 @@ body.mood-bad .mood-particle {
   }
 }
 
-@keyframes shimmer {
-  0% {
-    transform: translateX(-100%);
-  }
-  100% {
-    transform: translateX(100%);
-  }
-}
-
 .animate-gradient {
   animation: gradient 3s ease infinite;
-}
-
-.animate-shimmer {
-  animation: shimmer 2s ease-in-out infinite;
 }
 
 /* ============================================
@@ -3236,12 +3037,10 @@ body.mood-bad .mood-particle {
 @keyframes energy-glow {
   0%,
   100% {
-    filter: drop-shadow(0 0 10px currentColor)
-      drop-shadow(0 0 20px currentColor);
+    filter: drop-shadow(0 0 10px currentColor) drop-shadow(0 0 20px currentColor);
   }
   50% {
-    filter: drop-shadow(0 0 20px currentColor)
-      drop-shadow(0 0 40px currentColor);
+    filter: drop-shadow(0 0 20px currentColor) drop-shadow(0 0 40px currentColor);
   }
 }
 
@@ -3848,8 +3647,7 @@ input::-moz-focus-inner {
     filter: drop-shadow(0 0 5px currentColor);
   }
   50% {
-    filter: drop-shadow(0 0 15px currentColor)
-      drop-shadow(0 0 25px currentColor);
+    filter: drop-shadow(0 0 15px currentColor) drop-shadow(0 0 25px currentColor);
   }
 }
 
@@ -3893,14 +3691,12 @@ input::-moz-focus-inner {
 /* Unlock confetti burst */
 @keyframes confetti-burst {
   0% {
-    transform: translate(-50%, -50%) rotate(var(--confetti-angle, 0deg))
-      translateY(0);
+    transform: translate(-50%, -50%) rotate(var(--confetti-angle, 0deg)) translateY(0);
     opacity: 1;
     scale: 1;
   }
   100% {
-    transform: translate(-50%, -50%) rotate(var(--confetti-angle, 0deg))
-      translateY(-100px);
+    transform: translate(-50%, -50%) rotate(var(--confetti-angle, 0deg)) translateY(-100px);
     opacity: 0;
     scale: 0.5;
   }
@@ -4021,8 +3817,7 @@ input::-moz-focus-inner {
 }
 
 .animate-stat-premium-enter {
-  animation: stat-card-premium-enter 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)
-    forwards;
+  animation: stat-card-premium-enter 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
 .animate-stat-premium-enter-1 {
@@ -4245,8 +4040,8 @@ input::-moz-focus-inner {
 
 /* Unified particle class — theme switches animation automatically */
 .zen-particle {
-  animation: zen-mote-float var(--particle-duration, 3s) ease-in-out
-    var(--particle-delay, 0s) infinite;
+  animation: zen-mote-float var(--particle-duration, 3s) ease-in-out var(--particle-delay, 0s)
+    infinite;
 }
 .dark .zen-particle {
   animation-name: zen-star-twinkle;

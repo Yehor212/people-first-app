@@ -1,3 +1,4 @@
+import { broadcastChange } from '@/lib/syncBroadcast';
 import { exportBackup, importBackup, type BackupPayload } from "@/storage/backup";
 import { supabase } from "@/lib/supabaseClient";
 import { triggerDataRefresh } from "@/hooks/useIndexedDB";
@@ -9,7 +10,7 @@ import { addCategorizedBreadcrumb } from "@/lib/sentry";
 
 const BACKUP_TABLE = "user_backups";
 const SYNC_INTERVAL = 10 * 60 * 1000; // 10 minutes (granular sync handles individual items)
-const SYNC_DEBOUNCE = 120 * 1000; // 2 minutes after data change (reduced from 60s to lower write pressure)
+const SYNC_DEBOUNCE = 30 * 1000; // 30 seconds (backup is safety net; per-entity sync handles real-time)
 
 let syncInterval: ReturnType<typeof setInterval> | null = null;
 let syncTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -116,7 +117,7 @@ const doSyncWithCloud = async (
 
     const {
       data: { session },
-    } = await supabase.auth.getSession();
+    } = await supabase!.auth.getSession();
     const user = session?.user;
 
     if (!user) {
@@ -135,7 +136,7 @@ const doSyncWithCloud = async (
       throw new Error("Sync operation aborted due to timeout");
     }
 
-    const { data: remote, error: fetchError } = await supabase
+    const { data: remote, error: fetchError } = await supabase!
       .from(BACKUP_TABLE)
       .select("payload, updated_at")
       .eq("user_id", user.id)
@@ -203,7 +204,7 @@ const doSyncWithCloud = async (
       throw new Error("Sync operation aborted due to timeout");
     }
 
-    const { error: upsertError } = await supabase.from(BACKUP_TABLE).upsert(
+    const { error: upsertError } = await supabase!.from(BACKUP_TABLE).upsert(
       {
         user_id: user.id,
         payload: finalBackup as unknown as Json,
@@ -217,6 +218,9 @@ const doSyncWithCloud = async (
     }
 
     lastSyncTime = Date.now();
+
+    // Signal other devices that data changed
+    broadcastChange('backup');
     return { status: syncStatus };
   } finally {
     // P1-11 Fix: Cleanup resources
@@ -319,7 +323,7 @@ export const startAutoSync = () => {
 
   // Create and store listener references for later cleanup
   visibilityChangeHandler = () => {
-    if (document.visibilityState === "visible" && Date.now() - lastSyncTime > 60000) {
+    if (document.visibilityState === "visible" && Date.now() - lastSyncTime > 30000) {
       silentSync().catch((error) => {
         logger.warn("[Sync] Visibility change sync failed:", error);
       });
@@ -329,7 +333,7 @@ export const startAutoSync = () => {
   beforeUnloadHandler = () => {
     // Note: async operations in beforeunload are unreliable
     // This is a best-effort sync attempt
-    if (navigator.sendBeacon && supabase) {
+    if (typeof navigator.sendBeacon === 'function' && supabase) {
       silentSync().catch((error) => {
         logger.warn("[Sync] Beforeunload sync failed:", error);
       });
