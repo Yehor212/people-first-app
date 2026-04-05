@@ -114,8 +114,12 @@ export const HomeTab = memo(function HomeTab({
         className="w-full rounded-2xl bg-card ring-1 ring-black/5 dark:ring-white/10 shadow-zen-card p-5 text-start"
       >
         <div className="flex items-center gap-4">
-          {/* Mini orb preview — GPU-accelerated shader with idle shimmer */}
-          <ValenceOrb valence={latestValence} size={48} />
+          {/* Mini orb preview — render at 120px for shader detail, crop to 48px circle */}
+          <div className="w-12 h-12 flex-shrink-0 rounded-full overflow-hidden relative">
+            <div className="absolute w-[120px] h-[120px] -top-[36px] -left-[36px]">
+              <ValenceOrb valence={latestValence} size={120} />
+            </div>
+          </div>
           <div className="flex-1 min-w-0">
             <p className="text-base font-semibold text-foreground">{t.somLogFeeling}</p>
             {todayMoods.length > 0 && (
