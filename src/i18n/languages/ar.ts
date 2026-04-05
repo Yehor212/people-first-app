@@ -282,15 +282,6 @@ const arabicOverrides: Partial<Translations> = {
   focusReflectionSave: "حفظ",
   focusExpandToJournal: "اكتب عن ذلك في يومياتك",
 
-  // TodayFocusCard
-  todayFocusMoodMorning: "كيف تشعر هذا الصباح؟",
-  todayFocusMoodAfternoon: "كيف مزاجك الآن؟",
-  todayFocusMoodEvening: "كيف كان يومك؟",
-  todayFocusHabits: "حان وقت تتبع عاداتك",
-  todayFocusFocus: "هل أنت مستعد لجلسة تركيز؟",
-  todayFocusGratitude: "على ماذا تشعر بالامتنان اليوم؟",
-  todayFocusSubtitle: "خطوتك التالية",
-
   // Reflection prompts
   reflectionNoted: "تم التسجيل. واصل النمو.",
   reflectionPlaceholderNano: "كلمة واحدة...",
@@ -307,14 +298,6 @@ const arabicOverrides: Partial<Translations> = {
   reflectionDaily3: "ما الإنجاز الصغير الذي يمكنك الاحتفال به اليوم؟",
   reflectionDaily4: "شيء واحد تريد التركيز عليه اليوم:",
   reflectionDaily5: "ما الذي سيجعل هذا اليوم رائعًا؟",
-
-  // Growth Rings
-  growthRingsTotal: "{count} حلقات نمو",
-  growthRingsEmpty: "حلقات النمو: لا يوجد نشاط مسجل",
-  growthRingsLabel: "حلقات النمو: {total} يوم، {active} نشط، {rest} راحة",
-  growthWeekBalance: "نمو {active} أيام، راحة {rest}. توازن.",
-  growthWeekFull: "أسبوع كامل من النمو!",
-  growthWeekPartial: "{count} أيام نمو هذا الأسبوع.",
 
   // Breathing
   breathingTitle: "التنفس",
@@ -2608,9 +2591,6 @@ const arabicOverrides: Partial<Translations> = {
   ariaClearSearch: "مسح البحث",
 
   // Pluralization variants
-  growthRingsTotal_one: "{count} حلقة نمو",
-  growthRingsTotal_few: "{count} حلقات نمو",
-  growthRingsTotal_many: "{count} حلقة نمو",
   somEntriesToday_one: "{count} سجل اليوم",
   somEntriesToday_few: "{count} سجلات اليوم",
   somEntriesToday_many: "{count} سجلاً اليوم",

@@ -287,15 +287,6 @@ export const uk: Translations = {
   focusReflectionSave: "Зберегти",
   focusExpandToJournal: "Написати про це в щоденнику",
 
-  // TodayFocusCard
-  todayFocusMoodMorning: "Як ви почуваєтеся цього ранку?",
-  todayFocusMoodAfternoon: "Як ваш настрій?",
-  todayFocusMoodEvening: "Як пройшов ваш день?",
-  todayFocusHabits: "Час відмітити звички",
-  todayFocusFocus: "Готові до сесії фокусу?",
-  todayFocusGratitude: "За що ви вдячні сьогодні?",
-  todayFocusSubtitle: "Ваш наступний крок",
-
   // Reflection prompts
   reflectionNoted: "Записано. Продовжуй рости.",
   reflectionPlaceholderNano: "Одне слово...",
@@ -312,14 +303,6 @@ export const uk: Translations = {
   reflectionDaily3: "Яку маленьку перемогу можеш відсвяткувати сьогодні?",
   reflectionDaily4: "На чому хочеш зосередитись сьогодні:",
   reflectionDaily5: "Що зробить цей день чудовим?",
-
-  // Growth Rings
-  growthRingsTotal: "{count} кілець зростання",
-  growthRingsEmpty: "Кільця зростання: активність не зафіксована",
-  growthRingsLabel: "Кільця зростання: {total} днів, {active} активних, {rest} відпочинку",
-  growthWeekBalance: "Ріс {active} дн., відпочивав {rest}. Баланс.",
-  growthWeekFull: "Повний тиждень зростання!",
-  growthWeekPartial: "{count} днів зростання цього тижня.",
 
   // Breathing
   breathingTitle: "Дихання",
@@ -2717,9 +2700,6 @@ export const uk: Translations = {
   ariaClearSearch: "Очистити пошук",
 
   // Pluralization variants
-  growthRingsTotal_one: "{count} кільце зростання",
-  growthRingsTotal_few: "{count} кільця зростання",
-  growthRingsTotal_many: "{count} кілець зростання",
   somEntriesToday_one: "{count} запис сьогодні",
   somEntriesToday_few: "{count} записи сьогодні",
   somEntriesToday_many: "{count} записів сьогодні",

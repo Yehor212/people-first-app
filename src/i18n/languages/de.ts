@@ -293,15 +293,6 @@ export const de: Translations = {
   focusReflectionSave: "Speichern",
   focusExpandToJournal: "Schreib darüber in deinem Tagebuch",
 
-  // TodayFocusCard
-  todayFocusMoodMorning: "Wie fühlst du dich heute Morgen?",
-  todayFocusMoodAfternoon: "Wie ist deine Stimmung?",
-  todayFocusMoodEvening: "Wie war dein Tag?",
-  todayFocusHabits: "Zeit, deine Gewohnheiten abzuhaken",
-  todayFocusFocus: "Bereit für eine Fokus-Session?",
-  todayFocusGratitude: "Wofür bist du heute dankbar?",
-  todayFocusSubtitle: "Dein nächster Schritt",
-
   // Reflection prompts
   reflectionNoted: "Notiert. Wachse weiter.",
   reflectionPlaceholderNano: "Ein Wort...",
@@ -318,14 +309,6 @@ export const de: Translations = {
   reflectionDaily3: "Welchen kleinen Erfolg kannst du heute feiern?",
   reflectionDaily4: "Worauf willst du dich heute konzentrieren:",
   reflectionDaily5: "Was würde diesen Tag großartig machen?",
-
-  // Growth Rings
-  growthRingsTotal: "{count} Wachstumsringe",
-  growthRingsEmpty: "Wachstumsringe: keine Aktivität aufgezeichnet",
-  growthRingsLabel: "Wachstumsringe: {total} Tage, {active} aktiv, {rest} Ruhe",
-  growthWeekBalance: "{active} Tage gewachsen, {rest} geruht. Balance.",
-  growthWeekFull: "Eine ganze Woche Wachstum!",
-  growthWeekPartial: "{count} Wachstumstage diese Woche.",
 
   // Breathing
   breathingTitle: "Atmung",
@@ -2754,9 +2737,6 @@ export const de: Translations = {
   ariaClearSearch: "Suche löschen",
 
   // Pluralization variants
-  growthRingsTotal_one: "{count} Wachstumsring",
-  growthRingsTotal_few: "{count} Wachstumsringe",
-  growthRingsTotal_many: "{count} Wachstumsringe",
   somEntriesToday_one: "{count} heute erfasst",
   somEntriesToday_few: "{count} heute erfasst",
   somEntriesToday_many: "{count} heute erfasst",

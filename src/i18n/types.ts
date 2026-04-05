@@ -280,15 +280,6 @@ export interface Translations {
   focusReflectionSave: string;
   focusExpandToJournal: string;
 
-  // TodayFocusCard
-  todayFocusMoodMorning: string;
-  todayFocusMoodAfternoon: string;
-  todayFocusMoodEvening: string;
-  todayFocusHabits: string;
-  todayFocusFocus: string;
-  todayFocusGratitude: string;
-  todayFocusSubtitle: string;
-
   // Reflection prompts (IA Blueprint Phase 3)
   reflectionNoted: string;
   reflectionPlaceholderNano: string;
@@ -305,14 +296,6 @@ export interface Translations {
   reflectionDaily3: string;
   reflectionDaily4: string;
   reflectionDaily5: string;
-
-  // Growth Rings
-  growthRingsTotal: string;
-  growthRingsEmpty: string;
-  growthRingsLabel: string;
-  growthWeekBalance: string;
-  growthWeekFull: string;
-  growthWeekPartial: string;
 
   // Breathing exercises
   breathingTitle: string;
@@ -2724,9 +2707,6 @@ export interface Translations {
 
   // Pluralization variants (Intl.PluralRules)
   // Convention: base key = "other" form, _one/_few/_many/_two/_zero = variants
-  growthRingsTotal_one: string;
-  growthRingsTotal_few: string;
-  growthRingsTotal_many: string;
   somEntriesToday_one: string;
   somEntriesToday_few: string;
   somEntriesToday_many: string;

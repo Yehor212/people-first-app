@@ -3,10 +3,10 @@
   "lastUpdated": "2026-04-04",
   "floors": {
     "tests.total": {
-      "value": 3385,
+      "value": 3354,
       "direction": "up",
-      "recorded": "2026-03-15",
-      "description": "Total unit test count (vitest)"
+      "recorded": "2026-04-05",
+      "description": "Total unit test count (vitest) — lowered: growthRings feature removed (31 tests deleted)"
     },
     "tests.files": {
       "value": 147,

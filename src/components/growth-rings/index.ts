@@ -1,1 +1,0 @@
-export { GrowthRingsCanvas } from './GrowthRingsCanvas';

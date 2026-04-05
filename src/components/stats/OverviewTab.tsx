@@ -6,7 +6,7 @@
 import { useMemo } from "react";
 import { motion } from "framer-motion";
 import { MoodEntry, Habit, FocusSession, GratitudeEntry } from "@/types";
-import { Heart, Target, PlayCircle, TreePine, Star, TrendingUp } from "lucide-react";
+import { Heart, Target, PlayCircle, Star, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDecimal } from "@/lib/timeUtils";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -18,8 +18,6 @@ import { InsightsPanel } from "@/components/InsightsPanel";
 import { hapticTap } from "@/lib/haptics";
 import { computeIdentityClusters } from "@/lib/identityClusters";
 import { IdentityIcon } from "@/components/IdentityIconPicker";
-import { computeGrowthRings, getGrowthRingsSummary } from "@/lib/growthRings";
-import { getToday } from "@/lib/utils";
 import type { RingType } from "@/components/stats";
 import type { UseStatsPageDataReturn } from "./useStatsPageData";
 
@@ -69,24 +67,6 @@ export function OverviewTab({
   const { language } = useLanguage();
   // Identity clusters — group habits by identity (IA Blueprint Phase 2)
   const identityClusters = useMemo(() => computeIdentityClusters(habits), [habits]);
-
-  // Growth rings — never-resetting growth visualization (IA Blueprint Phase 2.3)
-  const growthRingsData = useMemo(() => {
-    const activeDates = habits.flatMap((h) =>
-      Object.entries(h.entries || {})
-        .filter(([, e]) => e.value === 2)
-        .map(([d]) => d)
-    );
-    const uniqueActive = [...new Set(activeDates)];
-    // Use earliest mood date or 30 days ago as start
-    const earliest =
-      moods.length > 0
-        ? moods.reduce((min, m) => (m.date < min ? m.date : min), moods[0].date)
-        : getToday();
-    return computeGrowthRings(uniqueActive, restDays, earliest);
-  }, [habits, moods, restDays]);
-
-  const growthSummary = useMemo(() => getGrowthRingsSummary(growthRingsData), [growthRingsData]);
 
   return (
     <>
@@ -149,35 +129,6 @@ export function OverviewTab({
           </button>
         )}
       </div>
-
-      {/* Growth Rings — never-resetting growth (IA Blueprint Phase 2.3) */}
-      <motion.div {...motionPresets.slideUp} className="rounded-xl bg-card p-4 space-y-3">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <TreePine className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />{" "}
-            {t.growthRings || "Growth Rings"}
-          </h3>
-          <span className="text-xs text-muted-foreground">{growthSummary.totalRings}</span>
-        </div>
-        {/* Visual ring bar */}
-        <div className="flex gap-px h-6 rounded-lg overflow-hidden">
-          {growthRingsData.rings.slice(-30).map((ring, i) => (
-            <div
-              key={i}
-              className={`flex-1 ${
-                ring.type === "active"
-                  ? "bg-emerald-500 dark:bg-emerald-400"
-                  : ring.type === "rest"
-                    ? "bg-blue-300 dark:bg-blue-500"
-                    : "bg-muted"
-              }`}
-              style={{ opacity: ring.density }}
-              title={`${ring.date}: ${ring.type}`}
-            />
-          ))}
-        </div>
-        <p className="text-xs text-muted-foreground">{growthSummary.weekSummary}</p>
-      </motion.div>
 
       {/* Identity Clusters — who you're becoming (IA Blueprint Phase 2) */}
       {identityClusters.length > 0 && (

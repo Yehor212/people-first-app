@@ -296,15 +296,6 @@ const hebrewOverrides: Partial<Translations> = {
   focusReflectionSave: "שמור",
   focusExpandToJournal: "כתוב על זה ביומן שלך",
 
-  // TodayFocusCard
-  todayFocusMoodMorning: "איך אתה מרגיש הבוקר?",
-  todayFocusMoodAfternoon: "מה מצב הרוח שלך?",
-  todayFocusMoodEvening: "איך היה היום שלך?",
-  todayFocusHabits: "הגיע הזמן לסמן את ההרגלים",
-  todayFocusFocus: "מוכן לסשן ריכוז?",
-  todayFocusGratitude: "על מה אתה אסיר תודה היום?",
-  todayFocusSubtitle: "הצעד הבא שלך",
-
   // Reflection prompts
   reflectionNoted: "נרשם. המשיכו לצמוח.",
   reflectionPlaceholderNano: "מילה אחת...",
@@ -321,14 +312,6 @@ const hebrewOverrides: Partial<Translations> = {
   reflectionDaily3: "איזה ניצחון קטן אפשר לחגוג היום?",
   reflectionDaily4: "דבר אחד שרוצה להתמקד בו היום:",
   reflectionDaily5: "מה יהפוך את היום הזה לנהדר?",
-
-  // Growth Rings
-  growthRingsTotal: "{count} טבעות צמיחה",
-  growthRingsEmpty: "טבעות צמיחה: לא נרשמה פעילות",
-  growthRingsLabel: "טבעות צמיחה: {total} ימים, {active} פעילים, {rest} מנוחה",
-  growthWeekBalance: "צמחת {active} ימים, נחת {rest}. איזון.",
-  growthWeekFull: "שבוע שלם של צמיחה!",
-  growthWeekPartial: "{count} ימי צמיחה השבוע.",
 
   // Breathing
   breathingTitle: "נשימה",
@@ -2687,9 +2670,6 @@ const hebrewOverrides: Partial<Translations> = {
   ariaClearSearch: "נקה חיפוש",
 
   // Pluralization variants
-  growthRingsTotal_one: "{count} טבעת צמיחה",
-  growthRingsTotal_few: "{count} טבעות צמיחה",
-  growthRingsTotal_many: "{count} טבעות צמיחה",
   somEntriesToday_one: "{count} נרשם היום",
   somEntriesToday_few: "{count} נרשמו היום",
   somEntriesToday_many: "{count} נרשמו היום",

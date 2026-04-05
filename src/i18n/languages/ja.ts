@@ -275,15 +275,6 @@ export const ja: Translations = {
   focusReflectionSave: "保存",
   focusExpandToJournal: "日記に書いてみましょう",
 
-  // TodayFocusCard
-  todayFocusMoodMorning: "今朝の気分はいかがですか？",
-  todayFocusMoodAfternoon: "今の気分はどうですか？",
-  todayFocusMoodEvening: "今日はどんな一日でしたか？",
-  todayFocusHabits: "習慣をチェックしましょう",
-  todayFocusFocus: "集中セッションの準備はできましたか？",
-  todayFocusGratitude: "今日感謝していることは何ですか？",
-  todayFocusSubtitle: "次のステップ",
-
   // Reflection prompts
   reflectionNoted: "記録しました。成長を続けましょう。",
   reflectionPlaceholderNano: "ひとこと...",
@@ -300,14 +291,6 @@ export const ja: Translations = {
   reflectionDaily3: "今日お祝いできる小さな勝利は何ですか？",
   reflectionDaily4: "今日集中したいこと：",
   reflectionDaily5: "今日を素晴らしくするものは何ですか？",
-
-  // Growth Rings
-  growthRingsTotal: "{count}個の成長リング",
-  growthRingsEmpty: "成長リング：活動記録なし",
-  growthRingsLabel: "成長リング：{total}日間、{active}日活動、{rest}日休息",
-  growthWeekBalance: "{active}日成長、{rest}日休息。バランス。",
-  growthWeekFull: "一週間まるまる成長！",
-  growthWeekPartial: "今週{count}日の成長。",
 
   // Breathing
   breathingTitle: "呼吸法",
@@ -2695,9 +2678,6 @@ export const ja: Translations = {
   ariaClearSearch: "検索をクリア",
 
   // Pluralization variants (Japanese has single form — all same as base)
-  growthRingsTotal_one: "{count}個の成長リング",
-  growthRingsTotal_few: "{count}個の成長リング",
-  growthRingsTotal_many: "{count}個の成長リング",
   somEntriesToday_one: "今日{count}件記録",
   somEntriesToday_few: "今日{count}件記録",
   somEntriesToday_many: "今日{count}件記録",
@@ -2708,5 +2688,4 @@ export const ja: Translations = {
   // SEO meta tags
   metaTitle: "ZenFlow — デイリーウェルネス",
   metaDescription: "習慣、気分、生産性トラッカー。マインドフルな生活への旅を始めましょう。",
-  selectMonth: "月を選択",
 };
