@@ -1,4 +1,4 @@
-import { memo, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Header } from "@/components/Header";
 import { PullToRefresh } from "@/components/PullToRefresh";
@@ -22,6 +22,39 @@ import { ValenceOrb } from "@/components/state-of-mind/ValenceOrb";
 import { isHabitCompletedOnDate } from "@/lib/habits";
 import { getToday } from "@/lib/utils";
 import type { MoodEntry } from "@/types";
+
+/** Miniature orb with idle oscillation — isolated to avoid HomeTab re-renders */
+const MiniOrbPreview = memo(function MiniOrbPreview({
+  valence,
+  hasEntry,
+}: {
+  valence: number;
+  hasEntry: boolean;
+}) {
+  // Oscillate valence gently when no mood entry exists yet
+  const [oscillatedValence, setOscillatedValence] = useState(0);
+
+  useEffect(() => {
+    if (hasEntry) return; // stop oscillation once user picks a mood
+    let frame = 0;
+    const id = setInterval(() => {
+      frame += 1;
+      // Sine wave: period ~6s (30 ticks × 200ms), range -0.4..+0.4
+      setOscillatedValence(Math.sin(frame * 0.1) * 0.4);
+    }, 200);
+    return () => clearInterval(id);
+  }, [hasEntry]);
+
+  const displayValence = hasEntry ? valence : oscillatedValence;
+
+  return (
+    <div className="w-12 h-12 flex-shrink-0 relative">
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 scale-[0.4] w-[120px] h-[120px] brightness-75">
+        <ValenceOrb valence={displayValence} size={120} />
+      </div>
+    </div>
+  );
+});
 
 const setShowChallenges = getModalToggle("showChallenges");
 const setShowTasksPanel = getModalToggle("showTasksPanel");
@@ -114,12 +147,7 @@ export const HomeTab = memo(function HomeTab({
         className="w-full rounded-2xl bg-card ring-1 ring-black/5 dark:ring-white/10 shadow-zen-card p-5 text-start"
       >
         <div className="flex items-center gap-4">
-          {/* Mini orb — full 120px shader scaled to 48px via GPU-composited CSS transform (SSAA quality) */}
-          <div className="w-12 h-12 flex-shrink-0 relative">
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 scale-[0.4] w-[120px] h-[120px]">
-              <ValenceOrb valence={latestValence} size={120} />
-            </div>
-          </div>
+          <MiniOrbPreview valence={latestValence} hasEntry={todayMoods.length > 0} />
           <div className="flex-1 min-w-0">
             <p className="text-base font-semibold text-foreground">{t.somLogFeeling}</p>
             {todayMoods.length > 0 && (

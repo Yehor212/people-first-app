@@ -83,6 +83,14 @@ export const JournalModule = memo(function JournalModule({
 
   const [showExportPicker, setShowExportPicker] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importFeedback, setImportFeedback] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
+  const [hasDraft, setHasDraft] = useState(false);
+  const [showRemovePasswordConfirm, setShowRemovePasswordConfirm] = useState(false);
+
   useBackHandler(showExportPicker, () => setShowExportPicker(false));
 
   // Consolidated Escape key handler for inline sub-dialogs (password, export, remove-confirm)
@@ -109,13 +117,6 @@ export const JournalModule = memo(function JournalModule({
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
   }, [showPasswordSettings, showExportPicker, showRemovePasswordConfirm]);
-  const [importing, setImporting] = useState(false);
-  const [importFeedback, setImportFeedback] = useState<{
-    type: "success" | "error";
-    message: string;
-  } | null>(null);
-  const [hasDraft, setHasDraft] = useState(false);
-  const [showRemovePasswordConfirm, setShowRemovePasswordConfirm] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Secure password reset via email verification
