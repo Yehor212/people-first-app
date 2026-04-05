@@ -527,6 +527,32 @@ process.stdin.on('end', () => {
         }
       }
 
+      // --- Layer 5i: Deterministic TSC gate (session 2026-04-05 finding) ---
+      // Root cause: tsc --noEmit passed but IDE showed TS2322 (RefObject<T|null>).
+      // This can happen when: (1) independent-verifier skips tsc with "no TS changes"
+      // because it checks unstaged diff while files are already staged, (2) stale tsc cache.
+      // Fix: ALWAYS run tsc at commit time when staged files include .ts/.tsx.
+      // Research: "tsc clean ≠ IDE clean" — run both (session feedback, Ruflo memory stored).
+      {
+        try {
+          const staged5i = execSync('git diff --cached --name-only', { cwd: ROOT, stdio: 'pipe', timeout: 5000 }).toString();
+          const hasTsChanges5i = staged5i.split('\n').some(f => /\.(ts|tsx)$/.test(f.trim()));
+          if (hasTsChanges5i) {
+            try {
+              execSync('npx tsc --noEmit', { cwd: ROOT, stdio: 'pipe', timeout: 120000 });
+              audit('allow', 'Layer 5i: tsc --noEmit PASSED (deterministic)', cmd);
+            } catch (tscErr) {
+              const tscOutput = ((tscErr.stdout || '') + '\n' + (tscErr.stderr || '')).toString().slice(-800);
+              block(
+                'TSC GATE FAILED (Layer 5i)! TypeScript errors found in staged files.\n' +
+                'Fix ALL errors before commit. Output:\n' + tscOutput,
+                cmd
+              );
+            }
+          }
+        } catch { /* git diff failed — don't block on git errors */ }
+      }
+
       // NOTE: Token consumption moved AFTER Layer 7/7b (verifier finding 2.2)
       // If Layer 7 blocks, tokens are preserved — no forced postflight recreation.
 
