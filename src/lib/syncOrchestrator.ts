@@ -162,7 +162,9 @@ class SyncOrchestrator {
 
     // Start processing using mutex pattern to avoid race conditions
     // If already processing, wait for current batch to complete then check queue again
-    void this.startProcessing();
+    this.startProcessing().catch(() => {
+      /* errors handled inside processQueue */
+    });
   }
 
   /**
@@ -176,7 +178,9 @@ class SyncOrchestrator {
       // After waiting, recursively check if we need to process more
       // Both isProcessing and processingPromise are now cleared atomically in processQueue()
       if (this.queue.length > 0 && !this.isProcessing) {
-        void this.startProcessing();
+        this.startProcessing().catch(() => {
+          /* errors handled inside processQueue */
+        });
       }
       return;
     }
@@ -475,7 +479,9 @@ class SyncOrchestrator {
 
     // Resume processing when back online using mutex-protected method
     if (isOnline && this.queue.length > 0 && !this.isProcessing) {
-      void this.startProcessing();
+      this.startProcessing().catch(() => {
+        /* errors handled inside processQueue */
+      });
     }
   }
 

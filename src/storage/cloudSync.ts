@@ -1,4 +1,4 @@
-import { broadcastChange } from '@/lib/syncBroadcast';
+import { broadcastChange } from "@/lib/syncBroadcast";
 import { exportBackup, importBackup, type BackupPayload } from "@/storage/backup";
 import { supabase } from "@/lib/supabaseClient";
 import { triggerDataRefresh } from "@/hooks/useIndexedDB";
@@ -220,7 +220,7 @@ const doSyncWithCloud = async (
     lastSyncTime = Date.now();
 
     // Signal other devices that data changed
-    broadcastChange('backup');
+    broadcastChange("backup");
     return { status: syncStatus };
   } finally {
     // P1-11 Fix: Cleanup resources
@@ -296,7 +296,8 @@ export const silentSync = async () => {
         // Track failures and emit event for monitoring
         consecutiveSyncFailures++;
         emitSyncFailureEvent(error, consecutiveSyncFailures);
-        throw error; // Re-throw for orchestrator retry logic
+        // NOT re-throwing: silentSync must never throw to prevent unhandled rejections
+        // from setInterval/visibilitychange callers. Orchestrator retries via queue, not exceptions.
       }
     },
     { priority: 5, maxRetries: 3 }
@@ -333,7 +334,7 @@ export const startAutoSync = () => {
   beforeUnloadHandler = () => {
     // Note: async operations in beforeunload are unreliable
     // This is a best-effort sync attempt
-    if (typeof navigator.sendBeacon === 'function' && supabase) {
+    if (typeof navigator.sendBeacon === "function" && supabase) {
       silentSync().catch((error) => {
         logger.warn("[Sync] Beforeunload sync failed:", error);
       });

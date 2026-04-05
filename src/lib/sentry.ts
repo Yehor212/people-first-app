@@ -136,7 +136,15 @@ export function initSentry(): void {
         event.breadcrumbs = event.breadcrumbs.map((bc) => ({
           ...bc,
           message: bc.message ? scrubString(bc.message) : bc.message,
-          data: bc.data ? JSON.parse(scrubString(JSON.stringify(bc.data))) : bc.data,
+          data: bc.data
+            ? (() => {
+                try {
+                  return JSON.parse(scrubString(JSON.stringify(bc.data)));
+                } catch {
+                  return bc.data; // Return original if scrubbing corrupts JSON
+                }
+              })()
+            : bc.data,
         }));
       }
 

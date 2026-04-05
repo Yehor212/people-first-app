@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 // ─── Mocks (must be hoisted before imports) ──────────────────────────────────
 
@@ -12,37 +12,37 @@ const mockFrom = vi.fn();
 
 let mockSupabase: any = null;
 
-vi.mock('@/lib/supabaseClient', () => ({
+vi.mock("@/lib/supabaseClient", () => ({
   get supabase() {
     return mockSupabase;
   },
 }));
 
-vi.mock('@/storage/backup', () => ({
+vi.mock("@/storage/backup", () => ({
   exportBackup: vi.fn(),
   importBackup: vi.fn(),
 }));
 
-vi.mock('@/hooks/useIndexedDB', () => ({
+vi.mock("@/hooks/useIndexedDB", () => ({
   triggerDataRefresh: vi.fn(),
 }));
 
-vi.mock('@/lib/logger', () => ({
+vi.mock("@/lib/logger", () => ({
   default: { sync: vi.fn(), warn: vi.fn(), error: vi.fn(), log: vi.fn(), debug: vi.fn() },
 }));
 
-vi.mock('@/lib/syncOrchestrator', () => ({
+vi.mock("@/lib/syncOrchestrator", () => ({
   syncOrchestrator: {
     sync: vi.fn(),
   },
 }));
 
-vi.mock('@/lib/validation', () => ({
-  generateSecureRandom: vi.fn(() => 'abc123'),
-  isAbortError: vi.fn((err: unknown) => err instanceof DOMException && err.name === 'AbortError'),
+vi.mock("@/lib/validation", () => ({
+  generateSecureRandom: vi.fn(() => "abc123"),
+  isAbortError: vi.fn((err: unknown) => err instanceof DOMException && err.name === "AbortError"),
 }));
 
-vi.mock('@/lib/sentry', () => ({
+vi.mock("@/lib/sentry", () => ({
   addCategorizedBreadcrumb: vi.fn(),
 }));
 
@@ -56,12 +56,12 @@ import {
   triggerSync,
   flushSync,
   destroyCloudSync,
-} from '@/storage/cloudSync';
+} from "@/storage/cloudSync";
 
-import { exportBackup, importBackup } from '@/storage/backup';
-import { triggerDataRefresh } from '@/hooks/useIndexedDB';
-import { syncOrchestrator } from '@/lib/syncOrchestrator';
-import { isAbortError } from '@/lib/validation';
+import { exportBackup, importBackup } from "@/storage/backup";
+import { triggerDataRefresh } from "@/hooks/useIndexedDB";
+import { syncOrchestrator } from "@/lib/syncOrchestrator";
+import { isAbortError } from "@/lib/validation";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -79,8 +79,8 @@ function createMockSupabase() {
     select: mockSelect,
     upsert: mockUpsert,
   }));
-  mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } });
-  mockGetSession.mockResolvedValue({ data: { session: { user: { id: 'user-1' } } } });
+  mockGetUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
+  mockGetSession.mockResolvedValue({ data: { session: { user: { id: "user-1" } } } });
   return {
     auth: { getUser: mockGetUser, getSession: mockGetSession },
     from: mockFrom,
@@ -89,9 +89,9 @@ function createMockSupabase() {
 
 const LOCAL_BACKUP = {
   schemaVersion: 1,
-  exportedAt: '2024-01-01T00:00:00.000Z',
+  exportedAt: "2024-01-01T00:00:00.000Z",
   data: {
-    moods: [{ id: 'm1' }],
+    moods: [{ id: "m1" }],
     habits: [],
     focusSessions: [],
     gratitudeEntries: [],
@@ -101,7 +101,7 @@ const LOCAL_BACKUP = {
 
 const EMPTY_BACKUP = {
   schemaVersion: 1,
-  exportedAt: '2024-01-01T00:00:00.000Z',
+  exportedAt: "2024-01-01T00:00:00.000Z",
   data: {
     moods: [],
     habits: [],
@@ -113,10 +113,10 @@ const EMPTY_BACKUP = {
 
 const REMOTE_PAYLOAD = {
   schemaVersion: 1,
-  exportedAt: '2024-01-01T00:00:00.000Z',
+  exportedAt: "2024-01-01T00:00:00.000Z",
   data: {
-    moods: [{ id: 'r1' }],
-    habits: [{ id: 'r2' }],
+    moods: [{ id: "r1" }],
+    habits: [{ id: "r2" }],
     focusSessions: [],
     gratitudeEntries: [],
     journalEntries: [],
@@ -133,7 +133,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   // Restore isAbortError to its default factory behavior in case a test overrode it
   vi.mocked(isAbortError).mockImplementation(
-    (err: unknown) => err instanceof DOMException && err.name === 'AbortError'
+    (err: unknown) => err instanceof DOMException && err.name === "AbortError"
   );
   // Reset mockSupabase to null by default
   mockSupabase = null;
@@ -146,20 +146,20 @@ afterEach(() => {
 
 // ─── syncWithCloud ───────────────────────────────────────────────────────────
 
-describe('syncWithCloud', () => {
-  it('throws when supabase is null', async () => {
+describe("syncWithCloud", () => {
+  it("throws when supabase is null", async () => {
     mockSupabase = null;
-    await expect(syncWithCloud()).rejects.toThrow('Supabase not configured.');
+    await expect(syncWithCloud()).rejects.toThrow("Supabase not configured.");
   });
 
-  it('throws when user is not authenticated', async () => {
+  it("throws when user is not authenticated", async () => {
     mockSupabase = createMockSupabase();
     mockGetSession.mockResolvedValue({ data: { session: null } });
 
-    await expect(syncWithCloud()).rejects.toThrow('Not authenticated.');
+    await expect(syncWithCloud()).rejects.toThrow("Not authenticated.");
   });
 
-  it('pushes local data when no remote data exists', async () => {
+  it("pushes local data when no remote data exists", async () => {
     mockSupabase = createMockSupabase();
     mockExportBackup.mockResolvedValue(LOCAL_BACKUP as any);
     // Remote returns null (no data)
@@ -167,51 +167,51 @@ describe('syncWithCloud', () => {
 
     const result = await syncWithCloud();
 
-    expect(result).toEqual({ status: 'pushed' });
-    expect(mockFrom).toHaveBeenCalledWith('user_backups');
+    expect(result).toEqual({ status: "pushed" });
+    expect(mockFrom).toHaveBeenCalledWith("user_backups");
     expect(mockUpsert).toHaveBeenCalled();
   });
 
-  it('merges remote data into local and returns merged status', async () => {
+  it("merges remote data into local and returns merged status", async () => {
     mockSupabase = createMockSupabase();
     mockExportBackup.mockResolvedValue(LOCAL_BACKUP as any);
     mockMaybeSingle.mockResolvedValue({
-      data: { payload: REMOTE_PAYLOAD, updated_at: '2024-01-01' },
+      data: { payload: REMOTE_PAYLOAD, updated_at: "2024-01-01" },
       error: null,
     });
 
     const result = await syncWithCloud();
 
-    expect(result).toEqual({ status: 'merged' });
-    expect(mockImportBackup).toHaveBeenCalledWith(REMOTE_PAYLOAD, 'merge');
+    expect(result).toEqual({ status: "merged" });
+    expect(mockImportBackup).toHaveBeenCalledWith(REMOTE_PAYLOAD, "merge");
     expect(mockTriggerDataRefresh).toHaveBeenCalled();
   });
 
-  it('returns pulled status when local is empty but remote has data', async () => {
+  it("returns pulled status when local is empty but remote has data", async () => {
     mockSupabase = createMockSupabase();
     mockExportBackup.mockResolvedValue(EMPTY_BACKUP as any);
     mockMaybeSingle.mockResolvedValue({
-      data: { payload: REMOTE_PAYLOAD, updated_at: '2024-01-01' },
+      data: { payload: REMOTE_PAYLOAD, updated_at: "2024-01-01" },
       error: null,
     });
 
     const result = await syncWithCloud();
 
-    expect(result).toEqual({ status: 'pulled' });
-    expect(mockImportBackup).toHaveBeenCalledWith(REMOTE_PAYLOAD, 'merge');
+    expect(result).toEqual({ status: "pulled" });
+    expect(mockImportBackup).toHaveBeenCalledWith(REMOTE_PAYLOAD, "merge");
     expect(mockTriggerDataRefresh).toHaveBeenCalled();
   });
 
-  it('throws when upsert returns an error', async () => {
+  it("throws when upsert returns an error", async () => {
     mockSupabase = createMockSupabase();
     mockExportBackup.mockResolvedValue(LOCAL_BACKUP as any);
     mockMaybeSingle.mockResolvedValue({ data: null, error: null });
-    mockUpsert.mockResolvedValue({ error: new Error('Upsert failed') });
+    mockUpsert.mockResolvedValue({ error: new Error("Upsert failed") });
 
-    await expect(syncWithCloud()).rejects.toThrow('Upsert failed');
+    await expect(syncWithCloud()).rejects.toThrow("Upsert failed");
   });
 
-  it('concurrent callers share the same promise (P1-11 lock)', async () => {
+  it("concurrent callers share the same promise (P1-11 lock)", async () => {
     mockSupabase = createMockSupabase();
     // Use a deferred pattern so we can control resolution timing
     let resolveExport!: (val: any) => void;
@@ -231,14 +231,14 @@ describe('syncWithCloud', () => {
     const [result1, result2] = await Promise.all([promise1, promise2]);
 
     // Both should get the same result
-    expect(result1).toEqual({ status: 'pushed' });
-    expect(result2).toEqual({ status: 'pushed' });
+    expect(result1).toEqual({ status: "pushed" });
+    expect(result2).toEqual({ status: "pushed" });
 
     // exportBackup should only be called once (second caller waits for same promise)
     expect(mockExportBackup).toHaveBeenCalledTimes(1);
   });
 
-  it('calls exportBackup and passes result to upsert', async () => {
+  it("calls exportBackup and passes result to upsert", async () => {
     mockSupabase = createMockSupabase();
     mockExportBackup.mockResolvedValue(LOCAL_BACKUP as any);
     mockMaybeSingle.mockResolvedValue({ data: null, error: null });
@@ -249,42 +249,45 @@ describe('syncWithCloud', () => {
     // The upsert call should contain the backup payload
     const upsertArg = mockUpsert.mock.calls[0][0];
     expect(upsertArg).toMatchObject({
-      user_id: 'user-1',
+      user_id: "user-1",
       payload: LOCAL_BACKUP,
     });
     expect(upsertArg.updated_at).toBeDefined();
   });
 
-  it('uses replace mode when specified', async () => {
+  it("uses replace mode when specified", async () => {
     mockSupabase = createMockSupabase();
     mockExportBackup.mockResolvedValue(LOCAL_BACKUP as any);
     mockMaybeSingle.mockResolvedValue({
-      data: { payload: REMOTE_PAYLOAD, updated_at: '2024-01-01' },
+      data: { payload: REMOTE_PAYLOAD, updated_at: "2024-01-01" },
       error: null,
     });
 
-    await syncWithCloud('replace');
+    await syncWithCloud("replace");
 
-    expect(mockImportBackup).toHaveBeenCalledWith(REMOTE_PAYLOAD, 'replace');
+    expect(mockImportBackup).toHaveBeenCalledWith(REMOTE_PAYLOAD, "replace");
   });
 
-  it('throws when fetch (select) returns an error', async () => {
+  it("throws when fetch (select) returns an error", async () => {
     mockSupabase = createMockSupabase();
     mockExportBackup.mockResolvedValue(LOCAL_BACKUP as any);
-    mockMaybeSingle.mockResolvedValue({ data: null, error: new Error('Fetch error') });
+    mockMaybeSingle.mockResolvedValue({ data: null, error: new Error("Fetch error") });
 
-    await expect(syncWithCloud()).rejects.toThrow('Fetch error');
+    await expect(syncWithCloud()).rejects.toThrow("Fetch error");
   });
 
-  it('re-exports backup after merge before upserting', async () => {
+  it("re-exports backup after merge before upserting", async () => {
     mockSupabase = createMockSupabase();
     // First call: local backup; second call: merged backup
-    const mergedBackup = { ...LOCAL_BACKUP, data: { ...LOCAL_BACKUP.data, moods: [{ id: 'm1' }, { id: 'r1' }] } };
+    const mergedBackup = {
+      ...LOCAL_BACKUP,
+      data: { ...LOCAL_BACKUP.data, moods: [{ id: "m1" }, { id: "r1" }] },
+    };
     mockExportBackup
       .mockResolvedValueOnce(LOCAL_BACKUP as any)
       .mockResolvedValueOnce(mergedBackup as any);
     mockMaybeSingle.mockResolvedValue({
-      data: { payload: REMOTE_PAYLOAD, updated_at: '2024-01-01' },
+      data: { payload: REMOTE_PAYLOAD, updated_at: "2024-01-01" },
       error: null,
     });
 
@@ -297,7 +300,7 @@ describe('syncWithCloud', () => {
     expect(upsertArg.payload).toEqual(mergedBackup);
   });
 
-  it('does not re-export backup when pushing only (no merge)', async () => {
+  it("does not re-export backup when pushing only (no merge)", async () => {
     mockSupabase = createMockSupabase();
     mockExportBackup.mockResolvedValue(LOCAL_BACKUP as any);
     mockMaybeSingle.mockResolvedValue({ data: null, error: null });
@@ -311,7 +314,7 @@ describe('syncWithCloud', () => {
 
 // ─── silentSync ──────────────────────────────────────────────────────────────
 
-describe('silentSync', () => {
+describe("silentSync", () => {
   it('calls syncOrchestrator.sync with "backup" and priority 5', async () => {
     mockOrchestratorSync.mockResolvedValue(undefined);
 
@@ -319,11 +322,11 @@ describe('silentSync', () => {
 
     expect(mockOrchestratorSync).toHaveBeenCalledTimes(1);
     const [opType, , options] = mockOrchestratorSync.mock.calls[0];
-    expect(opType).toBe('backup');
+    expect(opType).toBe("backup");
     expect(options).toMatchObject({ priority: 5, maxRetries: 3 });
   });
 
-  it('callback calls syncWithCloud with merge mode', async () => {
+  it("callback calls syncWithCloud with merge mode", async () => {
     mockSupabase = createMockSupabase();
     mockExportBackup.mockResolvedValue(LOCAL_BACKUP as any);
     mockMaybeSingle.mockResolvedValue({ data: null, error: null });
@@ -340,25 +343,26 @@ describe('silentSync', () => {
     expect(mockGetSession).toHaveBeenCalled();
   });
 
-  it('callback re-throws non-abort errors for orchestrator retry', async () => {
+  it("callback swallows non-abort errors to prevent unhandled rejections", async () => {
     mockSupabase = createMockSupabase();
-    const syncError = new Error('Network failure');
+    const syncError = new Error("Network failure");
     mockExportBackup.mockRejectedValue(syncError);
 
     mockOrchestratorSync.mockImplementation(async (_type, callback) => {
       await callback();
     });
 
-    await expect(silentSync()).rejects.toThrow('Network failure');
+    // silentSync must NOT throw — prevents unhandled rejections from setInterval/visibilitychange
+    await expect(silentSync()).resolves.not.toThrow();
   });
 
-  it('callback does not throw on abort errors', async () => {
+  it("callback does not throw on abort errors", async () => {
     mockSupabase = createMockSupabase();
-    const abortError = new DOMException('Aborted', 'AbortError');
+    const abortError = new DOMException("Aborted", "AbortError");
     mockExportBackup.mockRejectedValue(abortError);
 
     // isAbortError mock returns true for AbortError
-    const { isAbortError } = await import('@/lib/validation');
+    const { isAbortError } = await import("@/lib/validation");
     vi.mocked(isAbortError).mockReturnValue(true);
 
     mockOrchestratorSync.mockImplementation(async (_type, callback) => {
@@ -369,10 +373,10 @@ describe('silentSync', () => {
     await expect(silentSync()).resolves.toBeUndefined();
   });
 
-  it('emits sync-failure event after consecutive failures', async () => {
+  it("emits sync-failure event after consecutive failures", async () => {
     mockSupabase = createMockSupabase();
 
-    const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
+    const dispatchSpy = vi.spyOn(window, "dispatchEvent");
 
     // Simulate failures by having the orchestrator callback reject
     // but catch the error ourselves so we can still track dispatch events
@@ -389,7 +393,7 @@ describe('silentSync', () => {
     });
 
     // Make syncWithCloud fail inside the callback
-    mockExportBackup.mockImplementation(() => Promise.reject(new Error('Sync fail')));
+    mockExportBackup.mockImplementation(() => Promise.reject(new Error("Sync fail")));
 
     // Call silentSync multiple times to accumulate failures
     // silentSync delegates to orchestrator, which catches the error internally
@@ -399,7 +403,7 @@ describe('silentSync', () => {
 
     // Should have dispatched sync-failure events
     const failureEvents = dispatchSpy.mock.calls.filter(
-      (call) => (call[0] as CustomEvent).type === 'zenflow:sync-failure'
+      (call) => (call[0] as CustomEvent).type === "zenflow:sync-failure"
     );
     expect(failureEvents.length).toBe(3);
 
@@ -414,10 +418,10 @@ describe('silentSync', () => {
 
 // ─── startAutoSync / stopAutoSync ────────────────────────────────────────────
 
-describe('startAutoSync', () => {
-  it('does not set interval when supabase is null', () => {
+describe("startAutoSync", () => {
+  it("does not set interval when supabase is null", () => {
     mockSupabase = null;
-    const spy = vi.spyOn(globalThis, 'setInterval');
+    const spy = vi.spyOn(globalThis, "setInterval");
 
     startAutoSync();
 
@@ -425,9 +429,9 @@ describe('startAutoSync', () => {
     spy.mockRestore();
   });
 
-  it('sets interval for periodic sync', () => {
+  it("sets interval for periodic sync", () => {
     mockSupabase = createMockSupabase();
-    const spy = vi.spyOn(globalThis, 'setInterval');
+    const spy = vi.spyOn(globalThis, "setInterval");
 
     startAutoSync();
 
@@ -436,9 +440,9 @@ describe('startAutoSync', () => {
     spy.mockRestore();
   });
 
-  it('does not duplicate when called twice (autoSyncStarted guard)', () => {
+  it("does not duplicate when called twice (autoSyncStarted guard)", () => {
     mockSupabase = createMockSupabase();
-    const spy = vi.spyOn(globalThis, 'setInterval');
+    const spy = vi.spyOn(globalThis, "setInterval");
 
     startAutoSync();
     startAutoSync();
@@ -448,31 +452,31 @@ describe('startAutoSync', () => {
     spy.mockRestore();
   });
 
-  it('adds visibilitychange listener', () => {
+  it("adds visibilitychange listener", () => {
     mockSupabase = createMockSupabase();
-    const spy = vi.spyOn(document, 'addEventListener');
+    const spy = vi.spyOn(document, "addEventListener");
 
     startAutoSync();
 
-    expect(spy).toHaveBeenCalledWith('visibilitychange', expect.any(Function));
+    expect(spy).toHaveBeenCalledWith("visibilitychange", expect.any(Function));
     spy.mockRestore();
   });
 
-  it('adds beforeunload listener', () => {
+  it("adds beforeunload listener", () => {
     mockSupabase = createMockSupabase();
-    const spy = vi.spyOn(window, 'addEventListener');
+    const spy = vi.spyOn(window, "addEventListener");
 
     startAutoSync();
 
-    expect(spy).toHaveBeenCalledWith('beforeunload', expect.any(Function));
+    expect(spy).toHaveBeenCalledWith("beforeunload", expect.any(Function));
     spy.mockRestore();
   });
 });
 
-describe('stopAutoSync', () => {
-  it('clears interval', () => {
+describe("stopAutoSync", () => {
+  it("clears interval", () => {
     mockSupabase = createMockSupabase();
-    const clearSpy = vi.spyOn(globalThis, 'clearInterval');
+    const clearSpy = vi.spyOn(globalThis, "clearInterval");
 
     startAutoSync();
     stopAutoSync();
@@ -481,24 +485,24 @@ describe('stopAutoSync', () => {
     clearSpy.mockRestore();
   });
 
-  it('removes visibilitychange and beforeunload listeners', () => {
+  it("removes visibilitychange and beforeunload listeners", () => {
     mockSupabase = createMockSupabase();
-    const docSpy = vi.spyOn(document, 'removeEventListener');
-    const winSpy = vi.spyOn(window, 'removeEventListener');
+    const docSpy = vi.spyOn(document, "removeEventListener");
+    const winSpy = vi.spyOn(window, "removeEventListener");
 
     startAutoSync();
     stopAutoSync();
 
-    expect(docSpy).toHaveBeenCalledWith('visibilitychange', expect.any(Function));
-    expect(winSpy).toHaveBeenCalledWith('beforeunload', expect.any(Function));
+    expect(docSpy).toHaveBeenCalledWith("visibilitychange", expect.any(Function));
+    expect(winSpy).toHaveBeenCalledWith("beforeunload", expect.any(Function));
 
     docSpy.mockRestore();
     winSpy.mockRestore();
   });
 
-  it('resets autoSyncStarted flag so startAutoSync can be called again', () => {
+  it("resets autoSyncStarted flag so startAutoSync can be called again", () => {
     mockSupabase = createMockSupabase();
-    const spy = vi.spyOn(globalThis, 'setInterval');
+    const spy = vi.spyOn(globalThis, "setInterval");
 
     startAutoSync();
     stopAutoSync();
@@ -512,37 +516,33 @@ describe('stopAutoSync', () => {
 
 // ─── triggerSync ─────────────────────────────────────────────────────────────
 
-describe('triggerSync', () => {
-  it('is a no-op when supabase is null', () => {
+describe("triggerSync", () => {
+  it("is a no-op when supabase is null", () => {
     mockSupabase = null;
-    const spy = vi.spyOn(globalThis, 'setTimeout');
+    const spy = vi.spyOn(globalThis, "setTimeout");
 
     triggerSync();
 
     // No timeout should be set for the debounce
-    const syncTimeoutCalls = spy.mock.calls.filter(
-      (call) => call[1] === 30_000
-    );
+    const syncTimeoutCalls = spy.mock.calls.filter((call) => call[1] === 30_000);
     expect(syncTimeoutCalls).toHaveLength(0);
     spy.mockRestore();
   });
 
-  it('sets a debounced timeout (30s)', () => {
+  it("sets a debounced timeout (30s)", () => {
     mockSupabase = createMockSupabase();
-    const spy = vi.spyOn(globalThis, 'setTimeout');
+    const spy = vi.spyOn(globalThis, "setTimeout");
 
     triggerSync();
 
-    const syncTimeoutCalls = spy.mock.calls.filter(
-      (call) => call[1] === 30_000
-    );
+    const syncTimeoutCalls = spy.mock.calls.filter((call) => call[1] === 30_000);
     expect(syncTimeoutCalls).toHaveLength(1);
     spy.mockRestore();
   });
 
-  it('clears previous timeout when called again', () => {
+  it("clears previous timeout when called again", () => {
     mockSupabase = createMockSupabase();
-    const clearSpy = vi.spyOn(globalThis, 'clearTimeout');
+    const clearSpy = vi.spyOn(globalThis, "clearTimeout");
 
     triggerSync();
     triggerSync();
@@ -555,10 +555,10 @@ describe('triggerSync', () => {
 
 // ─── flushSync ───────────────────────────────────────────────────────────────
 
-describe('flushSync', () => {
-  it('is a no-op when supabase is null', () => {
+describe("flushSync", () => {
+  it("is a no-op when supabase is null", () => {
     mockSupabase = null;
-    const spy = vi.spyOn(globalThis, 'clearTimeout');
+    const spy = vi.spyOn(globalThis, "clearTimeout");
 
     flushSync();
 
@@ -568,9 +568,9 @@ describe('flushSync', () => {
     spy.mockRestore();
   });
 
-  it('cancels pending debounced sync timeout', () => {
+  it("cancels pending debounced sync timeout", () => {
     mockSupabase = createMockSupabase();
-    const clearSpy = vi.spyOn(globalThis, 'clearTimeout');
+    const clearSpy = vi.spyOn(globalThis, "clearTimeout");
 
     triggerSync(); // Set a debounced timeout
     flushSync(); // Should clear it
@@ -579,7 +579,7 @@ describe('flushSync', () => {
     clearSpy.mockRestore();
   });
 
-  it('triggers immediate silentSync', () => {
+  it("triggers immediate silentSync", () => {
     mockSupabase = createMockSupabase();
     mockOrchestratorSync.mockResolvedValue(undefined);
 
@@ -592,10 +592,10 @@ describe('flushSync', () => {
 
 // ─── destroyCloudSync ────────────────────────────────────────────────────────
 
-describe('destroyCloudSync', () => {
-  it('calls stopAutoSync (clears interval and listeners)', () => {
+describe("destroyCloudSync", () => {
+  it("calls stopAutoSync (clears interval and listeners)", () => {
     mockSupabase = createMockSupabase();
-    const clearIntervalSpy = vi.spyOn(globalThis, 'clearInterval');
+    const clearIntervalSpy = vi.spyOn(globalThis, "clearInterval");
 
     startAutoSync();
     destroyCloudSync();
@@ -604,7 +604,7 @@ describe('destroyCloudSync', () => {
     clearIntervalSpy.mockRestore();
   });
 
-  it('aborts in-progress sync operation', async () => {
+  it("aborts in-progress sync operation", async () => {
     mockSupabase = createMockSupabase();
     // Create an in-progress sync by making exportBackup hang
     let resolveExport!: (val: any) => void;
@@ -635,10 +635,10 @@ describe('destroyCloudSync', () => {
     vi.mocked(exportBackup).mockResolvedValue(LOCAL_BACKUP as any);
     mockMaybeSingle.mockResolvedValue({ data: null, error: null });
     const result = await syncWithCloud();
-    expect(result).toEqual({ status: 'pushed' });
+    expect(result).toEqual({ status: "pushed" });
   });
 
-  it('resets all module state so a fresh start is possible', async () => {
+  it("resets all module state so a fresh start is possible", async () => {
     mockSupabase = createMockSupabase();
     mockExportBackup.mockResolvedValue(LOCAL_BACKUP as any);
     mockMaybeSingle.mockResolvedValue({ data: null, error: null });
@@ -648,7 +648,7 @@ describe('destroyCloudSync', () => {
     destroyCloudSync();
 
     // Should be able to start auto-sync again
-    const spy = vi.spyOn(globalThis, 'setInterval');
+    const spy = vi.spyOn(globalThis, "setInterval");
     startAutoSync();
     expect(spy).toHaveBeenCalledTimes(1);
     spy.mockRestore();
@@ -660,6 +660,6 @@ describe('destroyCloudSync', () => {
     mockMaybeSingle.mockResolvedValue({ data: null, error: null });
 
     const result = await syncWithCloud();
-    expect(result).toEqual({ status: 'pushed' });
+    expect(result).toEqual({ status: "pushed" });
   });
 });
