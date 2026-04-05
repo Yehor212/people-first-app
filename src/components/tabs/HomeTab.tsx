@@ -79,10 +79,10 @@ interface HomeTabProps {
 export const HomeTab = memo(function HomeTab({
   currentActiveStreak,
   isRestMode,
-  activateRestMode,
+  activateRestMode: _activateRestMode,
   deactivateRestMode,
-  canActivateRestMode,
-  completedTodayCount,
+  canActivateRestMode: _canActivateRestMode,
+  completedTodayCount: _completedTodayCount,
   currentPrimaryCTA,
   handleAddMood,
   handlePullToRefresh,

@@ -57,7 +57,7 @@ export function OverviewTab({
   habits,
   completedFocusSessions,
   gratitudeEntries,
-  restDays = [],
+  restDays: _restDays = [],
   moodInsights,
   onQuickAction,
   onShowStory,
