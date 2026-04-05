@@ -760,12 +760,10 @@ const hebrewOverrides: Partial<Translations> = {
   tasks: "משימות",
   quests: "קווסטים",
   challenges: "אתגרים",
-  openTasks: "פתח משימות",
   openQuests: "פתח קווסטים",
   openChallenges: "פתח אתגרים",
   challengesCompleted: "הושלמו",
   completeAllFor: "השלם הכל כדי לקבל",
-  addTask: "הוסף משימה",
   noTasksYet: "אין משימות עדיין",
   addFirstTask: "הוסף משימה ראשונה",
 
@@ -1685,24 +1683,13 @@ const hebrewOverrides: Partial<Translations> = {
   restDayCooldown: "יום מנוחה נוצל לאחרונה",
   restDayAvailableIn: "זמין בעוד",
 
-  // Task Momentum
-  taskMomentum: "מומנטום משימות",
-  taskMomentumDesc: "תעדוף משימות ידידותי ל-ADHD",
-  tasksInARow: "משימות ברצף",
+  // Task form (shared)
   taskNamePlaceholder: "שם משימה...",
   durationMinutes: "משך (דקות)",
   interestLevel: "עניין (1-10)",
   markAsUrgent: "סמן כדחוף",
   urgent: "דחוף",
-  topRecommendedTasks: "3 המשימות המומלצות",
-  quickWins: "ניצחונות מהירים (פחות מ-2 דק')",
-  allTasks: "כל המשימות",
   addFirstTaskMessage: "הוסף את המשימה הראשונה כדי להתחיל עם מומנטום משימות!",
-  adhdTaskTips: "טיפים למשימות ADHD",
-  taskTip1: "התחל עם ניצחונות מהירים (2-5 דק')",
-  taskTip2: "בנה מומנטום עם השלמות רצופות",
-  taskTip3: "משימות עם עניין גבוה נותנות יותר דופמין",
-  taskTip4: "דחוף + קצר = שילוב מושלם",
 
   // Random Quests
   randomQuests: "משימות אקראיות",

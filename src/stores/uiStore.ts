@@ -1,16 +1,24 @@
-import { create } from 'zustand';
-import type { Habit } from '@/types';
-import type { FeatureId } from '@/lib/onboardingFlow';
-import type { ChallengeInvite } from '@/lib/friendChallenge';
-import type { UpdateState } from '@/lib/appUpdateManager';
+import { create } from "zustand";
+import type { Habit } from "@/types";
+import type { FeatureId } from "@/lib/onboardingFlow";
+import type { ChallengeInvite } from "@/lib/friendChallenge";
+import type { UpdateState } from "@/lib/appUpdateManager";
 
 export type ModalName =
-  | 'showWeeklyReport' | 'showWidgetSettings' | 'showChallenges'
-  | 'showChallengeModal' | 'showTimeHelper' | 'showTasksPanel'
-  | 'showQuestsPanel' | 'showFriendsPanel' | 'showWelcomeOverlay'
-  | 'showWelcomeBack' | 'showMindfulMoment';
+  | "showWeeklyReport"
+  | "showWidgetSettings"
+  | "showChallenges"
+  | "showChallengeModal"
+  | "showTimeHelper"
+  | "showTasksPanel"
+  | "showAddEvent"
+  | "showQuestsPanel"
+  | "showFriendsPanel"
+  | "showWelcomeOverlay"
+  | "showWelcomeBack"
+  | "showMindfulMoment";
 
-export type CanvasMode = 'idle' | 'split' | 'emotion-flow' | 'goal-flow';
+export type CanvasMode = "idle" | "split" | "emotion-flow" | "goal-flow";
 
 interface UIState {
   // Canvas interaction mode
@@ -70,20 +78,32 @@ interface UIActions {
   setUpdateState: (state: UpdateState | null) => void;
   setChallengeInvite: (invite: ChallengeInvite | undefined) => void;
   setChallengeHabit: (habit: Habit | undefined) => void;
-  setWelcomeBackData: (data: UIState['welcomeBackData']) => void;
+  setWelcomeBackData: (data: UIState["welcomeBackData"]) => void;
   setJournalPromptText: (text: string | undefined) => void;
   setCurrentFocusMinutes: (minutes: number | undefined) => void;
-  setFocusTimerBridge: (state: { endTime: number | null; isRunning: boolean; isBreak: boolean; label: string }) => void;
+  setFocusTimerBridge: (state: {
+    endTime: number | null;
+    isRunning: boolean;
+    isBreak: boolean;
+    label: string;
+  }) => void;
   clearFocusTimerBridge: () => void;
   setCanvasMode: (mode: CanvasMode) => void;
 }
 
 // Priority order for Android back button (matches original Index.tsx logic)
 const MODAL_CLOSE_PRIORITY: ModalName[] = [
-  'showFriendsPanel', 'showTasksPanel', 'showQuestsPanel',
-  'showChallenges', 'showChallengeModal', 'showWidgetSettings',
-  'showWeeklyReport', 'showTimeHelper', 'showMindfulMoment',
-  'showWelcomeBack', 'showWelcomeOverlay',
+  "showFriendsPanel",
+  "showTasksPanel",
+  "showQuestsPanel",
+  "showChallenges",
+  "showChallengeModal",
+  "showWidgetSettings",
+  "showWeeklyReport",
+  "showTimeHelper",
+  "showMindfulMoment",
+  "showWelcomeBack",
+  "showWelcomeOverlay",
 ];
 
 const MODAL_DEFAULTS: Record<ModalName, boolean> = {
@@ -103,7 +123,7 @@ const MODAL_DEFAULTS: Record<ModalName, boolean> = {
 export const useUIStore = create<UIState & UIActions>((set, get) => ({
   ...MODAL_DEFAULTS,
 
-  canvasMode: 'idle' as CanvasMode,
+  canvasMode: "idle" as CanvasMode,
 
   challengeInvite: undefined,
   challengeHabit: undefined,
@@ -116,7 +136,7 @@ export const useUIStore = create<UIState & UIActions>((set, get) => ({
   focusEndTime: null,
   focusIsRunning: false,
   focusIsBreak: false,
-  focusLabel: '',
+  focusLabel: "",
 
   openModal: (name) => set({ [name]: true }),
   closeModal: (name) => set({ [name]: false }),
@@ -141,26 +161,30 @@ export const useUIStore = create<UIState & UIActions>((set, get) => ({
   setWelcomeBackData: (welcomeBackData) => set({ welcomeBackData }),
   setJournalPromptText: (journalPromptText) => set({ journalPromptText }),
   setCurrentFocusMinutes: (currentFocusMinutes) => set({ currentFocusMinutes }),
-  setFocusTimerBridge: ({ endTime, isRunning, isBreak, label }) => set({
-    focusEndTime: endTime,
-    focusIsRunning: isRunning,
-    focusIsBreak: isBreak,
-    focusLabel: label,
-  }),
-  clearFocusTimerBridge: () => set({
-    focusEndTime: null,
-    focusIsRunning: false,
-    focusIsBreak: false,
-    focusLabel: '',
-    currentFocusMinutes: undefined,
-  }),
+  setFocusTimerBridge: ({ endTime, isRunning, isBreak, label }) =>
+    set({
+      focusEndTime: endTime,
+      focusIsRunning: isRunning,
+      focusIsBreak: isBreak,
+      focusLabel: label,
+    }),
+  clearFocusTimerBridge: () =>
+    set({
+      focusEndTime: null,
+      focusIsRunning: false,
+      focusIsBreak: false,
+      focusLabel: "",
+      currentFocusMinutes: undefined,
+    }),
   setCanvasMode: (canvasMode) => set({ canvasMode }),
 }));
 
 // Focus control callbacks — module-level refs (non-reactive, no Zustand re-renders)
 let _focusControls: { toggle: () => void; reset: () => void } | null = null;
 export const getFocusControls = () => _focusControls;
-export const setFocusControls = (c: typeof _focusControls) => { _focusControls = c; };
+export const setFocusControls = (c: typeof _focusControls) => {
+  _focusControls = c;
+};
 
 /**
  * Creates a stable toggle function for a modal: (value: boolean) => void.
@@ -185,7 +209,14 @@ export function getModalToggle(name: ModalName): (value: boolean) => void {
 
 // Derived selector: any modal open (for scroll lock, etc.)
 export const selectAnyModalOpen = (state: UIState): boolean =>
-  state.showWeeklyReport || state.showWidgetSettings || state.showChallenges ||
-  state.showChallengeModal || state.showTimeHelper || state.showTasksPanel ||
-  state.showQuestsPanel || state.showFriendsPanel || state.showWelcomeOverlay ||
-  state.showWelcomeBack || state.showMindfulMoment;
+  state.showWeeklyReport ||
+  state.showWidgetSettings ||
+  state.showChallenges ||
+  state.showChallengeModal ||
+  state.showTimeHelper ||
+  state.showTasksPanel ||
+  state.showQuestsPanel ||
+  state.showFriendsPanel ||
+  state.showWelcomeOverlay ||
+  state.showWelcomeBack ||
+  state.showMindfulMoment;

@@ -687,7 +687,7 @@ function checkRatchet(): void {
   }
 
   // Source file drift
-  const docSourceFiles = 702; // from ARCHITECTURE.md
+  const docSourceFiles = 677; // from ARCHITECTURE.md
   const drift = Math.abs(sourceFiles - docSourceFiles);
   if (drift > 20) {
     console.log(

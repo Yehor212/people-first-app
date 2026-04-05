@@ -501,6 +501,7 @@ export function Index() {
               awardXp={awardXp}
               earnTreats={earnTreats}
               handleMindfulMomentComplete={handleMindfulMomentComplete}
+              handleAddScheduleEvent={handleAddScheduleEvent}
               currentStreak={innerWorld.currentActiveStreak}
               userLevel={userLevel.level}
             />

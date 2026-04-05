@@ -53,7 +53,7 @@ const MiniOrbPreview = memo(function MiniOrbPreview({
 });
 
 const setShowChallenges = getModalToggle("showChallenges");
-const setShowTasksPanel = getModalToggle("showTasksPanel");
+const setShowAddEvent = getModalToggle("showAddEvent");
 const setShowQuestsPanel = getModalToggle("showQuestsPanel");
 
 interface HomeTabProps {
@@ -147,7 +147,7 @@ export const HomeTab = memo(function HomeTab({
           onOpenChallenges={
             isFeatureVisible("challenges") ? () => setShowChallenges(true) : undefined
           }
-          onOpenTasks={isFeatureVisible("tasks") ? () => setShowTasksPanel(true) : undefined}
+          onOpenEvents={() => setShowAddEvent(true)}
           onOpenQuests={isFeatureVisible("quests") ? () => setShowQuestsPanel(true) : undefined}
         />
 

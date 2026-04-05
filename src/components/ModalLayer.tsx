@@ -27,7 +27,7 @@ const MindfulMoment = lazyWithRetry(
 import { SkeletonList, SkeletonSection } from "@/components/ui/skeleton";
 import { PremiumLoader } from "@/components/PremiumLoader";
 import { getChallenges, getBadges, addChallenge } from "@/lib/challengeStorage";
-import { triggerSync } from "@/storage/cloudSync";
+import { getToday } from "@/lib/utils";
 import type { Challenge, Badge } from "@/types";
 
 // Lazy-loaded modal/panel components with retry logic
@@ -35,9 +35,9 @@ const ChallengesPanel = lazyWithRetry(
   () => import("@/components/ChallengesPanel").then((m) => ({ default: m.ChallengesPanel })),
   "ChallengesPanel"
 );
-const TasksPanel = lazyWithRetry(
-  () => import("@/components/TasksPanel").then((m) => ({ default: m.TasksPanel })),
-  "TasksPanel"
+const AddEventModal = lazyWithRetry(
+  () => import("@/components/schedule/AddEventModal").then((m) => ({ default: m.AddEventModal })),
+  "AddEventModal"
 );
 const QuestsPanel = lazyWithRetry(
   () => import("@/components/QuestsPanel").then((m) => ({ default: m.QuestsPanel })),
@@ -62,6 +62,8 @@ interface ModalLayerProps {
   earnTreats: (source: string, amount: number, reason?: string) => { earned: number };
   // Handler from hook
   handleMindfulMomentComplete: () => void;
+  // Schedule event handler (for AddEventModal from HomeTab button)
+  handleAddScheduleEvent: (event: Omit<import("@/types").ScheduleEvent, "id">) => void;
   // Data from hooks that can't be called again in this component
   currentStreak: number;
   userLevel: number;
@@ -71,9 +73,10 @@ export function ModalLayer({
   challenges,
   setChallenges,
   setBadges,
-  awardXp,
-  earnTreats,
+  awardXp: _awardXp,
+  earnTreats: _earnTreats,
   handleMindfulMomentComplete,
+  handleAddScheduleEvent,
   currentStreak,
   userLevel,
 }: ModalLayerProps) {
@@ -89,7 +92,7 @@ export function ModalLayer({
   const challengeHabit = useUIStore((s) => s.challengeHabit);
   const setChallengeHabit = useUIStore((s) => s.setChallengeHabit);
   const showTimeHelper = useUIStore((s) => s.showTimeHelper);
-  const showTasksPanel = useUIStore((s) => s.showTasksPanel);
+  const showAddEvent = useUIStore((s) => s.showAddEvent);
   const showQuestsPanel = useUIStore((s) => s.showQuestsPanel);
   const showFriendsPanel = useUIStore((s) => s.showFriendsPanel);
   const showMindfulMoment = useUIStore((s) => s.showMindfulMoment);
@@ -100,7 +103,7 @@ export function ModalLayer({
   const setShowChallenges = getModalToggle("showChallenges");
   const setShowChallengeModal = getModalToggle("showChallengeModal");
   const setShowTimeHelper = getModalToggle("showTimeHelper");
-  const setShowTasksPanel = getModalToggle("showTasksPanel");
+  const setShowAddEvent = getModalToggle("showAddEvent");
   const setShowQuestsPanel = getModalToggle("showQuestsPanel");
   const setShowFriendsPanel = getModalToggle("showFriendsPanel");
   const setShowMindfulMoment = getModalToggle("showMindfulMoment");
@@ -191,22 +194,17 @@ export function ModalLayer({
         </LazyErrorBoundary>
       )}
 
-      {/* Tasks Panel Modal (Progressive: Day 4) */}
-      {showTasksPanel && isFeatureVisible("tasks") && (
-        <LazyErrorBoundary componentName="Tasks">
-          <Suspense fallback={<SkeletonList />}>
-            <TasksPanel
-              onClose={() => setShowTasksPanel(false)}
-              onAwardXp={(_source, amount) => {
-                // Award XP through gamification (using habit as proxy for task)
-                for (let i = 0; i < Math.ceil(amount / 15); i++) {
-                  awardXp("habit");
-                }
-              }}
-              onEarnTreats={(_source, amount, reason) => {
-                // Use 'habit' as treat source since 'task' is not a valid TreatSource
-                earnTreats("habit", amount, reason);
-                triggerSync(); // Sync inner world treats
+      {/* Add Event Modal (from HomeTab "Подія" button) */}
+      {showAddEvent && (
+        <LazyErrorBoundary componentName="AddEvent">
+          <Suspense fallback={<SkeletonSection />}>
+            <AddEventModal
+              selectedDate={getToday()}
+              allDates={[getToday()]}
+              onClose={() => setShowAddEvent(false)}
+              onAdd={(event) => {
+                handleAddScheduleEvent(event);
+                setShowAddEvent(false);
               }}
             />
           </Suspense>

@@ -1651,33 +1651,20 @@ export interface Translations {
   restDayCooldown: string;
   restDayAvailableIn: string;
 
-  // Task Momentum
-  taskMomentum: string;
-  taskMomentumDesc: string;
-  tasksInARow: string;
+  // Task form (shared)
   taskNamePlaceholder: string;
   durationMinutes: string;
   interestLevel: string;
   markAsUrgent: string;
   urgent: string;
-  addTask: string;
-  topRecommendedTasks: string;
-  quickWins: string;
-  allTasks: string;
   noTasksYet: string;
   addFirstTaskMessage: string;
   addFirstTask: string;
-  adhdTaskTips: string;
-  taskTip1: string;
-  taskTip2: string;
-  taskTip3: string;
-  taskTip4: string;
 
   // Header Quick Actions
   tasks: string;
   quests: string;
   challenges: string;
-  openTasks: string;
   openQuests: string;
   openChallenges: string;
   challengesCompleted: string;
