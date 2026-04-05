@@ -194,76 +194,8 @@ export const JournalModule = memo(function JournalModule({
     return journal.entryDates.has(today);
   }, [journal.entryDates]);
 
-  // Scroll lock when journal is open
-  useScrollLock(moduleState === "open");
-  useModalA11y(moduleState === "open", handleClose);
-
-  // Focus trap for main overlay
+  // --- CALLBACKS (declare BEFORE hooks that reference them — prevents TDZ in production builds) ---
   const overlayRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (moduleState !== "open" || !overlayRef.current) return;
-    return createFocusTrap(overlayRef.current);
-  }, [moduleState]);
-
-  // Load entry count for card preview
-  useEffect(() => {
-    getEntryCount()
-      .then(setEntryCount)
-      .catch((err) => logger.warn("[Journal]", "Entry count failed:", err));
-  }, [journal.totalCount]);
-
-  // Check for unsaved draft (for card badge)
-  useEffect(() => {
-    if (moduleState !== "card") return;
-    import("@/storage/db")
-      .then(({ settingsRepo }) => {
-        settingsRepo
-          .get("journal_draft_new")
-          .then((record) => {
-            setHasDraft(!!record?.value);
-          })
-          .catch((err) => {
-            logger.warn("[Journal]", "Draft check failed:", err);
-            setHasDraft(false);
-          });
-      })
-      .catch((err) => {
-        logger.warn("[Journal]", "DB module load failed:", err);
-        setHasDraft(false);
-      });
-  }, [moduleState, journal.totalCount]);
-
-  // Android back button handling
-  useEffect(() => {
-    if (moduleState !== "open") return;
-    if (resetStep !== "idle")
-      return registerModalCloseCallback(() => {
-        closeResetDialog();
-        return true;
-      });
-    if (showPasswordSettings)
-      return registerModalCloseCallback(() => {
-        setShowPasswordSettings(false);
-        setShowChangePassword(false);
-        return true;
-      });
-    if (journal.view !== "list") {
-      return registerModalCloseCallback(() => {
-        journal.goBack();
-        return true;
-      });
-    }
-    return registerModalCloseCallback(() => {
-      setModuleState("card");
-      security.lock();
-      return true;
-    });
-  }, [moduleState, resetStep, showPasswordSettings, journal, security]);
-
-  // Security touch on interaction
-  useEffect(() => {
-    if (moduleState === "open") security.touch();
-  }, [moduleState, security]);
 
   const handleOpen = () => {
     setModuleState("open");
@@ -421,6 +353,76 @@ export const JournalModule = memo(function JournalModule({
     setResetEmail("");
     setResetError("");
   };
+
+  // --- HOOKS (all callbacks declared above — safe from TDZ in production minified chunks) ---
+  useScrollLock(moduleState === "open");
+  useModalA11y(moduleState === "open", handleClose);
+
+  // Focus trap for main overlay
+  useEffect(() => {
+    if (moduleState !== "open" || !overlayRef.current) return;
+    return createFocusTrap(overlayRef.current);
+  }, [moduleState]);
+
+  // Load entry count for card preview
+  useEffect(() => {
+    getEntryCount()
+      .then(setEntryCount)
+      .catch((err) => logger.warn("[Journal]", "Entry count failed:", err));
+  }, [journal.totalCount]);
+
+  // Check for unsaved draft (for card badge)
+  useEffect(() => {
+    if (moduleState !== "card") return;
+    import("@/storage/db")
+      .then(({ settingsRepo }) => {
+        settingsRepo
+          .get("journal_draft_new")
+          .then((record) => {
+            setHasDraft(!!record?.value);
+          })
+          .catch((err) => {
+            logger.warn("[Journal]", "Draft check failed:", err);
+            setHasDraft(false);
+          });
+      })
+      .catch((err) => {
+        logger.warn("[Journal]", "DB module load failed:", err);
+        setHasDraft(false);
+      });
+  }, [moduleState, journal.totalCount]);
+
+  // Android back button handling
+  useEffect(() => {
+    if (moduleState !== "open") return;
+    if (resetStep !== "idle")
+      return registerModalCloseCallback(() => {
+        closeResetDialog();
+        return true;
+      });
+    if (showPasswordSettings)
+      return registerModalCloseCallback(() => {
+        setShowPasswordSettings(false);
+        setShowChangePassword(false);
+        return true;
+      });
+    if (journal.view !== "list") {
+      return registerModalCloseCallback(() => {
+        journal.goBack();
+        return true;
+      });
+    }
+    return registerModalCloseCallback(() => {
+      setModuleState("card");
+      security.lock();
+      return true;
+    });
+  }, [moduleState, resetStep, showPasswordSettings, journal, security]);
+
+  // Security touch on interaction
+  useEffect(() => {
+    if (moduleState === "open") security.touch();
+  }, [moduleState, security]);
 
   // Auto-close success after 2s
   useEffect(() => {
