@@ -13,8 +13,8 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { zenMotion } from "@/lib/animationUtils";
 
 interface DiaryFormatToolbarProps {
-  editorRef: React.RefObject<HTMLDivElement | null>;
-  scrollContainerRef?: React.RefObject<HTMLDivElement | null>;
+  editorRef: React.RefObject<HTMLDivElement>;
+  scrollContainerRef?: React.RefObject<HTMLDivElement>;
 }
 
 const FORMAT_ACTIONS = [
@@ -50,8 +50,7 @@ export const DiaryFormatToolbar = memo(function DiaryFormatToolbar({
       if (document.queryCommandState("bold")) formats.add("bold");
       if (document.queryCommandState("italic")) formats.add("italic");
       if (document.queryCommandState("underline")) formats.add("underline");
-      if (document.queryCommandState("strikeThrough"))
-        formats.add("strikeThrough");
+      if (document.queryCommandState("strikeThrough")) formats.add("strikeThrough");
     } catch {
       // queryCommandState may fail in some contexts
     }
@@ -90,8 +89,7 @@ export const DiaryFormatToolbar = memo(function DiaryFormatToolbar({
   // Listen for selection changes
   useEffect(() => {
     document.addEventListener("selectionchange", updateSelection);
-    return () =>
-      document.removeEventListener("selectionchange", updateSelection);
+    return () => document.removeEventListener("selectionchange", updateSelection);
   }, [updateSelection]);
 
   // Mobile: also catch touchend (selection may finalize after touch handles released)
@@ -146,10 +144,7 @@ export const DiaryFormatToolbar = memo(function DiaryFormatToolbar({
 
     // Center horizontally on selection
     let left = selectionRect.left + selectionRect.width / 2 - tbW / 2;
-    left = Math.max(
-      VIEWPORT_PADDING,
-      Math.min(left, window.innerWidth - tbW - VIEWPORT_PADDING),
-    );
+    left = Math.max(VIEWPORT_PADDING, Math.min(left, window.innerWidth - tbW - VIEWPORT_PADDING));
 
     return {
       position: "fixed" as const,
@@ -189,11 +184,7 @@ export const DiaryFormatToolbar = memo(function DiaryFormatToolbar({
                 .replace(/&/g, "&amp;")
                 .replace(/</g, "&lt;")
                 .replace(/>/g, "&gt;");
-              document.execCommand(
-                "insertHTML",
-                false,
-                `<code>${escaped}</code>`,
-              );
+              document.execCommand("insertHTML", false, `<code>${escaped}</code>`);
             }
           }
         }
@@ -207,7 +198,7 @@ export const DiaryFormatToolbar = memo(function DiaryFormatToolbar({
       // Re-read position after formatting (selection may shift)
       setTimeout(updateSelection, 0);
     },
-    [editorRef, checkActiveFormats, updateSelection, ts],
+    [editorRef, checkActiveFormats, updateSelection, ts]
   );
 
   return (
@@ -224,11 +215,9 @@ export const DiaryFormatToolbar = memo(function DiaryFormatToolbar({
           onPointerDown={(e) => e.preventDefault()}
         >
           {FORMAT_ACTIONS.map((action) => {
-            const baseCmdName = action.cmd.includes(":")
-              ? action.cmd.split(":")[0]
-              : action.cmd;
+            const baseCmdName = action.cmd.includes(":") ? action.cmd.split(":")[0] : action.cmd;
             const isActive = activeFormats.has(
-              baseCmdName === "formatBlock" ? "formatBlock" : action.cmd,
+              baseCmdName === "formatBlock" ? "formatBlock" : action.cmd
             );
             return (
               <motion.button
@@ -240,7 +229,7 @@ export const DiaryFormatToolbar = memo(function DiaryFormatToolbar({
                   action.style,
                   isActive
                     ? "bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/30"
-                    : "text-muted-foreground hover:bg-white/10 hover:text-foreground",
+                    : "text-muted-foreground hover:bg-white/10 hover:text-foreground"
                 )}
                 aria-label={action.icon}
               >

@@ -27,7 +27,7 @@ interface FloatingMediaLayerProps {
   layout: Record<string, PhotoLayout>;
   onLayoutChange: (layout: Record<string, PhotoLayout>) => void;
   onReturnToGallery: (photoId: string) => void;
-  containerRef: React.RefObject<HTMLDivElement | null>;
+  containerRef: React.RefObject<HTMLDivElement>;
 }
 
 const FloatingPhoto = memo(function FloatingPhoto({
@@ -41,7 +41,7 @@ const FloatingPhoto = memo(function FloatingPhoto({
   position: PhotoLayout;
   onPositionChange: (pos: PhotoLayout) => void;
   onReturn: () => void;
-  containerRef: React.RefObject<HTMLDivElement | null>;
+  containerRef: React.RefObject<HTMLDivElement>;
 }) {
   const resizeStartRef = useRef<{
     startX: number;

@@ -18,7 +18,7 @@ import { useReflectionPrompts } from "@/hooks/useReflectionPrompts";
 import { computeGrowthRings, getGrowthRingsSummary } from "@/lib/growthRings";
 import { motionPresets, zenTap } from "@/lib/animationUtils";
 import { plural } from "@/lib/plural";
-import { valenceToColor } from "@/components/state-of-mind/colorUtils";
+import { ValenceOrb } from "@/components/state-of-mind/ValenceOrb";
 import { isHabitCompletedOnDate } from "@/lib/habits";
 import { getToday } from "@/lib/utils";
 import type { MoodEntry } from "@/types";
@@ -44,7 +44,7 @@ interface HomeTabProps {
   handlePullToRefresh: () => Promise<void>;
 
   // Refs
-  moodRef: React.RefObject<HTMLDivElement | null>;
+  moodRef: React.RefObject<HTMLDivElement>;
 }
 
 export const HomeTab = memo(function HomeTab({
@@ -91,7 +91,7 @@ export const HomeTab = memo(function HomeTab({
     return { rings: data.rings, ...summary };
   }, [habits, moods]);
 
-  const scrollToRef = (ref: React.RefObject<HTMLDivElement | null>) => {
+  const scrollToRef = (ref: React.RefObject<HTMLDivElement>) => {
     ref.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
 
@@ -114,11 +114,8 @@ export const HomeTab = memo(function HomeTab({
         className="w-full rounded-2xl bg-card ring-1 ring-black/5 dark:ring-white/10 shadow-zen-card p-5 text-start"
       >
         <div className="flex items-center gap-4">
-          {/* Mini blob preview */}
-          <div
-            className="w-12 h-12 rounded-full motion-safe:animate-som-blob-breathe"
-            style={{ backgroundColor: valenceToColor(latestValence, 0.6) }}
-          />
+          {/* Mini orb preview — GPU-accelerated shader with idle shimmer */}
+          <ValenceOrb valence={latestValence} size={48} />
           <div className="flex-1 min-w-0">
             <p className="text-base font-semibold text-foreground">{t.somLogFeeling}</p>
             {todayMoods.length > 0 && (

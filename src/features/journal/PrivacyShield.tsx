@@ -10,14 +10,14 @@
  * via CSS classes for performance.
  */
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback } from "react";
 
-const BLURRED_CLASS = 'privacy-blurred';
-const VISIBLE_CLASS = 'privacy-visible';
+const BLURRED_CLASS = "privacy-blurred";
+const VISIBLE_CLASS = "privacy-visible";
 
 interface PrivacyShieldProps {
   isActive: boolean;
-  editorRef: React.RefObject<HTMLDivElement | null>;
+  editorRef: React.RefObject<HTMLDivElement>;
 }
 
 /**
@@ -41,12 +41,12 @@ function getCaretContext(): { node: Text; offset: number } | null {
 function getWordBounds(text: string, offset: number): [number, number] {
   // Expand left to find word start
   let start = offset;
-  while (start > 0 && text[start - 1] !== ' ' && text[start - 1] !== '\n') {
+  while (start > 0 && text[start - 1] !== " " && text[start - 1] !== "\n") {
     start--;
   }
   // Expand right to find word end
   let end = offset;
-  while (end < text.length && text[end] !== ' ' && text[end] !== '\n') {
+  while (end < text.length && text[end] !== " " && text[end] !== "\n") {
     end++;
   }
   return [start, end];
@@ -59,7 +59,7 @@ export function PrivacyShield({ isActive, editorRef }: PrivacyShieldProps) {
   const cleanupVisibleSpan = useCallback(() => {
     const span = prevSpanRef.current;
     if (span && span.parentNode) {
-      const text = span.textContent || '';
+      const text = span.textContent || "";
       const textNode = document.createTextNode(text);
       span.parentNode.replaceChild(textNode, span);
       textNode.parentElement?.normalize();
@@ -82,7 +82,7 @@ export function PrivacyShield({ isActive, editorRef }: PrivacyShieldProps) {
 
     // Only process if caret is inside our editor
     if (!editor.contains(node)) return;
-    const text = node.textContent || '';
+    const text = node.textContent || "";
     const [wordStart, wordEnd] = getWordBounds(text, offset);
 
     if (wordStart === wordEnd) return; // empty
@@ -96,7 +96,7 @@ export function PrivacyShield({ isActive, editorRef }: PrivacyShieldProps) {
     const parent = node.parentNode;
     if (!parent) return;
 
-    const span = document.createElement('span');
+    const span = document.createElement("span");
     span.className = VISIBLE_CLASS;
     span.textContent = word;
 
@@ -151,12 +151,12 @@ export function PrivacyShield({ isActive, editorRef }: PrivacyShieldProps) {
     const onInput = () => update();
     const onSelectionChange = () => update();
 
-    editor?.addEventListener('input', onInput);
-    document.addEventListener('selectionchange', onSelectionChange);
+    editor?.addEventListener("input", onInput);
+    document.addEventListener("selectionchange", onSelectionChange);
 
     return () => {
-      editor?.removeEventListener('input', onInput);
-      document.removeEventListener('selectionchange', onSelectionChange);
+      editor?.removeEventListener("input", onInput);
+      document.removeEventListener("selectionchange", onSelectionChange);
     };
   }, [isActive, editorRef, update]);
 

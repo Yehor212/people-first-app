@@ -15,14 +15,14 @@
  * via CSS classes for 60fps performance (no React re-renders on caret movement).
  */
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback } from "react";
 
 interface ZenFocusModeProps {
   isActive: boolean;
-  editorRef: React.RefObject<HTMLDivElement | null>;
+  editorRef: React.RefObject<HTMLDivElement>;
 }
 
-const ZEN_DIMMED_CLASS = 'zen-dimmed';
+const ZEN_DIMMED_CLASS = "zen-dimmed";
 
 /**
  * Walk up from a node to find the direct child of the editor container.
@@ -51,30 +51,33 @@ export function ZenFocusMode({ isActive, editorRef }: ZenFocusModeProps) {
   const prevActiveRef = useRef(false);
 
   /** Apply dimming to all paragraphs except the active one */
-  const applyDimming = useCallback((activeParagraph: HTMLElement | null) => {
-    const editor = editorRef.current;
-    if (!editor) return;
+  const applyDimming = useCallback(
+    (activeParagraph: HTMLElement | null) => {
+      const editor = editorRef.current;
+      if (!editor) return;
 
-    const children = editor.children;
-    if (children.length <= 1) {
-      // Single paragraph or empty — nothing to dim, clear any existing dimming
+      const children = editor.children;
+      if (children.length <= 1) {
+        // Single paragraph or empty — nothing to dim, clear any existing dimming
+        for (let i = 0; i < children.length; i++) {
+          (children[i] as HTMLElement).classList.remove(ZEN_DIMMED_CLASS);
+        }
+        lastParagraphRef.current = null;
+        return;
+      }
+
       for (let i = 0; i < children.length; i++) {
-        (children[i] as HTMLElement).classList.remove(ZEN_DIMMED_CLASS);
+        const child = children[i] as HTMLElement;
+        if (child === activeParagraph) {
+          child.classList.remove(ZEN_DIMMED_CLASS);
+        } else {
+          child.classList.add(ZEN_DIMMED_CLASS);
+        }
       }
-      lastParagraphRef.current = null;
-      return;
-    }
-
-    for (let i = 0; i < children.length; i++) {
-      const child = children[i] as HTMLElement;
-      if (child === activeParagraph) {
-        child.classList.remove(ZEN_DIMMED_CLASS);
-      } else {
-        child.classList.add(ZEN_DIMMED_CLASS);
-      }
-    }
-    lastParagraphRef.current = activeParagraph;
-  }, [editorRef]);
+      lastParagraphRef.current = activeParagraph;
+    },
+    [editorRef]
+  );
 
   /** Remove dimming from all paragraphs */
   const clearDimming = useCallback(() => {
@@ -154,19 +157,19 @@ export function ZenFocusMode({ isActive, editorRef }: ZenFocusModeProps) {
       const node = sel.getRangeAt(0).startContainer;
       const paragraph = findParentParagraph(node, editor);
       if (paragraph) {
-        paragraph.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        paragraph.scrollIntoView({ behavior: "smooth", block: "center" });
       }
     };
 
-    document.addEventListener('selectionchange', onSelectionChange);
-    editor?.addEventListener('input', onInput);
+    document.addEventListener("selectionchange", onSelectionChange);
+    editor?.addEventListener("input", onInput);
 
     // Initial apply (delayed to let focus settle)
     requestAnimationFrame(() => updateFocus());
 
     return () => {
-      document.removeEventListener('selectionchange', onSelectionChange);
-      editor?.removeEventListener('input', onInput);
+      document.removeEventListener("selectionchange", onSelectionChange);
+      editor?.removeEventListener("input", onInput);
       clearDimming();
     };
   }, [isActive, editorRef, updateFocus, clearDimming]);
@@ -193,9 +196,9 @@ export function ZenFocusMode({ isActive, editorRef }: ZenFocusModeProps) {
       }, 500);
     };
 
-    scrollContainer.addEventListener('scroll', onScroll, { passive: true });
+    scrollContainer.addEventListener("scroll", onScroll, { passive: true });
     return () => {
-      scrollContainer.removeEventListener('scroll', onScroll);
+      scrollContainer.removeEventListener("scroll", onScroll);
       clearTimeout(scrollTimeoutRef.current);
     };
   }, [isActive, editorRef, clearDimming]);
