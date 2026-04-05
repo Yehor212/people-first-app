@@ -147,14 +147,13 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
         onKeyDown={(e) => {
           e.stopPropagation();
         }}
-        onTouchEnd={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="sticky top-0 bg-card border-b border-border p-6 z-10">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2 zen-gradient rounded-xl">
-                <Sparkles className="w-6 h-6 text-white" />
+                <Sparkles className="w-6 h-6 text-white" aria-hidden="true" />
               </div>
               <div>
                 <h2 id="dopamine-settings-title" className="text-xl font-bold">
@@ -180,7 +179,7 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
           {/* Intensity Presets */}
           <div>
             <h3 className="font-semibold mb-3 flex items-center gap-2">
-              <Zap className="w-4 h-4" />
+              <Zap className="w-4 h-4" aria-hidden="true" />
               {t.dopamineIntensity || "Intensity Level"}
             </h3>
             <div className="grid grid-cols-3 gap-2">
@@ -252,7 +251,7 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
           {/* Individual Settings */}
           <div className="space-y-4">
             <h3 className="font-semibold mb-3 flex items-center gap-2">
-              <Award className="w-4 h-4" />
+              <Award className="w-4 h-4" aria-hidden="true" />
               {t.dopamineCustomize || "Fine-tune Settings"}
             </h3>
 
@@ -325,6 +324,7 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
         <div className="sticky bottom-0 bg-card border-t border-border p-4">
           <button
             onClick={onClose}
+            aria-label={t.dopamineSave || "Save & Close"}
             className="w-full py-3 zen-gradient text-white font-medium rounded-xl hover:opacity-90 transition-opacity"
           >
             {t.dopamineSave || "Save & Close"}

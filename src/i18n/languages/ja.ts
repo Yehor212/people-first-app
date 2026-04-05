@@ -2196,6 +2196,7 @@ export const ja: Translations = {
   selectColor: "色を選択",
   selectCompanion: "選択",
   selectIcon: "アイコンを選択",
+  selectMonth: "月を選択",
   selectMood: "気分を選択してください",
   send: "送信",
   sending: "送信中...",
@@ -2707,4 +2708,5 @@ export const ja: Translations = {
   // SEO meta tags
   metaTitle: "ZenFlow — デイリーウェルネス",
   metaDescription: "習慣、気分、生産性トラッカー。マインドフルな生活への旅を始めましょう。",
+  selectMonth: "月を選択",
 };

@@ -2252,6 +2252,7 @@ export const de: Translations = {
   selectColor: "Farbe auswählen",
   selectCompanion: "Auswählen",
   selectIcon: "Symbol auswählen",
+  selectMonth: "Monat auswählen",
   selectMood: "Wähle deine Stimmung",
   send: "Senden",
   sending: "Wird gesendet...",

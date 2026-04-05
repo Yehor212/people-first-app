@@ -125,7 +125,9 @@
       "mcp__ruflo__wasm_agent_list",
       "mcp__ruflo__ruvllm_status",
       "mcp__ruflo__analyze_diff-classify",
-      "mcp__ruflo__analyze_diff-stats"
+      "mcp__ruflo__analyze_diff-stats",
+      "mcp__ruflo__session_list",
+      "mcp__ruflo__guidance_quickref"
     ],
     "deny": [
       "Bash(rm -rf)",

@@ -134,9 +134,9 @@ export const AnimatedCalendar = memo(function AnimatedCalendar({
       <div className="flex items-center gap-3 mb-5">
         <div className="relative">
           <div className="p-2.5 bg-gradient-to-br from-violet-500 to-purple-500 rounded-xl shadow-lg shadow-violet-500/20">
-            <Calendar className="w-5 h-5 text-white" />
+            <Calendar className="w-5 h-5 text-white" aria-hidden="true" />
           </div>
-          <div className="absolute -top-1 -end-1 w-2 h-2 bg-violet-400 rounded-full animate-pulse" />
+          <div className="absolute -top-1 -end-1 w-2 h-2 bg-violet-400 rounded-full motion-safe:animate-pulse" />
         </div>
         <h3 className="text-lg font-bold text-foreground">{title}</h3>
       </div>
@@ -169,13 +169,14 @@ export const AnimatedCalendar = memo(function AnimatedCalendar({
           </button>
           <button
             onClick={() => setShowMonthSelector(!showMonthSelector)}
-            className="px-4 py-2 rounded-xl bg-gradient-to-r from-primary/10 to-accent/10 text-sm font-medium hover:from-primary/20 hover:to-accent/20 transition-all flex items-center gap-2"
+            aria-label={calT.selectMonth || "Select month"}
+            className="px-4 py-2 min-h-[44px] rounded-xl bg-gradient-to-r from-primary/10 to-accent/10 text-sm font-medium hover:from-primary/20 hover:to-accent/20 transition-all flex items-center gap-2"
           >
             {monthNames[selectedMonth]} {selectedYear}
             {showMonthSelector ? (
-              <ChevronUp className="w-4 h-4" />
+              <ChevronUp className="w-4 h-4" aria-hidden="true" />
             ) : (
-              <ChevronDown className="w-4 h-4" />
+              <ChevronDown className="w-4 h-4" aria-hidden="true" />
             )}
           </button>
           <button
@@ -190,7 +191,7 @@ export const AnimatedCalendar = memo(function AnimatedCalendar({
 
       {/* Month Selector Grid */}
       {showMonthSelector && (
-        <div className="grid grid-cols-4 gap-2 mb-5 animate-fade-in">
+        <div className="grid grid-cols-4 gap-2 mb-5 motion-safe:animate-fade-in">
           {monthNames.map((month, index) => (
             <button
               key={month}
@@ -200,7 +201,7 @@ export const AnimatedCalendar = memo(function AnimatedCalendar({
                 setShowMonthSelector(false);
               }}
               className={cn(
-                "px-2 py-2.5 rounded-xl text-xs font-medium transition-all",
+                "px-2 py-2.5 min-h-[44px] rounded-xl text-xs font-medium transition-all",
                 selectedMonth === index
                   ? "bg-gradient-to-r from-primary to-accent text-white shadow-lg"
                   : "bg-secondary text-muted-foreground hover:bg-primary/10"
@@ -217,7 +218,7 @@ export const AnimatedCalendar = memo(function AnimatedCalendar({
         {stats.map((stat, index) => (
           <div
             key={stat.label}
-            className="text-center p-3 bg-secondary/50 rounded-xl hover:bg-secondary transition-colors animate-fade-in"
+            className="text-center p-3 bg-secondary/50 rounded-xl hover:bg-secondary transition-colors motion-safe:animate-fade-in"
             style={{ animationDelay: `${index * 100}ms` }}
           >
             <p
@@ -265,7 +266,7 @@ export const AnimatedCalendar = memo(function AnimatedCalendar({
               aria-pressed={isSelected}
               onClick={() => onDateSelect(cell.dateKey)}
               className={cn(
-                "w-full aspect-square rounded-xl text-xs font-semibold flex items-center justify-center transition-all duration-200",
+                "w-full aspect-square min-h-[44px] min-w-[44px] rounded-xl text-xs font-semibold flex items-center justify-center transition-all duration-200",
                 "hover:scale-105 hover:shadow-lg",
                 hasEmotion || hasLegacyMood
                   ? `bg-gradient-to-br ${gradient} text-white shadow-md`
@@ -291,7 +292,7 @@ export const AnimatedCalendar = memo(function AnimatedCalendar({
       {/* Selected Day Details */}
       <div className="mt-5 p-4 bg-gradient-to-br from-secondary/80 to-secondary rounded-xl">
         {selectedDate && selectedDayData ? (
-          <div className="space-y-3 animate-fade-in">
+          <div className="space-y-3 motion-safe:animate-fade-in">
             <div className="flex items-center justify-between">
               <p className="font-bold text-foreground">{selectedDate}</p>
               {selectedDayData.mood && (

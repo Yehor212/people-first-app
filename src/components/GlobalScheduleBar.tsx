@@ -3,7 +3,7 @@
  * Shows current time and upcoming/current event
  */
 
-import { memo, useState, useEffect, useMemo } from 'react';
+import { memo, useState, useEffect, useMemo } from "react";
 import { Clock, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -14,7 +14,10 @@ interface GlobalScheduleBarProps {
   onTap?: () => void;
 }
 
-export const GlobalScheduleBar = memo(function GlobalScheduleBar({ events, onTap }: GlobalScheduleBarProps) {
+export const GlobalScheduleBar = memo(function GlobalScheduleBar({
+  events,
+  onTap,
+}: GlobalScheduleBarProps) {
   const { t } = useLanguage();
   const [currentTime, setCurrentTime] = useState(new Date());
 
@@ -86,7 +89,7 @@ export const GlobalScheduleBar = memo(function GlobalScheduleBar({ events, onTap
         "w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl transition-all",
         "bg-card/80 backdrop-blur-sm border border-border/50",
         "hover:bg-card hover:border-primary/30",
-        "active:scale-[0.98]",
+        "active:scale-[0.98]"
       )}
     >
       {/* Clock icon with time */}
@@ -94,14 +97,12 @@ export const GlobalScheduleBar = memo(function GlobalScheduleBar({ events, onTap
         <div
           className={cn(
             "w-8 h-8 rounded-xl flex items-center justify-center",
-            currentEvent ? "bg-primary/20" : "bg-muted",
+            currentEvent ? "bg-primary/20" : "bg-muted"
           )}
         >
           <Clock
-            className={cn(
-              "w-4 h-4",
-              currentEvent ? "text-primary" : "text-muted-foreground",
-            )}
+            aria-hidden="true"
+            className={cn("w-4 h-4", currentEvent ? "text-primary" : "text-muted-foreground")}
           />
         </div>
         <span className="text-lg font-bold text-foreground">
@@ -114,15 +115,13 @@ export const GlobalScheduleBar = memo(function GlobalScheduleBar({ events, onTap
         {currentEvent ? (
           <div className="flex items-center gap-2">
             <div
-              className="w-2 h-2 rounded-full animate-pulse"
+              className="w-2 h-2 rounded-full motion-safe:animate-pulse"
               style={{ backgroundColor: currentEvent.color }}
             />
             <span className="text-sm font-medium truncate">
               {currentEvent.emoji} {currentEvent.title}
             </span>
-            <span className="text-xs text-muted-foreground">
-              {t.timeNow || "now"}
-            </span>
+            <span className="text-xs text-muted-foreground">{t.timeNow || "now"}</span>
           </div>
         ) : nextEvent ? (
           <div className="flex items-center gap-2">

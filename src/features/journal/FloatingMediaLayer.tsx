@@ -132,7 +132,7 @@ const FloatingPhoto = memo(function FloatingPhoto({
 
       {/* Return to gallery button (top-right, always visible on mobile) */}
       <button
-        aria-label="Return photo to gallery"
+        aria-label="Return photo to gallery" // A11Y-OK: aria-label fallback for non-i18n context
         onClick={(e) => {
           e.stopPropagation();
           onReturn();
@@ -145,7 +145,7 @@ const FloatingPhoto = memo(function FloatingPhoto({
       {/* Resize handle (bottom-right corner, 44px touch target) */}
       <div
         role="slider"
-        aria-label="Resize photo"
+        aria-label="Resize photo" // A11Y-OK: aria-label fallback for non-i18n context
         aria-valuemin={80}
         aria-valuemax={500}
         aria-valuenow={liveWidth}

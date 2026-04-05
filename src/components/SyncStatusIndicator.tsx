@@ -140,7 +140,7 @@ export function SyncStatusIndicator() {
     <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-card border border-border zen-shadow-sm">
       {/* Icon */}
       <div className={`p-1 rounded-md ${bgColor}`}>
-        <Icon className={`w-4 h-4 ${color} ${animate ? "animate-spin" : ""}`} />
+        <Icon className={`w-4 h-4 ${color} ${animate ? "motion-safe:animate-spin" : ""}`} />
       </div>
 
       {/* Status text */}
@@ -224,7 +224,7 @@ export function SyncStatusIndicatorCompact() {
   if (isProcessing) {
     return (
       <div className="relative" aria-label={`${t.syncSyncing || "Syncing"} ${pendingCount}`}>
-        <Loader className="w-5 h-5 text-blue-500 animate-spin" />
+        <Loader className="w-5 h-5 text-blue-500 motion-safe:animate-spin" />
         {pendingCount > 0 && (
           <span
             className="absolute -top-1 -end-1 bg-blue-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center font-bold"
@@ -241,7 +241,7 @@ export function SyncStatusIndicatorCompact() {
     case "syncing":
       return (
         <Loader
-          className="w-5 h-5 text-blue-500 animate-spin"
+          className="w-5 h-5 text-blue-500 motion-safe:animate-spin"
           aria-label={t.syncSyncing || "Syncing"}
         />
       );

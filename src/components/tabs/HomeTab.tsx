@@ -1,4 +1,4 @@
-import { memo, useMemo, useState } from 'react';
+import { memo, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Header } from "@/components/Header";
 import { PullToRefresh } from "@/components/PullToRefresh";
@@ -110,6 +110,7 @@ export const HomeTab = memo(function HomeTab({
         {...motionPresets.slideUp}
         whileTap={zenTap.card}
         onClick={() => setShowStateOfMind(true)}
+        aria-label={t.somLogFeeling}
         className="w-full rounded-2xl bg-card ring-1 ring-black/5 dark:ring-white/10 shadow-zen-card p-5 text-start"
       >
         <div className="flex items-center gap-4">

@@ -2192,6 +2192,7 @@ const hebrewOverrides: Partial<Translations> = {
   selectColor: "בחר צבע",
   selectCompanion: "בחר",
   selectIcon: "בחר אייקון",
+  selectMonth: "בחר חודש",
   selectMood: "בחר את מצב הרוח שלך",
   send: "שלח",
   sending: "שולח...",
@@ -2699,6 +2700,7 @@ const hebrewOverrides: Partial<Translations> = {
   // SEO meta tags
   metaTitle: "ZenFlow — בריאות יומית",
   metaDescription: "מעקב הרגלים, מצב רוח ופרודוקטיביות. התחל את המסע שלך לחיים מודעים.",
+  selectMonth: "בחר חודש",
 };
 
 export const he: Translations = { ...en, ...hebrewOverrides };

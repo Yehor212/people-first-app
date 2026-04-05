@@ -2224,6 +2224,7 @@ export interface Translations {
   selectColor: string;
   selectCompanion: string;
   selectIcon: string;
+  selectMonth: string;
   selectMood: string;
   send: string;
   sending: string;

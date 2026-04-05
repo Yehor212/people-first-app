@@ -442,6 +442,7 @@ const arabicOverrides: Partial<Translations> = {
   calendarSelectDay: "اختر يوم",
   calendarPrevMonth: "الشهر السابق",
   calendarNextMonth: "الشهر التالي",
+  selectMonth: "اختر الشهر",
   moodEntries: "إدخالات المزاج",
   focusMinutes: "دقائق التركيز",
   achievements: "الإنجازات",
@@ -2620,6 +2621,7 @@ const arabicOverrides: Partial<Translations> = {
   // SEO meta tags
   metaTitle: "ZenFlow — العافية اليومية",
   metaDescription: "متتبع العادات والمزاج والإنتاجية. ابدأ رحلتك نحو حياة واعية.",
+  selectMonth: "اختر الشهر",
 };
 
 export const ar: Translations = { ...en, ...arabicOverrides };

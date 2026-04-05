@@ -2220,6 +2220,7 @@ export const uk: Translations = {
   selectColor: "Оберіть колір",
   selectCompanion: "Обрати",
   selectIcon: "Оберіть іконку",
+  selectMonth: "Обрати місяць",
   selectMood: "Оберіть настрій",
   send: "Надіслати",
   sending: "Надсилання...",
