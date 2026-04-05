@@ -114,9 +114,9 @@ export const HomeTab = memo(function HomeTab({
         className="w-full rounded-2xl bg-card ring-1 ring-black/5 dark:ring-white/10 shadow-zen-card p-5 text-start"
       >
         <div className="flex items-center gap-4">
-          {/* Mini orb preview — render at 120px for shader detail, crop to 48px circle */}
-          <div className="w-12 h-12 flex-shrink-0 rounded-full overflow-hidden relative">
-            <div className="absolute w-[120px] h-[120px] -top-[36px] -left-[36px]">
+          {/* Mini orb — full 120px shader scaled to 48px via GPU-composited CSS transform (SSAA quality) */}
+          <div className="w-12 h-12 flex-shrink-0 relative">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 scale-[0.4] w-[120px] h-[120px]">
               <ValenceOrb valence={latestValence} size={120} />
             </div>
           </div>
