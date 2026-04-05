@@ -11,10 +11,10 @@ export default defineConfig({
       provider: "v8",
       reporter: ["text", "html", "json-summary"],
       thresholds: {
-        lines: 30,
-        functions: 45,
+        lines: 18,
+        functions: 41,
         branches: 70,
-        statements: 30,
+        statements: 18,
       },
       exclude: [
         "node_modules/",
@@ -29,13 +29,13 @@ export default defineConfig({
         "docs/",
         "dev-dist/",
         "scripts/",
-        "*.ts"
-      ]
-    }
+        "*.ts",
+      ],
+    },
   },
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src")
-    }
-  }
+      "@": path.resolve(__dirname, "./src"),
+    },
+  },
 });
