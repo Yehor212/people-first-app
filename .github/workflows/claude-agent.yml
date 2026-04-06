@@ -1,0 +1,57 @@
+name: Claude Autonomous Agent
+
+on:
+  schedule:
+    # Weekdays at 9:00 UTC (12:00 Kyiv time)
+    - cron: '0 9 * * 1-5'
+  workflow_dispatch:
+    inputs:
+      task:
+        description: 'Custom task for Claude agent'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  daily-health-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Claude Agent - Daily Health Check
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            You are a daily health check agent for ZenFlow app.
+
+            Run these checks and create a GitHub issue with results:
+
+            1. Run `npx tsc --noEmit` — report any type errors
+            2. Run `npx vitest run` — report test results (pass/fail count)
+            3. Run `npx eslint src/ --max-warnings 0` — report lint warnings
+            4. Run `npm outdated` — list outdated dependencies
+            5. Check if any `sync_events` in Supabase have errors (if accessible)
+
+            ${{ github.event.inputs.task }}
+
+            Create a GitHub issue titled "Daily Health Check - [date]" with:
+            - Summary of all check results
+            - Any failures or warnings found
+            - Suggested fixes for any issues
+
+            Only create the issue if there are actual problems to report.
+            If everything is clean, just log "All checks passed" and exit.
+          max_turns: 10
