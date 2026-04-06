@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { useGamificationStore, useUserDataStore } from "@/stores";
 import { getToday, generateId } from "@/lib/utils";
 import { triggerSync } from "@/storage/cloudSync";
+import { syncMood } from "@/storage/realtimeSync";
 import { haptics } from "@/lib/haptics";
 import { logger } from "@/lib/logger";
 import { analytics } from "@/lib/analytics";
@@ -31,6 +32,7 @@ export function useMoodHandlers({ updateChallengeProgress }: UseMoodHandlersPara
     analytics.moodTracked(entry.mood);
     updateChallengeProgress();
     triggerSync();
+    void syncMood(stamped).catch((err) => logger.warn("[Mood] Granular sync failed:", err));
   }, 800);
 
   const handleQuickMood = useCallback(
@@ -55,6 +57,7 @@ export function useMoodHandlers({ updateChallengeProgress }: UseMoodHandlersPara
       analytics.moodTracked(mood);
 
       triggerSync();
+      void syncMood(entry).catch((err) => logger.warn("[Mood] Granular sync failed:", err));
       logger.log("Quick mood logged from notification:", mood);
     },
     [rewardUser, setMoods]
@@ -62,18 +65,22 @@ export function useMoodHandlers({ updateChallengeProgress }: UseMoodHandlersPara
 
   const handleUpdateMood = useCallback(
     (entryId: string, newMood: MoodEntry["mood"], note?: string) => {
+      let updatedEntry: MoodEntry | undefined;
       setMoods((prev) =>
         prev.map((entry) => {
           if (entry.id !== entryId) return entry;
-          return {
+          updatedEntry = {
             ...entry,
             mood: newMood,
             note: note ?? entry.note,
             updatedAt: Date.now(),
           };
+          return updatedEntry;
         })
       );
       triggerSync();
+      if (updatedEntry)
+        void syncMood(updatedEntry).catch((err) => logger.warn("[Mood] Update sync failed:", err));
     },
     [setMoods]
   );

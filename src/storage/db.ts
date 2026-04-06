@@ -1,9 +1,9 @@
-import Dexie, { Table } from 'dexie';
-import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
-import type { JournalEntry, JournalPhoto, JournalAudio } from '@/features/journal/types';
-import { logger } from '@/lib/logger';
-import { SK } from '@/lib/storageKeys';
-import { storageRemove } from '@/lib/safeJson';
+import Dexie, { Table } from "dexie";
+import { MoodEntry, Habit, FocusSession, GratitudeEntry } from "@/types";
+import type { JournalEntry, JournalPhoto, JournalAudio } from "@/features/journal/types";
+import { logger } from "@/lib/logger";
+import { SK } from "@/lib/storageKeys";
+import { storageRemove } from "@/lib/safeJson";
 
 /**
  * Offline queue action stored in IndexedDB
@@ -20,6 +20,16 @@ export interface OfflineQueueItem {
   lastError?: string;
 }
 
+/** Dead-letter item for actions that exhausted retries */
+export interface DeadLetterItem {
+  id: string;
+  type: string;
+  entityId: string;
+  payload: unknown;
+  lastError: string;
+  failedAt: number;
+}
+
 // Определяем схему базы данных
 export class ZenFlowDB extends Dexie {
   moods!: Table<MoodEntry, string>;
@@ -28,93 +38,108 @@ export class ZenFlowDB extends Dexie {
   gratitudeEntries!: Table<GratitudeEntry, string>;
   settings!: Table<{ key: string; value: unknown }, string>;
   offlineQueue!: Table<OfflineQueueItem, string>;
+  deadLetterQueue!: Table<DeadLetterItem, string>;
   journalEntries!: Table<JournalEntry, string>;
   journalPhotos!: Table<JournalPhoto, string>;
   journalAudio!: Table<JournalAudio, string>;
 
   constructor() {
-    super('ZenFlowDB');
+    super("ZenFlowDB");
 
     // Version 1: Initial schema
     this.version(1).stores({
-      moods: 'id, timestamp',
-      habits: 'id, createdAt',
-      focusSessions: 'id, startTime',
-      gratitudeEntries: 'id, timestamp',
-      settings: 'key',
+      moods: "id, timestamp",
+      habits: "id, createdAt",
+      focusSessions: "id, startTime",
+      gratitudeEntries: "id, timestamp",
+      settings: "key",
     });
 
     // Version 2: Add indexes for performance (no data migration needed)
     this.version(2).stores({
-      moods: 'id, timestamp, date',
-      habits: 'id, createdAt, type',
-      focusSessions: 'id, startTime, date',
-      gratitudeEntries: 'id, timestamp, date',
-      settings: 'key',
+      moods: "id, timestamp, date",
+      habits: "id, createdAt, type",
+      focusSessions: "id, startTime, date",
+      gratitudeEntries: "id, timestamp, date",
+      settings: "key",
     });
 
     // Version 3: Add offline queue table for P0 fix
     // This moves offline queue from localStorage to IndexedDB
     // for better quota handling and reliability
     this.version(3).stores({
-      moods: 'id, timestamp, date',
-      habits: 'id, createdAt, type',
-      focusSessions: 'id, startTime, date',
-      gratitudeEntries: 'id, timestamp, date',
-      settings: 'key',
-      offlineQueue: 'id, type, entityId, timestamp',
+      moods: "id, timestamp, date",
+      habits: "id, createdAt, type",
+      focusSessions: "id, startTime, date",
+      gratitudeEntries: "id, timestamp, date",
+      settings: "key",
+      offlineQueue: "id, type, entityId, timestamp",
     });
 
     // Version 4: Add journal/diary tables
     this.version(4).stores({
-      moods: 'id, timestamp, date',
-      habits: 'id, createdAt, type',
-      focusSessions: 'id, startTime, date',
-      gratitudeEntries: 'id, timestamp, date',
-      settings: 'key',
-      offlineQueue: 'id, type, entityId, timestamp',
-      journalEntries: 'id, date, createdAt, updatedAt',
-      journalPhotos: 'id, entryId, createdAt',
+      moods: "id, timestamp, date",
+      habits: "id, createdAt, type",
+      focusSessions: "id, startTime, date",
+      gratitudeEntries: "id, timestamp, date",
+      settings: "key",
+      offlineQueue: "id, type, entityId, timestamp",
+      journalEntries: "id, date, createdAt, updatedAt",
+      journalPhotos: "id, entryId, createdAt",
     });
 
     // Version 5: Add journal audio recordings table
     this.version(5).stores({
-      moods: 'id, timestamp, date',
-      habits: 'id, createdAt, type',
-      focusSessions: 'id, startTime, date',
-      gratitudeEntries: 'id, timestamp, date',
-      settings: 'key',
-      offlineQueue: 'id, type, entityId, timestamp',
-      journalEntries: 'id, date, createdAt, updatedAt',
-      journalPhotos: 'id, entryId, createdAt',
-      journalAudio: 'id, entryId, createdAt',
+      moods: "id, timestamp, date",
+      habits: "id, createdAt, type",
+      focusSessions: "id, startTime, date",
+      gratitudeEntries: "id, timestamp, date",
+      settings: "key",
+      offlineQueue: "id, type, entityId, timestamp",
+      journalEntries: "id, date, createdAt, updatedAt",
+      journalPhotos: "id, entryId, createdAt",
+      journalAudio: "id, entryId, createdAt",
     });
 
     // Version 6: State of Mind — add valence index for mood entries
     // Supports multiple entries per day via valence-based mood tracking
     this.version(6).stores({
-      moods: 'id, timestamp, date, valence',
-      habits: 'id, createdAt, type',
-      focusSessions: 'id, startTime, date',
-      gratitudeEntries: 'id, timestamp, date',
-      settings: 'key',
-      offlineQueue: 'id, type, entityId, timestamp',
-      journalEntries: 'id, date, createdAt, updatedAt',
-      journalPhotos: 'id, entryId, createdAt',
-      journalAudio: 'id, entryId, createdAt',
+      moods: "id, timestamp, date, valence",
+      habits: "id, createdAt, type",
+      focusSessions: "id, startTime, date",
+      gratitudeEntries: "id, timestamp, date",
+      settings: "key",
+      offlineQueue: "id, type, entityId, timestamp",
+      journalEntries: "id, date, createdAt, updatedAt",
+      journalPhotos: "id, entryId, createdAt",
+      journalAudio: "id, entryId, createdAt",
     });
 
     // Version 7: Add updatedAt index for cross-device timestamp merge
     this.version(7).stores({
-      moods: 'id, timestamp, date, valence, updatedAt',
-      habits: 'id, createdAt, type',
-      focusSessions: 'id, startTime, date, updatedAt',
-      gratitudeEntries: 'id, timestamp, date, updatedAt',
-      settings: 'key',
-      offlineQueue: 'id, type, entityId, timestamp',
-      journalEntries: 'id, date, createdAt, updatedAt',
-      journalPhotos: 'id, entryId, createdAt',
-      journalAudio: 'id, entryId, createdAt',
+      moods: "id, timestamp, date, valence, updatedAt",
+      habits: "id, createdAt, type",
+      focusSessions: "id, startTime, date, updatedAt",
+      gratitudeEntries: "id, timestamp, date, updatedAt",
+      settings: "key",
+      offlineQueue: "id, type, entityId, timestamp",
+      journalEntries: "id, date, createdAt, updatedAt",
+      journalPhotos: "id, entryId, createdAt",
+      journalAudio: "id, entryId, createdAt",
+    });
+
+    // Version 8: Add dead-letter queue for exhausted offline actions (Phase 2)
+    this.version(8).stores({
+      moods: "id, timestamp, date, valence, updatedAt",
+      habits: "id, createdAt, type",
+      focusSessions: "id, startTime, date, updatedAt",
+      gratitudeEntries: "id, timestamp, date, updatedAt",
+      settings: "key",
+      offlineQueue: "id, type, entityId, timestamp",
+      deadLetterQueue: "id, type, entityId, failedAt",
+      journalEntries: "id, date, createdAt, updatedAt",
+      journalPhotos: "id, entryId, createdAt",
+      journalAudio: "id, entryId, createdAt",
     });
   }
 }
@@ -136,12 +161,19 @@ export const journalPhotosRepo = db.journalPhotos;
  * zenflow-google-auth-checked, zenflow-notification-permission-checked, zenflow-privacy
  */
 const USER_SETTINGS_KEYS = [
-  'zenflow-moods', 'zenflow-habits', 'zenflow-focus', 'zenflow-gratitude',
-  'zenflow-username', 'zenflow-username-custom',
-  'zenflow-reminders', 'zenflow-schedule-events',
-  'zenflow-special-badges', 'zenflow-last-weekly-report',
-  'zenflow-micro-reflections', 'zenflow-canvas-goals',
-  'gamification',
+  "zenflow-moods",
+  "zenflow-habits",
+  "zenflow-focus",
+  "zenflow-gratitude",
+  "zenflow-username",
+  "zenflow-username-custom",
+  "zenflow-reminders",
+  "zenflow-schedule-events",
+  "zenflow-special-badges",
+  "zenflow-last-weekly-report",
+  "zenflow-micro-reflections",
+  "zenflow-canvas-goals",
+  "gamification",
 ];
 
 /**
@@ -153,10 +185,19 @@ const USER_SETTINGS_KEYS = [
  */
 export const clearLocalUserData = async (): Promise<void> => {
   try {
-    await db.transaction('rw',
-      [db.moods, db.habits, db.focusSessions, db.gratitudeEntries,
-      db.journalEntries, db.journalPhotos, db.journalAudio,
-      db.offlineQueue, db.settings],
+    await db.transaction(
+      "rw",
+      [
+        db.moods,
+        db.habits,
+        db.focusSessions,
+        db.gratitudeEntries,
+        db.journalEntries,
+        db.journalPhotos,
+        db.journalAudio,
+        db.offlineQueue,
+        db.settings,
+      ],
       async () => {
         await db.moods.clear();
         await db.habits.clear();
@@ -171,30 +212,30 @@ export const clearLocalUserData = async (): Promise<void> => {
       }
     );
   } catch (error) {
-    logger.error('[DB] Failed to clear IndexedDB tables:', error);
+    logger.error("[DB] Failed to clear IndexedDB tables:", error);
     // Fallback: delete and recreate the entire database
     try {
       await db.delete();
       await db.open();
     } catch (fallbackError) {
-      logger.error('[DB] Database recreation failed:', fallbackError);
+      logger.error("[DB] Database recreation failed:", fallbackError);
     }
   }
 
   // Clear user-data localStorage keys (must match IndexedDB keys above)
   const allUserKeys = [
     ...USER_SETTINGS_KEYS,
-    SK.CLOUD_SYNC_ENABLED,  // Cloud sync preference (per-account)
-    SK.OFFLINE_QUEUE,        // Offline queue localStorage fallback
+    SK.CLOUD_SYNC_ENABLED, // Cloud sync preference (per-account)
+    SK.OFFLINE_QUEUE, // Offline queue localStorage fallback
   ];
-  allUserKeys.forEach(key => storageRemove(key));
+  allUserKeys.forEach((key) => storageRemove(key));
 };
 
 // Helper to check database health with timeout
 export const checkDatabaseHealth = async (): Promise<boolean> => {
   // First check if IndexedDB is available at all
-  if (typeof indexedDB === 'undefined') {
-    logger.warn('[DB] IndexedDB not available - using localStorage fallback');
+  if (typeof indexedDB === "undefined") {
+    logger.warn("[DB] IndexedDB not available - using localStorage fallback");
     return true; // Allow app to continue with localStorage
   }
 
@@ -203,7 +244,7 @@ export const checkDatabaseHealth = async (): Promise<boolean> => {
     // Increased from 3000ms to 5000ms to handle slow devices and cold starts
     const timeoutPromise = new Promise<boolean>((resolve) => {
       setTimeout(() => {
-        logger.warn('[DB] Database health check timed out - continuing anyway');
+        logger.warn("[DB] Database health check timed out - continuing anyway");
         resolve(true); // Don't block app on timeout
       }, 5000);
     });
@@ -217,16 +258,18 @@ export const checkDatabaseHealth = async (): Promise<boolean> => {
         return true;
       } catch (openError) {
         // If opening fails, try to delete and recreate
-        logger.warn('[DB] Database open failed, attempting recovery:', openError);
+        logger.warn("[DB] Database open failed, attempting recovery:", openError);
 
         // Emit event to notify UI about database recovery
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('zenflow:database-recovery-needed', {
-            detail: {
-              error: openError instanceof Error ? openError.message : 'Database open failed',
-              timestamp: Date.now(),
-            }
-          }));
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("zenflow:database-recovery-needed", {
+              detail: {
+                error: openError instanceof Error ? openError.message : "Database open failed",
+                timestamp: Date.now(),
+              },
+            })
+          );
         }
 
         try {
@@ -234,15 +277,17 @@ export const checkDatabaseHealth = async (): Promise<boolean> => {
           await db.open();
           return true;
         } catch (recoveryError) {
-          logger.error('[DB] Database recovery failed:', recoveryError);
+          logger.error("[DB] Database recovery failed:", recoveryError);
           // Emit critical error event
-          if (typeof window !== 'undefined') {
-            window.dispatchEvent(new CustomEvent('zenflow:database-recovery-failed', {
-              detail: {
-                error: recoveryError instanceof Error ? recoveryError.message : 'Recovery failed',
-                timestamp: Date.now(),
-              }
-            }));
+          if (typeof window !== "undefined") {
+            window.dispatchEvent(
+              new CustomEvent("zenflow:database-recovery-failed", {
+                detail: {
+                  error: recoveryError instanceof Error ? recoveryError.message : "Recovery failed",
+                  timestamp: Date.now(),
+                },
+              })
+            );
           }
           // Still return true to allow app to work with localStorage
           return true;
@@ -252,7 +297,7 @@ export const checkDatabaseHealth = async (): Promise<boolean> => {
 
     return await Promise.race([healthCheckPromise, timeoutPromise]);
   } catch (error) {
-    logger.error('[DB] Database health check failed:', error);
+    logger.error("[DB] Database health check failed:", error);
     // Return true to allow app to continue - it will use localStorage fallback
     return true;
   }

@@ -120,6 +120,8 @@ class OfflineQueue {
    * Handle messages from Service Worker (e.g., Background Sync trigger)
    */
   private handleSWMessage(event: MessageEvent): void {
+    // S5: Origin validation — reject messages from different origins or empty origin
+    if (!event.origin || event.origin !== location.origin) return;
     if (event.data?.type === "SYNC_REQUESTED") {
       logger.log("[OfflineQueue] Background Sync triggered by SW");
       void this.processQueue();
@@ -180,7 +182,10 @@ class OfflineQueue {
     }
 
     // Create a new lock promise for this operation
-    let releaseLock: () => void;
+    // INTENTIONAL: noop initializer satisfies TS strict mode — Promise executor assigns synchronously
+    let releaseLock: () => void = () => {
+      /* replaced by Promise resolve */
+    };
     this.enqueueLock = new Promise<void>((resolve) => {
       releaseLock = resolve;
     });

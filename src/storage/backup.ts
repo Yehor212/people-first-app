@@ -17,8 +17,11 @@ import {
   getDeletedJournalEntryIds,
   mergeDeletedJournalEntryIds,
   getDeletedMoodIds,
+  mergeDeletedMoodIds,
   getDeletedFocusSessionIds,
+  mergeDeletedFocusSessionIds,
   getDeletedGratitudeIds,
+  mergeDeletedGratitudeIds,
 } from "@/storage/deletionTracker";
 
 export type ImportMode = "merge" | "replace";
@@ -74,6 +77,12 @@ export interface BackupPayloadV3 {
   deletedHabitIds?: string[];
   /** Journal entry IDs deleted by this device */
   deletedJournalEntryIds?: string[];
+  /** Mood IDs deleted by this device */
+  deletedMoodIds?: string[];
+  /** Focus session IDs deleted by this device */
+  deletedFocusSessionIds?: string[];
+  /** Gratitude entry IDs deleted by this device */
+  deletedGratitudeIds?: string[];
 }
 
 export type BackupPayload = BackupPayloadV1 | BackupPayloadV2 | BackupPayloadV3;
@@ -122,6 +131,9 @@ export const exportBackup = async (): Promise<BackupPayloadV3> => {
   // Get deleted IDs to include in backup (cross-device deletion propagation)
   const deletedHabitIds = [...(await getDeletedHabitIds())];
   const deletedJournalEntryIds = [...(await getDeletedJournalEntryIds())];
+  const deletedMoodIds = [...(await getDeletedMoodIds())];
+  const deletedFocusSessionIds = [...(await getDeletedFocusSessionIds())];
+  const deletedGratitudeIds = [...(await getDeletedGratitudeIds())];
 
   // Use Dexie transaction for atomic point-in-time snapshot
   // This ensures all data is read consistently without interleaved writes
@@ -190,6 +202,9 @@ export const exportBackup = async (): Promise<BackupPayloadV3> => {
     data,
     deletedHabitIds: deletedHabitIds.length > 0 ? deletedHabitIds : undefined,
     deletedJournalEntryIds: deletedJournalEntryIds.length > 0 ? deletedJournalEntryIds : undefined,
+    deletedMoodIds: deletedMoodIds.length > 0 ? deletedMoodIds : undefined,
+    deletedFocusSessionIds: deletedFocusSessionIds.length > 0 ? deletedFocusSessionIds : undefined,
+    deletedGratitudeIds: deletedGratitudeIds.length > 0 ? deletedGratitudeIds : undefined,
   };
 };
 
@@ -546,17 +561,48 @@ export const importBackup = async (
 
   // Handle cross-device deletion propagation atomically:
   // Wrap in transaction so tracker update + delete happen together or not at all (C3 fix)
-  const remoteDeletedIds = (payload as BackupPayloadV3).deletedHabitIds;
-  const remoteDeletedJournalIds = (payload as BackupPayloadV3).deletedJournalEntryIds;
+  // Validate deletion ID arrays to prevent mass deletion via crafted backup payloads
+  const v3 = payload as BackupPayloadV3;
+  const isValidIdArray = (v: unknown): v is string[] =>
+    Array.isArray(v) &&
+    v.length <= 10000 &&
+    v.every((s) => typeof s === "string" && s.length > 0 && s.length <= 100);
+  const remoteDeletedHabitIds = isValidIdArray(v3.deletedHabitIds) ? v3.deletedHabitIds : undefined;
+  const remoteDeletedJournalIds = isValidIdArray(v3.deletedJournalEntryIds)
+    ? v3.deletedJournalEntryIds
+    : undefined;
+  const remoteDeletedMoodIds = isValidIdArray(v3.deletedMoodIds) ? v3.deletedMoodIds : undefined;
+  const remoteDeletedFocusIds = isValidIdArray(v3.deletedFocusSessionIds)
+    ? v3.deletedFocusSessionIds
+    : undefined;
+  const remoteDeletedGratitudeIds = isValidIdArray(v3.deletedGratitudeIds)
+    ? v3.deletedGratitudeIds
+    : undefined;
 
-  if (remoteDeletedIds?.length || remoteDeletedJournalIds?.length) {
+  const hasRemoteDeletions =
+    remoteDeletedHabitIds?.length ||
+    remoteDeletedJournalIds?.length ||
+    remoteDeletedMoodIds?.length ||
+    remoteDeletedFocusIds?.length ||
+    remoteDeletedGratitudeIds?.length;
+
+  if (hasRemoteDeletions) {
     await db.transaction(
       "rw",
-      [db.habits, db.journalEntries, db.journalPhotos, db.journalAudio, db.settings],
+      [
+        db.moods,
+        db.habits,
+        db.focusSessions,
+        db.gratitudeEntries,
+        db.journalEntries,
+        db.journalPhotos,
+        db.journalAudio,
+        db.settings,
+      ],
       async () => {
-        if (remoteDeletedIds?.length) {
-          await mergeDeletedHabitIds(remoteDeletedIds);
-          await db.habits.bulkDelete(remoteDeletedIds);
+        if (remoteDeletedHabitIds?.length) {
+          await mergeDeletedHabitIds(remoteDeletedHabitIds);
+          await db.habits.bulkDelete(remoteDeletedHabitIds);
         }
         if (remoteDeletedJournalIds?.length) {
           await mergeDeletedJournalEntryIds(remoteDeletedJournalIds);
@@ -567,6 +613,18 @@ export const importBackup = async (
             const audios = await db.journalAudio.where("entryId").equals(entryId).primaryKeys();
             if (audios.length) await db.journalAudio.bulkDelete(audios);
           }
+        }
+        if (remoteDeletedMoodIds?.length) {
+          await mergeDeletedMoodIds(remoteDeletedMoodIds);
+          await db.moods.bulkDelete(remoteDeletedMoodIds);
+        }
+        if (remoteDeletedFocusIds?.length) {
+          await mergeDeletedFocusSessionIds(remoteDeletedFocusIds);
+          await db.focusSessions.bulkDelete(remoteDeletedFocusIds);
+        }
+        if (remoteDeletedGratitudeIds?.length) {
+          await mergeDeletedGratitudeIds(remoteDeletedGratitudeIds);
+          await db.gratitudeEntries.bulkDelete(remoteDeletedGratitudeIds);
         }
       }
     );

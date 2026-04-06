@@ -1,9 +1,12 @@
-import { useGamificationStore, useUserDataStore } from '@/stores';
-import { triggerXpPopup } from '@/components/XpPopup';
-import { haptics } from '@/lib/haptics';
-import { updateAllQuestsProgress } from '@/lib/randomQuests';
-import { useThrottledCallback } from '@/hooks/useThrottledCallback';
-import type { GratitudeEntry } from '@/types';
+import { useGamificationStore, useUserDataStore } from "@/stores";
+import { triggerXpPopup } from "@/components/XpPopup";
+import { haptics } from "@/lib/haptics";
+import { logger } from "@/lib/logger";
+import { triggerSync } from "@/storage/cloudSync";
+import { syncGratitude } from "@/storage/realtimeSync";
+import { updateAllQuestsProgress } from "@/lib/randomQuests";
+import { useThrottledCallback } from "@/hooks/useThrottledCallback";
+import type { GratitudeEntry } from "@/types";
 
 interface UseGratitudeHandlersParams {
   earnTreats: (source: string, amount: number, reason?: string) => { earned: number };
@@ -21,13 +24,17 @@ export function useGratitudeHandlers({
   feedCreatures,
   updateChallengeProgress,
 }: UseGratitudeHandlersParams) {
-  const setGratitudeEntries = useUserDataStore(s => s.setGratitudeEntries);
-  const rewardUser = useGamificationStore(s => s.rewardUser);
+  const setGratitudeEntries = useUserDataStore((s) => s.setGratitudeEntries);
+  const rewardUser = useGamificationStore((s) => s.rewardUser);
 
   const handleAddGratitude = useThrottledCallback((entry: GratitudeEntry) => {
     const stamped = { ...entry, updatedAt: entry.updatedAt || Date.now() };
-    setGratitudeEntries(prev => [...prev, stamped]);
-    rewardUser('gratitude', { treats: 8, treatReason: 'Gratitude entry', haptic: haptics.gratitudeSaved });
+    setGratitudeEntries((prev) => [...prev, stamped]);
+    rewardUser("gratitude", {
+      treats: 8,
+      treatReason: "Gratitude entry",
+      haptic: haptics.gratitudeSaved,
+    });
 
     // Gratitude-specific: attract creatures
     if (Math.random() < 0.3) attractCreature();
@@ -35,12 +42,17 @@ export function useGratitudeHandlers({
 
     updateChallengeProgress();
 
-    const completedQuests = updateAllQuestsProgress({ type: 'gratitude_added', value: 1 });
-    completedQuests.forEach(quest => {
+    const completedQuests = updateAllQuestsProgress({ type: "gratitude_added", value: 1 });
+    completedQuests.forEach((quest) => {
       const xpReward = quest.reward.xp;
-      earnTreats('gratitude', xpReward, `Quest: ${quest.title}`);
-      triggerXpPopup(xpReward, 'bonus');
+      earnTreats("gratitude", xpReward, `Quest: ${quest.title}`);
+      triggerXpPopup(xpReward, "bonus");
     });
+
+    triggerSync();
+    void syncGratitude(stamped).catch((err) =>
+      logger.warn("[Gratitude] Granular sync failed:", err)
+    );
   }, 800);
 
   return { handleAddGratitude };

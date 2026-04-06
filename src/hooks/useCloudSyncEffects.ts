@@ -244,6 +244,8 @@ export function useCloudSyncEffects({
             case "gratitude":
               void pullGratitudeFromCloud();
               break;
+            case "habits":
+            case "journal":
             default:
               void silentSync();
               break;
@@ -258,7 +260,7 @@ export function useCloudSyncEffects({
 
     return () => {
       unsubRemote?.();
-      destroySyncBroadcast();
+      destroySyncBroadcast(true);
     };
   }, []);
 

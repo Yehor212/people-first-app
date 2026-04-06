@@ -127,7 +127,13 @@
       "mcp__ruflo__analyze_diff-classify",
       "mcp__ruflo__analyze_diff-stats",
       "mcp__ruflo__session_list",
-      "mcp__ruflo__guidance_quickref"
+      "mcp__ruflo__guidance_quickref",
+      "WebFetch(domain:yehor-shamraiev.sentry.io)",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__query-docs",
+      "Bash(del /c/project/people-first-app/.ide-ack-pending)",
+      "Bash(git -C /c/project/people-first-app checkout -- src/lib/offlineQueueHandlers.ts)",
+      "Bash(git -C /c/project/people-first-app diff --stat HEAD)"
     ],
     "deny": [
       "Bash(rm -rf)",

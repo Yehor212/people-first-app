@@ -20,6 +20,7 @@ import { supabase } from "@/lib/supabaseClient";
 // Sync operation types
 export type SyncOperationType =
   | "backup" // Full backup sync (cloudSync)
+  | "delta" // Delta sync via sync_events (Phase 2)
   | "reminders" // Reminder settings sync
   | "challenges" // Challenges sync
   | "tasks" // Tasks sync

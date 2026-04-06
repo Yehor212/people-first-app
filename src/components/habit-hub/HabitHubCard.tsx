@@ -232,7 +232,7 @@ export const HabitHubCard = memo(function HabitHubCard({
           <div className="flex items-center justify-between">
             {streak > 0 ? (
               <div className="flex items-center gap-1">
-                <AnimatedFire intensity={Math.min(streak / 7, 3)} size="sm" />
+                <AnimatedFire intensity={Math.min(1 + streak / 7, 3)} size="sm" />
                 <span className="text-xs font-medium text-orange-400/70 tabular-nums">
                   {streak}
                   {t.dStreak}

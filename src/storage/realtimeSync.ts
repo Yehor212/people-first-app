@@ -8,11 +8,15 @@
 import { logger } from "@/lib/logger";
 import { triggerDataRefresh } from "@/hooks/useIndexedDB";
 import { broadcastChange } from "@/lib/syncBroadcast";
+import { writeEvent, getPersistentDeviceId } from "@/storage/eventSync";
 import {
   getDeletedMoodIds,
+  trackDeletedMoodId,
   getDeletedFocusSessionIds,
   getDeletedGratitudeIds,
+  trackDeletedGratitudeId,
   getDeletedHabitIds,
+  trackDeletedHabitId,
   getDeletedJournalEntryIds,
 } from "@/storage/deletionTracker";
 import { addCategorizedBreadcrumb } from "@/lib/sentry";
@@ -185,6 +189,11 @@ export const syncMood = async (mood: MoodEntry): Promise<void> => {
     });
     logger.log("[Sync] Mood synced:", mood.id);
     broadcastChange("moods");
+    void getPersistentDeviceId()
+      .then((did) =>
+        writeEvent("mood", mood.id, "upsert", mood as unknown as Record<string, unknown>, did)
+      )
+      .catch((err) => logger.warn("[Sync] writeEvent failed:", err));
   } catch (error) {
     // Handle AbortError separately - it's intentional, don't retry/queue
     if (isAbortError(error)) {
@@ -243,7 +252,12 @@ export const deleteMoodFromCloud = async (moodId: string): Promise<void> => {
     const { error } = await supabase.from("moods").delete().eq("id", moodId).eq("user_id", userId);
 
     if (error) throw error;
-    logger.log("[Sync] Mood deleted:", moodId);
+    await trackDeletedMoodId(moodId);
+    broadcastChange("moods");
+    logger.log("[Sync] Mood deleted + tracked:", moodId);
+    void getPersistentDeviceId()
+      .then((did) => writeEvent("mood", moodId, "delete", null, did))
+      .catch((err) => logger.warn("[Sync] writeEvent failed:", err));
   } catch (error) {
     // Handle AbortError separately
     if (isAbortError(error)) {
@@ -382,6 +396,11 @@ export const syncHabit = async (habit: Habit): Promise<void> => {
 
     logger.log("[Sync] Habit synced:", habit.id);
     broadcastChange("habits");
+    void getPersistentDeviceId()
+      .then((did) =>
+        writeEvent("habit", habit.id, "upsert", habit as unknown as Record<string, unknown>, did)
+      )
+      .catch((err) => logger.warn("[Sync] writeEvent failed:", err));
   } catch (error) {
     // Handle AbortError separately
     if (isAbortError(error)) {
@@ -420,7 +439,12 @@ export const deleteHabitFromCloud = async (habitId: string): Promise<void> => {
 
     if (error) throw error;
 
-    logger.log("[Sync] Habit deleted:", habitId);
+    await trackDeletedHabitId(habitId);
+    broadcastChange("habits");
+    logger.log("[Sync] Habit deleted + tracked:", habitId);
+    void getPersistentDeviceId()
+      .then((did) => writeEvent("habit", habitId, "delete", null, did))
+      .catch((err) => logger.warn("[Sync] writeEvent failed:", err));
   } catch (error) {
     // Handle AbortError separately
     if (isAbortError(error)) {
@@ -484,12 +508,26 @@ export const syncHabitCompletion = async (
       const { error } = await supabase
         .from("habit_completions")
         .delete()
+        .eq("user_id", userId)
         .eq("habit_id", habitId)
         .eq("date", date);
 
       if (error) throw error;
     }
     logger.log("[Sync] Habit completion synced:", habitId, date, completed);
+    void getPersistentDeviceId()
+      .then((did) =>
+        writeEvent(
+          "habit_completion",
+          `${habitId}_${date}`,
+          completed ? "upsert" : "delete",
+          completed
+            ? ({ habitId, date, count, duration } as unknown as Record<string, unknown>)
+            : null,
+          did
+        )
+      )
+      .catch((err) => logger.warn("[Sync] writeEvent failed:", err));
   } catch (error) {
     // Handle AbortError separately
     if (isAbortError(error)) {
@@ -549,6 +587,17 @@ export const syncFocusSession = async (session: FocusSession): Promise<void> => 
     if (error) throw error;
     logger.log("[Sync] Focus session synced:", session.id);
     broadcastChange("focus");
+    void getPersistentDeviceId()
+      .then((did) =>
+        writeEvent(
+          "focus",
+          session.id,
+          "upsert",
+          session as unknown as Record<string, unknown>,
+          did
+        )
+      )
+      .catch((err) => logger.warn("[Sync] writeEvent failed:", err));
   } catch (error) {
     // Handle AbortError separately
     if (isAbortError(error)) {
@@ -605,6 +654,17 @@ export const syncGratitude = async (entry: GratitudeEntry): Promise<void> => {
     if (error) throw error;
     logger.log("[Sync] Gratitude synced:", entry.id);
     broadcastChange("gratitude");
+    void getPersistentDeviceId()
+      .then((did) =>
+        writeEvent(
+          "gratitude",
+          entry.id,
+          "upsert",
+          entry as unknown as Record<string, unknown>,
+          did
+        )
+      )
+      .catch((err) => logger.warn("[Sync] writeEvent failed:", err));
   } catch (error) {
     // Handle AbortError separately
     if (isAbortError(error)) {
@@ -642,7 +702,12 @@ export const deleteGratitudeFromCloud = async (entryId: string): Promise<void> =
       .eq("user_id", userId);
 
     if (error) throw error;
-    logger.log("[Sync] Gratitude deleted:", entryId);
+    await trackDeletedGratitudeId(entryId);
+    broadcastChange("gratitude");
+    logger.log("[Sync] Gratitude deleted + tracked:", entryId);
+    void getPersistentDeviceId()
+      .then((did) => writeEvent("gratitude", entryId, "delete", null, did))
+      .catch((err) => logger.warn("[Sync] writeEvent failed:", err));
   } catch (error) {
     // Handle AbortError separately
     if (isAbortError(error)) {
@@ -812,7 +877,7 @@ export const pullFromCloud = async (): Promise<boolean> => {
         entriesByHabit.set(c.habit_id, habitEntries);
       }
       // If count > 1, it's numerical (value × 1000), otherwise YES_MANUAL (2)
-      habitEntries[c.date] = { value: c.count > 1 ? c.count * 1000 : 2 };
+      habitEntries[c.date] = { value: (c.count ?? 1) > 1 ? (c.count ?? 1) * 1000 : 2 };
     }
 
     const remindersByHabit = new Map<
@@ -826,9 +891,9 @@ export const pullFromCloud = async (): Promise<boolean> => {
         remindersByHabit.set(r.habit_id, reminders);
       }
       reminders.push({
-        enabled: r.enabled,
+        enabled: r.enabled ?? true,
         time: r.time,
-        days: r.days,
+        days: r.days ?? [],
       });
     }
 
@@ -860,7 +925,7 @@ export const pullFromCloud = async (): Promise<boolean> => {
           icon: h.icon,
           color,
           entries,
-          createdAt: new Date(h.created_at).getTime(),
+          createdAt: h.created_at ? new Date(h.created_at).getTime() : Date.now(),
           templateId: h.template_id || undefined,
           habitType,
           reminders,
@@ -1394,6 +1459,12 @@ export const syncJournalEntry = async (entry: JournalEntry): Promise<void> => {
 
     if (error) throw error;
     logger.log("[Sync] Journal entry synced:", entry.id);
+    broadcastChange("journal");
+    void getPersistentDeviceId()
+      .then((did) =>
+        writeEvent("journal", entry.id, "upsert", entry as unknown as Record<string, unknown>, did)
+      )
+      .catch((err) => logger.warn("[Sync] writeEvent failed:", err));
 
     // Fire-and-forget: generate vector embedding for semantic search
     generateEmbeddings([entry.id]).catch((err) =>
@@ -1442,6 +1513,10 @@ export const deleteJournalEntryFromCloud = async (entryId: string): Promise<void
     if (audioRes.error) logger.warn("[Sync] Journal audio delete failed:", audioRes.error);
 
     logger.log("[Sync] Journal entry deleted from cloud:", entryId);
+    broadcastChange("journal");
+    void getPersistentDeviceId()
+      .then((did) => writeEvent("journal", entryId, "delete", null, did))
+      .catch((err) => logger.warn("[Sync] writeEvent failed:", err));
   } catch (error) {
     if (isAbortError(error)) {
       logger.warn("[Sync] Journal entry delete aborted:", entryId);
@@ -1585,7 +1660,7 @@ export const pullMoodsFromCloud = async (): Promise<boolean> => {
       date: m.date,
       timestamp: m.timestamp,
       tags: m.tags as string[] | undefined,
-      emotion: (m.emotion as MoodEntry["emotion"]) || undefined,
+      emotion: (m.emotion as unknown as MoodEntry["emotion"]) || undefined,
       valence: m.valence ?? undefined,
       logType: (m.log_type as MoodEntry["logType"]) ?? undefined,
       emotionTags: (m.emotion_tags as string[]) ?? undefined,
@@ -1637,7 +1712,7 @@ export const pullFocusFromCloud = async (): Promise<boolean> => {
       label: f.label || undefined,
       status: f.status as "completed" | "aborted" | undefined,
       reflection: f.reflection ?? undefined,
-      updatedAt: f.updated_at ? new Date(f.updated_at).getTime() : f.completed_at,
+      updatedAt: (f as any).updated_at ? new Date((f as any).updated_at).getTime() : f.completed_at,
     }));
     const deletedFocusIds = await getDeletedFocusSessionIds();
     await db.transaction("rw", db.focusSessions, async () => {
@@ -1679,7 +1754,7 @@ export const pullGratitudeFromCloud = async (): Promise<boolean> => {
       text: g.text,
       date: g.date,
       timestamp: g.timestamp,
-      updatedAt: g.updated_at ? new Date(g.updated_at).getTime() : g.timestamp,
+      updatedAt: (g as any).updated_at ? new Date((g as any).updated_at).getTime() : g.timestamp,
     }));
     const deletedGratIds = await getDeletedGratitudeIds();
     await db.transaction("rw", db.gratitudeEntries, async () => {

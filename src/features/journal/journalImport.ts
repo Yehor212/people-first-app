@@ -6,6 +6,7 @@
  */
 
 import { db } from "@/storage/db";
+import { triggerSync } from "@/storage/cloudSync";
 import { sanitizeObject } from "@/lib/validation";
 import type { JournalEntry, JournalPhoto, JournalAudio } from "./types";
 
@@ -157,6 +158,9 @@ export async function importJournalBackup(
       }
     }
   }
+
+  // Trigger backup sync so imported entries reach the cloud
+  if (result.imported > 0) triggerSync();
 
   return result;
 }
