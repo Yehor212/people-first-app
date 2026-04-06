@@ -54,4 +54,4 @@ jobs:
 
             Only create the issue if there are actual problems to report.
             If everything is clean, just log "All checks passed" and exit.
-          max_turns: 10
+          claude_args: '--max-turns 10'
