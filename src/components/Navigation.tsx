@@ -54,7 +54,7 @@ export const Navigation = memo(function Navigation({
     <>
       {/* Desktop sidebar — always visible at lg (1024px+), unaffected by keyboard */}
       <aside
-        className="hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 lg:left-0 lg:w-64 lg:border-r lg:border-border lg:bg-card/95 lg:backdrop-blur-lg lg:z-50"
+        className="hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 lg:left-0 lg:w-64 lg:border-e lg:border-border lg:bg-card/95 lg:backdrop-blur-lg lg:z-50"
         role="navigation"
         aria-label={t.mainNavigation || "Main navigation"}
         aria-orientation="vertical"
