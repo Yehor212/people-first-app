@@ -28,7 +28,8 @@ import { SkeletonList, SkeletonSection } from "@/components/ui/skeleton";
 import { PremiumLoader } from "@/components/PremiumLoader";
 import { getChallenges, getBadges, addChallenge } from "@/lib/challengeStorage";
 import { getToday } from "@/lib/utils";
-import type { Challenge, Badge } from "@/types";
+import type { Challenge, Badge, TreatSource } from "@/types";
+import type { XpAction } from "@/lib/gamification";
 
 // Lazy-loaded modal/panel components with retry logic
 const ChallengesPanel = lazyWithRetry(
@@ -58,8 +59,12 @@ interface ModalLayerProps {
   setChallenges: Dispatch<SetStateAction<Challenge[]>>;
   setBadges: Dispatch<SetStateAction<Badge[]>>;
   // Gamification hooks (from useGamification/useInnerWorld - can't be called again)
-  awardXp: (activity: string) => void;
-  earnTreats: (source: string, amount: number, reason?: string) => { earned: number };
+  awardXp: (action: XpAction) => void;
+  earnTreats: (
+    source: TreatSource,
+    baseAmount: number,
+    description?: string
+  ) => { earned: number; bonus: number; multiplier: number; newBalance: number };
   // Handler from hook
   handleMindfulMomentComplete: () => void;
   // Schedule event handler (for AddEventModal from HomeTab button)

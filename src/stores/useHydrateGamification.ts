@@ -2,16 +2,28 @@ import { useEffect, useRef } from "react";
 import { triggerXpPopup } from "@/components/XpPopup";
 import { triggerSync } from "@/storage/cloudSync";
 import { useGamificationStore } from "./gamificationStore";
+import type { XpAction } from "@/lib/gamification";
+import type { TreatSource, MoodType } from "@/types";
+
+/** Activities that can plant seeds or water plants in the inner world */
+export type PlantActivity =
+  | "mood"
+  | "habit"
+  | "focus"
+  | "gratitude"
+  | "journal"
+  | "breathing"
+  | "rest";
 
 export interface GamificationHookRefs {
-  awardXp: (activity: string) => void;
+  awardXp: (action: XpAction) => void;
   earnTreats: (
-    source: string,
-    amount: number,
-    reason?: string,
-  ) => { earned: number };
-  plantSeed: (activity: string, extra?: string) => unknown;
-  waterPlants: (activity: string) => void;
+    source: TreatSource,
+    baseAmount: number,
+    description?: string
+  ) => { earned: number; bonus: number; multiplier: number; newBalance: number };
+  plantSeed: (sourceActivity: PlantActivity, mood?: MoodType) => null;
+  waterPlants: (sourceActivity: PlantActivity) => void;
 }
 
 /**
@@ -29,8 +41,7 @@ export function useHydrateGamification(hooks: GamificationHookRefs): void {
   useEffect(() => {
     useGamificationStore.getState()._registerHooks({
       awardXp: (activity) => ref.current.awardXp(activity),
-      earnTreats: (source, amount, reason) =>
-        ref.current.earnTreats(source, amount, reason),
+      earnTreats: (source, amount, reason) => ref.current.earnTreats(source, amount, reason),
       plantSeed: (activity, extra) => ref.current.plantSeed(activity, extra),
       waterPlants: (activity) => ref.current.waterPlants(activity),
       showPopup: (amount, type) => triggerXpPopup(amount, type),

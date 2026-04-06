@@ -13,7 +13,7 @@ const initialState = useGamificationStore.getState();
 function createMockHooks() {
   return {
     awardXp: vi.fn(),
-    earnTreats: vi.fn().mockReturnValue({ earned: 5 }),
+    earnTreats: vi.fn().mockReturnValue({ earned: 5, bonus: 0, multiplier: 1, newBalance: 5 }),
     plantSeed: vi.fn(),
     waterPlants: vi.fn(),
     showPopup: vi.fn(),
@@ -67,23 +67,23 @@ describe("_registerHooks", () => {
 // =========================================================================
 describe("rewardUser without hooks", () => {
   it("logs a warning when hooks are not registered", () => {
-    useGamificationStore.getState().rewardUser("test-activity", defaultOptions());
+    useGamificationStore.getState().rewardUser("mood" as const, defaultOptions());
     expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining("before hooks registered"));
   });
 
   it("returns { treatsEarned: 0 }", () => {
-    const result = useGamificationStore.getState().rewardUser("test-activity", defaultOptions());
+    const result = useGamificationStore.getState().rewardUser("mood" as const, defaultOptions());
     expect(result).toEqual({ treatsEarned: 0 });
   });
 
   it("does not call showPopup without hooks registered", () => {
-    useGamificationStore.getState().rewardUser("test-activity", defaultOptions());
+    useGamificationStore.getState().rewardUser("mood" as const, defaultOptions());
     // No hooks registered = early return, showPopup never called
     expect(logger.warn).toHaveBeenCalled();
   });
 
   it("does not call sync without hooks registered", () => {
-    useGamificationStore.getState().rewardUser("test-activity", defaultOptions());
+    useGamificationStore.getState().rewardUser("mood" as const, defaultOptions());
     // No hooks registered = early return, sync never called
     expect(logger.warn).toHaveBeenCalled();
   });
@@ -127,8 +127,8 @@ describe("rewardUser with hooks (full flow)", () => {
   it("calls plantSeed with activity and seedExtra", () => {
     const hooks = createMockHooks();
     useGamificationStore.getState()._registerHooks(hooks);
-    useGamificationStore.getState().rewardUser("mood", defaultOptions({ seedExtra: "bonus" }));
-    expect(hooks.plantSeed).toHaveBeenCalledWith("mood", "bonus");
+    useGamificationStore.getState().rewardUser("mood", defaultOptions({ seedExtra: "great" }));
+    expect(hooks.plantSeed).toHaveBeenCalledWith("mood", "great");
   });
 
   it("calls waterPlants with activity", () => {

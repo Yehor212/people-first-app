@@ -2,7 +2,12 @@ import type { Config } from "tailwindcss";
 
 export default {
   darkMode: ["class"],
-  content: ["./pages/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}"],
+  content: [
+    "./pages/**/*.{ts,tsx}",
+    "./components/**/*.{ts,tsx}",
+    "./app/**/*.{ts,tsx}",
+    "./src/**/*.{ts,tsx}",
+  ],
   prefix: "",
   theme: {
     container: {
@@ -15,20 +20,45 @@ export default {
     extend: {
       fontFamily: {
         sans: [
-          '-apple-system', 'BlinkMacSystemFont', '"SF Pro Text"',
-          '"SF Pro Display"', 'system-ui', 'Roboto',
-          '"Helvetica Neue"', 'Arial', 'sans-serif',
+          "-apple-system",
+          "BlinkMacSystemFont",
+          '"SF Pro Text"',
+          '"SF Pro Display"',
+          "system-ui",
+          "Roboto",
+          '"Helvetica Neue"',
+          "Arial",
+          "sans-serif",
         ],
       },
       fontSize: {
-        'xs':   ['0.8125rem', { lineHeight: '1.125rem' }],   /* 13px — Apple Caption */
-        'sm':   ['0.9375rem', { lineHeight: '1.375rem' }],   /* 15px — Apple Secondary */
-        'base': ['1.0625rem', { lineHeight: '1.5625rem' }],  /* 17px — Apple Body */
-        'lg':   ['1.25rem',   { lineHeight: '1.75rem' }],    /* 20px — Apple Title 3 */
-        'xl':   ['1.375rem',  { lineHeight: '1.875rem' }],   /* 22px — Apple Title 2 */
-        '2xl':  ['1.75rem',   { lineHeight: '2.125rem' }],   /* 28px — Apple Title 1 */
-        '3xl':  ['2.125rem',  { lineHeight: '2.5rem' }],     /* 34px — Apple Large Title */
-        '4xl':  ['2.5rem',    { lineHeight: '1' }],          /* 40px — Display */
+        /* Fluid typography: clamp(mobile, preferred, desktop) — 375px→1536px viewport */
+        xs: [
+          "clamp(0.8125rem, 0.798rem + 0.06vw, 0.875rem)",
+          { lineHeight: "1.125rem" },
+        ] /* 13→14px */,
+        sm: ["clamp(0.9375rem, 0.917rem + 0.09vw, 1rem)", { lineHeight: "1.375rem" }] /* 15→16px */,
+        base: [
+          "clamp(1.0625rem, 1.022rem + 0.17vw, 1.1875rem)",
+          { lineHeight: "1.5625rem" },
+        ] /* 17→19px */,
+        lg: [
+          "clamp(1.25rem, 1.189rem + 0.26vw, 1.4375rem)",
+          { lineHeight: "1.75rem" },
+        ] /* 20→23px */,
+        xl: [
+          "clamp(1.375rem, 1.314rem + 0.26vw, 1.5625rem)",
+          { lineHeight: "1.875rem" },
+        ] /* 22→25px */,
+        "2xl": [
+          "clamp(1.75rem, 1.648rem + 0.43vw, 2.0625rem)",
+          { lineHeight: "2.125rem" },
+        ] /* 28→33px */,
+        "3xl": [
+          "clamp(2.125rem, 2.003rem + 0.52vw, 2.5rem)",
+          { lineHeight: "2.5rem" },
+        ] /* 34→40px */,
+        "4xl": ["clamp(2.5rem, 2.337rem + 0.69vw, 3rem)", { lineHeight: "1" }] /* 40→48px */,
       },
       colors: {
         border: "hsl(var(--border))",
@@ -90,31 +120,31 @@ export default {
         "2xl": "calc(var(--radius) + 8px)",
       },
       boxShadow: {
-        'zen-xs': 'var(--zen-shadow-xs)',
-        'zen-sm': 'var(--zen-shadow-sm)',
-        'zen-md': 'var(--zen-shadow-md)',
-        'zen-lg': 'var(--zen-shadow-lg)',
-        'zen-xl': 'var(--zen-shadow-xl)',
-        'zen-soft': 'var(--zen-shadow-soft)',
-        'zen-card': 'var(--zen-shadow-card)',
-        'zen-glow': 'var(--zen-shadow-glow)',
-        'zen-hover': 'var(--zen-shadow-hover)',
+        "zen-xs": "var(--zen-shadow-xs)",
+        "zen-sm": "var(--zen-shadow-sm)",
+        "zen-md": "var(--zen-shadow-md)",
+        "zen-lg": "var(--zen-shadow-lg)",
+        "zen-xl": "var(--zen-shadow-xl)",
+        "zen-soft": "var(--zen-shadow-soft)",
+        "zen-card": "var(--zen-shadow-card)",
+        "zen-glow": "var(--zen-shadow-glow)",
+        "zen-hover": "var(--zen-shadow-hover)",
       },
       height: {
-        screen: ['100vh', '100dvh'],
+        screen: ["100vh", "100dvh"],
       },
       minHeight: {
-        screen: ['100vh', '100dvh'],
+        screen: ["100vh", "100dvh"],
       },
       maxHeight: {
-        screen: ['100vh', '100dvh'],
+        screen: ["100vh", "100dvh"],
       },
       backgroundColor: {
-        'surface': 'hsl(var(--surface-base))',
-        'surface-raised': 'hsl(var(--surface-raised))',
-        'surface-elevated': 'hsl(var(--surface-elevated))',
-        'surface-overlay': 'hsl(var(--surface-overlay))',
-        'surface-glass': 'var(--surface-glass)',
+        surface: "hsl(var(--surface-base))",
+        "surface-raised": "hsl(var(--surface-raised))",
+        "surface-elevated": "hsl(var(--surface-elevated))",
+        "surface-overlay": "hsl(var(--surface-overlay))",
+        "surface-glass": "var(--surface-glass)",
       },
       keyframes: {
         "accordion-down": {

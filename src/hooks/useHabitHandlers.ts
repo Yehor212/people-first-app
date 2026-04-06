@@ -20,13 +20,19 @@ import { safeLocalStorageGet, safeLocalStorageSet } from "@/lib/safeJson";
 import { analytics } from "@/lib/analytics";
 import { LIMITS } from "@/lib/constants";
 import { ENTRY } from "@/types";
-import type { Habit } from "@/types";
+import type { Habit, TreatSource, MoodType } from "@/types";
+import type { XpAction } from "@/lib/gamification";
+import type { PlantActivity } from "@/stores/useHydrateGamification";
 
 interface UseHabitHandlersParams {
-  awardXp: (activity: string) => void;
-  earnTreats: (source: string, amount: number, reason?: string) => { earned: number };
-  plantSeed: (activity: string, extra?: string) => unknown;
-  waterPlants: (activity: string) => void;
+  awardXp: (action: XpAction) => void;
+  earnTreats: (
+    source: TreatSource,
+    baseAmount: number,
+    description?: string
+  ) => { earned: number; bonus: number; multiplier: number; newBalance: number };
+  plantSeed: (sourceActivity: PlantActivity, mood?: MoodType) => null;
+  waterPlants: (sourceActivity: PlantActivity) => void;
   updateChallengeProgress: () => void;
   checkForFeatureUnlocks: () => void;
 }

@@ -84,16 +84,17 @@
     --transition-normal: 200ms;
     --transition-slow: 300ms;
 
-    /* Typography Scale — Apple Health aligned */
-    --text-2xs: 0.6875rem; /* 11px - only for badges */
-    --text-xs: 0.8125rem; /* 13px - Apple Caption */
-    --text-sm: 0.9375rem; /* 15px - Apple Secondary */
-    --text-base: 1.0625rem; /* 17px - Apple Body */
-    --text-lg: 1.25rem; /* 20px - Apple Title 3 */
-    --text-xl: 1.375rem; /* 22px - Apple Title 2 */
-    --text-2xl: 1.75rem; /* 28px - Apple Title 1 */
-    --text-3xl: 2.125rem; /* 34px - Apple Large Title */
-    --text-4xl: 2.5rem; /* 40px - Display */
+    /* Typography Scale — Apple Health aligned, fluid via clamp() in tailwind.config.ts */
+    /* These vars are unused (Tailwind fontSize is the source of truth) — kept for documentation */
+    --text-2xs: 0.6875rem; /* 11px - only for badges (no fluid scaling) */
+    --text-xs: 0.8125rem; /* 13→14px fluid */
+    --text-sm: 0.9375rem; /* 15→16px fluid */
+    --text-base: 1.0625rem; /* 17→19px fluid */
+    --text-lg: 1.25rem; /* 20→23px fluid */
+    --text-xl: 1.375rem; /* 22→25px fluid */
+    --text-2xl: 1.75rem; /* 28→33px fluid */
+    --text-3xl: 2.125rem; /* 34→40px fluid */
+    --text-4xl: 2.5rem; /* 40→48px fluid */
 
     /* Border Radius Scale */
     --radius-xs: 0.375rem; /* 6px */
@@ -708,6 +709,7 @@
     touch-action: manipulation; /* kill 300ms tap delay */
     scroll-padding-top: calc(var(--safe-top, 0px) + 1rem);
     scroll-padding-bottom: calc(var(--nav-height) + var(--safe-bottom, 0px) + 1rem);
+    scrollbar-gutter: stable; /* prevent layout shift when scrollbar appears/disappears on desktop */
   }
 
   body {
@@ -733,7 +735,22 @@
   /* ===== RESPONSIVE CONTAINER WIDTH ===== */
   @media (min-width: 768px) {
     :root {
-      --container-max-width: 42rem; /* 672px — tablets & desktop */
+      --container-max-width: 42rem; /* 672px — tablets */
+    }
+  }
+  @media (min-width: 1024px) {
+    :root {
+      --container-max-width: 48rem; /* 768px — laptops */
+    }
+  }
+  @media (min-width: 1280px) {
+    :root {
+      --container-max-width: 56rem; /* 896px — desktops */
+    }
+  }
+  @media (min-width: 1536px) {
+    :root {
+      --container-max-width: 64rem; /* 1024px — large desktops */
     }
   }
 
@@ -893,6 +910,16 @@
     max-height: calc(100vh - var(--safe-top) - var(--safe-bottom) - 2rem);
     max-height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 2rem);
     overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  /* Global: prevent scroll chaining from any scroll container inside fixed overlays.
+   * Fixes desktop wheel scroll leaking to background when scrolling inside modals/sheets.
+   * Targets all overflow-y-auto descendants of position:fixed elements (dialogs, sheets, panels). */
+  .fixed .overflow-y-auto,
+  .fixed .overflow-auto,
+  [role="dialog"] .overflow-y-auto,
+  [role="dialog"] .overflow-auto {
     overscroll-behavior: contain;
   }
 

@@ -3,45 +3,45 @@
  * Tests gratitude entry creation, creature interactions, and gamification rewards.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { renderHook, act } from "@testing-library/react";
 
 // --- mocks ---
 
 const mockSetGratitudeEntries = vi.fn();
 const mockRewardUser = vi.fn();
-const mockEarnTreats = vi.fn(() => ({ earned: 5 }));
+const mockEarnTreats = vi.fn(() => ({ earned: 5, bonus: 0, multiplier: 1, newBalance: 5 }));
 const mockAttractCreature = vi.fn();
 const mockFeedCreatures = vi.fn();
 const mockUpdateChallengeProgress = vi.fn();
 
-vi.mock('@/stores', () => ({
+vi.mock("@/stores", () => ({
   useUserDataStore: vi.fn((sel: (s: Record<string, unknown>) => unknown) =>
-    sel({ setGratitudeEntries: mockSetGratitudeEntries }),
+    sel({ setGratitudeEntries: mockSetGratitudeEntries })
   ),
   useGamificationStore: vi.fn((sel: (s: Record<string, unknown>) => unknown) =>
-    sel({ rewardUser: mockRewardUser }),
+    sel({ rewardUser: mockRewardUser })
   ),
   useUIStore: vi.fn(),
 }));
 
-vi.mock('@/components/XpPopup', () => ({
+vi.mock("@/components/XpPopup", () => ({
   triggerXpPopup: vi.fn(),
 }));
 
-vi.mock('@/lib/haptics', () => ({
-  haptics: { gratitudeSaved: 'gratitudeSaved' },
+vi.mock("@/lib/haptics", () => ({
+  haptics: { gratitudeSaved: "gratitudeSaved" },
 }));
 
-vi.mock('@/lib/randomQuests', () => ({
+vi.mock("@/lib/randomQuests", () => ({
   updateAllQuestsProgress: vi.fn(() => []),
 }));
 
 // --- import under test after mocks ---
 
-import { useGratitudeHandlers } from '../useGratitudeHandlers';
+import { useGratitudeHandlers } from "../useGratitudeHandlers";
 
-describe('useGratitudeHandlers', () => {
+describe("useGratitudeHandlers", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -53,17 +53,17 @@ describe('useGratitudeHandlers', () => {
         attractCreature: mockAttractCreature,
         feedCreatures: mockFeedCreatures,
         updateChallengeProgress: mockUpdateChallengeProgress,
-      }),
+      })
     );
 
   const makeEntry = () => ({
-    id: 'grat-1',
-    text: 'Thankful for sunshine',
-    date: '2026-02-19',
+    id: "grat-1",
+    text: "Thankful for sunshine",
+    date: "2026-02-19",
     timestamp: Date.now(),
   });
 
-  it('handleAddGratitude adds entry to store', () => {
+  it("handleAddGratitude adds entry to store", () => {
     const { result } = renderGratitudeHandlers();
     const entry = makeEntry();
 
@@ -76,7 +76,7 @@ describe('useGratitudeHandlers', () => {
     expect(updater([])).toEqual([expect.objectContaining(entry)]);
   });
 
-  it('handleAddGratitude rewards user with treats', () => {
+  it("handleAddGratitude rewards user with treats", () => {
     const { result } = renderGratitudeHandlers();
     const entry = makeEntry();
 
@@ -84,14 +84,14 @@ describe('useGratitudeHandlers', () => {
       result.current.handleAddGratitude(entry);
     });
 
-    expect(mockRewardUser).toHaveBeenCalledWith('gratitude', {
+    expect(mockRewardUser).toHaveBeenCalledWith("gratitude", {
       treats: 8,
-      treatReason: 'Gratitude entry',
-      haptic: 'gratitudeSaved',
+      treatReason: "Gratitude entry",
+      haptic: "gratitudeSaved",
     });
   });
 
-  it('handleAddGratitude calls feedCreatures', () => {
+  it("handleAddGratitude calls feedCreatures", () => {
     const { result } = renderGratitudeHandlers();
     const entry = makeEntry();
 
@@ -102,7 +102,7 @@ describe('useGratitudeHandlers', () => {
     expect(mockFeedCreatures).toHaveBeenCalledTimes(1);
   });
 
-  it('handleAddGratitude calls updateChallengeProgress', () => {
+  it("handleAddGratitude calls updateChallengeProgress", () => {
     const { result } = renderGratitudeHandlers();
     const entry = makeEntry();
 
@@ -112,5 +112,4 @@ describe('useGratitudeHandlers', () => {
 
     expect(mockUpdateChallengeProgress).toHaveBeenCalledTimes(1);
   });
-
 });

@@ -6,10 +6,14 @@ import { triggerSync } from "@/storage/cloudSync";
 import { syncGratitude } from "@/storage/realtimeSync";
 import { updateAllQuestsProgress } from "@/lib/randomQuests";
 import { useThrottledCallback } from "@/hooks/useThrottledCallback";
-import type { GratitudeEntry } from "@/types";
+import type { GratitudeEntry, TreatSource } from "@/types";
 
 interface UseGratitudeHandlersParams {
-  earnTreats: (source: string, amount: number, reason?: string) => { earned: number };
+  earnTreats: (
+    source: TreatSource,
+    baseAmount: number,
+    description?: string
+  ) => { earned: number; bonus: number; multiplier: number; newBalance: number };
   attractCreature: () => void;
   feedCreatures: () => void;
   updateChallengeProgress: () => void;

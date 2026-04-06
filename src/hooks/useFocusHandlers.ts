@@ -8,10 +8,14 @@ import { updateAllQuestsProgress } from "@/lib/randomQuests";
 import { logger } from "@/lib/logger";
 import { analytics } from "@/lib/analytics";
 import { useThrottledCallback } from "@/hooks/useThrottledCallback";
-import type { FocusSession } from "@/types";
+import type { FocusSession, TreatSource } from "@/types";
 
 interface UseFocusHandlersParams {
-  earnTreats: (source: string, amount: number, reason?: string) => { earned: number };
+  earnTreats: (
+    source: TreatSource,
+    baseAmount: number,
+    description?: string
+  ) => { earned: number; bonus: number; multiplier: number; newBalance: number };
   updateChallengeProgress: () => void;
   checkForFeatureUnlocks: () => void;
 }

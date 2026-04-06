@@ -1156,7 +1156,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
               ref={editorRef}
               contentEditable
               suppressContentEditableWarning
-              className="w-full min-h-[260px] bg-transparent border-none outline-none resize-none [&_blockquote]:border-l-2 [&_blockquote]:border-current/20 [&_blockquote]:ps-3 [&_blockquote]:italic [&_code]:bg-black/5 [&_code]:px-1 [&_code]:rounded [&_code]:font-mono [&_del]:line-through empty:before:content-[attr(data-placeholder)] empty:before:opacity-40 empty:before:pointer-events-none leading-[1.8]"
+              className="w-full max-w-prose mx-auto min-h-[260px] bg-transparent border-none outline-none resize-none [&_blockquote]:border-l-2 [&_blockquote]:border-current/20 [&_blockquote]:ps-3 [&_blockquote]:italic [&_code]:bg-black/5 [&_code]:px-1 [&_code]:rounded [&_code]:font-mono [&_del]:line-through empty:before:content-[attr(data-placeholder)] empty:before:opacity-40 empty:before:pointer-events-none leading-[1.8]"
               style={{
                 fontSize: FONT_SIZES[fontSize],
                 fontFamily: diaryTheme.fontFamily,

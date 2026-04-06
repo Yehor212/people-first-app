@@ -9,14 +9,20 @@ import { FeatureUnlock } from "@/components/FeatureUnlock";
 import { WelcomeBackModal } from "@/components/WelcomeBackModal";
 import { StorageErrorBanner } from "@/components/StorageErrorBanner";
 import { MoodEntry } from "@/types";
+import type { TreatSource } from "@/types";
+import type { XpAction } from "@/lib/gamification";
 import { generateId, getToday } from "@/lib/utils";
 import { triggerSync } from "@/storage/cloudSync";
 import { syncMood } from "@/storage/realtimeSync";
 import { logger } from "@/lib/logger";
 
 interface OverlayLayerProps {
-  awardXp: (activity: string) => void;
-  earnTreats: (source: string, amount: number, reason?: string) => { earned: number };
+  awardXp: (action: XpAction) => void;
+  earnTreats: (
+    source: TreatSource,
+    baseAmount: number,
+    description?: string
+  ) => { earned: number; bonus: number; multiplier: number; newBalance: number };
 }
 
 const setShowWelcomeOverlay = getModalToggle("showWelcomeOverlay");

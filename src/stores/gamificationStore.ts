@@ -1,5 +1,7 @@
 import { create } from "zustand";
 import { logger } from "@/lib/logger";
+import type { XpAction } from "@/lib/gamification";
+import type { TreatSource, MoodType } from "@/types";
 
 type PopupType =
   | "mood"
@@ -11,17 +13,22 @@ type PopupType =
   | "bonus"
   | "mindful";
 
+type PlantActivity = "mood" | "habit" | "focus" | "gratitude" | "journal" | "breathing" | "rest";
+
+/** Activities that can be rewarded via rewardUser — intersection of XpAction, TreatSource, PlantActivity, PopupType */
+export type RewardActivity = "mood" | "habit" | "focus" | "gratitude" | "journal" | "breathing";
+
 // Hook functions registered by bridge (from useGamification + useInnerWorld)
 // showPopup + sync registered via bridge to eliminate inverted deps (C2: store→component, C3: store→storage)
 interface RegisteredHooks {
-  awardXp: (activity: string) => void;
+  awardXp: (action: XpAction) => void;
   earnTreats: (
-    source: string,
-    amount: number,
-    reason?: string,
-  ) => { earned: number };
-  plantSeed: (activity: string, extra?: string) => unknown;
-  waterPlants: (activity: string) => void;
+    source: TreatSource,
+    baseAmount: number,
+    description?: string
+  ) => { earned: number; bonus: number; multiplier: number; newBalance: number };
+  plantSeed: (sourceActivity: PlantActivity, mood?: MoodType) => null;
+  waterPlants: (sourceActivity: PlantActivity) => void;
   showPopup: (amount: number, type: PopupType) => void;
   sync: () => void;
 }
@@ -30,7 +37,7 @@ export interface RewardOptions {
   treats: number;
   treatReason: string;
   haptic?: () => Promise<void>;
-  seedExtra?: string;
+  seedExtra?: MoodType;
   skipXp?: boolean;
   skipPopup?: boolean;
   skipGarden?: boolean;
@@ -47,12 +54,10 @@ interface GamificationState {
 
 interface GamificationActions {
   _registerHooks: (hooks: RegisteredHooks) => void;
-  rewardUser: (activity: string, options: RewardOptions) => RewardResult;
+  rewardUser: (activity: RewardActivity, options: RewardOptions) => RewardResult;
 }
 
-export const useGamificationStore = create<
-  GamificationState & GamificationActions
->((set, get) => ({
+export const useGamificationStore = create<GamificationState & GamificationActions>((set, get) => ({
   _hooks: null,
 
   _registerHooks: (hooks) => set({ _hooks: hooks }),
@@ -68,15 +73,10 @@ export const useGamificationStore = create<
     if (!options.skipXp) hooks.awardXp(activity);
 
     // 2. Earn treats (companion reward system)
-    const treatResult = hooks.earnTreats(
-      activity,
-      options.treats,
-      options.treatReason,
-    );
+    const treatResult = hooks.earnTreats(activity, options.treats, options.treatReason);
 
     // 3. Show treats popup (via bridge — no direct component import)
-    if (!options.skipPopup)
-      hooks.showPopup(treatResult.earned, activity as PopupType);
+    if (!options.skipPopup) hooks.showPopup(treatResult.earned, activity as PopupType);
 
     // 4. Sync to cloud (via bridge — no direct storage import)
     if (!options.skipSync) hooks.sync();

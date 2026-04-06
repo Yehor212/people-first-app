@@ -545,7 +545,7 @@ export const JournalModule = memo(function JournalModule({
       className="fixed inset-0 z-[60] bg-background md:bg-background/80 md:backdrop-blur-sm flex items-start justify-center animate-slide-up"
       dir={isRTL ? "rtl" : "ltr"}
     >
-      <div className="w-full h-full flex flex-col md:max-w-2xl md:my-4 md:h-[calc(100%-2rem)] md:rounded-2xl md:bg-background md:shadow-2xl md:border md:border-border/20 md:overflow-hidden">
+      <div className="w-full h-full flex flex-col md:max-w-2xl lg:max-w-4xl xl:max-w-5xl md:my-4 md:h-[calc(100%-2rem)] md:rounded-2xl md:bg-background md:shadow-2xl md:border md:border-border/20 md:overflow-hidden">
         {/* Security gate */}
         {security.isLocked && !security.loading && (
           <>
