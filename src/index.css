@@ -741,6 +741,7 @@
   @media (min-width: 1024px) {
     :root {
       --container-max-width: 48rem; /* 768px — laptops */
+      --nav-height: 0rem; /* sidebar replaces bottom nav at lg — no nav-height padding needed */
     }
   }
   @media (min-width: 1280px) {
