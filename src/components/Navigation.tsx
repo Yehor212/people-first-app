@@ -57,12 +57,11 @@ export const Navigation = memo(function Navigation({
         className="hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 lg:left-0 lg:w-64 lg:border-e lg:border-border lg:bg-card/95 lg:backdrop-blur-lg lg:z-50"
         role="navigation"
         aria-label={t.mainNavigation || "Main navigation"}
-        aria-orientation="vertical"
       >
         <div className="flex items-center gap-2 px-5 py-6 border-b border-border/50">
           <span className="text-lg font-bold text-foreground">ZenFlow</span>
         </div>
-        <nav className="flex-1 py-3 px-3 space-y-1" role="tablist" aria-orientation="vertical">
+        <div className="flex-1 py-3 px-3 space-y-1" role="tablist" aria-orientation="vertical">
           {tabs.map((tab) => (
             <button
               key={tab.id}
@@ -98,7 +97,7 @@ export const Navigation = memo(function Navigation({
               </span>
             </button>
           ))}
-        </nav>
+        </div>
       </aside>
 
       {/* Mobile bottom nav — hidden at lg (1024px+) and when keyboard is open */}

@@ -7,7 +7,17 @@ import tseslint from "typescript-eslint";
 
 export default tseslint.config(
   {
-    ignores: ["dist", "android", "coverage", "scripts", "supabase/functions/**", "*.js", "*.mjs"],
+    ignores: [
+      "dist",
+      "android",
+      "coverage",
+      "scripts",
+      "supabase/functions/**",
+      "*.js",
+      "*.mjs",
+      "knip.config.ts",
+      ".size-limit.json",
+    ],
   },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommendedTypeChecked],
