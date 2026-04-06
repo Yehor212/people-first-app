@@ -6,6 +6,7 @@
 
 @layer base {
   :root {
+    color-scheme: light dark; /* native form controls match theme, prevents dark mode flash */
     /**
      * ZenFlow - Premium Light Theme (WCAG AA Compliant)
      *
