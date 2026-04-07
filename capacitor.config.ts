@@ -1,28 +1,33 @@
-import type { CapacitorConfig } from '@capacitor/cli';
+import type { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
-  appId: 'com.zenflow.app',
-  appName: 'ZenFlow',
-  webDir: 'dist',
+  appId: "com.zenflow.app",
+  appName: "ZenFlow",
+  webDir: "dist",
   android: {
     webContentsDebuggingEnabled: false,
     allowMixedContent: false,
   },
+  ios: {
+    scheme: "zenflow",
+    contentInset: "automatic",
+  },
   server: {
-    androidScheme: 'https',
+    androidScheme: "https",
+    iosScheme: "https",
     cleartext: false,
   },
   plugins: {
     SplashScreen: {
       launchAutoHide: false,
       launchFadeOutDuration: 300,
-      androidScaleType: 'CENTER_CROP',
+      androidScaleType: "CENTER_CROP",
     },
     LocalNotifications: {
       // Default icon color (emerald)
-      iconColor: '#10B981',
+      iconColor: "#10B981",
       // Use default system sound
-      sound: 'default',
+      sound: "default",
       /**
        * IMPORTANT: Android Notification Channel Behavior
        *

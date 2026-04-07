@@ -1,18 +1,9 @@
 import { useEffect, useRef } from "react";
-import {
-  useAppStore,
-  useUIStore,
-  useUserDataStore,
-  getModalToggle,
-} from "@/stores";
+import { useAppStore, useUIStore, useUserDataStore, getModalToggle } from "@/stores";
 import { useFeatureFlags } from "@/contexts/FeatureFlagsContext";
 import { logger } from "@/lib/logger";
 import { App } from "@capacitor/app";
-import {
-  handleAuthCallback,
-  notifyAuthComplete,
-  setPendingAuthUrl,
-} from "@/lib/authRedirect";
+import { handleAuthCallback, notifyAuthComplete, setPendingAuthUrl } from "@/lib/authRedirect";
 import { isNative } from "@/lib/platform";
 import { supabase } from "@/lib/supabaseClient";
 import { decodeInviteData } from "@/lib/friendChallenge";
@@ -45,9 +36,7 @@ export function useDeepLinkHandler(): void {
 
     // Event-based session wait: 1 cache check + onAuthStateChange listener + 15s timeout
     // Replaces polling loop (was 20 × getSession() at 400ms intervals)
-    const waitForSession = (): Promise<
-      import("@supabase/supabase-js").Session | null
-    > => {
+    const waitForSession = (): Promise<import("@supabase/supabase-js").Session | null> => {
       return new Promise((resolve) => {
         if (!supabase) {
           resolve(null);
@@ -56,9 +45,7 @@ export function useDeepLinkHandler(): void {
 
         let settled = false;
 
-        const trySettle = (
-          session: import("@supabase/supabase-js").Session | null,
-        ) => {
+        const trySettle = (session: import("@supabase/supabase-js").Session | null) => {
           if (settled) return;
           settled = true;
           resolve(session);
@@ -76,10 +63,7 @@ export function useDeepLinkHandler(): void {
         const {
           data: { subscription },
         } = supabase.auth.onAuthStateChange((event, session) => {
-          if (
-            (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") &&
-            session?.user
-          ) {
+          if ((event === "SIGNED_IN" || event === "TOKEN_REFRESHED") && session?.user) {
             subscription?.unsubscribe();
             clearTimeout(timeoutId);
             trySettle(session);
@@ -99,12 +83,9 @@ export function useDeepLinkHandler(): void {
         const parsed = new URL(url);
         const hash = new URLSearchParams(parsed.hash.replace(/^#/, ""));
         const code = parsed.searchParams.get("code") || hash.get("code") || "";
-        const state =
-          parsed.searchParams.get("state") || hash.get("state") || "";
-        const hasToken =
-          hash.get("access_token") && hash.get("refresh_token") ? "1" : "0";
-        const error =
-          parsed.searchParams.get("error") || hash.get("error") || "";
+        const state = parsed.searchParams.get("state") || hash.get("state") || "";
+        const hasToken = hash.get("access_token") && hash.get("refresh_token") ? "1" : "0";
+        const error = parsed.searchParams.get("error") || hash.get("error") || "";
         return `${parsed.protocol}//${parsed.host}${parsed.pathname}|code=${code}|state=${state}|token=${hasToken}|error=${error}`;
       } catch {
         return url;
@@ -113,10 +94,15 @@ export function useDeepLinkHandler(): void {
 
     const handleAuthUrl = async (
       url: string,
-      source: "launch" | "appUrlOpen" | "appState" = "appUrlOpen",
+      source: "launch" | "appUrlOpen" | "appState" = "appUrlOpen"
     ): Promise<boolean> => {
-      // Check if URL is auth callback
-      if (!url.includes("login-callback")) return false;
+      // Check if URL is auth callback — validate scheme + path (OWASP deep link safety)
+      const isAuthCallback =
+        url.includes("login-callback") &&
+        (url.startsWith("com.zenflow.app://") ||
+          url.startsWith("https://") ||
+          url.startsWith("http://localhost"));
+      if (!isAuthCallback) return false;
 
       const dedupeKey = getAuthDedupeKey(url);
       if (handledAuthKeysRef.current.has(dedupeKey)) {
@@ -129,11 +115,7 @@ export function useDeepLinkHandler(): void {
         handledAuthKeysRef.current.add(dedupeKey);
       }
 
-      logger.log(
-        "[Index] Auth URL received from",
-        source,
-        new URL(url).pathname,
-      );
+      logger.log("[Index] Auth URL received from", source, new URL(url).pathname);
 
       // If supabase not ready, store for later
       if (!supabase) {
@@ -169,9 +151,7 @@ export function useDeepLinkHandler(): void {
 
       logger.error("[Auth] Callback processed but no session established");
       if (callbackError instanceof Error) {
-        setWebOAuthError(
-          callbackError.message || "Google sign-in failed. Please try again.",
-        );
+        setWebOAuthError(callbackError.message || "Google sign-in failed. Please try again.");
       } else {
         setWebOAuthError("Google sign-in did not complete. Please try again.");
       }
@@ -186,11 +166,9 @@ export function useDeepLinkHandler(): void {
         // Check if it's a challenge invite URL
         // Support both: zenflow://challenge?data=... and https://zenflow.app/challenge?data=...
         const isCustomScheme =
-          parsedUrl.protocol === "zenflow:" &&
-          parsedUrl.hostname === "challenge";
+          parsedUrl.protocol === "zenflow:" && parsedUrl.hostname === "challenge";
         const isHttpsScheme =
-          parsedUrl.hostname === "zenflow.app" &&
-          parsedUrl.pathname.startsWith("/challenge");
+          parsedUrl.hostname === "zenflow.app" && parsedUrl.pathname.startsWith("/challenge");
 
         if (isCustomScheme || isHttpsScheme) {
           const data = parsedUrl.searchParams.get("data");
@@ -204,9 +182,7 @@ export function useDeepLinkHandler(): void {
                 setShowChallengeModal(true);
                 return true;
               } else {
-                logger.log(
-                  "[Index] Challenges feature disabled, ignoring invite",
-                );
+                logger.log("[Index] Challenges feature disabled, ignoring invite");
               }
             }
           }
@@ -243,25 +219,17 @@ export function useDeepLinkHandler(): void {
         }
       });
 
-      const stateListener = await App.addListener(
-        "appStateChange",
-        ({ isActive }) => {
-          if (!isActive) return;
+      const stateListener = await App.addListener("appStateChange", ({ isActive }) => {
+        if (!isActive) return;
 
-          void App.getLaunchUrl()
-            .then((launch) => {
-              if (launch?.url && launch.url.includes("login-callback")) {
-                void handleAuthUrl(launch.url, "appState");
-              }
-            })
-            .catch((error) =>
-              logger.error(
-                "[Index] Failed to read launch URL on resume:",
-                error,
-              ),
-            );
-        },
-      );
+        void App.getLaunchUrl()
+          .then((launch) => {
+            if (launch?.url && launch.url.includes("login-callback")) {
+              void handleAuthUrl(launch.url, "appState");
+            }
+          })
+          .catch((error) => logger.error("[Index] Failed to read launch URL on resume:", error));
+      });
 
       removeListener = () => {
         void listener.remove();
