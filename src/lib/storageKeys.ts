@@ -21,6 +21,7 @@ export const SK = {
   INNER_WORLD: "zenflow-inner-world",
   CHALLENGES: "zenflow_challenges",
   LAST_STATE: "zenflow_last_state",
+  SIDEBAR_COLLAPSED: "zenflow_sidebar_collapsed",
   QUESTS: "zenflow_quests",
   OFFLINE_QUEUE: "zenflow_offline_queue",
 

@@ -317,7 +317,7 @@ export function Index() {
           adConsent={true}
           isPremium={false}
         >
-          <div className="min-h-screen zen-gradient-hero lg:pl-64">
+          <div className="min-h-screen zen-gradient-hero lg:ps-[var(--sidebar-width,256px)] transition-[padding] duration-300">
             {/* Skip to main content link for accessibility */}
             <a
               href="#main-content"
