@@ -2720,6 +2720,7 @@ export const de: Translations = {
   ariaFloatPhoto: "Foto schweben",
   ariaPhotoLightbox: "Fotogalerie",
   ariaPhotoPicker: "Fotoauswahl",
+  ariaTemplatePicker: "Vorlagenauswahl",
   ariaSearchStickers: "Sticker suchen",
   ariaClearSearch: "Suche löschen",
 

@@ -2689,6 +2689,7 @@ export interface Translations {
   ariaFloatPhoto: string;
   ariaPhotoLightbox: string;
   ariaPhotoPicker: string;
+  ariaTemplatePicker: string;
   ariaSearchStickers: string;
   ariaClearSearch: string;
 

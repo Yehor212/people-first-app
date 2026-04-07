@@ -2683,6 +2683,7 @@ export const uk: Translations = {
   ariaFloatPhoto: "Фото у вікні",
   ariaPhotoLightbox: "Галерея фото",
   ariaPhotoPicker: "Вибір фото",
+  ariaTemplatePicker: "Вибір шаблону",
   ariaSearchStickers: "Пошук стікерів",
   ariaClearSearch: "Очистити пошук",
 

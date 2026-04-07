@@ -44,7 +44,7 @@ export function JournalTemplatePicker({ onSelect, onClose }: JournalTemplatePick
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Template picker"
+        aria-label={ts.ariaTemplatePicker || "Template picker"}
         className="fixed bottom-0 inset-x-0 z-[65] animate-slide-up pb-safe"
         onClick={(e) => e.stopPropagation()}
       >

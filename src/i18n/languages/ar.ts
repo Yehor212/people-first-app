@@ -2574,6 +2574,7 @@ const arabicOverrides: Partial<Translations> = {
   ariaFloatPhoto: "صورة عائمة",
   ariaPhotoLightbox: "معرض الصور",
   ariaPhotoPicker: "منتقي الصور",
+  ariaTemplatePicker: "منتقي القوالب",
   ariaSearchStickers: "البحث عن ملصقات",
   ariaClearSearch: "مسح البحث",
 

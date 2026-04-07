@@ -2723,6 +2723,7 @@ export const fr: Translations = {
   ariaFloatPhoto: "Photo flottante",
   ariaPhotoLightbox: "Visionneuse de photos",
   ariaPhotoPicker: "Sélecteur de photos",
+  ariaTemplatePicker: "Sélecteur de modèles",
   ariaSearchStickers: "Rechercher des autocollants",
   ariaClearSearch: "Effacer la recherche",
 

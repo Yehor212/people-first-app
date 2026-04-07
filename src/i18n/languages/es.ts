@@ -2708,6 +2708,7 @@ export const es: Translations = {
   ariaFloatPhoto: "Flotar foto",
   ariaPhotoLightbox: "Galería de fotos",
   ariaPhotoPicker: "Selector de fotos",
+  ariaTemplatePicker: "Selector de plantillas",
   ariaSearchStickers: "Buscar stickers",
   ariaClearSearch: "Borrar búsqueda",
 

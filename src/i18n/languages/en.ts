@@ -2699,6 +2699,7 @@ export const en: Translations = {
   ariaFloatPhoto: "Float photo",
   ariaPhotoLightbox: "Photo lightbox",
   ariaPhotoPicker: "Photo picker",
+  ariaTemplatePicker: "Template picker",
   ariaSearchStickers: "Search stickers",
   ariaClearSearch: "Clear search",
 

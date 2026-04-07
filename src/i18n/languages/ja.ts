@@ -2661,6 +2661,7 @@ export const ja: Translations = {
   ariaFloatPhoto: "写真をフロート",
   ariaPhotoLightbox: "写真ライトボックス",
   ariaPhotoPicker: "写真選択",
+  ariaTemplatePicker: "テンプレート選択",
   ariaSearchStickers: "ステッカー検索",
   ariaClearSearch: "検索をクリア",
 

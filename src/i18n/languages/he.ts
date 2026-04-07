@@ -2653,6 +2653,7 @@ const hebrewOverrides: Partial<Translations> = {
   ariaFloatPhoto: "צף תמונה",
   ariaPhotoLightbox: "תצוגת תמונה",
   ariaPhotoPicker: "בורר תמונות",
+  ariaTemplatePicker: "בורר תבניות",
   ariaSearchStickers: "חפש מדבקות",
   ariaClearSearch: "נקה חיפוש",
 
