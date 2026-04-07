@@ -2,7 +2,6 @@ import { motion } from "framer-motion";
 import { X, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useBackHandler } from "@/hooks/useBackHandler";
 import { useModalA11y } from "@/hooks/useModalA11y";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import {
@@ -20,8 +19,7 @@ interface JournalTemplatePickerProps {
 export function JournalTemplatePicker({ onSelect, onClose }: JournalTemplatePickerProps) {
   const { t } = useLanguage();
   const ts = t as unknown as Record<string, string>;
-  useBackHandler(true, onClose);
-  useModalA11y(true, onClose);
+  const { modalRef, handleKeyDown } = useModalA11y(true, onClose);
   useScrollLock(true);
 
   const handleSelectTemplate = (template: JournalTemplate) => {
@@ -42,6 +40,8 @@ export function JournalTemplatePicker({ onSelect, onClose }: JournalTemplatePick
         onClick={onClose}
       />
       <div
+        ref={modalRef}
+        onKeyDown={handleKeyDown}
         role="dialog"
         aria-modal="true"
         aria-label={ts.ariaTemplatePicker || "Template picker"}

@@ -3,7 +3,6 @@ import { X, Search, Settings2 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useBackHandler } from "@/hooks/useBackHandler";
 import { useModalA11y } from "@/hooks/useModalA11y";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { SK } from "@/lib/storageKeys";
@@ -23,8 +22,7 @@ interface JournalStickerPickerProps {
 export function JournalStickerPicker({ onSelect, onClose, mood }: JournalStickerPickerProps) {
   const { t } = useLanguage();
   const ts = t as unknown as Record<string, string>;
-  useBackHandler(true, onClose);
-  useModalA11y(true, onClose);
+  const { modalRef, handleKeyDown } = useModalA11y(true, onClose);
   useScrollLock(true);
 
   const { prefs, enabledCategories, enabledCount, togglePack, isNew, markSeen } = useStickerPacks();
@@ -62,6 +60,8 @@ export function JournalStickerPicker({ onSelect, onClose, mood }: JournalSticker
       <div className="fixed inset-0 z-[64] bg-black/30 animate-fade-in" onClick={onClose} />
 
       <div
+        ref={modalRef}
+        onKeyDown={handleKeyDown}
         role="dialog"
         aria-modal="true"
         className={cn(

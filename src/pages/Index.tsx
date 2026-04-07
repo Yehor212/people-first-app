@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { shouldAnimate } from "@/lib/animationUtils";
 import {
@@ -88,6 +88,7 @@ import { GlobalScheduleBar } from "@/components/GlobalScheduleBar";
 import { FocusMiniPlayer } from "@/components/FocusMiniPlayer";
 import { useSessionTimeout } from "@/hooks/useSessionTimeout";
 import { useScrollLock } from "@/hooks/useScrollLock";
+import { useDesktopShortcuts, type ShortcutConfig } from "@/hooks/useDesktopShortcuts";
 import { analytics } from "@/lib/analytics";
 
 export function Index() {
@@ -110,6 +111,44 @@ export function Index() {
     CANVAS_ENABLED,
     HABIT_HUB_ENABLED,
   } = useTabNavigation();
+
+  // Desktop keyboard shortcuts: Ctrl+1..5 to switch tabs
+  const desktopShortcuts: ShortcutConfig[] = useMemo(
+    () => [
+      {
+        key: "1",
+        ctrl: true,
+        handler: () => handleTabChange("home"),
+        description: "Switch to Home tab",
+      },
+      {
+        key: "2",
+        ctrl: true,
+        handler: () => handleTabChange(HABIT_HUB_ENABLED ? "mindmap" : "garden"),
+        description: "Switch to tab 2",
+      },
+      {
+        key: "3",
+        ctrl: true,
+        handler: () => handleTabChange(HABIT_HUB_ENABLED ? "garden" : "stats"),
+        description: "Switch to tab 3",
+      },
+      {
+        key: "4",
+        ctrl: true,
+        handler: () => handleTabChange(HABIT_HUB_ENABLED ? "stats" : "settings"),
+        description: "Switch to tab 4",
+      },
+      {
+        key: "5",
+        ctrl: true,
+        handler: () => handleTabChange(HABIT_HUB_ENABLED ? "settings" : "settings"),
+        description: "Switch to Settings tab",
+      },
+    ],
+    [handleTabChange, HABIT_HUB_ENABLED]
+  );
+  useDesktopShortcuts(desktopShortcuts);
 
   // Extracted lifecycle hooks (from Step 1 decomposition)
   useAppLifecycle();

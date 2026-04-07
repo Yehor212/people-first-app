@@ -1,4 +1,14 @@
 import type { Config } from "tailwindcss";
+import plugin from "tailwindcss/plugin";
+
+// Platform-adaptive variants: touch/mouse for input type, ios/android/desktop for platform
+const platformVariants = plugin(({ addVariant }) => {
+  addVariant("touch", "@media (pointer: coarse)");
+  addVariant("mouse", "@media (hover: hover) and (pointer: fine)");
+  addVariant("ios", "[data-platform='ios'] &");
+  addVariant("android", "[data-platform='android'] &");
+  addVariant("desktop", "[data-platform='web'] &");
+});
 
 export default {
   darkMode: ["class"],
@@ -177,6 +187,11 @@ export default {
       },
     },
   },
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  plugins: [require("tailwindcss-animate"), require("@tailwindcss/container-queries")],
+  plugins: [
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    require("tailwindcss-animate"),
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    require("@tailwindcss/container-queries"),
+    platformVariants,
+  ],
 } satisfies Config;

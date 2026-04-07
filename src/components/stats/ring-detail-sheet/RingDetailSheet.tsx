@@ -10,11 +10,11 @@
  */
 
 import { useMemo } from "react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { zenTap } from "@/lib/animationUtils";
 import { TrendingUp, TrendingDown, Minus, Sparkles, Zap, ChevronRight, X } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useBackHandler } from "@/hooks/useBackHandler";
+import { useModalA11y } from "@/hooks/useModalA11y";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { cn, getToday } from "@/lib/utils";
 import type { RingDetailSheetProps } from "./types";
@@ -33,7 +33,8 @@ export function RingDetailSheet({
 }: RingDetailSheetProps) {
   const { t } = useLanguage();
 
-  useBackHandler(open, () => onOpenChange(false));
+  const { modalRef, handleKeyDown } = useModalA11y(open, () => onOpenChange(false));
+  const _shouldReduceMotion = useReducedMotion();
   useScrollLock(open);
 
   const theme = ringType ? ringThemes[ringType] : null;
@@ -123,6 +124,8 @@ export function RingDetailSheet({
         }}
       />
       <div
+        ref={modalRef}
+        onKeyDown={handleKeyDown}
         role="dialog"
         aria-modal="true"
         className="fixed bottom-0 inset-x-0 z-[60] rounded-t-[2rem] bg-background max-h-[90dvh] overflow-hidden animate-slide-up pb-safe"
@@ -142,11 +145,15 @@ export function RingDetailSheet({
               "absolute -top-24 -end-24 w-72 h-72 rounded-full blur-3xl",
               `bg-gradient-to-br ${theme.gradient}`
             )}
-            animate={{
-              scale: [1, 1.15, 1],
-              opacity: [0.25, 0.4, 0.25],
-            }}
-            transition={{ duration: 5, repeat: Infinity }}
+            animate={
+              _shouldReduceMotion
+                ? {}
+                : {
+                    scale: [1, 1.15, 1],
+                    opacity: [0.25, 0.4, 0.25],
+                  }
+            }
+            transition={_shouldReduceMotion ? {} : { duration: 5, repeat: Infinity }}
           />
 
           {/* Handle bar */}
@@ -167,14 +174,18 @@ export function RingDetailSheet({
               <motion.div
                 className="p-3.5 rounded-2xl bg-foreground/20 backdrop-blur-sm"
                 style={{ boxShadow: `0 0 40px ${theme.glowColor}` }}
-                animate={{
-                  boxShadow: [
-                    `0 0 25px ${theme.glowColor}`,
-                    `0 0 50px ${theme.glowColor}`,
-                    `0 0 25px ${theme.glowColor}`,
-                  ],
-                }}
-                transition={{ duration: 2.5, repeat: Infinity }}
+                animate={
+                  _shouldReduceMotion
+                    ? {}
+                    : {
+                        boxShadow: [
+                          `0 0 25px ${theme.glowColor}`,
+                          `0 0 50px ${theme.glowColor}`,
+                          `0 0 25px ${theme.glowColor}`,
+                        ],
+                      }
+                }
+                transition={_shouldReduceMotion ? {} : { duration: 2.5, repeat: Infinity }}
               >
                 <Icon className="w-7 h-7 text-white" aria-hidden="true" />
               </motion.div>

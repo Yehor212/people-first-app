@@ -13,7 +13,7 @@ import { useAICoachConversation, ChatMessage } from "@/contexts/AICoachContext";
 import { cn } from "@/lib/utils";
 import { zenTap } from "@/lib/animationUtils";
 import { haptics } from "@/lib/haptics";
-import { useBackHandler } from "@/hooks/useBackHandler";
+import { useModalA11y } from "@/hooks/useModalA11y";
 import { useScrollLock } from "@/hooks/useScrollLock";
 
 export function AICoachChat() {
@@ -21,7 +21,7 @@ export function AICoachChat() {
   const { isOpen, isLoading, messages, closeCoach, sendMessage, clearHistory } =
     useAICoachConversation();
 
-  useBackHandler(isOpen, () => {
+  const { modalRef, handleKeyDown } = useModalA11y(isOpen, () => {
     if (!isLoading) closeCoach();
   });
   useScrollLock(isOpen);
@@ -76,6 +76,8 @@ export function AICoachChat() {
         role="presentation"
       />
       <div
+        ref={modalRef}
+        onKeyDown={handleKeyDown}
         role="dialog"
         aria-modal="true"
         className="fixed bottom-0 inset-x-0 z-[60] rounded-t-[2rem] bg-background max-h-[85dvh] overflow-clip motion-safe:animate-slide-up flex flex-col pb-safe"
