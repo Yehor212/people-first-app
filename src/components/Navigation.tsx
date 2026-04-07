@@ -151,18 +151,25 @@ export const Navigation = memo(function Navigation({
         role="navigation"
         aria-label={t.mainNavigation || "Main navigation"}
       >
-        {/* Logo / Brand */}
+        {/* Header — brand + toggle */}
         <div
           className={cn(
-            "flex items-center border-b border-border/50 transition-all duration-300",
-            collapsed ? "justify-center px-2 py-6" : "gap-2 px-5 py-6"
+            "flex items-center border-b border-border/50 transition-all duration-300 min-h-[60px]",
+            collapsed ? "justify-center px-2" : "justify-between px-5"
           )}
         >
-          {collapsed ? (
-            <span className="text-lg font-bold text-primary">Z</span>
-          ) : (
-            <span className="text-lg font-bold text-foreground">ZenFlow</span>
-          )}
+          {!collapsed && <span className="text-lg font-bold text-foreground">ZenFlow</span>}
+          <button
+            onClick={toggleCollapse}
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            className="p-2 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          >
+            {collapsed ? (
+              <PanelLeftOpen className="w-5 h-5" aria-hidden="true" />
+            ) : (
+              <PanelLeftClose className="w-5 h-5" aria-hidden="true" />
+            )}
+          </button>
         </div>
 
         {/* Main navigation tabs */}
@@ -174,37 +181,9 @@ export const Navigation = memo(function Navigation({
           {mainTabs.map(renderTab)}
         </div>
 
-        {/* Bottom section: Settings + Collapse toggle */}
+        {/* Bottom section: Settings only */}
         <div className="border-t border-border/50 py-3 px-2 space-y-1">
           {renderTab(settingsTab)}
-          <div className="relative group">
-            <button
-              onClick={toggleCollapse}
-              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-              className={cn(
-                "flex items-center w-full rounded-xl transition-all duration-200 min-h-[44px] text-muted-foreground hover:bg-muted hover:text-foreground",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
-                collapsed ? "justify-center px-2 py-3" : "gap-3 px-4 py-3"
-              )}
-            >
-              {collapsed ? (
-                <PanelLeftOpen className="w-5 h-5 shrink-0" aria-hidden="true" />
-              ) : (
-                <>
-                  <PanelLeftClose className="w-5 h-5 shrink-0" aria-hidden="true" />
-                  <span className="text-sm truncate">
-                    {(t as unknown as Record<string, string>).collapseSidebar || "Collapse"}
-                  </span>
-                </>
-              )}
-            </button>
-            {/* Tooltip for collapse button */}
-            {collapsed && (
-              <div className="absolute start-full top-1/2 -translate-y-1/2 ms-2 px-2.5 py-1.5 rounded-lg bg-popover text-popover-foreground text-xs font-medium shadow-lg border border-border opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-150 whitespace-nowrap z-[45]">
-                {(t as unknown as Record<string, string>).expandSidebar || "Expand sidebar"}
-              </div>
-            )}
-          </div>
         </div>
       </aside>
 
