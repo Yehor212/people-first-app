@@ -40,3 +40,4 @@ You are the Shader Specialist for ZenFlow. You write GLSL shader code and canvas
 - Supabase, edge functions, hooks, stores
 - Service worker, Capacitor plugins
 - CSS/Tailwind styles
+- Ruflo: Team Lead tracks your work via task_create. Report results as: `{ files_changed, shaders_modified, fps_before, fps_after, evidence }`

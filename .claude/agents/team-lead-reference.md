@@ -160,7 +160,20 @@ For 5+ agents: use **hierarchical delegation** — spawn Feature Leads that spaw
 - Original user request: [VERBATIM — Rule #14]
 - Verification criteria: How I validate output
 - Report format: findings with file:line, diffs, test output
+- Ruflo task ID: [from task_create — track completion]
 ```
+
+### Ruflo Integration in Delegation
+
+Before spawning any Builder:
+
+```
+task_create(type:"feature", description:"[subtask]", priority:"high",
+            tags:["builder","domain"], assignTo:["agent-name"])
+```
+
+After Builder returns: `task_complete(taskId, result:{files_changed, evidence})`
+Before commit: `task_list(status:"pending")` MUST return 0.
 
 **Anti-pattern: Vague delegation**
 
@@ -201,11 +214,16 @@ GOOD: "Review src/hooks/useSync.ts for race conditions. Check:
 ```bash
 npx tsc --noEmit                     # 0 errors
 npx eslint src/ --max-warnings 0     # 0 warnings
-npx vitest run                       # all pass
+npx vitest run                       # all pass (show count: "3202 passed")
 npm run build                        # succeeds
 npm run i18n:check                   # 8 languages
 npm run ratchet:check                # no regressions
+npx oxlint -c .oxlintrc.json src/   # 0 errors (fast linter, catches what ESLint misses)
+npx madge --circular src/            # 0 circular dependencies
+npm run check:size                   # under 1.5MB gzipped budget (.size-limit.json)
 ```
+
+Full CI pipeline: `npm run ci:preflight` = eslint → tsc → i18n:check → vitest → vite build → ratchet:check
 
 Non-zero exit = FAIL. No exceptions.
 
@@ -335,6 +353,28 @@ i18n: 8 languages (en, uk, es, de, fr, ja, ar, he)
 - `env(safe-area-inset-*)` on all fixed/sticky elements
 - Zero `as any` outside tests, zero silent `.catch(() => {})`
 - All UI strings via `t()` translation keys
+- Desktop sidebar navigation (hidden lg:flex) with `--nav-height: 0rem` at lg:
+- Fluid typography via clamp() (375px → 1536px viewport)
+- `scrollbar-gutter: stable` on desktop breakpoints
+- `overscroll-behavior: contain` on fixed overlays
+- `color-scheme: light dark` on :root
+
+### What User Didn't Mention But You MUST Check
+
+```
+□ Android back handler on modals/drawers
+□ Safe-area insets, -webkit-backdrop-filter
+□ aria-label, touch 44px, prefers-reduced-motion
+□ 8 languages, RTL for ar/he
+□ vitest zero regression, IDE diagnostics clean
+□ Zustand + Dexie + Supabase sync integrity
+□ No secrets, no XSS, no injection
+□ Offline-first behavior
+□ Desktop sidebar + responsive breakpoints
+□ Fluid typography scaling
+□ Bundle size under 1.5MB gzipped
+□ Circular dependency check (madge)
+```
 
 ### Visual Regression Ban (ABSOLUTE)
 
@@ -351,7 +391,84 @@ NEVER change visual design without explicit user approval. Fix only functional i
 
 ---
 
-## PART 10: MCP TOOLS
+## PART 10: ANTI-SKIP ENFORCEMENT (MECHANICAL — exit(2) hooks)
+
+These hooks run via system hooks — CANNOT be bypassed by reasoning or excuses:
+
+| Hook                                | Event             | Purpose                                                           |
+| ----------------------------------- | ----------------- | ----------------------------------------------------------------- |
+| `plan-completion-gate.cjs`          | Stop              | sources_checked covers ALL changes + git diff cross-ref           |
+| `dismissal-detector.cjs`            | Stop              | Catches 35 skip-language patterns without file:line evidence      |
+| `middle-item-audit.cjs`             | Stop + git commit | ALL items need evidence; middle items need 25+ chars with file    |
+| `tool-audit-trail.cjs`              | PostToolUse       | Logs Read/Grep/Edit/Bash calls, cross-references evidence         |
+| `satisficing-gate.cjs`              | Stop              | Blocks if audit checklist < 80% complete; min 10 items            |
+| `difficulty-weighted-checklist.cjs` | Stop + git commit | Blocks if >50% completed items are trivial; weights by complexity |
+| `anti-skip-gate.cjs`                | Stop              | Ruflo 16 areas + type assertions + plan coverage                  |
+| `independent-verifier.cjs`          | Stop              | Overwrites .verification-done with fresh tsc + vitest + checks    |
+| `stop-tsc-gate.cjs`                 | Stop              | Fast parallel backup: tsc + checklist + ruflo                     |
+
+### 35 Skip-Language Patterns (dismissal-detector.cjs)
+
+Blocked without file:line + 50 chars evidence: "out of scope", "enhancement", "can wait", "nice-to-have", "future work", "won't fix", "not critical", "low priority", "pre-existing", "known issue", "by design", "acceptable", "minor", "negligible", "edge case that rarely", "unlikely to", "separate PR", "next sprint", "deferred", "optional", "cosmetic", "non-blocking", "good enough", "practically impossible", "theoretical", "not a real", "vanishingly rare", "already tracked", "backlog", "tech debt", "later phase", "v2", "follow-up", "punt", "skip for now"
+
+### Difficulty Weighting (difficulty-weighted-checklist.cjs)
+
+Items classified by complexity:
+
+- **Trivial** (weight 0.1): add comment, rename variable, fix typo, update import
+- **Easy** (weight 0.3): add aria-label, fix lint warning, add translation key
+- **Medium** (weight 0.6): refactor hook, fix race condition, add error handling, write test
+- **Hard** (weight 1.0): architecture change, new feature module, security fix, cross-platform fix
+
+Block condition: weighted score of completed items < 0.4 (prevents satisficing with only trivial fixes).
+
+---
+
+## PART 11: RUFLO TASK TRACKING (MANDATORY per session)
+
+Every task gets tracked via Ruflo MCP. Unfinished tasks are VISIBLE and BLOCK commit.
+
+### 5-Phase Workflow
+
+```
+Phase 1: DECOMPOSE → task_create(type, description, priority, tags, assignTo)
+Phase 2: TRACK     → task_update(taskId, status:"in-progress", progress:N)
+Phase 3: COMPLETE  → task_complete(taskId, result:{files_changed, evidence})
+Phase 4: LEARN     → hooks_post-task(taskId, success, quality, agent)
+Phase 5: VERIFY    → task_list(status:"pending") MUST return 0
+                   → task_list(status:"in-progress") MUST return 0
+                   → task_summary() for final audit
+```
+
+### 16 Mandatory Ruflo Areas (ALL must be covered per session)
+
+| #   | Area                  | Fastest Tool          |
+| --- | --------------------- | --------------------- |
+| 1   | memory-knowledge      | `memory_search`       |
+| 2   | intelligence-learning | `neural_status`       |
+| 3   | guidance              | `guidance_workflow`   |
+| 4   | code-analysis         | `analyze_diff-risk`   |
+| 5   | security              | `aidefence_stats`     |
+| 6   | performance           | `performance_metrics` |
+| 7   | embeddings-vectors    | `embeddings_status`   |
+| 8   | config-system         | `config_list`         |
+| 9   | hooks-automation      | `hooks_list`          |
+| 10  | session-workflow      | `session_list`        |
+| 11  | agent-management      | `agent_list`          |
+| 12  | swarm-orchestration   | `swarm_status`        |
+| 13  | hive-mind             | `hive-mind_status`    |
+| 14  | wasm-agents           | `wasm_agent_list`     |
+| 15  | ruvllm-inference      | `ruvllm_status`       |
+| 16  | github-integration    | `github_metrics`      |
+
+Enforced by 6 hooks: `ruflo-enforcer.cjs` (Edit gate ≥3), `anti-skip-gate.cjs` (Stop =16), `commit-gate.cjs` Layer 5h, `stop-tsc-gate.cjs`, `independent-verifier.cjs`
+
+Before first edit: `guidance_workflow` + `memory_search` + `agentdb_pattern-search`
+After work: `memory_store` to save solution pattern
+
+---
+
+## PART 12: MCP TOOLS
 
 ### REAL Tools (USE)
 
@@ -359,6 +476,7 @@ NEVER change visual design without explicit user approval. Fix only functional i
 | ------------- | ------------------------------------------------- | ------------------- |
 | Ruflo Memory  | `memory_search`, `memory_store`                   | Pattern persistence |
 | Ruflo AgentDB | `agentdb_pattern-search`, `agentdb_pattern-store` | Hybrid search       |
+| Ruflo Tasks   | `task_create`, `task_update`, `task_complete`     | Accountability      |
 | Snyk          | `snyk_code_scan`, `snyk_sca_scan`                 | Security scanning   |
 | Playwright    | `browser_navigate`, `browser_snapshot`            | Browser automation  |
 | Context7      | `resolve-library-id` → `query-docs`               | Library docs        |
@@ -374,7 +492,7 @@ NEVER change visual design without explicit user approval. Fix only functional i
 
 ---
 
-## PART 11: RESEARCH-BACKED PRINCIPLES
+## PART 13: RESEARCH-BACKED PRINCIPLES
 
 ### From MAST Taxonomy (arXiv:2503.13657 — 1600+ traces, 14 failure modes)
 
@@ -407,7 +525,7 @@ NEVER change visual design without explicit user approval. Fix only functional i
 
 ---
 
-## PART 12: ROOT CAUSE MANDATE
+## PART 14: ROOT CAUSE MANDATE
 
 Every fix MUST address the ROOT CAUSE, not the symptom:
 

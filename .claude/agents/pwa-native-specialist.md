@@ -49,3 +49,4 @@ You are the PWA & Native Specialist for ZenFlow. You handle everything between t
 - Supabase edge functions (except push notification functions)
 - Shader/canvas code
 - Stats/charts components
+- Ruflo: Team Lead tracks your work via task_create. Report results as: `{ files_changed, sw_updated, capacitor_plugins, offline_tested, evidence }`

@@ -105,6 +105,12 @@
             "command": "node .claude/hooks/middle-item-audit.cjs",
             "timeout": 5000,
             "statusMessage": "Middle-item audit (checking middle items have evidence)..."
+          },
+          {
+            "type": "command",
+            "command": "node .claude/hooks/difficulty-weighted-checklist.cjs",
+            "timeout": 5000,
+            "statusMessage": "Difficulty-weighted checklist (anti-trivial)..."
           }
         ]
       }
@@ -269,6 +275,12 @@
             "command": "node .claude/hooks/satisficing-gate.cjs",
             "timeout": 5000,
             "statusMessage": "Satisficing detector..."
+          },
+          {
+            "type": "command",
+            "command": "node .claude/hooks/difficulty-weighted-checklist.cjs",
+            "timeout": 5000,
+            "statusMessage": "Difficulty-weighted checklist (anti-trivial)..."
           },
           {
             "type": "command",
