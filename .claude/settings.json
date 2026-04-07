@@ -264,6 +264,12 @@
             "command": "node .claude/hooks/dismissal-detector.cjs",
             "timeout": 5000,
             "statusMessage": "Dismissal detector (skip language without evidence)..."
+          },
+          {
+            "type": "command",
+            "command": "node .claude/hooks/middle-item-audit.cjs",
+            "timeout": 5000,
+            "statusMessage": "Middle-item audit (all items need evidence)..."
           }
         ]
       }
