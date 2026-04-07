@@ -125,7 +125,7 @@ export function RingDetailSheet({
       <div
         role="dialog"
         aria-modal="true"
-        className="fixed bottom-0 inset-x-0 z-[60] rounded-t-[2rem] bg-background max-h-[90dvh] overflow-hidden animate-slide-up"
+        className="fixed bottom-0 inset-x-0 z-[60] rounded-t-[2rem] bg-background max-h-[90dvh] overflow-hidden animate-slide-up pb-safe"
       >
         <h2 className="sr-only">{t[ringType] || theme.label}</h2>
 

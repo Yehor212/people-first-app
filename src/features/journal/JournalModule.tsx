@@ -942,7 +942,7 @@ export const JournalModule = memo(function JournalModule({
                           role="dialog"
                           aria-modal="true"
                           aria-label={ts.journalSettings || "Diary Settings"}
-                          className="fixed bottom-0 inset-x-0 z-[65] animate-slide-up"
+                          className="fixed bottom-0 inset-x-0 z-[65] animate-slide-up pb-safe"
                           onClick={(e) => e.stopPropagation()}
                         >
                           {/* Handle bar */}
@@ -1237,7 +1237,7 @@ export const JournalModule = memo(function JournalModule({
                           role="dialog"
                           aria-modal="true"
                           aria-label={ts.journalExportFormat || "Export Format"}
-                          className="fixed bottom-0 inset-x-0 z-[67] animate-slide-up"
+                          className="fixed bottom-0 inset-x-0 z-[67] animate-slide-up pb-safe"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <div className="flex justify-center pt-2 pb-1 bg-card rounded-t-2xl">

@@ -870,6 +870,11 @@
     overscroll-behavior: contain;
   }
 
+  /* Safe-area bottom padding utility — used by bottom sheets and overlays */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
   /* Centered content container (for tutorials, onboarding, modals) */
   .screen-centered {
     flex: 1;

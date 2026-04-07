@@ -27,17 +27,12 @@ export function TimeInput({
 
   return (
     <div className={cn("flex items-center gap-2", className)}>
-      {label && (
-        <span className="text-sm text-muted-foreground min-w-fit">{label}</span>
-      )}
+      {label && <span className="text-sm text-muted-foreground min-w-fit">{label}</span>}
 
       <div className="relative flex items-center">
         {/* Emoji/Icon prefix */}
         {icon && (
-          <span
-            className="absolute left-3 text-base pointer-events-none z-10"
-            aria-hidden="true"
-          >
+          <span className="absolute left-3 text-base pointer-events-none z-10" aria-hidden="true">
             {icon}
           </span>
         )}
@@ -51,7 +46,7 @@ export function TimeInput({
           aria-label={ariaLabel || label}
           className={cn(
             "appearance-none bg-secondary/80 rounded-xl text-foreground font-medium",
-            "h-11 px-4 py-2 text-sm",
+            "h-11 px-4 py-2 text-base md:text-sm",
             "border-2 border-transparent",
             "focus:outline-none focus:border-primary/30 focus:ring-2 focus:ring-primary/20",
             "hover:bg-secondary transition-all duration-150",
@@ -64,7 +59,7 @@ export function TimeInput({
             "[&::-webkit-calendar-picker-indicator]:h-full",
             "[&::-webkit-calendar-picker-indicator]:cursor-pointer",
             icon ? "ps-10" : "ps-4",
-            "pe-10", // Space for clock icon
+            "pe-10" // Space for clock icon
           )}
         />
 
@@ -102,7 +97,7 @@ export function TimeInputInline({
         "flex items-center justify-between gap-3 p-3 bg-secondary/50 rounded-xl",
         "hover:bg-secondary/70 transition-colors",
         disabled && "opacity-50",
-        className,
+        className
       )}
     >
       {/* Label with optional emoji */}
@@ -112,9 +107,7 @@ export function TimeInputInline({
             {icon}
           </span>
         )}
-        <span className="text-sm font-medium text-foreground truncate">
-          {label}
-        </span>
+        <span className="text-sm font-medium text-foreground truncate">{label}</span>
       </div>
 
       {/* Time input */}
@@ -127,7 +120,7 @@ export function TimeInputInline({
           aria-label={ariaLabel || label}
           className={cn(
             "appearance-none bg-background rounded-lg text-foreground font-semibold text-center",
-            "h-9 w-24 px-2 text-sm",
+            "h-9 w-24 px-2 text-base md:text-sm",
             "border border-border",
             "focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20",
             "transition-all duration-150",
@@ -135,7 +128,7 @@ export function TimeInputInline({
             "[&::-webkit-calendar-picker-indicator]:opacity-0",
             "[&::-webkit-calendar-picker-indicator]:absolute",
             "[&::-webkit-calendar-picker-indicator]:inset-0",
-            "[&::-webkit-calendar-picker-indicator]:cursor-pointer",
+            "[&::-webkit-calendar-picker-indicator]:cursor-pointer"
           )}
         />
       </div>

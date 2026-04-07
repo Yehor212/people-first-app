@@ -44,11 +44,11 @@ export function JournalStickerPackManager({
         role="dialog"
         aria-modal="true"
         className={cn(
-          "fixed bottom-0 inset-x-0 z-[67]",
+          "fixed bottom-0 inset-x-0 z-[67] pb-safe",
           "bg-card/95 backdrop-blur-xl border-t border-border/40",
           "rounded-t-2xl shadow-lg animate-slide-up",
           "max-h-[70dvh] flex flex-col",
-          "pb-[env(safe-area-inset-bottom)]",
+          "pb-[env(safe-area-inset-bottom)]"
         )}
       >
         {/* Handle bar */}
@@ -83,9 +83,7 @@ export function JournalStickerPackManager({
                 layout
                 className={cn(
                   "rounded-xl border p-3 transition-all duration-200",
-                  enabled
-                    ? "bg-primary/5 border-primary/20"
-                    : "bg-muted/10 border-border/10",
+                  enabled ? "bg-primary/5 border-primary/20" : "bg-muted/10 border-border/10"
                 )}
               >
                 <div className="flex items-center gap-3">
@@ -93,9 +91,7 @@ export function JournalStickerPackManager({
                   <div
                     className={cn(
                       "w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ring-2",
-                      enabled
-                        ? "ring-primary/30 bg-primary/10"
-                        : "ring-border/10 bg-muted/20",
+                      enabled ? "ring-primary/30 bg-primary/10" : "ring-border/10 bg-muted/20"
                     )}
                   >
                     <StickerRenderer emoji={cat.icon} size="sm" />
@@ -107,7 +103,7 @@ export function JournalStickerPackManager({
                       <span
                         className={cn(
                           "text-sm font-medium truncate",
-                          enabled ? "text-foreground" : "text-muted-foreground",
+                          enabled ? "text-foreground" : "text-muted-foreground"
                         )}
                       >
                         {ts[cat.labelKey] || cat.key}
@@ -136,7 +132,7 @@ export function JournalStickerPackManager({
                       "relative w-12 h-7 rounded-full transition-colors duration-200 flex-shrink-0",
                       "min-w-[48px] min-h-[44px] flex items-center",
                       enabled ? "bg-primary" : "bg-muted/40",
-                      isLastEnabled && "opacity-50 cursor-not-allowed",
+                      isLastEnabled && "opacity-50 cursor-not-allowed"
                     )}
                     aria-label={
                       enabled
@@ -153,7 +149,7 @@ export function JournalStickerPackManager({
                       }}
                       className={cn(
                         "w-5 h-5 rounded-full bg-white shadow-sm",
-                        enabled ? "ms-auto me-1" : "ms-1",
+                        enabled ? "ms-auto me-1" : "ms-1"
                       )}
                     />
                   </motion.button>

@@ -9,14 +9,12 @@ const inputVariants = cva(
     variants: {
       variant: {
         default: "border-input focus-visible:ring-ring",
-        error:
-          "border-destructive focus-visible:ring-destructive animate-shake",
-        success:
-          "border-[hsl(var(--mood-good))] focus-visible:ring-[hsl(var(--mood-good))]",
+        error: "border-destructive focus-visible:ring-destructive animate-shake",
+        success: "border-[hsl(var(--mood-good))] focus-visible:ring-[hsl(var(--mood-good))]",
       },
       inputSize: {
         default: "h-11 text-base md:text-sm",
-        sm: "h-9 text-sm px-2.5",
+        sm: "h-9 text-base md:text-sm px-2.5",
         lg: "h-12 text-base px-4",
       },
     },
@@ -24,13 +22,11 @@ const inputVariants = cva(
       variant: "default",
       inputSize: "default",
     },
-  },
+  }
 );
 
 export interface InputProps
-  extends
-    Omit<React.ComponentProps<"input">, "size">,
-    VariantProps<typeof inputVariants> {}
+  extends Omit<React.ComponentProps<"input">, "size">, VariantProps<typeof inputVariants> {}
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, type, variant, inputSize, ...props }, ref) => {
@@ -43,7 +39,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         {...props}
       />
     );
-  },
+  }
 );
 Input.displayName = "Input";
 

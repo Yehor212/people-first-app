@@ -17,10 +17,7 @@ interface JournalTemplatePickerProps {
   onClose: () => void;
 }
 
-export function JournalTemplatePicker({
-  onSelect,
-  onClose,
-}: JournalTemplatePickerProps) {
+export function JournalTemplatePicker({ onSelect, onClose }: JournalTemplatePickerProps) {
   const { t } = useLanguage();
   const ts = t as unknown as Record<string, string>;
   useBackHandler(true, onClose);
@@ -47,7 +44,8 @@ export function JournalTemplatePicker({
       <div
         role="dialog"
         aria-modal="true"
-        className="fixed bottom-0 inset-x-0 z-[65] animate-slide-up"
+        aria-label="Template picker"
+        className="fixed bottom-0 inset-x-0 z-[65] animate-slide-up pb-safe"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Handle bar */}
@@ -77,7 +75,7 @@ export function JournalTemplatePicker({
               className={cn(
                 "flex flex-col items-center gap-2 p-4 rounded-xl min-h-[100px]",
                 "bg-muted/30 border border-border/20",
-                "hover:bg-muted/50 transition-colors",
+                "hover:bg-muted/50 transition-colors"
               )}
             >
               <FileText className="w-6 h-6 text-muted-foreground/60" />
@@ -104,7 +102,7 @@ export function JournalTemplatePicker({
                   "flex flex-col items-center gap-2 p-4 rounded-xl min-h-[100px]",
                   "bg-card/60 border border-border/15",
                   "hover:bg-card/80 hover:border-primary/20",
-                  "transition-all duration-200",
+                  "transition-all duration-200"
                 )}
               >
                 <StickerRenderer emoji={template.icon} size="sm" />
@@ -113,8 +111,7 @@ export function JournalTemplatePicker({
                     {ts[template.nameKey] || template.id.replace(/-/g, " ")}
                   </p>
                   <p className="text-[10px] text-muted-foreground/60 mt-0.5 line-clamp-2">
-                    {ts[template.descriptionKey] ||
-                      `${template.sections.length} sections`}
+                    {ts[template.descriptionKey] || `${template.sections.length} sections`}
                   </p>
                 </div>
               </motion.button>
