@@ -373,13 +373,13 @@ test.describe("Full Navigation", () => {
     const nav = page.locator('[role="navigation"]');
     await expect(nav.first()).toBeVisible({ timeout: 10000 });
 
-    const tabList = page.locator('[role="tablist"]').first();
+    const tabList = page.locator('[role="tablist"]').last();
     await expect(tabList).toBeVisible({ timeout: 10000 });
 
     const tabs = tabList.locator('button[role="tab"]');
     const tabCount = await tabs.count();
 
-    // App has 5 tabs: home, map, garden/diary, stats, settings
+    // App has 5 tabs: home, habits, garden/diary, stats, settings (mobile bottom nav)
     expect(tabCount).toBe(5);
 
     for (let i = 0; i < tabCount; i++) {
@@ -480,7 +480,7 @@ test.describe("Empty States", () => {
     await page.waitForLoadState("networkidle");
 
     // Wait for tab navigation to appear (app has loaded past onboarding)
-    const tabList = page.locator('[role="tablist"]').first();
+    const tabList = page.locator('[role="tablist"]').last();
     await expect(tabList).toBeVisible({ timeout: 15000 });
 
     // Verify no crash
