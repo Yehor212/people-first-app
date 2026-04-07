@@ -136,6 +136,23 @@
             "command": "node .claude/hooks/goal-reinjection.cjs",
             "timeout": 5000,
             "statusMessage": "Goal re-injection check..."
+          },
+          {
+            "type": "command",
+            "command": "node .claude/hooks/tool-audit-trail.cjs",
+            "timeout": 2000,
+            "statusMessage": "Audit trail logging..."
+          }
+        ]
+      },
+      {
+        "matcher": "Read|Grep",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/tool-audit-trail.cjs",
+            "timeout": 2000,
+            "statusMessage": "Audit trail logging..."
           }
         ]
       },
@@ -159,6 +176,12 @@
             "command": "node .claude/hooks/goal-reinjection.cjs",
             "timeout": 5000,
             "statusMessage": "Goal re-injection check..."
+          },
+          {
+            "type": "command",
+            "command": "node .claude/hooks/tool-audit-trail.cjs",
+            "timeout": 2000,
+            "statusMessage": "Audit trail logging..."
           }
         ]
       },

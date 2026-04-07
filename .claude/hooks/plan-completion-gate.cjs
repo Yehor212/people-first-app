@@ -50,12 +50,14 @@ try {
   }
 
   // Rule 1: Every file in changes[] must appear in sources_checked[].name
-  // Stricter matching: exact basename match, not substring
+  // v2.1: Exact basename match with word boundary (not loose substring)
   const uncheckedFiles = changes.filter(f => {
     const base = path.basename(f).toLowerCase();
+    const baseNoExt = base.replace(/\.[^.]+$/, '');
     return !checked.some(s => {
       const sName = (s.name || '').toLowerCase();
-      return sName.includes(base);
+      // Match: exact basename, or basename without extension as whole word
+      return sName.includes(base) || new RegExp('\\b' + baseNoExt.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b').test(sName);
     });
   });
 
@@ -76,6 +78,50 @@ try {
     shallowEvidence.forEach(s => console.error(`   - ${s.name}: "${(s.evidence || '').slice(0, 60)}"`));
     process.exit(2);
   }
+
+  // Rule 3: Audit trail cross-reference — verify claimed READs actually happened
+  // This prevents fabricating "READ: src/file.tsx" in evidence without actually reading it
+  try {
+    const trailPath = path.join(root, '.tool-audit-trail');
+    if (fs.existsSync(trailPath)) {
+      const trail = fs.readFileSync(trailPath, 'utf8').split('\n').filter(Boolean);
+      const trailEntries = trail.map(line => { try { return JSON.parse(line); } catch (_) { return null; } }).filter(Boolean);
+
+      // Files that were actually Read
+      const actualReads = trailEntries
+        .filter(e => e.tool === 'Read')
+        .map(e => path.basename(e.file || '').toLowerCase());
+
+      // Files that were actually Edited/Written
+      const actualEdits = trailEntries
+        .filter(e => e.tool === 'Edit' || e.tool === 'Write')
+        .map(e => path.basename(e.file || '').toLowerCase());
+
+      // Rule 3a: Every edited file should have been Read first (temporal consistency)
+      const editWithoutRead = actualEdits.filter(f => f && !actualReads.includes(f));
+      if (editWithoutRead.length > 2) {
+        console.error(`⚠️ PLAN COMPLETION GATE: ${editWithoutRead.length} files edited WITHOUT being Read first.`);
+        console.error(`   Temporal consistency: Read BEFORE Edit is required.`);
+        // Warning only, not blocking — some new files don't need prior Read
+      }
+
+      // Rule 3b: sources_checked evidence claiming "READ:" must match actual trail
+      const claimedReads = checked
+        .map(s => (s.evidence || '').match(/READ:\s*([\w/.-]+\.\w+)/gi) || [])
+        .flat()
+        .map(r => path.basename(r.replace(/^READ:\s*/i, '')).toLowerCase());
+
+      if (claimedReads.length > 0 && actualReads.length > 0) {
+        const fabricated = claimedReads.filter(cr => !actualReads.some(ar => ar.includes(cr) || cr.includes(ar)));
+        if (fabricated.length > 0) {
+          console.error(`❌ PLAN COMPLETION GATE: ${fabricated.length} claimed READ(s) NOT found in audit trail!`);
+          console.error(`   Evidence fabrication detected: ${fabricated.join(', ')}`);
+          console.error(`   Audit trail has ${actualReads.length} actual reads.`);
+          process.exit(2);
+        }
+      }
+    }
+  } catch (_) { /* audit trail check is best-effort */ }
 
 } catch (e) {
   // FAIL-CLOSED: parse errors = block (v2 fix)

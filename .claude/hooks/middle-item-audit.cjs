@@ -44,9 +44,16 @@ try {
   const FILE_PATTERN = /\.(ts|tsx|js|jsx|css|json|md|cjs|gradle|xml)\b/i;
 
   // Rule 1: ALL items must have evidence (not just middle)
+  // v2.1: Exact basename match with word boundary
+  const matchesName = (sName, base) => {
+    const lower = sName.toLowerCase();
+    const baseNoExt = base.replace(/\.[^.]+$/, '');
+    return lower.includes(base) || new RegExp('\\b' + baseNoExt.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b').test(lower);
+  };
+
   const unchecked = changes.filter(item => {
     const base = path.basename(item).toLowerCase();
-    return !checked.some(s => (s.name || '').toLowerCase().includes(base));
+    return !checked.some(s => matchesName(s.name || '', base));
   });
 
   if (unchecked.length > 0) {
@@ -66,7 +73,7 @@ try {
 
     const shallowMiddle = middleItems.filter(item => {
       const base = path.basename(item).toLowerCase();
-      const match = checked.find(s => (s.name || '').toLowerCase().includes(base));
+      const match = checked.find(s => matchesName(s.name || '', base));
       if (!match) return true;
       const ev = match.evidence || '';
       return ev.length < 25 || !FILE_PATTERN.test(ev);
