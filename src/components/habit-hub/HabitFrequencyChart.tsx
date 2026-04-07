@@ -102,7 +102,7 @@ export const HabitFrequencyChart = memo(function HabitFrequencyChart({
             <YAxis
               tick={{
                 fill: "hsl(var(--muted-foreground) / 0.7)",
-                fontSize: 9,
+                fontSize: 10,
                 fontFamily: "Inter, sans-serif",
               }}
               axisLine={false}

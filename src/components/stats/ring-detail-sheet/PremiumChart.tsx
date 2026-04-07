@@ -2,19 +2,29 @@
  * PremiumChart - Animated SVG chart with glow effects
  */
 
-import { useId } from 'react';
-import { motion } from 'framer-motion';
-import type { DayData } from './types';
+import { useId } from "react";
+import { motion } from "framer-motion";
+import type { DayData } from "./types";
 
 // Premium animated chart with glow effects
-export function PremiumChart({ data, color, glowColor, dayNames }: { data: DayData[]; color: string; glowColor: string; dayNames: string[] }) {
+export function PremiumChart({
+  data,
+  color,
+  glowColor,
+  dayNames,
+}: {
+  data: DayData[];
+  color: string;
+  glowColor: string;
+  dayNames: string[];
+}) {
   const uid = useId();
   const gradientId = `chartGradient-${uid}`;
   const filterId = `chartGlow-${uid}`;
 
   if (data.length < 2) return null;
 
-  const values = data.map(d => (Number.isFinite(d.value) ? d.value : 0));
+  const values = data.map((d) => (Number.isFinite(d.value) ? d.value : 0));
   const max = Math.max(...values, 100);
   const height = 100;
   const width = 300;
@@ -28,29 +38,31 @@ export function PremiumChart({ data, color, glowColor, dayNames }: { data: DayDa
     value,
   }));
 
-  const pathD = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ');
+  const pathD = points
+    .map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`)
+    .join(" ");
   const areaD = `${pathD} L ${points[points.length - 1].x} ${height - padding.bottom} L ${points[0].x} ${height - padding.bottom} Z`;
 
   // Guard: if path contains NaN (bad data), don't render SVG
-  if (pathD.includes('NaN')) return null;
+  if (pathD.includes("NaN")) return null;
 
-  const dayLabels = data.map(d => {
+  const dayLabels = data.map((d) => {
     const dayOfWeek = new Date(d.date).getDay();
-    return dayNames[dayOfWeek]?.slice(0, 1) || '';
+    return dayNames[dayOfWeek]?.slice(0, 1) || "";
   });
 
   return (
-    <svg width={width} height={height} className="overflow-visible">
+    <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto overflow-visible">
       <defs>
         <linearGradient id={gradientId} x1="0%" y1="0%" x2="0%" y2="100%">
           <stop offset="0%" stopColor={color} stopOpacity="0.4" />
           <stop offset="100%" stopColor={color} stopOpacity="0.02" />
         </linearGradient>
         <filter id={filterId} x="-50%" y="-50%" width="200%" height="200%">
-          <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+          <feGaussianBlur stdDeviation="4" result="coloredBlur" />
           <feMerge>
-            <feMergeNode in="coloredBlur"/>
-            <feMergeNode in="SourceGraphic"/>
+            <feMergeNode in="coloredBlur" />
+            <feMergeNode in="SourceGraphic" />
           </feMerge>
         </filter>
       </defs>
@@ -72,10 +84,10 @@ export function PremiumChart({ data, color, glowColor, dayNames }: { data: DayDa
         strokeWidth="6"
         strokeLinecap="round"
         strokeLinejoin="round"
-        style={{ filter: 'blur(4px)' }}
+        style={{ filter: "blur(4px)" }}
         initial={{ pathLength: 0 }}
         animate={{ pathLength: 1 }}
-        transition={{ duration: 1.2, ease: 'easeOut' }}
+        transition={{ duration: 1.2, ease: "easeOut" }}
       />
 
       {/* Main line */}
@@ -88,7 +100,7 @@ export function PremiumChart({ data, color, glowColor, dayNames }: { data: DayDa
         strokeLinejoin="round"
         initial={{ pathLength: 0 }}
         animate={{ pathLength: 1 }}
-        transition={{ duration: 1.2, ease: 'easeOut' }}
+        transition={{ duration: 1.2, ease: "easeOut" }}
       />
 
       {/* Data points with animation */}
@@ -114,7 +126,7 @@ export function PremiumChart({ data, color, glowColor, dayNames }: { data: DayDa
             strokeWidth="2"
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            transition={{ delay: 0.8 + i * 0.08, type: 'spring' }}
+            transition={{ delay: 0.8 + i * 0.08, type: "spring" }}
           />
           {/* Value label for last point */}
           {i === points.length - 1 && (
@@ -123,14 +135,7 @@ export function PremiumChart({ data, color, glowColor, dayNames }: { data: DayDa
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 1.2 }}
             >
-              <rect
-                x={point.x - 18}
-                y={point.y - 28}
-                width="36"
-                height="20"
-                rx="10"
-                fill={color}
-              />
+              <rect x={point.x - 18} y={point.y - 28} width="36" height="20" rx="10" fill={color} />
               <text
                 x={point.x}
                 y={point.y - 14}

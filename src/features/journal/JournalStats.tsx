@@ -505,7 +505,7 @@ export const JournalStats = memo(function JournalStats({ entries, onBack }: Jour
                   {ts.journalStatsMoodDist || "Mood Distribution"}
                 </h3>
                 <div className="flex items-center gap-4">
-                  <ResponsiveContainer width={120} height={120}>
+                  <ResponsiveContainer width="100%" height={120}>
                     <PieChart>
                       <Pie
                         data={moodDist}
@@ -552,12 +552,12 @@ export const JournalStats = memo(function JournalStats({ entries, onBack }: Jour
                   <LineChart data={moodTimeline}>
                     <XAxis
                       dataKey="week"
-                      tick={{ fontSize: 9 }}
+                      tick={{ fontSize: 10 }}
                       stroke="#888"
                     />
                     <YAxis
                       domain={[1, 5]}
-                      tick={{ fontSize: 9 }}
+                      tick={{ fontSize: 10 }}
                       stroke="#888"
                       width={20}
                     />
@@ -591,11 +591,11 @@ export const JournalStats = memo(function JournalStats({ entries, onBack }: Jour
                   <BarChart data={frequency}>
                     <XAxis
                       dataKey="week"
-                      tick={{ fontSize: 8 }}
+                      tick={{ fontSize: 10 }}
                       stroke="#888"
                     />
                     <YAxis
-                      tick={{ fontSize: 9 }}
+                      tick={{ fontSize: 10 }}
                       stroke="#888"
                       width={20}
                       allowDecimals={false}
