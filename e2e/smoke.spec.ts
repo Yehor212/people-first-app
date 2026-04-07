@@ -366,6 +366,8 @@ test.describe("Focus Timer", () => {
  */
 test.describe("Full Navigation", () => {
   test("can navigate to all tabs", async ({ page }) => {
+    // Mobile viewport — bottom nav is lg:hidden (hidden at >=1024px)
+    await page.setViewportSize({ width: 375, height: 812 });
     await page.goto("/");
     await page.waitForLoadState("networkidle");
 
