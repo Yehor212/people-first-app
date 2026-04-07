@@ -1,8 +1,8 @@
-import { test, expect } from '@playwright/test';
-import { createRequire } from 'module';
+import { test, expect } from "@playwright/test";
+import { createRequire } from "module";
 
 const require = createRequire(import.meta.url);
-const packageJson = require('../package.json') as { version: string };
+const packageJson = require("../package.json") as { version: string };
 
 /**
  * Smoke Tests - Basic app functionality verification
@@ -17,56 +17,66 @@ const packageJson = require('../package.json') as { version: string };
 // addInitScript runs before page scripts, ensuring values are ready for React.
 test.beforeEach(async ({ page }) => {
   await page.addInitScript((appVersion: string) => {
-    localStorage.setItem('zenflow-language-selected', JSON.stringify(true));
-    localStorage.setItem('zenflow-google-auth-checked', JSON.stringify(true));
-    localStorage.setItem('zenflow-tutorial-complete', JSON.stringify(true));
-    localStorage.setItem('zenflow-onboarding-complete', JSON.stringify(true));
-    localStorage.setItem('zenflow-notification-permission-checked', JSON.stringify(true));
-    localStorage.setItem('zenflow-privacy', JSON.stringify({ noTracking: false, analytics: false, consentShown: true }));
+    localStorage.setItem("zenflow-language-selected", JSON.stringify(true));
+    localStorage.setItem("zenflow-google-auth-checked", JSON.stringify(true));
+    localStorage.setItem("zenflow-tutorial-complete", JSON.stringify(true));
+    localStorage.setItem("zenflow-onboarding-complete", JSON.stringify(true));
+    localStorage.setItem("zenflow-notification-permission-checked", JSON.stringify(true));
+    localStorage.setItem(
+      "zenflow-privacy",
+      JSON.stringify({ noTracking: false, analytics: false, consentShown: true })
+    );
     // Prevent welcome overlay from showing (progressive onboarding)
-    localStorage.setItem('zenflow_onboarding_state', JSON.stringify({
-      isNewUser: false, hasSeenWelcome: true, firstLoginDate: Date.now(), daysActive: 5,
-      lastActiveDate: new Date().toISOString().split('T')[0], unlockedFeatures: []
-    }));
+    localStorage.setItem(
+      "zenflow_onboarding_state",
+      JSON.stringify({
+        isNewUser: false,
+        hasSeenWelcome: true,
+        firstLoginDate: Date.now(),
+        daysActive: 5,
+        lastActiveDate: new Date().toISOString().split("T")[0],
+        unlockedFeatures: [],
+      })
+    );
     // Prevent re-engagement welcome back modal
-    localStorage.setItem('zenflow_last_active', new Date().toISOString().split('T')[0]);
+    localStorage.setItem("zenflow_last_active", new Date().toISOString().split("T")[0]);
     // Prevent weekly report modal from auto-showing (triggers on Mondays)
-    localStorage.setItem('zenflow-last-weekly-report', new Date().toISOString());
+    localStorage.setItem("zenflow-last-weekly-report", new Date().toISOString());
     // Prevent What's New modal from blocking UI (suppress for current version)
-    localStorage.setItem('zenflow_last_seen_version', appVersion);
+    localStorage.setItem("zenflow_last_seen_version", appVersion);
   }, packageJson.version);
 });
 
-test.describe('App Smoke Tests', () => {
-  test('app loads successfully', async ({ page }) => {
-    await page.goto('/');
+test.describe("App Smoke Tests", () => {
+  test("app loads successfully", async ({ page }) => {
+    await page.goto("/");
 
     // Wait for app to load (check for main container or navigation)
-    await expect(page.locator('body')).toBeVisible();
+    await expect(page.locator("body")).toBeVisible();
 
     // App should not show error states
-    await expect(page.locator('text=Something went wrong')).not.toBeVisible();
-    await expect(page.locator('text=Error')).not.toBeVisible();
+    await expect(page.locator("text=Something went wrong")).not.toBeVisible();
+    await expect(page.locator("text=Error")).not.toBeVisible();
   });
 
-  test('navigation tabs are visible', async ({ page }) => {
-    await page.goto('/');
+  test("navigation tabs are visible", async ({ page }) => {
+    await page.goto("/");
 
     // Wait for bottom navigation to appear
     const nav = page.locator('nav, [role="navigation"]');
     await expect(nav.first()).toBeVisible({ timeout: 10000 });
   });
 
-  test('can switch between tabs', async ({ page }) => {
-    await page.goto('/');
+  test("can switch between tabs", async ({ page }) => {
+    await page.goto("/");
 
     // Wait for navigation
     await page.waitForTimeout(2000);
 
     // Try clicking on Stats tab if visible
-    const statsTab = page.getByRole('button', { name: /stats|статист/i }).or(
-      page.locator('[data-tab="stats"]')
-    );
+    const statsTab = page
+      .getByRole("button", { name: /stats|статист/i })
+      .or(page.locator('[data-tab="stats"]'));
 
     if (await statsTab.isVisible()) {
       await statsTab.click();
@@ -74,72 +84,72 @@ test.describe('App Smoke Tests', () => {
     }
   });
 
-  test('theme toggle works', async ({ page }) => {
-    await page.goto('/');
+  test("theme toggle works", async ({ page }) => {
+    await page.goto("/");
     await page.waitForTimeout(2000);
 
     // Get initial theme
-    const html = page.locator('html');
-    const initialClass = await html.getAttribute('class');
+    const html = page.locator("html");
+    const initialClass = await html.getAttribute("class");
 
     // Find and click settings/theme toggle
-    const settingsButton = page.getByRole('button', { name: /settings|настройки/i }).or(
-      page.locator('[data-tab="settings"]')
-    );
+    const settingsButton = page
+      .getByRole("button", { name: /settings|настройки/i })
+      .or(page.locator('[data-tab="settings"]'));
 
     if (await settingsButton.isVisible()) {
       await settingsButton.click();
       await page.waitForTimeout(1000);
 
       // Look for theme toggle
-      const themeToggle = page.getByRole('button', { name: /dark|light|тема/i }).or(
-        page.locator('[data-testid="theme-toggle"]')
-      );
+      const themeToggle = page
+        .getByRole("button", { name: /dark|light|тема/i })
+        .or(page.locator('[data-testid="theme-toggle"]'));
 
       if (await themeToggle.isVisible()) {
         await themeToggle.click();
         await page.waitForTimeout(500);
 
         // Verify class changed
-        const newClass = await html.getAttribute('class');
+        const newClass = await html.getAttribute("class");
         // Theme should have changed (either added or removed 'dark')
         expect(newClass).not.toBe(initialClass);
       }
     }
   });
 
-  test('no console errors on load', async ({ page }) => {
+  test("no console errors on load", async ({ page }) => {
     const consoleErrors: string[] = [];
 
-    page.on('console', (msg) => {
-      if (msg.type() === 'error') {
+    page.on("console", (msg) => {
+      if (msg.type() === "error") {
         consoleErrors.push(msg.text());
       }
     });
 
-    await page.goto('/');
+    await page.goto("/");
     await page.waitForTimeout(3000);
 
     // Filter out known acceptable errors (like extension errors, third-party, 404s,
     // and CSP inline-script violations from Vite dev server HMR injection)
     const criticalErrors = consoleErrors.filter(
       (err) =>
-        !err.includes('favicon') &&
-        !err.includes('extension') &&
-        !err.includes('third-party') &&
-        !err.includes('ResizeObserver') &&
-        !err.includes('404') &&
-        !err.includes('Failed to load resource') &&
-        !err.includes('Content Security Policy')
+        !err.includes("favicon") &&
+        !err.includes("extension") &&
+        !err.includes("third-party") &&
+        !err.includes("ResizeObserver") &&
+        !err.includes("404") &&
+        !err.includes("Failed to load resource") &&
+        !err.includes("Content Security Policy")
     );
 
     expect(criticalErrors).toHaveLength(0);
   });
 });
 
-test.describe('Data Persistence', () => {
-  test('data persists after page reload', async ({ page }) => {
-    await page.goto('/');
+test.describe("Data Persistence", () => {
+  test("data persists after page reload", async ({ page }) => {
+    await page.goto("/");
     await page.waitForTimeout(2000);
 
     // This is a basic check - in a real test you'd interact with the app
@@ -150,7 +160,7 @@ test.describe('Data Persistence', () => {
     await page.waitForTimeout(2000);
 
     // App should still be functional
-    await expect(page.locator('body')).toBeVisible();
+    await expect(page.locator("body")).toBeVisible();
   });
 });
 
@@ -165,15 +175,16 @@ test.describe('Data Persistence', () => {
  * The mood tracker renders 5 radio buttons (great, good, okay, bad, terrible)
  * inside a radiogroup. After selecting a mood, a "Save mood" button appears.
  */
-test.describe('Mood Logging', () => {
-  test('can log a mood', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
+test.describe("Mood Logging", () => {
+  test("can log a mood", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
 
     // Ensure we are on the home tab (click it to be safe)
-    const homeTab = page.locator('button[role="tab"][aria-selected="true"]').first().or(
-      page.locator('button[role="tab"]').first()
-    );
+    const homeTab = page
+      .locator('button[role="tab"][aria-selected="true"]')
+      .first()
+      .or(page.locator('button[role="tab"]').first());
     await expect(homeTab).toBeVisible({ timeout: 10000 });
 
     // The mood tracker shows a radiogroup with 5 mood buttons.
@@ -204,7 +215,7 @@ test.describe('Mood Logging', () => {
 
     // After selecting a mood, the save button should appear.
     // The button text varies by language: "Save mood" / "Сохранить настроение" / etc.
-    const saveButton = page.locator('button').filter({
+    const saveButton = page.locator("button").filter({
       hasText: /save|сохранить|зберегти|guardar|speichern|enregistrer|保存/i,
     });
     await expect(saveButton).toBeVisible({ timeout: 10000 });
@@ -220,7 +231,7 @@ test.describe('Mood Logging', () => {
     await page.waitForTimeout(1500);
 
     // The app should still be functional (no crash)
-    await expect(page.locator('body')).toBeVisible();
+    await expect(page.locator("body")).toBeVisible();
   });
 });
 
@@ -231,10 +242,10 @@ test.describe('Mood Logging', () => {
  * can be started and paused. The timer has play/pause buttons with
  * aria-labels like "Start timer" / "Pause timer" (or their translations).
  */
-test.describe('Focus Timer', () => {
-  test('timer controls are accessible', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
+test.describe("Focus Timer", () => {
+  test("timer controls are accessible", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
 
     // The home tab should already be active after load.
     // The FocusTimer may be below the fold; scroll down to find it.
@@ -251,21 +262,27 @@ test.describe('Focus Timer', () => {
     // Look for the start/play button by its aria-label pattern
     const startButton = page.locator(
       'button[aria-label*="Start" i], button[aria-label*="start" i], ' +
-      'button[aria-label*="Начать" i], button[aria-label*="Почати" i], ' +
-      'button[aria-label*="Empezar" i], button[aria-label*="Starten" i], ' +
-      'button[aria-label*="Commencer" i], button[aria-label*="開始" i]'
+        'button[aria-label*="Начать" i], button[aria-label*="Почати" i], ' +
+        'button[aria-label*="Empezar" i], button[aria-label*="Starten" i], ' +
+        'button[aria-label*="Commencer" i], button[aria-label*="開始" i]'
     );
 
     // Also look for the pause button (in case timer is already running from saved state)
     const pauseButton = page.locator(
       'button[aria-label*="Pause" i], button[aria-label*="pause" i], ' +
-      'button[aria-label*="Пауза" i], button[aria-label*="Pausa" i], ' +
-      'button[aria-label*="一時停止" i]'
+        'button[aria-label*="Пауза" i], button[aria-label*="Pausa" i], ' +
+        'button[aria-label*="一時停止" i]'
     );
 
     // Either start or pause button should be visible (timer controls exist)
-    const startVisible = await startButton.first().isVisible().catch(() => false);
-    const pauseVisible = await pauseButton.first().isVisible().catch(() => false);
+    const startVisible = await startButton
+      .first()
+      .isVisible()
+      .catch(() => false);
+    const pauseVisible = await pauseButton
+      .first()
+      .isVisible()
+      .catch(() => false);
 
     if (!startVisible && !pauseVisible) {
       // Focus timer module may not be enabled for this user; skip gracefully
@@ -277,9 +294,9 @@ test.describe('Focus Timer', () => {
     expect(startVisible || pauseVisible).toBe(true);
   });
 
-  test('can start and pause timer', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
+  test("can start and pause timer", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
 
     // Scroll to ensure the timer section is in view
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
@@ -288,20 +305,26 @@ test.describe('Focus Timer', () => {
     // Locate the play (start/resume) button
     const playButton = page.locator(
       'button[aria-label*="Start" i], button[aria-label*="start" i], ' +
-      'button[aria-label*="Resume" i], button[aria-label*="resume" i], ' +
-      'button[aria-label*="Начать" i], button[aria-label*="Продолж" i], ' +
-      'button[aria-label*="Почати" i], button[aria-label*="Empezar" i], ' +
-      'button[aria-label*="Starten" i], button[aria-label*="Commencer" i], ' +
-      'button[aria-label*="開始" i]'
+        'button[aria-label*="Resume" i], button[aria-label*="resume" i], ' +
+        'button[aria-label*="Начать" i], button[aria-label*="Продолж" i], ' +
+        'button[aria-label*="Почати" i], button[aria-label*="Empezar" i], ' +
+        'button[aria-label*="Starten" i], button[aria-label*="Commencer" i], ' +
+        'button[aria-label*="開始" i]'
     );
     const pauseButton = page.locator(
       'button[aria-label*="Pause" i], button[aria-label*="pause" i], ' +
-      'button[aria-label*="Пауза" i], button[aria-label*="Pausa" i], ' +
-      'button[aria-label*="一時停止" i]'
+        'button[aria-label*="Пауза" i], button[aria-label*="Pausa" i], ' +
+        'button[aria-label*="一時停止" i]'
     );
 
-    const playVisible = await playButton.first().isVisible().catch(() => false);
-    const pauseVisible = await pauseButton.first().isVisible().catch(() => false);
+    const playVisible = await playButton
+      .first()
+      .isVisible()
+      .catch(() => false);
+    const pauseVisible = await pauseButton
+      .first()
+      .isVisible()
+      .catch(() => false);
 
     if (!playVisible && !pauseVisible) {
       // Focus timer module may not be enabled; skip gracefully
@@ -322,14 +345,14 @@ test.describe('Focus Timer', () => {
 
       // After pausing, the timer should not crash and the app should still be functional
       await page.waitForTimeout(1000);
-      await expect(page.locator('body')).toBeVisible();
+      await expect(page.locator("body")).toBeVisible();
     } else {
       // Timer is already running (from a previous session) - pause it first
       await pauseButton.first().click();
 
       // After pausing, the app should still be functional
       await page.waitForTimeout(1000);
-      await expect(page.locator('body')).toBeVisible();
+      await expect(page.locator("body")).toBeVisible();
     }
   });
 });
@@ -341,16 +364,16 @@ test.describe('Focus Timer', () => {
  * active content area. The navigation has 5 tabs: home, map, garden/diary,
  * stats, settings. Each tab is a <button role="tab"> with aria-selected.
  */
-test.describe('Full Navigation', () => {
-  test('can navigate to all tabs', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
+test.describe("Full Navigation", () => {
+  test("can navigate to all tabs", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
 
     // Wait for navigation to be ready
     const nav = page.locator('[role="navigation"]');
     await expect(nav.first()).toBeVisible({ timeout: 10000 });
 
-    const tabList = page.locator('[role="tablist"]');
+    const tabList = page.locator('[role="tablist"]').first();
     await expect(tabList).toBeVisible({ timeout: 10000 });
 
     const tabs = tabList.locator('button[role="tab"]');
@@ -363,16 +386,16 @@ test.describe('Full Navigation', () => {
       const tab = tabs.nth(i);
       await tab.click();
 
-      await expect(tab).toHaveAttribute('aria-selected', 'true', { timeout: 10000 });
+      await expect(tab).toHaveAttribute("aria-selected", "true", { timeout: 10000 });
 
       for (let j = 0; j < tabCount; j++) {
         if (j !== i) {
-          await expect(tabs.nth(j)).toHaveAttribute('aria-selected', 'false');
+          await expect(tabs.nth(j)).toHaveAttribute("aria-selected", "false");
         }
       }
 
       await page.waitForTimeout(500);
-      await expect(page.locator('text=Something went wrong')).not.toBeVisible();
+      await expect(page.locator("text=Something went wrong")).not.toBeVisible();
     }
   });
 });
@@ -384,19 +407,17 @@ test.describe('Full Navigation', () => {
  * goes offline. The banner has role="alert" and displays "You are offline"
  * (or a translated equivalent). It may take up to 2 seconds to detect.
  */
-test.describe('Offline Behavior', () => {
-  test('shows offline banner when network is lost', async ({ page, context }) => {
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
+test.describe("Offline Behavior", () => {
+  test("shows offline banner when network is lost", async ({ page, context }) => {
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
 
     // Wait for app to fully mount (AuthGate resolved, React useEffects registered)
-    await expect(
-      page.locator('nav, [role="navigation"]').first()
-    ).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('nav, [role="navigation"]').first()).toBeVisible({ timeout: 15000 });
 
     // Go offline: block network + fire the browser "offline" event
     await context.setOffline(true);
-    await page.evaluate(() => window.dispatchEvent(new Event('offline')));
+    await page.evaluate(() => window.dispatchEvent(new Event("offline")));
 
     // OfflineBanner listens to "offline" and renders with data-testid.
     // Generous timeout because AnimatePresence animates entry.
@@ -409,7 +430,7 @@ test.describe('Offline Behavior', () => {
 
     // Go back online: restore network + fire "online" event
     await context.setOffline(false);
-    await page.evaluate(() => window.dispatchEvent(new Event('online')));
+    await page.evaluate(() => window.dispatchEvent(new Event("online")));
 
     // Banner should disappear (may linger briefly due to animation)
     await expect(offlineBanner).not.toBeVisible({ timeout: 10000 });
@@ -423,14 +444,14 @@ test.describe('Offline Behavior', () => {
  * Clears localStorage and reloads, then checks that no broken/blank
  * screens appear when navigating between tabs.
  */
-test.describe('Empty States', () => {
-  test('shows empty states for new user', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
+test.describe("Empty States", () => {
+  test("shows empty states for new user", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
 
     // Clear all IndexedDB databases to simulate a brand-new user
     await page.evaluate(async () => {
-      const databases = await indexedDB.databases?.() || [];
+      const databases = (await indexedDB.databases?.()) || [];
       for (const db of databases) {
         if (db.name) {
           indexedDB.deleteDatabase(db.name);
@@ -441,61 +462,64 @@ test.describe('Empty States', () => {
     // Clear localStorage but re-set all onboarding bypass keys so we can access the app
     await page.evaluate((appVersion: string) => {
       localStorage.clear();
-      localStorage.setItem('zenflow-language-selected', JSON.stringify(true));
-      localStorage.setItem('zenflow-google-auth-checked', JSON.stringify(true));
-      localStorage.setItem('zenflow-tutorial-complete', JSON.stringify(true));
-      localStorage.setItem('zenflow-onboarding-complete', JSON.stringify(true));
-      localStorage.setItem('zenflow-notification-permission-checked', JSON.stringify(true));
-      localStorage.setItem('zenflow-privacy', JSON.stringify({ noTracking: false, analytics: false, consentShown: true }));
-      localStorage.setItem('zenflow-last-weekly-report', new Date().toISOString());
-      localStorage.setItem('zenflow_last_seen_version', appVersion);
+      localStorage.setItem("zenflow-language-selected", JSON.stringify(true));
+      localStorage.setItem("zenflow-google-auth-checked", JSON.stringify(true));
+      localStorage.setItem("zenflow-tutorial-complete", JSON.stringify(true));
+      localStorage.setItem("zenflow-onboarding-complete", JSON.stringify(true));
+      localStorage.setItem("zenflow-notification-permission-checked", JSON.stringify(true));
+      localStorage.setItem(
+        "zenflow-privacy",
+        JSON.stringify({ noTracking: false, analytics: false, consentShown: true })
+      );
+      localStorage.setItem("zenflow-last-weekly-report", new Date().toISOString());
+      localStorage.setItem("zenflow_last_seen_version", appVersion);
     }, packageJson.version);
 
     // Reload the page to start fresh
     await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState("networkidle");
 
     // Wait for tab navigation to appear (app has loaded past onboarding)
-    const tabList = page.locator('[role="tablist"]');
+    const tabList = page.locator('[role="tablist"]').first();
     await expect(tabList).toBeVisible({ timeout: 15000 });
 
     // Verify no crash
-    await expect(page.locator('body')).toBeVisible();
-    await expect(page.locator('text=Something went wrong')).not.toBeVisible();
+    await expect(page.locator("body")).toBeVisible();
+    await expect(page.locator("text=Something went wrong")).not.toBeVisible();
 
     // Navigate to the stats tab (index 3: home=0, map=1, garden=2, stats=3, settings=4)
     const statsTab = page.locator('button[role="tab"]').nth(3);
     await statsTab.click();
-    await expect(statsTab).toHaveAttribute('aria-selected', 'true', { timeout: 10000 });
+    await expect(statsTab).toHaveAttribute("aria-selected", "true", { timeout: 10000 });
 
     // Wait for the stats page content to load (it is lazy-loaded)
     await page.waitForTimeout(1500);
 
     // With no data, the stats page should show an empty state or
     // at least not crash. Check that something rendered.
-    await expect(page.locator('body')).toBeVisible();
-    await expect(page.locator('text=Something went wrong')).not.toBeVisible();
+    await expect(page.locator("body")).toBeVisible();
+    await expect(page.locator("text=Something went wrong")).not.toBeVisible();
 
     // Navigate to settings tab (index 4)
     const settingsTab = page.locator('button[role="tab"]').nth(4);
     await settingsTab.click();
-    await expect(settingsTab).toHaveAttribute('aria-selected', 'true', { timeout: 10000 });
+    await expect(settingsTab).toHaveAttribute("aria-selected", "true", { timeout: 10000 });
     await page.waitForTimeout(1000);
 
     // Settings should always render regardless of user data
-    await expect(page.locator('body')).toBeVisible();
-    await expect(page.locator('text=Something went wrong')).not.toBeVisible();
+    await expect(page.locator("body")).toBeVisible();
+    await expect(page.locator("text=Something went wrong")).not.toBeVisible();
 
     // Navigate back to home tab
     const homeTab = page.locator('button[role="tab"]').nth(0);
     await homeTab.click();
-    await expect(homeTab).toHaveAttribute('aria-selected', 'true', { timeout: 10000 });
+    await expect(homeTab).toHaveAttribute("aria-selected", "true", { timeout: 10000 });
     await page.waitForTimeout(1000);
 
     // Home should show the mood tracker (full input view for a new user)
     // or an onboarding flow. Either way, no crash.
-    await expect(page.locator('body')).toBeVisible();
-    await expect(page.locator('text=Something went wrong')).not.toBeVisible();
+    await expect(page.locator("body")).toBeVisible();
+    await expect(page.locator("text=Something went wrong")).not.toBeVisible();
   });
 });
 
@@ -506,22 +530,22 @@ test.describe('Empty States', () => {
  * sections: profile, modules, notifications, data, and account.
  * Uses the Accordion component which has trigger buttons.
  */
-test.describe('Settings', () => {
-  test('settings panel loads with all sections', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
+test.describe("Settings", () => {
+  test("settings panel loads with all sections", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
 
     // Navigate to the settings tab (5th tab, index 4: home=0, map=1, garden=2, stats=3, settings=4)
     const settingsTab = page.locator('button[role="tab"]').nth(4);
     await expect(settingsTab).toBeVisible({ timeout: 10000 });
     await settingsTab.click();
-    await expect(settingsTab).toHaveAttribute('aria-selected', 'true', { timeout: 10000 });
+    await expect(settingsTab).toHaveAttribute("aria-selected", "true", { timeout: 10000 });
 
     // Wait for the settings panel to lazy-load and render
     await page.waitForTimeout(1500);
 
     // The settings page has a heading "Settings" / "Настройки" / etc.
-    const settingsHeading = page.locator('h2').filter({
+    const settingsHeading = page.locator("h2").filter({
       hasText: /settings|настройки|налаштування|ajustes|einstellungen|paramètres|設定/i,
     });
     await expect(settingsHeading).toBeVisible({ timeout: 10000 });
@@ -540,36 +564,36 @@ test.describe('Settings', () => {
     // We use flexible regexes to match across languages.
 
     // Profile section
-    const profileSection = page.locator('button').filter({
+    const profileSection = page.locator("button").filter({
       hasText: /profile|профиль|профіль|perfil|profil/i,
     });
     await expect(profileSection.first()).toBeVisible({ timeout: 10000 });
 
     // Modules section
-    const modulesSection = page.locator('button').filter({
+    const modulesSection = page.locator("button").filter({
       hasText: /modules|модули|модулі|módulos|module/i,
     });
     await expect(modulesSection.first()).toBeVisible({ timeout: 10000 });
 
     // Notifications section
-    const notificationsSection = page.locator('button').filter({
+    const notificationsSection = page.locator("button").filter({
       hasText: /notification|уведомлен|сповіщен|notificacion|benachrichtig|通知/i,
     });
     await expect(notificationsSection.first()).toBeVisible({ timeout: 10000 });
 
     // Data section
-    const dataSection = page.locator('button').filter({
+    const dataSection = page.locator("button").filter({
       hasText: /data|данные|дані|datos|daten|données|データ|privacy|приватн/i,
     });
     await expect(dataSection.first()).toBeVisible({ timeout: 10000 });
 
     // Account section
-    const accountSection = page.locator('button').filter({
+    const accountSection = page.locator("button").filter({
       hasText: /account|аккаунт|акаунт|cuenta|konto|compte|アカウント/i,
     });
     await expect(accountSection.first()).toBeVisible({ timeout: 10000 });
 
     // Verify no error state
-    await expect(page.locator('text=Something went wrong')).not.toBeVisible();
+    await expect(page.locator("text=Something went wrong")).not.toBeVisible();
   });
 });
