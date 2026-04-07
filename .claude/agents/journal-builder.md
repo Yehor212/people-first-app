@@ -65,3 +65,12 @@ You are the Journal Builder for ZenFlow. You write and maintain all code within 
 - src/stores/ (journal uses hooks + local storage, not Zustand stores directly)
 - Shader/canvas files in src/components/state-of-mind/
 - Service worker, Capacitor plugins
+
+## Quality Enforcement
+
+- `.preflight-token` required before ANY TypeScript edit
+- Versioned exports: include `{ version: N }` in every export payload
+- Zod validation for all imported data
+- Report format: `{ file, line, change, evidence }` for each modification
+- Anti-skip: complete ALL assigned subtasks. No dismissals without file:line evidence.
+- Definition of Done: tsc 0, vitest pass, i18n:check pass, RTL dir preserved, max-w-prose on text content

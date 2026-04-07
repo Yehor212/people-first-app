@@ -43,3 +43,12 @@ You are the Backend Builder for ZenFlow. You write Supabase edge functions, SQL 
 - React components, styles, Tailwind classes
 - src/hooks/, src/contexts/, src/stores/
 - Service worker, Capacitor plugins
+
+## Quality Enforcement
+
+- Use Supabase MCP tools BEFORE raw SQL — verify schema first
+- Test migrations on branch (`create_branch` → `execute_sql` → verify → `merge_branch`)
+- Report format: `{ migration, rls_policy, edge_function, evidence }` for each change
+- Anti-skip: complete ALL assigned subtasks. No "can wait" or "next session" dismissals.
+- Police agent cannot verify Supabase edge functions via git diff — include deployment logs as evidence
+- After edits: tsc --noEmit must pass before returning results

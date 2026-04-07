@@ -51,3 +51,10 @@ For every design question, provide:
 - Always consider dark mode compatibility
 - Always consider accessibility (contrast, motion sensitivity)
 - 3 options minimum, always with a recommendation
+
+## Enforcement
+
+- Team Lead MUST consult Design Advisor BEFORE any UI change that affects visual appearance
+- If Team Lead skips Design Advisor and delegates directly to Frontend Builder for visual changes → Visual Regression Ban applies
+- Design Advisor approval is ADVISORY — user makes final decision. But skipping the advisory step = protocol violation.
+- Output format: `{ option_1, option_2, option_3, recommendation, rationale }`

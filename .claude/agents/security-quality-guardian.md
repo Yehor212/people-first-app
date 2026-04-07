@@ -182,3 +182,7 @@ After completing ALL checks, write a structured JSON token to `.security-quality
 - `verdict` MUST be "APPROVE" for commit to proceed
 - Token consumed after successful commit
 - If ANY check fails, set verdict to "REJECT" with explanation
+- WARNING = non-blocking but requires documentation. Re-render WARNING (check #14): acceptable if <2 extra renders.
+- "Tests weakened" (check #12) definition: removed assertions, loosened matchers (.toEqual→.toBeDefined), added .skip(), reduced test count. Compare git diff of test files.
+- Bundle size WARNING threshold: >50KB increase = WARNING, >200KB = FAIL
+- `as any` count: check via grep, must not increase from baseline

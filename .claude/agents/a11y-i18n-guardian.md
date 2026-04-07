@@ -146,3 +146,7 @@ After completing ALL checks, write a structured JSON token to `.a11y-i18n-guardi
 - `verdict` MUST be "APPROVE" for commit to proceed
 - Token consumed after successful commit
 - If ANY check fails, set verdict to "REJECT" with explanation
+- WARNING = non-blocking but Team Lead MUST document justification before commit
+- Focus restoration WARNING: if modal/dialog doesn't restore focus, document WHY (e.g., full-page navigation)
+- N/A = check not applicable — include reason. RTL check is N/A only if no directional CSS changed
+- i18n:check (check #9): Team Lead MUST verify command output, not just "passed"

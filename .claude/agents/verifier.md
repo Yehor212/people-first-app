@@ -161,3 +161,10 @@ After completing ALL checks, write a structured JSON token to `.verification-don
 - `verdict` MUST be "APPROVE" for commit to proceed
 - Token consumed after successful commit
 - If ANY check fails, set verdict to "REJECT" with explanation
+
+## Check Clarifications
+
+- **test_relevance** (check #16): Measurable criteria — grep changed test files for `.toBeDefined()` count. If >50% of NEW assertions use `.toBeDefined()` or `.toBeTruthy()` without specific values → FAIL. Use `git diff --cached -- "*.test.ts" | grep -c "toBeDefined\|toBeTruthy"` vs total new assertions.
+- **new_exports_wired** (check #17): Exceptions (OK to not import): type-only exports, test helpers, re-exports from index files. For all other new exports, grep for at least one import.
+- **Duplicate checks with Guardians**: Verifier runs AFTER all Guardians. If Guardian already checked (e.g., back handler), Verifier can mark as PASS with "verified by platform-guardian" evidence. No need to re-run.
+- **Quality gates**: Run ALL deterministic checks including `npx oxlint`, `npm run check:circular`, `npm run check:size`

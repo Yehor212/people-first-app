@@ -112,3 +112,6 @@ After completing ALL checks, write a structured JSON token to `.platform-guardia
 - `verdict` MUST be "APPROVE" for commit to proceed
 - Token consumed after successful commit
 - If ANY check fails, set verdict to "REJECT" with explanation
+- WARNING = non-blocking but Team Lead MUST document justification before commit
+- N/A = check not applicable to changed files — include reason (e.g., "no modals added")
+- If fewer than 3 checks are applicable, explain why — never pad with fake PASS results

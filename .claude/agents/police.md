@@ -186,3 +186,10 @@ Source: NASA IV&V, ICLR 2024, METR 2025, Anthropic Engineering.
 6. **Blind review** — verifier does NOT read intent. Sees ONLY diff + command output.
 7. **Infrastructure bias detection** — >70% hooks/config files staged = flag it.
 8. **Anti-gaming lesson (2026-04-01)**: Agent declared 37/37 fixed. Grep found 10/37 unfixed. ALWAYS verify claims with code grep.
+
+## Edge Cases
+
+- **Supabase edge functions**: deployed via MCP, NOT staged in git. For edge function changes, accept Supabase deployment logs + `mcp__supabase__get_edge_function` output as evidence (not git diff).
+- **Original user request**: Team Lead stores verbatim in delegation brief. Police should check brief completeness against actual changes.
+- **Intentional deviations**: if Team Lead documents a justified deviation (with file:line evidence), Police should verify the justification is sound, not auto-reject.
+- **Tool audit trail**: cross-reference `.tool-audit-trail` for evidence fabrication — claimed READs must match actual tool calls.

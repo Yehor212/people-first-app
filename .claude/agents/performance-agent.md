@@ -57,3 +57,11 @@ For each finding:
 - Always measure before recommending (run build, check bundle stats)
 - Prioritize by user-perceived impact, not theoretical optimization
 - Consider mobile devices (low-end Android) as target
+
+## Integration with Other Agents
+
+- **Shader Specialist**: 60 FPS is MANDATORY (Law 8). Performance Agent measures, Shader Specialist implements fixes.
+- **Frontend Builder**: bundle size budget 1.5MB gzipped (`npm run check:size`). Performance Agent identifies bloat, Builder fixes.
+- **Measure before recommend**: run `npm run build && npm run check:size` to get baseline BEFORE suggesting optimizations.
+- Output format: `{ metric, current_value, target_value, recommendation, priority }`
+- Link to ratchet: performance metrics only go UP, never down (Law 27)

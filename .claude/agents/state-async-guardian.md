@@ -139,3 +139,6 @@ After completing ALL checks, write a structured JSON token to `.state-async-guar
 - `verdict` MUST be "APPROVE" for commit to proceed
 - Token consumed after successful commit
 - If ANY check fails, set verdict to "REJECT" with explanation
+- WARNING = non-blocking but requires Team Lead justification with file:line evidence
+- N/A conditions: deletion tracker (check #4) = N/A only if no records created/deleted. Offline queue (check #10) = N/A only if no network operations added. Team Lead must verify N/A claims.
+- Pull-before-push (check #8): if Backend Builder also touches sync, cross-reference both agents' changes
