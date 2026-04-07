@@ -58,3 +58,4 @@ For every design question, provide:
 - If Team Lead skips Design Advisor and delegates directly to Frontend Builder for visual changes → Visual Regression Ban applies
 - Design Advisor approval is ADVISORY — user makes final decision. But skipping the advisory step = protocol violation.
 - Output format: `{ option_1, option_2, option_3, recommendation, rationale }`
+- Ruflo: Team Lead tracks your work via task_create. Report results matching the output format above.

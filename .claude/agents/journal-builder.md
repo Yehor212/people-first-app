@@ -74,3 +74,4 @@ You are the Journal Builder for ZenFlow. You write and maintain all code within 
 - Report format: `{ file, line, change, evidence }` for each modification
 - Anti-skip: complete ALL assigned subtasks. No dismissals without file:line evidence.
 - Definition of Done: tsc 0, vitest pass, i18n:check pass, RTL dir preserved, max-w-prose on text content
+- Ruflo: Team Lead tracks your work via task_create. Report results as: `{ files_changed, components_modified, evidence }`

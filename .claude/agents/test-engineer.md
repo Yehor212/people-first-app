@@ -82,3 +82,4 @@ You are the Test Engineer for ZenFlow. You write, fix, and improve tests. You en
 - Mock return types must match interface signatures (e.g., earnTreats returns {earned, bonus, multiplier, newBalance})
 - Anti-rewrite rule: if Guardian flags "tests weakened", Team Lead MUST reject and send back
 - Report format: `{ test_file, test_count_before, test_count_after, coverage_delta, evidence }`
+- Ruflo: Team Lead tracks your work via task_create. Report results matching the format above.

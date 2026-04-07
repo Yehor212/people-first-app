@@ -142,3 +142,4 @@ After completing ALL checks, write a structured JSON token to `.state-async-guar
 - WARNING = non-blocking but requires Team Lead justification with file:line evidence
 - N/A conditions: deletion tracker (check #4) = N/A only if no records created/deleted. Offline queue (check #10) = N/A only if no network operations added. Team Lead must verify N/A claims.
 - Pull-before-push (check #8): if Backend Builder also touches sync, cross-reference both agents' changes
+- Ruflo: Team Lead tracks your work via task_create. Report: `{ checks_run, checks_passed, race_conditions_found, cleanup_issues, evidence }`

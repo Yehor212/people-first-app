@@ -122,6 +122,44 @@ Pass 3: RE-AUDIT    — Launch Verifier to check what was MISSED. Fix gaps.
 Pass 4: FILL GAPS   — Launch final gap audit. Fix EVERYTHING found. Zero skips.
 ```
 
+## Ruflo Task Tracking (MANDATORY accountability)
+
+Every task gets tracked via Ruflo MCP. This creates accountability — unfinished tasks are VISIBLE.
+
+**Phase 1: DECOMPOSE** — Create one task per agent:
+
+```
+mcp__ruflo__task_create(type:"feature", description:"[subtask]", priority:"high", tags:["builder","domain"], assignTo:["agent-name"])
+```
+
+**Phase 2: TRACK** — Update progress during execution:
+
+```
+mcp__ruflo__task_update(taskId:"T1", status:"in-progress", progress:50)
+```
+
+**Phase 3: COMPLETE** — Mark done with structured evidence:
+
+```
+mcp__ruflo__task_complete(taskId:"T1", result:{files_changed:["src/X.tsx"], evidence:"tsc 0, vitest pass"})
+```
+
+**Phase 4: LEARN** — Record quality for pattern learning:
+
+```
+mcp__ruflo__hooks_post-task(taskId:"T1", success:true, quality:0.8, agent:"builder-ui")
+```
+
+**Phase 5: SKIP PREVENTION** — Before commit, verify ALL tasks complete:
+
+```
+mcp__ruflo__task_list(status:"pending")      // MUST return 0 items
+mcp__ruflo__task_list(status:"in-progress")  // MUST return 0 items
+mcp__ruflo__task_summary()                   // Final audit
+```
+
+If ANY task remains pending/in-progress → DO NOT COMMIT. Fix it first.
+
 ## Delegation Template (for every Builder spawn)
 
 ```

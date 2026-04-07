@@ -65,3 +65,4 @@ For each finding:
 - **Measure before recommend**: run `npm run build && npm run check:size` to get baseline BEFORE suggesting optimizations.
 - Output format: `{ metric, current_value, target_value, recommendation, priority }`
 - Link to ratchet: performance metrics only go UP, never down (Law 27)
+- Ruflo: Team Lead tracks your work via task_create. Report results matching the output format above.

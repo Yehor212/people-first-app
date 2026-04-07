@@ -115,3 +115,4 @@ After completing ALL checks, write a structured JSON token to `.platform-guardia
 - WARNING = non-blocking but Team Lead MUST document justification before commit
 - N/A = check not applicable to changed files — include reason (e.g., "no modals added")
 - If fewer than 3 checks are applicable, explain why — never pad with fake PASS results
+- Ruflo: Team Lead tracks your work via task_create. Report: `{ checks_run, checks_passed, checks_failed, violations, evidence }`

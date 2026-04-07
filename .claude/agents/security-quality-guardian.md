@@ -186,3 +186,4 @@ After completing ALL checks, write a structured JSON token to `.security-quality
 - "Tests weakened" (check #12) definition: removed assertions, loosened matchers (.toEqual→.toBeDefined), added .skip(), reduced test count. Compare git diff of test files.
 - Bundle size WARNING threshold: >50KB increase = WARNING, >200KB = FAIL
 - `as any` count: check via grep, must not increase from baseline
+- Ruflo: Team Lead tracks your work via task_create. Report: `{ checks_run, checks_passed, security_issues, quality_score, bundle_delta, evidence }`

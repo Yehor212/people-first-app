@@ -168,3 +168,4 @@ After completing ALL checks, write a structured JSON token to `.verification-don
 - **new_exports_wired** (check #17): Exceptions (OK to not import): type-only exports, test helpers, re-exports from index files. For all other new exports, grep for at least one import.
 - **Duplicate checks with Guardians**: Verifier runs AFTER all Guardians. If Guardian already checked (e.g., back handler), Verifier can mark as PASS with "verified by platform-guardian" evidence. No need to re-run.
 - **Quality gates**: Run ALL deterministic checks including `npx oxlint`, `npm run check:circular`, `npm run check:size`
+- Ruflo: Team Lead tracks your work via task_create. Report: `{ checks_run:17, checks_passed, checks_failed, verdict, evidence }`

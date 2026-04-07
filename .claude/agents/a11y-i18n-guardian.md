@@ -150,3 +150,4 @@ After completing ALL checks, write a structured JSON token to `.a11y-i18n-guardi
 - Focus restoration WARNING: if modal/dialog doesn't restore focus, document WHY (e.g., full-page navigation)
 - N/A = check not applicable — include reason. RTL check is N/A only if no directional CSS changed
 - i18n:check (check #9): Team Lead MUST verify command output, not just "passed"
+- Ruflo: Team Lead tracks your work via task_create. Report: `{ checks_run, checks_passed, violations, i18n_check_output, evidence }`
