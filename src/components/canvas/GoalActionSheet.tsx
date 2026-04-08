@@ -185,7 +185,7 @@ export function GoalActionSheet({
             role="dialog"
             aria-modal="true"
             aria-label={`Goal: ${goal.title}`}
-            className="fixed bottom-0 inset-x-0 z-[60] rounded-t-2xl overflow-hidden bg-card/95 backdrop-blur-md [-webkit-backdrop-filter:blur(12px)] pb-[env(safe-area-inset-bottom,0px)]"
+            className="fixed bottom-0 inset-x-0 z-[60] rounded-t-2xl overflow-hidden bg-card/95 backdrop-blur-md [-webkit-backdrop-filter:blur(12px)] pb-[env(safe-area-inset-bottom,0px)] lg:max-w-4xl lg:mx-auto"
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}

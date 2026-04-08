@@ -90,7 +90,7 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
             role="dialog"
             aria-modal="true"
             aria-label={t.leaderboard || "Leaderboard"}
-            className="fixed bottom-0 inset-x-0 z-[60] rounded-t-[2rem] bg-background max-h-[85dvh] overflow-hidden motion-safe:animate-slide-up pb-safe"
+            className="fixed bottom-0 inset-x-0 z-[60] rounded-t-[2rem] bg-background max-h-[85dvh] overflow-hidden motion-safe:animate-slide-up pb-safe lg:max-w-4xl lg:mx-auto"
           >
             <div className="pb-4 px-6 pt-6 flex items-center justify-between">
               <h2 className="flex items-center gap-2 text-xl font-semibold">

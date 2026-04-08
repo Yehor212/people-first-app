@@ -128,7 +128,7 @@ export function RingDetailSheet({
         onKeyDown={handleKeyDown}
         role="dialog"
         aria-modal="true"
-        className="fixed bottom-0 inset-x-0 z-[60] rounded-t-[2rem] bg-background max-h-[90dvh] overflow-hidden animate-slide-up pb-safe"
+        className="fixed bottom-0 inset-x-0 z-[60] rounded-t-[2rem] bg-background max-h-[90dvh] overflow-hidden animate-slide-up pb-safe lg:max-w-4xl lg:mx-auto"
       >
         <h2 className="sr-only">{t[ringType] || theme.label}</h2>
 

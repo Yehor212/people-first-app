@@ -54,7 +54,7 @@ export function HabitsOverlay({
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={zenMotion.snappy}
-            className="fixed bottom-0 inset-x-0 z-[61] max-h-[70dvh] rounded-t-[2rem] bg-card border-t border-border overflow-y-auto pb-[calc(env(safe-area-inset-bottom,0px)+1rem)]"
+            className="fixed bottom-0 inset-x-0 z-[61] max-h-[70dvh] rounded-t-[2rem] bg-card border-t border-border overflow-y-auto pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] lg:max-w-4xl lg:mx-auto"
           >
             {/* Handle bar */}
             <div className="flex justify-center py-3">

@@ -102,7 +102,7 @@ export function AddGoalSheet({
       <div
         role="dialog"
         aria-modal="true"
-        className="fixed bottom-0 inset-x-0 z-[60] rounded-t-[2rem] bg-background max-h-[85dvh] overflow-hidden motion-safe:animate-slide-up pb-[env(safe-area-inset-bottom)]"
+        className="fixed bottom-0 inset-x-0 z-[60] rounded-t-[2rem] bg-background max-h-[85dvh] overflow-hidden motion-safe:animate-slide-up pb-[env(safe-area-inset-bottom)] lg:max-w-4xl lg:mx-auto"
       >
         <h2 className="sr-only">{t.addGoal || "Add Goal"}</h2>
 
