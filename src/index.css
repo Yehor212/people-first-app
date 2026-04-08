@@ -734,25 +734,27 @@
   }
 
   /* ===== RESPONSIVE CONTAINER WIDTH ===== */
+  /* Widened for tablet/laptop — previous values felt phone-like on iPad (672px on 768px viewport) */
   @media (min-width: 768px) {
     :root {
-      --container-max-width: 42rem; /* 672px — tablets */
+      --container-max-width: 46rem; /* 736px — tablet portrait (iPad mini/Air 768-834px) */
+      --container-padding: 1rem; /* tighter padding to maximize content width */
     }
   }
   @media (min-width: 1024px) {
     :root {
-      --container-max-width: 48rem; /* 768px — laptops */
+      --container-max-width: 60rem; /* 960px — tablet landscape / laptop (next to 240px sidebar) */
       --nav-height: 0rem; /* sidebar replaces bottom nav at lg — no nav-height padding needed */
     }
   }
   @media (min-width: 1280px) {
     :root {
-      --container-max-width: 56rem; /* 896px — desktops */
+      --container-max-width: 72rem; /* 1152px — desktop */
     }
   }
   @media (min-width: 1536px) {
     :root {
-      --container-max-width: 64rem; /* 1024px — large desktops */
+      --container-max-width: 80rem; /* 1280px — wide desktop */
     }
   }
 
