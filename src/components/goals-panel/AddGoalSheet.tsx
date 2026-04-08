@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useModalA11y } from "@/hooks/useModalA11y";
 import { motion } from "framer-motion";
 import { zenTap } from "@/lib/animationUtils";
 import { Target, Sparkles, ChevronRight } from "lucide-react";
