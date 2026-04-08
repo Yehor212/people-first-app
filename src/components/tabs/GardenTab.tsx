@@ -89,31 +89,35 @@ export function GardenTab({
         />
 
         <PullToRefresh onRefresh={handlePullToRefresh}>
-          {/* Schedule Timeline — min-h prevents CLS on lazy load */}
-          <section aria-label={t.scheduleTitle || "Your Schedule"} className="min-h-[200px]">
-            <LazyErrorBoundary componentName="Schedule Timeline">
-              <Suspense fallback={<SkeletonList />}>
-                <ScheduleTimeline
-                  events={todayAllEvents}
-                  onAddEvent={handleAddScheduleEvent}
-                  onDeleteEvent={handleDeleteScheduleEvent}
-                />
-              </Suspense>
-            </LazyErrorBoundary>
-          </section>
+          {/* Desktop: 2-col grid for schedule + journal */}
+          <div className="xl:grid xl:grid-cols-2 xl:gap-6 space-y-6 xl:space-y-0">
+            {/* Schedule Timeline — min-h prevents CLS on lazy load */}
+            <section aria-label={t.scheduleTitle || "Your Schedule"} className="min-h-[200px]">
+              <LazyErrorBoundary componentName="Schedule Timeline">
+                <Suspense fallback={<SkeletonList />}>
+                  <ScheduleTimeline
+                    events={todayAllEvents}
+                    onAddEvent={handleAddScheduleEvent}
+                    onDeleteEvent={handleDeleteScheduleEvent}
+                  />
+                </Suspense>
+              </LazyErrorBoundary>
+            </section>
 
-          {/* Diary — min-h prevents CLS */}
-          <section
-            id="journal-section"
-            aria-label={t.tutorialJournalTitle || "Diary"}
-            className="min-h-[160px]"
-          >
-            <LazyErrorBoundary componentName="Journal">
-              <Suspense fallback={<SkeletonCard />}>
-                <JournalModule onToggleHabit={onToggleHabit} onAddGratitude={onAddGratitude} />
-              </Suspense>
-            </LazyErrorBoundary>
-          </section>
+            {/* Diary — min-h prevents CLS */}
+            <section
+              id="journal-section"
+              aria-label={t.tutorialJournalTitle || "Diary"}
+              className="min-h-[160px]"
+            >
+              <LazyErrorBoundary componentName="Journal">
+                <Suspense fallback={<SkeletonCard />}>
+                  <JournalModule onToggleHabit={onToggleHabit} onAddGratitude={onAddGratitude} />
+                </Suspense>
+              </LazyErrorBoundary>
+            </section>
+          </div>
+          {/* end 2-col grid */}
 
           {/* Breathing Exercise */}
           {isFeatureVisible("breathingExercise") && (

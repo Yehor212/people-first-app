@@ -743,8 +743,18 @@
   }
   @media (min-width: 1024px) {
     :root {
-      --container-max-width: 100%; /* fill available width next to sidebar */
+      --container-max-width: 52rem; /* 832px — readable with sidebar */
       --nav-height: 0rem; /* sidebar replaces bottom nav at lg — no nav-height padding needed */
+    }
+  }
+  @media (min-width: 1280px) {
+    :root {
+      --container-max-width: 64rem; /* 1024px — comfortable 2-col capable */
+    }
+  }
+  @media (min-width: 1536px) {
+    :root {
+      --container-max-width: 72rem; /* 1152px — wide desktop, 2-col grid */
     }
   }
 
