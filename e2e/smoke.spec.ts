@@ -371,9 +371,9 @@ test.describe("Full Navigation", () => {
     await page.goto("/");
     await page.waitForLoadState("networkidle");
 
-    // Wait for navigation to be ready
+    // Wait for mobile bottom navigation (nav.last() — sidebar is first but hidden on mobile)
     const nav = page.locator('[role="navigation"]');
-    await expect(nav.first()).toBeVisible({ timeout: 10000 });
+    await expect(nav.last()).toBeVisible({ timeout: 10000 });
 
     const tabList = page.locator('[role="tablist"]').last();
     await expect(tabList).toBeVisible({ timeout: 10000 });
