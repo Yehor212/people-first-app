@@ -34,7 +34,7 @@ export function RingDetailSheet({
   const { t } = useLanguage();
 
   const { modalRef, handleKeyDown } = useModalA11y(open, () => onOpenChange(false));
-  const _shouldReduceMotion = useReducedMotion();
+  const shouldReduceMotion = useReducedMotion();
   useScrollLock(open);
 
   const theme = ringType ? ringThemes[ringType] : null;
@@ -146,14 +146,14 @@ export function RingDetailSheet({
               `bg-gradient-to-br ${theme.gradient}`
             )}
             animate={
-              _shouldReduceMotion
+              shouldReduceMotion
                 ? {}
                 : {
                     scale: [1, 1.15, 1],
                     opacity: [0.25, 0.4, 0.25],
                   }
             }
-            transition={_shouldReduceMotion ? {} : { duration: 5, repeat: Infinity }}
+            transition={shouldReduceMotion ? {} : { duration: 5, repeat: Infinity }}
           />
 
           {/* Handle bar */}
@@ -175,7 +175,7 @@ export function RingDetailSheet({
                 className="p-3.5 rounded-2xl bg-foreground/20 backdrop-blur-sm"
                 style={{ boxShadow: `0 0 40px ${theme.glowColor}` }}
                 animate={
-                  _shouldReduceMotion
+                  shouldReduceMotion
                     ? {}
                     : {
                         boxShadow: [
@@ -185,7 +185,7 @@ export function RingDetailSheet({
                         ],
                       }
                 }
-                transition={_shouldReduceMotion ? {} : { duration: 2.5, repeat: Infinity }}
+                transition={shouldReduceMotion ? {} : { duration: 2.5, repeat: Infinity }}
               >
                 <Icon className="w-7 h-7 text-white" aria-hidden="true" />
               </motion.div>

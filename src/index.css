@@ -743,18 +743,8 @@
   }
   @media (min-width: 1024px) {
     :root {
-      --container-max-width: 60rem; /* 960px — tablet landscape / laptop (next to 240px sidebar) */
+      --container-max-width: 100%; /* fill available width next to sidebar */
       --nav-height: 0rem; /* sidebar replaces bottom nav at lg — no nav-height padding needed */
-    }
-  }
-  @media (min-width: 1280px) {
-    :root {
-      --container-max-width: 72rem; /* 1152px — desktop */
-    }
-  }
-  @media (min-width: 1536px) {
-    :root {
-      --container-max-width: 80rem; /* 1280px — wide desktop */
     }
   }
 
