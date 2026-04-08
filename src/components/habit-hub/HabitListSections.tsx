@@ -58,7 +58,7 @@ export function HabitListSections({
           <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-1 mb-3">
             {ts.todayHabits || "Today's Habits"}
           </h3>
-          <motion.div className="space-y-2" variants={listStagger} initial="hidden" animate="visible">
+          <motion.div className="space-y-2 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-3 lg:space-y-0" variants={listStagger} initial="hidden" animate="visible">
             {todayHabits.map(habit => (
               <motion.div key={habit.id} variants={cardEntrance}>
                 <HabitHubCard
@@ -94,7 +94,7 @@ export function HabitListSections({
                 transition={zenMotion.gentle}
                 className="overflow-hidden"
               >
-                <motion.div className="space-y-2" variants={listStagger} initial="hidden" animate="visible">
+                <motion.div className="space-y-2 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-3 lg:space-y-0" variants={listStagger} initial="hidden" animate="visible">
                   {otherHabits.map(habit => (
                     <motion.div key={habit.id} variants={cardEntrance}>
                       <HabitHubCard

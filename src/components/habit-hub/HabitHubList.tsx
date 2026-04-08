@@ -129,7 +129,7 @@ export function HabitHubList({
   return (
     <div className="space-y-4 pb-32">
       {/* ═══ CATEGORY FILTER CHIPS ═══ */}
-      <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
+      <div className="flex gap-2 overflow-x-auto lg:overflow-x-visible lg:flex-wrap pb-1 -mx-1 px-1 scrollbar-hide">
         {categoryChips.map((cat) => (
           <motion.button
             key={cat.id}

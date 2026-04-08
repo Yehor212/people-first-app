@@ -63,7 +63,7 @@ export function SettingsPanel({
   }, [initialOpenSection]);
 
   return (
-    <div className="space-y-4 motion-safe:animate-fade-in content-with-nav">
+    <div className="space-y-4 motion-safe:animate-fade-in content-with-nav lg:max-w-3xl lg:mx-auto">
       <h2 className="text-2xl font-bold text-foreground">{t.settings}</h2>
 
       {/* What's New Banner */}

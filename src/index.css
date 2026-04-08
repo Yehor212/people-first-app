@@ -758,6 +758,22 @@
     }
   }
 
+
+  /* ===== MODERN TYPOGRAPHY ===== */
+  h1, h2, h3, h4, h5, h6 { text-wrap: balance; }
+  p, li, dd, figcaption { text-wrap: pretty; }
+
+  /* ===== ZEN DESIGN SYSTEM UTILITIES ===== */
+  .zen-panel {
+    container-type: inline-size;
+    width: 100%;
+  }
+
+  .zen-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+    gap: 1rem;
+  }
   /* ===== SCROLLBAR STYLING ===== */
   /* Desktop only: thin custom scrollbar. Mobile: native overlay scrollbar (auto-show/hide) */
   @media (pointer: fine) {

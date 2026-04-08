@@ -582,7 +582,7 @@ export const JournalModule = memo(function JournalModule({
                 <motion.div
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="bg-card rounded-2xl p-5 max-w-[320px] w-full mx-4 shadow-xl"
+                  className="bg-card rounded-2xl p-5 max-w-[320px] lg:max-w-md w-full mx-4 shadow-xl"
                   onClick={(e) => e.stopPropagation()}
                 >
                   {/* Checking session */}
@@ -1355,7 +1355,7 @@ export const JournalModule = memo(function JournalModule({
           <div
             role="dialog"
             aria-modal="true"
-            className="fixed inset-x-4 top-1/2 -translate-y-1/2 z-[71] bg-card rounded-2xl p-6 shadow-xl animate-scale-in max-w-sm mx-auto"
+            className="fixed inset-x-4 top-1/2 -translate-y-1/2 z-[71] bg-card rounded-2xl p-6 shadow-xl animate-scale-in max-w-sm lg:max-w-lg mx-auto"
           >
             <h3 className="text-base font-semibold text-foreground mb-2">
               {ts.journalPasswordRemove || "Remove Password Lock"}
