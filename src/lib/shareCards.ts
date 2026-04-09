@@ -757,6 +757,3 @@ export async function generateTrophyCard(
   drawTrophyCard(ctx, data, tr, theme, lang);
   return canvasToBlob(canvas);
 }
-
-// Legacy re-exports for backwards compatibility during migration
-export { downloadImage, shareImage, copyImageToClipboard } from "@/lib/shareActions";

@@ -10,8 +10,6 @@ import { precacheAndRoute, cleanupOutdatedCaches } from "workbox-precaching";
 import { registerRoute } from "workbox-routing";
 import { CacheFirst, NetworkOnly } from "workbox-strategies";
 import { ExpirationPlugin } from "workbox-expiration";
-// REMOVED: BackgroundSyncPlugin - POST caching was causing "Request body already used" errors
-// import { BackgroundSyncPlugin } from 'workbox-background-sync';
 import { setCacheNameDetails } from "workbox-core";
 import { logger } from "@/lib/logger";
 
@@ -29,14 +27,10 @@ precacheAndRoute(self.__WB_MANIFEST);
 // Clean up old caches
 cleanupOutdatedCaches();
 
-// REMOVED: Background Sync Queue - POST caching was causing "Request body already used" errors
-// The app uses its own offline queue system (src/lib/offlineQueue.ts) instead
-
 // Cache Supabase Storage (public assets only)
 registerRoute(
   ({ url }) =>
-    (url.hostname.includes("supabase.co") ||
-      url.hostname === "api.zenflowapp.online") &&
+    (url.hostname.includes("supabase.co") || url.hostname === "api.zenflowapp.online") &&
     url.pathname.includes("/storage/v1/object/public/"),
   new CacheFirst({
     cacheName: "supabase-storage",
@@ -46,14 +40,12 @@ registerRoute(
         maxAgeSeconds: 7 * 24 * 60 * 60, // 7 days
       }),
     ],
-  }),
+  })
 );
 
 // Cache Fluent Emoji 3D sticker images (immutable CDN assets)
 registerRoute(
-  ({ url }) =>
-    url.hostname === "cdn.jsdelivr.net" &&
-    url.pathname.includes("fluent-emoji"),
+  ({ url }) => url.hostname === "cdn.jsdelivr.net" && url.pathname.includes("fluent-emoji"),
   new CacheFirst({
     cacheName: "fluent-emoji-stickers",
     plugins: [
@@ -62,7 +54,7 @@ registerRoute(
         maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days
       }),
     ],
-  }),
+  })
 );
 
 // Cache Google Fonts stylesheets
@@ -76,7 +68,7 @@ registerRoute(
         maxAgeSeconds: 365 * 24 * 60 * 60, // 1 year
       }),
     ],
-  }),
+  })
 );
 
 // Cache Google Fonts webfonts
@@ -90,7 +82,7 @@ registerRoute(
         maxAgeSeconds: 365 * 24 * 60 * 60, // 1 year
       }),
     ],
-  }),
+  })
 );
 
 // REMOVED: Supabase POST caching
@@ -117,7 +109,7 @@ self.addEventListener("sync", (event) => {
         clients.forEach((client) => {
           client.postMessage({ type: "SYNC_REQUESTED" });
         });
-      }),
+      })
     );
   }
 });
@@ -141,9 +133,9 @@ self.addEventListener("message", (event) => {
           cacheNames.map((cacheName) => {
             logger.log("[SW] Deleting cache:", cacheName);
             return caches.delete(cacheName);
-          }),
+          })
         );
-      }),
+      })
     );
   }
 
@@ -171,7 +163,7 @@ self.addEventListener("activate", (event) => {
           client.postMessage({ type: "SW_UPDATED" });
         });
       });
-    }),
+    })
   );
 });
 

@@ -2312,7 +2312,7 @@ export const de: Translations = {
   journalPasswordConfirm: "Passwort bestätigen",
   journalPasswordHint:
     "Dieses Passwort schützt nur dein Tagebuch. Es gibt keine Wiederherstellung — merke es dir gut.",
-  journalPasswordTooShort: "Mindestens 4 Zeichen",
+  journalPasswordTooShort: "Mindestens 6 Zeichen",
   journalPasswordMismatch: "Passwörter stimmen nicht überein",
   journalPasswordWrong: "Falsches Passwort",
   journalPasswordCooldown: "Zu viele Versuche. Warte",

@@ -2293,7 +2293,7 @@ export const en: Translations = {
   journalPasswordConfirm: "Confirm your password",
   journalPasswordHint:
     "This password protects only your diary. There is no recovery — remember it well.",
-  journalPasswordTooShort: "Minimum 4 characters",
+  journalPasswordTooShort: "Minimum 6 characters",
   journalPasswordMismatch: "Passwords do not match",
   journalPasswordWrong: "Wrong password",
   journalPasswordCooldown: "Too many attempts. Wait",

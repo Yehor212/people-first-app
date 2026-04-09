@@ -2248,7 +2248,7 @@ const hebrewOverrides: Partial<Translations> = {
   journalPasswordEnter: "הכנס סיסמה",
   journalPasswordConfirm: "אשר סיסמה",
   journalPasswordHint: "סיסמה זו מגינה רק על היומן שלך. אין שחזור — זכור אותה היטב.",
-  journalPasswordTooShort: "מינימום 4 תווים",
+  journalPasswordTooShort: "מינימום 6 תווים",
   journalPasswordMismatch: "הסיסמאות לא תואמות",
   journalPasswordWrong: "סיסמה שגויה",
   journalPasswordCooldown: "יותר מדי ניסיונות. המתן",

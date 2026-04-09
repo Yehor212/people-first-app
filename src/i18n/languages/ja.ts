@@ -2255,7 +2255,7 @@ export const ja: Translations = {
   journalPasswordConfirm: "パスワードを確認",
   journalPasswordHint:
     "このパスワードは日記のみを保護します。復元はできません — よく覚えておいてください。",
-  journalPasswordTooShort: "4文字以上必要です",
+  journalPasswordTooShort: "6文字以上必要です",
   journalPasswordMismatch: "パスワードが一致しません",
   journalPasswordWrong: "パスワードが間違っています",
   journalPasswordCooldown: "試行回数が多すぎます。お待ちください",

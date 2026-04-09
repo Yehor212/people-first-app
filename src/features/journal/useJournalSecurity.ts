@@ -1,13 +1,14 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { isNative } from '@/lib/platform';
-import { db } from '@/storage/db';
-import type { JournalPassword } from './types';
-import { JOURNAL_PASSWORD_KEY } from './types';
-import { logger } from '@/lib/logger';
+import { useState, useEffect, useCallback, useRef } from "react";
+import { isNative } from "@/lib/platform";
+import { db } from "@/storage/db";
+import type { JournalPassword } from "./types";
+import { JOURNAL_PASSWORD_KEY } from "./types";
+import { logger } from "@/lib/logger";
 
-const BIOMETRIC_SETTINGS_KEY = 'journal_biometric';
+const BIOMETRIC_SETTINGS_KEY = "journal_biometric";
 
-const PBKDF2_ITERATIONS = 100_000;
+const PBKDF2_ITERATIONS = 600_000;
+const LEGACY_PBKDF2_ITERATIONS = 100_000;
 const AUTO_LOCK_MS = 5 * 60 * 1000; // 5 minutes
 const COOLDOWN_STEPS = [
   { after: 3, seconds: 30 },
@@ -16,7 +17,7 @@ const COOLDOWN_STEPS = [
 
 function arrayBufferToBase64(buf: ArrayBuffer): string {
   const bytes = new Uint8Array(buf);
-  let binary = '';
+  let binary = "";
   for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
   return btoa(binary);
 }
@@ -30,13 +31,13 @@ function base64ToArrayBuffer(b64: string): ArrayBuffer {
 
 async function deriveKey(password: string, salt: ArrayBuffer): Promise<string> {
   const enc = new TextEncoder();
-  const keyMaterial = await crypto.subtle.importKey(
-    'raw', enc.encode(password), 'PBKDF2', false, ['deriveBits'],
-  );
+  const keyMaterial = await crypto.subtle.importKey("raw", enc.encode(password), "PBKDF2", false, [
+    "deriveBits",
+  ]);
   const bits = await crypto.subtle.deriveBits(
-    { name: 'PBKDF2', salt, iterations: PBKDF2_ITERATIONS, hash: 'SHA-256' },
+    { name: "PBKDF2", salt, iterations: PBKDF2_ITERATIONS, hash: "SHA-256" },
     keyMaterial,
-    256,
+    256
   );
   return arrayBufferToBase64(bits);
 }
@@ -53,23 +54,42 @@ export function useJournalSecurity() {
 
   // Load password state + biometric
   useEffect(() => {
-    db.settings.get(JOURNAL_PASSWORD_KEY).then(entry => {
-      setHasPassword(!!entry?.value);
-    }).catch(err => { logger.warn('[Journal]', 'Password check failed:', err); setHasPassword(false); });
+    db.settings
+      .get(JOURNAL_PASSWORD_KEY)
+      .then((entry) => {
+        setHasPassword(!!entry?.value);
+      })
+      .catch((err) => {
+        logger.warn("[Journal]", "Password check failed:", err);
+        setHasPassword(false);
+      });
 
     // Check biometric availability
     if (isNative) {
-      import('@/plugins/BiometricPlugin').then(({ default: BiometricAuth }) => {
-        BiometricAuth.isAvailable().then(result => {
-          setBiometricAvailable(result.available);
-        }).catch(err => { logger.warn('[Journal]', 'Biometric check failed:', err); setBiometricAvailable(false); });
-      }).catch(err => { logger.warn('[Journal]', 'Biometric plugin load failed:', err); setBiometricAvailable(false); });
+      import("@/plugins/BiometricPlugin")
+        .then(({ default: BiometricAuth }) => {
+          BiometricAuth.isAvailable()
+            .then((result) => {
+              setBiometricAvailable(result.available);
+            })
+            .catch((err) => {
+              logger.warn("[Journal]", "Biometric check failed:", err);
+              setBiometricAvailable(false);
+            });
+        })
+        .catch((err) => {
+          logger.warn("[Journal]", "Biometric plugin load failed:", err);
+          setBiometricAvailable(false);
+        });
     }
 
     // Load biometric setting
-    db.settings.get(BIOMETRIC_SETTINGS_KEY).then(entry => {
-      if (entry?.value) setBiometricEnabledState(true);
-    }).catch(err => logger.warn('[Journal]', 'Biometric setting load failed:', err));
+    db.settings
+      .get(BIOMETRIC_SETTINGS_KEY)
+      .then((entry) => {
+        if (entry?.value) setBiometricEnabledState(true);
+      })
+      .catch((err) => logger.warn("[Journal]", "Biometric setting load failed:", err));
   }, []);
 
   // Auto-lock timer
@@ -84,7 +104,9 @@ export function useJournalSecurity() {
 
   useEffect(() => {
     resetAutoLock();
-    return () => { if (autoLockTimerRef.current) clearTimeout(autoLockTimerRef.current); };
+    return () => {
+      if (autoLockTimerRef.current) clearTimeout(autoLockTimerRef.current);
+    };
   }, [resetAutoLock]);
 
   // Lock on visibility change (app background)
@@ -95,82 +117,91 @@ export function useJournalSecurity() {
         unlockedAtRef.current = 0;
       }
     };
-    document.addEventListener('visibilitychange', handleVisibility);
-    return () => document.removeEventListener('visibilitychange', handleVisibility);
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
   }, [isUnlocked]);
 
   // Set password
-  const setPassword = useCallback(async (password: string) => {
-    const salt = crypto.getRandomValues(new Uint8Array(16));
-    const hash = await deriveKey(password, salt.buffer);
-    const data: JournalPassword = {
-      hash,
-      salt: arrayBufferToBase64(salt.buffer),
-      iterations: PBKDF2_ITERATIONS,
-      createdAt: Date.now(),
-    };
-    await db.settings.put({ key: JOURNAL_PASSWORD_KEY, value: data });
-    setHasPassword(true);
-    setIsUnlocked(true);
-    unlockedAtRef.current = Date.now();
-    resetAutoLock();
-  }, [resetAutoLock]);
-
-  // Unlock with password
-  const unlock = useCallback(async (password: string): Promise<boolean> => {
-    // Cooldown check
-    if (Date.now() < cooldownUntil) return false;
-
-    const entry = await db.settings.get(JOURNAL_PASSWORD_KEY);
-    if (!entry?.value) return false;
-    const stored = entry.value as JournalPassword;
-    const salt = base64ToArrayBuffer(stored.salt);
-    const hash = await deriveKey(password, salt);
-
-    if (hash === stored.hash) {
+  const setPassword = useCallback(
+    async (password: string) => {
+      const salt = crypto.getRandomValues(new Uint8Array(16));
+      const hash = await deriveKey(password, salt.buffer);
+      const data: JournalPassword = {
+        hash,
+        salt: arrayBufferToBase64(salt.buffer),
+        iterations: PBKDF2_ITERATIONS,
+        createdAt: Date.now(),
+      };
+      await db.settings.put({ key: JOURNAL_PASSWORD_KEY, value: data });
+      setHasPassword(true);
       setIsUnlocked(true);
-      setFailedAttempts(0);
-      setCooldownUntil(0);
       unlockedAtRef.current = Date.now();
       resetAutoLock();
-      return true;
-    }
+    },
+    [resetAutoLock]
+  );
 
-    // Wrong password
-    const newAttempts = failedAttempts + 1;
-    setFailedAttempts(newAttempts);
+  // Unlock with password
+  const unlock = useCallback(
+    async (password: string): Promise<boolean> => {
+      // Cooldown check
+      if (Date.now() < cooldownUntil) return false;
 
-    // Check cooldown thresholds
-    for (const step of COOLDOWN_STEPS) {
-      if (newAttempts >= step.after) {
-        setCooldownUntil(Date.now() + step.seconds * 1000);
+      const entry = await db.settings.get(JOURNAL_PASSWORD_KEY);
+      if (!entry?.value) return false;
+      const stored = entry.value as JournalPassword;
+      const salt = base64ToArrayBuffer(stored.salt);
+      const hash = await deriveKey(password, salt);
+
+      if (hash === stored.hash) {
+        setIsUnlocked(true);
+        setFailedAttempts(0);
+        setCooldownUntil(0);
+        unlockedAtRef.current = Date.now();
+        resetAutoLock();
+        return true;
       }
-    }
-    return false;
-  }, [failedAttempts, cooldownUntil, resetAutoLock]);
+
+      // Wrong password
+      const newAttempts = failedAttempts + 1;
+      setFailedAttempts(newAttempts);
+
+      // Check cooldown thresholds
+      for (const step of COOLDOWN_STEPS) {
+        if (newAttempts >= step.after) {
+          setCooldownUntil(Date.now() + step.seconds * 1000);
+        }
+      }
+      return false;
+    },
+    [failedAttempts, cooldownUntil, resetAutoLock]
+  );
 
   // Change password atomically (verify old, then write new in single put)
-  const changePassword = useCallback(async (oldPw: string, newPw: string): Promise<boolean> => {
-    const entry = await db.settings.get(JOURNAL_PASSWORD_KEY);
-    if (!entry?.value) return false;
-    const stored = entry.value as JournalPassword;
-    const oldSalt = base64ToArrayBuffer(stored.salt);
-    const oldHash = await deriveKey(oldPw, oldSalt);
-    if (oldHash !== stored.hash) return false;
+  const changePassword = useCallback(
+    async (oldPw: string, newPw: string): Promise<boolean> => {
+      const entry = await db.settings.get(JOURNAL_PASSWORD_KEY);
+      if (!entry?.value) return false;
+      const stored = entry.value as JournalPassword;
+      const oldSalt = base64ToArrayBuffer(stored.salt);
+      const oldHash = await deriveKey(oldPw, oldSalt);
+      if (oldHash !== stored.hash) return false;
 
-    // Old password verified — atomic write with fresh salt
-    const newSalt = crypto.getRandomValues(new Uint8Array(16));
-    const newHash = await deriveKey(newPw, newSalt.buffer);
-    const newData: JournalPassword = {
-      hash: newHash,
-      salt: arrayBufferToBase64(newSalt.buffer),
-      iterations: PBKDF2_ITERATIONS,
-      createdAt: Date.now(),
-    };
-    await db.settings.put({ key: JOURNAL_PASSWORD_KEY, value: newData });
-    resetAutoLock();
-    return true;
-  }, [resetAutoLock]);
+      // Old password verified — atomic write with fresh salt
+      const newSalt = crypto.getRandomValues(new Uint8Array(16));
+      const newHash = await deriveKey(newPw, newSalt.buffer);
+      const newData: JournalPassword = {
+        hash: newHash,
+        salt: arrayBufferToBase64(newSalt.buffer),
+        iterations: PBKDF2_ITERATIONS,
+        createdAt: Date.now(),
+      };
+      await db.settings.put({ key: JOURNAL_PASSWORD_KEY, value: newData });
+      resetAutoLock();
+      return true;
+    },
+    [resetAutoLock]
+  );
 
   // Remove password (entries stay, lock removed)
   const removePassword = useCallback(async () => {
@@ -196,8 +227,8 @@ export function useJournalSecurity() {
   const unlockWithBiometric = useCallback(async (): Promise<boolean> => {
     if (!biometricAvailable || !biometricEnabled) return false;
     try {
-      const { default: BiometricAuth } = await import('@/plugins/BiometricPlugin');
-      const result = await BiometricAuth.authenticate({ reason: 'Unlock your journal' });
+      const { default: BiometricAuth } = await import("@/plugins/BiometricPlugin");
+      const result = await BiometricAuth.authenticate({ reason: "Unlock your journal" });
       if (result.success) {
         setIsUnlocked(true);
         setFailedAttempts(0);
@@ -218,9 +249,8 @@ export function useJournalSecurity() {
   }, []);
 
   // Cooldown remaining in seconds
-  const cooldownRemaining = cooldownUntil > Date.now()
-    ? Math.ceil((cooldownUntil - Date.now()) / 1000)
-    : 0;
+  const cooldownRemaining =
+    cooldownUntil > Date.now() ? Math.ceil((cooldownUntil - Date.now()) / 1000) : 0;
 
   return {
     hasPassword,

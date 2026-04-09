@@ -2278,7 +2278,7 @@ export const uk: Translations = {
   journalPasswordConfirm: "Підтвердіть пароль",
   journalPasswordHint:
     "Цей пароль захищає лише щоденник. Відновлення неможливе — запам'ятайте його.",
-  journalPasswordTooShort: "Мінімум 4 символи",
+  journalPasswordTooShort: "Мінімум 6 символів",
   journalPasswordMismatch: "Паролі не збігаються",
   journalPasswordWrong: "Невірний пароль",
   journalPasswordCooldown: "Забагато спроб. Зачекайте",

@@ -2303,7 +2303,7 @@ export const es: Translations = {
   journalPasswordConfirm: "Confirma tu contraseña",
   journalPasswordHint:
     "Esta contraseña protege solo tu diario. No hay recuperación — recuérdala bien.",
-  journalPasswordTooShort: "Mínimo 4 caracteres",
+  journalPasswordTooShort: "Mínimo 6 caracteres",
   journalPasswordMismatch: "Las contraseñas no coinciden",
   journalPasswordWrong: "Contraseña incorrecta",
   journalPasswordCooldown: "Demasiados intentos. Espera",

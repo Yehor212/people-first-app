@@ -2316,7 +2316,7 @@ export const fr: Translations = {
   journalPasswordConfirm: "Confirmez votre mot de passe",
   journalPasswordHint:
     "Ce mot de passe protège uniquement votre journal. Pas de récupération — mémorisez-le bien.",
-  journalPasswordTooShort: "Minimum 4 caractères",
+  journalPasswordTooShort: "Minimum 6 caractères",
   journalPasswordMismatch: "Les mots de passe ne correspondent pas",
   journalPasswordWrong: "Mot de passe incorrect",
   journalPasswordCooldown: "Trop de tentatives. Attendez",

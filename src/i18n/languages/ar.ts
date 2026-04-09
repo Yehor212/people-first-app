@@ -2169,7 +2169,7 @@ const arabicOverrides: Partial<Translations> = {
   journalPasswordEnter: "أدخل كلمة المرور",
   journalPasswordConfirm: "تأكيد كلمة المرور",
   journalPasswordHint: "كلمة المرور هذه تحمي يومياتك فقط. لا يمكن استعادتها — تذكرها جيداً.",
-  journalPasswordTooShort: "4 أحرف كحد أدنى",
+  journalPasswordTooShort: "6 أحرف كحد أدنى",
   journalPasswordMismatch: "كلمات المرور غير متطابقة",
   journalPasswordWrong: "كلمة مرور خاطئة",
   journalPasswordCooldown: "محاولات كثيرة. انتظر",
