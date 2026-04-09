@@ -40,8 +40,7 @@ export const getAuthRedirectUrl = () => {
     "https://yehor212.github.io",
     "capacitor://localhost",
     "https://zenflow.app",
-    "http://localhost:3000",
-    "http://localhost:5173",
+    ...(import.meta.env.DEV ? ["http://localhost:3000", "http://localhost:5173"] : []),
   ] as const;
   const rawOrigin = window.location.origin;
   const origin = (ALLOWED_ORIGINS as readonly string[]).includes(rawOrigin)

@@ -163,8 +163,8 @@ class SyncOrchestrator {
 
     // Start processing using mutex pattern to avoid race conditions
     // If already processing, wait for current batch to complete then check queue again
-    this.startProcessing().catch(() => {
-      /* errors handled inside processQueue */
+    this.startProcessing().catch((err) => {
+      logger.sync('Failed to start queue processing', err);
     });
   }
 
@@ -480,8 +480,8 @@ class SyncOrchestrator {
 
     // Resume processing when back online using mutex-protected method
     if (isOnline && this.queue.length > 0 && !this.isProcessing) {
-      this.startProcessing().catch(() => {
-        /* errors handled inside processQueue */
+      this.startProcessing().catch((err) => {
+        logger.sync('Failed to resume processing on network recovery', err);
       });
     }
   }
