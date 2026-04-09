@@ -66,7 +66,7 @@ export const JournalPhotoGallery = memo(function JournalPhotoGallery({
   return (
     <>
       {/* Thumbnail grid */}
-      <div className="flex gap-2 overflow-x-auto scrollbar-hide py-1">
+      <div className="flex gap-2 overflow-x-auto scrollbar-hide py-1 lg:flex-wrap lg:overflow-x-visible lg:gap-3">
         {photos.map((photo) => (
           <div key={photo.id} className="relative flex-shrink-0 group">
             <button
@@ -78,7 +78,7 @@ export const JournalPhotoGallery = memo(function JournalPhotoGallery({
                 alt=""
                 width={64}
                 height={64}
-                className="w-16 h-16 object-cover rounded-xl"
+                className="w-16 h-16 lg:w-24 lg:h-24 object-cover rounded-xl"
                 loading="lazy"
               />
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors rounded-xl flex items-center justify-center">

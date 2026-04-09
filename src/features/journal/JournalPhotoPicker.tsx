@@ -39,13 +39,13 @@ export function JournalPhotoPicker({
   }, []);
 
   const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
-  const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"];
+  const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+    if (!file.type || !ALLOWED_MIME_TYPES.includes(file.type)) {
       setError(
         ts.journalPhotoInvalidType || "Unsupported file type. Please use JPEG, PNG, or WebP."
       );

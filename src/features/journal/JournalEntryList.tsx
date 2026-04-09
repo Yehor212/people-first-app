@@ -137,6 +137,8 @@ interface JournalEntryListProps {
   loading?: boolean;
   daysSinceLastEntry?: number | null;
   privateMode?: boolean;
+  /** Compact single-column mode for desktop left panel */
+  compact?: boolean;
 }
 
 export const JournalEntryList = memo(function JournalEntryList({
@@ -149,6 +151,7 @@ export const JournalEntryList = memo(function JournalEntryList({
   loading = false,
   daysSinceLastEntry,
   privateMode = false,
+  compact = false,
 }: JournalEntryListProps) {
   const { t } = useLanguage();
   const ts = t as unknown as Record<string, string>;
@@ -615,7 +618,12 @@ export const JournalEntryList = memo(function JournalEntryList({
               variants={containerVariants}
               initial="hidden"
               animate="show"
-              className="space-y-2 md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-3 md:space-y-0"
+              className={cn(
+                "space-y-2",
+                compact
+                  ? "space-y-1.5"
+                  : "md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-3 md:space-y-0"
+              )}
             >
               {group.entries.map((entry) => (
                 <motion.div key={entry.id} variants={itemVariants}>

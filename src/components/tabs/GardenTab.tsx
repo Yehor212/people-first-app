@@ -83,7 +83,7 @@ export function GardenTab({
           onOpenChallenges={
             isFeatureVisible("challenges") ? () => setShowChallenges(true) : undefined
           }
-          onOpenTasks={isFeatureVisible("tasks") ? () => setShowTasksPanel(true) : undefined}
+          onOpenEvents={isFeatureVisible("tasks") ? () => setShowTasksPanel(true) : undefined}
           onOpenQuests={isFeatureVisible("quests") ? () => setShowQuestsPanel(true) : undefined}
           onOpenFriends={() => setShowFriendsPanel(true)}
         />

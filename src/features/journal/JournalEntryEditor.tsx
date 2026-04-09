@@ -219,6 +219,8 @@ interface JournalEntryEditorProps {
   onBack: () => void;
   onToggleHabit?: (habitId: string, date: string) => void;
   onAddGratitude?: (entry: import("@/types").GratitudeEntry) => void;
+  /** Desktop master-detail mode: render inline instead of fixed overlay */
+  desktop?: boolean;
 }
 
 export const JournalEntryEditor = memo(function JournalEntryEditor({
@@ -232,6 +234,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
   onBack,
   onToggleHabit,
   onAddGratitude,
+  desktop,
 }: JournalEntryEditorProps) {
   const state = useJournalEditorState({
     entry,
@@ -383,7 +386,10 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
       role="dialog"
       aria-modal="true"
       aria-label={ts.journalEntryTitle || "Diary Entry"}
-      className="fixed inset-0 z-[60] flex flex-col h-dvh overflow-hidden text-foreground"
+      className={cn(
+        "flex flex-col overflow-hidden text-foreground",
+        desktop ? "relative h-full" : "fixed inset-0 z-[60] h-dvh"
+      )}
       style={diaryStyle}
     >
       {/* Canvas decorative background */}
@@ -397,7 +403,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
       />
 
       {/* Atmospheric background pattern overlay (Layer 1 — behind paper, above canvas) */}
-      {bgPattern !== "none" && (
+      {bgPattern !== "none" && !desktop && (
         <div
           className="absolute inset-0 z-[1] pointer-events-none"
           style={getBgPatternStyle(bgPattern)}
@@ -405,7 +411,14 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
       )}
 
       {/* ═══ GLASS TOOLBAR ═══ */}
-      <div className="relative z-50 flex-shrink-0 w-full flex flex-col gap-3 px-6 py-3 pt-[max(0.75rem,var(--safe-top))] backdrop-blur-[20px] shadow-[0_10px_40px_rgba(0,0,0,0.5)] bg-[linear-gradient(135deg,rgba(15,23,42,0.7),rgba(2,6,23,0.85))] border-b border-b-[rgba(255,255,255,0.08)]">
+      <div
+        className={cn(
+          "relative z-50 flex-shrink-0 w-full flex flex-col gap-3 px-6 py-3 pt-[max(0.75rem,var(--safe-top))] border-b",
+          desktop
+            ? "bg-background/95 backdrop-blur-sm shadow-sm border-border/15"
+            : "backdrop-blur-[20px] shadow-[0_10px_40px_rgba(0,0,0,0.5)] bg-[linear-gradient(135deg,rgba(15,23,42,0.7),rgba(2,6,23,0.85))] border-b-[rgba(255,255,255,0.08)]"
+        )}
+      >
         {/* ROW 1: Navigation & Atmosphere */}
         <div className="flex items-center justify-between gap-3">
           {/* LEFT: Back + Title */}
@@ -893,12 +906,16 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
         )}
         <div
           ref={scrollAreaRef}
-          className="absolute inset-0 overflow-y-auto pt-[140px] pb-[160px] px-4 z-10"
+          className={cn(
+            "absolute inset-0 overflow-y-auto pt-[140px] pb-[160px] z-10",
+            desktop ? "px-8" : "px-4"
+          )}
           onScroll={handleContentScroll}
         >
           <div
             className={cn(
-              "max-w-4xl mx-auto rounded-2xl border shadow-[0_0_80px_rgba(0,0,0,0.5)] p-4 sm:p-6 md:p-8 min-h-[60dvh] space-y-4 [contain:layout_style_paint]",
+              "max-w-4xl mx-auto rounded-2xl border p-4 sm:p-6 md:p-8 min-h-[60dvh] space-y-4 [contain:layout_style_paint]",
+              desktop ? "shadow-md max-w-3xl" : "shadow-[0_0_80px_rgba(0,0,0,0.5)]",
               zenFocusActive && "zen-focus-active"
             )}
             style={{

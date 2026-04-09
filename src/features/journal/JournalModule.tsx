@@ -16,6 +16,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn, getToday } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useScrollLock } from "@/hooks/useScrollLock";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { registerModalCloseCallback } from "@/lib/androidBackHandler";
 import { useBackHandler } from "@/hooks/useBackHandler";
 import { useModalA11y } from "@/hooks/useModalA11y";
@@ -355,14 +356,15 @@ export const JournalModule = memo(function JournalModule({
   };
 
   // --- HOOKS (all callbacks declared above — safe from TDZ in production minified chunks) ---
+  const isLgScreen = useMediaQuery("(min-width: 1024px)");
   useScrollLock(moduleState === "open");
-  useModalA11y(moduleState === "open", handleClose);
+  useModalA11y(moduleState === "open" && !isLgScreen, handleClose);
 
-  // Focus trap for main overlay
+  // Focus trap for main overlay (skip on desktop — sidebar must be accessible)
   useEffect(() => {
-    if (moduleState !== "open" || !overlayRef.current) return;
+    if (moduleState !== "open" || !overlayRef.current || isLgScreen) return;
     return createFocusTrap(overlayRef.current);
-  }, [moduleState]);
+  }, [moduleState, isLgScreen]);
 
   // Load entry count for card preview
   useEffect(() => {
@@ -542,10 +544,19 @@ export const JournalModule = memo(function JournalModule({
       role="dialog"
       aria-modal="true"
       aria-label={ts.journalTitle || "Diary"}
-      className="fixed inset-0 z-[60] bg-background md:bg-background/80 md:backdrop-blur-sm flex items-start justify-center animate-slide-up"
+      className={cn(
+        "fixed inset-0 z-[60] bg-background flex items-start justify-center animate-slide-up",
+        "md:bg-background/80 md:backdrop-blur-sm",
+        "lg:left-[var(--sidebar-width,256px)] lg:bg-background lg:backdrop-blur-none lg:transition-[left] lg:duration-300 lg:items-stretch"
+      )}
       dir={isRTL ? "rtl" : "ltr"}
     >
-      <div className="w-full h-full flex flex-col md:max-w-2xl lg:max-w-4xl xl:max-w-5xl md:my-4 md:h-[calc(100%-2rem)] md:rounded-2xl md:bg-background md:shadow-2xl md:border md:border-border/20 md:overflow-hidden">
+      <div
+        className={cn(
+          "w-full h-full flex flex-col md:max-w-2xl md:my-4 md:h-[calc(100%-2rem)] md:rounded-2xl md:bg-background md:shadow-2xl md:border md:border-border/20 md:overflow-hidden",
+          "lg:max-w-none lg:my-0 lg:h-full lg:rounded-none lg:shadow-none lg:border-0"
+        )}
+      >
         {/* Security gate */}
         {security.isLocked && !security.loading && (
           <>
@@ -773,81 +784,13 @@ export const JournalModule = memo(function JournalModule({
           !security.loading &&
           !(showPasswordSettings && security.hasPassword === false && journal.totalCount === 0) && (
             <>
-              {/* Editor overlays on top with its own fixed positioning */}
-              {journal.view === "editing" && (
-                <JournalEntryEditor
-                  entry={journal.activeEntry}
-                  onSave={handleSaveEntry}
-                  onAddPhoto={journal.addPhoto}
-                  onRemovePhoto={journal.removePhoto}
-                  onAddAudio={journal.addAudio}
-                  onRemoveAudio={journal.removeAudio}
-                  onDelete={
-                    journal.activeEntryId
-                      ? () => handleDeleteEntry(journal.activeEntryId)
-                      : undefined
-                  }
-                  onBack={journal.goBack}
-                  onToggleHabit={onToggleHabit}
-                  onAddGratitude={onAddGratitude}
-                />
-              )}
-
-              {/* List / Viewer / Stats crossfade */}
-              <AnimatePresence mode="wait">
-                {journal.view === "stats" && (
-                  <motion.div
-                    key="stats"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.15 }}
-                    className="flex flex-col flex-1 min-h-0"
-                  >
-                    <Suspense
-                      fallback={
-                        <div className="flex-1 flex items-center justify-center">
-                          <Loader2
-                            className="w-6 h-6 animate-spin text-primary"
-                            aria-label={t.loading || "Loading..."}
-                          />
-                        </div>
-                      }
-                    >
-                      <LazyJournalStats entries={journal.allEntries} onBack={journal.goBack} />
-                    </Suspense>
-                  </motion.div>
-                )}
-
-                {journal.view === "viewing" && journal.activeEntry && (
-                  <motion.div
-                    key="viewing"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.15 }}
-                    className="flex flex-col flex-1 min-h-0"
-                  >
-                    <JournalEntryViewer
-                      entry={journal.activeEntry}
-                      onEdit={() => journal.editEntry(journal.activeEntryId)}
-                      onDelete={() => handleDeleteEntry(journal.activeEntry?.id || "")}
-                      onBack={journal.goBack}
-                    />
-                  </motion.div>
-                )}
-
-                {journal.view === "list" && (
-                  <motion.div
-                    key="list"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.15 }}
-                    className="flex flex-col flex-1 min-h-0"
-                  >
+              {isLgScreen ? (
+                /* ═══ DESKTOP: Master-detail split ═══ */
+                <div className="flex flex-1 min-h-0 h-full">
+                  {/* LEFT PANEL: always-visible list */}
+                  <div className="flex flex-col w-[360px] xl:w-[400px] border-e border-border/15 bg-background shrink-0 h-full overflow-hidden">
                     {/* Header */}
-                    <div className="flex items-center justify-between px-4 py-3 border-b border-border/30 bg-gradient-to-r from-primary/[0.03] via-background/80 to-primary/[0.02] backdrop-blur-xl">
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-border/15 bg-background">
                       <div className="flex items-center gap-2">
                         <h2 className="text-base font-bold text-foreground">
                           {ts.journalTitle || "Diary"}
@@ -886,7 +829,7 @@ export const JournalModule = memo(function JournalModule({
                     </div>
 
                     {/* Calendar */}
-                    <div className="px-4 py-2 border-b border-border/10 bg-gradient-to-b from-transparent to-muted/5">
+                    <div className="px-4 py-2 border-b border-border/10">
                       {calendarMode === "full" ? (
                         <JournalCalendarFull
                           entryDates={journal.entryDates}
@@ -911,8 +854,7 @@ export const JournalModule = memo(function JournalModule({
                     </div>
 
                     {/* Entry list */}
-                    <div className="relative flex-1 overflow-y-auto px-4 py-3">
-                      <ParticleBackground count={6} color="primary" />
+                    <div className="relative flex-1 overflow-y-auto px-3 py-3">
                       <div className="relative z-[1]">
                         <JournalEntryList
                           groupedEntries={journal.groupedEntries}
@@ -924,401 +866,623 @@ export const JournalModule = memo(function JournalModule({
                           daysSinceLastEntry={daysSinceLastEntry}
                           privateMode={privateMode}
                           onAddGratitude={onAddGratitude}
+                          compact
                         />
                       </div>
                     </div>
+                  </div>
 
-                    {/* Password settings bottom sheet */}
-                    {showPasswordSettings && (
-                      <>
-                        <div
-                          className="fixed inset-0 z-[64] bg-black/30 animate-fade-in"
-                          onClick={() => {
-                            setShowPasswordSettings(false);
-                            setShowChangePassword(false);
-                          }}
-                        />
-                        <div
-                          role="dialog"
-                          aria-modal="true"
-                          aria-label={ts.journalSettings || "Diary Settings"}
-                          className="fixed bottom-0 inset-x-0 z-[65] animate-slide-up pb-safe lg:max-w-4xl lg:mx-auto"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {/* Handle bar */}
-                          <div className="flex justify-center pt-2 pb-1 bg-card rounded-t-2xl">
-                            <div className="w-10 h-1 rounded-full bg-muted-foreground/20" />
+                  {/* RIGHT PANEL: editor / viewer / stats / empty */}
+                  <div className="flex-1 flex flex-col min-w-0 h-full bg-background">
+                    {journal.view === "editing" ? (
+                      <JournalEntryEditor
+                        entry={journal.activeEntry}
+                        onSave={handleSaveEntry}
+                        onAddPhoto={journal.addPhoto}
+                        onRemovePhoto={journal.removePhoto}
+                        onAddAudio={journal.addAudio}
+                        onRemoveAudio={journal.removeAudio}
+                        onDelete={
+                          journal.activeEntryId
+                            ? () => handleDeleteEntry(journal.activeEntryId)
+                            : undefined
+                        }
+                        onBack={journal.goBack}
+                        onToggleHabit={onToggleHabit}
+                        onAddGratitude={onAddGratitude}
+                        desktop
+                      />
+                    ) : journal.view === "viewing" && journal.activeEntry ? (
+                      <JournalEntryViewer
+                        entry={journal.activeEntry}
+                        onEdit={() => journal.editEntry(journal.activeEntryId)}
+                        onDelete={() => handleDeleteEntry(journal.activeEntry?.id || "")}
+                        onBack={journal.goBack}
+                      />
+                    ) : journal.view === "stats" ? (
+                      <Suspense
+                        fallback={
+                          <div className="flex-1 flex items-center justify-center">
+                            <Loader2
+                              className="w-6 h-6 animate-spin text-primary"
+                              aria-label={t.loading || "Loading..."}
+                            />
                           </div>
-                          <div className="bg-card p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
-                            <h3 className="text-base font-semibold text-foreground mb-4">
-                              {ts.journalSettings || "Diary Settings"}
-                            </h3>
-                            {security.hasPassword ? (
-                              showChangePassword ? (
-                                <div>
-                                  <JournalLockScreen
-                                    mode="change"
-                                    cooldownRemaining={0}
-                                    failedAttempts={0}
-                                    onUnlock={async () => false}
-                                    onSetPassword={async () => {}}
-                                    onChangePassword={async (oldPw, newPw) => {
-                                      const ok = await security.changePassword(oldPw, newPw);
-                                      if (ok) {
-                                        setShowChangePassword(false);
-                                        setShowPasswordSettings(false);
-                                      }
-                                      return ok;
-                                    }}
-                                  />
-                                  <button
-                                    onClick={() => setShowChangePassword(false)}
-                                    className="w-full mt-2 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors min-h-[44px]"
-                                  >
-                                    {ts.cancel || "Cancel"}
-                                  </button>
-                                </div>
-                              ) : (
-                                <div className="space-y-2">
-                                  <button
-                                    onClick={() => setShowChangePassword(true)}
-                                    className="w-full py-3 rounded-xl bg-primary/10 text-primary text-sm font-medium min-h-[44px]"
-                                  >
-                                    {ts.journalPasswordChange || "Change Password"}
-                                  </button>
-                                  <button
-                                    onClick={() => setShowRemovePasswordConfirm(true)}
-                                    className="w-full py-3 rounded-xl bg-destructive/10 text-destructive text-sm font-medium min-h-[44px]"
-                                  >
-                                    {ts.journalPasswordRemove || "Remove Password Lock"}
-                                  </button>
-                                </div>
-                              )
-                            ) : (
-                              <div>
-                                <p className="text-sm text-muted-foreground mb-3">
-                                  {ts.journalPasswordHint || "Protect your diary with a password"}
-                                </p>
-                                <JournalLockScreen
-                                  mode="setup"
-                                  cooldownRemaining={0}
-                                  failedAttempts={0}
-                                  onUnlock={async () => false}
-                                  onSetPassword={async (pw) => {
-                                    await security.setPassword(pw);
-                                    setShowPasswordSettings(false);
-                                  }}
-                                />
-                              </div>
-                            )}
-                            {/* Biometric toggle (only if password set + biometric available) */}
-                            {security.hasPassword && security.biometricAvailable && (
-                              <div className="mt-4 pt-4 border-t border-border/20">
-                                <div className="flex items-center justify-between min-h-[44px]">
-                                  <div>
-                                    <p className="text-sm font-medium text-foreground">
-                                      {ts.journalBiometricEnable || "Biometric Unlock"}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">
-                                      {ts.journalBiometricSubtitle ||
-                                        "Use fingerprint or face to unlock"}
-                                    </p>
-                                  </div>
-                                  <Switch
-                                    checked={security.biometricEnabled}
-                                    onCheckedChange={security.setBiometricEnabled}
-                                    aria-label={ts.journalBiometricEnable || "Biometric Unlock"}
-                                    className="mt-0.5 shrink-0"
-                                  />
-                                </div>
-                              </div>
-                            )}
+                        }
+                      >
+                        <LazyJournalStats entries={journal.allEntries} onBack={journal.goBack} />
+                      </Suspense>
+                    ) : (
+                      /* Empty state — no entry selected */
+                      <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground/50 gap-3 select-none">
+                        <PenLine className="w-14 h-14 opacity-30" />
+                        <p className="text-sm">
+                          {ts.journalSelectEntry || "Select an entry or start writing"}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                /* ═══ MOBILE: existing single-view behavior ═══ */
+                <>
+                  {/* Editor overlays on top with its own fixed positioning */}
+                  {journal.view === "editing" && (
+                    <JournalEntryEditor
+                      entry={journal.activeEntry}
+                      onSave={handleSaveEntry}
+                      onAddPhoto={journal.addPhoto}
+                      onRemovePhoto={journal.removePhoto}
+                      onAddAudio={journal.addAudio}
+                      onRemoveAudio={journal.removeAudio}
+                      onDelete={
+                        journal.activeEntryId
+                          ? () => handleDeleteEntry(journal.activeEntryId)
+                          : undefined
+                      }
+                      onBack={journal.goBack}
+                      onToggleHabit={onToggleHabit}
+                      onAddGratitude={onAddGratitude}
+                    />
+                  )}
 
-                            {/* Screenshot blocking (native only) */}
-                            {screenSecurity.isNative && (
-                              <div className="mt-4 pt-4 border-t border-border/20">
-                                <div className="flex items-center justify-between min-h-[44px]">
-                                  <div>
-                                    <p className="text-sm font-medium text-foreground">
-                                      {ts.journalScreenshotBlock || "Block Screenshots"}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">
-                                      {ts.journalScreenshotBlockSubtitle ||
-                                        "Prevent screen capture while diary is open"}
-                                    </p>
-                                  </div>
-                                  <Switch
-                                    checked={screenSecurity.enabled}
-                                    onCheckedChange={screenSecurity.setEnabled}
-                                    aria-label={ts.journalScreenshotBlock || "Block Screenshots"}
-                                    className="mt-0.5 shrink-0"
-                                  />
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Private mode toggle */}
-                            <div className="mt-4 pt-4 border-t border-border/20">
-                              <div className="flex items-center justify-between min-h-[44px]">
-                                <div>
-                                  <p className="text-sm font-medium text-foreground">
-                                    {ts.journalPrivateMode || "Hide previews"}
-                                  </p>
-                                  <p className="text-xs text-muted-foreground">
-                                    {ts.journalPrivateModeHint || "Show only titles in entry list"}
-                                  </p>
-                                </div>
-                                <Switch
-                                  checked={privateMode}
-                                  onCheckedChange={(checked) => {
-                                    setPrivateMode(checked);
-                                    storageSetRaw(SK.JOURNAL_PRIVATE_MODE, String(checked));
-                                  }}
-                                  aria-label={ts.journalPrivateMode || "Hide previews"}
-                                  className="mt-0.5 shrink-0"
-                                />
-                              </div>
-                            </div>
-
-                            {/* Reminder toggle */}
-                            <div className="mt-4 pt-4 border-t border-border/20">
-                              <div className="flex items-center justify-between min-h-[44px]">
-                                <div>
-                                  <p className="text-sm font-medium text-foreground">
-                                    {ts.journalReminderEnabled || "Daily reminder"}
-                                  </p>
-                                  <p className="text-xs text-muted-foreground">
-                                    {ts.journalReminderSubtitle || "Get reminded to write"}
-                                  </p>
-                                </div>
-                                <Switch
-                                  checked={reminder.enabled}
-                                  onCheckedChange={reminder.setEnabled}
-                                  aria-label={ts.journalReminderEnabled || "Daily reminder"}
-                                  className="mt-0.5 shrink-0"
-                                />
-                              </div>
-                              {reminder.enabled && (
-                                <div className="flex items-center gap-2 mt-2">
-                                  <span className="text-xs text-muted-foreground">
-                                    {ts.journalReminderTime || "Time"}:
-                                  </span>
-                                  <input
-                                    type="time"
-                                    value={`${String(reminder.hour).padStart(2, "0")}:${String(reminder.minute).padStart(2, "0")}`}
-                                    onChange={(e) => {
-                                      const [h, m] = e.target.value.split(":").map(Number);
-                                      if (!isNaN(h) && !isNaN(m)) void reminder.setTime(h, m);
-                                    }}
-                                    className="px-2 py-1 rounded-lg bg-muted/50 border border-border/30 text-sm text-foreground min-h-[36px]"
-                                  />
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Export / Import */}
-                            <div className="mt-4 pt-4 border-t border-border/20">
-                              <p className="text-xs font-bold text-muted-foreground/50 uppercase tracking-widest mb-2">
-                                {ts.journalDataSection || "Data"}
-                              </p>
-                              <div className="flex gap-2">
-                                <button
-                                  onClick={() => setShowExportPicker(true)}
-                                  disabled={exporting}
-                                  className="flex-1 py-2.5 rounded-xl bg-muted/50 text-foreground text-sm font-medium min-h-[44px] flex items-center justify-center gap-1.5 disabled:opacity-50"
-                                >
-                                  {exporting ? (
-                                    <Loader2
-                                      className="w-3.5 h-3.5 animate-spin"
-                                      aria-hidden="true"
-                                    />
-                                  ) : (
-                                    <Download className="w-3.5 h-3.5" />
-                                  )}
-                                  {ts.journalExport || "Export"}
-                                </button>
-                                <button
-                                  onClick={() => fileInputRef.current?.click()}
-                                  disabled={importing}
-                                  className="flex-1 py-2.5 rounded-xl bg-muted/50 text-foreground text-sm font-medium min-h-[44px] flex items-center justify-center gap-1.5 disabled:opacity-50"
-                                >
-                                  {importing ? (
-                                    <Loader2
-                                      className="w-3.5 h-3.5 animate-spin"
-                                      aria-hidden="true"
-                                    />
-                                  ) : (
-                                    <Upload className="w-3.5 h-3.5" />
-                                  )}
-                                  {ts.journalImport || "Import"}
-                                </button>
-                              </div>
-                              <input
-                                ref={fileInputRef}
-                                type="file"
-                                accept=".json"
-                                className="hidden"
-                                onChange={async (e) => {
-                                  const file = e.target.files?.[0];
-                                  if (!file) return;
-                                  e.target.value = "";
-                                  setImporting(true);
-                                  setImportFeedback(null);
-                                  try {
-                                    const { importJournalBackup } = await import("./journalImport");
-                                    const result = await importJournalBackup(file);
-                                    void journal.refresh();
-                                    if (result.errors.length > 0) {
-                                      const msg = `${ts.journalImportPartial || "Imported with errors"}: ${result.imported} ${ts.journalImportEntries || "entries"}, ${result.errors.length} ${ts.journalImportErrors || "errors"}`;
-                                      setImportFeedback({
-                                        type: "error",
-                                        message: msg,
-                                      });
-                                      announceError(msg);
-                                    } else {
-                                      const msg = `${ts.journalImportSuccess || "Import complete"}: ${result.imported} ${ts.journalImportEntries || "entries"}`;
-                                      setImportFeedback({
-                                        type: "success",
-                                        message: msg,
-                                      });
-                                      announceSuccess(msg);
-                                    }
-                                    setTimeout(() => setImportFeedback(null), 5000);
-                                  } catch {
-                                    const msg = ts.journalImportFailed || "Import failed";
-                                    setImportFeedback({
-                                      type: "error",
-                                      message: msg,
-                                    });
-                                    announceError(msg);
-                                    setTimeout(() => setImportFeedback(null), 5000);
-                                  } finally {
-                                    setImporting(false);
-                                  }
-                                }}
+                  {/* List / Viewer / Stats crossfade */}
+                  <AnimatePresence mode="wait">
+                    {journal.view === "stats" && (
+                      <motion.div
+                        key="stats"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.15 }}
+                        className="flex flex-col flex-1 min-h-0"
+                      >
+                        <Suspense
+                          fallback={
+                            <div className="flex-1 flex items-center justify-center">
+                              <Loader2
+                                className="w-6 h-6 animate-spin text-primary"
+                                aria-label={t.loading || "Loading..."}
                               />
-                              {importFeedback && (
-                                <p
-                                  className={cn(
-                                    "text-xs mt-2 px-3 py-2 rounded-lg text-center",
-                                    importFeedback.type === "success"
-                                      ? "bg-green-500/10 text-green-600 dark:text-green-400"
-                                      : "bg-destructive/10 text-destructive"
-                                  )}
-                                >
-                                  {importFeedback.message}
-                                </p>
-                              )}
                             </div>
+                          }
+                        >
+                          <LazyJournalStats entries={journal.allEntries} onBack={journal.goBack} />
+                        </Suspense>
+                      </motion.div>
+                    )}
 
+                    {journal.view === "viewing" && journal.activeEntry && (
+                      <motion.div
+                        key="viewing"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.15 }}
+                        className="flex flex-col flex-1 min-h-0"
+                      >
+                        <JournalEntryViewer
+                          entry={journal.activeEntry}
+                          onEdit={() => journal.editEntry(journal.activeEntryId)}
+                          onDelete={() => handleDeleteEntry(journal.activeEntry?.id || "")}
+                          onBack={journal.goBack}
+                        />
+                      </motion.div>
+                    )}
+
+                    {journal.view === "list" && (
+                      <motion.div
+                        key="list"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.15 }}
+                        className="flex flex-col flex-1 min-h-0"
+                      >
+                        {/* Header */}
+                        <div className="flex items-center justify-between px-4 py-3 border-b border-border/30 bg-gradient-to-r from-primary/[0.03] via-background/80 to-primary/[0.02] backdrop-blur-xl">
+                          <div className="flex items-center gap-2">
+                            <h2 className="text-base font-bold text-foreground">
+                              {ts.journalTitle || "Diary"}
+                            </h2>
+                            {streak > 0 && (
+                              <span className="text-[10px] font-bold text-orange-500 bg-gradient-to-r from-orange-500/15 to-amber-500/10 border border-orange-500/10 px-1.5 py-0.5 rounded-full flex-shrink-0 animate-streak-fire-glow">
+                                {streak} {"\u{1F525}"}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1">
                             <button
+                              onClick={() => journal.openStats()}
+                              className="p-2 rounded-lg hover:bg-muted/50 text-muted-foreground min-w-[44px] min-h-[44px] flex items-center justify-center"
+                              title={ts.journalStatsTitle || "Statistics"}
+                              aria-label={ts.journalStatsTitle || "Statistics"}
+                            >
+                              <BarChart3 className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => setShowPasswordSettings(true)}
+                              className="p-2 rounded-lg hover:bg-muted/50 text-muted-foreground min-w-[44px] min-h-[44px] flex items-center justify-center"
+                              title={ts.journalSettings || "Diary settings"}
+                              aria-label={ts.settings || "Settings"}
+                            >
+                              <Settings className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={handleClose}
+                              className="p-2 rounded-lg hover:bg-muted/50 min-w-[44px] min-h-[44px] flex items-center justify-center"
+                              aria-label={ts.close || "Close"}
+                            >
+                              <X className="w-5 h-5 text-foreground" />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Calendar */}
+                        <div className="px-4 py-2 border-b border-border/10 bg-gradient-to-b from-transparent to-muted/5">
+                          {calendarMode === "full" ? (
+                            <JournalCalendarFull
+                              entryDates={journal.entryDates}
+                              selectedDate={journal.selectedDate}
+                              onSelectDate={journal.setSelectedDate}
+                              onToggleMode={() => {
+                                setCalendarMode("strip");
+                                storageSetRaw(SK.JOURNAL_CALENDAR_MODE, "strip");
+                              }}
+                            />
+                          ) : (
+                            <JournalCalendar
+                              entryDates={journal.entryDates}
+                              selectedDate={journal.selectedDate}
+                              onSelectDate={journal.setSelectedDate}
+                              onToggleMode={() => {
+                                setCalendarMode("full");
+                                storageSetRaw(SK.JOURNAL_CALENDAR_MODE, "full");
+                              }}
+                            />
+                          )}
+                        </div>
+
+                        {/* Entry list */}
+                        <div className="relative flex-1 overflow-y-auto px-4 py-3">
+                          <ParticleBackground count={6} color="primary" />
+                          <div className="relative z-[1]">
+                            <JournalEntryList
+                              groupedEntries={journal.groupedEntries}
+                              onOpenEntry={journal.openEntry}
+                              onDeleteEntry={handleDeleteEntry}
+                              onNewEntry={handleNewEntry}
+                              totalCount={journal.totalCount}
+                              loading={journal.loading}
+                              daysSinceLastEntry={daysSinceLastEntry}
+                              privateMode={privateMode}
+                              onAddGratitude={onAddGratitude}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Password settings bottom sheet */}
+                        {showPasswordSettings && (
+                          <>
+                            <div
+                              className="fixed inset-0 z-[64] bg-black/30 animate-fade-in"
                               onClick={() => {
                                 setShowPasswordSettings(false);
                                 setShowChangePassword(false);
-                                setShowExportPicker(false);
                               }}
-                              className="w-full mt-4 py-2.5 text-sm text-muted-foreground min-h-[44px]"
+                            />
+                            <div
+                              role="dialog"
+                              aria-modal="true"
+                              aria-label={ts.journalSettings || "Diary Settings"}
+                              className="fixed bottom-0 inset-x-0 z-[65] animate-slide-up pb-safe lg:max-w-4xl lg:mx-auto"
+                              onClick={(e) => e.stopPropagation()}
                             >
-                              {ts.cancel || "Cancel"}
-                            </button>
-                          </div>
-                        </div>
-                      </>
-                    )}
+                              {/* Handle bar */}
+                              <div className="flex justify-center pt-2 pb-1 bg-card rounded-t-2xl">
+                                <div className="w-10 h-1 rounded-full bg-muted-foreground/20" />
+                              </div>
+                              <div className="bg-card p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+                                <h3 className="text-base font-semibold text-foreground mb-4">
+                                  {ts.journalSettings || "Diary Settings"}
+                                </h3>
+                                {security.hasPassword ? (
+                                  showChangePassword ? (
+                                    <div>
+                                      <JournalLockScreen
+                                        mode="change"
+                                        cooldownRemaining={0}
+                                        failedAttempts={0}
+                                        onUnlock={async () => false}
+                                        onSetPassword={async () => {}}
+                                        onChangePassword={async (oldPw, newPw) => {
+                                          const ok = await security.changePassword(oldPw, newPw);
+                                          if (ok) {
+                                            setShowChangePassword(false);
+                                            setShowPasswordSettings(false);
+                                          }
+                                          return ok;
+                                        }}
+                                      />
+                                      <button
+                                        onClick={() => setShowChangePassword(false)}
+                                        className="w-full mt-2 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors min-h-[44px]"
+                                      >
+                                        {ts.cancel || "Cancel"}
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <div className="space-y-2">
+                                      <button
+                                        onClick={() => setShowChangePassword(true)}
+                                        className="w-full py-3 rounded-xl bg-primary/10 text-primary text-sm font-medium min-h-[44px]"
+                                      >
+                                        {ts.journalPasswordChange || "Change Password"}
+                                      </button>
+                                      <button
+                                        onClick={() => setShowRemovePasswordConfirm(true)}
+                                        className="w-full py-3 rounded-xl bg-destructive/10 text-destructive text-sm font-medium min-h-[44px]"
+                                      >
+                                        {ts.journalPasswordRemove || "Remove Password Lock"}
+                                      </button>
+                                    </div>
+                                  )
+                                ) : (
+                                  <div>
+                                    <p className="text-sm text-muted-foreground mb-3">
+                                      {ts.journalPasswordHint ||
+                                        "Protect your diary with a password"}
+                                    </p>
+                                    <JournalLockScreen
+                                      mode="setup"
+                                      cooldownRemaining={0}
+                                      failedAttempts={0}
+                                      onUnlock={async () => false}
+                                      onSetPassword={async (pw) => {
+                                        await security.setPassword(pw);
+                                        setShowPasswordSettings(false);
+                                      }}
+                                    />
+                                  </div>
+                                )}
+                                {/* Biometric toggle (only if password set + biometric available) */}
+                                {security.hasPassword && security.biometricAvailable && (
+                                  <div className="mt-4 pt-4 border-t border-border/20">
+                                    <div className="flex items-center justify-between min-h-[44px]">
+                                      <div>
+                                        <p className="text-sm font-medium text-foreground">
+                                          {ts.journalBiometricEnable || "Biometric Unlock"}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
+                                          {ts.journalBiometricSubtitle ||
+                                            "Use fingerprint or face to unlock"}
+                                        </p>
+                                      </div>
+                                      <Switch
+                                        checked={security.biometricEnabled}
+                                        onCheckedChange={security.setBiometricEnabled}
+                                        aria-label={ts.journalBiometricEnable || "Biometric Unlock"}
+                                        className="mt-0.5 shrink-0"
+                                      />
+                                    </div>
+                                  </div>
+                                )}
 
-                    {/* Export format picker */}
-                    {showExportPicker && (
-                      <>
-                        <div
-                          className="fixed inset-0 z-[66] bg-black/30 animate-fade-in"
-                          onClick={() => setShowExportPicker(false)}
-                        />
-                        <div
-                          role="dialog"
-                          aria-modal="true"
-                          aria-label={ts.journalExportFormat || "Export Format"}
-                          className="fixed bottom-0 inset-x-0 z-[67] animate-slide-up pb-safe lg:max-w-4xl lg:mx-auto"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <div className="flex justify-center pt-2 pb-1 bg-card rounded-t-2xl">
-                            <div className="w-10 h-1 rounded-full bg-muted-foreground/20" />
-                          </div>
-                          <div className="bg-card p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
-                            <h3 className="text-base font-semibold text-foreground mb-3">
-                              {ts.journalExportFormat || "Export Format"}
-                            </h3>
-                            <div className="grid grid-cols-2 gap-2">
-                              {(
-                                [
-                                  {
-                                    key: "json",
-                                    label: ts.journalExportJSON || "JSON Backup",
-                                    desc:
-                                      ts.journalExportJSONDesc || "Full backup with photos & audio",
-                                  },
-                                  {
-                                    key: "csv",
-                                    label: ts.journalExportCSV || "CSV",
-                                    desc: ts.journalExportCSVDesc || "Spreadsheet format",
-                                  },
-                                  {
-                                    key: "pdf",
-                                    label: ts.journalExportPDF || "PDF",
-                                    desc: ts.journalExportPDFDesc || "Printable document",
-                                  },
-                                  {
-                                    key: "md",
-                                    label: ts.journalExportText || "Markdown",
-                                    desc: ts.journalExportTextDesc || "Plain text format",
-                                  },
-                                ] as const
-                              ).map((fmt) => (
-                                <button
-                                  key={fmt.key}
-                                  disabled={exporting}
-                                  onClick={async () => {
-                                    setExporting(true);
-                                    try {
-                                      const exp = await import("./journalExport");
-                                      if (fmt.key === "json") await exp.exportJSON();
-                                      else if (fmt.key === "csv") await exp.exportCSV(language);
-                                      else if (fmt.key === "pdf")
-                                        await exp.exportPDF(undefined, language);
-                                      else if (fmt.key === "md") await exp.exportMarkdown(language);
-                                      setShowExportPicker(false);
-                                    } catch (err) {
-                                      logger.warn("[Journal] Export failed:", err);
-                                    } finally {
-                                      setExporting(false);
-                                    }
-                                  }}
-                                  className={cn(
-                                    "p-3 rounded-xl text-start transition-all min-h-[44px]",
-                                    "bg-muted/30 border border-border/15",
-                                    "hover:bg-muted/50 active:scale-[0.98]",
-                                    "disabled:opacity-50"
+                                {/* Screenshot blocking (native only) */}
+                                {screenSecurity.isNative && (
+                                  <div className="mt-4 pt-4 border-t border-border/20">
+                                    <div className="flex items-center justify-between min-h-[44px]">
+                                      <div>
+                                        <p className="text-sm font-medium text-foreground">
+                                          {ts.journalScreenshotBlock || "Block Screenshots"}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
+                                          {ts.journalScreenshotBlockSubtitle ||
+                                            "Prevent screen capture while diary is open"}
+                                        </p>
+                                      </div>
+                                      <Switch
+                                        checked={screenSecurity.enabled}
+                                        onCheckedChange={screenSecurity.setEnabled}
+                                        aria-label={
+                                          ts.journalScreenshotBlock || "Block Screenshots"
+                                        }
+                                        className="mt-0.5 shrink-0"
+                                      />
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Private mode toggle */}
+                                <div className="mt-4 pt-4 border-t border-border/20">
+                                  <div className="flex items-center justify-between min-h-[44px]">
+                                    <div>
+                                      <p className="text-sm font-medium text-foreground">
+                                        {ts.journalPrivateMode || "Hide previews"}
+                                      </p>
+                                      <p className="text-xs text-muted-foreground">
+                                        {ts.journalPrivateModeHint ||
+                                          "Show only titles in entry list"}
+                                      </p>
+                                    </div>
+                                    <Switch
+                                      checked={privateMode}
+                                      onCheckedChange={(checked) => {
+                                        setPrivateMode(checked);
+                                        storageSetRaw(SK.JOURNAL_PRIVATE_MODE, String(checked));
+                                      }}
+                                      aria-label={ts.journalPrivateMode || "Hide previews"}
+                                      className="mt-0.5 shrink-0"
+                                    />
+                                  </div>
+                                </div>
+
+                                {/* Reminder toggle */}
+                                <div className="mt-4 pt-4 border-t border-border/20">
+                                  <div className="flex items-center justify-between min-h-[44px]">
+                                    <div>
+                                      <p className="text-sm font-medium text-foreground">
+                                        {ts.journalReminderEnabled || "Daily reminder"}
+                                      </p>
+                                      <p className="text-xs text-muted-foreground">
+                                        {ts.journalReminderSubtitle || "Get reminded to write"}
+                                      </p>
+                                    </div>
+                                    <Switch
+                                      checked={reminder.enabled}
+                                      onCheckedChange={reminder.setEnabled}
+                                      aria-label={ts.journalReminderEnabled || "Daily reminder"}
+                                      className="mt-0.5 shrink-0"
+                                    />
+                                  </div>
+                                  {reminder.enabled && (
+                                    <div className="flex items-center gap-2 mt-2">
+                                      <span className="text-xs text-muted-foreground">
+                                        {ts.journalReminderTime || "Time"}:
+                                      </span>
+                                      <input
+                                        type="time"
+                                        value={`${String(reminder.hour).padStart(2, "0")}:${String(reminder.minute).padStart(2, "0")}`}
+                                        onChange={(e) => {
+                                          const [h, m] = e.target.value.split(":").map(Number);
+                                          if (!isNaN(h) && !isNaN(m)) void reminder.setTime(h, m);
+                                        }}
+                                        className="px-2 py-1 rounded-lg bg-muted/50 border border-border/30 text-sm text-foreground min-h-[36px]"
+                                      />
+                                    </div>
                                   )}
-                                >
-                                  <p className="text-sm font-medium text-foreground">{fmt.label}</p>
-                                  <p className="text-[10px] text-muted-foreground/60 mt-0.5">
-                                    {fmt.desc}
+                                </div>
+
+                                {/* Export / Import */}
+                                <div className="mt-4 pt-4 border-t border-border/20">
+                                  <p className="text-xs font-bold text-muted-foreground/50 uppercase tracking-widest mb-2">
+                                    {ts.journalDataSection || "Data"}
                                   </p>
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={() => setShowExportPicker(true)}
+                                      disabled={exporting}
+                                      className="flex-1 py-2.5 rounded-xl bg-muted/50 text-foreground text-sm font-medium min-h-[44px] flex items-center justify-center gap-1.5 disabled:opacity-50"
+                                    >
+                                      {exporting ? (
+                                        <Loader2
+                                          className="w-3.5 h-3.5 animate-spin"
+                                          aria-hidden="true"
+                                        />
+                                      ) : (
+                                        <Download className="w-3.5 h-3.5" />
+                                      )}
+                                      {ts.journalExport || "Export"}
+                                    </button>
+                                    <button
+                                      onClick={() => fileInputRef.current?.click()}
+                                      disabled={importing}
+                                      className="flex-1 py-2.5 rounded-xl bg-muted/50 text-foreground text-sm font-medium min-h-[44px] flex items-center justify-center gap-1.5 disabled:opacity-50"
+                                    >
+                                      {importing ? (
+                                        <Loader2
+                                          className="w-3.5 h-3.5 animate-spin"
+                                          aria-hidden="true"
+                                        />
+                                      ) : (
+                                        <Upload className="w-3.5 h-3.5" />
+                                      )}
+                                      {ts.journalImport || "Import"}
+                                    </button>
+                                  </div>
+                                  <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    accept=".json"
+                                    className="hidden"
+                                    onChange={async (e) => {
+                                      const file = e.target.files?.[0];
+                                      if (!file) return;
+                                      e.target.value = "";
+                                      setImporting(true);
+                                      setImportFeedback(null);
+                                      try {
+                                        const { importJournalBackup } =
+                                          await import("./journalImport");
+                                        const result = await importJournalBackup(file);
+                                        void journal.refresh();
+                                        if (result.errors.length > 0) {
+                                          const msg = `${ts.journalImportPartial || "Imported with errors"}: ${result.imported} ${ts.journalImportEntries || "entries"}, ${result.errors.length} ${ts.journalImportErrors || "errors"}`;
+                                          setImportFeedback({
+                                            type: "error",
+                                            message: msg,
+                                          });
+                                          announceError(msg);
+                                        } else {
+                                          const msg = `${ts.journalImportSuccess || "Import complete"}: ${result.imported} ${ts.journalImportEntries || "entries"}`;
+                                          setImportFeedback({
+                                            type: "success",
+                                            message: msg,
+                                          });
+                                          announceSuccess(msg);
+                                        }
+                                        setTimeout(() => setImportFeedback(null), 5000);
+                                      } catch {
+                                        const msg = ts.journalImportFailed || "Import failed";
+                                        setImportFeedback({
+                                          type: "error",
+                                          message: msg,
+                                        });
+                                        announceError(msg);
+                                        setTimeout(() => setImportFeedback(null), 5000);
+                                      } finally {
+                                        setImporting(false);
+                                      }
+                                    }}
+                                  />
+                                  {importFeedback && (
+                                    <p
+                                      className={cn(
+                                        "text-xs mt-2 px-3 py-2 rounded-lg text-center",
+                                        importFeedback.type === "success"
+                                          ? "bg-green-500/10 text-green-600 dark:text-green-400"
+                                          : "bg-destructive/10 text-destructive"
+                                      )}
+                                    >
+                                      {importFeedback.message}
+                                    </p>
+                                  )}
+                                </div>
+
+                                <button
+                                  onClick={() => {
+                                    setShowPasswordSettings(false);
+                                    setShowChangePassword(false);
+                                    setShowExportPicker(false);
+                                  }}
+                                  className="w-full mt-4 py-2.5 text-sm text-muted-foreground min-h-[44px]"
+                                >
+                                  {ts.cancel || "Cancel"}
                                 </button>
-                              ))}
+                              </div>
                             </div>
-                            <button
+                          </>
+                        )}
+
+                        {/* Export format picker */}
+                        {showExportPicker && (
+                          <>
+                            <div
+                              className="fixed inset-0 z-[66] bg-black/30 animate-fade-in"
                               onClick={() => setShowExportPicker(false)}
-                              className="w-full mt-3 py-2.5 text-sm text-muted-foreground min-h-[44px]"
+                            />
+                            <div
+                              role="dialog"
+                              aria-modal="true"
+                              aria-label={ts.journalExportFormat || "Export Format"}
+                              className="fixed bottom-0 inset-x-0 z-[67] animate-slide-up pb-safe lg:max-w-4xl lg:mx-auto"
+                              onClick={(e) => e.stopPropagation()}
                             >
-                              {ts.cancel || "Cancel"}
-                            </button>
-                          </div>
-                        </div>
-                      </>
+                              <div className="flex justify-center pt-2 pb-1 bg-card rounded-t-2xl">
+                                <div className="w-10 h-1 rounded-full bg-muted-foreground/20" />
+                              </div>
+                              <div className="bg-card p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+                                <h3 className="text-base font-semibold text-foreground mb-3">
+                                  {ts.journalExportFormat || "Export Format"}
+                                </h3>
+                                <div className="grid grid-cols-2 gap-2">
+                                  {(
+                                    [
+                                      {
+                                        key: "json",
+                                        label: ts.journalExportJSON || "JSON Backup",
+                                        desc:
+                                          ts.journalExportJSONDesc ||
+                                          "Full backup with photos & audio",
+                                      },
+                                      {
+                                        key: "csv",
+                                        label: ts.journalExportCSV || "CSV",
+                                        desc: ts.journalExportCSVDesc || "Spreadsheet format",
+                                      },
+                                      {
+                                        key: "pdf",
+                                        label: ts.journalExportPDF || "PDF",
+                                        desc: ts.journalExportPDFDesc || "Printable document",
+                                      },
+                                      {
+                                        key: "md",
+                                        label: ts.journalExportText || "Markdown",
+                                        desc: ts.journalExportTextDesc || "Plain text format",
+                                      },
+                                    ] as const
+                                  ).map((fmt) => (
+                                    <button
+                                      key={fmt.key}
+                                      disabled={exporting}
+                                      onClick={async () => {
+                                        setExporting(true);
+                                        try {
+                                          const exp = await import("./journalExport");
+                                          if (fmt.key === "json") await exp.exportJSON();
+                                          else if (fmt.key === "csv") await exp.exportCSV(language);
+                                          else if (fmt.key === "pdf")
+                                            await exp.exportPDF(undefined, language);
+                                          else if (fmt.key === "md")
+                                            await exp.exportMarkdown(language);
+                                          setShowExportPicker(false);
+                                        } catch (err) {
+                                          logger.warn("[Journal] Export failed:", err);
+                                        } finally {
+                                          setExporting(false);
+                                        }
+                                      }}
+                                      className={cn(
+                                        "p-3 rounded-xl text-start transition-all min-h-[44px]",
+                                        "bg-muted/30 border border-border/15",
+                                        "hover:bg-muted/50 active:scale-[0.98]",
+                                        "disabled:opacity-50"
+                                      )}
+                                    >
+                                      <p className="text-sm font-medium text-foreground">
+                                        {fmt.label}
+                                      </p>
+                                      <p className="text-[10px] text-muted-foreground/60 mt-0.5">
+                                        {fmt.desc}
+                                      </p>
+                                    </button>
+                                  ))}
+                                </div>
+                                <button
+                                  onClick={() => setShowExportPicker(false)}
+                                  className="w-full mt-3 py-2.5 text-sm text-muted-foreground min-h-[44px]"
+                                >
+                                  {ts.cancel || "Cancel"}
+                                </button>
+                              </div>
+                            </div>
+                          </>
+                        )}
+                      </motion.div>
                     )}
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                  </AnimatePresence>
+                </>
+              )}
             </>
           )}
       </div>

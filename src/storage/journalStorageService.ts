@@ -16,13 +16,7 @@ const PHOTO_BUCKET = "journal-photos";
 const AUDIO_BUCKET = "journal-audio";
 
 /** Allowed image MIME types for photo uploads */
-const ALLOWED_IMAGE_MIMES: readonly string[] = [
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/heic",
-  "image/heif",
-];
+const ALLOWED_IMAGE_MIMES: readonly string[] = ["image/jpeg", "image/png", "image/webp"];
 
 /** Allowed audio MIME types for audio uploads */
 const ALLOWED_AUDIO_MIMES: readonly string[] = [
@@ -104,9 +98,7 @@ export async function uploadPhoto(photoId: string, dataUrl: string): Promise<Upl
     // M12: Validate MIME type against allowlist
     if (!ALLOWED_IMAGE_MIMES.includes(blob.type)) {
       logger.warn("[Storage] Photo upload rejected: disallowed MIME type", blob.type);
-      throw new Error(
-        `Unsupported image type "${blob.type}". Allowed: JPEG, PNG, WebP, HEIC, HEIF.`
-      );
+      throw new Error(`Unsupported image type "${blob.type}". Allowed: JPEG, PNG, WebP.`);
     }
 
     // M12: Enforce file size limit
