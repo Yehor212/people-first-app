@@ -219,16 +219,24 @@ document.addEventListener("visibilitychange", () => {
  */
 if (isNative) {
   // App paused (going to background)
-  void CapacitorApp.addListener("pause", () => {
+  const pauseListener = CapacitorApp.addListener("pause", () => {
     logger.log("[Main] App paused - saving state");
     handleAppPause();
   });
 
   // App resumed (coming back to foreground)
-  void CapacitorApp.addListener("resume", () => {
+  const resumeListener = CapacitorApp.addListener("resume", () => {
     logger.log("[Main] App resumed - checking for pending sync");
     void handleAppResume();
   });
+
+  // Cleanup on HMR to prevent listener stacking
+  if (import.meta.hot) {
+    import.meta.hot.dispose(async () => {
+      await (await pauseListener).remove();
+      await (await resumeListener).remove();
+    });
+  }
 }
 
 // Setup audio unlock for iOS - attaches to first user interaction

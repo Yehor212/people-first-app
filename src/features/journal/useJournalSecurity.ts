@@ -8,7 +8,7 @@ import { logger } from "@/lib/logger";
 const BIOMETRIC_SETTINGS_KEY = "journal_biometric";
 
 const PBKDF2_ITERATIONS = 600_000;
-const LEGACY_PBKDF2_ITERATIONS = 100_000;
+const _LEGACY_PBKDF2_ITERATIONS = 100_000; // For future transparent migration
 const AUTO_LOCK_MS = 5 * 60 * 1000; // 5 minutes
 const COOLDOWN_STEPS = [
   { after: 3, seconds: 30 },

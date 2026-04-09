@@ -297,8 +297,7 @@ export const checkDatabaseHealth = async (): Promise<boolean> => {
 
     return await Promise.race([healthCheckPromise, timeoutPromise]);
   } catch (error) {
-    logger.error("[DB] Database health check failed:", error);
-    // Return true to allow app to continue - it will use localStorage fallback
-    return true;
+    logger.error("[DB] Health check failed", error);
+    return false;
   }
 };

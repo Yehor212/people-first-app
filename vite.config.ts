@@ -138,7 +138,7 @@ export default defineConfig(({ mode }) => {
         // Exclude unused jspdf optional dep from bundle (-202 kB).
         // jspdf loads html2canvas dynamically only for .html() method,
         // which ZenFlow never calls (verified: 0 .html() calls in codebase).
-        "html2canvas": path.resolve(__dirname, "src/lib/noop.ts"),
+        html2canvas: path.resolve(__dirname, "src/lib/noop.ts"),
       },
     },
 
@@ -173,6 +173,11 @@ export default defineConfig(({ mode }) => {
             // Supabase client (no React dependency)
             if (id.includes("@supabase")) {
               return "supabase";
+            }
+
+            // Zustand state manager (no React dependency in core)
+            if (id.includes("zustand")) {
+              return "state-vendor";
             }
 
             // Dexie / IndexedDB (no React dependency)
