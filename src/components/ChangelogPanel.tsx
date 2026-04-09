@@ -8,20 +8,10 @@
  */
 
 import { useState } from "react";
-import {
-  X,
-  ChevronDown,
-  ChevronUp,
-  Sparkles,
-  Bug,
-  Zap,
-  Trash2,
-  History,
-} from "lucide-react";
+import { X, ChevronDown, ChevronUp, Sparkles, Bug, Zap, Trash2, History } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useModalA11y } from "@/hooks/useModalA11y";
+import { useModalClose } from "@/hooks/useModalState";
 import { useScrollLock } from "@/hooks/useScrollLock";
-import { useBackHandler } from "@/hooks/useBackHandler";
 import changelog from "virtual:changelog";
 import type { ChangelogVersion } from "@/types/changelog";
 
@@ -37,11 +27,7 @@ function getSectionIcon(title: string, emoji?: string): React.ReactNode {
 
   const lowerTitle = title.toLowerCase();
 
-  if (
-    lowerTitle.includes("add") ||
-    lowerTitle.includes("new") ||
-    lowerTitle.includes("feature")
-  ) {
+  if (lowerTitle.includes("add") || lowerTitle.includes("new") || lowerTitle.includes("feature")) {
     return <Sparkles className="w-4 h-4 text-green-500" />;
   }
   if (lowerTitle.includes("fix") || lowerTitle.includes("bug")) {
@@ -62,10 +48,7 @@ function getSectionIcon(title: string, emoji?: string): React.ReactNode {
 }
 
 // Translate section titles
-function translateSectionTitle(
-  title: string,
-  t: Record<string, string>,
-): string {
+function translateSectionTitle(title: string, t: Record<string, string>): string {
   const lowerTitle = title.toLowerCase();
 
   if (lowerTitle === "added" || lowerTitle.includes("new")) {
@@ -105,20 +88,14 @@ function VersionCard({
         <div className="flex items-center gap-3">
           <div className="flex flex-col items-start">
             <div className="flex items-center gap-2">
-              <span className="font-bold text-foreground">
-                v{version.version}
-              </span>
+              <span className="font-bold text-foreground">v{version.version}</span>
               {version.codename && (
                 <span className="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded-full">
                   {version.codename}
                 </span>
               )}
             </div>
-            {version.date && (
-              <span className="text-xs text-muted-foreground">
-                {version.date}
-              </span>
-            )}
+            {version.date && <span className="text-xs text-muted-foreground">{version.date}</span>}
           </div>
         </div>
         {isExpanded ? (
@@ -141,10 +118,7 @@ function VersionCard({
               </div>
               <ul className="space-y-1.5 ps-6">
                 {section.items.map((item, itemIndex) => (
-                  <li
-                    key={itemIndex}
-                    className="text-sm text-muted-foreground list-disc"
-                  >
+                  <li key={itemIndex} className="text-sm text-muted-foreground list-disc">
                     {item}
                   </li>
                 ))}
@@ -159,8 +133,7 @@ function VersionCard({
 
 export function ChangelogPanel({ onClose }: ChangelogPanelProps) {
   const { t } = useLanguage();
-  useModalA11y(true, onClose);
-  useBackHandler(true, onClose);
+  useModalClose(true, onClose);
   useScrollLock(true);
   const [expandedVersions, setExpandedVersions] = useState<Set<string>>(() => {
     // Expand the first (latest) version by default
@@ -201,10 +174,7 @@ export function ChangelogPanel({ onClose }: ChangelogPanelProps) {
       <div className="flex items-center justify-between p-4 border-b border-border bg-card/80 backdrop-blur-sm">
         <div className="flex items-center gap-3">
           <History className="w-6 h-6 text-primary" />
-          <h2
-            id="changelog-title"
-            className="text-xl font-bold text-foreground"
-          >
+          <h2 id="changelog-title" className="text-xl font-bold text-foreground">
             {t.changelogTitle || "Version History"}
           </h2>
         </div>

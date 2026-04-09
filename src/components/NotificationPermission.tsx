@@ -5,8 +5,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { isNative } from "@/lib/platform";
 import { logger } from "@/lib/logger";
 import { useScrollLock } from "@/hooks/useScrollLock";
-import { useModalA11y } from "@/hooks/useModalA11y";
-import { useBackHandler } from "@/hooks/useBackHandler";
+import { useModalClose } from "@/hooks/useModalState";
 import { SK } from "@/lib/storageKeys";
 import { storageGetRaw, storageSetRaw } from "@/lib/safeJson";
 
@@ -25,8 +24,7 @@ export function NotificationPermission({ onComplete }: NotificationPermissionPro
     onComplete();
   }, [onComplete]);
 
-  useModalA11y(showPrompt, handleDeny);
-  useBackHandler(showPrompt, handleDeny);
+  useModalClose(showPrompt, handleDeny);
 
   useEffect(() => {
     void checkPermission();

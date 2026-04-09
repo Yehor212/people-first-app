@@ -16,9 +16,8 @@ import {
 import { safeParseInt } from "@/lib/validation";
 import { SK } from "@/lib/storageKeys";
 import { RewardedAdPrompt } from "@/components/ads/RewardedAdPrompt";
-import { useModalA11y } from "@/hooks/useModalA11y";
+import { useModalClose } from "@/hooks/useModalState";
 import { useScrollLock } from "@/hooks/useScrollLock";
-import { useBackHandler } from "@/hooks/useBackHandler";
 import { getDailyLoginRewards, getLoginStreakBonus, DailyLoginReward } from "@/lib/adhdHooks";
 
 interface DailyRewardsProps {
@@ -28,9 +27,8 @@ interface DailyRewardsProps {
 
 export function DailyRewards({ onClose, onClaimReward }: DailyRewardsProps) {
   const { t } = useLanguage();
-  useModalA11y(true, onClose);
+  useModalClose(true, onClose);
   useScrollLock(true);
-  useBackHandler(true, onClose);
 
   const [rewards, setRewards] = useState<DailyLoginReward[]>(getDailyLoginRewards());
   const [currentDay, setCurrentDay] = useState(1);

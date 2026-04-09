@@ -8,8 +8,7 @@ import { X, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useScrollLock } from "@/hooks/useScrollLock";
-import { useModalA11y } from "@/hooks/useModalA11y";
-import { useBackHandler } from "@/hooks/useBackHandler";
+import { useModalClose } from "@/hooks/useModalState";
 import { getSpinWheelPrizes, spinWheel, SpinWheelPrize } from "@/lib/adhdHooks";
 
 interface SpinWheelProps {
@@ -32,8 +31,7 @@ const COLORS = [
 export function SpinWheel({ onClose, onWin, spinsAvailable }: SpinWheelProps) {
   const { t } = useLanguage();
   useScrollLock(true);
-  useModalA11y(true, onClose);
-  useBackHandler(true, onClose);
+  useModalClose(true, onClose);
 
   const [isSpinning, setIsSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
@@ -69,8 +67,7 @@ export function SpinWheel({ onClose, onWin, spinsAvailable }: SpinWheelProps) {
     // Calculate final rotation (multiple full spins + landing on prize)
     const spins = 5 + Math.random() * 3; // 5-8 full rotations
     const prizeAngle = prizeIndex * segmentAngle;
-    const finalRotation =
-      rotation + 360 * spins + (360 - prizeAngle - segmentAngle / 2);
+    const finalRotation = rotation + 360 * spins + (360 - prizeAngle - segmentAngle / 2);
 
     setRotation(finalRotation);
 
@@ -109,9 +106,7 @@ export function SpinWheel({ onClose, onWin, spinsAvailable }: SpinWheelProps) {
           </button>
 
           <Sparkles className="w-10 h-10 mx-auto mb-2" />
-          <h2 className="text-2xl font-bold">
-            {t.spinWheel || "Spin the Wheel!"}
-          </h2>
+          <h2 className="text-2xl font-bold">{t.spinWheel || "Spin the Wheel!"}</h2>
           <p className="text-foreground/80 text-sm mt-1">
             {t.spinsAvailable || "Spins Available"}: {spinsAvailable} 🎰
           </p>
@@ -143,7 +138,7 @@ export function SpinWheel({ onClose, onWin, spinsAvailable }: SpinWheelProps) {
                     key={prize.id}
                     className={cn(
                       "absolute w-1/2 h-1/2 origin-bottom-right",
-                      `bg-gradient-to-br ${COLORS[index % COLORS.length]}`,
+                      `bg-gradient-to-br ${COLORS[index % COLORS.length]}`
                     )}
                     style={{
                       transform: `rotate(${startAngle}deg) skewY(-${90 - segmentAngle}deg)`,
@@ -191,7 +186,7 @@ export function SpinWheel({ onClose, onWin, spinsAvailable }: SpinWheelProps) {
                   prize.rarity === "rare" &&
                     "bg-gradient-to-r from-blue-500 to-cyan-500 text-white",
                   prize.rarity === "common" &&
-                    "bg-gradient-to-r from-muted-foreground to-muted-foreground/80 text-white",
+                    "bg-gradient-to-r from-muted-foreground to-muted-foreground/80 text-white"
                 )}
               >
                 <span className="text-4xl">{prize.icon}</span>
@@ -226,7 +221,7 @@ export function SpinWheel({ onClose, onWin, spinsAvailable }: SpinWheelProps) {
                   ? "bg-muted text-muted-foreground cursor-not-allowed"
                   : spinsAvailable > 0
                     ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:scale-105 active:scale-95 shadow-lg"
-                    : "bg-muted text-muted-foreground cursor-not-allowed",
+                    : "bg-muted text-muted-foreground cursor-not-allowed"
               )}
             >
               {isSpinning
@@ -247,10 +242,7 @@ export function SpinWheel({ onClose, onWin, spinsAvailable }: SpinWheelProps) {
               { color: "bg-purple-500", label: "Epic" },
               { color: "bg-yellow-500", label: "Legendary" },
             ].map((item) => (
-              <div
-                key={item.label}
-                className="flex items-center justify-center gap-1"
-              >
+              <div key={item.label} className="flex items-center justify-center gap-1">
                 <div className={cn("w-3 h-3 rounded", item.color)} />
                 <span className="text-muted-foreground">{item.label}</span>
               </div>

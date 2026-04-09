@@ -12,8 +12,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { submitQuickFeedback } from "@/lib/feedbackService";
 import { platform } from "@/lib/platform";
 import { haptics } from "@/lib/haptics";
-import { useBackHandler } from "@/hooks/useBackHandler";
-import { useModalA11y } from "@/hooks/useModalA11y";
+import { useModalState } from "@/hooks/useModalState";
 
 import { logger } from "@/lib/logger";
 import { SK } from "@/lib/storageKeys";
@@ -30,24 +29,25 @@ interface FeedbackButtonProps {
 
 export function FeedbackButton({ position = "bottom-right", className }: FeedbackButtonProps) {
   const { t } = useLanguage();
-  const [isOpen, setIsOpen] = useState(false);
   const [type, setType] = useState<FeedbackType>("bug");
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useBackHandler(isOpen, () => setIsOpen(false));
-  useModalA11y(isOpen, handleClose);
+  const { isOpen, open, close } = useModalState({
+    onClose: () => {
+      void haptics.light();
+      setMessage("");
+      setType("bug");
+    },
+  });
 
   const handleOpen = () => {
     void haptics.light();
-    setIsOpen(true);
+    open();
   };
 
   const handleClose = () => {
-    void haptics.light();
-    setIsOpen(false);
-    setMessage("");
-    setType("bug");
+    close();
   };
 
   const handleSubmit = async () => {

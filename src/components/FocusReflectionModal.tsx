@@ -4,8 +4,7 @@ import { X, Sparkles, PenLine } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { zenMotion, zenTap } from "@/lib/animationUtils";
-import { useModalA11y } from "@/hooks/useModalA11y";
-import { useBackHandler } from "@/hooks/useBackHandler";
+import { useModalClose } from "@/hooks/useModalState";
 import { RewardedAdPrompt } from "@/components/ads/RewardedAdPrompt";
 
 /**
@@ -69,8 +68,7 @@ export function FocusReflectionModal({
 }: FocusReflectionModalProps) {
   const { t } = useLanguage();
   const [isSaving, setIsSaving] = useState(false);
-  useModalA11y(true, onDismiss);
-  useBackHandler(true, onDismiss);
+  useModalClose(true, onDismiss);
 
   return (
     <motion.div
