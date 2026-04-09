@@ -60,6 +60,7 @@ export function useAuthSession(isLoading: boolean): void {
   userNameRef.current = userName;
 
   // Check Supabase session on mount - restore auth state if session exists
+  // Note: continuous auth state listening is consolidated in the cloud sync useEffect below
   useEffect(() => {
     let active = true;
 
@@ -87,18 +88,8 @@ export function useAuthSession(isLoading: boolean): void {
 
     void checkSession();
 
-    // Also listen for auth state changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (active) {
-        setHasValidSession(!!session);
-      }
-    });
-
     return () => {
       active = false;
-      subscription?.unsubscribe();
     };
   }, [setGoogleAuthChecked, setHasValidSession]);
 
@@ -269,10 +260,16 @@ export function useAuthSession(isLoading: boolean): void {
       })
       .catch((err) => logger.warn("[Auth]", "Session check failed:", err));
 
-    // Correct destructuring pattern for auth subscription
+    // Consolidated auth subscription: session validity + cloud sync + app_version tracking
+    // (Previously 3 separate onAuthStateChange subscriptions)
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
+      // Keep session validity state in sync (was separate subscription)
+      if (active) {
+        setHasValidSession(!!session);
+      }
+
       // Reset sync refs on sign-out so next sign-in uses 'replace' mode
       if (event === "SIGNED_OUT") {
         lastSyncedUserIdRef.current = null;
@@ -286,6 +283,19 @@ export function useAuthSession(isLoading: boolean): void {
         syncOrchestrator.resetSessionExpired();
       }
       void syncIfNeeded(session?.user?.id ?? null);
+
+      // Track app_version in profiles on login (was separate subscription)
+      if (event === "SIGNED_IN" && session?.user?.id) {
+        supabase
+          .from("profiles")
+          .update({
+            app_version: APP_VERSION,
+          })
+          .eq("id", session.user.id)
+          .then(({ error }) => {
+            if (error) logger.warn("[Auth] Failed to track app_version:", error.message);
+          });
+      }
     });
 
     return () => {
@@ -337,27 +347,6 @@ export function useAuthSession(isLoading: boolean): void {
       subscription?.unsubscribe();
     };
   }, [setUserName]);
-
-  // Track app_version in profiles on login (last_active_at handled by server trigger)
-  useEffect(() => {
-    if (!supabase) return;
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_IN" && session?.user?.id) {
-        supabase
-          .from("profiles")
-          .update({
-            app_version: APP_VERSION,
-          })
-          .eq("id", session.user.id)
-          .then(({ error }) => {
-            if (error) logger.warn("[Auth] Failed to track app_version:", error.message);
-          });
-      }
-    });
-    return () => subscription?.unsubscribe();
-  }, []);
 
   // Session expired handler - listens for 401 errors from API/sync
   // Verify actual session state before resetting auth
