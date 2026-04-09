@@ -1,6 +1,10 @@
 import { useEffect, useRef } from "react";
 import { useAppStore, useUserDataStore } from "@/stores";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase as _supabase } from "@/lib/supabaseClient";
+
+// supabase is guaranteed non-null here — this hook is only called inside AuthGate
+// which verifies Supabase is configured before rendering auth-dependent components
+const supabase = _supabase!;
 import {
   handleAuthCallback,
   isNativePlatform,
@@ -8,11 +12,7 @@ import {
   getPendingAuthUrl,
 } from "@/lib/authRedirect";
 import { AUTH_SESSION_EXPIRED_EVENT } from "@/lib/apiClient";
-import {
-  syncWithCloud,
-  startAutoSync,
-  stopAutoSync,
-} from "@/storage/cloudSync";
+import { syncWithCloud, startAutoSync, stopAutoSync } from "@/storage/cloudSync";
 import { syncOrchestrator } from "@/lib/syncOrchestrator";
 import { joinPresence, leavePresence } from "@/lib/presenceService";
 import { migrateExistingUser } from "@/lib/cloudSyncSettings";
@@ -73,14 +73,8 @@ export function useAuthSession(isLoading: boolean): void {
 
         // If session exists but googleAuthChecked is false, restore it
         // This prevents the login loop after OAuth redirect
-        if (
-          sessionExists &&
-          !googleAuthCheckedRef.current &&
-          !isLoadingUserDataRef.current
-        ) {
-          logger.log(
-            "[Index] Session exists but auth not checked - restoring state",
-          );
+        if (sessionExists && !googleAuthCheckedRef.current && !isLoadingUserDataRef.current) {
+          logger.log("[Index] Session exists but auth not checked - restoring state");
           setGoogleAuthChecked(true);
         }
       } catch (error) {
@@ -122,22 +116,14 @@ export function useAuthSession(isLoading: boolean): void {
 
     // Handle error case immediately
     if (hasError) {
-      logger.error(
-        "[Index] OAuth error in URL:",
-        url.searchParams.get("error"),
-        errorDescription,
-      );
-      setWebOAuthError(
-        errorDescription || "Authentication failed. Please try again.",
-      );
+      logger.error("[Index] OAuth error in URL:", url.searchParams.get("error"), errorDescription);
+      setWebOAuthError(errorDescription || "Authentication failed. Please try again.");
       window.history.replaceState({}, "", window.location.pathname);
       return;
     }
 
     // Has ?code= — wait for Supabase to exchange it
-    logger.log(
-      "[Index] Web OAuth callback detected, waiting for code exchange...",
-    );
+    logger.log("[Index] Web OAuth callback detected, waiting for code exchange...");
     setIsProcessingWebOAuth(true);
 
     let settled = false;
@@ -149,11 +135,7 @@ export function useAuthSession(isLoading: boolean): void {
 
       if ((event === "SIGNED_IN" || event === "INITIAL_SESSION") && session) {
         settled = true;
-        logger.log(
-          "[Index] Web OAuth code exchange succeeded (event:",
-          event,
-          ")",
-        );
+        logger.log("[Index] Web OAuth code exchange succeeded (event:", event, ")");
         window.history.replaceState({}, "", window.location.pathname);
         setIsProcessingWebOAuth(false);
       }
@@ -167,9 +149,7 @@ export function useAuthSession(isLoading: boolean): void {
         if (settled) return;
         if (data.session) {
           settled = true;
-          logger.log(
-            "[Index] Web OAuth: fallback session check found valid session",
-          );
+          logger.log("[Index] Web OAuth: fallback session check found valid session");
           window.history.replaceState({}, "", window.location.pathname);
           setIsProcessingWebOAuth(false);
         }
@@ -230,17 +210,13 @@ export function useAuthSession(isLoading: boolean): void {
             endAuthFlow();
           } else {
             logger.error("[Index] Pending auth callback had no session");
-            setWebOAuthError(
-              "Google sign-in did not complete. Please try again.",
-            );
+            setWebOAuthError("Google sign-in did not complete. Please try again.");
             endAuthFlow();
           }
         } catch (error) {
           logger.error("[Index] Failed to process pending auth:", error);
           setWebOAuthError(
-            error instanceof Error
-              ? error.message
-              : "Google sign-in failed. Please try again.",
+            error instanceof Error ? error.message : "Google sign-in failed. Please try again."
           );
           endAuthFlow();
         }
@@ -265,8 +241,7 @@ export function useAuthSession(isLoading: boolean): void {
       // Use 'replace' if: (a) sign-out happened, or (b) different user was synced before
       const isAccountSwitch =
         hadSignOutRef.current ||
-        (lastSyncedUserIdRef.current !== null &&
-          lastSyncedUserIdRef.current !== userId);
+        (lastSyncedUserIdRef.current !== null && lastSyncedUserIdRef.current !== userId);
 
       lastSyncedUserIdRef.current = userId;
       hadSignOutRef.current = false;
@@ -277,9 +252,7 @@ export function useAuthSession(isLoading: boolean): void {
         // Start auto-sync after successful initial sync
         startAutoSync();
         // Join Presence channel for friend online status
-        joinPresence().catch((err) =>
-          logger.warn("[Auth]", "Presence join failed:", err),
-        );
+        joinPresence().catch((err) => logger.warn("[Auth]", "Presence join failed:", err));
       } catch (error) {
         logger.error("Cloud sync failed:", error);
       }
@@ -319,9 +292,7 @@ export function useAuthSession(isLoading: boolean): void {
       active = false;
       subscription?.unsubscribe();
       stopAutoSync();
-      leavePresence().catch((err) =>
-        logger.warn("[Auth]", "Presence leave failed:", err),
-      );
+      leavePresence().catch((err) => logger.warn("[Auth]", "Presence leave failed:", err));
     };
   }, []); // mount-only — isLoading tracked via ref
 
@@ -381,8 +352,7 @@ export function useAuthSession(isLoading: boolean): void {
           })
           .eq("id", session.user.id)
           .then(({ error }) => {
-            if (error)
-              logger.warn("[Auth] Failed to track app_version:", error.message);
+            if (error) logger.warn("[Auth] Failed to track app_version:", error.message);
           });
       }
     });
@@ -401,9 +371,7 @@ export function useAuthSession(isLoading: boolean): void {
       }
       lastSessionExpiredRef.current = now;
 
-      logger.warn(
-        "[Index] Session expired event received, verifying session...",
-      );
+      logger.warn("[Index] Session expired event received, verifying session...");
 
       // Check if session is actually expired before resetting
       try {
@@ -424,10 +392,6 @@ export function useAuthSession(isLoading: boolean): void {
     };
 
     window.addEventListener(AUTH_SESSION_EXPIRED_EVENT, handleSessionExpired);
-    return () =>
-      window.removeEventListener(
-        AUTH_SESSION_EXPIRED_EVENT,
-        handleSessionExpired,
-      );
+    return () => window.removeEventListener(AUTH_SESSION_EXPIRED_EVENT, handleSessionExpired);
   }, [setGoogleAuthChecked, setHasValidSession, setAuthBypassFlag]);
 }
