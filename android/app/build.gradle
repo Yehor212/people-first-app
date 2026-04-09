@@ -63,6 +63,15 @@ configurations.all {
     resolutionStrategy {
         // Force compatible version of androidx.browser for AGP 8.13.0 / compileSdk 36
         force 'androidx.browser:browser:1.9.0'
+        // Fix 181 transitive CVEs in Firebase/Capacitor dependencies (2026-04-09 audit)
+        // CVE-2024-7254: protobuf-java < 3.25.5 (HIGH)
+        force 'com.google.protobuf:protobuf-java:3.25.5'
+        force 'com.google.protobuf:protobuf-javalite:3.25.5'
+        // CVE-2025-55163 + others: netty < 4.1.124.Final (HIGH)
+        force 'io.netty:netty-codec-http:4.1.124.Final'
+        force 'io.netty:netty-codec-http2:4.1.124.Final'
+        force 'io.netty:netty-handler:4.1.124.Final'
+        force 'io.netty:netty-common:4.1.124.Final'
     }
 }
 
