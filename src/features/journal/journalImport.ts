@@ -8,6 +8,7 @@
 import { db } from "@/storage/db";
 import { triggerSync } from "@/storage/cloudSync";
 import { sanitizeObject } from "@/lib/validation";
+import { logger } from "@/lib/logger";
 import type { JournalEntry, JournalPhoto, JournalAudio } from "./types";
 
 interface JournalBackup {
@@ -83,80 +84,91 @@ export async function importJournalBackup(
 
   const backup = data;
 
-  // Get existing entry IDs for deduplication
-  onProgress?.("Checking existing entries...");
-  const existingIds = new Set((await db.journalEntries.toArray()).map((e) => e.id));
+  // Wrap all DB writes in a transaction for atomicity
+  // If the transaction fails, all writes are rolled back
+  try {
+    await db.transaction("rw", [db.journalEntries, db.journalPhotos, db.journalAudio], async () => {
+      // Get existing entry IDs for deduplication
+      onProgress?.("Checking existing entries...");
+      const existingIds = new Set((await db.journalEntries.toArray()).map((e) => e.id));
 
-  // Import entries
-  onProgress?.("Importing entries...");
-  for (const entry of backup.entries) {
-    if (!validateEntry(entry)) {
-      const entryId = (entry as Record<string, unknown>).id;
-      result.errors.push(`Invalid entry: ${typeof entryId === "string" ? entryId : "unknown"}`);
-      continue;
-    }
+      // Import entries
+      onProgress?.("Importing entries...");
+      for (const entry of backup.entries) {
+        if (!validateEntry(entry)) {
+          const entryId = (entry as Record<string, unknown>).id;
+          result.errors.push(`Invalid entry: ${typeof entryId === "string" ? entryId : "unknown"}`);
+          continue;
+        }
 
-    if (existingIds.has(entry.id)) {
-      result.skipped++;
-      continue;
-    }
+        if (existingIds.has(entry.id)) {
+          result.skipped++;
+          continue;
+        }
 
-    try {
-      // Ensure required fields have defaults
-      const safeEntry: JournalEntry = {
-        id: entry.id,
-        date: entry.date,
-        title: entry.title || "",
-        content: entry.content || "",
-        stickers: Array.isArray(entry.stickers) ? entry.stickers : [],
-        photoIds: Array.isArray(entry.photoIds) ? entry.photoIds : [],
-        audioIds: Array.isArray(entry.audioIds) ? entry.audioIds : undefined,
-        mood: entry.mood,
-        tags: Array.isArray(entry.tags) ? entry.tags : [],
-        templateId: entry.templateId,
-        createdAt: entry.createdAt,
-        updatedAt: entry.updatedAt || entry.createdAt,
-      };
+        try {
+          // Ensure required fields have defaults
+          const safeEntry: JournalEntry = {
+            id: entry.id,
+            date: entry.date,
+            title: entry.title || "",
+            content: entry.content || "",
+            stickers: Array.isArray(entry.stickers) ? entry.stickers : [],
+            photoIds: Array.isArray(entry.photoIds) ? entry.photoIds : [],
+            audioIds: Array.isArray(entry.audioIds) ? entry.audioIds : undefined,
+            mood: entry.mood,
+            tags: Array.isArray(entry.tags) ? entry.tags : [],
+            templateId: entry.templateId,
+            createdAt: entry.createdAt,
+            updatedAt: entry.updatedAt || entry.createdAt,
+          };
 
-      await db.journalEntries.add(safeEntry);
-      result.imported++;
-    } catch (err) {
-      result.errors.push(
-        `Failed to import entry ${entry.id}: ${err instanceof Error ? err.message : "unknown"}`
-      );
-    }
-  }
-
-  // Import photos
-  if (backup.photos.length > 0) {
-    onProgress?.("Importing photos...");
-    const existingPhotoIds = new Set((await db.journalPhotos.toArray()).map((p) => p.id));
-
-    for (const photo of backup.photos) {
-      if (!photo.id || existingPhotoIds.has(photo.id)) continue;
-      try {
-        await db.journalPhotos.add(photo);
-        result.photosImported++;
-      } catch {
-        // Skip duplicate or invalid photos
+          await db.journalEntries.add(safeEntry);
+          result.imported++;
+        } catch (err) {
+          result.errors.push(
+            `Failed to import entry ${entry.id}: ${err instanceof Error ? err.message : "unknown"}`
+          );
+        }
       }
-    }
-  }
 
-  // Import audio
-  if (backup.audio && backup.audio.length > 0) {
-    onProgress?.("Importing audio...");
-    const existingAudioIds = new Set((await db.journalAudio.toArray()).map((a) => a.id));
+      // Import photos
+      if (backup.photos.length > 0) {
+        onProgress?.("Importing photos...");
+        const existingPhotoIds = new Set((await db.journalPhotos.toArray()).map((p) => p.id));
 
-    for (const audio of backup.audio) {
-      if (!audio.id || existingAudioIds.has(audio.id)) continue;
-      try {
-        await db.journalAudio.add(audio);
-        result.audioImported++;
-      } catch {
-        // Skip duplicate or invalid audio
+        for (const photo of backup.photos) {
+          if (!photo.id || existingPhotoIds.has(photo.id)) continue;
+          try {
+            await db.journalPhotos.add(photo);
+            result.photosImported++;
+          } catch {
+            // Skip duplicate or invalid photos
+          }
+        }
       }
-    }
+
+      // Import audio
+      if (backup.audio && backup.audio.length > 0) {
+        onProgress?.("Importing audio...");
+        const existingAudioIds = new Set((await db.journalAudio.toArray()).map((a) => a.id));
+
+        for (const audio of backup.audio) {
+          if (!audio.id || existingAudioIds.has(audio.id)) continue;
+          try {
+            await db.journalAudio.add(audio);
+            result.audioImported++;
+          } catch {
+            // Skip duplicate or invalid audio
+          }
+        }
+      }
+    }); // end db.transaction
+  } catch (txErr) {
+    logger.error("[JournalImport] Transaction failed — all writes rolled back", txErr);
+    result.errors.push(
+      "Import transaction failed: " + (txErr instanceof Error ? txErr.message : "unknown")
+    );
   }
 
   // Trigger backup sync so imported entries reach the cloud

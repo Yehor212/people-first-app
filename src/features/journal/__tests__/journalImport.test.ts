@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // ─── Mocks ────────────────────────────────────────────────────
 
@@ -9,30 +9,40 @@ let addedEntries: any[] = [];
 let addedPhotos: any[] = [];
 let addedAudio: any[] = [];
 
-vi.mock('@/storage/db', () => ({
+vi.mock("@/storage/db", () => ({
   db: {
     journalEntries: {
       toArray: vi.fn(() => Promise.resolve(mockEntries)),
-      add: vi.fn((entry: any) => { addedEntries.push(entry); return Promise.resolve(); }),
+      add: vi.fn((entry: any) => {
+        addedEntries.push(entry);
+        return Promise.resolve();
+      }),
     },
     journalPhotos: {
       toArray: vi.fn(() => Promise.resolve(mockPhotos)),
-      add: vi.fn((photo: any) => { addedPhotos.push(photo); return Promise.resolve(); }),
+      add: vi.fn((photo: any) => {
+        addedPhotos.push(photo);
+        return Promise.resolve();
+      }),
     },
     journalAudio: {
       toArray: vi.fn(() => Promise.resolve(mockAudio)),
-      add: vi.fn((audio: any) => { addedAudio.push(audio); return Promise.resolve(); }),
+      add: vi.fn((audio: any) => {
+        addedAudio.push(audio);
+        return Promise.resolve();
+      }),
     },
+    transaction: vi.fn((_mode: string, _tables: any[], cb: () => Promise<any>) => cb()),
   },
 }));
 
-import { importJournalBackup } from '../journalImport';
+import { importJournalBackup } from "../journalImport";
 
 // ─── Helpers ──────────────────────────────────────────────────
 
 function makeFile(content: string): File {
-  const blob = new Blob([content], { type: 'application/json' });
-  const file = new File([blob], 'backup.json', { type: 'application/json' });
+  const blob = new Blob([content], { type: "application/json" });
+  const file = new File([blob], "backup.json", { type: "application/json" });
   // Ensure .text() works in test environment
   if (!file.text) {
     file.text = () => Promise.resolve(content);
@@ -52,13 +62,13 @@ function makeBackup(overrides: Record<string, unknown> = {}) {
 
 function makeEntry(overrides: Record<string, unknown> = {}) {
   return {
-    id: 'entry-1',
-    date: '2026-02-17',
-    title: 'Test Entry',
-    content: 'Hello world content',
+    id: "entry-1",
+    date: "2026-02-17",
+    title: "Test Entry",
+    content: "Hello world content",
     stickers: [],
     photoIds: [],
-    tags: ['personal'],
+    tags: ["personal"],
     createdAt: 1708128000000,
     updatedAt: 1708128000000,
     ...overrides,
@@ -67,10 +77,10 @@ function makeEntry(overrides: Record<string, unknown> = {}) {
 
 function makePhoto(overrides: Record<string, unknown> = {}) {
   return {
-    id: 'photo-1',
-    entryId: 'entry-1',
-    data: 'data:image/jpeg;base64,abc',
-    thumbnail: 'data:image/jpeg;base64,thumb',
+    id: "photo-1",
+    entryId: "entry-1",
+    data: "data:image/jpeg;base64,abc",
+    thumbnail: "data:image/jpeg;base64,thumb",
     width: 800,
     height: 600,
     createdAt: 1000,
@@ -80,11 +90,11 @@ function makePhoto(overrides: Record<string, unknown> = {}) {
 
 function makeAudioItem(overrides: Record<string, unknown> = {}) {
   return {
-    id: 'audio-1',
-    entryId: 'entry-1',
-    data: 'data:audio/webm;base64,abc',
+    id: "audio-1",
+    entryId: "entry-1",
+    data: "data:audio/webm;base64,abc",
     duration: 30,
-    mimeType: 'audio/webm',
+    mimeType: "audio/webm",
     createdAt: 1000,
     ...overrides,
   };
@@ -104,38 +114,35 @@ beforeEach(() => {
 
 // ─── Tests ────────────────────────────────────────────────────
 
-describe('importJournalBackup', () => {
-  it('returns error for invalid JSON', async () => {
-    const file = makeFile('not-json{{{');
+describe("importJournalBackup", () => {
+  it("returns error for invalid JSON", async () => {
+    const file = makeFile("not-json{{{");
 
     const result = await importJournalBackup(file);
 
-    expect(result.errors).toContain('Invalid JSON file');
+    expect(result.errors).toContain("Invalid JSON file");
     expect(result.imported).toBe(0);
   });
 
-  it('returns error for missing version', async () => {
+  it("returns error for missing version", async () => {
     const file = makeFile(JSON.stringify({ entries: [], photos: [] }));
 
     const result = await importJournalBackup(file);
 
-    expect(result.errors).toContain('Invalid backup format');
+    expect(result.errors).toContain("Invalid backup format");
   });
 
-  it('returns error for missing entries array', async () => {
+  it("returns error for missing entries array", async () => {
     const file = makeFile(JSON.stringify({ version: 2, photos: [] }));
 
     const result = await importJournalBackup(file);
 
-    expect(result.errors).toContain('Invalid backup format');
+    expect(result.errors).toContain("Invalid backup format");
   });
 
-  it('imports 2 valid entries successfully', async () => {
+  it("imports 2 valid entries successfully", async () => {
     const backup = makeBackup({
-      entries: [
-        makeEntry({ id: 'e1' }),
-        makeEntry({ id: 'e2' }),
-      ],
+      entries: [makeEntry({ id: "e1" }), makeEntry({ id: "e2" })],
     });
     const file = makeFile(JSON.stringify(backup));
 
@@ -147,13 +154,10 @@ describe('importJournalBackup', () => {
     expect(addedEntries).toHaveLength(2);
   });
 
-  it('deduplicates: skips 1 existing entry, imports the other', async () => {
-    mockEntries = [{ id: 'e1' }];
+  it("deduplicates: skips 1 existing entry, imports the other", async () => {
+    mockEntries = [{ id: "e1" }];
     const backup = makeBackup({
-      entries: [
-        makeEntry({ id: 'e1' }),
-        makeEntry({ id: 'e2' }),
-      ],
+      entries: [makeEntry({ id: "e1" }), makeEntry({ id: "e2" })],
     });
     const file = makeFile(JSON.stringify(backup));
 
@@ -162,37 +166,37 @@ describe('importJournalBackup', () => {
     expect(result.imported).toBe(1);
     expect(result.skipped).toBe(1);
     expect(addedEntries).toHaveLength(1);
-    expect(addedEntries[0].id).toBe('e2');
+    expect(addedEntries[0].id).toBe("e2");
   });
 
-  it('reports error for entry missing required id field', async () => {
+  it("reports error for entry missing required id field", async () => {
     const backup = makeBackup({
-      entries: [{ date: '2026-01-01', content: 'text', createdAt: 1000 }],
+      entries: [{ date: "2026-01-01", content: "text", createdAt: 1000 }],
     });
     const file = makeFile(JSON.stringify(backup));
 
     const result = await importJournalBackup(file);
 
-    expect(result.errors.some(e => e.includes('Invalid entry'))).toBe(true);
+    expect(result.errors.some((e) => e.includes("Invalid entry"))).toBe(true);
     expect(result.imported).toBe(0);
   });
 
-  it('reports error for entry missing content', async () => {
+  it("reports error for entry missing content", async () => {
     const backup = makeBackup({
-      entries: [{ id: 'e1', date: '2026-01-01', createdAt: 1000 }],
+      entries: [{ id: "e1", date: "2026-01-01", createdAt: 1000 }],
     });
     const file = makeFile(JSON.stringify(backup));
 
     const result = await importJournalBackup(file);
 
-    expect(result.errors.some(e => e.includes('Invalid entry'))).toBe(true);
+    expect(result.errors.some((e) => e.includes("Invalid entry"))).toBe(true);
     expect(result.imported).toBe(0);
   });
 
-  it('imports photos alongside entries', async () => {
+  it("imports photos alongside entries", async () => {
     const backup = makeBackup({
-      entries: [makeEntry({ id: 'e1', photoIds: ['photo-1'] })],
-      photos: [makePhoto({ id: 'photo-1', entryId: 'e1' })],
+      entries: [makeEntry({ id: "e1", photoIds: ["photo-1"] })],
+      photos: [makePhoto({ id: "photo-1", entryId: "e1" })],
     });
     const file = makeFile(JSON.stringify(backup));
 
@@ -203,14 +207,11 @@ describe('importJournalBackup', () => {
     expect(addedPhotos).toHaveLength(1);
   });
 
-  it('skips duplicate photos', async () => {
-    mockPhotos = [{ id: 'photo-1' }];
+  it("skips duplicate photos", async () => {
+    mockPhotos = [{ id: "photo-1" }];
     const backup = makeBackup({
       entries: [makeEntry()],
-      photos: [
-        makePhoto({ id: 'photo-1' }),
-        makePhoto({ id: 'photo-2' }),
-      ],
+      photos: [makePhoto({ id: "photo-1" }), makePhoto({ id: "photo-2" })],
     });
     const file = makeFile(JSON.stringify(backup));
 
@@ -218,14 +219,14 @@ describe('importJournalBackup', () => {
 
     expect(result.photosImported).toBe(1);
     expect(addedPhotos).toHaveLength(1);
-    expect(addedPhotos[0].id).toBe('photo-2');
+    expect(addedPhotos[0].id).toBe("photo-2");
   });
 
-  it('imports audio from backup', async () => {
+  it("imports audio from backup", async () => {
     const backup = makeBackup({
-      entries: [makeEntry({ id: 'e1', audioIds: ['audio-1'] })],
+      entries: [makeEntry({ id: "e1", audioIds: ["audio-1"] })],
       photos: [],
-      audio: [makeAudioItem({ id: 'audio-1', entryId: 'e1' })],
+      audio: [makeAudioItem({ id: "audio-1", entryId: "e1" })],
     });
     const file = makeFile(JSON.stringify(backup));
 
@@ -235,7 +236,7 @@ describe('importJournalBackup', () => {
     expect(addedAudio).toHaveLength(1);
   });
 
-  it('calls onProgress callback with progress steps', async () => {
+  it("calls onProgress callback with progress steps", async () => {
     const backup = makeBackup({
       entries: [makeEntry()],
       photos: [makePhoto()],
@@ -246,14 +247,14 @@ describe('importJournalBackup', () => {
 
     await importJournalBackup(file, onProgress);
 
-    expect(onProgress).toHaveBeenCalledWith('Reading file...');
-    expect(onProgress).toHaveBeenCalledWith('Checking existing entries...');
-    expect(onProgress).toHaveBeenCalledWith('Importing entries...');
-    expect(onProgress).toHaveBeenCalledWith('Importing photos...');
-    expect(onProgress).toHaveBeenCalledWith('Importing audio...');
+    expect(onProgress).toHaveBeenCalledWith("Reading file...");
+    expect(onProgress).toHaveBeenCalledWith("Checking existing entries...");
+    expect(onProgress).toHaveBeenCalledWith("Importing entries...");
+    expect(onProgress).toHaveBeenCalledWith("Importing photos...");
+    expect(onProgress).toHaveBeenCalledWith("Importing audio...");
   });
 
-  it('handles empty backup with no entries', async () => {
+  it("handles empty backup with no entries", async () => {
     const backup = makeBackup({ entries: [], photos: [] });
     const file = makeFile(JSON.stringify(backup));
 
