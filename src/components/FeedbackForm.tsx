@@ -33,7 +33,7 @@ export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
   const [status, setStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
 
   const handleSubmit = async () => {
-    if (!message.trim()) return;
+    if (!message.trim() || status === "sending") return;
 
     // Validate email if provided
     if (email.trim()) {

@@ -6,8 +6,8 @@
  * Users can participate anonymously or with a display name.
  */
 
-import { supabase, getCurrentUserId } from './supabaseClient';
-import { logger } from './logger';
+import { supabase, getCurrentUserId } from "./supabaseClient";
+import { logger } from "./logger";
 
 // ============================================
 // TYPES
@@ -34,7 +34,33 @@ export interface LeaderboardStats {
   totalParticipants: number;
 }
 
-export type LeaderboardType = 'weekly' | 'monthly' | 'streak';
+export type LeaderboardType = "weekly" | "monthly" | "streak";
+
+// ============================================
+// SHARED HELPERS
+// ============================================
+
+/**
+ * Shared helper for estimated-count queries against the leaderboards table.
+ * Deduplicates the repeated select→count→filter pattern used in getUserRanks.
+ */
+async function getLeaderboardCount(
+  table: string,
+  baseFilters: { column: string; value: string | number | boolean }[],
+  gtFilter?: { column: string; value: number }
+): Promise<number> {
+  if (!supabase) return 0;
+  let query = supabase.from(table).select("*", { count: "estimated", head: true });
+  for (const f of baseFilters) {
+    query = query.eq(f.column, f.value);
+  }
+  if (gtFilter) {
+    query = query.gt(gtFilter.column, gtFilter.value);
+  }
+  const { count, error } = await query;
+  if (error) throw error;
+  return count ?? 0;
+}
 
 // ============================================
 // LEADERBOARD QUERIES
@@ -50,22 +76,22 @@ export async function getLeaderboard(
   const userId = await getCurrentUserId();
 
   const orderColumn = {
-    weekly: 'weekly_xp',
-    monthly: 'monthly_xp',
-    streak: 'current_streak',
+    weekly: "weekly_xp",
+    monthly: "monthly_xp",
+    streak: "current_streak",
   }[type];
 
   if (!supabase) return [];
 
   const { data, error } = await supabase
-    .from('leaderboards')
-    .select('*')
-    .eq('opt_in', true)
+    .from("leaderboards")
+    .select("*")
+    .eq("opt_in", true)
     .order(orderColumn, { ascending: false })
     .limit(limit);
 
   if (error) {
-    logger.error('[Leaderboard] Failed to fetch leaderboard:', error);
+    logger.error("[Leaderboard] Failed to fetch leaderboard:", error);
     return [];
   }
 
@@ -73,7 +99,7 @@ export async function getLeaderboard(
   return rows.map((row, index) => ({
     id: row.id,
     userId: row.user_id,
-    displayName: row.display_name || 'Zen User',
+    displayName: row.display_name || "Zen User",
     weeklyXp: row.weekly_xp ?? 0,
     monthlyXp: row.monthly_xp ?? 0,
     allTimeXp: row.all_time_xp ?? 0,
@@ -95,13 +121,13 @@ export async function getUserLeaderboardEntry(): Promise<LeaderboardEntry | null
   if (!supabase) return null;
 
   const { data, error } = await supabase
-    .from('leaderboards')
-    .select('*')
-    .eq('user_id', userId)
+    .from("leaderboards")
+    .select("*")
+    .eq("user_id", userId)
     .maybeSingle();
 
   if (error) {
-    logger.error('[Leaderboard] Failed to fetch user entry:', error);
+    logger.error("[Leaderboard] Failed to fetch user entry:", error);
     return null;
   }
 
@@ -110,7 +136,7 @@ export async function getUserLeaderboardEntry(): Promise<LeaderboardEntry | null
   return {
     id: data.id,
     userId: data.user_id,
-    displayName: data.display_name || 'Zen User',
+    displayName: data.display_name || "Zen User",
     weeklyXp: data.weekly_xp ?? 0,
     monthlyXp: data.monthly_xp ?? 0,
     allTimeXp: data.all_time_xp ?? 0,
@@ -140,24 +166,29 @@ export async function getUserRanks(): Promise<LeaderboardStats> {
     return { weeklyRank: null, monthlyRank: null, streakRank: null, totalParticipants: 0 };
   }
 
-  // Run all 4 count queries in parallel (estimated count avoids full table scan)
-  const [
-    { count: total },
-    { count: weeklyAbove },
-    { count: monthlyAbove },
-    { count: streakAbove },
-  ] = await Promise.all([
-    supabase.from('leaderboards').select('*', { count: 'estimated', head: true }).eq('opt_in', true),
-    supabase.from('leaderboards').select('*', { count: 'estimated', head: true }).eq('opt_in', true).gt('weekly_xp', userEntry.weeklyXp),
-    supabase.from('leaderboards').select('*', { count: 'estimated', head: true }).eq('opt_in', true).gt('monthly_xp', userEntry.monthlyXp),
-    supabase.from('leaderboards').select('*', { count: 'estimated', head: true }).eq('opt_in', true).gt('current_streak', userEntry.currentStreak),
+  // Run all 4 count queries in parallel via shared helper (estimated count avoids full table scan)
+  const optInFilter = [{ column: "opt_in", value: true as string | number | boolean }];
+  const [total, weeklyAbove, monthlyAbove, streakAbove] = await Promise.all([
+    getLeaderboardCount("leaderboards", optInFilter),
+    getLeaderboardCount("leaderboards", optInFilter, {
+      column: "weekly_xp",
+      value: userEntry.weeklyXp,
+    }),
+    getLeaderboardCount("leaderboards", optInFilter, {
+      column: "monthly_xp",
+      value: userEntry.monthlyXp,
+    }),
+    getLeaderboardCount("leaderboards", optInFilter, {
+      column: "current_streak",
+      value: userEntry.currentStreak,
+    }),
   ]);
 
   return {
-    weeklyRank: (weeklyAbove ?? 0) + 1,
-    monthlyRank: (monthlyAbove ?? 0) + 1,
-    streakRank: (streakAbove ?? 0) + 1,
-    totalParticipants: total ?? 0,
+    weeklyRank: weeklyAbove + 1,
+    monthlyRank: monthlyAbove + 1,
+    streakRank: streakAbove + 1,
+    totalParticipants: total,
   };
 }
 
@@ -176,28 +207,29 @@ export async function optInToLeaderboard(displayName: string): Promise<boolean> 
   const sanitizedName = displayName
     .trim()
     .slice(0, 20)
-    .replace(/[^a-zA-Z0-9 _-]/g, '');
+    .replace(/[^a-zA-Z0-9 _-]/g, "");
 
-  const finalName = sanitizedName || 'Zen User';
+  const finalName = sanitizedName || "Zen User";
 
   if (!supabase) return false;
 
-  const { error } = await supabase
-    .from('leaderboards')
-    .upsert({
+  const { error } = await supabase.from("leaderboards").upsert(
+    {
       user_id: userId,
       display_name: finalName,
       opt_in: true,
-    }, {
-      onConflict: 'user_id',
-    });
+    },
+    {
+      onConflict: "user_id",
+    }
+  );
 
   if (error) {
-    logger.error('[Leaderboard] Failed to opt in:', error);
+    logger.error("[Leaderboard] Failed to opt in:", error);
     return false;
   }
 
-  logger.log('[Leaderboard] User opted in:', finalName);
+  logger.log("[Leaderboard] User opted in:", finalName);
   return true;
 }
 
@@ -211,16 +243,16 @@ export async function optOutOfLeaderboard(): Promise<boolean> {
   if (!supabase) return false;
 
   const { error } = await supabase
-    .from('leaderboards')
+    .from("leaderboards")
     .update({ opt_in: false })
-    .eq('user_id', userId);
+    .eq("user_id", userId);
 
   if (error) {
-    logger.error('[Leaderboard] Failed to opt out:', error);
+    logger.error("[Leaderboard] Failed to opt out:", error);
     return false;
   }
 
-  logger.log('[Leaderboard] User opted out');
+  logger.log("[Leaderboard] User opted out");
   return true;
 }
 
@@ -231,20 +263,21 @@ export async function updateDisplayName(displayName: string): Promise<boolean> {
   const userId = await getCurrentUserId();
   if (!userId) return false;
 
-  const sanitizedName = displayName
-    .trim()
-    .slice(0, 20)
-    .replace(/[^a-zA-Z0-9 _-]/g, '') || 'Zen User';
+  const sanitizedName =
+    displayName
+      .trim()
+      .slice(0, 20)
+      .replace(/[^a-zA-Z0-9 _-]/g, "") || "Zen User";
 
   if (!supabase) return false;
 
   const { error } = await supabase
-    .from('leaderboards')
+    .from("leaderboards")
     .update({ display_name: sanitizedName })
-    .eq('user_id', userId);
+    .eq("user_id", userId);
 
   if (error) {
-    logger.error('[Leaderboard] Failed to update display name:', error);
+    logger.error("[Leaderboard] Failed to update display name:", error);
     return false;
   }
 
@@ -271,31 +304,30 @@ export async function addXpToLeaderboard(xpAmount: number): Promise<void> {
   if (existing) {
     // Update existing entry
     const { error } = await supabase
-      .from('leaderboards')
+      .from("leaderboards")
       .update({
         weekly_xp: existing.weeklyXp + xpAmount,
         monthly_xp: existing.monthlyXp + xpAmount,
         all_time_xp: existing.allTimeXp + xpAmount,
       })
-      .eq('user_id', userId);
+      .eq("user_id", userId);
 
     if (error) {
-      logger.error('[Leaderboard] Failed to add XP:', error);
+      logger.error("[Leaderboard] Failed to add XP:", error);
     }
   } else {
     // Create new entry (not opted in by default)
-    const { error } = await supabase
-      .from('leaderboards')
-      .insert({
-        user_id: userId,
-        weekly_xp: xpAmount,
-        monthly_xp: xpAmount,
-        all_time_xp: xpAmount,
-        opt_in: false,
-      });
+    const { error } = await supabase.from("leaderboards").insert({
+      user_id: userId,
+      weekly_xp: xpAmount,
+      monthly_xp: xpAmount,
+      all_time_xp: xpAmount,
+      opt_in: false,
+    });
 
-    if (error && error.code !== '23505') { // Ignore duplicate key errors
-      logger.error('[Leaderboard] Failed to create entry:', error);
+    if (error && error.code !== "23505") {
+      // Ignore duplicate key errors
+      logger.error("[Leaderboard] Failed to create entry:", error);
     }
   }
 }
@@ -316,29 +348,27 @@ export async function updateLeaderboardStreak(currentStreak: number): Promise<vo
     const newLongest = Math.max(existing.longestStreak, currentStreak);
 
     const { error } = await supabase
-      .from('leaderboards')
+      .from("leaderboards")
       .update({
         current_streak: currentStreak,
         longest_streak: newLongest,
       })
-      .eq('user_id', userId);
+      .eq("user_id", userId);
 
     if (error) {
-      logger.error('[Leaderboard] Failed to update streak:', error);
+      logger.error("[Leaderboard] Failed to update streak:", error);
     }
   } else {
     // Create new entry
-    const { error } = await supabase
-      .from('leaderboards')
-      .insert({
-        user_id: userId,
-        current_streak: currentStreak,
-        longest_streak: currentStreak,
-        opt_in: false,
-      });
+    const { error } = await supabase.from("leaderboards").insert({
+      user_id: userId,
+      current_streak: currentStreak,
+      longest_streak: currentStreak,
+      opt_in: false,
+    });
 
-    if (error && error.code !== '23505') {
-      logger.error('[Leaderboard] Failed to create entry:', error);
+    if (error && error.code !== "23505") {
+      logger.error("[Leaderboard] Failed to create entry:", error);
     }
   }
 }
@@ -352,10 +382,14 @@ export async function updateLeaderboardStreak(currentStreak: number): Promise<vo
  */
 export function getRankMedal(rank: number): string {
   switch (rank) {
-    case 1: return '🥇';
-    case 2: return '🥈';
-    case 3: return '🥉';
-    default: return '';
+    case 1:
+      return "🥇";
+    case 2:
+      return "🥈";
+    case 3:
+      return "🥉";
+    default:
+      return "";
   }
 }
 
@@ -363,7 +397,7 @@ export function getRankMedal(rank: number): string {
  * Format rank with suffix (1st, 2nd, 3rd, etc.)
  */
 export function formatRank(rank: number): string {
-  const suffix = ['th', 'st', 'nd', 'rd'];
+  const suffix = ["th", "st", "nd", "rd"];
   const v = rank % 100;
   return rank + (suffix[(v - 20) % 10] || suffix[v] || suffix[0]);
 }
