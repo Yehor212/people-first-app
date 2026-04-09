@@ -676,6 +676,9 @@ export interface Translations {
   modalErrorBody: string;
   tryAgain: string;
   failedToLoad: string;
+  backupInvalidPayload: string;
+  backupUnsupportedVersion: string;
+  backupMissingData: string;
   failedToLoadBody: string;
   pushTitle: string;
   pushEnable: string;
