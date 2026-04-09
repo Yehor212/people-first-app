@@ -1983,6 +1983,9 @@ const arabicOverrides: Partial<Translations> = {
   modalErrorBody: "واجهت هذه الميزة خطأ. حاول إغلاقها وإعادة فتحها.",
   tryAgain: "حاول مرة أخرى",
   failedToLoad: "فشل التحميل",
+  backupInvalidPayload: "تنسيق ملف النسخ الاحتياطي غير صالح.",
+  backupUnsupportedVersion: "إصدار النسخ الاحتياطي غير مدعوم.",
+  backupMissingData: "ملف النسخ الاحتياطي لا يحتوي على بيانات.",
   failedToLoadBody: "تعذر تحميل المكون. يرجى تحديث الصفحة.",
 
   // Push Notifications

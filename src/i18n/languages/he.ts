@@ -800,6 +800,9 @@ const hebrewOverrides: Partial<Translations> = {
   modalErrorBody: "תכונה זו נתקלה בשגיאה. נסה לסגור ולפתוח מחדש.",
   tryAgain: "נסה שוב",
   failedToLoad: "הטעינה נכשלה",
+  backupInvalidPayload: "פורמט קובץ גיבוי לא תקין.",
+  backupUnsupportedVersion: "גרסת גיבוי לא נתמכת.",
+  backupMissingData: "קובץ הגיבוי חסר נתונים.",
   failedToLoadBody: "לא ניתן לטעון את הרכיב. אנא רענן את הדף.",
 
   // Leaderboard

@@ -845,6 +845,9 @@ export const de: Translations = {
     "Diese Funktion hat einen Fehler verursacht. Versuchen Sie, sie zu schließen und erneut zu öffnen.",
   tryAgain: "Erneut versuchen",
   failedToLoad: "Laden fehlgeschlagen",
+  backupInvalidPayload: "Ungültiges Backup-Dateiformat.",
+  backupUnsupportedVersion: "Nicht unterstützte Backup-Version.",
+  backupMissingData: "Backup-Datei enthält keine Daten.",
   failedToLoadBody:
     "Die Komponente konnte nicht geladen werden. Bitte aktualisieren Sie die Seite.",
   pushTitle: "Push-Benachrichtigungen",
