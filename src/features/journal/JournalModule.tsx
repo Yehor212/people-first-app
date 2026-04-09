@@ -788,9 +788,9 @@ export const JournalModule = memo(function JournalModule({
                 /* ═══ DESKTOP: Master-detail split ═══ */
                 <div className="flex flex-1 min-h-0 h-full">
                   {/* LEFT PANEL: always-visible list */}
-                  <div className="flex flex-col w-[360px] xl:w-[400px] border-e border-border/15 bg-background shrink-0 h-full overflow-hidden">
+                  <div className="flex flex-col w-[360px] xl:w-[400px] border-e border-border/30 bg-card shrink-0 h-full overflow-hidden">
                     {/* Header */}
-                    <div className="flex items-center justify-between px-4 py-3 border-b border-border/15 bg-background">
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-border/20">
                       <div className="flex items-center gap-2">
                         <h2 className="text-base font-bold text-foreground">
                           {ts.journalTitle || "Diary"}
@@ -829,7 +829,7 @@ export const JournalModule = memo(function JournalModule({
                     </div>
 
                     {/* Calendar */}
-                    <div className="px-4 py-2 border-b border-border/10">
+                    <div className="px-4 py-2 border-b border-border/20">
                       {calendarMode === "full" ? (
                         <JournalCalendarFull
                           entryDates={journal.entryDates}
@@ -884,7 +884,7 @@ export const JournalModule = memo(function JournalModule({
                         onRemoveAudio={journal.removeAudio}
                         onDelete={
                           journal.activeEntryId
-                            ? () => handleDeleteEntry(journal.activeEntryId)
+                            ? () => handleDeleteEntry(journal.activeEntryId!)
                             : undefined
                         }
                         onBack={journal.goBack}
@@ -914,9 +914,9 @@ export const JournalModule = memo(function JournalModule({
                       </Suspense>
                     ) : (
                       /* Empty state — no entry selected */
-                      <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground/50 gap-3 select-none">
-                        <PenLine className="w-14 h-14 opacity-30" />
-                        <p className="text-sm">
+                      <div className="flex-1 flex flex-col items-center justify-center gap-4 select-none">
+                        <PenLine className="w-16 h-16 text-muted-foreground/40" />
+                        <p className="text-sm text-muted-foreground">
                           {ts.journalSelectEntry || "Select an entry or start writing"}
                         </p>
                       </div>
