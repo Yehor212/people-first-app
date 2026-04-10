@@ -1,5 +1,6 @@
 import { useEffect, type ReactNode } from "react";
 import { useDeviceTier } from "@/hooks/useDeviceTier";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { cn } from "@/lib/utils";
 
 interface AdaptiveShellProps {
@@ -8,12 +9,17 @@ interface AdaptiveShellProps {
 }
 
 /**
- * Root layout wrapper that provides device-tier-aware context.
- * Phase 1: minimal wrapper with CSS class switching.
- * Phase 2: will add sidebar vs bottom-tab navigation switching.
+ * Root layout wrapper with tier-aware navigation context.
+ * Exposes showSidebar state via data attribute so Navigation.tsx
+ * can decide which mode to render.
  */
 export function AdaptiveShell({ children, className }: AdaptiveShellProps) {
   const { tier, isDesktopClass: isDesktop } = useDeviceTier();
+  const isTabletLandscape = useMediaQuery(
+    "(min-width: 768px) and (max-width: 1023px) and (orientation: landscape)"
+  );
+
+  const showSidebar = isDesktop || isTabletLandscape;
 
   useEffect(() => {
     document.documentElement.dataset.deviceTier = tier;
@@ -23,7 +29,13 @@ export function AdaptiveShell({ children, className }: AdaptiveShellProps) {
   return (
     <div
       data-device-tier={tier}
-      className={cn("adaptive-shell", isDesktop && "desktop-class", className)}
+      data-show-sidebar={showSidebar}
+      className={cn(
+        "adaptive-shell",
+        isDesktop && "desktop-class",
+        showSidebar && "has-sidebar",
+        className
+      )}
     >
       {children}
     </div>
