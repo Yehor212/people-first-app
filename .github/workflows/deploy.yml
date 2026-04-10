@@ -33,7 +33,7 @@ jobs:
           cache: npm
 
       - name: Install deps
-        run: npm ci
+        run: npm install
 
       - name: Security audit
         run: npm audit --audit-level=critical
@@ -106,7 +106,7 @@ jobs:
           java-version: 21
 
       - name: Install deps
-        run: npm ci
+        run: npm install
 
       - name: Build web assets (required before cap sync)
         env:
