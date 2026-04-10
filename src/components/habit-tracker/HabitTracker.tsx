@@ -16,6 +16,7 @@ import {
 import { CompactHabitCard } from "@/components/CompactHabitCard";
 import { ContextMenu } from "@/components/desktop/ContextMenu";
 import { HoverPreview } from "@/components/desktop/HoverPreview";
+import { DragDropZone } from "@/components/desktop/DragDropZone";
 import { useInputMethod } from "@/hooks/useInputMethod";
 import { HabitCreationForm } from "@/components/HabitCreationForm";
 import { hapticTap } from "@/lib/haptics";
@@ -109,6 +110,27 @@ export const HabitTracker = memo(function HabitTracker({
     if (categoryFilter === "all") return habits;
     return habits.filter((h) => (h.category || "health") === categoryFilter);
   }, [habits, categoryFilter]);
+
+  // Drag-to-reorder: persist order to localStorage
+  const [habitOrder, setHabitOrder] = useState<string[]>(() => {
+    const stored = storageGetRaw("habit-order");
+    return stored ? (JSON.parse(stored) as string[]) : [];
+  });
+
+  const orderedHabits = useMemo(() => {
+    if (habitOrder.length === 0) return filteredHabits;
+    const orderMap = new Map(habitOrder.map((id, i) => [id, i]));
+    return [...filteredHabits].sort((a, b) => {
+      const ai = orderMap.get(a.id) ?? Infinity;
+      const bi = orderMap.get(b.id) ?? Infinity;
+      return ai - bi;
+    });
+  }, [filteredHabits, habitOrder]);
+
+  const handleReorder = useCallback((newOrder: string[]) => {
+    setHabitOrder(newOrder);
+    storageSetRaw("habit-order", JSON.stringify(newOrder));
+  }, []);
 
   const isCompletedToday = useCallback(
     (habit: Habit) => {
@@ -388,67 +410,81 @@ export const HabitTracker = memo(function HabitTracker({
             </div>
           )}
 
-          <div className="@container">
-            <div
-              role="list"
-              aria-label={t.habits || "Habits"}
+          <div className="@container" role="list" aria-label={t.habits || "Habits"}>
+            <DragDropZone
+              items={orderedHabits.map((h) => h.id)}
+              onReorder={handleReorder}
+              enabled={isMouse}
               className="grid gap-2 grid-cols-1 @sm:grid-cols-2 @lg:grid-cols-3 @xl:grid-cols-4 @[80rem]:grid-cols-5"
-            >
-              {filteredHabits.map((habit) => (
-                // A11Y-OK: HoverPreview+ContextMenu use Radix with built-in aria; trigger is CompactHabitCard with its own aria-labels
-                <HoverPreview
-                  key={habit.id}
-                  enabled={canHover}
-                  content={
-                    <div className="text-xs space-y-1 min-w-[120px]">
-                      <p className="font-medium text-foreground">{habit.name}</p>
-                      {(habitStreaks.get(habit.id) || 0) > 0 && (
-                        <p className="text-muted-foreground">
-                          {t.streak || "Streak"}: {habitStreaks.get(habit.id)} {t.days || "days"}
-                        </p>
-                      )}
-                      {habit.category && (
-                        <p className="text-muted-foreground/70">{habit.category}</p>
-                      )}
-                    </div>
-                  }
-                  trigger={
-                    <ContextMenu
-                      enabled={isMouse}
+              renderItem={(id, dragHandleProps) => {
+                const habit = orderedHabits.find((h) => h.id === id);
+                if (!habit) return null;
+                return (
+                  // A11Y-OK: HoverPreview+ContextMenu use Radix with built-in aria; CompactHabitCard has its own aria-labels
+                  <div {...dragHandleProps}>
+                    <HoverPreview
+                      enabled={canHover}
+                      content={
+                        <div className="text-xs space-y-1 min-w-[120px]">
+                          <p className="font-medium text-foreground">{habit.name}</p>
+                          {(habitStreaks.get(habit.id) || 0) > 0 && (
+                            <p className="text-muted-foreground">
+                              {t.streak || "Streak"}: {habitStreaks.get(habit.id)}{" "}
+                              {t.days || "days"}
+                            </p>
+                          )}
+                          {habit.category && (
+                            <p className="text-muted-foreground/70">{habit.category}</p>
+                          )}
+                        </div>
+                      }
                       trigger={
-                        <CompactHabitCard
-                          habit={habit}
-                          onToggle={() => handleHabitToggle(habit)}
-                          onAdjust={onAdjustHabit}
-                          onDelete={(id: string) => {
-                            onDeleteHabit(id);
-                            void hapticTap();
-                          }}
-                          onEdit={onUpdateHabit ? form.handleEditHabit : undefined}
-                          onChallenge={onOpenChallenge ? (h) => onOpenChallenge(h) : undefined}
-                          streak={habitStreaks.get(habit.id) || 0}
-                          isDueToday={dueIds.has(habit.id)}
+                        <ContextMenu
+                          enabled={isMouse}
+                          trigger={
+                            <CompactHabitCard
+                              habit={habit}
+                              onToggle={() => handleHabitToggle(habit)}
+                              onAdjust={onAdjustHabit}
+                              onDelete={(id: string) => {
+                                onDeleteHabit(id);
+                                void hapticTap();
+                              }}
+                              onEdit={onUpdateHabit ? form.handleEditHabit : undefined}
+                              onChallenge={onOpenChallenge ? (h) => onOpenChallenge(h) : undefined}
+                              streak={habitStreaks.get(habit.id) || 0}
+                              isDueToday={dueIds.has(habit.id)}
+                            />
+                          }
+                          items={[
+                            {
+                              label: t.complete || "Complete",
+                              action: () => handleHabitToggle(habit),
+                            },
+                            ...(onUpdateHabit
+                              ? [
+                                  {
+                                    label: t.edit || "Edit",
+                                    action: () => form.handleEditHabit(habit),
+                                  },
+                                ]
+                              : []),
+                            {
+                              label: t.delete || "Delete",
+                              action: () => {
+                                onDeleteHabit(habit.id);
+                                void hapticTap();
+                              },
+                              destructive: true,
+                            },
+                          ]}
                         />
                       }
-                      items={[
-                        { label: t.complete || "Complete", action: () => handleHabitToggle(habit) },
-                        ...(onUpdateHabit
-                          ? [{ label: t.edit || "Edit", action: () => form.handleEditHabit(habit) }]
-                          : []),
-                        {
-                          label: t.delete || "Delete",
-                          action: () => {
-                            onDeleteHabit(habit.id);
-                            void hapticTap();
-                          },
-                          destructive: true,
-                        },
-                      ]}
                     />
-                  }
-                />
-              ))}
-            </div>
+                  </div>
+                );
+              }}
+            />
           </div>
 
           {habits.length > 0 && !swipeHintSeen && (
