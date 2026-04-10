@@ -304,7 +304,7 @@ export function useAuthSession(isLoading: boolean): void {
       stopAutoSync();
       leavePresence().catch((err) => logger.warn("[Auth]", "Presence leave failed:", err));
     };
-  }, []); // mount-only — isLoading tracked via ref
+  }, [setHasValidSession]);
 
   // Sync user name from Supabase metadata (uses cached session, no network call)
   useEffect(() => {

@@ -79,6 +79,10 @@ const HabitHubTab = lazyWithRetry(
   () => import("@/components/habit-hub").then((m) => ({ default: m.HabitHubTab })),
   "HabitHubTab"
 );
+const CommandPalette = lazyWithRetry(
+  () => import("@/components/desktop/CommandPalette"),
+  "CommandPalette"
+);
 import { useCanvasHandlers } from "@/hooks/useCanvasHandlers";
 import { useGamification } from "@/hooks/useGamification";
 import { useWidgetSync } from "@/hooks/useWidgetSync";
@@ -361,6 +365,16 @@ export function Index() {
             <MoodBackgroundOverlay />
 
             <OverlayLayer awardXp={awardXp} earnTreats={earnTreats} />
+
+            {/* Command palette — Ctrl+K */}
+            {commandPaletteOpen && (
+              <Suspense fallback={null}>
+                <CommandPalette
+                  open={commandPaletteOpen}
+                  onClose={() => setCommandPaletteOpen(false)}
+                />
+              </Suspense>
+            )}
 
             {/* Swipe container for tab navigation on mobile */}
             <div ref={swipeContainerRef} {...swipeProps} className="min-h-screen">

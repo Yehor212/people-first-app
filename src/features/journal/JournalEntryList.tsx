@@ -8,6 +8,8 @@ import { useBackHandler } from "@/hooks/useBackHandler";
 import type { JournalEntry } from "./types";
 import type { MoodType, GratitudeEntry } from "@/types";
 import { JournalEntryCard } from "./JournalEntryCard";
+import { ContextMenu } from "@/components/desktop/ContextMenu";
+import { useInputMethod } from "@/hooks/useInputMethod";
 import { StickerRenderer } from "./StickerRenderer";
 import { GratitudeBloomWidget } from "./GratitudeBloomWidget";
 import { BurnThoughtWidget } from "./BurnThoughtWidget";
@@ -155,6 +157,7 @@ export const JournalEntryList = memo(function JournalEntryList({
 }: JournalEntryListProps) {
   const { t } = useLanguage();
   const ts = t as unknown as Record<string, string>;
+  const { isMouse } = useInputMethod();
 
   // Stable handlers that accept ID — prevents inline arrows from defeating memo on JournalEntryCard
   const handleTap = useCallback((id: string) => onOpenEntry(id), [onOpenEntry]);
@@ -579,12 +582,26 @@ export const JournalEntryList = memo(function JournalEntryList({
                   <div className="absolute top-2 end-2 z-10 px-1.5 py-0.5 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400 text-[10px] font-medium">
                     {Math.round(similarity * 100)}%
                   </div>
-                  <JournalEntryCard
-                    entry={entry}
-                    onTap={handleTap}
-                    onDelete={handleDelete}
-                    privateMode={privateMode}
-                    searchQuery={debouncedSearch}
+                  {/* A11Y-OK: ContextMenu uses Radix with built-in aria; trigger is JournalEntryCard which has its own aria-labels */}
+                  <ContextMenu
+                    enabled={isMouse}
+                    trigger={
+                      <JournalEntryCard
+                        entry={entry}
+                        onTap={handleTap}
+                        onDelete={handleDelete}
+                        privateMode={privateMode}
+                        searchQuery={debouncedSearch}
+                      />
+                    }
+                    items={[
+                      { label: ts.open || "Open", action: () => handleTap(entry.id) },
+                      {
+                        label: ts.delete || "Delete",
+                        action: () => handleDelete(entry.id),
+                        destructive: true,
+                      },
+                    ]}
                   />
                 </motion.div>
               ))}
@@ -627,12 +644,26 @@ export const JournalEntryList = memo(function JournalEntryList({
             >
               {group.entries.map((entry) => (
                 <motion.div key={entry.id} variants={itemVariants}>
-                  <JournalEntryCard
-                    entry={entry}
-                    onTap={handleTap}
-                    onDelete={handleDelete}
-                    privateMode={privateMode}
-                    searchQuery={debouncedSearch}
+                  {/* A11Y-OK: ContextMenu uses Radix with built-in aria; trigger is JournalEntryCard which has its own aria-labels */}
+                  <ContextMenu
+                    enabled={isMouse}
+                    trigger={
+                      <JournalEntryCard
+                        entry={entry}
+                        onTap={handleTap}
+                        onDelete={handleDelete}
+                        privateMode={privateMode}
+                        searchQuery={debouncedSearch}
+                      />
+                    }
+                    items={[
+                      { label: ts.open || "Open", action: () => handleTap(entry.id) },
+                      {
+                        label: ts.delete || "Delete",
+                        action: () => handleDelete(entry.id),
+                        destructive: true,
+                      },
+                    ]}
                   />
                 </motion.div>
               ))}

@@ -14,6 +14,8 @@ import {
   DailyProgressBar,
 } from "@/components/HabitCompletionCelebration";
 import { CompactHabitCard } from "@/components/CompactHabitCard";
+import { ContextMenu } from "@/components/desktop/ContextMenu";
+import { useInputMethod } from "@/hooks/useInputMethod";
 import { HabitCreationForm } from "@/components/HabitCreationForm";
 import { hapticTap } from "@/lib/haptics";
 import { zenTap } from "@/lib/animationUtils";
@@ -22,11 +24,7 @@ import { storageGetRaw, storageSetRaw } from "@/lib/safeJson";
 import { getActiveChallenges } from "@/lib/friendChallenge";
 import { useHabitForm, habitCategories } from "@/hooks/useHabitForm";
 import { announceSuccess } from "@/lib/a11y";
-import {
-  playSuccess,
-  playStreakMilestone,
-  playLevelUp,
-} from "@/lib/audioManager";
+import { playSuccess, playStreakMilestone, playLevelUp } from "@/lib/audioManager";
 import { getHabitStreak } from "./habitStreakUtils";
 import { PremiumProgressBar } from "./PremiumProgressBar";
 
@@ -52,24 +50,19 @@ export const HabitTracker = memo(function HabitTracker({
   onOpenChallenge,
 }: HabitTrackerProps) {
   const { t } = useLanguage();
+  const { isMouse } = useInputMethod();
   const form = useHabitForm({ onAddHabit, onUpdateHabit });
 
   // Back handler for inline panels
   useBackHandler(form.showCustomForm, () => form.setShowCustomForm(false));
-  useBackHandler(form.isAdding && !form.showCustomForm, () =>
-    form.setIsAdding(false),
-  );
+  useBackHandler(form.isAdding && !form.showCustomForm, () => form.setIsAdding(false));
 
   // Swipe hint for first-time users
-  const [swipeHintSeen] = useState(
-    () => !!storageGetRaw(SK.HABIT_SWIPE_HINT_SEEN),
-  );
+  const [swipeHintSeen] = useState(() => !!storageGetRaw(SK.HABIT_SWIPE_HINT_SEEN));
   const swipeHintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // List display state
-  const [categoryFilter, setCategoryFilter] = useState<
-    Habit["category"] | "all"
-  >("all");
+  const [categoryFilter, setCategoryFilter] = useState<Habit["category"] | "all">("all");
 
   // Celebration states
   const [showAllComplete, setShowAllComplete] = useState(false);
@@ -81,12 +74,8 @@ export const HabitTracker = memo(function HabitTracker({
   } | null>(null);
 
   // Refs for celebration/debounce timeouts
-  const celebrationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null,
-  );
-  const celebrationHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null,
-  );
+  const celebrationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const celebrationHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const toggleDebounceRef = useRef<Set<string>>(new Set());
   const debounceTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
 
@@ -94,10 +83,8 @@ export const HabitTracker = memo(function HabitTracker({
   useEffect(() => {
     return () => {
       if (swipeHintTimerRef.current) clearTimeout(swipeHintTimerRef.current);
-      if (celebrationTimerRef.current)
-        clearTimeout(celebrationTimerRef.current);
-      if (celebrationHideTimerRef.current)
-        clearTimeout(celebrationHideTimerRef.current);
+      if (celebrationTimerRef.current) clearTimeout(celebrationTimerRef.current);
+      if (celebrationHideTimerRef.current) clearTimeout(celebrationHideTimerRef.current);
       if (debounceTimeoutRef.current) clearTimeout(debounceTimeoutRef.current);
     };
   }, []);
@@ -106,10 +93,7 @@ export const HabitTracker = memo(function HabitTracker({
   const activeChallengesCount = useMemo(() => getActiveChallenges().length, []);
 
   // Stable callback for celebration completion (avoids re-creating on every render)
-  const handleCelebrationComplete = useCallback(
-    () => setCelebrationData(null),
-    [],
-  );
+  const handleCelebrationComplete = useCallback(() => setCelebrationData(null), []);
 
   // Memoized completion status map (entry-based model)
   const completionStatusMap = useMemo(() => {
@@ -129,7 +113,7 @@ export const HabitTracker = memo(function HabitTracker({
     (habit: Habit) => {
       return completionStatusMap.get(habit.id) ?? false;
     },
-    [completionStatusMap],
+    [completionStatusMap]
   );
 
   // In Loop model, all non-archived habits are shown — frequency affects scoring, not visibility
@@ -137,10 +121,7 @@ export const HabitTracker = memo(function HabitTracker({
     return habits.filter((h) => !h.isArchived);
   }, [habits]);
 
-  const dueIds = useMemo(
-    () => new Set(habitsDueToday.map((h) => h.id)),
-    [habitsDueToday],
-  );
+  const dueIds = useMemo(() => new Set(habitsDueToday.map((h) => h.id)), [habitsDueToday]);
 
   const completedTodayCount = useMemo(() => {
     let count = 0;
@@ -165,7 +146,7 @@ export const HabitTracker = memo(function HabitTracker({
       toggleDebounceRef.current.add(habit.id);
       debounceTimeoutRef.current = setTimeout(
         () => toggleDebounceRef.current.delete(habit.id),
-        500,
+        500
       );
 
       const wasCompleted = isCompletedToday(habit);
@@ -180,9 +161,7 @@ export const HabitTracker = memo(function HabitTracker({
           playSuccess();
         }
 
-        announceSuccess(
-          `${habit.icon} ${habit.name} ${t.habitCompleted || "completed"}`,
-        );
+        announceSuccess(`${habit.icon} ${habit.name} ${t.habitCompleted || "completed"}`);
 
         setCelebrationData({
           habitName: habit.name,
@@ -195,22 +174,17 @@ export const HabitTracker = memo(function HabitTracker({
           .filter((h) => h.id !== habit.id)
           .every((h) => isCompletedToday(h));
         if (otherHabitsCompleted && habits.length > 1) {
-          if (celebrationTimerRef.current)
-            clearTimeout(celebrationTimerRef.current);
+          if (celebrationTimerRef.current) clearTimeout(celebrationTimerRef.current);
           celebrationTimerRef.current = setTimeout(() => {
             setShowAllComplete(true);
             playLevelUp();
-            if (celebrationHideTimerRef.current)
-              clearTimeout(celebrationHideTimerRef.current);
-            celebrationHideTimerRef.current = setTimeout(
-              () => setShowAllComplete(false),
-              4000,
-            );
+            if (celebrationHideTimerRef.current) clearTimeout(celebrationHideTimerRef.current);
+            celebrationHideTimerRef.current = setTimeout(() => setShowAllComplete(false), 4000);
           }, 1800);
         }
       }
     },
-    [habits, onToggleHabit, today, t, isCompletedToday],
+    [habits, onToggleHabit, today, t, isCompletedToday]
   );
 
   return (
@@ -219,7 +193,7 @@ export const HabitTracker = memo(function HabitTracker({
         "rounded-2xl p-6 animate-fade-in transition-all relative overflow-hidden",
         isPrimaryCTA
           ? "ring-2 ring-emerald-500/40 shadow-lg shadow-emerald-500/20"
-          : "bg-card zen-shadow-card",
+          : "bg-card zen-shadow-card"
       )}
     >
       {/* Nature Energy Background */}
@@ -277,9 +251,7 @@ export const HabitTracker = memo(function HabitTracker({
         <h3
           className={cn(
             "font-semibold",
-            isPrimaryCTA
-              ? "text-xl text-slate-800 dark:text-white"
-              : "text-lg text-foreground",
+            isPrimaryCTA ? "text-xl text-slate-800 dark:text-white" : "text-lg text-foreground"
           )}
         >
           {t.habits}
@@ -329,29 +301,18 @@ export const HabitTracker = memo(function HabitTracker({
                 e.preventDefault();
                 form.setIsAdding(!form.isAdding);
               }}
-              aria-label={
-                form.isAdding ? t.cancel || "Cancel" : t.addHabit || "Add habit"
-              }
+              aria-label={form.isAdding ? t.cancel || "Cancel" : t.addHabit || "Add habit"}
               className={cn(
                 "w-11 h-11 rounded-xl flex items-center justify-center transition-all",
                 form.isAdding
                   ? "bg-red-500/30 border border-red-500/50 text-red-300"
-                  : "bg-gradient-to-br from-emerald-500/60 to-teal-600/60 border border-emerald-500/30 text-white",
+                  : "bg-gradient-to-br from-emerald-500/60 to-teal-600/60 border border-emerald-500/30 text-white"
               )}
-              style={
-                !form.isAdding
-                  ? { boxShadow: "0 0 12px rgba(16, 185, 129, 0.3)" }
-                  : {}
-              }
+              style={!form.isAdding ? { boxShadow: "0 0 12px rgba(16, 185, 129, 0.3)" } : {}}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              <Plus
-                className={cn(
-                  "w-5 h-5 transition-transform",
-                  form.isAdding && "rotate-45",
-                )}
-              />
+              <Plus className={cn("w-5 h-5 transition-transform", form.isAdding && "rotate-45")} />
             </motion.button>
           ) : (
             <Button
@@ -362,9 +323,7 @@ export const HabitTracker = memo(function HabitTracker({
                 form.setIsAdding(!form.isAdding);
               }}
               className={cn(form.isAdding && "rotate-45")}
-              aria-label={
-                form.isAdding ? t.cancel || "Cancel" : t.addHabit || "Add habit"
-              }
+              aria-label={form.isAdding ? t.cancel || "Cancel" : t.addHabit || "Add habit"}
             >
               <Plus className="w-5 h-5" />
             </Button>
@@ -373,11 +332,7 @@ export const HabitTracker = memo(function HabitTracker({
       </div>
 
       {/* Form */}
-      <HabitCreationForm
-        form={form}
-        habits={habits}
-        isPrimaryCTA={isPrimaryCTA}
-      />
+      <HabitCreationForm form={form} habits={habits} isPrimaryCTA={isPrimaryCTA} />
 
       {/* Habit List */}
       {habits.length === 0 ? (
@@ -402,7 +357,7 @@ export const HabitTracker = memo(function HabitTracker({
                   "snap-start px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all min-h-[44px]",
                   categoryFilter === "all"
                     ? "bg-primary text-primary-foreground shadow-sm"
-                    : "bg-secondary text-muted-foreground hover:bg-muted",
+                    : "bg-secondary text-muted-foreground hover:bg-muted"
                 )}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
@@ -410,9 +365,7 @@ export const HabitTracker = memo(function HabitTracker({
                 {t.all || "All"} ({habits.length})
               </motion.button>
               {habitCategories.map(({ id, icon }) => {
-                const count = habits.filter(
-                  (h) => (h.category || "health") === id,
-                ).length;
+                const count = habits.filter((h) => (h.category || "health") === id).length;
                 if (count === 0) return null;
                 return (
                   <motion.button
@@ -422,7 +375,7 @@ export const HabitTracker = memo(function HabitTracker({
                       "snap-start px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all flex items-center gap-1 min-h-[44px]",
                       categoryFilter === id
                         ? "bg-primary text-primary-foreground shadow-sm"
-                        : "bg-secondary text-muted-foreground hover:bg-muted",
+                        : "bg-secondary text-muted-foreground hover:bg-muted"
                     )}
                     whileHover={{ scale: 1.02 }}
                     whileTap={zenTap.card}
@@ -434,29 +387,49 @@ export const HabitTracker = memo(function HabitTracker({
             </div>
           )}
 
-          <div
-            role="list"
-            aria-label={t.habits || "Habits"}
-            className="space-y-2"
-          >
-            {filteredHabits.map((habit) => (
-              <CompactHabitCard
-                key={habit.id}
-                habit={habit}
-                onToggle={() => handleHabitToggle(habit)}
-                onAdjust={onAdjustHabit}
-                onDelete={(id: string) => {
-                  onDeleteHabit(id);
-                  void hapticTap();
-                }}
-                onEdit={onUpdateHabit ? form.handleEditHabit : undefined}
-                onChallenge={
-                  onOpenChallenge ? (h) => onOpenChallenge(h) : undefined
-                }
-                streak={habitStreaks.get(habit.id) || 0}
-                isDueToday={dueIds.has(habit.id)}
-              />
-            ))}
+          <div className="@container">
+            <div
+              role="list"
+              aria-label={t.habits || "Habits"}
+              className="grid gap-2 grid-cols-1 @sm:grid-cols-2 @lg:grid-cols-3 @xl:grid-cols-4 @[80rem]:grid-cols-5"
+            >
+              {filteredHabits.map((habit) => (
+                // A11Y-OK: ContextMenu uses Radix with built-in aria; trigger is CompactHabitCard with its own aria-labels
+                <ContextMenu
+                  key={habit.id}
+                  enabled={isMouse}
+                  trigger={
+                    <CompactHabitCard
+                      habit={habit}
+                      onToggle={() => handleHabitToggle(habit)}
+                      onAdjust={onAdjustHabit}
+                      onDelete={(id: string) => {
+                        onDeleteHabit(id);
+                        void hapticTap();
+                      }}
+                      onEdit={onUpdateHabit ? form.handleEditHabit : undefined}
+                      onChallenge={onOpenChallenge ? (h) => onOpenChallenge(h) : undefined}
+                      streak={habitStreaks.get(habit.id) || 0}
+                      isDueToday={dueIds.has(habit.id)}
+                    />
+                  }
+                  items={[
+                    { label: t.complete || "Complete", action: () => handleHabitToggle(habit) },
+                    ...(onUpdateHabit
+                      ? [{ label: t.edit || "Edit", action: () => form.handleEditHabit(habit) }]
+                      : []),
+                    {
+                      label: t.delete || "Delete",
+                      action: () => {
+                        onDeleteHabit(habit.id);
+                        void hapticTap();
+                      },
+                      destructive: true,
+                    },
+                  ]}
+                />
+              ))}
+            </div>
           </div>
 
           {habits.length > 0 && !swipeHintSeen && (
@@ -492,9 +465,7 @@ export const HabitTracker = memo(function HabitTracker({
           onComplete={handleCelebrationComplete}
         />
       )}
-      {showAllComplete && (
-        <AllHabitsComplete onClose={() => setShowAllComplete(false)} />
-      )}
+      {showAllComplete && <AllHabitsComplete onClose={() => setShowAllComplete(false)} />}
     </div>
   );
 });

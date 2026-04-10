@@ -6,19 +6,38 @@
  * CSS @keyframes (Constitution §14: 60fps Android guarantee).
  */
 
-import { useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { useMemo, useState, useEffect, useCallback } from "react";
+import { motion } from "framer-motion";
 import {
-  Flower2, TreePine, Gem, Clover, BookOpen, Wind, Moon,
-  Bird, Bug, Sparkles, Ghost,
-  Heart, Sprout,
+  Flower2,
+  TreePine,
+  Gem,
+  Clover,
+  BookOpen,
+  Wind,
+  Moon,
+  Bird,
+  Bug,
+  Sparkles,
+  Ghost,
+  Heart,
+  Sprout,
   type LucideIcon,
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { motionPresets } from '@/lib/animationUtils';
-import { useLanguage } from '@/contexts/LanguageContext';
-import type { InnerWorld, GardenPlant, GardenCreature, PlantType, PlantStage, CreatureType, Season, GardenStage } from '@/types';
-import type { GardenAtmosphere } from '@/lib/gardenAtmosphere';
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { motionPresets } from "@/lib/animationUtils";
+import { useLanguage } from "@/contexts/LanguageContext";
+import type {
+  InnerWorld,
+  GardenPlant,
+  GardenCreature,
+  PlantType,
+  PlantStage,
+  CreatureType,
+  Season,
+  GardenStage,
+} from "@/types";
+import type { GardenAtmosphere } from "@/lib/gardenAtmosphere";
 
 // ── Icon Maps (lucide-react ONLY, NO emojis) ──
 
@@ -52,19 +71,19 @@ export const STAGE_SCALE: Record<PlantStage, { scale: number; opacity: number }>
 // ── Atmosphere → gradient classes ──
 
 const SEASONAL_GRADIENTS: Record<Season, string> = {
-  spring: 'from-emerald-50 to-green-100 dark:from-emerald-950/60 dark:to-green-950/40',
-  summer: 'from-amber-50 to-yellow-100 dark:from-amber-950/60 dark:to-yellow-950/40',
-  autumn: 'from-orange-50 to-amber-100 dark:from-orange-950/60 dark:to-amber-950/40',
-  winter: 'from-sky-50 to-slate-100 dark:from-sky-950/60 dark:to-slate-950/40',
+  spring: "from-emerald-50 to-green-100 dark:from-emerald-950/60 dark:to-green-950/40",
+  summer: "from-amber-50 to-yellow-100 dark:from-amber-950/60 dark:to-yellow-950/40",
+  autumn: "from-orange-50 to-amber-100 dark:from-orange-950/60 dark:to-amber-950/40",
+  winter: "from-sky-50 to-slate-100 dark:from-sky-950/60 dark:to-slate-950/40",
 };
 
 const ATMOSPHERE_GRADIENTS: Record<GardenAtmosphere, string> = {
-  default: '', // filled dynamically by season
-  focused: 'from-slate-100 to-blue-50 dark:from-slate-900 dark:to-blue-950',
-  restful: 'from-indigo-50 to-purple-50 dark:from-indigo-950 dark:to-purple-950',
-  social: 'from-rose-50 to-pink-50 dark:from-rose-950 dark:to-pink-950',
-  energetic: 'from-amber-50 to-orange-50 dark:from-amber-950 dark:to-orange-950',
-  creative: 'from-violet-50 to-fuchsia-50 dark:from-violet-950 dark:to-fuchsia-950',
+  default: "", // filled dynamically by season
+  focused: "from-slate-100 to-blue-50 dark:from-slate-900 dark:to-blue-950",
+  restful: "from-indigo-50 to-purple-50 dark:from-indigo-950 dark:to-purple-950",
+  social: "from-rose-50 to-pink-50 dark:from-rose-950 dark:to-pink-950",
+  energetic: "from-amber-50 to-orange-50 dark:from-amber-950 dark:to-orange-950",
+  creative: "from-violet-50 to-fuchsia-50 dark:from-violet-950 dark:to-fuchsia-950",
 };
 
 // ── Component ──
@@ -75,34 +94,74 @@ interface GardenCanvasProps {
 }
 
 const STAGE_I18N_KEYS: Record<GardenStage, string> = {
-  empty: 'gardenStageEmpty',
-  sprouting: 'gardenStageSprouting',
-  growing: 'gardenStageGrowing',
-  flourishing: 'gardenStageFlourishing',
-  magical: 'gardenStageMagical',
-  legendary: 'gardenStageLegendary',
+  empty: "gardenStageEmpty",
+  sprouting: "gardenStageSprouting",
+  growing: "gardenStageGrowing",
+  flourishing: "gardenStageFlourishing",
+  magical: "gardenStageMagical",
+  legendary: "gardenStageLegendary",
 };
 
 export function GardenCanvas({ world, atmosphere }: GardenCanvasProps) {
   const { t } = useLanguage();
   const { plants, creatures, companion, season, gardenStage, activeEffects } = world;
 
+  // Interactive state — keyboard shortcuts for desktop
+  const [zoom, setZoom] = useState(1);
+  const [rotation, setRotation] = useState(0);
+
+  const zoomIn = useCallback(() => setZoom((z) => Math.min(z + 0.1, 2)), []);
+  const zoomOut = useCallback(() => setZoom((z) => Math.max(z - 0.1, 0.5)), []);
+  const rotate = useCallback(() => setRotation((r) => (r + 15) % 360), []);
+  const resetView = useCallback(() => {
+    setZoom(1);
+    setRotation(0);
+  }, []);
+
+  // Garden keyboard shortcuts: +/- zoom, r rotate, 0 reset
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      switch (e.key) {
+        case "+":
+        case "=":
+          zoomIn();
+          break;
+        case "-":
+          zoomOut();
+          break;
+        case "r":
+          rotate();
+          break;
+        case "0":
+          resetView();
+          break;
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [zoomIn, zoomOut, rotate, resetView]);
+
   const isWindActive = useMemo(() => {
     if (!activeEffects?.wind?.until) return false;
     return Date.now() < activeEffects.wind.until;
   }, [activeEffects?.wind?.until]);
 
-  const gradientClass = atmosphere === 'default'
-    ? SEASONAL_GRADIENTS[season] || SEASONAL_GRADIENTS.spring
-    : ATMOSPHERE_GRADIENTS[atmosphere];
+  const gradientClass =
+    atmosphere === "default"
+      ? SEASONAL_GRADIENTS[season] || SEASONAL_GRADIENTS.spring
+      : ATMOSPHERE_GRADIENTS[atmosphere];
 
   return (
-    <motion.div
-      {...motionPresets.slideUp}
-      className="rounded-xl bg-card overflow-hidden"
-    >
-      {/* Atmosphere gradient background */}
-      <div className={cn('relative min-h-[280px] bg-gradient-to-br', gradientClass)}>
+    <motion.div {...motionPresets.slideUp} className="rounded-xl bg-card overflow-hidden">
+      {/* Atmosphere gradient background — zoom/rotate via keyboard (+/-/r/0) */}
+      <div
+        className={cn(
+          "relative min-h-[280px] bg-gradient-to-br transition-transform duration-200",
+          gradientClass
+        )}
+        style={{ transform: `scale(${zoom}) rotate(${rotation}deg)` }}
+      >
         {/* Garden stage badge */}
         <div className="absolute top-3 end-3 z-10 rounded-full bg-background/80 backdrop-blur-sm px-2.5 py-1 border border-border/40">
           <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
@@ -111,7 +170,7 @@ export function GardenCanvas({ world, atmosphere }: GardenCanvasProps) {
         </div>
 
         {/* Flora container — wind sway applies to all plants when active */}
-        <div className={cn('absolute inset-0', isWindActive && 'animate-wind-sway')}>
+        <div className={cn("absolute inset-0", isWindActive && "animate-wind-sway")}>
           {plants.map((plant) => (
             <PlantIcon key={plant.id} plant={plant} />
           ))}
@@ -129,19 +188,17 @@ export function GardenCanvas({ world, atmosphere }: GardenCanvasProps) {
           <div className="animate-garden-breathe rounded-full bg-background/70 backdrop-blur-sm p-2 border border-border/30">
             <Heart
               className={cn(
-                'w-5 h-5',
-                companion.mood === 'celebrating' || companion.mood === 'excited'
-                  ? 'text-rose-500'
-                  : companion.mood === 'sleeping'
-                    ? 'text-indigo-400'
-                    : 'text-pink-400'
+                "w-5 h-5",
+                companion.mood === "celebrating" || companion.mood === "excited"
+                  ? "text-rose-500"
+                  : companion.mood === "sleeping"
+                    ? "text-indigo-400"
+                    : "text-pink-400"
               )}
               fill="currentColor"
             />
           </div>
-          <span className="text-[9px] text-foreground/60 font-medium">
-            {companion.name}
-          </span>
+          <span className="text-[9px] text-foreground/60 font-medium">{companion.name}</span>
         </div>
 
         {/* Empty state */}
@@ -150,7 +207,7 @@ export function GardenCanvas({ world, atmosphere }: GardenCanvasProps) {
             <div className="text-center space-y-2">
               <Sprout className="w-8 h-8 text-muted-foreground/60 mx-auto" />
               <p className="text-xs text-muted-foreground/60">
-                {t.gardenGrowsHint || 'Your garden grows with every action'}
+                {t.gardenGrowsHint || "Your garden grows with every action"}
               </p>
             </div>
           </div>
@@ -165,15 +222,15 @@ export function GardenCanvas({ world, atmosphere }: GardenCanvasProps) {
 function PlantIcon({ plant }: { plant: GardenPlant }) {
   const Icon = PLANT_ICON_MAP[plant.type] || Flower2;
   const { scale, opacity } = STAGE_SCALE[plant.stage] || STAGE_SCALE.growing;
-  const isMagnificent = plant.stage === 'magnificent';
+  const isMagnificent = plant.stage === "magnificent";
   const baseSize = 20; // px
   const iconSize = Math.round(baseSize * scale);
 
   return (
     <div
       className={cn(
-        'absolute -translate-x-1/2 -translate-y-1/2 transition-none',
-        isMagnificent ? 'animate-zen-glow-breathe' : 'animate-garden-breathe',
+        "absolute -translate-x-1/2 -translate-y-1/2 transition-none",
+        isMagnificent ? "animate-zen-glow-breathe" : "animate-garden-breathe"
       )}
       style={{
         left: `${plant.position.x}%`,
@@ -184,9 +241,7 @@ function PlantIcon({ plant }: { plant: GardenPlant }) {
       }}
     >
       <Icon
-        className={cn(
-          plant.isSpecial && 'drop-shadow-[0_0_6px_currentColor]',
-        )}
+        className={cn(plant.isSpecial && "drop-shadow-[0_0_6px_currentColor]")}
         style={{ color: plant.color, width: iconSize, height: iconSize }}
       />
     </div>
@@ -195,14 +250,14 @@ function PlantIcon({ plant }: { plant: GardenPlant }) {
 
 function CreatureIcon({ creature }: { creature: GardenCreature }) {
   const Icon = CREATURE_ICON_MAP[creature.type] || Sparkles;
-  const isLegendary = creature.stage === 'legendary';
+  const isLegendary = creature.stage === "legendary";
   const size = isLegendary ? 18 : 14;
 
   return (
     <div
       className={cn(
-        'absolute -translate-x-1/2 -translate-y-1/2 animate-zen-float',
-        isLegendary && 'drop-shadow-[0_0_8px_currentColor]',
+        "absolute -translate-x-1/2 -translate-y-1/2 animate-zen-float",
+        isLegendary && "drop-shadow-[0_0_8px_currentColor]"
       )}
       style={{
         left: `${creature.position.x}%`,

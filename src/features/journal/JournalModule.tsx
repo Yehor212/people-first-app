@@ -38,6 +38,7 @@ import { logger } from "@/lib/logger";
 import { SK } from "@/lib/storageKeys";
 import { storageGetRaw, storageSetRaw, storageRemove } from "@/lib/safeJson";
 import { StickerRenderer } from "./StickerRenderer";
+import { PanelLayout, LayoutPanel, ResizeHandle } from "@/components/layout/PanelLayout";
 import { useJournalReminder, getDaysSinceLastEntry } from "./useJournalReminder";
 import { useScreenSecurity } from "./useScreenSecurity";
 import { ParticleBackground } from "@/components/stats/ParticleBackground";
@@ -788,143 +789,149 @@ export const JournalModule = memo(function JournalModule({
             <>
               {isLgScreen ? (
                 /* ═══ DESKTOP: Master-detail split ═══ */
-                <div className="flex flex-1 min-h-0 h-full">
+                <PanelLayout autoSaveId="journal-layout" className="flex-1 min-h-0">
                   {/* LEFT PANEL: always-visible list */}
-                  <div className="flex flex-col w-[360px] xl:w-[400px] border-e border-border/30 bg-card shrink-0 h-full overflow-hidden">
-                    {/* Header */}
-                    <div className="flex items-center justify-between px-4 py-3 border-b border-border/20">
-                      <div className="flex items-center gap-2">
-                        <h2 className="text-base font-bold text-foreground">
-                          {ts.journalTitle || "Diary"}
-                        </h2>
-                        {streak > 0 && (
-                          <span className="text-[10px] font-bold text-orange-500 bg-gradient-to-r from-orange-500/15 to-amber-500/10 border border-orange-500/10 px-1.5 py-0.5 rounded-full flex-shrink-0 animate-streak-fire-glow">
-                            {streak} {"\u{1F525}"}
-                          </span>
+                  <LayoutPanel defaultSize={30} minSize={20} maxSize={45}>
+                    <div className="flex flex-col border-e border-border/30 bg-card h-full overflow-hidden">
+                      {/* Header */}
+                      <div className="flex items-center justify-between px-4 py-3 border-b border-border/20">
+                        <div className="flex items-center gap-2">
+                          <h2 className="text-base font-bold text-foreground">
+                            {ts.journalTitle || "Diary"}
+                          </h2>
+                          {streak > 0 && (
+                            <span className="text-[10px] font-bold text-orange-500 bg-gradient-to-r from-orange-500/15 to-amber-500/10 border border-orange-500/10 px-1.5 py-0.5 rounded-full flex-shrink-0 animate-streak-fire-glow">
+                              {streak} {"\u{1F525}"}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => journal.openStats()}
+                            className="p-2 rounded-lg hover:bg-muted/50 text-muted-foreground min-w-[44px] min-h-[44px] flex items-center justify-center"
+                            title={ts.journalStatsTitle || "Statistics"}
+                            aria-label={ts.journalStatsTitle || "Statistics"}
+                          >
+                            <BarChart3 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => setShowPasswordSettings(true)}
+                            className="p-2 rounded-lg hover:bg-muted/50 text-muted-foreground min-w-[44px] min-h-[44px] flex items-center justify-center"
+                            title={ts.journalSettings || "Diary settings"}
+                            aria-label={ts.settings || "Settings"}
+                          >
+                            <Settings className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={handleClose}
+                            className="p-2 rounded-lg hover:bg-muted/50 min-w-[44px] min-h-[44px] flex items-center justify-center"
+                            aria-label={ts.close || "Close"}
+                          >
+                            <X className="w-5 h-5 text-foreground" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Calendar */}
+                      <div className="px-4 py-2 border-b border-border/20">
+                        {calendarMode === "full" ? (
+                          <JournalCalendarFull
+                            entryDates={journal.entryDates}
+                            selectedDate={journal.selectedDate}
+                            onSelectDate={journal.setSelectedDate}
+                            onToggleMode={() => {
+                              setCalendarMode("strip");
+                              storageSetRaw(SK.JOURNAL_CALENDAR_MODE, "strip");
+                            }}
+                          />
+                        ) : (
+                          <JournalCalendar
+                            entryDates={journal.entryDates}
+                            selectedDate={journal.selectedDate}
+                            onSelectDate={journal.setSelectedDate}
+                            onToggleMode={() => {
+                              setCalendarMode("full");
+                              storageSetRaw(SK.JOURNAL_CALENDAR_MODE, "full");
+                            }}
+                          />
                         )}
                       </div>
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => journal.openStats()}
-                          className="p-2 rounded-lg hover:bg-muted/50 text-muted-foreground min-w-[44px] min-h-[44px] flex items-center justify-center"
-                          title={ts.journalStatsTitle || "Statistics"}
-                          aria-label={ts.journalStatsTitle || "Statistics"}
-                        >
-                          <BarChart3 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => setShowPasswordSettings(true)}
-                          className="p-2 rounded-lg hover:bg-muted/50 text-muted-foreground min-w-[44px] min-h-[44px] flex items-center justify-center"
-                          title={ts.journalSettings || "Diary settings"}
-                          aria-label={ts.settings || "Settings"}
-                        >
-                          <Settings className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={handleClose}
-                          className="p-2 rounded-lg hover:bg-muted/50 min-w-[44px] min-h-[44px] flex items-center justify-center"
-                          aria-label={ts.close || "Close"}
-                        >
-                          <X className="w-5 h-5 text-foreground" />
-                        </button>
+
+                      {/* Entry list */}
+                      <div className="relative flex-1 overflow-y-auto px-3 py-3">
+                        <div className="relative z-[1]">
+                          <JournalEntryList
+                            groupedEntries={journal.groupedEntries}
+                            onOpenEntry={journal.openEntry}
+                            onDeleteEntry={handleDeleteEntry}
+                            onNewEntry={handleNewEntry}
+                            totalCount={journal.totalCount}
+                            loading={journal.loading}
+                            daysSinceLastEntry={daysSinceLastEntry}
+                            privateMode={privateMode}
+                            onAddGratitude={onAddGratitude}
+                            compact
+                          />
+                        </div>
                       </div>
                     </div>
+                  </LayoutPanel>
 
-                    {/* Calendar */}
-                    <div className="px-4 py-2 border-b border-border/20">
-                      {calendarMode === "full" ? (
-                        <JournalCalendarFull
-                          entryDates={journal.entryDates}
-                          selectedDate={journal.selectedDate}
-                          onSelectDate={journal.setSelectedDate}
-                          onToggleMode={() => {
-                            setCalendarMode("strip");
-                            storageSetRaw(SK.JOURNAL_CALENDAR_MODE, "strip");
-                          }}
-                        />
-                      ) : (
-                        <JournalCalendar
-                          entryDates={journal.entryDates}
-                          selectedDate={journal.selectedDate}
-                          onSelectDate={journal.setSelectedDate}
-                          onToggleMode={() => {
-                            setCalendarMode("full");
-                            storageSetRaw(SK.JOURNAL_CALENDAR_MODE, "full");
-                          }}
-                        />
-                      )}
-                    </div>
-
-                    {/* Entry list */}
-                    <div className="relative flex-1 overflow-y-auto px-3 py-3">
-                      <div className="relative z-[1]">
-                        <JournalEntryList
-                          groupedEntries={journal.groupedEntries}
-                          onOpenEntry={journal.openEntry}
-                          onDeleteEntry={handleDeleteEntry}
-                          onNewEntry={handleNewEntry}
-                          totalCount={journal.totalCount}
-                          loading={journal.loading}
-                          daysSinceLastEntry={daysSinceLastEntry}
-                          privateMode={privateMode}
-                          onAddGratitude={onAddGratitude}
-                          compact
-                        />
-                      </div>
-                    </div>
-                  </div>
+                  <ResizeHandle />
 
                   {/* RIGHT PANEL: editor / viewer / stats / empty */}
-                  <div className="flex-1 flex flex-col min-w-0 h-full bg-background">
-                    {journal.view === "editing" ? (
-                      <JournalEntryEditor
-                        entry={journal.activeEntry}
-                        onSave={handleSaveEntry}
-                        onAddPhoto={journal.addPhoto}
-                        onRemovePhoto={journal.removePhoto}
-                        onAddAudio={journal.addAudio}
-                        onRemoveAudio={journal.removeAudio}
-                        onDelete={
-                          journal.activeEntryId
-                            ? () => handleDeleteEntry(journal.activeEntryId!)
-                            : undefined
-                        }
-                        onBack={journal.goBack}
-                        onToggleHabit={onToggleHabit}
-                        onAddGratitude={onAddGratitude}
-                        desktop
-                      />
-                    ) : journal.view === "viewing" && journal.activeEntry ? (
-                      <JournalEntryViewer
-                        entry={journal.activeEntry}
-                        onEdit={() => journal.editEntry(journal.activeEntryId)}
-                        onDelete={() => handleDeleteEntry(journal.activeEntry?.id || "")}
-                        onBack={journal.goBack}
-                      />
-                    ) : journal.view === "stats" ? (
-                      <Suspense
-                        fallback={
-                          <div className="flex-1 flex items-center justify-center">
-                            <Loader2
-                              className="w-6 h-6 animate-spin text-primary"
-                              aria-label={t.loading || "Loading..."}
-                            />
-                          </div>
-                        }
-                      >
-                        <LazyJournalStats entries={journal.allEntries} onBack={journal.goBack} />
-                      </Suspense>
-                    ) : (
-                      /* Empty state — no entry selected */
-                      <div className="flex-1 flex flex-col items-center justify-center gap-4 select-none">
-                        <PenLine className="w-16 h-16 text-muted-foreground/40" />
-                        <p className="text-sm text-muted-foreground">
-                          {ts.journalSelectEntry || "Select an entry or start writing"}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                  <LayoutPanel defaultSize={70} maxSize={85}>
+                    <div className="flex flex-col min-w-0 h-full bg-background">
+                      {journal.view === "editing" ? (
+                        <JournalEntryEditor
+                          entry={journal.activeEntry}
+                          onSave={handleSaveEntry}
+                          onAddPhoto={journal.addPhoto}
+                          onRemovePhoto={journal.removePhoto}
+                          onAddAudio={journal.addAudio}
+                          onRemoveAudio={journal.removeAudio}
+                          onDelete={
+                            journal.activeEntryId
+                              ? () => handleDeleteEntry(journal.activeEntryId!)
+                              : undefined
+                          }
+                          onBack={journal.goBack}
+                          onToggleHabit={onToggleHabit}
+                          onAddGratitude={onAddGratitude}
+                          desktop
+                        />
+                      ) : journal.view === "viewing" && journal.activeEntry ? (
+                        <JournalEntryViewer
+                          entry={journal.activeEntry}
+                          onEdit={() => journal.editEntry(journal.activeEntryId)}
+                          onDelete={() => handleDeleteEntry(journal.activeEntry?.id || "")}
+                          onBack={journal.goBack}
+                        />
+                      ) : journal.view === "stats" ? (
+                        <Suspense
+                          fallback={
+                            <div className="flex-1 flex items-center justify-center">
+                              <Loader2
+                                className="w-6 h-6 animate-spin text-primary"
+                                aria-label={t.loading || "Loading..."}
+                              />
+                            </div>
+                          }
+                        >
+                          <LazyJournalStats entries={journal.allEntries} onBack={journal.goBack} />
+                        </Suspense>
+                      ) : (
+                        /* Empty state — no entry selected */
+                        <div className="flex-1 flex flex-col items-center justify-center gap-4 select-none">
+                          <PenLine className="w-16 h-16 text-muted-foreground/40" />
+                          <p className="text-sm text-muted-foreground">
+                            {ts.journalSelectEntry || "Select an entry or start writing"}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </LayoutPanel>
+                </PanelLayout>
               ) : (
                 /* ═══ MOBILE: existing single-view behavior ═══ */
                 <>

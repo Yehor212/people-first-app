@@ -1,10 +1,11 @@
-import { useState, useEffect, memo } from "react";
-import { X, Trash2, ZoomIn } from "lucide-react";
+import { useState, useEffect, useCallback, memo } from "react";
+import { X, Trash2, ZoomIn, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { useBackHandler } from "@/hooks/useBackHandler";
 import { useModalA11y } from "@/hooks/useModalA11y";
+import { useDeviceTier } from "@/hooks/useDeviceTier";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { JournalPhoto } from "./types";
 import { getPhotosForEntry, getPhotoById } from "./journalStorage";
@@ -27,14 +28,42 @@ export const JournalPhotoGallery = memo(function JournalPhotoGallery({
 }: JournalPhotoGalleryProps) {
   const { t } = useLanguage();
   const ts = t as unknown as Record<string, string>;
+  const { isDesktopClass } = useDeviceTier();
   const [photos, setPhotos] = useState<JournalPhoto[]>([]);
   const [lightboxPhoto, setLightboxPhoto] = useState<JournalPhoto | null>(null);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
   const [fullData, setFullData] = useState<string | null>(null);
 
   const closeLightbox = () => {
     setLightboxPhoto(null);
     setFullData(null);
   };
+
+  const navigateLightbox = useCallback(
+    (direction: -1 | 1) => {
+      if (photos.length <= 1) return;
+      const nextIndex = (lightboxIndex + direction + photos.length) % photos.length;
+      const nextPhoto = photos[nextIndex];
+      setLightboxIndex(nextIndex);
+      setLightboxPhoto(nextPhoto);
+      setFullData(null);
+      getPhotoById(nextPhoto.id)
+        .then((full) => setFullData(full?.data ?? nextPhoto.thumbnail))
+        .catch(() => setFullData(nextPhoto.thumbnail));
+    },
+    [photos, lightboxIndex]
+  );
+
+  // Keyboard navigation in lightbox
+  useEffect(() => {
+    if (!lightboxPhoto) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft") navigateLightbox(-1);
+      if (e.key === "ArrowRight") navigateLightbox(1);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [lightboxPhoto, navigateLightbox]);
 
   useScrollLock(!!lightboxPhoto);
   useBackHandler(!!lightboxPhoto, closeLightbox);
@@ -55,8 +84,9 @@ export const JournalPhotoGallery = memo(function JournalPhotoGallery({
       }); // graceful: photo display, not data mutation
   }, [entryId, photoIds]);
 
-  const openLightbox = async (photo: JournalPhoto) => {
+  const openLightbox = async (photo: JournalPhoto, index: number) => {
     setLightboxPhoto(photo);
+    setLightboxIndex(index);
     const full = await getPhotoById(photo.id);
     setFullData(full?.data ?? photo.thumbnail);
   };
@@ -66,11 +96,17 @@ export const JournalPhotoGallery = memo(function JournalPhotoGallery({
   return (
     <>
       {/* Thumbnail grid */}
-      <div className="flex gap-2 overflow-x-auto scrollbar-hide py-1 lg:flex-wrap lg:overflow-x-visible lg:gap-3">
-        {photos.map((photo) => (
+      <div
+        className={cn(
+          isDesktopClass
+            ? "grid grid-cols-3 gap-2 xl:grid-cols-4"
+            : "flex gap-2 overflow-x-auto scrollbar-hide py-1"
+        )}
+      >
+        {photos.map((photo, index) => (
           <div key={photo.id} className="relative flex-shrink-0 group">
             <button
-              onClick={() => openLightbox(photo)}
+              onClick={() => openLightbox(photo, index)}
               className="block rounded-xl overflow-hidden shadow-sm"
             >
               <img
@@ -78,7 +114,10 @@ export const JournalPhotoGallery = memo(function JournalPhotoGallery({
                 alt=""
                 width={64}
                 height={64}
-                className="w-16 h-16 lg:w-24 lg:h-24 object-cover rounded-xl"
+                className={cn(
+                  "object-cover rounded-xl",
+                  isDesktopClass ? "w-full aspect-square" : "w-16 h-16"
+                )}
                 loading="lazy"
               />
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors rounded-xl flex items-center justify-center">
@@ -144,7 +183,41 @@ export const JournalPhotoGallery = memo(function JournalPhotoGallery({
               </button>
             )}
 
+            {/* Prev/Next navigation */}
+            {photos.length > 1 && (
+              <>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigateLightbox(-1);
+                  }}
+                  className="absolute start-4 top-1/2 -translate-y-1/2 p-2.5 bg-white/10 hover:bg-white/20 rounded-full z-10 min-w-[44px] min-h-[44px] flex items-center justify-center transition-colors"
+                  aria-label="Previous photo"
+                >
+                  <ChevronLeft className="w-5 h-5 text-white" />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigateLightbox(1);
+                  }}
+                  className="absolute end-4 top-1/2 -translate-y-1/2 p-2.5 bg-white/10 hover:bg-white/20 rounded-full z-10 min-w-[44px] min-h-[44px] flex items-center justify-center transition-colors"
+                  aria-label="Next photo"
+                >
+                  <ChevronRight className="w-5 h-5 text-white" />
+                </button>
+              </>
+            )}
+
+            {/* Photo counter */}
+            {photos.length > 1 && (
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1 bg-black/50 rounded-full text-xs text-white/80 z-10">
+                {lightboxIndex + 1} / {photos.length}
+              </div>
+            )}
+
             <motion.img
+              key={lightboxPhoto.id}
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}

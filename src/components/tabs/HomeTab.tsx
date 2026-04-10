@@ -9,6 +9,7 @@ import { RestModeCard } from "@/components/RestModeCard";
 import { AllCompleteCelebration } from "@/components/AllCompleteCelebration";
 import { ReflectionPromptCard } from "@/components/ReflectionPromptCard";
 import { StateOfMindModal } from "@/components/state-of-mind/StateOfMindModal";
+import { BentoGrid, BentoCard } from "@/components/layout/BentoGrid";
 import { useFeatureFlags } from "@/contexts/FeatureFlagsContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAppStore, useUserDataStore, getModalToggle } from "@/stores";
@@ -161,23 +162,31 @@ export const HomeTab = memo(function HomeTab({
           />
         )}
 
-        <div className="space-y-5">
-          <DayProgressIndicator />
+        <BentoGrid>
+          <BentoCard span="row">
+            <DayProgressIndicator />
+          </BentoCard>
 
           {/* Contextual reflection prompt (IA Blueprint Phase 3) */}
           {reflectionPrompts.length > 0 && !isRestMode && (
-            <ReflectionPromptCard prompt={reflectionPrompts[0]} />
+            <BentoCard span="2">
+              <ReflectionPromptCard prompt={reflectionPrompts[0]} />
+            </BentoCard>
           )}
 
           {isRestMode ? (
-            <RestModeCard streak={currentActiveStreak} onCancel={deactivateRestMode} />
+            <BentoCard span="2">
+              <RestModeCard streak={currentActiveStreak} onCancel={deactivateRestMode} />
+            </BentoCard>
           ) : currentPrimaryCTA === "complete" ? (
-            <AllCompleteCelebration streak={currentActiveStreak} />
+            <BentoCard span="2">
+              <AllCompleteCelebration streak={currentActiveStreak} />
+            </BentoCard>
           ) : null}
 
           {/* Mood block — always accessible regardless of state */}
-          {moodBlock}
-        </div>
+          <BentoCard span="2">{moodBlock}</BentoCard>
+        </BentoGrid>
       </PullToRefresh>
 
       {/* State of Mind modal */}

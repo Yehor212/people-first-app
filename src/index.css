@@ -4536,3 +4536,87 @@ body.reduce-motion .diary-animated {
 body.reduce-motion .som-label-enter {
   animation: none;
 }
+
+/* ═══ Cross-Platform Micro-Interactions (Phase 7) ═══ */
+
+/* Card hover lift — desktop only */
+.card-hover {
+  transition:
+    transform 120ms ease-out,
+    box-shadow 120ms ease-out;
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--zen-shadow-lg, 0 10px 15px -3px rgb(0 0 0 / 0.1));
+}
+
+/* Button press feedback */
+button:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+/* Keyboard-only focus ring */
+:focus-visible {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 2px;
+  transition: outline-offset 100ms;
+}
+
+/* Theme color transitions */
+.adaptive-shell,
+.adaptive-shell *,
+.adaptive-shell *::before,
+.adaptive-shell *::after {
+  transition:
+    color 200ms,
+    background-color 200ms,
+    border-color 200ms;
+}
+
+/* Reduced motion: disable ALL animations and transitions */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ═══ Tier-Specific Information Density ═══ */
+
+/* Phone defaults (inherited by all) */
+:root {
+  --base-font-size: 16px;
+  --touch-target-min: 44px;
+  --line-height-body: 1.5;
+  --content-density: comfortable;
+}
+
+/* Tablet: same touch targets, slightly tighter */
+@media (min-width: 768px) {
+  :root {
+    --line-height-body: 1.5;
+    --content-density: balanced;
+  }
+}
+
+/* Laptop: tighter density for information-rich layouts */
+@media (min-width: 1024px) {
+  :root {
+    --base-font-size: 15px;
+    --touch-target-min: 32px;
+    --line-height-body: 1.55;
+    --content-density: compact;
+  }
+}
+
+/* Desktop: maximum information density */
+@media (min-width: 1440px) {
+  :root {
+    --line-height-body: 1.6;
+    --content-density: dense;
+  }
+}

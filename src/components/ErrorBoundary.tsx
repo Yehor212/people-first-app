@@ -118,6 +118,51 @@ class ErrorBoundaryBase extends React.Component<ErrorBoundaryBaseProps, ErrorBou
       return this.props.children;
     }
 
+    // Desktop: inline error panel instead of full-screen takeover
+    const tier = document.documentElement.dataset.deviceTier;
+    const isDesktop = tier === "laptop" || tier === "desktop";
+
+    if (isDesktop) {
+      return (
+        <div className="p-6 m-4 border border-destructive/20 rounded-2xl bg-card">
+          <div className="flex flex-col items-center gap-3 text-center max-w-sm mx-auto">
+            <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center">
+              <svg
+                className="w-6 h-6 text-destructive"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+            </div>
+            <h2 className="text-base font-semibold text-foreground">{this.props.title}</h2>
+            <p className="text-sm text-muted-foreground">{this.props.body}</p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => this.props.onExport(this.state.error)}
+                className="px-4 py-2 bg-secondary text-secondary-foreground rounded-xl text-sm font-medium hover:bg-muted transition-colors"
+              >
+                {this.props.exportLabel}
+              </button>
+              <button
+                onClick={this.props.onReload}
+                className="px-4 py-2 zen-gradient text-primary-foreground rounded-xl text-sm font-medium hover:opacity-90 transition-opacity"
+              >
+                {this.props.reloadLabel}
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="min-h-screen zen-gradient-hero flex items-center justify-center px-4 py-10">
         <div className="w-full max-w-md bg-card rounded-3xl p-6 zen-shadow-card space-y-4 text-center">

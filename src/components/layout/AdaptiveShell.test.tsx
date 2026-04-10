@@ -11,6 +11,10 @@ vi.mock("@/hooks/useDeviceTier", () => ({
   }),
 }));
 
+vi.mock("@/hooks/useMediaQuery", () => ({
+  useMediaQuery: () => false,
+}));
+
 describe("AdaptiveShell", () => {
   it("renders children", () => {
     render(

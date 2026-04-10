@@ -76,11 +76,11 @@
       "description": "TODO/FIXME/HACK/XXX comments in source"
     },
     "bundleSizeKB": {
-      "value": 4707,
+      "value": 4774,
       "direction": "down",
       "tolerance": 0.005,
-      "recorded": "2026-04-04",
-      "description": "Total JS bundle size in KB (dist/assets/*.js). Tolerance 0.5% (~24KB) for legitimate feature imports."
+      "recorded": "2026-04-10",
+      "description": "Total JS bundle size in KB (dist/assets/*.js). Tolerance 0.5% (~24KB). +67KB from cmdk + @radix-ui/react-context-menu + @radix-ui/react-hover-card for cross-platform desktop features."
     },
     "enforcement.blockingHooks": {
       "value": 15,

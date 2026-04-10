@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { renderHook } from "@testing-library/react";
-import { useKeyboardShortcuts, type ShortcutMap } from "./useKeyboardShortcuts";
+import { useKeyboardShortcuts } from "./useKeyboardShortcuts";
 
 describe("useKeyboardShortcuts", () => {
   const handler = vi.fn();

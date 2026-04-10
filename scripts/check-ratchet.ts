@@ -687,7 +687,7 @@ function checkRatchet(): void {
   }
 
   // Source file drift
-  const docSourceFiles = 677; // from ARCHITECTURE.md
+  const docSourceFiles = 701; // from ARCHITECTURE.md — updated 2026-04-10 after cross-platform Phase 2-7
   const drift = Math.abs(sourceFiles - docSourceFiles);
   if (drift > 20) {
     console.log(
