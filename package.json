@@ -143,5 +143,9 @@
       "eslint",
       "oxlint -c .oxlintrc.json"
     ]
+  },
+  "optionalDependencies": {
+    "@emnapi/core": "1.9.2",
+    "@emnapi/runtime": "1.9.2"
   }
 }
