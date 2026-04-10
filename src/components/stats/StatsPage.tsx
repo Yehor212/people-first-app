@@ -16,6 +16,8 @@ import { EmptyState } from "@/components/EmptyState";
 import { hapticTap } from "@/lib/haptics";
 import { useBackHandler } from "@/hooks/useBackHandler";
 import { useScrollLock } from "@/hooks/useScrollLock";
+import { ContextMenu } from "@/components/desktop/ContextMenu";
+import { useInputMethod } from "@/hooks/useInputMethod";
 import { RingDetailSheet } from "@/components/stats/RingDetailSheet";
 import type { RingType } from "@/components/stats/RingDetailSheet";
 
@@ -63,6 +65,7 @@ export const StatsPage = memo(function StatsPage({
   const [activeModal, setActiveModal] = useState<"share" | "story" | null>(null);
   const [selectedRing, setSelectedRing] = useState<RingType | null>(null);
   const statsContainerRef = useRef<HTMLDivElement>(null);
+  const { isMouse } = useInputMethod();
 
   useBackHandler(activeModal === "story", () => setActiveModal(null));
   useScrollLock(activeModal === "story" || selectedRing !== null);
@@ -154,23 +157,32 @@ export const StatsPage = memo(function StatsPage({
       className="@container space-y-4 animate-fade-in content-with-nav px-4 @lg:max-w-none"
       ref={statsContainerRef}
     >
-      {/* Header with Weekly Story button */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl sm:text-2xl font-bold text-foreground">{t.statistics}</h2>
-        {pageData.canShowStory && (
-          <button
-            onClick={() => {
-              void hapticTap();
-              setActiveModal("story");
-            }}
-            aria-label={t.weeklyStory || "Weekly Story"}
-            className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-primary to-accent text-white text-sm font-medium rounded-xl hover:opacity-90 transition-all zen-shadow-soft"
-          >
-            <PlayCircle className="w-4 h-4" />
-            {t.weeklyStory || "Weekly Story"}
-          </button>
-        )}
-      </div>
+      {/* A11Y-OK: ContextMenu uses Radix with built-in aria; header has its own aria-labels */}
+      <ContextMenu
+        enabled={isMouse}
+        trigger={
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl sm:text-2xl font-bold text-foreground">{t.statistics}</h2>
+            {pageData.canShowStory && (
+              <button
+                onClick={() => {
+                  void hapticTap();
+                  setActiveModal("story");
+                }}
+                aria-label={t.weeklyStory || "Weekly Story"}
+                className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-primary to-accent text-white text-sm font-medium rounded-xl hover:opacity-90 transition-all zen-shadow-soft"
+              >
+                <PlayCircle className="w-4 h-4" />
+                {t.weeklyStory || "Weekly Story"}
+              </button>
+            )}
+          </div>
+        }
+        items={[
+          { label: t.share || "Share", action: () => setActiveModal("share") },
+          { label: t.weeklyStory || "Weekly Story", action: () => setActiveModal("story") },
+        ]}
+      />
 
       {/* Empty state when no data exists */}
       {moods.length === 0 && habits.length === 0 && focusSessions.length === 0 && (
