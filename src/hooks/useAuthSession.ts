@@ -13,6 +13,7 @@ import {
 } from "@/lib/authRedirect";
 import { AUTH_SESSION_EXPIRED_EVENT } from "@/lib/apiClient";
 import { syncWithCloud, startAutoSync, stopAutoSync } from "@/storage/cloudSync";
+import { pullPreferences } from "@/storage/preferenceSync";
 import { syncOrchestrator } from "@/lib/syncOrchestrator";
 import { joinPresence, leavePresence } from "@/lib/presenceService";
 import { migrateExistingUser } from "@/lib/cloudSyncSettings";
@@ -281,6 +282,8 @@ export function useAuthSession(isLoading: boolean): void {
         // Reset sync orchestrator's session-expired flag so 401 errors
         // are properly surfaced again after re-authentication
         syncOrchestrator.resetSessionExpired();
+        // Pull UI preferences (sidebar, theme, default tab) from cloud
+        void pullPreferences();
       }
       void syncIfNeeded(session?.user?.id ?? null);
 
