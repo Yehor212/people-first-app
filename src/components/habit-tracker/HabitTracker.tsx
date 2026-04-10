@@ -15,6 +15,7 @@ import {
 } from "@/components/HabitCompletionCelebration";
 import { CompactHabitCard } from "@/components/CompactHabitCard";
 import { ContextMenu } from "@/components/desktop/ContextMenu";
+import { HoverPreview } from "@/components/desktop/HoverPreview";
 import { useInputMethod } from "@/hooks/useInputMethod";
 import { HabitCreationForm } from "@/components/HabitCreationForm";
 import { hapticTap } from "@/lib/haptics";
@@ -50,7 +51,7 @@ export const HabitTracker = memo(function HabitTracker({
   onOpenChallenge,
 }: HabitTrackerProps) {
   const { t } = useLanguage();
-  const { isMouse } = useInputMethod();
+  const { isMouse, canHover } = useInputMethod();
   const form = useHabitForm({ onAddHabit, onUpdateHabit });
 
   // Back handler for inline panels
@@ -394,39 +395,57 @@ export const HabitTracker = memo(function HabitTracker({
               className="grid gap-2 grid-cols-1 @sm:grid-cols-2 @lg:grid-cols-3 @xl:grid-cols-4 @[80rem]:grid-cols-5"
             >
               {filteredHabits.map((habit) => (
-                // A11Y-OK: ContextMenu uses Radix with built-in aria; trigger is CompactHabitCard with its own aria-labels
-                <ContextMenu
+                // A11Y-OK: HoverPreview+ContextMenu use Radix with built-in aria; trigger is CompactHabitCard with its own aria-labels
+                <HoverPreview
                   key={habit.id}
-                  enabled={isMouse}
+                  enabled={canHover}
+                  content={
+                    <div className="text-xs space-y-1 min-w-[120px]">
+                      <p className="font-medium text-foreground">{habit.name}</p>
+                      {(habitStreaks.get(habit.id) || 0) > 0 && (
+                        <p className="text-muted-foreground">
+                          {t.streak || "Streak"}: {habitStreaks.get(habit.id)} {t.days || "days"}
+                        </p>
+                      )}
+                      {habit.category && (
+                        <p className="text-muted-foreground/70">{habit.category}</p>
+                      )}
+                    </div>
+                  }
                   trigger={
-                    <CompactHabitCard
-                      habit={habit}
-                      onToggle={() => handleHabitToggle(habit)}
-                      onAdjust={onAdjustHabit}
-                      onDelete={(id: string) => {
-                        onDeleteHabit(id);
-                        void hapticTap();
-                      }}
-                      onEdit={onUpdateHabit ? form.handleEditHabit : undefined}
-                      onChallenge={onOpenChallenge ? (h) => onOpenChallenge(h) : undefined}
-                      streak={habitStreaks.get(habit.id) || 0}
-                      isDueToday={dueIds.has(habit.id)}
+                    <ContextMenu
+                      enabled={isMouse}
+                      trigger={
+                        <CompactHabitCard
+                          habit={habit}
+                          onToggle={() => handleHabitToggle(habit)}
+                          onAdjust={onAdjustHabit}
+                          onDelete={(id: string) => {
+                            onDeleteHabit(id);
+                            void hapticTap();
+                          }}
+                          onEdit={onUpdateHabit ? form.handleEditHabit : undefined}
+                          onChallenge={onOpenChallenge ? (h) => onOpenChallenge(h) : undefined}
+                          streak={habitStreaks.get(habit.id) || 0}
+                          isDueToday={dueIds.has(habit.id)}
+                        />
+                      }
+                      items={[
+                        { label: t.complete || "Complete", action: () => handleHabitToggle(habit) },
+                        ...(onUpdateHabit
+                          ? [{ label: t.edit || "Edit", action: () => form.handleEditHabit(habit) }]
+                          : []),
+                        {
+                          label: t.delete || "Delete",
+                          action: () => {
+                            onDeleteHabit(habit.id);
+                            void hapticTap();
+                          },
+                          destructive: true,
+                        },
+                      ]}
                     />
                   }
-                  items={[
-                    { label: t.complete || "Complete", action: () => handleHabitToggle(habit) },
-                    ...(onUpdateHabit
-                      ? [{ label: t.edit || "Edit", action: () => form.handleEditHabit(habit) }]
-                      : []),
-                    {
-                      label: t.delete || "Delete",
-                      action: () => {
-                        onDeleteHabit(habit.id);
-                        void hapticTap();
-                      },
-                      destructive: true,
-                    },
-                  ]}
                 />
               ))}
             </div>
