@@ -13,3 +13,7 @@ export const isWeb = platform === "web";
 // Set data-platform on <html> for CSS platform branching
 // Enables selectors like [data-platform="ios"] .modal { ... }
 document.documentElement.dataset.platform = platform;
+
+/** Static viewport check at load time. For reactive: use useDeviceTier() */
+// Guard: on native Capacitor, window.innerWidth is 0 during early startup
+export const isDesktopViewport = !isNative && window.innerWidth >= 1024;

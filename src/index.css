@@ -733,35 +733,41 @@
     min-height: -webkit-fill-available;
   }
 
-  /* ===== RESPONSIVE CONTAINER WIDTH ===== */
-  /* Widened for tablet/laptop — previous values felt phone-like on iPad (672px on 768px viewport) */
+  /* ===== Cross-platform tier-adaptive container widths ===== */
   @media (min-width: 768px) {
     :root {
-      --container-max-width: 46rem; /* 736px — tablet portrait (iPad mini/Air 768-834px) */
-      --container-padding: 1rem; /* tighter padding to maximize content width */
+      --container-max-width: 42rem; /* 672px tablet */
     }
   }
   @media (min-width: 1024px) {
     :root {
-      --container-max-width: 52rem; /* 832px — readable with sidebar */
+      --container-max-width: 56rem;
+      --container-padding: 1.5rem; /* 896px laptop */
       --nav-height: 0rem; /* sidebar replaces bottom nav at lg — no nav-height padding needed */
     }
   }
-  @media (min-width: 1280px) {
+  @media (min-width: 1440px) {
     :root {
-      --container-max-width: 64rem; /* 1024px — comfortable 2-col capable */
+      --container-max-width: 72rem;
+      --container-padding: 2rem; /* 1152px desktop */
     }
   }
-  @media (min-width: 1536px) {
-    :root {
-      --container-max-width: 72rem; /* 1152px — wide desktop, 2-col grid */
-    }
-  }
-
 
   /* ===== MODERN TYPOGRAPHY ===== */
-  h1, h2, h3, h4, h5, h6 { text-wrap: balance; }
-  p, li, dd, figcaption { text-wrap: pretty; }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    text-wrap: balance;
+  }
+  p,
+  li,
+  dd,
+  figcaption {
+    text-wrap: pretty;
+  }
 
   /* ===== ZEN DESIGN SYSTEM UTILITIES ===== */
   .zen-panel {
