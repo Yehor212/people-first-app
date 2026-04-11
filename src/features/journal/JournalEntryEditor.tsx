@@ -1342,7 +1342,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
             role="dialog"
             aria-modal="true"
             aria-label={t.ariaRecording}
-            className="fixed inset-0 z-[70] bg-black/60 flex items-center justify-center"
+            className="fixed inset-0 z-[65] bg-black/60 flex items-center justify-center"
           >
             <motion.div
               initial={{ opacity: 0, scale: 0.92, y: 20 }}

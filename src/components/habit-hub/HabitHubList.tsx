@@ -189,7 +189,7 @@ export function HabitHubList({
           {showSortMenu && (
             <>
               <div
-                className="fixed inset-0 z-[60]"
+                className="fixed inset-0 z-[50]"
                 aria-hidden="true"
                 onClick={() => setShowSortMenu(false)}
               />
@@ -200,7 +200,7 @@ export function HabitHubList({
                 exit={{ opacity: 0, scale: 0.95, y: -2 }}
                 transition={zenMotion.snappy}
                 className={cn(
-                  "absolute end-0 top-full z-[61] min-w-[120px] rounded-xl overflow-hidden",
+                  "absolute end-0 top-full z-[50] min-w-[120px] rounded-xl overflow-hidden",
                   "bg-popover border border-border shadow-xl",
                   "ltr:origin-top-right rtl:origin-top-left"
                 )}
@@ -286,7 +286,7 @@ export function HabitHubList({
       )}
 
       {/* ═══ FAB — Add Habit ═══ */}
-      <div className="fixed z-[60] end-5 bottom-[calc(7rem+env(safe-area-inset-bottom,0px))]">
+      <div className="fixed z-[45] end-5 bottom-[calc(7rem+env(safe-area-inset-bottom,0px))]">
         <motion.button
           initial={{ scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}

@@ -19,12 +19,17 @@ export function ExportPickerDialog({
 }: ExportPickerDialogProps) {
   return (
     <>
-      <div className="fixed inset-0 z-[66] bg-black/30 animate-fade-in" onClick={onClose} />
+      {/* // A11Y-OK: backdrop is decorative overlay dismissed by click — aria-hidden excludes from AT tree */}
+      <div
+        className="fixed inset-0 z-[55] bg-black/30 animate-fade-in"
+        aria-hidden="true"
+        onClick={onClose}
+      />
       <div
         role="dialog"
         aria-modal="true"
         aria-label={ts.journalExportFormat || "Export Format"}
-        className="fixed bottom-0 inset-x-0 z-[67] animate-slide-up pb-safe lg:max-w-4xl lg:mx-auto"
+        className="fixed bottom-0 inset-x-0 z-[60] animate-slide-up pb-safe lg:max-w-4xl lg:mx-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-center pt-2 pb-1 bg-card rounded-t-2xl">

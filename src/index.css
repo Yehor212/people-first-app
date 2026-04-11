@@ -131,30 +131,32 @@
     --safe-left: env(safe-area-inset-left, 0px);
     --safe-right: env(safe-area-inset-right, 0px);
 
-    /* Z-Index Scale (normalized 2026-02-25)
+    /* Z-index system — single source of truth
      * 10-30  : Content layers (canvas, editor content)
-     * 40     : Dropdowns
-     * 50     : Sticky headers, navigation, glass toolbars
-     * 60     : Overlay panels (challenges, AI coach)
-     * 65     : Fullscreen editors (journal)
-     * 70     : True modals (share, event details)
-     * 80     : System modals (auth, onboarding)
-     * 90     : Flying emoji
-     * 100    : Floating format toolbar (selection popup)
-     * 110    : Immersive modes (hyperfocus)
-     * 150    : Habit completion celebration
-     * 200    : Spotlight overlay (journal focus)
-     * 210    : Confetti burst (pointer-events-none)
-     * 220    : Celebrations (streak, mood, full-screen)
-     * 250    : System banners (offline, update prompt)
-     * 300-301: XP popups (always on top, pointer-events-none)
-     * 310    : System exit toast (android back handler)
+     * 40     : Navigation bar
+     * 45     : FAB (floating action button)
+     * 50     : Dropdowns, sticky headers, glass toolbars
+     * 55     : Sheet overlays (backdrop)
+     * 60     : Sheet content, overlay panels
+     * 65     : Modal overlays (backdrop)
+     * 70     : Modal content (true modals)
+     * 75     : Lock screens (panic, auth)
+     * 80     : System modals (offline banner, update prompt)
+     * 85     : Celebrations (streak, XP popup)
+     * 90     : Toast / system exit toast
+     * 9999   : Skip-to-content (a11y, do not change)
      */
-    --z-dropdown: 40;
-    --z-sticky: 50;
-    --z-overlay: 60;
-    --z-modal: 80;
-    --z-celebration: 220;
+    --z-nav: 40;
+    --z-fab: 45;
+    --z-dropdown: 50;
+    --z-sheet-overlay: 55;
+    --z-sheet: 60;
+    --z-modal-overlay: 65;
+    --z-modal: 70;
+    --z-lock: 75;
+    --z-system: 80;
+    --z-celebration: 85;
+    --z-toast: 90;
 
     /* Mood colors - softer, more visible */
     --mood-great: 158 60% 50%;
