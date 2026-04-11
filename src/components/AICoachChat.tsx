@@ -80,7 +80,7 @@ export function AICoachChat() {
         onKeyDown={handleKeyDown}
         role="dialog"
         aria-modal="true"
-        className="fixed bottom-0 inset-x-0 z-[60] rounded-t-[2rem] bg-background max-h-[85dvh] overflow-clip motion-safe:animate-slide-up flex flex-col pb-safe lg:max-w-4xl lg:mx-auto"
+        className="fixed bottom-0 inset-x-0 z-[60] rounded-t-[2rem] bg-background max-h-[85dvh] overflow-y-auto overscroll-contain motion-safe:animate-slide-up flex flex-col pb-safe lg:max-w-4xl lg:mx-auto"
       >
         <h2 className="sr-only">{t.aiCoachTitle || "AI Coach"}</h2>
         {/* Header - Premium */}

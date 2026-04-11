@@ -18,13 +18,7 @@ interface AddGoalSheetProps {
   t: Record<string, string>;
 }
 
-export function AddGoalSheet({
-  open,
-  onOpenChange,
-  habits,
-  onAdd,
-  t,
-}: AddGoalSheetProps) {
+export function AddGoalSheet({ open, onOpenChange, habits, onAdd, t }: AddGoalSheetProps) {
   const [type, setType] = useState<GoalType>("habit");
   const [period, setPeriod] = useState<GoalPeriod>("week");
   const [target, setTarget] = useState(5);
@@ -103,7 +97,7 @@ export function AddGoalSheet({
       <div
         role="dialog"
         aria-modal="true"
-        className="fixed bottom-0 inset-x-0 z-[60] rounded-t-[2rem] bg-background max-h-[85dvh] overflow-hidden motion-safe:animate-slide-up pb-[env(safe-area-inset-bottom)] lg:max-w-4xl lg:mx-auto"
+        className="fixed bottom-0 inset-x-0 z-[60] rounded-t-[2rem] bg-background max-h-[85dvh] overflow-y-auto overscroll-contain motion-safe:animate-slide-up pb-[env(safe-area-inset-bottom)] lg:max-w-4xl lg:mx-auto"
       >
         <h2 className="sr-only">{t.addGoal || "Add Goal"}</h2>
 
@@ -114,9 +108,7 @@ export function AddGoalSheet({
             <div className="p-2.5 rounded-xl bg-primary/20 backdrop-blur-sm">
               <Target className="w-5 h-5 text-primary" />
             </div>
-            <h2 className="text-lg font-bold text-foreground">
-              {t.addGoal || "Add Goal"}
-            </h2>
+            <h2 className="text-lg font-bold text-foreground">{t.addGoal || "Add Goal"}</h2>
           </div>
         </div>
 
@@ -128,46 +120,38 @@ export function AddGoalSheet({
               {t.goalType || "Goal Type"}
             </label>
             <div className="grid grid-cols-4 gap-2">
-              {(["habit", "focus", "mood", "streak"] as GoalType[]).map(
-                (goalType) => {
-                  const th = GOAL_THEMES[goalType];
-                  const selected = type === goalType;
-                  return (
-                    <button
-                      key={goalType}
-                      onClick={() => {
-                        void hapticTap();
-                        setType(goalType);
-                      }}
+              {(["habit", "focus", "mood", "streak"] as GoalType[]).map((goalType) => {
+                const th = GOAL_THEMES[goalType];
+                const selected = type === goalType;
+                return (
+                  <button
+                    key={goalType}
+                    onClick={() => {
+                      void hapticTap();
+                      setType(goalType);
+                    }}
+                    className={cn(
+                      "p-3 rounded-xl border transition-all flex flex-col items-center gap-1.5",
+                      selected
+                        ? `border-transparent bg-gradient-to-br ${th.bgGradient}`
+                        : "border-border/50 hover:border-border"
+                    )}
+                    style={selected ? { boxShadow: `0 4px 16px ${th.glowColor}` } : undefined}
+                  >
+                    <span className="text-lg">{th.emoji}</span>
+                    <span
                       className={cn(
-                        "p-3 rounded-xl border transition-all flex flex-col items-center gap-1.5",
-                        selected
-                          ? `border-transparent bg-gradient-to-br ${th.bgGradient}`
-                          : "border-border/50 hover:border-border",
+                        "text-xs font-medium capitalize",
+                        selected ? "text-foreground" : "text-muted-foreground"
                       )}
-                      style={
-                        selected
-                          ? { boxShadow: `0 4px 16px ${th.glowColor}` }
-                          : undefined
-                      }
                     >
-                      <span className="text-lg">{th.emoji}</span>
-                      <span
-                        className={cn(
-                          "text-xs font-medium capitalize",
-                          selected
-                            ? "text-foreground"
-                            : "text-muted-foreground",
-                        )}
-                      >
-                        {(t as unknown as Record<string, string>)[
-                          `goal${goalType.charAt(0).toUpperCase() + goalType.slice(1)}`
-                        ] || goalType}
-                      </span>
-                    </button>
-                  );
-                },
-              )}
+                      {(t as unknown as Record<string, string>)[
+                        `goal${goalType.charAt(0).toUpperCase() + goalType.slice(1)}`
+                      ] || goalType}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -213,7 +197,7 @@ export function AddGoalSheet({
                     "p-3 rounded-xl border transition-all text-sm font-medium",
                     period === p
                       ? "bg-primary/10 border-primary/40 text-primary"
-                      : "border-border/50 text-muted-foreground hover:border-border",
+                      : "border-border/50 text-muted-foreground hover:border-border"
                   )}
                 >
                   {p === "week" ? t.weekly || "Weekly" : t.monthly || "Monthly"}
@@ -239,10 +223,7 @@ export function AddGoalSheet({
                 </span>
               )}
               {type === "streak" && (
-                <span className="text-muted-foreground font-normal">
-                  {" "}
-                  ({t.days || "days"})
-                </span>
+                <span className="text-muted-foreground font-normal"> ({t.days || "days"})</span>
               )}
             </label>
             <div className="flex gap-2">
@@ -257,7 +238,7 @@ export function AddGoalSheet({
                     "flex-1 p-3 rounded-xl border transition-all text-sm font-bold",
                     target === preset
                       ? "bg-primary/10 border-primary/40 text-primary"
-                      : "border-border/50 text-muted-foreground hover:border-border",
+                      : "border-border/50 text-muted-foreground hover:border-border"
                   )}
                 >
                   {preset}
@@ -275,7 +256,7 @@ export function AddGoalSheet({
               "flex items-center justify-center gap-2",
               `bg-gradient-to-r ${GOAL_THEMES[type].gradient}`,
               "text-white shadow-xl active:scale-[0.98] transition-transform",
-              isSaving && "opacity-50",
+              isSaving && "opacity-50"
             )}
             style={{ boxShadow: `0 8px 32px ${GOAL_THEMES[type].glowColor}` }}
             whileTap={zenTap.card}

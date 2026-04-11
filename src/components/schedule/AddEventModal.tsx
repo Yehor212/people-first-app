@@ -113,7 +113,7 @@ export function AddEventModal({
 
       {/* Modal content */}
       <motion.div
-        className="relative w-full max-w-sm rounded-3xl overflow-hidden max-h-[90dvh] overflow-y-auto pb-[calc(var(--nav-height)+var(--safe-bottom))]"
+        className="relative w-full max-w-sm rounded-3xl max-h-[90dvh] overflow-y-auto overscroll-contain pb-[calc(var(--nav-height)+var(--safe-bottom))]"
         initial={{ opacity: 0, scale: 0.9, y: 50 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.9, y: 50 }}
