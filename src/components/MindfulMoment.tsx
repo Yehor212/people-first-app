@@ -97,7 +97,7 @@ export function MindfulMoment({
 
   return (
     <div
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[70] p-4 animate-fade-in lg:mx-auto lg:my-8 lg:max-w-2xl lg:rounded-2xl lg:shadow-2xl"
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[70] p-4 animate-fade-in md:mx-auto md:my-6 md:max-w-lg md:rounded-2xl md:shadow-2xl"
       role="dialog"
       aria-modal="true"
       aria-label={t.ariaMindfulMoment}
