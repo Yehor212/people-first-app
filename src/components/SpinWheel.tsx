@@ -90,7 +90,7 @@ export function SpinWheel({ onClose, onWin, spinsAvailable }: SpinWheelProps) {
 
   return (
     <div
-      className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
+      className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[60] flex items-center justify-center p-4 lg:mx-auto lg:my-8 lg:max-w-2xl lg:rounded-2xl lg:shadow-2xl"
       role="dialog"
       aria-modal="true"
     >

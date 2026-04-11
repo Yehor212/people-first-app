@@ -85,7 +85,7 @@ export function NotificationPermission({ onComplete }: NotificationPermissionPro
 
   return (
     <div
-      className="fixed inset-0 bg-background/95 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-fade-in"
+      className="fixed inset-0 bg-background/95 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-fade-in lg:mx-auto lg:my-8 lg:max-w-2xl lg:rounded-2xl lg:shadow-2xl"
       role="dialog"
       aria-modal="true"
       aria-label={t.ariaNotificationPermission}

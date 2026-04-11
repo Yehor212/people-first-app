@@ -1,15 +1,15 @@
-import { useMemo, memo } from 'react';
-import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
-import { safeAverage } from '@/lib/validation';
-import { isHabitCompletedOnDate, getHabitCompletedDates } from '@/lib/habits';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { useModalKeyboard } from '@/hooks/useModalKeyboard';
-import { useBackHandler } from '@/hooks/useBackHandler';
-import { useScrollLock } from '@/hooks/useScrollLock';
-import { TrendingUp, TrendingDown, Brain, Heart, Target, Award, Sparkles, X } from 'lucide-react';
-import { EmojiOrIcon } from '@/components/icons';
-import { cn, formatDate, parseLocalDate } from '@/lib/utils';
-import { motion } from 'framer-motion';
+import { useMemo, memo } from "react";
+import { MoodEntry, Habit, FocusSession, GratitudeEntry } from "@/types";
+import { safeAverage } from "@/lib/validation";
+import { isHabitCompletedOnDate, getHabitCompletedDates } from "@/lib/habits";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useModalKeyboard } from "@/hooks/useModalKeyboard";
+import { useBackHandler } from "@/hooks/useBackHandler";
+import { useScrollLock } from "@/hooks/useScrollLock";
+import { TrendingUp, TrendingDown, Brain, Heart, Target, Award, Sparkles, X } from "lucide-react";
+import { EmojiOrIcon } from "@/components/icons";
+import { cn, formatDate, parseLocalDate } from "@/lib/utils";
+import { motion } from "framer-motion";
 
 interface WeeklyReportProps {
   moods: MoodEntry[];
@@ -68,7 +68,13 @@ function getWeekBeforeLastDates() {
   return dates;
 }
 
-export const WeeklyReport = memo(function WeeklyReport({ moods, habits, focusSessions, gratitudeEntries, onClose }: WeeklyReportProps) {
+export const WeeklyReport = memo(function WeeklyReport({
+  moods,
+  habits,
+  focusSessions,
+  gratitudeEntries,
+  onClose,
+}: WeeklyReportProps) {
   const { t, language } = useLanguage();
 
   useBackHandler(true, onClose);
@@ -89,34 +95,35 @@ export const WeeklyReport = memo(function WeeklyReport({ moods, habits, focusSes
     const weekBeforeLast = getWeekBeforeLastDates();
 
     // Previous week stats (this is what we show in the report)
-    const lastWeekHabits = habits.flatMap(h =>
-      getHabitCompletedDates(h).filter(d => lastWeek.includes(d))
+    const lastWeekHabits = habits.flatMap((h) =>
+      getHabitCompletedDates(h).filter((d) => lastWeek.includes(d))
     );
     const lastWeekFocus = focusSessions
-      .filter(s => lastWeek.includes(s.date))
+      .filter((s) => lastWeek.includes(s.date))
       .reduce((acc, s) => acc + s.duration, 0);
-    const lastWeekGratitude = gratitudeEntries.filter(e => lastWeek.includes(e.date)).length;
+    const lastWeekGratitude = gratitudeEntries.filter((e) => lastWeek.includes(e.date)).length;
 
-    const lastWeekMoods = moods.filter(m => lastWeek.includes(m.date));
+    const lastWeekMoods = moods.filter((m) => lastWeek.includes(m.date));
     const moodValues: Record<string, number> = { great: 5, good: 4, okay: 3, bad: 2, terrible: 1 };
-    const moodScores = lastWeekMoods.map(m => moodValues[m.mood] || 3);
+    const moodScores = lastWeekMoods.map((m) => moodValues[m.mood] || 3);
     const avgMood = moodScores.length > 0 ? safeAverage(moodScores) : 3;
 
     // Week before last for comparison (to calculate improvement)
-    const weekBeforeLastHabits = habits.flatMap(h =>
-      getHabitCompletedDates(h).filter(d => weekBeforeLast.includes(d))
+    const weekBeforeLastHabits = habits.flatMap((h) =>
+      getHabitCompletedDates(h).filter((d) => weekBeforeLast.includes(d))
     ).length;
 
-    const improvement = weekBeforeLastHabits > 0
-      ? ((lastWeekHabits.length - weekBeforeLastHabits) / weekBeforeLastHabits) * 100
-      : 0;
+    const improvement =
+      weekBeforeLastHabits > 0
+        ? ((lastWeekHabits.length - weekBeforeLastHabits) / weekBeforeLastHabits) * 100
+        : 0;
 
     // Find best day from previous week
-    const dayStats = lastWeek.map(date => ({
+    const dayStats = lastWeek.map((date) => ({
       date,
-      count: habits.filter(h => isHabitCompletedOnDate(h, date)).length
+      count: habits.filter((h) => isHabitCompletedOnDate(h, date)).length,
     }));
-    const bestDay = dayStats.reduce((max, day) => day.count > max.count ? day : max, dayStats[0]);
+    const bestDay = dayStats.reduce((max, day) => (day.count > max.count ? day : max), dayStats[0]);
 
     return {
       habitsCompleted: lastWeekHabits.length,
@@ -124,45 +131,46 @@ export const WeeklyReport = memo(function WeeklyReport({ moods, habits, focusSes
       focusMinutes: lastWeekFocus,
       gratitudeCount: lastWeekGratitude,
       moodAverage: avgMood,
-      bestDay: parseLocalDate(bestDay.date).toLocaleDateString(language, { weekday: 'long' }),
+      bestDay: parseLocalDate(bestDay.date).toLocaleDateString(language, { weekday: "long" }),
       improvement,
       reportWeekStart: lastWeek[0],
-      reportWeekEnd: lastWeek[6]
+      reportWeekEnd: lastWeek[6],
     };
   }, [moods, habits, focusSessions, gratitudeEntries, language]);
 
   const getMotivationalMessage = () => {
-    const completion = weekStats.totalHabitsGoal > 0
-      ? (weekStats.habitsCompleted / weekStats.totalHabitsGoal) * 100
-      : 0;
+    const completion =
+      weekStats.totalHabitsGoal > 0
+        ? (weekStats.habitsCompleted / weekStats.totalHabitsGoal) * 100
+        : 0;
 
     if (completion >= 90) {
       return {
-        emoji: '🏆',
-        iconName: 'trophy' as const,
+        emoji: "🏆",
+        iconName: "trophy" as const,
         title: t.incredibleWeek,
-        message: t.pathToMastery
+        message: t.pathToMastery,
       };
     } else if (completion >= 70) {
       return {
-        emoji: '🌟',
-        iconName: 'star' as const,
+        emoji: "🌟",
+        iconName: "star" as const,
         title: t.greatWork,
-        message: t.keepMomentum
+        message: t.keepMomentum,
       };
     } else if (completion >= 50) {
       return {
-        emoji: '💪',
-        iconName: 'muscle' as const,
+        emoji: "💪",
+        iconName: "muscle" as const,
         title: t.goodProgress,
-        message: t.everyStepCounts
+        message: t.everyStepCounts,
       };
     } else {
       return {
-        emoji: '🌱',
-        iconName: 'seedling' as const,
+        emoji: "🌱",
+        iconName: "seedling" as const,
         title: t.newWeekOpportunities,
-        message: t.startSmall
+        message: t.startSmall,
       };
     }
   };
@@ -175,7 +183,7 @@ export const WeeklyReport = memo(function WeeklyReport({ moods, habits, focusSes
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm lg:mx-auto lg:my-8 lg:max-w-2xl lg:rounded-2xl lg:shadow-2xl"
       role="dialog"
       aria-modal="true"
       aria-labelledby="weekly-report-title"
@@ -185,14 +193,14 @@ export const WeeklyReport = memo(function WeeklyReport({ moods, habits, focusSes
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
-        transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+        transition={{ type: "spring", stiffness: 300, damping: 25 }}
         className="relative max-w-2xl w-full bg-card rounded-3xl shadow-2xl border border-border/50 max-h-[90dvh] overflow-hidden"
       >
         {/* Close button */}
         <button
           onClick={onClose}
           className="absolute top-4 end-4 z-10 p-2 rounded-full bg-background/80 backdrop-blur-sm hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-          aria-label={t.close || 'Close'}
+          aria-label={t.close || "Close"}
         >
           <X className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
         </button>
@@ -210,20 +218,28 @@ export const WeeklyReport = memo(function WeeklyReport({ moods, habits, focusSes
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                transition={{ delay: 0.2, type: 'spring', stiffness: 300 }}
+                transition={{ delay: 0.2, type: "spring", stiffness: 300 }}
                 className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-background/80 backdrop-blur-sm shadow-lg mb-4"
               >
-                <EmojiOrIcon
-                  emoji={motivation.emoji}
-                  iconName={motivation.iconName}
-                  size="xl"
-                />
+                <EmojiOrIcon emoji={motivation.emoji} iconName={motivation.iconName} size="xl" />
               </motion.div>
-              <h2 id="weekly-report-title" className="text-2xl sm:text-3xl font-bold mb-2 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              <h2
+                id="weekly-report-title"
+                className="text-2xl sm:text-3xl font-bold mb-2 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent"
+              >
                 {t.weeklyReport}
               </h2>
               <p className="text-sm text-muted-foreground">
-                {parseLocalDate(weekStats.reportWeekStart).toLocaleDateString(language, { month: 'long', day: 'numeric' })} - {parseLocalDate(weekStats.reportWeekEnd).toLocaleDateString(language, { month: 'long', day: 'numeric', year: 'numeric' })}
+                {parseLocalDate(weekStats.reportWeekStart).toLocaleDateString(language, {
+                  month: "long",
+                  day: "numeric",
+                })}{" "}
+                -{" "}
+                {parseLocalDate(weekStats.reportWeekEnd).toLocaleDateString(language, {
+                  month: "long",
+                  day: "numeric",
+                  year: "numeric",
+                })}
               </p>
             </div>
           </div>
@@ -257,14 +273,22 @@ export const WeeklyReport = memo(function WeeklyReport({ moods, habits, focusSes
               <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center mb-3">
                 <Target className="w-5 h-5 text-primary" aria-hidden="true" />
               </div>
-              <p className="text-2xl font-bold tabular-nums">{weekStats.habitsCompleted}/{weekStats.totalHabitsGoal}</p>
+              <p className="text-2xl font-bold tabular-nums">
+                {weekStats.habitsCompleted}/{weekStats.totalHabitsGoal}
+              </p>
               <p className="text-xs text-muted-foreground">{t.habits}</p>
               {weekStats.improvement !== 0 && (
-                <div className={cn(
-                  "absolute top-3 end-3 flex items-center gap-1 text-xs font-medium",
-                  weekStats.improvement > 0 ? "text-[hsl(var(--mood-good))]" : "text-destructive"
-                )}>
-                  {weekStats.improvement > 0 ? <TrendingUp className="w-3 h-3" aria-hidden="true" /> : <TrendingDown className="w-3 h-3" aria-hidden="true" />}
+                <div
+                  className={cn(
+                    "absolute top-3 end-3 flex items-center gap-1 text-xs font-medium",
+                    weekStats.improvement > 0 ? "text-[hsl(var(--mood-good))]" : "text-destructive"
+                  )}
+                >
+                  {weekStats.improvement > 0 ? (
+                    <TrendingUp className="w-3 h-3" aria-hidden="true" />
+                  ) : (
+                    <TrendingDown className="w-3 h-3" aria-hidden="true" />
+                  )}
                   {Math.abs(Math.round(weekStats.improvement))}%
                 </div>
               )}

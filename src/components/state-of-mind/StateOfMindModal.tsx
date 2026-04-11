@@ -1,18 +1,18 @@
-import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, X, Clock, CalendarDays } from 'lucide-react';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { useBackHandler } from '@/hooks/useBackHandler';
-import { useModalKeyboard } from '@/hooks/useModalKeyboard';
-import { zenMotion, zenTap } from '@/lib/animationUtils';
-import { haptics } from '@/lib/haptics';
-import { valenceToColor } from './colorUtils';
-import { ValenceOrb } from './ValenceOrb';
-import { ValenceSlider } from './ValenceSlider';
-import { EmotionTagGrid } from './EmotionTagGrid';
-import { ContextGrid } from './ContextGrid';
-import { NoteStep } from './NoteStep';
-import { useStateOfMind } from './useStateOfMind';
-import type { MoodEntry } from '@/types';
+import { motion, AnimatePresence } from "framer-motion";
+import { ArrowLeft, X, Clock, CalendarDays } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useBackHandler } from "@/hooks/useBackHandler";
+import { useModalKeyboard } from "@/hooks/useModalKeyboard";
+import { zenMotion, zenTap } from "@/lib/animationUtils";
+import { haptics } from "@/lib/haptics";
+import { valenceToColor } from "./colorUtils";
+import { ValenceOrb } from "./ValenceOrb";
+import { ValenceSlider } from "./ValenceSlider";
+import { EmotionTagGrid } from "./EmotionTagGrid";
+import { ContextGrid } from "./ContextGrid";
+import { NoteStep } from "./NoteStep";
+import { useStateOfMind } from "./useStateOfMind";
+import type { MoodEntry } from "@/types";
 
 interface StateOfMindModalProps {
   isOpen: boolean;
@@ -64,9 +64,9 @@ export function StateOfMindModal({ isOpen, onClose, onSave }: StateOfMindModalPr
     contextsAndNote: t.somContextsAndNote,
   };
 
-  const isLastStep = som.step === 'contextsAndNote';
-  const showNavigation = som.step !== 'saving';
-  const showFooterButton = som.step !== 'typeSelect' && som.step !== 'saving';
+  const isLastStep = som.step === "contextsAndNote";
+  const showNavigation = som.step !== "saving";
+  const showFooterButton = som.step !== "typeSelect" && som.step !== "saving";
 
   return (
     <AnimatePresence>
@@ -86,7 +86,7 @@ export function StateOfMindModal({ isOpen, onClose, onSave }: StateOfMindModalPr
           {/* Modal content */}
           <motion.div
             ref={modalRef}
-            className="fixed inset-0 z-[60] flex flex-col bg-background/95 pt-[max(env(safe-area-inset-top,0px),12px)] pb-[max(env(safe-area-inset-bottom,0px),12px)]"
+            className="fixed inset-0 z-[60] flex flex-col bg-background/95 pt-[max(env(safe-area-inset-top,0px),12px)] pb-[max(env(safe-area-inset-bottom,0px),12px)] lg:mx-auto lg:my-8 lg:max-w-3xl lg:rounded-2xl lg:shadow-2xl"
             initial={{ opacity: 0, scale: 0.92, y: 16 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.92, y: 16 }}
@@ -101,7 +101,7 @@ export function StateOfMindModal({ isOpen, onClose, onSave }: StateOfMindModalPr
               className="absolute inset-0 pointer-events-none"
               style={{
                 background: `radial-gradient(circle at 50% 32%, ${valenceToColor(som.valence, 0.22)}, ${valenceToColor(som.valence, 0.08)})`,
-                transition: 'background 300ms ease-out',
+                transition: "background 300ms ease-out",
               }}
               aria-hidden="true"
             />
@@ -109,7 +109,7 @@ export function StateOfMindModal({ isOpen, onClose, onSave }: StateOfMindModalPr
             {/* Header */}
             {showNavigation && (
               <div className="flex items-center justify-between px-4 py-3 flex-shrink-0">
-                {som.step !== 'typeSelect' ? (
+                {som.step !== "typeSelect" ? (
                   <motion.button
                     type="button"
                     whileTap={zenTap.icon}
@@ -124,7 +124,7 @@ export function StateOfMindModal({ isOpen, onClose, onSave }: StateOfMindModalPr
                 )}
 
                 <h2 className="text-base font-semibold text-foreground">
-                  {stepTitle[som.step] || ''}
+                  {stepTitle[som.step] || ""}
                 </h2>
 
                 <motion.button
@@ -151,7 +151,7 @@ export function StateOfMindModal({ isOpen, onClose, onSave }: StateOfMindModalPr
                   className="flex-1 flex flex-col h-full"
                 >
                   {/* Step: Type Selection — two large cards */}
-                  {som.step === 'typeSelect' && (
+                  {som.step === "typeSelect" && (
                     <div className="flex flex-col gap-4 pt-8 pb-4">
                       <motion.button
                         type="button"
@@ -159,7 +159,7 @@ export function StateOfMindModal({ isOpen, onClose, onSave }: StateOfMindModalPr
                         whileTap={zenTap.button}
                         onClick={() => {
                           void haptics.light();
-                          som.handleSelectType('momentary');
+                          som.handleSelectType("momentary");
                         }}
                         className="flex items-start gap-4 p-5 rounded-2xl bg-card ring-1 ring-black/5 dark:ring-white/10 text-start focus:outline-none focus:ring-2 focus:ring-primary/50"
                       >
@@ -167,8 +167,12 @@ export function StateOfMindModal({ isOpen, onClose, onSave }: StateOfMindModalPr
                           <Clock className="w-5 h-5 text-primary" />
                         </div>
                         <div className="flex flex-col gap-1">
-                          <span className="text-base font-semibold text-foreground">{t.somMomentaryTitle}</span>
-                          <span className="text-sm text-muted-foreground">{t.somMomentarySubtitle}</span>
+                          <span className="text-base font-semibold text-foreground">
+                            {t.somMomentaryTitle}
+                          </span>
+                          <span className="text-sm text-muted-foreground">
+                            {t.somMomentarySubtitle}
+                          </span>
                         </div>
                       </motion.button>
 
@@ -178,7 +182,7 @@ export function StateOfMindModal({ isOpen, onClose, onSave }: StateOfMindModalPr
                         whileTap={zenTap.button}
                         onClick={() => {
                           void haptics.light();
-                          som.handleSelectType('overall');
+                          som.handleSelectType("overall");
                         }}
                         className="flex items-start gap-4 p-5 rounded-2xl bg-card ring-1 ring-black/5 dark:ring-white/10 text-start focus:outline-none focus:ring-2 focus:ring-primary/50"
                       >
@@ -186,15 +190,19 @@ export function StateOfMindModal({ isOpen, onClose, onSave }: StateOfMindModalPr
                           <CalendarDays className="w-5 h-5 text-primary" />
                         </div>
                         <div className="flex flex-col gap-1">
-                          <span className="text-base font-semibold text-foreground">{t.somOverallTitle}</span>
-                          <span className="text-sm text-muted-foreground">{t.somOverallSubtitle}</span>
+                          <span className="text-base font-semibold text-foreground">
+                            {t.somOverallTitle}
+                          </span>
+                          <span className="text-sm text-muted-foreground">
+                            {t.somOverallSubtitle}
+                          </span>
                         </div>
                       </motion.button>
                     </div>
                   )}
 
                   {/* Step: Valence — blob + slider centered */}
-                  {som.step === 'valence' && (
+                  {som.step === "valence" && (
                     <div className="flex flex-col items-center justify-center flex-1 gap-6">
                       <motion.div variants={stepChild} className="relative">
                         {/* CSS blur backdrop — GPU-accelerated immersive color wash behind orb */}
@@ -215,7 +223,7 @@ export function StateOfMindModal({ isOpen, onClose, onSave }: StateOfMindModalPr
                   )}
 
                   {/* Step: Emotion Tags */}
-                  {som.step === 'emotionTags' && (
+                  {som.step === "emotionTags" && (
                     <motion.div variants={stepChild} className="pt-4">
                       <EmotionTagGrid
                         valence={som.valence}
@@ -226,12 +234,9 @@ export function StateOfMindModal({ isOpen, onClose, onSave }: StateOfMindModalPr
                   )}
 
                   {/* Step: Contexts + Note (merged) */}
-                  {som.step === 'contextsAndNote' && (
+                  {som.step === "contextsAndNote" && (
                     <motion.div variants={stepChild} className="pt-4 flex flex-col gap-6">
-                      <ContextGrid
-                        selected={som.contexts}
-                        onToggle={som.handleToggleContext}
-                      />
+                      <ContextGrid selected={som.contexts} onToggle={som.handleToggleContext} />
                       <NoteStep value={som.note} onChange={som.setNote} />
                     </motion.div>
                   )}
@@ -247,7 +252,8 @@ export function StateOfMindModal({ isOpen, onClose, onSave }: StateOfMindModalPr
                   whileTap={zenTap.button}
                   onClick={() => {
                     void haptics.light();
-                    if (isLastStep) som.handleSave(); else som.handleNext();
+                    if (isLastStep) som.handleSave();
+                    else som.handleNext();
                   }}
                   className="w-full py-3.5 rounded-xl bg-primary text-primary-foreground font-medium text-base focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2"
                 >
