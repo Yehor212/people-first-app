@@ -843,7 +843,7 @@ const SpeedDialFab = memo(function SpeedDialFab({ onNewEntry, onAddGratitude }: 
         }}
         aria-label={open ? ts.close || "Close" : ts.journalFabNewEntry || "New entry"}
         className={cn(
-          "fixed end-5 z-[56]",
+          "fixed end-5 lg:end-8 z-[45]",
           fabBottom,
           "w-14 h-14 rounded-full",
           "bg-gradient-to-br from-primary to-primary/80",
