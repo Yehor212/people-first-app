@@ -743,14 +743,14 @@
   }
   @media (min-width: 1024px) {
     :root {
-      --container-max-width: 100%; /* desktop: fill viewport, components handle own max-w */
+      --container-max-width: calc(100% - 4rem); /* desktop: fill minus 2rem margin per side */
       --container-padding: 1.5rem;
       --nav-height: 0rem; /* sidebar replaces bottom nav at lg — no nav-height padding needed */
     }
   }
   @media (min-width: 1440px) {
     :root {
-      --container-max-width: 100%; /* wide desktop: full width */
+      --container-max-width: calc(100% - 4rem); /* wide desktop: fill minus 2rem margin per side */
       --container-padding: 2rem;
     }
   }

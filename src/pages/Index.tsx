@@ -383,7 +383,7 @@ export function Index() {
                 id="main-content"
                 role="main"
                 tabIndex={-1}
-                className="mx-auto px-4 md:px-6 lg:px-8 py-6 max-w-[var(--container-max-width)] lg:max-w-none outline-none"
+                className="mx-auto px-4 md:px-6 lg:px-8 py-6 max-w-[var(--container-max-width)] outline-none"
                 style={{
                   paddingBottom: focusMiniPlayerActive
                     ? "calc(var(--nav-height) + var(--safe-bottom) + 3.5rem)"
