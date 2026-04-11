@@ -596,7 +596,7 @@ export const JournalModule = memo(function JournalModule({
                 <motion.div
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="bg-card rounded-2xl p-5 max-w-[320px] lg:max-w-md w-full mx-4 shadow-xl"
+                  className="bg-card rounded-2xl p-5 max-w-sm lg:max-w-md w-full mx-4 shadow-xl"
                   onClick={(e) => e.stopPropagation()}
                 >
                   {/* Checking session */}

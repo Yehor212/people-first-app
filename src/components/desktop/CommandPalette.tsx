@@ -125,7 +125,7 @@ export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
       role="dialog"
       aria-modal="true"
       aria-label={ts.search || "Command palette"}
-      className="fixed inset-0 z-[80] bg-black/50 backdrop-blur-sm flex items-start justify-center pt-[20vh]"
+      className="fixed inset-0 z-[80] bg-black/50 backdrop-blur-sm flex items-start justify-center pt-[min(20vh,120px)]"
       onClick={onClose}
     >
       <Command

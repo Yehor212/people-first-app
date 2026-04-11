@@ -166,7 +166,7 @@ export function QuestsPanel({ onClose }: QuestsPanelProps) {
       role="dialog"
       aria-modal="true"
       aria-labelledby="quests-title"
-      className="fixed inset-0 z-[60] bg-background/95 backdrop-blur-sm overflow-y-auto"
+      className="fixed inset-0 lg:mx-auto lg:my-8 lg:max-w-2xl lg:rounded-2xl lg:shadow-2xl z-[60] bg-background/95 backdrop-blur-sm overflow-y-auto"
     >
       <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
         {/* Header */}

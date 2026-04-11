@@ -185,7 +185,7 @@ export function JournalLockScreen({
         animate={{ opacity: 1, y: 0 }}
         transition={{ type: "spring", stiffness: 300, damping: 25 }}
         className={cn(
-          "w-full max-w-[340px] rounded-2xl p-6 relative z-10",
+          "w-full max-w-sm rounded-2xl p-6 relative z-10",
           "bg-card/60 backdrop-blur-3xl",
           "border border-white/10 dark:border-white/5",
           "shadow-[0_8px_40px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.06)]",
