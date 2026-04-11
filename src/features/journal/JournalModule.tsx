@@ -556,7 +556,7 @@ export const JournalModule = memo(function JournalModule({
     >
       <div
         className={cn(
-          "w-full h-full flex flex-col sm:max-w-xl sm:mx-auto md:max-w-2xl md:my-4 md:h-[calc(100%-2rem)] md:rounded-2xl md:bg-background md:shadow-2xl md:border md:border-border/20 md:overflow-hidden",
+          "w-full h-full flex flex-col md:my-4 md:mx-4 md:h-[calc(100%-2rem)] md:rounded-2xl md:bg-background md:shadow-2xl md:border md:border-border/20 md:overflow-hidden",
           "lg:max-w-none lg:my-0 lg:h-full lg:rounded-none lg:shadow-none lg:border-0"
         )}
       >
