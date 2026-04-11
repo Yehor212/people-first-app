@@ -165,7 +165,7 @@ export function ChangelogPanel({ onClose }: ChangelogPanelProps) {
 
   return (
     <div
-      className="fixed inset-0 lg:mx-auto lg:my-8 lg:max-w-3xl lg:rounded-2xl lg:shadow-2xl z-[80] bg-background motion-safe:animate-fade-in overflow-hidden flex flex-col"
+      className="fixed inset-0 md:mx-auto md:my-6 md:max-w-2xl md:rounded-2xl md:shadow-2xl z-[80] bg-background motion-safe:animate-fade-in overflow-hidden flex flex-col"
       role="dialog"
       aria-modal="true"
       aria-labelledby="changelog-title"

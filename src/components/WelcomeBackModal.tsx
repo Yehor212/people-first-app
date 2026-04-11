@@ -78,7 +78,7 @@ export function WelcomeBackModal({
   }, 1000);
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in lg:mx-auto lg:my-8 lg:max-w-2xl lg:rounded-2xl lg:shadow-2xl">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in md:mx-auto md:my-6 md:max-w-lg md:rounded-2xl md:shadow-2xl">
       <div
         {...modalProps}
         aria-labelledby="welcome-back-title"

@@ -135,7 +135,7 @@ export function UnifiedShareModal(props: UnifiedShareModalProps) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="share-dialog-title"
-        className="fixed bottom-0 start-0 end-0 z-[70] rounded-t-[2rem] bg-background max-h-[90dvh] overflow-hidden motion-safe:animate-slide-up pb-[env(safe-area-inset-bottom)] lg:max-w-2xl lg:mx-auto lg:my-8 lg:rounded-2xl lg:shadow-2xl lg:bottom-auto lg:inset-x-0 lg:top-1/2 lg:-translate-y-1/2"
+        className="fixed bottom-0 start-0 end-0 z-[70] rounded-t-[2rem] bg-background max-h-[90dvh] overflow-hidden motion-safe:animate-slide-up pb-[env(safe-area-inset-bottom)] md:max-w-lg md:mx-auto md:my-6 md:rounded-2xl md:shadow-2xl md:bottom-auto md:inset-x-0 md:top-1/2 md:-translate-y-1/2"
       >
         {/* Header */}
         <div className="px-6 pt-5 pb-3 text-center relative">
