@@ -388,7 +388,9 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
       aria-label={ts.journalEntryTitle || "Diary Entry"}
       className={cn(
         "flex flex-col overflow-hidden text-foreground",
-        desktop ? "relative h-full" : "fixed inset-0 z-[60] h-dvh"
+        desktop
+          ? "relative h-full"
+          : "fixed inset-0 z-[60] h-screen supports-[height:100svh]:h-[100svh]"
       )}
       style={diaryStyle}
     >
@@ -907,7 +909,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
         <div
           ref={scrollAreaRef}
           className={cn(
-            "absolute inset-0 overflow-y-auto pt-[140px] pb-[160px] z-10",
+            "absolute inset-0 overflow-y-auto pt-[clamp(80px,18vh,140px)] pb-[clamp(100px,22vh,160px)] z-10",
             desktop ? "px-8" : "px-4"
           )}
           onScroll={handleContentScroll}
