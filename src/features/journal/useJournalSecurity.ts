@@ -29,13 +29,17 @@ function base64ToArrayBuffer(b64: string): ArrayBuffer {
   return buf.buffer;
 }
 
-async function deriveKey(password: string, salt: ArrayBuffer): Promise<string> {
+async function deriveKey(
+  password: string,
+  salt: ArrayBuffer,
+  iterations = PBKDF2_ITERATIONS
+): Promise<string> {
   const enc = new TextEncoder();
   const keyMaterial = await crypto.subtle.importKey("raw", enc.encode(password), "PBKDF2", false, [
     "deriveBits",
   ]);
   const bits = await crypto.subtle.deriveBits(
-    { name: "PBKDF2", salt, iterations: PBKDF2_ITERATIONS, hash: "SHA-256" },
+    { name: "PBKDF2", salt, iterations, hash: "SHA-256" },
     keyMaterial,
     256
   );
@@ -144,16 +148,31 @@ export function useJournalSecurity() {
   // Unlock with password
   const unlock = useCallback(
     async (password: string): Promise<boolean> => {
-      // Cooldown check
       if (Date.now() < cooldownUntil) return false;
 
       const entry = await db.settings.get(JOURNAL_PASSWORD_KEY);
       if (!entry?.value) return false;
       const stored = entry.value as JournalPassword;
       const salt = base64ToArrayBuffer(stored.salt);
-      const hash = await deriveKey(password, salt);
+
+      // Use stored iteration count (supports legacy 100K + current 600K)
+      const storedIterations = stored.iterations || _LEGACY_PBKDF2_ITERATIONS;
+      const hash = await deriveKey(password, salt, storedIterations);
 
       if (hash === stored.hash) {
+        // Transparent migration: re-hash with current iterations if needed
+        if (storedIterations < PBKDF2_ITERATIONS) {
+          const newSalt = crypto.getRandomValues(new Uint8Array(16));
+          const newHash = await deriveKey(password, newSalt.buffer, PBKDF2_ITERATIONS);
+          const migrated: JournalPassword = {
+            hash: newHash,
+            salt: arrayBufferToBase64(newSalt.buffer),
+            iterations: PBKDF2_ITERATIONS,
+            createdAt: stored.createdAt,
+          };
+          await db.settings.put({ key: JOURNAL_PASSWORD_KEY, value: migrated });
+          logger.info("[Journal]", "Password hash migrated to current iterations");
+        }
         setIsUnlocked(true);
         setFailedAttempts(0);
         setCooldownUntil(0);
@@ -162,11 +181,8 @@ export function useJournalSecurity() {
         return true;
       }
 
-      // Wrong password
       const newAttempts = failedAttempts + 1;
       setFailedAttempts(newAttempts);
-
-      // Check cooldown thresholds
       for (const step of COOLDOWN_STEPS) {
         if (newAttempts >= step.after) {
           setCooldownUntil(Date.now() + step.seconds * 1000);
@@ -184,7 +200,8 @@ export function useJournalSecurity() {
       if (!entry?.value) return false;
       const stored = entry.value as JournalPassword;
       const oldSalt = base64ToArrayBuffer(stored.salt);
-      const oldHash = await deriveKey(oldPw, oldSalt);
+      const storedIterations = stored.iterations || _LEGACY_PBKDF2_ITERATIONS;
+      const oldHash = await deriveKey(oldPw, oldSalt, storedIterations);
       if (oldHash !== stored.hash) return false;
 
       // Old password verified — atomic write with fresh salt

@@ -100,8 +100,8 @@ export function JournalLockScreen({
         return;
       }
       if (step === "enter") {
-        if (password.length < 6) {
-          setError(ts.journalPasswordTooShort || "Minimum 6 characters");
+        if (password.length < 1) {
+          setError(ts.journalPasswordRequired || "Enter a password");
           triggerShake();
           return;
         }
@@ -129,8 +129,8 @@ export function JournalLockScreen({
 
     if (mode === "setup") {
       if (step === "enter") {
-        if (password.length < 6) {
-          setError(ts.journalPasswordTooShort || "Minimum 6 characters");
+        if (password.length < 1) {
+          setError(ts.journalPasswordRequired || "Enter a password");
           triggerShake();
           return;
         }
