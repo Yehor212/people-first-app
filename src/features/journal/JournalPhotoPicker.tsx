@@ -94,7 +94,7 @@ export function JournalPhotoPicker({
           "fixed bottom-0 inset-x-0 z-[65] pb-safe lg:max-w-4xl lg:mx-auto",
           "bg-card/95 backdrop-blur-xl border-t border-border/40",
           "rounded-t-2xl shadow-lg animate-slide-up",
-          "pb-[env(safe-area-inset-bottom)]"
+          "pb-safe"
         )}
       >
         {/* Handle bar */}

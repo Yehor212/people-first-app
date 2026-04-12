@@ -21,20 +21,7 @@ import { GOAL_ICON_MAP } from "./GoalInput";
 import { GOAL_COLORS } from "./GoalNode";
 import type { CanvasGoal } from "@/types";
 
-const CURATED_EMOJIS = [
-  "🎯",
-  "📚",
-  "💪",
-  "🏃",
-  "💡",
-  "🎨",
-  "🎵",
-  "❤️",
-  "⭐",
-  "🔥",
-  "🌱",
-  "🧘",
-];
+const CURATED_EMOJIS = ["🎯", "📚", "💪", "🏃", "💡", "🎨", "🎵", "❤️", "⭐", "🔥", "🌱", "🧘"];
 const COLOR_KEYS = Object.keys(GOAL_COLORS);
 
 const ICON_KEYS = Object.keys(GOAL_ICON_MAP);
@@ -77,7 +64,7 @@ function ActionRow({
           ? "text-muted-foreground/60 cursor-not-allowed"
           : destructive
             ? "text-red-400 active:bg-red-400/10"
-            : "text-foreground/80 active:bg-muted/50",
+            : "text-foreground/80 active:bg-muted/50"
       )}
     >
       <Icon className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
@@ -141,7 +128,7 @@ export function GoalActionSheet({
       const newIcon = goal.icon === key ? undefined : key;
       onUpdateIcon(goal.id, newIcon);
     },
-    [goal, onUpdateIcon],
+    [goal, onUpdateIcon]
   );
 
   const handleEmojiTap = useCallback(
@@ -151,7 +138,7 @@ export function GoalActionSheet({
       const newEmoji = goal.emoji === emoji ? undefined : emoji;
       onUpdateEmoji(goal.id, newEmoji);
     },
-    [goal, onUpdateEmoji],
+    [goal, onUpdateEmoji]
   );
 
   const handleColorTap = useCallback(
@@ -161,7 +148,7 @@ export function GoalActionSheet({
       const newColor = goal.color === color ? undefined : color;
       onUpdateColor(goal.id, newColor);
     },
-    [goal, onUpdateColor],
+    [goal, onUpdateColor]
   );
 
   return (
@@ -185,7 +172,7 @@ export function GoalActionSheet({
             role="dialog"
             aria-modal="true"
             aria-label={`Goal: ${goal.title}`}
-            className="fixed bottom-0 inset-x-0 z-[60] rounded-t-2xl overflow-hidden bg-card/95 backdrop-blur-md [-webkit-backdrop-filter:blur(12px)] pb-[env(safe-area-inset-bottom,0px)] lg:max-w-4xl lg:mx-auto"
+            className="fixed bottom-0 inset-x-0 z-[60] rounded-t-2xl overflow-hidden bg-card/95 backdrop-blur-md [-webkit-backdrop-filter:blur(12px)] pb-safe lg:max-w-4xl lg:mx-auto"
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
@@ -196,9 +183,7 @@ export function GoalActionSheet({
             <div className="w-10 h-1 rounded-full bg-muted-foreground/20 mx-auto mt-3 mb-4" />
 
             {/* Goal title */}
-            <div className="px-5 pb-3 text-foreground font-medium text-sm">
-              {goal.title}
-            </div>
+            <div className="px-5 pb-3 text-foreground font-medium text-sm">{goal.title}</div>
 
             {/* Icon picker row */}
             <div className="flex items-center gap-2 px-5 pb-4">
@@ -214,7 +199,7 @@ export function GoalActionSheet({
                       "p-3 rounded-lg transition-all",
                       isSelected
                         ? "bg-primary/15 ring-1 ring-primary/30 text-foreground"
-                        : "text-muted-foreground active:text-foreground active:bg-muted/50",
+                        : "text-muted-foreground active:text-foreground active:bg-muted/50"
                     )}
                     aria-label={`Icon: ${key}`}
                     aria-pressed={isSelected}
@@ -236,9 +221,7 @@ export function GoalActionSheet({
                     onClick={() => handleEmojiTap(emoji)}
                     className={cn(
                       "w-9 h-9 rounded-lg flex items-center justify-center transition-all text-base",
-                      isSelected
-                        ? "bg-primary/15 ring-1 ring-primary/30"
-                        : "active:bg-muted/50",
+                      isSelected ? "bg-primary/15 ring-1 ring-primary/30" : "active:bg-muted/50"
                     )}
                     aria-label={`Emoji: ${emoji}`}
                     aria-pressed={isSelected}
@@ -262,7 +245,7 @@ export function GoalActionSheet({
                       "w-11 h-11 rounded-full transition-all flex-shrink-0",
                       isSelected
                         ? "ring-2 ring-white/60 ring-offset-2 ring-offset-[rgba(15,20,30,0.95)]"
-                        : "ring-1 ring-white/10",
+                        : "ring-1 ring-white/10"
                     )}
                     style={{ background: GOAL_COLORS[key] }}
                     aria-label={`Color: ${key}`}
@@ -293,9 +276,7 @@ export function GoalActionSheet({
             />
             {showDeleteConfirm ? (
               <div className="px-5 py-3 space-y-2">
-                <p className="text-sm text-red-300">
-                  {ts.confirmDelete || "Delete?"}
-                </p>
+                <p className="text-sm text-red-300">{ts.confirmDelete || "Delete?"}</p>
                 <div className="flex gap-2">
                   <button
                     onClick={() => setShowDeleteConfirm(false)}

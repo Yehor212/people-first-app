@@ -172,7 +172,7 @@ export function AICoachChat() {
         </div>
 
         {/* Input - Premium */}
-        <div className="p-4 border-t border-border pb-[env(safe-area-inset-bottom)] relative">
+        <div className="p-4 border-t border-border pb-safe relative">
           <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(0deg,hsl(var(--cosmic-nebula-purple)/0.05)_0%,transparent_100%)]" />
           <div className="flex items-center gap-3 relative z-10">
             <input

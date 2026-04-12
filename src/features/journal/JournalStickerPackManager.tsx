@@ -48,7 +48,7 @@ export function JournalStickerPackManager({
           "bg-card/95 backdrop-blur-xl border-t border-border/40",
           "rounded-t-2xl shadow-lg animate-slide-up",
           "max-h-[70dvh] flex flex-col",
-          "pb-[env(safe-area-inset-bottom)]"
+          "pb-safe"
         )}
       >
         {/* Handle bar */}
