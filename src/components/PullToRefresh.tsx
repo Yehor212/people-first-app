@@ -5,11 +5,11 @@
  * Works on both web and native (Capacitor) platforms.
  */
 
-import { useState, useRef, useCallback, useEffect, type ReactNode } from 'react';
-import { RefreshCw, AlertCircle } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { haptics } from '@/lib/haptics';
-import { useLanguage } from '@/contexts/LanguageContext';
+import { useState, useRef, useCallback, useEffect, type ReactNode } from "react";
+import { RefreshCw, AlertCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { haptics } from "@/lib/haptics";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface PullToRefreshProps {
   /** Async function to call when refresh is triggered */
@@ -46,36 +46,42 @@ export function PullToRefresh({
     return () => clearTimeout(id);
   }, [error]);
 
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    if (!enabled || refreshing) return;
+  const handleTouchStart = useCallback(
+    (e: React.TouchEvent) => {
+      if (!enabled || refreshing) return;
 
-    // Only start tracking if we're at the top of the scroll container
-    const container = containerRef.current;
-    if (container && container.scrollTop === 0) {
-      startY.current = e.touches[0].clientY;
-    }
-  }, [enabled, refreshing]);
-
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!enabled || refreshing || startY.current === 0) return;
-
-    const currentY = e.touches[0].clientY;
-    const distance = currentY - startY.current;
-
-    // Only track downward pulls
-    if (distance > 0) {
-      // Apply resistance to make it feel natural
-      const resistedDistance = Math.min(distance * 0.5, MAX_PULL);
-      const prevDistance = pullDistanceRef.current;
-      pullDistanceRef.current = resistedDistance;
-      setPullDistance(resistedDistance);
-
-      // Haptic feedback when crossing threshold
-      if (resistedDistance >= THRESHOLD && prevDistance < THRESHOLD) {
-        void haptics.light();
+      // Only start tracking if we're at the top of the scroll container
+      const container = containerRef.current;
+      if (container && container.scrollTop === 0) {
+        startY.current = e.touches[0].clientY;
       }
-    }
-  }, [enabled, refreshing]);
+    },
+    [enabled, refreshing]
+  );
+
+  const handleTouchMove = useCallback(
+    (e: React.TouchEvent) => {
+      if (!enabled || refreshing || startY.current === 0) return;
+
+      const currentY = e.touches[0].clientY;
+      const distance = currentY - startY.current;
+
+      // Only track downward pulls
+      if (distance > 0) {
+        // Apply resistance to make it feel natural
+        const resistedDistance = Math.min(distance * 0.5, MAX_PULL);
+        const prevDistance = pullDistanceRef.current;
+        pullDistanceRef.current = resistedDistance;
+        setPullDistance(resistedDistance);
+
+        // Haptic feedback when crossing threshold
+        if (resistedDistance >= THRESHOLD && prevDistance < THRESHOLD) {
+          void haptics.light();
+        }
+      }
+    },
+    [enabled, refreshing]
+  );
 
   const handleTouchEnd = useCallback(async () => {
     if (!enabled || refreshing) return;
@@ -108,7 +114,7 @@ export function PullToRefresh({
   return (
     <div
       ref={containerRef}
-      className={cn('relative overflow-auto', className)}
+      className={cn("relative overflow-auto", className)}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -118,7 +124,7 @@ export function PullToRefresh({
         <div className="absolute left-4 right-4 top-2 z-20 flex items-center gap-2 rounded-xl bg-red-500/10 border border-red-500/20 px-3 py-2 animate-fade-in">
           <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
           <span className="text-xs text-red-600 dark:text-red-400">
-            {t.syncRefreshFailed || 'Sync paused — pull again to retry'}
+            {t.syncRefreshFailed || "Sync paused — pull again to retry"}
           </span>
         </div>
       )}
@@ -134,9 +140,9 @@ export function PullToRefresh({
       >
         <div
           className={cn(
-            'flex items-center justify-center w-10 h-10 rounded-full',
-            error ? 'bg-red-500/10' : 'bg-primary/10',
-            refreshing && 'animate-pulse'
+            "flex items-center justify-center w-10 h-10 rounded-full",
+            error ? "bg-red-500/10" : "bg-primary/10",
+            refreshing && "animate-pulse"
           )}
           style={{
             opacity: refreshing ? 1 : progress,
@@ -145,9 +151,9 @@ export function PullToRefresh({
         >
           <RefreshCw
             className={cn(
-              'w-5 h-5',
-              error ? 'text-red-500' : 'text-primary',
-              refreshing && 'animate-spin'
+              "w-5 h-5",
+              error ? "text-red-500" : "text-primary",
+              refreshing && "animate-spin"
             )}
           />
         </div>
@@ -155,10 +161,14 @@ export function PullToRefresh({
 
       {/* Content with offset during pull */}
       <div
-        className="transition-transform duration-150 ease-out"
-        style={{
-          transform: `translateY(${refreshing ? 48 : pullDistance}px)`,
-        }}
+        className={
+          pullDistance > 0 || refreshing ? "transition-transform duration-150 ease-out" : ""
+        }
+        style={
+          pullDistance > 0 || refreshing
+            ? { transform: `translateY(${refreshing ? 48 : pullDistance}px)` }
+            : undefined
+        }
       >
         {children}
       </div>
