@@ -87,7 +87,7 @@ export function NotificationPermission({ onComplete }: NotificationPermissionPro
     <>
       {/* A11Y-OK: decorative backdrop overlay — aria-hidden removes from accessibility tree, no aria-label needed */}
       <div
-        className="hidden md:block fixed inset-0 z-[59] bg-background/95 backdrop-blur-sm [-webkit-backdrop-filter:blur(4px)]"
+        className="hidden md:block fixed inset-0 z-[59] bg-black/40 backdrop-blur-sm [-webkit-backdrop-filter:blur(4px)]"
         onClick={handleDeny}
         aria-hidden="true"
       />

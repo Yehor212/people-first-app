@@ -44,15 +44,19 @@ export function SecuritySection() {
 
         {/* Journal Lock Timeout */}
         <div className="space-y-3">
-          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+          <label
+            htmlFor="journal-lock-timeout"
+            className="flex items-center gap-2 text-sm font-medium text-foreground"
+          >
             <Clock className="w-4 h-4 text-muted-foreground" />
             {tAny.journalLockTimeout || "Journal auto-lock"}
-          </div>
+          </label>
           <p className="text-xs text-muted-foreground">
             {tAny.journalLockTimeoutDesc || "Automatically lock journal after period of inactivity"}
           </p>
           <div className="relative">
             <select
+              id="journal-lock-timeout"
               value={timeoutMs}
               onChange={(e) => handleTimeoutChange(Number(e.target.value))}
               className="w-full appearance-none px-4 py-3 pe-10 rounded-xl bg-background border border-border text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 cursor-pointer"

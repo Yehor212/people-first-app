@@ -13,6 +13,7 @@ export function useKeyboardShift(enabled: boolean): number {
   useEffect(() => {
     if (!enabled) {
       setOffset(0);
+      document.documentElement.style.setProperty("--keyboard-height", "0px");
       return;
     }
 
@@ -34,6 +35,7 @@ export function useKeyboardShift(enabled: boolean): number {
     return () => {
       vv.removeEventListener("resize", handleResize);
       vv.removeEventListener("scroll", handleResize);
+      document.documentElement.style.setProperty("--keyboard-height", "0px");
     };
   }, [enabled]);
 

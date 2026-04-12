@@ -136,7 +136,7 @@ export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
     <>
       {/* Desktop backdrop */}
       <div
-        className="hidden md:block fixed inset-0 z-[59] bg-black/80 [-webkit-backdrop-filter:blur(4px)]"
+        className="hidden md:block fixed inset-0 z-[59] bg-black/80 backdrop-blur-sm [-webkit-backdrop-filter:blur(4px)]"
         onMouseDown={handleOverlayMouseDown}
         onTouchEnd={handleOverlayTouchEnd}
         aria-hidden="true"
