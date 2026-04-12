@@ -95,8 +95,9 @@ export function AuthGate({ isLoading, children }: AuthGateProps) {
     setNotificationPermissionChecked(true);
   };
 
-  // ── DEV BYPASS: ?dev=true skips all gates (temporary, remove before release) ──
+  // ── DEV BYPASS: ?dev=true skips all gates (development only) ──
   const isDevBypass =
+    import.meta.env.DEV &&
     typeof window !== "undefined" &&
     new URLSearchParams(window.location.search).get("dev") === "true";
   if (isDevBypass) {
