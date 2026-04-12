@@ -56,7 +56,7 @@ const DEFAULT_FLAGS: FeatureFlags = {
   challenges: true,
   aiCoach: false, // Hidden until AI is working
   innerWorld: true,
-  deltaSync: false, // Phase 3: gradual rollout of delta sync
+  deltaSync: true, // Enabled: event-based incremental sync (migration 20260405 applied)
 };
 
 interface FeatureFlagsContextType {

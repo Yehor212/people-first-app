@@ -56,7 +56,7 @@ const DEFAULT_FLAGS = {
   challenges: true,
   aiCoach: false,
   innerWorld: true,
-  deltaSync: false,
+  deltaSync: true,
 };
 
 // --- Tests ---
