@@ -172,11 +172,12 @@ export function UnifiedShareModal(props: UnifiedShareModalProps) {
               transition={zenMotion.snappy}
             >
               {isGenerating ? (
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-muted/50">
-                  <Loader2
-                    className="w-8 h-8 text-primary animate-spin"
-                    aria-label={t.generating || "Generating..."}
-                  />
+                <div
+                  className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-muted/50"
+                  role="status"
+                  aria-label={t.generating || "Generating..."}
+                >
+                  <Loader2 className="w-8 h-8 text-primary animate-spin" aria-hidden="true" />
                 </div>
               ) : isError ? (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 bg-muted/50">

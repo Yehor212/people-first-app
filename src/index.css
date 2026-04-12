@@ -322,6 +322,10 @@
     --background: 0 0% 0%; /* Pure black — Apple standard */
     --foreground: 0 0% 95%;
 
+    /* Dark mode font smoothing — reduces halation (light text appears heavier on dark bg) */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+
     --card: 0 0% 11%; /* #1C1C1E — iOS secondary bg */
     --card-foreground: 0 0% 95%;
 

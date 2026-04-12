@@ -109,7 +109,7 @@ export function WhatsNewModal({ onClose }: WhatsNewModalProps) {
         aria-labelledby="whats-new-title"
         className={cn(
           "w-full max-w-md bg-card rounded-2xl shadow-2xl",
-          "border border-border overflow-hidden",
+          "border border-border overflow-hidden"
         )}
         onClick={(e) => e.stopPropagation()}
       >
@@ -117,7 +117,7 @@ export function WhatsNewModal({ onClose }: WhatsNewModalProps) {
         <div className="relative px-6 py-5 bg-gradient-to-r from-primary/10 to-primary/5 border-b border-border">
           <button
             onClick={handleDismiss}
-            className="absolute top-4 end-4 p-1 rounded-full hover:bg-muted transition-colors"
+            className="absolute top-4 end-4 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full hover:bg-muted transition-colors"
             aria-label={t.close}
           >
             <X className="w-5 h-5 text-muted-foreground" />
@@ -128,10 +128,7 @@ export function WhatsNewModal({ onClose }: WhatsNewModalProps) {
               <Sparkles className="w-6 h-6 text-primary" />
             </div>
             <div>
-              <h2
-                id="whats-new-title"
-                className="text-xl font-bold text-foreground"
-              >
+              <h2 id="whats-new-title" className="text-xl font-bold text-foreground">
                 {getText("whatsNew.title", "What's New")}
               </h2>
               <p className="text-sm text-muted-foreground">
@@ -149,12 +146,10 @@ export function WhatsNewModal({ onClose }: WhatsNewModalProps) {
                 key={index}
                 className={cn(
                   "flex items-start gap-3 p-3 rounded-xl",
-                  "bg-muted/50 hover:bg-muted transition-colors",
+                  "bg-muted/50 hover:bg-muted transition-colors"
                 )}
               >
-                <div className="flex-shrink-0 p-2 rounded-lg bg-background">
-                  {change.icon}
-                </div>
+                <div className="flex-shrink-0 p-2 rounded-lg bg-background">{change.icon}</div>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold text-foreground">
                     {getText(change.titleKey, change.title)}
@@ -176,7 +171,7 @@ export function WhatsNewModal({ onClose }: WhatsNewModalProps) {
               "w-full py-3 px-4 rounded-xl font-medium",
               "bg-primary text-primary-foreground",
               "hover:bg-primary/90 transition-colors",
-              "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2",
+              "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
             )}
           >
             {getText("whatsNew.gotIt", "Got it!")}

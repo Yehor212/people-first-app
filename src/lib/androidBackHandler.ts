@@ -63,7 +63,7 @@ function showExitToast(message: string) {
     color: hsl(var(--popover-foreground));
     padding: 12px 24px;
     border-radius: 24px;
-    font-size: 14px;
+    font-size: 0.875rem;
     font-weight: 500;
     z-index: 310;
     animation: toast-slide-up 0.3s ease-out;

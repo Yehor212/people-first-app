@@ -340,7 +340,10 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
                   {spotify.spotifyTrack.albumArt && (
                     <img
                       src={spotify.spotifyTrack.albumArt}
-                      alt="Album"
+                      alt=""
+                      width={48}
+                      height={48}
+                      loading="lazy"
                       className="w-12 h-12 rounded-lg shadow-lg"
                     />
                   )}

@@ -3,10 +3,10 @@
  * ADHD-friendly: Reduces blank page anxiety with directed prompts
  */
 
-import { useState, useCallback } from 'react';
-import { Lightbulb, Shuffle, ChevronDown, ChevronUp } from 'lucide-react';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { cn } from '@/lib/utils';
+import { useState, useCallback } from "react";
+import { Lightbulb, Shuffle, ChevronDown, ChevronUp } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { cn } from "@/lib/utils";
 import {
   JournalPrompt as JournalPromptType,
   PromptCategory,
@@ -14,7 +14,7 @@ import {
   getPromptText,
   getRandomPrompt,
   getDailyPrompt,
-} from '@/lib/journalPrompts';
+} from "@/lib/journalPrompts";
 
 interface JournalPromptProps {
   onUsePrompt: (text: string) => void;
@@ -39,7 +39,8 @@ export function JournalPrompt({ onUsePrompt, category, compact = false }: Journa
   }, [currentPrompt, language, onUsePrompt]);
 
   const promptText = getPromptText(currentPrompt, language);
-  const categoryLabel = CATEGORY_LABELS[currentPrompt.category][language] || CATEGORY_LABELS[currentPrompt.category].en;
+  const categoryLabel =
+    CATEGORY_LABELS[currentPrompt.category][language] || CATEGORY_LABELS[currentPrompt.category].en;
 
   // Compact mode - just a small button
   if (compact && !isExpanded) {
@@ -49,7 +50,7 @@ export function JournalPrompt({ onUsePrompt, category, compact = false }: Journa
         className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground bg-secondary/50 hover:bg-secondary rounded-lg transition-colors"
       >
         <Lightbulb className="w-4 h-4" />
-        <span>{t.needInspiration || 'Need inspiration?'}</span>
+        <span>{t.needInspiration || "Need inspiration?"}</span>
         <ChevronDown className="w-4 h-4" />
       </button>
     );
@@ -61,9 +62,7 @@ export function JournalPrompt({ onUsePrompt, category, compact = false }: Journa
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <Lightbulb className="w-4 h-4 text-accent" />
-          <span className="text-sm font-medium text-accent">
-            {t.journalPrompt || 'Prompt'}
-          </span>
+          <span className="text-sm font-medium text-accent">{t.journalPrompt || "Prompt"}</span>
           <span className="text-xs px-2 py-0.5 bg-secondary rounded-full text-muted-foreground">
             {categoryLabel}
           </span>
@@ -71,7 +70,8 @@ export function JournalPrompt({ onUsePrompt, category, compact = false }: Journa
         {compact && (
           <button
             onClick={() => setIsExpanded(false)}
-            className="p-1 hover:bg-secondary/50 rounded transition-colors"
+            className="p-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-secondary/50 rounded transition-colors"
+            aria-label={t.collapse || "Collapse"}
           >
             <ChevronUp className="w-4 h-4" />
           </button>
@@ -79,10 +79,7 @@ export function JournalPrompt({ onUsePrompt, category, compact = false }: Journa
       </div>
 
       {/* Prompt text */}
-      <p className={cn(
-        "text-foreground leading-relaxed mb-4",
-        compact ? "text-sm" : "text-base"
-      )}>
+      <p className={cn("text-foreground leading-relaxed mb-4", compact ? "text-sm" : "text-base")}>
         "{promptText}"
       </p>
 
@@ -92,13 +89,13 @@ export function JournalPrompt({ onUsePrompt, category, compact = false }: Journa
           onClick={handleUse}
           className="flex-1 py-2 px-4 bg-accent/20 text-accent hover:bg-accent/30 rounded-lg font-medium text-sm transition-colors"
         >
-          {t.usePrompt || 'Use this prompt'}
+          {t.usePrompt || "Use this prompt"}
         </button>
         <button
           onClick={handleShuffle}
           className="p-2 bg-secondary hover:bg-muted rounded-lg transition-colors"
-          title={t.shufflePrompt || 'Get another prompt'}
-          aria-label={t.shufflePrompt || 'Get another prompt'}
+          title={t.shufflePrompt || "Get another prompt"}
+          aria-label={t.shufflePrompt || "Get another prompt"}
         >
           <Shuffle className="w-4 h-4" />
         </button>
