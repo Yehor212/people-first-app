@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { isNative } from "@/lib/platform";
 import { db } from "@/storage/db";
+import { SK } from "@/lib/storageKeys";
+import { safeLocalStorageGet, safeLocalStorageSet } from "@/lib/safeJson";
 import type { JournalPassword } from "./types";
 import { JOURNAL_PASSWORD_KEY } from "./types";
 import { logger } from "@/lib/logger";
@@ -9,7 +11,22 @@ const BIOMETRIC_SETTINGS_KEY = "journal_biometric";
 
 const PBKDF2_ITERATIONS = 600_000;
 const _LEGACY_PBKDF2_ITERATIONS = 100_000; // For future transparent migration
-const AUTO_LOCK_MS = 5 * 60 * 1000; // 5 minutes
+const DEFAULT_AUTO_LOCK_MS = 5 * 60 * 1000; // 5 minutes
+export const LOCK_TIMEOUT_OPTIONS = [
+  { label: "Immediately", ms: 0 },
+  { label: "1 minute", ms: 60_000 },
+  { label: "5 minutes", ms: 300_000 },
+  { label: "15 minutes", ms: 900_000 },
+  { label: "30 minutes", ms: 1_800_000 },
+] as const;
+function getAutoLockMs(): number {
+  const stored = safeLocalStorageGet<number | null>(SK.JOURNAL_LOCK_TIMEOUT, null);
+  return stored !== null ? stored : DEFAULT_AUTO_LOCK_MS;
+}
+
+export function setAutoLockMs(ms: number): void {
+  safeLocalStorageSet(SK.JOURNAL_LOCK_TIMEOUT, ms);
+}
 const COOLDOWN_STEPS = [
   { after: 3, seconds: 30 },
   { after: 5, seconds: 300 },
@@ -96,14 +113,17 @@ export function useJournalSecurity() {
       .catch((err) => logger.warn("[Journal]", "Biometric setting load failed:", err));
   }, []);
 
-  // Auto-lock timer
+  // Auto-lock timer (reads configurable timeout from localStorage)
   const resetAutoLock = useCallback(() => {
     if (autoLockTimerRef.current) clearTimeout(autoLockTimerRef.current);
     if (!isUnlocked) return;
+    const timeoutMs = getAutoLockMs();
+    if (timeoutMs === 0) return; // "Immediately" — lock via visibility change only
+    // ROOT-CAUSE: setTimeout is the standard idle-lock pattern (Bitwarden/1Password use same approach)
     autoLockTimerRef.current = setTimeout(() => {
       setIsUnlocked(false);
       unlockedAtRef.current = 0;
-    }, AUTO_LOCK_MS);
+    }, timeoutMs);
   }, [isUnlocked]);
 
   useEffect(() => {

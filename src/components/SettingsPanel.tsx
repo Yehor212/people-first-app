@@ -1,10 +1,17 @@
-import { useEffect, useState } from 'react';
-import { Sparkles, Smartphone, ChevronRight, Download, CheckCircle } from 'lucide-react';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { usePwaInstall } from '@/hooks/usePwaInstall';
-import { Habit, ReminderSettings, PrivacySettings, MoodEntry, FocusSession, GratitudeEntry } from '@/types';
-import { Accordion } from '@/components/ui/accordion';
-import { DopamineSettingsComponent } from '@/components/DopamineSettings';
+import { useEffect, useState } from "react";
+import { Sparkles, Smartphone, ChevronRight, Download, CheckCircle } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { usePwaInstall } from "@/hooks/usePwaInstall";
+import {
+  Habit,
+  ReminderSettings,
+  PrivacySettings,
+  MoodEntry,
+  FocusSession,
+  GratitudeEntry,
+} from "@/types";
+import { Accordion } from "@/components/ui/accordion";
+import { DopamineSettingsComponent } from "@/components/DopamineSettings";
 import {
   ProfileSection,
   AboutSection,
@@ -12,15 +19,18 @@ import {
   NotificationsSection,
   DataSection,
   AccountSection,
+  SecuritySection,
   WhatsNewBanner,
-} from '@/components/settings';
+} from "@/components/settings";
 
 interface SettingsPanelProps {
   userName: string;
   onNameChange: (name: string) => void;
   onResetData: () => void;
   reminders: ReminderSettings;
-  onRemindersChange: (value: ReminderSettings | ((prev: ReminderSettings) => ReminderSettings)) => void;
+  onRemindersChange: (
+    value: ReminderSettings | ((prev: ReminderSettings) => ReminderSettings)
+  ) => void;
   habits: Habit[];
   moods?: MoodEntry[];
   focusSessions?: FocusSession[];
@@ -44,19 +54,19 @@ export function SettingsPanel({
   privacy,
   onPrivacyChange,
   onOpenWidgetSettings,
-  initialOpenSection
+  initialOpenSection,
 }: SettingsPanelProps) {
   const { t } = useLanguage();
   const { canInstall, isInstalled, promptInstall } = usePwaInstall();
   const [showDopamineSettings, setShowDopamineSettings] = useState(false);
   const [openSections, setOpenSections] = useState<string[]>(
-    initialOpenSection ? [initialOpenSection] : ['profile']
+    initialOpenSection ? [initialOpenSection] : ["profile"]
   );
 
   // Auto-open and scroll to section when initialOpenSection changes
   useEffect(() => {
     if (initialOpenSection) {
-      setOpenSections(prev =>
+      setOpenSections((prev) =>
         prev.includes(initialOpenSection) ? prev : [...prev, initialOpenSection]
       );
     }
@@ -70,7 +80,12 @@ export function SettingsPanel({
       <WhatsNewBanner />
 
       {/* Settings Accordion */}
-      <Accordion type="multiple" value={openSections} onValueChange={setOpenSections} className="space-y-3">
+      <Accordion
+        type="multiple"
+        value={openSections}
+        onValueChange={setOpenSections}
+        className="space-y-3"
+      >
         <ProfileSection userName={userName} onNameChange={onNameChange} />
         <ModulesSection />
         <NotificationsSection
@@ -90,11 +105,8 @@ export function SettingsPanel({
           gratitudeEntries={gratitudeEntries}
           userName={userName}
         />
-        <AccountSection
-          userName={userName}
-          onNameChange={onNameChange}
-          onResetData={onResetData}
-        />
+        <AccountSection userName={userName} onNameChange={onNameChange} onResetData={onResetData} />
+        <SecuritySection />
         <AboutSection />
       </Accordion>
 
@@ -108,8 +120,12 @@ export function SettingsPanel({
             <div className="flex items-center gap-3">
               <Smartphone className="w-5 h-5 text-primary" />
               <div>
-                <h3 className="text-base font-semibold text-foreground">{t.widgetSettings || 'Widget Settings'}</h3>
-                <p className="text-xs text-muted-foreground">{t.widgetSettingsDesc || 'Configure widgets for your home screen'}</p>
+                <h3 className="text-base font-semibold text-foreground">
+                  {t.widgetSettings || "Widget Settings"}
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  {t.widgetSettingsDesc || "Configure widgets for your home screen"}
+                </p>
               </div>
             </div>
             <ChevronRight className="w-5 h-5 text-muted-foreground rtl:scale-x-[-1]" />

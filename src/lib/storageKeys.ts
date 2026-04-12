@@ -66,6 +66,7 @@ export const SK = {
   JOURNAL_REMINDER: "journal_reminder",
   JOURNAL_SCREENSHOT_BLOCK: "journal_screenshot_block",
   JOURNAL_PRIVATE_MODE: "journal_private_mode",
+  JOURNAL_LOCK_TIMEOUT: "zenflow-journal-lock-timeout",
   JOURNAL_PASSWORD_RESET: "journal_password_reset_pending",
   JOURNAL_CALENDAR_MODE: "journal-calendar-mode",
   JOURNAL_LEGEND_SEEN: "journal-legend-seen",
