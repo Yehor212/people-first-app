@@ -95,6 +95,14 @@ export function AuthGate({ isLoading, children }: AuthGateProps) {
     setNotificationPermissionChecked(true);
   };
 
+  // ── DEV BYPASS: ?dev=true skips all gates (temporary, remove before release) ──
+  const isDevBypass =
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("dev") === "true";
+  if (isDevBypass) {
+    return <>{children}</>;
+  }
+
   // ── Gate screens (order matters — first matching gate wins) ──
 
   if (initializationState.isInitializing) {

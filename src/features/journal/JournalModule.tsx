@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo, Suspense, memo } from "react";
+import { createPortal } from "react-dom";
 import {
   Lock,
   ChevronRight,
@@ -540,15 +541,15 @@ export const JournalModule = memo(function JournalModule({
     );
   }
 
-  // ── Full-screen overlay ──
-  return (
+  // ── Full-screen overlay (portal to escape PullToRefresh transform ancestor) ──
+  return createPortal(
     <div
       ref={overlayRef}
       role="dialog"
       aria-modal="true"
       aria-label={ts.journalTitle || "Diary"}
       className={cn(
-        "fixed inset-0 z-[60] bg-background flex items-start justify-center animate-slide-up",
+        "fixed inset-0 z-[60] bg-background flex items-start justify-center animate-slide-up h-screen overflow-hidden",
         "md:bg-background/80 md:backdrop-blur-sm",
         "lg:left-[var(--sidebar-width,256px)] lg:bg-background lg:backdrop-blur-none lg:transition-[left] lg:duration-300 lg:items-stretch"
       )}
@@ -557,7 +558,7 @@ export const JournalModule = memo(function JournalModule({
       <div
         className={cn(
           "w-full h-full flex flex-col md:my-4 md:mx-4 md:h-[calc(100%-2rem)] md:rounded-2xl md:bg-background md:shadow-2xl md:border md:border-border/20 md:overflow-hidden",
-          "lg:max-w-none lg:my-0 lg:h-full lg:rounded-none lg:shadow-none lg:border-0"
+          "lg:max-w-none lg:mx-0 lg:my-0 lg:h-full lg:rounded-none lg:shadow-none lg:border-0 lg:overflow-y-auto"
         )}
       >
         {/* Security gate */}
@@ -1446,6 +1447,7 @@ export const JournalModule = memo(function JournalModule({
           }}
         />
       )}
-    </div>
+    </div>,
+    document.body
   );
 });
