@@ -1,6 +1,11 @@
 import { db } from "@/storage/db";
 import { logger } from "@/lib/logger";
 
+// Max IDs per tracker — prevents unbounded growth over years of usage.
+// IDs are appended in order, so oldest = first. When limit exceeded, oldest are pruned.
+// 5000 IDs ≈ 200KB — safe for IndexedDB on all platforms.
+const MAX_TRACKER_IDS = 5000;
+
 // ── Generic deletion tracking helpers ──────────────────────────────────────────
 
 async function getDeletedIds(key: string): Promise<Set<string>> {
@@ -14,12 +19,20 @@ async function getDeletedIds(key: string): Promise<Set<string>> {
   }
 }
 
+/** Prune oldest IDs when tracker exceeds MAX_TRACKER_IDS */
+function pruneIfNeeded(ids: string[]): string[] {
+  if (ids.length <= MAX_TRACKER_IDS) return ids;
+  const pruneCount = ids.length - MAX_TRACKER_IDS;
+  logger.log(`[DeletionTracker] Pruning ${pruneCount} oldest IDs (total: ${ids.length})`);
+  return ids.slice(pruneCount);
+}
+
 async function trackDeletedId(key: string, id: string): Promise<void> {
   try {
     await db.transaction("rw", db.settings, async () => {
       const existing = await getDeletedIds(key);
       existing.add(id);
-      await db.settings.put({ key, value: [...existing] });
+      await db.settings.put({ key, value: pruneIfNeeded([...existing]) });
     });
   } catch (error) {
     logger.error(`[DeletionTracker] Failed to track ${key}:`, error);
@@ -34,7 +47,7 @@ async function mergeDeletedIds(key: string, remoteIds: string[]): Promise<void> 
       for (const id of remoteIds) {
         existing.add(id);
       }
-      await db.settings.put({ key, value: [...existing] });
+      await db.settings.put({ key, value: pruneIfNeeded([...existing]) });
     });
   } catch (error) {
     logger.error(`[DeletionTracker] Failed to merge ${key}:`, error);
