@@ -84,99 +84,107 @@ export function NotificationPermission({ onComplete }: NotificationPermissionPro
   }
 
   return (
-    <div
-      className="fixed inset-0 bg-background/95 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-fade-in md:mx-auto md:my-6 md:max-w-lg md:rounded-2xl md:shadow-2xl"
-      role="dialog"
-      aria-modal="true"
-      aria-label={t.ariaNotificationPermission}
-    >
-      <div className="w-full max-w-md bg-card rounded-2xl p-4 sm:p-6 zen-shadow-card animate-scale-in">
-        {/* Close button */}
-        <button
-          onClick={handleDeny}
-          className="absolute top-4 end-4 p-2 text-muted-foreground hover:text-foreground transition-colors"
-          aria-label={t.close || "Close"}
-        >
-          <X className="w-5 h-5" />
-        </button>
-
-        {/* Icon */}
-        <div className="flex justify-center mb-4">
-          <div className="p-4 zen-gradient rounded-2xl zen-shadow-glow">
-            <Bell className="w-12 h-12 text-primary-foreground" />
-          </div>
-        </div>
-
-        {/* Title */}
-        <h2 className="text-2xl font-bold text-foreground text-center mb-2">
-          {t.notificationPermissionTitle || "Stay on Track"}
-        </h2>
-
-        {/* Description */}
-        <p className="text-muted-foreground text-center mb-6">
-          {t.notificationPermissionDescription ||
-            "Get gentle reminders to track your mood, complete habits, and take focus breaks. Notifications help you build healthy routines."}
-        </p>
-
-        {/* Features */}
-        <div className="space-y-3 mb-6">
-          <div className="flex items-start gap-3">
-            <div className="w-2 h-2 rounded-full bg-primary mt-2" />
-            <div>
-              <p className="font-medium text-foreground">
-                {t.notificationFeature1Title || "Daily Mood Reminders"}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {t.notificationFeature1Desc || "Check in with yourself every day"}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-start gap-3">
-            <div className="w-2 h-2 rounded-full bg-primary mt-2" />
-            <div>
-              <p className="font-medium text-foreground">
-                {t.notificationFeature2Title || "Habit Tracking"}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {t.notificationFeature2Desc || "Stay consistent with your goals"}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-start gap-3">
-            <div className="w-2 h-2 rounded-full bg-primary mt-2" />
-            <div>
-              <p className="font-medium text-foreground">
-                {t.notificationFeature3Title || "Focus Sessions"}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {t.notificationFeature3Desc || "Get reminded to take productive breaks"}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Buttons */}
-        <div className="space-y-3">
-          <button
-            onClick={handleAllow}
-            className="btn-press w-full py-3 zen-gradient text-primary-foreground font-semibold rounded-xl zen-shadow-soft hover:opacity-90 transition-opacity"
-          >
-            {t.notificationAllow || "Enable Notifications"}
-          </button>
+    <>
+      {/* A11Y-OK: decorative backdrop overlay — aria-hidden removes from accessibility tree, no aria-label needed */}
+      <div
+        className="hidden md:block fixed inset-0 z-[59] bg-background/95 backdrop-blur-sm [-webkit-backdrop-filter:blur(4px)]"
+        onClick={handleDeny}
+        aria-hidden="true"
+      />
+      <div
+        className="fixed inset-0 bg-background/95 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-fade-in md:mx-auto md:my-6 md:max-w-lg md:rounded-2xl md:shadow-2xl"
+        role="dialog"
+        aria-modal="true"
+        aria-label={t.ariaNotificationPermission}
+      >
+        <div className="w-full max-w-md bg-card rounded-2xl p-4 sm:p-6 zen-shadow-card animate-scale-in">
+          {/* Close button */}
           <button
             onClick={handleDeny}
-            className="btn-press w-full py-3 bg-secondary text-secondary-foreground font-medium rounded-xl hover:bg-muted transition-colors"
+            className="absolute top-4 end-4 p-2 text-muted-foreground hover:text-foreground transition-colors"
+            aria-label={t.close || "Close"}
           >
-            {t.notificationDeny || "Maybe Later"}
+            <X className="w-5 h-5" />
           </button>
-        </div>
 
-        {/* Privacy note */}
-        <p className="text-xs text-muted-foreground text-center mt-4">
-          {t.notificationPrivacyNote ||
-            "You can change this anytime in Settings. Notifications are local and private."}
-        </p>
+          {/* Icon */}
+          <div className="flex justify-center mb-4">
+            <div className="p-4 zen-gradient rounded-2xl zen-shadow-glow">
+              <Bell className="w-12 h-12 text-primary-foreground" />
+            </div>
+          </div>
+
+          {/* Title */}
+          <h2 className="text-2xl font-bold text-foreground text-center mb-2">
+            {t.notificationPermissionTitle || "Stay on Track"}
+          </h2>
+
+          {/* Description */}
+          <p className="text-muted-foreground text-center mb-6">
+            {t.notificationPermissionDescription ||
+              "Get gentle reminders to track your mood, complete habits, and take focus breaks. Notifications help you build healthy routines."}
+          </p>
+
+          {/* Features */}
+          <div className="space-y-3 mb-6">
+            <div className="flex items-start gap-3">
+              <div className="w-2 h-2 rounded-full bg-primary mt-2" />
+              <div>
+                <p className="font-medium text-foreground">
+                  {t.notificationFeature1Title || "Daily Mood Reminders"}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {t.notificationFeature1Desc || "Check in with yourself every day"}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="w-2 h-2 rounded-full bg-primary mt-2" />
+              <div>
+                <p className="font-medium text-foreground">
+                  {t.notificationFeature2Title || "Habit Tracking"}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {t.notificationFeature2Desc || "Stay consistent with your goals"}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="w-2 h-2 rounded-full bg-primary mt-2" />
+              <div>
+                <p className="font-medium text-foreground">
+                  {t.notificationFeature3Title || "Focus Sessions"}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {t.notificationFeature3Desc || "Get reminded to take productive breaks"}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Buttons */}
+          <div className="space-y-3">
+            <button
+              onClick={handleAllow}
+              className="btn-press w-full py-3 zen-gradient text-primary-foreground font-semibold rounded-xl zen-shadow-soft hover:opacity-90 transition-opacity"
+            >
+              {t.notificationAllow || "Enable Notifications"}
+            </button>
+            <button
+              onClick={handleDeny}
+              className="btn-press w-full py-3 bg-secondary text-secondary-foreground font-medium rounded-xl hover:bg-muted transition-colors"
+            >
+              {t.notificationDeny || "Maybe Later"}
+            </button>
+          </div>
+
+          {/* Privacy note */}
+          <p className="text-xs text-muted-foreground text-center mt-4">
+            {t.notificationPrivacyNote ||
+              "You can change this anytime in Settings. Notifications are local and private."}
+          </p>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

@@ -89,167 +89,175 @@ export function SpinWheel({ onClose, onWin, spinsAvailable }: SpinWheelProps) {
   };
 
   return (
-    <div
-      className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[60] flex items-center justify-center p-4 md:mx-auto md:my-6 md:max-w-lg md:rounded-2xl md:shadow-2xl"
-      role="dialog"
-      aria-modal="true"
-    >
-      <div className="bg-card rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden animate-scale-in">
-        {/* Header */}
-        <div className="relative p-6 text-center bg-gradient-to-r from-purple-600 to-pink-600 text-white">
-          <button
-            onClick={onClose}
-            className="absolute top-4 end-4 p-2 hover:bg-foreground/20 rounded-full transition-colors"
-            aria-label={t.close || "Close"}
-          >
-            <X className="w-5 h-5" />
-          </button>
-
-          <Sparkles className="w-10 h-10 mx-auto mb-2" />
-          <h2 className="text-2xl font-bold">{t.spinWheel || "Spin the Wheel!"}</h2>
-          <p className="text-foreground/80 text-sm mt-1">
-            {t.spinsAvailable || "Spins Available"}: {spinsAvailable} 🎰
-          </p>
-        </div>
-
-        {/* Wheel Container */}
-        <div className="p-8 flex flex-col items-center">
-          <div className="relative w-72 h-72">
-            {/* Pointer */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2 z-10">
-              <div className="w-0 h-0 border-l-[15px] border-r-[15px] border-t-[25px] border-l-transparent border-r-transparent border-t-yellow-500 drop-shadow-lg" />
-            </div>
-
-            {/* Wheel */}
-            <div
-              ref={wheelRef}
-              className="w-full h-full rounded-full border-8 border-yellow-500 shadow-2xl overflow-hidden"
-              style={{
-                transform: `rotate(${rotation}deg)`,
-                transition: isSpinning
-                  ? "transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99)"
-                  : "none",
-              }}
+    <>
+      {/* Desktop backdrop */}
+      <div
+        className="hidden md:block fixed inset-0 z-[59] bg-black/70 backdrop-blur-sm [-webkit-backdrop-filter:blur(4px)]"
+        onClick={onClose}
+        aria-hidden="true"
+      />
+      <div
+        className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[60] flex items-center justify-center p-4 md:mx-auto md:my-6 md:max-w-lg md:rounded-2xl md:shadow-2xl"
+        role="dialog"
+        aria-modal="true"
+      >
+        <div className="bg-card rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden animate-scale-in">
+          {/* Header */}
+          <div className="relative p-6 text-center bg-gradient-to-r from-purple-600 to-pink-600 text-white">
+            <button
+              onClick={onClose}
+              className="absolute top-4 end-4 p-2 hover:bg-foreground/20 rounded-full transition-colors"
+              aria-label={t.close || "Close"}
             >
-              {prizes.map((prize, index) => {
-                const startAngle = index * segmentAngle;
-                return (
-                  <div
-                    key={prize.id}
-                    className={cn(
-                      "absolute w-1/2 h-1/2 origin-bottom-right",
-                      `bg-gradient-to-br ${COLORS[index % COLORS.length]}`
-                    )}
-                    style={{
-                      transform: `rotate(${startAngle}deg) skewY(-${90 - segmentAngle}deg)`,
-                      transformOrigin: "bottom right",
-                      left: "50%",
-                      top: "0",
-                    }}
-                  >
-                    <div
-                      className="absolute text-white font-bold text-xs flex items-center justify-center"
-                      style={{
-                        transform: `skewY(${90 - segmentAngle}deg) rotate(${segmentAngle / 2}deg)`,
-                        top: "30%",
-                        left: "20%",
-                      }}
-                    >
-                      <span className="text-lg me-1">{prize.icon}</span>
-                    </div>
-                  </div>
-                );
-              })}
+              <X className="w-5 h-5" />
+            </button>
 
-              {/* Center circle */}
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 border-4 border-white shadow-lg flex items-center justify-center">
-                <span className="text-2xl">🎰</span>
-              </div>
-            </div>
-
-            {/* Glow effect when spinning */}
-            {isSpinning && (
-              <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500/30 to-pink-500/30 animate-pulse" />
-            )}
+            <Sparkles className="w-10 h-10 mx-auto mb-2" />
+            <h2 className="text-2xl font-bold">{t.spinWheel || "Spin the Wheel!"}</h2>
+            <p className="text-foreground/80 text-sm mt-1">
+              {t.spinsAvailable || "Spins Available"}: {spinsAvailable} 🎰
+            </p>
           </div>
 
-          {/* Result */}
-          {showResult && prize && (
-            <div className="mt-6 text-center animate-scale-in">
+          {/* Wheel Container */}
+          <div className="p-8 flex flex-col items-center">
+            <div className="relative w-72 h-72">
+              {/* Pointer */}
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2 z-10">
+                <div className="w-0 h-0 border-l-[15px] border-r-[15px] border-t-[25px] border-l-transparent border-r-transparent border-t-yellow-500 drop-shadow-lg" />
+              </div>
+
+              {/* Wheel */}
               <div
-                className={cn(
-                  "inline-flex items-center gap-3 px-6 py-4 rounded-2xl",
-                  prize.rarity === "legendary" &&
-                    "bg-gradient-to-r from-yellow-400 to-orange-500 text-white",
-                  prize.rarity === "epic" &&
-                    "bg-gradient-to-r from-purple-500 to-pink-500 text-white",
-                  prize.rarity === "rare" &&
-                    "bg-gradient-to-r from-blue-500 to-cyan-500 text-white",
-                  prize.rarity === "common" &&
-                    "bg-gradient-to-r from-muted-foreground to-muted-foreground/80 text-white"
-                )}
+                ref={wheelRef}
+                className="w-full h-full rounded-full border-8 border-yellow-500 shadow-2xl overflow-hidden"
+                style={{
+                  transform: `rotate(${rotation}deg)`,
+                  transition: isSpinning
+                    ? "transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99)"
+                    : "none",
+                }}
               >
-                <span className="text-4xl">{prize.icon}</span>
-                <div className="text-start">
-                  <div className="font-bold text-xl">{prize.label}</div>
-                  <div className="text-sm opacity-90">
-                    {prize.rarity === "legendary" && "🌟 LEGENDARY!"}
-                    {prize.rarity === "epic" && "✨ EPIC!"}
-                    {prize.rarity === "rare" && "💫 RARE!"}
-                    {prize.rarity === "common" && "⭐ Nice!"}
-                  </div>
+                {prizes.map((prize, index) => {
+                  const startAngle = index * segmentAngle;
+                  return (
+                    <div
+                      key={prize.id}
+                      className={cn(
+                        "absolute w-1/2 h-1/2 origin-bottom-right",
+                        `bg-gradient-to-br ${COLORS[index % COLORS.length]}`
+                      )}
+                      style={{
+                        transform: `rotate(${startAngle}deg) skewY(-${90 - segmentAngle}deg)`,
+                        transformOrigin: "bottom right",
+                        left: "50%",
+                        top: "0",
+                      }}
+                    >
+                      <div
+                        className="absolute text-white font-bold text-xs flex items-center justify-center"
+                        style={{
+                          transform: `skewY(${90 - segmentAngle}deg) rotate(${segmentAngle / 2}deg)`,
+                          top: "30%",
+                          left: "20%",
+                        }}
+                      >
+                        <span className="text-lg me-1">{prize.icon}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* Center circle */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 border-4 border-white shadow-lg flex items-center justify-center">
+                  <span className="text-2xl">🎰</span>
                 </div>
               </div>
 
-              <button
-                onClick={handleClaim}
-                className="mt-4 px-8 py-3 zen-gradient text-white font-bold rounded-xl hover:scale-105 active:scale-95 transition-transform"
-              >
-                {t.claimPrize || "Claim Prize!"} 🎉
-              </button>
-            </div>
-          )}
-
-          {/* Spin Button */}
-          {!showResult && (
-            <button
-              onClick={handleSpin}
-              disabled={isSpinning || spinsAvailable <= 0}
-              className={cn(
-                "mt-6 px-10 py-4 rounded-2xl font-bold text-lg transition-all",
-                isSpinning
-                  ? "bg-muted text-muted-foreground cursor-not-allowed"
-                  : spinsAvailable > 0
-                    ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:scale-105 active:scale-95 shadow-lg"
-                    : "bg-muted text-muted-foreground cursor-not-allowed"
+              {/* Glow effect when spinning */}
+              {isSpinning && (
+                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500/30 to-pink-500/30 animate-pulse" />
               )}
-            >
-              {isSpinning
-                ? "🎰 Spinning..."
-                : spinsAvailable > 0
-                  ? `🎰 ${t.spin || "SPIN"}!`
-                  : t.noSpins || "No Spins Left"}
-            </button>
-          )}
-        </div>
+            </div>
 
-        {/* Legend */}
-        <div className="px-6 pb-6">
-          <div className="grid grid-cols-4 gap-2 text-xs text-center">
-            {[
-              { color: "bg-muted-foreground", label: "Common" },
-              { color: "bg-blue-500", label: "Rare" },
-              { color: "bg-purple-500", label: "Epic" },
-              { color: "bg-yellow-500", label: "Legendary" },
-            ].map((item) => (
-              <div key={item.label} className="flex items-center justify-center gap-1">
-                <div className={cn("w-3 h-3 rounded", item.color)} />
-                <span className="text-muted-foreground">{item.label}</span>
+            {/* Result */}
+            {showResult && prize && (
+              <div className="mt-6 text-center animate-scale-in">
+                <div
+                  className={cn(
+                    "inline-flex items-center gap-3 px-6 py-4 rounded-2xl",
+                    prize.rarity === "legendary" &&
+                      "bg-gradient-to-r from-yellow-400 to-orange-500 text-white",
+                    prize.rarity === "epic" &&
+                      "bg-gradient-to-r from-purple-500 to-pink-500 text-white",
+                    prize.rarity === "rare" &&
+                      "bg-gradient-to-r from-blue-500 to-cyan-500 text-white",
+                    prize.rarity === "common" &&
+                      "bg-gradient-to-r from-muted-foreground to-muted-foreground/80 text-white"
+                  )}
+                >
+                  <span className="text-4xl">{prize.icon}</span>
+                  <div className="text-start">
+                    <div className="font-bold text-xl">{prize.label}</div>
+                    <div className="text-sm opacity-90">
+                      {prize.rarity === "legendary" && "🌟 LEGENDARY!"}
+                      {prize.rarity === "epic" && "✨ EPIC!"}
+                      {prize.rarity === "rare" && "💫 RARE!"}
+                      {prize.rarity === "common" && "⭐ Nice!"}
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleClaim}
+                  className="mt-4 px-8 py-3 zen-gradient text-white font-bold rounded-xl hover:scale-105 active:scale-95 transition-transform"
+                >
+                  {t.claimPrize || "Claim Prize!"} 🎉
+                </button>
               </div>
-            ))}
+            )}
+
+            {/* Spin Button */}
+            {!showResult && (
+              <button
+                onClick={handleSpin}
+                disabled={isSpinning || spinsAvailable <= 0}
+                className={cn(
+                  "mt-6 px-10 py-4 rounded-2xl font-bold text-lg transition-all",
+                  isSpinning
+                    ? "bg-muted text-muted-foreground cursor-not-allowed"
+                    : spinsAvailable > 0
+                      ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:scale-105 active:scale-95 shadow-lg"
+                      : "bg-muted text-muted-foreground cursor-not-allowed"
+                )}
+              >
+                {isSpinning
+                  ? "🎰 Spinning..."
+                  : spinsAvailable > 0
+                    ? `🎰 ${t.spin || "SPIN"}!`
+                    : t.noSpins || "No Spins Left"}
+              </button>
+            )}
+          </div>
+
+          {/* Legend */}
+          <div className="px-6 pb-6">
+            <div className="grid grid-cols-4 gap-2 text-xs text-center">
+              {[
+                { color: "bg-muted-foreground", label: "Common" },
+                { color: "bg-blue-500", label: "Rare" },
+                { color: "bg-purple-500", label: "Epic" },
+                { color: "bg-yellow-500", label: "Legendary" },
+              ].map((item) => (
+                <div key={item.label} className="flex items-center justify-center gap-1">
+                  <div className={cn("w-3 h-3 rounded", item.color)} />
+                  <span className="text-muted-foreground">{item.label}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

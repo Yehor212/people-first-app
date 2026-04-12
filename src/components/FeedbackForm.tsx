@@ -133,14 +133,22 @@ export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
   ];
 
   return (
-    <div
-      className="fixed inset-0 z-[60] bg-black/80 flex items-end justify-center md:items-center md:mx-auto md:my-6 md:max-w-lg md:rounded-2xl md:shadow-2xl"
-      onMouseDown={handleOverlayMouseDown}
-      onTouchEnd={handleOverlayTouchEnd}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="feedback-form-title"
-    >
+    <>
+      {/* Desktop backdrop */}
+      <div
+        className="hidden md:block fixed inset-0 z-[59] bg-black/80 [-webkit-backdrop-filter:blur(4px)]"
+        onMouseDown={handleOverlayMouseDown}
+        onTouchEnd={handleOverlayTouchEnd}
+        aria-hidden="true"
+      />
+      <div
+        className="fixed inset-0 z-[60] bg-black/80 flex items-end justify-center md:items-center md:mx-auto md:my-6 md:max-w-lg md:rounded-2xl md:shadow-2xl"
+        onMouseDown={handleOverlayMouseDown}
+        onTouchEnd={handleOverlayTouchEnd}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="feedback-form-title"
+      >
       <div
         className="w-full max-w-lg bg-background rounded-t-3xl p-6 max-h-[85dvh] overflow-y-auto motion-safe:animate-in motion-safe:slide-in-from-bottom motion-safe:duration-300 pb-safe"
         onTouchEnd={(e) => e.stopPropagation()}
@@ -246,5 +254,6 @@ export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
         </div>
       </div>
     </div>
+    </>
   );
 };

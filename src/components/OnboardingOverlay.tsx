@@ -73,70 +73,81 @@ export function WelcomeOverlay({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div
-      ref={modalRef}
-      onKeyDown={handleKeyDown}
-      tabIndex={-1}
-      className="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 backdrop-blur-sm motion-safe:animate-fade-in px-3 sm:px-4 md:mx-auto md:my-6 md:max-w-lg md:rounded-2xl md:shadow-2xl"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="onboarding-welcome-title"
-    >
-      <div className="relative max-w-lg w-full bg-card rounded-xl sm:rounded-2xl zen-shadow-card border border-border overflow-hidden motion-safe:animate-scale-in">
-        {/* Header - responsive */}
-        <div className="p-4 sm:p-6 bg-gradient-to-r from-primary/10 to-primary/5 border-b border-border">
-          <div className="flex items-center justify-between mb-3 sm:mb-4">
-            <div className="text-3xl sm:text-4xl">{currentStep.icon}</div>
-            <button
-              onClick={() => {
-                markWelcomeSeen();
-                onClose();
-              }}
-              aria-label={t.close}
-              className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors"
+    <>
+      {/* A11Y-OK: decorative backdrop overlay — aria-hidden removes from accessibility tree, no aria-label needed */}
+      <div
+        className="hidden md:block fixed inset-0 z-[79] bg-black/60 backdrop-blur-sm [-webkit-backdrop-filter:blur(4px)]"
+        onClick={() => {
+          markWelcomeSeen();
+          onClose();
+        }}
+        aria-hidden="true"
+      />
+      <div
+        ref={modalRef}
+        onKeyDown={handleKeyDown}
+        tabIndex={-1}
+        className="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 backdrop-blur-sm motion-safe:animate-fade-in px-3 sm:px-4 md:mx-auto md:my-6 md:max-w-lg md:rounded-2xl md:shadow-2xl"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="onboarding-welcome-title"
+      >
+        <div className="relative max-w-lg w-full bg-card rounded-xl sm:rounded-2xl zen-shadow-card border border-border overflow-hidden motion-safe:animate-scale-in">
+          {/* Header - responsive */}
+          <div className="p-4 sm:p-6 bg-gradient-to-r from-primary/10 to-primary/5 border-b border-border">
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <div className="text-3xl sm:text-4xl">{currentStep.icon}</div>
+              <button
+                onClick={() => {
+                  markWelcomeSeen();
+                  onClose();
+                }}
+                aria-label={t.close}
+                className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors"
+              >
+                <X className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground" />
+              </button>
+            </div>
+            <h2
+              id="onboarding-welcome-title"
+              className="text-xl sm:text-2xl font-bold text-foreground mb-2"
             >
-              <X className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground" />
+              {currentStep.title}
+            </h2>
+            <p className="text-sm sm:text-base text-muted-foreground">{currentStep.description}</p>
+          </div>
+
+          {/* Progress dots - responsive */}
+          <div className="px-4 sm:px-6 pt-4 sm:pt-6 pb-4">
+            <div className="flex justify-center gap-1.5 sm:gap-2 mb-4 sm:mb-6">
+              {steps.map((_, i) => (
+                <div
+                  key={i}
+                  className={`h-1.5 sm:h-2 rounded-full transition-all duration-300 ${
+                    i === step
+                      ? "w-6 sm:w-8 bg-primary"
+                      : i < step
+                        ? "w-1.5 sm:w-2 bg-primary/50"
+                        : "w-1.5 sm:w-2 bg-border"
+                  }`}
+                />
+              ))}
+            </div>
+
+            {/* Action button - responsive */}
+            <button
+              onClick={handleNext}
+              className="w-full py-2.5 sm:py-3 px-4 bg-primary text-primary-foreground rounded-lg sm:rounded-xl font-medium hover:bg-primary/90 transition-colors zen-shadow-sm flex items-center justify-center gap-2 text-sm sm:text-base"
+            >
+              {step < steps.length - 1
+                ? t.onboardingNext || "Next"
+                : t.onboardingGetStarted || "Let's start!"}
+              <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 rtl:scale-x-[-1]" />
             </button>
           </div>
-          <h2
-            id="onboarding-welcome-title"
-            className="text-xl sm:text-2xl font-bold text-foreground mb-2"
-          >
-            {currentStep.title}
-          </h2>
-          <p className="text-sm sm:text-base text-muted-foreground">{currentStep.description}</p>
-        </div>
-
-        {/* Progress dots - responsive */}
-        <div className="px-4 sm:px-6 pt-4 sm:pt-6 pb-4">
-          <div className="flex justify-center gap-1.5 sm:gap-2 mb-4 sm:mb-6">
-            {steps.map((_, i) => (
-              <div
-                key={i}
-                className={`h-1.5 sm:h-2 rounded-full transition-all duration-300 ${
-                  i === step
-                    ? "w-6 sm:w-8 bg-primary"
-                    : i < step
-                      ? "w-1.5 sm:w-2 bg-primary/50"
-                      : "w-1.5 sm:w-2 bg-border"
-                }`}
-              />
-            ))}
-          </div>
-
-          {/* Action button - responsive */}
-          <button
-            onClick={handleNext}
-            className="w-full py-2.5 sm:py-3 px-4 bg-primary text-primary-foreground rounded-lg sm:rounded-xl font-medium hover:bg-primary/90 transition-colors zen-shadow-sm flex items-center justify-center gap-2 text-sm sm:text-base"
-          >
-            {step < steps.length - 1
-              ? t.onboardingNext || "Next"
-              : t.onboardingGetStarted || "Let's start!"}
-            <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 rtl:scale-x-[-1]" />
-          </button>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 

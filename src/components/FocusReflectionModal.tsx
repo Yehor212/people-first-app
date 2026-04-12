@@ -71,19 +71,26 @@ export function FocusReflectionModal({
   useModalClose(true, onDismiss);
 
   return (
-    <motion.div
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center px-4 z-[60] md:mx-auto md:my-6 md:max-w-lg md:rounded-2xl md:shadow-2xl"
-      role="dialog"
-      aria-modal="true"
-      aria-label={t.ariaFocusReflection}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) {
-          onDismiss();
-        }
-      }}
-    >
+    <>
+      {/* Desktop backdrop */}
+      <div
+        className="hidden md:block fixed inset-0 z-[59] bg-black/60 backdrop-blur-sm [-webkit-backdrop-filter:blur(4px)]"
+        onClick={onDismiss}
+        aria-hidden="true"
+      />
+      <motion.div
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center px-4 z-[60] md:mx-auto md:my-6 md:max-w-lg md:rounded-2xl md:shadow-2xl"
+        role="dialog"
+        aria-modal="true"
+        aria-label={t.ariaFocusReflection}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        onClick={(e) => {
+          if (e.target === e.currentTarget) {
+            onDismiss();
+          }
+        }}
+      >
       <motion.div
         className="w-full max-w-xs sm:max-w-sm relative overflow-hidden rounded-2xl"
         initial={{ scale: 0.9, opacity: 0 }}
@@ -204,5 +211,6 @@ export function FocusReflectionModal({
         </div>
       </motion.div>
     </motion.div>
+    </>
   );
 }

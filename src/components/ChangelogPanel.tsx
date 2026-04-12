@@ -164,64 +164,72 @@ export function ChangelogPanel({ onClose }: ChangelogPanelProps) {
   };
 
   return (
-    <div
-      className="fixed inset-0 md:mx-auto md:my-6 md:max-w-2xl md:rounded-2xl md:shadow-2xl z-[80] bg-background motion-safe:animate-fade-in overflow-hidden flex flex-col"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="changelog-title"
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-border bg-card/80 backdrop-blur-sm">
-        <div className="flex items-center gap-3">
-          <History className="w-6 h-6 text-primary" />
-          <h2 id="changelog-title" className="text-xl font-bold text-foreground">
-            {t.changelogTitle || "Version History"}
-          </h2>
-        </div>
-        <button
-          onClick={onClose}
-          aria-label={t.close || "Close"}
-          className="p-2 hover:bg-muted rounded-full transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
-        >
-          <X className="w-6 h-6" />
-        </button>
-      </div>
-
-      {/* Controls */}
-      <div className="flex gap-2 p-4 border-b border-border">
-        <button
-          onClick={expandAll}
-          className="px-3 py-1.5 text-xs bg-secondary text-secondary-foreground rounded-lg hover:bg-muted transition-colors min-h-[44px] flex items-center justify-center"
-        >
-          {t.changelogExpandAll || "Expand All"}
-        </button>
-        <button
-          onClick={collapseAll}
-          className="px-3 py-1.5 text-xs bg-secondary text-secondary-foreground rounded-lg hover:bg-muted transition-colors min-h-[44px] flex items-center justify-center"
-        >
-          {t.changelogCollapseAll || "Collapse All"}
-        </button>
-      </div>
-
-      {/* Version List */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3 pb-safe">
-        {changelog.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground">
-            {t.changelogEmpty || "No version history available"}
+    <>
+      {/* Desktop backdrop */}
+      <div
+        className="hidden md:block fixed inset-0 z-[79] bg-black/40 backdrop-blur-sm [-webkit-backdrop-filter:blur(4px)]"
+        onClick={onClose}
+        aria-hidden="true"
+      />
+      <div
+        className="fixed inset-0 md:mx-auto md:my-6 md:max-w-2xl md:rounded-2xl md:shadow-2xl z-[80] bg-background motion-safe:animate-fade-in overflow-hidden flex flex-col"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="changelog-title"
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-border bg-card/80 backdrop-blur-sm">
+          <div className="flex items-center gap-3">
+            <History className="w-6 h-6 text-primary" />
+            <h2 id="changelog-title" className="text-xl font-bold text-foreground">
+              {t.changelogTitle || "Version History"}
+            </h2>
           </div>
-        ) : (
-          changelog.map((version) => (
-            <VersionCard
-              key={version.version}
-              version={version}
-              isExpanded={expandedVersions.has(version.version)}
-              onToggle={() => toggleVersion(version.version)}
-              t={t as unknown as Record<string, string>}
-            />
-          ))
-        )}
+          <button
+            onClick={onClose}
+            aria-label={t.close || "Close"}
+            className="p-2 hover:bg-muted rounded-full transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        {/* Controls */}
+        <div className="flex gap-2 p-4 border-b border-border">
+          <button
+            onClick={expandAll}
+            className="px-3 py-1.5 text-xs bg-secondary text-secondary-foreground rounded-lg hover:bg-muted transition-colors min-h-[44px] flex items-center justify-center"
+          >
+            {t.changelogExpandAll || "Expand All"}
+          </button>
+          <button
+            onClick={collapseAll}
+            className="px-3 py-1.5 text-xs bg-secondary text-secondary-foreground rounded-lg hover:bg-muted transition-colors min-h-[44px] flex items-center justify-center"
+          >
+            {t.changelogCollapseAll || "Collapse All"}
+          </button>
+        </div>
+
+        {/* Version List */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-3 pb-safe">
+          {changelog.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              {t.changelogEmpty || "No version history available"}
+            </div>
+          ) : (
+            changelog.map((version) => (
+              <VersionCard
+                key={version.version}
+                version={version}
+                isExpanded={expandedVersions.has(version.version)}
+                onToggle={() => toggleVersion(version.version)}
+                t={t as unknown as Record<string, string>}
+              />
+            ))
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 

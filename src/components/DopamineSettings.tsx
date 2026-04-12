@@ -124,21 +124,28 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
   );
 
   return (
-    <div
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4 md:mx-auto md:my-6 md:max-w-lg md:rounded-2xl md:shadow-2xl"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="dopamine-settings-title"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-      onKeyDown={(e) => {
-        if (e.key === "Escape") onClose();
-      }}
-      onTouchEnd={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
+    <>
+      {/* Desktop backdrop */}
+      <div
+        className="hidden md:block fixed inset-0 z-[59] bg-black/50 backdrop-blur-sm [-webkit-backdrop-filter:blur(4px)]"
+        onClick={onClose}
+        aria-hidden="true"
+      />
+      <div
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4 md:mx-auto md:my-6 md:max-w-lg md:rounded-2xl md:shadow-2xl"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="dopamine-settings-title"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) onClose();
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") onClose();
+        }}
+        onTouchEnd={(e) => {
+          if (e.target === e.currentTarget) onClose();
+        }}
+      >
       <div
         className="bg-card rounded-2xl shadow-2xl max-w-md w-full max-h-[90dvh] overflow-y-auto scroll-pt-[80px]"
         // A11Y-OK: non-interactive container — stopPropagation prevents backdrop-close, outer div has role="dialog"
@@ -332,6 +339,7 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
         </div>
       </div>
     </div>
+    </>
   );
 }
 

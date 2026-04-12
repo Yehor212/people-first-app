@@ -178,182 +178,193 @@ export const WeeklyReport = memo(function WeeklyReport({
   const motivation = getMotivationalMessage();
 
   return (
-    <motion.div
-      ref={modalRef}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm md:mx-auto md:my-6 md:max-w-lg md:rounded-2xl md:shadow-2xl"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="weekly-report-title"
-      onKeyDown={handleKeyDown}
-    >
+    <>
+      {/* Desktop backdrop */}
+      {/* A11Y-OK: decorative backdrop overlay, aria-hidden removes from accessibility tree */}
+      <div
+        className="hidden md:block fixed inset-0 z-[59] bg-black/60 backdrop-blur-sm [-webkit-backdrop-filter:blur(4px)]"
+        onClick={onClose}
+        aria-hidden="true"
+      />
       <motion.div
-        initial={{ scale: 0.9, opacity: 0, y: 20 }}
-        animate={{ scale: 1, opacity: 1, y: 0 }}
-        exit={{ scale: 0.9, opacity: 0, y: 20 }}
-        transition={{ type: "spring", stiffness: 300, damping: 25 }}
-        className="relative max-w-2xl w-full bg-card rounded-3xl shadow-2xl border border-border/50 max-h-[90dvh] overflow-hidden"
+        ref={modalRef}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm md:mx-auto md:my-6 md:max-w-lg md:rounded-2xl md:shadow-2xl"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="weekly-report-title"
+        onKeyDown={handleKeyDown}
       >
-        {/* Close button */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 end-4 z-10 p-2 rounded-full bg-background/80 backdrop-blur-sm hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-          aria-label={t.close || "Close"}
+        <motion.div
+          initial={{ scale: 0.9, opacity: 0, y: 20 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          exit={{ scale: 0.9, opacity: 0, y: 20 }}
+          transition={{ type: "spring", stiffness: 300, damping: 25 }}
+          className="relative max-w-2xl w-full bg-card rounded-3xl shadow-2xl border border-border/50 max-h-[90dvh] overflow-hidden"
         >
-          <X className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
-        </button>
-
-        {/* Scrollable content */}
-        <div className="max-h-[90dvh] overflow-y-auto">
-          {/* Premium Header with gradient background */}
-          <div className="relative overflow-hidden">
-            {/* Gradient background layers */}
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-accent/10 to-primary/5" />
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,hsl(var(--primary)/0.15),transparent_50%)]" />
-
-            {/* Header content */}
-            <div className="relative p-8 pb-6 text-center">
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ delay: 0.2, type: "spring", stiffness: 300 }}
-                className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-background/80 backdrop-blur-sm shadow-lg mb-4"
-              >
-                <EmojiOrIcon emoji={motivation.emoji} iconName={motivation.iconName} size="xl" />
-              </motion.div>
-              <h2
-                id="weekly-report-title"
-                className="text-2xl sm:text-3xl font-bold mb-2 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent"
-              >
-                {t.weeklyReport}
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                {parseLocalDate(weekStats.reportWeekStart).toLocaleDateString(language, {
-                  month: "long",
-                  day: "numeric",
-                })}{" "}
-                -{" "}
-                {parseLocalDate(weekStats.reportWeekEnd).toLocaleDateString(language, {
-                  month: "long",
-                  day: "numeric",
-                  year: "numeric",
-                })}
-              </p>
-            </div>
-          </div>
-
-          {/* Motivational Message */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="mx-6 mb-6 p-5 bg-gradient-to-br from-primary/10 via-accent/5 to-transparent rounded-2xl border border-primary/20"
+          {/* Close button */}
+          <button
+            onClick={onClose}
+            className="absolute top-4 end-4 z-10 p-2 rounded-full bg-background/80 backdrop-blur-sm hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            aria-label={t.close || "Close"}
           >
-            <div className="flex items-start gap-3">
-              <Sparkles className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" aria-hidden="true" />
-              <div>
-                <h3 className="text-lg font-bold mb-1">{motivation.title}</h3>
-                <p className="text-sm text-muted-foreground">{motivation.message}</p>
+            <X className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
+          </button>
+
+          {/* Scrollable content */}
+          <div className="max-h-[90dvh] overflow-y-auto">
+            {/* Premium Header with gradient background */}
+            <div className="relative overflow-hidden">
+              {/* Gradient background layers */}
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-accent/10 to-primary/5" />
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,hsl(var(--primary)/0.15),transparent_50%)]" />
+
+              {/* Header content */}
+              <div className="relative p-8 pb-6 text-center">
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.2, type: "spring", stiffness: 300 }}
+                  className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-background/80 backdrop-blur-sm shadow-lg mb-4"
+                >
+                  <EmojiOrIcon emoji={motivation.emoji} iconName={motivation.iconName} size="xl" />
+                </motion.div>
+                <h2
+                  id="weekly-report-title"
+                  className="text-2xl sm:text-3xl font-bold mb-2 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent"
+                >
+                  {t.weeklyReport}
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  {parseLocalDate(weekStats.reportWeekStart).toLocaleDateString(language, {
+                    month: "long",
+                    day: "numeric",
+                  })}{" "}
+                  -{" "}
+                  {parseLocalDate(weekStats.reportWeekEnd).toLocaleDateString(language, {
+                    month: "long",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
+                </p>
               </div>
             </div>
-          </motion.div>
 
-          {/* Stats Grid - Premium cards */}
-          <div className="grid grid-cols-2 gap-3 px-6 mb-6">
-            {/* Habits */}
+            {/* Motivational Message */}
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.35 }}
-              whileHover={{ y: -2 }}
-              className="relative overflow-hidden rounded-xl bg-card border border-border/50 p-4 shadow-[0_2px_8px_-2px_hsl(var(--foreground)/0.08)] hover:shadow-[0_8px_20px_-4px_hsl(var(--primary)/0.15)] transition-all duration-300"
+              transition={{ delay: 0.3 }}
+              className="mx-6 mb-6 p-5 bg-gradient-to-br from-primary/10 via-accent/5 to-transparent rounded-2xl border border-primary/20"
             >
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center mb-3">
-                <Target className="w-5 h-5 text-primary" aria-hidden="true" />
-              </div>
-              <p className="text-2xl font-bold tabular-nums">
-                {weekStats.habitsCompleted}/{weekStats.totalHabitsGoal}
-              </p>
-              <p className="text-xs text-muted-foreground">{t.habits}</p>
-              {weekStats.improvement !== 0 && (
-                <div
-                  className={cn(
-                    "absolute top-3 end-3 flex items-center gap-1 text-xs font-medium",
-                    weekStats.improvement > 0 ? "text-[hsl(var(--mood-good))]" : "text-destructive"
-                  )}
-                >
-                  {weekStats.improvement > 0 ? (
-                    <TrendingUp className="w-3 h-3" aria-hidden="true" />
-                  ) : (
-                    <TrendingDown className="w-3 h-3" aria-hidden="true" />
-                  )}
-                  {Math.abs(Math.round(weekStats.improvement))}%
+              <div className="flex items-start gap-3">
+                <Sparkles className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" aria-hidden="true" />
+                <div>
+                  <h3 className="text-lg font-bold mb-1">{motivation.title}</h3>
+                  <p className="text-sm text-muted-foreground">{motivation.message}</p>
                 </div>
-              )}
+              </div>
             </motion.div>
 
-            {/* Focus */}
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              whileHover={{ y: -2 }}
-              className="relative overflow-hidden rounded-xl bg-card border border-border/50 p-4 shadow-[0_2px_8px_-2px_hsl(var(--foreground)/0.08)] hover:shadow-[0_8px_20px_-4px_hsl(var(--primary)/0.15)] transition-all duration-300"
-            >
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500/20 to-cyan-500/10 flex items-center justify-center mb-3">
-                <Brain className="w-5 h-5 text-blue-500" aria-hidden="true" />
-              </div>
-              <p className="text-2xl font-bold tabular-nums">{weekStats.focusMinutes}</p>
-              <p className="text-xs text-muted-foreground">{t.focusMinutes || t.min}</p>
-            </motion.div>
+            {/* Stats Grid - Premium cards */}
+            <div className="grid grid-cols-2 gap-3 px-6 mb-6">
+              {/* Habits */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.35 }}
+                whileHover={{ y: -2 }}
+                className="relative overflow-hidden rounded-xl bg-card border border-border/50 p-4 shadow-[0_2px_8px_-2px_hsl(var(--foreground)/0.08)] hover:shadow-[0_8px_20px_-4px_hsl(var(--primary)/0.15)] transition-all duration-300"
+              >
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center mb-3">
+                  <Target className="w-5 h-5 text-primary" aria-hidden="true" />
+                </div>
+                <p className="text-2xl font-bold tabular-nums">
+                  {weekStats.habitsCompleted}/{weekStats.totalHabitsGoal}
+                </p>
+                <p className="text-xs text-muted-foreground">{t.habits}</p>
+                {weekStats.improvement !== 0 && (
+                  <div
+                    className={cn(
+                      "absolute top-3 end-3 flex items-center gap-1 text-xs font-medium",
+                      weekStats.improvement > 0
+                        ? "text-[hsl(var(--mood-good))]"
+                        : "text-destructive"
+                    )}
+                  >
+                    {weekStats.improvement > 0 ? (
+                      <TrendingUp className="w-3 h-3" aria-hidden="true" />
+                    ) : (
+                      <TrendingDown className="w-3 h-3" aria-hidden="true" />
+                    )}
+                    {Math.abs(Math.round(weekStats.improvement))}%
+                  </div>
+                )}
+              </motion.div>
 
-            {/* Gratitude */}
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.45 }}
-              whileHover={{ y: -2 }}
-              className="relative overflow-hidden rounded-xl bg-card border border-border/50 p-4 shadow-[0_2px_8px_-2px_hsl(var(--foreground)/0.08)] hover:shadow-[0_8px_20px_-4px_hsl(var(--primary)/0.15)] transition-all duration-300"
-            >
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-pink-500/20 to-rose-500/10 flex items-center justify-center mb-3">
-                <Heart className="w-5 h-5 text-pink-500" aria-hidden="true" />
-              </div>
-              <p className="text-2xl font-bold tabular-nums">{weekStats.gratitudeCount}</p>
-              <p className="text-xs text-muted-foreground">{t.gratitude}</p>
-            </motion.div>
+              {/* Focus */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                whileHover={{ y: -2 }}
+                className="relative overflow-hidden rounded-xl bg-card border border-border/50 p-4 shadow-[0_2px_8px_-2px_hsl(var(--foreground)/0.08)] hover:shadow-[0_8px_20px_-4px_hsl(var(--primary)/0.15)] transition-all duration-300"
+              >
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500/20 to-cyan-500/10 flex items-center justify-center mb-3">
+                  <Brain className="w-5 h-5 text-blue-500" aria-hidden="true" />
+                </div>
+                <p className="text-2xl font-bold tabular-nums">{weekStats.focusMinutes}</p>
+                <p className="text-xs text-muted-foreground">{t.focusMinutes || t.min}</p>
+              </motion.div>
 
-            {/* Best Day */}
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-              whileHover={{ y: -2 }}
-              className="relative overflow-hidden rounded-xl bg-card border border-border/50 p-4 shadow-[0_2px_8px_-2px_hsl(var(--foreground)/0.08)] hover:shadow-[0_8px_20px_-4px_hsl(var(--primary)/0.15)] transition-all duration-300"
-            >
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-500/20 to-orange-500/10 flex items-center justify-center mb-3">
-                <Award className="w-5 h-5 text-amber-500" aria-hidden="true" />
-              </div>
-              <p className="text-lg font-bold capitalize truncate">{weekStats.bestDay}</p>
-              <p className="text-xs text-muted-foreground">{t.bestDay}</p>
-            </motion.div>
+              {/* Gratitude */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.45 }}
+                whileHover={{ y: -2 }}
+                className="relative overflow-hidden rounded-xl bg-card border border-border/50 p-4 shadow-[0_2px_8px_-2px_hsl(var(--foreground)/0.08)] hover:shadow-[0_8px_20px_-4px_hsl(var(--primary)/0.15)] transition-all duration-300"
+              >
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-pink-500/20 to-rose-500/10 flex items-center justify-center mb-3">
+                  <Heart className="w-5 h-5 text-pink-500" aria-hidden="true" />
+                </div>
+                <p className="text-2xl font-bold tabular-nums">{weekStats.gratitudeCount}</p>
+                <p className="text-xs text-muted-foreground">{t.gratitude}</p>
+              </motion.div>
+
+              {/* Best Day */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+                whileHover={{ y: -2 }}
+                className="relative overflow-hidden rounded-xl bg-card border border-border/50 p-4 shadow-[0_2px_8px_-2px_hsl(var(--foreground)/0.08)] hover:shadow-[0_8px_20px_-4px_hsl(var(--primary)/0.15)] transition-all duration-300"
+              >
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-500/20 to-orange-500/10 flex items-center justify-center mb-3">
+                  <Award className="w-5 h-5 text-amber-500" aria-hidden="true" />
+                </div>
+                <p className="text-lg font-bold capitalize truncate">{weekStats.bestDay}</p>
+                <p className="text-xs text-muted-foreground">{t.bestDay}</p>
+              </motion.div>
+            </div>
+
+            {/* Close Button */}
+            <div className="px-6 pb-6">
+              <motion.button
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.55 }}
+                onClick={onClose}
+                className="w-full py-4 bg-gradient-to-r from-primary to-accent text-white font-bold rounded-xl hover:shadow-lg hover:shadow-primary/25 transition-all active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+              >
+                {t.continueBtn}
+              </motion.button>
+            </div>
           </div>
-
-          {/* Close Button */}
-          <div className="px-6 pb-6">
-            <motion.button
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.55 }}
-              onClick={onClose}
-              className="w-full py-4 bg-gradient-to-r from-primary to-accent text-white font-bold rounded-xl hover:shadow-lg hover:shadow-primary/25 transition-all active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-            >
-              {t.continueBtn}
-            </motion.button>
-          </div>
-        </div>
+        </motion.div>
       </motion.div>
-    </motion.div>
+    </>
   );
 });

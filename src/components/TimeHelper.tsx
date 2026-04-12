@@ -114,236 +114,244 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
     timeLeft < 300 ? "text-red-500" : timeLeft < 900 ? "text-yellow-500" : "text-primary";
 
   return (
-    <div
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4 md:mx-auto md:my-6 md:max-w-lg md:rounded-2xl md:shadow-2xl"
-      role="dialog"
-      aria-modal="true"
-    >
+    <>
+      {/* Desktop backdrop */}
       <div
-        ref={modalRef}
-        onKeyDown={modalKeyDown}
-        tabIndex={-1}
-        role="document"
-        className="bg-card rounded-2xl shadow-2xl max-w-lg w-full p-6"
+        className="hidden md:block fixed inset-0 z-[59] bg-black/50 backdrop-blur-sm [-webkit-backdrop-filter:blur(4px)]"
+        onClick={onClose}
+        aria-hidden="true"
+      />
+      <div
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4 md:mx-auto md:my-6 md:max-w-lg md:rounded-2xl md:shadow-2xl"
+        role="dialog"
+        aria-modal="true"
       >
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="p-2 zen-gradient rounded-xl">
-              <Clock className="w-6 h-6 text-white" />
+        <div
+          ref={modalRef}
+          onKeyDown={modalKeyDown}
+          tabIndex={-1}
+          role="document"
+          className="bg-card rounded-2xl shadow-2xl max-w-lg w-full p-6"
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 zen-gradient rounded-xl">
+                <Clock className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold">
+                  {t.timeBlindnessHelper || "Time Blindness Helper"}
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  {t.visualTimeAwareness || "Visual time awareness for ADHD"}
+                </p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-xl font-bold">
-                {t.timeBlindnessHelper || "Time Blindness Helper"}
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                {t.visualTimeAwareness || "Visual time awareness for ADHD"}
-              </p>
-            </div>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-muted rounded-lg transition-colors"
+              aria-label={t.close || "Close"}
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-muted rounded-lg transition-colors"
-            aria-label={t.close || "Close"}
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
 
-        {/* Circular Timer */}
-        <div className="mb-6">
-          <div className="relative w-64 h-64 mx-auto">
-            <svg className="w-full h-full transform -rotate-90">
-              <circle
-                cx="128"
-                cy="128"
-                r="120"
-                fill="none"
-                stroke="rgba(139, 92, 246, 0.1)"
-                strokeWidth="12"
-              />
-              <circle
-                cx="128"
-                cy="128"
-                r="120"
-                fill="none"
-                stroke="url(#timeGradient)"
-                strokeWidth="12"
-                strokeLinecap="round"
-                strokeDasharray={`${2 * Math.PI * 120}`}
-                strokeDashoffset={`${2 * Math.PI * 120 * (1 - progress / 100)}`}
-                className="transition-all duration-1000"
-              />
-              <defs>
-                <linearGradient id="timeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#8B5CF6" />
-                  <stop offset="100%" stopColor="#EC4899" />
-                </linearGradient>
-              </defs>
-            </svg>
+          {/* Circular Timer */}
+          <div className="mb-6">
+            <div className="relative w-64 h-64 mx-auto">
+              <svg className="w-full h-full transform -rotate-90">
+                <circle
+                  cx="128"
+                  cy="128"
+                  r="120"
+                  fill="none"
+                  stroke="rgba(139, 92, 246, 0.1)"
+                  strokeWidth="12"
+                />
+                <circle
+                  cx="128"
+                  cy="128"
+                  r="120"
+                  fill="none"
+                  stroke="url(#timeGradient)"
+                  strokeWidth="12"
+                  strokeLinecap="round"
+                  strokeDasharray={`${2 * Math.PI * 120}`}
+                  strokeDashoffset={`${2 * Math.PI * 120 * (1 - progress / 100)}`}
+                  className="transition-all duration-1000"
+                />
+                <defs>
+                  <linearGradient id="timeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#8B5CF6" />
+                    <stop offset="100%" stopColor="#EC4899" />
+                  </linearGradient>
+                </defs>
+              </svg>
 
-            {/* Time Display */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-center">
-                <div className={cn("text-5xl font-bold mb-2", progressColor)}>
-                  {formatTime(timeLeft)}
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  {timeLeft > 0 ? getTimeRemaining() : t.timesUp || "Time's up!"}
+              {/* Time Display */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-center">
+                  <div className={cn("text-5xl font-bold mb-2", progressColor)}>
+                    {formatTime(timeLeft)}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {timeLeft > 0 ? getTimeRemaining() : t.timesUp || "Time's up!"}
+                  </div>
                 </div>
               </div>
             </div>
+
+            {/* End Time Prediction */}
+            {isRunning && timeLeft > 0 && (
+              <div className="text-center mt-4 p-3 bg-primary/10 rounded-xl">
+                <p className="text-sm text-muted-foreground mb-1">
+                  {t.youllFinishAt || "🎯 You'll finish at:"}
+                </p>
+                <p className="text-xl font-bold text-primary">{getEndTime()}</p>
+              </div>
+            )}
           </div>
 
-          {/* End Time Prediction */}
-          {isRunning && timeLeft > 0 && (
-            <div className="text-center mt-4 p-3 bg-primary/10 rounded-xl">
-              <p className="text-sm text-muted-foreground mb-1">
-                {t.youllFinishAt || "🎯 You'll finish at:"}
-              </p>
-              <p className="text-xl font-bold text-primary">{getEndTime()}</p>
+          {/* Controls */}
+          {!isRunning ? (
+            <>
+              {/* Duration Selector */}
+              <div className="mb-4">
+                <label className="text-sm font-medium mb-2 block">
+                  {t.durationMinutes || "Duration (minutes)"}
+                </label>
+                <div className="grid grid-cols-4 gap-2 mb-3">
+                  {[15, 30, 45, 60].map((mins) => (
+                    <button
+                      key={mins}
+                      onClick={() => setDuration(mins)}
+                      className={cn(
+                        "py-2 rounded-lg font-medium transition-all",
+                        duration === mins
+                          ? "zen-gradient text-white zen-shadow"
+                          : "bg-muted hover:bg-muted/70"
+                      )}
+                    >
+                      {mins}m
+                    </button>
+                  ))}
+                </div>
+                <input
+                  type="range"
+                  min="5"
+                  max="180"
+                  step="5"
+                  value={duration}
+                  onChange={(e) => setDuration(safeParseInt(e.target.value, 60, 5, 180))}
+                  className="w-full"
+                  aria-label={t.ariaDurationMinutes}
+                />
+                <div className="text-center text-sm text-muted-foreground mt-1">
+                  {(t.nMinutes || "{n} minutes").replace("{n}", String(duration))}
+                </div>
+              </div>
+
+              {/* Ping Interval */}
+              <div className="mb-4">
+                <label className="text-sm font-medium mb-2 block">
+                  {t.pingEveryMinutes || "Ping Every (minutes)"}
+                </label>
+                <div className="grid grid-cols-4 gap-2">
+                  {[5, 10, 15, 30].map((mins) => (
+                    <button
+                      key={mins}
+                      onClick={() => setPingInterval(mins)}
+                      className={cn(
+                        "py-2 rounded-lg font-medium transition-all text-sm",
+                        pingInterval === mins
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted hover:bg-muted/70"
+                      )}
+                    >
+                      {mins}m
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Sound Toggle */}
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-sm font-medium">{t.audioPings || "Audio Pings"}</span>
+                <div className="flex gap-2">
+                  <button
+                    onClick={playNotification}
+                    className="px-3 py-2 rounded-lg bg-muted hover:bg-muted/70 transition-colors text-sm font-medium"
+                    title={t.testSound}
+                  >
+                    {t.testSound || "🔊 Test"}
+                  </button>
+                  <button
+                    onClick={() => setSoundEnabled(!soundEnabled)}
+                    className={cn(
+                      "flex items-center gap-2 px-3 py-2 rounded-lg transition-colors",
+                      soundEnabled
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground"
+                    )}
+                  >
+                    {soundEnabled ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
+                    <span className="text-sm">
+                      {soundEnabled ? t.soundOn || "On" : t.soundOff || "Off"}
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Start Button */}
+              <button
+                onClick={() => setIsRunning(true)}
+                className="w-full py-3 zen-gradient text-white font-bold rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+              >
+                <Play className="w-5 h-5" />
+                {t.startTimer || "Start Timer"}
+              </button>
+            </>
+          ) : (
+            <div className="flex gap-2">
+              <button
+                onClick={() => setIsRunning(false)}
+                className="flex-1 py-3 bg-muted hover:bg-muted/70 font-medium rounded-xl transition-colors flex items-center justify-center gap-2"
+              >
+                <Pause className="w-5 h-5" />
+                {t.pauseTimer || "Pause"}
+              </button>
+              <button
+                onClick={() => {
+                  setIsRunning(false);
+                  setTimeLeft(duration * 60);
+                }}
+                className="flex-1 py-3 bg-destructive/10 hover:bg-destructive/20 text-destructive font-medium rounded-xl transition-colors"
+              >
+                {t.resetTimer || "Reset"}
+              </button>
             </div>
           )}
-        </div>
 
-        {/* Controls */}
-        {!isRunning ? (
-          <>
-            {/* Duration Selector */}
-            <div className="mb-4">
-              <label className="text-sm font-medium mb-2 block">
-                {t.durationMinutes || "Duration (minutes)"}
-              </label>
-              <div className="grid grid-cols-4 gap-2 mb-3">
-                {[15, 30, 45, 60].map((mins) => (
-                  <button
-                    key={mins}
-                    onClick={() => setDuration(mins)}
-                    className={cn(
-                      "py-2 rounded-lg font-medium transition-all",
-                      duration === mins
-                        ? "zen-gradient text-white zen-shadow"
-                        : "bg-muted hover:bg-muted/70"
-                    )}
-                  >
-                    {mins}m
-                  </button>
-                ))}
+          {/* Info */}
+          <div className="mt-6 p-4 bg-primary/5 border border-primary/20 rounded-xl">
+            <div className="flex gap-3">
+              <div className="text-2xl">💡</div>
+              <div className="text-sm">
+                <div className="font-medium mb-1">
+                  {t.adhdTimeManagement || "ADHD Time Management"}
+                </div>
+                <ul className="text-muted-foreground space-y-1 list-disc list-inside">
+                  <li>{t.adhdTip1 || "Audio pings help track time passing"}</li>
+                  <li>{t.adhdTip2 || "Visual countdown reduces anxiety"}</li>
+                  <li>{t.adhdTip3 || "End time prediction = better planning"}</li>
+                  <li>{t.adhdTip4 || "Color changes warn when time is low"}</li>
+                </ul>
               </div>
-              <input
-                type="range"
-                min="5"
-                max="180"
-                step="5"
-                value={duration}
-                onChange={(e) => setDuration(safeParseInt(e.target.value, 60, 5, 180))}
-                className="w-full"
-                aria-label={t.ariaDurationMinutes}
-              />
-              <div className="text-center text-sm text-muted-foreground mt-1">
-                {(t.nMinutes || "{n} minutes").replace("{n}", String(duration))}
-              </div>
-            </div>
-
-            {/* Ping Interval */}
-            <div className="mb-4">
-              <label className="text-sm font-medium mb-2 block">
-                {t.pingEveryMinutes || "Ping Every (minutes)"}
-              </label>
-              <div className="grid grid-cols-4 gap-2">
-                {[5, 10, 15, 30].map((mins) => (
-                  <button
-                    key={mins}
-                    onClick={() => setPingInterval(mins)}
-                    className={cn(
-                      "py-2 rounded-lg font-medium transition-all text-sm",
-                      pingInterval === mins
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted hover:bg-muted/70"
-                    )}
-                  >
-                    {mins}m
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Sound Toggle */}
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-sm font-medium">{t.audioPings || "Audio Pings"}</span>
-              <div className="flex gap-2">
-                <button
-                  onClick={playNotification}
-                  className="px-3 py-2 rounded-lg bg-muted hover:bg-muted/70 transition-colors text-sm font-medium"
-                  title={t.testSound}
-                >
-                  {t.testSound || "🔊 Test"}
-                </button>
-                <button
-                  onClick={() => setSoundEnabled(!soundEnabled)}
-                  className={cn(
-                    "flex items-center gap-2 px-3 py-2 rounded-lg transition-colors",
-                    soundEnabled
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-muted-foreground"
-                  )}
-                >
-                  {soundEnabled ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
-                  <span className="text-sm">
-                    {soundEnabled ? t.soundOn || "On" : t.soundOff || "Off"}
-                  </span>
-                </button>
-              </div>
-            </div>
-
-            {/* Start Button */}
-            <button
-              onClick={() => setIsRunning(true)}
-              className="w-full py-3 zen-gradient text-white font-bold rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
-            >
-              <Play className="w-5 h-5" />
-              {t.startTimer || "Start Timer"}
-            </button>
-          </>
-        ) : (
-          <div className="flex gap-2">
-            <button
-              onClick={() => setIsRunning(false)}
-              className="flex-1 py-3 bg-muted hover:bg-muted/70 font-medium rounded-xl transition-colors flex items-center justify-center gap-2"
-            >
-              <Pause className="w-5 h-5" />
-              {t.pauseTimer || "Pause"}
-            </button>
-            <button
-              onClick={() => {
-                setIsRunning(false);
-                setTimeLeft(duration * 60);
-              }}
-              className="flex-1 py-3 bg-destructive/10 hover:bg-destructive/20 text-destructive font-medium rounded-xl transition-colors"
-            >
-              {t.resetTimer || "Reset"}
-            </button>
-          </div>
-        )}
-
-        {/* Info */}
-        <div className="mt-6 p-4 bg-primary/5 border border-primary/20 rounded-xl">
-          <div className="flex gap-3">
-            <div className="text-2xl">💡</div>
-            <div className="text-sm">
-              <div className="font-medium mb-1">
-                {t.adhdTimeManagement || "ADHD Time Management"}
-              </div>
-              <ul className="text-muted-foreground space-y-1 list-disc list-inside">
-                <li>{t.adhdTip1 || "Audio pings help track time passing"}</li>
-                <li>{t.adhdTip2 || "Visual countdown reduces anxiety"}</li>
-                <li>{t.adhdTip3 || "End time prediction = better planning"}</li>
-                <li>{t.adhdTip4 || "Color changes warn when time is low"}</li>
-              </ul>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
