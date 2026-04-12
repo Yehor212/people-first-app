@@ -641,6 +641,11 @@ export const uk: Translations = {
   settingsGroupNotifications: "Сповіщення",
   settingsGroupData: "Дані та приватність",
   settingsGroupAccount: "Акаунт",
+  settingsGroupSecurity: "Безпека",
+  settingsSecurityDesc: "Налаштування блокування щоденника та безпеки",
+  journalLockTimeout: "Автоблокування щоденника",
+  journalLockTimeoutDesc: "Автоматично блокувати щоденник після періоду неактивності",
+  journalLockImmediateWarning: "Щоденник блокуватиметься щоразу, коли ви залишите екран щоденника",
   settingsGroupAbout: "Про додаток",
 
   // Feature Toggles / Modules (v1.5.9)

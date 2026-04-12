@@ -639,6 +639,11 @@ const arabicOverrides: Partial<Translations> = {
   settingsGroupNotifications: "الإشعارات",
   settingsGroupData: "البيانات والنسخ الاحتياطي",
   settingsGroupAccount: "الحساب",
+  settingsGroupSecurity: "الأمان",
+  settingsSecurityDesc: "إعداد قفل اليوميات وتفضيلات الأمان",
+  journalLockTimeout: "القفل التلقائي لليوميات",
+  journalLockTimeoutDesc: "قفل اليوميات تلقائياً بعد فترة من عدم النشاط",
+  journalLockImmediateWarning: "سيتم قفل اليوميات في كل مرة تغادر فيها شاشة اليوميات",
   settingsGroupAbout: "حول التطبيق",
 
   // Modules

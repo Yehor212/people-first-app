@@ -642,6 +642,11 @@ export const en: Translations = {
   settingsGroupNotifications: "Notifications",
   settingsGroupData: "Data & Privacy",
   settingsGroupAccount: "Account",
+  settingsGroupSecurity: "Security",
+  settingsSecurityDesc: "Configure journal lock and security preferences",
+  journalLockTimeout: "Journal auto-lock",
+  journalLockTimeoutDesc: "Automatically lock journal after period of inactivity",
+  journalLockImmediateWarning: "Journal will lock every time you leave the diary screen",
   settingsGroupAbout: "About",
 
   // Feature Toggles / Modules (v1.5.9)

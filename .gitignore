@@ -92,6 +92,8 @@ ios/App/App/GoogleService-Info.plist
 coverage/
 test-results/
 playwright-report/
+screenshots/
+.playwright-mcp/
 
 # ============================================
 # Vite PWA dev artifacts

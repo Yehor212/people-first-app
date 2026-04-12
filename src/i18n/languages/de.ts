@@ -648,6 +648,12 @@ export const de: Translations = {
   settingsGroupNotifications: "Benachrichtigungen",
   settingsGroupData: "Daten & Datenschutz",
   settingsGroupAccount: "Konto",
+  settingsGroupSecurity: "Sicherheit",
+  settingsSecurityDesc: "Tagebuch-Sperre und Sicherheitseinstellungen konfigurieren",
+  journalLockTimeout: "Tagebuch automatisch sperren",
+  journalLockTimeoutDesc: "Tagebuch nach einer Inaktivitätsperiode automatisch sperren",
+  journalLockImmediateWarning:
+    "Das Tagebuch wird jedes Mal gesperrt, wenn du den Tagebuch-Bildschirm verlässt",
   settingsGroupAbout: "Über",
 
   // Feature Toggles / Modules (v1.5.9)

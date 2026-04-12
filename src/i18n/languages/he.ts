@@ -601,6 +601,11 @@ const hebrewOverrides: Partial<Translations> = {
   settingsGroupNotifications: "התראות",
   settingsGroupData: "נתונים וגיבוי",
   settingsGroupAccount: "חשבון",
+  settingsGroupSecurity: "אבטחה",
+  settingsSecurityDesc: "הגדרת נעילת היומן והעדפות אבטחה",
+  journalLockTimeout: "נעילה אוטומטית של היומן",
+  journalLockTimeoutDesc: "נעילת היומן אוטומטית לאחר תקופה של חוסר פעילות",
+  journalLockImmediateWarning: "היומן יינעל בכל פעם שתעזוב את מסך היומן",
   settingsGroupAbout: "אודות",
 
   // Modules

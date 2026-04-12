@@ -650,6 +650,12 @@ export const es: Translations = {
   settingsGroupNotifications: "Notificaciones",
   settingsGroupData: "Datos y privacidad",
   settingsGroupAccount: "Cuenta",
+  settingsGroupSecurity: "Seguridad",
+  settingsSecurityDesc: "Configurar el bloqueo del diario y preferencias de seguridad",
+  journalLockTimeout: "Bloqueo automático del diario",
+  journalLockTimeoutDesc: "Bloquear automáticamente el diario tras un período de inactividad",
+  journalLockImmediateWarning:
+    "El diario se bloqueará cada vez que salgas de la pantalla del diario",
   settingsGroupAbout: "Acerca de",
 
   // Feature Toggles / Modules (v1.5.9)

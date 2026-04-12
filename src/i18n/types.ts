@@ -793,6 +793,11 @@ export interface Translations {
   settingsGroupNotifications: string;
   settingsGroupData: string;
   settingsGroupAccount: string;
+  settingsGroupSecurity: string;
+  settingsSecurityDesc: string;
+  journalLockTimeout: string;
+  journalLockTimeoutDesc: string;
+  journalLockImmediateWarning: string;
   settingsGroupAbout: string;
 
   // Feature Toggles / Modules (v1.5.9)

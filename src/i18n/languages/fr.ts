@@ -651,6 +651,12 @@ export const fr: Translations = {
   settingsGroupNotifications: "Notifications",
   settingsGroupData: "Données et confidentialité",
   settingsGroupAccount: "Compte",
+  settingsGroupSecurity: "Sécurité",
+  settingsSecurityDesc: "Configurer le verrouillage du journal et les préférences de sécurité",
+  journalLockTimeout: "Verrouillage automatique du journal",
+  journalLockTimeoutDesc: "Verrouiller automatiquement le journal après une période d'inactivité",
+  journalLockImmediateWarning:
+    "Le journal se verrouillera chaque fois que vous quitterez l'écran du journal",
   settingsGroupAbout: "À propos",
 
   // Feature Toggles / Modules (v1.5.9)

@@ -628,6 +628,11 @@ export const ja: Translations = {
   settingsGroupNotifications: "通知",
   settingsGroupData: "データとプライバシー",
   settingsGroupAccount: "アカウント",
+  settingsGroupSecurity: "セキュリティ",
+  settingsSecurityDesc: "日記のロックとセキュリティ設定を構成する",
+  journalLockTimeout: "日記の自動ロック",
+  journalLockTimeoutDesc: "一定時間操作がない場合、日記を自動的にロックします",
+  journalLockImmediateWarning: "日記画面を離れるたびにロックされます",
   settingsGroupAbout: "情報",
 
   // Feature Toggles / Modules (v1.5.9)
