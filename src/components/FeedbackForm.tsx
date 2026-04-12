@@ -134,7 +134,7 @@ export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
 
   return (
     <div
-      className="fixed inset-0 z-[60] bg-black/80 flex items-end justify-center md:items-center md:inset-y-6 md:left-auto md:right-auto md:w-full md:mx-auto md:max-w-lg md:rounded-2xl md:shadow-2xl"
+      className="fixed inset-0 z-[60] bg-black/80 flex items-end justify-center md:items-center md:mx-auto md:my-6 md:max-w-lg md:rounded-2xl md:shadow-2xl"
       onMouseDown={handleOverlayMouseDown}
       onTouchEnd={handleOverlayTouchEnd}
       role="dialog"

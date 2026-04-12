@@ -86,7 +86,7 @@ export function FriendsPanel({
       role="dialog"
       aria-modal="true"
       aria-labelledby="friends-panel-title"
-      className="fixed inset-0 md:inset-y-6 md:left-auto md:right-auto md:w-full md:mx-auto md:max-w-2xl md:rounded-2xl md:shadow-2xl z-[60] bg-background/95 backdrop-blur-sm overflow-y-auto motion-safe:animate-fade-in"
+      className="fixed inset-0 md:mx-auto md:my-6 md:max-w-2xl md:rounded-2xl md:shadow-2xl z-[60] bg-background/95 backdrop-blur-sm overflow-y-auto motion-safe:animate-fade-in"
     >
       <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
         {/* Header */}

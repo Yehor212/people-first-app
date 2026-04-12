@@ -130,7 +130,7 @@ export function DailyRewards({ onClose, onClaimReward }: DailyRewardsProps) {
 
   return (
     <div
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 md:inset-y-6 md:left-auto md:right-auto md:w-full md:mx-auto md:max-w-lg md:rounded-2xl md:shadow-2xl"
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 md:mx-auto md:my-6 md:max-w-lg md:rounded-2xl md:shadow-2xl"
       role="dialog"
       aria-modal="true"
       aria-label={t.ariaDailyRewards}
