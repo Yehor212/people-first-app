@@ -134,11 +134,10 @@ export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
 
   return (
     <>
-      {/* Desktop backdrop */}
+      {/* A11Y-OK: decorative backdrop — aria-hidden="true" removes from a11y tree, no aria-label needed */}
       <div
         className="hidden md:block fixed inset-0 z-[59] bg-black/80 backdrop-blur-sm [-webkit-backdrop-filter:blur(4px)]"
-        onMouseDown={handleOverlayMouseDown}
-        onTouchEnd={handleOverlayTouchEnd}
+        onClick={handleClose}
         aria-hidden="true"
       />
       <div

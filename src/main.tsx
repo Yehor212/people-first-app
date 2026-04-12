@@ -55,8 +55,8 @@ try {
 // Listen for SW activation — new SW means new deploy, check version immediately
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.addEventListener("message", (event) => {
-    // Security: validate origin for defense-in-depth (CWE-345)
-    if (event.origin && event.origin !== window.location.origin) return;
+    // Security: validate origin for defense-in-depth (CWE-20, CWE-345)
+    if (!event.origin || event.origin !== window.location.origin) return;
     if (event.data?.type === "SW_UPDATED") {
       logger.log("[Main] New SW activated, checking version...");
       checkAppVersion()

@@ -116,8 +116,8 @@ self.addEventListener("sync", (event) => {
 
 // Listen for messages from the main app (origin-validated)
 self.addEventListener("message", (event) => {
-  // Security: reject messages from foreign origins (CWE-345)
-  if (event.origin && event.origin !== self.location.origin) return;
+  // Security: reject messages from missing or foreign origins (CWE-20, CWE-345)
+  if (!event.origin || event.origin !== self.location.origin) return;
 
   if (event.data?.type === "SKIP_WAITING") {
     logger.log("[SW] Skip waiting requested");
