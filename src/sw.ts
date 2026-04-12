@@ -1,4 +1,10 @@
 /// <reference lib="webworker" />
+
+// Background Sync API types (not yet in standard lib.webworker.d.ts)
+interface SyncEvent extends ExtendableEvent {
+  readonly tag: string;
+}
+
 /**
  * Custom Service Worker with Background Sync support
  *
@@ -99,7 +105,8 @@ registerRoute(
 registerRoute(({ request }) => request.mode === "navigate", new NetworkOnly());
 
 // Listen for sync events (triggered when coming back online)
-self.addEventListener("sync", (event) => {
+self.addEventListener("sync", (evt) => {
+  const event = evt as SyncEvent;
   logger.log("[SW] Sync event received:", event.tag);
 
   if (event.tag === "zenflow-sync") {
