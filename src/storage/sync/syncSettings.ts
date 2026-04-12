@@ -5,7 +5,9 @@
 
 import { logger } from "@/lib/logger";
 import { isAbortError } from "@/lib/validation";
+import { detectNetworkError } from "./syncUtils";
 import { supabase, getCurrentUserId } from "@/lib/supabaseClient";
+import { offlineQueue } from "@/lib/offlineQueue";
 import type { Json } from "@/types/supabase";
 
 // ============================================
@@ -18,6 +20,12 @@ export const syncSetting = async (key: string, value: unknown): Promise<void> =>
   if (!supabase) return;
   if (!userId) {
     logger.warn("[Sync] Cannot sync setting: User not authenticated");
+    return;
+  }
+
+  // Offline queue: defer sync when offline (same pattern as syncMood/syncHabit)
+  if (!navigator.onLine) {
+    await offlineQueue.enqueue("UPDATE_SETTINGS", key, { key, value });
     return;
   }
 
@@ -38,6 +46,11 @@ export const syncSetting = async (key: string, value: unknown): Promise<void> =>
     // Handle AbortError separately
     if (isAbortError(error)) {
       logger.warn("[Sync] Setting sync aborted:", key);
+      return;
+    }
+    // Network error: queue for retry when online
+    if (detectNetworkError(error)) {
+      await offlineQueue.enqueue("UPDATE_SETTINGS", key, { key, value });
       return;
     }
     logger.error("[Sync] Failed to sync setting:", error);
