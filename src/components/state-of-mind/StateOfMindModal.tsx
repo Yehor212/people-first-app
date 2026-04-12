@@ -86,7 +86,7 @@ export function StateOfMindModal({ isOpen, onClose, onSave }: StateOfMindModalPr
           {/* Modal content */}
           <motion.div
             ref={modalRef}
-            className="fixed inset-0 z-[60] flex flex-col bg-background/95 pt-[max(env(safe-area-inset-top,0px),12px)] pb-[max(env(safe-area-inset-bottom,0px),12px)] md:mx-auto md:my-6 md:max-w-2xl md:rounded-2xl md:shadow-2xl"
+            className="fixed inset-0 z-[60] flex flex-col bg-background/95 pt-[max(env(safe-area-inset-top,0px),12px)] pb-[max(env(safe-area-inset-bottom,0px),12px)] md:inset-y-6 md:left-auto md:right-auto md:w-full md:mx-auto md:max-w-2xl md:rounded-2xl md:shadow-2xl"
             initial={{ opacity: 0, scale: 0.92, y: 16 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.92, y: 16 }}

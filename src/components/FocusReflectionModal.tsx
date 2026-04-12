@@ -72,7 +72,7 @@ export function FocusReflectionModal({
 
   return (
     <motion.div
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center px-4 z-[60] md:mx-auto md:my-6 md:max-w-lg md:rounded-2xl md:shadow-2xl"
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center px-4 z-[60] md:inset-y-6 md:left-auto md:right-auto md:w-full md:mx-auto md:max-w-lg md:rounded-2xl md:shadow-2xl"
       role="dialog"
       aria-modal="true"
       aria-label={t.ariaFocusReflection}
