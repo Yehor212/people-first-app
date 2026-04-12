@@ -273,6 +273,8 @@ export function JournalLockScreen({
                 "transition-shadow duration-300",
                 wrongGlow && "ring-2 ring-destructive/50 shadow-[0_0_20px_rgba(239,68,68,0.2)]"
               )}
+              inputMode="text"
+              autoComplete="off"
               disabled={countdown > 0}
               autoComplete="off"
               aria-describedby={error ? "lock-error" : undefined}

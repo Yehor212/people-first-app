@@ -5,7 +5,7 @@
  * Returns 0 when keyboard is hidden. Returns positive value when visible.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 
 export function useKeyboardShift(enabled: boolean): number {
   const [offset, setOffset] = useState(0);
@@ -22,15 +22,18 @@ export function useKeyboardShift(enabled: boolean): number {
     const handleResize = () => {
       // Difference between window height and viewport height = keyboard height
       const keyboardHeight = window.innerHeight - vv.height;
-      setOffset(keyboardHeight > 50 ? keyboardHeight : 0);
+      const value = keyboardHeight > 50 ? keyboardHeight : 0;
+      setOffset(value);
+      // Expose as CSS variable for layout adjustments (editor, toolbars)
+      document.documentElement.style.setProperty("--keyboard-height", `${value}px`);
     };
 
-    vv.addEventListener('resize', handleResize);
-    vv.addEventListener('scroll', handleResize);
+    vv.addEventListener("resize", handleResize);
+    vv.addEventListener("scroll", handleResize);
 
     return () => {
-      vv.removeEventListener('resize', handleResize);
-      vv.removeEventListener('scroll', handleResize);
+      vv.removeEventListener("resize", handleResize);
+      vv.removeEventListener("scroll", handleResize);
     };
   }, [enabled]);
 

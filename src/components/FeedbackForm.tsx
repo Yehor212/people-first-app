@@ -149,111 +149,115 @@ export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
         aria-modal="true"
         aria-labelledby="feedback-form-title"
       >
-      <div
-        className="w-full max-w-lg bg-background rounded-t-3xl p-6 max-h-[85dvh] overflow-y-auto motion-safe:animate-in motion-safe:slide-in-from-bottom motion-safe:duration-300 pb-safe"
-        onTouchEnd={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between pb-4">
-          <div>
-            <h2 id="feedback-form-title" className="text-lg font-semibold flex items-center gap-2">
-              <MessageSquare className="w-5 h-5 text-primary" />
-              {t.feedbackTitle}
-            </h2>
-            <p className="text-sm text-muted-foreground mt-1">{t.feedbackSubtitle}</p>
-          </div>
-          <button
-            onClick={handleClose}
-            aria-label={t.close || "Close"}
-            className="p-2 rounded-lg hover:bg-muted transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        <div className="space-y-4 pb-6">
-          {/* Category Selection */}
-          <div className="flex gap-2">
-            {categories.map((cat) => (
-              <button
-                key={cat.value}
-                onClick={() => setCategory(cat.value)}
-                aria-pressed={category === cat.value}
-                aria-label={cat.label}
-                className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-sm font-medium transition-all ${
-                  category === cat.value
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-secondary text-secondary-foreground hover:bg-muted"
-                }`}
+        <div
+          className="w-full max-w-lg bg-background rounded-t-3xl p-6 max-h-[85dvh] overflow-y-auto motion-safe:animate-in motion-safe:slide-in-from-bottom motion-safe:duration-300 pb-safe"
+          onTouchEnd={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between pb-4">
+            <div>
+              <h2
+                id="feedback-form-title"
+                className="text-lg font-semibold flex items-center gap-2"
               >
-                {cat.icon}
-                <span className="hidden sm:inline">{cat.label}</span>
-              </button>
-            ))}
+                <MessageSquare className="w-5 h-5 text-primary" />
+                {t.feedbackTitle}
+              </h2>
+              <p className="text-sm text-muted-foreground mt-1">{t.feedbackSubtitle}</p>
+            </div>
+            <button
+              onClick={handleClose}
+              aria-label={t.close || "Close"}
+              className="p-2 rounded-lg hover:bg-muted transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
 
-          {/* Message Input */}
-          <textarea
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            placeholder={t.feedbackMessagePlaceholder}
-            aria-label={t.feedbackMessagePlaceholder || "Message"}
-            className="w-full h-32 p-3 rounded-xl bg-secondary text-foreground placeholder:text-muted-foreground resize-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-            disabled={status === "sending"}
-          />
+          <div className="space-y-4 pb-6">
+            {/* Category Selection */}
+            <div className="flex gap-2">
+              {categories.map((cat) => (
+                <button
+                  key={cat.value}
+                  onClick={() => setCategory(cat.value)}
+                  aria-pressed={category === cat.value}
+                  aria-label={cat.label}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-sm font-medium transition-all ${
+                    category === cat.value
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-secondary text-secondary-foreground hover:bg-muted"
+                  }`}
+                >
+                  {cat.icon}
+                  <span className="hidden sm:inline">{cat.label}</span>
+                </button>
+              ))}
+            </div>
 
-          {/* Email Input (Optional) */}
-          <div>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                setEmailError(null); // Clear error when user types
-              }}
-              placeholder={t.feedbackEmailPlaceholder}
-              aria-label={t.feedbackEmailPlaceholder || "Email (optional)"}
-              autoComplete="email"
-              className={`w-full p-3 rounded-xl bg-secondary text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 ${
-                emailError
-                  ? "ring-2 ring-red-500 focus-visible:ring-red-500"
-                  : "focus-visible:ring-primary"
-              }`}
+            {/* Message Input */}
+            <textarea
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder={t.feedbackMessagePlaceholder}
+              aria-label={t.feedbackMessagePlaceholder || "Message"}
+              className="w-full h-32 p-3 rounded-xl bg-secondary text-foreground placeholder:text-muted-foreground resize-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               disabled={status === "sending"}
             />
-            {emailError && <p className="text-sm text-red-500 mt-1">{emailError}</p>}
+
+            {/* Email Input (Optional) */}
+            <div>
+              <input
+                type="email"
+                inputMode="email"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setEmailError(null); // Clear error when user types
+                }}
+                placeholder={t.feedbackEmailPlaceholder}
+                aria-label={t.feedbackEmailPlaceholder || "Email (optional)"}
+                autoComplete="email"
+                className={`w-full p-3 rounded-xl bg-secondary text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 ${
+                  emailError
+                    ? "ring-2 ring-red-500 focus-visible:ring-red-500"
+                    : "focus-visible:ring-primary"
+                }`}
+                disabled={status === "sending"}
+              />
+              {emailError && <p className="text-sm text-red-500 mt-1">{emailError}</p>}
+            </div>
+
+            {/* Submit Button */}
+            <Button
+              onClick={throttledSubmit}
+              disabled={!message.trim() || status === "sending"}
+              className="w-full py-6 rounded-xl text-base font-semibold"
+            >
+              {status === "sending" ? (
+                <>
+                  <Loader2 className="w-5 h-5 me-2 motion-safe:animate-spin" aria-hidden="true" />
+                  {t.feedbackSending}
+                </>
+              ) : status === "success" ? (
+                t.feedbackSuccess
+              ) : status === "error" ? (
+                t.feedbackError
+              ) : (
+                <>
+                  <Send className="w-5 h-5 me-2" />
+                  {t.feedbackSubmit}
+                </>
+              )}
+            </Button>
+
+            {/* Version Info */}
+            <p className="text-xs text-muted-foreground text-center">
+              v{APP_VERSION} | {platform}
+            </p>
           </div>
-
-          {/* Submit Button */}
-          <Button
-            onClick={throttledSubmit}
-            disabled={!message.trim() || status === "sending"}
-            className="w-full py-6 rounded-xl text-base font-semibold"
-          >
-            {status === "sending" ? (
-              <>
-                <Loader2 className="w-5 h-5 me-2 motion-safe:animate-spin" aria-hidden="true" />
-                {t.feedbackSending}
-              </>
-            ) : status === "success" ? (
-              t.feedbackSuccess
-            ) : status === "error" ? (
-              t.feedbackError
-            ) : (
-              <>
-                <Send className="w-5 h-5 me-2" />
-                {t.feedbackSubmit}
-              </>
-            )}
-          </Button>
-
-          {/* Version Info */}
-          <p className="text-xs text-muted-foreground text-center">
-            v{APP_VERSION} | {platform}
-          </p>
         </div>
       </div>
-    </div>
     </>
   );
 };
