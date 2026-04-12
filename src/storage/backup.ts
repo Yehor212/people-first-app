@@ -452,6 +452,25 @@ export const importBackup = async (
   const journalPhotoAdds = validJournalPhotos.filter((p) => !journalPhotoKeySet.has(p.id)).length;
   const journalAudioAdds = validJournalAudio.filter((a) => !journalAudioKeySet.has(a.id)).length;
 
+  // Extract remote deletion IDs BEFORE the merge transaction
+  // so they can be merged into the local tracker before filtering
+  const v3 = payload as BackupPayloadV3;
+  const isValidIdArray = (v: unknown): v is string[] =>
+    Array.isArray(v) &&
+    v.length <= 10000 &&
+    v.every((s) => typeof s === "string" && s.length > 0 && s.length <= 100);
+  const remoteDeletedHabitIds = isValidIdArray(v3.deletedHabitIds) ? v3.deletedHabitIds : undefined;
+  const remoteDeletedJournalIds = isValidIdArray(v3.deletedJournalEntryIds)
+    ? v3.deletedJournalEntryIds
+    : undefined;
+  const remoteDeletedMoodIds = isValidIdArray(v3.deletedMoodIds) ? v3.deletedMoodIds : undefined;
+  const remoteDeletedFocusIds = isValidIdArray(v3.deletedFocusSessionIds)
+    ? v3.deletedFocusSessionIds
+    : undefined;
+  const remoteDeletedGratitudeIds = isValidIdArray(v3.deletedGratitudeIds)
+    ? v3.deletedGratitudeIds
+    : undefined;
+
   await db.transaction(
     "rw",
     [
@@ -466,6 +485,10 @@ export const importBackup = async (
     ],
     async () => {
       if (validMoods.valid.length) {
+        // CRITICAL: Merge remote deletion tracker FIRST to prevent resurrection
+        if (remoteDeletedMoodIds?.length) {
+          await mergeDeletedMoodIds(remoteDeletedMoodIds);
+        }
         const deletedMoodIds = await getDeletedMoodIds();
         await mergeByTimestamp(
           db.moods,
@@ -480,7 +503,12 @@ export const importBackup = async (
         const localHabits = await db.habits.toArray();
         const localHabitMap = new Map(localHabits.map((h) => [h.id, h]));
 
-        // Get locally deleted habit IDs — never re-import these
+        // CRITICAL: Merge remote deletion tracker FIRST, before filtering
+        // Without this, a new device has an empty tracker and resurrects deleted habits
+        if (remoteDeletedHabitIds?.length) {
+          await mergeDeletedHabitIds(remoteDeletedHabitIds);
+        }
+        // Now get the COMBINED deletion tracker (local + remote)
         const deletedIds = await getDeletedHabitIds();
 
         const mergedHabits = validHabits.valid
@@ -509,6 +537,10 @@ export const importBackup = async (
       }
 
       if (validFocus.valid.length) {
+        // CRITICAL: Merge remote deletion tracker FIRST to prevent resurrection
+        if (remoteDeletedFocusIds?.length) {
+          await mergeDeletedFocusSessionIds(remoteDeletedFocusIds);
+        }
         const deletedFocusIds = await getDeletedFocusSessionIds();
         await mergeByTimestamp(
           db.focusSessions,
@@ -518,6 +550,10 @@ export const importBackup = async (
         );
       }
       if (validGratitude.valid.length) {
+        // CRITICAL: Merge remote deletion tracker FIRST to prevent resurrection
+        if (remoteDeletedGratitudeIds?.length) {
+          await mergeDeletedGratitudeIds(remoteDeletedGratitudeIds);
+        }
         const deletedGratitudeIds = await getDeletedGratitudeIds();
         await mergeByTimestamp(
           db.gratitudeEntries,
@@ -529,6 +565,10 @@ export const importBackup = async (
       if (validSettings.valid.length) await db.settings.bulkPut(validSettings.valid);
       // For journal entries: filter out locally deleted entries before merging
       if (validJournalEntries.length) {
+        // CRITICAL: Merge remote deletion tracker FIRST to prevent resurrection
+        if (remoteDeletedJournalIds?.length) {
+          await mergeDeletedJournalEntryIds(remoteDeletedJournalIds);
+        }
         const deletedEntryIds = await getDeletedJournalEntryIds();
         const filteredEntries =
           deletedEntryIds.size > 0
@@ -559,25 +599,8 @@ export const importBackup = async (
     }
   );
 
-  // Handle cross-device deletion propagation atomically:
-  // Wrap in transaction so tracker update + delete happen together or not at all (C3 fix)
-  // Validate deletion ID arrays to prevent mass deletion via crafted backup payloads
-  const v3 = payload as BackupPayloadV3;
-  const isValidIdArray = (v: unknown): v is string[] =>
-    Array.isArray(v) &&
-    v.length <= 10000 &&
-    v.every((s) => typeof s === "string" && s.length > 0 && s.length <= 100);
-  const remoteDeletedHabitIds = isValidIdArray(v3.deletedHabitIds) ? v3.deletedHabitIds : undefined;
-  const remoteDeletedJournalIds = isValidIdArray(v3.deletedJournalEntryIds)
-    ? v3.deletedJournalEntryIds
-    : undefined;
-  const remoteDeletedMoodIds = isValidIdArray(v3.deletedMoodIds) ? v3.deletedMoodIds : undefined;
-  const remoteDeletedFocusIds = isValidIdArray(v3.deletedFocusSessionIds)
-    ? v3.deletedFocusSessionIds
-    : undefined;
-  const remoteDeletedGratitudeIds = isValidIdArray(v3.deletedGratitudeIds)
-    ? v3.deletedGratitudeIds
-    : undefined;
+  // Defense-in-depth: bulkDelete any remaining items that slipped through the filter
+  // (remoteDeleted* variables already declared and merged above the main transaction)
 
   const hasRemoteDeletions =
     remoteDeletedHabitIds?.length ||
