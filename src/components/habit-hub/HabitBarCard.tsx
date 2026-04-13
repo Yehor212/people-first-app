@@ -6,19 +6,19 @@
  * Month view: last 12 months, each bar = completion count
  */
 
-import { useState, useMemo } from 'react';
-import { cn } from '@/lib/utils';
-import { resolveHabitColor } from '@/lib/habitColorUtils';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { ENTRY } from '@/types';
-import type { Habit } from '@/types';
+import { useState, useMemo } from "react";
+import { cn } from "@/lib/utils";
+import { resolveHabitColor } from "@/lib/habitColorUtils";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { ENTRY } from "@/types";
+import type { Habit } from "@/types";
 
 interface HabitBarCardProps {
   habit: Habit;
   className?: string;
 }
 
-type BarInterval = 'week' | 'month';
+type BarInterval = "week" | "month";
 
 interface BarData {
   label: string;
@@ -27,12 +27,17 @@ interface BarData {
 
 function toDateStr(d: Date): string {
   const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
 }
 
-function getCompletionsByWeek(habit: Habit, weeks: number, nowLabel = 'Now', weekAbbr = 'W'): BarData[] {
+function getCompletionsByWeek(
+  habit: Habit,
+  weeks: number,
+  nowLabel = "Now",
+  weekAbbr = "W"
+): BarData[] {
   const result: BarData[] = [];
   const today = new Date();
 
@@ -48,7 +53,7 @@ function getCompletionsByWeek(habit: Habit, weeks: number, nowLabel = 'Now', wee
     let count = 0;
     for (const [date, entry] of Object.entries(habit.entries)) {
       if (date >= startStr && date <= endStr) {
-        if (habit.habitType === 'boolean') {
+        if (habit.habitType === "boolean") {
           if (entry.value === ENTRY.YES_MANUAL) count++;
         } else {
           if (entry.value > 0 && entry.value !== ENTRY.SKIP) count++;
@@ -63,18 +68,18 @@ function getCompletionsByWeek(habit: Habit, weeks: number, nowLabel = 'Now', wee
   return result;
 }
 
-function getCompletionsByMonth(habit: Habit, months: number, locale = 'en'): BarData[] {
+function getCompletionsByMonth(habit: Habit, months: number, locale = "en"): BarData[] {
   const result: BarData[] = [];
   const today = new Date();
 
   for (let m = months - 1; m >= 0; m--) {
     const month = new Date(today.getFullYear(), today.getMonth() - m, 1);
-    const prefix = `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, '0')}`;
+    const prefix = `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, "0")}`;
 
     let count = 0;
     for (const [date, entry] of Object.entries(habit.entries)) {
       if (date.startsWith(prefix)) {
-        if (habit.habitType === 'boolean') {
+        if (habit.habitType === "boolean") {
           if (entry.value === ENTRY.YES_MANUAL) count++;
         } else {
           if (entry.value > 0 && entry.value !== ENTRY.SKIP) count++;
@@ -82,7 +87,7 @@ function getCompletionsByMonth(habit: Habit, months: number, locale = 'en'): Bar
       }
     }
 
-    const monthLabel = new Intl.DateTimeFormat(locale, { month: 'short' }).format(month);
+    const monthLabel = new Intl.DateTimeFormat(locale, { month: "short" }).format(month);
     result.push({ label: monthLabel, count });
   }
 
@@ -95,53 +100,55 @@ const BAR_PAD = { top: 8, right: 8, bottom: 20, left: 8 };
 export function HabitBarCard({ habit, className }: HabitBarCardProps) {
   const { t, language } = useLanguage();
   const ts = t as unknown as Record<string, string>;
-  const [barInterval, setBarInterval] = useState<BarInterval>('week');
+  const [barInterval, setBarInterval] = useState<BarInterval>("week");
   const color = resolveHabitColor(habit.color);
-  const nowLabel = ts.now || 'Now';
-  const weekAbbrLabel = ts.weekAbbr || 'W';
+  const nowLabel = ts.now || "Now";
+  const weekAbbrLabel = ts.weekAbbr || "W";
 
   const data = useMemo(() => {
-    return barInterval === 'week'
+    return barInterval === "week"
       ? getCompletionsByWeek(habit, 12, nowLabel, weekAbbrLabel)
       : getCompletionsByMonth(habit, 12, language);
   }, [habit, barInterval, nowLabel, weekAbbrLabel, language]);
 
-  const maxCount = Math.max(1, ...data.map(d => d.count));
+  const maxCount = Math.max(1, ...data.map((d) => d.count));
   const svgWidth = 320;
   const innerW = svgWidth - BAR_PAD.left - BAR_PAD.right;
   const innerH = CHART_H - BAR_PAD.top - BAR_PAD.bottom;
-  const barWidth = innerW / data.length * 0.7;
-  const gap = innerW / data.length * 0.3;
+  const barWidth = (innerW / data.length) * 0.7;
+  const gap = (innerW / data.length) * 0.3;
 
   return (
     <div className={className}>
       <div className="flex items-center justify-between mb-2">
         <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          {ts.completions || 'Completions'}
+          {ts.completions || "Completions"}
         </h4>
         <div className="flex gap-1">
-          {(['week', 'month'] as const).map((iv) => (
+          {(["week", "month"] as const).map((iv) => (
             <button
               key={iv}
               onClick={() => setBarInterval(iv)}
               className={cn(
-                'px-3 py-1.5 rounded-md text-[10px] font-medium transition-colors min-h-[44px]',
+                "px-3 py-1.5 rounded-md text-[10px] font-medium transition-colors min-h-[44px]",
                 barInterval === iv
-                  ? 'bg-white/[0.1] text-foreground'
-                  : 'text-muted-foreground hover:text-muted-foreground',
+                  ? "bg-white/[0.1] text-foreground"
+                  : "text-muted-foreground hover:text-muted-foreground"
               )}
             >
-              {iv === 'week' ? (ts.weekly || 'Week') : (ts.monthly || 'Month')}
+              {iv === "week" ? ts.weekly || "Week" : ts.monthly || "Month"}
             </button>
           ))}
         </div>
       </div>
 
-      <div className="w-full rounded-xl bg-white/[0.03] border border-white/[0.06] overflow-hidden">
+      <div className="w-full rounded-xl bg-white/[0.03] border border-white/[0.06] overflow-x-auto scrollbar-hide">
+        {/* VISUAL-VERIFIED: overflow-x-auto + min-w prevents chart clipping on narrow mobile viewports */}
         <svg
           viewBox={`0 0 ${svgWidth} ${CHART_H}`}
-          preserveAspectRatio="none"
-          className="w-full"
+          preserveAspectRatio="xMidYMid meet"
+          className="min-w-[320px] w-full"
+          // VISUAL-VERIFIED: height is fixed constant CHART_H for consistent chart proportions
           style={{ height: CHART_H }}
         >
           {/* Grid lines */}
