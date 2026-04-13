@@ -53,6 +53,10 @@ CLAUDE.md
 .claude-flow/
 .swarm/
 .mcp.json
+memory/
+.superpowers/
+docs/superpowers/
+supabase/functions/claude-agent/
 
 # ============================================
 # Extra lockfiles (use only package-lock.json)
