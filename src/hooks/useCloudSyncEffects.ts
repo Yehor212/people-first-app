@@ -30,6 +30,7 @@ import {
   pullGratitudeFromCloud,
 } from "@/storage/realtimeSync";
 import { silentSync } from "@/storage/cloudSync";
+import { verifySyncIntegrity } from "@/lib/syncIntegrity";
 import { isNative } from "@/lib/platform";
 import { App } from "@capacitor/app";
 
@@ -247,7 +248,7 @@ export function useCloudSyncEffects({
             case "habits":
             case "journal":
             default:
-              void silentSync();
+              void silentSync().then(() => verifySyncIntegrity());
               break;
           }
         });

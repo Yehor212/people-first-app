@@ -16,6 +16,8 @@ import { UpdateRequiredDialog } from "@/components/UpdateRequiredDialog";
 import Index from "./pages/Index";
 import { preloadShareCardAssets } from "@/lib/shareCards";
 import { useDopamineSettings } from "@/components/DopamineSettings";
+import { useFontScaleInit } from "@/hooks/useFontScale";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -43,6 +45,9 @@ if ("requestIdleCallback" in window) {
 function AnimationGate({ children }: { children: ReactNode }) {
   const dopamine = useDopamineSettings();
 
+  // Apply stored font scale on mount (sets --font-scale CSS custom property)
+  useFontScaleInit();
+
   useEffect(() => {
     if (dopamine.animations) {
       document.body.classList.remove("reduce-motion");
@@ -57,27 +62,41 @@ function AnimationGate({ children }: { children: ReactNode }) {
   );
 }
 
+/** RTL dir attribute — sets dir="rtl" for Arabic/Hebrew, dir="ltr" for others */
+function RtlDirectionManager({ children }: { children: ReactNode }) {
+  const { language } = useLanguage();
+
+  useEffect(() => {
+    const rtlLocales = ["ar", "he"];
+    document.documentElement.dir = rtlLocales.includes(language) ? "rtl" : "ltr";
+  }, [language]);
+
+  return <>{children}</>;
+}
+
 const App = () => (
   <AnimationGate>
     <QueryClientProvider client={queryClient}>
       <LanguageProvider>
-        <FeatureFlagsProvider>
-          <EmotionThemeProvider>
-            <AICoachProvider>
-              <XpPopupProvider>
-                <FlyingEmojiProvider>
-                  <ErrorBoundary>
-                    <TooltipProvider>
-                      <DatabaseRecoveryDialog />
-                      <UpdateRequiredDialog />
-                      <Index />
-                    </TooltipProvider>
-                  </ErrorBoundary>
-                </FlyingEmojiProvider>
-              </XpPopupProvider>
-            </AICoachProvider>
-          </EmotionThemeProvider>
-        </FeatureFlagsProvider>
+        <RtlDirectionManager>
+          <FeatureFlagsProvider>
+            <EmotionThemeProvider>
+              <AICoachProvider>
+                <XpPopupProvider>
+                  <FlyingEmojiProvider>
+                    <ErrorBoundary>
+                      <TooltipProvider>
+                        <DatabaseRecoveryDialog />
+                        <UpdateRequiredDialog />
+                        <Index />
+                      </TooltipProvider>
+                    </ErrorBoundary>
+                  </FlyingEmojiProvider>
+                </XpPopupProvider>
+              </AICoachProvider>
+            </EmotionThemeProvider>
+          </FeatureFlagsProvider>
+        </RtlDirectionManager>
       </LanguageProvider>
     </QueryClientProvider>
   </AnimationGate>

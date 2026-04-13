@@ -129,6 +129,7 @@ const GOD_COMPONENT_EXEMPT = [
   "ChallengesPanel.tsx", // 390→409 lines from scroll-snap classes + prettier reformat, not complexity
   "HabitCreationForm.tsx", // 380→427 lines from reminder section expansion + prettier reformat
   "HyperfocusMode.tsx", // 297→406 lines from prettier single→double quotes + import split, not complexity
+  "main.tsx", // 398→402 lines from delta pull + haptic sync on resume — entry point, not UI component
 ];
 
 const GOD_COMPONENT_OUT_OF_SCOPE = ["features/journal/"];

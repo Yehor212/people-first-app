@@ -1027,6 +1027,25 @@ const arabicOverrides: Partial<Translations> = {
   dopamineTipText: "المكافآت الفورية تعزز التحفيز",
   dopamineSave: "حفظ",
 
+  fontScaleTitle: "حجم النص",
+  fontScalePreview: "معاينة: كيف سيبدو النص",
+  fontScalePreviewSub: "اسحب شريط التمرير لتغيير حجم النص في التطبيق.",
+  fontScaleTiny: "صغير جداً",
+  fontScaleSmall: "صغير",
+  fontScaleDefault: "افتراضي",
+  fontScaleMedium: "متوسط",
+  fontScaleLarge: "كبير",
+  fontScaleXL: "كبير جداً",
+  fontScaleXXL: "ضخم",
+
+  syncNow: "مزامنة الآن",
+  syncStatusSynced: "تمت المزامنة",
+  syncStatusSyncing: "جارٍ المزامنة...",
+  syncStatusPending: "تغييرات معلقة",
+  syncStatusOffline: "غير متصل",
+  syncStatusNotSignedIn: "لم يتم تسجيل الدخول",
+  syncStatusError: "خطأ في المزامنة",
+
   // ADHD Hooks
   dailyRewards: "المكافآت اليومية",
   loginStreak: "سلسلة الدخول",
@@ -1954,7 +1973,6 @@ const arabicOverrides: Partial<Translations> = {
   authSigningIn: "جارٍ تسجيل الدخول...",
   signedInAs: "مسجل كـ",
   signOut: "تسجيل الخروج",
-  syncNow: "مزامنة الآن",
   cloudSyncDisabled: "المزامنة السحابية معطلة",
   sessionExpired: "المزامنة السحابية متوقفة",
   sessionExpiredMessage: "سجّل الدخول لمزامنة بياناتك",
@@ -2597,7 +2615,6 @@ const arabicOverrides: Partial<Translations> = {
   // SEO meta tags
   metaTitle: "ZenFlow — العافية اليومية",
   metaDescription: "متتبع العادات والمزاج والإنتاجية. ابدأ رحلتك نحو حياة واعية.",
-  selectMonth: "اختر الشهر",
 };
 
 export const ar: Translations = { ...en, ...arabicOverrides };

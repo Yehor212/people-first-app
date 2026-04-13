@@ -1195,6 +1195,26 @@ export interface Translations {
   dopamineTipText: string;
   dopamineSave: string;
 
+  // Font Scale Settings
+  fontScaleTitle: string;
+  fontScalePreview: string;
+  fontScalePreviewSub: string;
+  fontScaleTiny: string;
+  fontScaleSmall: string;
+  fontScaleDefault: string;
+  fontScaleMedium: string;
+  fontScaleLarge: string;
+  fontScaleXL: string;
+  fontScaleXXL: string;
+
+  // Sync Status
+  syncStatusSynced: string;
+  syncStatusSyncing: string;
+  syncStatusPending: string;
+  syncStatusOffline: string;
+  syncStatusNotSignedIn: string;
+  syncStatusError: string;
+
   // ADHD Hooks
   dailyRewards: string;
   loginStreak: string;

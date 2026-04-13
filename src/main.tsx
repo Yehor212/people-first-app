@@ -7,6 +7,7 @@ import { initAndroidBackHandler } from "./lib/androidBackHandler";
 import { logger } from "./lib/logger";
 import { setupDeepLinks } from "./lib/deepLinks";
 import { offlineQueue } from "./lib/offlineQueue";
+import { hapticSuccess } from "./lib/haptics";
 // Sentry and cloudSync are dynamically imported below to keep them off the critical path
 import { cleanupShareCache } from "./lib/shareActions";
 import { initA11y } from "./lib/a11y";
@@ -189,10 +190,27 @@ async function handleAppResume(): Promise<void> {
     }
   }
 
-  // Trigger sync if online and there are pending actions
-  if (navigator.onLine && offlineQueue.hasPendingActions()) {
-    logger.log("[Main] Processing pending offline queue on resume");
-    void offlineQueue.processQueue();
+  // Trigger sync if online — drain offline queue + delta pull + haptic feedback
+  if (navigator.onLine) {
+    if (offlineQueue.hasPendingActions()) {
+      logger.log("[Main] Processing pending offline queue on resume");
+      void offlineQueue.processQueue().then(() => {
+        void hapticSuccess(); // Subtle feedback: queued changes synced
+      });
+    }
+    // Delta pull on resume — fetch new events from server (Telegram pattern)
+    void import("@/storage/eventSync")
+      .then(({ fetchAllDeltas }) =>
+        import("@/lib/syncCursor").then(({ loadSyncCursor }) =>
+          loadSyncCursor().then((cursor) => {
+            if (cursor.globalSeq > 0) {
+              logger.log("[Main] Delta pull on resume, seq:", cursor.globalSeq);
+              void fetchAllDeltas(cursor.globalSeq);
+            }
+          })
+        )
+      )
+      .catch((err) => logger.warn("[Main] Delta pull on resume failed:", err));
   }
   // Clean up stale share cache files (24+ hours old)
   void cleanupShareCache();

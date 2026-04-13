@@ -4,19 +4,12 @@
  */
 
 import { memo, useMemo } from "react";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  ResponsiveContainer,
-  Cell,
-} from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Cell } from "recharts";
 import { cn } from "@/lib/utils";
 import { getFrequencyByWeekday } from "@/lib/habitScore";
 import { resolveHabitColor } from "@/lib/habitColorUtils";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useChartFontSizes } from "@/lib/chartTokens";
 import type { Habit } from "@/types";
 
 const CHART_MARGIN = { top: 4, right: 4, bottom: 0, left: -20 } as const;
@@ -32,32 +25,17 @@ export const HabitFrequencyChart = memo(function HabitFrequencyChart({
 }: HabitFrequencyChartProps) {
   const { t } = useLanguage();
   const ts = t as unknown as Record<string, string>;
+  const chartFonts = useChartFontSizes();
 
   const dayLabels = useMemo(
-    () => [
-      t.daySun,
-      t.dayMon,
-      t.dayTue,
-      t.dayWed,
-      t.dayThu,
-      t.dayFri,
-      t.daySat,
-    ],
-    [t.daySun, t.dayMon, t.dayTue, t.dayWed, t.dayThu, t.dayFri, t.daySat],
+    () => [t.daySun, t.dayMon, t.dayTue, t.dayWed, t.dayThu, t.dayFri, t.daySat],
+    [t.daySun, t.dayMon, t.dayTue, t.dayWed, t.dayThu, t.dayFri, t.daySat]
   );
 
   const data = useMemo(() => {
     const counts = getFrequencyByWeekday(habit);
     // Reorder to Mon-first: [Mon, Tue, Wed, Thu, Fri, Sat, Sun]
-    const reordered = [
-      counts[1],
-      counts[2],
-      counts[3],
-      counts[4],
-      counts[5],
-      counts[6],
-      counts[0],
-    ];
+    const reordered = [counts[1], counts[2], counts[3], counts[4], counts[5], counts[6], counts[0]];
     const labels = [
       dayLabels[1],
       dayLabels[2],
@@ -70,10 +48,7 @@ export const HabitFrequencyChart = memo(function HabitFrequencyChart({
     return reordered.map((count, i) => ({ day: labels[i], count }));
   }, [habit, dayLabels]);
 
-  const maxCount = useMemo(
-    () => Math.max(...data.map((d) => d.count), 1),
-    [data],
-  );
+  const maxCount = useMemo(() => Math.max(...data.map((d) => d.count), 1), [data]);
 
   return (
     <div className={cn("", className)}>
@@ -81,45 +56,49 @@ export const HabitFrequencyChart = memo(function HabitFrequencyChart({
         {ts.weekdayFrequency || "By Day of Week"}
       </h4>
 
-      <div className="h-[140px] w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} margin={CHART_MARGIN}>
-            <CartesianGrid
-              strokeDasharray="3 3"
-              stroke="rgba(255,255,255,0.04)"
-              vertical={false}
-            />
-            <XAxis
-              dataKey="day"
-              tick={{
-                fill: "hsl(var(--muted-foreground))",
-                fontSize: 10,
-                fontFamily: "Inter, sans-serif",
-              }}
-              axisLine={{ stroke: "rgba(255,255,255,0.06)" }}
-              tickLine={false}
-            />
-            <YAxis
-              tick={{
-                fill: "hsl(var(--muted-foreground) / 0.7)",
-                fontSize: 10,
-                fontFamily: "Inter, sans-serif",
-              }}
-              axisLine={false}
-              tickLine={false}
-              allowDecimals={false}
-            />
-            <Bar dataKey="count" radius={[4, 4, 0, 0]} maxBarSize={28}>
-              {data.map((entry, index) => (
-                <Cell
-                  key={index}
-                  fill={resolveHabitColor(habit.color)}
-                  fillOpacity={0.3 + (entry.count / maxCount) * 0.6}
-                />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+      <div
+        className="@container w-full"
+        role="img"
+        aria-label={`${ts.weekdayFrequency || "Habit frequency by day"}: ${data.map((d) => `${d.day} ${d.count}`).join(", ")}`}
+      >
+        <div className="aspect-[5/2] @sm:aspect-[3/1] min-h-[100px] max-h-[200px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={data} margin={CHART_MARGIN}>
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="rgba(255,255,255,0.04)"
+                vertical={false}
+              />
+              <XAxis
+                dataKey="day"
+                tick={{
+                  fill: "hsl(var(--muted-foreground))",
+                  fontSize: chartFonts.axis,
+                }}
+                axisLine={{ stroke: "rgba(255,255,255,0.06)" }}
+                tickLine={false}
+              />
+              <YAxis
+                tick={{
+                  fill: "hsl(var(--muted-foreground) / 0.7)",
+                  fontSize: chartFonts.axis,
+                }}
+                axisLine={false}
+                tickLine={false}
+                allowDecimals={false}
+              />
+              <Bar dataKey="count" radius={[4, 4, 0, 0]} maxBarSize={28}>
+                {data.map((entry, index) => (
+                  <Cell
+                    key={index}
+                    fill={resolveHabitColor(habit.color)}
+                    fillOpacity={0.3 + (entry.count / maxCount) * 0.6}
+                  />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </div>
     </div>
   );

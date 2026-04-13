@@ -5,7 +5,14 @@
  * Pure reducer — no side effects, testable in isolation.
  */
 
-export type SyncPhase = "idle" | "delta" | "snapshot" | "offline" | "error";
+export type SyncPhase =
+  | "idle"
+  | "delta"
+  | "snapshot"
+  | "offline"
+  | "error"
+  | "recovering"
+  | "online_pending";
 
 export interface SyncMachineState {
   phase: SyncPhase;
@@ -25,14 +32,19 @@ export type SyncAction =
   | { type: "WENT_OFFLINE" }
   | { type: "CAME_ONLINE" }
   | { type: "ERROR"; retryDelayMs: number }
-  | { type: "RESET"; lastSeq: number };
+  | { type: "RESET"; lastSeq: number }
+  | { type: "GAP_RECOVERY_START" }
+  | { type: "GAP_RECOVERY_DONE"; lastSeq: number }
+  | { type: "QUEUE_DRAINED" };
 
 const VALID_TRANSITIONS: Record<SyncPhase, SyncPhase[]> = {
   idle: ["delta", "offline"],
-  delta: ["idle", "snapshot", "offline", "error"],
+  delta: ["idle", "snapshot", "offline", "error", "recovering"],
   snapshot: ["idle", "error", "offline"],
-  offline: ["delta", "idle"],
+  offline: ["online_pending"],
   error: ["delta", "idle", "offline"],
+  recovering: ["idle", "delta", "error", "offline"],
+  online_pending: ["delta", "idle"],
 };
 
 export const INITIAL_STATE: SyncMachineState = {
@@ -106,8 +118,30 @@ export function syncReducer(state: SyncMachineState, action: SyncAction): SyncMa
 
     case "CAME_ONLINE": {
       if (state.phase !== "offline") return state;
-      // Transition to idle (not delta) so runDeltaSync can call TRIGGER_DELTA
+      // Transition to online_pending — drain offline queue before normal sync
+      return { ...state, phase: "online_pending", retryAt: null };
+    }
+
+    case "QUEUE_DRAINED": {
+      if (state.phase !== "online_pending") return state;
       return { ...state, phase: "idle", retryAt: null };
+    }
+
+    case "GAP_RECOVERY_START": {
+      if (!canTransition(state.phase, "recovering")) return state;
+      return { ...state, phase: "recovering" };
+    }
+
+    case "GAP_RECOVERY_DONE": {
+      if (state.phase !== "recovering") return state;
+      return {
+        ...state,
+        phase: "idle",
+        lastSeq: action.lastSeq,
+        lastSyncAt: Date.now(),
+        consecutiveErrors: 0,
+        retryAt: null,
+      };
     }
 
     case "ERROR": {

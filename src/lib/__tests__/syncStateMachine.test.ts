@@ -71,14 +71,20 @@ describe("syncStateMachine", () => {
       expect(state.phase).toBe("offline");
     });
 
-    it("transitions from offline to idle on CAME_ONLINE", () => {
+    it("transitions from offline to online_pending on CAME_ONLINE", () => {
       const offlineState: SyncMachineState = { ...INITIAL_STATE, phase: "offline" };
       const state = syncReducer(offlineState, { type: "CAME_ONLINE" });
-      expect(state.phase).toBe("idle");
+      expect(state.phase).toBe("online_pending");
     });
 
     it("ignores CAME_ONLINE if not offline", () => {
       const state = syncReducer(INITIAL_STATE, { type: "CAME_ONLINE" });
+      expect(state.phase).toBe("idle");
+    });
+
+    it("transitions from online_pending to idle on QUEUE_DRAINED", () => {
+      const pendingState: SyncMachineState = { ...INITIAL_STATE, phase: "online_pending" };
+      const state = syncReducer(pendingState, { type: "QUEUE_DRAINED" });
       expect(state.phase).toBe("idle");
     });
   });

@@ -54,6 +54,8 @@ export type OfflineActionType =
   | "SYNC_JOURNAL_ENTRY"
   | "DELETE_JOURNAL_ENTRY";
 
+export type OfflineActionPriority = "critical" | "high" | "normal" | "low";
+
 export interface OfflineAction {
   id: string;
   type: OfflineActionType;
@@ -63,6 +65,69 @@ export interface OfflineAction {
   retries: number;
   maxRetries: number;
   lastError?: string;
+  priority?: OfflineActionPriority; // V2: priority queue support (default: "normal")
+}
+
+const PRIORITY_ORDER: Record<OfflineActionPriority, number> = {
+  critical: 0,
+  high: 1,
+  normal: 2,
+  low: 3,
+};
+
+/**
+ * Compact redundant operations on the same entity.
+ * - UPDATE + UPDATE same entity → keep latest UPDATE only
+ * - CREATE + DELETE same entity → remove both (net zero)
+ * - CREATE + UPDATE same entity → keep CREATE with latest payload
+ */
+export function compactQueue(actions: OfflineAction[]): OfflineAction[] {
+  const byEntity = new Map<string, OfflineAction[]>();
+
+  for (const action of actions) {
+    const key = `${action.entityId}`;
+    const existing = byEntity.get(key) || [];
+    existing.push(action);
+    byEntity.set(key, existing);
+  }
+
+  const compacted: OfflineAction[] = [];
+
+  for (const [, entityActions] of byEntity) {
+    if (entityActions.length === 1) {
+      compacted.push(entityActions[0]);
+      continue;
+    }
+
+    const types = entityActions.map((a) => a.type);
+    const hasCreate = types.some((t) => t.startsWith("CREATE") || t === "SYNC_JOURNAL_ENTRY");
+    const hasDelete = types.some((t) => t.startsWith("DELETE"));
+
+    if (hasCreate && hasDelete) {
+      // CREATE + DELETE = net zero, skip all
+      continue;
+    }
+
+    // Keep only the latest action for this entity
+    const latest = entityActions[entityActions.length - 1];
+    if (hasCreate) {
+      // CREATE + UPDATE = keep CREATE with latest payload
+      const createAction = entityActions.find(
+        (a) => a.type.startsWith("CREATE") || a.type === "SYNC_JOURNAL_ENTRY"
+      )!;
+      compacted.push({ ...createAction, payload: latest.payload, timestamp: latest.timestamp });
+    } else {
+      compacted.push(latest);
+    }
+  }
+
+  // Sort by priority then timestamp
+  return compacted.sort((a, b) => {
+    const pa = PRIORITY_ORDER[a.priority || "normal"];
+    const pb = PRIORITY_ORDER[b.priority || "normal"];
+    if (pa !== pb) return pa - pb;
+    return a.timestamp - b.timestamp;
+  });
 }
 
 interface QueueState {
@@ -380,6 +445,16 @@ class OfflineQueue {
 
     if (!navigator.onLine || this.state.actions.length === 0) {
       return;
+    }
+
+    // Compact before processing: collapse redundant operations (CREATE+DELETE=noop, UPDATE+UPDATE=latest)
+    if (this.state.actions.length > 1) {
+      const before = this.state.actions.length;
+      this.state.actions = compactQueue(this.state.actions);
+      if (this.state.actions.length < before) {
+        logger.log(`[OfflineQueue] Compacted: ${before} → ${this.state.actions.length}`);
+        void this.persistToStorage();
+      }
     }
 
     this.processingPromise = this.doProcessQueue();

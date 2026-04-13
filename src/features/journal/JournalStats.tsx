@@ -27,13 +27,14 @@ import type { JournalEntry } from "./types";
 import { countWords } from "./types";
 import { StickerRenderer } from "./StickerRenderer";
 import type { MoodType } from "@/types";
+import { useChartFontSizes } from "@/lib/chartTokens";
 
 const MOOD_COLORS: Record<MoodType, string> = {
-  great: "#4ade80",
-  good: "#34d399",
-  okay: "#fbbf24",
-  bad: "#fb923c",
-  terrible: "#f87171",
+  great: "hsl(var(--mood-great))",
+  good: "hsl(var(--mood-good))",
+  okay: "hsl(var(--mood-okay))",
+  bad: "hsl(var(--mood-bad))",
+  terrible: "hsl(var(--mood-terrible))",
 };
 
 const MOOD_SCORE: Record<MoodType, number> = {
@@ -60,6 +61,7 @@ interface JournalStatsProps {
 export const JournalStats = memo(function JournalStats({ entries, onBack }: JournalStatsProps) {
   const { t, language } = useLanguage();
   const ts = t as unknown as Record<string, string>;
+  const chartFonts = useChartFontSizes();
   const [pixelYear, setPixelYear] = useState(() => new Date().getFullYear());
 
   const moodLabels = useMemo<Record<MoodType, string>>(
@@ -70,14 +72,12 @@ export const JournalStats = memo(function JournalStats({ entries, onBack }: Jour
       bad: ts.moodBad || "Bad",
       terrible: ts.moodTerrible || "Terrible",
     }),
-    [ts],
+    [ts]
   );
 
   const dayNames = useMemo(() => {
     const formatter = new Intl.DateTimeFormat(language, { weekday: "short" });
-    return Array.from({ length: 7 }, (_, i) =>
-      formatter.format(new Date(2025, 0, 5 + i)),
-    );
+    return Array.from({ length: 7 }, (_, i) => formatter.format(new Date(2025, 0, 5 + i)));
   }, [language]);
 
   // Mood distribution
@@ -95,9 +95,7 @@ export const JournalStats = memo(function JournalStats({ entries, onBack }: Jour
 
   // Mood over time (weekly average)
   const moodTimeline = useMemo(() => {
-    const entriesWithMood = entries
-      .filter((e) => e.mood)
-      .sort((a, b) => a.createdAt - b.createdAt);
+    const entriesWithMood = entries.filter((e) => e.mood).sort((a, b) => a.createdAt - b.createdAt);
     if (entriesWithMood.length === 0) return [];
 
     // Group by week
@@ -117,9 +115,7 @@ export const JournalStats = memo(function JournalStats({ entries, onBack }: Jour
         month: "short",
         day: "numeric",
       }),
-      avg:
-        Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) /
-        10,
+      avg: Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10,
     }));
   }, [entries, language]);
 
@@ -131,9 +127,7 @@ export const JournalStats = memo(function JournalStats({ entries, onBack }: Jour
     for (let i = 7; i >= 0; i--) {
       const weekStart = now - (i + 1) * 7 * 86400000;
       const weekEnd = now - i * 7 * 86400000;
-      const count = entries.filter(
-        (e) => e.createdAt >= weekStart && e.createdAt < weekEnd,
-      ).length;
+      const count = entries.filter((e) => e.createdAt >= weekStart && e.createdAt < weekEnd).length;
       const label = new Date(weekStart).toLocaleDateString(language, {
         month: "short",
         day: "numeric",
@@ -161,8 +155,7 @@ export const JournalStats = memo(function JournalStats({ entries, onBack }: Jour
   // Streaks
   const streakData = useMemo(() => {
     const dates = [...new Set(entries.map((e) => e.date))].sort();
-    if (dates.length === 0)
-      return { current: 0, longest: 0, thisMonth: 0, avgPerWeek: 0 };
+    if (dates.length === 0) return { current: 0, longest: 0, thisMonth: 0, avgPerWeek: 0 };
 
     // Current streak (from today backwards)
     const today = new Date();
@@ -207,9 +200,7 @@ export const JournalStats = memo(function JournalStats({ entries, onBack }: Jour
 
     // Avg per week (over last 4 weeks)
     const fourWeeksAgo = Date.now() - 28 * 86400000;
-    const recentCount = entries.filter(
-      (e) => e.createdAt >= fourWeeksAgo,
-    ).length;
+    const recentCount = entries.filter((e) => e.createdAt >= fourWeeksAgo).length;
     const avgPerWeek = Math.round((recentCount / 4) * 10) / 10;
 
     return { current, longest, thisMonth, avgPerWeek };
@@ -385,9 +376,7 @@ export const JournalStats = memo(function JournalStats({ entries, onBack }: Jour
                   <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider">
                     {card.label}
                   </p>
-                  <p className="text-lg font-bold text-foreground mt-0.5">
-                    {card.value}
-                  </p>
+                  <p className="text-lg font-bold text-foreground mt-0.5">{card.value}</p>
                 </motion.div>
               ))}
             </div>
@@ -411,9 +400,7 @@ export const JournalStats = memo(function JournalStats({ entries, onBack }: Jour
                     {pixelYear}
                   </span>
                   <button
-                    onClick={() =>
-                      setPixelYear((y) => Math.min(y + 1, currentYear))
-                    }
+                    onClick={() => setPixelYear((y) => Math.min(y + 1, currentYear))}
                     disabled={pixelYear >= currentYear}
                     className="p-1.5 rounded-lg hover:bg-muted/50 disabled:opacity-50 min-w-[32px] min-h-[32px] flex items-center justify-center"
                     aria-label={ts.next || "Next"}
@@ -439,12 +426,7 @@ export const JournalStats = memo(function JournalStats({ entries, onBack }: Jour
                         const dayData = monthData.days[dayIdx];
                         if (!dayData) {
                           // Empty cell for months with <31 days
-                          return (
-                            <div
-                              key={dayIdx}
-                              className="w-full aspect-square"
-                            />
-                          );
+                          return <div key={dayIdx} className="w-full aspect-square" />;
                         }
                         return (
                           <div
@@ -457,7 +439,7 @@ export const JournalStats = memo(function JournalStats({ entries, onBack }: Jour
                                   ? MOOD_PIXEL_BG[dayData.mood]
                                   : dayData.hasEntry
                                     ? "bg-primary/30"
-                                    : "bg-muted/40",
+                                    : "bg-muted/40"
                             )}
                             title={`${dayData.date}${dayData.mood ? ` — ${moodLabels[dayData.mood]}` : ""}`}
                           />
@@ -471,19 +453,12 @@ export const JournalStats = memo(function JournalStats({ entries, onBack }: Jour
               {/* Legend */}
               <div className="flex items-center justify-between mt-3 pt-2 border-t border-border/10">
                 <div className="flex items-center gap-2.5 flex-wrap">
-                  {(
-                    ["great", "good", "okay", "bad", "terrible"] as MoodType[]
-                  ).map((mood) => (
+                  {(["great", "good", "okay", "bad", "terrible"] as MoodType[]).map((mood) => (
                     <span
                       key={mood}
                       className="flex items-center gap-1 text-[9px] text-muted-foreground/60"
                     >
-                      <span
-                        className={cn(
-                          "w-2 h-2 rounded-[1px]",
-                          MOOD_PIXEL_BG[mood],
-                        )}
-                      />
+                      <span className={cn("w-2 h-2 rounded-[1px]", MOOD_PIXEL_BG[mood])} />
                       {moodLabels[mood]}
                     </span>
                   ))}
@@ -504,7 +479,11 @@ export const JournalStats = memo(function JournalStats({ entries, onBack }: Jour
                 <h3 className="text-xs font-bold text-muted-foreground/50 uppercase tracking-widest mb-3">
                   {ts.journalStatsMoodDist || "Mood Distribution"}
                 </h3>
-                <div className="flex items-center gap-4">
+                <div
+                  className="flex items-center gap-4"
+                  role="img"
+                  aria-label={`${ts.journalStatsMoodDist || "Mood Distribution"}: ${moodDist.map((m) => `${m.name} ${m.value}`).join(", ")}`}
+                >
                   <ResponsiveContainer width="100%" height={120}>
                     <PieChart>
                       <Pie
@@ -529,9 +508,7 @@ export const JournalStats = memo(function JournalStats({ entries, onBack }: Jour
                           className="w-2.5 h-2.5 rounded-full flex-shrink-0"
                           style={{ backgroundColor: m.color }}
                         />
-                        <span className="text-xs text-foreground flex-1">
-                          {m.name}
-                        </span>
+                        <span className="text-xs text-foreground flex-1">{m.name}</span>
                         <span className="text-xs text-muted-foreground tabular-nums">
                           {m.value}
                         </span>
@@ -544,26 +521,26 @@ export const JournalStats = memo(function JournalStats({ entries, onBack }: Jour
 
             {/* Mood over time */}
             {moodTimeline.length > 2 && (
-              <div className="p-4 rounded-xl bg-card/70 backdrop-blur-sm border border-border/20">
+              <div
+                className="p-4 rounded-xl bg-card/70 backdrop-blur-sm border border-border/20"
+                role="img"
+                aria-label={`${ts.journalStatsMoodTime || "Mood Over Time"}: ${moodTimeline.map((w) => `${w.week} ${w.avg.toFixed(1)}`).join(", ")}`}
+              >
                 <h3 className="text-xs font-bold text-muted-foreground/50 uppercase tracking-widest mb-3">
                   {ts.journalStatsMoodTime || "Mood Over Time"}
                 </h3>
                 <ResponsiveContainer width="100%" height={140}>
                   <LineChart data={moodTimeline}>
-                    <XAxis
-                      dataKey="week"
-                      tick={{ fontSize: 10 }}
-                      stroke="#888"
-                    />
+                    <XAxis dataKey="week" tick={{ fontSize: chartFonts.axis }} stroke="#888" />
                     <YAxis
                       domain={[1, 5]}
-                      tick={{ fontSize: 10 }}
+                      tick={{ fontSize: chartFonts.axis }}
                       stroke="#888"
                       width={20}
                     />
                     <Tooltip
                       contentStyle={{
-                        fontSize: 11,
+                        fontSize: chartFonts.tooltip,
                         borderRadius: 8,
                         border: "none",
                         boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
@@ -583,26 +560,29 @@ export const JournalStats = memo(function JournalStats({ entries, onBack }: Jour
 
             {/* Writing frequency */}
             {frequency.some((f) => f.count > 0) && (
-              <div className="p-4 rounded-xl bg-card/70 backdrop-blur-sm border border-border/20">
+              <div
+                className="p-4 rounded-xl bg-card/70 backdrop-blur-sm border border-border/20"
+                role="img"
+                aria-label={`${ts.journalStatsFrequency || "Writing Frequency"}: ${frequency
+                  .filter((f) => f.count > 0)
+                  .map((f) => `${f.week} ${f.count}`)
+                  .join(", ")}`}
+              >
                 <h3 className="text-xs font-bold text-muted-foreground/50 uppercase tracking-widest mb-3">
                   {ts.journalStatsFrequency || "Writing Frequency"}
                 </h3>
                 <ResponsiveContainer width="100%" height={120}>
                   <BarChart data={frequency}>
-                    <XAxis
-                      dataKey="week"
-                      tick={{ fontSize: 10 }}
-                      stroke="#888"
-                    />
+                    <XAxis dataKey="week" tick={{ fontSize: chartFonts.axis }} stroke="#888" />
                     <YAxis
-                      tick={{ fontSize: 10 }}
+                      tick={{ fontSize: chartFonts.axis }}
                       stroke="#888"
                       width={20}
                       allowDecimals={false}
                     />
                     <Tooltip
                       contentStyle={{
-                        fontSize: 11,
+                        fontSize: chartFonts.tooltip,
                         borderRadius: 8,
                         border: "none",
                         boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
@@ -621,26 +601,18 @@ export const JournalStats = memo(function JournalStats({ entries, onBack }: Jour
               </h3>
               <div className="flex items-end gap-1.5 h-16">
                 {dayActivity.map((d) => {
-                  const maxCount = Math.max(
-                    ...dayActivity.map((x) => x.count),
-                    1,
-                  );
+                  const maxCount = Math.max(...dayActivity.map((x) => x.count), 1);
                   const height = (d.count / maxCount) * 100;
                   return (
-                    <div
-                      key={d.day}
-                      className="flex-1 flex flex-col items-center gap-1"
-                    >
+                    <div key={d.day} className="flex-1 flex flex-col items-center gap-1">
                       <div
                         className={cn(
                           "w-full rounded-t-md transition-all",
-                          d.count > 0 ? "bg-primary/60" : "bg-muted/30",
+                          d.count > 0 ? "bg-primary/60" : "bg-muted/30"
                         )}
                         style={{ height: `${Math.max(height, 4)}%` }}
                       />
-                      <span className="text-[10px] text-muted-foreground/60">
-                        {d.day}
-                      </span>
+                      <span className="text-[10px] text-muted-foreground/60">{d.day}</span>
                     </div>
                   );
                 })}
@@ -663,10 +635,7 @@ export const JournalStats = memo(function JournalStats({ entries, onBack }: Jour
                         className="px-2 py-0.5 rounded-full bg-primary/8 text-primary/80"
                         style={{ fontSize: `${size}px` }}
                       >
-                        #{tag}{" "}
-                        <span className="text-muted-foreground/50">
-                          {count}
-                        </span>
+                        #{tag} <span className="text-muted-foreground/50">{count}</span>
                       </span>
                     );
                   })}

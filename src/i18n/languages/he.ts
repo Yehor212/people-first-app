@@ -1361,6 +1361,23 @@ const hebrewOverrides: Partial<Translations> = {
   dopamineTipText: "מוחות ADHD צריכים יותר דופמין! נסו מצב ADHD למוטיבציה ומשוב מקסימליים.",
   dopamineSave: "שמור וסגור",
 
+  fontScaleTitle: "גודל טקסט",
+  fontScalePreview: "תצוגה מקדימה של הטקסט",
+  fontScalePreviewSub: "הזז את המחוון כדי לשנות את גודל הטקסט באפליקציה.",
+  fontScaleTiny: "זעיר",
+  fontScaleSmall: "קטן",
+  fontScaleDefault: "ברירת מחדל",
+  fontScaleMedium: "בינוני",
+  fontScaleLarge: "גדול",
+  fontScaleXL: "גדול מאוד",
+  fontScaleXXL: "ענק",
+  syncStatusSynced: "מסונכרן",
+  syncStatusSyncing: "מסנכרן...",
+  syncStatusPending: "שינויים ממתינים",
+  syncStatusOffline: "לא מחובר",
+  syncStatusNotSignedIn: "לא מחובר לחשבון",
+  syncStatusError: "שגיאת סנכרון",
+
   // Spin Wheel & Gamification
   spinWheel: "סובב את הגלגל!",
   spinsAvailable: "סיבובים זמינים",

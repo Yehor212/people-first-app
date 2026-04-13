@@ -28,6 +28,7 @@ export const SK = {
   // ─── Theme & UI ───
   THEME: "zenflow-theme",
   OLED_MODE: "zenflow_oled_mode",
+  FONT_SCALE: "zenflow_font_scale",
   LANGUAGE: "zenflow-language",
   LANGUAGE_SELECTED: "zenflow-language-selected",
   INSIGHTS_COLLAPSED: "zenflow-insights-collapsed",

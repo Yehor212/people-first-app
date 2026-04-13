@@ -48,6 +48,13 @@
 
     --radius: 1rem;
 
+    /* Chart typography tokens — scale with --font-scale */
+    --font-scale: 1;
+    --chart-font-axis: calc(0.6875rem * var(--font-scale, 1));
+    --chart-font-tooltip: calc(0.8125rem * var(--font-scale, 1));
+    --chart-font-label: calc(0.9375rem * var(--font-scale, 1));
+    --chart-font-title: calc(1.0625rem * var(--font-scale, 1));
+
     /* Custom ZenFlow tokens */
     --zen-gradient: linear-gradient(135deg, hsl(158 45% 42%), hsl(158 55% 55%));
     --zen-gradient-warm: linear-gradient(135deg, hsl(28 75% 65%), hsl(38 80% 70%));

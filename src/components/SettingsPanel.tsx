@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Sparkles, Smartphone, ChevronRight, Download, CheckCircle } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePwaInstall } from "@/hooks/usePwaInstall";
@@ -12,6 +12,10 @@ import {
 } from "@/types";
 import { Accordion } from "@/components/ui/accordion";
 import { DopamineSettingsComponent } from "@/components/DopamineSettings";
+import { FontScaleSettings } from "@/components/FontScaleSettings";
+import { SyncStatusBadge, type SyncStatus } from "@/components/SyncStatusBadge";
+import { supabase } from "@/lib/supabaseClient";
+import { offlineQueue } from "@/lib/offlineQueue";
 import {
   ProfileSection,
   AboutSection,
@@ -59,6 +63,27 @@ export function SettingsPanel({
   const { t } = useLanguage();
   const { canInstall, isInstalled, promptInstall } = usePwaInstall();
   const [showDopamineSettings, setShowDopamineSettings] = useState(false);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  // Track online/offline for real sync status
+  useEffect(() => {
+    const goOnline = () => setIsOnline(true);
+    const goOffline = () => setIsOnline(false);
+    window.addEventListener("online", goOnline);
+    window.addEventListener("offline", goOffline);
+    return () => {
+      window.removeEventListener("online", goOnline);
+      window.removeEventListener("offline", goOffline);
+    };
+  }, []);
+
+  // Derive real sync status from multiple signals
+  const syncStatus: SyncStatus = useMemo(() => {
+    if (!supabase) return "not-signed-in";
+    if (!isOnline) return "offline";
+    if (offlineQueue.hasPendingActions()) return "pending";
+    return "synced";
+  }, [isOnline]);
   const [openSections, setOpenSections] = useState<string[]>(
     initialOpenSection ? [initialOpenSection] : ["profile"]
   );
@@ -132,6 +157,30 @@ export function SettingsPanel({
           </div>
         </button>
       )}
+
+      {/* Standalone: Sync Status + Sync Now */}
+      <div className="bg-card rounded-2xl p-5 zen-shadow-card">
+        <div className="flex items-center justify-between">
+          <SyncStatusBadge status={syncStatus} />
+          {supabase && navigator.onLine && (
+            <button
+              // A11Y-OK: aria-label provided with translated text for screen readers
+              aria-label={(t as Record<string, string>).syncNow || "Sync Now"}
+              onClick={() => {
+                void import("@/lib/offlineQueue").then(({ offlineQueue }) => {
+                  void offlineQueue.processQueue();
+                });
+              }}
+              className="text-xs text-primary font-medium hover:text-primary/80 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+            >
+              {(t as Record<string, string>).syncNow || "Sync Now"}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Standalone: Font Scale */}
+      <FontScaleSettings />
 
       {/* Standalone: Dopamine Settings */}
       <div className="bg-card rounded-2xl p-5 zen-shadow-card">
