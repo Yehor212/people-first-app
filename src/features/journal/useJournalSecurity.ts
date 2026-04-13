@@ -191,7 +191,7 @@ export function useJournalSecurity() {
             createdAt: stored.createdAt,
           };
           await db.settings.put({ key: JOURNAL_PASSWORD_KEY, value: migrated });
-          logger.info("[Journal]", "Password hash migrated to current iterations");
+          logger.log("[Journal]", "Password hash migrated to current iterations");
         }
         setIsUnlocked(true);
         setFailedAttempts(0);
