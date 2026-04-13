@@ -1091,8 +1091,8 @@ export const JournalModule = memo(function JournalModule({
                           </div>
                         </div>
 
-                        {/* Password settings bottom sheet */}
-                        {showPasswordSettings && (
+                        {/* Password settings bottom sheet — mobile only (desktop rendered below ternary) */}
+                        {!isLgScreen && showPasswordSettings && (
                           <>
                             <div
                               className="fixed inset-0 z-[64] bg-black/30 animate-fade-in"
@@ -1412,6 +1412,160 @@ export const JournalModule = memo(function JournalModule({
             </>
           )}
       </div>
+
+      {/* Desktop: Password settings modal (mobile uses bottom sheet inside its branch) */}
+      {isLgScreen && showPasswordSettings && (
+        <>
+          <div
+            className="fixed inset-0 z-[64] bg-black/30 animate-fade-in"
+            onClick={() => {
+              setShowPasswordSettings(false);
+              setShowChangePassword(false);
+            }}
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={ts.journalSettings || "Diary Settings"}
+            className="fixed inset-0 md:mx-auto md:my-6 md:max-w-lg md:rounded-2xl md:shadow-2xl z-[65] bg-card overflow-y-auto"
+          >
+            <div className="sticky top-0 bg-card border-b border-border p-5 z-10 flex items-center justify-between">
+              <h3 className="text-base font-semibold text-foreground">
+                {ts.journalSettings || "Diary Settings"}
+              </h3>
+              <button
+                onClick={() => setShowPasswordSettings(false)}
+                aria-label={ts.close || "Close"}
+                className="p-2 hover:bg-muted rounded-lg min-w-[44px] min-h-[44px] flex items-center justify-center"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-5">
+              {security.hasPassword ? (
+                showChangePassword ? (
+                  <div>
+                    <JournalLockScreen
+                      mode="change"
+                      cooldownRemaining={0}
+                      failedAttempts={0}
+                      // INTENTIONAL: no-op stubs — JournalLockScreen requires all handlers but change mode only uses onChangePassword
+                      onUnlock={async () => false}
+                      onSetPassword={async () => {
+                        /* unused in change mode */
+                      }}
+                      onChangePassword={async (oldPw, newPw) => {
+                        const ok = await security.changePassword(oldPw, newPw);
+                        if (ok) {
+                          setShowChangePassword(false);
+                          setShowPasswordSettings(false);
+                        }
+                        return ok;
+                      }}
+                    />
+                    <button
+                      onClick={() => setShowChangePassword(false)}
+                      className="w-full mt-2 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors min-h-[44px]"
+                    >
+                      {ts.cancel || "Cancel"}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <button
+                      onClick={() => setShowChangePassword(true)}
+                      className="w-full py-3 rounded-xl bg-primary/10 text-primary text-sm font-medium min-h-[44px]"
+                    >
+                      {ts.journalPasswordChange || "Change Password"}
+                    </button>
+                    <button
+                      onClick={() => setShowRemovePasswordConfirm(true)}
+                      className="w-full py-3 rounded-xl bg-destructive/10 text-destructive text-sm font-medium min-h-[44px]"
+                    >
+                      {ts.journalPasswordRemove || "Remove Password Lock"}
+                    </button>
+                  </div>
+                )
+              ) : (
+                <div>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    {ts.journalPasswordHint || "Protect your diary with a password"}
+                  </p>
+                  <JournalLockScreen
+                    mode="setup"
+                    cooldownRemaining={0}
+                    failedAttempts={0}
+                    // INTENTIONAL: no-op stub — setup mode only uses onSetPassword
+                    onUnlock={async () => false}
+                    onSetPassword={async (pw) => {
+                      await security.setPassword(pw);
+                      setShowPasswordSettings(false);
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* Biometric toggle */}
+              {security.hasPassword && security.biometricAvailable && (
+                <div className="mt-4 pt-4 border-t border-border/20">
+                  <div className="flex items-center justify-between min-h-[44px]">
+                    <div>
+                      <p className="text-sm font-medium text-foreground">
+                        {ts.journalBiometricEnable || "Biometric Unlock"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {ts.journalBiometricSubtitle || "Use fingerprint or face to unlock"}
+                      </p>
+                    </div>
+                    <Switch
+                      checked={security.biometricEnabled}
+                      onCheckedChange={security.setBiometricEnabled}
+                      aria-label={ts.journalBiometricEnable || "Biometric Unlock"}
+                      className="mt-0.5 shrink-0"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Private mode toggle */}
+              <div className="mt-4 pt-4 border-t border-border/20">
+                <div className="flex items-center justify-between min-h-[44px]">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">
+                      {ts.journalPrivateMode || "Hide previews"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {ts.journalPrivateModeHint || "Show only titles in entry list"}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={privateMode}
+                    onCheckedChange={(checked) => {
+                      setPrivateMode(checked);
+                      storageSetRaw(SK.JOURNAL_PRIVATE_MODE, String(checked));
+                    }}
+                    aria-label={ts.journalPrivateMode || "Hide previews"}
+                    className="mt-0.5 shrink-0"
+                  />
+                </div>
+              </div>
+
+              {/* Export data */}
+              <div className="mt-4 pt-4 border-t border-border/20">
+                <button
+                  onClick={() => {
+                    setShowPasswordSettings(false);
+                    setShowExportPicker(true);
+                  }}
+                  className="w-full py-3 rounded-xl bg-muted text-foreground text-sm font-medium min-h-[44px]"
+                >
+                  {ts.journalExport || "Export Diary Data"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Undo delete snackbar */}
       <AnimatePresence>
