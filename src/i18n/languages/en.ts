@@ -2592,6 +2592,14 @@ export const en: Translations = {
   diaryGameChangers: "Game Changers",
   diaryFormatHint: "Select text to format (bold, italic, etc.)",
   diaryFormatLinkPrompt: "Enter URL:",
+  diarySidebarShow: "Show entries",
+  diarySidebarHide: "Hide entries",
+  diaryPhotoSizeSmall: "Small",
+  diaryPhotoSizeMedium: "Medium",
+  diaryPhotoSizeLarge: "Large",
+  diaryPhotoSizeFull: "Full width",
+  diaryPhotoReturn: "Return photo to gallery",
+  diaryPhotoResize: "Resize photo",
 
   // State of Mind
   somLogFeeling: "Log how you're feeling",

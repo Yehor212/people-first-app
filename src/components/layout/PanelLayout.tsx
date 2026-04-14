@@ -1,5 +1,10 @@
-import type { ReactNode } from "react";
-import { Group as PanelGroup, Panel, Separator as PanelResizeHandle } from "react-resizable-panels";
+import { forwardRef, type ReactNode } from "react";
+import {
+  Group as PanelGroup,
+  Panel,
+  Separator as PanelResizeHandle,
+  type ImperativePanelHandle,
+} from "react-resizable-panels";
 import { cn } from "@/lib/utils";
 
 interface PanelLayoutProps {
@@ -35,26 +40,44 @@ interface LayoutPanelProps {
   minSize?: number;
   maxSize?: number;
   className?: string;
+  collapsible?: boolean;
+  collapsedSize?: number;
+  onCollapse?: () => void;
+  onExpand?: () => void;
 }
 
-export function LayoutPanel({
-  children,
-  defaultSize,
-  minSize = 15,
-  maxSize = 70,
-  className,
-}: LayoutPanelProps) {
+export const LayoutPanel = forwardRef<ImperativePanelHandle, LayoutPanelProps>(function LayoutPanel(
+  {
+    children,
+    defaultSize,
+    minSize = 15,
+    maxSize = 70,
+    className,
+    collapsible,
+    collapsedSize,
+    onCollapse,
+    onExpand,
+  },
+  ref
+) {
   return (
     <Panel
+      ref={ref}
       defaultSize={defaultSize}
       minSize={minSize}
       maxSize={maxSize}
       className={cn("overflow-y-auto", className)}
+      collapsible={collapsible}
+      collapsedSize={collapsedSize}
+      onCollapse={onCollapse}
+      onExpand={onExpand}
     >
       {children}
     </Panel>
   );
-}
+});
+
+export type { ImperativePanelHandle };
 
 export function ResizeHandle() {
   return (

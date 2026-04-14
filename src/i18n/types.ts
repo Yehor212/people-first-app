@@ -2579,6 +2579,14 @@ export interface Translations {
   diaryGameChangers: string;
   diaryFormatHint: string;
   diaryFormatLinkPrompt: string;
+  diarySidebarShow: string;
+  diarySidebarHide: string;
+  diaryPhotoSizeSmall: string;
+  diaryPhotoSizeMedium: string;
+  diaryPhotoSizeLarge: string;
+  diaryPhotoSizeFull: string;
+  diaryPhotoReturn: string;
+  diaryPhotoResize: string;
 
   // State of Mind (Apple Health model)
   somLogFeeling: string;

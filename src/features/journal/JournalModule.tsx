@@ -12,6 +12,7 @@ import {
   Download,
   Upload,
   BarChart3,
+  PanelLeftOpen,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn, getToday } from "@/lib/utils";
@@ -39,7 +40,12 @@ import { logger } from "@/lib/logger";
 import { SK } from "@/lib/storageKeys";
 import { storageGetRaw, storageSetRaw, storageRemove } from "@/lib/safeJson";
 import { StickerRenderer } from "./StickerRenderer";
-import { PanelLayout, LayoutPanel, ResizeHandle } from "@/components/layout/PanelLayout";
+import {
+  PanelLayout,
+  LayoutPanel,
+  ResizeHandle,
+  type ImperativePanelHandle,
+} from "@/components/layout/PanelLayout";
 import { useJournalReminder, getDaysSinceLastEntry } from "./useJournalReminder";
 import { useScreenSecurity } from "./useScreenSecurity";
 import { ParticleBackground } from "@/components/stats/ParticleBackground";
@@ -95,6 +101,9 @@ export const JournalModule = memo(function JournalModule({
   } | null>(null);
   const [hasDraft, setHasDraft] = useState(false);
   const [showRemovePasswordConfirm, setShowRemovePasswordConfirm] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const sidebarPanelRef = useRef<ImperativePanelHandle>(null);
+  const sidebarContentRef = useRef<HTMLDivElement>(null);
 
   useBackHandler(showExportPicker, () => setShowExportPicker(false));
 
@@ -161,6 +170,30 @@ export const JournalModule = memo(function JournalModule({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- unmount-only: journal ref is stable, intentionally excluded to avoid re-running cleanup
     []
   );
+
+  // Auto-collapse sidebar when entering edit mode on desktop
+  useEffect(() => {
+    if (journal.view === "editing" && isLgScreen) {
+      sidebarPanelRef.current?.collapse();
+    }
+  }, [journal.view, isLgScreen]);
+
+  // Keyboard shortcut: Ctrl+\ (Cmd+\ on Mac) to toggle sidebar
+  useEffect(() => {
+    if (!isLgScreen) return;
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "\\") {
+        e.preventDefault();
+        if (sidebarCollapsed) {
+          sidebarPanelRef.current?.expand();
+        } else {
+          sidebarPanelRef.current?.collapse();
+        }
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [isLgScreen, sidebarCollapsed]);
 
   // Streak calculation from all entry dates
   const streak = useMemo(() => {
@@ -791,9 +824,26 @@ export const JournalModule = memo(function JournalModule({
               {isLgScreen ? (
                 /* ═══ DESKTOP: Master-detail split ═══ */
                 <PanelLayout autoSaveId="journal-layout" className="flex-1 min-h-0">
-                  {/* LEFT PANEL: always-visible list */}
-                  <LayoutPanel defaultSize={30} minSize={20} maxSize={45}>
-                    <div className="flex flex-col border-e border-border/30 bg-card h-full overflow-hidden">
+                  {/* LEFT PANEL: collapsible entry list */}
+                  <LayoutPanel
+                    ref={sidebarPanelRef}
+                    defaultSize={30}
+                    minSize={20}
+                    maxSize={45}
+                    collapsible
+                    collapsedSize={0}
+                    onCollapse={() => setSidebarCollapsed(true)}
+                    onExpand={() => {
+                      setSidebarCollapsed(false);
+                      // WCAG 2.4.3: move focus into expanded sidebar content
+                      requestAnimationFrame(() => sidebarContentRef.current?.focus());
+                    }}
+                  >
+                    <div
+                      ref={sidebarContentRef}
+                      tabIndex={-1}
+                      className="flex flex-col border-e border-border/30 bg-card h-full overflow-hidden outline-none"
+                    >
                       {/* Header */}
                       <div className="flex items-center justify-between px-4 py-3 border-b border-border/20">
                         <div className="flex items-center gap-2">
@@ -882,7 +932,19 @@ export const JournalModule = memo(function JournalModule({
 
                   {/* RIGHT PANEL: editor / viewer / stats / empty */}
                   <LayoutPanel defaultSize={70} maxSize={85}>
-                    <div className="flex flex-col min-w-0 h-full bg-background">
+                    <div className="flex flex-col min-w-0 h-full bg-background relative">
+                      {/* Toggle button to re-expand collapsed sidebar */}
+                      {sidebarCollapsed && (
+                        <button
+                          onClick={() => sidebarPanelRef.current?.expand()}
+                          className="absolute ltr:left-2 rtl:right-2 top-3 z-40 p-2 bg-card rounded-lg shadow-md hover:bg-accent transition-colors"
+                          aria-label={ts.diarySidebarShow || "Show entries"}
+                          aria-expanded={false}
+                          autoFocus
+                        >
+                          <PanelLeftOpen className="w-4 h-4" />
+                        </button>
+                      )}
                       {journal.view === "editing" ? (
                         <JournalEntryEditor
                           entry={journal.activeEntry}

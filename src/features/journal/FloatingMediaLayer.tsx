@@ -10,10 +10,11 @@
 
 import { useRef, useCallback, useState, useEffect, memo } from "react";
 import { motion } from "framer-motion";
-import { X } from "lucide-react";
+import { X, GripVertical, Maximize2 } from "lucide-react";
 import type { JournalPhoto } from "./types";
 import { getPhotosForEntry } from "./journalStorage";
 import { logger } from "@/lib/logger";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface PhotoLayout {
   x: number; // percentage of container width (0-100)
@@ -43,6 +44,8 @@ const FloatingPhoto = memo(function FloatingPhoto({
   onReturn: () => void;
   containerRef: React.RefObject<HTMLDivElement>;
 }) {
+  const { t } = useLanguage();
+  const ts = t as unknown as Record<string, string>;
   const resizeStartRef = useRef<{
     startX: number;
     startWidth: number;
@@ -130,9 +133,57 @@ const FloatingPhoto = memo(function FloatingPhoto({
         draggable={false}
       />
 
+      {/* Drag handle — visible on hover */}
+      <div
+        className="absolute top-1 left-1/2 -translate-x-1/2
+        opacity-0 group-hover:opacity-100
+        transition-opacity cursor-grab active:cursor-grabbing
+        p-1 rounded bg-black/40 text-white"
+      >
+        <GripVertical className="w-4 h-4" />
+      </div>
+
+      {/* Size presets — visible on hover */}
+      <div
+        className="absolute -top-9 left-1/2 -translate-x-1/2
+        opacity-0 group-hover:opacity-100 transition-opacity
+        flex gap-1 bg-card shadow-lg rounded-lg p-1 border border-border/50"
+      >
+        {[
+          { width: 120, label: "S", ariaKey: "diaryPhotoSizeSmall", fallback: "Small" },
+          { width: 240, label: "M", ariaKey: "diaryPhotoSizeMedium", fallback: "Medium" },
+          { width: 360, label: "L", ariaKey: "diaryPhotoSizeLarge", fallback: "Large" },
+        ].map((preset) => (
+          <button
+            key={preset.label}
+            onClick={(e) => {
+              e.stopPropagation();
+              onPositionChange({ ...position, width: preset.width });
+              setLiveWidth(preset.width);
+            }}
+            className="px-2 py-0.5 text-xs rounded hover:bg-accent transition-colors"
+            aria-label={ts[preset.ariaKey] || preset.fallback}
+          >
+            {preset.label}
+          </button>
+        ))}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            const cw = containerRef.current?.getBoundingClientRect().width ?? 500;
+            onPositionChange({ ...position, width: Math.min(cw, 500) });
+            setLiveWidth(Math.min(cw, 500));
+          }}
+          className="px-2 py-0.5 text-xs rounded hover:bg-accent transition-colors"
+          aria-label={ts.diaryPhotoSizeFull || "Full width"}
+        >
+          <Maximize2 className="w-3 h-3" />
+        </button>
+      </div>
+
       {/* Return to gallery button (top-right, always visible on mobile) */}
       <button
-        aria-label="Return photo to gallery" // A11Y-OK: aria-label fallback for non-i18n context
+        aria-label={ts.diaryPhotoReturn || "Return photo to gallery"}
         onClick={(e) => {
           e.stopPropagation();
           onReturn();
@@ -145,7 +196,7 @@ const FloatingPhoto = memo(function FloatingPhoto({
       {/* Resize handle (bottom-right corner, 44px touch target) */}
       <div
         role="slider"
-        aria-label="Resize photo" // A11Y-OK: aria-label fallback for non-i18n context
+        aria-label={ts.diaryPhotoResize || "Resize photo"}
         aria-valuemin={80}
         aria-valuemax={500}
         aria-valuenow={liveWidth}

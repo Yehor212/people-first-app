@@ -9,13 +9,13 @@
  * - Hover 3D rotation effect
  */
 
-import { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { zenTap } from '@/lib/animationUtils';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { DiamondIcon, SparklesIcon } from '@/components/icons';
-import { cn, formatDate, getToday } from '@/lib/utils';
+import { useState, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { zenTap } from "@/lib/animationUtils";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { DiamondIcon, SparklesIcon } from "@/components/icons";
+import { cn, formatDate, getToday } from "@/lib/utils";
 
 interface DayData {
   date: string;
@@ -87,29 +87,29 @@ function CrystalDay({
   // Crystal styles based on activity - using theme tokens for WCAG compliance
   const crystalStyles = {
     0: {
-      bg: 'from-[hsl(var(--chart-activity-0))] to-[hsl(var(--chart-activity-0))]/80',
-      glow: 'none',
-      border: 'border-[hsl(var(--border))]',
+      bg: "from-[hsl(var(--chart-activity-0))] to-[hsl(var(--chart-activity-0))]/80",
+      glow: "none",
+      border: "border-[hsl(var(--border))]",
     },
     1: {
-      bg: 'from-[hsl(var(--chart-activity-1))] to-[hsl(var(--chart-activity-1))]/80',
-      glow: '0 0 8px rgba(20, 184, 166, 0.3)',
-      border: 'border-[hsl(var(--chart-activity-1))]/70',
+      bg: "from-[hsl(var(--chart-activity-1))] to-[hsl(var(--chart-activity-1))]/80",
+      glow: "0 0 8px rgba(20, 184, 166, 0.3)",
+      border: "border-[hsl(var(--chart-activity-1))]/70",
     },
     2: {
-      bg: 'from-[hsl(var(--chart-activity-2))] to-[hsl(var(--chart-activity-2))]/80',
-      glow: '0 0 12px rgba(16, 185, 129, 0.4)',
-      border: 'border-[hsl(var(--chart-activity-2))]/70',
+      bg: "from-[hsl(var(--chart-activity-2))] to-[hsl(var(--chart-activity-2))]/80",
+      glow: "0 0 12px rgba(16, 185, 129, 0.4)",
+      border: "border-[hsl(var(--chart-activity-2))]/70",
     },
     3: {
-      bg: 'from-[hsl(var(--chart-activity-3))] to-[hsl(var(--chart-activity-3))]/80',
-      glow: '0 0 16px rgba(34, 197, 94, 0.5)',
-      border: 'border-[hsl(var(--chart-activity-3))]/70',
+      bg: "from-[hsl(var(--chart-activity-3))] to-[hsl(var(--chart-activity-3))]/80",
+      glow: "0 0 16px rgba(34, 197, 94, 0.5)",
+      border: "border-[hsl(var(--chart-activity-3))]/70",
     },
     4: {
-      bg: 'from-[hsl(var(--chart-activity-4))] to-[hsl(var(--chart-activity-4))]/80',
-      glow: '0 0 20px rgba(52, 211, 153, 0.6), 0 0 30px rgba(16, 185, 129, 0.3)',
-      border: 'border-[hsl(var(--chart-activity-4))]/70',
+      bg: "from-[hsl(var(--chart-activity-4))] to-[hsl(var(--chart-activity-4))]/80",
+      glow: "0 0 20px rgba(52, 211, 153, 0.6), 0 0 30px rgba(16, 185, 129, 0.3)",
+      border: "border-[hsl(var(--chart-activity-4))]/70",
     },
   }[activityLevel];
 
@@ -141,9 +141,7 @@ function CrystalDay({
             ? {
                 boxShadow: [
                   crystalStyles.glow,
-                  crystalStyles.glow.replace(/[\d.]+(?=\))/g, (m) =>
-                    String(parseFloat(m) * 1.3)
-                  ),
+                  crystalStyles.glow.replace(/[\d.]+(?=\))/g, (m) => String(parseFloat(m) * 1.3)),
                   crystalStyles.glow,
                 ],
               }
@@ -168,7 +166,9 @@ function CrystalDay({
       <span
         className={cn(
           "relative z-10 text-xs font-medium",
-          isToday ? "text-emerald-700 dark:text-emerald-300 font-bold" : "text-slate-700 dark:text-slate-200"
+          isToday
+            ? "text-emerald-700 dark:text-emerald-300 font-bold"
+            : "text-slate-700 dark:text-slate-200"
         )}
       >
         {dayNum}
@@ -225,7 +225,9 @@ export function CrystalCalendar({ data, onDayClick, className }: CrystalCalendar
   }, [currentDate]);
 
   // Weekday labels from i18n
-  const weekdays = [t.sun, t.mon, t.tue, t.wed, t.thu, t.fri, t.sat].map(d => d?.slice(0, 1) || '');
+  const weekdays = [t.sun, t.mon, t.tue, t.wed, t.thu, t.fri, t.sat].map(
+    (d) => d?.slice(0, 1) || ""
+  );
 
   // Month navigation
   const goToPrevMonth = () => {
@@ -237,20 +239,18 @@ export function CrystalCalendar({ data, onDayClick, className }: CrystalCalendar
   };
 
   // Format month name
-  const monthName = currentDate.toLocaleDateString(language, { month: 'long', year: 'numeric' });
+  const monthName = currentDate.toLocaleDateString(language, { month: "long", year: "numeric" });
 
   // Today's date string for comparison
   const todayStr = getToday();
 
   return (
-    <div className={cn("relative overflow-hidden rounded-2xl p-4", className)}>
+    <div
+      className={cn("relative overflow-hidden rounded-2xl p-4 lg:max-w-xs lg:mx-auto", className)}
+    >
       {/* Theme-aware crystal cave background */}
-      <div
-        className="absolute inset-0 bg-gradient-to-b from-teal-50 via-emerald-50/80 to-slate-100 dark:bg-none"
-      />
-      <div
-        className="absolute inset-0 hidden dark:block bg-[radial-gradient(ellipse_at_top,rgba(20,184,166,0.1)_0%,#0f172a_40%,#020617_100%)]"
-      />
+      <div className="absolute inset-0 bg-gradient-to-b from-teal-50 via-emerald-50/80 to-slate-100 dark:bg-none" />
+      <div className="absolute inset-0 hidden dark:block bg-[radial-gradient(ellipse_at_top,rgba(20,184,166,0.1)_0%,#0f172a_40%,#020617_100%)]" />
 
       {/* Crystal formations decoration */}
       <div className="absolute top-0 left-0 right-0 h-20 pointer-events-none opacity-30">
@@ -342,22 +342,22 @@ export function CrystalCalendar({ data, onDayClick, className }: CrystalCalendar
       <div className="relative flex items-center justify-center gap-4 mt-4 pt-4 border-t border-border/50">
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rotate-45 rounded-sm bg-[hsl(var(--chart-activity-4))] border border-[hsl(var(--chart-activity-4))]/70" />
-          <span className="text-xs text-primary">{t.active || 'Active'}</span>
+          <span className="text-xs text-primary">{t.active || "Active"}</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rotate-45 rounded-sm bg-[hsl(var(--chart-activity-0))] border border-border" />
-          <span className="text-xs text-muted-foreground">{t.empty || 'Empty'}</span>
+          <span className="text-xs text-muted-foreground">{t.empty || "Empty"}</span>
         </div>
         <div className="flex items-center gap-2">
           <SparklesIcon size="xs" />
-          <span className="text-xs text-amber-600 dark:text-amber-400">{t.perfect || 'Perfect'}</span>
+          <span className="text-xs text-amber-600 dark:text-amber-400">
+            {t.perfect || "Perfect"}
+          </span>
         </div>
       </div>
 
       {/* Bottom crystal glow */}
-      <div
-        className="absolute bottom-0 left-0 right-0 h-16 pointer-events-none bg-[radial-gradient(ellipse_at_bottom,rgba(20,184,166,0.1)_0%,transparent_70%)]"
-      />
+      <div className="absolute bottom-0 left-0 right-0 h-16 pointer-events-none bg-[radial-gradient(ellipse_at_bottom,rgba(20,184,166,0.1)_0%,transparent_70%)]" />
     </div>
   );
 }
