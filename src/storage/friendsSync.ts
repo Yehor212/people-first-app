@@ -426,8 +426,8 @@ async function findFriendByCode(friendCode: string): Promise<{
       avatarEmoji: data.avatar_emoji || "🧘",
       currentStreak: data.current_streak || 0,
       level: data.level || 1,
-      lastActive: data.updated_at,
-      status: data.status,
+      lastActive: data.updated_at ?? undefined,
+      status: data.status ?? undefined,
     };
   } catch (error) {
     if (!isAbortError(error)) {
