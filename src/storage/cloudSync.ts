@@ -6,23 +6,19 @@ import logger from "@/lib/logger";
 import type { Json } from "@/types/supabase";
 import { syncOrchestrator } from "@/lib/syncOrchestrator";
 import { generateSecureRandom, isAbortError } from "@/lib/validation";
+import type { SeverityLevel } from "@sentry/core";
+import type { ErrorCategory } from "@/lib/sentry";
+
 // Lazy-load sentry to keep @sentry/* (~250 KB) off the critical rendering path.
 // Breadcrumbs are fire-and-forget telemetry — async import is safe.
 const lazyCategorizedBreadcrumb = (
-  category: string,
+  category: ErrorCategory,
   message: string,
   data?: Record<string, unknown>,
-  level?: string
+  level?: SeverityLevel
 ) => {
   import("@/lib/sentry")
-    .then((mod) =>
-      mod.addCategorizedBreadcrumb(
-        category as Parameters<typeof mod.addCategorizedBreadcrumb>[0],
-        message,
-        data,
-        level as Parameters<typeof mod.addCategorizedBreadcrumb>[3]
-      )
-    )
+    .then((mod) => mod.addCategorizedBreadcrumb(category, message, data, level))
     .catch((e) => logger.warn("[Sentry] lazy load skipped:", e));
 };
 

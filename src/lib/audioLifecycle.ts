@@ -13,12 +13,14 @@
 import { getAmbientSoundGenerator, forceUnlockAudio, type AudioStatus } from "./ambientSounds";
 import { resumeOnInteraction } from "./audioManager";
 import { logger } from "./logger";
+import type { SeverityLevel } from "@sentry/core";
+
 // Lazy-load sentry to keep @sentry/* (~250 KB) off the critical rendering path.
 // Breadcrumbs are fire-and-forget telemetry — async import is safe.
 const lazyBreadcrumb = (bc: {
   category: string;
   message: string;
-  level?: string;
+  level?: SeverityLevel;
   data?: Record<string, unknown>;
 }) => {
   import("@/lib/sentry")
