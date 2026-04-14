@@ -9,7 +9,25 @@
  */
 
 import { logger } from "@/lib/logger";
-import { addCategorizedBreadcrumb } from "@/lib/sentry";
+// Lazy-load sentry to keep @sentry/* (~250 KB) off the critical rendering path.
+// Breadcrumbs are fire-and-forget telemetry — async import is safe.
+const lazyCategorizedBreadcrumb = (
+  category: string,
+  message: string,
+  data?: Record<string, unknown>,
+  level?: string
+) => {
+  import("@/lib/sentry")
+    .then((mod) =>
+      mod.addCategorizedBreadcrumb(
+        category as Parameters<typeof mod.addCategorizedBreadcrumb>[0],
+        message,
+        data,
+        level as Parameters<typeof mod.addCategorizedBreadcrumb>[3]
+      )
+    )
+    .catch((e) => logger.warn("[Sentry] lazy load skipped:", e));
+};
 import { isAbortError, isValidUUID } from "@/lib/validation";
 import { supabase, getCurrentUserId } from "@/lib/supabaseClient";
 import { db } from "@/storage/db";
@@ -89,7 +107,7 @@ export const pullFromCloud = async (): Promise<boolean> => {
     return false;
   }
 
-  addCategorizedBreadcrumb("sync", "Starting pullFromCloud");
+  lazyCategorizedBreadcrumb("sync", "Starting pullFromCloud");
 
   try {
     // Fetch all data in parallel
@@ -472,7 +490,7 @@ export const pullFromCloud = async (): Promise<boolean> => {
       throw transactionError; // Re-throw to be caught by outer catch
     }
 
-    addCategorizedBreadcrumb("sync", "pullFromCloud completed", {
+    lazyCategorizedBreadcrumb("sync", "pullFromCloud completed", {
       moods: moods.length,
       habits: habits.length,
       focusSessions: focusSessions.length,
@@ -491,11 +509,11 @@ export const pullFromCloud = async (): Promise<boolean> => {
   } catch (error) {
     // Handle AbortError gracefully
     if (isAbortError(error)) {
-      addCategorizedBreadcrumb("sync", "pullFromCloud aborted", {}, "warning");
+      lazyCategorizedBreadcrumb("sync", "pullFromCloud aborted", {}, "warning");
       logger.warn("[Sync] pullFromCloud aborted (timeout or navigation)");
       return false;
     }
-    addCategorizedBreadcrumb(
+    lazyCategorizedBreadcrumb(
       "sync",
       "pullFromCloud failed",
       { error: (error as Error).message },
@@ -520,7 +538,7 @@ export const pushToCloud = async (): Promise<boolean> => {
     return false;
   }
 
-  addCategorizedBreadcrumb("sync", "Starting pushToCloud");
+  lazyCategorizedBreadcrumb("sync", "Starting pushToCloud");
 
   try {
     const [
@@ -553,7 +571,7 @@ export const pushToCloud = async (): Promise<boolean> => {
     await processBatched(journalPhotos, (p) => syncJournalPhoto(p));
     await processBatched(journalAudio, (a) => syncJournalAudio(a));
 
-    addCategorizedBreadcrumb("sync", "pushToCloud completed", {
+    lazyCategorizedBreadcrumb("sync", "pushToCloud completed", {
       moods: moods.length,
       habits: habits.length,
       focusSessions: focusSessions.length,
@@ -572,11 +590,11 @@ export const pushToCloud = async (): Promise<boolean> => {
   } catch (error) {
     // Handle AbortError gracefully
     if (isAbortError(error)) {
-      addCategorizedBreadcrumb("sync", "pushToCloud aborted", {}, "warning");
+      lazyCategorizedBreadcrumb("sync", "pushToCloud aborted", {}, "warning");
       logger.warn("[Sync] pushToCloud aborted (timeout or navigation)");
       return false;
     }
-    addCategorizedBreadcrumb(
+    lazyCategorizedBreadcrumb(
       "sync",
       "pushToCloud failed",
       { error: (error as Error).message },

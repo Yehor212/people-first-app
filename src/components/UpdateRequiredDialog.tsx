@@ -19,7 +19,18 @@ import {
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useBackHandler } from "@/hooks/useBackHandler";
 import { RefreshCw, Download } from "lucide-react";
-import { addBreadcrumb } from "@/lib/sentry";
+// Lazy-load sentry to keep @sentry/* (~250 KB) off the critical rendering path.
+// Breadcrumbs are fire-and-forget telemetry — async import is safe.
+const lazyBreadcrumb = (bc: {
+  category: string;
+  message: string;
+  level?: string;
+  data?: Record<string, unknown>;
+}) => {
+  import("@/lib/sentry")
+    .then(({ addBreadcrumb }) => addBreadcrumb(bc))
+    .catch((e) => logger.warn("[Sentry] lazy load skipped:", e));
+};
 import { logger } from "@/lib/logger";
 
 // Event name for chunk load failures
@@ -38,7 +49,7 @@ export function UpdateRequiredDialog() {
     logger.warn("[UpdateRequired] Chunk load error detected:", detail);
 
     // Track in Sentry as handled (not an error anymore)
-    addBreadcrumb({
+    lazyBreadcrumb({
       category: "app",
       message: "Chunk load error - update required dialog shown",
       level: "warning",
@@ -59,7 +70,7 @@ export function UpdateRequiredDialog() {
 
   const handleRefresh = useCallback(() => {
     // Track the refresh action
-    addBreadcrumb({
+    lazyBreadcrumb({
       category: "app",
       message: "User clicked refresh after chunk load error",
       level: "info",

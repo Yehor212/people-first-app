@@ -14,7 +14,18 @@ import { generateSecureId } from "@/lib/validation";
 import { safeLocalStorageGet, safeLocalStorageSet } from "@/lib/safeJson";
 import { SK } from "@/lib/storageKeys";
 import { isAbortError } from "@/lib/validation";
-import { addBreadcrumb } from "@/lib/sentry";
+// Lazy-load sentry to keep @sentry/* (~250 KB) off the critical rendering path.
+// Breadcrumbs are fire-and-forget telemetry — async import is safe.
+const lazyBreadcrumb = (bc: {
+  category: string;
+  message: string;
+  level?: string;
+  data?: Record<string, unknown>;
+}) => {
+  import("@/lib/sentry")
+    .then(({ addBreadcrumb }) => addBreadcrumb(bc))
+    .catch((e) => logger.warn("[Sentry] lazy load skipped:", e));
+};
 
 // ============================================
 // TIMEOUT
@@ -433,7 +444,7 @@ export async function refreshFriendsData(): Promise<void> {
   const friends = loadFriends();
   if (friends.length === 0) return;
 
-  addBreadcrumb({
+  lazyBreadcrumb({
     category: "friends",
     message: "Refreshing friends data",
     level: "info",

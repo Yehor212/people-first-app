@@ -6,7 +6,25 @@ import logger from "@/lib/logger";
 import type { Json } from "@/types/supabase";
 import { syncOrchestrator } from "@/lib/syncOrchestrator";
 import { generateSecureRandom, isAbortError } from "@/lib/validation";
-import { addCategorizedBreadcrumb } from "@/lib/sentry";
+// Lazy-load sentry to keep @sentry/* (~250 KB) off the critical rendering path.
+// Breadcrumbs are fire-and-forget telemetry — async import is safe.
+const lazyCategorizedBreadcrumb = (
+  category: string,
+  message: string,
+  data?: Record<string, unknown>,
+  level?: string
+) => {
+  import("@/lib/sentry")
+    .then((mod) =>
+      mod.addCategorizedBreadcrumb(
+        category as Parameters<typeof mod.addCategorizedBreadcrumb>[0],
+        message,
+        data,
+        level as Parameters<typeof mod.addCategorizedBreadcrumb>[3]
+      )
+    )
+    .catch((e) => logger.warn("[Sentry] lazy load skipped:", e));
+};
 
 const BACKUP_TABLE = "user_backups";
 const SYNC_INTERVAL = 10 * 60 * 1000; // 10 minutes (granular sync handles individual items)
@@ -43,19 +61,19 @@ let beforeUnloadHandler: (() => void) | null = null;
 export const syncWithCloud = async (
   mode: "merge" | "replace" = "merge"
 ): Promise<{ status: string }> => {
-  addCategorizedBreadcrumb("sync", "syncWithCloud called", { mode });
+  lazyCategorizedBreadcrumb("sync", "syncWithCloud called", { mode });
 
   // P1-11 Fix: If sync is already in progress, wait for it and return the same result
   // This prevents "skipped" status and ensures all callers get consistent data
   if (currentSyncPromise) {
     logger.sync("Sync already in progress, waiting for completion...");
-    addCategorizedBreadcrumb("sync", "Waiting for existing sync");
+    lazyCategorizedBreadcrumb("sync", "Waiting for existing sync");
     try {
       return await currentSyncPromise;
     } catch (error) {
       // Handle AbortError gracefully - don't re-throw aborts
       if (isAbortError(error)) {
-        addCategorizedBreadcrumb("sync", "Sync wait aborted", {}, "warning");
+        lazyCategorizedBreadcrumb("sync", "Sync wait aborted", {}, "warning");
         logger.warn("[Sync] Sync wait aborted");
         return { status: "aborted" };
       }
@@ -273,7 +291,7 @@ export const silentSync = async () => {
       try {
         await syncWithCloud("merge");
         logger.sync("Auto-sync completed");
-        addCategorizedBreadcrumb("sync", "Auto-sync completed");
+        lazyCategorizedBreadcrumb("sync", "Auto-sync completed");
         // Reset failure counter and emit success on successful sync
         if (consecutiveSyncFailures > 0) {
           consecutiveSyncFailures = 0;
@@ -282,11 +300,11 @@ export const silentSync = async () => {
       } catch (error) {
         // Don't count aborts as failures - they're intentional
         if (isAbortError(error)) {
-          addCategorizedBreadcrumb("sync", "Auto-sync aborted (intentional)", {}, "info");
+          lazyCategorizedBreadcrumb("sync", "Auto-sync aborted (intentional)", {}, "info");
           logger.log("[Sync] Auto-sync aborted (intentional)");
           return; // Don't throw, don't count as failure
         }
-        addCategorizedBreadcrumb(
+        lazyCategorizedBreadcrumb(
           "sync",
           "Auto-sync failed",
           { error: (error as Error).message },

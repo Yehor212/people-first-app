@@ -11,7 +11,25 @@
 
 import { useState, useEffect } from "react";
 import { logger } from "@/lib/logger";
-import { addCategorizedBreadcrumb } from "@/lib/sentry";
+// Lazy-load sentry to keep @sentry/* (~250 KB) off the critical rendering path.
+// Breadcrumbs are fire-and-forget telemetry — async import is safe.
+const lazyCategorizedBreadcrumb = (
+  category: string,
+  message: string,
+  data?: Record<string, unknown>,
+  level?: string
+) => {
+  import("@/lib/sentry")
+    .then((mod) =>
+      mod.addCategorizedBreadcrumb(
+        category as Parameters<typeof mod.addCategorizedBreadcrumb>[0],
+        message,
+        data,
+        level as Parameters<typeof mod.addCategorizedBreadcrumb>[3]
+      )
+    )
+    .catch((e) => logger.warn("[Sentry] lazy load skipped:", e));
+};
 import { isCloudSyncEnabled } from "@/lib/cloudSyncSettings";
 import { generateSecureRandom } from "@/lib/validation";
 import { is401Error, AUTH_SESSION_EXPIRED_EVENT } from "@/lib/apiClient";
@@ -164,7 +182,7 @@ class SyncOrchestrator {
     // Start processing using mutex pattern to avoid race conditions
     // If already processing, wait for current batch to complete then check queue again
     this.startProcessing().catch((err) => {
-      logger.sync('Failed to start queue processing', err);
+      logger.sync("Failed to start queue processing", err);
     });
   }
 
@@ -216,7 +234,7 @@ class SyncOrchestrator {
         const operation = this.queue[0];
 
         try {
-          addCategorizedBreadcrumb("sync", `Starting ${operation.type} sync`, {
+          lazyCategorizedBreadcrumb("sync", `Starting ${operation.type} sync`, {
             operationId: operation.id,
             priority: operation.priority,
           });
@@ -234,7 +252,7 @@ class SyncOrchestrator {
           operation.completedAt = Date.now();
           const duration = operation.completedAt - operation.startedAt;
 
-          addCategorizedBreadcrumb("sync", `Completed ${operation.type} sync`, {
+          lazyCategorizedBreadcrumb("sync", `Completed ${operation.type} sync`, {
             duration,
             operationId: operation.id,
           });
@@ -252,7 +270,7 @@ class SyncOrchestrator {
             lastError: undefined, // Clear previous errors on success
           });
         } catch (error) {
-          addCategorizedBreadcrumb(
+          lazyCategorizedBreadcrumb(
             "sync",
             `Sync error for ${operation.type}`,
             {
@@ -307,7 +325,7 @@ class SyncOrchestrator {
             }
 
             // Session truly expired
-            addCategorizedBreadcrumb(
+            lazyCategorizedBreadcrumb(
               "sync",
               "Session expired - clearing queue",
               { operation: operation.type },
@@ -481,7 +499,7 @@ class SyncOrchestrator {
     // Resume processing when back online using mutex-protected method
     if (isOnline && this.queue.length > 0 && !this.isProcessing) {
       this.startProcessing().catch((err) => {
-        logger.sync('Failed to resume processing on network recovery', err);
+        logger.sync("Failed to resume processing on network recovery", err);
       });
     }
   }

@@ -13,7 +13,18 @@
 
 import { logger } from "./logger";
 import { isAbortError } from "./validation";
-import { addBreadcrumb } from "@/lib/sentry";
+// Lazy-load sentry to keep @sentry/* (~250 KB) off the critical rendering path.
+// Breadcrumbs are fire-and-forget telemetry — async import is safe.
+const lazyBreadcrumb = (bc: {
+  category: string;
+  message: string;
+  level?: string;
+  data?: Record<string, unknown>;
+}) => {
+  import("@/lib/sentry")
+    .then(({ addBreadcrumb }) => addBreadcrumb(bc))
+    .catch((e) => logger.warn("[Sentry] lazy load skipped:", e));
+};
 import { BASE_URL } from "@/lib/env";
 
 // ============================================
@@ -195,7 +206,7 @@ export async function unlockAudio(): Promise<void> {
       logger.log("[AmbientSounds] Audio fully unlocked for mobile browser");
 
       // Sentry breadcrumb for unlock success
-      addBreadcrumb({
+      lazyBreadcrumb({
         category: "audio",
         message: "Audio unlocked successfully",
         level: "info",
@@ -205,7 +216,7 @@ export async function unlockAudio(): Promise<void> {
       // Don't mark as unlocked on failure — allow retry on next user gesture
 
       // Sentry breadcrumb for unlock issues
-      addBreadcrumb({
+      lazyBreadcrumb({
         category: "audio",
         message: "Audio unlock had issues",
         level: "warning",
@@ -301,7 +312,7 @@ export function isAudioUnlocked(): boolean {
  * Force re-unlock audio (useful after app resume on iOS)
  */
 export async function forceUnlockAudio(): Promise<void> {
-  addBreadcrumb({
+  lazyBreadcrumb({
     category: "audio",
     message: "Force re-unlocking audio (app resume)",
     level: "info",
@@ -454,7 +465,7 @@ export class AmbientSoundGenerator {
 
     // Sentry breadcrumb for state changes
     if (this.status.state !== prevState) {
-      addBreadcrumb({
+      lazyBreadcrumb({
         category: "audio",
         message: `Audio state: ${prevState} → ${this.status.state}`,
         level: this.status.error ? "error" : "info",

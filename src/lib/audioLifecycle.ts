@@ -13,7 +13,18 @@
 import { getAmbientSoundGenerator, forceUnlockAudio, type AudioStatus } from "./ambientSounds";
 import { resumeOnInteraction } from "./audioManager";
 import { logger } from "./logger";
-import { addBreadcrumb } from "@/lib/sentry";
+// Lazy-load sentry to keep @sentry/* (~250 KB) off the critical rendering path.
+// Breadcrumbs are fire-and-forget telemetry — async import is safe.
+const lazyBreadcrumb = (bc: {
+  category: string;
+  message: string;
+  level?: string;
+  data?: Record<string, unknown>;
+}) => {
+  import("@/lib/sentry")
+    .then(({ addBreadcrumb }) => addBreadcrumb(bc))
+    .catch((e) => logger.warn("[Sentry] lazy load skipped:", e));
+};
 
 interface AudioLifecycleState {
   wasPlaying: boolean;
@@ -48,7 +59,7 @@ export function pauseAllAudio(): void {
       logger.log("[AudioLifecycle] Paused audio on app background");
 
       // Sentry breadcrumb for debugging
-      addBreadcrumb({
+      lazyBreadcrumb({
         category: "audio",
         message: "Audio paused on app background",
         level: "info",
@@ -94,7 +105,7 @@ export async function resumeAllAudio(): Promise<void> {
 
     logger.log("[AudioLifecycle] Audio resumed successfully");
 
-    addBreadcrumb({
+    lazyBreadcrumb({
       category: "audio",
       message: "Audio resumed on app foreground",
       level: "info",
@@ -106,7 +117,7 @@ export async function resumeAllAudio(): Promise<void> {
   } catch (error) {
     logger.error("[AudioLifecycle] Failed to resume audio:", error);
 
-    addBreadcrumb({
+    lazyBreadcrumb({
       category: "audio",
       message: "Audio resume failed",
       level: "error",

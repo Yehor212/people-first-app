@@ -8,7 +8,25 @@ import { triggerDataRefresh } from "@/hooks/useIndexedDB";
 import { broadcastChange } from "@/lib/syncBroadcast";
 import { writeEvent, getPersistentDeviceId } from "@/storage/eventSync";
 import { getDeletedMoodIds, trackDeletedMoodId } from "@/storage/deletionTracker";
-import { addCategorizedBreadcrumb } from "@/lib/sentry";
+// Lazy-load sentry to keep @sentry/* (~250 KB) off the critical rendering path.
+// Breadcrumbs are fire-and-forget telemetry — async import is safe.
+const lazyCategorizedBreadcrumb = (
+  category: string,
+  message: string,
+  data?: Record<string, unknown>,
+  level?: string
+) => {
+  import("@/lib/sentry")
+    .then((mod) =>
+      mod.addCategorizedBreadcrumb(
+        category as Parameters<typeof mod.addCategorizedBreadcrumb>[0],
+        message,
+        data,
+        level as Parameters<typeof mod.addCategorizedBreadcrumb>[3]
+      )
+    )
+    .catch((e) => logger.warn("[Sentry] lazy load skipped:", e));
+};
 import { isAbortError, isValidUUID } from "@/lib/validation";
 import { supabase, getCurrentUserId } from "@/lib/supabaseClient";
 import { db } from "@/storage/db";
@@ -36,7 +54,7 @@ export const syncMood = async (mood: MoodEntry): Promise<void> => {
     return;
   }
 
-  addCategorizedBreadcrumb("sync", "Starting mood sync", {
+  lazyCategorizedBreadcrumb("sync", "Starting mood sync", {
     moodId: mood.id,
     date: mood.date,
   });
@@ -44,7 +62,7 @@ export const syncMood = async (mood: MoodEntry): Promise<void> => {
   // If offline, queue for later sync
   if (!navigator.onLine) {
     await offlineQueue.enqueue("CREATE_MOOD", mood.id, mood);
-    addCategorizedBreadcrumb("sync", "Mood queued (offline)", {
+    lazyCategorizedBreadcrumb("sync", "Mood queued (offline)", {
       moodId: mood.id,
     });
     logger.log("[Sync] Mood queued for offline sync:", mood.id);
@@ -75,7 +93,7 @@ export const syncMood = async (mood: MoodEntry): Promise<void> => {
     );
 
     if (error) throw error;
-    addCategorizedBreadcrumb("sync", "Mood synced successfully", {
+    lazyCategorizedBreadcrumb("sync", "Mood synced successfully", {
       moodId: mood.id,
     });
     logger.log("[Sync] Mood synced:", mood.id);
@@ -88,7 +106,7 @@ export const syncMood = async (mood: MoodEntry): Promise<void> => {
   } catch (error) {
     // Handle AbortError separately - it's intentional, don't retry/queue
     if (isAbortError(error)) {
-      addCategorizedBreadcrumb("sync", "Mood sync aborted", { moodId: mood.id }, "warning");
+      lazyCategorizedBreadcrumb("sync", "Mood sync aborted", { moodId: mood.id }, "warning");
       logger.warn("[Sync] Mood sync aborted (timeout or navigation):", mood.id);
       return; // Don't retry, don't queue - this was intentional
     }
@@ -99,7 +117,7 @@ export const syncMood = async (mood: MoodEntry): Promise<void> => {
 
     if (isNetworkError) {
       await offlineQueue.enqueue("CREATE_MOOD", mood.id, mood);
-      addCategorizedBreadcrumb(
+      lazyCategorizedBreadcrumb(
         "sync",
         "Mood queued (network error)",
         { moodId: mood.id },
@@ -108,7 +126,7 @@ export const syncMood = async (mood: MoodEntry): Promise<void> => {
       logger.log("[Sync] Mood queued after network error:", mood.id);
       // Don't re-throw network errors - they're handled via offline queue
     } else {
-      addCategorizedBreadcrumb(
+      lazyCategorizedBreadcrumb(
         "sync",
         "Mood sync failed",
         { moodId: mood.id, error: (error as Error).message },
