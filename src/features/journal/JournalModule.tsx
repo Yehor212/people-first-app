@@ -171,30 +171,6 @@ export const JournalModule = memo(function JournalModule({
     []
   );
 
-  // Auto-collapse sidebar when entering edit mode on desktop
-  useEffect(() => {
-    if (journal.view === "editing" && isLgScreen) {
-      sidebarPanelRef.current?.collapse();
-    }
-  }, [journal.view, isLgScreen]);
-
-  // Keyboard shortcut: Ctrl+\ (Cmd+\ on Mac) to toggle sidebar
-  useEffect(() => {
-    if (!isLgScreen) return;
-    const handler = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === "\\") {
-        e.preventDefault();
-        if (sidebarCollapsed) {
-          sidebarPanelRef.current?.expand();
-        } else {
-          sidebarPanelRef.current?.collapse();
-        }
-      }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [isLgScreen, sidebarCollapsed]);
-
   // Streak calculation from all entry dates
   const streak = useMemo(() => {
     const allDates = [...journal.entryDates.keys()].sort().reverse();
@@ -397,6 +373,30 @@ export const JournalModule = memo(function JournalModule({
   useScrollLock(moduleState === "open");
   useModalA11y(moduleState === "open" && !isLgScreen, handleClose);
 
+  // Auto-collapse sidebar when entering edit mode on desktop
+  useEffect(() => {
+    if (journal.view === "editing" && isLgScreen) {
+      sidebarPanelRef.current?.collapse();
+    }
+  }, [journal.view, isLgScreen]);
+
+  // Keyboard shortcut: Ctrl+\ (Cmd+\ on Mac) to toggle sidebar
+  useEffect(() => {
+    if (!isLgScreen) return;
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "\\") {
+        e.preventDefault();
+        if (sidebarCollapsed) {
+          sidebarPanelRef.current?.expand();
+        } else {
+          sidebarPanelRef.current?.collapse();
+        }
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [isLgScreen, sidebarCollapsed]);
+
   // Focus trap for main overlay (skip on desktop — sidebar must be accessible)
   useEffect(() => {
     if (moduleState !== "open" || !overlayRef.current || isLgScreen) return;
@@ -591,7 +591,7 @@ export const JournalModule = memo(function JournalModule({
       <div
         className={cn(
           "w-full h-full flex flex-col md:my-4 md:mx-4 md:h-[calc(100%-2rem)] md:rounded-2xl md:bg-background md:shadow-2xl md:border md:border-border/20 md:overflow-hidden",
-          "lg:max-w-none lg:mx-0 lg:my-0 lg:h-full lg:rounded-none lg:shadow-none lg:border-0 lg:overflow-y-auto"
+          "lg:max-w-none lg:mx-0 lg:my-0 lg:h-full lg:rounded-none lg:shadow-none lg:border-0 lg:overflow-hidden"
         )}
       >
         {/* Security gate */}
@@ -1009,7 +1009,7 @@ export const JournalModule = memo(function JournalModule({
                       onRemoveAudio={journal.removeAudio}
                       onDelete={
                         journal.activeEntryId
-                          ? () => handleDeleteEntry(journal.activeEntryId)
+                          ? () => handleDeleteEntry(journal.activeEntryId!)
                           : undefined
                       }
                       onBack={journal.goBack}
