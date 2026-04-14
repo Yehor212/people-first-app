@@ -73,6 +73,7 @@ export const SK = {
   JOURNAL_LEGEND_SEEN: "journal-legend-seen",
   JOURNAL_RECENT_STICKERS: "journal-recent-stickers",
   JOURNAL_STICKER_PACKS: "journal-sticker-packs",
+  JOURNAL_SIDEBAR_COLLAPSED: "journal-sidebar-collapsed",
 
   // ─── Audio ───
   AUDIO_MUTED: "zenflow-audio-muted",

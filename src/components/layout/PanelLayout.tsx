@@ -1,36 +1,37 @@
-import { forwardRef, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import {
-  Group as PanelGroup,
+  Group,
   Panel,
-  Separator as PanelResizeHandle,
-  type ImperativePanelHandle,
+  Separator,
+  usePanelRef,
+  type PanelImperativeHandle,
 } from "react-resizable-panels";
 import { cn } from "@/lib/utils";
 
 interface PanelLayoutProps {
-  direction?: "horizontal" | "vertical";
+  orientation?: "horizontal" | "vertical";
   children: ReactNode;
-  onLayout?: (sizes: number[]) => void;
+  onLayoutChange?: (layout: Record<string, number>) => void;
   autoSaveId?: string;
   className?: string;
 }
 
 export function PanelLayout({
-  direction = "horizontal",
+  orientation = "horizontal",
   children,
-  onLayout,
+  onLayoutChange,
   autoSaveId,
   className,
 }: PanelLayoutProps) {
   return (
-    <PanelGroup
-      direction={direction}
-      onLayout={onLayout}
+    <Group
+      orientation={orientation}
+      onLayoutChange={onLayoutChange}
       autoSaveId={autoSaveId}
       className={cn("h-full", className)}
     >
       {children}
-    </PanelGroup>
+    </Group>
   );
 }
 
@@ -44,25 +45,24 @@ interface LayoutPanelProps {
   collapsedSize?: number;
   onCollapse?: () => void;
   onExpand?: () => void;
+  panelRef?: ReturnType<typeof usePanelRef>;
 }
 
-export const LayoutPanel = forwardRef<ImperativePanelHandle, LayoutPanelProps>(function LayoutPanel(
-  {
-    children,
-    defaultSize,
-    minSize = 15,
-    maxSize = 70,
-    className,
-    collapsible,
-    collapsedSize,
-    onCollapse,
-    onExpand,
-  },
-  ref
-) {
+export function LayoutPanel({
+  children,
+  defaultSize,
+  minSize = 15,
+  maxSize = 70,
+  className,
+  collapsible,
+  collapsedSize,
+  onCollapse,
+  onExpand,
+  panelRef,
+}: LayoutPanelProps) {
   return (
     <Panel
-      ref={ref}
+      panelRef={panelRef}
       defaultSize={defaultSize}
       minSize={minSize}
       maxSize={maxSize}
@@ -75,14 +75,15 @@ export const LayoutPanel = forwardRef<ImperativePanelHandle, LayoutPanelProps>(f
       {children}
     </Panel>
   );
-});
+}
 
-export type { ImperativePanelHandle };
+export { usePanelRef };
+export type { PanelImperativeHandle };
 
 export function ResizeHandle() {
   return (
-    <PanelResizeHandle className="group w-1.5 bg-transparent hover:bg-primary/20 transition-colors duration-150 flex items-center justify-center">
+    <Separator className="group w-1.5 bg-transparent hover:bg-primary/20 transition-colors duration-150 flex items-center justify-center">
       <div className="w-0.5 h-8 rounded-full bg-border group-hover:bg-primary/50 transition-colors" />
-    </PanelResizeHandle>
+    </Separator>
   );
 }

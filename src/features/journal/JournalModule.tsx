@@ -44,7 +44,7 @@ import {
   PanelLayout,
   LayoutPanel,
   ResizeHandle,
-  type ImperativePanelHandle,
+  usePanelRef,
 } from "@/components/layout/PanelLayout";
 import { useJournalReminder, getDaysSinceLastEntry } from "./useJournalReminder";
 import { useScreenSecurity } from "./useScreenSecurity";
@@ -101,8 +101,10 @@ export const JournalModule = memo(function JournalModule({
   } | null>(null);
   const [hasDraft, setHasDraft] = useState(false);
   const [showRemovePasswordConfirm, setShowRemovePasswordConfirm] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const sidebarPanelRef = useRef<ImperativePanelHandle>(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    return storageGetRaw(SK.JOURNAL_SIDEBAR_COLLAPSED, "true") !== "false";
+  });
+  const sidebarPanelRef = usePanelRef();
   const sidebarContentRef = useRef<HTMLDivElement>(null);
 
   useBackHandler(showExportPicker, () => setShowExportPicker(false));
@@ -373,12 +375,15 @@ export const JournalModule = memo(function JournalModule({
   useScrollLock(moduleState === "open");
   useModalA11y(moduleState === "open" && !isLgScreen, handleClose);
 
-  // Auto-collapse sidebar when entering edit mode on desktop
+  // Collapse sidebar on mount if user preference says collapsed (default: collapsed)
+  const initialCollapseApplied = useRef(false);
   useEffect(() => {
-    if (journal.view === "editing" && isLgScreen) {
+    if (!isLgScreen || initialCollapseApplied.current) return;
+    initialCollapseApplied.current = true;
+    if (sidebarCollapsed) {
       sidebarPanelRef.current?.collapse();
     }
-  }, [journal.view, isLgScreen]);
+  }, [isLgScreen, sidebarCollapsed, sidebarPanelRef]);
 
   // Keyboard shortcut: Ctrl+\ (Cmd+\ on Mac) to toggle sidebar
   useEffect(() => {
@@ -395,7 +400,7 @@ export const JournalModule = memo(function JournalModule({
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [isLgScreen, sidebarCollapsed]);
+  }, [isLgScreen, sidebarCollapsed, sidebarPanelRef]);
 
   // Focus trap for main overlay (skip on desktop — sidebar must be accessible)
   useEffect(() => {
@@ -826,15 +831,19 @@ export const JournalModule = memo(function JournalModule({
                 <PanelLayout autoSaveId="journal-layout" className="flex-1 min-h-0">
                   {/* LEFT PANEL: collapsible entry list */}
                   <LayoutPanel
-                    ref={sidebarPanelRef}
+                    panelRef={sidebarPanelRef}
                     defaultSize={30}
                     minSize={20}
                     maxSize={45}
                     collapsible
                     collapsedSize={0}
-                    onCollapse={() => setSidebarCollapsed(true)}
+                    onCollapse={() => {
+                      setSidebarCollapsed(true);
+                      storageSetRaw(SK.JOURNAL_SIDEBAR_COLLAPSED, "true");
+                    }}
                     onExpand={() => {
                       setSidebarCollapsed(false);
+                      storageSetRaw(SK.JOURNAL_SIDEBAR_COLLAPSED, "false");
                       // WCAG 2.4.3: move focus into expanded sidebar content
                       requestAnimationFrame(() => sidebarContentRef.current?.focus());
                     }}
