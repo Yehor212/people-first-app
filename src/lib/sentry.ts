@@ -105,6 +105,15 @@ export function initSentry(): void {
           // old chunk hashes). Reporting them creates false regression alerts.
           return null;
         }
+
+        // Filter out Supabase auth lock contention errors
+        // Known SDK issue: multiple concurrent getUser()/getSession() calls
+        // compete for navigator.locks, causing "lock was stolen" errors.
+        // See: supabase/supabase-js#1594, #2013, #2111
+        const isLockStolen = error.message?.includes("lock") && error.message?.includes("stolen");
+        if (isLockStolen) {
+          return null;
+        }
       }
 
       // Remove user email and IP
