@@ -1,10 +1,11 @@
-import { type ReactNode } from "react";
+import { useCallback, useRef, type ReactNode } from "react";
 import {
   Group,
   Panel,
   Separator,
   usePanelRef,
   type PanelImperativeHandle,
+  type PanelSize,
 } from "react-resizable-panels";
 import { cn } from "@/lib/utils";
 
@@ -12,7 +13,6 @@ interface PanelLayoutProps {
   orientation?: "horizontal" | "vertical";
   children: ReactNode;
   onLayoutChange?: (layout: Record<string, number>) => void;
-  autoSaveId?: string;
   className?: string;
 }
 
@@ -20,14 +20,12 @@ export function PanelLayout({
   orientation = "horizontal",
   children,
   onLayoutChange,
-  autoSaveId,
   className,
 }: PanelLayoutProps) {
   return (
     <Group
       orientation={orientation}
       onLayoutChange={onLayoutChange}
-      autoSaveId={autoSaveId}
       className={cn("h-full", className)}
     >
       {children}
@@ -55,11 +53,29 @@ export function LayoutPanel({
   maxSize = 70,
   className,
   collapsible,
-  collapsedSize,
+  collapsedSize = 0,
   onCollapse,
   onExpand,
   panelRef,
 }: LayoutPanelProps) {
+  const wasCollapsedRef = useRef(false);
+
+  const handleResize = useCallback(
+    (size: PanelSize) => {
+      const currentPct = typeof size === "object" ? size.sizePercentage : size;
+      const isNowCollapsed = currentPct <= (collapsedSize ?? 0);
+
+      if (isNowCollapsed && !wasCollapsedRef.current) {
+        wasCollapsedRef.current = true;
+        onCollapse?.();
+      } else if (!isNowCollapsed && wasCollapsedRef.current) {
+        wasCollapsedRef.current = false;
+        onExpand?.();
+      }
+    },
+    [collapsedSize, onCollapse, onExpand]
+  );
+
   return (
     <Panel
       panelRef={panelRef}
@@ -69,8 +85,7 @@ export function LayoutPanel({
       className={cn("overflow-y-auto", className)}
       collapsible={collapsible}
       collapsedSize={collapsedSize}
-      onCollapse={onCollapse}
-      onExpand={onExpand}
+      onResize={handleResize}
     >
       {children}
     </Panel>

@@ -13,6 +13,7 @@ import {
   Upload,
   BarChart3,
   PanelLeftOpen,
+  PanelLeftClose,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn, getToday } from "@/lib/utils";
@@ -828,7 +829,7 @@ export const JournalModule = memo(function JournalModule({
             <>
               {isLgScreen ? (
                 /* ═══ DESKTOP: Master-detail split ═══ */
-                <PanelLayout autoSaveId="journal-layout" className="flex-1 min-h-0">
+                <PanelLayout className="flex-1 min-h-0">
                   {/* LEFT PANEL: collapsible entry list */}
                   <LayoutPanel
                     panelRef={sidebarPanelRef}
@@ -849,6 +850,7 @@ export const JournalModule = memo(function JournalModule({
                     }}
                   >
                     <div
+                      id="journal-sidebar-panel"
                       ref={sidebarContentRef}
                       tabIndex={-1}
                       className="flex flex-col border-e border-border/30 bg-card h-full overflow-hidden outline-none"
@@ -942,18 +944,30 @@ export const JournalModule = memo(function JournalModule({
                   {/* RIGHT PANEL: editor / viewer / stats / empty */}
                   <LayoutPanel defaultSize={70} maxSize={85}>
                     <div className="flex flex-col min-w-0 h-full bg-background relative">
-                      {/* Toggle button to re-expand collapsed sidebar */}
-                      {sidebarCollapsed && (
-                        <button
-                          onClick={() => sidebarPanelRef.current?.expand()}
-                          className="absolute ltr:left-2 rtl:right-2 top-3 z-40 p-2 bg-card rounded-lg shadow-md hover:bg-accent transition-colors"
-                          aria-label={ts.diarySidebarShow || "Show entries"}
-                          aria-expanded={false}
-                          autoFocus
-                        >
+                      {/* Toggle button: expand/collapse sidebar */}
+                      <button
+                        onClick={() => {
+                          if (sidebarCollapsed) {
+                            sidebarPanelRef.current?.expand();
+                          } else {
+                            sidebarPanelRef.current?.collapse();
+                          }
+                        }}
+                        className="absolute ltr:left-2 rtl:right-2 top-3 z-40 p-2 bg-card rounded-lg shadow-md hover:bg-accent transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+                        aria-label={
+                          sidebarCollapsed
+                            ? ts.diarySidebarShow || "Show entries"
+                            : ts.diarySidebarHide || "Hide entries"
+                        }
+                        aria-expanded={!sidebarCollapsed}
+                        aria-controls="journal-sidebar-panel"
+                      >
+                        {sidebarCollapsed ? (
                           <PanelLeftOpen className="w-4 h-4" />
-                        </button>
-                      )}
+                        ) : (
+                          <PanelLeftClose className="w-4 h-4" />
+                        )}
+                      </button>
                       {journal.view === "editing" ? (
                         <JournalEntryEditor
                           entry={journal.activeEntry}
