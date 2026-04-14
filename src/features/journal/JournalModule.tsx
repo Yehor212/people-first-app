@@ -391,7 +391,7 @@ export const JournalModule = memo(function JournalModule({
     if (journal.view === "editing" && isLgScreen && !sidebarCollapsed) {
       sidebarPanelRef.current?.collapse();
     }
-  }, [journal.view, isLgScreen, sidebarCollapsed]);
+  }, [journal.view, isLgScreen, sidebarCollapsed, sidebarPanelRef]);
 
   // Keyboard shortcut: Ctrl+\ (Cmd+\ on Mac) to toggle sidebar
   useEffect(() => {
