@@ -115,7 +115,22 @@ export default defineConfig(({ mode }) => {
               // version-check.js and version.json MUST always be fetched from network.
               // If precached, the old SW serves stale version-check.js with the old
               // version string baked in, making the version check pass incorrectly.
-              globIgnores: ["version-check.js", "version.json"],
+              globIgnores: [
+                "version-check.js",
+                "version.json",
+                // Language chunks load on-demand when user selects a language.
+                // Precaching all 7 adds ~750 KB to first install for unused locales.
+                "**/uk-*.js",
+                "**/es-*.js",
+                "**/de-*.js",
+                "**/fr-*.js",
+                "**/ja-*.js",
+                "**/ar-*.js",
+                "**/he-*.js",
+                // Heavy feature chunks — lazy-loaded, not needed for offline shell
+                "**/jspdf*.js",
+                "**/chartTokens*.js",
+              ],
               maximumFileSizeToCacheInBytes: 3 * 1024 * 1024, // 3 MB limit
             },
 

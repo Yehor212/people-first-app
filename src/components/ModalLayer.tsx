@@ -1,4 +1,5 @@
 import { Dispatch, SetStateAction, Suspense, useMemo } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { useUIStore, useUserDataStore, useAppStore, getModalToggle } from "@/stores";
 import { useFeatureFlags } from "@/contexts/FeatureFlagsContext";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
@@ -87,20 +88,26 @@ export function ModalLayer({
 }: ModalLayerProps) {
   const { isFeatureVisible } = useFeatureFlags();
 
-  // UI modal/panel state from Zustand
-  const showWeeklyReport = useUIStore((s) => s.showWeeklyReport);
-  const showWidgetSettings = useUIStore((s) => s.showWidgetSettings);
-  const showChallenges = useUIStore((s) => s.showChallenges);
-  const showChallengeModal = useUIStore((s) => s.showChallengeModal);
-  const challengeInvite = useUIStore((s) => s.challengeInvite);
-  const setChallengeInvite = useUIStore((s) => s.setChallengeInvite);
-  const challengeHabit = useUIStore((s) => s.challengeHabit);
-  const setChallengeHabit = useUIStore((s) => s.setChallengeHabit);
-  const showTimeHelper = useUIStore((s) => s.showTimeHelper);
-  const showAddEvent = useUIStore((s) => s.showAddEvent);
-  const showQuestsPanel = useUIStore((s) => s.showQuestsPanel);
-  const showFriendsPanel = useUIStore((s) => s.showFriendsPanel);
-  const showMindfulMoment = useUIStore((s) => s.showMindfulMoment);
+  // UI modal/panel state — single subscription (was 13 individual)
+  const {
+    showWeeklyReport, showWidgetSettings, showChallenges, showChallengeModal,
+    challengeInvite, setChallengeInvite, challengeHabit, setChallengeHabit,
+    showTimeHelper, showAddEvent, showQuestsPanel, showFriendsPanel, showMindfulMoment,
+  } = useUIStore(useShallow((s) => ({
+    showWeeklyReport: s.showWeeklyReport,
+    showWidgetSettings: s.showWidgetSettings,
+    showChallenges: s.showChallenges,
+    showChallengeModal: s.showChallengeModal,
+    challengeInvite: s.challengeInvite,
+    setChallengeInvite: s.setChallengeInvite,
+    challengeHabit: s.challengeHabit,
+    setChallengeHabit: s.setChallengeHabit,
+    showTimeHelper: s.showTimeHelper,
+    showAddEvent: s.showAddEvent,
+    showQuestsPanel: s.showQuestsPanel,
+    showFriendsPanel: s.showFriendsPanel,
+    showMindfulMoment: s.showMindfulMoment,
+  })));
 
   // Modal toggle functions (stable references via getModalToggle utility)
   const setShowWeeklyReport = getModalToggle("showWeeklyReport");
@@ -113,12 +120,16 @@ export function ModalLayer({
   const setShowFriendsPanel = getModalToggle("showFriendsPanel");
   const setShowMindfulMoment = getModalToggle("showMindfulMoment");
 
-  // User data from store
-  const userName = useUserDataStore((s) => s.userName);
-  const moods = useUserDataStore((s) => s.moods);
-  const habits = useUserDataStore((s) => s.habits);
-  const focusSessions = useUserDataStore((s) => s.focusSessions);
-  const gratitudeEntries = useUserDataStore((s) => s.gratitudeEntries);
+  // User data — single subscription (was 5 individual)
+  const {
+    userName, moods, habits, focusSessions, gratitudeEntries,
+  } = useUserDataStore(useShallow((s) => ({
+    userName: s.userName,
+    moods: s.moods,
+    habits: s.habits,
+    focusSessions: s.focusSessions,
+    gratitudeEntries: s.gratitudeEntries,
+  })));
 
   // Navigation (for MindfulMoment onViewProgress)
   const setActiveTab = useAppStore((s) => s.setActiveTab);

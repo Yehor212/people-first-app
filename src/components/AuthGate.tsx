@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { useAppStore, useUserDataStore } from "@/stores";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { logger } from "@/lib/logger";
@@ -26,39 +27,50 @@ interface AuthGateProps {
 export function AuthGate({ isLoading, children }: AuthGateProps) {
   const { t } = useLanguage();
 
-  // App initialization state
-  const initializationState = useAppStore((s) => s.initializationState);
-  const loadingFadeOut = useAppStore((s) => s.loadingFadeOut);
+  // App store — single subscription with shallow comparison (was 12 individual)
+  const {
+    initializationState, loadingFadeOut,
+    authBypassFlag, setAuthBypassFlag,
+    isProcessingWebOAuth, webOAuthError, setWebOAuthError, hasValidSession,
+    tutorialBypassFlag, setTutorialBypassFlag,
+    onboardingBypassFlag, setOnboardingBypassFlag,
+  } = useAppStore(useShallow((s) => ({
+    initializationState: s.initializationState,
+    loadingFadeOut: s.loadingFadeOut,
+    authBypassFlag: s.authBypassFlag,
+    setAuthBypassFlag: s.setAuthBypassFlag,
+    isProcessingWebOAuth: s.isProcessingWebOAuth,
+    webOAuthError: s.webOAuthError,
+    setWebOAuthError: s.setWebOAuthError,
+    hasValidSession: s.hasValidSession,
+    tutorialBypassFlag: s.tutorialBypassFlag,
+    setTutorialBypassFlag: s.setTutorialBypassFlag,
+    onboardingBypassFlag: s.onboardingBypassFlag,
+    setOnboardingBypassFlag: s.setOnboardingBypassFlag,
+  })));
 
-  // Auth state
-  const authBypassFlag = useAppStore((s) => s.authBypassFlag);
-  const setAuthBypassFlag = useAppStore((s) => s.setAuthBypassFlag);
-  const isProcessingWebOAuth = useAppStore((s) => s.isProcessingWebOAuth);
-  const webOAuthError = useAppStore((s) => s.webOAuthError);
-  const setWebOAuthError = useAppStore((s) => s.setWebOAuthError);
-  const hasValidSession = useAppStore((s) => s.hasValidSession);
-
-  // Gate bypass flags (synchronous — survive until page refresh)
-  const tutorialBypassFlag = useAppStore((s) => s.tutorialBypassFlag);
-  const setTutorialBypassFlag = useAppStore((s) => s.setTutorialBypassFlag);
-  const onboardingBypassFlag = useAppStore((s) => s.onboardingBypassFlag);
-  const setOnboardingBypassFlag = useAppStore((s) => s.setOnboardingBypassFlag);
-
-  // User data gate state
-  const hasSelectedLanguage = useUserDataStore((s) => s.hasSelectedLanguage);
-  const setHasSelectedLanguage = useUserDataStore((s) => s.setHasSelectedLanguage);
-  const setUserName = useUserDataStore((s) => s.setUserName);
-  const setUserNameCustom = useUserDataStore((s) => s.setUserNameCustom);
-  const tutorialComplete = useUserDataStore((s) => s.tutorialComplete);
-  const setTutorialComplete = useUserDataStore((s) => s.setTutorialComplete);
-  const onboardingComplete = useUserDataStore((s) => s.onboardingComplete);
-  const setOnboardingComplete = useUserDataStore((s) => s.setOnboardingComplete);
-  const notificationPermissionChecked = useUserDataStore((s) => s.notificationPermissionChecked);
-  const setNotificationPermissionChecked = useUserDataStore(
-    (s) => s.setNotificationPermissionChecked
-  );
-  const googleAuthChecked = useUserDataStore((s) => s.googleAuthChecked);
-  const setGoogleAuthChecked = useUserDataStore((s) => s.setGoogleAuthChecked);
+  // User data store — single subscription with shallow comparison (was 12 individual)
+  const {
+    hasSelectedLanguage, setHasSelectedLanguage,
+    setUserName, setUserNameCustom,
+    tutorialComplete, setTutorialComplete,
+    onboardingComplete, setOnboardingComplete,
+    notificationPermissionChecked, setNotificationPermissionChecked,
+    googleAuthChecked, setGoogleAuthChecked,
+  } = useUserDataStore(useShallow((s) => ({
+    hasSelectedLanguage: s.hasSelectedLanguage,
+    setHasSelectedLanguage: s.setHasSelectedLanguage,
+    setUserName: s.setUserName,
+    setUserNameCustom: s.setUserNameCustom,
+    tutorialComplete: s.tutorialComplete,
+    setTutorialComplete: s.setTutorialComplete,
+    onboardingComplete: s.onboardingComplete,
+    setOnboardingComplete: s.setOnboardingComplete,
+    notificationPermissionChecked: s.notificationPermissionChecked,
+    setNotificationPermissionChecked: s.setNotificationPermissionChecked,
+    googleAuthChecked: s.googleAuthChecked,
+    setGoogleAuthChecked: s.setGoogleAuthChecked,
+  })));
 
   // ── Gate handlers ──
 

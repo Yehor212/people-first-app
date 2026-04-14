@@ -1,4 +1,5 @@
 import { memo } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { useUIStore, useUserDataStore, getModalToggle } from "@/stores";
 import { ConfettiBurst } from "@/components/ConfettiBurst";
 import { ConsentBanner } from "@/components/ConsentBanner";
@@ -28,19 +29,32 @@ interface OverlayLayerProps {
 const setShowWelcomeOverlay = getModalToggle("showWelcomeOverlay");
 const setShowWelcomeBack = getModalToggle("showWelcomeBack");
 export const OverlayLayer = memo(function OverlayLayer({ awardXp, earnTreats }: OverlayLayerProps) {
-  const confettiBurst = useUIStore((s) => s.confettiBurst);
-  const setConfettiBurst = useUIStore((s) => s.setConfettiBurst);
-  const showWelcomeOverlay = useUIStore((s) => s.showWelcomeOverlay);
-  const featureToUnlock = useUIStore((s) => s.featureToUnlock);
-  const setFeatureToUnlock = useUIStore((s) => s.setFeatureToUnlock);
-  const showWelcomeBack = useUIStore((s) => s.showWelcomeBack);
-  const welcomeBackData = useUIStore((s) => s.welcomeBackData);
-  const updateState = useUIStore((s) => s.updateState);
-  const setUpdateState = useUIStore((s) => s.setUpdateState);
-  const privacy = useUserDataStore((s) => s.privacy);
-  const setPrivacy = useUserDataStore((s) => s.setPrivacy);
-  const onboardingComplete = useUserDataStore((s) => s.onboardingComplete);
-  const setMoods = useUserDataStore((s) => s.setMoods);
+  // UI store — single subscription (was 9 individual)
+  const {
+    confettiBurst, setConfettiBurst, showWelcomeOverlay,
+    featureToUnlock, setFeatureToUnlock, showWelcomeBack, welcomeBackData,
+    updateState, setUpdateState,
+  } = useUIStore(useShallow((s) => ({
+    confettiBurst: s.confettiBurst,
+    setConfettiBurst: s.setConfettiBurst,
+    showWelcomeOverlay: s.showWelcomeOverlay,
+    featureToUnlock: s.featureToUnlock,
+    setFeatureToUnlock: s.setFeatureToUnlock,
+    showWelcomeBack: s.showWelcomeBack,
+    welcomeBackData: s.welcomeBackData,
+    updateState: s.updateState,
+    setUpdateState: s.setUpdateState,
+  })));
+
+  // User data — single subscription (was 4 individual)
+  const {
+    privacy, setPrivacy, onboardingComplete, setMoods,
+  } = useUserDataStore(useShallow((s) => ({
+    privacy: s.privacy,
+    setPrivacy: s.setPrivacy,
+    onboardingComplete: s.onboardingComplete,
+    setMoods: s.setMoods,
+  })));
 
   return (
     <>

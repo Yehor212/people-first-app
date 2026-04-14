@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Flame, Trophy, Copy, Check, Share2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -15,7 +16,7 @@ interface FriendProfileCardProps {
   t: Record<string, string>;
 }
 
-export function FriendProfileCard({
+export const FriendProfileCard = memo(function FriendProfileCard({
   myProfile, copied, isSharing, showSettings,
   onCopy, onShare, onPrivacyChange, t,
 }: FriendProfileCardProps) {
@@ -117,4 +118,4 @@ export function FriendProfileCard({
       </AnimatePresence>
     </>
   );
-}
+});

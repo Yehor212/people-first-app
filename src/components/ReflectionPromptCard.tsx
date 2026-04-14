@@ -9,7 +9,7 @@
  * Persists responses as MicroReflection records via userDataStore.
  */
 
-import { useState, useCallback } from "react";
+import { memo, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Sparkles, MessageCircle, BookOpen, Send } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -24,7 +24,7 @@ interface ReflectionPromptCardProps {
   prompt: ReflectionPrompt;
 }
 
-export function ReflectionPromptCard({ prompt }: ReflectionPromptCardProps) {
+export const ReflectionPromptCard = memo(function ReflectionPromptCard({ prompt }: ReflectionPromptCardProps) {
   const { t } = useLanguage();
   const [text, setText] = useState("");
   const [submitted, setSubmitted] = useState(false);
@@ -129,4 +129,4 @@ export function ReflectionPromptCard({ prompt }: ReflectionPromptCardProps) {
       </button>
     </motion.div>
   );
-}
+});

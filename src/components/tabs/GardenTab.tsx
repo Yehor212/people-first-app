@@ -1,4 +1,5 @@
 import { Suspense, useCallback } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { LazyErrorBoundary, ModalErrorBoundary } from "@/components/ErrorBoundary";
 import { Header } from "@/components/Header";
 import { PullToRefresh } from "@/components/PullToRefresh";
@@ -60,11 +61,16 @@ export function GardenTab({
 }: GardenTabProps) {
   const { t } = useLanguage();
   const { isFeatureVisible } = useFeatureFlags();
-  const moods = useUserDataStore((s) => s.moods);
-  const habits = useUserDataStore((s) => s.habits);
-  const focusSessions = useUserDataStore((s) => s.focusSessions);
-  const gratitudeEntries = useUserDataStore((s) => s.gratitudeEntries);
-  const userName = useUserDataStore((s) => s.userName);
+  // User data — single subscription (was 5 individual)
+  const {
+    moods, habits, focusSessions, gratitudeEntries, userName,
+  } = useUserDataStore(useShallow((s) => ({
+    moods: s.moods,
+    habits: s.habits,
+    focusSessions: s.focusSessions,
+    gratitudeEntries: s.gratitudeEntries,
+    userName: s.userName,
+  })));
   const setCurrentFocusMinutes = useUIStore((s) => s.setCurrentFocusMinutes);
   const rewardUser = useGamificationStore((s) => s.rewardUser);
 

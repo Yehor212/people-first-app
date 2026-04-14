@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -15,7 +16,7 @@ export interface AchievementCardProps {
   hiddenTitle: string;
 }
 
-export function AchievementCard({
+export const AchievementCard = memo(function AchievementCard({
   achievement,
   isUnlocked,
   progress,
@@ -91,4 +92,4 @@ export function AchievementCard({
       </div>
     </Card>
   );
-}
+});

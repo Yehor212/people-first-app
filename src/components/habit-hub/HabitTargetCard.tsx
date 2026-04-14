@@ -7,7 +7,7 @@
  * Uses existing ProgressRing component. Deep Space aesthetic.
  */
 
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 import { ProgressRing } from "@/components/ui/progress-ring";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { formatDecimal } from "@/lib/timeUtils";
@@ -115,7 +115,7 @@ function computeIntervalStats(habit: Habit): IntervalStat[] {
   ];
 }
 
-export function HabitTargetCard({ habit, className }: HabitTargetCardProps) {
+export const HabitTargetCard = memo(function HabitTargetCard({ habit, className }: HabitTargetCardProps) {
   const { t, language } = useLanguage();
   const ts = t as unknown as Record<string, string>;
 
@@ -155,4 +155,4 @@ export function HabitTargetCard({ habit, className }: HabitTargetCardProps) {
       </div>
     </div>
   );
-}
+});

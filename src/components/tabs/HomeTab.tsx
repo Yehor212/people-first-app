@@ -12,6 +12,7 @@ import { StateOfMindModal } from "@/components/state-of-mind/StateOfMindModal";
 import { BentoGrid, BentoCard } from "@/components/layout/BentoGrid";
 import { useFeatureFlags } from "@/contexts/FeatureFlagsContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useShallow } from "zustand/react/shallow";
 import { useAppStore, useUserDataStore, getModalToggle } from "@/stores";
 import { useReflectionPrompts } from "@/hooks/useReflectionPrompts";
 import { motionPresets, zenTap } from "@/lib/animationUtils";
@@ -91,15 +92,26 @@ export const HomeTab = memo(function HomeTab({
 }: HomeTabProps) {
   const { isFeatureVisible } = useFeatureFlags();
   const { t, language } = useLanguage();
-  const moods = useUserDataStore((s) => s.moods);
-  const habits = useUserDataStore((s) => s.habits);
-  const focusSessions = useUserDataStore((s) => s.focusSessions);
-  const userName = useUserDataStore((s) => s.userName);
-  const hasValidSession = useAppStore((s) => s.hasValidSession);
-  const googleAuthChecked = useUserDataStore((s) => s.googleAuthChecked);
-  const setActiveTab = useAppStore((s) => s.setActiveTab);
-  const setSettingsOpenSection = useAppStore((s) => s.setSettingsOpenSection);
-  const gratitudeEntries = useUserDataStore((s) => s.gratitudeEntries);
+  // User data — single subscription (was 6 individual)
+  const {
+    moods, habits, focusSessions, userName, googleAuthChecked, gratitudeEntries,
+  } = useUserDataStore(useShallow((s) => ({
+    moods: s.moods,
+    habits: s.habits,
+    focusSessions: s.focusSessions,
+    userName: s.userName,
+    googleAuthChecked: s.googleAuthChecked,
+    gratitudeEntries: s.gratitudeEntries,
+  })));
+
+  // App store — single subscription (was 3 individual)
+  const {
+    hasValidSession, setActiveTab, setSettingsOpenSection,
+  } = useAppStore(useShallow((s) => ({
+    hasValidSession: s.hasValidSession,
+    setActiveTab: s.setActiveTab,
+    setSettingsOpenSection: s.setSettingsOpenSection,
+  })));
   const [showStateOfMind, setShowStateOfMind] = useState(false);
 
   // Contextual reflection prompts (IA Blueprint Phase 3)

@@ -5,7 +5,7 @@
  * Shows feature name, description, icon and toggle switch.
  */
 
-import { ReactNode } from 'react';
+import { memo, ReactNode } from 'react';
 import { Switch } from '@/components/ui/switch';
 import { Lock } from 'lucide-react';
 
@@ -20,7 +20,7 @@ interface FeatureToggleItemProps {
   lockedMessage?: string;
 }
 
-export function FeatureToggleItem({
+export const FeatureToggleItem = memo(function FeatureToggleItem({
   icon,
   title,
   description,
@@ -58,4 +58,4 @@ export function FeatureToggleItem({
       />
     </div>
   );
-}
+});

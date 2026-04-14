@@ -3,12 +3,12 @@
  * Extracted from CompactHabitCard (v1.3.0 Premium Phase 8)
  */
 
-import { useEffect, useRef } from "react";
+import { memo, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Crown, Star, Zap } from "lucide-react";
 import { haptics } from "@/lib/haptics";
 
-export function StreakMilestoneBadge({ streak }: { streak: number }) {
+export const StreakMilestoneBadge = memo(function StreakMilestoneBadge({ streak }: { streak: number }) {
   const hasTriggeredHaptic = useRef(false);
 
   useEffect(() => {
@@ -61,4 +61,4 @@ export function StreakMilestoneBadge({ streak }: { streak: number }) {
   }
 
   return null;
-}
+});

@@ -3,7 +3,7 @@
  * Part of v1.5.0 Intelligence & Speed
  */
 
-import { useMemo, useState } from 'react';
+import { memo, useMemo, useState } from 'react';
 import {
   Sparkles,
   Clock,
@@ -183,7 +183,7 @@ function HabitSuggestionItem({
 // MAIN COMPONENT
 // ============================================
 
-export function SmartRemindersCard({
+export const SmartRemindersCard = memo(function SmartRemindersCard({
   currentSettings,
   moods,
   habits,
@@ -348,6 +348,6 @@ export function SmartRemindersCard({
       )}
     </div>
   );
-}
+});
 
 export default SmartRemindersCard;

@@ -6,7 +6,7 @@
  * Month view: last 12 months, each bar = completion count
  */
 
-import { useState, useMemo } from "react";
+import { memo, useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { resolveHabitColor } from "@/lib/habitColorUtils";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -97,7 +97,7 @@ function getCompletionsByMonth(habit: Habit, months: number, locale = "en"): Bar
 const CHART_H = 100;
 const BAR_PAD = { top: 8, right: 8, bottom: 20, left: 8 };
 
-export function HabitBarCard({ habit, className }: HabitBarCardProps) {
+export const HabitBarCard = memo(function HabitBarCard({ habit, className }: HabitBarCardProps) {
   const { t, language } = useLanguage();
   const ts = t as unknown as Record<string, string>;
   const [barInterval, setBarInterval] = useState<BarInterval>("week");
@@ -211,4 +211,4 @@ export function HabitBarCard({ habit, className }: HabitBarCardProps) {
       </div>
     </div>
   );
-}
+});
