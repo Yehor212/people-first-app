@@ -12,6 +12,8 @@ import {
   EyeOff,
   Fingerprint,
   SlidersHorizontal,
+  PanelLeftOpen,
+  PanelLeftClose,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn, getToday } from "@/lib/utils";
@@ -221,6 +223,9 @@ interface JournalEntryEditorProps {
   onAddGratitude?: (entry: import("@/types").GratitudeEntry) => void;
   /** Desktop master-detail mode: render inline instead of fixed overlay */
   desktop?: boolean;
+  /** Desktop sidebar toggle (passed from JournalModule) */
+  sidebarCollapsed?: boolean;
+  onToggleSidebar?: () => void;
 }
 
 export const JournalEntryEditor = memo(function JournalEntryEditor({
@@ -235,6 +240,8 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
   onToggleHabit,
   onAddGratitude,
   desktop,
+  sidebarCollapsed,
+  onToggleSidebar,
 }: JournalEntryEditorProps) {
   const state = useJournalEditorState({
     entry,
@@ -423,8 +430,29 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
       >
         {/* ROW 1: Navigation & Atmosphere */}
         <div className="flex items-center justify-between gap-3">
-          {/* LEFT: Back + Title */}
+          {/* LEFT: Sidebar toggle + Back + Title */}
           <div className="flex items-center gap-3 min-w-0">
+            {/* Desktop sidebar toggle — integrated into editor header (Bear/Notion pattern) */}
+            {desktop && onToggleSidebar && (
+              <motion.button
+                whileTap={{ scale: 0.92 }}
+                onClick={onToggleSidebar}
+                className="p-2 rounded-lg text-muted-foreground hover:bg-white/10 hover:text-foreground transition-all min-w-[44px] min-h-[44px] flex items-center justify-center"
+                aria-label={
+                  sidebarCollapsed
+                    ? ts.diarySidebarShow || "Show entries"
+                    : ts.diarySidebarHide || "Hide entries"
+                }
+                aria-expanded={!sidebarCollapsed}
+                aria-controls="journal-sidebar-panel"
+              >
+                {sidebarCollapsed ? (
+                  <PanelLeftOpen className="w-4 h-4" />
+                ) : (
+                  <PanelLeftClose className="w-4 h-4" />
+                )}
+              </motion.button>
+            )}
             <motion.button
               whileTap={{ scale: 0.92 }}
               onClick={handleBack}

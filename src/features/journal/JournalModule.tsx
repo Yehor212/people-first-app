@@ -386,6 +386,13 @@ export const JournalModule = memo(function JournalModule({
     }
   }, [isLgScreen, sidebarCollapsed, sidebarPanelRef]);
 
+  // Auto-collapse sidebar when entering edit mode on desktop (writing focus)
+  useEffect(() => {
+    if (journal.view === "editing" && isLgScreen && !sidebarCollapsed) {
+      sidebarPanelRef.current?.collapse();
+    }
+  }, [journal.view, isLgScreen, sidebarCollapsed]);
+
   // Keyboard shortcut: Ctrl+\ (Cmd+\ on Mac) to toggle sidebar
   useEffect(() => {
     if (!isLgScreen) return;
@@ -985,6 +992,14 @@ export const JournalModule = memo(function JournalModule({
                           onToggleHabit={onToggleHabit}
                           onAddGratitude={onAddGratitude}
                           desktop
+                          sidebarCollapsed={sidebarCollapsed}
+                          onToggleSidebar={() => {
+                            if (sidebarCollapsed) {
+                              sidebarPanelRef.current?.expand();
+                            } else {
+                              sidebarPanelRef.current?.collapse();
+                            }
+                          }}
                         />
                       ) : journal.view === "viewing" && journal.activeEntry ? (
                         <JournalEntryViewer
