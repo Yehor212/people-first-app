@@ -5,8 +5,8 @@
  * to avoid TDZ errors. Use lazyWithRetry() or React.lazy() from the parent.
  */
 
-import { useMemo, useState, memo } from "react";
-import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
+import { useMemo, useState, useRef, useEffect, useCallback, memo } from "react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Flame } from "lucide-react";
 import { motion } from "framer-motion";
 import {
   PieChart,
@@ -28,6 +28,8 @@ import { countWords } from "./types";
 import { StickerRenderer } from "./StickerRenderer";
 import type { MoodType } from "@/types";
 import { useChartFontSizes } from "@/lib/chartTokens";
+import { AnimatedCounter } from "@/components/ui/AnimatedCounter";
+import { shouldAnimate } from "@/lib/animationUtils";
 
 const MOOD_COLORS: Record<MoodType, string> = {
   great: "hsl(var(--mood-great))",
@@ -53,6 +55,76 @@ const MOOD_PIXEL_BG: Record<MoodType, string> = {
   terrible: "bg-red-400",
 };
 
+/**
+ * useChartPathAnimation — Applies stroke-dasharray draw animation
+ * to all <path> elements inside a Recharts container on scroll-into-view.
+ * EP6_US006 T1: Chart Path Drawing Animation
+ */
+function useChartPathAnimation() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const hasAnimatedRef = useRef(false);
+
+  const applyAnimation = useCallback(() => {
+    if (hasAnimatedRef.current) return;
+    hasAnimatedRef.current = true;
+
+    const el = containerRef.current;
+    if (!el) return;
+
+    const paths = el.querySelectorAll<SVGPathElement>(
+      ".recharts-line-curve, .recharts-bar-rectangle path, .recharts-pie-sector path"
+    );
+
+    paths.forEach((path, idx) => {
+      const length = path.getTotalLength();
+      path.style.setProperty("--path-length", String(length));
+      path.style.strokeDasharray = String(length);
+      path.style.strokeDashoffset = String(length);
+      path.style.animation = `chart-path-draw 1.2s ease-out ${idx * 0.1}s forwards`;
+    });
+  }, []);
+
+  useEffect(() => {
+    const animate = shouldAnimate();
+    if (!animate) return;
+
+    const el = containerRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          // Small delay to ensure Recharts has rendered paths
+          requestAnimationFrame(() => applyAnimation());
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.3 }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [applyAnimation]);
+
+  return containerRef;
+}
+
+/** StreakFireIcon — Fire icon with scale pulse on mount (EP6_US006 T2) */
+const StreakFireIcon = memo(function StreakFireIcon() {
+  const animate = shouldAnimate();
+  return (
+    <motion.span
+      initial={animate ? { scale: 1 } : false}
+      animate={animate ? { scale: [1, 1.2, 1] } : undefined}
+      transition={animate ? { duration: 0.5, ease: "easeOut" } : undefined}
+      className="inline-flex"
+      aria-hidden="true"
+    >
+      <Flame className="w-4 h-4 text-orange-500" />
+    </motion.span>
+  );
+});
+
 interface JournalStatsProps {
   entries: JournalEntry[];
   onBack: () => void;
@@ -63,6 +135,10 @@ export const JournalStats = memo(function JournalStats({ entries, onBack }: Jour
   const ts = t as unknown as Record<string, string>;
   const chartFonts = useChartFontSizes();
   const [pixelYear, setPixelYear] = useState(() => new Date().getFullYear());
+
+  // T1: Chart path drawing animation refs
+  const moodTimelineRef = useChartPathAnimation();
+  const frequencyRef = useChartPathAnimation();
 
   const moodLabels = useMemo<Record<MoodType, string>>(
     () => ({
@@ -338,47 +414,99 @@ export const JournalStats = memo(function JournalStats({ entries, onBack }: Jour
           </div>
         ) : (
           <>
-            {/* Summary cards */}
+            {/* Summary cards — T2: AnimatedCounter with spring overshoot */}
             <div className="grid grid-cols-2 gap-2.5">
-              {[
-                {
-                  label: ts.journalStatsTotal || "Total Entries",
-                  value: String(entries.length),
-                },
-                {
-                  label: ts.journalStatsTotalWords || "Total Words",
-                  value: totalWords.toLocaleString(),
-                },
-                {
-                  label: ts.journalStatsStreaks || "Current Streak",
-                  value: `${streakData.current} ${ts.journalStatsDays || "days"}`,
-                },
-                {
-                  label: ts.journalStatsLongestStreak || "Longest Streak",
-                  value: `${streakData.longest} ${ts.journalStatsDays || "days"}`,
-                },
-                {
-                  label: ts.journalStatsThisMonth || "This Month",
-                  value: String(streakData.thisMonth),
-                },
-                {
-                  label: ts.journalStatsAvgPerWeek || "Avg / Week",
-                  value: String(streakData.avgPerWeek),
-                },
-              ].map((card, i) => (
-                <motion.div
-                  key={card.label}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                  className="p-3 rounded-xl bg-card/70 backdrop-blur-sm border border-border/20"
-                >
-                  <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider">
-                    {card.label}
-                  </p>
-                  <p className="text-lg font-bold text-foreground mt-0.5">{card.value}</p>
-                </motion.div>
-              ))}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0 }}
+                className="p-3 rounded-xl bg-card/70 backdrop-blur-sm border border-border/20"
+              >
+                <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider">
+                  {ts.journalStatsTotal || "Total Entries"}
+                </p>
+                <p className="text-lg font-bold text-foreground mt-0.5">
+                  <AnimatedCounter target={entries.length} />
+                </p>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.05 }}
+                className="p-3 rounded-xl bg-card/70 backdrop-blur-sm border border-border/20"
+              >
+                <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider">
+                  {ts.journalStatsTotalWords || "Total Words"}
+                </p>
+                <p className="text-lg font-bold text-foreground mt-0.5">
+                  <AnimatedCounter target={totalWords} />
+                </p>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="p-3 rounded-xl bg-card/70 backdrop-blur-sm border border-border/20"
+              >
+                <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider flex items-center gap-1">
+                  <StreakFireIcon />
+                  {ts.journalStatsStreaks || "Current Streak"}
+                </p>
+                <p className="text-lg font-bold text-foreground mt-0.5">
+                  <AnimatedCounter
+                    target={streakData.current}
+                    suffix={` ${ts.journalStatsDays || "days"}`}
+                  />
+                </p>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15 }}
+                className="p-3 rounded-xl bg-card/70 backdrop-blur-sm border border-border/20"
+              >
+                <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider flex items-center gap-1">
+                  <StreakFireIcon />
+                  {ts.journalStatsLongestStreak || "Longest Streak"}
+                </p>
+                <p className="text-lg font-bold text-foreground mt-0.5">
+                  <AnimatedCounter
+                    target={streakData.longest}
+                    suffix={` ${ts.journalStatsDays || "days"}`}
+                  />
+                </p>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="p-3 rounded-xl bg-card/70 backdrop-blur-sm border border-border/20"
+              >
+                <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider">
+                  {ts.journalStatsThisMonth || "This Month"}
+                </p>
+                <p className="text-lg font-bold text-foreground mt-0.5">
+                  <AnimatedCounter target={streakData.thisMonth} />
+                </p>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.25 }}
+                className="p-3 rounded-xl bg-card/70 backdrop-blur-sm border border-border/20"
+              >
+                <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider">
+                  {ts.journalStatsAvgPerWeek || "Avg / Week"}
+                </p>
+                <p className="text-lg font-bold text-foreground mt-0.5">
+                  <AnimatedCounter target={streakData.avgPerWeek} format={(v) => v.toFixed(1)} />
+                </p>
+              </motion.div>
             </div>
 
             {/* Year in Pixels — mood mosaic */}
@@ -519,9 +647,10 @@ export const JournalStats = memo(function JournalStats({ entries, onBack }: Jour
               </div>
             )}
 
-            {/* Mood over time */}
+            {/* Mood over time — T1: chart path draw animation */}
             {moodTimeline.length > 2 && (
               <div
+                ref={moodTimelineRef}
                 className="p-4 rounded-xl bg-card/70 backdrop-blur-sm border border-border/20"
                 role="img"
                 aria-label={`${ts.journalStatsMoodTime || "Mood Over Time"}: ${moodTimeline.map((w) => `${w.week} ${w.avg.toFixed(1)}`).join(", ")}`}
@@ -558,9 +687,10 @@ export const JournalStats = memo(function JournalStats({ entries, onBack }: Jour
               </div>
             )}
 
-            {/* Writing frequency */}
+            {/* Writing frequency — T1: chart path draw animation */}
             {frequency.some((f) => f.count > 0) && (
               <div
+                ref={frequencyRef}
                 className="p-4 rounded-xl bg-card/70 backdrop-blur-sm border border-border/20"
                 role="img"
                 aria-label={`${ts.journalStatsFrequency || "Writing Frequency"}: ${frequency
