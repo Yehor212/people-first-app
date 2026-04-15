@@ -9,6 +9,7 @@ import { storageGetRaw, storageSetRaw } from "@/lib/safeJson";
 import { shouldAnimate } from "@/lib/animationUtils";
 import { hapticTap } from "@/lib/haptics";
 import type { MoodType } from "@/types";
+import { computeStreaks } from "./computeStreaks";
 
 /** Theme-token-based mood background colors with opacity modulation */
 const MOOD_BG_STYLE: Record<MoodType, string> = {
@@ -51,37 +52,6 @@ const MOOD_LEGEND: { mood: MoodType; color: string; key: string }[] = [
   { mood: "bad", color: "bg-orange-400", key: "moodBad" },
   { mood: "terrible", color: "bg-red-400", key: "moodTerrible" },
 ];
-
-/** Detect consecutive diary day streaks from a set of date strings */
-function computeStreaks(
-  entryDates: Map<string, MoodType | undefined>
-): Map<string, { isStart: boolean; isEnd: boolean; length: number }> {
-  const result = new Map<string, { isStart: boolean; isEnd: boolean; length: number }>();
-  const dates = Array.from(entryDates.keys()).sort();
-  if (dates.length === 0) return result;
-
-  let streakStart = 0;
-  for (let i = 1; i <= dates.length; i++) {
-    const prevDate = new Date(dates[i - 1] + "T00:00:00");
-    const currDate = i < dates.length ? new Date(dates[i] + "T00:00:00") : null;
-    const isConsecutive = currDate && currDate.getTime() - prevDate.getTime() === 86400000;
-
-    if (!isConsecutive) {
-      const streakLen = i - streakStart;
-      if (streakLen >= 2) {
-        for (let j = streakStart; j < i; j++) {
-          result.set(dates[j], {
-            isStart: j === streakStart,
-            isEnd: j === i - 1,
-            length: streakLen,
-          });
-        }
-      }
-      streakStart = i;
-    }
-  }
-  return result;
-}
 
 /** Get localized single-letter day names (Sun–Sat) using Intl API */
 function getLocalizedDayNames(locale: string): string[] {
