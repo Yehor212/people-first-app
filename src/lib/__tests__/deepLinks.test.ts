@@ -69,6 +69,16 @@ describe('parseDeepLink', () => {
     expect(result).toBeNull();
   });
 
+  it('parses zenflow://diary/mood as diary type with route "mood"', () => {
+    const result = parseDeepLink('zenflow://diary/mood');
+    expect(result).toEqual({ type: 'diary', route: 'mood' });
+  });
+
+  it('parses zenflow://diary/editor as diary type with route "editor"', () => {
+    const result = parseDeepLink('zenflow://diary/editor');
+    expect(result).toEqual({ type: 'diary', route: 'editor' });
+  });
+
   it('returns unknown for zenflow://other', () => {
     const result = parseDeepLink('zenflow://other');
     expect(result).toEqual({ type: 'unknown', params: expect.any(Object) });
