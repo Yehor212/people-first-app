@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useEffect, useCallback } from "react";
 import {
   ArrowLeft,
   Check,
@@ -18,6 +18,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { cn, getToday } from "@/lib/utils";
 import { zenMotion } from "@/lib/animationUtils";
+import { hapticTap } from "@/lib/haptics";
 import { getLocale } from "@/lib/timeUtils";
 import type {
   JournalEntry,
@@ -386,6 +387,122 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
     handleTemplateSelect,
     handleTemplateClose,
   } = state;
+
+  // T3: Markdown shortcut auto-conversion on input
+  const handleMarkdownShortcuts = useCallback((_e: Event) => {
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return;
+    const range = sel.getRangeAt(0);
+
+    // Only process if cursor is inside editor
+    if (!editor.contains(range.commonAncestorContainer)) return;
+
+    const node = range.startContainer;
+    if (node.nodeType !== Node.TEXT_NODE) return;
+    const text = node.textContent || "";
+    const cursorPos = range.startOffset;
+
+    // Get text up to cursor
+    const textBefore = text.slice(0, cursorPos);
+
+    // Bold: **text**
+    const boldMatch = textBefore.match(/\*\*(.+?)\*\*$/);
+    if (boldMatch) {
+      const fullMatch = boldMatch[0];
+      const content = boldMatch[1];
+      const startIdx = cursorPos - fullMatch.length;
+
+      // Replace markdown with plain text, then apply bold
+      const textNode = node as Text;
+      const before = text.slice(0, startIdx);
+      const after = text.slice(cursorPos);
+      textNode.textContent = before + content + after;
+
+      // Select the content text and apply bold
+      const newRange = document.createRange();
+      newRange.setStart(textNode, startIdx);
+      newRange.setEnd(textNode, startIdx + content.length);
+      sel.removeAllRanges();
+      sel.addRange(newRange);
+      document.execCommand("bold", false);
+
+      // Collapse cursor to end
+      sel.collapseToEnd();
+      void hapticTap();
+      handleEditorInput();
+      return;
+    }
+
+    // Italic: *text* (but not **)
+    const italicMatch = textBefore.match(/(?<!\*)\*([^*]+?)\*$/);
+    if (italicMatch) {
+      const fullMatch = italicMatch[0];
+      const content = italicMatch[1];
+      const startIdx = cursorPos - fullMatch.length;
+
+      const textNode = node as Text;
+      const before = text.slice(0, startIdx);
+      const after = text.slice(cursorPos);
+      textNode.textContent = before + content + after;
+
+      const newRange = document.createRange();
+      newRange.setStart(textNode, startIdx);
+      newRange.setEnd(textNode, startIdx + content.length);
+      sel.removeAllRanges();
+      sel.addRange(newRange);
+      document.execCommand("italic", false);
+
+      sel.collapseToEnd();
+      void hapticTap();
+      handleEditorInput();
+      return;
+    }
+
+    // Link: [text](url)
+    const linkMatch = textBefore.match(/\[(.+?)\]\((https?:\/\/[^\s)]+)\)$/);
+    if (linkMatch) {
+      const fullMatch = linkMatch[0];
+      const linkText = linkMatch[1];
+      const url = linkMatch[2];
+      const startIdx = cursorPos - fullMatch.length;
+
+      const textNode = node as Text;
+      const before = text.slice(0, startIdx);
+      const after = text.slice(cursorPos);
+      textNode.textContent = before + linkText + after;
+
+      const newRange = document.createRange();
+      newRange.setStart(textNode, startIdx);
+      newRange.setEnd(textNode, startIdx + linkText.length);
+      sel.removeAllRanges();
+      sel.addRange(newRange);
+
+      // Validate URL before creating link
+      try {
+        const parsed = new URL(url);
+        if (["http:", "https:"].includes(parsed.protocol)) {
+          document.execCommand("createLink", false, url);
+        }
+      } catch {
+        // Invalid URL — skip link creation
+      }
+
+      sel.collapseToEnd();
+      void hapticTap();
+      handleEditorInput();
+    }
+  }, [editorRef, handleEditorInput]);
+
+  // T3: Attach markdown shortcut listener to editor
+  useEffect(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    editor.addEventListener("input", handleMarkdownShortcuts);
+    return () => editor.removeEventListener("input", handleMarkdownShortcuts);
+  }, [editorRef, handleMarkdownShortcuts]);
 
   return (
     <div

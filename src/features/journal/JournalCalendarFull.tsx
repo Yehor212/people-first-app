@@ -1,9 +1,29 @@
 import { useState, useMemo } from "react";
 import { ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { cn, getToday } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { shouldAnimate } from "@/lib/animationUtils";
+import { hapticTap } from "@/lib/haptics";
 import type { MoodType } from "@/types";
+
+/** Theme-token-based mood background colors with opacity modulation */
+const MOOD_BG_STYLE: Record<MoodType, string> = {
+  great: "hsl(var(--mood-great) / 0.45)",
+  good: "hsl(var(--mood-good) / 0.38)",
+  okay: "hsl(var(--mood-okay) / 0.35)",
+  bad: "hsl(var(--mood-bad) / 0.32)",
+  terrible: "hsl(var(--mood-terrible) / 0.30)",
+};
+
+/** Dark mode reduces saturation — lower opacity */
+const MOOD_BG_STYLE_DARK: Record<MoodType, string> = {
+  great: "hsl(var(--mood-great) / 0.28)",
+  good: "hsl(var(--mood-good) / 0.24)",
+  okay: "hsl(var(--mood-okay) / 0.22)",
+  bad: "hsl(var(--mood-bad) / 0.20)",
+  terrible: "hsl(var(--mood-terrible) / 0.18)",
+};
 
 const MOOD_COLORS: Record<string, string> = {
   great: "bg-green-400",
@@ -20,6 +40,37 @@ const MOOD_RING: Record<string, string> = {
   bad: "ring-orange-400/20",
   terrible: "ring-red-400/20",
 };
+
+/** Detect consecutive diary day streaks from a set of date strings */
+function computeStreaks(
+  entryDates: Map<string, MoodType | undefined>
+): Map<string, { isStart: boolean; isEnd: boolean; length: number }> {
+  const result = new Map<string, { isStart: boolean; isEnd: boolean; length: number }>();
+  const dates = Array.from(entryDates.keys()).sort();
+  if (dates.length === 0) return result;
+
+  let streakStart = 0;
+  for (let i = 1; i <= dates.length; i++) {
+    const prevDate = new Date(dates[i - 1] + "T00:00:00");
+    const currDate = i < dates.length ? new Date(dates[i] + "T00:00:00") : null;
+    const isConsecutive = currDate && currDate.getTime() - prevDate.getTime() === 86400000;
+
+    if (!isConsecutive) {
+      const streakLen = i - streakStart;
+      if (streakLen >= 2) {
+        for (let j = streakStart; j < i; j++) {
+          result.set(dates[j], {
+            isStart: j === streakStart,
+            isEnd: j === i - 1,
+            length: streakLen,
+          });
+        }
+      }
+      streakStart = i;
+    }
+  }
+  return result;
+}
 
 /** RTL locales where week starts on Saturday */
 const RTL_WEEK_START_SATURDAY = new Set(["ar", "he"]);
@@ -50,6 +101,8 @@ export function JournalCalendarFull({
   const today = getToday();
   const { t, language } = useLanguage();
   const ts = t as unknown as Record<string, string>;
+  const reducedMotion = useReducedMotion();
+  const animate = shouldAnimate() && !reducedMotion;
 
   // Current viewing month
   const [viewYear, setViewYear] = useState(() => parseInt(today.split("-")[0]));
@@ -62,6 +115,10 @@ export function JournalCalendarFull({
     [language, startSaturday]
   );
 
+  // Detect dark mode via class on document
+  const isDark =
+    typeof document !== "undefined" && document.documentElement.classList.contains("dark");
+
   // Count entries per date for the current month
   const entryCounts = useMemo(() => {
     const counts = new Map<string, number>();
@@ -70,6 +127,9 @@ export function JournalCalendarFull({
     });
     return counts;
   }, [entryDates]);
+
+  // Memoized streak computation
+  const streaks = useMemo(() => computeStreaks(entryDates), [entryDates]);
 
   // Generate calendar grid for current month
   const calendarDays = useMemo(() => {
@@ -189,14 +249,18 @@ export function JournalCalendarFull({
         ))}
       </div>
 
-      {/* Calendar grid */}
+      {/* Calendar grid — animated month transitions gated by shouldAnimate */}
       <AnimatePresence mode="wait" initial={false}>
         <motion.div
           key={`${viewYear}-${viewMonth}`}
-          initial={{ opacity: 0, x: direction > 0 ? 40 : -40 }}
+          initial={animate ? { opacity: 0, x: direction > 0 ? 50 : -50 } : false}
           animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: direction > 0 ? -40 : 40 }}
-          transition={{ duration: 0.2, ease: "easeInOut" }}
+          exit={animate ? { opacity: 0, x: direction > 0 ? -50 : 50 } : undefined}
+          transition={
+            animate
+              ? { duration: 0.3, type: "spring", stiffness: 260, damping: 25 }
+              : { duration: 0 }
+          }
           className="grid grid-cols-7 gap-0.5"
         >
           {calendarDays.map((cell, idx) => {
@@ -209,29 +273,57 @@ export function JournalCalendarFull({
             const count = entryCounts.get(cell.date) || 0;
             const isSelected = cell.date === selectedDate;
             const isFuture = cell.date > today;
+            const streak = streaks.get(cell.date);
+
+            // T1: Mood intensity background color via theme tokens
+            const moodBgColor =
+              mood && !isSelected && !isFuture
+                ? isDark
+                  ? MOOD_BG_STYLE_DARK[mood]
+                  : MOOD_BG_STYLE[mood]
+                : undefined;
 
             return (
               <button
                 key={cell.date}
                 onClick={() => {
                   if (isFuture) return;
+                  // T3: Haptic feedback on day tap
+                  void hapticTap();
                   onSelectDate(isSelected ? null : cell.date);
                 }}
                 disabled={isFuture}
+                style={moodBgColor ? { backgroundColor: moodBgColor } : undefined}
                 className={cn(
                   "aspect-square rounded-xl flex flex-col items-center justify-center gap-0.5",
-                  "transition-all duration-150 relative",
+                  "transition-all duration-150 relative overflow-hidden",
                   "min-h-[36px]",
                   isFuture && "opacity-30",
                   isSelected
                     ? "bg-primary/15 shadow-sm ring-1 ring-primary/30"
-                    : "hover:bg-muted/40",
+                    : !moodBgColor && "hover:bg-muted/40",
+                  moodBgColor && !isSelected && "hover:brightness-110",
                   cell.isToday && !isSelected && "ring-1 ring-primary/40"
                 )}
               >
+                {/* T2: Streak background bar — subtle connector between consecutive days */}
+                {streak && (
+                  <span
+                    className="absolute inset-y-[30%] bg-primary/8 pointer-events-none"
+                    style={{
+                      left: streak.isStart ? "20%" : "0",
+                      right: streak.isEnd ? "20%" : "0",
+                      borderStartStartRadius: streak.isStart ? "6px" : "0",
+                      borderEndStartRadius: streak.isStart ? "6px" : "0",
+                      borderStartEndRadius: streak.isEnd ? "6px" : "0",
+                      borderEndEndRadius: streak.isEnd ? "6px" : "0",
+                    }}
+                    aria-hidden="true"
+                  />
+                )}
                 <span
                   className={cn(
-                    "text-xs font-medium leading-none",
+                    "text-xs font-medium leading-none relative z-[1]",
                     cell.isToday ? "text-primary font-bold" : "text-foreground",
                     isFuture && "text-muted-foreground/50"
                   )}
@@ -239,7 +331,7 @@ export function JournalCalendarFull({
                   {cell.day}
                 </span>
                 {hasEntry && (
-                  <div className="flex items-center gap-px">
+                  <div className="flex items-center gap-px relative z-[1]">
                     <div
                       className={cn(
                         "w-2 h-2 rounded-full ring-1",

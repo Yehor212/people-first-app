@@ -127,6 +127,98 @@ Based on Impact × Effort from deep-redesign + revolution research:
 
 ---
 
+## EP6_US004 Tasks (Swipe-to-Delete with Rubber-Band Physics)
+
+| Task | Title                                                                                                                                       | Est. | Group | Status |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------- | ---- | ----- | ------ |
+| T1   | [Swipe Gesture & Rubber-Band Physics](epics/epic-6-telegram-polish/stories/EP6_US004-swipe-to-delete/tasks/T1-swipe-gesture-rubber-band.md) | 4h   | 1     | Todo   |
+| T2   | [Delete Action, Undo Toast & Haptic](epics/epic-6-telegram-polish/stories/EP6_US004-swipe-to-delete/tasks/T2-delete-action-undo-toast.md)   | 4h   | 1     | Todo   |
+| T3   | [Visual Polish & Scroll Conflict](epics/epic-6-telegram-polish/stories/EP6_US004-swipe-to-delete/tasks/T3-visual-polish-scroll-conflict.md) | 4h   | 2     | Todo   |
+
+**Total:** 12h | **Parallel Groups:** G1 (T1, T2 parallel) → G2 (T3 depends on T1, T2)
+**Execution order:** T1 + T2 in parallel → T3 after both complete
+**DRY Warning:** T2 reuses existing soft-delete flow from JournalModule.tsx + useJournal.ts
+
+---
+
+## EP6_US005 Tasks (Journal Calendar Polish)
+
+| Task | Title                                                                                                                                           | Est. | Group | Status |
+| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---- | ----- | ------ |
+| T1   | [Mood-Intensity Day Cell Coloring](epics/epic-6-telegram-polish/stories/EP6_US005-calendar-polish/tasks/T1-mood-intensity-day-coloring.md)      | 4h   | 1     | Todo   |
+| T2   | [Streak Visualization](epics/epic-6-telegram-polish/stories/EP6_US005-calendar-polish/tasks/T2-streak-visualization.md)                         | 4h   | 1     | Todo   |
+| T3   | [Calendar Transitions & Tap Filter](epics/epic-6-telegram-polish/stories/EP6_US005-calendar-polish/tasks/T3-calendar-transitions-tap-filter.md) | 4h   | 2     | Todo   |
+
+**Total:** 12h | **Parallel Groups:** G1 (T1, T2 parallel) → G2 (T3 after mood/streak land)
+**Execution order:** T1 + T2 in parallel → T3 after both complete
+
+---
+
+## EP6_US006 Tasks (Stats Animated Charts & Counters)
+
+| Task | Title                                                                                                                                                 | Est. | Group | Status |
+| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ---- | ----- | ------ |
+| T1   | [Chart Path Drawing Animation](epics/epic-6-telegram-polish/stories/EP6_US006-stats-animated-charts/tasks/T1-chart-path-drawing-animation.md)         | 4h   | 1     | Todo   |
+| T2   | [Animated Counter & Streak Display](epics/epic-6-telegram-polish/stories/EP6_US006-stats-animated-charts/tasks/T2-animated-counter-streak-display.md) | 4h   | 1     | Todo   |
+
+**Total:** 8h | **Parallel Groups:** G1 (T1, T2 parallel)
+**Execution order:** T1 + T2 in parallel (no dependencies)
+
+---
+
+## EP6_US007 Tasks (Editor Floating Formatting Toolbar)
+
+| Task | Title                                                                                                                                                       | Est. | Group | Status |
+| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ---- | ----- | ------ |
+| T1   | [FloatingToolbar Upgrade & Portal](epics/epic-6-telegram-polish/stories/EP6_US007-editor-floating-toolbar/tasks/T1-floating-toolbar-upgrade.md)             | 5h   | 1     | Todo   |
+| T2   | [Selection Detection & Toolbar Lifecycle](epics/epic-6-telegram-polish/stories/EP6_US007-editor-floating-toolbar/tasks/T2-selection-detection-lifecycle.md) | 4h   | 2     | Todo   |
+| T3   | [Format Actions & Markdown Shortcuts](epics/epic-6-telegram-polish/stories/EP6_US007-editor-floating-toolbar/tasks/T3-format-actions-markdown-shortcuts.md) | 4h   | 2     | Todo   |
+
+**Total:** 13h | **Parallel Groups:** G1 (T1) → G2 (T2, T3 parallel after T1)
+**Execution order:** T1 first → T2 + T3 in parallel
+**DRY Warning:** T1 extends existing DiaryFormatToolbar.tsx (90% similar — upgrade, not replace)
+
+---
+
+## EP6_US008 Tasks (Ritual Widget Enhancement)
+
+| Task | Title                                                                                                                                                         | Est. | Group | Status |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---- | ----- | ------ |
+| T1   | [BurnThought Phase Haptics](epics/epic-6-telegram-polish/stories/EP6_US008-ritual-widget-enhancement/tasks/T1-burnthought-phase-haptics.md)                   | 3h   | 1     | Todo   |
+| T2   | [GratitudeBloom Petal Variety & Haptics](epics/epic-6-telegram-polish/stories/EP6_US008-ritual-widget-enhancement/tasks/T2-gratitude-bloom-petals-haptics.md) | 3h   | 1     | Todo   |
+
+**Total:** 6h | **Parallel Groups:** G1 (T1, T2 parallel)
+**Execution order:** T1 + T2 in parallel (no dependencies)
+
+---
+
+## EP6_US009 Tasks (Page Transitions & Shared Element Animation)
+
+| Task | Title                                                                                                                                                      | Est. | Group | Status |
+| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ---- | ----- | ------ |
+| T1   | [Shared Element Card→Detail Expand](epics/epic-6-telegram-polish/stories/EP6_US009-page-transitions/tasks/T1-shared-element-card-expand.md)                | 5h   | 1     | Todo   |
+| T2   | [FAB Scale Transition](epics/epic-6-telegram-polish/stories/EP6_US009-page-transitions/tasks/T2-fab-scale-transition.md)                                   | 3h   | 1     | Todo   |
+| T3   | [Sub-Section Crossfade & View Transitions API](epics/epic-6-telegram-polish/stories/EP6_US009-page-transitions/tasks/T3-crossfade-view-transitions-api.md) | 5h   | 2     | Todo   |
+
+**Total:** 13h | **Parallel Groups:** G1 (T1, T2 parallel) → G2 (T3 after transitions infrastructure)
+**Execution order:** T1 + T2 in parallel → T3 after both complete
+
+---
+
+## EP6_US010 Tasks (Home Screen Widget — Mood Diary Integration)
+
+| Task | Title                                                                                                                                                    | Est. | Group | Status |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ---- | ----- | ------ |
+| T1   | [WidgetData Extension & Mood Sync](epics/epic-6-telegram-polish/stories/EP6_US010-home-screen-widget/tasks/T1-widget-data-extension-mood-sync.md)        | 3h   | 1     | Todo   |
+| T2   | [Mini Widget Provider (Android 2x1)](epics/epic-6-telegram-polish/stories/EP6_US010-home-screen-widget/tasks/T2-mini-widget-provider.md)                 | 5h   | 2     | Todo   |
+| T3   | [Deep Link Intents & Mood in Small Widget](epics/epic-6-telegram-polish/stories/EP6_US010-home-screen-widget/tasks/T3-deep-link-intents-mood-display.md) | 4h   | 2     | Todo   |
+| T4   | [Widget i18n Strings](epics/epic-6-telegram-polish/stories/EP6_US010-home-screen-widget/tasks/T4-widget-i18n-strings.md)                                 | 3h   | 3     | Todo   |
+
+**Total:** 15h | **Parallel Groups:** G1 (T1) → G2 (T2, T3 parallel) → G3 (T4 after layouts exist)
+**Execution order:** T1 → T2 + T3 in parallel → T4 last
+
+---
+
 ## Epic 3 Stories (Memories, Nostalgia & Living Timeline)
 
 | Story     | Title                                                                                                                                     | Priority | Complexity | Status  |

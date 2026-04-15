@@ -308,6 +308,7 @@ export const JournalEntryCard = memo(function JournalEntryCard({
 
       {/* Existing card */}
       <motion.div
+        layoutId={animate ? `entry-${entry.id}` : undefined}
         role="button"
         tabIndex={0}
         drag="x"
@@ -327,9 +328,10 @@ export const JournalEntryCard = memo(function JournalEntryCard({
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
         onContextMenu={handleContextMenu}
+        layout={animate ? true : undefined}
         whileTap={animate ? { scale: 0.97, boxShadow: "0 0 0 rgba(0,0,0,0)" } : undefined}
         whileHover={animate ? { y: -2 } : undefined}
-        transition={{ type: "spring", stiffness: 400, damping: 25 }}
+        transition={{ type: "spring", stiffness: 300, damping: 25 }}
         className={cn(
           "relative rounded-2xl overflow-hidden cursor-pointer group",
           "bg-card/60 backdrop-blur-md",

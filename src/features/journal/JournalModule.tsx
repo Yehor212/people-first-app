@@ -15,7 +15,7 @@ import {
   PanelLeftOpen,
   PanelLeftClose,
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 import { cn, getToday } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useScrollLock } from "@/hooks/useScrollLock";
@@ -52,6 +52,7 @@ import { useScreenSecurity } from "./useScreenSecurity";
 import { ParticleBackground } from "@/components/stats/ParticleBackground";
 import { useGamificationStore } from "@/stores";
 import { haptics, hapticSuccess } from "@/lib/haptics";
+import { shouldAnimate } from "@/lib/animationUtils";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
 
 // Lazy-load JournalStats to avoid CJS TDZ (Recharts)
@@ -213,6 +214,8 @@ export const JournalModule = memo(function JournalModule({
 
   // --- CALLBACKS (declare BEFORE hooks that reference them — prevents TDZ in production builds) ---
   const overlayRef = useRef<HTMLDivElement>(null);
+  /** Tracks how the editor was opened: "fab" = FAB button, "card" = entry card tap */
+  const entryModeRef = useRef<"fab" | "card">("card");
 
   const handleOpen = () => {
     setModuleState("open");
@@ -225,8 +228,14 @@ export const JournalModule = memo(function JournalModule({
   };
 
   const handleNewEntry = () => {
+    entryModeRef.current = "fab";
     journal.editEntry(null);
   };
+
+  const handleOpenEntry = useCallback((id: string) => {
+    entryModeRef.current = "card";
+    journal.openEntry(id);
+  }, [journal]);
 
   const handleSaveEntry = useCallback(
     async (data: Parameters<typeof journal.createEntry>[0]) => {
@@ -933,7 +942,7 @@ export const JournalModule = memo(function JournalModule({
                         <div className="relative z-[1]">
                           <JournalEntryList
                             groupedEntries={journal.groupedEntries}
-                            onOpenEntry={journal.openEntry}
+                            onOpenEntry={handleOpenEntry}
                             onDeleteEntry={handleDeleteEntry}
                             onSwipeDelete={handleDeleteEntry}
                             onNewEntry={handleNewEntry}
@@ -1038,9 +1047,32 @@ export const JournalModule = memo(function JournalModule({
                 </PanelLayout>
               ) : (
                 /* ═══ MOBILE: existing single-view behavior ═══ */
+                <LayoutGroup>
                 <>
                   {/* Editor overlays on top with its own fixed positioning */}
+                  <AnimatePresence>
                   {journal.view === "editing" && (
+                    <motion.div
+                      key="editor-transition"
+                      {...(shouldAnimate()
+                        ? entryModeRef.current === "fab"
+                          ? {
+                              initial: { scale: 0, opacity: 0, transformOrigin: "bottom right" },
+                              animate: { scale: 1, opacity: 1 },
+                              exit: { scale: 0, opacity: 0, transformOrigin: "bottom right" },
+                              transition: { type: "spring", stiffness: 300, damping: 25 },
+                            }
+                          : {
+                              layoutId: journal.activeEntryId ? `entry-${journal.activeEntryId}` : undefined,
+                              initial: { opacity: 0 },
+                              animate: { opacity: 1 },
+                              exit: { opacity: 0 },
+                              transition: { type: "spring", stiffness: 300, damping: 25 },
+                            }
+                        : {})}
+                      className="contents"
+                      style={{ display: "contents" }}
+                    >
                     <JournalEntryEditor
                       entry={journal.activeEntry}
                       onSave={handleSaveEntry}
@@ -1057,17 +1089,19 @@ export const JournalModule = memo(function JournalModule({
                       onToggleHabit={onToggleHabit}
                       onAddGratitude={onAddGratitude}
                     />
+                    </motion.div>
                   )}
+                  </AnimatePresence>
 
                   {/* List / Viewer / Stats crossfade */}
                   <AnimatePresence mode="wait">
                     {journal.view === "stats" && (
                       <motion.div
                         key="stats"
-                        initial={{ opacity: 0 }}
+                        initial={shouldAnimate() ? { opacity: 0 } : undefined}
                         animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.15 }}
+                        exit={shouldAnimate() ? { opacity: 0 } : undefined}
+                        transition={{ duration: 0.2 }}
                         className="flex flex-col flex-1 min-h-0"
                       >
                         <Suspense
@@ -1088,10 +1122,10 @@ export const JournalModule = memo(function JournalModule({
                     {journal.view === "viewing" && journal.activeEntry && (
                       <motion.div
                         key="viewing"
-                        initial={{ opacity: 0 }}
+                        initial={shouldAnimate() ? { opacity: 0 } : undefined}
                         animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.15 }}
+                        exit={shouldAnimate() ? { opacity: 0 } : undefined}
+                        transition={{ duration: 0.2 }}
                         className="flex flex-col flex-1 min-h-0"
                       >
                         <JournalEntryViewer
@@ -1106,10 +1140,10 @@ export const JournalModule = memo(function JournalModule({
                     {journal.view === "list" && (
                       <motion.div
                         key="list"
-                        initial={{ opacity: 0 }}
+                        initial={shouldAnimate() ? { opacity: 0 } : undefined}
                         animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.15 }}
+                        exit={shouldAnimate() ? { opacity: 0 } : undefined}
+                        transition={{ duration: 0.2 }}
                         className="flex flex-col flex-1 min-h-0"
                       >
                         {/* Header */}
@@ -1182,7 +1216,7 @@ export const JournalModule = memo(function JournalModule({
                           <div className="relative z-[1]">
                             <JournalEntryList
                               groupedEntries={journal.groupedEntries}
-                              onOpenEntry={journal.openEntry}
+                              onOpenEntry={handleOpenEntry}
                               onDeleteEntry={handleDeleteEntry}
                               onSwipeDelete={handleDeleteEntry}
                               onNewEntry={handleNewEntry}
@@ -1512,6 +1546,7 @@ export const JournalModule = memo(function JournalModule({
                     )}
                   </AnimatePresence>
                 </>
+                </LayoutGroup>
               )}
             </>
           )}
