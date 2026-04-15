@@ -1077,6 +1077,12 @@ export interface Translations {
   widgetWriteButton: string;
   widgetMoodAndStreak: string;
   widgetNoData: string;
+  journalSaving: string;
+  journalSaved: string;
+  journalSaveFailed: string;
+  journalRetry: string;
+  journalSynced: string;
+  journalMilestone: string;
   todayHabits: string;
   habitHub: string;
   habitScore: string;

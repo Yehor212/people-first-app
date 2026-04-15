@@ -5,7 +5,9 @@ import { useScrollLock } from "@/hooks/useScrollLock";
 import { usePanicGesture } from "@/hooks/usePanicGesture";
 import { registerModalCloseCallback } from "@/lib/androidBackHandler";
 import { createFocusTrap, announceSuccess } from "@/lib/a11y";
-import { hapticSuccess } from "@/lib/haptics";
+import { hapticSuccess, hapticTap } from "@/lib/haptics";
+import { shouldAnimate } from "@/lib/animationUtils";
+import type { SaveState } from "./SaveIndicator";
 import type {
   JournalEntry,
   JournalPhoto,
@@ -250,9 +252,17 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
   >(entry?.habitSnapshot || []);
   const [tagInput, setTagInput] = useState("");
 
-  // === Save State ===
-  const [saving, setSaving] = useState(false);
+  // === Save State (state machine replaces boolean) ===
+  const [saveState, setSaveState] = useState<SaveState>("idle");
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const saveStartRef = useRef(0);
+  const MIN_SAVE_DISPLAY_MS = 400;
+
+  // === Word Count Milestones ===
+  const MILESTONES = useMemo(() => [100, 250, 500, 1000], []);
+  const [milestoneTriggered, setMilestoneTriggered] = useState<number | null>(null);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const prevWordCountRef = useRef<number | null>(null); // null = not initialized yet
 
   // === UI Panels State ===
   const [showStickers, setShowStickers] = useState(false);
@@ -344,6 +354,36 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
   }, [title, content, stickers, photoIds, audioIds, mood, tags]);
 
   const wordCount = useMemo(() => countWordsHtml(content), [content]);
+
+  // === Milestone detection (fires only on upward crossing during editing) ===
+  useEffect(() => {
+    // Initialize prevWordCountRef on first render (prevents false milestone on load)
+    if (prevWordCountRef.current === null) {
+      prevWordCountRef.current = wordCount;
+      return;
+    }
+    const prev = prevWordCountRef.current;
+    for (const threshold of MILESTONES) {
+      if (prev < threshold && wordCount >= threshold) {
+        setMilestoneTriggered(threshold);
+        void hapticTap();
+        if (threshold === 1000) {
+          setShowConfetti(true);
+        }
+        break; // Only fire the lowest newly-crossed milestone
+      }
+    }
+    prevWordCountRef.current = wordCount;
+  }, [wordCount, MILESTONES]);
+
+  // Auto-clear milestone animation after 300ms
+  useEffect(() => {
+    if (milestoneTriggered === null) return;
+    const timer = setTimeout(() => setMilestoneTriggered(null), 300);
+    return () => clearTimeout(timer);
+  }, [milestoneTriggered]);
+
+  const onConfettiComplete = useCallback(() => setShowConfetti(false), []);
 
   const completedHabitCount = useMemo(
     () => habitSnapshot.filter((s) => s.completed).length,
@@ -573,7 +613,8 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
     // Stop any active voice/recording before saving
     if (voice.isListening) voice.stop();
     if (recorder.isRecording) recorder.stop();
-    setSaving(true);
+    setSaveState("saving");
+    saveStartRef.current = Date.now();
     try {
       await onSave({
         title: title.trim(),
@@ -596,10 +637,17 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
         fontSize: fontSize !== "medium" ? fontSize : undefined,
         photoLayout: Object.keys(photoLayout).length > 0 ? photoLayout : undefined,
       });
+      // Enforce minimum display time for "saving" state (prevents flicker)
+      const elapsed = Date.now() - saveStartRef.current;
+      if (elapsed < MIN_SAVE_DISPLAY_MS) {
+        await new Promise((r) => setTimeout(r, MIN_SAVE_DISPLAY_MS - elapsed));
+      }
       void clearDraft(draftKey);
       announceSuccess(ts.journalEntrySaved || "Entry saved");
-      setSaving(false);
+      setSaveState("saved");
       setSaveSuccess(true);
+      // Auto-transition saved -> idle after 2s
+      setTimeout(() => setSaveState("idle"), 2000);
       // Celebration: sound + haptic
       try {
         const { playSuccess } = await import("@/lib/audioManager");
@@ -611,7 +659,7 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
       // Navigate after brief celebration
       navigationTimeoutRef.current = setTimeout(() => onBack(), 600);
     } catch (err) {
-      setSaving(false);
+      setSaveState("error");
       logger.warn("[Journal] Save failed:", err);
     }
   }, [
@@ -641,6 +689,9 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
     fontSize,
     photoLayout,
   ]);
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- stable retry wrapper
+  const handleRetry = useCallback(() => { void handleSave(); }, [handleSave]);
 
   const handleSaveAndClose = useCallback(async () => {
     setShowUnsavedDialog(false);
@@ -692,7 +743,7 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
         }
         handleBack();
       }
-      if ((e.ctrlKey || e.metaKey) && e.key === "Enter" && hasContent && !saving) {
+      if ((e.ctrlKey || e.metaKey) && e.key === "Enter" && hasContent && saveState !== "saving") {
         e.preventDefault();
         void handleSave();
       }
@@ -711,7 +762,7 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
     handleBack,
     handleSave,
     hasContent,
-    saving,
+    saveState,
     recorder,
   ]);
 
@@ -1032,8 +1083,14 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
     setTagInput,
 
     // save state
-    saving,
+    saveState,
     saveSuccess,
+    handleRetry,
+
+    // milestones
+    milestoneTriggered,
+    showConfetti,
+    onConfettiComplete,
 
     // ui panels
     showStickers,

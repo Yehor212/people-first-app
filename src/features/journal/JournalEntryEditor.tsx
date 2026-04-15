@@ -287,8 +287,13 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
     tagInput,
     setTagInput,
     // save
-    saving,
+    saveState,
     saveSuccess,
+    handleRetry,
+    // milestones
+    milestoneTriggered,
+    showConfetti,
+    onConfettiComplete,
     // ui panels
     showStickers,
     setShowStickers,
@@ -659,7 +664,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
             <motion.button
               whileTap={saveSuccess ? {} : { scale: 0.95 }}
               onClick={saveSuccess ? undefined : handleSave}
-              disabled={!saveSuccess && (saving || !hasContent)}
+              disabled={!saveSuccess && (saveState === "saving" || !hasContent)}
               className={cn(
                 "flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium min-h-[44px] transition-all",
                 saveSuccess
@@ -1604,7 +1609,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
             <div className="flex flex-col gap-2">
               <button
                 onClick={handleSaveAndClose}
-                disabled={saving}
+                disabled={saveState === "saving"}
                 className={cn(
                   "w-full py-2.5 rounded-xl text-sm font-medium min-h-[44px]",
                   "bg-gradient-to-r from-primary to-primary/90 text-primary-foreground",
