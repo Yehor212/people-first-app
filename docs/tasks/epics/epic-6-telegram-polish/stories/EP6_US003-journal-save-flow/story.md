@@ -1,6 +1,6 @@
 # EP6_US003: Journal Save Flow & Word Count Milestones
 
-**Status:** Backlog
+**Status:** Done
 **Epic:** 6 — Telegram-Level Polish
 **Priority:** P1
 **INVEST Score:** 6/6

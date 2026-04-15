@@ -1,6 +1,6 @@
 # EP6_US008: Ritual Widget Enhancement (BurnThought & GratitudeBloom)
 
-**Status:** Backlog
+**Status:** Done
 **Epic:** 6 — Telegram-Level Polish
 **Priority:** P2
 **INVEST Score:** 6/6

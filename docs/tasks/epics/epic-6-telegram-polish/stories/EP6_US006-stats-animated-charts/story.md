@@ -1,6 +1,6 @@
 # EP6_US006: Stats Animated Charts & Counters
 
-**Status:** Backlog
+**Status:** Done
 **Epic:** 6 — Telegram-Level Polish
 **Priority:** P2
 **INVEST Score:** 6/6

@@ -1,6 +1,6 @@
 # EP6_US010: Home Screen Widget — Mood Diary Integration
 
-**Status:** Backlog
+**Status:** Done
 **Epic:** 6 — Telegram-Level Polish
 **Priority:** P3
 **INVEST Score:** 5/6 (Estimable: iOS scope depends on platform setup)

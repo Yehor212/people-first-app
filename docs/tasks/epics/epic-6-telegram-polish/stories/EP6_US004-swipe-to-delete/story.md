@@ -1,6 +1,6 @@
 # EP6_US004: Swipe-to-Delete with Rubber-Band Physics
 
-**Status:** Backlog
+**Status:** Done
 **Epic:** 6 — Telegram-Level Polish
 **Priority:** P1
 **INVEST Score:** 6/6

@@ -1,6 +1,6 @@
 # EP6_US009: Page Transitions & Shared Element Animation
 
-**Status:** Backlog
+**Status:** Done
 **Epic:** 6 — Telegram-Level Polish
 **Priority:** P3
 **INVEST Score:** 5/6 (Negotiable: View Transitions API scope is flexible)
