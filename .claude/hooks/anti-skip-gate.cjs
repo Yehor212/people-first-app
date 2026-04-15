@@ -133,27 +133,7 @@ try {
 // ─── CHECK 6: Plan Items Coverage ───
 // (Covered by Check 1 via audit-checklist.json)
 
-// ─── CHECK 7: Ruflo ALL 16 Area Coverage (v3 — ZERO skips) ───
-try {
-  const { countRufloAreas, TOTAL_AREAS } = require('./hook-utils.cjs');
-  const rufloPath = path.join(ROOT, '.ruflo-last-action');
-  if (fs.existsSync(rufloPath)) {
-    const rufloState = JSON.parse(fs.readFileSync(rufloPath, 'utf8'));
-    const { usedCount, missingAreas } = countRufloAreas(rufloState);
-
-    // STOP requires ALL 16 areas — BLOCKING, no exceptions
-    if (usedCount < TOTAL_AREAS) {
-      blockers.push(
-        `RUFLO ALL-16 COVERAGE: ${usedCount}/${TOTAL_AREAS} areas used. ` +
-        `Missing ${missingAreas.length}: [${missingAreas.join(', ')}]. ` +
-        `Call 1 tool from each missing area before stopping.`
-      );
-    }
-  } else {
-    // No ruflo state file at all
-    warnings.push('RUFLO: No .ruflo-last-action found. Run mcp__ruflo__guidance_workflow to start.');
-  }
-} catch { /* ignore parse errors */ }
+// ─── CHECK 7: Ruflo coverage — REMOVED (ceremony, no bug prevention) ───
 
 // ─── OUTPUT ───
 if (blockers.length > 0) {
