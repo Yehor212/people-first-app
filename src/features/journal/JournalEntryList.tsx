@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo, useCallback, useRef, memo, useDeferredValue } from "react";
 import { Plus, Search, X, Sparkles, Loader2, PenLine, Sprout, Flame } from "lucide-react";
-import { motion, AnimatePresence, type Variants } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion, type Variants } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { zenMotion } from "@/lib/animationUtils";
+import { springs, stagger } from "@/config/animations";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useBackHandler } from "@/hooks/useBackHandler";
 import type { JournalEntry } from "./types";
@@ -116,17 +117,26 @@ function getDailyQuote(): (typeof DAILY_QUOTES)[0] {
 
 const containerVariants = {
   hidden: { opacity: 0 },
-  show: { opacity: 1, transition: { staggerChildren: 0.04 } },
+  show: { opacity: 1, transition: { staggerChildren: stagger.perItem / 1000 } },
 } satisfies Variants;
 
+/** Capped stagger: items beyond index 4 appear instantly (no delay) */
 const itemVariants = {
-  hidden: { opacity: 0, y: 12, scale: 0.97 },
-  show: {
+  hidden: { opacity: 0, y: 20 },
+  show: (i: number) => ({
     opacity: 1,
     y: 0,
-    scale: 1,
-    transition: { type: "spring", stiffness: 300, damping: 25 },
-  },
+    transition: {
+      ...springs.quick,
+      delay: stagger.delayForIndex(i),
+    },
+  }),
+};
+
+/** Static variants when prefers-reduced-motion is active */
+const staticVariants = {
+  hidden: { opacity: 1, y: 0 },
+  show: { opacity: 1, y: 0 },
 } satisfies Variants;
 
 interface JournalEntryListProps {
@@ -158,6 +168,9 @@ export const JournalEntryList = memo(function JournalEntryList({
   const { t } = useLanguage();
   const ts = t as unknown as Record<string, string>;
   const { isMouse } = useInputMethod();
+  const reducedMotion = useReducedMotion();
+  const activeContainerVariants = reducedMotion ? staticVariants : containerVariants;
+  const activeItemVariants = reducedMotion ? staticVariants : itemVariants;
 
   // Stable handlers that accept ID — prevents inline arrows from defeating memo on JournalEntryCard
   const handleTap = useCallback((id: string) => onOpenEntry(id), [onOpenEntry]);
@@ -572,13 +585,18 @@ export const JournalEntryList = memo(function JournalEntryList({
         <>
           {aiMatchedEntries.length > 0 ? (
             <motion.div
-              variants={containerVariants}
+              variants={activeContainerVariants}
               initial="hidden"
               animate="show"
               className="space-y-2"
             >
-              {aiMatchedEntries.map(({ entry, similarity }) => (
-                <motion.div key={entry.id} variants={itemVariants} className="relative">
+              {aiMatchedEntries.map(({ entry, similarity }, index) => (
+                <motion.div
+                  key={entry.id}
+                  variants={activeItemVariants}
+                  custom={index}
+                  className="relative"
+                >
                   <div className="absolute top-2 end-2 z-10 px-1.5 py-0.5 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400 text-[10px] font-medium">
                     {Math.round(similarity * 100)}%
                   </div>
@@ -632,7 +650,7 @@ export const JournalEntryList = memo(function JournalEntryList({
               <span className="text-[10px] text-muted-foreground/60">{group.entries.length}</span>
             </div>
             <motion.div
-              variants={containerVariants}
+              variants={activeContainerVariants}
               initial="hidden"
               animate="show"
               className={cn(
@@ -642,8 +660,8 @@ export const JournalEntryList = memo(function JournalEntryList({
                   : "md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-3 md:space-y-0"
               )}
             >
-              {group.entries.map((entry) => (
-                <motion.div key={entry.id} variants={itemVariants}>
+              {group.entries.map((entry, index) => (
+                <motion.div key={entry.id} variants={activeItemVariants} custom={index}>
                   {/* A11Y-OK: ContextMenu uses Radix with built-in aria; trigger is JournalEntryCard which has its own aria-labels */}
                   <ContextMenu
                     enabled={isMouse}
