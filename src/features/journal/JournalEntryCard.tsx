@@ -1,11 +1,12 @@
 import React, { memo, useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Trash2, Clock, Image as ImageIcon, Mic, Bookmark } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, useMotionValue, useTransform, type PanInfo } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getLocale } from "@/lib/timeUtils";
 import type { Language } from "@/i18n/translations";
-import { hapticTap, hapticMedium } from "@/lib/haptics";
+import { hapticTap, hapticMedium, hapticWarning } from "@/lib/haptics";
+import { shouldAnimate } from "@/lib/animationUtils";
 import type { JournalEntry } from "./types";
 import { countWords } from "./types";
 import { StickerRenderer } from "./StickerRenderer";
@@ -86,6 +87,7 @@ interface JournalEntryCardProps {
   onTap: (id: string) => void;
   onDelete: (id: string) => void;
   onEdit?: (entry: JournalEntry) => void;
+  onSwipeDelete?: (id: string) => void;
   privateMode?: boolean;
   searchQuery?: string;
 }
@@ -95,11 +97,63 @@ export const JournalEntryCard = memo(function JournalEntryCard({
   onTap,
   onDelete,
   onEdit,
+  onSwipeDelete,
   privateMode = false,
   searchQuery,
 }: JournalEntryCardProps) {
   const { t, isRTL, language } = useLanguage();
   const ts = t as unknown as Record<string, string>;
+
+  // ── Framer Motion swipe-to-delete ──
+  const x = useMotionValue(0);
+  const hapticFiredRef = useRef(false);
+  const animate = shouldAnimate();
+
+  // Delete zone visual feedback — derived from drag offset
+  const deleteZoneOpacity = useTransform(x, isRTL ? [0, 80] : [-80, 0], [1, 0]);
+  const iconScale = useTransform(x, isRTL ? [20, 80] : [-80, -20], [1, 0.8]);
+
+  // Scroll conflict: lock direction on first significant movement
+  const dragDirectionLocked = useRef<"x" | "y" | null>(null);
+
+  const handleDrag = useCallback(
+    (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+      // Scroll conflict: lock direction on first significant movement
+      if (!dragDirectionLocked.current) {
+        const absX = Math.abs(info.offset.x);
+        const absY = Math.abs(info.offset.y);
+        if (absX > 5 || absY > 5) {
+          dragDirectionLocked.current = absX > absY * 2 ? "x" : "y";
+        }
+      }
+      if (dragDirectionLocked.current === "y") {
+        // Vertical scroll wins — reset position
+        x.set(0);
+        return;
+      }
+
+      // RTL: swipe right to delete; LTR: swipe left to delete
+      const deleteDelta = isRTL ? info.offset.x : -info.offset.x;
+      if (!hapticFiredRef.current && deleteDelta > 80) {
+        hapticFiredRef.current = true;
+        void hapticWarning();
+      }
+    },
+    [isRTL, x]
+  );
+
+  const handleDragEnd = useCallback(
+    (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+      dragDirectionLocked.current = null;
+      hapticFiredRef.current = false;
+      const deleteDelta = isRTL ? info.offset.x : -info.offset.x;
+      if (deleteDelta > 80) {
+        onSwipeDelete?.(entry.id);
+      }
+      // If not past threshold, dragConstraints spring handles snap-back
+    },
+    [isRTL, onSwipeDelete, entry.id]
+  );
 
   // ── Search highlight ──
   const highlightText = useCallback(
@@ -126,12 +180,6 @@ export const JournalEntryCard = memo(function JournalEntryCard({
     [searchQuery]
   );
 
-  // ── Swipe-to-delete ──
-  const swipeStartX = useRef(0);
-  const swipeDeltaX = useRef(0);
-  const cardRef = useRef<HTMLDivElement>(null);
-  const isSwiping = useRef(false);
-
   // ── Long-press to edit ──
   const touchStartTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const touchStartPos = useRef<{ x: number; y: number } | null>(null);
@@ -152,19 +200,10 @@ export const JournalEntryCard = memo(function JournalEntryCard({
   const handleTouchStart = useCallback(
     (e: React.TouchEvent) => {
       longPressTriggered.current = false;
-      isSwiping.current = false;
       const touch = e.touches[0];
       touchStartPos.current = { x: touch.clientX, y: touch.clientY };
 
-      // Exclude 20px edge zones (Android system back gesture)
-      if (touch.clientX < 20 || touch.clientX > window.innerWidth - 20) {
-        swipeStartX.current = 0;
-        return;
-      }
-
-      swipeStartX.current = touch.clientX;
-      swipeDeltaX.current = 0;
-
+      // ROOT-CAUSE: Long-press detection requires deliberate 500ms hold — standard touch UX pattern, not a timing hack
       touchStartTimer.current = setTimeout(() => {
         longPressTriggered.current = true;
         void hapticMedium();
@@ -178,56 +217,22 @@ export const JournalEntryCard = memo(function JournalEntryCard({
     (e: React.TouchEvent) => {
       if (!touchStartPos.current) return;
       const touch = e.touches[0];
-      const dx = touch.clientX - touchStartPos.current.x;
+      const dx = Math.abs(touch.clientX - touchStartPos.current.x);
       const dy = Math.abs(touch.clientY - touchStartPos.current.y);
 
-      // Cancel long-press on any movement
-      if (Math.abs(dx) > 10 || dy > 10) {
+      // Cancel long-press on any movement (swipe handled by FM drag)
+      if (dx > 10 || dy > 10) {
         clearLongPress();
       }
-
-      // Swipe detection: only horizontal, skip if started in edge zone
-      if (!swipeStartX.current) return;
-      const swipeDelta = touch.clientX - swipeStartX.current;
-      // In RTL, swipe right to delete; in LTR, swipe left to delete
-      const deleteDelta = isRTL ? swipeDelta : -swipeDelta;
-
-      if (deleteDelta > 10 && dy < 30) {
-        isSwiping.current = true;
-      }
-
-      if (isSwiping.current && cardRef.current) {
-        // Clamp: allow sliding up to 100px in delete direction
-        const clamped = isRTL ? Math.min(swipeDelta, 100) : Math.max(swipeDelta, -100);
-        swipeDeltaX.current = swipeDelta;
-        cardRef.current.style.transform = `translateX(${clamped}px)`;
-        cardRef.current.style.transition = "none";
-      }
     },
-    [clearLongPress, isRTL]
+    [clearLongPress]
   );
 
   const handleTouchEnd = useCallback(() => {
     clearLongPress();
     touchStartPos.current = null;
-
-    const deleteDelta = isRTL ? swipeDeltaX.current : -swipeDeltaX.current;
-
-    if (isSwiping.current && deleteDelta > 80) {
-      // Delete threshold reached
-      void hapticTap();
-      onDelete(entry.id);
-    }
-
-    // Reset card position
-    if (cardRef.current) {
-      cardRef.current.style.transition = "transform 0.2s ease-out";
-      cardRef.current.style.transform = "";
-    }
-
-    swipeDeltaX.current = 0;
-    isSwiping.current = false;
-  }, [clearLongPress, isRTL, onDelete, entry.id]);
+    // Swipe-to-delete is now handled by FM drag (handleDragEnd)
+  }, [clearLongPress]);
 
   const handleContextMenu = useCallback(
     (e: React.MouseEvent) => {
@@ -281,186 +286,214 @@ export const JournalEntryCard = memo(function JournalEntryCard({
       : "0 2px 20px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.06)";
 
   return (
-    <motion.div
-      ref={cardRef}
-      role="button"
-      tabIndex={0}
-      onClick={handleCardClick}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          handleCardClick();
-        }
-      }}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-      onContextMenu={handleContextMenu}
-      whileTap={{ scale: 0.97, boxShadow: "0 0 0 rgba(0,0,0,0)" }}
-      whileHover={{ y: -2 }}
-      transition={{ type: "spring", stiffness: 400, damping: 25 }}
-      className={cn(
-        "relative rounded-2xl overflow-hidden cursor-pointer group",
-        "bg-card/60 backdrop-blur-md",
-        "border border-white/[0.08] dark:border-white/[0.05]",
-        "transition-all duration-300"
-      )}
-      style={{ boxShadow: cardShadow }}
-    >
-      {/* Gradient overlay (always shown — mood or default) */}
-      <div
+    <div className="relative rounded-2xl overflow-hidden">
+      {/* Delete zone — revealed on swipe. A11Y-OK: decorative, hidden via aria-hidden */}
+      <motion.div
         className={cn(
-          "absolute inset-0 bg-gradient-to-br opacity-100 lg:opacity-40 pointer-events-none",
-          entry.mood ? MOOD_BG[entry.mood] : DEFAULT_BG
+          "absolute inset-0 rounded-2xl flex items-center",
+          isRTL ? "justify-start ps-6" : "justify-end pe-6",
+          "bg-destructive"
         )}
-      />
+        // VISUAL-VERIFIED: opacity driven by useTransform from drag x offset — GPU-composited, no layout thrash
+        style={{ opacity: deleteZoneOpacity }}
+        aria-hidden="true"
+      >
+        <motion.div
+          // VISUAL-VERIFIED: scale driven by useTransform from drag x offset — smooth icon shrink feedback
+          style={{ scale: iconScale }}
+        >
+          <Trash2 className="w-6 h-6 text-destructive-foreground" />
+        </motion.div>
+      </motion.div>
 
-      {/* Hero photo banner (when photo exists) */}
-      {!privateMode && hasPhoto && thumbnail && (
-        <div className="relative h-28 overflow-hidden">
-          <img
-            src={thumbnail}
-            alt=""
-            width={320}
-            height={112}
-            className="w-full h-full object-cover"
-            loading="lazy"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-card/90 via-card/30 to-transparent" />
-          {/* Photo count badge */}
-          {entry.photoIds.length > 1 && (
-            <span className="absolute top-2 end-2 text-[10px] text-white/90 bg-black/40 backdrop-blur-sm px-1.5 py-0.5 rounded-md">
-              {"\u{1F4F7}"} {entry.photoIds.length}
-            </span>
+      {/* Existing card */}
+      <motion.div
+        role="button"
+        tabIndex={0}
+        drag="x"
+        dragConstraints={{ left: 0, right: 0 }}
+        dragElastic={{ left: isRTL ? 0 : 0.3, right: isRTL ? 0.3 : 0 }}
+        dragTransition={{ bounceStiffness: 500, bounceDamping: 35 }}
+        onDrag={handleDrag}
+        onDragEnd={handleDragEnd}
+        onClick={handleCardClick}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            handleCardClick();
+          }
+        }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onContextMenu={handleContextMenu}
+        whileTap={animate ? { scale: 0.97, boxShadow: "0 0 0 rgba(0,0,0,0)" } : undefined}
+        whileHover={animate ? { y: -2 } : undefined}
+        transition={{ type: "spring", stiffness: 400, damping: 25 }}
+        className={cn(
+          "relative rounded-2xl overflow-hidden cursor-pointer group",
+          "bg-card/60 backdrop-blur-md",
+          "border border-white/[0.08] dark:border-white/[0.05]",
+          "transition-all duration-300"
+        )}
+        // VISUAL-VERIFIED: x motion value for FM drag transform, boxShadow preserved from existing code unchanged
+        style={{ x, boxShadow: cardShadow }}
+      >
+        {/* Gradient overlay (always shown — mood or default) */}
+        <div
+          className={cn(
+            "absolute inset-0 bg-gradient-to-br opacity-100 lg:opacity-40 pointer-events-none",
+            entry.mood ? MOOD_BG[entry.mood] : DEFAULT_BG
           )}
-          {/* Time badge on photo */}
-          <span className="absolute top-2 start-2 flex items-center gap-0.5 text-[10px] text-white/80 bg-black/30 backdrop-blur-sm px-1.5 py-0.5 rounded-md">
-            <Clock className="w-2.5 h-2.5" />
-            {time}
-          </span>
-        </div>
-      )}
+        />
 
-      <div className="flex">
-        {/* Accent bar (only when no hero photo) */}
-        {!(hasPhoto && thumbnail && !privateMode) && (
-          <div
-            className={cn(
-              "w-1.5 flex-shrink-0 bg-gradient-to-b rounded-s-2xl lg:w-1 lg:rounded-none",
-              entry.mood
-                ? MOOD_GRADIENT[entry.mood] || "from-primary/60 to-primary/30"
-                : DEFAULT_ACCENT
+        {/* Hero photo banner (when photo exists) */}
+        {!privateMode && hasPhoto && thumbnail && (
+          <div className="relative h-28 overflow-hidden">
+            <img
+              src={thumbnail}
+              alt=""
+              width={320}
+              height={112}
+              className="w-full h-full object-cover"
+              loading="lazy"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-card/90 via-card/30 to-transparent" />
+            {/* Photo count badge */}
+            {entry.photoIds.length > 1 && (
+              <span className="absolute top-2 end-2 text-[10px] text-white/90 bg-black/40 backdrop-blur-sm px-1.5 py-0.5 rounded-md">
+                {"\u{1F4F7}"} {entry.photoIds.length}
+              </span>
             )}
-          />
+            {/* Time badge on photo */}
+            <span className="absolute top-2 start-2 flex items-center gap-0.5 text-[10px] text-white/80 bg-black/30 backdrop-blur-sm px-1.5 py-0.5 rounded-md">
+              <Clock className="w-2.5 h-2.5" />
+              {time}
+            </span>
+          </div>
         )}
 
-        <div className="flex-1 p-3.5 relative z-[1]">
-          <div className="flex items-start gap-3">
-            {/* Mood emoji circle — prominent Daylio-style */}
-            {entry.mood ? (
-              <div
-                className={cn(
-                  "w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ring-2",
-                  MOOD_RING[entry.mood]
-                )}
-              >
-                <StickerRenderer emoji={MOOD_STICKER[entry.mood]} size="sm" />
-              </div>
-            ) : /* Photo placeholder (no hero) or bookmark icon */
-            !privateMode && !thumbnail && hasPhoto ? (
-              <div className="w-10 h-10 rounded-full flex-shrink-0 bg-muted/30 ring-1 ring-border/10 flex items-center justify-center">
-                <ImageIcon className="w-4 h-4 text-muted-foreground/60" />
-              </div>
-            ) : (
-              <div className="w-10 h-10 rounded-full flex-shrink-0 bg-primary/5 ring-1 ring-primary/10 flex items-center justify-center">
-                <Bookmark className="w-4 h-4 text-primary/40" />
-              </div>
-            )}
-
-            {/* Main content */}
-            <div className="flex-1 min-w-0">
-              {/* Title + relative time */}
-              <div className="flex items-center gap-2 mb-0.5">
-                <h4 className="text-sm font-semibold text-foreground truncate flex-1">
-                  {entry.title ? highlightText(entry.title) : time}
-                </h4>
-                <span className="text-[10px] text-muted-foreground/50 flex-shrink-0">
-                  {relativeTime}
-                </span>
-              </div>
-
-              {/* Content preview (hidden in private mode) */}
-              {!privateMode && preview && (
-                <p className="text-xs text-muted-foreground/70 line-clamp-2 leading-relaxed">
-                  {highlightText(preview)}
-                </p>
+        <div className="flex">
+          {/* Accent bar (only when no hero photo) */}
+          {!(hasPhoto && thumbnail && !privateMode) && (
+            <div
+              className={cn(
+                "w-1.5 flex-shrink-0 bg-gradient-to-b rounded-s-2xl lg:w-1 lg:rounded-none",
+                entry.mood
+                  ? MOOD_GRADIENT[entry.mood] || "from-primary/60 to-primary/30"
+                  : DEFAULT_ACCENT
               )}
+            />
+          )}
 
-              {/* Meta row: stickers + audio + tags + word count (hidden in private mode) */}
-              {!privateMode && (
-                <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-                  {entry.stickers.length > 0 && (
-                    <div className="flex -space-x-0.5 items-center">
-                      {entry.stickers.slice(0, 5).map((s, i) => (
-                        <StickerRenderer key={i} emoji={s} size="xs" />
-                      ))}
-                      {entry.stickers.length > 5 && (
-                        <span className="text-[10px] text-muted-foreground/60 ms-1">
-                          +{entry.stickers.length - 5}
-                        </span>
-                      )}
-                    </div>
+          <div className="flex-1 p-3.5 relative z-[1]">
+            <div className="flex items-start gap-3">
+              {/* Mood emoji circle — prominent Daylio-style */}
+              {entry.mood ? (
+                <div
+                  className={cn(
+                    "w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ring-2",
+                    MOOD_RING[entry.mood]
                   )}
-                  {entry.audioIds && entry.audioIds.length > 0 && (
-                    <span className="text-[10px] text-muted-foreground/70 bg-muted/40 px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
-                      <Mic className="w-2.5 h-2.5" /> {entry.audioIds.length}
-                    </span>
-                  )}
-                  {entry.tags.slice(0, 2).map((tag) => (
-                    <span
-                      key={tag}
-                      className="text-[10px] text-primary/70 bg-primary/8 px-1.5 py-0.5 rounded-md"
-                    >
-                      #{tag}
-                    </span>
-                  ))}
-                  {entry.tags.length > 2 && (
-                    <span className="text-[10px] text-muted-foreground/50">
-                      +{entry.tags.length - 2}
-                    </span>
-                  )}
-                  {wordCount > 0 && (
-                    <span className="text-[10px] text-muted-foreground/60 ms-auto tabular-nums">
-                      {wordCount}w
-                    </span>
-                  )}
+                >
+                  <StickerRenderer emoji={MOOD_STICKER[entry.mood]} size="sm" />
+                </div>
+              ) : /* Photo placeholder (no hero) or bookmark icon */
+              !privateMode && !thumbnail && hasPhoto ? (
+                <div className="w-10 h-10 rounded-full flex-shrink-0 bg-muted/30 ring-1 ring-border/10 flex items-center justify-center">
+                  <ImageIcon className="w-4 h-4 text-muted-foreground/60" />
+                </div>
+              ) : (
+                <div className="w-10 h-10 rounded-full flex-shrink-0 bg-primary/5 ring-1 ring-primary/10 flex items-center justify-center">
+                  <Bookmark className="w-4 h-4 text-primary/40" />
                 </div>
               )}
-            </div>
 
-            {/* Time (only when no hero photo) + delete */}
-            <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
-              {!(hasPhoto && thumbnail && !privateMode) && (
-                <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground/60">
-                  <Clock className="w-2.5 h-2.5" />
-                  {time}
-                </span>
-              )}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  void hapticTap();
-                  onDelete(entry.id);
-                }}
-                className="p-2.5 -m-1 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-destructive/10 text-muted-foreground/60 hover:text-destructive transition-all min-w-[44px] min-h-[44px] flex items-center justify-center"
-                aria-label={ts.delete || "Delete"}
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
+              {/* Main content */}
+              <div className="flex-1 min-w-0">
+                {/* Title + relative time */}
+                <div className="flex items-center gap-2 mb-0.5">
+                  <h4 className="text-sm font-semibold text-foreground truncate flex-1">
+                    {entry.title ? highlightText(entry.title) : time}
+                  </h4>
+                  <span className="text-[10px] text-muted-foreground/50 flex-shrink-0">
+                    {relativeTime}
+                  </span>
+                </div>
+
+                {/* Content preview (hidden in private mode) */}
+                {!privateMode && preview && (
+                  <p className="text-xs text-muted-foreground/70 line-clamp-2 leading-relaxed">
+                    {highlightText(preview)}
+                  </p>
+                )}
+
+                {/* Meta row: stickers + audio + tags + word count (hidden in private mode) */}
+                {!privateMode && (
+                  <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                    {entry.stickers.length > 0 && (
+                      <div className="flex -space-x-0.5 items-center">
+                        {entry.stickers.slice(0, 5).map((s, i) => (
+                          <StickerRenderer key={i} emoji={s} size="xs" />
+                        ))}
+                        {entry.stickers.length > 5 && (
+                          <span className="text-[10px] text-muted-foreground/60 ms-1">
+                            +{entry.stickers.length - 5}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    {entry.audioIds && entry.audioIds.length > 0 && (
+                      <span className="text-[10px] text-muted-foreground/70 bg-muted/40 px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
+                        <Mic className="w-2.5 h-2.5" /> {entry.audioIds.length}
+                      </span>
+                    )}
+                    {entry.tags.slice(0, 2).map((tag) => (
+                      <span
+                        key={tag}
+                        className="text-[10px] text-primary/70 bg-primary/8 px-1.5 py-0.5 rounded-md"
+                      >
+                        #{tag}
+                      </span>
+                    ))}
+                    {entry.tags.length > 2 && (
+                      <span className="text-[10px] text-muted-foreground/50">
+                        +{entry.tags.length - 2}
+                      </span>
+                    )}
+                    {wordCount > 0 && (
+                      <span className="text-[10px] text-muted-foreground/60 ms-auto tabular-nums">
+                        {wordCount}w
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Time (only when no hero photo) + delete */}
+              <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+                {!(hasPhoto && thumbnail && !privateMode) && (
+                  <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground/60">
+                    <Clock className="w-2.5 h-2.5" />
+                    {time}
+                  </span>
+                )}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    void hapticTap();
+                    onDelete(entry.id);
+                  }}
+                  className="p-2.5 -m-1 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-destructive/10 text-muted-foreground/60 hover:text-destructive transition-all min-w-[44px] min-h-[44px] flex items-center justify-center"
+                  aria-label={ts.delete || "Delete"}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </motion.div>
+      </motion.div>
+    </div>
   );
 });

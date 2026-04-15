@@ -101,9 +101,9 @@
       "description": "Anti-patterns without BLOCK or WARN enforcement"
     },
     "npmOutdated": {
-      "value": 53,
+      "value": 55,
       "direction": "down",
-      "recorded": "2026-04-04",
+      "recorded": "2026-04-15",
       "description": "Outdated npm packages — CANARY ONLY (external dependency, not code-controlled). Floor=999 disables blocking. Actual count tracked as canary only."
     }
   },

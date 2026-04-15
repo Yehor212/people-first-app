@@ -51,7 +51,7 @@ import { useJournalReminder, getDaysSinceLastEntry } from "./useJournalReminder"
 import { useScreenSecurity } from "./useScreenSecurity";
 import { ParticleBackground } from "@/components/stats/ParticleBackground";
 import { useGamificationStore } from "@/stores";
-import { haptics } from "@/lib/haptics";
+import { haptics, hapticSuccess } from "@/lib/haptics";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
 
 // Lazy-load JournalStats to avoid CJS TDZ (Recharts)
@@ -283,6 +283,8 @@ export const JournalModule = memo(function JournalModule({
       const entry = journal.softDeleteEntry(id);
       if (!entry) return;
       setPendingDelete({ id, entry });
+      // Haptic confirmation when slide-out starts (shouldTriggerHaptics check is inside hapticSuccess)
+      void hapticSuccess();
       deleteTimerRef.current = setTimeout(() => {
         journal
           .commitDeleteEntry(id)
@@ -933,6 +935,7 @@ export const JournalModule = memo(function JournalModule({
                             groupedEntries={journal.groupedEntries}
                             onOpenEntry={journal.openEntry}
                             onDeleteEntry={handleDeleteEntry}
+                            onSwipeDelete={handleDeleteEntry}
                             onNewEntry={handleNewEntry}
                             totalCount={journal.totalCount}
                             loading={journal.loading}
@@ -1181,6 +1184,7 @@ export const JournalModule = memo(function JournalModule({
                               groupedEntries={journal.groupedEntries}
                               onOpenEntry={journal.openEntry}
                               onDeleteEntry={handleDeleteEntry}
+                              onSwipeDelete={handleDeleteEntry}
                               onNewEntry={handleNewEntry}
                               totalCount={journal.totalCount}
                               loading={journal.loading}

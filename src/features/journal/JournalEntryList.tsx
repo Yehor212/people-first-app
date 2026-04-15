@@ -143,6 +143,7 @@ interface JournalEntryListProps {
   groupedEntries: { label: string; key: string; entries: JournalEntry[] }[];
   onOpenEntry: (id: string) => void;
   onDeleteEntry: (id: string) => void;
+  onSwipeDelete?: (id: string) => void;
   onNewEntry: () => void;
   onAddGratitude?: (entry: GratitudeEntry) => void;
   totalCount: number;
@@ -157,6 +158,7 @@ export const JournalEntryList = memo(function JournalEntryList({
   groupedEntries,
   onOpenEntry,
   onDeleteEntry,
+  onSwipeDelete,
   onNewEntry,
   onAddGratitude,
   totalCount,
@@ -175,6 +177,7 @@ export const JournalEntryList = memo(function JournalEntryList({
   // Stable handlers that accept ID — prevents inline arrows from defeating memo on JournalEntryCard
   const handleTap = useCallback((id: string) => onOpenEntry(id), [onOpenEntry]);
   const handleDelete = useCallback((id: string) => onDeleteEntry(id), [onDeleteEntry]);
+  const handleSwipeDelete = useCallback((id: string) => onSwipeDelete?.(id), [onSwipeDelete]);
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   // Defer the debounced value so list filtering doesn't block input responsiveness (INP)
@@ -590,39 +593,49 @@ export const JournalEntryList = memo(function JournalEntryList({
               animate="show"
               className="space-y-2"
             >
-              {aiMatchedEntries.map(({ entry, similarity }, index) => (
-                <motion.div
-                  key={entry.id}
-                  variants={activeItemVariants}
-                  custom={index}
-                  className="relative"
-                >
-                  <div className="absolute top-2 end-2 z-10 px-1.5 py-0.5 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400 text-[10px] font-medium">
-                    {Math.round(similarity * 100)}%
-                  </div>
-                  {/* A11Y-OK: ContextMenu uses Radix with built-in aria; trigger is JournalEntryCard which has its own aria-labels */}
-                  <ContextMenu
-                    enabled={isMouse}
-                    trigger={
-                      <JournalEntryCard
-                        entry={entry}
-                        onTap={handleTap}
-                        onDelete={handleDelete}
-                        privateMode={privateMode}
-                        searchQuery={debouncedSearch}
-                      />
-                    }
-                    items={[
-                      { label: ts.open || "Open", action: () => handleTap(entry.id) },
-                      {
-                        label: ts.delete || "Delete",
-                        action: () => handleDelete(entry.id),
-                        destructive: true,
-                      },
-                    ]}
-                  />
-                </motion.div>
-              ))}
+              <AnimatePresence mode="popLayout">
+                {aiMatchedEntries.map(({ entry, similarity }, index) => (
+                  <motion.div
+                    key={entry.id}
+                    variants={activeItemVariants}
+                    custom={index}
+                    layout
+                    exit={{ x: -300, opacity: 0 }}
+                    transition={{
+                      ...springs.quick,
+                      layout: { type: "spring", stiffness: 300, damping: 30 },
+                    }}
+                    className="relative"
+                  >
+                    <div className="absolute top-2 end-2 z-10 px-1.5 py-0.5 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400 text-[10px] font-medium">
+                      {Math.round(similarity * 100)}%
+                    </div>
+                    {/* A11Y-OK: ContextMenu uses Radix with built-in aria; trigger is JournalEntryCard which has its own aria-labels */}
+                    <ContextMenu
+                      enabled={isMouse}
+                      trigger={
+                        // A11Y-OK: JournalEntryCard has role=button + tabIndex + aria internally
+                        <JournalEntryCard
+                          entry={entry}
+                          onTap={handleTap}
+                          onDelete={handleDelete}
+                          onSwipeDelete={handleSwipeDelete}
+                          privateMode={privateMode}
+                          searchQuery={debouncedSearch}
+                        />
+                      }
+                      items={[
+                        { label: ts.open || "Open", action: () => handleTap(entry.id) },
+                        {
+                          label: ts.delete || "Delete",
+                          action: () => handleDelete(entry.id),
+                          destructive: true,
+                        },
+                      ]}
+                    />
+                  </motion.div>
+                ))}
+              </AnimatePresence>
             </motion.div>
           ) : (
             <div className="flex flex-col items-center py-8 text-center">
@@ -660,31 +673,45 @@ export const JournalEntryList = memo(function JournalEntryList({
                   : "md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-3 md:space-y-0"
               )}
             >
-              {group.entries.map((entry, index) => (
-                <motion.div key={entry.id} variants={activeItemVariants} custom={index}>
-                  {/* A11Y-OK: ContextMenu uses Radix with built-in aria; trigger is JournalEntryCard which has its own aria-labels */}
-                  <ContextMenu
-                    enabled={isMouse}
-                    trigger={
-                      <JournalEntryCard
-                        entry={entry}
-                        onTap={handleTap}
-                        onDelete={handleDelete}
-                        privateMode={privateMode}
-                        searchQuery={debouncedSearch}
-                      />
-                    }
-                    items={[
-                      { label: ts.open || "Open", action: () => handleTap(entry.id) },
-                      {
-                        label: ts.delete || "Delete",
-                        action: () => handleDelete(entry.id),
-                        destructive: true,
-                      },
-                    ]}
-                  />
-                </motion.div>
-              ))}
+              <AnimatePresence mode="popLayout">
+                {group.entries.map((entry, index) => (
+                  <motion.div
+                    key={entry.id}
+                    variants={activeItemVariants}
+                    custom={index}
+                    layout
+                    exit={{ x: -300, opacity: 0 }}
+                    transition={{
+                      ...springs.quick,
+                      layout: { type: "spring", stiffness: 300, damping: 30 },
+                    }}
+                  >
+                    {/* A11Y-OK: ContextMenu uses Radix with built-in aria; trigger is JournalEntryCard which has its own aria-labels */}
+                    <ContextMenu
+                      enabled={isMouse}
+                      trigger={
+                        // A11Y-OK: JournalEntryCard has role=button + tabIndex + aria internally
+                        <JournalEntryCard
+                          entry={entry}
+                          onTap={handleTap}
+                          onDelete={handleDelete}
+                          onSwipeDelete={handleSwipeDelete}
+                          privateMode={privateMode}
+                          searchQuery={debouncedSearch}
+                        />
+                      }
+                      items={[
+                        { label: ts.open || "Open", action: () => handleTap(entry.id) },
+                        {
+                          label: ts.delete || "Delete",
+                          action: () => handleDelete(entry.id),
+                          destructive: true,
+                        },
+                      ]}
+                    />
+                  </motion.div>
+                ))}
+              </AnimatePresence>
             </motion.div>
           </div>
         ))}
