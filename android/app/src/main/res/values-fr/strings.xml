@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="widget_name_mini">ZenFlow Mini</string>
+    <string name="widget_description_mini">Humeur et série en un coup d\'œil</string>
+    <string name="widget_streak_label">Série</string>
+    <string name="widget_write_button">Écrire</string>
+    <string name="widget_no_mood">Aucune humeur enregistrée</string>
+    <string name="widget_days">jours</string>
+    <string name="widget_habits_label">Habitudes</string>
+</resources>

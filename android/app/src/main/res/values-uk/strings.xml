@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="widget_name_mini">ZenFlow Міні</string>
+    <string name="widget_description_mini">Настрій та серія на одному екрані</string>
+    <string name="widget_streak_label">Серія</string>
+    <string name="widget_write_button">Написати</string>
+    <string name="widget_no_mood">Настрій не записано</string>
+    <string name="widget_days">днів</string>
+    <string name="widget_habits_label">Звички</string>
+</resources>

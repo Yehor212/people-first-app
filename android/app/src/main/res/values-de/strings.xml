@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="widget_name_mini">ZenFlow Mini</string>
+    <string name="widget_description_mini">Stimmung und Serie auf einen Blick</string>
+    <string name="widget_streak_label">Serie</string>
+    <string name="widget_write_button">Schreiben</string>
+    <string name="widget_no_mood">Keine Stimmung erfasst</string>
+    <string name="widget_days">Tage</string>
+    <string name="widget_habits_label">Gewohnheiten</string>
+</resources>

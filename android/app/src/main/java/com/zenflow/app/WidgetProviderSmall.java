@@ -6,6 +6,7 @@ import android.appwidget.AppWidgetProvider;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.widget.RemoteViews;
 
 import org.json.JSONObject;
@@ -44,6 +45,12 @@ public class WidgetProviderSmall extends AppWidgetProvider {
             views.setTextViewText(R.id.streak_count, String.valueOf(streak));
             views.setTextViewText(R.id.habits_progress, habitsToday + "/" + habitsTotalToday);
 
+            // Mood emoji display (T3: added for home screen widget mood)
+            String moodEmoji = data.optString("currentMood", "");
+            if (!moodEmoji.isEmpty()) {
+                views.setTextViewText(R.id.mood_display, moodEmoji);
+            }
+
         } catch (Exception e) {
             // Use default values
             views.setTextViewText(R.id.streak_count, "0");
@@ -54,12 +61,12 @@ public class WidgetProviderSmall extends AppWidgetProvider {
         String insight = getSmartInsight(streak, habitsToday, habitsTotalToday);
         views.setTextViewText(R.id.insight_message, insight);
 
-        // Set click intent to open the app
-        Intent intent = new Intent(context, MainActivity.class);
+        // Set click intent to open diary tab via deep link
+        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("zenflow://diary/mood"));
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         PendingIntent pendingIntent = PendingIntent.getActivity(
             context,
-            0,
+            appWidgetId * 10,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );

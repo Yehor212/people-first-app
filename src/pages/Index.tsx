@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { shouldAnimate } from "@/lib/animationUtils";
 import {
@@ -302,7 +302,21 @@ export function Index() {
   // Sync widget with calculated streak (same as StreakBanner shows)
   // Wait for all data that affects streak to be loaded
   const isWidgetDataLoading = isLoadingUserData || isLoadingInnerWorld;
-  useWidgetSync(widgetStreak, habits, todayFocusMinutes, lastBadgeName, isWidgetDataLoading);
+
+  // Derive latest mood emoji + label for widget sync
+  const widgetMoodData = useMemo(() => {
+    const MOOD_EMOJI: Record<string, string> = {
+      great: "\u{1F604}", good: "\u{1F642}", okay: "\u{1F610}",
+      bad: "\u{1F614}", terrible: "\u{1F622}",
+    };
+    const today = new Date().toISOString().slice(0, 10);
+    const todayMoods = moods.filter(m => m.date === today);
+    if (todayMoods.length === 0) return { emoji: undefined, label: undefined };
+    const latest = todayMoods[todayMoods.length - 1];
+    return { emoji: MOOD_EMOJI[latest.mood], label: latest.mood };
+  }, [moods]);
+
+  useWidgetSync(widgetStreak, habits, todayFocusMinutes, lastBadgeName, isWidgetDataLoading, widgetMoodData.emoji, widgetMoodData.label);
 
   // Settings/data management handlers
   const {

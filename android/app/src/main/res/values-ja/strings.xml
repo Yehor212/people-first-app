@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="widget_name_mini">ZenFlow ミニ</string>
+    <string name="widget_description_mini">気分とストリークを一目で</string>
+    <string name="widget_streak_label">連続</string>
+    <string name="widget_write_button">書く</string>
+    <string name="widget_no_mood">気分未記録</string>
+    <string name="widget_days">日</string>
+    <string name="widget_habits_label">習慣</string>
+</resources>

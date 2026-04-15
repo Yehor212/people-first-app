@@ -44,6 +44,16 @@
                     android:host="challenge" />
             </intent-filter>
 
+            <!-- Deep links from home screen widgets (diary/mood, diary/editor) -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="zenflow"
+                    android:host="diary" />
+            </intent-filter>
+
             <!-- OWASP L22: Android App Links for verified challenge invites -->
             <!-- Requires hosting /.well-known/assetlinks.json on zenflow.app with SHA256 fingerprint -->
             <intent-filter android:autoVerify="true">
@@ -69,6 +79,18 @@
         </provider>
 
         <!-- Widget Receivers -->
+        <receiver
+            android:name=".WidgetProviderMini"
+            android:exported="true"
+            android:label="@string/widget_name_mini">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/appwidget_info_mini" />
+        </receiver>
+
         <receiver
             android:name=".WidgetProviderSmall"
             android:exported="true"

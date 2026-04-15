@@ -16,4 +16,8 @@
     <string name="widget_days">days</string>
     <string name="widget_min">min</string>
     <string name="widget_no_habits">No habits yet</string>
+    <string name="widget_name_mini">ZenFlow Mini</string>
+    <string name="widget_description_mini">Mood emoji and streak at a glance</string>
+    <string name="widget_write_button">Write</string>
+    <string name="widget_no_mood">No mood logged</string>
 </resources>

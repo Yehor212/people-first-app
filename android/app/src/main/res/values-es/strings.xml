@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="widget_name_mini">ZenFlow Mini</string>
+    <string name="widget_description_mini">Ánimo y racha de un vistazo</string>
+    <string name="widget_streak_label">Racha</string>
+    <string name="widget_write_button">Escribir</string>
+    <string name="widget_no_mood">Sin estado de ánimo</string>
+    <string name="widget_days">días</string>
+    <string name="widget_habits_label">Hábitos</string>
+</resources>

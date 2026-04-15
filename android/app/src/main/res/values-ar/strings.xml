@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="widget_name_mini">ZenFlow مصغّر</string>
+    <string name="widget_description_mini">المزاج والسلسلة بنظرة واحدة</string>
+    <string name="widget_streak_label">السلسلة</string>
+    <string name="widget_write_button">اكتب</string>
+    <string name="widget_no_mood">لم يتم تسجيل المزاج</string>
+    <string name="widget_days">أيام</string>
+    <string name="widget_habits_label">العادات</string>
+</resources>

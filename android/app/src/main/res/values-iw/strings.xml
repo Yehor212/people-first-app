@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="widget_name_mini">ZenFlow מיני</string>
+    <string name="widget_description_mini">מצב רוח ורצף במבט אחד</string>
+    <string name="widget_streak_label">רצף</string>
+    <string name="widget_write_button">כתוב</string>
+    <string name="widget_no_mood">לא נרשם מצב רוח</string>
+    <string name="widget_days">ימים</string>
+    <string name="widget_habits_label">הרגלים</string>
+</resources>

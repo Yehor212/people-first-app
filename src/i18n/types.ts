@@ -1072,6 +1072,10 @@ export interface Translations {
   widgetSmall: string;
   widgetMedium: string;
   widgetLarge: string;
+  widgetMini: string;
+  widgetNoMood: string;
+  widgetWriteButton: string;
+  widgetMoodAndStreak: string;
   widgetNoData: string;
   todayHabits: string;
   habitHub: string;

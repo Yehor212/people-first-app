@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_bg_premium"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:layoutDirection="locale"
+    android:padding="8dp">
+
+    <!-- Mood emoji -->
+    <TextView
+        android:id="@+id/mood_emoji"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="\uD83D\uDE42"
+        android:textSize="28sp"
+        android:layout_marginEnd="8dp"
+        android:gravity="center" />
+
+    <!-- Streak + Write button column -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center">
+
+        <TextView
+            android:id="@+id/streak_count"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0 \uD83D\uDD25"
+            android:textColor="@color/widget_streak"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <!-- Write button -->
+    <TextView
+        android:id="@+id/write_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/widget_write_button"
+        android:textColor="@color/widget_habits"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:minWidth="44dp"
+        android:minHeight="44dp"
+        android:gravity="center"
+        android:padding="4dp" />
+
+</LinearLayout>

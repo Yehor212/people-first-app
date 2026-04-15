@@ -16,8 +16,10 @@ import { logger } from "./logger";
 export const DEEP_LINK_EVENT = "zenflow-deep-link";
 
 export interface DeepLinkData {
-  type: "challenge" | "unknown";
+  type: "challenge" | "diary" | "unknown";
   id?: string;
+  /** Sub-route for diary deep links: "mood" | "editor" */
+  route?: string;
   params?: Record<string, string>;
 }
 
@@ -40,6 +42,14 @@ export function parseDeepLink(url: string): DeepLinkData | null {
         if (id && /^[A-Za-z0-9]{4,12}$/.test(id)) {
           return { type: "challenge", id };
         }
+      }
+
+      // zenflow://diary/mood or zenflow://diary/editor
+      if (host === "diary" || path.startsWith("diary")) {
+        const route = path.replace("diary/", "").replace("diary", "") || host === "diary" ? parsed.pathname.replace(/^\/+/, "") : "";
+        const validRoutes = ["mood", "editor"];
+        const resolvedRoute = validRoutes.includes(route) ? route : "mood";
+        return { type: "diary", route: resolvedRoute };
       }
     }
 
@@ -86,6 +96,11 @@ function handleDeepLink(url: string): void {
 
   const data = parseDeepLink(url);
   if (data && data.type !== "unknown") {
+    // Validate known schemes before dispatching
+    if (data.type === "diary" && data.route && !["mood", "editor"].includes(data.route)) {
+      logger.log("[DeepLinks] Invalid diary route:", data.route);
+      return;
+    }
     dispatchDeepLinkEvent(data);
   }
 }

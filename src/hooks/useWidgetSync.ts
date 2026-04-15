@@ -14,7 +14,9 @@ export function useWidgetSync(
   habits: Habit[],
   focusMinutes: number,
   lastBadge?: string,
-  isLoading?: boolean
+  isLoading?: boolean,
+  currentMood?: string,
+  moodLabel?: string
 ) {
   useEffect(() => {
     // Track if component is still mounted to prevent memory leaks
@@ -58,6 +60,8 @@ export function useWidgetSync(
             habitsTotalToday: habits.length,
             focusMinutes,
             lastBadge,
+            currentMood,
+            moodLabel,
             habits: habits.slice(0, 5).map(habit => {
               const entry = habit.entries?.[today];
               const completed = habit.habitType === 'numerical'
@@ -91,7 +95,7 @@ export function useWidgetSync(
     return () => {
       isMounted = false;
     };
-  }, [streak, habits, focusMinutes, lastBadge, isLoading]);
+  }, [streak, habits, focusMinutes, lastBadge, isLoading, currentMood, moodLabel]);
 }
 
 /**

@@ -8,6 +8,7 @@ import { isNative } from "@/lib/platform";
 import { supabase } from "@/lib/supabaseClient";
 import { decodeInviteData } from "@/lib/friendChallenge";
 import { endAuthFlow } from "@/lib/authGuard";
+import { subscribeToDeepLinks } from "@/lib/deepLinks";
 
 const setShowChallengeModal = getModalToggle("showChallengeModal");
 
@@ -27,6 +28,7 @@ export function useDeepLinkHandler(): void {
   const setUserNameCustom = useUserDataStore((s) => s.setUserNameCustom);
   const setGoogleAuthChecked = useUserDataStore((s) => s.setGoogleAuthChecked);
   const setChallengeInvite = useUIStore((s) => s.setChallengeInvite);
+  const setActiveTab = useAppStore((s) => s.setActiveTab);
   const handledAuthKeysRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
@@ -243,4 +245,20 @@ export function useDeepLinkHandler(): void {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only: register deep link listener once
   }, []); // Listener registers ONCE, no dependencies
+
+  // Handle diary deep links from widget taps (zenflow://diary/mood, zenflow://diary/editor)
+  useEffect(() => {
+    const cleanup = subscribeToDeepLinks((data) => {
+      if (data.type === "diary") {
+        logger.log("[DeepLink] Diary deep link received, route:", data.route);
+        // Navigate to home tab (diary/journal is on home)
+        setActiveTab("home");
+        // If route is "editor", dispatch a custom event so JournalModule can open the editor
+        if (data.route === "editor") {
+          window.dispatchEvent(new CustomEvent("zenflow-open-journal-editor"));
+        }
+      }
+    });
+    return cleanup;
+  }, [setActiveTab]);
 }

@@ -9,6 +9,8 @@ export interface WidgetData {
   habitsTotalToday: number;
   focusMinutes: number;
   lastBadge?: string;
+  currentMood?: string;    // Mood emoji character (e.g. "😊")
+  moodLabel?: string;      // Translated mood name (e.g. "Happy")
   habits: Array<{
     name: string;
     completed: boolean;
