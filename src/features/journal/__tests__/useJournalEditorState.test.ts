@@ -1,11 +1,13 @@
 /**
- * useJournalEditorState — Save State Machine & Word Count Milestones
+ * useJournalEditorState — Save State Machine, Word Count Milestones & Draft Persistence
  *
  * The full hook has too many side-effects and dependencies to render in isolation,
- * so we extract and test the PURE LOGIC patterns that drive save state and milestones.
+ * so we extract and test the PURE LOGIC patterns that drive save state, milestones,
+ * and draft persistence.
  *
  * T01: Save state machine transitions
  * T02: Word count milestone detection
+ * T06: Draft persistence lifecycle
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
@@ -326,5 +328,405 @@ describe("T02: Word count milestones", () => {
 
     expect(result.current.milestoneTriggered).toBe(1000);
     expect(result.current.showConfetti).toBe(true);
+  });
+});
+
+// ══════════════════════════════════════════════════════════════
+// Extracted logic: Draft persistence (mirrors useJournalEditorState)
+// ══════════════════════════════════════════════════════════════
+
+interface DraftData {
+  title: string;
+  content: string;
+  stickers: string[];
+  photoIds: string[];
+  audioIds?: string[];
+  mood?: string;
+  tags: string[];
+  savedAt: number;
+  theme?: string;
+  font?: string;
+  inkColor?: string;
+}
+
+/**
+ * Mirrors the draft restore/dismiss/clear-on-save logic from useJournalEditorState.
+ * Uses injected saveDraft/loadDraft/clearDraft functions so tests control I/O.
+ */
+function useDraftPersistence(opts: {
+  draftKey: string;
+  initialDraft: DraftData | null;
+  clearDraftFn: (key: string) => Promise<void>;
+  saveDraftFn: (key: string, data: DraftData) => Promise<void>;
+  onSave: () => Promise<void>;
+  hasContent: boolean;
+}) {
+  const { draftKey, initialDraft, clearDraftFn, saveDraftFn, onSave, hasContent } = opts;
+
+  // === Content State ===
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const contentRef = useRef("");
+  const [stickers, setStickers] = useState<string[]>([]);
+  const [photoIds, setPhotoIds] = useState<string[]>([]);
+  const [audioIds, setAudioIds] = useState<string[]>([]);
+  const [mood, setMood] = useState<string | undefined>(undefined);
+  const [tags, setTags] = useState<string[]>([]);
+
+  // === Draft State ===
+  const [draftAvailable, setDraftAvailable] = useState<DraftData | null>(initialDraft);
+
+  // === Auto-save debounce (3s) ===
+  const draftTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const [draftSavedAt, setDraftSavedAt] = useState(0);
+
+  useEffect(() => {
+    if (draftTimerRef.current) clearTimeout(draftTimerRef.current);
+    draftTimerRef.current = setTimeout(() => {
+      if (title || contentRef.current || stickers.length > 0 || mood || tags.length > 0 || audioIds.length > 0) {
+        void saveDraftFn(draftKey, {
+          title,
+          content: contentRef.current,
+          stickers,
+          photoIds,
+          audioIds,
+          mood,
+          tags,
+          savedAt: Date.now(),
+        });
+        setDraftSavedAt(Date.now());
+      }
+    }, 3000);
+    return () => {
+      if (draftTimerRef.current) clearTimeout(draftTimerRef.current);
+    };
+  }, [title, stickers, photoIds, audioIds, mood, tags, draftKey, saveDraftFn]);
+
+  // === Save State ===
+  const [saveState, setSaveState] = useState<SaveState>("idle");
+
+  const handleSave = useCallback(async () => {
+    if (!hasContent) return;
+    setSaveState("saving");
+    try {
+      await onSave();
+      void clearDraftFn(draftKey);
+      setSaveState("saved");
+    } catch {
+      setSaveState("error");
+    }
+  }, [onSave, hasContent, clearDraftFn, draftKey]);
+
+  // === Restore draft ===
+  const handleRestoreDraft = useCallback(() => {
+    if (!draftAvailable) return;
+    setTitle(draftAvailable.title);
+    contentRef.current = draftAvailable.content;
+    setContent(draftAvailable.content);
+    setStickers(draftAvailable.stickers);
+    setPhotoIds(draftAvailable.photoIds);
+    if (draftAvailable.audioIds) setAudioIds(draftAvailable.audioIds);
+    setMood(draftAvailable.mood);
+    setTags(draftAvailable.tags);
+    setDraftAvailable(null);
+  }, [draftAvailable]);
+
+  // === Dismiss draft ===
+  const handleDismissDraft = useCallback(() => {
+    void clearDraftFn(draftKey);
+    setDraftAvailable(null);
+  }, [draftKey, clearDraftFn]);
+
+  return {
+    title,
+    setTitle,
+    content,
+    stickers,
+    photoIds,
+    audioIds,
+    mood,
+    tags,
+    draftAvailable,
+    draftSavedAt,
+    saveState,
+    handleSave,
+    handleRestoreDraft,
+    handleDismissDraft,
+  };
+}
+
+// ══════════════════════════════════════════════════════════════
+// T06: Draft persistence lifecycle
+// ══════════════════════════════════════════════════════════════
+
+describe("T06: Draft persistence lifecycle", () => {
+  const DRAFT_KEY = "journal_draft_new";
+
+  const makeDraft = (overrides?: Partial<DraftData>): DraftData => ({
+    title: "My Draft Title",
+    content: "<p>Some draft content here</p>",
+    stickers: ["star", "heart"],
+    photoIds: ["photo-1"],
+    audioIds: ["audio-1"],
+    mood: "happy",
+    tags: ["reflection", "morning"],
+    savedAt: Date.now() - 60_000,
+    ...overrides,
+  });
+
+  let clearDraftFn: ReturnType<typeof vi.fn>;
+  let saveDraftFn: ReturnType<typeof vi.fn>;
+  let onSave: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    clearDraftFn = vi.fn(() => Promise.resolve());
+    saveDraftFn = vi.fn(() => Promise.resolve());
+    onSave = vi.fn(() => Promise.resolve());
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("clearDraft called after successful save", async () => {
+    const draft = makeDraft();
+
+    const { result } = renderHook(() =>
+      useDraftPersistence({
+        draftKey: DRAFT_KEY,
+        initialDraft: draft,
+        clearDraftFn,
+        saveDraftFn,
+        onSave,
+        hasContent: true,
+      })
+    );
+
+    expect(result.current.saveState).toBe("idle");
+
+    await act(async () => {
+      await result.current.handleSave();
+    });
+
+    expect(onSave).toHaveBeenCalledTimes(1);
+    expect(clearDraftFn).toHaveBeenCalledTimes(1);
+    expect(clearDraftFn).toHaveBeenCalledWith(DRAFT_KEY);
+    expect(result.current.saveState).toBe("saved");
+  });
+
+  it("clearDraft NOT called when save fails", async () => {
+    onSave = vi.fn(() => Promise.reject(new Error("save failed")));
+
+    const { result } = renderHook(() =>
+      useDraftPersistence({
+        draftKey: DRAFT_KEY,
+        initialDraft: null,
+        clearDraftFn,
+        saveDraftFn,
+        onSave,
+        hasContent: true,
+      })
+    );
+
+    await act(async () => {
+      await result.current.handleSave();
+    });
+
+    expect(clearDraftFn).not.toHaveBeenCalled();
+    expect(result.current.saveState).toBe("error");
+  });
+
+  it("handleRestoreDraft populates state from draft data", () => {
+    const draft = makeDraft({
+      title: "Restored Title",
+      content: "<p>Restored content</p>",
+      stickers: ["moon"],
+      photoIds: ["photo-99"],
+      audioIds: ["audio-42"],
+      mood: "calm",
+      tags: ["evening"],
+    });
+
+    const { result } = renderHook(() =>
+      useDraftPersistence({
+        draftKey: DRAFT_KEY,
+        initialDraft: draft,
+        clearDraftFn,
+        saveDraftFn,
+        onSave,
+        hasContent: false,
+      })
+    );
+
+    // Draft available before restore
+    expect(result.current.draftAvailable).toStrictEqual(draft);
+    expect(result.current.title).toBe("");
+    expect(result.current.content).toBe("");
+
+    act(() => {
+      result.current.handleRestoreDraft();
+    });
+
+    // State populated from draft
+    expect(result.current.title).toBe("Restored Title");
+    expect(result.current.content).toBe("<p>Restored content</p>");
+    expect(result.current.stickers).toStrictEqual(["moon"]);
+    expect(result.current.photoIds).toStrictEqual(["photo-99"]);
+    expect(result.current.audioIds).toStrictEqual(["audio-42"]);
+    expect(result.current.mood).toBe("calm");
+    expect(result.current.tags).toStrictEqual(["evening"]);
+
+    // draftAvailable cleared after restore
+    expect(result.current.draftAvailable).toBeNull();
+  });
+
+  it("handleRestoreDraft is a no-op when draftAvailable is null", () => {
+    const { result } = renderHook(() =>
+      useDraftPersistence({
+        draftKey: DRAFT_KEY,
+        initialDraft: null,
+        clearDraftFn,
+        saveDraftFn,
+        onSave,
+        hasContent: false,
+      })
+    );
+
+    act(() => {
+      result.current.handleRestoreDraft();
+    });
+
+    expect(result.current.title).toBe("");
+    expect(result.current.content).toBe("");
+    expect(result.current.draftAvailable).toBeNull();
+  });
+
+  it("handleDismissDraft clears draft and sets draftAvailable to null", () => {
+    const draft = makeDraft();
+
+    const { result } = renderHook(() =>
+      useDraftPersistence({
+        draftKey: DRAFT_KEY,
+        initialDraft: draft,
+        clearDraftFn,
+        saveDraftFn,
+        onSave,
+        hasContent: false,
+      })
+    );
+
+    // Draft available before dismiss
+    expect(result.current.draftAvailable).toStrictEqual(draft);
+
+    act(() => {
+      result.current.handleDismissDraft();
+    });
+
+    expect(clearDraftFn).toHaveBeenCalledTimes(1);
+    expect(clearDraftFn).toHaveBeenCalledWith(DRAFT_KEY);
+    expect(result.current.draftAvailable).toBeNull();
+  });
+
+  it("auto-save debounce fires after 3s when content exists", () => {
+    const { result } = renderHook(() =>
+      useDraftPersistence({
+        draftKey: DRAFT_KEY,
+        initialDraft: null,
+        clearDraftFn,
+        saveDraftFn,
+        onSave,
+        hasContent: true,
+      })
+    );
+
+    // Set title to trigger auto-save dependency change
+    act(() => {
+      result.current.setTitle("New title");
+    });
+
+    // Not called yet — debounce not elapsed
+    expect(saveDraftFn).not.toHaveBeenCalled();
+
+    // Advance 2s — still not called
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
+    expect(saveDraftFn).not.toHaveBeenCalled();
+
+    // Advance remaining 1s to hit 3s total
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+    expect(saveDraftFn).toHaveBeenCalledTimes(1);
+    expect(saveDraftFn).toHaveBeenCalledWith(
+      DRAFT_KEY,
+      expect.objectContaining({ title: "New title" })
+    );
+  });
+
+  it("auto-save debounce resets on rapid changes", () => {
+    const { result } = renderHook(() =>
+      useDraftPersistence({
+        draftKey: DRAFT_KEY,
+        initialDraft: null,
+        clearDraftFn,
+        saveDraftFn,
+        onSave,
+        hasContent: true,
+      })
+    );
+
+    // First change
+    act(() => {
+      result.current.setTitle("A");
+    });
+
+    // Wait 2s
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
+    expect(saveDraftFn).not.toHaveBeenCalled();
+
+    // Second change resets the debounce
+    act(() => {
+      result.current.setTitle("AB");
+    });
+
+    // Advance 2s from second change — still not called (need 3s from last change)
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
+    expect(saveDraftFn).not.toHaveBeenCalled();
+
+    // Advance remaining 1s
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+    expect(saveDraftFn).toHaveBeenCalledTimes(1);
+    expect(saveDraftFn).toHaveBeenCalledWith(
+      DRAFT_KEY,
+      expect.objectContaining({ title: "AB" })
+    );
+  });
+
+  it("auto-save does NOT fire when all fields are empty", () => {
+    renderHook(() =>
+      useDraftPersistence({
+        draftKey: DRAFT_KEY,
+        initialDraft: null,
+        clearDraftFn,
+        saveDraftFn,
+        onSave,
+        hasContent: false,
+      })
+    );
+
+    // Advance well past debounce
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
+
+    expect(saveDraftFn).not.toHaveBeenCalled();
   });
 });

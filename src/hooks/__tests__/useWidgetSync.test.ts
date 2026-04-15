@@ -319,6 +319,113 @@ describe('useWidgetSync', () => {
   });
 });
 
+describe('useWidgetSync — mood data', () => {
+  const mockHabits: Habit[] = [
+    makeTestHabit({
+      id: '1',
+      name: 'Exercise',
+      entries: datesToEntries(['2024-01-15']),
+      createdAt: new Date('2024-01-01').getTime(),
+    }),
+  ];
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockIsNative = true;
+    mockIsSupported.mockResolvedValue({ supported: true });
+    mockUpdateWidget.mockResolvedValue(undefined);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('includes currentMood and moodLabel in widget update payload', async () => {
+    vi.resetModules();
+    vi.doMock('@/lib/platform', () => ({
+      isNative: true,
+      platform: 'android',
+      isAndroid: true,
+      isIos: false,
+      isWeb: false,
+    }));
+
+    const { useWidgetSync } = await import('../useWidgetSync');
+    renderHook(() =>
+      useWidgetSync(3, mockHabits, 20, 'badge', false, 'great', 'Feeling great')
+    );
+
+    await waitFor(() => {
+      expect(mockUpdateWidget).toHaveBeenCalledWith(
+        expect.objectContaining({
+          currentMood: 'great',
+          moodLabel: 'Feeling great',
+        })
+      );
+    });
+  });
+
+  it('handles undefined mood gracefully (no crash)', async () => {
+    vi.resetModules();
+    vi.doMock('@/lib/platform', () => ({
+      isNative: true,
+      platform: 'android',
+      isAndroid: true,
+      isIos: false,
+      isWeb: false,
+    }));
+
+    const { useWidgetSync } = await import('../useWidgetSync');
+    // Both currentMood and moodLabel are undefined
+    renderHook(() =>
+      useWidgetSync(3, mockHabits, 20, 'badge', false, undefined, undefined)
+    );
+
+    await waitFor(() => {
+      expect(mockUpdateWidget).toHaveBeenCalledWith(
+        expect.objectContaining({
+          currentMood: undefined,
+          moodLabel: undefined,
+        })
+      );
+    });
+  });
+
+  it('updates widget when mood changes', async () => {
+    vi.resetModules();
+    vi.doMock('@/lib/platform', () => ({
+      isNative: true,
+      platform: 'android',
+      isAndroid: true,
+      isIos: false,
+      isWeb: false,
+    }));
+
+    const { useWidgetSync } = await import('../useWidgetSync');
+    const { rerender } = renderHook(
+      ({ mood, label }: { mood?: string; label?: string }) =>
+        useWidgetSync(3, mockHabits, 20, 'badge', false, mood, label),
+      { initialProps: { mood: 'okay', label: 'Feeling okay' } }
+    );
+
+    await waitFor(() => {
+      expect(mockUpdateWidget).toHaveBeenCalledTimes(1);
+      expect(mockUpdateWidget).toHaveBeenCalledWith(
+        expect.objectContaining({ currentMood: 'okay', moodLabel: 'Feeling okay' })
+      );
+    });
+
+    rerender({ mood: 'great', label: 'Feeling great' });
+
+    await waitFor(() => {
+      expect(mockUpdateWidget).toHaveBeenCalledTimes(2);
+      expect(mockUpdateWidget).toHaveBeenLastCalledWith(
+        expect.objectContaining({ currentMood: 'great', moodLabel: 'Feeling great' })
+      );
+    });
+  });
+});
+
 describe('useWidgetData', () => {
   beforeEach(() => {
     vi.clearAllMocks();
