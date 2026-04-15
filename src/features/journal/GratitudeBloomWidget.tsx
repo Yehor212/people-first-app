@@ -34,14 +34,47 @@ interface GratitudeBloomWidgetProps {
   onPlant: (entry: GratitudeEntry) => void;
 }
 
-// ── Botanical palette ────────────────────────────────────────────
-const PETAL_COLORS = ['#f9a8d4', '#fda4af', '#fcd34d', '#a7f3d0', '#c4b5fd'] as const;
+// ── Botanical palette (theme-token CSS variables) ────────────────
+// Each petal gets a unique hue via theme tokens — works in light & dark mode.
+// Fallbacks are semi-transparent to blend with any background.
+const PETAL_TOKEN_COLORS = [
+  'var(--bloom-petal-rose, oklch(0.76 0.14 350 / 0.7))',
+  'var(--bloom-petal-coral, oklch(0.74 0.13 25 / 0.7))',
+  'var(--bloom-petal-gold, oklch(0.82 0.12 85 / 0.7))',
+  'var(--bloom-petal-mint, oklch(0.80 0.10 160 / 0.7))',
+  'var(--bloom-petal-lavender, oklch(0.75 0.11 290 / 0.7))',
+] as const;
+
+// Particle burst colors matching petal tokens (need hex for canvas-free particles)
+const PARTICLE_COLORS = [
+  'var(--bloom-petal-rose, oklch(0.76 0.14 350 / 0.5))',
+  'var(--bloom-petal-coral, oklch(0.74 0.13 25 / 0.5))',
+  'var(--bloom-petal-gold, oklch(0.82 0.12 85 / 0.5))',
+  'var(--bloom-petal-mint, oklch(0.80 0.10 160 / 0.5))',
+  'var(--bloom-petal-lavender, oklch(0.75 0.11 290 / 0.5))',
+] as const;
+
+// 5 distinct SVG petal shapes — varied silhouettes for visual richness
+// Each path is drawn in a 28x44 viewBox, origin at center-bottom for rotation
+const PETAL_PATHS = [
+  // Round — classic teardrop
+  'M14 0 C6 8 0 22 4 34 Q8 44 14 44 Q20 44 24 34 C28 22 22 8 14 0Z',
+  // Pointed — narrow tulip
+  'M14 0 C10 10 3 24 6 36 Q10 44 14 44 Q18 44 22 36 C25 24 18 10 14 0Z',
+  // Curved — asymmetric wave
+  'M14 0 C4 12 -2 26 6 36 Q10 44 14 44 Q18 44 22 36 C30 26 24 12 14 0Z',
+  // Wide — magnolia
+  'M14 0 C2 10 -2 24 4 36 Q8 44 14 44 Q20 44 24 36 C30 24 26 10 14 0Z',
+  // Narrow — lily
+  'M14 0 C10 6 6 20 8 34 Q10 44 14 44 Q18 44 20 34 C22 20 18 6 14 0Z',
+] as const;
+
 // Pre-computed radial particle burst (12 particles, varied sizes)
 const PARTICLES = Array.from({ length: 12 }, (_, i) => ({
   x: Math.cos((i / 12) * Math.PI * 2) * 44,
   y: Math.sin((i / 12) * Math.PI * 2) * 44,
   size: 4 + (i % 3) * 1.5,
-  color: PETAL_COLORS[i % PETAL_COLORS.length],
+  color: PARTICLE_COLORS[i % PARTICLE_COLORS.length],
 }));
 
 // ── Component ────────────────────────────────────────────────────
@@ -241,24 +274,30 @@ export const GratitudeBloomWidget = memo(function GratitudeBloomWidget({ onClose
 
               {/* Flower — blooms at top of stem */}
               <div className="absolute top-3.5 left-1/2">
-                {/* 5 Petals — teardrop shapes with radial gradient + glow */}
-                {PETAL_COLORS.map((color, i) => (
-                  <motion.div
+                {/* 5 Petals — distinct SVG shapes with theme-token colors */}
+                {PETAL_PATHS.map((path, i) => (
+                  <motion.svg
                     key={i}
                     className="absolute"
+                    width={14}
+                    height={22}
+                    viewBox="0 0 28 44"
                     style={{
-                      width: 14, height: 22,
                       left: -7, top: -11,
-                      background: `radial-gradient(ellipse at 50% 30%, ${color}ee, ${color}aa)`,
-                      borderRadius: '50% 50% 50% 50% / 60% 60% 40% 40%',
                       transformOrigin: 'center bottom',
                       rotate: `${i * 72}deg`,
-                      boxShadow: `0 0 10px 3px ${color}30`,
+                      filter: 'drop-shadow(0 0 6px oklch(0.8 0.1 100 / 0.25))',
                     }}
                     initial={{ scale: 0, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ delay: 0.85 + i * 0.07, type: 'spring', stiffness: 280, damping: 15 }}
-                  />
+                  >
+                    <path
+                      d={path}
+                      fill={PETAL_TOKEN_COLORS[i]}
+                      opacity={0.85}
+                    />
+                  </motion.svg>
                 ))}
 
                 {/* Center pistil — warm glow */}
@@ -279,7 +318,6 @@ export const GratitudeBloomWidget = memo(function GratitudeBloomWidget({ onClose
                     width: p.size, height: p.size,
                     top: 18, left: '50%', marginLeft: -(p.size / 2),
                     backgroundColor: p.color,
-                    boxShadow: `0 0 4px 1px ${p.color}50`,
                   }}
                   initial={{ scale: 0, opacity: 0, x: 0, y: 0 }}
                   animate={{
