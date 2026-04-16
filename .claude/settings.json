@@ -3,5 +3,30 @@
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
     "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "65"
   },
-  "hooks": {}
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Bash|Edit|Write|Grep|Glob|Read|Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/learning/post-task-learner.cjs",
+            "timeout": 3
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/learning/session-end-trainer.cjs",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
 }

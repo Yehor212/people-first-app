@@ -1,5 +1,5 @@
 import { memo, useCallback, useRef, useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Bookmark } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -79,7 +79,7 @@ export const MoodDotStrip = memo(function MoodDotStrip({
 
   const handleMouseEnter = useCallback((id: string) => {
     if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
-    hoverTimeoutRef.current = setTimeout(() => setHoveredId(id), 300);
+    hoverTimeoutRef.current = setTimeout(() => setHoveredId(id), 150);
   }, []);
 
   const handleMouseLeave = useCallback(() => {
@@ -167,18 +167,25 @@ export const MoodDotStrip = memo(function MoodDotStrip({
                 )}
               </motion.button>
 
-              {/* Tooltip */}
-              {isHovered && (
-                <div
-                  className={cn(
-                    "absolute z-50 px-2 py-1 rounded-md bg-popover text-popover-foreground text-xs shadow-md border border-border/30 whitespace-nowrap pointer-events-none",
-                    isRTL ? "right-12" : "left-12"
-                  )}
-                >
-                  <span className="font-medium">{title.length > 24 ? title.slice(0, 24) + "..." : title}</span>
-                  <span className="text-muted-foreground/60 ms-1.5">{getRelativeTimeShort(entry.createdAt)}</span>
-                </div>
-              )}
+              {/* Tooltip — spring entrance */}
+              <AnimatePresence>
+                {isHovered && (
+                  <motion.div
+                    key={`tooltip-${entry.id}`}
+                    initial={{ opacity: 0, x: isRTL ? 6 : -6, scale: 0.95 }}
+                    animate={{ opacity: 1, x: 0, scale: 1 }}
+                    exit={{ opacity: 0, x: isRTL ? 4 : -4, scale: 0.97 }}
+                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                    className={cn(
+                      "absolute z-50 px-2.5 py-1.5 rounded-lg bg-popover text-popover-foreground text-xs shadow-lg border border-border/30 whitespace-nowrap pointer-events-none backdrop-blur-sm",
+                      isRTL ? "right-12" : "left-12"
+                    )}
+                  >
+                    <span className="font-medium">{title.length > 24 ? title.slice(0, 24) + "\u2026" : title}</span>
+                    <span className="text-muted-foreground/60 ms-1.5">{getRelativeTimeShort(entry.createdAt)}</span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           );
         })}

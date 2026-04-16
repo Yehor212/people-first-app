@@ -7,7 +7,7 @@ import { TimeOfDayGradient } from "./TimeOfDayGradient";
 import { TypewriterText } from "./TypewriterText";
 import { ValenceOrb } from "@/components/state-of-mind/ValenceOrb";
 import { ParticleBackground } from "@/components/stats/ParticleBackground";
-import { springPresets } from "@/config/animations";
+import { springs as springPresets } from "@/config/animations";
 
 /** Detect low-end device: skip orb if < 4GB RAM or no WebGL */
 function isLowEndDevice(): boolean {
@@ -31,11 +31,54 @@ const TIME_PARTICLE_COLOR: Record<string, "gold" | "primary" | "accent" | "purpl
 
 function getCurrentTimePeriod(): string {
   const h = new Date().getHours();
-  if (h >= 6 && h < 12) return "morning";
+  if (h >= 5 && h < 12) return "morning";
   if (h >= 12 && h < 17) return "afternoon";
-  if (h >= 17 && h < 21) return "evening";
+  if (h >= 17 && h < 22) return "evening";
   return "night";
 }
+
+const TIME_GREETINGS: Record<string, Record<string, string>> = {
+  morning: {
+    en: "Good morning",
+    uk: "\u0414\u043E\u0431\u0440\u043E\u0433\u043E \u0440\u0430\u043D\u043A\u0443",
+    es: "Buenos d\u00EDas",
+    de: "Guten Morgen",
+    fr: "Bonjour",
+    ja: "\u304A\u306F\u3088\u3046",
+    ar: "\u0635\u0628\u0627\u062D \u0627\u0644\u062E\u064A\u0631",
+    he: "\u05D1\u05D5\u05E7\u05E8 \u05D8\u05D5\u05D1",
+  },
+  afternoon: {
+    en: "Good afternoon",
+    uk: "\u0414\u043E\u0431\u0440\u0438\u0439 \u0434\u0435\u043D\u044C",
+    es: "Buenas tardes",
+    de: "Guten Tag",
+    fr: "Bon apr\u00E8s-midi",
+    ja: "\u3053\u3093\u306B\u3061\u306F",
+    ar: "\u0645\u0633\u0627\u0621 \u0627\u0644\u062E\u064A\u0631",
+    he: "\u05E6\u05D4\u05E8\u05D9\u05D9\u05DD \u05D8\u05D5\u05D1\u05D9\u05DD",
+  },
+  evening: {
+    en: "Good evening",
+    uk: "\u0414\u043E\u0431\u0440\u0438\u0439 \u0432\u0435\u0447\u0456\u0440",
+    es: "Buenas noches",
+    de: "Guten Abend",
+    fr: "Bonsoir",
+    ja: "\u3053\u3093\u3070\u3093\u306F",
+    ar: "\u0645\u0633\u0627\u0621 \u0627\u0644\u062E\u064A\u0631",
+    he: "\u05E2\u05E8\u05D1 \u05D8\u05D5\u05D1",
+  },
+  night: {
+    en: "Still up?",
+    uk: "\u0429\u0435 \u043D\u0435 \u0441\u043F\u0438\u0448?",
+    es: "\u00BFA\u00FAn despierto?",
+    de: "Noch wach?",
+    fr: "Encore debout\u00A0?",
+    ja: "\u307E\u3060\u8D77\u304D\u3066\u308B\uFF1F",
+    ar: "\u0645\u0627 \u0632\u0644\u062A \u0645\u0633\u062A\u064A\u0642\u0638\u061F",
+    he: "\u05E2\u05D3\u05D9\u05D9\u05DF \u05E2\u05E8\uFF1F",
+  },
+};
 
 interface DiaryEmptyCanvasProps {
   onNewEntry: () => void;
@@ -50,12 +93,13 @@ export const DiaryEmptyCanvas = memo(function DiaryEmptyCanvas({
   streak,
   entriesThisWeek,
 }: DiaryEmptyCanvasProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const ts = t as unknown as Record<string, string>;
   const reducedMotion = useReducedMotion();
   const lowEnd = isLowEndDevice();
   const [currentPrompt, setCurrentPrompt] = useState("");
   const period = getCurrentTimePeriod();
+  const greeting = TIME_GREETINGS[period]?.[language] || TIME_GREETINGS[period]?.en || "Hello";
 
   const handlePromptChange = useCallback((text: string) => {
     setCurrentPrompt(text);
@@ -88,11 +132,21 @@ export const DiaryEmptyCanvas = memo(function DiaryEmptyCanvas({
         </motion.div>
       )}
 
-      {/* Layer 4: Typewriter text */}
+      {/* Layer 4: Time-aware greeting */}
+      <motion.h2
+        initial={reducedMotion ? false : { opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.25, duration: 0.35 }}
+        className="relative z-[1] text-lg font-semibold text-foreground/80 text-center"
+      >
+        {greeting}
+      </motion.h2>
+
+      {/* Layer 5: Typewriter text */}
       <motion.div
         initial={reducedMotion ? false : { opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3, duration: 0.4 }}
+        transition={{ delay: 0.35, duration: 0.4 }}
         className="relative z-[1] text-center px-8"
       >
         <TypewriterText
@@ -133,24 +187,31 @@ export const DiaryEmptyCanvas = memo(function DiaryEmptyCanvas({
         </motion.button>
       </motion.div>
 
-      {/* Layer 6: Context line */}
-      <motion.p
+      {/* Layer 7: Context line + streak */}
+      <motion.div
         initial={reducedMotion ? false : { opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.7, duration: 0.3 }}
-        className="relative z-[1] text-xs text-muted-foreground/50 text-center"
+        className="relative z-[1] flex items-center justify-center gap-3 text-xs text-muted-foreground/60"
       >
-        {entriesThisWeek > 0 ? (
-          <>
-            {entriesThisWeek} {ts.diaryEntriesThisWeek || "entries this week"}
-            {streak > 0 && (
-              <span> · {streak} {"\u{1F525}"} {ts.diaryStreak || "streak"}</span>
-            )}
-          </>
-        ) : (
+        {entriesThisWeek > 0 && (
+          <span className="flex items-center gap-1">
+            {"\u{1F4DD}"} {entriesThisWeek} {ts.diaryEntriesThisWeek || "this week"}
+          </span>
+        )}
+        {streak > 0 && (
+          <motion.span
+            animate={reducedMotion ? undefined : { scale: [1, 1.1, 1] }}
+            transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+            className="flex items-center gap-1 text-orange-500 font-semibold"
+          >
+            {"\u{1F525}"} {streak} {ts.diaryStreak || "streak"}
+          </motion.span>
+        )}
+        {entriesThisWeek === 0 && streak === 0 && (
           <span>{ts.diaryStartFirstEntry || "Start your first entry this week"}</span>
         )}
-      </motion.p>
+      </motion.div>
     </div>
   );
 });

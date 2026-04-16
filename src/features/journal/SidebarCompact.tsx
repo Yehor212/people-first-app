@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { MoodDotStrip } from "./MoodDotStrip";
 import type { JournalEntry } from "./types";
-import type { SidebarState } from "@/hooks/useSidebarState";
+
 
 interface SidebarCompactProps {
   entries: JournalEntry[];

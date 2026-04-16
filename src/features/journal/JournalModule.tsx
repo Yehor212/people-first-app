@@ -59,6 +59,7 @@ import { lazyWithRetry } from "@/lib/lazyWithRetry";
 import { useSidebarState } from "@/hooks/useSidebarState";
 import { useSidebarKeyboard } from "@/hooks/useSidebarKeyboard";
 import { useEntryTransition } from "@/hooks/useEntryTransition";
+import { springs } from "@/config/animations";
 
 // Lazy-load JournalStats to avoid CJS TDZ (Recharts)
 const LazyJournalStats = lazyWithRetry(
@@ -228,6 +229,7 @@ export const JournalModule = memo(function JournalModule({
   };
 
   const handleClose = () => {
+    entryTransition.cancelTransition();
     journal.goBack();
     setModuleState("card");
     security.lock();
@@ -242,6 +244,23 @@ export const JournalModule = memo(function JournalModule({
     entryModeRef.current = "card";
     entryTransition.startTransition(id);
     journal.openEntry(id);
+    // Complete transition after layout animation settles (~350ms spring duration)
+    setTimeout(() => entryTransition.completeTransition(), 350);
+  }, [journal, entryTransition]);
+
+  /** Reverse entry transition before navigating back to list */
+  const handleGoBack = useCallback(() => {
+    if (entryTransition.transitionState === "settled" || entryTransition.transitionState === "morphing-forward") {
+      entryTransition.reverseTransition();
+      // Wait for reverse animation, then finalize
+      setTimeout(() => {
+        entryTransition.finishReverse();
+        journal.goBack();
+      }, 300);
+    } else {
+      entryTransition.cancelTransition();
+      journal.goBack();
+    }
   }, [journal, entryTransition]);
 
   const handleSaveEntry = useCallback(
@@ -461,7 +480,7 @@ export const JournalModule = memo(function JournalModule({
       });
     if (journal.view !== "list") {
       return registerModalCloseCallback(() => {
-        journal.goBack();
+        handleGoBack();
         return true;
       });
     }
@@ -470,7 +489,7 @@ export const JournalModule = memo(function JournalModule({
       security.lock();
       return true;
     });
-  }, [moduleState, resetStep, showPasswordSettings, journal, security]);
+  }, [moduleState, resetStep, showPasswordSettings, journal, security, handleGoBack]);
 
   // Security touch on interaction
   useEffect(() => {
@@ -852,6 +871,7 @@ export const JournalModule = memo(function JournalModule({
                       onExpandSidebar={() => {
                         setSidebarState("expanded");
                         sidebarPanelRef.current?.expand();
+                        void haptics.light();
                       }}
                     />
                   )}
@@ -867,9 +887,11 @@ export const JournalModule = memo(function JournalModule({
                     collapsedSize={0}
                     onCollapse={() => {
                       setSidebarState("hidden");
+                      void haptics.light();
                     }}
                     onExpand={() => {
                       setSidebarState("expanded");
+                      void haptics.light();
                       // WCAG 2.4.3: move focus into expanded sidebar content
                       requestAnimationFrame(() => sidebarContentRef.current?.focus());
                     }}
@@ -880,12 +902,13 @@ export const JournalModule = memo(function JournalModule({
                       tabIndex={-1}
                       className="flex flex-col border-e border-border/30 bg-card h-full overflow-hidden outline-none"
                     >
-                      {/* Header — animated entrance/exit */}
+                      {/* Header — choreographed entrance (Phase 1: 0-150ms) */}
                       <motion.div
-                        initial={reducedMotion ? false : { opacity: 0, x: -8 }}
+                        key="sidebar-header"
+                        initial={reducedMotion ? false : { opacity: 0, x: isRTL ? 8 : -8 }}
                         animate={{ opacity: 1, x: 0 }}
-                        exit={reducedMotion ? undefined : { opacity: 0, x: -8 }}
-                        transition={{ type: "spring", stiffness: 300, damping: 25, delay: 0.15 }}
+                        exit={reducedMotion ? undefined : { opacity: 0, x: isRTL ? 8 : -8 }}
+                        transition={springs.quick}
                         className="flex items-center justify-between px-4 py-3 border-b border-border/20">
                         <div className="flex items-center gap-2">
                           <h2 className="text-base font-bold text-foreground">
@@ -924,12 +947,13 @@ export const JournalModule = memo(function JournalModule({
                         </div>
                       </motion.div>
 
-                      {/* Calendar — animated entrance/exit */}
+                      {/* Calendar — choreographed entrance (Phase 2: 100-250ms) */}
                       <motion.div
+                        key="sidebar-calendar"
                         initial={reducedMotion ? false : { opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={reducedMotion ? undefined : { opacity: 0, scale: 0.95 }}
-                        transition={{ type: "spring", stiffness: 260, damping: 25, delay: 0.25 }}
+                        transition={{ ...springs.smooth, delay: 0.1 }}
                         className="px-4 py-2 border-b border-border/20">
                         {calendarMode === "full" ? (
                           <JournalCalendarFull
@@ -954,12 +978,13 @@ export const JournalModule = memo(function JournalModule({
                         )}
                       </motion.div>
 
-                      {/* Entry list — animated entrance */}
+                      {/* Entry list — choreographed entrance (Phase 3: 150-350ms) */}
                       <motion.div
-                        initial={reducedMotion ? false : { opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={reducedMotion ? undefined : { opacity: 0 }}
-                        transition={{ duration: 0.2, delay: 0.2 }}
+                        key="sidebar-entries"
+                        initial={reducedMotion ? false : { opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={reducedMotion ? undefined : { opacity: 0, y: 6 }}
+                        transition={{ ...springs.quick, delay: 0.15 }}
                         className="relative flex-1 overflow-y-auto px-3 py-3">
                         <div className="relative z-[1]">
                           <JournalEntryList
@@ -987,13 +1012,16 @@ export const JournalModule = memo(function JournalModule({
                   <LayoutPanel defaultSize={70} maxSize={85}>
                     <div className="flex flex-col min-w-0 h-full bg-background relative">
                       {/* Toggle button: expand/collapse sidebar */}
-                      <button
+                      <motion.button
+                        whileTap={reducedMotion ? undefined : { scale: 0.93 }}
+                        transition={springs.snappy}
                         onClick={() => {
                           if (isHidden || isCompact) {
                             sidebarPanelRef.current?.expand();
                           } else {
                             sidebarPanelRef.current?.collapse();
                           }
+                          void haptics.light();
                         }}
                         className="absolute ltr:left-2 rtl:right-2 top-3 z-40 p-2 bg-card rounded-lg shadow-md hover:bg-accent transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
                         aria-label={
@@ -1009,7 +1037,7 @@ export const JournalModule = memo(function JournalModule({
                         ) : (
                           <PanelLeftOpen className="w-4 h-4" />
                         )}
-                      </button>
+                      </motion.button>
                       {journal.view === "editing" ? (
                         <JournalEntryEditor
                           entry={journal.activeEntry}
@@ -1023,7 +1051,7 @@ export const JournalModule = memo(function JournalModule({
                               ? () => handleDeleteEntry(journal.activeEntryId!)
                               : undefined
                           }
-                          onBack={journal.goBack}
+                          onBack={handleGoBack}
                           onToggleHabit={onToggleHabit}
                           onAddGratitude={onAddGratitude}
                           desktop
@@ -1041,7 +1069,7 @@ export const JournalModule = memo(function JournalModule({
                           entry={journal.activeEntry}
                           onEdit={() => journal.editEntry(journal.activeEntryId)}
                           onDelete={() => handleDeleteEntry(journal.activeEntry?.id || "")}
-                          onBack={journal.goBack}
+                          onBack={handleGoBack}
                         />
                       ) : journal.view === "stats" ? (
                         <Suspense
@@ -1054,7 +1082,7 @@ export const JournalModule = memo(function JournalModule({
                             </div>
                           }
                         >
-                          <LazyJournalStats entries={journal.allEntries} onBack={journal.goBack} />
+                          <LazyJournalStats entries={journal.allEntries} onBack={handleGoBack} />
                         </Suspense>
                       ) : (
                         /* Empty state — cinematic living canvas */
@@ -1062,7 +1090,6 @@ export const JournalModule = memo(function JournalModule({
                           onNewEntry={handleNewEntry}
                           onNewEntryWithPrompt={(_prompt) => {
                             handleNewEntry();
-                            // TODO: pass prompt to editor as initial content (EP12_US004 enhancement)
                           }}
                           streak={streak}
                           entriesThisWeek={journal.entries.filter((e) => {
@@ -1116,7 +1143,7 @@ export const JournalModule = memo(function JournalModule({
                           ? () => handleDeleteEntry(journal.activeEntryId!)
                           : undefined
                       }
-                      onBack={journal.goBack}
+                      onBack={handleGoBack}
                       onToggleHabit={onToggleHabit}
                       onAddGratitude={onAddGratitude}
                     />
@@ -1145,7 +1172,7 @@ export const JournalModule = memo(function JournalModule({
                             </div>
                           }
                         >
-                          <LazyJournalStats entries={journal.allEntries} onBack={journal.goBack} />
+                          <LazyJournalStats entries={journal.allEntries} onBack={handleGoBack} />
                         </Suspense>
                       </motion.div>
                     )}
@@ -1163,7 +1190,7 @@ export const JournalModule = memo(function JournalModule({
                           entry={journal.activeEntry}
                           onEdit={() => journal.editEntry(journal.activeEntryId)}
                           onDelete={() => handleDeleteEntry(journal.activeEntry?.id || "")}
-                          onBack={journal.goBack}
+                          onBack={handleGoBack}
                         />
                       </motion.div>
                     )}

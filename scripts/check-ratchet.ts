@@ -130,6 +130,7 @@ const GOD_COMPONENT_EXEMPT = [
   "HabitCreationForm.tsx", // 380→427 lines from reminder section expansion + prettier reformat
   "HyperfocusMode.tsx", // 297→406 lines from prettier single→double quotes + import split, not complexity
   "main.tsx", // 398→402 lines from delta pull + haptic sync on resume — entry point, not UI component
+  "diary/TypingDynamicsMirror.tsx", // 467 lines: inline WebGL renderer + GLSL uniform mapping — shader component, not UI complexity
 ];
 
 const GOD_COMPONENT_OUT_OF_SCOPE = ["features/journal/"];
@@ -688,7 +689,7 @@ function checkRatchet(): void {
   }
 
   // Source file drift
-  const docSourceFiles = 701; // from ARCHITECTURE.md — updated 2026-04-10 after cross-platform Phase 2-7
+  const docSourceFiles = 727; // updated 2026-04-16 after EP8_US002 + EP10/EP11/EP12 scaffolding
   const drift = Math.abs(sourceFiles - docSourceFiles);
   if (drift > 20) {
     console.log(

@@ -253,6 +253,7 @@ export const JournalEntryCard = memo(function JournalEntryCard({
       longPressTriggered.current = false;
       return;
     }
+    void hapticTap();
     onTap(entry.id);
   }, [onTap, entry.id]);
 
@@ -336,7 +337,7 @@ export const JournalEntryCard = memo(function JournalEntryCard({
         onContextMenu={handleContextMenu}
         layout={animate ? true : undefined}
         whileTap={animate ? { scale: 0.97, boxShadow: "0 0 0 rgba(0,0,0,0)" } : undefined}
-        whileHover={animate ? { y: -2 } : undefined}
+        whileHover={animate ? { y: -2, boxShadow: "0 4px 16px rgba(0,0,0,0.08)" } : undefined}
         transition={{ type: "spring", stiffness: 300, damping: 25 }}
         className={cn(
           "relative rounded-2xl overflow-hidden cursor-pointer group",
