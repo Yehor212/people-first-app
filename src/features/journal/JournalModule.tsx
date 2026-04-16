@@ -15,7 +15,7 @@ import {
   PanelLeftOpen,
   PanelLeftClose,
 } from "lucide-react";
-import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
+import { motion, AnimatePresence, LayoutGroup, useReducedMotion } from "framer-motion";
 import { cn, getToday } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useScrollLock } from "@/hooks/useScrollLock";
@@ -109,6 +109,7 @@ export const JournalModule = memo(function JournalModule({
   const { sidebarState, setSidebarState, toggleSidebar, isExpanded, isCompact, isHidden } = useSidebarState();
   const sidebarPanelRef = usePanelRef();
   useSidebarKeyboard(sidebarState, toggleSidebar, setSidebarState);
+  const reducedMotion = useReducedMotion();
   const sidebarContentRef = useRef<HTMLDivElement>(null);
 
   useBackHandler(showExportPicker, () => setShowExportPicker(false));
@@ -833,20 +834,23 @@ export const JournalModule = memo(function JournalModule({
               {isLgScreen ? (
                 /* ═══ DESKTOP: Master-detail split ═══ */
                 <div className="flex flex-1 min-h-0">
-                {isCompact && (
-                  <SidebarCompact
-                    entries={journal.allEntries}
-                    activeEntryId={journal.activeEntryId}
-                    onOpenEntry={handleOpenEntry}
-                    onNewEntry={handleNewEntry}
-                    onOpenStats={() => journal.openStats()}
-                    onOpenSettings={() => setShowPasswordSettings(true)}
-                    onExpandSidebar={() => {
-                      setSidebarState("expanded");
-                      sidebarPanelRef.current?.expand();
-                    }}
-                  />
-                )}
+                <AnimatePresence mode="wait">
+                  {isCompact && (
+                    <SidebarCompact
+                      key="sidebar-compact"
+                      entries={journal.allEntries}
+                      activeEntryId={journal.activeEntryId}
+                      onOpenEntry={handleOpenEntry}
+                      onNewEntry={handleNewEntry}
+                      onOpenStats={() => journal.openStats()}
+                      onOpenSettings={() => setShowPasswordSettings(true)}
+                      onExpandSidebar={() => {
+                        setSidebarState("expanded");
+                        sidebarPanelRef.current?.expand();
+                      }}
+                    />
+                  )}
+                </AnimatePresence>
                 <PanelLayout className="flex-1 min-h-0">
                   {/* LEFT PANEL: collapsible entry list */}
                   <LayoutPanel
@@ -871,8 +875,13 @@ export const JournalModule = memo(function JournalModule({
                       tabIndex={-1}
                       className="flex flex-col border-e border-border/30 bg-card h-full overflow-hidden outline-none"
                     >
-                      {/* Header */}
-                      <div className="flex items-center justify-between px-4 py-3 border-b border-border/20">
+                      {/* Header — animated entrance/exit */}
+                      <motion.div
+                        initial={reducedMotion ? false : { opacity: 0, x: -8 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={reducedMotion ? undefined : { opacity: 0, x: -8 }}
+                        transition={{ type: "spring", stiffness: 300, damping: 25, delay: 0.15 }}
+                        className="flex items-center justify-between px-4 py-3 border-b border-border/20">
                         <div className="flex items-center gap-2">
                           <h2 className="text-base font-bold text-foreground">
                             {ts.journalTitle || "Diary"}
@@ -908,10 +917,15 @@ export const JournalModule = memo(function JournalModule({
                             <X className="w-5 h-5 text-foreground" />
                           </button>
                         </div>
-                      </div>
+                      </motion.div>
 
-                      {/* Calendar */}
-                      <div className="px-4 py-2 border-b border-border/20">
+                      {/* Calendar — animated entrance/exit */}
+                      <motion.div
+                        initial={reducedMotion ? false : { opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={reducedMotion ? undefined : { opacity: 0, scale: 0.95 }}
+                        transition={{ type: "spring", stiffness: 260, damping: 25, delay: 0.25 }}
+                        className="px-4 py-2 border-b border-border/20">
                         {calendarMode === "full" ? (
                           <JournalCalendarFull
                             entryDates={journal.entryDates}
@@ -933,10 +947,15 @@ export const JournalModule = memo(function JournalModule({
                             }}
                           />
                         )}
-                      </div>
+                      </motion.div>
 
-                      {/* Entry list */}
-                      <div className="relative flex-1 overflow-y-auto px-3 py-3">
+                      {/* Entry list — animated entrance */}
+                      <motion.div
+                        initial={reducedMotion ? false : { opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={reducedMotion ? undefined : { opacity: 0 }}
+                        transition={{ duration: 0.2, delay: 0.2 }}
+                        className="relative flex-1 overflow-y-auto px-3 py-3">
                         <div className="relative z-[1]">
                           <JournalEntryList
                             groupedEntries={journal.groupedEntries}
@@ -952,7 +971,7 @@ export const JournalModule = memo(function JournalModule({
                             compact
                           />
                         </div>
-                      </div>
+                      </motion.div>
                     </div>
                   </LayoutPanel>
 
