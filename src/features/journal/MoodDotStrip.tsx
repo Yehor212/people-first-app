@@ -138,6 +138,7 @@ export const MoodDotStrip = memo(function MoodDotStrip({
               className="flex items-center justify-center h-10"
             >
               <motion.button
+                layoutId={`mood-${entry.id}`}
                 role="option"
                 aria-selected={isActive}
                 aria-label={`${mood ? mood : "entry"}: ${title}`}

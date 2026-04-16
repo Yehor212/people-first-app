@@ -833,6 +833,7 @@ export const JournalModule = memo(function JournalModule({
             <>
               {isLgScreen ? (
                 /* ═══ DESKTOP: Master-detail split ═══ */
+                <LayoutGroup>
                 <div className="flex flex-1 min-h-0">
                 <AnimatePresence mode="wait">
                   {isCompact && (
@@ -1063,6 +1064,7 @@ export const JournalModule = memo(function JournalModule({
                   </LayoutPanel>
                 </PanelLayout>
                 </div>
+                </LayoutGroup>
               ) : (
                 /* ═══ MOBILE: existing single-view behavior ═══ */
                 <LayoutGroup>

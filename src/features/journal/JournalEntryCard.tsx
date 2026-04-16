@@ -390,25 +390,26 @@ export const JournalEntryCard = memo(function JournalEntryCard({
 
           <div className="flex-1 p-3.5 relative z-[1]">
             <div className="flex items-start gap-3">
-              {/* Mood emoji circle — prominent Daylio-style */}
+              {/* Mood emoji circle — prominent Daylio-style, layoutId for sidebar morph */}
               {entry.mood ? (
-                <div
+                <motion.div
+                  layoutId={`mood-${entry.id}`}
                   className={cn(
                     "w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ring-2",
                     MOOD_RING[entry.mood]
                   )}
                 >
                   <StickerRenderer emoji={MOOD_STICKER[entry.mood]} size="sm" />
-                </div>
+                </motion.div>
               ) : /* Photo placeholder (no hero) or bookmark icon */
               !privateMode && !thumbnail && hasPhoto ? (
-                <div className="w-10 h-10 rounded-full flex-shrink-0 bg-muted/30 ring-1 ring-border/10 flex items-center justify-center">
+                <motion.div layoutId={`mood-${entry.id}`} className="w-10 h-10 rounded-full flex-shrink-0 bg-muted/30 ring-1 ring-border/10 flex items-center justify-center">
                   <ImageIcon className="w-4 h-4 text-muted-foreground/60" />
-                </div>
+                </motion.div>
               ) : (
-                <div className="w-10 h-10 rounded-full flex-shrink-0 bg-primary/5 ring-1 ring-primary/10 flex items-center justify-center">
+                <motion.div layoutId={`mood-${entry.id}`} className="w-10 h-10 rounded-full flex-shrink-0 bg-primary/5 ring-1 ring-primary/10 flex items-center justify-center">
                   <Bookmark className="w-4 h-4 text-primary/40" />
-                </div>
+                </motion.div>
               )}
 
               {/* Main content */}
