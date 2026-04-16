@@ -54,6 +54,8 @@ import { useGamificationStore } from "@/stores";
 import { haptics, hapticSuccess } from "@/lib/haptics";
 import { shouldAnimate } from "@/lib/animationUtils";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
+import { useSidebarState } from "@/hooks/useSidebarState";
+import { useSidebarKeyboard } from "@/hooks/useSidebarKeyboard";
 
 // Lazy-load JournalStats to avoid CJS TDZ (Recharts)
 const LazyJournalStats = lazyWithRetry(
@@ -103,10 +105,9 @@ export const JournalModule = memo(function JournalModule({
   } | null>(null);
   const [hasDraft, setHasDraft] = useState(false);
   const [showRemovePasswordConfirm, setShowRemovePasswordConfirm] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
-    return storageGetRaw(SK.JOURNAL_SIDEBAR_COLLAPSED, "true") !== "false";
-  });
+  const { sidebarState, setSidebarState, toggleSidebar, isExpanded, isCompact, isHidden } = useSidebarState();
   const sidebarPanelRef = usePanelRef();
+  useSidebarKeyboard(sidebarState, toggleSidebar, setSidebarState);
   const sidebarContentRef = useRef<HTMLDivElement>(null);
 
   useBackHandler(showExportPicker, () => setShowExportPicker(false));
@@ -387,39 +388,22 @@ export const JournalModule = memo(function JournalModule({
   useScrollLock(moduleState === "open");
   useModalA11y(moduleState === "open" && !isLgScreen, handleClose);
 
-  // Collapse sidebar on mount if user preference says collapsed (default: collapsed)
+  // Collapse sidebar on mount if user preference says hidden or compact (default: expanded)
   const initialCollapseApplied = useRef(false);
   useEffect(() => {
     if (!isLgScreen || initialCollapseApplied.current) return;
     initialCollapseApplied.current = true;
-    if (sidebarCollapsed) {
+    if (isHidden || isCompact) {
       sidebarPanelRef.current?.collapse();
     }
-  }, [isLgScreen, sidebarCollapsed, sidebarPanelRef]);
+  }, [isLgScreen, isHidden, isCompact, sidebarPanelRef]);
 
   // Auto-collapse sidebar when entering edit mode on desktop (writing focus)
   useEffect(() => {
-    if (journal.view === "editing" && isLgScreen && !sidebarCollapsed) {
+    if (journal.view === "editing" && isLgScreen && isExpanded) {
       sidebarPanelRef.current?.collapse();
     }
-  }, [journal.view, isLgScreen, sidebarCollapsed, sidebarPanelRef]);
-
-  // Keyboard shortcut: Ctrl+\ (Cmd+\ on Mac) to toggle sidebar
-  useEffect(() => {
-    if (!isLgScreen) return;
-    const handler = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === "\\") {
-        e.preventDefault();
-        if (sidebarCollapsed) {
-          sidebarPanelRef.current?.expand();
-        } else {
-          sidebarPanelRef.current?.collapse();
-        }
-      }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [isLgScreen, sidebarCollapsed, sidebarPanelRef]);
+  }, [journal.view, isLgScreen, isExpanded, sidebarPanelRef]);
 
   // Focus trap for main overlay (skip on desktop — sidebar must be accessible)
   useEffect(() => {
@@ -857,12 +841,10 @@ export const JournalModule = memo(function JournalModule({
                     collapsible
                     collapsedSize={0}
                     onCollapse={() => {
-                      setSidebarCollapsed(true);
-                      storageSetRaw(SK.JOURNAL_SIDEBAR_COLLAPSED, "true");
+                      setSidebarState("hidden");
                     }}
                     onExpand={() => {
-                      setSidebarCollapsed(false);
-                      storageSetRaw(SK.JOURNAL_SIDEBAR_COLLAPSED, "false");
+                      setSidebarState("expanded");
                       // WCAG 2.4.3: move focus into expanded sidebar content
                       requestAnimationFrame(() => sidebarContentRef.current?.focus());
                     }}
@@ -966,7 +948,7 @@ export const JournalModule = memo(function JournalModule({
                       {/* Toggle button: expand/collapse sidebar */}
                       <button
                         onClick={() => {
-                          if (sidebarCollapsed) {
+                          if (isHidden || isCompact) {
                             sidebarPanelRef.current?.expand();
                           } else {
                             sidebarPanelRef.current?.collapse();
@@ -974,17 +956,17 @@ export const JournalModule = memo(function JournalModule({
                         }}
                         className="absolute ltr:left-2 rtl:right-2 top-3 z-40 p-2 bg-card rounded-lg shadow-md hover:bg-accent transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
                         aria-label={
-                          sidebarCollapsed
-                            ? ts.diarySidebarShow || "Show entries"
-                            : ts.diarySidebarHide || "Hide entries"
+                          isExpanded
+                            ? ts.diarySidebarHide || "Hide entries"
+                            : ts.diarySidebarShow || "Show entries"
                         }
-                        aria-expanded={!sidebarCollapsed}
+                        aria-expanded={isExpanded}
                         aria-controls="journal-sidebar-panel"
                       >
-                        {sidebarCollapsed ? (
-                          <PanelLeftOpen className="w-4 h-4" />
-                        ) : (
+                        {isExpanded ? (
                           <PanelLeftClose className="w-4 h-4" />
+                        ) : (
+                          <PanelLeftOpen className="w-4 h-4" />
                         )}
                       </button>
                       {journal.view === "editing" ? (
@@ -1004,9 +986,9 @@ export const JournalModule = memo(function JournalModule({
                           onToggleHabit={onToggleHabit}
                           onAddGratitude={onAddGratitude}
                           desktop
-                          sidebarCollapsed={sidebarCollapsed}
+                          sidebarCollapsed={!isExpanded}
                           onToggleSidebar={() => {
-                            if (sidebarCollapsed) {
+                            if (isHidden || isCompact) {
                               sidebarPanelRef.current?.expand();
                             } else {
                               sidebarPanelRef.current?.collapse();
