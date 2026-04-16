@@ -629,7 +629,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
             </motion.button>
             <div className="min-w-0">
               <div
-                className="text-sm font-bold tracking-tight truncate font-['Outfit',sans-serif]"
+                className="text-sm font-bold tracking-tight truncate font-display"
                 style={{ color: diaryTheme.accentColor }}
               >
                 {title || ts.diaryTimeCapsule || "TIME CAPSULE"}

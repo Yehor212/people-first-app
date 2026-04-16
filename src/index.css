@@ -1,8 +1,17 @@
+/* Phase 0-B: self-hosted variable fonts (@fontsource, OFL). Must import
+ * BEFORE @tailwind so Tailwind's @layer utilities can reference the
+ * `font-display|font-sans|font-hand` families declared in tailwind.config.ts. */
+@import "./styles/fonts.css";
+
+/* Phase 0-A: generated design-token CSS custom properties.
+ * First real consumer — validates the DTCG → Style Dictionary → PostCSS pipeline
+ * end-to-end. Imported before @tailwind so --zen-typography-* vars resolve at
+ * any cascade level, including inside @apply. */
+@import "./generated/tokens.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-/* Google Fonts moved to index.html for proper CSS @import order */
 
 @layer base {
   :root {

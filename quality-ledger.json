@@ -1,6 +1,7 @@
 {
   "version": "1.0.0",
   "lastUpdated": "2026-04-16",
+  "phase": "0-B-typography-system",
   "floors": {
     "tests.total": {
       "value": 3120,
@@ -15,22 +16,34 @@
       "description": "Test file count. Current: 160 (improved +17)."
     },
     "designTokenCoverage": {
-      "value": 1,
+      "value": 29,
       "direction": "up",
       "recorded": "2026-04-16",
-      "description": "Phase 0-A: Design tokens in src/design-tokens/tokens.json (DTCG format). Canary=1. Phase 0-B will expand to ~60 (typography+space+radius+shadow+motion+z-index). Phase 2-B will add ~80 color tokens from src/index.css."
+      "description": "Count of real design tokens (excludes _placeholder) in src/design-tokens/tokens.json. Phase 0-A: 1 (canary color). Phase 0-B: 29 (1 color + 28 typography: 5 family + 9 scale + 4 weight + 5 leading + 5 tracking). Phase 2-B will add ~80 color tokens from src/index.css."
     },
     "dtcgCompliant": {
       "value": 1,
       "direction": "up",
       "recorded": "2026-04-16",
-      "description": "W3C Design Token Community Group format compliance (0=not adopted, 1=adopted). Spec: https://design-tokens.github.io/community-group/format/ (2025-10-28). Value=1 since Phase 0-A — every token uses $value/$type/$description."
+      "description": "W3C Design Token Community Group format compliance (0=not adopted, 1=adopted). Spec: https://design-tokens.github.io/community-group/format/ (2025-10-28). Value=1 since Phase 0-A — every token uses $value/$type/$description. Phase 0-B extended DTCG coverage to fontFamily (array form) and dimension ({value,unit}) types via custom Style Dictionary transforms."
     },
     "styleDictionaryVersion": {
       "value": 4,
       "direction": "up",
       "recorded": "2026-04-16",
-      "description": "Style Dictionary major version. v4.x added native DTCG preprocessor support and async format registration. Build pipeline: tokens.json → src/generated/{tokens.css,tokens.ts}."
+      "description": "Style Dictionary major version. v4.x added native DTCG preprocessor support and async format registration. Build pipeline: tokens.json → src/generated/{tokens.css,tokens.ts}. Phase 0-B added custom transforms zen/fontFamily/dtcg-to-css and zen/dimension/dtcg-to-css."
+    },
+    "typographySystemCompliance": {
+      "value": 1,
+      "direction": "up",
+      "recorded": "2026-04-16",
+      "description": "Phase 0-B typography foundation in place (0=absent, 1=adopted). Adopted when: (a) src/styles/fonts.css with @font-face decls for Fraunces+Inter+Caveat, (b) tailwind.config.ts fontFamily extended with display/serif/body/hand/mono, (c) docs/typography-grammar.md documents 5 sacred moments + anti-patterns, (d) tokens.json has typography category (family+scale+weight+leading+tracking). Future phases will ratchet up by adding component adoption metric."
+    },
+    "fontFaceCount": {
+      "value": 3,
+      "direction": "up",
+      "recorded": "2026-04-16",
+      "description": "Self-hosted variable font families shipped via @fontsource-variable (OFL-1.1). Phase 0-B: Fraunces (display/serif), Inter (body/sans), Caveat (hand). 16 @font-face declarations total (4 Fraunces Latin+LatinExt × normal+italic; 8 Inter Latin+LatinExt+Cyrillic+CyrillicExt × normal+italic; 4 Caveat Latin+LatinExt+Cyrillic+CyrillicExt × normal only). Each increment here indicates a new font added — locale-specific (ja/ar/he) will raise this in a future phase."
     },
     "eslint.maxWarnings": {
       "value": 0,
@@ -98,7 +111,7 @@
       "direction": "down",
       "tolerance": 0.005,
       "recorded": "2026-04-16",
-      "description": "Total JS bundle size in KB (dist/assets/*.js). Tolerance 0.5% (~24KB). +36KB from journal UX redesign batch: 12 new components (OnThisDayCard, YearInPixels, MoodSlider, SlashCommandMenu, JournalOnboardingHints, StreakCelebration, ThemeTransitionOverlay, PhotoGridLayout, KeyboardShortcutsOverlay, StreakFreeze, MoodCorrelations) + useEdgeSwipe hook."
+      "description": "Total JS bundle size in KB (dist/assets/*.js). Tolerance 0.5% (~24KB). +36KB from journal UX redesign batch: 12 new components. Phase 0-B typography added ~112 KB of woff2 font assets but ZERO JS growth (measured 4917 KB post-Phase-0-B vs 4917 pre — fonts are CSS-referenced, not JS-imported). Font assets live separately; JS bundle ratchet remains untouched."
     },
     "enforcement.blockingHooks": {
       "value": 15,
@@ -275,6 +288,27 @@
       "from": 0,
       "to": 4,
       "reason": "Phase 0-A installed Style Dictionary v4.4.0. v4 is the first major version with native DTCG preprocessor and async format registration — required for proper OKLCH colorSpace handling.",
+      "date": "2026-04-16"
+    },
+    {
+      "metric": "designTokenCoverage",
+      "from": 1,
+      "to": 29,
+      "reason": "Phase 0-B typography — added 28 real tokens: 5 fontFamily (display, body, serif, hand, mono), 9 scale dimensions (xs..5xl), 4 fontWeight (regular/medium/semibold/bold), 5 leading numbers, 5 tracking dimensions. Validates Style Dictionary DTCG fontFamily + dimension transforms end-to-end (tokens.css now has --typography-* vars resolving to quoted stacks and rem/em values).",
+      "date": "2026-04-16"
+    },
+    {
+      "metric": "typographySystemCompliance",
+      "from": 0,
+      "to": 1,
+      "reason": "Phase 0-B adopted typography system foundation: self-hosted @fontsource-variable packages (Fraunces + Inter + Caveat, OFL-1.1), src/styles/fonts.css with 16 @font-face declarations across Latin+LatinExt+Cyrillic+CyrillicExt subsets, tailwind.config.ts fontFamily extended with display/serif/body/hand/mono, docs/typography-grammar.md documenting 5 Sacred Moments + anti-patterns. One dogfood swap in JournalEntryEditor.tsx (Outfit → font-display) validates the pipeline renders Fraunces in production build.",
+      "date": "2026-04-16"
+    },
+    {
+      "metric": "fontFaceCount",
+      "from": 0,
+      "to": 3,
+      "reason": "Phase 0-B self-hosted 3 variable font families (Fraunces display/serif, Inter body/sans, Caveat hand). Total ~112 KB woff2 assets (Latin+LatinExt+Cyrillic+CyrillicExt where supported). Fraunces Latin-only in the npm package — Cyrillic text falls back to Georgia via stack, documented in typography-grammar.md §RTL & i18n safety.",
       "date": "2026-04-16"
     }
   ]

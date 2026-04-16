@@ -8,6 +8,62 @@
 export const tokens = {
   /** Phase 0-A pipeline canary. Proves DTCG→Style Dictionary→PostCSS OKLCH→CSS fallback chain works end-to-end. DO NOT USE in production — this is infrastructure verification only. */
   "color.design-system.canary": "oklch(0.58 0.14 240)",
+  /** Display slot — entry titles, drop-caps, streak counters, quote watermarks. Fraunces Variable (opsz+wght axes) is Latin-only in the npm package; Cyrillic text falls back to Georgia via this stack (Law 17 i18n safety). */
+  "typography.family.display": "\"Fraunces Variable\", Georgia, Cambria, \"Times New Roman\", serif",
+  /** Body slot — default UI text, paragraphs, inputs, buttons. Inter Variable covers Latin + LatinExt + Cyrillic + CyrillicExt. font-display: optional prevents FOUT flash on hot path. */
+  "typography.family.body": "\"Inter Variable\", -apple-system, BlinkMacSystemFont, \"SF Pro Text\", system-ui, Roboto, \"Helvetica Neue\", Arial, sans-serif",
+  /** Serif alias — same as display. Use for prose passages, editorial pull-quotes, bound-book export styling. */
+  "typography.family.serif": "\"Fraunces Variable\", Georgia, Cambria, \"Times New Roman\", serif",
+  /** Hand slot — gratitude entries, intimate annotations, handwritten moments. Caveat Variable (Latin+Cyrillic, wght 400-700). Use sparingly — reserve for emotional moments per typography-grammar.md §Sacred Moments. */
+  "typography.family.hand": "\"Caveat Variable\", \"Comic Sans MS\", cursive",
+  /** Mono slot — reserved for tabular numerics (streak counters via font-feature-settings: 'tnum') and future code blocks. No bundled font this phase (system stack only). */
+  "typography.family.mono": "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+  /** 12px — captions, metadata, footnotes. */
+  "typography.scale.xs": "0.75rem",
+  /** 14px — secondary UI, form hints, list metadata. */
+  "typography.scale.sm": "0.875rem",
+  /** 16px — default body copy (WCAG 1.4.4 baseline). */
+  "typography.scale.base": "1rem",
+  /** 18px — lead paragraphs, editorial body. */
+  "typography.scale.lg": "1.125rem",
+  /** 20px — card titles, section intros. */
+  "typography.scale.xl": "1.25rem",
+  /** 24px — sheet/modal titles. */
+  "typography.scale.2xl": "1.5rem",
+  /** 30px — page headings. */
+  "typography.scale.3xl": "1.875rem",
+  /** 36px — hero display. */
+  "typography.scale.4xl": "2.25rem",
+  /** 48px — drop-cap date, streak celebration moment. */
+  "typography.scale.5xl": "3rem",
+  /** Body copy default. */
+  "typography.weight.regular": 400,
+  /** Light emphasis, UI labels. */
+  "typography.weight.medium": 500,
+  /** Headings, interactive emphasis. */
+  "typography.weight.semibold": 600,
+  /** Strong emphasis, section titles. */
+  "typography.weight.bold": 700,
+  /** Display/hero — compressed line-height for big sizes. */
+  "typography.leading.tight": 1.15,
+  /** Card titles, two-line labels. */
+  "typography.leading.snug": 1.35,
+  /** Body default — readable paragraph density. */
+  "typography.leading.normal": 1.5,
+  /** Long-form prose, journal entry reading. */
+  "typography.leading.relaxed": 1.7,
+  /** Gratitude handwriting, quote watermarks — breathing room. */
+  "typography.leading.loose": 1.9,
+  /** Display headlines — tighten for visual balance at large sizes. */
+  "typography.tracking.tight": "-0.02em",
+  /** Body default. */
+  "typography.tracking.normal": "0em",
+  /** Small caps, tabular labels. */
+  "typography.tracking.wide": "0.05em",
+  /** Emphasis labels, small UI text. */
+  "typography.tracking.wider": "0.1em",
+  /** Section kickers (all-caps, tiny). */
+  "typography.tracking.widest": "0.2em",
 } as const;
 
 export type TokenKey = keyof typeof tokens;

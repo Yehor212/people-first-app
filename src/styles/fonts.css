@@ -1,0 +1,225 @@
+/**
+ * ZenFlow — Typography System Foundation (Phase 0-B, 2026-04-16)
+ *
+ * Self-hosted variable fonts via @fontsource-variable (OFL-1.1 licensed,
+ * NPM-bundled, Capacitor-offline-safe — no Google Fonts CDN runtime).
+ *
+ * Slot map (per frontend-design-plan §14 Q2):
+ *   display/serif → Fraunces Variable (opsz, wght axes — Cyrillic NOT packaged)
+ *   body/sans     → Inter    Variable (wght axis, Latin+LatinExt+Cyrillic+CyrillicExt)
+ *   hand          → Caveat   Variable (wght axis, Latin+Cyrillic)
+ *   mono          → ui-monospace (system stack, no bundled font)
+ *
+ * Unicode ranges copied verbatim from each package's wght.css — these are
+ * Google Fonts canonical ranges. Browser fetches ONLY the subset files the
+ * document actually uses, not the union.
+ *
+ * IMPORTANT — Fraunces Cyrillic limitation:
+ *   @fontsource-variable/fraunces@5.2.9 does NOT ship cyrillic subset
+ *   (package only contains latin / latin-ext / vietnamese). For Ukrainian/Russian
+ *   display text we fall back to Georgia via the font-family stack defined in
+ *   tailwind.config.ts — browser font-matching selects Georgia automatically
+ *   when a glyph is outside Fraunces's unicode-range. Acceptable tradeoff:
+ *   Fraunces is the only tri-axis free VF; no full-Cyrillic alternative exists
+ *   in the literary-serif category. A future phase may add Frank Ruhl Libre
+ *   (Cyrillic-capable serif) lazy-loaded per locale.
+ *
+ * Subset policy:
+ *   INCLUDED:  latin, latin-ext (Ukrainian uses Latin-Ext for accent chars),
+ *              cyrillic + cyrillic-ext (Inter/Caveat only)
+ *   EXCLUDED:  vietnamese (no vi locale in app), greek (no el locale),
+ *              greek-ext. Browser download savings: ~30-40% per font.
+ *
+ * font-display policy:
+ *   - Fraunces (display): swap — entry titles MUST be readable immediately;
+ *     brief FOUT flash to Georgia is acceptable for an emotional moment.
+ *   - Inter (body): optional — body text is the "hot path"; avoid any FOUT
+ *     flash. If system stack renders first and network is slow, user reads
+ *     in system font and Inter takes effect on next page.
+ *   - Caveat (hand): swap — handwritten gratitude is an emotional moment,
+ *     better brief flash than invisible text.
+ *
+ * Samsung Internet 13- fallback: variable font axis support lands in 14.0
+ * (Jan 2021). Users on 13.x (~0.3% of Android, per caniuse 2026-04) see the
+ * default 400 weight rendered from the same woff2 file — readable, just
+ * not variable-weight-tunable. No separate static fallback font-faces needed.
+ */
+
+/* =============================================================
+ * FRAUNCES VARIABLE — display / serif
+ * Axes: wght (100-900). opsz/SOFT/WONK available via separate
+ * files; we ship only wght to keep payload small. Components
+ * opt into opsz via `font-variation-settings: "opsz" 144`.
+ * ============================================================= */
+
+/* fraunces-latin-ext-wght-normal */
+@font-face {
+  font-family: 'Fraunces Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('@fontsource-variable/fraunces/files/fraunces-latin-ext-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+/* fraunces-latin-wght-normal */
+@font-face {
+  font-family: 'Fraunces Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('@fontsource-variable/fraunces/files/fraunces-latin-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+/* fraunces-latin-ext-wght-italic */
+@font-face {
+  font-family: 'Fraunces Variable';
+  font-style: italic;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('@fontsource-variable/fraunces/files/fraunces-latin-ext-wght-italic.woff2') format('woff2-variations');
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+/* fraunces-latin-wght-italic */
+@font-face {
+  font-family: 'Fraunces Variable';
+  font-style: italic;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('@fontsource-variable/fraunces/files/fraunces-latin-wght-italic.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+/* =============================================================
+ * INTER VARIABLE — body / sans
+ * Axes: wght (100-900). Full Latin + Cyrillic coverage.
+ * Our subset: latin, latin-ext, cyrillic, cyrillic-ext (normal+italic).
+ * ============================================================= */
+
+/* inter-cyrillic-ext-wght-normal */
+@font-face {
+  font-family: 'Inter Variable';
+  font-style: normal;
+  font-display: optional;
+  font-weight: 100 900;
+  src: url('@fontsource-variable/inter/files/inter-cyrillic-ext-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
+}
+
+/* inter-cyrillic-wght-normal */
+@font-face {
+  font-family: 'Inter Variable';
+  font-style: normal;
+  font-display: optional;
+  font-weight: 100 900;
+  src: url('@fontsource-variable/inter/files/inter-cyrillic-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
+}
+
+/* inter-latin-ext-wght-normal */
+@font-face {
+  font-family: 'Inter Variable';
+  font-style: normal;
+  font-display: optional;
+  font-weight: 100 900;
+  src: url('@fontsource-variable/inter/files/inter-latin-ext-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+/* inter-latin-wght-normal */
+@font-face {
+  font-family: 'Inter Variable';
+  font-style: normal;
+  font-display: optional;
+  font-weight: 100 900;
+  src: url('@fontsource-variable/inter/files/inter-latin-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+/* inter-cyrillic-ext-wght-italic */
+@font-face {
+  font-family: 'Inter Variable';
+  font-style: italic;
+  font-display: optional;
+  font-weight: 100 900;
+  src: url('@fontsource-variable/inter/files/inter-cyrillic-ext-wght-italic.woff2') format('woff2-variations');
+  unicode-range: U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
+}
+
+/* inter-cyrillic-wght-italic */
+@font-face {
+  font-family: 'Inter Variable';
+  font-style: italic;
+  font-display: optional;
+  font-weight: 100 900;
+  src: url('@fontsource-variable/inter/files/inter-cyrillic-wght-italic.woff2') format('woff2-variations');
+  unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
+}
+
+/* inter-latin-ext-wght-italic */
+@font-face {
+  font-family: 'Inter Variable';
+  font-style: italic;
+  font-display: optional;
+  font-weight: 100 900;
+  src: url('@fontsource-variable/inter/files/inter-latin-ext-wght-italic.woff2') format('woff2-variations');
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+/* inter-latin-wght-italic */
+@font-face {
+  font-family: 'Inter Variable';
+  font-style: italic;
+  font-display: optional;
+  font-weight: 100 900;
+  src: url('@fontsource-variable/inter/files/inter-latin-wght-italic.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+/* =============================================================
+ * CAVEAT VARIABLE — hand
+ * Axes: wght (400-700). Latin + Cyrillic. No italic variant
+ * in the font itself (handwritten scripts are inherently slanted).
+ * ============================================================= */
+
+/* caveat-cyrillic-ext-wght-normal */
+@font-face {
+  font-family: 'Caveat Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400 700;
+  src: url('@fontsource-variable/caveat/files/caveat-cyrillic-ext-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
+}
+
+/* caveat-cyrillic-wght-normal */
+@font-face {
+  font-family: 'Caveat Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400 700;
+  src: url('@fontsource-variable/caveat/files/caveat-cyrillic-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
+}
+
+/* caveat-latin-ext-wght-normal */
+@font-face {
+  font-family: 'Caveat Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400 700;
+  src: url('@fontsource-variable/caveat/files/caveat-latin-ext-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+/* caveat-latin-wght-normal */
+@font-face {
+  font-family: 'Caveat Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400 700;
+  src: url('@fontsource-variable/caveat/files/caveat-latin-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}

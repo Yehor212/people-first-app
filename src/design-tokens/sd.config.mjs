@@ -1,18 +1,25 @@
 /**
- * Style Dictionary v4 configuration — ZenFlow Phase 0-A
+ * Style Dictionary v4 configuration — ZenFlow Phase 0-A → Phase 0-B
  *
  * Builds `src/design-tokens/tokens.json` (W3C DTCG format) into:
  *   - `src/generated/tokens.css`  — CSS custom properties under :root
  *   - `src/generated/tokens.ts`   — typed TS exports for runtime access
  *
  * Pipeline:
- *   tokens.json  →  Style Dictionary (DTCG preprocess + custom color transform)
- *                →  tokens.css (raw oklch() strings)
+ *   tokens.json  →  Style Dictionary (DTCG preprocess + custom transforms)
+ *                →  tokens.css (raw oklch() / rem / joined font-family strings)
  *                →  (Vite build) PostCSS @csstools/postcss-oklab-function
  *                →  dist CSS with rgb() fallback + oklch() in cascade
  *
- * Phase 0-A is SCAFFOLDING ONLY. The canary token proves the pipeline works.
- * No colors from src/index.css are moved here yet — that happens in Phase 2-B.
+ * DTCG $value shapes we handle:
+ *   - color        → {colorSpace, components[], alpha?} → oklch(L C H / A)
+ *   - fontFamily   → string | string[]                   → joined CSS stack w/ quoted multi-word names
+ *   - dimension    → {value, unit}                       → `${value}${unit}` e.g. "1.125rem"
+ *   - fontWeight   → number | string                     → passthrough (CSS accepts both)
+ *   - number       → number                              → passthrough
+ *
+ * Phase 0-B adds typography tokens (family, scale, weight, leading, tracking).
+ * Colors in src/index.css remain the source of truth until Phase 2-B.
  *
  * Docs: https://styledictionary.com/ (v4), DTCG spec 2025-10-28
  */
@@ -57,6 +64,46 @@ function dtcgColorToCss(value) {
   return value;
 }
 
+/**
+ * DTCG fontFamily $value:
+ *   - string   → single name
+ *   - string[] → ordered preference list (first = most preferred)
+ *
+ * CSS serialisation rule: font names containing whitespace MUST be quoted;
+ * single-word names SHOULD stay unquoted (helps with CSS generic families
+ * like `serif`, `sans-serif`, `cursive`, `monospace` which MUST NOT be
+ * quoted to retain their generic semantics).
+ *
+ * Spec: https://design-tokens.github.io/community-group/format/#font-family
+ */
+function dtcgFontFamilyToCss(value) {
+  if (value == null) return value;
+  const names = Array.isArray(value) ? value : [value];
+  return names
+    .map((name) => {
+      const str = String(name);
+      // Quote any name containing whitespace OR non-identifier characters,
+      // but leave generic CSS families unquoted per CSS Fonts Module Level 4.
+      return /\s|[^\w-]/.test(str) ? `"${str}"` : str;
+    })
+    .join(", ");
+}
+
+/**
+ * DTCG dimension $value: { value: number, unit: "px" | "rem" | "em" | ... }
+ * Emit `{value}{unit}`, e.g. `{ value: 1.125, unit: "rem" }` → "1.125rem".
+ * "em" is outside the DTCG spec (spec lists px + rem) but pragmatic for
+ * letter-spacing tokens. Style Dictionary does not restrict units server-side.
+ */
+function dtcgDimensionToCss(value) {
+  if (value == null) return value;
+  if (typeof value === "string" || typeof value === "number") return String(value);
+  if (typeof value === "object" && "value" in value && "unit" in value) {
+    return `${value.value}${value.unit}`;
+  }
+  return value;
+}
+
 // ---------- Custom transforms ----------
 
 // Convert DTCG structured color $value → CSS color() function
@@ -66,6 +113,24 @@ StyleDictionary.registerTransform({
   transitive: true,
   filter: (token) => token.$type === "color" || token.type === "color",
   transform: (token) => dtcgColorToCss(token.$value ?? token.value),
+});
+
+// Convert DTCG fontFamily $value → CSS-ready comma-joined string with quoting
+StyleDictionary.registerTransform({
+  name: "zen/fontFamily/dtcg-to-css",
+  type: "value",
+  transitive: true,
+  filter: (token) => token.$type === "fontFamily" || token.type === "fontFamily",
+  transform: (token) => dtcgFontFamilyToCss(token.$value ?? token.value),
+});
+
+// Convert DTCG dimension $value → CSS-ready length string (e.g. "1.125rem")
+StyleDictionary.registerTransform({
+  name: "zen/dimension/dtcg-to-css",
+  type: "value",
+  transitive: true,
+  filter: (token) => token.$type === "dimension" || token.type === "dimension",
+  transform: (token) => dtcgDimensionToCss(token.$value ?? token.value),
 });
 
 // Filter out _placeholder tokens from generated output — they document future
@@ -126,6 +191,8 @@ export default {
         "attribute/cti",
         "name/kebab",
         "zen/color/dtcg-to-css",
+        "zen/fontFamily/dtcg-to-css",
+        "zen/dimension/dtcg-to-css",
       ],
       buildPath: "src/generated/",
       files: [
@@ -140,6 +207,8 @@ export default {
         "attribute/cti",
         "name/kebab",
         "zen/color/dtcg-to-css",
+        "zen/fontFamily/dtcg-to-css",
+        "zen/dimension/dtcg-to-css",
       ],
       buildPath: "src/generated/",
       files: [

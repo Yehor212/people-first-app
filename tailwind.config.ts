@@ -28,8 +28,29 @@ export default {
       },
     },
     extend: {
+      /**
+       * Phase 0-B typography slot families.
+       *
+       * Backed by CSS vars emitted from src/design-tokens/tokens.json via
+       * Style Dictionary (src/generated/tokens.css). Hard-coded fallbacks
+       * mirror the token values so these families still resolve during Vite
+       * HMR before the generated CSS loads, and for static analysis tools.
+       *
+       * Slot policy (see docs/typography-grammar.md):
+       *   sans / body  → Inter Variable   (hot path, font-display: optional)
+       *   display      → Fraunces Variable (sacred moments, font-display: swap)
+       *   serif        → alias of display  (prose, editorial)
+       *   hand         → Caveat Variable   (gratitude, handwritten notes)
+       *   mono         → system stack      (tabular numerics, future code blocks)
+       *
+       * `sans` is the Tailwind default alias (`font-sans` and base body copy)
+       * so pre-existing classes that rely on Tailwind's system stack still
+       * render — now via Inter Variable once loaded, with system fallback
+       * preserved. Cross-platform Law 10 respected (iOS/Android/Desktop equal).
+       */
       fontFamily: {
         sans: [
+          '"Inter Variable"',
           "-apple-system",
           "BlinkMacSystemFont",
           '"SF Pro Text"',
@@ -39,6 +60,44 @@ export default {
           '"Helvetica Neue"',
           "Arial",
           "sans-serif",
+        ],
+        body: [
+          '"Inter Variable"',
+          "-apple-system",
+          "BlinkMacSystemFont",
+          '"SF Pro Text"',
+          "system-ui",
+          "Roboto",
+          '"Helvetica Neue"',
+          "Arial",
+          "sans-serif",
+        ],
+        display: [
+          '"Fraunces Variable"',
+          "Georgia",
+          "Cambria",
+          '"Times New Roman"',
+          "serif",
+        ],
+        serif: [
+          '"Fraunces Variable"',
+          "Georgia",
+          "Cambria",
+          '"Times New Roman"',
+          "serif",
+        ],
+        hand: [
+          '"Caveat Variable"',
+          '"Comic Sans MS"',
+          "cursive",
+        ],
+        mono: [
+          "ui-monospace",
+          "SFMono-Regular",
+          "Menlo",
+          "Monaco",
+          "Consolas",
+          "monospace",
         ],
       },
       fontSize: {
