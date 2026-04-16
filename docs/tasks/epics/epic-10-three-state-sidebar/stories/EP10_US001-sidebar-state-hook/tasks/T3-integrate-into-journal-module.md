@@ -2,7 +2,7 @@
 
 **Story:** [EP10_US001 — Sidebar State Hook & Keyboard Shortcuts](../story.md)
 **Type:** Implementation
-**Status:** Todo
+**Status:** Done
 **Priority:** P0
 **Estimate:** 4h
 **Parallel Group:** 2

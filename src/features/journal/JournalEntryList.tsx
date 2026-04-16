@@ -152,6 +152,8 @@ interface JournalEntryListProps {
   privateMode?: boolean;
   /** Compact single-column mode for desktop left panel */
   compact?: boolean;
+  /** Currently active entry ID (desktop master-detail) — for active/dimmed styling */
+  activeEntryId?: string | null;
 }
 
 export const JournalEntryList = memo(function JournalEntryList({
@@ -166,6 +168,7 @@ export const JournalEntryList = memo(function JournalEntryList({
   daysSinceLastEntry,
   privateMode = false,
   compact = false,
+  activeEntryId = null,
 }: JournalEntryListProps) {
   const { t } = useLanguage();
   const ts = t as unknown as Record<string, string>;
@@ -622,6 +625,8 @@ export const JournalEntryList = memo(function JournalEntryList({
                           onSwipeDelete={handleSwipeDelete}
                           privateMode={privateMode}
                           searchQuery={debouncedSearch}
+                          isActive={activeEntryId === entry.id}
+                          dimmed={!!activeEntryId && activeEntryId !== entry.id}
                         />
                       }
                       items={[
@@ -698,6 +703,8 @@ export const JournalEntryList = memo(function JournalEntryList({
                           onSwipeDelete={handleSwipeDelete}
                           privateMode={privateMode}
                           searchQuery={debouncedSearch}
+                          isActive={activeEntryId === entry.id}
+                          dimmed={!!activeEntryId && activeEntryId !== entry.id}
                         />
                       }
                       items={[

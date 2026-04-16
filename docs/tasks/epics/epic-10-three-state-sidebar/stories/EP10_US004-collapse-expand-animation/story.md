@@ -1,7 +1,7 @@
 # EP10_US004: Collapse/Expand Animation Choreography
 
 **Epic:** [Epic 10: Three-State Sidebar](../../epic.md)
-**Status:** Backlog
+**Status:** To Review
 **Priority:** P1
 **Complexity:** High
 **Created:** 2026-04-15

@@ -1,7 +1,7 @@
 # EP11_US001: Card Lift & Sibling Dim on Selection
 
 **Epic:** [Epic 11: Shared-Element Transitions](../../epic.md)
-**Status:** Backlog
+**Status:** To Review
 **Priority:** P0
 **Complexity:** Medium
 **Created:** 2026-04-15

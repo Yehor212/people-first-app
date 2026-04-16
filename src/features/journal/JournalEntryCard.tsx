@@ -90,6 +90,10 @@ interface JournalEntryCardProps {
   onSwipeDelete?: (id: string) => void;
   privateMode?: boolean;
   searchQuery?: string;
+  /** Entry is currently open in editor (desktop master-detail) */
+  isActive?: boolean;
+  /** Dim card when another entry is selected */
+  dimmed?: boolean;
 }
 
 export const JournalEntryCard = memo(function JournalEntryCard({
@@ -100,6 +104,8 @@ export const JournalEntryCard = memo(function JournalEntryCard({
   onSwipeDelete,
   privateMode = false,
   searchQuery,
+  isActive = false,
+  dimmed = false,
 }: JournalEntryCardProps) {
   const { t, isRTL, language } = useLanguage();
   const ts = t as unknown as Record<string, string>;
@@ -336,10 +342,12 @@ export const JournalEntryCard = memo(function JournalEntryCard({
           "relative rounded-2xl overflow-hidden cursor-pointer group",
           "bg-card/60 backdrop-blur-md",
           "border border-white/[0.08] dark:border-white/[0.05]",
-          "transition-all duration-300"
+          "transition-all duration-300",
+          isActive && "ring-1 ring-primary/30 border-primary/20",
+          dimmed && "opacity-60"
         )}
         // VISUAL-VERIFIED: x motion value for FM drag transform, boxShadow preserved from existing code unchanged
-        style={{ x, boxShadow: cardShadow }}
+        style={{ x, boxShadow: isActive ? `${cardShadow}, 0 0 0 1px rgba(var(--primary-rgb), 0.1)` : cardShadow }}
       >
         {/* Gradient overlay (always shown — mood or default) */}
         <div
@@ -390,25 +398,26 @@ export const JournalEntryCard = memo(function JournalEntryCard({
 
           <div className="flex-1 p-3.5 relative z-[1]">
             <div className="flex items-start gap-3">
-              {/* Mood emoji circle — prominent Daylio-style */}
+              {/* Mood emoji circle — prominent Daylio-style, layoutId for sidebar morph */}
               {entry.mood ? (
-                <div
+                <motion.div
+                  layoutId={`mood-${entry.id}`}
                   className={cn(
                     "w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ring-2",
                     MOOD_RING[entry.mood]
                   )}
                 >
                   <StickerRenderer emoji={MOOD_STICKER[entry.mood]} size="sm" />
-                </div>
+                </motion.div>
               ) : /* Photo placeholder (no hero) or bookmark icon */
               !privateMode && !thumbnail && hasPhoto ? (
-                <div className="w-10 h-10 rounded-full flex-shrink-0 bg-muted/30 ring-1 ring-border/10 flex items-center justify-center">
+                <motion.div layoutId={`mood-${entry.id}`} className="w-10 h-10 rounded-full flex-shrink-0 bg-muted/30 ring-1 ring-border/10 flex items-center justify-center">
                   <ImageIcon className="w-4 h-4 text-muted-foreground/60" />
-                </div>
+                </motion.div>
               ) : (
-                <div className="w-10 h-10 rounded-full flex-shrink-0 bg-primary/5 ring-1 ring-primary/10 flex items-center justify-center">
+                <motion.div layoutId={`mood-${entry.id}`} className="w-10 h-10 rounded-full flex-shrink-0 bg-primary/5 ring-1 ring-primary/10 flex items-center justify-center">
                   <Bookmark className="w-4 h-4 text-primary/40" />
-                </div>
+                </motion.div>
               )}
 
               {/* Main content */}

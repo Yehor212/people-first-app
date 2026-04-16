@@ -15,7 +15,7 @@ import {
   PanelLeftOpen,
   PanelLeftClose,
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { cn, getToday } from "@/lib/utils";
 import { zenMotion } from "@/lib/animationUtils";
 import { hapticTap } from "@/lib/haptics";
@@ -246,6 +246,8 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
   sidebarCollapsed,
   onToggleSidebar,
 }: JournalEntryEditorProps) {
+  const reducedMotion = useReducedMotion();
+  const [contentReady, setContentReady] = useState(!desktop || !!reducedMotion);
   const state = useJournalEditorState({
     entry,
     onSave,
@@ -534,8 +536,17 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
     return () => editor.removeEventListener("input", handleMarkdownShortcuts);
   }, [editorRef, handleMarkdownShortcuts]);
 
+  const EditorWrapper = desktop ? motion.div : "div";
+  const editorWrapperProps = desktop
+    ? {
+        layoutId: `entry-${entry?.id}`,
+        onLayoutAnimationComplete: () => setContentReady(true),
+        transition: { type: "spring", stiffness: 260, damping: 25 },
+      }
+    : {};
+
   return (
-    <div
+    <EditorWrapper
       ref={editorOverlayRef}
       role="dialog"
       aria-modal="true"
@@ -547,6 +558,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
           : "fixed inset-0 z-[60] h-screen supports-[height:100svh]:h-[100svh]"
       )}
       style={diaryStyle}
+      {...editorWrapperProps}
     >
       {/* Canvas decorative background */}
       <DiaryCanvas
@@ -1712,6 +1724,6 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
 
       {/* Floating format toolbar (Telegram-style — appears on text selection) */}
       <DiaryFormatToolbar editorRef={editorRef} scrollContainerRef={scrollAreaRef} />
-    </div>
+    </EditorWrapper>
   );
 });

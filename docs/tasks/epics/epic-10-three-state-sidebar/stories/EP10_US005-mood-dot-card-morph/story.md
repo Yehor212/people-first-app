@@ -1,7 +1,7 @@
 # EP10_US005: Mood Dot ↔ Card Morph (layoutId)
 
 **Epic:** [Epic 10: Three-State Sidebar](../../epic.md)
-**Status:** Backlog
+**Status:** To Review
 **Priority:** P2
 **Complexity:** High
 **Created:** 2026-04-15

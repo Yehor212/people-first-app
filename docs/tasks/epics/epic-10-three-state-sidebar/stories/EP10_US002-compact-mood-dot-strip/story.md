@@ -1,7 +1,7 @@
 # EP10_US002: Compact Sidebar — Mood Dot Strip
 
 **Epic:** [Epic 10: Three-State Sidebar](../../epic.md)
-**Status:** Backlog
+**Status:** To Review
 **Priority:** P0
 **Complexity:** High
 **Created:** 2026-04-15

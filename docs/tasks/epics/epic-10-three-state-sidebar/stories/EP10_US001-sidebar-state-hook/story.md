@@ -1,7 +1,7 @@
 # EP10_US001: Sidebar State Hook & Keyboard Shortcuts
 
 **Epic:** [Epic 10: Three-State Sidebar](../../epic.md)
-**Status:** Backlog
+**Status:** To Review
 **Priority:** P0
 **Complexity:** Medium
 **Created:** 2026-04-15

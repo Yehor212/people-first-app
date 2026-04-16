@@ -1,7 +1,7 @@
 # EP12_US004: CTA Pills & Context Line
 
 **Epic:** [Epic 12: Living Empty State & Ambient Canvas](../../epic.md)
-**Status:** Backlog
+**Status:** To Review
 **Priority:** P1
 **Complexity:** Low
 **Created:** 2026-04-15

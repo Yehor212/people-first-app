@@ -1,7 +1,7 @@
 # EP12_US001: Time-of-Day Ambient Gradient
 
 **Epic:** [Epic 12: Living Empty State & Ambient Canvas](../../epic.md)
-**Status:** Backlog
+**Status:** To Review
 **Priority:** P0
 **Complexity:** Medium
 **Created:** 2026-04-15

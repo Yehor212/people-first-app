@@ -1,7 +1,7 @@
 # EP12_US003: Orb & Ambient Particles Integration
 
 **Epic:** [Epic 12: Living Empty State & Ambient Canvas](../../epic.md)
-**Status:** Backlog
+**Status:** To Review
 **Priority:** P1
 **Complexity:** Medium
 **Created:** 2026-04-15

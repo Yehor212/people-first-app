@@ -15,7 +15,7 @@ import {
   PanelLeftOpen,
   PanelLeftClose,
 } from "lucide-react";
-import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
+import { motion, AnimatePresence, LayoutGroup, useReducedMotion } from "framer-motion";
 import { cn, getToday } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useScrollLock } from "@/hooks/useScrollLock";
@@ -30,6 +30,8 @@ import { useJournal } from "./useJournal";
 import { useJournalSecurity } from "./useJournalSecurity";
 import { JournalLockScreen } from "./JournalLockScreen";
 import { JournalEntryList } from "./JournalEntryList";
+import { SidebarCompact } from "./SidebarCompact";
+import { DiaryEmptyCanvas } from "./DiaryEmptyCanvas";
 import { JournalEntryEditor } from "./JournalEntryEditor";
 import { JournalEntryViewer } from "./JournalEntryViewer";
 import { ExportPickerDialog } from "./ExportPickerDialog";
@@ -54,6 +56,9 @@ import { useGamificationStore } from "@/stores";
 import { haptics, hapticSuccess } from "@/lib/haptics";
 import { shouldAnimate } from "@/lib/animationUtils";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
+import { useSidebarState } from "@/hooks/useSidebarState";
+import { useSidebarKeyboard } from "@/hooks/useSidebarKeyboard";
+import { useEntryTransition } from "@/hooks/useEntryTransition";
 
 // Lazy-load JournalStats to avoid CJS TDZ (Recharts)
 const LazyJournalStats = lazyWithRetry(
@@ -103,10 +108,11 @@ export const JournalModule = memo(function JournalModule({
   } | null>(null);
   const [hasDraft, setHasDraft] = useState(false);
   const [showRemovePasswordConfirm, setShowRemovePasswordConfirm] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
-    return storageGetRaw(SK.JOURNAL_SIDEBAR_COLLAPSED, "true") !== "false";
-  });
+  const { sidebarState, setSidebarState, toggleSidebar, isExpanded, isCompact, isHidden } = useSidebarState();
   const sidebarPanelRef = usePanelRef();
+  useSidebarKeyboard(sidebarState, toggleSidebar, setSidebarState);
+  const reducedMotion = useReducedMotion();
+  const entryTransition = useEntryTransition();
   const sidebarContentRef = useRef<HTMLDivElement>(null);
 
   useBackHandler(showExportPicker, () => setShowExportPicker(false));
@@ -234,8 +240,9 @@ export const JournalModule = memo(function JournalModule({
 
   const handleOpenEntry = useCallback((id: string) => {
     entryModeRef.current = "card";
+    entryTransition.startTransition(id);
     journal.openEntry(id);
-  }, [journal]);
+  }, [journal, entryTransition]);
 
   const handleSaveEntry = useCallback(
     async (data: Parameters<typeof journal.createEntry>[0]) => {
@@ -387,39 +394,22 @@ export const JournalModule = memo(function JournalModule({
   useScrollLock(moduleState === "open");
   useModalA11y(moduleState === "open" && !isLgScreen, handleClose);
 
-  // Collapse sidebar on mount if user preference says collapsed (default: collapsed)
+  // Collapse sidebar on mount if user preference says hidden or compact (default: expanded)
   const initialCollapseApplied = useRef(false);
   useEffect(() => {
     if (!isLgScreen || initialCollapseApplied.current) return;
     initialCollapseApplied.current = true;
-    if (sidebarCollapsed) {
+    if (isHidden || isCompact) {
       sidebarPanelRef.current?.collapse();
     }
-  }, [isLgScreen, sidebarCollapsed, sidebarPanelRef]);
+  }, [isLgScreen, isHidden, isCompact, sidebarPanelRef]);
 
   // Auto-collapse sidebar when entering edit mode on desktop (writing focus)
   useEffect(() => {
-    if (journal.view === "editing" && isLgScreen && !sidebarCollapsed) {
+    if (journal.view === "editing" && isLgScreen && isExpanded) {
       sidebarPanelRef.current?.collapse();
     }
-  }, [journal.view, isLgScreen, sidebarCollapsed, sidebarPanelRef]);
-
-  // Keyboard shortcut: Ctrl+\ (Cmd+\ on Mac) to toggle sidebar
-  useEffect(() => {
-    if (!isLgScreen) return;
-    const handler = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === "\\") {
-        e.preventDefault();
-        if (sidebarCollapsed) {
-          sidebarPanelRef.current?.expand();
-        } else {
-          sidebarPanelRef.current?.collapse();
-        }
-      }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [isLgScreen, sidebarCollapsed, sidebarPanelRef]);
+  }, [journal.view, isLgScreen, isExpanded, sidebarPanelRef]);
 
   // Focus trap for main overlay (skip on desktop — sidebar must be accessible)
   useEffect(() => {
@@ -847,6 +837,25 @@ export const JournalModule = memo(function JournalModule({
             <>
               {isLgScreen ? (
                 /* ═══ DESKTOP: Master-detail split ═══ */
+                <LayoutGroup>
+                <div className="flex flex-1 min-h-0">
+                <AnimatePresence mode="wait">
+                  {isCompact && (
+                    <SidebarCompact
+                      key="sidebar-compact"
+                      entries={journal.allEntries}
+                      activeEntryId={journal.activeEntryId}
+                      onOpenEntry={handleOpenEntry}
+                      onNewEntry={handleNewEntry}
+                      onOpenStats={() => journal.openStats()}
+                      onOpenSettings={() => setShowPasswordSettings(true)}
+                      onExpandSidebar={() => {
+                        setSidebarState("expanded");
+                        sidebarPanelRef.current?.expand();
+                      }}
+                    />
+                  )}
+                </AnimatePresence>
                 <PanelLayout className="flex-1 min-h-0">
                   {/* LEFT PANEL: collapsible entry list */}
                   <LayoutPanel
@@ -857,12 +866,10 @@ export const JournalModule = memo(function JournalModule({
                     collapsible
                     collapsedSize={0}
                     onCollapse={() => {
-                      setSidebarCollapsed(true);
-                      storageSetRaw(SK.JOURNAL_SIDEBAR_COLLAPSED, "true");
+                      setSidebarState("hidden");
                     }}
                     onExpand={() => {
-                      setSidebarCollapsed(false);
-                      storageSetRaw(SK.JOURNAL_SIDEBAR_COLLAPSED, "false");
+                      setSidebarState("expanded");
                       // WCAG 2.4.3: move focus into expanded sidebar content
                       requestAnimationFrame(() => sidebarContentRef.current?.focus());
                     }}
@@ -873,8 +880,13 @@ export const JournalModule = memo(function JournalModule({
                       tabIndex={-1}
                       className="flex flex-col border-e border-border/30 bg-card h-full overflow-hidden outline-none"
                     >
-                      {/* Header */}
-                      <div className="flex items-center justify-between px-4 py-3 border-b border-border/20">
+                      {/* Header — animated entrance/exit */}
+                      <motion.div
+                        initial={reducedMotion ? false : { opacity: 0, x: -8 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={reducedMotion ? undefined : { opacity: 0, x: -8 }}
+                        transition={{ type: "spring", stiffness: 300, damping: 25, delay: 0.15 }}
+                        className="flex items-center justify-between px-4 py-3 border-b border-border/20">
                         <div className="flex items-center gap-2">
                           <h2 className="text-base font-bold text-foreground">
                             {ts.journalTitle || "Diary"}
@@ -910,10 +922,15 @@ export const JournalModule = memo(function JournalModule({
                             <X className="w-5 h-5 text-foreground" />
                           </button>
                         </div>
-                      </div>
+                      </motion.div>
 
-                      {/* Calendar */}
-                      <div className="px-4 py-2 border-b border-border/20">
+                      {/* Calendar — animated entrance/exit */}
+                      <motion.div
+                        initial={reducedMotion ? false : { opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={reducedMotion ? undefined : { opacity: 0, scale: 0.95 }}
+                        transition={{ type: "spring", stiffness: 260, damping: 25, delay: 0.25 }}
+                        className="px-4 py-2 border-b border-border/20">
                         {calendarMode === "full" ? (
                           <JournalCalendarFull
                             entryDates={journal.entryDates}
@@ -935,10 +952,15 @@ export const JournalModule = memo(function JournalModule({
                             }}
                           />
                         )}
-                      </div>
+                      </motion.div>
 
-                      {/* Entry list */}
-                      <div className="relative flex-1 overflow-y-auto px-3 py-3">
+                      {/* Entry list — animated entrance */}
+                      <motion.div
+                        initial={reducedMotion ? false : { opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={reducedMotion ? undefined : { opacity: 0 }}
+                        transition={{ duration: 0.2, delay: 0.2 }}
+                        className="relative flex-1 overflow-y-auto px-3 py-3">
                         <div className="relative z-[1]">
                           <JournalEntryList
                             groupedEntries={journal.groupedEntries}
@@ -952,9 +974,10 @@ export const JournalModule = memo(function JournalModule({
                             privateMode={privateMode}
                             onAddGratitude={onAddGratitude}
                             compact
+                            activeEntryId={journal.activeEntryId}
                           />
                         </div>
-                      </div>
+                      </motion.div>
                     </div>
                   </LayoutPanel>
 
@@ -966,7 +989,7 @@ export const JournalModule = memo(function JournalModule({
                       {/* Toggle button: expand/collapse sidebar */}
                       <button
                         onClick={() => {
-                          if (sidebarCollapsed) {
+                          if (isHidden || isCompact) {
                             sidebarPanelRef.current?.expand();
                           } else {
                             sidebarPanelRef.current?.collapse();
@@ -974,17 +997,17 @@ export const JournalModule = memo(function JournalModule({
                         }}
                         className="absolute ltr:left-2 rtl:right-2 top-3 z-40 p-2 bg-card rounded-lg shadow-md hover:bg-accent transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
                         aria-label={
-                          sidebarCollapsed
-                            ? ts.diarySidebarShow || "Show entries"
-                            : ts.diarySidebarHide || "Hide entries"
+                          isExpanded
+                            ? ts.diarySidebarHide || "Hide entries"
+                            : ts.diarySidebarShow || "Show entries"
                         }
-                        aria-expanded={!sidebarCollapsed}
+                        aria-expanded={isExpanded}
                         aria-controls="journal-sidebar-panel"
                       >
-                        {sidebarCollapsed ? (
-                          <PanelLeftOpen className="w-4 h-4" />
-                        ) : (
+                        {isExpanded ? (
                           <PanelLeftClose className="w-4 h-4" />
+                        ) : (
+                          <PanelLeftOpen className="w-4 h-4" />
                         )}
                       </button>
                       {journal.view === "editing" ? (
@@ -1004,9 +1027,9 @@ export const JournalModule = memo(function JournalModule({
                           onToggleHabit={onToggleHabit}
                           onAddGratitude={onAddGratitude}
                           desktop
-                          sidebarCollapsed={sidebarCollapsed}
+                          sidebarCollapsed={!isExpanded}
                           onToggleSidebar={() => {
-                            if (sidebarCollapsed) {
+                            if (isHidden || isCompact) {
                               sidebarPanelRef.current?.expand();
                             } else {
                               sidebarPanelRef.current?.collapse();
@@ -1034,17 +1057,25 @@ export const JournalModule = memo(function JournalModule({
                           <LazyJournalStats entries={journal.allEntries} onBack={journal.goBack} />
                         </Suspense>
                       ) : (
-                        /* Empty state — no entry selected */
-                        <div className="flex-1 flex flex-col items-center justify-center gap-4 select-none">
-                          <PenLine className="w-16 h-16 text-muted-foreground/40" />
-                          <p className="text-sm text-muted-foreground">
-                            {ts.journalSelectEntry || "Select an entry or start writing"}
-                          </p>
-                        </div>
+                        /* Empty state — cinematic living canvas */
+                        <DiaryEmptyCanvas
+                          onNewEntry={handleNewEntry}
+                          onNewEntryWithPrompt={(_prompt) => {
+                            handleNewEntry();
+                            // TODO: pass prompt to editor as initial content (EP12_US004 enhancement)
+                          }}
+                          streak={streak}
+                          entriesThisWeek={journal.entries.filter((e) => {
+                            const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+                            return e.createdAt > weekAgo;
+                          }).length}
+                        />
                       )}
                     </div>
                   </LayoutPanel>
                 </PanelLayout>
+                </div>
+                </LayoutGroup>
               ) : (
                 /* ═══ MOBILE: existing single-view behavior ═══ */
                 <LayoutGroup>
