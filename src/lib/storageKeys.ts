@@ -74,6 +74,7 @@ export const SK = {
   JOURNAL_RECENT_STICKERS: "journal-recent-stickers",
   JOURNAL_STICKER_PACKS: "journal-sticker-packs",
   JOURNAL_SIDEBAR_COLLAPSED: "journal-sidebar-collapsed",
+  JOURNAL_SIDEBAR_STATE: "journal_sidebar_state",
 
   // ─── Audio ───
   AUDIO_MUTED: "zenflow-audio-muted",
