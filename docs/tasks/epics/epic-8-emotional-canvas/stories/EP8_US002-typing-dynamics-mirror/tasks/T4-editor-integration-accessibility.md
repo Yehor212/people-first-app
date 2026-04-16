@@ -2,6 +2,7 @@
 
 **Epic:** [Epic 8: Emotional Canvas](../../../../epic.md)
 **User Story:** [EP8_US002: Typing Dynamics Mirror](../story.md)
+**Status:** Done
 **Related:** T2 (useTypingDynamics), T3 (TypingDynamicsMirror)
 **Parallel Group:** 3
 

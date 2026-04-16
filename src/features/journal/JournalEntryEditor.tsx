@@ -62,6 +62,8 @@ import { DiaryFormatHint } from "./DiaryFormatHint";
 import { DIARY_FONTS, DIARY_FONT_NAMES } from "./types";
 import { useJournalEditorState } from "./useJournalEditorState";
 import { formatRecordingTime } from "./useJournalEditorHelpers";
+import { useTypingDynamics } from "@/hooks/useTypingDynamics";
+import { TypingDynamicsMirror } from "@/components/diary/TypingDynamicsMirror";
 
 // Local aliases to avoid name collision with the hook's `theme` state
 const DIARY_FONTS_LOCAL = DIARY_FONTS;
@@ -392,6 +394,9 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
     handleTemplateSelect,
     handleTemplateClose,
   } = state;
+
+  // EP8_US002: Typing dynamics for mini-orb
+  const typingDynamics = useTypingDynamics(editorRef);
 
   // T3: Markdown shortcut auto-conversion on input
   const handleMarkdownShortcuts = useCallback((_e: Event) => {
@@ -1066,7 +1071,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
         >
           <div
             className={cn(
-              "max-w-4xl mx-auto rounded-2xl border p-4 sm:p-6 md:p-8 min-h-[60dvh] space-y-4 [contain:layout_style_paint]",
+              "relative max-w-4xl mx-auto rounded-2xl border p-4 sm:p-6 md:p-8 min-h-[60dvh] space-y-4 [contain:layout_style_paint]",
               desktop ? "shadow-md max-w-3xl" : "shadow-[0_0_80px_rgba(0,0,0,0.5)]",
               zenFocusActive && "zen-focus-active"
             )}
@@ -1368,6 +1373,15 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                   </motion.span>
                 )}
               </AnimatePresence>
+            </div>
+
+            {/* EP8_US002: Typing dynamics mini-orb — bottom-right corner */}
+            <div
+              className="absolute bottom-2 right-2 z-40 pointer-events-none transition-opacity duration-300 ease-out"
+              style={{ opacity: typingDynamics.isTyping ? 1 : 0 }}
+              aria-hidden="true"
+            >
+              <TypingDynamicsMirror dynamics={typingDynamics} />
             </div>
           </div>
         </div>
