@@ -76,11 +76,11 @@
       "description": "TODO/FIXME/HACK/XXX comments in source"
     },
     "bundleSizeKB": {
-      "value": 4814,
+      "value": 4856,
       "direction": "down",
       "tolerance": 0.005,
-      "recorded": "2026-04-11",
-      "description": "Total JS bundle size in KB (dist/assets/*.js). Tolerance 0.5% (~24KB). +67KB from cmdk + @radix-ui/react-context-menu + @radix-ui/react-hover-card for cross-platform desktop features."
+      "recorded": "2026-04-16",
+      "description": "Total JS bundle size in KB (dist/assets/*.js). Tolerance 0.5% (~24KB). +42KB from Epic 6: AnimatedCounter, SaveIndicator, computeStreaks, viewTransitions, deepLinks, SVG petals."
     },
     "enforcement.blockingHooks": {
       "value": 15,
