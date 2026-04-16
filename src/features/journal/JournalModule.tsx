@@ -30,6 +30,7 @@ import { useJournal } from "./useJournal";
 import { useJournalSecurity } from "./useJournalSecurity";
 import { JournalLockScreen } from "./JournalLockScreen";
 import { JournalEntryList } from "./JournalEntryList";
+import { SidebarCompact } from "./SidebarCompact";
 import { JournalEntryEditor } from "./JournalEntryEditor";
 import { JournalEntryViewer } from "./JournalEntryViewer";
 import { ExportPickerDialog } from "./ExportPickerDialog";
@@ -831,6 +832,21 @@ export const JournalModule = memo(function JournalModule({
             <>
               {isLgScreen ? (
                 /* ═══ DESKTOP: Master-detail split ═══ */
+                <div className="flex flex-1 min-h-0">
+                {isCompact && (
+                  <SidebarCompact
+                    entries={journal.allEntries}
+                    activeEntryId={journal.activeEntryId}
+                    onOpenEntry={handleOpenEntry}
+                    onNewEntry={handleNewEntry}
+                    onOpenStats={() => journal.openStats()}
+                    onOpenSettings={() => setShowPasswordSettings(true)}
+                    onExpandSidebar={() => {
+                      setSidebarState("expanded");
+                      sidebarPanelRef.current?.expand();
+                    }}
+                  />
+                )}
                 <PanelLayout className="flex-1 min-h-0">
                   {/* LEFT PANEL: collapsible entry list */}
                   <LayoutPanel
@@ -1027,6 +1043,7 @@ export const JournalModule = memo(function JournalModule({
                     </div>
                   </LayoutPanel>
                 </PanelLayout>
+                </div>
               ) : (
                 /* ═══ MOBILE: existing single-view behavior ═══ */
                 <LayoutGroup>
