@@ -76,11 +76,11 @@
       "description": "TODO/FIXME/HACK/XXX comments in source"
     },
     "bundleSizeKB": {
-      "value": 4884,
+      "value": 4920,
       "direction": "down",
       "tolerance": 0.005,
       "recorded": "2026-04-16",
-      "description": "Total JS bundle size in KB (dist/assets/*.js). Tolerance 0.5% (~24KB). +28KB from EP8_US002: TypingDynamicsMirror GLSL shader + useTypingDynamics hook + EP10/EP11/EP12 scaffolding."
+      "description": "Total JS bundle size in KB (dist/assets/*.js). Tolerance 0.5% (~24KB). +36KB from journal UX redesign batch: 12 new components (OnThisDayCard, YearInPixels, MoodSlider, SlashCommandMenu, JournalOnboardingHints, StreakCelebration, ThemeTransitionOverlay, PhotoGridLayout, KeyboardShortcutsOverlay, StreakFreeze, MoodCorrelations) + useEdgeSwipe hook."
     },
     "enforcement.blockingHooks": {
       "value": 15,

@@ -276,7 +276,6 @@ export function JournalLockScreen({
               inputMode="text"
               autoComplete="off"
               disabled={countdown > 0}
-              autoComplete="off"
               aria-describedby={error ? "lock-error" : undefined}
             />
             <button

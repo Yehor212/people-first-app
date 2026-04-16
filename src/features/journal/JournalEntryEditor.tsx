@@ -58,6 +58,11 @@ import { ZenFocusMode } from "./ZenFocusMode";
 import { PrivacyShield } from "./PrivacyShield";
 import { FloatingMediaLayer } from "./FloatingMediaLayer";
 import { DiaryFormatToolbar } from "./DiaryFormatToolbar";
+import { SlashCommandMenu } from "./SlashCommandMenu";
+import { MoodSlider } from "./MoodSlider";
+import { ThemeTransitionOverlay, useThemeTransition } from "./ThemeTransitionOverlay";
+// PhotoGridLayout available for viewer/card use — editor uses FloatingMediaLayer + JournalPhotoGallery
+export { PhotoGridLayout } from "./PhotoGridLayout";
 import { DiaryFormatHint } from "./DiaryFormatHint";
 import { DIARY_FONTS, DIARY_FONT_NAMES } from "./types";
 import { useJournalEditorState } from "./useJournalEditorState";
@@ -247,7 +252,8 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
   onToggleSidebar,
 }: JournalEntryEditorProps) {
   const reducedMotion = useReducedMotion();
-  const [contentReady, setContentReady] = useState(!desktop || !!reducedMotion);
+  const themeTransition = useThemeTransition();
+  const [_contentReady, setContentReady] = useState(!desktop || !!reducedMotion);
   const state = useJournalEditorState({
     entry,
     onSave,
@@ -699,14 +705,15 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
             </motion.button>
 
             <motion.button
-              whileTap={saveSuccess ? {} : { scale: 0.95 }}
+              whileTap={saveSuccess ? {} : { scale: 0.92 }}
+              whileHover={saveSuccess ? {} : { scale: 1.03 }}
               onClick={saveSuccess ? undefined : handleSave}
               disabled={!saveSuccess && (saveState === "saving" || !hasContent)}
               className={cn(
-                "flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium min-h-[44px] transition-all",
+                "flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium min-h-[44px] transition-all",
                 saveSuccess
-                  ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
-                  : "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25",
+                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-[0_0_12px_rgba(16,185,129,0.2)]"
+                  : "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25 hover:shadow-[0_0_8px_rgba(16,185,129,0.12)]",
                 "disabled:opacity-40"
               )}
             >
@@ -714,9 +721,9 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                 {saveSuccess ? (
                   <motion.span
                     key="success"
-                    initial={{ scale: 0 }}
-                    animate={{ scale: [0, 1.2, 1] }}
-                    transition={{ duration: 0.4, ease: "easeOut" }}
+                    initial={{ scale: 0, rotate: -45 }}
+                    animate={{ scale: [0, 1.3, 1], rotate: 0 }}
+                    transition={{ type: "spring", stiffness: 500, damping: 20 }}
                     className="flex items-center"
                   >
                     <Check className="w-5 h-5" />
@@ -757,6 +764,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                         key={at.name}
                         whileTap={{ scale: 0.95 }}
                         onClick={() => {
+                          themeTransition.triggerTransition();
                           diaryTheme.setTheme(at.name);
                           setBgPattern("none");
                         }}
@@ -1166,16 +1174,8 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
               }}
             />
 
-            {/* Mood display */}
-            {mood && (
-              <button
-                onClick={() => setMood(undefined)}
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-muted/50 text-xs min-h-[32px]"
-              >
-                {MOOD_OPTIONS.find((m) => m.mood === mood)?.emoji} {mood}
-                <span className="text-muted-foreground ms-1">&times;</span>
-              </button>
-            )}
+            {/* Mood slider */}
+            <MoodSlider value={mood} onChange={setMood} className="my-1" />
 
             {/* Stickers */}
             {stickers.length > 0 && (
@@ -1438,7 +1438,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
         <div className="flex items-center gap-2 overflow-x-auto scrollbar-none -mx-1.5 px-1.5">
           <motion.button
             whileTap={{ scale: 0.95 }}
-            onClick={() => setShowPhotos(true)}
+            onClick={() => { void hapticTap(); setShowPhotos(true); }}
             disabled={photoIds.length >= MAX_PHOTOS_PER_ENTRY}
             className="px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground border border-transparent hover:bg-white/10 hover:text-foreground transition-all flex items-center gap-2 flex-shrink-0 disabled:opacity-40 min-h-[44px]"
           >
@@ -1447,6 +1447,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={() => {
+              void hapticTap();
               setShowBurnWidget((v) => !v);
               setShowGratitudeWidget(false);
             }}
@@ -1463,6 +1464,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
             <motion.button
               whileTap={{ scale: 0.95 }}
               onClick={() => {
+                void hapticTap();
                 setShowGratitudeWidget((v) => !v);
                 setShowBurnWidget(false);
               }}
@@ -1478,7 +1480,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
           )}
           <motion.button
             whileTap={{ scale: 0.95 }}
-            onClick={() => setShowBreathe(!showBreathe)}
+            onClick={() => { void hapticTap(); setShowBreathe(!showBreathe); }}
             className={cn(
               "px-4 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-2 flex-shrink-0 min-h-[44px]",
               showBreathe
@@ -1490,7 +1492,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
           </motion.button>
           <motion.button
             whileTap={{ scale: 0.95 }}
-            onClick={() => setZenFocusActive(!zenFocusActive)}
+            onClick={() => { void hapticTap(); setZenFocusActive(!zenFocusActive); }}
             className={cn(
               "px-4 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-2 flex-shrink-0 min-h-[44px]",
               zenFocusActive
@@ -1502,7 +1504,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
           </motion.button>
           <motion.button
             whileTap={{ scale: 0.95 }}
-            onClick={() => setShowHabits(!showHabits)}
+            onClick={() => { void hapticTap(); setShowHabits(!showHabits); }}
             className={cn(
               "px-4 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-2 flex-shrink-0 min-h-[44px]",
               showHabits
@@ -1722,8 +1724,35 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
         )}
       </AnimatePresence>
 
+      {/* Theme transition overlay (crossfade blur on theme change) */}
+      <ThemeTransitionOverlay
+        isTransitioning={themeTransition.isTransitioning}
+        onTransitionEnd={themeTransition.onTransitionEnd}
+      />
+
       {/* Floating format toolbar (Telegram-style — appears on text selection) */}
       <DiaryFormatToolbar editorRef={editorRef} scrollContainerRef={scrollAreaRef} />
+
+      {/* Slash command menu (Notion-style — appears on typing /) */}
+      <SlashCommandMenu
+        editorRef={editorRef}
+        onCommand={(cmd) => {
+          switch (cmd) {
+            case "mood": /* scroll to mood section — already visible at top */ break;
+            case "heading": document.execCommand("formatBlock", false, "h2"); break;
+            case "quote": document.execCommand("formatBlock", false, "blockquote"); break;
+            case "checklist": document.execCommand("insertHTML", false, '<div><input type="checkbox" /> </div>'); break;
+            case "breathe": setShowBreathe(true); break;
+            case "gratitude": setShowGratitudeWidget(true); setShowBurnWidget(false); break;
+            case "burn": setShowBurnWidget(true); setShowGratitudeWidget(false); break;
+            case "focus": setZenFocusActive(true); break;
+            case "template": /* template auto-shows for new entries */ break;
+            case "photo": setShowPhotos(true); break;
+            case "audio": void handleStartRecording(); break;
+          }
+        }}
+        onClose={() => {/* handled internally */}}
+      />
     </EditorWrapper>
   );
 });

@@ -32,6 +32,9 @@ import { JournalLockScreen } from "./JournalLockScreen";
 import { JournalEntryList } from "./JournalEntryList";
 import { SidebarCompact } from "./SidebarCompact";
 import { DiaryEmptyCanvas } from "./DiaryEmptyCanvas";
+import { OnThisDayCard } from "./OnThisDayCard";
+import { JournalOnboardingHints, useJournalOnboarding } from "./JournalOnboardingHints";
+import { KeyboardShortcutsOverlay } from "./KeyboardShortcutsOverlay";
 import { JournalEntryEditor } from "./JournalEntryEditor";
 import { JournalEntryViewer } from "./JournalEntryViewer";
 import { ExportPickerDialog } from "./ExportPickerDialog";
@@ -60,6 +63,9 @@ import { useSidebarState } from "@/hooks/useSidebarState";
 import { useSidebarKeyboard } from "@/hooks/useSidebarKeyboard";
 import { useEntryTransition } from "@/hooks/useEntryTransition";
 import { springs } from "@/config/animations";
+import { StreakCelebration } from "./StreakCelebration";
+import { useStreakFreeze, StreakFreezeIndicator } from "./StreakFreeze";
+import { useEdgeSwipe } from "@/hooks/useEdgeSwipe";
 
 // Lazy-load JournalStats to avoid CJS TDZ (Recharts)
 const LazyJournalStats = lazyWithRetry(
@@ -109,11 +115,25 @@ export const JournalModule = memo(function JournalModule({
   } | null>(null);
   const [hasDraft, setHasDraft] = useState(false);
   const [showRemovePasswordConfirm, setShowRemovePasswordConfirm] = useState(false);
+  const [celebratingStreak, setCelebratingStreak] = useState<number | null>(null);
+  const [showShortcuts, setShowShortcuts] = useState(false);
   const { sidebarState, setSidebarState, toggleSidebar, isExpanded, isCompact, isHidden } = useSidebarState();
   const sidebarPanelRef = usePanelRef();
   useSidebarKeyboard(sidebarState, toggleSidebar, setSidebarState);
+  // ? key → show keyboard shortcuts overlay
+  useEffect(() => {
+    if (moduleState !== "open") return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "?" && !e.ctrlKey && !e.metaKey && !(e.target instanceof HTMLInputElement) && !(e.target instanceof HTMLTextAreaElement) && !(e.target as HTMLElement)?.isContentEditable) {
+        setShowShortcuts((v) => !v);
+      }
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [moduleState]);
   const reducedMotion = useReducedMotion();
   const entryTransition = useEntryTransition();
+  const onboarding = useJournalOnboarding();
   const sidebarContentRef = useRef<HTMLDivElement>(null);
 
   useBackHandler(showExportPicker, () => setShowExportPicker(false));
@@ -204,6 +224,13 @@ export const JournalModule = memo(function JournalModule({
     return count;
   }, [journal.entryDates]);
 
+  // Streak freeze (Duolingo-style — miss a day without breaking streak)
+  const lastEntryDate = useMemo(() => {
+    const dates = [...journal.entryDates.keys()].sort().reverse();
+    return dates[0] ?? null;
+  }, [journal.entryDates]);
+  const streakFreeze = useStreakFreeze(streak, lastEntryDate);
+
   const daysSinceLastEntry = useMemo(
     () => getDaysSinceLastEntry(journal.entryDates),
     [journal.entryDates]
@@ -223,12 +250,18 @@ export const JournalModule = memo(function JournalModule({
   const overlayRef = useRef<HTMLDivElement>(null);
   /** Tracks how the editor was opened: "fab" = FAB button, "card" = entry card tap */
   const entryModeRef = useRef<"fab" | "card">("card");
+  // Tracked timers for entry transitions — cleared on unmount/cancel to prevent setState-after-unmount leaks
+  const transitionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
+  }, []);
 
   const handleOpen = () => {
     setModuleState("open");
   };
 
   const handleClose = () => {
+    if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
     entryTransition.cancelTransition();
     journal.goBack();
     setModuleState("card");
@@ -245,15 +278,17 @@ export const JournalModule = memo(function JournalModule({
     entryTransition.startTransition(id);
     journal.openEntry(id);
     // Complete transition after layout animation settles (~350ms spring duration)
-    setTimeout(() => entryTransition.completeTransition(), 350);
+    if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
+    transitionTimerRef.current = setTimeout(() => entryTransition.completeTransition(), 350);
   }, [journal, entryTransition]);
 
   /** Reverse entry transition before navigating back to list */
   const handleGoBack = useCallback(() => {
+    if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
     if (entryTransition.transitionState === "settled" || entryTransition.transitionState === "morphing-forward") {
       entryTransition.reverseTransition();
       // Wait for reverse animation, then finalize
-      setTimeout(() => {
+      transitionTimerRef.current = setTimeout(() => {
         entryTransition.finishReverse();
         journal.goBack();
       }, 300);
@@ -292,6 +327,7 @@ export const JournalModule = memo(function JournalModule({
           const newStreak = streak + 1;
           const milestones = [7, 14, 30, 60, 100];
           if (milestones.includes(newStreak)) {
+            setCelebratingStreak(newStreak);
             try {
               const { playStreakMilestone } = await import("@/lib/audioManager");
               playStreakMilestone();
@@ -410,6 +446,21 @@ export const JournalModule = memo(function JournalModule({
 
   // --- HOOKS (all callbacks declared above — safe from TDZ in production minified chunks) ---
   const isLgScreen = useMediaQuery("(min-width: 1024px)");
+  useEdgeSwipe({
+    enabled: moduleState === "open" && isLgScreen,
+    isRTL,
+    onSwipeRight: () => {
+      if (isHidden || isCompact) {
+        setSidebarState("expanded");
+        sidebarPanelRef.current?.expand();
+      }
+    },
+    onSwipeLeft: () => {
+      if (isExpanded) {
+        sidebarPanelRef.current?.collapse();
+      }
+    },
+  });
   useScrollLock(moduleState === "open");
   useModalA11y(moduleState === "open" && !isLgScreen, handleClose);
 
@@ -919,6 +970,10 @@ export const JournalModule = memo(function JournalModule({
                               {streak} {"\u{1F525}"}
                             </span>
                           )}
+                          <StreakFreezeIndicator
+                            availableFreezes={streakFreeze.availableFreezes}
+                            isStreakFrozen={streakFreeze.isStreakFrozen}
+                          />
                         </div>
                         <div className="flex items-center gap-1">
                           <button
@@ -987,6 +1042,18 @@ export const JournalModule = memo(function JournalModule({
                         transition={{ ...springs.quick, delay: 0.15 }}
                         className="relative flex-1 overflow-y-auto px-3 py-3">
                         <div className="relative z-[1]">
+                          {onboarding.currentHint && (
+                            <JournalOnboardingHints
+                              currentHint={onboarding.currentHint}
+                              position={null}
+                              onDismiss={onboarding.dismissHint}
+                            />
+                          )}
+                          <OnThisDayCard
+                            entries={journal.allEntries}
+                            onOpenEntry={handleOpenEntry}
+                            onDismiss={() => {/* handled internally */}}
+                          />
                           <JournalEntryList
                             groupedEntries={journal.groupedEntries}
                             onOpenEntry={handleOpenEntry}
@@ -1798,6 +1865,19 @@ export const JournalModule = memo(function JournalModule({
           }}
         />
       )}
+
+      {/* Keyboard shortcuts overlay */}
+      <KeyboardShortcutsOverlay open={showShortcuts} onClose={() => setShowShortcuts(false)} />
+
+      {/* Streak milestone celebration overlay */}
+      <AnimatePresence>
+        {celebratingStreak !== null && (
+          <StreakCelebration
+            streak={celebratingStreak}
+            onDone={() => setCelebratingStreak(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>,
     document.body
   );

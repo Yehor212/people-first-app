@@ -28,6 +28,8 @@ import { countWords } from "./types";
 import { StickerRenderer } from "./StickerRenderer";
 import type { MoodType } from "@/types";
 import { useChartFontSizes } from "@/lib/chartTokens";
+import { YearInPixels } from "./YearInPixels";
+import { MoodCorrelations } from "./MoodCorrelations";
 import { AnimatedCounter } from "@/components/ui/AnimatedCounter";
 import { shouldAnimate } from "@/lib/animationUtils";
 
@@ -804,6 +806,23 @@ export const JournalStats = memo(function JournalStats({ entries, onBack }: Jour
               </div>
             )}
           </>
+        )}
+
+        {/* Year in Pixels — mood heatmap grid */}
+        {entries.length > 0 && (
+          <div className="mt-6">
+            <h3 className="text-sm font-semibold text-foreground mb-3 px-1">
+              {ts.journalYearInPixels || "Year in Pixels"}
+            </h3>
+            <YearInPixels entries={entries} />
+          </div>
+        )}
+
+        {/* Mood correlation insights */}
+        {entries.length >= 10 && (
+          <div className="mt-6">
+            <MoodCorrelations entries={entries} />
+          </div>
         )}
       </div>
     </>

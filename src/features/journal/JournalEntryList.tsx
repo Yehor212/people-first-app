@@ -120,14 +120,18 @@ const containerVariants = {
   show: { opacity: 1, transition: { staggerChildren: stagger.perItem / 1000 } },
 } satisfies Variants;
 
-/** Capped stagger: items beyond index 4 appear instantly (no delay) */
+/** Capped stagger: items beyond index 4 appear instantly (no delay).
+ *  Telegram-style: subtle y + scale with snappy spring. */
 const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
+  hidden: { opacity: 0, y: 12, scale: 0.97 },
   show: (i: number) => ({
     opacity: 1,
     y: 0,
+    scale: 1,
     transition: {
-      ...springs.quick,
+      type: "spring" as const,
+      stiffness: 400,
+      damping: 28,
       delay: stagger.delayForIndex(i),
     },
   }),
@@ -328,25 +332,46 @@ export const JournalEntryList = memo(function JournalEntryList({
   const showFilters = !aiMode && (activeMoods.size > 0 || allTags.length > 0);
   const showAiToggle = !!supabase; // Only show AI toggle when cloud is available
 
-  // Loading skeleton
+  // Loading skeleton — shimmer gradient + staggered spring entrance
   if (loading) {
     return (
       <div className="space-y-3 pb-24">
-        {[1, 2, 3].map((i) => (
-          <div
+        {[0, 1, 2].map((i) => (
+          <motion.div
             key={i}
-            className="animate-pulse rounded-xl overflow-hidden bg-card/80 border border-border/30"
+            initial={reducedMotion ? false : { opacity: 0, y: 12, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ ...springs.quick, delay: stagger.delayForIndex(i) }}
+            className="rounded-2xl overflow-hidden bg-card/60 backdrop-blur-sm border border-border/20"
           >
             <div className="flex">
-              <div className="w-1 bg-muted-foreground/10" />
-              <div className="flex-1 p-3.5 space-y-2">
-                <div className="h-3.5 bg-muted-foreground/10 rounded w-1/3" />
-                <div className="h-2.5 bg-muted-foreground/8 rounded w-full" />
-                <div className="h-2.5 bg-muted-foreground/8 rounded w-2/3" />
+              <div className="w-1 bg-gradient-to-b from-primary/20 to-primary/5 rounded-s" />
+              <div className="flex-1 p-4 space-y-2.5">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-muted-foreground/8 skeleton-shimmer" />
+                  <div className="h-3.5 bg-muted-foreground/8 rounded-full w-24 skeleton-shimmer" />
+                </div>
+                <div className="h-2.5 bg-muted-foreground/6 rounded-full w-full skeleton-shimmer" />
+                <div className="h-2.5 bg-muted-foreground/6 rounded-full w-2/3 skeleton-shimmer" />
+                <div className="flex items-center gap-2 pt-1">
+                  <div className="h-2 bg-muted-foreground/5 rounded-full w-12 skeleton-shimmer" />
+                  <div className="h-2 bg-muted-foreground/5 rounded-full w-16 skeleton-shimmer" />
+                </div>
               </div>
             </div>
-          </div>
+          </motion.div>
         ))}
+        <style>{`
+          @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+          }
+          .skeleton-shimmer {
+            background: linear-gradient(90deg, transparent 25%, hsl(var(--muted-foreground) / 0.06) 50%, transparent 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.8s ease-in-out infinite;
+          }
+        `}</style>
       </div>
     );
   }

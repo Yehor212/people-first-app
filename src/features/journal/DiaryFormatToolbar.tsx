@@ -40,14 +40,16 @@ const BOTTOM_SAFE_ZONE = 80; // bottom glass toolbar height + safe margin
 const SELECTION_DEBOUNCE_MS = 100;
 const REPOSITION_DELAY_MS = 60;
 
-/** Animation variants gated by shouldAnimate() */
+/** Animation variants gated by shouldAnimate() — spring physics (Telegram-style) */
 const getMotionProps = () => {
   const animate = shouldAnimate();
   return {
-    initial: animate ? { opacity: 0, y: 8 } : { opacity: 1, y: 0 },
-    animate: { opacity: 1, y: 0 },
-    exit: animate ? { opacity: 0, y: 4 } : { opacity: 0 },
-    transition: animate ? { duration: 0.15, ease: [0.25, 0.46, 0.45, 0.94] } : { duration: 0 },
+    initial: animate ? { opacity: 0, y: 6, scale: 0.95 } : { opacity: 1, y: 0, scale: 1 },
+    animate: { opacity: 1, y: 0, scale: 1 },
+    exit: animate ? { opacity: 0, y: 4, scale: 0.97 } : { opacity: 0 },
+    transition: animate
+      ? { type: "spring" as const, stiffness: 500, damping: 30 }
+      : { duration: 0 },
   };
 };
 
@@ -303,19 +305,20 @@ export const DiaryFormatToolbar = memo(function DiaryFormatToolbar({
             return (
               <motion.button
                 key={action.cmd}
-                whileTap={shouldAnimate() ? { scale: 0.9 } : undefined}
+                whileTap={shouldAnimate() ? { scale: 0.85 } : undefined}
+                whileHover={shouldAnimate() ? { scale: 1.05 } : undefined}
                 animate={
                   isPulsing && shouldAnimate()
-                    ? { scale: [1, 1.05, 1] }
+                    ? { scale: [1, 1.15, 1] }
                     : { scale: 1 }
                 }
-                transition={isPulsing ? { duration: 0.1 } : undefined}
+                transition={{ type: "spring", stiffness: 500, damping: 25 }}
                 onClick={() => execFormat(action.cmd)}
                 className={cn(
-                  "min-w-[44px] min-h-[44px] w-11 h-11 rounded-lg flex items-center justify-center text-xs transition-colors",
+                  "min-w-[44px] min-h-[44px] w-11 h-11 rounded-xl flex items-center justify-center text-xs transition-colors",
                   action.style,
                   isActive
-                    ? "bg-primary/15 text-primary ring-1 ring-primary/30"
+                    ? "bg-primary/20 text-primary ring-1 ring-primary/40 shadow-[0_0_8px_rgba(var(--primary-rgb),0.15)]"
                     : "text-muted-foreground hover:bg-muted/30 hover:text-foreground"
                 )}
                 aria-label={action.icon}
