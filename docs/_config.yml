@@ -1,0 +1,21 @@
+title: ZenFlow
+description: Mood tracking and journaling app
+theme: jekyll-theme-primer
+
+# Exclude internal dev docs from GitHub Pages build
+# These files contain code samples with {{ }} that conflict with Liquid templating
+exclude:
+  - research/
+  - specs/
+  - tasks/
+  - law21-28/
+  - quality/
+  - _backup/
+  - "*.draft.md"
+
+# Disable Liquid processing for code-heavy docs
+defaults:
+  - scope:
+      path: ""
+    values:
+      render_with_liquid: false
