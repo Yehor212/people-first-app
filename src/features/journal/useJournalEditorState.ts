@@ -6,7 +6,6 @@ import { usePanicGesture } from "@/hooks/usePanicGesture";
 import { registerModalCloseCallback } from "@/lib/androidBackHandler";
 import { createFocusTrap, announceSuccess } from "@/lib/a11y";
 import { hapticSuccess, hapticTap } from "@/lib/haptics";
-import { shouldAnimate } from "@/lib/animationUtils";
 import type { SaveState } from "./SaveIndicator";
 import type {
   JournalEntry,
@@ -690,7 +689,6 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
     photoLayout,
   ]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- stable retry wrapper
   const handleRetry = useCallback(() => { void handleSave(); }, [handleSave]);
 
   const handleSaveAndClose = useCallback(async () => {

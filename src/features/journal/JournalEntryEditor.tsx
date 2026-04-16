@@ -289,11 +289,11 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
     // save
     saveState,
     saveSuccess,
-    handleRetry,
-    // milestones
-    milestoneTriggered,
-    showConfetti,
-    onConfettiComplete,
+    handleRetry: _handleRetry,
+    // milestones (wired in future: confetti overlay + milestone toast)
+    milestoneTriggered: _milestoneTriggered,
+    showConfetti: _showConfetti,
+    onConfettiComplete: _onConfettiComplete,
     // ui panels
     showStickers,
     setShowStickers,

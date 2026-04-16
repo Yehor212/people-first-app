@@ -4,14 +4,12 @@ import { startViewTransition } from '../viewTransitions';
 describe('startViewTransition', () => {
   beforeEach(() => {
     // Clean up any mock on document
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    delete (document as any).startViewTransition;
+    delete (document as unknown as Record<string, unknown>).startViewTransition;
   });
 
   it('calls document.startViewTransition when API is available', () => {
     const mockTransition = vi.fn((cb: () => void) => cb());
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (document as any).startViewTransition = mockTransition;
+    (document as unknown as Record<string, unknown>).startViewTransition = mockTransition;
 
     const callback = vi.fn();
     startViewTransition(callback);
@@ -21,9 +19,7 @@ describe('startViewTransition', () => {
   });
 
   it('calls callback directly when API is not available', () => {
-    // Ensure startViewTransition is absent
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    expect((document as any).startViewTransition).toBeUndefined();
+    expect((document as unknown as Record<string, unknown>).startViewTransition).toBeUndefined();
 
     const callback = vi.fn();
     startViewTransition(callback);
