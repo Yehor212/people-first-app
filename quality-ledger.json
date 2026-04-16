@@ -40,10 +40,16 @@
       "description": "Phase 0-B typography foundation in place (0=absent, 1=adopted). Adopted when: (a) src/styles/fonts.css with @font-face decls for Fraunces+Inter+Caveat, (b) tailwind.config.ts fontFamily extended with display/serif/body/hand/mono, (c) docs/typography-grammar.md documents 5 sacred moments + anti-patterns, (d) tokens.json has typography category (family+scale+weight+leading+tracking). Future phases will ratchet up by adding component adoption metric."
     },
     "fontFaceCount": {
-      "value": 3,
+      "value": 4,
       "direction": "up",
       "recorded": "2026-04-16",
-      "description": "Self-hosted variable font families shipped via @fontsource-variable (OFL-1.1). Phase 0-B: Fraunces (display/serif), Inter (body/sans), Caveat (hand). 16 @font-face declarations total (4 Fraunces Latin+LatinExt × normal+italic; 8 Inter Latin+LatinExt+Cyrillic+CyrillicExt × normal+italic; 4 Caveat Latin+LatinExt+Cyrillic+CyrillicExt × normal only). Each increment here indicates a new font added — locale-specific (ja/ar/he) will raise this in a future phase."
+      "description": "Self-hosted variable font families shipped via @fontsource-variable (OFL-1.1). Phase 0-B.1: Fraunces (display/serif, Latin), Literata (display/serif, Cyrillic companion), Inter (body/sans), Caveat (hand). 20 @font-face declarations total (4 Fraunces Latin+LatinExt × normal+italic; 4 Literata Cyrillic+CyrillicExt × normal+italic; 8 Inter Latin+LatinExt+Cyrillic+CyrillicExt × normal+italic; 4 Caveat Latin+LatinExt+Cyrillic+CyrillicExt × normal only). Each increment here indicates a new font added — locale-specific (ja/ar/he) will raise this in a future phase."
+    },
+    "cyrillicDisplayCoverage": {
+      "value": 1,
+      "direction": "up",
+      "recorded": "2026-04-16",
+      "description": "Phase 0-B.1 — Cyrillic-capable variable display serif wired into the `display`/`serif` Tailwind slot via unicode-range @font-face (0=fallback to Georgia only, 1=Literata Variable owns Cyrillic range). Before: Fraunces Latin-only, Cyrillic fell to Georgia, degrading the editorial-revolution aesthetic for the primary Russian/Ukrainian user. After: Literata Variable (Google Books, opsz+wght, OFL-1.1) automatically selected per glyph by the browser's font-matching algorithm — no JS, no :lang() selectors. Future increment possibilities: locale-specific ja/ar/he display serifs (=2, =3...)."
     },
     "eslint.maxWarnings": {
       "value": 0,

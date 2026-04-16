@@ -74,6 +74,7 @@ export default {
         ],
         display: [
           '"Fraunces Variable"',
+          '"Literata Variable"',
           "Georgia",
           "Cambria",
           '"Times New Roman"',
@@ -81,6 +82,7 @@ export default {
         ],
         serif: [
           '"Fraunces Variable"',
+          '"Literata Variable"',
           "Georgia",
           "Cambria",
           '"Times New Roman"',

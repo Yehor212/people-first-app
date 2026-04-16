@@ -8,12 +8,12 @@
 export const tokens = {
   /** Phase 0-A pipeline canary. Proves DTCG→Style Dictionary→PostCSS OKLCH→CSS fallback chain works end-to-end. DO NOT USE in production — this is infrastructure verification only. */
   "color.design-system.canary": "oklch(0.58 0.14 240)",
-  /** Display slot — entry titles, drop-caps, streak counters, quote watermarks. Fraunces Variable (opsz+wght axes) is Latin-only in the npm package; Cyrillic text falls back to Georgia via this stack (Law 17 i18n safety). */
-  "typography.family.display": "\"Fraunces Variable\", Georgia, Cambria, \"Times New Roman\", serif",
+  /** Display slot — entry titles, drop-caps, streak counters, quote watermarks. Phase 0-B.1 dual-font: Fraunces Variable (Latin+LatinExt, tri-axis opsz/SOFT/WONK/wght) for Latin scripts; Literata Variable (Cyrillic+CyrillicExt, opsz+wght) for Ukrainian/Russian text. Browser font-matching selects per glyph via unicode-range in src/styles/fonts.css — no JS required. Georgia stays as universal fallback (Law 17 i18n safety). */
+  "typography.family.display": "\"Fraunces Variable\", \"Literata Variable\", Georgia, Cambria, \"Times New Roman\", serif",
   /** Body slot — default UI text, paragraphs, inputs, buttons. Inter Variable covers Latin + LatinExt + Cyrillic + CyrillicExt. font-display: optional prevents FOUT flash on hot path. */
   "typography.family.body": "\"Inter Variable\", -apple-system, BlinkMacSystemFont, \"SF Pro Text\", system-ui, Roboto, \"Helvetica Neue\", Arial, sans-serif",
-  /** Serif alias — same as display. Use for prose passages, editorial pull-quotes, bound-book export styling. */
-  "typography.family.serif": "\"Fraunces Variable\", Georgia, Cambria, \"Times New Roman\", serif",
+  /** Serif alias — same as display. Use for prose passages, editorial pull-quotes, bound-book export styling. Same Phase 0-B.1 Fraunces+Literata dual-font unicode-range cascade for Cyrillic coverage. */
+  "typography.family.serif": "\"Fraunces Variable\", \"Literata Variable\", Georgia, Cambria, \"Times New Roman\", serif",
   /** Hand slot — gratitude entries, intimate annotations, handwritten moments. Caveat Variable (Latin+Cyrillic, wght 400-700). Use sparingly — reserve for emotional moments per typography-grammar.md §Sacred Moments. */
   "typography.family.hand": "\"Caveat Variable\", \"Comic Sans MS\", cursive",
   /** Mono slot — reserved for tabular numerics (streak counters via font-feature-settings: 'tnum') and future code blocks. No bundled font this phase (system stack only). */
