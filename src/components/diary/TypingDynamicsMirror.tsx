@@ -426,11 +426,22 @@ function mapDynamicsToUniforms(dynamics: TypingDynamics): TargetUniforms {
   return { brightness, shapeN1, shapeM, breathPeriod };
 }
 
-// ── Reduced Motion Check ──
+// ── Reduced Motion Check (reactive) ──
 
-function prefersReducedMotion(): boolean {
-  if (typeof window === 'undefined') return false;
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+function useReducedMotion(): boolean {
+  const [reduced, setReduced] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  });
+
+  useEffect(() => {
+    const mql = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const onChange = (e: MediaQueryListEvent) => setReduced(e.matches);
+    mql.addEventListener('change', onChange);
+    return () => mql.removeEventListener('change', onChange);
+  }, []);
+
+  return reduced;
 }
 
 // ── Props ──
@@ -478,8 +489,8 @@ export const TypingDynamicsMirror = memo(function TypingDynamicsMirror({
   // Derive color once from theme (neutral valence)
   const orbColor = useMemo(() => valenceToHSL(NEUTRAL_VALENCE), []);
 
-  // Check reduced motion preference
-  const reducedMotion = useMemo(() => prefersReducedMotion(), []);
+  // Check reduced motion preference (reactive — responds to live toggle)
+  const reducedMotion = useReducedMotion();
 
   // Track mounted state
   useEffect(() => {

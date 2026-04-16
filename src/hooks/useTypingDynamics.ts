@@ -66,79 +66,37 @@ const KEYSTROKES_PER_WORD = 6;
 export function useTypingDynamics(
   editorRef: React.RefObject<HTMLElement | null>
 ): TypingDynamics {
-  const bufferRef = useRef<KeystrokeEvent[]>([]);
-  const bufferIndexRef = useRef(0);
-  const bufferCountRef = useRef(0);
+  const eventsRef = useRef<KeystrokeEvent[]>([]);
   const lastFrameTimeRef = useRef(0);
   const rafIdRef = useRef(0);
 
   const [dynamics, setDynamics] = useState<TypingDynamics>(DEFAULT_DYNAMICS);
 
-  // Stable ref for the handler to avoid re-attaching listeners
-  const handlerRef = useRef<((e: KeyboardEvent) => void) | null>(null);
-
   useEffect(() => {
     const element = editorRef.current;
     if (!element) return;
 
-    // Initialize buffer
-    const buffer: KeystrokeEvent[] = new Array(BUFFER_CAPACITY);
-    bufferRef.current = buffer;
-    bufferIndexRef.current = 0;
-    bufferCountRef.current = 0;
-
-    // --- Circular buffer helpers ---
-    function pushEvent(event: KeystrokeEvent): void {
-      buffer[bufferIndexRef.current] = event;
-      bufferIndexRef.current = (bufferIndexRef.current + 1) % BUFFER_CAPACITY;
-      if (bufferCountRef.current < BUFFER_CAPACITY) {
-        bufferCountRef.current++;
-      }
-    }
-
-    function getEvents(): KeystrokeEvent[] {
-      const count = bufferCountRef.current;
-      if (count === 0) return [];
-
-      const result: KeystrokeEvent[] = [];
-      const startIdx =
-        count < BUFFER_CAPACITY
-          ? 0
-          : bufferIndexRef.current; // oldest element when buffer is full
-
-      for (let i = 0; i < count; i++) {
-        result.push(buffer[(startIdx + i) % BUFFER_CAPACITY]);
-      }
-      return result;
-    }
-
-    function evictOlderThan(cutoff: number): void {
-      // Remove events older than cutoff from the logical start
-      const events = getEvents();
-      let removed = 0;
-      for (let i = 0; i < events.length; i++) {
-        if (events[i].timestamp < cutoff) {
-          removed++;
-        } else {
-          break; // Events are in chronological order
-        }
-      }
-      if (removed > 0) {
-        bufferCountRef.current = Math.max(0, bufferCountRef.current - removed);
-        // Advance the logical start by adjusting the index
-        if (bufferCountRef.current === 0) {
-          bufferIndexRef.current = 0;
-        }
-      }
-    }
+    const events = eventsRef.current;
+    events.length = 0;
 
     // --- Metrics computation ---
     function computeMetrics(): TypingDynamics {
       const now = performance.now();
       const cutoff = now - WINDOW_MS;
-      evictOlderThan(cutoff);
 
-      const events = getEvents();
+      // Evict stale events — find first valid index via binary-style scan
+      // Events are chronological, so we trim from the front
+      let trimCount = 0;
+      while (trimCount < events.length && events[trimCount].timestamp < cutoff) {
+        trimCount++;
+      }
+      if (trimCount > 0) events.splice(0, trimCount);
+
+      // Cap at BUFFER_CAPACITY (drop oldest if somehow exceeded)
+      if (events.length > BUFFER_CAPACITY) {
+        events.splice(0, events.length - BUFFER_CAPACITY);
+      }
+
       const totalKeystrokes = events.length;
 
       if (totalKeystrokes === 0) {
@@ -214,13 +172,12 @@ export function useTypingDynamics(
     const onKeyDown = (e: KeyboardEvent): void => {
       const isBackspace =
         e.key === 'Backspace' || e.key === 'Delete';
-      pushEvent({
+      events.push({
         timestamp: performance.now(),
         isBackspace,
       });
     };
 
-    handlerRef.current = onKeyDown;
     element.addEventListener('keydown', onKeyDown, { passive: true });
 
     // --- Animation loop (30 FPS throttled) ---
@@ -245,8 +202,7 @@ export function useTypingDynamics(
       isActive = false;
       element.removeEventListener('keydown', onKeyDown);
       cancelAnimationFrame(rafIdRef.current);
-      bufferCountRef.current = 0;
-      bufferIndexRef.current = 0;
+      events.length = 0;
     };
   }, [editorRef]);
 

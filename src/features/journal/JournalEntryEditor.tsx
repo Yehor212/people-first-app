@@ -1,4 +1,4 @@
-import { memo, useEffect, useCallback } from "react";
+import { memo, useEffect, useCallback, useState, useRef } from "react";
 import {
   ArrowLeft,
   Check,
@@ -395,8 +395,28 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
     handleTemplateClose,
   } = state;
 
-  // EP8_US002: Typing dynamics for mini-orb
+  // EP8_US002: Typing dynamics for mini-orb with delayed unmount
   const typingDynamics = useTypingDynamics(editorRef);
+  const [orbMounted, setOrbMounted] = useState(false);
+  const orbTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (typingDynamics.isTyping) {
+      // Clear any pending unmount
+      if (orbTimerRef.current) {
+        clearTimeout(orbTimerRef.current);
+        orbTimerRef.current = null;
+      }
+      setOrbMounted(true);
+    } else if (orbMounted) {
+      // Delay unmount by 500ms to allow fade-out animation to complete
+      // (isTyping already waits 5s after last keystroke before going false)
+      orbTimerRef.current = setTimeout(() => setOrbMounted(false), 600);
+    }
+    return () => {
+      if (orbTimerRef.current) clearTimeout(orbTimerRef.current);
+    };
+  }, [typingDynamics.isTyping, orbMounted]);
 
   // T3: Markdown shortcut auto-conversion on input
   const handleMarkdownShortcuts = useCallback((_e: Event) => {
@@ -1376,13 +1396,26 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
             </div>
 
             {/* EP8_US002: Typing dynamics mini-orb — bottom-right corner */}
-            <div
-              className="absolute bottom-2 right-2 z-40 pointer-events-none transition-opacity duration-300 ease-out"
-              style={{ opacity: typingDynamics.isTyping ? 1 : 0 }}
-              aria-hidden="true"
-            >
-              <TypingDynamicsMirror dynamics={typingDynamics} />
-            </div>
+            <AnimatePresence>
+              {orbMounted && (
+                <motion.div
+                  key="typing-orb"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{
+                    opacity: {
+                      duration: typingDynamics.isTyping ? 0.3 : 0.5,
+                      ease: "easeOut",
+                    },
+                  }}
+                  className="absolute bottom-2 right-2 z-40 pointer-events-none"
+                  aria-hidden="true"
+                >
+                  <TypingDynamicsMirror dynamics={typingDynamics} />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
       </div>
