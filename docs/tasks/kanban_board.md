@@ -11,7 +11,7 @@
 | Key              | Value               |
 | ---------------- | ------------------- |
 | Team ID          | — (file-based mode) |
-| Next Epic Number | 10                  |
+| Next Epic Number | 13                  |
 
 ---
 
@@ -28,6 +28,9 @@
 | Epic 7: Living Entries & Arousal Foundation          | Backlog | US009      | 0/8          | EP7\_        |
 | Epic 8: Emotional Canvas                             | Backlog | US008      | 0/7          | EP8\_        |
 | Epic 9: Multi-Sensory Input                          | Backlog | US008      | 0/7          | EP9\_        |
+| Epic 10: Three-State Sidebar                         | Backlog | US006      | 0/5          | EP10\_       |
+| Epic 11: Shared-Element Transitions                  | Backlog | US005      | 0/4          | EP11\_       |
+| Epic 12: Living Empty State & Ambient Canvas         | Backlog | US005      | 0/4          | EP12\_       |
 
 ---
 
@@ -44,6 +47,9 @@
 - [Epic 7: Living Entries & Arousal Foundation](epics/epic-7-living-entries/epic.md) — Backlog
 - [Epic 8: Emotional Canvas](epics/epic-8-emotional-canvas/epic.md) — Backlog
 - [Epic 9: Multi-Sensory Input](epics/epic-9-multi-sensory-input/epic.md) — Backlog
+- [Epic 10: Three-State Sidebar](epics/epic-10-three-state-sidebar/epic.md) — Backlog
+- [Epic 11: Shared-Element Transitions](epics/epic-11-shared-element-transitions/epic.md) — Backlog
+- [Epic 12: Living Empty State & Ambient Canvas](epics/epic-12-living-empty-state/epic.md) — Backlog
 
 ### Archived
 
@@ -286,7 +292,7 @@ Based on Impact × Effort from deep-redesign + revolution research:
 | Story     | Title                                                                                                                     | Priority | Complexity | Status  |
 | --------- | ------------------------------------------------------------------------------------------------------------------------- | -------- | ---------- | ------- |
 | EP8_US001 | [Living Ink Diffusion](epics/epic-8-emotional-canvas/stories/EP8_US001-living-ink-diffusion/story.md)                     | P0       | High       | Backlog |
-| EP8_US002 | [Typing Dynamics Mirror](epics/epic-8-emotional-canvas/stories/EP8_US002-typing-dynamics-mirror/story.md)                 | P1       | Medium     | Backlog |
+| EP8_US002 | [Typing Dynamics Mirror](epics/epic-8-emotional-canvas/stories/EP8_US002-typing-dynamics-mirror/story.md)                 | P1       | Medium     | Done |
 | EP8_US003 | [Emotional Weather System](epics/epic-8-emotional-canvas/stories/EP8_US003-emotional-weather-system/story.md)             | P0       | High       | Backlog |
 | EP8_US004 | [Weather Particles](epics/epic-8-emotional-canvas/stories/EP8_US004-weather-particles/story.md)                           | P1       | Medium     | Backlog |
 | EP8_US005 | [Ink Pattern Preservation & Replay](epics/epic-8-emotional-canvas/stories/EP8_US005-ink-pattern-preservation/story.md)    | P1       | Medium     | Backlog |
@@ -296,6 +302,21 @@ Based on Impact × Effort from deep-redesign + revolution research:
 **Dependency chain:** US001 (foundation: lexicon + ink) → US003 (weather needs lexicon) → US004 (particles need weather states), US006 (badge needs weather data). US002 independent. US005 needs US001. US007 last (cross-cutting).
 **Parallelizable:** US001 + US002 can run in parallel. US005 + US003 can run in parallel after US001.
 **Recommended order:** US001 + US002 → US003 + US005 → US004 + US006 → US007
+
+---
+
+## EP8_US002 Tasks (Typing Dynamics Mirror)
+
+| Task | Title                                                                                                                                                              | Est. | Group | Status  |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---- | ----- | ------- |
+| T1   | [Design Definition](epics/epic-8-emotional-canvas/stories/EP8_US002-typing-dynamics-mirror/tasks/T1-design-definition.md)                                          | 3h   | 1     | Done |
+| T2   | [useTypingDynamics Hook](epics/epic-8-emotional-canvas/stories/EP8_US002-typing-dynamics-mirror/tasks/T2-use-typing-dynamics-hook.md)                               | 4h   | 1     | Done |
+| T3   | [TypingDynamicsMirror Component](epics/epic-8-emotional-canvas/stories/EP8_US002-typing-dynamics-mirror/tasks/T3-typing-dynamics-mirror-component.md)               | 5h   | 2     | Done |
+| T4   | [Editor Integration & Accessibility](epics/epic-8-emotional-canvas/stories/EP8_US002-typing-dynamics-mirror/tasks/T4-editor-integration-accessibility.md)           | 4h   | 3     | Done |
+
+**Total:** 16h | **Parallel Groups:** G1 (T1, T2 parallel) → G2 (T3 depends on T1+T2) → G3 (T4 depends on T3)
+**Execution order:** T1 + T2 in parallel → T3 after both complete → T4 last
+**DRY Warning:** T3 reuses existing ValenceOrb shader pipeline (19 references in src/components/state-of-mind/)
 
 ---
 
@@ -314,4 +335,47 @@ Based on Impact × Effort from deep-redesign + revolution research:
 **Dependency chain:** US001 (foundation) → US002-US006 (individual modes, parallelizable) → US007 (combination needs all modes).
 **Parallelizable:** US002, US003, US004, US005, US006 can run in parallel after US001.
 **Blocked by:** Epic 7 (entryToVisualParams integration).
+
+---
+
+## Epic 10 Stories (Three-State Sidebar)
+
+| Story      | Title                                                                                                                                 | Priority | Complexity | Status  |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------- | -------- | ---------- | ------- |
+| EP10_US001 | [Sidebar State Hook & Keyboard Shortcuts](epics/epic-10-three-state-sidebar/stories/EP10_US001-sidebar-state-hook/story.md)           | P0       | Medium     | Backlog |
+| EP10_US002 | [Compact Sidebar — Mood Dot Strip](epics/epic-10-three-state-sidebar/stories/EP10_US002-compact-mood-dot-strip/story.md)              | P0       | High       | Backlog |
+| EP10_US003 | [Compact Sidebar — Header Icons & New Entry](epics/epic-10-three-state-sidebar/stories/EP10_US003-compact-header-icons/story.md)      | P1       | Medium     | Backlog |
+| EP10_US004 | [Collapse/Expand Animation Choreography](epics/epic-10-three-state-sidebar/stories/EP10_US004-collapse-expand-animation/story.md)     | P1       | High       | Backlog |
+| EP10_US005 | [Mood Dot ↔ Card Morph (layoutId)](epics/epic-10-three-state-sidebar/stories/EP10_US005-mood-dot-card-morph/story.md)                 | P2       | High       | Backlog |
+
+**Dependency chain:** US001 (foundation) → US002 + US003 (parallel, need state hook) → US004 (animation needs all components) → US005 (morph needs animation choreography).
+**Parallelizable:** US002 and US003 can run in parallel after US001.
+
+---
+
+## Epic 11 Stories (Shared-Element Transitions)
+
+| Story      | Title                                                                                                                                        | Priority | Complexity | Status  |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ---------- | ------- |
+| EP11_US001 | [Card Lift & Sibling Dim on Selection](epics/epic-11-shared-element-transitions/stories/EP11_US001-card-lift-sibling-dim/story.md)            | P0       | Medium     | Backlog |
+| EP11_US002 | [Card→Editor Layout Morph](epics/epic-11-shared-element-transitions/stories/EP11_US002-card-editor-layout-morph/story.md)                    | P0       | High       | Backlog |
+| EP11_US003 | [Mood Circle Morph to Editor Header](epics/epic-11-shared-element-transitions/stories/EP11_US003-mood-circle-morph/story.md)                 | P1       | High       | Backlog |
+| EP11_US004 | [Reverse Morph & Rapid Switch](epics/epic-11-shared-element-transitions/stories/EP11_US004-reverse-morph-rapid-switch/story.md)               | P1       | High       | Backlog |
+
+**Dependency chain:** US001 (lift/dim foundation) → US002 (card morph) → US003 (mood morph, concurrent with US002) → US004 (reverse + robustness).
+**Blocked by:** Epic 10 US001 (sidebar state determines morph origin).
+
+---
+
+## Epic 12 Stories (Living Empty State & Ambient Canvas)
+
+| Story      | Title                                                                                                                             | Priority | Complexity | Status  |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------- | -------- | ---------- | ------- |
+| EP12_US001 | [Time-of-Day Ambient Gradient](epics/epic-12-living-empty-state/stories/EP12_US001-time-of-day-gradient/story.md)                 | P0       | Medium     | Backlog |
+| EP12_US002 | [Typewriter Rotating Prompts](epics/epic-12-living-empty-state/stories/EP12_US002-typewriter-prompts/story.md)                    | P0       | Medium     | Backlog |
+| EP12_US003 | [Orb & Ambient Particles Integration](epics/epic-12-living-empty-state/stories/EP12_US003-orb-ambient-particles/story.md)         | P1       | Medium     | Backlog |
+| EP12_US004 | [CTA Pills & Context Line](epics/epic-12-living-empty-state/stories/EP12_US004-cta-pills-context/story.md)                       | P1       | Low        | Backlog |
+
+**Dependency chain:** US001 + US002 (parallel, independent foundations) → US003 (orb needs gradient config) → US004 (CTAs need DiaryEmptyCanvas orchestrator from US003).
+**Parallelizable:** US001 and US002 can run in parallel.
 **Recommended order:** US001 → US002 + US003 + US004 + US005 + US006 (parallel) → US007
