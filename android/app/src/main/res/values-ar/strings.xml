@@ -1,5 +1,18 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
+    <string name="app_name">ZenFlow</string>
+    <string name="title_activity_main">ZenFlow</string>
+    <string name="package_name">com.zenflow.app</string>
+    <string name="custom_url_scheme">com.zenflow.app</string>
+
+    <!-- Widget strings -->
+    <string name="widget_name_small">ZenFlow صغير</string>
+    <string name="widget_name_medium">ZenFlow متوسط</string>
+    <string name="widget_name_large">ZenFlow كبير</string>
+    <string name="widget_description">تتبع عاداتك ووقت التركيز</string>
+    <string name="widget_focus_label">تركيز</string>
+    <string name="widget_min">د</string>
+    <string name="widget_no_habits">لا توجد عادات بعد</string>
     <string name="widget_name_mini">ZenFlow مصغّر</string>
     <string name="widget_description_mini">المزاج والسلسلة بنظرة واحدة</string>
     <string name="widget_streak_label">السلسلة</string>

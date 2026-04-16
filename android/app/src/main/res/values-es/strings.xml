@@ -1,5 +1,18 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
+    <string name="app_name">ZenFlow</string>
+    <string name="title_activity_main">ZenFlow</string>
+    <string name="package_name">com.zenflow.app</string>
+    <string name="custom_url_scheme">com.zenflow.app</string>
+
+    <!-- Widget strings -->
+    <string name="widget_name_small">ZenFlow Pequeño</string>
+    <string name="widget_name_medium">ZenFlow Mediano</string>
+    <string name="widget_name_large">ZenFlow Grande</string>
+    <string name="widget_description">Rastrea tus hábitos y tiempo de enfoque</string>
+    <string name="widget_focus_label">Enfoque</string>
+    <string name="widget_min">min</string>
+    <string name="widget_no_habits">Aún no hay hábitos</string>
     <string name="widget_name_mini">ZenFlow Mini</string>
     <string name="widget_description_mini">Ánimo y racha de un vistazo</string>
     <string name="widget_streak_label">Racha</string>

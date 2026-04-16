@@ -1,5 +1,18 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
+    <string name="app_name">ZenFlow</string>
+    <string name="title_activity_main">ZenFlow</string>
+    <string name="package_name">com.zenflow.app</string>
+    <string name="custom_url_scheme">com.zenflow.app</string>
+
+    <!-- Widget strings -->
+    <string name="widget_name_small">ZenFlow 小</string>
+    <string name="widget_name_medium">ZenFlow 中</string>
+    <string name="widget_name_large">ZenFlow 大</string>
+    <string name="widget_description">習慣と集中時間を記録</string>
+    <string name="widget_focus_label">集中</string>
+    <string name="widget_min">分</string>
+    <string name="widget_no_habits">まだ習慣がありません</string>
     <string name="widget_name_mini">ZenFlow ミニ</string>
     <string name="widget_description_mini">気分とストリークを一目で</string>
     <string name="widget_streak_label">連続</string>

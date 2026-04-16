@@ -1,5 +1,18 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
+    <string name="app_name">ZenFlow</string>
+    <string name="title_activity_main">ZenFlow</string>
+    <string name="package_name">com.zenflow.app</string>
+    <string name="custom_url_scheme">com.zenflow.app</string>
+
+    <!-- Widget strings -->
+    <string name="widget_name_small">ZenFlow Малий</string>
+    <string name="widget_name_medium">ZenFlow Середній</string>
+    <string name="widget_name_large">ZenFlow Великий</string>
+    <string name="widget_description">Відстежуйте звички та час концентрації</string>
+    <string name="widget_focus_label">Фокус</string>
+    <string name="widget_min">хв</string>
+    <string name="widget_no_habits">Ще немає звичок</string>
     <string name="widget_name_mini">ZenFlow Міні</string>
     <string name="widget_description_mini">Настрій та серія на одному екрані</string>
     <string name="widget_streak_label">Серія</string>
