@@ -286,7 +286,7 @@ Based on Impact × Effort from deep-redesign + revolution research:
 | Story     | Title                                                                                                                     | Priority | Complexity | Status  |
 | --------- | ------------------------------------------------------------------------------------------------------------------------- | -------- | ---------- | ------- |
 | EP8_US001 | [Living Ink Diffusion](epics/epic-8-emotional-canvas/stories/EP8_US001-living-ink-diffusion/story.md)                     | P0       | High       | Backlog |
-| EP8_US002 | [Typing Dynamics Mirror](epics/epic-8-emotional-canvas/stories/EP8_US002-typing-dynamics-mirror/story.md)                 | P1       | Medium     | Backlog |
+| EP8_US002 | [Typing Dynamics Mirror](epics/epic-8-emotional-canvas/stories/EP8_US002-typing-dynamics-mirror/story.md)                 | P1       | Medium     | To Review |
 | EP8_US003 | [Emotional Weather System](epics/epic-8-emotional-canvas/stories/EP8_US003-emotional-weather-system/story.md)             | P0       | High       | Backlog |
 | EP8_US004 | [Weather Particles](epics/epic-8-emotional-canvas/stories/EP8_US004-weather-particles/story.md)                           | P1       | Medium     | Backlog |
 | EP8_US005 | [Ink Pattern Preservation & Replay](epics/epic-8-emotional-canvas/stories/EP8_US005-ink-pattern-preservation/story.md)    | P1       | Medium     | Backlog |
@@ -296,6 +296,21 @@ Based on Impact × Effort from deep-redesign + revolution research:
 **Dependency chain:** US001 (foundation: lexicon + ink) → US003 (weather needs lexicon) → US004 (particles need weather states), US006 (badge needs weather data). US002 independent. US005 needs US001. US007 last (cross-cutting).
 **Parallelizable:** US001 + US002 can run in parallel. US005 + US003 can run in parallel after US001.
 **Recommended order:** US001 + US002 → US003 + US005 → US004 + US006 → US007
+
+---
+
+## EP8_US002 Tasks (Typing Dynamics Mirror)
+
+| Task | Title                                                                                                                                                              | Est. | Group | Status  |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---- | ----- | ------- |
+| T1   | [Design Definition](epics/epic-8-emotional-canvas/stories/EP8_US002-typing-dynamics-mirror/tasks/T1-design-definition.md)                                          | 3h   | 1     | Done |
+| T2   | [useTypingDynamics Hook](epics/epic-8-emotional-canvas/stories/EP8_US002-typing-dynamics-mirror/tasks/T2-use-typing-dynamics-hook.md)                               | 4h   | 1     | Done |
+| T3   | [TypingDynamicsMirror Component](epics/epic-8-emotional-canvas/stories/EP8_US002-typing-dynamics-mirror/tasks/T3-typing-dynamics-mirror-component.md)               | 5h   | 2     | Done |
+| T4   | [Editor Integration & Accessibility](epics/epic-8-emotional-canvas/stories/EP8_US002-typing-dynamics-mirror/tasks/T4-editor-integration-accessibility.md)           | 4h   | 3     | Done |
+
+**Total:** 16h | **Parallel Groups:** G1 (T1, T2 parallel) → G2 (T3 depends on T1+T2) → G3 (T4 depends on T3)
+**Execution order:** T1 + T2 in parallel → T3 after both complete → T4 last
+**DRY Warning:** T3 reuses existing ValenceOrb shader pipeline (19 references in src/components/state-of-mind/)
 
 ---
 
