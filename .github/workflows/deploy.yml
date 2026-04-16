@@ -57,6 +57,15 @@ jobs:
           VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
         run: npm run build
 
+      # Phase 0-A: size-limit enforces JS+CSS budget ceilings (ratchet complements this with floor).
+      # On PRs: posts a comment comparing sizes against main. On push: fails build if over budget.
+      - name: Size limit (bundle budgets)
+        uses: andresz1/size-limit-action@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          skip_step: install
+          build_script: build
+
       - name: Cache Playwright browsers
         uses: actions/cache@v4
         with:

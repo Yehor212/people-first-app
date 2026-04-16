@@ -1,18 +1,36 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-04-04",
+  "lastUpdated": "2026-04-16",
   "floors": {
     "tests.total": {
       "value": 3120,
       "direction": "up",
       "recorded": "2026-04-05",
-      "description": "Total unit test count (vitest) — lowered: TasksPanel+taskMomentum features removed"
+      "description": "Total unit test count (vitest) — lowered: TasksPanel+taskMomentum features removed. Current: 3419 (improved +299 via journal UX batch)."
     },
     "tests.files": {
       "value": 143,
       "direction": "up",
       "recorded": "2026-04-04",
-      "description": "Test file count"
+      "description": "Test file count. Current: 160 (improved +17)."
+    },
+    "designTokenCoverage": {
+      "value": 1,
+      "direction": "up",
+      "recorded": "2026-04-16",
+      "description": "Phase 0-A: Design tokens in src/design-tokens/tokens.json (DTCG format). Canary=1. Phase 0-B will expand to ~60 (typography+space+radius+shadow+motion+z-index). Phase 2-B will add ~80 color tokens from src/index.css."
+    },
+    "dtcgCompliant": {
+      "value": 1,
+      "direction": "up",
+      "recorded": "2026-04-16",
+      "description": "W3C Design Token Community Group format compliance (0=not adopted, 1=adopted). Spec: https://design-tokens.github.io/community-group/format/ (2025-10-28). Value=1 since Phase 0-A — every token uses $value/$type/$description."
+    },
+    "styleDictionaryVersion": {
+      "value": 4,
+      "direction": "up",
+      "recorded": "2026-04-16",
+      "description": "Style Dictionary major version. v4.x added native DTCG preprocessor support and async format registration. Build pipeline: tokens.json → src/generated/{tokens.css,tokens.ts}."
     },
     "eslint.maxWarnings": {
       "value": 0,
@@ -237,6 +255,27 @@
       "to": 999,
       "reason": "npmOutdated depends on external npm registry state, not code changes. Ubuntu CI reports 80 while Windows reports 79 — non-deterministic. Moved to canary-only (floor=999 disables blocking). Root cause: external dependency metric cannot be a code quality floor.",
       "date": "2026-03-21"
+    },
+    {
+      "metric": "designTokenCoverage",
+      "from": 0,
+      "to": 1,
+      "reason": "Phase 0-A tokens infrastructure — 1 canary OKLCH token proves DTCG→Style Dictionary v4→PostCSS OKLCH→CSS fallback chain works end-to-end. Scaffolding for Phase 0-B (typography+space) and Phase 2-B (color migration from src/index.css HSL).",
+      "date": "2026-04-16"
+    },
+    {
+      "metric": "dtcgCompliant",
+      "from": 0,
+      "to": 1,
+      "reason": "Phase 0-A adopted W3C Design Token Community Group format spec (2025-10-28). Every token uses $value/$type/$description. Supports both legacy string colors and structured {colorSpace, components} objects.",
+      "date": "2026-04-16"
+    },
+    {
+      "metric": "styleDictionaryVersion",
+      "from": 0,
+      "to": 4,
+      "reason": "Phase 0-A installed Style Dictionary v4.4.0. v4 is the first major version with native DTCG preprocessor and async format registration — required for proper OKLCH colorSpace handling.",
+      "date": "2026-04-16"
     }
   ]
 }
