@@ -10,6 +10,23 @@ import { cn } from "@/lib/utils";
 import { hapticSelection, hapticMedium } from "@/lib/haptics";
 import { springs } from "@/config/animations";
 import type { MoodType } from "@/types";
+import { useDesignFlag } from "@/hooks/useDesignFlag";
+
+/**
+ * Phase 2-B — flag-gated gradient fill.
+ * When `design.colors.oklch.mood-slider` flag is enabled, the track fill uses
+ * the new 5-step OKLCH mood palette (--color-mood-*) which provides a
+ * perceptually uniform gradient per emoji step. PostCSS
+ * @csstools/postcss-oklab-function emits an rgb() fallback before the oklch()
+ * declaration so browsers without Oklab support still render correctly.
+ * When flag is off (default 0% rollout) the original 3-stop HSL gradient
+ * remains — behaviourally identical to all prior builds, zero visual
+ * regression risk.
+ */
+const HSL_GRADIENT =
+  "linear-gradient(to right,hsl(var(--destructive)),hsl(var(--warning)),hsl(var(--primary)))";
+const OKLCH_GRADIENT =
+  "linear-gradient(to right,var(--color-mood-terrible),var(--color-mood-bad),var(--color-mood-okay),var(--color-mood-good),var(--color-mood-great))";
 
 const MOODS: { key: MoodType; emoji: string }[] = [
   { key: "terrible", emoji: "\u{1F622}" },
@@ -52,6 +69,7 @@ export const MoodSlider = memo(function MoodSlider({
   className?: string;
 }) {
   const prefersReduced = useReducedMotion();
+  const useOklchGradient = useDesignFlag("design.colors.oklch.mood-slider");
   const trackRef = useRef<HTMLDivElement>(null);
   const lastDetentRef = useRef<number>(moodToIndex(value));
   const [trackWidth, setTrackWidth] = useState(0);
@@ -135,10 +153,14 @@ export const MoodSlider = memo(function MoodSlider({
     <div className={cn("min-h-[64px] select-none px-1", className)}>
       {/* Track */}
       <div ref={trackRef} className="relative h-2 rounded-full bg-muted/30">
-        {/* Gradient fill */}
+        {/* Gradient fill — dual-path per design.colors.oklch.mood-slider flag */}
         <motion.div
-          className="absolute inset-y-0 left-0 rounded-full bg-[linear-gradient(to_right,hsl(var(--destructive)),hsl(var(--warning)),hsl(var(--primary)))]"
-          style={{ width: fillWidth }}
+          data-gradient-mode={useOklchGradient ? "oklch" : "hsl"}
+          className="absolute inset-y-0 left-0 rounded-full"
+          style={{
+            width: fillWidth,
+            backgroundImage: useOklchGradient ? OKLCH_GRADIENT : HSL_GRADIENT,
+          }}
         />
 
         {/* Draggable thumb */}

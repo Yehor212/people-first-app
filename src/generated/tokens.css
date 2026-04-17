@@ -7,6 +7,30 @@
 
 :root {
   --color-design-system-canary: oklch(0.58 0.14 240);
+  --color-surface-background: oklch(0.968 0.001 286.4);
+  --color-surface-foreground: oklch(0.227 0 89.9);
+  --color-surface-card: oklch(1 0 89.9);
+  --color-surface-card-foreground: oklch(0.227 0 89.9);
+  --color-surface-popover: oklch(1 0 89.9);
+  --color-surface-popover-foreground: oklch(0.227 0 89.9);
+  --color-surface-primary: oklch(0.58 0.098 165.7);
+  --color-surface-primary-foreground: oklch(1 0 89.9);
+  --color-surface-secondary: oklch(0.92 0.003 286.3);
+  --color-surface-secondary-foreground: oklch(0.27 0 89.9);
+  --color-surface-muted: oklch(0.872 0.006 286.3);
+  --color-surface-muted-foreground: oklch(0.51 0 89.9);
+  --color-surface-accent: oklch(0.707 0.145 57.8);
+  --color-surface-accent-foreground: oklch(0.304 0.07 56.3);
+  --color-surface-destructive: oklch(0.565 0.202 26.6);
+  --color-surface-destructive-foreground: oklch(1 0 89.9);
+  --color-surface-border: oklch(0.92 0.003 286.3);
+  --color-surface-input: oklch(0.92 0.003 286.3);
+  --color-surface-ring: oklch(0.58 0.098 165.7);
+  --color-mood-terrible: oklch(0.565 0.202 26.6);
+  --color-mood-bad: oklch(0.657 0.154 42.5);
+  --color-mood-okay: oklch(0.812 0.14 85.1);
+  --color-mood-good: oklch(0.701 0.152 151.3);
+  --color-mood-great: oklch(0.624 0.106 165.6);
   --color-theme-paper-surface: oklch(0.97 0.024 80);
   --color-theme-paper-surface-muted: oklch(0.95 0.03 78);
   --color-theme-paper-surface-card: oklch(0.99 0.015 82);

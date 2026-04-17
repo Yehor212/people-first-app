@@ -8,6 +8,54 @@
 export const tokens = {
   /** Phase 0-A pipeline canary. Proves DTCG→Style Dictionary→PostCSS OKLCH→CSS fallback chain works end-to-end. DO NOT USE in production — this is infrastructure verification only. */
   "color.design-system.canary": "oklch(0.58 0.14 240)",
+  /** Phase 2-B — OKLCH equivalent of --background (HSL 240 5% 96%). Existing HSL var in src/index.css :root remains authoritative for Tailwind/shadcn. Gated by useDesignFlag('design.colors.oklch.*') per surface migration. */
+  "color.surface.background": "oklch(0.968 0.001 286.4)",
+  /** Phase 2-B — OKLCH equivalent of --foreground (HSL 0 0% 11%). Achromatic near-black; H residual from cbrt noise is visually indistinguishable. */
+  "color.surface.foreground": "oklch(0.227 0 89.9)",
+  /** Phase 2-B — OKLCH equivalent of --card (HSL 0 0% 100%). Pure white L=1. */
+  "color.surface.card": "oklch(1 0 89.9)",
+  /** Phase 2-B — OKLCH equivalent of --card-foreground. Same as foreground. */
+  "color.surface.card-foreground": "oklch(0.227 0 89.9)",
+  /** Phase 2-B — OKLCH equivalent of --popover (HSL 0 0% 100%). */
+  "color.surface.popover": "oklch(1 0 89.9)",
+  /** Phase 2-B — OKLCH equivalent of --popover-foreground. */
+  "color.surface.popover-foreground": "oklch(0.227 0 89.9)",
+  /** Phase 2-B — OKLCH equivalent of --primary (HSL 158 45% 38%) — ZenFlow brand teal. Chroma 0.098 falls within sRGB gamut (no clamping needed). */
+  "color.surface.primary": "oklch(0.58 0.098 165.7)",
+  /** Phase 2-B — OKLCH equivalent of --primary-foreground (HSL 0 0% 100%). Near-white text on teal buttons. */
+  "color.surface.primary-foreground": "oklch(1 0 89.9)",
+  /** Phase 2-B — OKLCH equivalent of --secondary (HSL 240 5% 90%). Cool grey chip background. */
+  "color.surface.secondary": "oklch(0.92 0.003 286.3)",
+  /** Phase 2-B — OKLCH equivalent of --secondary-foreground (HSL 0 0% 15%). */
+  "color.surface.secondary-foreground": "oklch(0.27 0 89.9)",
+  /** Phase 2-B — OKLCH equivalent of --muted (HSL 240 5% 84%). */
+  "color.surface.muted": "oklch(0.872 0.006 286.3)",
+  /** Phase 2-B — OKLCH equivalent of --muted-foreground (HSL 0 0% 40%). */
+  "color.surface.muted-foreground": "oklch(0.51 0 89.9)",
+  /** Phase 2-B — OKLCH equivalent of --accent (HSL 28 75% 55%) — warm orange accent. */
+  "color.surface.accent": "oklch(0.707 0.145 57.8)",
+  /** Phase 2-B — OKLCH equivalent of --accent-foreground (HSL 28 90% 15%). */
+  "color.surface.accent-foreground": "oklch(0.304 0.07 56.3)",
+  /** Phase 2-B — OKLCH equivalent of --destructive (HSL 0 65% 50%) — error/danger red. */
+  "color.surface.destructive": "oklch(0.565 0.202 26.6)",
+  /** Phase 2-B — OKLCH equivalent of --destructive-foreground. */
+  "color.surface.destructive-foreground": "oklch(1 0 89.9)",
+  /** Phase 2-B — OKLCH equivalent of --border (HSL 240 5% 90%). */
+  "color.surface.border": "oklch(0.92 0.003 286.3)",
+  /** Phase 2-B — OKLCH equivalent of --input (HSL 240 5% 90%). Form field border. */
+  "color.surface.input": "oklch(0.92 0.003 286.3)",
+  /** Phase 2-B — OKLCH equivalent of --ring (HSL 158 45% 38%). Focus ring teal, matches primary. */
+  "color.surface.ring": "oklch(0.58 0.098 165.7)",
+  /** Phase 2-B mood scale step 1/5 — deep red. Matches --destructive start of existing MoodSlider gradient. */
+  "color.mood.terrible": "oklch(0.565 0.202 26.6)",
+  /** Phase 2-B mood scale step 2/5 — warm red-orange. New perceptually-uniform intermediate (HSL 18 70% 55%). */
+  "color.mood.bad": "oklch(0.657 0.154 42.5)",
+  /** Phase 2-B mood scale step 3/5 — amber/warning. Roughly aligns with --warning HSL 42 80% 60%. */
+  "color.mood.okay": "oklch(0.812 0.14 85.1)",
+  /** Phase 2-B mood scale step 4/5 — soft green. Perceptual midpoint between okay (amber) and great (teal) in Oklab space. */
+  "color.mood.good": "oklch(0.701 0.152 151.3)",
+  /** Phase 2-B mood scale step 5/5 — teal. Derived from --primary HSL 158 45% 42%. End of MoodSlider gradient. */
+  "color.mood.great": "oklch(0.624 0.106 165.6)",
   /** Paper theme base surface — warm cream ~#F5EFE1. Inspired by iA Writer / Apple Books reading pane. Chroma 0.024 gives subtle warmth without tinting to yellow. Hue 80 = warm-neutral cream. */
   "color.theme.paper.surface": "oklch(0.97 0.024 80)",
   /** Paper secondary surface — slightly deeper than base for section backgrounds, hover states, muted UI. */

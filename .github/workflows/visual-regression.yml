@@ -1,0 +1,84 @@
+# Phase 2-B visual regression workflow — Playwright baselines + reg-actions diff.
+#
+# On every PR: builds the app, runs Playwright screenshot tests, uploads all
+# snapshots as a workflow artifact (30-day retention), and runs reg-viz to
+# publish a PR comment with any visual diffs. No S3/external storage needed —
+# GitHub Actions artifacts store the images for free on open-source plan.
+#
+# Main branch: same flow but no PR comment (baselines only).
+#
+# To update baselines: re-run Playwright locally with --update-snapshots, commit
+# the new pngs under e2e/*-snapshots/, push. Next PR will diff against new baselines.
+
+name: Visual Regression
+
+on:
+  pull_request:
+    paths:
+      - "src/**"
+      - "public/**"
+      - "e2e/**"
+      - "tailwind.config.ts"
+      - "vite.config.ts"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/visual-regression.yml"
+  push:
+    branches: [main]
+
+jobs:
+  visual:
+    name: Playwright screenshots + reg-viz diff
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout (full history for reg-actions)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Build app (production)
+        run: npm run build
+        env:
+          CI: "true"
+
+      - name: Run Playwright design-system visual tests
+        run: npx playwright test e2e/design-system.spec.ts
+        env:
+          CI: "true"
+
+      - name: Upload Playwright snapshots (always)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-snapshots-${{ github.sha }}
+          path: |
+            e2e/**/*-snapshots/**
+            e2e/**/test-results/**
+            playwright-report/**
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: Publish visual diff comment (reg-actions)
+        if: always() && github.event_name == 'pull_request'
+        uses: reg-viz/reg-actions@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          image-directory-path: e2e
+          matching-threshold: 0.05
+          target-hash: ${{ github.event.pull_request.base.sha }}

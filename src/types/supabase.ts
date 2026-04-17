@@ -187,6 +187,36 @@ export type Database = {
           },
         ]
       }
+      design_flags: {
+        Row: {
+          description: string | null
+          enabled: boolean
+          key: string
+          killswitch: boolean
+          rollout_percent: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          description?: string | null
+          enabled?: boolean
+          key: string
+          killswitch?: boolean
+          rollout_percent?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          description?: string | null
+          enabled?: boolean
+          key?: string
+          killswitch?: boolean
+          rollout_percent?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       feedback: {
         Row: {
           app_version: string | null

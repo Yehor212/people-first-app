@@ -21,6 +21,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useBatteryState } from "@/hooks/useBatteryState";
 import { setLowBatteryMirror } from "@/lib/animationUtils";
+import { useDesignFlagStore } from "@/stores/designFlagStore";
 
 const LOW_BATTERY_THRESHOLD = 0.15;
 
@@ -40,6 +41,19 @@ if ("requestIdleCallback" in window) {
 } else {
   // ROOT-CAUSE: requestIdleCallback not supported in Safari <16.4 — setTimeout(2s) is the standard polyfill
   setTimeout(() => void preloadShareCardAssets(), 2000);
+}
+
+// Phase 2-B: bootstrap design-system rollout flags from Supabase at idle time.
+// The store's persist middleware rehydrates cached flags synchronously so the
+// first render is not blocked; this fetch only refreshes the cache. Failure is
+// silent — offline-first (Law 25) degradation keeps the last cached values.
+const bootstrapDesignFlags = () => {
+  void useDesignFlagStore.getState().fetchFlags();
+};
+if ("requestIdleCallback" in window) {
+  requestIdleCallback(bootstrapDesignFlags);
+} else {
+  setTimeout(bootstrapDesignFlags, 2500);
 }
 
 /**

@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-04-17",
-  "phase": "2-a-first-rollout",
+  "lastUpdated": "2026-04-16",
+  "phase": "2-b-oklch-bridge-flags-visual-regression",
   "floors": {
     "motionVerbCount": {
       "value": 6,
@@ -43,7 +43,7 @@
       "value": 3120,
       "direction": "up",
       "recorded": "2026-04-05",
-      "description": "Total unit test count (vitest) — lowered: TasksPanel+taskMomentum features removed. Current: 3419 (improved +299 via journal UX batch)."
+      "description": "Total unit test count (vitest). Current: 3396 (Phase 2-B adds +25 = designFlagStore 6 + useDesignFlag 15 + MoodSlider 4; total preserved despite 73 remaining todo stubs)."
     },
     "tests.files": {
       "value": 143,
@@ -52,10 +52,40 @@
       "description": "Test file count. Current: 160 (improved +17)."
     },
     "designTokenCoverage": {
+      "value": 76,
+      "direction": "up",
+      "recorded": "2026-04-16",
+      "description": "Count of real design tokens (excludes _placeholder) in src/design-tokens/tokens.json. Phase 0-A: 1. Phase 0-B: 29 (+28 typography). Phase 0-C: 53 (+24 color.theme paper/ink/oled). Phase 2-B: 76 (+18 color.surface OKLCH semantic aliases + 5 color.mood OKLCH palette). surface tokens bridge to src/index.css :root HSL vars via useDesignFlag('design.colors.oklch.*') — non-disruptive dual-token strategy."
+    },
+    "oklchBridgeCoverage": {
+      "value": 23,
+      "direction": "up",
+      "recorded": "2026-04-16",
+      "description": "Phase 2-B — count of OKLCH tokens that mirror shadcn/Tailwind HSL semantic vars in src/index.css. 18 color.surface tokens (background, foreground, card, popover, primary, secondary, muted, accent, destructive, border, input, ring + *-foreground variants) + 5 color.mood tokens (terrible/bad/okay/good/great) = 23. Pure JS HSL→OKLCH math in scripts/hsl-to-oklch.mjs (Oklab reference matrices, no external lib). Each surface stays HSL-authoritative in :root — OKLCH path opted into per-surface via useDesignFlag."
+    },
+    "designFlagCount": {
+      "value": 4,
+      "direction": "up",
+      "recorded": "2026-04-16",
+      "description": "Phase 2-B — count of rows in public.design_flags Supabase table (distinct from FeatureFlagsContext localStorage UI toggles). Seed: design.typography.v2 (100%), design.motion.v2 (100%), design.colors.oklch.mood-slider (0%, pilot), design.theme.paper (0%, deferred). RLS: public SELECT, service_role write. Zustand store persists offline-first; 5-min debounced refresh via idle callback."
+    },
+    "supabaseMigrationCount": {
       "value": 29,
       "direction": "up",
       "recorded": "2026-04-16",
-      "description": "Count of real design tokens (excludes _placeholder) in src/design-tokens/tokens.json. Phase 0-A: 1 (canary color). Phase 0-B: 29 (1 color + 28 typography: 5 family + 9 scale + 4 weight + 5 leading + 5 tracking). Phase 2-B will add ~80 color tokens from src/index.css."
+      "description": "Phase 2-B — count of migrations applied to Supabase project bwgfslmxmueyglpumkbf. Phase 2-B adds 20260416_design_flags (design_flags table + RLS + updated_at trigger + 4 seed rows). Migration files live in supabase/migrations/; the ZenFlow project uses direct apply (no branch workflow) per existing pattern."
+    },
+    "visualRegressionSpecs": {
+      "value": 2,
+      "direction": "up",
+      "recorded": "2026-04-16",
+      "description": "Phase 2-B — count of Playwright visual regression spec files in e2e/. (1) visual-regression.spec.ts (home/stats/settings x light/dark/RTL/reduced-motion, pre-existing). (2) design-system.spec.ts (Phase 2-B MoodSlider OKLCH flag dual-path baselines). Workflow .github/workflows/visual-regression.yml runs Chromium on every PR, publishes reg-viz diff comment, uploads snapshots as 30-day artifact."
+    },
+    "designFlagHookReady": {
+      "value": 1,
+      "direction": "up",
+      "recorded": "2026-04-16",
+      "description": "Phase 2-B — useDesignFlag hook readiness (0=absent, 1=active, 2=adopted >=5 surfaces). Hook evaluates killswitch/enabled/rollout_percent deterministically via bucketHash(userId+key) % 100 so same user always sees same state. Store has offline-first persist + 5-min debounced refresh. Static variant isDesignFlagEnabledStatic() exists for non-React callsites (animationUtils, audioManager)."
     },
     "dtcgCompliant": {
       "value": 1,
