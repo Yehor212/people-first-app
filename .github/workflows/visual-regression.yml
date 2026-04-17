@@ -57,6 +57,25 @@ jobs:
         env:
           CI: "true"
 
+      - name: Verify visual baselines exist (Percy/Sauce anti-pattern guard)
+        # Phase 2-B.1 hardening: fail the workflow if NO baseline PNGs are
+        # committed. Playwright's default behaviour on first run is to
+        # auto-generate baselines and pass — that silently accepts whatever
+        # the PR renders as "correct." Concrete industry anti-pattern
+        # (Percy/Sauce 2026). Baselines MUST be committed locally via
+        # `npx playwright test e2e/design-system.spec.ts --update-snapshots`
+        # and pushed as part of the PR.
+        run: |
+          shopt -s nullglob
+          files=(e2e/design-system.spec.ts-snapshots/*.png e2e/design-system.spec.ts-snapshots/**/*.png)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "::error::No baseline PNGs found under e2e/design-system.spec.ts-snapshots/."
+            echo "::error::Run locally: npx playwright test e2e/design-system.spec.ts --update-snapshots"
+            echo "::error::Then commit the generated PNGs. Do NOT rely on CI to auto-populate."
+            exit 1
+          fi
+          echo "Found ${#files[@]} baseline PNG(s)."
+
       - name: Run Playwright design-system visual tests
         run: npx playwright test e2e/design-system.spec.ts
         env:

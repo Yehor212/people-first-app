@@ -206,7 +206,32 @@
       "value": 0,
       "direction": "down",
       "recorded": "2026-03-16",
-      "description": "Theme-blind hardcoded colors (Visual Aesthetic Part 6)"
+      "description": "Theme-blind hardcoded colors (Visual Aesthetic Part 6) — hex literals + slate/gray utilities only. Does NOT cover Tailwind numeric color classes (bg-red-500 etc); that category tracked separately via tailwindNumericColors since Phase 2-B.1."
+    },
+    "tailwindNumericColors": {
+      "value": 845,
+      "direction": "down",
+      "tolerance": 0.01,
+      "recorded": "2026-04-16",
+      "description": "Phase 2-B.1 — count of Tailwind numeric color utility classes (bg|text|border|from|to|via|ring|shadow|fill|stroke|outline)-(red|blue|green|...)-[0-9]+ in src/. Police 2 found hardcodedColors scanner narrow (hex+slate/gray only), missing 800+ numeric utilities. New metric = true scanner count (grep via scripts/check-ratchet.ts::countTailwindNumericColors). Exclusions: __tests__, .d.ts, state-of-mind/ shader, dark: variants, tailwind.config. Floor can only go down. Tolerance 1% for prettier reformat noise."
+    },
+    "baselinePngsCommitted": {
+      "value": 2,
+      "direction": "up",
+      "recorded": "2026-04-16",
+      "description": "Phase 2-B.1 — count of Playwright baseline PNGs committed under e2e/*-snapshots/. 2 = home-flag-off-hsl-chromium.png + home-flag-on-oklch-chromium.png (OKLCH dual-path baselines). OS-agnostic filenames via playwright.config.ts snapshotPathTemplate so CI Linux reuses local Windows baselines. Visual-regression workflow fails if baselines missing (Percy/Sauce 2026 anti-pattern guard)."
+    },
+    "pbtCoverage": {
+      "value": 1,
+      "direction": "up",
+      "recorded": "2026-04-16",
+      "description": "Phase 2-B.1 — property-based test coverage on critical logic (0=absent, 1=OKLCH math, 2=+sync/flag rollout). fast-check@3 installed. scripts/__tests__/hsl-to-oklch.property.test.mjs: 12 property tests + Björn Ottosson reference oracle (pure red/green/blue/white/black). 100+ random HSL inputs per property. Catches regressions in HSL→sRGB→linear→Oklab→OKLCH pipeline that example tests miss."
+    },
+    "policeVersion": {
+      "value": 2,
+      "direction": "up",
+      "recorded": "2026-04-16",
+      "description": "Phase 2-B.1 — police.md agent version. v1: 6 layers (deterministic/security/completeness/agent-gaming/nobody-asked/web-research). v2 adds 10 enhanced checks (E1 METR freshness / E2 evaluator-aware / E3 OKLCH spot-check / E4 baseline commit-binding / E5 RLS SDK harness / E6 schema drift / E7 ratchet blame / E8 dep weight / E9 PBT coverage / E10 mutation score) + Byzantine N=3 protocol. Research-backed (METR 2025, arXiv 2507.14928 / 2507.05619, Björn Ottosson 2020)."
     },
     "consoleLogs": {
       "value": 0,

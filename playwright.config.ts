@@ -14,6 +14,12 @@ export default defineConfig({
   workers: process.env.CI ? 2 : undefined,
   reporter: process.env.CI ? 'github' : 'html',
 
+  /* OS-agnostic snapshot paths so baselines generated locally (Windows)
+     are reused in CI (Ubuntu). Without this Playwright suffixes -win32 /
+     -linux / -darwin per OS, making CI regenerate its own baselines
+     silently on first run (Percy/Sauce 2026 anti-pattern). */
+  snapshotPathTemplate: '{testFileDir}/{testFileName}-snapshots/{arg}-{projectName}{ext}',
+
   use: {
     baseURL: 'http://localhost:8080/people-first-app/',
     trace: 'on-first-retry',

@@ -178,6 +178,7 @@ function measureMetrics(): Record<string, number> {
     exhaustiveDeps: runCount(`bash -c "grep -rn 'eslint-disable.*exhaustive-deps' src/ | wc -l"`),
     inlineStyles: runCount(`bash -c "grep -rn 'style={{' src/ --include='*.tsx' | wc -l"`),
     hardcodedColors: countHardcodedColors(),
+    tailwindNumericColors: countTailwindNumericColors(),
     consoleLogs: countConsoleLogs(),
     todoFixme: countTodoFixme(),
     bundleSizeKB: measureBundleSizeKB(),
@@ -280,6 +281,39 @@ function countHardcodedColors(): number {
   );
 
   return slateGray + hexArbitrary;
+}
+
+/** Count Tailwind numeric color utility class occurrences.
+ *
+ * Phase 2-B.1 — Police 2 finding 4: original `countHardcodedColors` scans only
+ * hex literals + slate/gray utilities. Numeric utilities like `bg-red-500`,
+ * `text-purple-400`, `from-amber-300` bypass theme tokens and break on theme
+ * switch, yet the old scanner missed them entirely (84 violations hidden under
+ * `hardcodedColors=0`).
+ *
+ * This new metric is a SEPARATE floor — don't reset `hardcodedColors` since
+ * its definition (hex+slate/gray only) is still useful for its domain.
+ *
+ * Pattern: `(bg|text|border|from|to|via|ring|shadow|fill|stroke|outline)-
+ *           (red|blue|green|purple|pink|amber|emerald|cyan|violet|rose|
+ *            orange|yellow|indigo|lime|teal|sky|slate|zinc|neutral|stone|gray)-
+ *           [0-9]+`
+ *
+ * Exclusions: __tests__, test files, state-of-mind (shader code),
+ * tailwind.config.ts, translations, .d.ts, dark: variants, ThemeToggle.
+ */
+function countTailwindNumericColors(): number {
+  const prefixes = "bg|text|border|from|to|via|ring|shadow|fill|stroke|outline";
+  const colors =
+    "red|blue|green|purple|pink|amber|emerald|cyan|violet|rose|" +
+    "orange|yellow|indigo|lime|teal|sky|slate|zinc|neutral|stone|gray";
+  const pattern = `(${prefixes})-(${colors})-[0-9]+`;
+  const shared =
+    "grep -v '__tests__' | grep -v '.test.' | grep -v '.d.ts' | grep -v 'state-of-mind/' | " +
+    "grep -v 'tailwind.config' | grep -v 'translations' | grep -v 'dark:'";
+  return runCount(
+    `bash -c "grep -rE '${pattern}' src/ --include='*.tsx' --include='*.ts' | ${shared} | wc -l"`,
+  );
 }
 
 function getTestTotal(): number {
