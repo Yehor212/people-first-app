@@ -1,6 +1,7 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { shouldAnimate } from "@/lib/animationUtils";
+import { Bloom } from "@/lib/motion";
+import { morph } from "@/lib/motion/morph";
+import { staggerDelay } from "@/lib/motion/choreography";
 import {
   useUIStore,
   selectAnyModalOpen,
@@ -107,7 +108,7 @@ export function Index() {
     activeTab,
     setActiveTab,
     settingsOpenSection,
-    handleTabChange,
+    handleTabChange: baseHandleTabChange,
     startTransition,
     mainRef,
     swipeProps,
@@ -116,6 +117,15 @@ export function Index() {
     CANVAS_ENABLED,
     HABIT_HUB_ENABLED,
   } = useTabNavigation();
+
+  // Tab-change wrapped in Morph (View Transitions API). When the API is
+  // unavailable (Firefox / older WebView) or reduced-motion is active,
+  // `morph()` runs the callback directly — tab still switches, no freeze.
+  const handleTabChange = (next: Parameters<typeof baseHandleTabChange>[0]) => {
+    void morph(`tab-${next}`, () => {
+      baseHandleTabChange(next);
+    });
+  };
 
   // Device tier for platform-adaptive behavior
   const { tier } = useDeviceTier();
@@ -426,14 +436,10 @@ export function Index() {
                       </div>
                     }
                   >
-                    <AnimatePresence mode="wait" initial={false}>
-                      <motion.div
-                        key={activeTab}
-                        initial={shouldAnimate() ? { opacity: 0 } : false}
-                        animate={{ opacity: 1 }}
-                        exit={shouldAnimate() ? { opacity: 0 } : undefined}
-                        transition={{ duration: 0.1 }}
-                      >
+                    <Bloom
+                      key={activeTab}
+                      transition={staggerDelay('primary')}
+                    >
                         {activeTab === "home" && (
                           <HomeTab
                             currentActiveStreak={innerWorld.currentActiveStreak}
@@ -505,8 +511,7 @@ export function Index() {
                             onUnskipHabit={handleUnskipHabit}
                           />
                         )}
-                      </motion.div>
-                    </AnimatePresence>
+                    </Bloom>
                   </Suspense>
                 </LazyErrorBoundary>
               </main>

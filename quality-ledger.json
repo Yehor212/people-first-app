@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
   "lastUpdated": "2026-04-17",
-  "phase": "1-motion-grammar",
+  "phase": "2-a-first-rollout",
   "floors": {
     "motionVerbCount": {
       "value": 6,
@@ -10,16 +10,34 @@
       "description": "Phase 1 — Count of semantic motion verbs defined in src/lib/motion/. Six verbs: bloom (open/appear), fold (close/dismiss), morph (shared element via View Transitions), settle (drag release spring), breathe (idle pulse), ripple (tap acknowledge). Each verb lives in its own <80 LOC file with typed exports + static reduced-motion fallback. Ratchets up only when new verbs genuinely expand the grammar — most Phase 2 work adopts the existing six, not adds new ones."
     },
     "motionVerbCoverage": {
-      "value": 0,
+      "value": 4,
       "direction": "up",
       "recorded": "2026-04-17",
-      "description": "Phase 1 — Percentage of high-traffic components (152 files) that consume motion verbs instead of ad-hoc initial/animate/exit. Starts at 0 in Phase 1 (library built, no adoption yet). Phase 2 rollout will ratchet this up as Index.tsx tabs, Modal/Sheet, Journal shared-element etc. swap to verbs.bloom/fold/morph/settle/breathe/ripple. Target: 100 by Phase 2-C close."
+      "description": "Phase 2-A — count of production surfaces that consume motion verbs instead of ad-hoc initial/animate/exit. Phase 1: 0. Phase 2-A: 4 surfaces adopted — (1) src/pages/Index.tsx tab transitions (morph + Bloom + staggerDelay), (2) src/hooks/useEntryTransition.ts dual-path VT morph, (3) src/components/ui/DialogMotion.tsx additive wrapper, (4) src/components/ui/SheetMotion.tsx additive wrapper. Target: 20+ by Phase 2-C close."
     },
     "motionTestCoverage": {
-      "value": 35,
+      "value": 85,
       "direction": "up",
       "recorded": "2026-04-17",
-      "description": "Phase 1 — Count of tests in src/lib/motion/__tests__/. Verifies verb shape, easings, durations, reduced-motion fallbacks, morph delegation to View Transitions wrapper, ripple DOM lifecycle. Ratchets up with any new verb tests or coverage expansion. Current split: verbs.test (9) + bloom (8) + fold (7) + morph (7) + settle (7) + breathe (8) + ripple (12) = 58. Floor at 35 leaves headroom for edge-case test trimming during refactors without breaking the ratchet."
+      "description": "Phase 2-A — count of motion-related tests across src/lib/motion/__tests__/, src/components/ui/__tests__/{Dialog,Sheet}Motion.test.tsx, src/hooks/useEntryTransition.test.ts. Verb internals + adoption paths. Phase 1: 58 (verbs 9 + bloom 8 + fold 7 + morph 7 + settle 7 + breathe 8 + ripple 12). Phase 2-A adds choreography 11 + DialogMotion 4 + SheetMotion 5 + useEntryTransition 10 = 88 total. Floor at 85 leaves small headroom for minor trimming during refactors."
+    },
+    "viewTransitionCoverage": {
+      "value": 2,
+      "direction": "up",
+      "recorded": "2026-04-17",
+      "description": "Phase 2-A — count of surfaces using the View Transitions API via morph() + withTransitionName(). (1) Index.tsx tab transitions (morph(`tab-${next}`, ...) wrapping handleTabChange). (2) useEntryTransition VT path (morph(`entry-${id}`, ...) alongside FSM fallback). Each falls back cleanly when startViewTransition is unavailable (Firefox, older Android WebView). Target: 5+ by Phase 2-C as card→detail, orb→wheel, modal overlay adopt."
+    },
+    "additiveMotionPrimitives": {
+      "value": 2,
+      "direction": "up",
+      "recorded": "2026-04-17",
+      "description": "Phase 2-A — count of additive motion-aware primitive siblings (DialogMotion alongside Dialog, SheetMotion alongside Sheet). Additive means the original Dialog/Sheet primitives remain untouched so dozens of call sites keep working; consumers opt-in per-file by changing import path. Each wrapper honours .claude/rules/modal-standard.md (z-index, 44px touch, safe-area) and respects useShouldAnimate() gating."
+    },
+    "staggerChoreographyActive": {
+      "value": 1,
+      "direction": "up",
+      "recorded": "2026-04-17",
+      "description": "Phase 2-A — staggered choreography helper active (0=absent, 1=active, 2=adopted across >=5 surfaces). src/lib/motion/choreography.ts exports stages (background 0ms, chrome 80ms, primary 140ms, secondary 220ms, cta 360ms), staggerDelay(stage), childrenStagger(count, base). Currently consumed by Index.tsx tab Bloom (primary) and MotionPreview rollout demos. Phase 2-B will expand adoption across every composite surface."
     },
     "tests.total": {
       "value": 3120,

@@ -8,3 +8,4 @@
 
 export * from './verbs';
 export * from './components';
+export * from './choreography';

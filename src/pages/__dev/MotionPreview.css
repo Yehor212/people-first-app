@@ -10,6 +10,31 @@
   padding-bottom: 1rem;
 }
 
+.motion-preview-tab-bar {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.motion-preview-tab-bar .motion-preview-btn[data-active='true'] {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+
+.motion-preview-card-tap {
+  padding: 1rem;
+  border: 2px dashed hsl(var(--border));
+  border-radius: 0.75rem;
+  background: hsl(var(--muted));
+  color: hsl(var(--foreground));
+  cursor: pointer;
+  min-height: 44px;
+}
+
+.motion-preview-card-tap:hover {
+  background: hsl(var(--accent));
+}
+
 .motion-preview-card {
   padding: 1.5rem;
   background: hsl(var(--card));

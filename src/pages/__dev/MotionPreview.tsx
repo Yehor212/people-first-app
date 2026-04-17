@@ -21,8 +21,21 @@ import {
   morphTiming,
   createRipple,
   easings,
+  staggerDelay,
   withTransitionName,
 } from '@/lib/motion';
+import {
+  DialogMotion,
+  DialogMotionContent,
+  DialogMotionDescription,
+  DialogMotionTitle,
+} from '@/components/ui/DialogMotion';
+import {
+  SheetMotion,
+  SheetMotionContent,
+  SheetMotionDescription,
+  SheetMotionTitle,
+} from '@/components/ui/SheetMotion';
 import './MotionPreview.css';
 
 const VERB_SPECS = [
@@ -39,7 +52,23 @@ export default function MotionPreview() {
   const [foldOpen, setFoldOpen] = useState(true);
   const [morphedA, setMorphedA] = useState(true);
   const [settlePos, setSettlePos] = useState<'left' | 'right'>('left');
+  const [tabDemo, setTabDemo] = useState<'home' | 'stats' | 'settings'>('home');
+  const [cardOpen, setCardOpen] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const rippleRef = useRef<HTMLButtonElement>(null);
+
+  const handleTabDemo = async (next: 'home' | 'stats' | 'settings') => {
+    await morph(`tab-demo-${next}`, () => {
+      setTabDemo(next);
+    });
+  };
+
+  const handleCardTap = async () => {
+    await morph('motion-preview-card', () => {
+      setCardOpen((o) => !o);
+    });
+  };
 
   if (!import.meta.env.DEV) return null;
 
@@ -162,6 +191,97 @@ export default function MotionPreview() {
           >
             Tap me
           </button>
+        </div>
+      </section>
+
+      <section className="motion-preview-rollout max-w-[1200px] mx-auto mt-12">
+        <h2 className="text-2xl font-display mb-4">Phase 2-A rollout — real-world demos</h2>
+        <div className="motion-preview-grid grid gap-6 md:grid-cols-2">
+          <div className="motion-preview-card">
+            <h3 className="motion-preview-card-title">Tab switch (Index.tsx)</h3>
+            <p className="motion-preview-spec">Morph + Bloom at primary stage (140ms)</p>
+            <div className="motion-preview-tab-bar">
+              {(['home', 'stats', 'settings'] as const).map((tab) => (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => handleTabDemo(tab)}
+                  className="motion-preview-btn"
+                  data-active={tabDemo === tab}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
+            <Bloom
+              key={tabDemo}
+              className="motion-preview-panel"
+              transition={staggerDelay('primary')}
+            >
+              <p>Active tab: {tabDemo}</p>
+            </Bloom>
+          </div>
+
+          <div className="motion-preview-card">
+            <h3 className="motion-preview-card-title">Journal shared element</h3>
+            <p className="motion-preview-spec">morph() + view-transition-name</p>
+            <button
+              type="button"
+              onClick={handleCardTap}
+              className="motion-preview-card-tap"
+              style={withTransitionName('motion-preview-journal-card')}
+            >
+              {cardOpen ? 'Close entry' : 'Tap card'}
+            </button>
+            {cardOpen && (
+              <div
+                className="motion-preview-panel"
+                style={withTransitionName('motion-preview-journal-card')}
+              >
+                <p>Expanded editor view.</p>
+              </div>
+            )}
+          </div>
+
+          <div className="motion-preview-card">
+            <h3 className="motion-preview-card-title">DialogMotion</h3>
+            <p className="motion-preview-spec">Bloom open · Fold close</p>
+            <button
+              type="button"
+              onClick={() => setDialogOpen(true)}
+              className="motion-preview-btn"
+            >
+              Open DialogMotion
+            </button>
+            <DialogMotion open={dialogOpen} onOpenChange={setDialogOpen}>
+              <DialogMotionContent>
+                <DialogMotionTitle>DialogMotion demo</DialogMotionTitle>
+                <DialogMotionDescription>
+                  Bloom on enter, Fold on exit.
+                </DialogMotionDescription>
+              </DialogMotionContent>
+            </DialogMotion>
+          </div>
+
+          <div className="motion-preview-card">
+            <h3 className="motion-preview-card-title">SheetMotion</h3>
+            <p className="motion-preview-spec">Bloom from edge · Fold to edge</p>
+            <button
+              type="button"
+              onClick={() => setSheetOpen(true)}
+              className="motion-preview-btn"
+            >
+              Open SheetMotion
+            </button>
+            <SheetMotion open={sheetOpen} onOpenChange={setSheetOpen}>
+              <SheetMotionContent side="right">
+                <SheetMotionTitle>SheetMotion demo</SheetMotionTitle>
+                <SheetMotionDescription>
+                  Slides from the end edge with Bloom.
+                </SheetMotionDescription>
+              </SheetMotionContent>
+            </SheetMotion>
+          </div>
         </div>
       </section>
 
