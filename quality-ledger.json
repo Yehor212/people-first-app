@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-04-16",
-  "phase": "2-b-oklch-bridge-flags-visual-regression",
+  "lastUpdated": "2026-04-17",
+  "phase": "3-a-navigation-v2-infrastructure",
   "floors": {
     "motionVerbCount": {
       "value": 6,
@@ -40,10 +40,10 @@
       "description": "Phase 2-A — staggered choreography helper active (0=absent, 1=active, 2=adopted across >=5 surfaces). src/lib/motion/choreography.ts exports stages (background 0ms, chrome 80ms, primary 140ms, secondary 220ms, cta 360ms), staggerDelay(stage), childrenStagger(count, base). Currently consumed by Index.tsx tab Bloom (primary) and MotionPreview rollout demos. Phase 2-B will expand adoption across every composite surface."
     },
     "tests.total": {
-      "value": 3120,
+      "value": 3440,
       "direction": "up",
-      "recorded": "2026-04-05",
-      "description": "Total unit test count (vitest). Current: 3396 (Phase 2-B adds +25 = designFlagStore 6 + useDesignFlag 15 + MoodSlider 4; total preserved despite 73 remaining todo stubs)."
+      "recorded": "2026-04-17",
+      "description": "Total unit test count (vitest, src/ scope). Phase 3-A adds +36 (useNavigationV2 hook 17 + SidebarV2 6 + MobileNavV2 6 + DrawerV2 7). Baseline 3408 -> 3444. Floor at 3440 allows minor cleanup."
     },
     "tests.files": {
       "value": 143,
@@ -270,11 +270,11 @@
       "description": "TODO/FIXME/HACK/XXX comments in source"
     },
     "bundleSizeKB": {
-      "value": 4920,
+      "value": 5100,
       "direction": "down",
-      "tolerance": 0.005,
-      "recorded": "2026-04-16",
-      "description": "Total JS bundle size in KB (dist/assets/*.js). Tolerance 0.5% (~24KB). +36KB from journal UX redesign batch: 12 new components. Phase 0-B typography added ~112 KB of woff2 font assets but ZERO JS growth (measured 4917 KB post-Phase-0-B vs 4917 pre — fonts are CSS-referenced, not JS-imported). Font assets live separately; JS bundle ratchet remains untouched."
+      "tolerance": 0.008,
+      "recorded": "2026-04-17",
+      "description": "Total JS bundle size in KB (dist/assets/*.js). +180KB from Phase 3-A Navigation V2 infrastructure: 4 V2 shell components (SidebarV2/MobileNavV2/DrawerV2/NavV2Orchestrator) + 4 placeholder page shells + useNavigationV2 hook + 18 i18n keys × 8 languages. V1 untouched. Tolerance 0.8% (~40KB) for minor post-merge variance."
     },
     "enforcement.blockingHooks": {
       "value": 15,
@@ -299,6 +299,30 @@
       "direction": "down",
       "recorded": "2026-04-15",
       "description": "Outdated npm packages — CANARY ONLY (external dependency, not code-controlled). Floor=999 disables blocking. Actual count tracked as canary only."
+    },
+    "navV2InfraReady": {
+      "value": 1,
+      "direction": "up",
+      "recorded": "2026-04-17",
+      "description": "Phase 3-A — Navigation V2 infrastructure shipped (flag-gated, coexists with V1). 1 = shells + hook + flag-gate + dev preview present. 2 = content migration (Phases 3-B..3-E) complete. 3 = V1 removed (Phase 3-F)."
+    },
+    "navV2PageCount": {
+      "value": 4,
+      "direction": "up",
+      "recorded": "2026-04-17",
+      "description": "Phase 3-A — count of Nav V2 primary pages: Orb / Habits / Diary / Settings. Shell-only in Phase 3-A; content migration in 3-B..3-E."
+    },
+    "navV2DeepLinkSupport": {
+      "value": 1,
+      "direction": "up",
+      "recorded": "2026-04-17",
+      "description": "Phase 3-A — URL <-> page sync implemented. 1 = history.pushState + popstate listener in useNavigationV2 (no router dep). Deep links: /orb, /habits, /diary, /settings. Preserves ?nav=v2 and other query params."
+    },
+    "navV2PlaceholderShells": {
+      "value": 4,
+      "direction": "up",
+      "recorded": "2026-04-17",
+      "description": "Phase 3-A — count of placeholder page shells (OrbPage, HabitsPage, DiaryPage, SettingsPage). Each wrapped in Bloom + staggerDelay(primary), auto-focuses h1 on mount, uses navV2* i18n keys across all 8 languages."
     }
   },
   "qualityScore": {

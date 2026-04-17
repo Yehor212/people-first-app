@@ -2758,4 +2758,24 @@ export const en: Translations = {
   // SEO meta tags
   metaTitle: "ZenFlow — Daily Wellness",
   metaDescription: "Habit, mood and productivity tracker. Start your journey to a mindful life.",
+
+  // Phase 3-A: Navigation V2
+  navV2Orb: "Orb",
+  navV2Habits: "Habits",
+  navV2Diary: "Diary",
+  navV2Settings: "Settings",
+  navV2PrimaryNav: "Primary navigation",
+  navV2OpenMenu: "Open menu",
+  navV2CloseMenu: "Close menu",
+  navV2Menu: "Menu",
+  navV2CollapseSidebar: "Collapse sidebar",
+  navV2ExpandSidebar: "Expand sidebar",
+  navV2Search: "Search",
+  navV2Theme: "Theme",
+  navV2Archive: "Archive",
+  navV2Account: "Account",
+  navV2OrbPlaceholder: "Orb page — Phase 3-B will wire the HomeTab experience here.",
+  navV2HabitsPlaceholder: "Habits page — Phase 3-C will wire GardenTab + HabitHubTab here.",
+  navV2DiaryPlaceholder: "Diary page — Phase 3-D will wire the JournalModule experience here.",
+  navV2SettingsPlaceholder: "Settings page — Phase 3-E will wire SettingsTab here.",
 };

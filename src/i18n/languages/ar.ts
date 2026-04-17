@@ -2633,6 +2633,26 @@ const arabicOverrides: Partial<Translations> = {
   // SEO meta tags
   metaTitle: "ZenFlow — العافية اليومية",
   metaDescription: "متتبع العادات والمزاج والإنتاجية. ابدأ رحلتك نحو حياة واعية.",
+
+  // Phase 3-A: Navigation V2
+  navV2Orb: "أورب",
+  navV2Habits: "العادات",
+  navV2Diary: "اليوميات",
+  navV2Settings: "الإعدادات",
+  navV2PrimaryNav: "التنقل الرئيسي",
+  navV2OpenMenu: "افتح القائمة",
+  navV2CloseMenu: "أغلق القائمة",
+  navV2Menu: "القائمة",
+  navV2CollapseSidebar: "طيّ الشريط الجانبي",
+  navV2ExpandSidebar: "توسيع الشريط الجانبي",
+  navV2Search: "بحث",
+  navV2Theme: "المظهر",
+  navV2Archive: "الأرشيف",
+  navV2Account: "الحساب",
+  navV2OrbPlaceholder: "صفحة أورب — ستصل المرحلة 3-B بـ HomeTab هنا.",
+  navV2HabitsPlaceholder: "صفحة العادات — ستصل المرحلة 3-C بـ GardenTab + HabitHubTab.",
+  navV2DiaryPlaceholder: "صفحة اليوميات — ستصل المرحلة 3-D بـ JournalModule.",
+  navV2SettingsPlaceholder: "صفحة الإعدادات — ستصل المرحلة 3-E بـ SettingsTab.",
 };
 
 export const ar: Translations = { ...en, ...arabicOverrides };

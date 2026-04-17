@@ -2,13 +2,13 @@
   {
     "name": "JS bundle (gzipped)",
     "path": "dist/assets/*.js",
-    "limit": "1525 kB",
+    "limit": "1560 kB",
     "gzip": true
   },
   {
     "name": "JS bundle (raw)",
     "path": "dist/assets/*.js",
-    "limit": "5200 kB",
+    "limit": "5300 kB",
     "brotli": false,
     "gzip": false
   },

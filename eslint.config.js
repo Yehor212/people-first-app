@@ -17,6 +17,8 @@ export default tseslint.config(
       "*.mjs",
       "knip.config.ts",
       ".size-limit.json",
+      // Agent worktrees (isolated branches) — not part of main lint/type scope.
+      ".claude/worktrees/**",
     ],
   },
   {

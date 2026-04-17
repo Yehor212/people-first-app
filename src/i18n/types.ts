@@ -2751,4 +2751,24 @@ export interface Translations {
   // SEO meta tags
   metaTitle: string;
   metaDescription: string;
+
+  // Phase 3-A: Navigation V2
+  navV2Orb: string;
+  navV2Habits: string;
+  navV2Diary: string;
+  navV2Settings: string;
+  navV2PrimaryNav: string;
+  navV2OpenMenu: string;
+  navV2CloseMenu: string;
+  navV2Menu: string;
+  navV2CollapseSidebar: string;
+  navV2ExpandSidebar: string;
+  navV2Search: string;
+  navV2Theme: string;
+  navV2Archive: string;
+  navV2Account: string;
+  navV2OrbPlaceholder: string;
+  navV2HabitsPlaceholder: string;
+  navV2DiaryPlaceholder: string;
+  navV2SettingsPlaceholder: string;
 }

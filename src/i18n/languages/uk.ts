@@ -2742,4 +2742,24 @@ export const uk: Translations = {
   // SEO meta tags
   metaTitle: "ZenFlow — Щоденне благополуччя",
   metaDescription: "Трекер звичок, настрою та продуктивності. Почніть шлях до усвідомленого життя.",
+
+  // Phase 3-A: Navigation V2
+  navV2Orb: "Орб",
+  navV2Habits: "Звички",
+  navV2Diary: "Щоденник",
+  navV2Settings: "Налаштування",
+  navV2PrimaryNav: "Основна навігація",
+  navV2OpenMenu: "Відкрити меню",
+  navV2CloseMenu: "Закрити меню",
+  navV2Menu: "Меню",
+  navV2CollapseSidebar: "Згорнути панель",
+  navV2ExpandSidebar: "Розгорнути панель",
+  navV2Search: "Пошук",
+  navV2Theme: "Тема",
+  navV2Archive: "Архів",
+  navV2Account: "Обліковий запис",
+  navV2OrbPlaceholder: "Сторінка Орба — у фазі 3-B з’єднаємо HomeTab сюди.",
+  navV2HabitsPlaceholder: "Сторінка Звичок — у фазі 3-C з’єднаємо GardenTab + HabitHubTab.",
+  navV2DiaryPlaceholder: "Сторінка Щоденника — у фазі 3-D з’єднаємо JournalModule.",
+  navV2SettingsPlaceholder: "Сторінка Налаштувань — у фазі 3-E з’єднаємо SettingsTab.",
 };

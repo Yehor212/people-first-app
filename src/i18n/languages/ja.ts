@@ -2720,4 +2720,24 @@ export const ja: Translations = {
   // SEO meta tags
   metaTitle: "ZenFlow — デイリーウェルネス",
   metaDescription: "習慣、気分、生産性トラッカー。マインドフルな生活への旅を始めましょう。",
+
+  // Phase 3-A: Navigation V2
+  navV2Orb: "オーブ",
+  navV2Habits: "習慣",
+  navV2Diary: "日記",
+  navV2Settings: "設定",
+  navV2PrimaryNav: "メインナビゲーション",
+  navV2OpenMenu: "メニューを開く",
+  navV2CloseMenu: "メニューを閉じる",
+  navV2Menu: "メニュー",
+  navV2CollapseSidebar: "サイドバーを折りたたむ",
+  navV2ExpandSidebar: "サイドバーを展開",
+  navV2Search: "検索",
+  navV2Theme: "テーマ",
+  navV2Archive: "アーカイブ",
+  navV2Account: "アカウント",
+  navV2OrbPlaceholder: "オーブページ — フェーズ3-BでHomeTabを接続します。",
+  navV2HabitsPlaceholder: "習慣ページ — フェーズ3-CでGardenTab + HabitHubTabを接続します。",
+  navV2DiaryPlaceholder: "日記ページ — フェーズ3-DでJournalModuleを接続します。",
+  navV2SettingsPlaceholder: "設定ページ — フェーズ3-EでSettingsTabを接続します。",
 };

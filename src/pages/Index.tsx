@@ -2,6 +2,8 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import { Bloom } from "@/lib/motion";
 import { morph } from "@/lib/motion/morph";
 import { staggerDelay } from "@/lib/motion/choreography";
+import { useDesignFlag } from "@/hooks/useDesignFlag";
+import { NavV2Orchestrator } from "@/components/navigation-v2/NavV2Orchestrator";
 import {
   useUIStore,
   selectAnyModalOpen,
@@ -97,7 +99,28 @@ import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useDeviceTier } from "@/hooks/useDeviceTier";
 import { analytics } from "@/lib/analytics";
 
+/**
+ * Index — V1/V2 shell selector (Phase 3-A).
+ *
+ * V1 hooks are heavy (~40 hooks). To avoid Rules-of-Hooks violations from an
+ * early-return flag gate, the V1 render path is isolated in <IndexV1Impl>.
+ * This shell only checks the flag + query override and picks a branch.
+ */
 export function Index() {
+  const navV2Flag = useDesignFlag("design.nav.v2");
+  const navV2QueryOverride = useMemo(() => {
+    if (typeof window === "undefined") return false;
+    return new URLSearchParams(window.location.search).get("nav") === "v2";
+  }, []);
+
+  if (navV2Flag || navV2QueryOverride) {
+    return <NavV2Orchestrator />;
+  }
+  return <IndexV1Impl />;
+}
+
+/** V1 orchestrator — original 7-tab home. Unchanged from pre-Phase-3-A aside from rename. */
+function IndexV1Impl() {
   const { t } = useLanguage();
 
   // Security: Auto-logout after 24h inactivity on web (disabled on native)

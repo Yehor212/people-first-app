@@ -2781,4 +2781,24 @@ export const de: Translations = {
   metaTitle: "ZenFlow — Tägliches Wohlbefinden",
   metaDescription:
     "Gewohnheits-, Stimmungs- und Produktivitätstracker. Starte deine Reise zu einem achtsamen Leben.",
+
+  // Phase 3-A: Navigation V2
+  navV2Orb: "Orb",
+  navV2Habits: "Gewohnheiten",
+  navV2Diary: "Tagebuch",
+  navV2Settings: "Einstellungen",
+  navV2PrimaryNav: "Hauptnavigation",
+  navV2OpenMenu: "Menü öffnen",
+  navV2CloseMenu: "Menü schließen",
+  navV2Menu: "Menü",
+  navV2CollapseSidebar: "Seitenleiste einklappen",
+  navV2ExpandSidebar: "Seitenleiste ausklappen",
+  navV2Search: "Suche",
+  navV2Theme: "Thema",
+  navV2Archive: "Archiv",
+  navV2Account: "Konto",
+  navV2OrbPlaceholder: "Orb-Seite — Phase 3-B verbindet hier HomeTab.",
+  navV2HabitsPlaceholder: "Gewohnheiten-Seite — Phase 3-C verbindet GardenTab + HabitHubTab.",
+  navV2DiaryPlaceholder: "Tagebuch-Seite — Phase 3-D verbindet JournalModule.",
+  navV2SettingsPlaceholder: "Einstellungen-Seite — Phase 3-E verbindet SettingsTab.",
 };

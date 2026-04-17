@@ -2769,4 +2769,24 @@ export const es: Translations = {
   metaTitle: "ZenFlow — Bienestar Diario",
   metaDescription:
     "Rastreador de hábitos, estado de ánimo y productividad. Comienza tu camino hacia una vida consciente.",
+
+  // Phase 3-A: Navigation V2
+  navV2Orb: "Orbe",
+  navV2Habits: "Hábitos",
+  navV2Diary: "Diario",
+  navV2Settings: "Ajustes",
+  navV2PrimaryNav: "Navegación principal",
+  navV2OpenMenu: "Abrir menú",
+  navV2CloseMenu: "Cerrar menú",
+  navV2Menu: "Menú",
+  navV2CollapseSidebar: "Contraer barra lateral",
+  navV2ExpandSidebar: "Expandir barra lateral",
+  navV2Search: "Buscar",
+  navV2Theme: "Tema",
+  navV2Archive: "Archivo",
+  navV2Account: "Cuenta",
+  navV2OrbPlaceholder: "Página Orbe — la fase 3-B conectará aquí HomeTab.",
+  navV2HabitsPlaceholder: "Página Hábitos — la fase 3-C conectará GardenTab + HabitHubTab.",
+  navV2DiaryPlaceholder: "Página Diario — la fase 3-D conectará JournalModule.",
+  navV2SettingsPlaceholder: "Página Ajustes — la fase 3-E conectará SettingsTab.",
 };

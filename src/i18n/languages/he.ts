@@ -2711,6 +2711,26 @@ const hebrewOverrides: Partial<Translations> = {
   // SEO meta tags
   metaTitle: "ZenFlow — בריאות יומית",
   metaDescription: "מעקב הרגלים, מצב רוח ופרודוקטיביות. התחל את המסע שלך לחיים מודעים.",
+
+  // Phase 3-A: Navigation V2
+  navV2Orb: "אורב",
+  navV2Habits: "הרגלים",
+  navV2Diary: "יומן",
+  navV2Settings: "הגדרות",
+  navV2PrimaryNav: "ניווט ראשי",
+  navV2OpenMenu: "פתח תפריט",
+  navV2CloseMenu: "סגור תפריט",
+  navV2Menu: "תפריט",
+  navV2CollapseSidebar: "כווץ סרגל צד",
+  navV2ExpandSidebar: "הרחב סרגל צד",
+  navV2Search: "חיפוש",
+  navV2Theme: "ערכת נושא",
+  navV2Archive: "ארכיון",
+  navV2Account: "חשבון",
+  navV2OrbPlaceholder: "עמוד אורב — שלב 3-B יחבר כאן את HomeTab.",
+  navV2HabitsPlaceholder: "עמוד הרגלים — שלב 3-C יחבר את GardenTab + HabitHubTab.",
+  navV2DiaryPlaceholder: "עמוד יומן — שלב 3-D יחבר את JournalModule.",
+  navV2SettingsPlaceholder: "עמוד הגדרות — שלב 3-E יחבר את SettingsTab.",
 };
 
 export const he: Translations = { ...en, ...hebrewOverrides };
