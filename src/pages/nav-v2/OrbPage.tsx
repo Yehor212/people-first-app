@@ -6,7 +6,6 @@ import { useThemeStore } from "@/stores/themeStore";
 import { ValenceOrb } from "@/components/state-of-mind/ValenceOrb";
 import { EmotionTagGrid } from "@/components/state-of-mind/EmotionTagGrid";
 import { isSensitiveTag } from "@/components/state-of-mind/emotionTags";
-import { MoodSlider } from "@/features/journal";
 import { StateOfMindModal } from "@/components/state-of-mind/StateOfMindModal";
 import { haptics } from "@/lib/haptics";
 import { CosmicBgAdapter } from "./CosmicBgAdapter";
@@ -14,6 +13,7 @@ import { useCosmicParallax } from "./useCosmicParallax";
 import { ShootingStar } from "./ShootingStar";
 import { CinematicHeading } from "./CinematicHeading";
 import { MoodScopeSelector } from "./MoodScopeSelector";
+import { MoodOrbPicker } from "./MoodOrbPicker";
 import { MoodConfirmCta } from "./MoodConfirmCta";
 import { MoodFirstRunHint } from "./MoodFirstRunHint";
 import { useOrbMoodFlow } from "./useOrbMoodFlow";
@@ -189,15 +189,14 @@ export const OrbPage = memo(function OrbPage() {
             </div>
           </Bloom>
 
-          <Bloom key="orb-slider" transition={staggerDelay("cta")}>
+          <Bloom key="orb-picker" transition={staggerDelay("cta")}>
             <div
-              className="mx-auto mt-6 md:mt-8 max-w-md"
-              data-testid="orb-page-slider"
+              className="mx-auto mt-6 md:mt-8"
+              data-testid="orb-page-picker"
             >
-              <MoodSlider
-                value={sliderValue}
+              <MoodOrbPicker
+                value={sliderValue ?? null}
                 onChange={handleSliderChange}
-                showEmojis={false}
               />
             </div>
           </Bloom>

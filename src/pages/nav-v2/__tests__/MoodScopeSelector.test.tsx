@@ -90,4 +90,25 @@ describe("MoodScopeSelector", () => {
     expect(screen.getByText("For the whole day")).toBeInTheDocument();
     expect(screen.getByText("At a specific time")).toBeInTheDocument();
   });
+
+  // --- Phase 3-A.4c-ii-d-a: Now-primary variant + specific opt-in ---
+  it("'now' chip is marked as primary variant", () => {
+    render(<MoodScopeSelector />);
+    expect(screen.getByTestId("mood-scope-chip-now")).toHaveAttribute(
+      "data-variant",
+      "primary",
+    );
+  });
+
+  it("'specific' and 'day' chips are secondary opt-in variants", () => {
+    render(<MoodScopeSelector />);
+    expect(screen.getByTestId("mood-scope-chip-specific")).toHaveAttribute(
+      "data-variant",
+      "secondary",
+    );
+    expect(screen.getByTestId("mood-scope-chip-day")).toHaveAttribute(
+      "data-variant",
+      "secondary",
+    );
+  });
 });

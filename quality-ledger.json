@@ -9,6 +9,30 @@
       "recorded": "2026-04-17",
       "description": "Phase 3-A.4b — glassy segmented scope selector (now / day / specific) above MoodSlider. Controls draft.scope in moodEntryDraftStore. Specific scope reveals native <input type=time>. Role=radiogroup for a11y."
     },
+    "moodOrbPickerActive": {
+      "value": 1,
+      "direction": "up",
+      "recorded": "2026-04-17",
+      "description": "Phase 3-A.4c-ii-d-a — 5-orb discrete MoodOrbPicker replaces continuous MoodSlider on V2 OrbPage. Apple State of Mind pattern: Very Unpleasant / Unpleasant / Neutral / Pleasant / Very Pleasant → valence [-1, -0.5, 0, 0.5, 1]. V1 HomeTab + MoodSlider untouched. fieldset+legend+radiogroup+aria-checked, Arrow/Enter keyboard nav, 44px targets, RTL mirror for ar/he."
+    },
+    "moodDiscreteLabels": {
+      "value": 5,
+      "direction": "stable",
+      "recorded": "2026-04-17",
+      "description": "Phase 3-A.4c-ii-d-a — number of discrete mood labels in MoodOrbPicker. Maps to Apple State of Mind's 5-level Russell valence buckets. Keys: moodVeryUnpleasant / moodUnpleasant / moodNeutral / moodPleasant / moodVeryPleasant × 8 languages = 40 translations."
+    },
+    "moodScopeNowPrimary": {
+      "value": 1,
+      "direction": "up",
+      "recorded": "2026-04-17",
+      "description": "Phase 3-A.4c-ii-d-a — MoodScopeSelector refined so 'Now' is the prominent primary default (px-5 py-2.5 font-semibold), with 'Specific time' and 'Whole day' as softer secondary opt-ins. data-variant='primary'|'secondary' attribute exposes the tier. 'Now' = one-tap default capture."
+    },
+    "colorEchoActive": {
+      "value": 1,
+      "direction": "up",
+      "recorded": "2026-04-17",
+      "description": "Phase 3-A.4c-ii-d-a — MoodOrbPicker sets --page-tint CSS var on its fieldset once a mood is selected, echoing the orb's hue at 8% alpha. Ancestor chrome can consume the var for a subtle mood-aware background wash. 5 hue buckets: 250 (terrible) / 220 (bad) / 40 (okay) / 80 (good) / 120 (great)."
+    },
     "emotionSpectrumIntegrated": {
       "value": 1,
       "direction": "up",
@@ -384,11 +408,11 @@
       "description": "TODO/FIXME/HACK/XXX comments in source"
     },
     "bundleSizeKB": {
-      "value": 4943,
+      "value": 4989,
       "direction": "down",
       "tolerance": 0.008,
       "recorded": "2026-04-17",
-      "description": "Total JS bundle size in KB (dist/assets/*.js). +180KB from Phase 3-A Navigation V2 infrastructure: 4 V2 shell components (SidebarV2/MobileNavV2/DrawerV2/NavV2Orchestrator) + 4 placeholder page shells + useNavigationV2 hook + 18 i18n keys × 8 languages. V1 untouched. Tolerance 0.8% (~40KB) for minor post-merge variance."
+      "description": "Total JS bundle size in KB (dist/assets/*.js). +46KB from Phase 3-A.4c-ii-d-a MoodOrbPicker (5 discrete labeled orbs replacing continuous MoodSlider on V2 OrbPage) + MoodOrbPicker.css + 48 new i18n keys (6 × 8 langs). V1 HomeTab + MoodSlider untouched. Tolerance 0.8% (~40KB) for minor post-merge variance."
     },
     "enforcement.blockingHooks": {
       "value": 20,

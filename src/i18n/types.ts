@@ -114,6 +114,14 @@ export interface Translations {
   moodOkay: string;
   moodNotGreat: string;
 
+  // Phase 3-A.4c-ii-d-a — 5 discrete mood orb labels (Apple State of Mind pattern)
+  moodVeryUnpleasant: string;
+  moodUnpleasant: string;
+  moodNeutral: string;
+  moodPleasant: string;
+  moodVeryPleasant: string;
+  moodOrbGroupLabel: string;
+
   // Time Awareness (ADHD time blindness helper)
   timeUntilEndOfDay: string;
   timeIn: string;

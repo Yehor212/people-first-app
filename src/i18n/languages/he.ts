@@ -115,6 +115,14 @@ const hebrewOverrides: Partial<Translations> = {
   moodOkay: "בסדר",
   moodNotGreat: "לא כל כך טוב",
 
+  // Phase 3-A.4c-ii-d-a — 5 discrete mood orb labels
+  moodVeryUnpleasant: "מאוד לא נעים",
+  moodUnpleasant: "לא נעים",
+  moodNeutral: "נייטרלי",
+  moodPleasant: "נעים",
+  moodVeryPleasant: "מאוד נעים",
+  moodOrbGroupLabel: "איך אתה מרגיש?",
+
   // Urgency Alerts
   urgencyHabitsPending: "הרגלים ממתינים לך",
   urgencyHabitsPendingDesc: "נותרו {hours} שעות להשלמת {count} הרגלים",

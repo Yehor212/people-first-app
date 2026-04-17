@@ -105,6 +105,14 @@ export const ja: Translations = {
   moodOkay: "普通",
   moodNotGreat: "あまり良くない",
 
+  // Phase 3-A.4c-ii-d-a — 5 discrete mood orb labels
+  moodVeryUnpleasant: "とても不快",
+  moodUnpleasant: "不快",
+  moodNeutral: "落ち着いた",
+  moodPleasant: "快い",
+  moodVeryPleasant: "とても快い",
+  moodOrbGroupLabel: "今の気分は?",
+
   // Time Awareness (ADHD time blindness helper)
   timeUntilEndOfDay: "1日の終わりまで",
   timeIn: "あと",

@@ -105,6 +105,14 @@ export const uk: Translations = {
   moodOkay: "Нормально",
   moodNotGreat: "Не дуже",
 
+  // Phase 3-A.4c-ii-d-a — 5 discrete mood orb labels
+  moodVeryUnpleasant: "Дуже неприємно",
+  moodUnpleasant: "Неприємно",
+  moodNeutral: "Нейтрально",
+  moodPleasant: "Приємно",
+  moodVeryPleasant: "Дуже приємно",
+  moodOrbGroupLabel: "Як почуваєшся?",
+
   // Time Awareness (ADHD time blindness helper)
   timeUntilEndOfDay: "До кінця дня",
   timeIn: "через",

@@ -115,6 +115,14 @@ const arabicOverrides: Partial<Translations> = {
   moodOkay: "عادي",
   moodNotGreat: "ليس رائعاً",
 
+  // Phase 3-A.4c-ii-d-a — 5 discrete mood orb labels
+  moodVeryUnpleasant: "غير سار جداً",
+  moodUnpleasant: "غير سار",
+  moodNeutral: "محايد",
+  moodPleasant: "سار",
+  moodVeryPleasant: "سار جداً",
+  moodOrbGroupLabel: "كيف تشعر؟",
+
   // Time Awareness
   timeUntilEndOfDay: "حتى نهاية اليوم",
   timeIn: "خلال",

@@ -33,7 +33,7 @@ export interface UseOrbMoodFlowReturn {
   confirmEnabled: boolean;
   firstRunEligible: boolean;
   // handlers
-  handleSliderChange: (mood: MoodType) => void;
+  handleSliderChange: (mood: MoodType | null) => void;
   handleEmotionToggle: (tag: string) => void;
   handleConfirm: () => void;
   handleSkip: () => void;
@@ -134,7 +134,12 @@ export function useOrbMoodFlow(): UseOrbMoodFlowReturn {
   );
 
   const handleSliderChange = useCallback(
-    (mood: MoodType) => {
+    (mood: MoodType | null) => {
+      if (mood === null) {
+        setSliderValue(undefined);
+        setDraftValence(null);
+        return;
+      }
       setSliderValue(mood);
       setDraftValence(MOOD_TO_VALENCE[mood]);
     },

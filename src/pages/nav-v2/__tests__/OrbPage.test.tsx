@@ -83,23 +83,31 @@ vi.mock("@/components/state-of-mind/EmotionTagGrid", () => ({
   ),
 }));
 
-// Barrel import path used in OrbPage
-vi.mock("@/features/journal", () => ({
-  MoodSlider: ({
+// Phase 3-A.4c-ii-d-a — MoodOrbPicker replaces MoodSlider on V2.
+vi.mock("../MoodOrbPicker", () => ({
+  MoodOrbPicker: ({
+    value,
     onChange,
-    showEmojis,
   }: {
-    onChange: (m: string) => void;
-    showEmojis?: boolean;
+    value: string | null;
+    onChange: (m: string | null) => void;
   }) => (
-    <button
-      data-testid="mood-slider"
-      data-show-emojis={String(showEmojis ?? true)}
-      onClick={() => onChange("good")}
-      type="button"
-    >
-      slider
-    </button>
+    <div data-testid="mood-orb-picker" data-value={value ?? ""}>
+      <button
+        data-testid="mood-orb-option-good"
+        onClick={() => onChange(value === "good" ? null : "good")}
+        type="button"
+      >
+        good orb
+      </button>
+      <button
+        data-testid="mood-orb-option-great"
+        onClick={() => onChange("great")}
+        type="button"
+      >
+        great orb
+      </button>
+    </div>
   ),
 }));
 
@@ -213,11 +221,11 @@ describe("OrbPage (Phase 3-A.2 + Phase 3-A.4b)", () => {
     expect(sizes).toContain("320");
   });
 
-  it("renders the MoodSlider without emojis", () => {
+  it("renders the MoodOrbPicker (replaces MoodSlider on V2)", () => {
     render(<OrbPage />);
-    const slider = screen.getByTestId("mood-slider");
-    expect(slider).toBeInTheDocument();
-    expect(slider.getAttribute("data-show-emojis")).toBe("false");
+    expect(screen.getByTestId("mood-orb-picker")).toBeInTheDocument();
+    // V1 slider must NOT render on V2 orb page
+    expect(screen.queryByTestId("mood-slider")).not.toBeInTheDocument();
   });
 
   it("renders the whisper subtitle with italic + font-serif", () => {
@@ -254,7 +262,7 @@ describe("OrbPage (Phase 3-A.2 + Phase 3-A.4b)", () => {
 
   it("reveals the emotion spectrum after slider sets valence", () => {
     render(<OrbPage />);
-    fireEvent.click(screen.getByTestId("mood-slider"));
+    fireEvent.click(screen.getByTestId("mood-orb-option-good"));
     expect(
       screen.getByTestId("orb-page-emotion-spectrum"),
     ).toBeInTheDocument();
@@ -264,13 +272,13 @@ describe("OrbPage (Phase 3-A.2 + Phase 3-A.4b)", () => {
   // --- Phase 3-A.4b confirm CTA gate ---
   it("shows confirm CTA disabled before emotion chosen", () => {
     render(<OrbPage />);
-    fireEvent.click(screen.getByTestId("mood-slider"));
+    fireEvent.click(screen.getByTestId("mood-orb-option-good"));
     expect(screen.getByTestId("mood-confirm-button")).toBeDisabled();
   });
 
   it("enables confirm CTA after emotion is chosen", () => {
     render(<OrbPage />);
-    fireEvent.click(screen.getByTestId("mood-slider"));
+    fireEvent.click(screen.getByTestId("mood-orb-option-good"));
     fireEvent.click(screen.getByTestId("emotion-tag-mock-hopeful"));
     expect(screen.getByTestId("mood-confirm-button")).not.toBeDisabled();
   });
@@ -278,7 +286,7 @@ describe("OrbPage (Phase 3-A.2 + Phase 3-A.4b)", () => {
   it("confirm after 5s saves mood + seeds diary draft + navigates", () => {
     vi.useFakeTimers();
     render(<OrbPage />);
-    fireEvent.click(screen.getByTestId("mood-slider"));
+    fireEvent.click(screen.getByTestId("mood-orb-option-good"));
     fireEvent.click(screen.getByTestId("emotion-tag-mock-hopeful"));
     fireEvent.click(screen.getByTestId("mood-confirm-button"));
     expect(setMoodsSpy).not.toHaveBeenCalled();
@@ -298,7 +306,7 @@ describe("OrbPage (Phase 3-A.2 + Phase 3-A.4b)", () => {
   it("undo toast cancels save within 5s", () => {
     vi.useFakeTimers();
     render(<OrbPage />);
-    fireEvent.click(screen.getByTestId("mood-slider"));
+    fireEvent.click(screen.getByTestId("mood-orb-option-good"));
     fireEvent.click(screen.getByTestId("emotion-tag-mock-hopeful"));
     fireEvent.click(screen.getByTestId("mood-confirm-button"));
     fireEvent.click(screen.getByTestId("mood-undo-toast-button"));
@@ -311,7 +319,7 @@ describe("OrbPage (Phase 3-A.2 + Phase 3-A.4b)", () => {
 
   it("skip button clears draft without saving", () => {
     render(<OrbPage />);
-    fireEvent.click(screen.getByTestId("mood-slider"));
+    fireEvent.click(screen.getByTestId("mood-orb-option-good"));
     expect(useMoodEntryDraftStore.getState().valence).not.toBeNull();
     fireEvent.click(screen.getByTestId("mood-skip-button"));
     expect(useMoodEntryDraftStore.getState().valence).toBeNull();
@@ -359,7 +367,7 @@ describe("OrbPage (Phase 3-A.2 + Phase 3-A.4b)", () => {
     const auraBefore = screen
       .getByTestId("orb-aura")
       .getAttribute("data-aura-hue");
-    fireEvent.click(screen.getByTestId("mood-slider"));
+    fireEvent.click(screen.getByTestId("mood-orb-option-good"));
     const auraAfter = screen
       .getByTestId("orb-aura")
       .getAttribute("data-aura-hue");

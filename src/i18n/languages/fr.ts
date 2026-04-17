@@ -105,6 +105,14 @@ export const fr: Translations = {
   moodOkay: "Correct",
   moodNotGreat: "Pas très bien",
 
+  // Phase 3-A.4c-ii-d-a — 5 discrete mood orb labels
+  moodVeryUnpleasant: "Très désagréable",
+  moodUnpleasant: "Désagréable",
+  moodNeutral: "Neutre",
+  moodPleasant: "Agréable",
+  moodVeryPleasant: "Très agréable",
+  moodOrbGroupLabel: "Comment te sens-tu ?",
+
   // Time Awareness (ADHD time blindness helper)
   timeUntilEndOfDay: "Jusqu'à la fin de journée",
   timeIn: "dans",

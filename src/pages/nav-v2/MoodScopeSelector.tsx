@@ -36,11 +36,14 @@ function ScopeChip({
   active,
   label,
   onSelect,
+  variant = "secondary",
 }: {
   scope: MoodDraftScope;
   active: boolean;
   label: string;
   onSelect: (scope: MoodDraftScope) => void;
+  /** Primary = prominent default ("Now"); secondary = softer opt-in. */
+  variant?: "primary" | "secondary";
 }) {
   return (
     <button
@@ -50,11 +53,13 @@ function ScopeChip({
       data-testid={`mood-scope-chip-${scope}`}
       data-scope={scope}
       data-active={active ? "true" : "false"}
+      data-variant={variant}
       className={[
         "mood-scope-chip",
         "relative flex items-center justify-center",
-        "px-4 py-2 md:px-5 md:py-2.5",
-        "text-sm md:text-base font-medium",
+        variant === "primary"
+          ? "px-5 py-2.5 md:px-6 md:py-3 text-sm md:text-base font-semibold"
+          : "px-4 py-2 md:px-5 md:py-2.5 text-sm md:text-base font-medium",
         "rounded-full",
         "transition-all duration-200 ease-out",
         "min-h-[44px]",
@@ -107,24 +112,32 @@ export const MoodScopeSelector = memo(function MoodScopeSelector() {
       role="radiogroup"
       aria-label={tx.orbScopeGroupLabel || "When did this apply?"}
     >
-      <div className="mood-scope-chip-row">
+      {/*
+        Phase 3-A.4c-ii-d-a — "Now" is the primary, prominent default.
+        "Specific time" is a subtle secondary that reveals a native picker.
+        "Whole day" kept as third option for users capturing an overall day.
+      */}
+      <div className="mood-scope-chip-row" data-scope-refined="true">
         <ScopeChip
           scope="now"
           active={scope === "now"}
           label={tx[SCOPE_KEYS.now] || "In this moment"}
           onSelect={onSelect}
-        />
-        <ScopeChip
-          scope="day"
-          active={scope === "day"}
-          label={tx[SCOPE_KEYS.day] || "For the whole day"}
-          onSelect={onSelect}
+          variant="primary"
         />
         <ScopeChip
           scope="specific"
           active={scope === "specific"}
           label={tx[SCOPE_KEYS.specific] || "At a specific time"}
           onSelect={onSelect}
+          variant="secondary"
+        />
+        <ScopeChip
+          scope="day"
+          active={scope === "day"}
+          label={tx[SCOPE_KEYS.day] || "For the whole day"}
+          onSelect={onSelect}
+          variant="secondary"
         />
       </div>
 
