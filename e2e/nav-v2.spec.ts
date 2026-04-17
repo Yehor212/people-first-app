@@ -293,4 +293,163 @@ test.describe("Nav V2 Infrastructure Baselines", () => {
       timeout: 30_000,
     });
   });
+
+  // Phase 3-A.4c-ii-c-b — Emotion grid progressive disclosure baselines.
+  // Two display states (collapsed = 8 chips + "More precise", expanded = 20 chips)
+  // × two themes (paper/ink) × two viewports (desktop 1280×900, mobile 375×812)
+  // = 8 PNG baselines. Validates visual discipline of Bloom stagger reveal.
+  async function setupEmotionGridScene(
+    page: import("@playwright/test").Page,
+    opts: { theme: "paper" | "ink"; viewport: { width: number; height: number } },
+  ) {
+    await primeApp(page, { paperTheme: opts.theme });
+    await freezeTimeToDay(page);
+    await page.addInitScript(() => {
+      localStorage.setItem("zenflow-orb-first-run-dismissed", "1");
+    });
+    await page.setViewportSize(opts.viewport);
+    await page.goto("/?nav=v2");
+    await page.evaluate(() => document.fonts.ready);
+
+    await expect(page.getByTestId("orb-page")).toBeVisible();
+
+    await page.waitForFunction(() => {
+      interface W { __zenMoodDraft?: unknown }
+      return (window as unknown as W).__zenMoodDraft !== undefined;
+    }, { timeout: 5000 });
+    await page.evaluate(() => {
+      interface DraftHandle {
+        setValence: (v: number) => void;
+        setEmotion: (e: string | null) => void;
+      }
+      interface W { __zenMoodDraft?: DraftHandle }
+      const h = (window as unknown as W).__zenMoodDraft;
+      if (h) {
+        h.setValence(0.5);
+        h.setEmotion(null);
+      }
+    });
+    // Wait for Bloom CTA stagger (cta delay) + initial chip stagger settle.
+    await page.waitForTimeout(500);
+    await expect(page.getByTestId("orb-page-emotion-spectrum")).toBeVisible();
+    await expect(page.getByTestId("emotion-more-precise")).toBeVisible();
+  }
+
+  for (const theme of ["paper", "ink"] as const) {
+    const themeLabel = theme === "paper" ? "day" : "night";
+
+    test(`desktop: emotion grid collapsed — ${themeLabel} (${theme})`, async ({
+      page,
+    }, testInfo) => {
+      testInfo.setTimeout(60_000);
+      await setupEmotionGridScene(page, {
+        theme,
+        viewport: { width: 1280, height: 900 },
+      });
+
+      // Collapsed state — initial 8 chips + "More precise" button visible.
+      const chips = page.locator('[data-testid^="emotion-chip-"]');
+      const collapsedCount = await chips.count();
+      // Tier-1 initial — 8-16 chips depending on valence tier-1 density.
+      expect(collapsedCount).toBeGreaterThanOrEqual(6);
+      expect(collapsedCount).toBeLessThanOrEqual(16);
+      await expect(page.getByTestId("emotion-more-precise")).toBeVisible();
+
+      await expect(page).toHaveScreenshot(
+        `nav-v2-desktop-orb-emotions-collapsed-${themeLabel}.png`,
+        {
+          fullPage: true,
+          maxDiffPixelRatio: 0.04,
+          animations: "disabled",
+          timeout: 30_000,
+        },
+      );
+    });
+
+    test(`desktop: emotion grid expanded — ${themeLabel} (${theme})`, async ({
+      page,
+    }, testInfo) => {
+      testInfo.setTimeout(60_000);
+      await setupEmotionGridScene(page, {
+        theme,
+        viewport: { width: 1280, height: 900 },
+      });
+
+      // Trigger progressive disclosure.
+      await page.getByTestId("emotion-more-precise").click();
+      // Bloom stagger: 0.05 delay + (20 * 0.02) = ~0.45s to settle, plus buffer.
+      await page.waitForTimeout(600);
+
+      const chips = page.locator('[data-testid^="emotion-chip-"]');
+      await expect(chips.first()).toBeVisible();
+      // 20 tags at valence=0.5 — full spectrum revealed.
+      const count = await chips.count();
+      expect(count).toBeGreaterThanOrEqual(15);
+
+      await expect(page).toHaveScreenshot(
+        `nav-v2-desktop-orb-emotions-expanded-${themeLabel}.png`,
+        {
+          fullPage: true,
+          maxDiffPixelRatio: 0.04,
+          animations: "disabled",
+          timeout: 30_000,
+        },
+      );
+    });
+
+    test(`mobile: emotion grid collapsed — ${themeLabel} (${theme})`, async ({
+      page,
+    }, testInfo) => {
+      testInfo.setTimeout(60_000);
+      await setupEmotionGridScene(page, {
+        theme,
+        viewport: { width: 375, height: 812 },
+      });
+
+      const chips = page.locator('[data-testid^="emotion-chip-"]');
+      const collapsedCount = await chips.count();
+      // Tier-1 initial — 8-16 chips depending on valence tier-1 density.
+      expect(collapsedCount).toBeGreaterThanOrEqual(6);
+      expect(collapsedCount).toBeLessThanOrEqual(16);
+      await expect(page.getByTestId("emotion-more-precise")).toBeVisible();
+
+      await expect(page).toHaveScreenshot(
+        `nav-v2-mobile-orb-emotions-collapsed-${themeLabel}.png`,
+        {
+          fullPage: true,
+          maxDiffPixelRatio: 0.04,
+          animations: "disabled",
+          timeout: 30_000,
+        },
+      );
+    });
+
+    test(`mobile: emotion grid expanded — ${themeLabel} (${theme})`, async ({
+      page,
+    }, testInfo) => {
+      testInfo.setTimeout(60_000);
+      await setupEmotionGridScene(page, {
+        theme,
+        viewport: { width: 375, height: 812 },
+      });
+
+      await page.getByTestId("emotion-more-precise").click();
+      await page.waitForTimeout(600);
+
+      const chips = page.locator('[data-testid^="emotion-chip-"]');
+      await expect(chips.first()).toBeVisible();
+      const count = await chips.count();
+      expect(count).toBeGreaterThanOrEqual(15);
+
+      await expect(page).toHaveScreenshot(
+        `nav-v2-mobile-orb-emotions-expanded-${themeLabel}.png`,
+        {
+          fullPage: true,
+          maxDiffPixelRatio: 0.04,
+          animations: "disabled",
+          timeout: 30_000,
+        },
+      );
+    });
+  }
 });
