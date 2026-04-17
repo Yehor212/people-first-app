@@ -1,5 +1,4 @@
-import { Suspense, lazy, memo, useCallback, useEffect, useState } from "react";
-import { Menu } from "lucide-react";
+import { Suspense, lazy, memo, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { haptics } from "@/lib/haptics";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -8,7 +7,6 @@ import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useDeviceTier } from "@/hooks/useDeviceTier";
 import { registerModalCloseCallback } from "@/lib/androidBackHandler";
 import { SidebarV2 } from "./SidebarV2";
-import { MobileNavV2 } from "./MobileNavV2";
 import { DrawerV2 } from "./DrawerV2";
 import { OrbPage } from "@/pages/nav-v2/OrbPage";
 import { HabitsPage } from "@/pages/nav-v2/HabitsPage";
@@ -21,12 +19,17 @@ const CommandPalette = lazy(() => import("@/components/desktop/CommandPalette"))
  * NavV2Orchestrator — wraps the V2 navigation shell around flag-gated page shells.
  *
  * Renders:
- *   - Desktop: permanent <SidebarV2> (collapsible rail) + page content
- *   - Mobile: top-left menu button + <DrawerV2> + <MobileNavV2> + page content
- *   - Both: Ctrl+K <CommandPalette> (lazy)
+ *   - Desktop (>=md): permanent <SidebarV2> (collapsible rail) + page content
+ *   - Mobile (<md):   top-left stylised single-bar menu trigger + <DrawerV2> only.
+ *                     No bottom tab bar — sidebar-as-drawer is the sole secondary nav.
+ *   - Both:           Ctrl+K <CommandPalette> (lazy)
  *
  * Stays orthogonal to V1 (`<Navigation />`) — Index.tsx picks one or the other
  * based on `design.nav.v2` flag + `?nav=v2` override.
+ *
+ * Phase 3-A.1 correction: MobileNavV2 bottom tabs removed from render (Option A —
+ * drawer-only on mobile per user post-facto override). File retained as dead code
+ * pending Phase 3-F V1 cutover cleanup.
  */
 export const NavV2Orchestrator = memo(function NavV2Orchestrator() {
   const { t } = useLanguage();
@@ -45,15 +48,6 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator() {
     commandPaletteOpen,
     setCommandPaletteOpen,
   } = useNavigationV2();
-
-  // Track mobile keyboard so we can hide the floating pill while typing
-  const [keyboardOpen, setKeyboardOpen] = useState(false);
-  useEffect(() => {
-    const threshold = window.screen.height * 0.75;
-    const onResize = () => setKeyboardOpen(window.innerHeight < threshold);
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
 
   // Register Android back handler — drawer close > palette close > let native back
   useEffect(() => {
@@ -108,7 +102,11 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator() {
         onToggleCollapsed={toggleSidebar}
       />
 
-      {/* Mobile menu button (top-left) — stylised single-bar per POV */}
+      {/*
+        Mobile menu trigger — always visible top-left (44×44, WCAG 2.5.5 + 2.5.7).
+        Stylised single-bar per paper aesthetic — NOT a triple-bar hamburger.
+        This is the sole mobile nav affordance now that bottom tabs are removed.
+      */}
       <button
         type="button"
         onClick={() => {
@@ -123,12 +121,35 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator() {
           "md:hidden fixed start-3 z-40",
           "top-[calc(env(safe-area-inset-top)+0.5rem)]",
           "flex h-11 w-11 items-center justify-center rounded-full",
-          "bg-card/80 backdrop-blur-lg [-webkit-backdrop-filter:blur(12px)]",
-          "border border-border/60 shadow-sm",
-          "text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+          "bg-card/85 backdrop-blur-lg [-webkit-backdrop-filter:blur(12px)]",
+          "border border-border/60 shadow-md",
+          "text-foreground",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+          "transition-[transform,background-color] duration-200 active:scale-95",
         )}
       >
-        <Menu className="h-5 w-5" aria-hidden="true" />
+        {/*
+          Single stylised bar — intentionally one line (paper ink mark), not three.
+          Rendered as SVG so it participates in currentColor theming.
+        */}
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 20 20"
+          fill="none"
+          aria-hidden="true"
+          focusable="false"
+        >
+          <line
+            x1="4"
+            y1="10"
+            x2="16"
+            y2="10"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          />
+        </svg>
       </button>
 
       <DrawerV2
@@ -147,12 +168,6 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator() {
       )}
 
       {pageNode}
-
-      <MobileNavV2
-        activePage={activePage}
-        onPageChange={setActivePage}
-        hidden={keyboardOpen}
-      />
     </div>
   );
 });

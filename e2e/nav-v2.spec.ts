@@ -1,8 +1,9 @@
 /**
- * Phase 3-A Navigation V2 visual regression spec.
+ * Phase 3-A.1 Navigation V2 visual regression spec (sidebar-only).
  *
- * Purpose: capture V2 navigation shell baselines for both desktop (SidebarV2
- * + first page shell) and mobile (MobileNavV2 floating pill + shell).
+ * Purpose: capture V2 navigation shell baselines for both desktop (permanent
+ * SidebarV2 + Orb page with ValenceOrb) and mobile (drawer trigger only —
+ * NO bottom tabs after Phase 3-A.1 Option A correction).
  *
  * V1 remains the default render path — we enable V2 via the ?nav=v2 query
  * override (no flag mutation required, so the cloud flag stays at
@@ -10,7 +11,7 @@
  *
  * Local baselines land under e2e/nav-v2.spec.ts-snapshots/ and are committed
  * (learning from Phase 2-B.2: never defer baselines — CI regenerates silently
- * otherwise).
+ * otherwise). Mobile baseline regenerated in Phase 3-A.1 to drop MobileNavV2.
  */
 
 import { test, expect } from "@playwright/test";
@@ -77,20 +78,28 @@ test.describe("Nav V2 Infrastructure Baselines", () => {
     });
   });
 
-  test("mobile: MobileNavV2 floating pill + page shell", async ({ page }) => {
+  test("mobile: drawer trigger only, NO bottom tabs (Phase 3-A.1 sidebar-only)", async ({ page }) => {
     await primeApp(page);
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto("/?nav=v2");
     await page.evaluate(() => document.fonts.ready);
 
-    await expect(page.getByTestId("mobile-nav-v2")).toBeVisible();
+    // Orb page + drawer trigger must render.
     await expect(page.getByTestId("orb-page")).toBeVisible();
     await expect(page.getByTestId("nav-v2-open-drawer")).toBeVisible();
 
-    // All 4 tabs present
+    // Bottom tab bar must NOT render — Phase 3-A.1 Option A correction.
+    expect(await page.getByTestId("mobile-nav-v2").count()).toBe(0);
     for (const id of ["orb", "habits", "diary", "settings"]) {
-      await expect(page.getByTestId(`mobile-nav-v2-tab-${id}`)).toBeVisible();
+      expect(await page.getByTestId(`mobile-nav-v2-tab-${id}`).count()).toBe(0);
     }
+
+    // Primary landmark still exposed via SidebarV2 (CSS-hidden on mobile, in DOM).
+    // SidebarV2 uses role="navigation" + aria-label on its <aside> wrapper.
+    const primaryNav = await page
+      .locator('[role="navigation"][aria-label*="Primary" i]')
+      .count();
+    expect(primaryNav).toBeGreaterThan(0);
 
     await expect(page).toHaveScreenshot("nav-v2-mobile-orb.png", {
       fullPage: true,

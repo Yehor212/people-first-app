@@ -40,15 +40,15 @@
       "description": "Phase 2-A — staggered choreography helper active (0=absent, 1=active, 2=adopted across >=5 surfaces). src/lib/motion/choreography.ts exports stages (background 0ms, chrome 80ms, primary 140ms, secondary 220ms, cta 360ms), staggerDelay(stage), childrenStagger(count, base). Currently consumed by Index.tsx tab Bloom (primary) and MotionPreview rollout demos. Phase 2-B will expand adoption across every composite surface."
     },
     "tests.total": {
-      "value": 3440,
+      "value": 3626,
       "direction": "up",
       "recorded": "2026-04-17",
       "description": "Total unit test count (vitest, src/ scope). Phase 3-A adds +36 (useNavigationV2 hook 17 + SidebarV2 6 + MobileNavV2 6 + DrawerV2 7). Baseline 3408 -> 3444. Floor at 3440 allows minor cleanup."
     },
     "tests.files": {
-      "value": 143,
+      "value": 185,
       "direction": "up",
-      "recorded": "2026-04-04",
+      "recorded": "2026-04-17",
       "description": "Test file count. Current: 160 (improved +17)."
     },
     "designTokenCoverage": {
@@ -270,16 +270,16 @@
       "description": "TODO/FIXME/HACK/XXX comments in source"
     },
     "bundleSizeKB": {
-      "value": 5100,
+      "value": 4943,
       "direction": "down",
       "tolerance": 0.008,
       "recorded": "2026-04-17",
       "description": "Total JS bundle size in KB (dist/assets/*.js). +180KB from Phase 3-A Navigation V2 infrastructure: 4 V2 shell components (SidebarV2/MobileNavV2/DrawerV2/NavV2Orchestrator) + 4 placeholder page shells + useNavigationV2 hook + 18 i18n keys × 8 languages. V1 untouched. Tolerance 0.8% (~40KB) for minor post-merge variance."
     },
     "enforcement.blockingHooks": {
-      "value": 15,
+      "value": 20,
       "direction": "up",
-      "recorded": "2026-04-04",
+      "recorded": "2026-04-17",
       "description": "BLOCKING hooks (exit 2 fail-closed): preflight-gate, protected-files, commit-gate, quality-stop-gate, search-gate, bandaid-gate"
     },
     "enforcement.totalHooks": {
@@ -295,9 +295,9 @@
       "description": "Anti-patterns without BLOCK or WARN enforcement"
     },
     "npmOutdated": {
-      "value": 55,
+      "value": 45,
       "direction": "down",
-      "recorded": "2026-04-15",
+      "recorded": "2026-04-17",
       "description": "Outdated npm packages — CANARY ONLY (external dependency, not code-controlled). Floor=999 disables blocking. Actual count tracked as canary only."
     },
     "navV2InfraReady": {
@@ -319,10 +319,22 @@
       "description": "Phase 3-A — URL <-> page sync implemented. 1 = history.pushState + popstate listener in useNavigationV2 (no router dep). Deep links: /orb, /habits, /diary, /settings. Preserves ?nav=v2 and other query params."
     },
     "navV2PlaceholderShells": {
-      "value": 4,
+      "value": 3,
       "direction": "up",
       "recorded": "2026-04-17",
-      "description": "Phase 3-A — count of placeholder page shells (OrbPage, HabitsPage, DiaryPage, SettingsPage). Each wrapped in Bloom + staggerDelay(primary), auto-focuses h1 on mount, uses navV2* i18n keys across all 8 languages."
+      "description": "Phase 3-A.1 — count of REMAINING placeholder page shells (HabitsPage, DiaryPage, SettingsPage). OrbPage upgraded from placeholder to real ValenceOrb + greeting + MoodSlider integration in Phase 3-A.1. All shells wrapped in Bloom + staggerDelay, auto-focus h1, use navV2* i18n keys. Phase 3-C/D/E will reduce this count."
+    },
+    "navV2SidebarOnly": {
+      "value": 1,
+      "direction": "up",
+      "recorded": "2026-04-17",
+      "description": "Phase 3-A.1 — Option A navigation: sidebar-only on mobile (drawer via top-left 44x44 trigger button), permanent SidebarV2 on desktop, NO bottom tab bar. 1 = MobileNavV2 removed from render (file retained pending Phase 3-F cutover), drawer trigger WCAG 2.5.5+2.5.7 compliant (visible + 44x44 touch target), primary nav landmark preserved via SidebarV2 in DOM on all viewports."
+    },
+    "navV2OrbIntegrated": {
+      "value": 1,
+      "direction": "up",
+      "recorded": "2026-04-17",
+      "description": "Phase 3-A.1 — ValenceOrb wired into OrbPage (src/pages/nav-v2/OrbPage.tsx). Composition: time-based greeting (font-display Fraunces, reuses goodMorning/goodAfternoon/goodEvening i18n keys), 240px ValenceOrb hero (tap opens State of Mind modal), MoodSlider for quick entry. Bloom staggered (chrome 80ms → primary 140ms → secondary 220ms). Idle oscillation only when shouldAnimate()===true. setMoods used directly for slim write path."
     }
   },
   "qualityScore": {
@@ -353,6 +365,10 @@
       },
       {
         "date": "2026-04-04",
+        "value": 9.9
+      },
+      {
+        "date": "2026-04-17",
         "value": 9.9
       }
     ]
