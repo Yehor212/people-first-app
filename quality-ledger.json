@@ -371,6 +371,12 @@
       "direction": "up",
       "recorded": "2026-04-17",
       "description": "Phase 3-A.1 — ValenceOrb wired into OrbPage (src/pages/nav-v2/OrbPage.tsx). Composition: time-based greeting (font-display Fraunces, reuses goodMorning/goodAfternoon/goodEvening i18n keys), 240px ValenceOrb hero (tap opens State of Mind modal), MoodSlider for quick entry. Bloom staggered (chrome 80ms → primary 140ms → secondary 220ms). Idle oscillation only when shouldAnimate()===true. setMoods used directly for slim write path."
+    },
+    "orbCosmicScopeActive": {
+      "value": 1,
+      "direction": "up",
+      "recorded": "2026-04-16",
+      "description": "Phase 3-A.4a-fix — OrbPage is sacred cosmic space: forces cosmic-dark presentation regardless of app theme. Implementation: OrbPage <main> receives `dark orb-cosmic-scope` classes. The `dark` class activates Tailwind `dark:` variants (dark:block on CosmicBgAdapter's cosmic radial layer); the `orb-cosmic-scope` class overrides --focus-cosmic-*, --nebula-*, --particle-color tokens to mirror :root.dark values even in light app theme, sets color-scheme: dark, and boosts .zen-particle star visibility with warm starlight + halo. Sidebar is OUTSIDE this scope (rendered by NavV2Orchestrator at the page shell root) so it keeps the app theme (paper/ink/oled)."
     }
   },
   "qualityScore": {

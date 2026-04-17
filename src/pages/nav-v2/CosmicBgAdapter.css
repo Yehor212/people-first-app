@@ -21,3 +21,30 @@
     radial-gradient(circle at 30% 30%, var(--nebula-a) 0%, transparent 40%),
     radial-gradient(circle at 70% 70%, var(--nebula-b) 0%, transparent 40%);
 }
+
+/* Phase 3-A.4a-fix — Force cosmic dark presentation on OrbPage regardless
+ * of the app theme. The sidebar stays in app theme because it is rendered
+ * OUTSIDE this scope (in NavV2Orchestrator at the page shell root). Only
+ * OrbPage's <main> receives .orb-cosmic-scope, so Tailwind `dark:` variants
+ * inside the subtree activate (hidden dark:block, etc.) and cosmic tokens
+ * resolve to their night values. */
+.orb-cosmic-scope {
+  /* Mirror the `:root.dark` cosmic palette so --focus-cosmic-* and --nebula-*
+   * resolve to the night values even when the app theme is light. */
+  --focus-cosmic-dark: 240 30% 3%;
+  --focus-cosmic-mid: 240 35% 10%;
+  --focus-cosmic-deep: 240 50% 2%;
+  --focus-cosmic-light: 240 40% 18%;
+  --particle-color: hsl(0 0% 100%);
+  --nebula-a: hsl(270 60% 50% / 0.15);
+  --nebula-b: hsl(330 60% 50% / 0.1);
+  color-scheme: dark;
+}
+
+/* Starlight boost — CosmicStar renders `.zen-particle.absolute.rounded-full`.
+ * Inside the cosmic scope we reinforce visibility with warm starlight tone
+ * and a soft halo so stars read clearly against the deep nebula. */
+.orb-cosmic-scope .zen-particle {
+  background-color: hsl(45 100% 94% / 0.95);
+  box-shadow: 0 0 6px 1px hsl(45 100% 92% / 0.55);
+}

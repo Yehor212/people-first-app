@@ -172,7 +172,7 @@ export const OrbPage = memo(function OrbPage() {
         id="main-content-v2"
         role="main"
         tabIndex={-1}
-        className="relative min-h-screen overflow-hidden outline-none"
+        className="dark orb-cosmic-scope relative min-h-screen overflow-hidden outline-none"
         aria-labelledby="orb-page-heading"
         data-testid="orb-page"
       >
