@@ -689,7 +689,7 @@ function checkRatchet(): void {
   }
 
   // Source file drift
-  const docSourceFiles = 727; // updated 2026-04-16 after EP8_US002 + EP10/EP11/EP12 scaffolding
+  const docSourceFiles = 759; // updated 2026-04-17 Phase 1 motion grammar (+16 motion files) plus uncommitted journal scaffolding (+16)
   const drift = Math.abs(sourceFiles - docSourceFiles);
   if (drift > 20) {
     console.log(

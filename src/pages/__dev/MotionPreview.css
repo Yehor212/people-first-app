@@ -1,0 +1,172 @@
+/**
+ * MotionPreview dev page styles — sibling to MotionPreview.tsx.
+ * Keeps inline `style={}` out of the React tree to satisfy the inlineStyles
+ * ratchet floor. All colours come from theme tokens (--background, --foreground,
+ * --primary, --muted-foreground, --border) — zero hardcoded palettes.
+ */
+
+.motion-preview-header {
+  border-bottom: 1px solid hsl(var(--border));
+  padding-bottom: 1rem;
+}
+
+.motion-preview-card {
+  padding: 1.5rem;
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-height: 220px;
+}
+
+.motion-preview-card-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.motion-preview-spec {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.75rem;
+  color: hsl(var(--muted-foreground));
+  margin: 0;
+}
+
+.motion-preview-btn {
+  align-self: flex-start;
+  padding: 0.5rem 1rem;
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  cursor: pointer;
+  min-height: 44px;
+  min-width: 44px;
+}
+
+.motion-preview-btn:hover {
+  opacity: 0.92;
+}
+
+.motion-preview-panel {
+  padding: 1rem;
+  background: hsl(var(--muted));
+  border-radius: 0.5rem;
+  color: hsl(var(--foreground));
+}
+
+.motion-preview-morph-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100px;
+}
+
+.motion-preview-morph-a,
+.motion-preview-morph-b {
+  width: 80px;
+  height: 80px;
+  border-radius: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: 700;
+  color: hsl(var(--primary-foreground));
+}
+
+.motion-preview-morph-a {
+  background: hsl(var(--primary));
+}
+
+.motion-preview-morph-b {
+  background: hsl(var(--accent));
+  border-radius: 50%;
+}
+
+.motion-preview-settle-track {
+  position: relative;
+  height: 56px;
+  background: hsl(var(--muted));
+  border-radius: 0.5rem;
+  padding: 4px;
+}
+
+.motion-preview-settle-dot {
+  width: 48px;
+  height: 48px;
+  background: hsl(var(--primary));
+  border-radius: 50%;
+  transition: none;
+}
+
+.motion-preview-settle-dot[data-pos='left'] {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+.motion-preview-settle-dot[data-pos='right'] {
+  margin-left: auto;
+  margin-right: 0;
+}
+
+.motion-preview-breathe-dot {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: radial-gradient(circle, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%);
+  align-self: center;
+}
+
+.motion-preview-ripple-btn {
+  position: relative;
+  overflow: hidden;
+  padding: 1rem 2rem;
+  background: hsl(var(--secondary));
+  color: hsl(var(--secondary-foreground));
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  cursor: pointer;
+  min-height: 44px;
+  min-width: 120px;
+  align-self: flex-start;
+}
+
+.motion-preview-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.motion-preview-table th,
+.motion-preview-table td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid hsl(var(--border));
+  text-align: left;
+}
+
+.motion-preview-table th {
+  font-weight: 600;
+  background: hsl(var(--muted));
+}
+
+.motion-preview-verb-cell {
+  font-weight: 600;
+  color: hsl(var(--primary));
+}
+
+.motion-preview-mono-cell {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.75rem;
+  color: hsl(var(--muted-foreground));
+}
+
+/* Morph view-transition timing — uses the spec expo ease-out curve. */
+::view-transition-group(motion-preview-morph-shape) {
+  animation-duration: 420ms;
+  animation-timing-function: cubic-bezier(0.19, 1, 0.22, 1);
+}

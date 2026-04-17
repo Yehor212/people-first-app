@@ -1,0 +1,101 @@
+/**
+ * Motion verb CSS — non-React / progressive-enhancement variants.
+ *
+ * - `.zen-bloom`   consumes `@starting-style` for mount transitions on
+ *                  elements that toggle visibility via `display`, `popover`
+ *                  or the inert attribute. Modern browsers only
+ *                  (Chrome 117+, Safari 17.5+). Older browsers skip
+ *                  the transition silently.
+ * - `.zen-fold`    exit transition for CSS-only dismissals.
+ * - `.zen-breathe` infinite idle pulse for non-React surfaces.
+ * - `@keyframes zen-ripple` for `createRipple()` in ripple.ts.
+ *
+ * Reduced-motion is handled by consumers via `useShouldAnimate()` gating;
+ * the prefers-reduced-motion media query is ALSO honoured here as a second
+ * line of defence so users can't be betrayed by a runaway CSS animation.
+ */
+
+@supports (transition-behavior: allow-discrete) {
+  @starting-style {
+    .zen-bloom {
+      opacity: 0;
+      transform: scale(0.92) translateY(8px);
+    }
+  }
+}
+
+.zen-bloom {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+  transition:
+    opacity 0.32s cubic-bezier(0.2, 0.9, 0.2, 1),
+    transform 0.32s cubic-bezier(0.2, 0.9, 0.2, 1);
+  transition-behavior: allow-discrete;
+}
+
+.zen-fold {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+  transition:
+    opacity 0.24s cubic-bezier(0.4, 0, 1, 1),
+    transform 0.24s cubic-bezier(0.4, 0, 1, 1);
+}
+
+.zen-fold[data-state='closed'],
+.zen-fold.is-closing {
+  opacity: 0;
+  transform: scale(0.96) translateY(8px);
+}
+
+.zen-breathe {
+  animation: zen-breathe 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  will-change: transform, opacity;
+}
+
+@keyframes zen-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.88;
+  }
+  50% {
+    transform: scale(1.015);
+    opacity: 1;
+  }
+}
+
+/* Ripple wave spawned by createRipple() — position: absolute relative to
+ * the target, which callers must give `position: relative` + overflow:hidden. */
+.zen-ripple-wave {
+  position: absolute;
+  border-radius: 50%;
+  transform: scale(0);
+  background: currentColor;
+  opacity: 0.2;
+  pointer-events: none;
+  animation: zen-ripple 200ms linear forwards;
+  will-change: transform, opacity;
+}
+
+@keyframes zen-ripple {
+  to {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+/* Second-line-of-defence kill switch. Consumers should gate via JS first,
+ * but in case a stray .zen-breathe reaches a reduced-motion user, freeze it. */
+@media (prefers-reduced-motion: reduce) {
+  .zen-bloom,
+  .zen-fold {
+    transition: none !important;
+  }
+  .zen-breathe {
+    animation: none !important;
+  }
+  .zen-ripple-wave {
+    animation: none !important;
+    display: none !important;
+  }
+}

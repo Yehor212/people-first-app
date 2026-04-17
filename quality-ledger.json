@@ -1,8 +1,26 @@
 {
   "version": "1.0.0",
   "lastUpdated": "2026-04-17",
-  "phase": "0-D-motion-foundations",
+  "phase": "1-motion-grammar",
   "floors": {
+    "motionVerbCount": {
+      "value": 6,
+      "direction": "up",
+      "recorded": "2026-04-17",
+      "description": "Phase 1 — Count of semantic motion verbs defined in src/lib/motion/. Six verbs: bloom (open/appear), fold (close/dismiss), morph (shared element via View Transitions), settle (drag release spring), breathe (idle pulse), ripple (tap acknowledge). Each verb lives in its own <80 LOC file with typed exports + static reduced-motion fallback. Ratchets up only when new verbs genuinely expand the grammar — most Phase 2 work adopts the existing six, not adds new ones."
+    },
+    "motionVerbCoverage": {
+      "value": 0,
+      "direction": "up",
+      "recorded": "2026-04-17",
+      "description": "Phase 1 — Percentage of high-traffic components (152 files) that consume motion verbs instead of ad-hoc initial/animate/exit. Starts at 0 in Phase 1 (library built, no adoption yet). Phase 2 rollout will ratchet this up as Index.tsx tabs, Modal/Sheet, Journal shared-element etc. swap to verbs.bloom/fold/morph/settle/breathe/ripple. Target: 100 by Phase 2-C close."
+    },
+    "motionTestCoverage": {
+      "value": 35,
+      "direction": "up",
+      "recorded": "2026-04-17",
+      "description": "Phase 1 — Count of tests in src/lib/motion/__tests__/. Verifies verb shape, easings, durations, reduced-motion fallbacks, morph delegation to View Transitions wrapper, ripple DOM lifecycle. Ratchets up with any new verb tests or coverage expansion. Current split: verbs.test (9) + bloom (8) + fold (7) + morph (7) + settle (7) + breathe (8) + ripple (12) = 58. Floor at 35 leaves headroom for edge-case test trimming during refactors without breaking the ratchet."
+    },
     "tests.total": {
       "value": 3120,
       "direction": "up",

@@ -15,6 +15,13 @@
  * in :root (below) stay untouched. */
 @import "./styles/themes.css";
 
+/* Phase 1: motion verb CSS — @starting-style / keyframes / ripple wave.
+ * Consumed by the six motion verbs (bloom/fold/morph/settle/breathe/ripple)
+ * for progressive-enhancement paths (popover, CSS-only dismissals, idle
+ * pulses, ripple). Reduced-motion override inside the file is a second
+ * line of defence; primary gating goes through useShouldAnimate(). */
+@import "./lib/motion/verbs.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
