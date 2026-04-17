@@ -218,8 +218,32 @@
     "baselinePngsCommitted": {
       "value": 2,
       "direction": "up",
-      "recorded": "2026-04-16",
-      "description": "Phase 2-B.1 — count of Playwright baseline PNGs committed under e2e/*-snapshots/. 2 = home-flag-off-hsl-chromium.png + home-flag-on-oklch-chromium.png (OKLCH dual-path baselines). OS-agnostic filenames via playwright.config.ts snapshotPathTemplate so CI Linux reuses local Windows baselines. Visual-regression workflow fails if baselines missing (Percy/Sauce 2026 anti-pattern guard)."
+      "recorded": "2026-04-17",
+      "description": "Phase 2-B.2 — count of Playwright baseline PNGs committed under e2e/*-snapshots/. 2 = home-flag-off-hsl-chromium.png + home-flag-on-oklch-chromium.png (OKLCH dual-path baselines). Phase 2-B.2 regenerated with: (a) await document.fonts.ready before screenshot (fontReadyWaitInE2E=1) so Fraunces swap stable, (b) Privacy modal localStorage-dismissed (privacyModalDismissedInFixture=1) so pre-existing modal-overlap bug doesn't freeze into CI reference, (c) playwright.config.ts snapshotPathTemplate switched {testFileDir}→{testDir} to fix Windows path resolution. OS-agnostic filenames preserved — CI Linux reuses local Windows baselines."
+    },
+    "sacredMomentsDogfoodCoverage": {
+      "value": 6,
+      "direction": "up",
+      "recorded": "2026-04-17",
+      "description": "Phase 2-B.2 — count of Sacred Moments adopting typography tokens per docs/typography-grammar.md. 6 = (1) Journal entry title font-display [already in 0da7e3f], (2) HomePage greeting 'Good evening, Friend' font-display tracking-tight [src/components/Header.tsx:64], (3) Diary empty-canvas greeting font-display tracking-tight [src/features/journal/DiaryEmptyCanvas.tsx:140], (4) Streak counter font-display tabular-nums [src/features/journal/StreakCelebration.tsx:116], (5) Quote watermark font-serif italic [src/features/journal/JournalEntryList.tsx:489], (6) Gratitude input font-hand italic [src/features/journal/GratitudeBloomWidget.tsx:342]. Phase 0-B.1 shipped font-families; 2-B.2 begins component adoption (POV §0 'literary companion' enforcement)."
+    },
+    "fontReadyWaitInE2E": {
+      "value": 1,
+      "direction": "up",
+      "recorded": "2026-04-17",
+      "description": "Phase 2-B.2 — visual-regression specs await document.fonts.ready before screenshot (0=absent, 1=present). Without this, Playwright captures FOUT stubs (system sans) instead of Fraunces/Inter, making baselines bear no resemblance to production. Implemented in e2e/design-system.spec.ts::waitForApp (Phase 2-B.1 baselines were broken without it). Apply same pattern to e2e/visual-regression.spec.ts in Phase 2-C."
+    },
+    "privacyModalDismissedInFixture": {
+      "value": 1,
+      "direction": "up",
+      "recorded": "2026-04-17",
+      "description": "Phase 2-B.2 — visual-regression fixtures localStorage-dismiss Privacy Settings first-run modal (0=absent, 1=present). Phase 2-B.1 baselines FROZE the pre-existing modal z-index overlap bug into CI reference — any future real fix of that bug would then register as false-positive visual regression. Option B isolation (test-fixture only, not production z-index change) until Phase 2-D modal-hygiene sprint. Keys: zenflow-privacy-acknowledged, zenflow-privacy."
+    },
+    "visualDiffGuardAssertion": {
+      "value": 1,
+      "direction": "up",
+      "recorded": "2026-04-17",
+      "description": "Phase 2-B.2 — e2e spec includes deterministic design-flag assertion that verifies Zustand persist rehydration independently of visual bytes (0=absent, 1=present). Rationale: MoodSlider lives in JournalEntryEditor, not HomePage, so full-page HSL vs OKLCH baselines are byte-identical until Phase 2-C scroll-driven inline-mood chip lands. Functional bridge coverage needs a DOM-level guard, not only visual diff. e2e/design-system.spec.ts 'design flag store honours rollout_percent=100 when enabled' test reads localStorage and asserts flag payload — fails loud if Zustand persist breaks."
     },
     "pbtCoverage": {
       "value": 1,

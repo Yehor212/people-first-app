@@ -486,10 +486,10 @@ export const JournalEntryList = memo(function JournalEntryList({
         return (
           <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-primary/8 via-primary/4 to-transparent border border-primary/10 p-3.5">
             <Quote className="absolute top-2 end-2 w-6 h-6 text-primary/10" />
-            <p className="text-xs text-foreground/80 italic leading-relaxed pe-6">
+            <p className="text-sm font-serif italic leading-relaxed pe-6 text-foreground/80">
               {ts[quote.key] || quote.fallback}
             </p>
-            <p className="text-[10px] text-muted-foreground/50 mt-1.5">— {quote.author}</p>
+            <p className="text-[10px] font-serif text-muted-foreground/50 mt-1.5">— {quote.author}</p>
           </div>
         );
       })()}

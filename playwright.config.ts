@@ -17,8 +17,11 @@ export default defineConfig({
   /* OS-agnostic snapshot paths so baselines generated locally (Windows)
      are reused in CI (Ubuntu). Without this Playwright suffixes -win32 /
      -linux / -darwin per OS, making CI regenerate its own baselines
-     silently on first run (Percy/Sauce 2026 anti-pattern). */
-  snapshotPathTemplate: '{testFileDir}/{testFileName}-snapshots/{arg}-{projectName}{ext}',
+     silently on first run (Percy/Sauce 2026 anti-pattern).
+     Phase 2-B.2: switched {testFileDir} → {testDir}/{testFilePath.dir} to
+     force snapshots into e2e/ on Windows (Playwright 1.46 resolves
+     {testFileDir} as cwd on POSIX-normalised paths). */
+  snapshotPathTemplate: '{testDir}/{testFileName}-snapshots/{arg}-{projectName}{ext}',
 
   use: {
     baseURL: 'http://localhost:8080/people-first-app/',

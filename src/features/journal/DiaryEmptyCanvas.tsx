@@ -137,7 +137,7 @@ export const DiaryEmptyCanvas = memo(function DiaryEmptyCanvas({
         initial={reducedMotion ? false : { opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.25, duration: 0.35 }}
-        className="relative z-[1] text-lg font-semibold text-foreground/80 text-center"
+        className="relative z-[1] text-2xl font-display font-medium text-foreground/80 text-center tracking-tight"
       >
         {greeting}
       </motion.h2>

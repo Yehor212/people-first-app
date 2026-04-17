@@ -113,7 +113,7 @@ export const StreakCelebration = memo(function StreakCelebration({
         transition={reducedMotion ? undefined : bounceSpring}
       >
         <motion.span
-          className="text-7xl font-bold text-foreground drop-shadow-lg"
+          className="text-7xl font-display font-semibold tracking-tight tabular-nums text-foreground drop-shadow-lg"
           aria-hidden="true"
         >
           <motion.span

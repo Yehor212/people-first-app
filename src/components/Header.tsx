@@ -60,8 +60,8 @@ export const Header = memo(function Header({
         </div>
       </div>
 
-      {/* Large title — Apple Health style */}
-      <h1 className="text-2xl font-bold text-foreground mb-4">
+      {/* Large title — Apple Health style (Phase 2-B.2: sacred moment — font-display Fraunces) */}
+      <h1 className="text-3xl font-display font-semibold tracking-tight text-foreground mb-4">
         {greeting}, {userName}
       </h1>
 
