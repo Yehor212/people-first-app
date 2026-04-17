@@ -130,17 +130,49 @@ export function getDopamineSettings(): DopamineSettings {
 }
 
 /**
- * Check if animations should be shown
- * Respects in-app Dopamine Settings toggle (primary) AND OS prefers-reduced-motion (secondary).
- * If either disables animations, animations are off — WCAG 2.3.3 compliance.
+ * Module-level mirror of the "low battery" signal, written by the React
+ * AnimationGate via `setLowBatteryMirror()`. Non-React call sites (audioManager,
+ * haptics, lifecycle helpers) read it via `shouldAnimate()` without needing a
+ * hook context.
+ *
+ * Default `false` — "no signal, do not block animations". Mirrors
+ * `useBatteryState()` returning `null` on Safari/iOS.
+ */
+let lowBatteryMirror = false;
+
+/**
+ * AnimationGate pushes the current low-battery flag here on every change.
+ * Not a public API for feature code — use `useShouldAnimate()` instead.
+ */
+export function setLowBatteryMirror(isLow: boolean): void {
+  lowBatteryMirror = isLow;
+}
+
+/** Exposed for tests only. */
+export function _getLowBatteryMirror(): boolean {
+  return lowBatteryMirror;
+}
+
+/**
+ * Check if animations should be shown.
+ *
+ * AND-logic (WCAG 2.3.3, Law 9):
+ *   - Dopamine.animations must be ON.
+ *   - OS `prefers-reduced-motion` must NOT be "reduce".
+ *   - `lowBatteryMirror` must be false.
+ *
+ * Safe to call outside React — reads localStorage + matchMedia synchronously.
  */
 export function shouldAnimate(): boolean {
   if (!getDopamineSettings().animations) return false;
   if (
     typeof window !== "undefined" &&
+    typeof window.matchMedia === "function" &&
     window.matchMedia("(prefers-reduced-motion: reduce)").matches
-  )
+  ) {
     return false;
+  }
+  if (lowBatteryMirror) return false;
   return true;
 }
 

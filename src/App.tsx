@@ -18,6 +18,11 @@ import { preloadShareCardAssets } from "@/lib/shareCards";
 import { useDopamineSettings } from "@/components/DopamineSettings";
 import { useFontScaleInit } from "@/hooks/useFontScale";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { useBatteryState } from "@/hooks/useBatteryState";
+import { setLowBatteryMirror } from "@/lib/animationUtils";
+
+const LOW_BATTERY_THRESHOLD = 0.15;
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -39,26 +44,58 @@ if ("requestIdleCallback" in window) {
 
 /**
  * AnimationGate — single point of control for ALL animation layers.
- * Only the in-app Dopamine toggle decides; OS prefers-reduced-motion is ignored
- * so iOS users always get full visual fidelity.
+ *
+ * Combines three inputs with AND-logic (WCAG 2.3.3 compliant, Law 9):
+ *   1. In-app Dopamine toggle (primary user preference).
+ *   2. OS `prefers-reduced-motion` (system accessibility kill-switch).
+ *   3. Low battery (<15% AND not charging) — power-aware downgrade.
+ *
+ * Effects when "animate=false":
+ *   - `body.reduce-motion` class toggled (CSS kill-switch in index.css).
+ *   - `documentElement[data-reduced-motion="true"]` attribute for downstream
+ *     selectors.
+ *   - `MotionConfig reducedMotion="always"` — Framer Motion collapses all
+ *     transitions to instant.
+ *   - Static mirror in `animationUtils.setLowBatteryMirror` so non-React
+ *     call sites (audioManager, haptics) observe the same gate.
+ *
+ * Behaviour change vs. prior versions: users with Dopamine=on + OS reduce=on
+ * now see animations OFF (previously ON). Intentional per WCAG 2.3.3.
  */
 function AnimationGate({ children }: { children: ReactNode }) {
   const dopamine = useDopamineSettings();
+  const osPrefersReduce = useMediaQuery("(prefers-reduced-motion: reduce)");
+  const battery = useBatteryState();
 
   // Apply stored font scale on mount (sets --font-scale CSS custom property)
   useFontScaleInit();
 
+  const lowBattery =
+    battery !== null && !battery.charging && battery.level < LOW_BATTERY_THRESHOLD;
+  const animate = dopamine.animations && !osPrefersReduce && !lowBattery;
+
   useEffect(() => {
-    if (dopamine.animations) {
+    // Keep the module-level mirror in sync for non-React consumers.
+    setLowBatteryMirror(lowBattery);
+    return () => setLowBatteryMirror(false);
+  }, [lowBattery]);
+
+  useEffect(() => {
+    if (animate) {
       document.body.classList.remove("reduce-motion");
+      document.documentElement.dataset.reducedMotion = "false";
     } else {
       document.body.classList.add("reduce-motion");
+      document.documentElement.dataset.reducedMotion = "true";
     }
-    return () => document.body.classList.remove("reduce-motion");
-  }, [dopamine.animations]);
+    return () => {
+      document.body.classList.remove("reduce-motion");
+      delete document.documentElement.dataset.reducedMotion;
+    };
+  }, [animate]);
 
   return (
-    <MotionConfig reducedMotion={dopamine.animations ? "never" : "always"}>{children}</MotionConfig>
+    <MotionConfig reducedMotion={animate ? "never" : "always"}>{children}</MotionConfig>
   );
 }
 

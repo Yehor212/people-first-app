@@ -1,29 +1,128 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { startViewTransition } from '../viewTransitions';
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { startViewTransition, transition, withTransitionName } from "../viewTransitions";
 
-describe('startViewTransition', () => {
+vi.mock("@/lib/animationUtils", () => ({
+  shouldAnimate: vi.fn(() => true),
+}));
+
+import { shouldAnimate } from "@/lib/animationUtils";
+const shouldAnimateMock = vi.mocked(shouldAnimate);
+
+function installMockStartViewTransition() {
+  const mock = vi.fn((callback: () => void | Promise<void>) => {
+    // Mirror the real API: `finished` resolves when the callback
+    // resolves, rejects when it throws or rejects.
+    let finished: Promise<void>;
+    try {
+      const result = callback();
+      finished = result instanceof Promise ? result : Promise.resolve();
+    } catch (err) {
+      finished = Promise.reject(err instanceof Error ? err : new Error(String(err)));
+    }
+    return {
+      finished,
+      ready: finished,
+      updateCallbackDone: finished,
+      skipTransition: vi.fn(),
+    };
+  });
+  (document as unknown as Record<string, unknown>).startViewTransition = mock;
+  return mock;
+}
+
+describe("startViewTransition (legacy)", () => {
   beforeEach(() => {
-    // Clean up any mock on document
     delete (document as unknown as Record<string, unknown>).startViewTransition;
   });
 
-  it('calls document.startViewTransition when API is available', () => {
-    const mockTransition = vi.fn((cb: () => void) => cb());
-    (document as unknown as Record<string, unknown>).startViewTransition = mockTransition;
+  it("calls document.startViewTransition when API is available", () => {
+    const apiMock = vi.fn((cb: () => void) => {
+      cb();
+      return {
+        finished: Promise.resolve(),
+        ready: Promise.resolve(),
+        updateCallbackDone: Promise.resolve(),
+        skipTransition: vi.fn(),
+      };
+    });
+    (document as unknown as Record<string, unknown>).startViewTransition = apiMock;
 
-    const callback = vi.fn();
-    startViewTransition(callback);
-
-    expect(mockTransition).toHaveBeenCalledOnce();
-    expect(mockTransition).toHaveBeenCalledWith(callback);
+    const cb = vi.fn();
+    startViewTransition(cb);
+    expect(apiMock).toHaveBeenCalledOnce();
+    expect(cb).toHaveBeenCalledOnce();
   });
 
-  it('calls callback directly when API is not available', () => {
+  it("calls callback directly when API is not available", () => {
     expect((document as unknown as Record<string, unknown>).startViewTransition).toBeUndefined();
+    const cb = vi.fn();
+    startViewTransition(cb);
+    expect(cb).toHaveBeenCalledOnce();
+  });
+});
 
-    const callback = vi.fn();
-    startViewTransition(callback);
+describe("transition (Phase 0-D)", () => {
+  beforeEach(() => {
+    delete (document as unknown as Record<string, unknown>).startViewTransition;
+    document.documentElement.style.removeProperty("view-transition-name");
+    shouldAnimateMock.mockReturnValue(true);
+  });
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
 
-    expect(callback).toHaveBeenCalledOnce();
+  it("runs fn directly when the View Transitions API is missing", async () => {
+    const fn = vi.fn();
+    await transition(fn);
+    expect(fn).toHaveBeenCalledOnce();
+  });
+
+  it("runs fn directly when shouldAnimate() is false (reduced-motion path)", async () => {
+    installMockStartViewTransition();
+    shouldAnimateMock.mockReturnValue(false);
+    const fn = vi.fn();
+    await transition(fn, { name: "should-skip" });
+    expect(fn).toHaveBeenCalledOnce();
+    // No view-transition-name should be left on the root.
+    expect(document.documentElement.style.getPropertyValue("view-transition-name")).toBe("");
+  });
+
+  it("runs fn directly when skip=true even if API is available", async () => {
+    const apiMock = installMockStartViewTransition();
+    const fn = vi.fn();
+    await transition(fn, { skip: true });
+    expect(fn).toHaveBeenCalledOnce();
+    expect(apiMock).not.toHaveBeenCalled();
+  });
+
+  it("wraps fn in startViewTransition when all conditions allow", async () => {
+    const apiMock = installMockStartViewTransition();
+    const fn = vi.fn();
+    await transition(fn);
+    expect(apiMock).toHaveBeenCalledOnce();
+    expect(fn).toHaveBeenCalledOnce();
+  });
+
+  it("applies and cleans up view-transition-name on documentElement", async () => {
+    installMockStartViewTransition();
+    const fn = vi.fn();
+    await transition(fn, { name: "mood-orb" });
+    expect(document.documentElement.style.getPropertyValue("view-transition-name")).toBe("");
+  });
+
+  it("cleans up view-transition-name even when fn throws", async () => {
+    installMockStartViewTransition();
+    const fn = vi.fn(() => {
+      throw new Error("boom");
+    });
+    await expect(transition(fn, { name: "mood-orb" })).rejects.toThrow("boom");
+    expect(document.documentElement.style.getPropertyValue("view-transition-name")).toBe("");
+  });
+});
+
+describe("withTransitionName", () => {
+  it("returns a CSSProperties object containing viewTransitionName", () => {
+    const style = withTransitionName("hero");
+    expect(style).toEqual({ viewTransitionName: "hero" });
   });
 });

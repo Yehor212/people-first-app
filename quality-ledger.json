@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-04-16",
-  "phase": "0-C-paper-theme-core",
+  "lastUpdated": "2026-04-17",
+  "phase": "0-D-motion-foundations",
   "floors": {
     "tests.total": {
       "value": 3120,
@@ -68,6 +68,30 @@
       "direction": "up",
       "recorded": "2026-04-16",
       "description": "Phase 0-C — Paper theme infrastructure readiness (0=absent, 1=opt-in available). Adopted when: (a) color.theme.paper tokens in DTCG OKLCH format, (b) src/styles/themes.css @layer theme maps --zen-* aliases, (c) Zustand themeStore with persist + prefers-color-scheme auto resolution, (d) inline SVG feTurbulence noise + warm vignette active on paper variant, (e) dev preview page gated by import.meta.env.DEV, (f) contrast test passing. Phase 2 will ratchet to value=2 once paper becomes default for new users and Settings Panel surfaces the switch."
+    },
+    "motionHookCount": {
+      "value": 3,
+      "direction": "up",
+      "recorded": "2026-04-17",
+      "description": "Phase 0-D — count of motion-foundation hooks shipped. useMediaQuery (SSR-safe), useBatteryState (Navigator Battery API wrapper, null on Safari/iOS), useShouldAnimate (reactive AND-gate over Dopamine + OS reduce + battery). Phase 1 Motion Grammar verbs (Bloom/Fold/Morph/Settle/Breathe/Ripple) will consume these — each addition increments."
+    },
+    "viewTransitionReady": {
+      "value": 1,
+      "direction": "up",
+      "recorded": "2026-04-17",
+      "description": "Phase 0-D — View Transitions API wrapper readiness (0=absent, 1=ready, 2=adopted across grammar). src/lib/viewTransitions.ts exports transition(fn, {name, skip}) with (a) document.startViewTransition detection, (b) shouldAnimate() reduced-motion gate, (c) explicit skip option, (d) view-transition-name apply+cleanup on documentElement, (e) legacy startViewTransition kept for backward compat, (f) withTransitionName() React style helper. Typed via src/types/view-transitions.d.ts (ViewTransition + Document augmentation)."
+    },
+    "reducedMotionCompliance": {
+      "value": 1,
+      "direction": "up",
+      "recorded": "2026-04-17",
+      "description": "Phase 0-D — WCAG 2.3.3 compliance level for animation gating (0=non-compliant, 1=OS signal honoured, 2=verified via automated a11y audit). Raised from 0 because src/App.tsx AnimationGate now applies AND-logic: Dopamine=on AND !osPrefersReduce AND !lowBattery. Previously the gate explicitly ignored OS prefers-reduced-motion (src/App.tsx:42 old comment: 'OS prefers-reduced-motion is ignored so iOS users always get full visual fidelity'). Behaviour change documented: users with Dopamine=on + OS=reduce now see animations OFF (intended). MotionConfig + body.reduce-motion + documentElement[data-reduced-motion] all follow the same gate."
+    },
+    "batteryAwareMotion": {
+      "value": 1,
+      "direction": "up",
+      "recorded": "2026-04-17",
+      "description": "Phase 0-D — battery-aware motion downgrading (0=absent, 1=active). Raised from 0 because (a) src/hooks/useBatteryState.ts wraps Navigator.getBattery() with null-safe fallback for Safari/iOS, (b) useShouldAnimate + AnimationGate disable animations when battery.level < 0.15 AND !battery.charging, (c) animationUtils.setLowBatteryMirror mirrors the signal to non-React call sites (audioManager, haptics). Charging devices bypass the threshold since the power concern is removed."
     },
     "eslint.maxWarnings": {
       "value": 0,
