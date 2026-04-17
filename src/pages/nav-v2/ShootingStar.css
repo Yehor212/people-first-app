@@ -1,0 +1,56 @@
+/**
+ * ShootingStar — Phase 3-A.3 A+++ WOW-3 keyframes.
+ *
+ * Single short streak across upper third. Starts off-screen left, travels to
+ * upper-right with a fading trail. Transform + opacity only (GPU compositor).
+ */
+
+.shooting-star {
+  position: absolute;
+  top: 18%;
+  left: -10%;
+  width: 120px;
+  height: 1.5px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    hsl(var(--paper-warm-2, 38 60% 92%) / 0.0) 5%,
+    hsl(var(--paper-warm-2, 38 60% 92%) / 0.9) 60%,
+    hsl(var(--paper-warm-3, 30 70% 80%) / 1) 100%
+  );
+  border-radius: 9999px;
+  pointer-events: none;
+  transform: rotate(20deg) translate3d(0, 0, 0);
+  will-change: transform, opacity;
+  animation: shooting-star-fly 1.1s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+  opacity: 0;
+  z-index: 1;
+}
+
+@keyframes shooting-star-fly {
+  0% {
+    opacity: 0;
+    transform: rotate(20deg) translate3d(0, 0, 0) scaleX(0.4);
+  }
+  20% {
+    opacity: 1;
+    transform: rotate(20deg) translate3d(20vw, 12vh, 0) scaleX(1);
+  }
+  80% {
+    opacity: 0.8;
+    transform: rotate(20deg) translate3d(80vw, 48vh, 0) scaleX(1);
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(20deg) translate3d(110vw, 66vh, 0) scaleX(0.4);
+  }
+}
+
+/* Reduced motion: component already gates at render level; keep this as an
+   extra safety net so preferred-reduced-motion browsers never animate. */
+@media (prefers-reduced-motion: reduce) {
+  .shooting-star {
+    animation: none;
+    opacity: 0;
+  }
+}

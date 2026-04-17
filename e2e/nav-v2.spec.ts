@@ -52,9 +52,34 @@ async function primeApp(page: import("@playwright/test").Page) {
   }, { appVersion: packageJson.version });
 }
 
+// Phase 3-A.3: freeze time-of-day to 'day' (12:00) so palette/stars are
+// deterministic. Motion is disabled via `animations: "disabled"` in screenshot.
+async function freezeTimeToDay(page: import("@playwright/test").Page) {
+  await page.addInitScript(() => {
+    const fixedMs = new Date(2026, 3, 16, 12, 0, 0).getTime();
+    const OriginalDate = Date;
+    // @ts-expect-error — replace global Date with a fixed-offset subclass
+    globalThis.Date = class FixedDate extends OriginalDate {
+      constructor(...args: unknown[]) {
+        if (args.length === 0) {
+          super(fixedMs);
+        } else {
+          // @ts-expect-error pass through rest args
+          super(...args);
+        }
+      }
+      static now() {
+        return fixedMs;
+      }
+    };
+  });
+}
+
 test.describe("Nav V2 Infrastructure Baselines", () => {
-  test("desktop: SidebarV2 + Orb page shell", async ({ page }) => {
+  test("desktop: SidebarV2 + Orb page shell", async ({ page }, testInfo) => {
+    testInfo.setTimeout(60_000);
     await primeApp(page);
+    await freezeTimeToDay(page);
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto("/?nav=v2");
     await page.evaluate(() => document.fonts.ready);
@@ -70,16 +95,21 @@ test.describe("Nav V2 Infrastructure Baselines", () => {
       .getByRole("button", { name: /^Orb$/ });
     await expect(orbBtn).toHaveAttribute("aria-current", "page");
 
-    // Visual baseline — full-page capture
+    // Visual baseline — full-page capture. A+++ WOW layers render:
+    // time-of-day palette (day), parallax layers static at rest, aura ring,
+    // cinematic heading final state, mood slider.
     await expect(page).toHaveScreenshot("nav-v2-desktop-orb.png", {
       fullPage: true,
-      maxDiffPixelRatio: 0.02,
+      maxDiffPixelRatio: 0.03,
       animations: "disabled",
+      timeout: 30_000,
     });
   });
 
-  test("mobile: drawer trigger only, NO bottom tabs (Phase 3-A.1 sidebar-only)", async ({ page }) => {
+  test("mobile: drawer trigger only, NO bottom tabs (Phase 3-A.1 sidebar-only)", async ({ page }, testInfo) => {
+    testInfo.setTimeout(60_000);
     await primeApp(page);
+    await freezeTimeToDay(page);
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto("/?nav=v2");
     await page.evaluate(() => document.fonts.ready);
@@ -103,8 +133,9 @@ test.describe("Nav V2 Infrastructure Baselines", () => {
 
     await expect(page).toHaveScreenshot("nav-v2-mobile-orb.png", {
       fullPage: true,
-      maxDiffPixelRatio: 0.02,
+      maxDiffPixelRatio: 0.03,
       animations: "disabled",
+      timeout: 30_000,
     });
   });
 

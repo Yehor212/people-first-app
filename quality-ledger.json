@@ -1,8 +1,38 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-04-17",
-  "phase": "3-a-navigation-v2-infrastructure",
+  "lastUpdated": "2026-04-16",
+  "phase": "3-a.3-orbpage-a-plus-plus-plus-wow",
   "floors": {
+    "cosmicParallaxLayers": {
+      "value": 3,
+      "direction": "up",
+      "recorded": "2026-04-16",
+      "description": "Phase 3-A.3 WOW-1 — depth layers in CosmicOrbBackground: far (0.1x nebula), mid (0.3x stars), near (0.6x foreground dots). Pointer + DeviceOrientation drive CSS vars via useCosmicParallax; transforms run on GPU compositor (60 FPS). Ratchet floor guards that we never drop below 3 depth planes."
+    },
+    "timeOfDayPaletteCount": {
+      "value": 4,
+      "direction": "up",
+      "recorded": "2026-04-16",
+      "description": "Phase 3-A.3 WOW-2 — dawn/day/dusk/night palette buckets in CosmicOrbBackground.css, each driving --cob-tint-a/b/c + --cob-star-tint + --cob-shooting-tint + --cob-nebula-opacity via [data-tod] attribute. getTimeOfDay() picks bucket from new Date().getHours(). No React re-render on palette change."
+    },
+    "shootingStarsActive": {
+      "value": 1,
+      "direction": "up",
+      "recorded": "2026-04-16",
+      "description": "Phase 3-A.3 WOW-3 — <ShootingStar /> scheduler active. Random 8–15s interval, 1.1s streak across upper third, palette-tinted (--cob-shooting-tint), silent. useShouldAnimate gates completely."
+    },
+    "cinematicTypographyReveal": {
+      "value": 1,
+      "direction": "up",
+      "recorded": "2026-04-16",
+      "description": "Phase 3-A.3 WOW-5 — CinematicHeading renders greeting with per-character 50ms stagger, 6px y-shift fade, + SOFT axis 0→50 variation on italic emphasis word. framer-motion variants, one-shot on mount, static fallback under useShouldAnimate/useReducedMotion."
+    },
+    "orbReactiveAura": {
+      "value": 1,
+      "direction": "up",
+      "recorded": "2026-04-16",
+      "description": "Phase 3-A.3 WOW-4 — .orb-aura ring behind ValenceOrb breathes (4s sine) and pulses on tap (600ms scale+fade). Hue derives from mood valence (indigo 250 → cream 40 → amber 32). CSS-only animation toggled via data-orb-breathing / data-orb-pulse attributes."
+    },
     "motionVerbCount": {
       "value": 6,
       "direction": "up",

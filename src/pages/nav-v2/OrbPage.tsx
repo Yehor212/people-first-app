@@ -11,6 +11,7 @@ import { getToday, generateId } from "@/lib/utils";
 import { useShouldAnimate } from "@/hooks/useShouldAnimate";
 import { haptics } from "@/lib/haptics";
 import { CosmicOrbBackground } from "./CosmicOrbBackground";
+import { CinematicHeading } from "./CinematicHeading";
 import type { MoodEntry, MoodType } from "@/types";
 
 /**
@@ -114,10 +115,26 @@ export const OrbPage = memo(function OrbPage() {
   const whisperKey = useMemo(() => pickWhisperKey(), []);
   const whisperText = tx[whisperKey] || "How's your heart today?";
 
+  // WOW-4: reactive aura pulse — one-shot class toggle (CSS owns the keyframe).
+  const auraRef = useRef<HTMLDivElement>(null);
   const handleOrbTap = useCallback(() => {
     void haptics.tabChanged();
+    // Trigger one-shot pulse by flipping data-orb-pulse, clear after 650ms.
+    const node = auraRef.current;
+    if (node && shouldAnimate) {
+      node.setAttribute("data-orb-pulse", "true");
+      setTimeout(() => node.removeAttribute("data-orb-pulse"), 650);
+    }
     setShowStateOfMind(true);
-  }, []);
+  }, [shouldAnimate]);
+
+  // WOW-4: mood-derived aura hue (indigo when sad, cream neutral, amber when happy).
+  const auraHue = useMemo(() => {
+    // orbValence ranges roughly [-1, 1]. Map:
+    //   -1 → 250 (indigo), 0 → 40 (cream), +1 → 32 (amber).
+    if (orbValence < 0) return 40 + (250 - 40) * Math.min(1, -orbValence);
+    return 40 - (40 - 32) * Math.min(1, orbValence);
+  }, [orbValence]);
 
   // MoodSlider → MoodEntry. Slim write path (no gamification reward).
   const [sliderValue, setSliderValue] = useState<MoodType | undefined>(undefined);
@@ -161,25 +178,39 @@ export const OrbPage = memo(function OrbPage() {
 
         {/* Content layer — sits above cosmic background */}
         <div className="relative z-10 mx-auto max-w-3xl px-4 py-10 md:px-6 md:py-16">
-          {/* Greeting — chrome stage (80ms), literary display type */}
+          {/* Greeting — chrome stage (80ms), literary display type.
+             * WOW-5: CinematicHeading splits into leading text + italic emphasis
+             * and staggers characters with 50ms delay + SOFT axis animation
+             * on the emphasis word. Falls back to static text when reduced-motion. */}
           <Bloom key="orb-greeting" transition={staggerDelay("chrome")}>
-            <h1
-              ref={h1Ref}
-              id="orb-page-heading"
-              tabIndex={-1}
-              className="font-display text-3xl md:text-5xl font-semibold tracking-tight text-foreground text-center outline-none"
-            >
-              {greetingText},{" "}
-              <span className="italic font-light">{displayName}</span>
-            </h1>
+            <div ref={h1Ref} tabIndex={-1} className="outline-none">
+              <CinematicHeading
+                id="orb-page-heading"
+                leadText={`${greetingText}, `}
+                emphasis={displayName}
+                className="font-display text-3xl md:text-5xl font-semibold tracking-tight text-foreground text-center outline-none"
+              />
+            </div>
           </Bloom>
 
-          {/* ValenceOrb hero — primary stage (140ms), enlarged + ambient rim glow */}
+          {/* ValenceOrb hero — primary stage (140ms), enlarged + reactive aura.
+             * WOW-4: `.orb-aura` ring behind the orb breathes at 4s cadence,
+             * colour derives from mood valence (indigo→cream→amber), and tap
+             * triggers a one-shot pulse via data-orb-pulse. */}
           <Bloom key="orb-hero" transition={staggerDelay("primary")}>
             <div className="mt-12 md:mt-16 flex items-center justify-center">
               <div
                 className="relative orb-page-rim-glow"
+                data-orb-breathing={shouldAnimate ? "true" : "false"}
+                style={{ "--orb-aura-hue": auraHue } as React.CSSProperties}
               >
+                {/* Breathing aura — painted behind the orb button */}
+                <div
+                  ref={auraRef}
+                  className="orb-aura"
+                  data-testid="orb-aura"
+                  aria-hidden="true"
+                />
                 <button
                   type="button"
                   onClick={handleOrbTap}

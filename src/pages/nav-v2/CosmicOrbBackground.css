@@ -1,36 +1,221 @@
 /**
- * CosmicOrbBackground — Phase 3-A.2 WOW-factor backdrop styles.
+ * CosmicOrbBackground — Phase 3-A.3 A+++ WOW styles.
  *
- * Gradients live in CSS (not inline) to stay within the Ratchet inlineStyles
- * budget. All three rely on CSS custom properties already defined by the
- * FocusTimer theme (focus-cosmic-*, nebula-a/b) so palette drift is zero.
+ * Five cinematic layers composed via CSS custom properties so re-painting
+ * palettes or responding to mouse parallax never requires a React re-render:
  *
- * Layers (painter order, back to front):
- *   .cosmic-orb-bg__dark-radial  — dark-mode cosmic radial (hidden in light)
- *   .cosmic-orb-bg__nebula        — twin radial nebulae (used in both animated
- *                                   and static variants via class toggle)
+ *   1. Time-of-day palette vars (`--cob-tint-a/b/c` + `--cob-star-tint`)
+ *      switched by [data-tod="dawn|day|dusk|night"] on the root.
+ *   2. Parallax transforms consume (`--parallax-x`, `--parallax-y`) written by
+ *      useCosmicParallax — far layer drifts at 0.1x, mid at 0.3x, near at
+ *      0.6x for perceptible depth.
+ *   3. Near particles (`.cosmic-orb-bg__near > .dot-*`) — 8 larger motes.
+ *   4. Nebula twin radials (`.cosmic-orb-bg__nebula`) now tinted per palette.
+ *   5. Dark-mode radial preserved — it's a legit cosmic bucket already.
+ *
+ * Every animated property is transform or opacity → GPU compositor → 60 FPS.
  */
 
+/* ---------- Time-of-day palettes (CSS vars consumed by every layer) ---------- */
+
+[data-tod="dawn"] {
+  --cob-tint-a: 18 82% 92%;   /* pale rose */
+  --cob-tint-b: 42 90% 88%;   /* soft gold */
+  --cob-tint-c: 210 75% 92%;  /* morning blue */
+  --cob-star-tint: 28 80% 80%;
+  --cob-shooting-tint: 22 90% 78%;
+  --cob-nebula-opacity: 0.42;
+}
+
+[data-tod="day"] {
+  --cob-tint-a: 40 85% 95%;   /* ivory */
+  --cob-tint-b: 38 90% 85%;   /* amber */
+  --cob-tint-c: 205 85% 90%;  /* sky */
+  --cob-star-tint: 200 70% 85%;
+  --cob-shooting-tint: 35 90% 80%;
+  --cob-nebula-opacity: 0.35;
+}
+
+[data-tod="dusk"] {
+  --cob-tint-a: 16 92% 78%;   /* orange */
+  --cob-tint-b: 340 75% 82%;  /* coral */
+  --cob-tint-c: 255 65% 72%;  /* indigo */
+  --cob-star-tint: 30 90% 78%;
+  --cob-shooting-tint: 22 95% 72%;
+  --cob-nebula-opacity: 0.48;
+}
+
+[data-tod="night"] {
+  --cob-tint-a: 250 55% 22%;  /* deep indigo */
+  --cob-tint-b: 275 55% 28%;  /* violet */
+  --cob-tint-c: 195 65% 45%;  /* subtle cyan */
+  --cob-star-tint: 225 40% 90%;
+  --cob-shooting-tint: 38 95% 85%;
+  --cob-nebula-opacity: 0.55;
+}
+
+/* ---------- Time-of-day base wash (replaces old amber→sky→indigo fixed) ---------- */
+
+.cosmic-orb-bg__tod-wash {
+  background: linear-gradient(
+    to bottom,
+    hsl(var(--cob-tint-a)) 0%,
+    hsl(var(--cob-tint-b)) 50%,
+    hsl(var(--cob-tint-c)) 100%
+  );
+  transition: background 2000ms ease-in-out;
+}
+
+/* Dark cosmic radial — kept for dark theme opt-in, now uses tod-night tints
+   when tod attribute is present. */
 .cosmic-orb-bg__dark-radial {
   background: radial-gradient(
     ellipse at center,
-    hsl(var(--focus-cosmic-light)) 0%,
-    hsl(var(--focus-cosmic-mid)) 40%,
-    hsl(var(--focus-cosmic-dark)) 100%
+    hsl(var(--focus-cosmic-light, var(--cob-tint-c))) 0%,
+    hsl(var(--focus-cosmic-mid, var(--cob-tint-b))) 40%,
+    hsl(var(--focus-cosmic-dark, var(--cob-tint-a))) 100%
   );
 }
 
-.cosmic-orb-bg__nebula {
-  background:
-    radial-gradient(circle at 30% 30%, var(--nebula-a) 0%, transparent 40%),
-    radial-gradient(circle at 70% 70%, var(--nebula-b) 0%, transparent 40%);
+/* ---------- Parallax layers ---------- */
+
+.cosmic-orb-bg__far,
+.cosmic-orb-bg__mid,
+.cosmic-orb-bg__near {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  will-change: transform;
 }
 
+/* Far layer — slow drift (0.1x mouse) applied to nebula. */
+.cosmic-orb-bg__far {
+  transform: translate3d(
+    calc(var(--parallax-x, 0) * -6px),
+    calc(var(--parallax-y, 0) * -6px),
+    0
+  );
+  transition: transform 400ms cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+/* Mid layer — existing stars drift at 0.3x. */
+.cosmic-orb-bg__mid {
+  transform: translate3d(
+    calc(var(--parallax-x, 0) * -18px),
+    calc(var(--parallax-y, 0) * -18px),
+    0
+  );
+  transition: transform 300ms cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+/* Near layer — larger foreground particles drift at 0.6x. */
+.cosmic-orb-bg__near {
+  transform: translate3d(
+    calc(var(--parallax-x, 0) * -36px),
+    calc(var(--parallax-y, 0) * -36px),
+    0
+  );
+  transition: transform 200ms cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+/* ---------- Near particles — 8 larger motes, palette-tinted ---------- */
+
+.cosmic-orb-bg__near .dot {
+  position: absolute;
+  border-radius: 9999px;
+  background: hsl(var(--cob-star-tint) / 0.75);
+  box-shadow: 0 0 10px hsl(var(--cob-star-tint) / 0.55);
+  opacity: 0.65;
+  will-change: transform, opacity;
+}
+
+.cosmic-orb-bg__near .dot-1 { top: 12%; left: 18%; width: 4px; height: 4px; }
+.cosmic-orb-bg__near .dot-2 { top: 22%; left: 72%; width: 5px; height: 5px; }
+.cosmic-orb-bg__near .dot-3 { top: 38%; left: 9%;  width: 3px; height: 3px; }
+.cosmic-orb-bg__near .dot-4 { top: 52%; left: 88%; width: 6px; height: 6px; }
+.cosmic-orb-bg__near .dot-5 { top: 66%; left: 30%; width: 4px; height: 4px; }
+.cosmic-orb-bg__near .dot-6 { top: 78%; left: 62%; width: 5px; height: 5px; }
+.cosmic-orb-bg__near .dot-7 { top: 85%; left: 14%; width: 3px; height: 3px; }
+.cosmic-orb-bg__near .dot-8 { top: 15%; left: 52%; width: 4px; height: 4px; }
+
+/* ---------- Nebula twin radials (tinted per palette) ---------- */
+
+.cosmic-orb-bg__nebula {
+  background:
+    radial-gradient(
+      circle at 30% 30%,
+      hsl(var(--cob-tint-b) / var(--cob-nebula-opacity)) 0%,
+      transparent 40%
+    ),
+    radial-gradient(
+      circle at 70% 70%,
+      hsl(var(--cob-tint-c) / var(--cob-nebula-opacity)) 0%,
+      transparent 40%
+    );
+}
+
+/* ---------- Orb reactive aura ---------- */
+
 /**
- * Ambient rim glow for the OrbPage hero — soft 48px drop-shadow using the
- * primary colour token. Uses filter (GPU compositor) — no layout thrash.
+ * .orb-aura — breathing ring behind ValenceOrb. Mood colour derives from
+ * CSS var `--orb-aura-hue` (0–360) set inline by OrbPage (low = indigo 250,
+ * neutral = cream 40, high = amber 32).
  */
+.orb-aura {
+  position: absolute;
+  inset: -16%;
+  border-radius: 9999px;
+  background: radial-gradient(
+    circle,
+    hsl(var(--orb-aura-hue, 32) 75% 72% / 0.45) 0%,
+    hsl(var(--orb-aura-hue, 32) 75% 72% / 0.18) 45%,
+    transparent 70%
+  );
+  filter: blur(18px);
+  transform: translateZ(0);
+  will-change: transform, opacity;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.4;
+}
+
+/* Breathing — slow 4s sine via two keyframe stops, only when motion allowed */
+@keyframes orb-aura-breathe {
+  0%, 100% { transform: scale(1); opacity: 0.35; }
+  50%      { transform: scale(1.025); opacity: 0.55; }
+}
+
+[data-orb-breathing="true"] .orb-aura {
+  animation: orb-aura-breathe 4s ease-in-out infinite;
+}
+
+/* Tap pulse — one-shot. JS adds [data-orb-pulse="true"] for 600ms then removes. */
+@keyframes orb-aura-pulse {
+  0%   { transform: scale(1);   opacity: 0.7; }
+  100% { transform: scale(1.4); opacity: 0;   }
+}
+
+[data-orb-pulse="true"] .orb-aura {
+  animation: orb-aura-pulse 600ms cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+}
+
+/* ---------- Legacy rim glow (still used on the button wrapper) ---------- */
+
 .orb-page-rim-glow {
   filter: drop-shadow(0 0 48px hsl(var(--primary) / 0.25));
 }
 
+/* ---------- Reduced-motion safety nets ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .cosmic-orb-bg__far,
+  .cosmic-orb-bg__mid,
+  .cosmic-orb-bg__near {
+    transform: none !important;
+    transition: none !important;
+  }
+  [data-orb-breathing="true"] .orb-aura,
+  [data-orb-pulse="true"] .orb-aura {
+    animation: none !important;
+  }
+}

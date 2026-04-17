@@ -1,0 +1,16 @@
+/**
+ * CinematicHeading — Phase 3-A.3 WOW-5 CSS helpers.
+ *
+ * Keeps style={{}} counts within ratchet budget by exposing class selectors
+ * for the per-character display/whitespace rules and for the static fallback
+ * font-variation-settings.
+ */
+
+.cinematic-heading__char {
+  display: inline-block;
+  white-space: pre;
+}
+
+.cinematic-heading__soft-static {
+  font-variation-settings: "SOFT" 50;
+}
