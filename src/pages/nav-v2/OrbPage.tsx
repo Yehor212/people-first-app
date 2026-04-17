@@ -5,6 +5,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useThemeStore } from "@/stores/themeStore";
 import { ValenceOrb } from "@/components/state-of-mind/ValenceOrb";
 import { EmotionTagGrid } from "@/components/state-of-mind/EmotionTagGrid";
+import { isSensitiveTag } from "@/components/state-of-mind/emotionTags";
 import { MoodSlider } from "@/features/journal";
 import { StateOfMindModal } from "@/components/state-of-mind/StateOfMindModal";
 import { haptics } from "@/lib/haptics";
@@ -211,6 +212,7 @@ export const OrbPage = memo(function OrbPage() {
                   valence={draftValence}
                   selected={draftEmotion ? [draftEmotion] : []}
                   onToggle={handleEmotionToggle}
+                  expandable
                 />
               </div>
             </Bloom>
@@ -223,6 +225,26 @@ export const OrbPage = memo(function OrbPage() {
                 onConfirm={handleConfirm}
                 onSkip={handleSkip}
               />
+              {draftEmotion && isSensitiveTag(draftEmotion) && (
+                <div className="mt-3 flex justify-center">
+                  <a
+                    href="/support"
+                    data-testid="mood-support-link"
+                    className={[
+                      "text-xs transition-colors",
+                      appliedTheme === "paper"
+                        ? "text-warm-brown-ink/50 hover:text-primary"
+                        : "text-white/50 hover:text-primary",
+                    ].join(" ")}
+                    onClick={(e) => {
+                      // Future: route to /support. For now, soft intent signal only.
+                      e.preventDefault();
+                    }}
+                  >
+                    {tx.moodSupportLink || "Need support?"}
+                  </a>
+                </div>
+              )}
             </div>
           )}
         </div>

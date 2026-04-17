@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
   "lastUpdated": "2026-04-17",
-  "phase": "3-a.4b-orbpage-mood-entry-flow",
+  "phase": "3-a.4c-ii-c-a-emotion-progressive-disclosure",
   "floors": {
     "moodScopeSelectorActive": {
       "value": 1,
@@ -14,6 +14,36 @@
       "direction": "up",
       "recorded": "2026-04-17",
       "description": "Phase 3-A.4b — existing EmotionTagGrid component reused on OrbPage, revealed after valence chosen via slider. Filters chips by draft valence range, single-select for orb flow (modal stays multi-select)."
+    },
+    "emotionVocabularyCount": {
+      "value": 100,
+      "direction": "up",
+      "recorded": "2026-04-17",
+      "description": "Phase 3-A.4c — total emotion tags in src/components/state-of-mind/emotionTags.ts. Hybrid taxonomy: Russell circumplex (valence) x Cowen/Keltner 27 x Plutchik intensity. 100 tags across 5 valence buckets (TERRIBLE / BAD / OKAY / GOOD / GREAT) x 20 per bucket, warmth-gradient sorted within bucket. Each tag carries arousal + warmth + initialVisible + sensitive metadata."
+    },
+    "emotionProgressiveDisclosure": {
+      "value": 1,
+      "direction": "up",
+      "recorded": "2026-04-17",
+      "description": "Phase 3-A.4c-ii-c-a — EmotionTagGrid gained expandable?: boolean prop. When expandable=true (OrbPage), grid renders only tier-1 (initialVisible) chips plus a 'More precise' button that reveals the full spectrum with Bloom-shaped chip stagger. Button toggles bidirectionally with aria-expanded wired + ArrowLeft/Right keyboard navigation between chips. Default (expandable=false) preserves V1 'Show more' behavior for StateOfMindModal."
+    },
+    "sensitiveEmotionLink": {
+      "value": 1,
+      "direction": "up",
+      "recorded": "2026-04-17",
+      "description": "Phase 3-A.4c-ii-c-a — OrbPage renders a muted 'Need support?' link below Confirm CTA whenever the user has picked an emotion flagged sensitive in emotionTags.ts (hopeless, worthless, despairing). Styling is scope-aware: cosmic theme uses text-white/50, paper (day) theme uses text-warm-brown-ink/50. Link calls preventDefault for now — a stub for a future /support route. Literary, non-alarmist tone preserves the orb's contemplative POV."
+    },
+    "emotionChipsInitialVisible": {
+      "value": 8,
+      "direction": "stable",
+      "recorded": "2026-04-17",
+      "description": "Phase 3-A.4c-ii-c-a — number of tier-1 emotion chips surfaced per bucket when a valence lies at a single-bucket edge. Overlap zones (mid-bucket valences) surface additional initialVisible tags from adjacent buckets for richer disclosure at transition points. 8 reflects Miller's 7+-2 chunking limit (cognitive-load optimum)."
+    },
+    "emotionChipsExpanded": {
+      "value": 20,
+      "direction": "stable",
+      "recorded": "2026-04-17",
+      "description": "Phase 3-A.4c-ii-c-a — number of emotion chips per bucket when progressive disclosure is fully expanded. 20 per bucket x 5 buckets = 100-tag vocabulary. Overlap ranges may present more at mid-bucket valences; this ratchet tracks the documented per-bucket size."
     },
     "moodAutoFlowToDiary": {
       "value": 1,
