@@ -4,6 +4,7 @@ import { Bloom } from "@/lib/motion";
 import { staggerDelay } from "@/lib/motion/choreography";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useUserDataStore } from "@/stores";
+import { useThemeStore } from "@/stores/themeStore";
 import { ValenceOrb } from "@/components/state-of-mind/ValenceOrb";
 import { MoodSlider } from "@/features/journal";
 import { StateOfMindModal } from "@/components/state-of-mind/StateOfMindModal";
@@ -70,6 +71,13 @@ export const OrbPage = memo(function OrbPage() {
   const h1Ref = useRef<HTMLHeadingElement>(null);
   const shouldAnimate = useShouldAnimate();
   const parallaxRef = useCosmicParallax<HTMLDivElement>();
+  const appliedTheme = useThemeStore((s) => s.appliedTheme);
+
+  // Phase 3-A.4a-day: scope class switches between cosmic dark (ink/oled) and
+  // warm paper variant. Paper scope flips Tailwind foreground tokens so greeting
+  // + whisper resolve to warm brown-ink (≥4.5:1 contrast on all 5 palettes).
+  const scopeClass =
+    appliedTheme === "paper" ? "orb-day-scope" : "dark orb-cosmic-scope";
 
   const { moods, userName, setMoods } = useUserDataStore(
     useShallow((s) => ({
@@ -172,7 +180,7 @@ export const OrbPage = memo(function OrbPage() {
         id="main-content-v2"
         role="main"
         tabIndex={-1}
-        className="dark orb-cosmic-scope relative min-h-screen overflow-hidden outline-none"
+        className={`${scopeClass} relative min-h-screen overflow-hidden outline-none`}
         aria-labelledby="orb-page-heading"
         data-testid="orb-page"
       >

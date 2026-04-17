@@ -20,36 +20,49 @@ import { createRequire } from "module";
 const require = createRequire(import.meta.url);
 const packageJson = require("../package.json") as { version: string };
 
-async function primeApp(page: import("@playwright/test").Page) {
-  await page.addInitScript(({ appVersion }: { appVersion: string }) => {
-    // Dismiss first-run chrome so Nav V2 shell takes centre stage.
-    localStorage.setItem("zenflow-language-selected", JSON.stringify(true));
-    localStorage.setItem("zenflow-google-auth-checked", JSON.stringify(true));
-    localStorage.setItem("zenflow-tutorial-complete", JSON.stringify(true));
-    localStorage.setItem("zenflow-onboarding-complete", JSON.stringify(true));
-    localStorage.setItem(
-      "zenflow-notification-permission-checked",
-      JSON.stringify(true),
-    );
-    localStorage.setItem(
-      "zenflow_onboarding_state",
-      JSON.stringify({
-        isNewUser: false,
-        hasSeenWelcome: true,
-        firstLoginDate: Date.now(),
-        daysActive: 5,
-        lastActiveDate: new Date().toISOString().split("T")[0],
-        unlockedFeatures: [],
-      }),
-    );
-    localStorage.setItem("zenflow_last_seen_version", appVersion);
-    localStorage.setItem("zenflow-theme", "light");
-    localStorage.setItem(
-      "zenflow-privacy",
-      JSON.stringify({ noTracking: false, analytics: false, consentShown: true }),
-    );
-    localStorage.setItem("zenflow-privacy-acknowledged", JSON.stringify(true));
-  }, { appVersion: packageJson.version });
+async function primeApp(
+  page: import("@playwright/test").Page,
+  opts: { paperTheme?: "paper" | "ink" } = {},
+) {
+  const paperTheme = opts.paperTheme ?? "paper";
+  await page.addInitScript(
+    ({ appVersion, paperTheme }: { appVersion: string; paperTheme: string }) => {
+      // Dismiss first-run chrome so Nav V2 shell takes centre stage.
+      localStorage.setItem("zenflow-language-selected", JSON.stringify(true));
+      localStorage.setItem("zenflow-google-auth-checked", JSON.stringify(true));
+      localStorage.setItem("zenflow-tutorial-complete", JSON.stringify(true));
+      localStorage.setItem("zenflow-onboarding-complete", JSON.stringify(true));
+      localStorage.setItem(
+        "zenflow-notification-permission-checked",
+        JSON.stringify(true),
+      );
+      localStorage.setItem(
+        "zenflow_onboarding_state",
+        JSON.stringify({
+          isNewUser: false,
+          hasSeenWelcome: true,
+          firstLoginDate: Date.now(),
+          daysActive: 5,
+          lastActiveDate: new Date().toISOString().split("T")[0],
+          unlockedFeatures: [],
+        }),
+      );
+      localStorage.setItem("zenflow_last_seen_version", appVersion);
+      localStorage.setItem("zenflow-theme", "light");
+      // Phase 3-A.4a-day: seed paper/ink theme store so OrbPage variant-switches
+      // CosmicBgAdapter between DayCosmicBackground and night cosmic.
+      localStorage.setItem(
+        "zenflow:theme-v0c",
+        JSON.stringify({ state: { theme: paperTheme }, version: 0 }),
+      );
+      localStorage.setItem(
+        "zenflow-privacy",
+        JSON.stringify({ noTracking: false, analytics: false, consentShown: true }),
+      );
+      localStorage.setItem("zenflow-privacy-acknowledged", JSON.stringify(true));
+    },
+    { appVersion: packageJson.version, paperTheme },
+  );
 }
 
 // Phase 3-A.3: freeze time-of-day to 'day' (12:00) so palette/stars are
@@ -76,9 +89,9 @@ async function freezeTimeToDay(page: import("@playwright/test").Page) {
 }
 
 test.describe("Nav V2 Infrastructure Baselines", () => {
-  test("desktop: SidebarV2 + Orb page shell", async ({ page }, testInfo) => {
+  test("desktop: SidebarV2 + Orb page shell (day variant — paper theme)", async ({ page }, testInfo) => {
     testInfo.setTimeout(60_000);
-    await primeApp(page);
+    await primeApp(page, { paperTheme: "paper" });
     await freezeTimeToDay(page);
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto("/?nav=v2");
@@ -88,17 +101,17 @@ test.describe("Nav V2 Infrastructure Baselines", () => {
     await expect(page.getByTestId("sidebar-v2")).toBeVisible();
     await expect(page.getByTestId("orb-page")).toBeVisible();
 
-    // URL should auto-redirect to /orb on first page load (or stay at root).
-    // aria-current is on the orb button
+    // Day variant must render (paper theme → warm 7-layer scene)
+    await expect(page.getByTestId("day-cosmic-background")).toBeVisible();
+
     const orbBtn = page
       .getByTestId("sidebar-v2")
       .getByRole("button", { name: /^Orb$/ });
     await expect(orbBtn).toHaveAttribute("aria-current", "page");
 
-    // Visual baseline — full-page capture. A+++ WOW layers render:
-    // time-of-day palette (day), parallax layers static at rest, aura ring,
-    // cinematic heading final state, mood slider.
-    await expect(page).toHaveScreenshot("nav-v2-desktop-orb.png", {
+    // Visual baseline — day variant (paper): warm OKLCH mesh, dust motes,
+    // god-rays, paper grain, cinematic greeting, orb hero, mood slider.
+    await expect(page).toHaveScreenshot("nav-v2-desktop-orb-day.png", {
       fullPage: true,
       maxDiffPixelRatio: 0.03,
       animations: "disabled",
@@ -106,32 +119,70 @@ test.describe("Nav V2 Infrastructure Baselines", () => {
     });
   });
 
-  test("mobile: drawer trigger only, NO bottom tabs (Phase 3-A.1 sidebar-only)", async ({ page }, testInfo) => {
+  test("desktop: SidebarV2 + Orb page shell (night variant — ink theme, cosmic)", async ({ page }, testInfo) => {
     testInfo.setTimeout(60_000);
-    await primeApp(page);
+    await primeApp(page, { paperTheme: "ink" });
+    await freezeTimeToDay(page);
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto("/?nav=v2");
+    await page.evaluate(() => document.fonts.ready);
+
+    await expect(page.getByTestId("orb-page")).toBeVisible();
+    // Night variant must render (ink theme → stars + violet nebula, UNCHANGED)
+    await expect(page.getByTestId("cosmic-orb-background")).toBeVisible();
+    await expect(page.getByTestId("cosmic-orb-nebula")).toBeVisible();
+
+    // Visual baseline — night variant (ink): legacy cosmic dark, stars, nebula.
+    await expect(page).toHaveScreenshot("nav-v2-desktop-orb-night.png", {
+      fullPage: true,
+      maxDiffPixelRatio: 0.03,
+      animations: "disabled",
+      timeout: 30_000,
+    });
+  });
+
+  test("mobile: drawer trigger only, NO bottom tabs (day variant — paper theme)", async ({ page }, testInfo) => {
+    testInfo.setTimeout(60_000);
+    await primeApp(page, { paperTheme: "paper" });
     await freezeTimeToDay(page);
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto("/?nav=v2");
     await page.evaluate(() => document.fonts.ready);
 
-    // Orb page + drawer trigger must render.
     await expect(page.getByTestId("orb-page")).toBeVisible();
     await expect(page.getByTestId("nav-v2-open-drawer")).toBeVisible();
+    await expect(page.getByTestId("day-cosmic-background")).toBeVisible();
 
-    // Bottom tab bar must NOT render — Phase 3-A.1 Option A correction.
     expect(await page.getByTestId("mobile-nav-v2").count()).toBe(0);
     for (const id of ["orb", "habits", "diary", "settings"]) {
       expect(await page.getByTestId(`mobile-nav-v2-tab-${id}`).count()).toBe(0);
     }
 
-    // Primary landmark still exposed via SidebarV2 (CSS-hidden on mobile, in DOM).
-    // SidebarV2 uses role="navigation" + aria-label on its <aside> wrapper.
     const primaryNav = await page
       .locator('[role="navigation"][aria-label*="Primary" i]')
       .count();
     expect(primaryNav).toBeGreaterThan(0);
 
-    await expect(page).toHaveScreenshot("nav-v2-mobile-orb.png", {
+    await expect(page).toHaveScreenshot("nav-v2-mobile-orb-day.png", {
+      fullPage: true,
+      maxDiffPixelRatio: 0.03,
+      animations: "disabled",
+      timeout: 30_000,
+    });
+  });
+
+  test("mobile: night variant (ink theme, cosmic dark)", async ({ page }, testInfo) => {
+    testInfo.setTimeout(60_000);
+    await primeApp(page, { paperTheme: "ink" });
+    await freezeTimeToDay(page);
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto("/?nav=v2");
+    await page.evaluate(() => document.fonts.ready);
+
+    await expect(page.getByTestId("orb-page")).toBeVisible();
+    await expect(page.getByTestId("cosmic-orb-background")).toBeVisible();
+
+    await expect(page).toHaveScreenshot("nav-v2-mobile-orb-night.png", {
       fullPage: true,
       maxDiffPixelRatio: 0.03,
       animations: "disabled",

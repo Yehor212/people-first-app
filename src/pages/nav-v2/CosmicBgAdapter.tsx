@@ -2,28 +2,28 @@ import { memo } from "react";
 import { motion } from "framer-motion";
 import { CosmicStar, cosmicStars } from "@/components/FocusReflectionModal";
 import { useShouldAnimate } from "@/hooks/useShouldAnimate";
+import { useThemeStore } from "@/stores/themeStore";
+import { DayCosmicBackground } from "./DayCosmicBackground";
 import "./CosmicBgAdapter.css";
 
 /**
  * CosmicBgAdapter — Phase 3-A.4a cosmic backdrop for OrbPage.
  *
- * Reuses the exact visual layers from src/components/focus-timer/CosmicBackground.tsx
- * (proven quality) — light-mode Sun-Dappled Meadow gradient + dark-mode cosmic
- * radial + cosmicStars particles + dual-pool nebula glow — but WITHOUT the CTA
- * "Start here" header pill that focus-timer needs for its own surface.
+ * Phase 3-A.4a-day addition: this adapter now VARIANT-SWITCHES between two
+ * parallel cinematic scenes based on the resolved paper/ink/oled theme:
+ *   - appliedTheme === 'paper' → <DayCosmicBackground /> (warm 7-layer scene)
+ *   - appliedTheme === 'ink' | 'oled' → legacy cosmic dark (stars + nebula)
  *
- * Why an adapter (not direct reuse): focus-timer's CosmicBackground renders a
- * fragment with the pill baked in and always mounted. OrbPage is a mindfulness
- * surface — no pill. Modifying focus-timer to accept an optional label would
- * risk its main purpose. This adapter reproduces the four visual layers only,
- * identical palette/tokens, and wraps them in a single aria-hidden container
- * absolutely positioned so OrbPage can stack content on top.
+ * The two scenes share the SAME "wow" mandate — night cosmic remains
+ * UNTOUCHED (dark theme users still see stars + violet nebula exactly as
+ * shipped in dfcce25). Day variant adds warm OKLCH mesh, bokeh pools,
+ * soft-light atmosphere, god-rays, 35 dust motes, static paper grain,
+ * and edge vignette — research-grounded (Calm/Headspace/Day One/iA Writer).
  *
- * Layers (painter order):
- *   1. Light-mode base gradient — amber-50 → sky-50 → indigo-50 (dark:bg-none).
- *   2. Dark-mode cosmic radial — hsl(--focus-cosmic-*) via ellipse gradient.
- *   3. Star particles — CosmicStar instances from FocusReflectionModal seed.
- *   4. Dual-pool nebula glow — --nebula-a (30/30) + --nebula-b (70/70), pulsed.
+ * Night layers (painter order):
+ *   1. Dark-mode cosmic radial — hsl(--focus-cosmic-*) via ellipse gradient.
+ *   2. Star particles — CosmicStar instances from FocusReflectionModal seed.
+ *   3. Dual-pool nebula glow — --nebula-a (30/30) + --nebula-b (70/70), pulsed.
  *
  * Perf (Law 8): every layer is transform/opacity only. Nebula pulse guarded by
  * useShouldAnimate so reduced-motion keeps the static frame (opacity 0.35).
@@ -33,6 +33,12 @@ import "./CosmicBgAdapter.css";
  */
 export const CosmicBgAdapter = memo(function CosmicBgAdapter() {
   const shouldAnimate = useShouldAnimate();
+  const appliedTheme = useThemeStore((s) => s.appliedTheme);
+
+  // Paper theme → day variant (warm WOW). Ink/oled → night cosmic (untouched).
+  if (appliedTheme === "paper") {
+    return <DayCosmicBackground />;
+  }
 
   return (
     <div
@@ -40,11 +46,8 @@ export const CosmicBgAdapter = memo(function CosmicBgAdapter() {
       data-testid="cosmic-orb-background"
       className="pointer-events-none absolute inset-0 z-0 overflow-hidden"
     >
-      {/* Light-mode Sun-Dappled Meadow base */}
-      <div className="absolute inset-0 bg-gradient-to-b from-amber-50 via-sky-50 to-indigo-50 dark:bg-none" />
-
-      {/* Dark-mode cosmic radial */}
-      <div className="absolute inset-0 hidden dark:block cosmic-bg-adapter__dark-radial" />
+      {/* Dark-mode cosmic radial — paper variant routed to DayCosmicBackground above */}
+      <div className="absolute inset-0 cosmic-bg-adapter__dark-radial" />
 
       {/* Star particles — reuse the proven FocusReflectionModal seed */}
       {cosmicStars.map((star) => (

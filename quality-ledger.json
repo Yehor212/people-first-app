@@ -10,10 +10,28 @@
       "description": "Phase 3-A.4a — parallax coverage. Phase 3-A.3 shipped a 3-plane parallax inside the now-deleted CosmicOrbBackground. 3-A.4a swapped cosmic backdrop to the proven focus-timer CosmicBackground (via CosmicBgAdapter) which doesn't define depth layers; parallax now drives the ShootingStar flourish sibling layer via useCosmicParallax ref. Floor dropped to 1 (single parallax-driven layer) rather than deleted — future phases may re-introduce multi-plane depth without breaking the new proven base."
     },
     "timeOfDayPaletteCount": {
-      "value": 0,
+      "value": 5,
       "direction": "up",
       "recorded": "2026-04-16",
-      "description": "Phase 3-A.4a DEPRECATED — time-of-day palette (dawn/day/dusk/night buckets) was specific to the custom CosmicOrbBackground deleted in 3-A.4a. The adopted focus-timer CosmicBackground uses a single Sun-Dappled Meadow light palette + dark cosmic radial. Floor set to 0 (feature intentionally retired). May return as a Phase 3-B enhancement on top of the new proven base."
+      "description": "Phase 3-A.4a-day REVIVED — 5 OKLCH time-of-day palettes (dawn/morning/afternoon/golden/dusk) power DayCosmicBackground via [data-daymode] custom properties. WCAG AA contrast verified for warm brown-ink text across every palette."
+    },
+    "dayCosmicVariant": {
+      "value": 1,
+      "direction": "up",
+      "recorded": "2026-04-16",
+      "description": "Phase 3-A.4a-day — DayCosmicBackground parallel 7-layer warm scene for paper theme. CosmicBgAdapter variant-switches on useThemeStore.appliedTheme (paper→day, ink/oled→night). Night cosmic dark is UNTOUCHED."
+    },
+    "dustMotesCount": {
+      "value": 35,
+      "direction": "up",
+      "recorded": "2026-04-16",
+      "description": "Phase 3-A.4a-day — 35 CSS-only dust motes (zero JS-particle deps) on day variant. Deterministic positions via index-derived sin/cos. Drift 12-20s linear, gated by useShouldAnimate + prefers-reduced-motion."
+    },
+    "paperGrainActive": {
+      "value": 1,
+      "direction": "up",
+      "recorded": "2026-04-16",
+      "description": "Phase 3-A.4a-day — SVG feTurbulence paper grain on day variant, 4% opacity, mix-blend-mode multiply, STATIC (never animated, mobile FPS safe)."
     },
     "cosmicBgSource": {
       "value": 1,
@@ -596,6 +614,34 @@
       "from": 4,
       "to": 0,
       "reason": "Phase 3-A.4a — time-of-day palette (dawn/day/dusk/night buckets) belonged to the deleted custom CosmicOrbBackground. Focus-timer CosmicBackground uses static Sun-Dappled Meadow palette. Feature retired cleanly; getTimeOfDay.ts + its test deleted. May return as a Phase 3-B enhancement on top of the proven base.",
+      "date": "2026-04-16"
+    },
+    {
+      "metric": "timeOfDayPaletteCount",
+      "from": 0,
+      "to": 5,
+      "reason": "Phase 3-A.4a-day — 5 OKLCH palettes (dawn/morning/afternoon/golden/dusk) revived for DayCosmicBackground. Drives warm-brown-ink contrast chromatically across all dayparts, WCAG AA >= 4.5:1.",
+      "date": "2026-04-16"
+    },
+    {
+      "metric": "dayCosmicVariant",
+      "from": 0,
+      "to": 1,
+      "reason": "Phase 3-A.4a-day — DayCosmicBackground.tsx + .css introduced. 7-layer warm scene (base mesh, bokeh pools, soft-light sheet, god-rays, 35 motes, paper grain, vignette). Variant switching via useThemeStore.appliedTheme in CosmicBgAdapter. Night cosmic untouched.",
+      "date": "2026-04-16"
+    },
+    {
+      "metric": "dustMotesCount",
+      "from": 0,
+      "to": 35,
+      "reason": "Phase 3-A.4a-day — 35 CSS dust motes replace cosmic stars as day-variant depth markers. Research-grounded metaphor shift (floating in stars -> sitting by sunlit paper window).",
+      "date": "2026-04-16"
+    },
+    {
+      "metric": "paperGrainActive",
+      "from": 0,
+      "to": 1,
+      "reason": "Phase 3-A.4a-day — static SVG feTurbulence paper grain layer on day variant. Never animated (mobile FPS safe), 4% opacity multiply blend.",
       "date": "2026-04-16"
     },
     {

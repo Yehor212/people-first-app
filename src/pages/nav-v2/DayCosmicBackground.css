@@ -1,0 +1,243 @@
+/**
+ * DayCosmicBackground.css — Phase 3-A.4a-day
+ *
+ * 7-layer warm daylight scene. OKLCH palette with time-of-day switcher
+ * through [data-daymode] selectors on <html>. All animations gated via
+ * prefers-reduced-motion so reduced-motion users see the static scene
+ * (still beautiful — motes freeze in place, bokeh holds its tint).
+ *
+ * Custom properties set on <html>[data-daymode] drive all layers. Defaults
+ * match 'afternoon' so when the attr is absent (SSR, tests) we still paint
+ * a warm scene.
+ */
+
+/* Default palette — afternoon (kicks in when data-daymode absent) */
+html {
+  --day-base: oklch(0.96 0.025 75);
+  --day-base-edge: oklch(0.90 0.05 40);
+  --day-accent-1: oklch(0.88 0.10 45 / 0.45);
+  --day-accent-2: oklch(0.82 0.12 30 / 0.35);
+  --day-atmosphere: oklch(0.85 0.08 50 / 0.30);
+  --day-vignette: oklch(0.85 0.06 55 / 0.15);
+  --day-mote: oklch(0.98 0.02 85 / 0.85);
+  --day-ray: 255 230 180;
+}
+
+html[data-daymode="dawn"] {
+  --day-base: oklch(0.96 0.02 70);
+  --day-base-edge: oklch(0.88 0.06 20);
+  --day-accent-1: oklch(0.88 0.08 20 / 0.45);
+  --day-accent-2: oklch(0.82 0.10 30 / 0.35);
+  --day-atmosphere: oklch(0.86 0.06 25 / 0.30);
+  --day-vignette: oklch(0.80 0.08 20 / 0.18);
+  --day-mote: oklch(0.98 0.02 75 / 0.85);
+  --day-ray: 255 210 170;
+}
+
+html[data-daymode="morning"] {
+  --day-base: oklch(0.97 0.015 85);
+  --day-base-edge: oklch(0.90 0.04 85);
+  --day-accent-1: oklch(0.86 0.08 240 / 0.35);
+  --day-accent-2: oklch(0.88 0.07 85 / 0.35);
+  --day-atmosphere: oklch(0.88 0.05 85 / 0.25);
+  --day-vignette: oklch(0.86 0.04 85 / 0.13);
+  --day-mote: oklch(0.99 0.015 85 / 0.85);
+  --day-ray: 255 245 210;
+}
+
+html[data-daymode="afternoon"] {
+  --day-base: oklch(0.94 0.04 75);
+  --day-base-edge: oklch(0.88 0.07 55);
+  --day-accent-1: oklch(0.88 0.10 45 / 0.45);
+  --day-accent-2: oklch(0.82 0.10 35 / 0.35);
+  --day-atmosphere: oklch(0.85 0.08 50 / 0.30);
+  --day-vignette: oklch(0.82 0.08 55 / 0.18);
+  --day-mote: oklch(0.98 0.02 85 / 0.85);
+  --day-ray: 255 230 180;
+}
+
+html[data-daymode="golden"] {
+  --day-base: oklch(0.88 0.10 60);
+  --day-base-edge: oklch(0.78 0.13 35);
+  --day-accent-1: oklch(0.82 0.14 45 / 0.55);
+  --day-accent-2: oklch(0.72 0.15 25 / 0.45);
+  --day-atmosphere: oklch(0.82 0.12 50 / 0.35);
+  --day-vignette: oklch(0.70 0.12 30 / 0.22);
+  --day-mote: oklch(0.99 0.04 80 / 0.90);
+  --day-ray: 255 200 140;
+}
+
+html[data-daymode="dusk"] {
+  --day-base: oklch(0.78 0.08 25);
+  --day-base-edge: oklch(0.68 0.10 295);
+  --day-accent-1: oklch(0.72 0.10 30 / 0.50);
+  --day-accent-2: oklch(0.60 0.08 290 / 0.40);
+  --day-atmosphere: oklch(0.72 0.09 35 / 0.35);
+  --day-vignette: oklch(0.55 0.08 295 / 0.25);
+  --day-mote: oklch(0.96 0.03 60 / 0.85);
+  --day-ray: 255 180 130;
+}
+
+/* ==================== Layer 1 — Base warm OKLCH mesh ==================== */
+.day-cosmic__base {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      ellipse 140% 100% at 50% 40%,
+      var(--day-base) 0%,
+      var(--day-base-edge) 85%
+    );
+}
+
+/* ==================== Layer 2 — Warm bokeh pools ==================== */
+.day-cosmic__bokeh {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      circle at 15% 20%,
+      var(--day-accent-1) 0%,
+      transparent 45%
+    ),
+    radial-gradient(
+      circle at 85% 80%,
+      var(--day-accent-2) 0%,
+      transparent 45%
+    );
+  filter: blur(80px);
+  -webkit-filter: blur(80px);
+}
+
+/* ==================== Layer 3 — Soft-light atmosphere sheet ============= */
+.day-cosmic__atmosphere {
+  position: absolute;
+  inset: 0;
+  background: var(--day-atmosphere);
+  mix-blend-mode: soft-light;
+}
+
+/* ==================== Layer 4 — God-ray masque ========================= */
+/* Diagonal repeating rays masked by a radial so they emerge from the
+ * top-left "window corner" and fade toward opposite edge. Uses rgb()
+ * with alpha tokenised via --day-ray so palettes shift ray colour too. */
+.day-cosmic__god-rays {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    115deg,
+    transparent 0px,
+    transparent 40px,
+    rgb(var(--day-ray) / 0.05) 40px,
+    rgb(var(--day-ray) / 0.05) 80px
+  );
+  -webkit-mask-image: radial-gradient(
+    ellipse 70% 60% at 20% 10%,
+    #000 0%,
+    transparent 70%
+  );
+  mask-image: radial-gradient(
+    ellipse 70% 60% at 20% 10%,
+    #000 0%,
+    transparent 70%
+  );
+}
+
+/* ==================== Layer 5 — 35 dust motes ========================== */
+.day-cosmic__motes {
+  position: absolute;
+  inset: 0;
+}
+
+.day-cosmic__mote {
+  position: absolute;
+  border-radius: 9999px;
+  background: var(--day-mote);
+  box-shadow: 0 0 6px 1px oklch(0.98 0.02 85 / 0.4);
+  animation-name: day-cosmic-drift;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform, opacity;
+}
+
+@keyframes day-cosmic-drift {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  50% {
+    transform: translate3d(12px, -24px, 0) scale(1.1);
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(-8px, -48px, 0) scale(0.9);
+    opacity: 0;
+  }
+}
+
+/* Reduced motion — freeze motes at their initial position, still visible.
+ * data-animated="false" toggled by useShouldAnimate() in TSX for tests,
+ * plus the media query belt-and-suspenders for native-resolution override. */
+.day-cosmic__motes[data-animated="false"] .day-cosmic__mote {
+  animation: none;
+  opacity: 0.6;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .day-cosmic__mote {
+    animation: none;
+    opacity: 0.6;
+  }
+}
+
+/* ==================== Layer 6 — Paper grain SVG (STATIC) =============== */
+.day-cosmic__paper-grain {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.04;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+}
+
+/* ==================== Layer 7 — Edge foxing vignette =================== */
+.day-cosmic__vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse closest-corner at 50% 50%,
+    transparent 55%,
+    var(--day-vignette) 100%
+  );
+}
+
+/* ==================== orb-day-scope — text tokens ===================== */
+/* Applied on OrbPage <main> when appliedTheme === 'paper'. Drives warm
+ * brown-ink text color for greeting/whisper, WCAG AA ≥ 4.5:1 on all five
+ * time-of-day palettes. Also flips foreground/muted-foreground tokens so
+ * Tailwind `text-foreground`/`text-muted-foreground` inside the subtree
+ * resolve to the ink pair, not the light-mode defaults. */
+.orb-day-scope {
+  --zen-ink: oklch(0.28 0.04 50);
+  --zen-ink-muted: oklch(0.45 0.05 45);
+  /* Tailwind bridge tokens (HSL triplets consumed by `text-foreground`). */
+  --foreground: 28 25% 18%;
+  --muted-foreground: 30 15% 36%;
+  color-scheme: light;
+}
+
+.orb-day-scope h1,
+.orb-day-scope h2,
+.orb-day-scope p {
+  color: var(--zen-ink);
+}
+
+.orb-day-scope [data-testid="orb-page-whisper"] {
+  color: var(--zen-ink-muted);
+}
