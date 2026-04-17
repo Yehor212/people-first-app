@@ -9,6 +9,12 @@
  * any cascade level, including inside @apply. */
 @import "./generated/tokens.css";
 
+/* Phase 0-C: opt-in paper/ink/oled themes via data-theme attribute.
+ * Must import AFTER generated/tokens.css so --zen-* aliases can reference
+ * --color-theme-* vars. Non-disruptive Option A — existing shadcn HSL vars
+ * in :root (below) stay untouched. */
+@import "./styles/themes.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

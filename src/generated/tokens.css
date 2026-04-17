@@ -7,6 +7,30 @@
 
 :root {
   --color-design-system-canary: oklch(0.58 0.14 240);
+  --color-theme-paper-surface: oklch(0.97 0.024 80);
+  --color-theme-paper-surface-muted: oklch(0.95 0.03 78);
+  --color-theme-paper-surface-card: oklch(0.99 0.015 82);
+  --color-theme-paper-ink: oklch(0.18 0.02 60);
+  --color-theme-paper-ink-muted: oklch(0.38 0.018 60);
+  --color-theme-paper-border: oklch(0.62 0.035 70);
+  --color-theme-paper-primary: oklch(0.48 0.12 55);
+  --color-theme-paper-primary-fg: oklch(0.99 0.012 82);
+  --color-theme-ink-surface: oklch(0.12 0.015 60);
+  --color-theme-ink-surface-muted: oklch(0.16 0.02 62);
+  --color-theme-ink-surface-card: oklch(0.19 0.022 62);
+  --color-theme-ink-ink: oklch(0.92 0.02 75);
+  --color-theme-ink-ink-muted: oklch(0.72 0.018 72);
+  --color-theme-ink-border: oklch(0.5 0.02 60);
+  --color-theme-ink-primary: oklch(0.65 0.11 55);
+  --color-theme-ink-primary-fg: oklch(0.12 0.015 60);
+  --color-theme-oled-surface: oklch(0 0 0);
+  --color-theme-oled-surface-muted: oklch(0.08 0.012 60);
+  --color-theme-oled-surface-card: oklch(0.12 0.015 60);
+  --color-theme-oled-ink: oklch(0.92 0.02 75);
+  --color-theme-oled-ink-muted: oklch(0.7 0.018 72);
+  --color-theme-oled-border: oklch(0.48 0.02 60);
+  --color-theme-oled-primary: oklch(0.65 0.11 55);
+  --color-theme-oled-primary-fg: oklch(0 0 0);
   --typography-family-display: "Fraunces Variable", "Literata Variable", Georgia, Cambria, "Times New Roman", serif;
   --typography-family-body: "Inter Variable", -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, Roboto, "Helvetica Neue", Arial, sans-serif;
   --typography-family-serif: "Fraunces Variable", "Literata Variable", Georgia, Cambria, "Times New Roman", serif;

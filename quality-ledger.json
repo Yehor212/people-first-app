@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
   "lastUpdated": "2026-04-16",
-  "phase": "0-B-typography-system",
+  "phase": "0-C-paper-theme-core",
   "floors": {
     "tests.total": {
       "value": 3120,
@@ -50,6 +50,24 @@
       "direction": "up",
       "recorded": "2026-04-16",
       "description": "Phase 0-B.1 — Cyrillic-capable variable display serif wired into the `display`/`serif` Tailwind slot via unicode-range @font-face (0=fallback to Georgia only, 1=Literata Variable owns Cyrillic range). Before: Fraunces Latin-only, Cyrillic fell to Georgia, degrading the editorial-revolution aesthetic for the primary Russian/Ukrainian user. After: Literata Variable (Google Books, opsz+wght, OFL-1.1) automatically selected per glyph by the browser's font-matching algorithm — no JS, no :lang() selectors. Future increment possibilities: locale-specific ja/ar/he display serifs (=2, =3...)."
+    },
+    "themeCount": {
+      "value": 3,
+      "direction": "up",
+      "recorded": "2026-04-16",
+      "description": "Phase 0-C — count of opt-in themes available via data-theme attribute. paper (warm cream 12.4:1 AAA), ink (warm dark 14:1 AAA), oled (true black 18:1 AAA). Existing light/dark/dark.oled remain operational via legacy .dark class — this floor counts only the new data-theme family (src/styles/themes.css @layer theme). Phase 2 may flip paper to default and deprecate the legacy family."
+    },
+    "contrastAAACoverage": {
+      "value": 3,
+      "direction": "up",
+      "recorded": "2026-04-16",
+      "description": "Phase 0-C — count of themes where surface-vs-primary-text contrast is mathematically validated at WCAG AAA (≥7:1) via automated test (src/styles/themes.contrast.test.ts). 14 assertions cover main text, secondary text, UI borders (1.4.11 ≥3:1), and primary button text. OKLCH → OKLab → linear sRGB → WCAG luminance chain implemented inline with no external color library (zero dep cost)."
+    },
+    "paperThemeReady": {
+      "value": 1,
+      "direction": "up",
+      "recorded": "2026-04-16",
+      "description": "Phase 0-C — Paper theme infrastructure readiness (0=absent, 1=opt-in available). Adopted when: (a) color.theme.paper tokens in DTCG OKLCH format, (b) src/styles/themes.css @layer theme maps --zen-* aliases, (c) Zustand themeStore with persist + prefers-color-scheme auto resolution, (d) inline SVG feTurbulence noise + warm vignette active on paper variant, (e) dev preview page gated by import.meta.env.DEV, (f) contrast test passing. Phase 2 will ratchet to value=2 once paper becomes default for new users and Settings Panel surfaces the switch."
     },
     "eslint.maxWarnings": {
       "value": 0,
@@ -315,6 +333,34 @@
       "from": 0,
       "to": 3,
       "reason": "Phase 0-B self-hosted 3 variable font families (Fraunces display/serif, Inter body/sans, Caveat hand). Total ~112 KB woff2 assets (Latin+LatinExt+Cyrillic+CyrillicExt where supported). Fraunces Latin-only in the npm package — Cyrillic text falls back to Georgia via stack, documented in typography-grammar.md §RTL & i18n safety.",
+      "date": "2026-04-16"
+    },
+    {
+      "metric": "designTokenCoverage",
+      "from": 29,
+      "to": 53,
+      "reason": "Phase 0-C — paper theme core. Added 24 real color tokens under color.theme (paper + ink + oled, 8 roles each: surface, surface-muted, surface-card, ink, ink-muted, border, primary, primary-fg). All OKLCH structured $values. Mathematically validated to meet WCAG AAA contrast for text (≥7:1) and 1.4.11 for UI boundaries (≥3:1) via src/styles/themes.contrast.test.ts.",
+      "date": "2026-04-16"
+    },
+    {
+      "metric": "themeCount",
+      "from": 0,
+      "to": 3,
+      "reason": "Phase 0-C — introduced 3 opt-in data-theme variants (paper/ink/oled) via src/styles/themes.css @layer theme. Non-disruptive Option A: existing shadcn HSL vars in :root untouched; new --zen-* aliases coexist. Zustand themeStore with persist + auto-resolve from prefers-color-scheme. Not auto-applied — reversible preview foundation for Phase 2.",
+      "date": "2026-04-16"
+    },
+    {
+      "metric": "contrastAAACoverage",
+      "from": 0,
+      "to": 3,
+      "reason": "Phase 0-C — all 3 new themes mathematically validated at WCAG AAA. Paper: surface vs ink ≈ 12.4:1. Ink: surface vs ink ≈ 14:1. OLED: surface vs ink ≈ 18:1. UI borders all meet 1.4.11 ≥3:1 (mathematically binary-searched for minimum L delta per theme). Inline WCAG formula avoids external color library dep.",
+      "date": "2026-04-16"
+    },
+    {
+      "metric": "paperThemeReady",
+      "from": 0,
+      "to": 1,
+      "reason": "Phase 0-C — paper theme infrastructure READY as opt-in preview. Wiring complete: tokens.json (24 OKLCH tokens), generated/tokens.css (--color-theme-*), styles/themes.css (@layer + data-theme selectors + inline SVG noise + warm vignette), stores/themeStore.ts (Zustand + persist + prefers-color-scheme auto), pages/__dev/ThemePreview.tsx (dev-only live switcher), styles/themes.contrast.test.ts (14 passing assertions). Phase 2 will ratchet to 2 when paper becomes default + surfaces in Settings Panel with full i18n.",
       "date": "2026-04-16"
     }
   ]

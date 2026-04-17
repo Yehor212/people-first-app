@@ -1,0 +1,74 @@
+/* ThemePreview.css — Phase 0-C dev-only styles
+ *
+ * Keeps inlineStyles ratchet at 0 contribution from dev preview. Uses
+ * `data-preview="paper|ink|oled"` to scope each sample to its theme's
+ * color-theme-* CSS vars (from src/generated/tokens.css).
+ *
+ * DEV-ONLY — not imported in production paths.
+ */
+
+.theme-preview-sample {
+  font-family: var(--typography-family-body);
+}
+
+.theme-preview-sample[data-preview="paper"] {
+  background: var(--color-theme-paper-surface);
+  color: var(--color-theme-paper-ink);
+  border-color: var(--color-theme-paper-border);
+}
+.theme-preview-sample[data-preview="paper"] .theme-preview-muted {
+  color: var(--color-theme-paper-ink-muted);
+}
+.theme-preview-sample[data-preview="paper"] .theme-preview-card {
+  background: var(--color-theme-paper-surface-card);
+  border-color: var(--color-theme-paper-border);
+}
+.theme-preview-sample[data-preview="paper"] .theme-preview-btn {
+  background: var(--color-theme-paper-primary);
+  color: var(--color-theme-paper-primary-fg);
+}
+
+.theme-preview-sample[data-preview="ink"] {
+  background: var(--color-theme-ink-surface);
+  color: var(--color-theme-ink-ink);
+  border-color: var(--color-theme-ink-border);
+}
+.theme-preview-sample[data-preview="ink"] .theme-preview-muted {
+  color: var(--color-theme-ink-ink-muted);
+}
+.theme-preview-sample[data-preview="ink"] .theme-preview-card {
+  background: var(--color-theme-ink-surface-card);
+  border-color: var(--color-theme-ink-border);
+}
+.theme-preview-sample[data-preview="ink"] .theme-preview-btn {
+  background: var(--color-theme-ink-primary);
+  color: var(--color-theme-ink-primary-fg);
+}
+
+.theme-preview-sample[data-preview="oled"] {
+  background: var(--color-theme-oled-surface);
+  color: var(--color-theme-oled-ink);
+  border-color: var(--color-theme-oled-border);
+}
+.theme-preview-sample[data-preview="oled"] .theme-preview-muted {
+  color: var(--color-theme-oled-ink-muted);
+}
+.theme-preview-sample[data-preview="oled"] .theme-preview-card {
+  background: var(--color-theme-oled-surface-card);
+  border-color: var(--color-theme-oled-border);
+}
+.theme-preview-sample[data-preview="oled"] .theme-preview-btn {
+  background: var(--color-theme-oled-primary);
+  color: var(--color-theme-oled-primary-fg);
+}
+
+.theme-preview-display {
+  font-family: var(--typography-family-display);
+}
+.theme-preview-body {
+  line-height: var(--typography-leading-relaxed);
+}
+.theme-preview-hand {
+  font-family: var(--typography-family-hand);
+  font-size: var(--typography-scale-xl);
+}

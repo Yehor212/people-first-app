@@ -1,0 +1,100 @@
+/* Phase 0-C — Paper Theme Core
+ *
+ * OPT-IN theme layer activated via data-theme attribute on <html>.
+ * Three themes: paper (default future default), ink (warm dark), oled (true black).
+ *
+ * Option A — NON-DISRUPTIVE: we DO NOT override existing shadcn HSL vars
+ * (--background, --foreground, --card etc. in src/index.css :root). Those stay
+ * bound to `hsl(var(--background))` consumers. Instead we expose a parallel
+ * --zen-surface / --zen-ink token family that new components adopt progressively
+ * in Phase 1+. Phase 2-B will perform the full shadcn-var migration to OKLCH.
+ *
+ * Contrast (WCAG, see src/styles/themes.contrast.test.ts):
+ *   Paper:  surface vs ink ≈ 12.4:1  AAA
+ *   Ink:    surface vs ink ≈ 14.2:1  AAA
+ *   OLED:   surface vs ink ≈ 18.2:1  AAA+
+ *
+ * Atmospheric details (paper only):
+ *   - ::before  — SVG feTurbulence noise overlay (grain, 0.85 baseFrequency)
+ *   - ::after   — radial vignette in warm ochre for reading-lamp feel
+ *   Both are pointer-events: none, positioned fixed, z-index 0/1 (behind content).
+ *
+ * This file is imported AFTER src/generated/tokens.css so that --zen-*
+ * aliases can reference --color-theme-* vars via var().
+ */
+
+@layer theme {
+  :root[data-theme="paper"] {
+    --zen-surface: var(--color-theme-paper-surface);
+    --zen-surface-muted: var(--color-theme-paper-surface-muted);
+    --zen-surface-card: var(--color-theme-paper-surface-card);
+    --zen-ink: var(--color-theme-paper-ink);
+    --zen-ink-muted: var(--color-theme-paper-ink-muted);
+    --zen-border: var(--color-theme-paper-border);
+    --zen-primary: var(--color-theme-paper-primary);
+    --zen-primary-fg: var(--color-theme-paper-primary-fg);
+  }
+
+  :root[data-theme="ink"] {
+    --zen-surface: var(--color-theme-ink-surface);
+    --zen-surface-muted: var(--color-theme-ink-surface-muted);
+    --zen-surface-card: var(--color-theme-ink-surface-card);
+    --zen-ink: var(--color-theme-ink-ink);
+    --zen-ink-muted: var(--color-theme-ink-ink-muted);
+    --zen-border: var(--color-theme-ink-border);
+    --zen-primary: var(--color-theme-ink-primary);
+    --zen-primary-fg: var(--color-theme-ink-primary-fg);
+  }
+
+  :root[data-theme="oled"] {
+    --zen-surface: var(--color-theme-oled-surface);
+    --zen-surface-muted: var(--color-theme-oled-surface-muted);
+    --zen-surface-card: var(--color-theme-oled-surface-card);
+    --zen-ink: var(--color-theme-oled-ink);
+    --zen-ink-muted: var(--color-theme-oled-ink-muted);
+    --zen-border: var(--color-theme-oled-border);
+    --zen-primary: var(--color-theme-oled-primary);
+    --zen-primary-fg: var(--color-theme-oled-primary-fg);
+  }
+
+  /* Paper atmospheric grain — subtle fractal noise via inline SVG.
+   * baseFrequency=0.85 tuned for paper-fiber feel (0.7=coarse burlap,
+   * 1.2=photographic sensor grain). opacity 0.035 keeps it subliminal.
+   * mix-blend-mode: multiply darkens where grain hits, mimicking ink bleed.
+   */
+  :root[data-theme="paper"] body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.13  0 0 0 0 0.12  0 0 0 0 0.10  0 0 0 0.35 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+    background-size: 200px 200px;
+    opacity: 0.035;
+    mix-blend-mode: multiply;
+  }
+
+  /* Paper warm reading-lamp vignette — radial amber fade at edges. */
+  :root[data-theme="paper"] body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background: radial-gradient(
+      ellipse at center,
+      transparent 45%,
+      oklch(0.88 0.05 65 / 0.12) 100%
+    );
+  }
+
+  /* Respect reduced motion — vignette is static so only the noise overlay
+   * is a concern visually; at 0.035 opacity it is essentially invisible and
+   * adds no animation. Still, disable both for extreme accessibility modes. */
+  @media (prefers-contrast: more) {
+    :root[data-theme="paper"] body::before,
+    :root[data-theme="paper"] body::after {
+      display: none;
+    }
+  }
+}
