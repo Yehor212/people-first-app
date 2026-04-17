@@ -1,0 +1,140 @@
+/**
+ * MoodFirstRunHint styling — Phase 3-A.4b.
+ *
+ * Glass backdrop + glass card with three numbered beats. Dismissed forever
+ * after first acknowledgement.
+ */
+
+.mood-first-run-backdrop {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 80;
+  animation: mood-first-run-fade 300ms ease-out both;
+}
+
+.mood-first-run-card {
+  position: relative;
+  width: 100%;
+  max-width: 22rem;
+  padding: 1.5rem 1.5rem 1.25rem;
+  border-radius: 1.25rem;
+  background: color-mix(in oklab, hsl(var(--card)) 92%, transparent);
+  backdrop-filter: blur(24px) saturate(170%);
+  -webkit-backdrop-filter: blur(24px) saturate(170%);
+  border: 1px solid color-mix(in oklab, hsl(var(--foreground)) 10%, transparent);
+  box-shadow:
+    0 20px 60px -20px rgba(0, 0, 0, 0.45),
+    0 4px 8px rgba(0, 0, 0, 0.08);
+  animation: mood-first-run-pop 340ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.mood-first-run-title {
+  margin: 0 0 1.125rem;
+  font-family: var(--font-display, "Fraunces", serif);
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: hsl(var(--foreground));
+  text-align: center;
+}
+
+.mood-first-run-steps {
+  list-style: none;
+  margin: 0 0 1.25rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.mood-first-run-step {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.75rem;
+  background: color-mix(in oklab, hsl(var(--foreground)) 3%, transparent);
+}
+
+.mood-first-run-step-index {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 9999px;
+  background: color-mix(in oklab, hsl(var(--primary)) 30%, transparent);
+  color: hsl(var(--primary-foreground));
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.mood-first-run-step-text {
+  color: hsl(var(--foreground));
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.mood-first-run-dismiss {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: 9999px;
+  background: color-mix(in oklab, hsl(var(--primary)) 45%, transparent);
+  color: hsl(var(--primary-foreground));
+  border: 1px solid color-mix(in oklab, hsl(var(--primary)) 35%, transparent);
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  min-height: 44px;
+  transition: all 200ms ease;
+}
+
+.mood-first-run-dismiss:hover {
+  background: color-mix(in oklab, hsl(var(--primary)) 60%, transparent);
+}
+
+.mood-first-run-dismiss:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px hsl(var(--background)), 0 0 0 5px hsl(var(--primary));
+}
+
+@keyframes mood-first-run-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes mood-first-run-pop {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mood-first-run-backdrop,
+  .mood-first-run-card {
+    animation: none;
+  }
+  .mood-first-run-dismiss {
+    transition: none !important;
+  }
+}

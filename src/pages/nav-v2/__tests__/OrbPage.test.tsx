@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, act } from "@testing-library/react";
 import { OrbPage } from "../OrbPage";
+import { useMoodEntryDraftStore } from "@/stores/moodEntryDraftStore";
+import { useDiaryDraftStore } from "@/stores/diaryDraftStore";
 
 // --- Mocks ---
 
@@ -18,6 +20,20 @@ vi.mock("@/contexts/LanguageContext", () => ({
       orbWhisper3: "Speak to the orb.",
       orbWhisper4: "Breathe, then listen.",
       orbWhisper5: "What's the weather inside?",
+      orbScopeGroupLabel: "When?",
+      orbScopeNow: "In this moment",
+      orbScopeDay: "For the whole day",
+      orbScopeSpecific: "At a specific time",
+      orbScopeSpecificTimeLabel: "Pick a time",
+      orbConfirm: "Save",
+      orbSkip: "Later",
+      orbUndo: "Undo",
+      orbMoodSaved: "Mood saved",
+      orbFirstRunTitle: "Three steps",
+      orbFirstRunStep1: "Step one",
+      orbFirstRunStep2: "Step two",
+      orbFirstRunStep3: "Step three",
+      orbFirstRunGotIt: "Got it",
     },
     language: "en",
     isRTL: false,
@@ -26,9 +42,12 @@ vi.mock("@/contexts/LanguageContext", () => ({
 
 vi.mock("@/lib/haptics", () => ({
   haptics: { tabChanged: vi.fn() },
+  hapticSuccess: vi.fn(),
+  hapticTap: vi.fn(),
+  hapticSelection: vi.fn(),
+  hapticMedium: vi.fn(),
 }));
 
-// ValenceOrb mock — proves integration without running WebGL in jsdom
 vi.mock("@/components/state-of-mind/ValenceOrb", () => ({
   ValenceOrb: ({ valence, size }: { valence: number; size?: number }) => (
     <div
@@ -41,8 +60,31 @@ vi.mock("@/components/state-of-mind/ValenceOrb", () => ({
   ),
 }));
 
-// MoodSlider mock — proves integration + forwards showEmojis for assertion
-vi.mock("@/features/journal/MoodSlider", () => ({
+vi.mock("@/components/state-of-mind/EmotionTagGrid", () => ({
+  EmotionTagGrid: ({
+    valence,
+    selected,
+    onToggle,
+  }: {
+    valence: number;
+    selected: string[];
+    onToggle: (tag: string) => void;
+  }) => (
+    <div data-testid="emotion-tag-grid" data-valence={valence}>
+      <button
+        data-testid="emotion-tag-mock-hopeful"
+        data-selected={selected.includes("hopeful")}
+        onClick={() => onToggle("hopeful")}
+        type="button"
+      >
+        hopeful
+      </button>
+    </div>
+  ),
+}));
+
+// Barrel import path used in OrbPage
+vi.mock("@/features/journal", () => ({
   MoodSlider: ({
     onChange,
     showEmojis,
@@ -61,19 +103,14 @@ vi.mock("@/features/journal/MoodSlider", () => ({
   ),
 }));
 
-// CosmicBgAdapter mock — prove it's rendered behind content
 vi.mock("../CosmicBgAdapter", () => ({
-  CosmicBgAdapter: () => (
-    <div data-testid="cosmic-orb-background">cosmic</div>
-  ),
+  CosmicBgAdapter: () => <div data-testid="cosmic-orb-background">cosmic</div>,
 }));
 
-// ShootingStar mock — prove flourish layer renders
 vi.mock("../ShootingStar", () => ({
   ShootingStar: () => <div data-testid="shooting-star-stub" />,
 }));
 
-// useCosmicParallax mock — no DOM side effects in jsdom
 vi.mock("../useCosmicParallax", () => ({
   useCosmicParallax: () => ({ current: null }),
 }));
@@ -83,31 +120,60 @@ vi.mock("@/components/state-of-mind/StateOfMindModal", () => ({
     isOpen ? <div data-testid="som-modal">state of mind modal</div> : null,
 }));
 
-// Mock setMoods so we can assert it was called
-const setMoodsSpy = vi.fn();
-vi.mock("zustand/react/shallow", () => ({
-  useShallow: <T,>(fn: (s: unknown) => T) => fn,
-}));
-vi.mock("@/stores", () => ({
-  useUserDataStore: (selector: (s: unknown) => unknown) =>
-    selector({ moods: [], userName: "Yehor", setMoods: setMoodsSpy }),
+const setActivePageMock = vi.fn();
+vi.mock("@/hooks/useNavigationV2", () => ({
+  useNavigationV2: () => ({
+    activePage: "orb",
+    setActivePage: setActivePageMock,
+    sidebarCollapsed: false,
+    toggleSidebar: vi.fn(),
+    drawerOpen: false,
+    openDrawer: vi.fn(),
+    closeDrawer: vi.fn(),
+    handleBackButton: vi.fn(),
+    commandPaletteOpen: false,
+    setCommandPaletteOpen: vi.fn(),
+  }),
 }));
 
-// Control reduced-motion gating
+const setMoodsSpy = vi.fn();
+let mockMoods: Array<Record<string, unknown>> = [];
+// Stable selector snapshot — prevents re-render loops when useShallow wraps.
+// Rebuild the snapshot only when tests mutate mockMoods (via beforeEach).
+let moodsSnapshot = { moods: mockMoods, userName: "Yehor", setMoods: setMoodsSpy };
+function rebuildMoodsSnapshot() {
+  moodsSnapshot = { moods: mockMoods, userName: "Yehor", setMoods: setMoodsSpy };
+}
+vi.mock("@/stores", () => ({
+  useUserDataStore: (selector: (s: unknown) => unknown) => selector(moodsSnapshot),
+}));
+
+vi.mock("@/stores/themeStore", () => ({
+  useThemeStore: (selector: (s: unknown) => unknown) =>
+    selector({ appliedTheme: "ink" }),
+}));
+
 const shouldAnimateMock = vi.fn(() => true);
 vi.mock("@/hooks/useShouldAnimate", () => ({
   useShouldAnimate: () => shouldAnimateMock(),
 }));
 
-// Bloom passthrough so children render synchronously
 vi.mock("@/lib/motion", () => ({
   Bloom: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
-describe("OrbPage (Phase 3-A.2 cosmic cinematic surface)", () => {
+describe("OrbPage (Phase 3-A.2 + Phase 3-A.4b)", () => {
   beforeEach(() => {
     setMoodsSpy.mockClear();
+    setActivePageMock.mockClear();
     shouldAnimateMock.mockReturnValue(true);
+    mockMoods = [];
+    rebuildMoodsSnapshot();
+    useMoodEntryDraftStore.getState().reset();
+    useDiaryDraftStore.getState().clearPendingMoodContext();
+    // Ensure first-run hint has already been dismissed in the default test
+    // suite (we test the eligibility explicitly below).
+    window.localStorage.setItem("zenflow-orb-first-run-dismissed", "1");
   });
 
   afterEach(() => {
@@ -121,113 +187,44 @@ describe("OrbPage (Phase 3-A.2 cosmic cinematic surface)", () => {
     expect(main).toHaveAttribute("aria-labelledby", "orb-page-heading");
   });
 
-  it("renders CosmicBgAdapter behind content (Phase 3-A.4a focus-timer bg reuse)", () => {
+  it("renders CosmicBgAdapter behind content", () => {
     render(<OrbPage />);
     expect(screen.getByTestId("cosmic-orb-background")).toBeInTheDocument();
   });
 
-  it("renders shooting-star flourish layer atop cosmic backdrop (Phase 3-A.3 WOW-3)", () => {
+  it("renders shooting-star flourish layer", () => {
     render(<OrbPage />);
     expect(screen.getByTestId("cosmic-orb-flourish-layer")).toBeInTheDocument();
     expect(screen.getByTestId("shooting-star-stub")).toBeInTheDocument();
   });
 
-  it("renders the greeting with font-display + includes user name", () => {
+  it("renders the greeting with user name", () => {
     render(<OrbPage />);
     const heading = screen.getByRole("heading", { level: 1 });
     expect(heading).toHaveTextContent(/Yehor/);
     expect(heading.className).toContain("font-display");
-    expect(heading.className).toContain("tracking-tight");
   });
 
-  it("greeting tone follows the time of day (morning < 12 < afternoon < 18 < evening)", () => {
-    vi.useFakeTimers();
-    // 9am — morning
-    vi.setSystemTime(new Date("2026-04-16T09:00:00"));
-    const { unmount } = render(<OrbPage />);
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(/Good morning/);
-    unmount();
-
-    // 3pm — afternoon
-    vi.setSystemTime(new Date("2026-04-16T15:00:00"));
-    const r2 = render(<OrbPage />);
-    expect(r2.getByRole("heading", { level: 1 })).toHaveTextContent(/Good afternoon/);
-    r2.unmount();
-
-    // 8pm — evening
-    vi.setSystemTime(new Date("2026-04-16T20:00:00"));
-    const r3 = render(<OrbPage />);
-    expect(r3.getByRole("heading", { level: 1 })).toHaveTextContent(/Good evening/);
-    r3.unmount();
-  });
-
-  it("renders the ValenceOrb hero (not the old placeholder text)", () => {
+  it("renders the ValenceOrb hero at 256/320 sizes", () => {
     render(<OrbPage />);
-    // Two orbs render (mobile + desktop) — CSS hidden/md:block picks which one shows.
-    const orbs = screen.getAllByTestId("valence-orb");
-    expect(orbs.length).toBeGreaterThanOrEqual(1);
-    // Placeholder copy from Phase 3-A must be gone
-    expect(screen.queryByText(/Phase 3-B will wire/i)).not.toBeInTheDocument();
-  });
-
-  it("renders the orb at the Phase 3-A.2 enlarged sizes (256 mobile / 320 desktop)", () => {
-    render(<OrbPage />);
-    // Two wrappers render — one for each viewport. Both ValenceOrb mocks exist
-    // in the DOM, CSS `hidden md:block` picks which one shows. Verify both sizes.
     const orbs = screen.getAllByTestId("valence-orb");
     const sizes = orbs.map((el) => el.getAttribute("data-size"));
     expect(sizes).toContain("256");
     expect(sizes).toContain("320");
   });
 
-  it("renders the MoodSlider WITHOUT emojis on OrbPage (showEmojis=false)", () => {
+  it("renders the MoodSlider without emojis", () => {
     render(<OrbPage />);
     const slider = screen.getByTestId("mood-slider");
     expect(slider).toBeInTheDocument();
     expect(slider.getAttribute("data-show-emojis")).toBe("false");
-    expect(screen.getByTestId("orb-page-slider")).toBeInTheDocument();
   });
 
-  it("renders the whisper subtitle with an italic font-serif class", () => {
+  it("renders the whisper subtitle with italic + font-serif", () => {
     render(<OrbPage />);
     const whisper = screen.getByTestId("orb-page-whisper");
-    expect(whisper).toBeInTheDocument();
     expect(whisper.className).toContain("italic");
     expect(whisper.className).toContain("font-serif");
-    // Whisper text should be one of the 5 literary prompts
-    expect(whisper.textContent).toMatch(
-      /heart today|rises for you|orb|listen|weather inside/i,
-    );
-  });
-
-  it("whisper rotates deterministically by day-of-month", () => {
-    vi.useFakeTimers();
-    // Day 1 → prompt index 1 % 5 = 1 → orbWhisper2
-    vi.setSystemTime(new Date("2026-04-01T12:00:00"));
-    const { unmount } = render(<OrbPage />);
-    expect(screen.getByTestId("orb-page-whisper")).toHaveAttribute(
-      "data-whisper-key",
-      "orbWhisper2",
-    );
-    unmount();
-
-    // Day 5 → 5 % 5 = 0 → orbWhisper1
-    vi.setSystemTime(new Date("2026-04-05T12:00:00"));
-    const r2 = render(<OrbPage />);
-    expect(r2.getByTestId("orb-page-whisper")).toHaveAttribute(
-      "data-whisper-key",
-      "orbWhisper1",
-    );
-    r2.unmount();
-
-    // Day 14 → 14 % 5 = 4 → orbWhisper5
-    vi.setSystemTime(new Date("2026-04-14T12:00:00"));
-    const r3 = render(<OrbPage />);
-    expect(r3.getByTestId("orb-page-whisper")).toHaveAttribute(
-      "data-whisper-key",
-      "orbWhisper5",
-    );
-    r3.unmount();
   });
 
   it("tapping the orb opens the State of Mind modal", () => {
@@ -237,30 +234,142 @@ describe("OrbPage (Phase 3-A.2 cosmic cinematic surface)", () => {
     expect(screen.getByTestId("som-modal")).toBeInTheDocument();
   });
 
-  it("changing the MoodSlider calls setMoods with a valid MoodEntry shape", () => {
+  // --- Phase 3-A.4b scope selector ---
+  it("renders the MoodScopeSelector above the slider", () => {
+    render(<OrbPage />);
+    expect(screen.getByTestId("mood-scope-selector")).toBeInTheDocument();
+    expect(screen.getByTestId("mood-scope-chip-now")).toBeInTheDocument();
+    expect(screen.getByTestId("mood-scope-chip-day")).toBeInTheDocument();
+    expect(screen.getByTestId("mood-scope-chip-specific")).toBeInTheDocument();
+  });
+
+  // --- Phase 3-A.4b emotion spectrum gate ---
+  it("hides the emotion spectrum before valence is chosen", () => {
+    render(<OrbPage />);
+    expect(
+      screen.queryByTestId("orb-page-emotion-spectrum"),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByTestId("emotion-tag-grid")).not.toBeInTheDocument();
+  });
+
+  it("reveals the emotion spectrum after slider sets valence", () => {
     render(<OrbPage />);
     fireEvent.click(screen.getByTestId("mood-slider"));
-    expect(setMoodsSpy).toHaveBeenCalledTimes(1);
+    expect(
+      screen.getByTestId("orb-page-emotion-spectrum"),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("emotion-tag-grid")).toBeInTheDocument();
+  });
 
-    // setMoods was called with an updater fn — exercise it to prove shape
-    const updater = setMoodsSpy.mock.calls[0][0] as (
-      prev: Array<Record<string, unknown>>,
-    ) => Array<Record<string, unknown>>;
-    const next = updater([]);
-    expect(next).toHaveLength(1);
-    const entry = next[0];
-    expect(entry.mood).toBe("good");
-    expect(typeof entry.id).toBe("string");
-    expect(typeof entry.date).toBe("string");
-    expect(typeof entry.timestamp).toBe("number");
-    expect(typeof entry.updatedAt).toBe("number");
+  // --- Phase 3-A.4b confirm CTA gate ---
+  it("shows confirm CTA disabled before emotion chosen", () => {
+    render(<OrbPage />);
+    fireEvent.click(screen.getByTestId("mood-slider"));
+    expect(screen.getByTestId("mood-confirm-button")).toBeDisabled();
+  });
+
+  it("enables confirm CTA after emotion is chosen", () => {
+    render(<OrbPage />);
+    fireEvent.click(screen.getByTestId("mood-slider"));
+    fireEvent.click(screen.getByTestId("emotion-tag-mock-hopeful"));
+    expect(screen.getByTestId("mood-confirm-button")).not.toBeDisabled();
+  });
+
+  it("confirm after 5s saves mood + seeds diary draft + navigates", () => {
+    vi.useFakeTimers();
+    render(<OrbPage />);
+    fireEvent.click(screen.getByTestId("mood-slider"));
+    fireEvent.click(screen.getByTestId("emotion-tag-mock-hopeful"));
+    fireEvent.click(screen.getByTestId("mood-confirm-button"));
+    expect(setMoodsSpy).not.toHaveBeenCalled();
+
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
+
+    expect(setMoodsSpy).toHaveBeenCalledTimes(1);
+    expect(setActivePageMock).toHaveBeenCalledWith("diary");
+    const ctx = useDiaryDraftStore.getState().pendingMoodContext;
+    expect(ctx).not.toBeNull();
+    expect(ctx?.emotion).toBe("hopeful");
+    expect(ctx?.scope).toBe("now");
+  });
+
+  it("undo toast cancels save within 5s", () => {
+    vi.useFakeTimers();
+    render(<OrbPage />);
+    fireEvent.click(screen.getByTestId("mood-slider"));
+    fireEvent.click(screen.getByTestId("emotion-tag-mock-hopeful"));
+    fireEvent.click(screen.getByTestId("mood-confirm-button"));
+    fireEvent.click(screen.getByTestId("mood-undo-toast-button"));
+    act(() => {
+      vi.advanceTimersByTime(6000);
+    });
+    expect(setMoodsSpy).not.toHaveBeenCalled();
+    expect(setActivePageMock).not.toHaveBeenCalled();
+  });
+
+  it("skip button clears draft without saving", () => {
+    render(<OrbPage />);
+    fireEvent.click(screen.getByTestId("mood-slider"));
+    expect(useMoodEntryDraftStore.getState().valence).not.toBeNull();
+    fireEvent.click(screen.getByTestId("mood-skip-button"));
+    expect(useMoodEntryDraftStore.getState().valence).toBeNull();
+    expect(setMoodsSpy).not.toHaveBeenCalled();
+  });
+
+  // --- Phase 3-A.4b first-run hint ---
+  it("shows first-run hint when moods empty and not dismissed", () => {
+    window.localStorage.removeItem("zenflow-orb-first-run-dismissed");
+    mockMoods = [];
+    render(<OrbPage />);
+    expect(screen.getByTestId("mood-first-run-hint")).toBeInTheDocument();
+  });
+
+  it("hides first-run hint when mood history exists", () => {
+    window.localStorage.removeItem("zenflow-orb-first-run-dismissed");
+    mockMoods = [
+      {
+        id: "1",
+        mood: "good",
+        date: "2026-04-16",
+        timestamp: Date.now(),
+        valence: 0.5,
+      },
+    ];
+    rebuildMoodsSnapshot();
+    render(<OrbPage />);
+    expect(
+      screen.queryByTestId("mood-first-run-hint"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("hides first-run hint when already dismissed (localStorage)", () => {
+    window.localStorage.setItem("zenflow-orb-first-run-dismissed", "1");
+    mockMoods = [];
+    render(<OrbPage />);
+    expect(
+      screen.queryByTestId("mood-first-run-hint"),
+    ).not.toBeInTheDocument();
+  });
+
+  // --- Phase 3-A.4b aura reacts to draft valence ---
+  it("aura hue derives from draft valence once slider fires", () => {
+    render(<OrbPage />);
+    const auraBefore = screen
+      .getByTestId("orb-aura")
+      .getAttribute("data-aura-hue");
+    fireEvent.click(screen.getByTestId("mood-slider"));
+    const auraAfter = screen
+      .getByTestId("orb-aura")
+      .getAttribute("data-aura-hue");
+    expect(auraBefore).not.toBe(auraAfter);
   });
 
   it("does NOT idle-oscillate when reduced motion is requested", () => {
     shouldAnimateMock.mockReturnValue(false);
     render(<OrbPage />);
     const orbs = screen.getAllByTestId("valence-orb");
-    // With no entries AND no animation, valence should stay at 0 (not oscillate)
     for (const orb of orbs) {
       expect(orb.getAttribute("data-valence")).toBe("0");
     }

@@ -1,0 +1,191 @@
+/**
+ * MoodConfirmCta styling — Phase 3-A.4b.
+ *
+ * Glassy minimalist confirm + subtle skip link + bottom-pinned undo toast.
+ */
+
+.mood-confirm-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 2rem auto 0;
+  animation: mood-confirm-bloom 340ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.mood-confirm-button {
+  padding: 0.75rem 2rem;
+  border-radius: 9999px;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  min-height: 48px;
+  min-width: 160px;
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  transition: all 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  cursor: pointer;
+  border: 1px solid color-mix(in oklab, hsl(var(--primary)) 30%, transparent);
+}
+
+.mood-confirm-button-idle {
+  color: hsl(var(--muted-foreground));
+  background: color-mix(in oklab, hsl(var(--muted)) 20%, transparent);
+  border-color: color-mix(in oklab, hsl(var(--foreground)) 8%, transparent);
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.mood-confirm-button-enabled {
+  color: hsl(var(--primary-foreground));
+  background: color-mix(in oklab, hsl(var(--primary)) 40%, transparent);
+  box-shadow:
+    0 4px 12px -4px color-mix(in oklab, hsl(var(--primary)) 35%, transparent),
+    0 1px 2px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 color-mix(in oklab, hsl(var(--primary-foreground)) 15%, transparent);
+}
+
+.mood-confirm-button-enabled:hover {
+  background: color-mix(in oklab, hsl(var(--primary)) 55%, transparent);
+  transform: translateY(-1px);
+}
+
+.mood-confirm-button-enabled:active {
+  transform: translateY(0);
+  box-shadow:
+    0 2px 6px -2px color-mix(in oklab, hsl(var(--primary)) 35%, transparent),
+    0 1px 1px rgba(0, 0, 0, 0.08);
+}
+
+.mood-confirm-button:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 3px hsl(var(--background)),
+    0 0 0 5px hsl(var(--primary)),
+    0 4px 12px -4px color-mix(in oklab, hsl(var(--primary)) 35%, transparent);
+}
+
+/* Skip link — subtle text-only, below confirm */
+.mood-skip-button {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: hsl(var(--muted-foreground));
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  min-height: 44px;
+  border-radius: 9999px;
+  transition: color 200ms ease;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 3px;
+  opacity: 0.8;
+}
+
+.mood-skip-button:hover {
+  color: hsl(var(--foreground));
+  opacity: 1;
+}
+
+.mood-skip-button:focus-visible {
+  outline: none;
+  color: hsl(var(--primary));
+  box-shadow: 0 0 0 2px color-mix(in oklab, hsl(var(--primary)) 30%, transparent);
+}
+
+/* Bottom-pinned undo toast */
+.mood-undo-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(2rem + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1rem 0.75rem 1.25rem;
+  border-radius: 9999px;
+  background: color-mix(in oklab, hsl(var(--card)) 88%, transparent);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border: 1px solid color-mix(in oklab, hsl(var(--foreground)) 12%, transparent);
+  box-shadow:
+    0 10px 40px -10px rgba(0, 0, 0, 0.3),
+    0 2px 4px rgba(0, 0, 0, 0.08);
+  color: hsl(var(--foreground));
+  font-size: 0.9rem;
+  z-index: 70;
+  min-width: 18rem;
+  overflow: hidden;
+  animation: mood-undo-toast-in 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.mood-undo-toast-text {
+  flex: 1;
+  font-weight: 500;
+}
+
+.mood-undo-toast-button {
+  padding: 0.35rem 0.85rem;
+  border-radius: 9999px;
+  background: transparent;
+  border: 1px solid color-mix(in oklab, hsl(var(--primary)) 35%, transparent);
+  color: hsl(var(--primary));
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 32px;
+  transition: all 200ms ease;
+}
+
+.mood-undo-toast-button:hover {
+  background: color-mix(in oklab, hsl(var(--primary)) 15%, transparent);
+}
+
+.mood-undo-toast-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px hsl(var(--primary));
+}
+
+.mood-undo-toast-progress {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 2px;
+  background: color-mix(in oklab, hsl(var(--primary)) 70%, transparent);
+  transition: width 100ms linear;
+}
+
+@keyframes mood-confirm-bloom {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes mood-undo-toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mood-confirm-stack,
+  .mood-undo-toast {
+    animation: none;
+  }
+  .mood-confirm-button,
+  .mood-skip-button,
+  .mood-undo-toast-button {
+    transition: none !important;
+  }
+}

@@ -1,0 +1,137 @@
+/**
+ * MoodScopeSelector styling — Phase 3-A.4b.
+ *
+ * Glassy, floating chips that don't break the cosmic aesthetic. Both themes:
+ *   - Cosmic (night): white text, cool glass, translucent indigo active.
+ *   - Paper (day):    warm-ink text, warm glass, soft amber active.
+ *
+ * No hardcoded colors; uses theme tokens. `backdrop-filter` + `-webkit-`
+ * pair keeps Safari happy (Law 10 cross-platform).
+ */
+
+.mood-scope-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 28rem;
+  margin: 0 auto;
+}
+
+.mood-scope-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.375rem;
+  border-radius: 9999px;
+  background: color-mix(in oklab, hsl(var(--card)) 30%, transparent);
+  backdrop-filter: blur(12px) saturate(140%);
+  -webkit-backdrop-filter: blur(12px) saturate(140%);
+  border: 1px solid color-mix(in oklab, hsl(var(--foreground)) 8%, transparent);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    0 8px 24px -12px rgba(0, 0, 0, 0.15);
+}
+
+/* Day variant — warmer glass */
+.orb-day-scope .mood-scope-chip-row {
+  background: color-mix(in oklab, hsl(var(--card)) 55%, transparent);
+  border-color: color-mix(in oklab, hsl(var(--foreground)) 10%, transparent);
+  box-shadow:
+    0 1px 2px rgba(120, 80, 40, 0.06),
+    0 8px 24px -12px rgba(120, 80, 40, 0.18);
+}
+
+.mood-scope-chip {
+  background: transparent;
+  color: hsl(var(--muted-foreground));
+  border: 1px solid transparent;
+  cursor: pointer;
+  letter-spacing: 0.01em;
+}
+
+.mood-scope-chip:hover {
+  color: hsl(var(--foreground));
+  background: color-mix(in oklab, hsl(var(--foreground)) 5%, transparent);
+}
+
+.mood-scope-chip-active {
+  color: hsl(var(--primary-foreground));
+  background: color-mix(in oklab, hsl(var(--primary)) 55%, transparent);
+  border-color: color-mix(in oklab, hsl(var(--primary)) 40%, transparent);
+  box-shadow: 0 2px 8px -2px color-mix(in oklab, hsl(var(--primary)) 30%, transparent);
+}
+
+/* Day variant — warmer active state */
+.orb-day-scope .mood-scope-chip-active {
+  color: hsl(var(--foreground));
+  background: color-mix(in oklab, hsl(var(--primary)) 30%, transparent);
+  border-color: color-mix(in oklab, hsl(var(--primary)) 45%, transparent);
+}
+
+/* Time-picker reveal */
+.mood-scope-time-reveal {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  background: color-mix(in oklab, hsl(var(--card)) 35%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid color-mix(in oklab, hsl(var(--foreground)) 8%, transparent);
+  animation: mood-scope-reveal 240ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.mood-scope-time-label {
+  font-size: 0.875rem;
+  color: hsl(var(--muted-foreground));
+  white-space: nowrap;
+}
+
+.mood-scope-time-input {
+  background: transparent;
+  border: none;
+  color: hsl(var(--foreground));
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+  padding: 0.25rem 0.25rem;
+  min-width: 5rem;
+  min-height: 32px;
+}
+
+.mood-scope-time-input::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  filter: invert(40%);
+}
+
+.orb-day-scope .mood-scope-time-input::-webkit-calendar-picker-indicator {
+  filter: invert(30%) sepia(20%);
+}
+
+.mood-scope-time-input:focus {
+  outline: none;
+  box-shadow: inset 0 -1px 0 hsl(var(--primary));
+}
+
+@keyframes mood-scope-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mood-scope-time-reveal {
+    animation: none;
+  }
+  .mood-scope-chip {
+    transition: none !important;
+  }
+}

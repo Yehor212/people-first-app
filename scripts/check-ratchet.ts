@@ -723,7 +723,7 @@ function checkRatchet(): void {
   }
 
   // Source file drift
-  const docSourceFiles = 759; // updated 2026-04-17 Phase 1 motion grammar (+16 motion files) plus uncommitted journal scaffolding (+16)
+  const docSourceFiles = 785; // updated 2026-04-17 Phase 3-A.4b OrbPage mood flow — scope selector + confirm CTA + first-run hint + draft stores + hook
   const drift = Math.abs(sourceFiles - docSourceFiles);
   if (drift > 20) {
     console.log(

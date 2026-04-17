@@ -199,4 +199,98 @@ test.describe("Nav V2 Infrastructure Baselines", () => {
     await expect(page.getByTestId("mobile-nav-v2")).toHaveCount(0);
     await expect(page.getByTestId("nav-v2-orchestrator")).toHaveCount(0);
   });
+
+  // Phase 3-A.4b mid-flow baselines — scope selector + emotion spectrum + confirm CTA visible
+  test("desktop: mid-flow state (day variant — scope + emotion + confirm visible)", async ({
+    page,
+  }, testInfo) => {
+    testInfo.setTimeout(60_000);
+    await primeApp(page, { paperTheme: "paper" });
+    await freezeTimeToDay(page);
+    // Mark first-run hint as dismissed so it doesn't block the screenshot
+    await page.addInitScript(() => {
+      localStorage.setItem("zenflow-orb-first-run-dismissed", "1");
+    });
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto("/?nav=v2");
+    await page.evaluate(() => document.fonts.ready);
+
+    await expect(page.getByTestId("orb-page")).toBeVisible();
+    await expect(page.getByTestId("mood-scope-selector")).toBeVisible();
+    await expect(page.getByTestId("orb-page-slider")).toBeVisible();
+
+    // Use the deterministic draft-store window hook to set valence + emotion,
+    // bypassing the framer-motion drag which Playwright cannot reliably trigger.
+    await page.waitForFunction(() => {
+      interface W { __zenMoodDraft?: unknown }
+      return (window as unknown as W).__zenMoodDraft !== undefined;
+    }, { timeout: 5000 });
+    await page.evaluate(() => {
+      interface DraftHandle {
+        setValence: (v: number) => void;
+        setEmotion: (e: string | null) => void;
+      }
+      interface W { __zenMoodDraft?: DraftHandle }
+      const h = (window as unknown as W).__zenMoodDraft;
+      if (h) {
+        h.setValence(0.5);
+        h.setEmotion("hopeful");
+      }
+    });
+    await page.waitForTimeout(300);
+
+    await expect(page.getByTestId("orb-page-emotion-spectrum")).toBeVisible();
+    await expect(page.getByTestId("mood-confirm-button")).toBeVisible();
+
+    await expect(page).toHaveScreenshot("nav-v2-desktop-orb-midflow-day.png", {
+      fullPage: true,
+      maxDiffPixelRatio: 0.04,
+      animations: "disabled",
+      timeout: 30_000,
+    });
+  });
+
+  test("desktop: mid-flow state (night variant — cosmic glass chips)", async ({
+    page,
+  }, testInfo) => {
+    testInfo.setTimeout(60_000);
+    await primeApp(page, { paperTheme: "ink" });
+    await freezeTimeToDay(page);
+    await page.addInitScript(() => {
+      localStorage.setItem("zenflow-orb-first-run-dismissed", "1");
+    });
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto("/?nav=v2");
+    await page.evaluate(() => document.fonts.ready);
+
+    await expect(page.getByTestId("orb-page")).toBeVisible();
+    await expect(page.getByTestId("mood-scope-selector")).toBeVisible();
+
+    await page.waitForFunction(() => {
+      interface W { __zenMoodDraft?: unknown }
+      return (window as unknown as W).__zenMoodDraft !== undefined;
+    }, { timeout: 5000 });
+    await page.evaluate(() => {
+      interface DraftHandle {
+        setValence: (v: number) => void;
+        setEmotion: (e: string | null) => void;
+      }
+      interface W { __zenMoodDraft?: DraftHandle }
+      const h = (window as unknown as W).__zenMoodDraft;
+      if (h) {
+        h.setValence(0.5);
+        h.setEmotion("hopeful");
+      }
+    });
+    await page.waitForTimeout(300);
+
+    await expect(page.getByTestId("orb-page-emotion-spectrum")).toBeVisible();
+
+    await expect(page).toHaveScreenshot("nav-v2-desktop-orb-midflow-night.png", {
+      fullPage: true,
+      maxDiffPixelRatio: 0.04,
+      animations: "disabled",
+      timeout: 30_000,
+    });
+  });
 });

@@ -2736,6 +2736,21 @@ const hebrewOverrides: Partial<Translations> = {
   orbWhisper3: "דבר אל הכדור.",
   orbWhisper4: "נשום, ואז הקשב.",
   orbWhisper5: "איך מזג האוויר בפנים?",
+  // Phase 3-A.4b
+  orbScopeGroupLabel: "מתי זה קרה?",
+  orbScopeNow: "ברגע זה",
+  orbScopeDay: "במשך כל היום",
+  orbScopeSpecific: "בשעה מסוימת",
+  orbScopeSpecificTimeLabel: "בחר שעה",
+  orbConfirm: "שמור",
+  orbSkip: "אחר כך",
+  orbUndo: "ביטול",
+  orbMoodSaved: "מצב הרוח נשמר",
+  orbFirstRunTitle: "שלושה צעדים לרישום הראשון",
+  orbFirstRunStep1: "גרור את הכדור לפי התחושה שלך",
+  orbFirstRunStep2: "בחר הקשר (רגע, יום, או שעה)",
+  orbFirstRunStep3: "בחר רגש ואשר",
+  orbFirstRunGotIt: "הבנתי",
 };
 
 export const he: Translations = { ...en, ...hebrewOverrides };

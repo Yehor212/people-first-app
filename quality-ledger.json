@@ -1,8 +1,38 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-04-16",
-  "phase": "3-a.4a-orbpage-cosmic-bg-swap",
+  "lastUpdated": "2026-04-17",
+  "phase": "3-a.4b-orbpage-mood-entry-flow",
   "floors": {
+    "moodScopeSelectorActive": {
+      "value": 1,
+      "direction": "up",
+      "recorded": "2026-04-17",
+      "description": "Phase 3-A.4b — glassy segmented scope selector (now / day / specific) above MoodSlider. Controls draft.scope in moodEntryDraftStore. Specific scope reveals native <input type=time>. Role=radiogroup for a11y."
+    },
+    "emotionSpectrumIntegrated": {
+      "value": 1,
+      "direction": "up",
+      "recorded": "2026-04-17",
+      "description": "Phase 3-A.4b — existing EmotionTagGrid component reused on OrbPage, revealed after valence chosen via slider. Filters chips by draft valence range, single-select for orb flow (modal stays multi-select)."
+    },
+    "moodAutoFlowToDiary": {
+      "value": 1,
+      "direction": "up",
+      "recorded": "2026-04-17",
+      "description": "Phase 3-A.4b — confirm handler persists MoodEntry then seeds diaryDraftStore.pendingMoodContext and calls useNavigationV2.setActivePage('diary'). Morph transition carries the user with the mood context pre-populated."
+    },
+    "undoToastEnabled": {
+      "value": 1,
+      "direction": "up",
+      "recorded": "2026-04-17",
+      "description": "Phase 3-A.4b — 5-second undo toast on confirm. Mood is NOT persisted until the window expires. Undo button cancels save + cleans timers. Portal to body to escape transform ancestors."
+    },
+    "firstRunOrbHint": {
+      "value": 1,
+      "direction": "up",
+      "recorded": "2026-04-17",
+      "description": "Phase 3-A.4b — three-step onboarding overlay shown once for users with zero mood entries. Dismissed forever via localStorage flag. role=dialog + aria-modal for a11y; Escape closes."
+    },
     "cosmicParallaxLayers": {
       "value": 1,
       "direction": "up",
@@ -349,7 +379,7 @@
       "description": "Anti-patterns without BLOCK or WARN enforcement"
     },
     "npmOutdated": {
-      "value": 45,
+      "value": 46,
       "direction": "down",
       "recorded": "2026-04-17",
       "description": "Outdated npm packages — CANARY ONLY (external dependency, not code-controlled). Floor=999 disables blocking. Actual count tracked as canary only."

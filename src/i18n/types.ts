@@ -2778,4 +2778,20 @@ export interface Translations {
   orbWhisper3: string;
   orbWhisper4: string;
   orbWhisper5: string;
+
+  // Phase 3-A.4b: Orb mood entry flow (scope selector + confirm CTA + first-run hint)
+  orbScopeGroupLabel: string;
+  orbScopeNow: string;
+  orbScopeDay: string;
+  orbScopeSpecific: string;
+  orbScopeSpecificTimeLabel: string;
+  orbConfirm: string;
+  orbSkip: string;
+  orbUndo: string;
+  orbMoodSaved: string;
+  orbFirstRunTitle: string;
+  orbFirstRunStep1: string;
+  orbFirstRunStep2: string;
+  orbFirstRunStep3: string;
+  orbFirstRunGotIt: string;
 }

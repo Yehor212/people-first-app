@@ -2658,6 +2658,21 @@ const arabicOverrides: Partial<Translations> = {
   orbWhisper3: "تحدث إلى الكرة.",
   orbWhisper4: "تنفس، ثم استمع.",
   orbWhisper5: "كيف الطقس في داخلك؟",
+  // Phase 3-A.4b
+  orbScopeGroupLabel: "متى كان ذلك؟",
+  orbScopeNow: "في هذه اللحظة",
+  orbScopeDay: "طوال اليوم",
+  orbScopeSpecific: "في وقت محدد",
+  orbScopeSpecificTimeLabel: "اختر الوقت",
+  orbConfirm: "حفظ",
+  orbSkip: "لاحقاً",
+  orbUndo: "تراجع",
+  orbMoodSaved: "تم حفظ المزاج",
+  orbFirstRunTitle: "ثلاث خطوات لأول إدخال",
+  orbFirstRunStep1: "حرّك الكرة لتطابق شعورك",
+  orbFirstRunStep2: "اختر النطاق (لحظة، يوم، أو وقت)",
+  orbFirstRunStep3: "اختر شعوراً وأكّد",
+  orbFirstRunGotIt: "فهمت",
 };
 
 export const ar: Translations = { ...en, ...arabicOverrides };
