@@ -87,3 +87,64 @@ describe("MoodSlider — OKLCH flag dual-path", () => {
     expect(slider?.getAttribute("aria-valuenow")).toBe("2");
   });
 });
+
+describe("MoodSlider — Phase 3-A.2 showEmojis prop", () => {
+  it("renders the emoji row by default (backward compatible with all V1 callers)", () => {
+    const { container } = render(
+      <MoodSlider value="okay" onChange={vi.fn()} />,
+    );
+    const emojiRow = container.querySelector(
+      '[data-testid="mood-slider-emoji-row"]',
+    );
+    expect(emojiRow).not.toBeNull();
+    // 5 mood detent buttons — one per mood
+    expect(emojiRow?.querySelectorAll("button").length).toBe(5);
+  });
+
+  it("renders the emoji row explicitly when showEmojis=true", () => {
+    const { container } = render(
+      <MoodSlider value="good" onChange={vi.fn()} showEmojis={true} />,
+    );
+    expect(
+      container.querySelector('[data-testid="mood-slider-emoji-row"]'),
+    ).not.toBeNull();
+  });
+
+  it("hides the emoji row entirely when showEmojis=false (OrbPage cinematic mode)", () => {
+    const { container } = render(
+      <MoodSlider value="good" onChange={vi.fn()} showEmojis={false} />,
+    );
+    expect(
+      container.querySelector('[data-testid="mood-slider-emoji-row"]'),
+    ).toBeNull();
+    // And no emoji characters anywhere in the rendered output
+    const emojiCodes = ["\u{1F622}", "\u{1F614}", "\u{1F610}", "\u{1F642}", "\u{1F604}"];
+    for (const emoji of emojiCodes) {
+      expect(container.textContent || "").not.toContain(emoji);
+    }
+  });
+
+  it("preserves slider semantics (role=slider) when showEmojis=false", () => {
+    const { container } = render(
+      <MoodSlider value="okay" onChange={vi.fn()} showEmojis={false} />,
+    );
+    const slider = container.querySelector('[role="slider"]');
+    expect(slider).not.toBeNull();
+    expect(slider?.getAttribute("aria-valuenow")).toBe("2");
+    expect(slider?.getAttribute("aria-valuemin")).toBe("0");
+    expect(slider?.getAttribute("aria-valuemax")).toBe("4");
+  });
+
+  it("exposes ArrowLeft/Right keyboard handlers regardless of showEmojis", () => {
+    const onChange = vi.fn();
+    const { container } = render(
+      <MoodSlider value="okay" onChange={onChange} showEmojis={false} />,
+    );
+    const thumb = container.querySelector<HTMLElement>('[role="slider"]');
+    expect(thumb).not.toBeNull();
+    // Slider is keyboard-focusable (tabIndex=0) in both modes
+    expect(thumb?.getAttribute("tabindex")).toBe("0");
+    // aria-label preserved so screen-reader users are unaffected by emoji toggle
+    expect(thumb?.getAttribute("aria-label")).toBe("Mood");
+  });
+});

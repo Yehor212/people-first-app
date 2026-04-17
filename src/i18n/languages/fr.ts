@@ -2804,4 +2804,9 @@ export const fr: Translations = {
   navV2HabitsPlaceholder: "Page Habitudes — la phase 3-C connectera GardenTab + HabitHubTab.",
   navV2DiaryPlaceholder: "Page Journal — la phase 3-D connectera JournalModule.",
   navV2SettingsPlaceholder: "Page Paramètres — la phase 3-E connectera SettingsTab.",
+  orbWhisper1: "Comment va ton cœur aujourd'hui ?",
+  orbWhisper2: "Qu'est-ce qui monte en toi maintenant ?",
+  orbWhisper3: "Parle à l'orbe.",
+  orbWhisper4: "Respire, puis écoute.",
+  orbWhisper5: "Quel temps fait-il à l'intérieur ?",
 };

@@ -2778,4 +2778,9 @@ export const en: Translations = {
   navV2HabitsPlaceholder: "Habits page — Phase 3-C will wire GardenTab + HabitHubTab here.",
   navV2DiaryPlaceholder: "Diary page — Phase 3-D will wire the JournalModule experience here.",
   navV2SettingsPlaceholder: "Settings page — Phase 3-E will wire SettingsTab here.",
+  orbWhisper1: "How's your heart today?",
+  orbWhisper2: "What rises for you now?",
+  orbWhisper3: "Speak to the orb.",
+  orbWhisper4: "Breathe, then listen.",
+  orbWhisper5: "What's the weather inside?",
 };

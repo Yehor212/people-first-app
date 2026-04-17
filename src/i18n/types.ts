@@ -2771,4 +2771,11 @@ export interface Translations {
   navV2HabitsPlaceholder: string;
   navV2DiaryPlaceholder: string;
   navV2SettingsPlaceholder: string;
+
+  // Phase 3-A.2: Orb whisper prompts (rotate daily via date-of-month)
+  orbWhisper1: string;
+  orbWhisper2: string;
+  orbWhisper3: string;
+  orbWhisper4: string;
+  orbWhisper5: string;
 }

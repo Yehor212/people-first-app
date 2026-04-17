@@ -1,0 +1,36 @@
+/**
+ * CosmicOrbBackground — Phase 3-A.2 WOW-factor backdrop styles.
+ *
+ * Gradients live in CSS (not inline) to stay within the Ratchet inlineStyles
+ * budget. All three rely on CSS custom properties already defined by the
+ * FocusTimer theme (focus-cosmic-*, nebula-a/b) so palette drift is zero.
+ *
+ * Layers (painter order, back to front):
+ *   .cosmic-orb-bg__dark-radial  — dark-mode cosmic radial (hidden in light)
+ *   .cosmic-orb-bg__nebula        — twin radial nebulae (used in both animated
+ *                                   and static variants via class toggle)
+ */
+
+.cosmic-orb-bg__dark-radial {
+  background: radial-gradient(
+    ellipse at center,
+    hsl(var(--focus-cosmic-light)) 0%,
+    hsl(var(--focus-cosmic-mid)) 40%,
+    hsl(var(--focus-cosmic-dark)) 100%
+  );
+}
+
+.cosmic-orb-bg__nebula {
+  background:
+    radial-gradient(circle at 30% 30%, var(--nebula-a) 0%, transparent 40%),
+    radial-gradient(circle at 70% 70%, var(--nebula-b) 0%, transparent 40%);
+}
+
+/**
+ * Ambient rim glow for the OrbPage hero — soft 48px drop-shadow using the
+ * primary colour token. Uses filter (GPU compositor) — no layout thrash.
+ */
+.orb-page-rim-glow {
+  filter: drop-shadow(0 0 48px hsl(var(--primary) / 0.25));
+}
+

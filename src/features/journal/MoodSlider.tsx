@@ -63,10 +63,17 @@ export const MoodSlider = memo(function MoodSlider({
   value,
   onChange,
   className,
+  showEmojis = true,
 }: {
   value: MoodType | undefined;
   onChange: (mood: MoodType) => void;
   className?: string;
+  /**
+   * Phase 3-A.2 — hides the emoji detent row under the track.
+   * Default true preserves every existing caller (JournalEntryEditor, HomeTab, etc.)
+   * byte-for-byte. OrbPage passes `false` for a minimalist, cinematic cosmic surface.
+   */
+  showEmojis?: boolean;
 }) {
   const prefersReduced = useReducedMotion();
   const useOklchGradient = useDesignFlag("design.colors.oklch.mood-slider");
@@ -185,26 +192,28 @@ export const MoodSlider = memo(function MoodSlider({
         />
       </div>
 
-      {/* Emoji row */}
-      <div className="flex justify-between mt-3 px-0">
-        {MOODS.map((mood, i) => (
-          <motion.button
-            key={mood.key}
-            type="button"
-            className="text-xl w-11 h-11 flex items-center justify-center rounded-full"
-            animate={
-              prefersReduced
-                ? undefined
-                : { scale: i === selectedIndex ? 1.3 : 1 }
-            }
-            transition={springs.snappy}
-            onClick={() => snapToDetent(i)}
-            aria-label={mood.key}
-          >
-            {mood.emoji}
-          </motion.button>
-        ))}
-      </div>
+      {/* Emoji row — gated by showEmojis (Phase 3-A.2: OrbPage opts out for cinematic vibe) */}
+      {showEmojis && (
+        <div className="flex justify-between mt-3 px-0" data-testid="mood-slider-emoji-row">
+          {MOODS.map((mood, i) => (
+            <motion.button
+              key={mood.key}
+              type="button"
+              className="text-xl w-11 h-11 flex items-center justify-center rounded-full"
+              animate={
+                prefersReduced
+                  ? undefined
+                  : { scale: i === selectedIndex ? 1.3 : 1 }
+              }
+              transition={springs.snappy}
+              onClick={() => snapToDetent(i)}
+              aria-label={mood.key}
+            >
+              {mood.emoji}
+            </motion.button>
+          ))}
+        </div>
+      )}
     </div>
   );
 });

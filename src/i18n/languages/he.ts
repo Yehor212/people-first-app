@@ -2731,6 +2731,11 @@ const hebrewOverrides: Partial<Translations> = {
   navV2HabitsPlaceholder: "עמוד הרגלים — שלב 3-C יחבר את GardenTab + HabitHubTab.",
   navV2DiaryPlaceholder: "עמוד יומן — שלב 3-D יחבר את JournalModule.",
   navV2SettingsPlaceholder: "עמוד הגדרות — שלב 3-E יחבר את SettingsTab.",
+  orbWhisper1: "מה שלום הלב שלך היום?",
+  orbWhisper2: "מה עולה בך עכשיו?",
+  orbWhisper3: "דבר אל הכדור.",
+  orbWhisper4: "נשום, ואז הקשב.",
+  orbWhisper5: "איך מזג האוויר בפנים?",
 };
 
 export const he: Translations = { ...en, ...hebrewOverrides };

@@ -2653,6 +2653,11 @@ const arabicOverrides: Partial<Translations> = {
   navV2HabitsPlaceholder: "صفحة العادات — ستصل المرحلة 3-C بـ GardenTab + HabitHubTab.",
   navV2DiaryPlaceholder: "صفحة اليوميات — ستصل المرحلة 3-D بـ JournalModule.",
   navV2SettingsPlaceholder: "صفحة الإعدادات — ستصل المرحلة 3-E بـ SettingsTab.",
+  orbWhisper1: "كيف حال قلبك اليوم؟",
+  orbWhisper2: "ماذا يرتفع فيك الآن؟",
+  orbWhisper3: "تحدث إلى الكرة.",
+  orbWhisper4: "تنفس، ثم استمع.",
+  orbWhisper5: "كيف الطقس في داخلك؟",
 };
 
 export const ar: Translations = { ...en, ...arabicOverrides };

@@ -13,6 +13,11 @@ vi.mock("@/contexts/LanguageContext", () => ({
       somLogFeeling: "Log how you feel",
       navV2Orb: "Orb",
       navV2OrbSubhead: "How are you feeling?",
+      orbWhisper1: "How's your heart today?",
+      orbWhisper2: "What rises for you now?",
+      orbWhisper3: "Speak to the orb.",
+      orbWhisper4: "Breathe, then listen.",
+      orbWhisper5: "What's the weather inside?",
     },
     language: "en",
     isRTL: false,
@@ -36,16 +41,30 @@ vi.mock("@/components/state-of-mind/ValenceOrb", () => ({
   ),
 }));
 
-// MoodSlider mock — proves integration
+// MoodSlider mock — proves integration + forwards showEmojis for assertion
 vi.mock("@/features/journal/MoodSlider", () => ({
-  MoodSlider: ({ onChange }: { onChange: (m: string) => void }) => (
+  MoodSlider: ({
+    onChange,
+    showEmojis,
+  }: {
+    onChange: (m: string) => void;
+    showEmojis?: boolean;
+  }) => (
     <button
       data-testid="mood-slider"
+      data-show-emojis={String(showEmojis ?? true)}
       onClick={() => onChange("good")}
       type="button"
     >
       slider
     </button>
+  ),
+}));
+
+// CosmicOrbBackground mock — prove it's rendered behind content
+vi.mock("../CosmicOrbBackground", () => ({
+  CosmicOrbBackground: () => (
+    <div data-testid="cosmic-orb-background">cosmic</div>
   ),
 }));
 
@@ -75,7 +94,7 @@ vi.mock("@/lib/motion", () => ({
   Bloom: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
-describe("OrbPage (Phase 3-A.1 ValenceOrb integration)", () => {
+describe("OrbPage (Phase 3-A.2 cosmic cinematic surface)", () => {
   beforeEach(() => {
     setMoodsSpy.mockClear();
     shouldAnimateMock.mockReturnValue(true);
@@ -90,6 +109,11 @@ describe("OrbPage (Phase 3-A.1 ValenceOrb integration)", () => {
     const main = screen.getByTestId("orb-page");
     expect(main).toHaveAttribute("role", "main");
     expect(main).toHaveAttribute("aria-labelledby", "orb-page-heading");
+  });
+
+  it("renders CosmicOrbBackground behind content (Phase 3-A.2 WOW factor)", () => {
+    render(<OrbPage />);
+    expect(screen.getByTestId("cosmic-orb-background")).toBeInTheDocument();
   });
 
   it("renders the greeting with font-display + includes user name", () => {
@@ -123,15 +147,71 @@ describe("OrbPage (Phase 3-A.1 ValenceOrb integration)", () => {
 
   it("renders the ValenceOrb hero (not the old placeholder text)", () => {
     render(<OrbPage />);
-    expect(screen.getByTestId("valence-orb")).toBeInTheDocument();
+    // Two orbs render (mobile + desktop) — CSS hidden/md:block picks which one shows.
+    const orbs = screen.getAllByTestId("valence-orb");
+    expect(orbs.length).toBeGreaterThanOrEqual(1);
     // Placeholder copy from Phase 3-A must be gone
     expect(screen.queryByText(/Phase 3-B will wire/i)).not.toBeInTheDocument();
   });
 
-  it("renders the MoodSlider below the orb", () => {
+  it("renders the orb at the Phase 3-A.2 enlarged sizes (256 mobile / 320 desktop)", () => {
     render(<OrbPage />);
-    expect(screen.getByTestId("mood-slider")).toBeInTheDocument();
+    // Two wrappers render — one for each viewport. Both ValenceOrb mocks exist
+    // in the DOM, CSS `hidden md:block` picks which one shows. Verify both sizes.
+    const orbs = screen.getAllByTestId("valence-orb");
+    const sizes = orbs.map((el) => el.getAttribute("data-size"));
+    expect(sizes).toContain("256");
+    expect(sizes).toContain("320");
+  });
+
+  it("renders the MoodSlider WITHOUT emojis on OrbPage (showEmojis=false)", () => {
+    render(<OrbPage />);
+    const slider = screen.getByTestId("mood-slider");
+    expect(slider).toBeInTheDocument();
+    expect(slider.getAttribute("data-show-emojis")).toBe("false");
     expect(screen.getByTestId("orb-page-slider")).toBeInTheDocument();
+  });
+
+  it("renders the whisper subtitle with an italic font-serif class", () => {
+    render(<OrbPage />);
+    const whisper = screen.getByTestId("orb-page-whisper");
+    expect(whisper).toBeInTheDocument();
+    expect(whisper.className).toContain("italic");
+    expect(whisper.className).toContain("font-serif");
+    // Whisper text should be one of the 5 literary prompts
+    expect(whisper.textContent).toMatch(
+      /heart today|rises for you|orb|listen|weather inside/i,
+    );
+  });
+
+  it("whisper rotates deterministically by day-of-month", () => {
+    vi.useFakeTimers();
+    // Day 1 → prompt index 1 % 5 = 1 → orbWhisper2
+    vi.setSystemTime(new Date("2026-04-01T12:00:00"));
+    const { unmount } = render(<OrbPage />);
+    expect(screen.getByTestId("orb-page-whisper")).toHaveAttribute(
+      "data-whisper-key",
+      "orbWhisper2",
+    );
+    unmount();
+
+    // Day 5 → 5 % 5 = 0 → orbWhisper1
+    vi.setSystemTime(new Date("2026-04-05T12:00:00"));
+    const r2 = render(<OrbPage />);
+    expect(r2.getByTestId("orb-page-whisper")).toHaveAttribute(
+      "data-whisper-key",
+      "orbWhisper1",
+    );
+    r2.unmount();
+
+    // Day 14 → 14 % 5 = 4 → orbWhisper5
+    vi.setSystemTime(new Date("2026-04-14T12:00:00"));
+    const r3 = render(<OrbPage />);
+    expect(r3.getByTestId("orb-page-whisper")).toHaveAttribute(
+      "data-whisper-key",
+      "orbWhisper5",
+    );
+    r3.unmount();
   });
 
   it("tapping the orb opens the State of Mind modal", () => {
@@ -163,8 +243,10 @@ describe("OrbPage (Phase 3-A.1 ValenceOrb integration)", () => {
   it("does NOT idle-oscillate when reduced motion is requested", () => {
     shouldAnimateMock.mockReturnValue(false);
     render(<OrbPage />);
-    const orb = screen.getByTestId("valence-orb");
+    const orbs = screen.getAllByTestId("valence-orb");
     // With no entries AND no animation, valence should stay at 0 (not oscillate)
-    expect(orb.getAttribute("data-valence")).toBe("0");
+    for (const orb of orbs) {
+      expect(orb.getAttribute("data-valence")).toBe("0");
+    }
   });
 });

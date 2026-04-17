@@ -2789,4 +2789,9 @@ export const es: Translations = {
   navV2HabitsPlaceholder: "Página Hábitos — la fase 3-C conectará GardenTab + HabitHubTab.",
   navV2DiaryPlaceholder: "Página Diario — la fase 3-D conectará JournalModule.",
   navV2SettingsPlaceholder: "Página Ajustes — la fase 3-E conectará SettingsTab.",
+  orbWhisper1: "¿Cómo está tu corazón hoy?",
+  orbWhisper2: "¿Qué emerge en ti ahora?",
+  orbWhisper3: "Habla al orbe.",
+  orbWhisper4: "Respira, luego escucha.",
+  orbWhisper5: "¿Qué tiempo hace por dentro?",
 };

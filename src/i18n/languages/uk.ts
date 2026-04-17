@@ -2762,4 +2762,9 @@ export const uk: Translations = {
   navV2HabitsPlaceholder: "Сторінка Звичок — у фазі 3-C з’єднаємо GardenTab + HabitHubTab.",
   navV2DiaryPlaceholder: "Сторінка Щоденника — у фазі 3-D з’єднаємо JournalModule.",
   navV2SettingsPlaceholder: "Сторінка Налаштувань — у фазі 3-E з’єднаємо SettingsTab.",
+  orbWhisper1: "Як твоє серце сьогодні?",
+  orbWhisper2: "Що підіймається в тобі зараз?",
+  orbWhisper3: "Розкажи орбу.",
+  orbWhisper4: "Дихай, потім слухай.",
+  orbWhisper5: "Яка погода всередині?",
 };

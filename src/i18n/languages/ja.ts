@@ -2740,4 +2740,9 @@ export const ja: Translations = {
   navV2HabitsPlaceholder: "習慣ページ — フェーズ3-CでGardenTab + HabitHubTabを接続します。",
   navV2DiaryPlaceholder: "日記ページ — フェーズ3-DでJournalModuleを接続します。",
   navV2SettingsPlaceholder: "設定ページ — フェーズ3-EでSettingsTabを接続します。",
+  orbWhisper1: "今日、心の調子はどう？",
+  orbWhisper2: "今、何が浮かんでくる？",
+  orbWhisper3: "オーブに語りかけて。",
+  orbWhisper4: "息を吸って、聴いてみて。",
+  orbWhisper5: "内側の天気はどう？",
 };
