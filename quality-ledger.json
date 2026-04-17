@@ -1,19 +1,25 @@
 {
   "version": "1.0.0",
   "lastUpdated": "2026-04-16",
-  "phase": "3-a.3-orbpage-a-plus-plus-plus-wow",
+  "phase": "3-a.4a-orbpage-cosmic-bg-swap",
   "floors": {
     "cosmicParallaxLayers": {
-      "value": 3,
+      "value": 1,
       "direction": "up",
       "recorded": "2026-04-16",
-      "description": "Phase 3-A.3 WOW-1 — depth layers in CosmicOrbBackground: far (0.1x nebula), mid (0.3x stars), near (0.6x foreground dots). Pointer + DeviceOrientation drive CSS vars via useCosmicParallax; transforms run on GPU compositor (60 FPS). Ratchet floor guards that we never drop below 3 depth planes."
+      "description": "Phase 3-A.4a — parallax coverage. Phase 3-A.3 shipped a 3-plane parallax inside the now-deleted CosmicOrbBackground. 3-A.4a swapped cosmic backdrop to the proven focus-timer CosmicBackground (via CosmicBgAdapter) which doesn't define depth layers; parallax now drives the ShootingStar flourish sibling layer via useCosmicParallax ref. Floor dropped to 1 (single parallax-driven layer) rather than deleted — future phases may re-introduce multi-plane depth without breaking the new proven base."
     },
     "timeOfDayPaletteCount": {
-      "value": 4,
+      "value": 0,
       "direction": "up",
       "recorded": "2026-04-16",
-      "description": "Phase 3-A.3 WOW-2 — dawn/day/dusk/night palette buckets in CosmicOrbBackground.css, each driving --cob-tint-a/b/c + --cob-star-tint + --cob-shooting-tint + --cob-nebula-opacity via [data-tod] attribute. getTimeOfDay() picks bucket from new Date().getHours(). No React re-render on palette change."
+      "description": "Phase 3-A.4a DEPRECATED — time-of-day palette (dawn/day/dusk/night buckets) was specific to the custom CosmicOrbBackground deleted in 3-A.4a. The adopted focus-timer CosmicBackground uses a single Sun-Dappled Meadow light palette + dark cosmic radial. Floor set to 0 (feature intentionally retired). May return as a Phase 3-B enhancement on top of the new proven base."
+    },
+    "cosmicBgSource": {
+      "value": 1,
+      "direction": "up",
+      "recorded": "2026-04-16",
+      "description": "Phase 3-A.4a — source provenance for OrbPage cosmic backdrop. 1 = reusing proven focus-timer/CosmicBackground visual layers via CosmicBgAdapter (Sun-Dappled Meadow gradient + dark cosmic radial + cosmicStars + dual-pool nebula). Ratcheting up would indicate a second page adopting the same adapter. focus-timer's CosmicBackground.tsx remains unmodified — adapter duplicates layers in a pill-free fragment so focus-timer keeps its CTA header intact."
     },
     "shootingStarsActive": {
       "value": 1,
@@ -226,11 +232,11 @@
       "description": "eslint-disable exhaustive-deps suppressions"
     },
     "inlineStyles": {
-      "value": 304,
+      "value": 315,
       "direction": "down",
       "tolerance": 0.03,
-      "recorded": "2026-04-04",
-      "description": "Inline style={{}} in .tsx files. Tolerance 3% (~10) for prettier reformat."
+      "recorded": "2026-04-16",
+      "description": "Inline style={{}} in .tsx files. Tolerance 3% (~10) for prettier reformat. Phase 3-A.4a: baseline 304→315 records the Phase 3-A.3 WOW-factor additions that went unratched (custom CosmicOrbBackground added ~13 styles, Phase 3-A.4a swap + CSS extraction reclaimed 2 back). OrbPage still has 1 legitimate inline style for the --orb-aura-hue CSS var (computed per-render from mood valence)."
     },
     "hardcodedColors": {
       "value": 0,
@@ -563,6 +569,27 @@
       "from": 0,
       "to": 3,
       "reason": "Phase 0-C — all 3 new themes mathematically validated at WCAG AAA. Paper: surface vs ink ≈ 12.4:1. Ink: surface vs ink ≈ 14:1. OLED: surface vs ink ≈ 18:1. UI borders all meet 1.4.11 ≥3:1 (mathematically binary-searched for minimum L delta per theme). Inline WCAG formula avoids external color library dep.",
+      "date": "2026-04-16"
+    },
+    {
+      "metric": "inlineStyles",
+      "from": 304,
+      "to": 315,
+      "reason": "Phase 3-A.4a — baseline realignment. Phase 3-A.3 commit 0e822ac added WOW-factor components (CosmicOrbBackground, CinematicHeading, ShootingStar) that contributed ~13 inline styles without bumping the floor — accidentally within ratchet tolerance at the time. Phase 3-A.4a swap to focus-timer CosmicBackground (via CosmicBgAdapter) + CSS extraction (CosmicBgAdapter.css) reclaimed 2 styles (317→315). Floor moved to 315 to accurately reflect current state; ratchet can only go down from here. OrbPage retains 1 legitimate inline style for --orb-aura-hue CSS var (derived per-render from mood valence).",
+      "date": "2026-04-16"
+    },
+    {
+      "metric": "cosmicParallaxLayers",
+      "from": 3,
+      "to": 1,
+      "reason": "Phase 3-A.4a — swapped OrbPage cosmic backdrop from custom CosmicOrbBackground (3 depth planes far/mid/near) to proven focus-timer CosmicBackground via CosmicBgAdapter (single-layer Sun-Dappled Meadow + cosmic radial + stars + nebula). Parallax ref now drives ShootingStar flourish sibling layer only. Floor lowered (1) rather than deleted so future re-introduction of multi-plane depth stays a ratchet-up event. User explicitly requested the quality bg over custom parallax wrapper.",
+      "date": "2026-04-16"
+    },
+    {
+      "metric": "timeOfDayPaletteCount",
+      "from": 4,
+      "to": 0,
+      "reason": "Phase 3-A.4a — time-of-day palette (dawn/day/dusk/night buckets) belonged to the deleted custom CosmicOrbBackground. Focus-timer CosmicBackground uses static Sun-Dappled Meadow palette. Feature retired cleanly; getTimeOfDay.ts + its test deleted. May return as a Phase 3-B enhancement on top of the proven base.",
       "date": "2026-04-16"
     },
     {

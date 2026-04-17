@@ -61,11 +61,21 @@ vi.mock("@/features/journal/MoodSlider", () => ({
   ),
 }));
 
-// CosmicOrbBackground mock — prove it's rendered behind content
-vi.mock("../CosmicOrbBackground", () => ({
-  CosmicOrbBackground: () => (
+// CosmicBgAdapter mock — prove it's rendered behind content
+vi.mock("../CosmicBgAdapter", () => ({
+  CosmicBgAdapter: () => (
     <div data-testid="cosmic-orb-background">cosmic</div>
   ),
+}));
+
+// ShootingStar mock — prove flourish layer renders
+vi.mock("../ShootingStar", () => ({
+  ShootingStar: () => <div data-testid="shooting-star-stub" />,
+}));
+
+// useCosmicParallax mock — no DOM side effects in jsdom
+vi.mock("../useCosmicParallax", () => ({
+  useCosmicParallax: () => ({ current: null }),
 }));
 
 vi.mock("@/components/state-of-mind/StateOfMindModal", () => ({
@@ -111,9 +121,15 @@ describe("OrbPage (Phase 3-A.2 cosmic cinematic surface)", () => {
     expect(main).toHaveAttribute("aria-labelledby", "orb-page-heading");
   });
 
-  it("renders CosmicOrbBackground behind content (Phase 3-A.2 WOW factor)", () => {
+  it("renders CosmicBgAdapter behind content (Phase 3-A.4a focus-timer bg reuse)", () => {
     render(<OrbPage />);
     expect(screen.getByTestId("cosmic-orb-background")).toBeInTheDocument();
+  });
+
+  it("renders shooting-star flourish layer atop cosmic backdrop (Phase 3-A.3 WOW-3)", () => {
+    render(<OrbPage />);
+    expect(screen.getByTestId("cosmic-orb-flourish-layer")).toBeInTheDocument();
+    expect(screen.getByTestId("shooting-star-stub")).toBeInTheDocument();
   });
 
   it("renders the greeting with font-display + includes user name", () => {

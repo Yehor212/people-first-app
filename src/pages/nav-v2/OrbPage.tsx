@@ -10,7 +10,9 @@ import { StateOfMindModal } from "@/components/state-of-mind/StateOfMindModal";
 import { getToday, generateId } from "@/lib/utils";
 import { useShouldAnimate } from "@/hooks/useShouldAnimate";
 import { haptics } from "@/lib/haptics";
-import { CosmicOrbBackground } from "./CosmicOrbBackground";
+import { CosmicBgAdapter } from "./CosmicBgAdapter";
+import { useCosmicParallax } from "./useCosmicParallax";
+import { ShootingStar } from "./ShootingStar";
 import { CinematicHeading } from "./CinematicHeading";
 import type { MoodEntry, MoodType } from "@/types";
 
@@ -25,7 +27,7 @@ import type { MoodEntry, MoodType } from "@/types";
  *   - MoodSlider shown WITHOUT emoji row — track + thumb only, minimal.
  *
  * Composition (top → bottom, staggered entrance):
- *   1. CosmicOrbBackground (z-0, no stagger — paints first frame)
+ *   1. CosmicBgAdapter + ShootingStar flourish (z-0, no stagger — paints first frame)
  *   2. Greeting — chrome stage (80ms)
  *   3. ValenceOrb hero — primary stage (140ms) + ambient rim glow
  *   4. Whisper subtitle — secondary stage (220ms)
@@ -67,6 +69,7 @@ export const OrbPage = memo(function OrbPage() {
   const tx = t as unknown as Record<string, string>;
   const h1Ref = useRef<HTMLHeadingElement>(null);
   const shouldAnimate = useShouldAnimate();
+  const parallaxRef = useCosmicParallax<HTMLDivElement>();
 
   const { moods, userName, setMoods } = useUserDataStore(
     useShallow((s) => ({
@@ -173,8 +176,22 @@ export const OrbPage = memo(function OrbPage() {
         aria-labelledby="orb-page-heading"
         data-testid="orb-page"
       >
-        {/* Cosmic backdrop — paints behind everything, pointer-events: none */}
-        <CosmicOrbBackground />
+        {/* Cosmic backdrop — reuses proven focus-timer CosmicBackground visual
+           * layers via CosmicBgAdapter (Phase 3-A.4a). Paints behind everything,
+           * pointer-events: none. */}
+        <CosmicBgAdapter />
+
+        {/* Parallax + cinematic flourishes layer (Phase 3-A.3 WOW-1/WOW-3) —
+           * sits atop cosmic backdrop, under content. Parallax ref writes
+           * CSS --parallax-x/y consumed by inner ShootingStar for drift. */}
+        <div
+          ref={parallaxRef}
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 z-0 overflow-hidden"
+          data-testid="cosmic-orb-flourish-layer"
+        >
+          <ShootingStar />
+        </div>
 
         {/* Content layer — sits above cosmic background */}
         <div className="relative z-10 mx-auto max-w-3xl px-4 py-10 md:px-6 md:py-16">

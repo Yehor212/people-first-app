@@ -1,0 +1,23 @@
+/**
+ * CosmicBgAdapter.css — Phase 3-A.4a
+ *
+ * Extracted from inline style={{}} to keep within the ratchet budget
+ * (floors.inlineStyles, direction: down). Selectors below reproduce
+ * the three painted layers from src/components/focus-timer/CosmicBackground.tsx
+ * exactly (same tokens: --focus-cosmic-*, --nebula-*).
+ */
+
+.cosmic-bg-adapter__dark-radial {
+  background: radial-gradient(
+    ellipse at center,
+    hsl(var(--focus-cosmic-light)) 0%,
+    hsl(var(--focus-cosmic-mid)) 40%,
+    hsl(var(--focus-cosmic-dark)) 100%
+  );
+}
+
+.cosmic-bg-adapter__nebula {
+  background:
+    radial-gradient(circle at 30% 30%, var(--nebula-a) 0%, transparent 40%),
+    radial-gradient(circle at 70% 70%, var(--nebula-b) 0%, transparent 40%);
+}
