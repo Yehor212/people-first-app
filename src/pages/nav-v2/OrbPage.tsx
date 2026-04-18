@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { Bloom } from "@/lib/motion";
 import { staggerDelay } from "@/lib/motion/choreography";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -6,7 +6,6 @@ import { useThemeStore } from "@/stores/themeStore";
 import { ValenceOrb } from "@/components/state-of-mind/ValenceOrb";
 import { EmotionTagGrid } from "@/components/state-of-mind/EmotionTagGrid";
 import { isSensitiveTag } from "@/components/state-of-mind/emotionTags";
-import { StateOfMindModal } from "@/components/state-of-mind/StateOfMindModal";
 import { haptics } from "@/lib/haptics";
 import { CosmicBgAdapter } from "./CosmicBgAdapter";
 import { useCosmicParallax } from "./useCosmicParallax";
@@ -17,8 +16,6 @@ import { ValenceSlider } from "@/components/state-of-mind/ValenceSlider";
 import { MoodConfirmCta } from "./MoodConfirmCta";
 import { MoodFirstRunHint } from "./MoodFirstRunHint";
 import { useOrbMoodFlow } from "./useOrbMoodFlow";
-import { useUserDataStore } from "@/stores";
-import type { MoodEntry } from "@/types";
 
 /**
  * OrbPage — Phase 3-A.2 cosmic cinematic mindfulness surface with
@@ -55,7 +52,6 @@ export const OrbPage = memo(function OrbPage() {
   const h1Ref = useRef<HTMLHeadingElement>(null);
   const parallaxRef = useCosmicParallax<HTMLDivElement>();
   const appliedTheme = useThemeStore((s) => s.appliedTheme);
-  const setMoods = useUserDataStore((s) => s.setMoods);
 
   const scopeClass =
     appliedTheme === "paper" ? "orb-day-scope" : "dark orb-cosmic-scope";
@@ -77,8 +73,6 @@ export const OrbPage = memo(function OrbPage() {
     handleSkip,
   } = useOrbMoodFlow();
 
-  const [showStateOfMind, setShowStateOfMind] = useState(false);
-
   useEffect(() => {
     h1Ref.current?.focus();
   }, []);
@@ -90,23 +84,17 @@ export const OrbPage = memo(function OrbPage() {
 
   const auraRef = useRef<HTMLDivElement>(null);
   const handleOrbTap = useCallback(() => {
+    // V2 orb tap plays pulse-aura animation only. Mood entry flow is inline
+    // below (slider → emotion grid → confirm CTA). Opening the legacy V1
+    // StateOfMindModal here duplicated the UI and showed V1 chrome on a V2
+    // surface — removed per user feedback 2026-04-18.
     void haptics.tabChanged();
     const node = auraRef.current;
     if (node && shouldAnimate) {
       node.setAttribute("data-orb-pulse", "true");
       setTimeout(() => node.removeAttribute("data-orb-pulse"), 650);
     }
-    setShowStateOfMind(true);
   }, [shouldAnimate]);
-
-  const handleModalSave = useCallback(
-    (entry: MoodEntry) => {
-      const stamped = { ...entry, updatedAt: entry.updatedAt || Date.now() };
-      setMoods((prev) => [...prev, stamped]);
-      setShowStateOfMind(false);
-    },
-    [setMoods],
-  );
 
   return (
     <Bloom key="orb-page" transition={staggerDelay("primary")}>
@@ -251,12 +239,6 @@ export const OrbPage = memo(function OrbPage() {
           )}
         </div>
       </main>
-
-      <StateOfMindModal
-        isOpen={showStateOfMind}
-        onClose={() => setShowStateOfMind(false)}
-        onSave={handleModalSave}
-      />
 
       <MoodFirstRunHint eligible={firstRunEligible} />
     </Bloom>

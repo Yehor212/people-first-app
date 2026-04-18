@@ -239,11 +239,16 @@ describe("OrbPage (Phase 3-A.2 + Phase 3-A.4b)", () => {
     expect(whisper.className).toContain("font-serif");
   });
 
-  it("tapping the orb opens the State of Mind modal", () => {
+  it("tapping the orb plays pulse-aura animation only (no V1 modal)", () => {
     render(<OrbPage />);
+    // V1 StateOfMindModal must NOT render on V2 OrbPage (Phase 3-B fix 2026-04-18)
     expect(screen.queryByTestId("som-modal")).not.toBeInTheDocument();
+    const aura = screen.getByTestId("orb-aura");
+    expect(aura).not.toHaveAttribute("data-orb-pulse");
     fireEvent.click(screen.getByTestId("orb-page-hero"));
-    expect(screen.getByTestId("som-modal")).toBeInTheDocument();
+    expect(aura).toHaveAttribute("data-orb-pulse", "true");
+    // No modal opens even after tap — inline flow handles entry below
+    expect(screen.queryByTestId("som-modal")).not.toBeInTheDocument();
   });
 
   // --- Phase 3-A.4b scope selector ---

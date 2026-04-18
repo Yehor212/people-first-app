@@ -1,0 +1,89 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { ThemeToggleV2 } from "../ThemeToggleV2";
+import { useThemeStore } from "@/stores/themeStore";
+
+vi.mock("@/contexts/LanguageContext", () => ({
+  useLanguage: () => ({
+    t: {
+      switchToDark: "Switch to dark mode",
+      switchToLight: "Switch to light mode",
+      themeLight: "Light",
+      themeDark: "Dark",
+    },
+  }),
+}));
+
+vi.mock("@/lib/haptics", () => ({
+  haptics: { tabChanged: vi.fn().mockResolvedValue(undefined) },
+}));
+
+vi.mock("@/lib/logger", () => ({
+  logger: { warn: vi.fn() },
+}));
+
+describe("ThemeToggleV2", () => {
+  beforeEach(() => {
+    useThemeStore.setState({ theme: "paper", appliedTheme: "paper" });
+    document.documentElement.removeAttribute("data-theme-swap");
+  });
+
+  it("renders with 44px min touch target (Law 9 a11y)", () => {
+    render(<ThemeToggleV2 />);
+    const btn = screen.getByTestId("sidebar-v2-theme-toggle");
+    expect(btn.className).toContain("min-h-[44px]");
+  });
+
+  it("exposes aria-label 'Switch to dark mode' when theme is paper", () => {
+    useThemeStore.setState({ theme: "paper", appliedTheme: "paper" });
+    render(<ThemeToggleV2 />);
+    const btn = screen.getByTestId("sidebar-v2-theme-toggle");
+    expect(btn).toHaveAttribute("aria-label", "Switch to dark mode");
+    expect(btn).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("exposes aria-label 'Switch to light mode' when theme is ink", () => {
+    useThemeStore.setState({ theme: "ink", appliedTheme: "ink" });
+    render(<ThemeToggleV2 />);
+    const btn = screen.getByTestId("sidebar-v2-theme-toggle");
+    expect(btn).toHaveAttribute("aria-label", "Switch to light mode");
+    expect(btn).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("toggles paper → ink on click (fallback path without view transitions)", () => {
+    render(<ThemeToggleV2 />);
+    const btn = screen.getByTestId("sidebar-v2-theme-toggle");
+    expect(useThemeStore.getState().appliedTheme).toBe("paper");
+    fireEvent.click(btn);
+    expect(useThemeStore.getState().appliedTheme).toBe("ink");
+  });
+
+  it("toggles ink → paper on click", () => {
+    useThemeStore.setState({ theme: "ink", appliedTheme: "ink" });
+    render(<ThemeToggleV2 />);
+    fireEvent.click(screen.getByTestId("sidebar-v2-theme-toggle"));
+    expect(useThemeStore.getState().appliedTheme).toBe("paper");
+  });
+
+  it("hides label when collapsed (icon-only sidebar rail)", () => {
+    render(<ThemeToggleV2 collapsed />);
+    expect(screen.queryByText("Dark")).not.toBeInTheDocument();
+    expect(screen.queryByText("Light")).not.toBeInTheDocument();
+    // aria-label still present for screen readers
+    expect(screen.getByTestId("sidebar-v2-theme-toggle")).toHaveAttribute(
+      "aria-label",
+    );
+  });
+
+  it("shows 'Dark' label when in paper (prompts next action)", () => {
+    useThemeStore.setState({ theme: "paper", appliedTheme: "paper" });
+    render(<ThemeToggleV2 />);
+    expect(screen.getByText("Dark")).toBeInTheDocument();
+  });
+
+  it("shows 'Light' label when in ink (prompts next action)", () => {
+    useThemeStore.setState({ theme: "ink", appliedTheme: "ink" });
+    render(<ThemeToggleV2 />);
+    expect(screen.getByText("Light")).toBeInTheDocument();
+  });
+});

@@ -1,0 +1,184 @@
+import { useCallback, useEffect, useState } from "react";
+import { Sun, Moon } from "lucide-react";
+import { flushSync } from "react-dom";
+import { cn } from "@/lib/utils";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useThemeStore } from "@/stores/themeStore";
+import { haptics } from "@/lib/haptics";
+import { logger } from "@/lib/logger";
+
+/**
+ * ThemeToggleV2 — Sidebar-embedded theme switcher for Nav-V2.
+ *
+ * Visual: 52×36 pill-switch (Sun ↔ Moon, sky-300 / slate-700) matching V1
+ * ThemeToggle.tsx aesthetic, but wired through the V2 paper/ink theme store.
+ *
+ * Animation: 2026-standard circle-reveal via View Transitions API — the new
+ * theme grows from the click origin as a clip-path circle until it covers
+ * the viewport. Gracefully falls back to instant swap on browsers without
+ * the API and when `prefers-reduced-motion: reduce` is set.
+ *
+ * Accessibility: Law 9 — 44×44 tap surface (via padding), aria-label,
+ * keyboard activation (Enter/Space). Haptic feedback on native.
+ */
+
+const TRANSITION_DURATION_MS = 500;
+
+function prefersReducedMotion(): boolean {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function")
+    return false;
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+function supportsViewTransition(): boolean {
+  return (
+    typeof document !== "undefined" &&
+    typeof document.startViewTransition === "function"
+  );
+}
+
+export function ThemeToggleV2({ collapsed = false }: { collapsed?: boolean }) {
+  const { t } = useLanguage();
+  const appliedTheme = useThemeStore((s) => s.appliedTheme);
+  const setTheme = useThemeStore((s) => s.setTheme);
+
+  // Prevent hydration mismatch — only render interactive state after mount.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const isDark = appliedTheme === "ink" || appliedTheme === "oled";
+
+  const handleToggle = useCallback(
+    (e: React.MouseEvent<HTMLButtonElement>) => {
+      const nextTheme = isDark ? "paper" : "ink";
+      void haptics.tabChanged();
+
+      // Compute click origin for circle-reveal (fallback to element center).
+      const rect = e.currentTarget.getBoundingClientRect();
+      const x = e.clientX || rect.left + rect.width / 2;
+      const y = e.clientY || rect.top + rect.height / 2;
+
+      if (!supportsViewTransition() || prefersReducedMotion()) {
+        setTheme(nextTheme);
+        return;
+      }
+
+      // Mark document root so CSS can scope the circle-reveal animation.
+      document.documentElement.setAttribute("data-theme-swap", "active");
+
+      try {
+        const vt = document.startViewTransition!(() => {
+          flushSync(() => setTheme(nextTheme));
+        });
+
+        vt.ready
+          .then(() => {
+            const endRadius = Math.hypot(
+              Math.max(x, window.innerWidth - x),
+              Math.max(y, window.innerHeight - y),
+            );
+            document.documentElement.animate(
+              {
+                clipPath: [
+                  `circle(0px at ${x}px ${y}px)`,
+                  `circle(${endRadius}px at ${x}px ${y}px)`,
+                ],
+              },
+              {
+                duration: TRANSITION_DURATION_MS,
+                easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+                pseudoElement: "::view-transition-new(root)",
+              },
+            );
+          })
+          .catch((err) => {
+            logger.warn("[ThemeToggleV2]", "view-transition failed", err);
+          });
+
+        void vt.finished.finally(() => {
+          document.documentElement.removeAttribute("data-theme-swap");
+        });
+      } catch (err) {
+        logger.warn("[ThemeToggleV2]", "startViewTransition threw", err);
+        document.documentElement.removeAttribute("data-theme-swap");
+        setTheme(nextTheme);
+      }
+    },
+    [isDark, setTheme],
+  );
+
+  const ariaLabel = isDark
+    ? t.switchToLight || "Switch to light mode"
+    : t.switchToDark || "Switch to dark mode";
+
+  // SSR / pre-hydration placeholder — static, zero hydration risk.
+  if (!mounted) {
+    return (
+      <div
+        className={cn(
+          "flex items-center rounded-lg px-3 py-2 min-h-[44px]",
+          collapsed && "justify-center px-2",
+        )}
+        aria-hidden="true"
+      >
+        <div className="relative flex-shrink-0 w-[52px] h-[28px] rounded-full bg-muted" />
+      </div>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleToggle}
+      aria-label={ariaLabel}
+      aria-pressed={isDark}
+      data-testid="sidebar-v2-theme-toggle"
+      className={cn(
+        "flex items-center gap-3 rounded-lg px-3 py-2 min-h-[44px]",
+        "text-muted-foreground hover:text-foreground hover:bg-paper-surface/40",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+        "transition-colors duration-200",
+        collapsed && "justify-center px-2",
+      )}
+    >
+      <span
+        className={cn(
+          "relative flex-shrink-0 rounded-full transition-all duration-300 shadow-inner",
+          "w-[52px] h-[28px]",
+          isDark ? "bg-slate-700" : "bg-sky-300",
+        )}
+        aria-hidden="true"
+      >
+        <span
+          className={cn(
+            "absolute top-[3px] w-[22px] h-[22px] rounded-full transition-all duration-300 flex items-center justify-center shadow-sm",
+            isDark
+              ? "left-[27px] bg-indigo-950 ring-1 ring-slate-500/30"
+              : "left-[3px] bg-yellow-400",
+          )}
+        >
+          {isDark ? (
+            <Moon className="w-3.5 h-3.5 text-slate-300" aria-hidden="true" />
+          ) : (
+            <Sun className="w-3.5 h-3.5 text-white" aria-hidden="true" />
+          )}
+        </span>
+
+        {isDark && (
+          <>
+            <span className="absolute top-[5px] left-[5px] w-1 h-1 bg-foreground/60 rounded-full" />
+            <span className="absolute top-[12px] left-[11px] w-0.5 h-0.5 bg-foreground/40 rounded-full" />
+          </>
+        )}
+      </span>
+
+      {!collapsed && (
+        <span className="text-xs">
+          {isDark ? t.themeLight || "Light" : t.themeDark || "Dark"}
+        </span>
+      )}
+    </button>
+  );
+}

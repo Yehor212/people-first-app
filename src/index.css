@@ -4698,3 +4698,20 @@ button:active:not(:disabled) {
     --content-density: dense;
   }
 }
+
+/* ========================================================================
+ * Theme-swap View Transition — circle-reveal from click origin.
+ * Scoped via `html[data-theme-swap="active"]` so it never conflicts with
+ * page-level view transitions used by motion/morph.ts.
+ * ------------------------------------------------------------------------ */
+html[data-theme-swap="active"]::view-transition-old(root),
+html[data-theme-swap="active"]::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+html[data-theme-swap="active"]::view-transition-old(root) {
+  z-index: 1;
+}
+html[data-theme-swap="active"]::view-transition-new(root) {
+  z-index: 2;
+}
