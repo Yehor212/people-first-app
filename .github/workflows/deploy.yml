@@ -58,8 +58,10 @@ jobs:
         run: npm run build
 
       # Phase 0-A: size-limit enforces JS+CSS budget ceilings (ratchet complements this with floor).
-      # On PRs: posts a comment comparing sizes against main. On push: fails build if over budget.
-      - name: Size limit (bundle budgets)
+      # PR-only: size-limit-action needs a PR to compare against main; on direct push to main it fails with
+      # "No PR found" (action limitation). On push events, `npm run ratchet:check` below enforces the ceiling.
+      - name: Size limit (bundle budgets) [PR only]
+        if: github.event_name == 'pull_request'
         uses: andresz1/size-limit-action@v1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
