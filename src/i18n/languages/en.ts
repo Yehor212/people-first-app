@@ -5,7 +5,7 @@ export const en: Translations = {
   goodMorning: "Good morning",
   goodAfternoon: "Good afternoon",
   goodEvening: "Good evening",
-  friend: "Friend",
+  defaultUserName: "Friend",
   home: "Home",
   stats: "Stats",
   settings: "Settings",

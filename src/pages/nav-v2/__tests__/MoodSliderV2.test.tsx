@@ -96,6 +96,59 @@ describe("MoodSliderV2", () => {
     expect(hapticSelectionMock).not.toHaveBeenCalled();
   });
 
+  it("keyboard ArrowUp increments draft like ArrowRight", () => {
+    const onCommit = vi.fn();
+    const onDraft = vi.fn();
+    // Stub rAF → synchronous so aria-valuenow publishes in-act.
+    const rafSpy = vi
+      .spyOn(window, "requestAnimationFrame")
+      .mockImplementation((cb: FrameRequestCallback) => {
+        cb(0);
+        return 0 as unknown as number;
+      });
+    try {
+      render(<MoodSliderV2 value={0} onDraft={onDraft} onCommit={onCommit} />);
+      const handle = screen.getByTestId("mood-slider-v2-handle");
+      handle.focus();
+      expect(handle.getAttribute("aria-valuenow")).toBe("0");
+      act(() => {
+        fireEvent.keyDown(handle, { key: "ArrowUp" });
+      });
+      // ArrowUp aliases ArrowRight → +0.1 draft, no commit, no haptic.
+      expect(onCommit).not.toHaveBeenCalled();
+      expect(hapticSelectionMock).not.toHaveBeenCalled();
+      expect(handle.getAttribute("aria-valuenow")).toBe("0.1");
+    } finally {
+      rafSpy.mockRestore();
+    }
+  });
+
+  it("keyboard ArrowDown decrements draft like ArrowLeft", () => {
+    const onCommit = vi.fn();
+    const onDraft = vi.fn();
+    const rafSpy = vi
+      .spyOn(window, "requestAnimationFrame")
+      .mockImplementation((cb: FrameRequestCallback) => {
+        cb(0);
+        return 0 as unknown as number;
+      });
+    try {
+      render(<MoodSliderV2 value={0} onDraft={onDraft} onCommit={onCommit} />);
+      const handle = screen.getByTestId("mood-slider-v2-handle");
+      handle.focus();
+      expect(handle.getAttribute("aria-valuenow")).toBe("0");
+      act(() => {
+        fireEvent.keyDown(handle, { key: "ArrowDown" });
+      });
+      // ArrowDown aliases ArrowLeft → -0.1 draft, no commit, no haptic.
+      expect(onCommit).not.toHaveBeenCalled();
+      expect(hapticSelectionMock).not.toHaveBeenCalled();
+      expect(handle.getAttribute("aria-valuenow")).toBe("-0.1");
+    } finally {
+      rafSpy.mockRestore();
+    }
+  });
+
   it("keyboard Shift+Arrow snaps to the next canonical stop", () => {
     const onCommit = vi.fn();
     const onDraft = vi.fn();

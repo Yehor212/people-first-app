@@ -7,7 +7,7 @@ const hebrewOverrides: Partial<Translations> = {
   goodMorning: "בוקר טוב",
   goodAfternoon: "צהריים טובים",
   goodEvening: "ערב טוב",
-  friend: "חבר",
+  defaultUserName: "חבר",
   home: "בית",
   stats: "סטטיסטיקות",
   settings: "הגדרות",

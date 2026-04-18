@@ -8,7 +8,7 @@ export interface Translations {
   goodMorning: string;
   goodAfternoon: string;
   goodEvening: string;
-  friend: string;
+  defaultUserName: string;
 
   // Navigation
   home: string;

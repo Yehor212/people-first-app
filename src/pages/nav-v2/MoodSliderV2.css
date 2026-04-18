@@ -130,6 +130,63 @@
   }
 }
 
+/* Paper theme polish — Phase 3-A.4c-ii-d-e.
+ *
+ * Paper bg is warm peach-cream. Two problems the d-d commit carried as debt:
+ *   D1 Gradient midpoint: hue 40 (warm peach) mid stop blends into the paper
+ *      bg and the track reads as 2-tone. Fix: bump contrast via a tighter dark
+ *      inner shadow + a filter:contrast() nudge so the 5 hues read as bands.
+ *   D2 Handle glow: `0 0 16px hue` disappears on warm bg at neg1 (indigo glow
+ *      vs apricot bg = low contrast). Fix: wider + stronger glow, subtle dark
+ *      ring for shape legibility. No new tokens — uses existing --foreground.
+ *
+ * Ink/oled themes are UNAFFECTED — dark backgrounds already give the track
+ * and the handle enough contrast.
+ */
+[data-theme="paper"] .mood-slider-v2-track {
+  /* Darker inner hairline + slightly deeper inset shadow = visible frame
+     around the warm mid-gradient. 1.05 contrast lifts the mid-stops just
+     enough to break the paper-bg blend without going painterly. */
+  box-shadow:
+    inset 0 0 0 1px hsl(var(--foreground) / 0.22),
+    inset 0 1px 3px hsl(var(--foreground) / 0.14),
+    0 1px 2px hsl(var(--foreground) / 0.12);
+  filter: contrast(1.05) saturate(1.08);
+}
+
+[data-theme="paper"] .mood-slider-v2-handle {
+  /* Wider glow radius + stronger drop shadow for shape legibility against
+     the paper-cream bg. Outline via currentColor isn't used — we stay on
+     the --handle-hue custom prop so neg1 (indigo) and pos1 (green) both
+     still read as the tint color. */
+  box-shadow:
+    0 0 0 2px hsl(var(--background)) inset,
+    0 0 22px var(--handle-hue),
+    0 0 4px hsl(var(--foreground) / 0.25),
+    0 2px 6px hsl(var(--foreground) / 0.18);
+}
+
+[data-theme="paper"] .mood-slider-v2-handle[data-animate="true"] {
+  animation: mood-slider-v2-glow-paper 1.6s ease-in-out infinite;
+}
+
+@keyframes mood-slider-v2-glow-paper {
+  0%, 100% {
+    box-shadow:
+      0 0 0 2px hsl(var(--background)) inset,
+      0 0 18px var(--handle-hue),
+      0 0 4px hsl(var(--foreground) / 0.25),
+      0 2px 6px hsl(var(--foreground) / 0.18);
+  }
+  50% {
+    box-shadow:
+      0 0 0 2px hsl(var(--background)) inset,
+      0 0 28px var(--handle-hue),
+      0 0 5px hsl(var(--foreground) / 0.32),
+      0 2px 7px hsl(var(--foreground) / 0.24);
+  }
+}
+
 /* Snap-point ghosts: 5 subtle ticks at valence [-1, -0.5, 0, 0.5, 1].
    Neutral muted-foreground ensures even contrast across the 5-hue gradient
    (Phase 3-A.4c-ii-d-d-fix: hue-matched ticks were invisible on warm right

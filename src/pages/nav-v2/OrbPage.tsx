@@ -135,7 +135,7 @@ export const OrbPage = memo(function OrbPage() {
               <CinematicHeading
                 id="orb-page-heading"
                 leadText={`${greetingText}, `}
-                emphasis={userName === "Friend" ? (tx.friend || "Friend") : userName}
+                emphasis={userName === "Friend" ? (tx.defaultUserName || "Friend") : userName}
                 className="font-display text-3xl md:text-5xl font-semibold tracking-tight text-foreground text-center outline-none"
               />
             </div>

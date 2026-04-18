@@ -5,7 +5,7 @@ export const ja: Translations = {
   goodMorning: "おはようございます",
   goodAfternoon: "こんにちは",
   goodEvening: "こんばんは",
-  friend: "友達",
+  defaultUserName: "ともだち",
   home: "ホーム",
   stats: "統計",
   settings: "設定",
@@ -116,9 +116,9 @@ export const ja: Translations = {
 
   // Phase 3-A.4c-ii-d-d — MoodSliderV2（連続的な気分スライダー）
   moodSliderLabel: "気分スライダー",
-  moodSlideHint: "スライドして気分を見つけてください",
+  moodSlideHint: "スライドして気分を見つけよう",
   moodReset: "まだわからない",
-  moodCommitHint: "離すか Enter を押して選択",
+  moodCommitHint: "手を離すか Enter で決定",
 
   // Time Awareness (ADHD time blindness helper)
   timeUntilEndOfDay: "1日の終わりまで",

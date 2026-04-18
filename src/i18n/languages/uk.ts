@@ -5,7 +5,7 @@ export const uk: Translations = {
   goodMorning: "Доброго ранку",
   goodAfternoon: "Добрий день",
   goodEvening: "Добрий вечір",
-  friend: "Друже",
+  defaultUserName: "Друже",
   home: "Головна",
   stats: "Статистика",
   settings: "Налаштування",
