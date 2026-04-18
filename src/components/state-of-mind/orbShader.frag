@@ -415,10 +415,13 @@ void main() {
                 + envColor * envStr + causticColor)
                 * ao * surfaceTex;
 
-  // ── Inner depth shadow REMOVED — was creating "dark blob" appearance in body center.
-  // User feedback 2026-04-18: "пятно в центре" — visible darkening of interior.
-  // Original 0.28 multiplier darkened the 65-102% radius band, reading as ring/blob.
-  // Restored continuous litColor without mid-radius shadow modulation.
+  // ── Inner depth shadow (softened — subtle glass depth near edge only) ──
+  // User feedback 2026-04-18: full removal was too radical (orb lost glass-depth feel).
+  // Keep subtle 0.08 multiplier at 85-98% band — depth cue without center blob.
+  float depthShadowZone = smoothstep(shapeR * 0.85, shapeR * 0.95, dist)
+                        * smoothstep(shapeR * 1.00, shapeR * 0.96, dist);
+  float depthShadow = depthShadowZone * 0.08;
+  litColor *= (1.0 - depthShadow);
 
   // ── Glass Inner Rim Glow (caustique band — light refracting through glass edge) ──
   float rimZone = smoothstep(shapeR * 0.70, shapeR * 0.88, dist)
