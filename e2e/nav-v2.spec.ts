@@ -703,3 +703,107 @@ test.describe("MoodOrbPicker Baselines (Phase 3-A.4c-ii-d-b)", () => {
     );
   });
 });
+
+// Phase 3-A.4c-ii-d-c Task #41 TAKE 2 — SidebarV2 ink/oled coverage.
+//
+// Task #39 TAKE 2 lifted ink/oled blocks out of @layer theme so --card tokens
+// reach SidebarV2 (which uses `bg-card/80 backdrop-blur-lg` + `border-border`).
+// Task #40 verified via getComputedStyle that --card is `34 4% 18%` under ink
+// and `30 3% 11%` under oled. This describe block captures the visual result
+// on desktop (1280×900) for both expanded (w-64=256px) and collapsed (w-[72px])
+// states. Mobile viewport skipped: sidebar is `hidden md:flex` (767px-and-below
+// uses DrawerV2 trigger only — no sidebar surface to regress on).
+//
+// Empirical sanity check baked in: before screenshotting, we assert the
+// computed --card is ink/oled (not paper white). Catches silent fallback.
+test.describe("SidebarV2 Theme Coverage (Phase 3-A.4c-ii-d-c)", () => {
+  async function setupSidebarThemeScene(
+    page: import("@playwright/test").Page,
+    opts: { theme: "ink" | "oled"; collapsed: boolean },
+  ) {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    // primeApp only supports paper|ink — for oled, prime with paper then
+    // overwrite the theme-v0c key with oled via second init script.
+    await primeApp(page, {
+      paperTheme: opts.theme === "oled" ? "paper" : opts.theme,
+    });
+    if (opts.theme === "oled") {
+      await page.addInitScript(() => {
+        localStorage.setItem(
+          "zenflow:theme-v0c",
+          JSON.stringify({ state: { theme: "oled" }, version: 0 }),
+        );
+      });
+    }
+    await freezeTimeToDay(page);
+    await page.addInitScript(() => {
+      localStorage.setItem("zenflow-orb-first-run-dismissed", "1");
+    });
+    // Hide stochastic flourishes + freeze animations (same recipe as mood-orb).
+    await page.addInitScript(() => {
+      const s = document.createElement("style");
+      s.setAttribute("data-test-override", "1");
+      s.textContent = `
+        [data-testid="cosmic-orb-flourish-layer"] { display: none !important; }
+        *, *::before, *::after {
+          animation-duration: 0ms !important;
+          animation-delay: 0ms !important;
+          transition-duration: 0ms !important;
+          transition-delay: 0ms !important;
+        }
+      `;
+      document.documentElement.appendChild(s);
+    });
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto("/?nav=v2");
+    await page.evaluate(() => document.fonts.ready);
+
+    await expect(page.getByTestId("orb-page")).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByTestId("sidebar-v2")).toBeVisible({
+      timeout: 10_000,
+    });
+
+    // Empirical veracity check: --card must be ink/oled, not paper.
+    const cardHsl = await page.evaluate(() =>
+      getComputedStyle(document.documentElement)
+        .getPropertyValue("--card")
+        .trim(),
+    );
+    const expected =
+      opts.theme === "ink" ? "34 4% 18%" : "30 3% 11%";
+    expect(cardHsl).toBe(expected);
+
+    // Collapsed state is useState-only (not persisted) — click toggle.
+    if (opts.collapsed) {
+      await page.getByTestId("sidebar-v2-collapse-toggle").click();
+      // Wait for width transition (300ms ease-out + safety margin).
+      await page.waitForTimeout(500);
+    }
+
+    await page.waitForTimeout(400);
+  }
+
+  for (const theme of ["ink", "oled"] as const) {
+    for (const state of ["expanded", "collapsed"] as const) {
+      test(`sidebar ${state} — ${theme} — desktop`, async ({
+        page,
+      }, testInfo) => {
+        testInfo.setTimeout(60_000);
+        await setupSidebarThemeScene(page, {
+          theme,
+          collapsed: state === "collapsed",
+        });
+
+        await expect(page).toHaveScreenshot(
+          `nav-v2-sidebar-${theme}-${state}-desktop.png`,
+          {
+            fullPage: true,
+            maxDiffPixelRatio: 0.04,
+            animations: "disabled",
+            timeout: 30_000,
+          },
+        );
+      });
+    }
+  }
+});

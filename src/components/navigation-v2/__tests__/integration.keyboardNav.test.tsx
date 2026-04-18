@@ -1,0 +1,160 @@
+/**
+ * Phase 3-A.4c-ii-d-c Integration Test #2 — Ctrl+1..4 keyboard navigation.
+ *
+ * The orchestrator wires useKeyboardShortcuts → setActivePage for both
+ * Ctrl+N and Cmd+N (Mac) because useKeyboardShortcuts treats metaKey as ctrlKey.
+ * This test mounts the REAL hook + real keyboard plumbing, but mocks the pages
+ * (as lightweight markers) + `useNavigationV2` isn't mocked — we let it run.
+ *
+ * Scope — what this test verifies:
+ *  - Ctrl+1 activates Orb, Ctrl+2 Habits, Ctrl+3 Diary, Ctrl+4 Settings
+ *  - metaKey equivalence (Cmd+1..4 on macOS) → same handlers
+ *  - Shortcuts are SUPPRESSED when device tier is "phone" (useKeyboardShortcuts
+ *    `enabled=false` branch)
+ */
+
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, cleanup, act } from "@testing-library/react";
+import { NavV2Orchestrator } from "../NavV2Orchestrator";
+
+// Lightweight i18n mock
+vi.mock("@/contexts/LanguageContext", () => ({
+  useLanguage: () => ({
+    t: {
+      navV2Orb: "Orb",
+      navV2Habits: "Habits",
+      navV2Diary: "Diary",
+      navV2Settings: "Settings",
+      navV2OpenMenu: "Open menu",
+      navV2CloseMenu: "Close menu",
+      navV2Menu: "Menu",
+      navV2PrimaryNav: "Primary navigation",
+      navV2Search: "Search",
+      navV2Theme: "Theme",
+      navV2Archive: "Archive",
+      navV2Account: "Account",
+    },
+    isRTL: false,
+    language: "en",
+  }),
+}));
+
+vi.mock("@/lib/haptics", () => ({
+  haptics: { tabChanged: vi.fn(), selection: vi.fn() },
+}));
+
+vi.mock("@/lib/androidBackHandler", () => ({
+  registerModalCloseCallback: () => () => undefined,
+}));
+
+// morph() uses View Transitions API which jsdom doesn't support. Stub it to
+// run the callback synchronously so setActivePage's state update lands.
+vi.mock("@/lib/motion/morph", () => ({
+  morph: (_name: string, run: () => void) => {
+    run();
+    return Promise.resolve();
+  },
+}));
+
+// Page shells as markers so we can assert active-page transitions.
+vi.mock("@/pages/nav-v2/OrbPage", () => ({
+  OrbPage: () => <div data-testid="page-orb-marker">orb</div>,
+}));
+vi.mock("@/pages/nav-v2/HabitsPage", () => ({
+  HabitsPage: () => <div data-testid="page-habits-marker">habits</div>,
+}));
+vi.mock("@/pages/nav-v2/DiaryPage", () => ({
+  DiaryPage: () => <div data-testid="page-diary-marker">diary</div>,
+}));
+vi.mock("@/pages/nav-v2/SettingsPage", () => ({
+  SettingsPage: () => <div data-testid="page-settings-marker">settings</div>,
+}));
+
+vi.mock("../SidebarV2", () => ({
+  SidebarV2: () => <nav data-testid="sidebar-v2">sidebar</nav>,
+}));
+vi.mock("../DrawerV2", () => ({
+  DrawerV2: ({ open }: { open: boolean }) =>
+    open ? <div data-testid="drawer-v2-open">drawer</div> : null,
+}));
+
+// Device-tier mock — controllable per test
+const tierState = { tier: "desktop" as "phone" | "tablet" | "desktop" };
+vi.mock("@/hooks/useDeviceTier", () => ({
+  useDeviceTier: () => tierState,
+}));
+
+// Real hook + real shortcuts + real keyboard plumbing below — no mocks of them.
+
+describe("Integration #2 — Ctrl+1..4 keyboard navigation", () => {
+  beforeEach(() => {
+    tierState.tier = "desktop";
+    // Reset URL so useNavigationV2 defaults to orb
+    window.history.replaceState({}, "", "/");
+    try {
+      window.localStorage.removeItem("zen-nav-v2-last-page");
+    } catch {
+      // ignore
+    }
+    cleanup();
+  });
+
+  function fireKey(key: string, modifier: "ctrl" | "meta" = "ctrl") {
+    act(() => {
+      document.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          key,
+          ctrlKey: modifier === "ctrl",
+          metaKey: modifier === "meta",
+          bubbles: true,
+          cancelable: true,
+        }),
+      );
+    });
+  }
+
+  it("Ctrl+1 → Orb, Ctrl+2 → Habits, Ctrl+3 → Diary, Ctrl+4 → Settings", () => {
+    const { container } = render(<NavV2Orchestrator />);
+    const root = () => container.querySelector('[data-testid="nav-v2-orchestrator"]');
+
+    // Starts on orb
+    expect(root()?.getAttribute("data-active-page")).toBe("orb");
+
+    fireKey("2");
+    expect(root()?.getAttribute("data-active-page")).toBe("habits");
+    expect(screen.getByTestId("page-habits-marker")).toBeInTheDocument();
+
+    fireKey("3");
+    expect(root()?.getAttribute("data-active-page")).toBe("diary");
+    expect(screen.getByTestId("page-diary-marker")).toBeInTheDocument();
+
+    fireKey("4");
+    expect(root()?.getAttribute("data-active-page")).toBe("settings");
+    expect(screen.getByTestId("page-settings-marker")).toBeInTheDocument();
+
+    fireKey("1");
+    expect(root()?.getAttribute("data-active-page")).toBe("orb");
+    expect(screen.getByTestId("page-orb-marker")).toBeInTheDocument();
+  });
+
+  it("Cmd+1..4 (macOS meta) behaves identically", () => {
+    const { container } = render(<NavV2Orchestrator />);
+    const root = () => container.querySelector('[data-testid="nav-v2-orchestrator"]');
+
+    fireKey("3", "meta");
+    expect(root()?.getAttribute("data-active-page")).toBe("diary");
+
+    fireKey("1", "meta");
+    expect(root()?.getAttribute("data-active-page")).toBe("orb");
+  });
+
+  it("does NOT respond to Ctrl+N when device tier is 'phone'", () => {
+    tierState.tier = "phone";
+    const { container } = render(<NavV2Orchestrator />);
+    const root = () => container.querySelector('[data-testid="nav-v2-orchestrator"]');
+
+    fireKey("2");
+    fireKey("3");
+    expect(root()?.getAttribute("data-active-page")).toBe("orb");
+  });
+});

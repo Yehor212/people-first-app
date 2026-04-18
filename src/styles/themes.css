@@ -34,8 +34,29 @@
     --zen-primary: var(--color-theme-paper-primary);
     --zen-primary-fg: var(--color-theme-paper-primary-fg);
   }
+}
 
-  :root[data-theme="ink"] {
+/* Phase 3-A.4c-ii-d-c Task #39 TAKE 2 — Un-layered ink/oled shadcn-bridge.
+ *
+ * EMPIRICAL ROOT CAUSE (Task #41 test-engineer verified at runtime):
+ *   getComputedStyle(html[data-theme=ink]).getPropertyValue('--card')
+ *   returned "0 0% 100%" (Tailwind's @layer base default) NOT "34 4% 18%".
+ *
+ * CSS Cascade Level 5 (Layer Order): layers declared LATER win on ties.
+ *   src/index.css:16  @import themes.css  → declares @layer theme FIRST
+ *   src/index.css:29  @tailwind base       → declares @layer base  SECOND
+ *   Therefore `base` wins over `theme` → paper white leaks into ink/oled.
+ *
+ * FIX: Un-layered rules win over ANY @layer (per CSS Cascade Level 5 spec).
+ * By lifting ONLY the shadcn-bridge selectors out of @layer theme, our
+ * ink/oled --card/--background/etc. take precedence over Tailwind's base
+ * layer defaults, without touching @import order or @tailwind directives.
+ *
+ * Paper's --zen-* block stays inside @layer theme because it doesn't
+ * conflict with Tailwind base layer (different var names). Grain/vignette
+ * pseudo-elements remain inside @layer theme (visual atmosphere only).
+ */
+:root[data-theme="ink"] {
     --zen-surface: var(--color-theme-ink-surface);
     --zen-surface-muted: var(--color-theme-ink-surface-muted);
     --zen-surface-card: var(--color-theme-ink-surface-card);
@@ -44,9 +65,37 @@
     --zen-border: var(--color-theme-ink-border);
     --zen-primary: var(--color-theme-ink-primary);
     --zen-primary-fg: var(--color-theme-ink-primary-fg);
-  }
 
-  :root[data-theme="oled"] {
+    /* Phase 3-A.4c-ii-d-c — Shadcn-family bridge for V2 shell (SidebarV2,
+     * DrawerV2, MobileNavV2, NavV2Orchestrator). Tailwind maps `bg-card`,
+     * `border-border`, `text-muted-foreground` etc. to `hsl(var(--<name>))`.
+     * Since the Tailwind color function wraps vars in hsl(), we MUST emit
+     * HSL triplets (H S% L%) rather than oklch(). Values below are perceptual
+     * conversions of the --color-theme-ink-* OKLCH palette so ink theme stays
+     * tonally consistent across --zen-* (new-wave) and shadcn (legacy) consumers.
+     * Legacy .dark class (src/index.css) is untouched — this attribute selector
+     * has equal specificity and wins by source-order (themes.css loads after).
+     */
+    --background: 30 3% 11%;       /* ≈ oklch(0.12 0.015 60)  — ink-surface */
+    --foreground: 46 4% 92%;       /* ≈ oklch(0.92 0.02 75)   — ink-ink */
+    --card: 34 4% 18%;             /* ≈ oklch(0.19 0.022 62)  — ink-surface-card */
+    --card-foreground: 46 4% 92%;
+    --popover: 34 4% 18%;
+    --popover-foreground: 46 4% 92%;
+    --primary: 22 45% 55%;         /* ≈ oklch(0.65 0.11 55)   — ink-primary (warm copper) */
+    --primary-foreground: 30 3% 11%;
+    --secondary: 34 4% 15%;
+    --secondary-foreground: 46 4% 92%;
+    --muted: 34 4% 15%;            /* ≈ oklch(0.16 0.02 62)   — ink-surface-muted */
+    --muted-foreground: 42 3% 70%; /* ≈ oklch(0.72 0.018 72)  — ink-ink-muted */
+    --accent: 22 45% 55%;
+    --accent-foreground: 30 3% 11%;
+    --border: 30 4% 28%;           /* tuned softer than raw ink-border for hairline feel */
+    --input: 30 4% 28%;
+    --ring: 22 45% 55%;
+}
+
+:root[data-theme="oled"] {
     --zen-surface: var(--color-theme-oled-surface);
     --zen-surface-muted: var(--color-theme-oled-surface-muted);
     --zen-surface-card: var(--color-theme-oled-surface-card);
@@ -55,8 +104,32 @@
     --zen-border: var(--color-theme-oled-border);
     --zen-primary: var(--color-theme-oled-primary);
     --zen-primary-fg: var(--color-theme-oled-primary-fg);
-  }
 
+    /* Phase 3-A.4c-ii-d-c — OLED shadcn bridge. Pure-black base (AMOLED
+     * power saving) with ink-equivalent surfaces on raised elements so
+     * SidebarV2 `bg-card/80` still reads as a visible panel (not invisible
+     * on 0 0% 0% bg). Inner palette mirrors ink for visual continuity.
+     */
+    --background: 0 0% 0%;         /* ≈ oklch(0 0 0)          — oled-surface */
+    --foreground: 46 4% 92%;
+    --card: 30 3% 11%;             /* ≈ oklch(0.12 0.015 60)  — oled-surface-card (raised) */
+    --card-foreground: 46 4% 92%;
+    --popover: 30 3% 11%;
+    --popover-foreground: 46 4% 92%;
+    --primary: 22 45% 55%;
+    --primary-foreground: 0 0% 0%;
+    --secondary: 34 4% 8%;         /* ≈ oklch(0.08 0.012 60)  — oled-surface-muted */
+    --secondary-foreground: 46 4% 92%;
+    --muted: 34 4% 8%;
+    --muted-foreground: 42 3% 68%;
+    --accent: 22 45% 55%;
+    --accent-foreground: 0 0% 0%;
+    --border: 30 4% 22%;
+    --input: 30 4% 22%;
+    --ring: 22 45% 55%;
+}
+
+@layer theme {
   /* Paper atmospheric grain — subtle fractal noise via inline SVG.
    * baseFrequency=0.85 tuned for paper-fiber feel (0.7=coarse burlap,
    * 1.2=photographic sensor grain). opacity 0.035 keeps it subliminal.
