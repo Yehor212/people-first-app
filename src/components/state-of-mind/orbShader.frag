@@ -415,19 +415,24 @@ void main() {
                 + envColor * envStr + causticColor)
                 * ao * surfaceTex;
 
-  // ── Ring compositing removed (Phase 3-B.3 surgical fix) ──
-  // Prior implementation had two concentric ring layers (depthShadowZone at
-  // 65-90% radius + rimZone at 70-88% radius) that produced visible hard
-  // rings uncoordinated with the main aura. Removed to yield a single
-  // organic Gaussian falloff. Superformula SDF untouched — only compositing.
+  // ── Inner depth shadow (dark band just inside body edge — glass depth) ──
+  float depthShadowZone = smoothstep(shapeR * 0.65, shapeR * 0.90, dist)
+                        * smoothstep(shapeR * 1.02, shapeR * 0.92, dist);
+  float depthShadow = depthShadowZone * 0.28;
+  litColor *= (1.0 - depthShadow);
 
-  // ── Glow / Bloom / Aura (canonical Gaussian — organic light emission) ──
+  // ── Glass Inner Rim Glow (caustique band — light refracting through glass edge) ──
+  float rimZone = smoothstep(shapeR * 0.70, shapeR * 0.88, dist)
+                * smoothstep(shapeR * 1.01, shapeR * 0.92, dist);
+  float glassRimGlow = rimZone * 0.55;
+  vec3 rimGlowColor = mix(shimmerColor * 0.9, vec3(1.0), 0.55);
+  litColor += rimGlowColor * glassRimGlow * edge;
+
+  // ── Glow / Bloom / Aura (dramatic — orb clearly emits light) ──
   float darkMult = uIsDark > 0.5 ? 1.15 : 1.0;
-  float innerGlow = exp(-max(sdf, 0.0) * 14.0) * 0.27 * darkMult;
-  // Canonical 2D Gaussian: exp(-4.0 * r² / σ²) — radially symmetric, smooth falloff
-  float auraSigmaSq = shapeR * shapeR;
-  float aura = exp(-4.0 * dist * dist / auraSigmaSq) * 0.18 * darkMult;
-  float bloom = exp(-dist * 5.0) * 0.07 * darkMult;
+  float innerGlow = exp(-max(sdf, 0.0) * 14.0) * 0.27 * darkMult; // -40% pulse brightness
+  float aura = exp(-dist * 2.8) * 0.18 * darkMult;    // -40% pulse brightness
+  float bloom = exp(-dist * 5.0) * 0.07 * darkMult;   // -40% pulse brightness
 
   // Light theme: brighter aura so premultiplied pixels don't darken light backgrounds
   float auraLightBoost = uIsDark > 0.5 ? 1.0 : 1.3;
