@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-04-17",
+  "lastUpdated": "2026-04-18",
   "phase": "3-a.4c-ii-c-a-emotion-progressive-disclosure",
   "floors": {
     "moodScopeSelectorActive": {
@@ -178,15 +178,15 @@
       "description": "Phase 2-A — staggered choreography helper active (0=absent, 1=active, 2=adopted across >=5 surfaces). src/lib/motion/choreography.ts exports stages (background 0ms, chrome 80ms, primary 140ms, secondary 220ms, cta 360ms), staggerDelay(stage), childrenStagger(count, base). Currently consumed by Index.tsx tab Bloom (primary) and MotionPreview rollout demos. Phase 2-B will expand adoption across every composite surface."
     },
     "tests.total": {
-      "value": 3626,
+      "value": 3786,
       "direction": "up",
-      "recorded": "2026-04-17",
+      "recorded": "2026-04-18",
       "description": "Total unit test count (vitest, src/ scope). Phase 3-A adds +36 (useNavigationV2 hook 17 + SidebarV2 6 + MobileNavV2 6 + DrawerV2 7). Baseline 3408 -> 3444. Floor at 3440 allows minor cleanup."
     },
     "tests.files": {
-      "value": 185,
+      "value": 206,
       "direction": "up",
-      "recorded": "2026-04-17",
+      "recorded": "2026-04-18",
       "description": "Test file count. Current: 160 (improved +17)."
     },
     "designTokenCoverage": {
@@ -433,9 +433,9 @@
       "description": "Anti-patterns without BLOCK or WARN enforcement"
     },
     "npmOutdated": {
-      "value": 46,
+      "value": 28,
       "direction": "down",
-      "recorded": "2026-04-17",
+      "recorded": "2026-04-18",
       "description": "Outdated npm packages — CANARY ONLY (external dependency, not code-controlled). Floor=999 disables blocking. Actual count tracked as canary only."
     },
     "navV2InfraReady": {
@@ -513,6 +513,10 @@
       },
       {
         "date": "2026-04-17",
+        "value": 9.9
+      },
+      {
+        "date": "2026-04-18",
         "value": 9.9
       }
     ]
