@@ -182,13 +182,17 @@ export const OrbPage = memo(function OrbPage() {
               className="mx-auto mt-6 md:mt-8"
               data-testid="orb-page-picker"
             >
-              <ValenceSlider
-                value={draftValence ?? 0}
-                onChange={(v) => {
-                  handleSliderDraft(v);
-                  handleSliderCommit(v);
-                }}
-              />
+              {/* data-testid="orb-page-slider" preserves infrastructure test
+                  contract after Phase 3-B swap from MoodSliderV2 → ValenceSlider. */}
+              <div data-testid="orb-page-slider">
+                <ValenceSlider
+                  value={draftValence ?? 0}
+                  onChange={(v) => {
+                    handleSliderDraft(v);
+                    handleSliderCommit(v);
+                  }}
+                />
+              </div>
             </div>
           </Bloom>
 

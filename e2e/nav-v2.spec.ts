@@ -476,7 +476,11 @@ test.describe("Nav V2 Infrastructure Baselines", () => {
 //   5. 400ms settle after commit (220ms spring + 300ms tint wash)
 //   6. Empirical --card assertion for ink/oled themes (catch silent fallback)
 //   7. animations: 'disabled' on toHaveScreenshot
-test.describe("MoodSliderV2 Baselines (Phase 3-A.4c-ii-d-d)", () => {
+// Phase 3-B (2026-04-18) — MoodSliderV2 was replaced by ValenceSlider (old bar)
+// on OrbPage per user feedback. These baselines target the retired component
+// and are preserved for historical reference only. Re-enable when/if
+// MoodSliderV2 returns or rewrite under ValenceSlider DOM contract.
+test.describe.skip("MoodSliderV2 Baselines (Phase 3-A.4c-ii-d-d)", () => {
   // Shared setup: prime + freeze time + dismiss first-run + hide flourishes.
   async function setupSliderScene(
     page: import("@playwright/test").Page,

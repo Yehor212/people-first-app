@@ -38,10 +38,21 @@ function isValidPage(value: unknown): value is NavV2Page {
   return typeof value === "string" && (NAV_V2_PAGES as readonly string[]).includes(value);
 }
 
+/** Strip Vite base (e.g. "/people-first-app/") from pathname for GH Pages deploys. */
+function normalizePath(pathname: string): string {
+  // import.meta.env.BASE_URL is set by Vite at build time (e.g. "/people-first-app/")
+  const base = (import.meta.env?.BASE_URL || "/").replace(/\/$/, "");
+  if (base && pathname.startsWith(base)) {
+    const stripped = pathname.slice(base.length);
+    return stripped || "/";
+  }
+  return pathname;
+}
+
 function readInitialPage(): NavV2Page {
   if (typeof window === "undefined") return "orb";
   // URL takes priority over localStorage (deep-link friendly)
-  const pathPage = PATH_TO_PAGE[window.location.pathname];
+  const pathPage = PATH_TO_PAGE[normalizePath(window.location.pathname)];
   if (pathPage) return pathPage;
   try {
     const stored = window.localStorage.getItem(STORAGE_KEY);
@@ -102,7 +113,7 @@ export function useNavigationV2(): UseNavigationV2Return {
   useEffect(() => {
     if (typeof window === "undefined") return;
     const onPopState = () => {
-      const next = PATH_TO_PAGE[window.location.pathname];
+      const next = PATH_TO_PAGE[normalizePath(window.location.pathname)];
       if (next && next !== activePageRef.current) {
         setActivePageState(next);
       }
@@ -118,9 +129,11 @@ export function useNavigationV2(): UseNavigationV2Return {
     const run = () => {
       setActivePageState(page);
       if (typeof window !== "undefined") {
+        const base = (import.meta.env?.BASE_URL || "/").replace(/\/$/, "");
         const path = PAGE_TO_PATH[page];
-        // Preserve ?nav=v2 (and other) query params across navigation
-        const newUrl = path + window.location.search + window.location.hash;
+        // Preserve ?nav=v2 (and other) query params across navigation.
+        // Prepend Vite base so GH Pages deploys keep /people-first-app/ prefix.
+        const newUrl = base + path + window.location.search + window.location.hash;
         try {
           window.history.pushState({ navV2Page: page }, "", newUrl);
         } catch {

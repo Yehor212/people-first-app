@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>ZenFlow</title>
+    <!--
+      GH Pages SPA fallback (rafgraph/spa-github-pages pattern).
+      Any 404 on a deep route (/orb, /habits, /diary, /settings) redirects
+      here; this snippet rewrites the URL to / with the intended path
+      encoded in a single-use query so index.html can restore it.
+    -->
+    <script>
+      (function () {
+        var pathSegmentsToKeep = 1; // "/people-first-app" base prefix
+        var l = window.location;
+        l.replace(
+          l.protocol +
+            "//" +
+            l.hostname +
+            (l.port ? ":" + l.port : "") +
+            l.pathname
+              .split("/")
+              .slice(0, 1 + pathSegmentsToKeep)
+              .join("/") +
+            "/?/" +
+            l.pathname
+              .slice(1)
+              .split("/")
+              .slice(pathSegmentsToKeep)
+              .join("/")
+              .replace(/&/g, "~and~") +
+            (l.search ? "&" + l.search.slice(1).replace(/&/g, "~and~") : "") +
+            l.hash,
+        );
+      })();
+    </script>
+  </head>
+  <body></body>
+</html>
