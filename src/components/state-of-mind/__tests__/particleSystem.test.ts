@@ -160,13 +160,10 @@ describe('particleSystem — theme variants (Phase 3-B.2 Task E)', () => {
       updateVariantParticles(poolA, 'pollen', CX, CY, OUTER_R, 1 / 30);  // 1 frame
       updateVariantParticles(poolB, 'pollen', CX, CY, OUTER_R, 2 / 30);  // 2 frames
 
-      // poolB should have advanced further in life OR respawned (life=0) due to
-      // having crossed maxLife in 2-frame dt. Either outcome proves dt-scaling works.
+      // poolB should have advanced further in life
       for (let i = 0; i < poolA.length; i++) {
         if (poolA[i].variant === 'pollen' && poolB[i].variant === 'pollen') {
-          const respawned = poolB[i].life < poolA[i].life;
-          const advanced = poolB[i].life > poolA[i].life - 1;
-          expect(respawned || advanced).toBe(true);
+          expect(poolB[i].life).toBeGreaterThan(poolA[i].life - 1);
         }
       }
     });
