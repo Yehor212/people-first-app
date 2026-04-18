@@ -181,7 +181,19 @@
       "mcp__playwright__browser_press_key",
       "mcp__playwright__browser_type",
       "Bash(rm -f *.png *.md.tmp diary-snapshot.md editor-snapshot.md nav-snapshot.md)",
-      "Bash(rm -rf .worktrees/ .plan-completion .playwright-mcp/)"
+      "Bash(rm -rf .worktrees/ .plan-completion .playwright-mcp/)",
+      "mcp__supabase__get_cost",
+      "mcp__supabase__generate_typescript_types",
+      "Bash(npm view *)",
+      "Bash(git fetch *)",
+      "Bash(git rm *)",
+      "Bash(awk '/^\\\\.dark/,/^}/' src/index.css)",
+      "Bash(npx playwright *)",
+      "Bash(npm run *)",
+      "Read(//tmp/**)",
+      "Bash(pkill -f \"vite\")",
+      "Bash(taskkill //F //FI \"WINDOWTITLE eq npm*\")",
+      "Bash(git revert *)"
     ],
     "deny": [
       "Bash(rm -rf)",

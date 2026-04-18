@@ -163,10 +163,10 @@ export const OrbPage = memo(function OrbPage() {
                   className="relative rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-background transition-transform duration-200 active:scale-[0.98]"
                 >
                   <div className="block md:hidden">
-                    <ValenceOrb valence={orbValence} size={256} />
+                    <ValenceOrb valence={orbValence} size={280} />
                   </div>
                   <div className="hidden md:block">
-                    <ValenceOrb valence={orbValence} size={320} />
+                    <ValenceOrb valence={orbValence} size={360} />
                   </div>
                 </button>
               </div>
