@@ -6,6 +6,7 @@ import { isNative } from "@/lib/platform";
 import { logger } from "@/lib/logger";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { useModalClose } from "@/hooks/useModalState";
+import { useBackHandler } from "@/hooks/useBackHandler";
 import { SK } from "@/lib/storageKeys";
 import { storageGetRaw, storageSetRaw } from "@/lib/safeJson";
 
@@ -25,6 +26,7 @@ export function NotificationPermission({ onComplete }: NotificationPermissionPro
   }, [onComplete]);
 
   useModalClose(showPrompt, handleDeny);
+  useBackHandler(showPrompt, handleDeny);
 
   useEffect(() => {
     void checkPermission();
