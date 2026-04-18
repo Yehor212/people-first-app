@@ -105,22 +105,25 @@ vi.mock("@/components/state-of-mind/EmotionTagGrid", () => ({
   ),
 }));
 
-// Phase 3-A.4c-ii-d-a — MoodOrbPicker replaces MoodSlider.
-vi.mock("../MoodOrbPicker", () => ({
-  MoodOrbPicker: ({
+// Phase 3-A.4c-ii-d-d — MoodSliderV2 replaces MoodOrbPicker.
+// Mock preserves the `mood-slider` testid used by sensitive-link tests.
+vi.mock("../MoodSliderV2", () => ({
+  MoodSliderV2: ({
     value,
-    onChange,
+    onCommit,
   }: {
-    value: string | null;
-    onChange: (m: string | null) => void;
+    value: number | null;
+    onDraft?: (v: number) => void;
+    onCommit: (v: number) => void;
+    disabled?: boolean;
   }) => (
     <div data-testid="mood-orb-picker" data-value={value ?? ""}>
       <button
         data-testid="mood-slider"
-        onClick={() => onChange("good")}
+        onClick={() => onCommit(0.5)}
         type="button"
       >
-        orb good
+        slider good
       </button>
     </div>
   ),

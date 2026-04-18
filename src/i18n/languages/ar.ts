@@ -7,6 +7,7 @@ const arabicOverrides: Partial<Translations> = {
   goodMorning: "صباح الخير",
   goodAfternoon: "مساء الخير",
   goodEvening: "مساء الخير",
+  friend: "صديقي",
   home: "الرئيسية",
   stats: "الإحصائيات",
   settings: "الإعدادات",
@@ -122,6 +123,12 @@ const arabicOverrides: Partial<Translations> = {
   moodPleasant: "سار",
   moodVeryPleasant: "سار جداً",
   moodOrbGroupLabel: "كيف تشعر؟",
+
+  // Phase 3-A.4c-ii-d-d — MoodSliderV2 (شريط تمرير متواصل للمزاج)
+  moodSliderLabel: "شريط تمرير المزاج",
+  moodSlideHint: "اسحب لتجد مزاجك",
+  moodReset: "لست متأكداً بعد",
+  moodCommitHint: "اترك أو اضغط Enter للاختيار",
 
   // Time Awareness
   timeUntilEndOfDay: "حتى نهاية اليوم",

@@ -13,7 +13,7 @@ import { useCosmicParallax } from "./useCosmicParallax";
 import { ShootingStar } from "./ShootingStar";
 import { CinematicHeading } from "./CinematicHeading";
 import { MoodScopeSelector } from "./MoodScopeSelector";
-import { MoodOrbPicker } from "./MoodOrbPicker";
+import { MoodSliderV2 } from "./MoodSliderV2";
 import { MoodConfirmCta } from "./MoodConfirmCta";
 import { MoodFirstRunHint } from "./MoodFirstRunHint";
 import { useOrbMoodFlow } from "./useOrbMoodFlow";
@@ -67,11 +67,11 @@ export const OrbPage = memo(function OrbPage() {
     shouldAnimate,
     draftValence,
     draftEmotion,
-    sliderValue,
     valenceChosen,
     confirmEnabled,
     firstRunEligible,
-    handleSliderChange,
+    handleSliderDraft,
+    handleSliderCommit,
     handleEmotionToggle,
     handleConfirm,
     handleSkip,
@@ -135,7 +135,7 @@ export const OrbPage = memo(function OrbPage() {
               <CinematicHeading
                 id="orb-page-heading"
                 leadText={`${greetingText}, `}
-                emphasis={userName}
+                emphasis={userName === "Friend" ? (tx.friend || "Friend") : userName}
                 className="font-display text-3xl md:text-5xl font-semibold tracking-tight text-foreground text-center outline-none"
               />
             </div>
@@ -194,9 +194,10 @@ export const OrbPage = memo(function OrbPage() {
               className="mx-auto mt-6 md:mt-8"
               data-testid="orb-page-picker"
             >
-              <MoodOrbPicker
-                value={sliderValue ?? null}
-                onChange={handleSliderChange}
+              <MoodSliderV2
+                value={draftValence}
+                onDraft={handleSliderDraft}
+                onCommit={handleSliderCommit}
               />
             </div>
           </Bloom>

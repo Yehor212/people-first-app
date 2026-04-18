@@ -454,65 +454,93 @@ test.describe("Nav V2 Infrastructure Baselines", () => {
   }
 });
 
-// Phase 3-A.4c-ii-d-b — MoodOrbPicker (5 discrete orbs) visual baselines.
+// Phase 3-A.4c-ii-d-d — MoodSliderV2 (bespoke continuous slider) visual baselines.
 //
-// Matrix: 12 PNGs.
-//   - Idle (no selection): day + night × desktop + mobile = 4
-//   - Selected hue echo (day desktop, all 5 tints 250/220/40/80/120) = 5
-//   - Neutral selected: night × desktop + mobile = 2
-//   - RTL idle: day desktop [dir="rtl"] row-reverse smoke = 1
-// Total = 12 baselines.
+// Replaces the 12 MoodOrbPicker baselines (picker deleted). Matrix: 18 PNGs.
+//   - Idle center (valence 0, no selection): paper/ink/oled × desktop 1280×900 = 3
+//   - Valence -1 committed (left extreme): paper/ink/oled × desktop = 3
+//   - Valence +1 committed (right extreme): paper/ink/oled × desktop = 3
+//   - Mobile idle center: paper/ink × 390×844 = 2
+//   - RTL idle center: ar × paper × desktop = 1
+//   - RTL valence 0.5 committed: ar × paper × desktop = 1
+//   - Keyboard focus: paper × desktop (handle focused) = 1
+//   - Reduced-motion: paper × desktop (valence 0.5 committed, prefers-reduced-motion) = 1
+//   - Post-commit emotion grid: paper/ink × desktop + paper × mobile = 3
+// Total = 18 baselines.
 //
-// Stability recipe (lessons from emotion-grid baselines in 18690354):
-//   1. reducedMotion: 'reduce' via page.emulateMedia — halts ValenceOrb breathe
-//      loop + --page-tint transition.
-//   2. await document.fonts.ready — Fraunces italic small-caps FOUC guard.
-//   3. ShootingStar stochastic layer: CSS override hides it in test builds.
-//   4. animations: 'disabled' on toHaveScreenshot — Playwright pauses
-//      in-flight CSS/SVG/Web Animations for the screenshot frame.
-//   5. After click, waitForTimeout(400) to settle 220ms opacity + scale
-//      transition + the --page-tint CSS var wash (the .mood-orb-option
-//      transition is 220ms, double it for safety).
-test.describe("MoodOrbPicker Baselines (Phase 3-A.4c-ii-d-b)", () => {
-  // Shared setup: prime + freeze time + dismiss first-run hint + hide
-  // stochastic background flourishes, then navigate and wait fonts ready.
-  async function setupMoodOrbPickerScene(
+// Stability recipe (inherited from d-b, plus slider-specific):
+//   1. reducedMotion: 'reduce' via emulateMedia (except the reduced-motion proof test)
+//   2. CSS override freezes animation+transition durations to 0ms (except proof test)
+//   3. cosmic-orb-flourish-layer + ShootingStar hidden
+//   4. document.fonts.ready await (Fraunces)
+//   5. 400ms settle after commit (220ms spring + 300ms tint wash)
+//   6. Empirical --card assertion for ink/oled themes (catch silent fallback)
+//   7. animations: 'disabled' on toHaveScreenshot
+test.describe("MoodSliderV2 Baselines (Phase 3-A.4c-ii-d-d)", () => {
+  // Shared setup: prime + freeze time + dismiss first-run + hide flourishes.
+  async function setupSliderScene(
     page: import("@playwright/test").Page,
     opts: {
-      theme: "paper" | "ink";
+      theme: "paper" | "ink" | "oled";
       viewport: { width: number; height: number };
       rtl?: boolean;
+      preserveMotion?: boolean; // for the reduced-motion proof test
     },
   ) {
-    await page.emulateMedia({ reducedMotion: "reduce" });
-    await primeApp(page, { paperTheme: opts.theme });
+    if (!opts.preserveMotion) {
+      await page.emulateMedia({ reducedMotion: "reduce" });
+    } else {
+      // Reduced-motion proof test — explicitly request reduce so the CSS
+      // @media query branch activates, but DO NOT inject the 0ms override.
+      await page.emulateMedia({ reducedMotion: "reduce" });
+    }
+    // primeApp supports paper|ink; oled needs explicit override.
+    await primeApp(page, {
+      paperTheme: opts.theme === "oled" ? "paper" : opts.theme,
+    });
+    if (opts.theme === "oled") {
+      await page.addInitScript(() => {
+        localStorage.setItem(
+          "zenflow:theme-v0c",
+          JSON.stringify({ state: { theme: "oled" }, version: 0 }),
+        );
+      });
+    }
     await freezeTimeToDay(page);
     await page.addInitScript(() => {
       localStorage.setItem("zenflow-orb-first-run-dismissed", "1");
     });
-    // Hide stochastic ShootingStar (cosmic flourish layer) via style tag —
-    // positions are random per render and defeat pixel determinism.
-    await page.addInitScript(() => {
-      const s = document.createElement("style");
-      s.setAttribute("data-test-override", "1");
-      s.textContent = `
-        [data-testid="cosmic-orb-flourish-layer"] { display: none !important; }
-        *, *::before, *::after {
-          animation-duration: 0ms !important;
-          animation-delay: 0ms !important;
-          transition-duration: 0ms !important;
-          transition-delay: 0ms !important;
-        }
-      `;
-      document.documentElement.appendChild(s);
-    });
+    if (!opts.preserveMotion) {
+      // Hide stochastic ShootingStar + freeze all CSS animations/transitions.
+      await page.addInitScript(() => {
+        const s = document.createElement("style");
+        s.setAttribute("data-test-override", "1");
+        s.textContent = `
+          [data-testid="cosmic-orb-flourish-layer"] { display: none !important; }
+          *, *::before, *::after {
+            animation-duration: 0ms !important;
+            animation-delay: 0ms !important;
+            transition-duration: 0ms !important;
+            transition-delay: 0ms !important;
+          }
+        `;
+        document.documentElement.appendChild(s);
+      });
+    } else {
+      // Reduced-motion proof: freeze ONLY the cosmic flourish; let the
+      // slider's own @media (prefers-reduced-motion) rule do the work.
+      await page.addInitScript(() => {
+        const s = document.createElement("style");
+        s.setAttribute("data-test-override", "1");
+        s.textContent = `
+          [data-testid="cosmic-orb-flourish-layer"] { display: none !important; }
+        `;
+        document.documentElement.appendChild(s);
+      });
+    }
     if (opts.rtl) {
-      // Switch language to Arabic via localStorage — the app's LanguageContext
-      // then sets <html dir="rtl"> natively (Law 17). This is more robust
-      // than overriding dir manually which i18n provider overwrites on mount.
       await page.addInitScript(() => {
         localStorage.setItem("zenflow-language", JSON.stringify("ar"));
-        // Kick dir on init too in case our init script runs before i18n boot.
         document.documentElement.setAttribute("dir", "rtl");
         document.documentElement.setAttribute("lang", "ar");
       });
@@ -521,42 +549,74 @@ test.describe("MoodOrbPicker Baselines (Phase 3-A.4c-ii-d-b)", () => {
     await page.goto("/?nav=v2");
     await page.evaluate(() => document.fonts.ready);
 
-    // Night/ink + mobile combos take longer to paint — give generous
-    // mount timeout. First test in cold-start may incur HMR/dev-server penalty.
     await expect(page.getByTestId("orb-page")).toBeVisible({
       timeout: 20_000,
     });
-    await expect(page.getByTestId("mood-orb-picker")).toBeVisible({
+    await expect(page.getByTestId("mood-slider-v2")).toBeVisible({
       timeout: 10_000,
     });
-    // 5 orbs rendered.
-    await expect(
-      page.locator('[data-testid^="mood-orb-option-"]'),
-    ).toHaveCount(5);
-    // Fonts + initial Bloom stagger settle.
+    await expect(page.getByTestId("mood-slider-v2-handle")).toBeVisible();
+    await expect(page.getByTestId("mood-slider-v2-track")).toBeVisible();
+
+    // Empirical veracity check for ink/oled: --card token cascade applied.
+    // Catches silent paper fallback on non-paper themes (d-c incident lesson).
+    if (opts.theme === "ink" || opts.theme === "oled") {
+      const cardHsl = await page.evaluate(() =>
+        getComputedStyle(document.documentElement)
+          .getPropertyValue("--card")
+          .trim(),
+      );
+      const expected = opts.theme === "ink" ? "34 4% 18%" : "30 3% 11%";
+      expect(cardHsl).toBe(expected);
+    }
+
     await page.waitForTimeout(500);
   }
 
-  // --- 1. Idle (no selection) baselines — day+night × desktop+mobile ---
-  for (const theme of ["paper", "ink"] as const) {
-    const themeLabel = theme === "paper" ? "day" : "night";
+  /**
+   * Commit a valence by calling the exposed draft-store handle (deterministic,
+   * no framer-motion drag required). Parallel to the d-b/midflow approach.
+   */
+  async function commitValence(
+    page: import("@playwright/test").Page,
+    valence: number,
+  ) {
+    await page.waitForFunction(() => {
+      interface W { __zenMoodDraft?: unknown }
+      return (window as unknown as W).__zenMoodDraft !== undefined;
+    }, { timeout: 5000 });
+    await page.evaluate((v) => {
+      interface DraftHandle {
+        setValence: (v: number) => void;
+        setEmotion: (e: string | null) => void;
+      }
+      interface W { __zenMoodDraft?: DraftHandle }
+      const h = (window as unknown as W).__zenMoodDraft;
+      if (h) {
+        h.setValence(v);
+      }
+    }, valence);
+    // Settle: 220ms spring + 300ms tint wash + safety buffer.
+    await page.waitForTimeout(400);
+  }
 
-    test(`desktop idle — ${themeLabel} (${theme})`, async ({
-      page,
-    }, testInfo) => {
+  // --- 1. Idle center (no selection) — paper/ink/oled × desktop = 3 ---
+  for (const theme of ["paper", "ink", "oled"] as const) {
+    test(`desktop idle center — ${theme}`, async ({ page }, testInfo) => {
       testInfo.setTimeout(60_000);
-      await setupMoodOrbPickerScene(page, {
+      await setupSliderScene(page, {
         theme,
-        viewport: { width: 1440, height: 900 },
+        viewport: { width: 1280, height: 900 },
       });
 
-      // No orb selected.
       await expect(
-        page.getByTestId("mood-orb-picker"),
+        page.getByTestId("mood-slider-v2"),
       ).toHaveAttribute("data-has-selection", "false");
 
+      const viewport = theme === "paper" ? "desktop-day" :
+        theme === "ink" ? "desktop-night" : "desktop-oled";
       await expect(page).toHaveScreenshot(
-        `nav-v2-mood-orb-picker-idle-desktop-${themeLabel}.png`,
+        `nav-v2-mood-slider-idle-${theme}-${viewport}-ltr.png`,
         {
           fullPage: true,
           maxDiffPixelRatio: 0.04,
@@ -565,18 +625,70 @@ test.describe("MoodOrbPicker Baselines (Phase 3-A.4c-ii-d-b)", () => {
         },
       );
     });
+  }
 
-    test(`mobile idle — ${themeLabel} (${theme})`, async ({
-      page,
-    }, testInfo) => {
+  // --- 2. Valence -1 (left extreme, committed) — paper/ink/oled × desktop = 3 ---
+  for (const theme of ["paper", "ink", "oled"] as const) {
+    test(`desktop valence -1 committed — ${theme}`, async ({ page }, testInfo) => {
       testInfo.setTimeout(60_000);
-      await setupMoodOrbPickerScene(page, {
+      await setupSliderScene(page, {
+        theme,
+        viewport: { width: 1280, height: 900 },
+      });
+
+      await commitValence(page, -1);
+
+      const viewport = theme === "paper" ? "desktop-day" :
+        theme === "ink" ? "desktop-night" : "desktop-oled";
+      await expect(page).toHaveScreenshot(
+        `nav-v2-mood-slider-neg1-${theme}-${viewport}-ltr.png`,
+        {
+          fullPage: true,
+          maxDiffPixelRatio: 0.04,
+          animations: "disabled",
+          timeout: 30_000,
+        },
+      );
+    });
+  }
+
+  // --- 3. Valence +1 (right extreme, committed) — paper/ink/oled × desktop = 3 ---
+  for (const theme of ["paper", "ink", "oled"] as const) {
+    test(`desktop valence +1 committed — ${theme}`, async ({ page }, testInfo) => {
+      testInfo.setTimeout(60_000);
+      await setupSliderScene(page, {
+        theme,
+        viewport: { width: 1280, height: 900 },
+      });
+
+      await commitValence(page, 1);
+
+      const viewport = theme === "paper" ? "desktop-day" :
+        theme === "ink" ? "desktop-night" : "desktop-oled";
+      await expect(page).toHaveScreenshot(
+        `nav-v2-mood-slider-pos1-${theme}-${viewport}-ltr.png`,
+        {
+          fullPage: true,
+          maxDiffPixelRatio: 0.04,
+          animations: "disabled",
+          timeout: 30_000,
+        },
+      );
+    });
+  }
+
+  // --- 4. Mobile idle center — paper/ink = 2 ---
+  for (const theme of ["paper", "ink"] as const) {
+    test(`mobile idle center — ${theme}`, async ({ page }, testInfo) => {
+      testInfo.setTimeout(60_000);
+      await setupSliderScene(page, {
         theme,
         viewport: { width: 390, height: 844 },
       });
 
+      const viewport = theme === "paper" ? "mobile-day" : "mobile-night";
       await expect(page).toHaveScreenshot(
-        `nav-v2-mood-orb-picker-idle-mobile-${themeLabel}.png`,
+        `nav-v2-mood-slider-idle-${theme}-${viewport}-ltr.png`,
         {
           fullPage: true,
           maxDiffPixelRatio: 0.04,
@@ -587,116 +699,207 @@ test.describe("MoodOrbPicker Baselines (Phase 3-A.4c-ii-d-b)", () => {
     });
   }
 
-  // --- 2. Selected baselines (5 tints on day desktop) ---
-  // Captures each hue echo for --page-tint: 250, 220, 40, 80, 120.
-  const MOODS = [
-    { mood: "terrible", hue: 250, slug: "very-unpleasant" },
-    { mood: "bad", hue: 220, slug: "unpleasant" },
-    { mood: "okay", hue: 40, slug: "neutral" },
-    { mood: "good", hue: 80, slug: "pleasant" },
-    { mood: "great", hue: 120, slug: "very-pleasant" },
-  ] as const;
-
-  for (const { mood, hue, slug } of MOODS) {
-    test(`desktop selected — ${slug} (hue ${hue}) — day`, async ({
-      page,
-    }, testInfo) => {
-      testInfo.setTimeout(60_000);
-      await setupMoodOrbPickerScene(page, {
-        theme: "paper",
-        viewport: { width: 1440, height: 900 },
-      });
-
-      await page.getByTestId(`mood-orb-option-${mood}`).click();
-      // Settle transitions: opacity 220ms + transform 220ms + tint CSS var.
-      await page.waitForTimeout(400);
-
-      await expect(
-        page.getByTestId("mood-orb-picker"),
-      ).toHaveAttribute("data-has-selection", "true");
-
-      // Sanity-assert the aria-checked state flipped on the clicked orb.
-      await expect(
-        page.getByTestId(`mood-orb-option-${mood}`),
-      ).toHaveAttribute("aria-checked", "true");
-
-      // Neutral (hue 40) is also our color-echo assertion target.
-      if (mood === "okay") {
-        const tint = await page
-          .getByTestId("mood-orb-picker")
-          .evaluate((el) => (el as HTMLElement).style.getPropertyValue(
-            "--page-tint",
-          ));
-        expect(tint).toMatch(/hsla?\(\s*40/);
-      }
-
-      await expect(page).toHaveScreenshot(
-        `nav-v2-mood-orb-picker-${slug}-day-desktop.png`,
-        {
-          fullPage: true,
-          maxDiffPixelRatio: 0.04,
-          animations: "disabled",
-          timeout: 30_000,
-        },
-      );
-    });
-  }
-
-  // --- 3. Night theme + neutral selected (desktop + mobile) ---
-  for (const vp of [
-    { label: "desktop", width: 1440, height: 900 },
-    { label: "mobile", width: 390, height: 844 },
-  ] as const) {
-    test(`${vp.label} selected — neutral — night`, async ({
-      page,
-    }, testInfo) => {
-      testInfo.setTimeout(60_000);
-      await setupMoodOrbPickerScene(page, {
-        theme: "ink",
-        viewport: { width: vp.width, height: vp.height },
-      });
-
-      await page.getByTestId("mood-orb-option-okay").click();
-      await page.waitForTimeout(400);
-
-      await expect(
-        page.getByTestId("mood-orb-option-okay"),
-      ).toHaveAttribute("aria-checked", "true");
-
-      await expect(page).toHaveScreenshot(
-        `nav-v2-mood-orb-picker-neutral-night-${vp.label}.png`,
-        {
-          fullPage: true,
-          maxDiffPixelRatio: 0.04,
-          animations: "disabled",
-          timeout: 30_000,
-        },
-      );
-    });
-  }
-
-  // --- 4. RTL smoke (day desktop, no selection) ---
-  test("rtl idle — day desktop (row-reverse)", async ({ page }, testInfo) => {
+  // --- 5. RTL idle center — ar × paper × desktop = 1 ---
+  test("desktop idle center — paper RTL (ar)", async ({ page }, testInfo) => {
     testInfo.setTimeout(60_000);
-    await setupMoodOrbPickerScene(page, {
+    await setupSliderScene(page, {
       theme: "paper",
-      viewport: { width: 1440, height: 900 },
+      viewport: { width: 1280, height: 900 },
       rtl: true,
     });
 
-    // Verify dir="rtl" applied to <html> at screenshot time. CSS row-reverse
-    // rule is validated visually via the baseline PNG (pixel diff catches
-    // regression if LTR creeps back in).
     const htmlDir = await page
       .locator("html")
       .evaluate((el) => el.getAttribute("dir"));
     expect(htmlDir).toBe("rtl");
 
     await expect(page).toHaveScreenshot(
-      "nav-v2-mood-orb-picker-idle-rtl-day-desktop.png",
+      "nav-v2-mood-slider-idle-paper-desktop-day-rtl.png",
       {
         fullPage: true,
         maxDiffPixelRatio: 0.04,
+        animations: "disabled",
+        timeout: 30_000,
+      },
+    );
+  });
+
+  // --- 6. RTL valence 0.5 committed — ar × paper × desktop = 1 ---
+  test("desktop valence 0.5 committed — paper RTL (ar)", async ({ page }, testInfo) => {
+    testInfo.setTimeout(60_000);
+    await setupSliderScene(page, {
+      theme: "paper",
+      viewport: { width: 1280, height: 900 },
+      rtl: true,
+    });
+
+    await commitValence(page, 0.5);
+
+    await expect(page).toHaveScreenshot(
+      "nav-v2-mood-slider-pos05-paper-desktop-day-rtl.png",
+      {
+        fullPage: true,
+        maxDiffPixelRatio: 0.04,
+        animations: "disabled",
+        timeout: 30_000,
+      },
+    );
+  });
+
+  // --- 7. Keyboard focus — paper × desktop = 1 ---
+  test("desktop keyboard focus — paper", async ({ page }, testInfo) => {
+    testInfo.setTimeout(60_000);
+    await setupSliderScene(page, {
+      theme: "paper",
+      viewport: { width: 1280, height: 900 },
+    });
+
+    // Focus the handle deterministically.
+    await page.getByTestId("mood-slider-v2-handle").focus();
+    await page.waitForTimeout(200);
+
+    // Sanity-assert focus landed on the handle (role=slider).
+    const focusedTestId = await page.evaluate(
+      () => document.activeElement?.getAttribute("data-testid"),
+    );
+    expect(focusedTestId).toBe("mood-slider-v2-handle");
+
+    await expect(page).toHaveScreenshot(
+      "nav-v2-mood-slider-focus-paper-desktop-day-ltr.png",
+      {
+        fullPage: true,
+        maxDiffPixelRatio: 0.04,
+        animations: "disabled",
+        timeout: 30_000,
+      },
+    );
+  });
+
+  // --- 8. Reduced-motion proof — paper × desktop = 1 ---
+  test("desktop reduced-motion proof — paper, valence 0.5 committed", async ({ page }, testInfo) => {
+    testInfo.setTimeout(60_000);
+    await setupSliderScene(page, {
+      theme: "paper",
+      viewport: { width: 1280, height: 900 },
+      preserveMotion: true, // no 0ms override — let the slider's own reduce branch prove itself
+    });
+
+    await commitValence(page, 0.5);
+
+    // Proof: handle must not carry the data-animate="true" glow pulse attr.
+    // shouldAnimate returns false when prefers-reduced-motion: reduce.
+    const animateAttr = await page
+      .getByTestId("mood-slider-v2-handle")
+      .getAttribute("data-animate");
+    expect(animateAttr).toBe("false");
+
+    await expect(page).toHaveScreenshot(
+      "nav-v2-mood-slider-reduced-motion-paper-desktop-day-ltr.png",
+      {
+        fullPage: true,
+        maxDiffPixelRatio: 0.04,
+        animations: "disabled",
+        timeout: 30_000,
+      },
+    );
+  });
+
+  // --- 9-11. Post-commit emotion grid — paper/ink desktop + paper mobile = 3 ---
+  // After valence commit with emotion, the emotion-spectrum + chips should
+  // bloom below the slider. Captures slider + emotion grid composition.
+  test("desktop post-commit emotion grid — paper", async ({ page }, testInfo) => {
+    testInfo.setTimeout(60_000);
+    await setupSliderScene(page, {
+      theme: "paper",
+      viewport: { width: 1280, height: 900 },
+    });
+
+    await page.evaluate(() => {
+      interface DraftHandle {
+        setValence: (v: number) => void;
+        setEmotion: (e: string | null) => void;
+      }
+      interface W { __zenMoodDraft?: DraftHandle }
+      const h = (window as unknown as W).__zenMoodDraft;
+      if (h) {
+        h.setValence(0);
+        h.setEmotion(null);
+      }
+    });
+    await page.waitForTimeout(600);
+    await expect(page.getByTestId("orb-page-emotion-spectrum")).toBeVisible();
+
+    await expect(page).toHaveScreenshot(
+      "nav-v2-mood-slider-postcommit-paper-desktop-day-ltr.png",
+      {
+        fullPage: true,
+        maxDiffPixelRatio: 0.05,
+        animations: "disabled",
+        timeout: 30_000,
+      },
+    );
+  });
+
+  test("desktop post-commit emotion grid — ink", async ({ page }, testInfo) => {
+    testInfo.setTimeout(60_000);
+    await setupSliderScene(page, {
+      theme: "ink",
+      viewport: { width: 1280, height: 900 },
+    });
+
+    await page.evaluate(() => {
+      interface DraftHandle {
+        setValence: (v: number) => void;
+        setEmotion: (e: string | null) => void;
+      }
+      interface W { __zenMoodDraft?: DraftHandle }
+      const h = (window as unknown as W).__zenMoodDraft;
+      if (h) {
+        h.setValence(0);
+        h.setEmotion(null);
+      }
+    });
+    await page.waitForTimeout(600);
+    await expect(page.getByTestId("orb-page-emotion-spectrum")).toBeVisible();
+
+    await expect(page).toHaveScreenshot(
+      "nav-v2-mood-slider-postcommit-ink-desktop-night-ltr.png",
+      {
+        fullPage: true,
+        maxDiffPixelRatio: 0.05,
+        animations: "disabled",
+        timeout: 30_000,
+      },
+    );
+  });
+
+  test("mobile post-commit emotion grid — paper", async ({ page }, testInfo) => {
+    testInfo.setTimeout(60_000);
+    await setupSliderScene(page, {
+      theme: "paper",
+      viewport: { width: 390, height: 844 },
+    });
+
+    await page.evaluate(() => {
+      interface DraftHandle {
+        setValence: (v: number) => void;
+        setEmotion: (e: string | null) => void;
+      }
+      interface W { __zenMoodDraft?: DraftHandle }
+      const h = (window as unknown as W).__zenMoodDraft;
+      if (h) {
+        h.setValence(0);
+        h.setEmotion(null);
+      }
+    });
+    await page.waitForTimeout(600);
+    await expect(page.getByTestId("orb-page-emotion-spectrum")).toBeVisible();
+
+    await expect(page).toHaveScreenshot(
+      "nav-v2-mood-slider-postcommit-paper-mobile-day-ltr.png",
+      {
+        fullPage: true,
+        maxDiffPixelRatio: 0.05,
         animations: "disabled",
         timeout: 30_000,
       },

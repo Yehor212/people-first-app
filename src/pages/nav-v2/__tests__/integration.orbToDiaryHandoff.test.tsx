@@ -80,19 +80,23 @@ vi.mock("@/components/state-of-mind/EmotionTagGrid", () => ({
   ),
 }));
 
-vi.mock("../MoodOrbPicker", () => ({
-  MoodOrbPicker: ({
-    onChange,
+// Phase 3-A.4c-ii-d-d — MoodSliderV2 replaces MoodOrbPicker. Mock drives
+// onCommit(0) to match the neutral-valence "okay" the prior test asserted.
+vi.mock("../MoodSliderV2", () => ({
+  MoodSliderV2: ({
+    onCommit,
   }: {
-    value: string | null;
-    onChange: (m: string | null) => void;
+    value: number | null;
+    onDraft?: (v: number) => void;
+    onCommit: (v: number) => void;
+    disabled?: boolean;
   }) => (
     <button
       type="button"
       data-testid="mood-orb-option-okay"
-      onClick={() => onChange("okay")}
+      onClick={() => onCommit(0)}
     >
-      okay orb
+      okay slider
     </button>
   ),
 }));

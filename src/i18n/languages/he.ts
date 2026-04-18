@@ -7,6 +7,7 @@ const hebrewOverrides: Partial<Translations> = {
   goodMorning: "בוקר טוב",
   goodAfternoon: "צהריים טובים",
   goodEvening: "ערב טוב",
+  friend: "חבר",
   home: "בית",
   stats: "סטטיסטיקות",
   settings: "הגדרות",
@@ -122,6 +123,12 @@ const hebrewOverrides: Partial<Translations> = {
   moodPleasant: "נעים",
   moodVeryPleasant: "מאוד נעים",
   moodOrbGroupLabel: "איך אתה מרגיש?",
+
+  // Phase 3-A.4c-ii-d-d — MoodSliderV2 (מחוון רציף למצב רוח)
+  moodSliderLabel: "מחוון מצב רוח",
+  moodSlideHint: "החלק כדי למצוא את מצב הרוח שלך",
+  moodReset: "עדיין לא בטוח",
+  moodCommitHint: "שחרר או הקש Enter כדי לבחור",
 
   // Urgency Alerts
   urgencyHabitsPending: "הרגלים ממתינים לך",

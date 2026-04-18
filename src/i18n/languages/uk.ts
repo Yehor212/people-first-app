@@ -5,6 +5,7 @@ export const uk: Translations = {
   goodMorning: "Доброго ранку",
   goodAfternoon: "Добрий день",
   goodEvening: "Добрий вечір",
+  friend: "Друже",
   home: "Головна",
   stats: "Статистика",
   settings: "Налаштування",
@@ -112,6 +113,12 @@ export const uk: Translations = {
   moodPleasant: "Приємно",
   moodVeryPleasant: "Дуже приємно",
   moodOrbGroupLabel: "Як почуваєшся?",
+
+  // Phase 3-A.4c-ii-d-d — MoodSliderV2 (безперервний повзунок настрою)
+  moodSliderLabel: "Повзунок настрою",
+  moodSlideHint: "Проведіть, щоб знайти свій настрій",
+  moodReset: "Поки не знаю",
+  moodCommitHint: "Відпустіть або натисніть Enter, щоб обрати",
 
   // Time Awareness (ADHD time blindness helper)
   timeUntilEndOfDay: "До кінця дня",

@@ -5,6 +5,7 @@ export const de: Translations = {
   goodMorning: "Guten Morgen",
   goodAfternoon: "Guten Tag",
   goodEvening: "Guten Abend",
+  friend: "Freund",
   home: "Start",
   stats: "Statistiken",
   settings: "Einstellungen",
@@ -112,6 +113,12 @@ export const de: Translations = {
   moodPleasant: "Angenehm",
   moodVeryPleasant: "Sehr angenehm",
   moodOrbGroupLabel: "Wie fühlst du dich?",
+
+  // Phase 3-A.4c-ii-d-d — MoodSliderV2 (fortlaufender Stimmungsregler)
+  moodSliderLabel: "Stimmungsregler",
+  moodSlideHint: "Ziehe, um deine Stimmung zu finden",
+  moodReset: "Noch unklar",
+  moodCommitHint: "Loslassen oder Enter drücken zum Wählen",
 
   // Time Awareness (ADHD time blindness helper)
   timeUntilEndOfDay: "Bis Tagesende",

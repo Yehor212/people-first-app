@@ -5,6 +5,7 @@ export const es: Translations = {
   goodMorning: "Buenos días",
   goodAfternoon: "Buenas tardes",
   goodEvening: "Buenas noches",
+  friend: "Amigo",
   home: "Inicio",
   stats: "Estadísticas",
   settings: "Ajustes",
@@ -112,6 +113,12 @@ export const es: Translations = {
   moodPleasant: "Agradable",
   moodVeryPleasant: "Muy agradable",
   moodOrbGroupLabel: "¿Cómo te sientes?",
+
+  // Phase 3-A.4c-ii-d-d — MoodSliderV2 (control deslizante continuo)
+  moodSliderLabel: "Control de ánimo",
+  moodSlideHint: "Desliza para encontrar tu estado de ánimo",
+  moodReset: "Aún no lo sé",
+  moodCommitHint: "Suelta o pulsa Enter para elegir",
 
   // Time Awareness (ADHD time blindness helper)
   timeUntilEndOfDay: "Hasta fin del día",

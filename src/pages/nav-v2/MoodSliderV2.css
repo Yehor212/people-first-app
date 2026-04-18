@@ -1,0 +1,316 @@
+/**
+ * MoodSliderV2 styling — Phase 3-A.4c-ii-d-d.
+ *
+ * Bespoke continuous mood slider. Replaces discrete 5-orb MoodOrbPicker.
+ * OKLCH gradient track (interpolated in oklch to avoid gray midpoints),
+ * 36px circular handle with ambient glow, 5 snap-point ghost ticks, live
+ * Fraunces italic mood label, reset-to-center chip. Drives hero ValenceOrb
+ * via split draft/committed state + rAF throttle.
+ *
+ * All colors via theme tokens. No hardcoded hex. OKLCH stops computed from
+ * the same 5 hues MoodOrbPicker used (250 / 220 / 40 / 80 / 120).
+ *
+ * Law 8 (60 FPS): single `left` write per frame, no layout thrash, glow pulse
+ * via CSS animation (GPU-accelerated transform/opacity only).
+ * Law 9 (a11y): 44px touch zone, focus ring, reduced-motion branch.
+ * Law 10 (cross-platform): no platform-specific CSS.
+ * Law 17 (Babel): i18n-safe via `[dir="rtl"]` flips.
+ */
+
+.mood-slider-v2 {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 26rem;
+  margin: 0 auto;
+  padding: 0;
+  border: 0;
+  /* --page-tint is written at root on commit — kept as transparent fallback. */
+  --page-tint: transparent;
+  /* --handle-hue is written on every draft change; falls back to muted-foreground token. */
+  --handle-hue: hsl(var(--muted-foreground));
+}
+
+.mood-slider-v2-legend {
+  font-family: "Fraunces", Georgia, serif;
+  font-style: italic;
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+  color: hsl(var(--muted-foreground));
+  text-align: center;
+  margin: 0 0 0.125rem 0;
+  padding: 0;
+}
+
+/* Touch zone: the outer surface catches fingers with a 64px vertical runway. */
+.mood-slider-v2-surface {
+  position: relative;
+  width: 100%;
+  min-height: 64px;
+  padding: 14px 18px; /* leave breathing room for handle overflow */
+  touch-action: none; /* we handle pointermove ourselves */
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  cursor: grab;
+}
+
+.mood-slider-v2-surface[data-dragging="true"] {
+  cursor: grabbing;
+}
+
+.mood-slider-v2-surface:disabled,
+.mood-slider-v2-surface[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Track: 6px high rail with OKLCH gradient. Centered vertically inside surface. */
+.mood-slider-v2-track {
+  position: relative;
+  height: 6px;
+  width: 100%;
+  border-radius: 999px;
+  /* Fallback sRGB gradient for browsers without `in oklch` interpolation */
+  background: linear-gradient(
+    to right,
+    hsl(258 32% 48% / 0.85),
+    hsl(232 32% 58% / 0.85),
+    hsl(42 38% 78% / 0.95),
+    hsl(88 42% 68% / 0.95),
+    hsl(128 42% 66% / 0.95)
+  );
+  /* Shell: inner hairline + subtle drop shadow so the gradient reads as a
+     physical object against paper-cream backgrounds (Phase 3-A.4c-ii-d-d-fix:
+     the warm mid-gradient stops were blending into the paper bg without a
+     frame). Law 8 — shadows are static (no blur animation), GPU-cheap. */
+  box-shadow:
+    inset 0 0 0 1px hsl(var(--foreground) / 0.14),
+    inset 0 1px 2px hsl(var(--foreground) / 0.08),
+    0 1px 2px hsl(var(--foreground) / 0.08);
+}
+
+/* OKLCH upgrade — only applied when supported. Keeps older Safari on sRGB. */
+@supports (background: linear-gradient(in oklch, red, blue)) {
+  .mood-slider-v2-track {
+    background: linear-gradient(
+      to right in oklch,
+      oklch(0.58 0.09 250 / 0.9),
+      oklch(0.64 0.08 220 / 0.9),
+      oklch(0.80 0.05 40 / 0.95),
+      oklch(0.82 0.09 80 / 0.95),
+      oklch(0.84 0.10 120 / 0.95)
+    );
+  }
+}
+
+/* RTL: flip gradient direction so very_pleasant sits on the left. */
+[dir="rtl"] .mood-slider-v2-track {
+  background: linear-gradient(
+    to left,
+    hsl(258 32% 48% / 0.85),
+    hsl(232 32% 58% / 0.85),
+    hsl(42 38% 78% / 0.95),
+    hsl(88 42% 68% / 0.95),
+    hsl(128 42% 66% / 0.95)
+  );
+}
+
+@supports (background: linear-gradient(in oklch, red, blue)) {
+  [dir="rtl"] .mood-slider-v2-track {
+    background: linear-gradient(
+      to left in oklch,
+      oklch(0.58 0.09 250 / 0.9),
+      oklch(0.64 0.08 220 / 0.9),
+      oklch(0.80 0.05 40 / 0.95),
+      oklch(0.82 0.09 80 / 0.95),
+      oklch(0.84 0.10 120 / 0.95)
+    );
+  }
+}
+
+/* Snap-point ghosts: 5 subtle ticks at valence [-1, -0.5, 0, 0.5, 1].
+   Neutral muted-foreground ensures even contrast across the 5-hue gradient
+   (Phase 3-A.4c-ii-d-d-fix: hue-matched ticks were invisible on warm right
+   half vs violet left half — now symmetric). */
+.mood-slider-v2-tick {
+  position: absolute;
+  top: 50%;
+  width: 2px;
+  height: 10px;
+  border-radius: 1px;
+  background: hsl(var(--muted-foreground) / 0.55);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.mood-slider-v2-tick[data-last-commit="true"] {
+  background: hsl(var(--muted-foreground));
+  width: 3px;
+  height: 12px;
+}
+
+/* Handle: 36px round disc with ambient glow. Positioned via `left` CSS var. */
+.mood-slider-v2-handle {
+  position: absolute;
+  top: 50%;
+  width: 36px;
+  height: 36px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: var(--handle-hue);
+  box-shadow:
+    0 0 0 2px hsl(var(--background)) inset,
+    0 0 16px var(--handle-hue),
+    0 1px 3px hsl(var(--foreground) / 0.12);
+  transform: translate(-50%, -50%);
+  cursor: grab;
+  transition:
+    transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 220ms ease-out;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mood-slider-v2-handle:focus-visible {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 4px;
+}
+
+/* Desktop hover nudge — touch devices skip via `(hover: hover)`. */
+@media (hover: hover) and (pointer: fine) {
+  .mood-slider-v2-handle:hover:not([disabled]) {
+    transform: translate(-50%, -50%) scale(1.08);
+  }
+}
+
+.mood-slider-v2-handle[data-dragging="true"] {
+  cursor: grabbing;
+  transform: translate(-50%, -50%) scale(1.12);
+}
+
+/* Inner rim paper-texture echo — delicate ring that hints at the hero orb. */
+.mood-slider-v2-handle::before {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border-radius: 999px;
+  border: 1px solid hsl(var(--background) / 0.6);
+  pointer-events: none;
+}
+
+/* Glow pulse — gated on `data-animate="true"` so reduced-motion disables it. */
+.mood-slider-v2-handle[data-animate="true"] {
+  animation: mood-slider-v2-glow 1.6s ease-in-out infinite;
+}
+
+@keyframes mood-slider-v2-glow {
+  0%, 100% {
+    box-shadow:
+      0 0 0 2px hsl(var(--background)) inset,
+      0 0 12px var(--handle-hue),
+      0 1px 3px hsl(var(--foreground) / 0.12);
+  }
+  50% {
+    box-shadow:
+      0 0 0 2px hsl(var(--background)) inset,
+      0 0 22px var(--handle-hue),
+      0 1px 3px hsl(var(--foreground) / 0.18);
+  }
+}
+
+/* Live label row: Fraunces italic crossfade + reset chip. */
+.mood-slider-v2-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  /* Law 9: 44px touch target — label row aligns with reset chip height so
+     label baseline stays visually centered against the chip. */
+  min-height: 44px;
+}
+
+.mood-slider-v2-label {
+  flex: 1;
+  font-family: "Fraunces", Georgia, serif;
+  font-style: italic;
+  font-variant-caps: small-caps;
+  font-size: 0.8rem;
+  letter-spacing: 0.05em;
+  color: hsl(var(--foreground) / 0.75);
+  text-align: center;
+  transition: opacity 120ms ease-out, color 220ms ease-out;
+  margin: 0;
+  padding: 0;
+}
+
+.mood-slider-v2-reset {
+  /* Law 9: 44px touch target (min-height). Visual chip keeps its compact
+     feel via small font + tight padding — the outer hit area is 44px
+     but the visible text remains a literary chip, not a giant button. */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Fraunces", Georgia, serif;
+  font-style: italic;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  color: hsl(var(--muted-foreground) / 0.85);
+  background: transparent;
+  border: 1px solid hsl(var(--foreground) / 0.15);
+  border-radius: 999px;
+  padding: 4px 14px;
+  min-height: 44px;
+  cursor: pointer;
+  transition:
+    background-color 180ms ease-out,
+    color 180ms ease-out,
+    border-color 180ms ease-out;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mood-slider-v2-reset:hover:not(:disabled) {
+  color: hsl(var(--foreground));
+  border-color: hsl(var(--foreground) / 0.32);
+  background: hsl(var(--foreground) / 0.04);
+}
+
+.mood-slider-v2-reset:focus-visible {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 3px;
+}
+
+.mood-slider-v2-reset:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* Mobile tightening — keep everything in comfortable finger range. */
+@media (max-width: 480px) {
+  .mood-slider-v2 {
+    max-width: 22rem;
+    gap: 0.625rem;
+  }
+  .mood-slider-v2-label {
+    font-size: 0.75rem;
+  }
+  .mood-slider-v2-reset {
+    font-size: 0.68rem;
+  }
+}
+
+/* Reduced motion: hard-disable the spring/glow pulse, but keep the handle
+   (still has to move) and opacity crossfade (information, not flourish). */
+@media (prefers-reduced-motion: reduce) {
+  .mood-slider-v2-handle,
+  .mood-slider-v2-handle[data-animate="true"] {
+    transition-duration: 0ms !important;
+    animation: none !important;
+  }
+  .mood-slider-v2-reset {
+    transition: none !important;
+  }
+}

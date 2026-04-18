@@ -83,29 +83,34 @@ vi.mock("@/components/state-of-mind/EmotionTagGrid", () => ({
   ),
 }));
 
-// Phase 3-A.4c-ii-d-a — MoodOrbPicker replaces MoodSlider on V2.
-vi.mock("../MoodOrbPicker", () => ({
-  MoodOrbPicker: ({
+// Phase 3-A.4c-ii-d-d — MoodSliderV2 replaces MoodOrbPicker on V2 OrbPage.
+// The mock exposes the original `mood-orb-option-*` testids so existing
+// assertions keep working unchanged; it drives `onCommit(valence)` instead of
+// the legacy MoodType-based `onChange(m)` callback.
+vi.mock("../MoodSliderV2", () => ({
+  MoodSliderV2: ({
     value,
-    onChange,
+    onCommit,
   }: {
-    value: string | null;
-    onChange: (m: string | null) => void;
+    value: number | null;
+    onDraft?: (v: number) => void;
+    onCommit: (v: number) => void;
+    disabled?: boolean;
   }) => (
     <div data-testid="mood-orb-picker" data-value={value ?? ""}>
       <button
         data-testid="mood-orb-option-good"
-        onClick={() => onChange(value === "good" ? null : "good")}
+        onClick={() => onCommit(0.5)}
         type="button"
       >
-        good orb
+        good slider
       </button>
       <button
         data-testid="mood-orb-option-great"
-        onClick={() => onChange("great")}
+        onClick={() => onCommit(1)}
         type="button"
       >
-        great orb
+        great slider
       </button>
     </div>
   ),
@@ -221,10 +226,12 @@ describe("OrbPage (Phase 3-A.2 + Phase 3-A.4b)", () => {
     expect(sizes).toContain("320");
   });
 
-  it("renders the MoodOrbPicker (replaces MoodSlider on V2)", () => {
+  it("renders the MoodSliderV2 (continuous slider, Phase 3-A.4c-ii-d-d)", () => {
     render(<OrbPage />);
+    // Mock surfaces the slider under the same testid as the prior picker for
+    // compatibility; the real MoodSliderV2 unit tests cover the slider surface.
     expect(screen.getByTestId("mood-orb-picker")).toBeInTheDocument();
-    // V1 slider must NOT render on V2 orb page
+    // V1 journal slider must NOT render on V2 orb page
     expect(screen.queryByTestId("mood-slider")).not.toBeInTheDocument();
   });
 

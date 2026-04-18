@@ -8,6 +8,7 @@ export interface Translations {
   goodMorning: string;
   goodAfternoon: string;
   goodEvening: string;
+  friend: string;
 
   // Navigation
   home: string;
@@ -121,6 +122,12 @@ export interface Translations {
   moodPleasant: string;
   moodVeryPleasant: string;
   moodOrbGroupLabel: string;
+
+  // Phase 3-A.4c-ii-d-d — MoodSliderV2 (continuous slider revival)
+  moodSliderLabel: string;
+  moodSlideHint: string;
+  moodReset: string;
+  moodCommitHint: string;
 
   // Time Awareness (ADHD time blindness helper)
   timeUntilEndOfDay: string;
