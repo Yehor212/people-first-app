@@ -83,31 +83,28 @@ vi.mock("@/components/state-of-mind/EmotionTagGrid", () => ({
   ),
 }));
 
-// Phase 3-A.4c-ii-d-d — MoodSliderV2 replaces MoodOrbPicker on V2 OrbPage.
+// Phase 3-B — ValenceSlider (old bar) restored on V2 OrbPage.
 // The mock exposes the original `mood-orb-option-*` testids so existing
-// assertions keep working unchanged; it drives `onCommit(valence)` instead of
-// the legacy MoodType-based `onChange(m)` callback.
-vi.mock("../MoodSliderV2", () => ({
-  MoodSliderV2: ({
+// assertions keep working unchanged; ValenceSlider uses `onChange(valence)`.
+vi.mock("@/components/state-of-mind/ValenceSlider", () => ({
+  ValenceSlider: ({
     value,
-    onCommit,
+    onChange,
   }: {
-    value: number | null;
-    onDraft?: (v: number) => void;
-    onCommit: (v: number) => void;
-    disabled?: boolean;
+    value: number;
+    onChange: (v: number) => void;
   }) => (
     <div data-testid="mood-orb-picker" data-value={value ?? ""}>
       <button
         data-testid="mood-orb-option-good"
-        onClick={() => onCommit(0.5)}
+        onClick={() => onChange(0.5)}
         type="button"
       >
         good slider
       </button>
       <button
         data-testid="mood-orb-option-great"
-        onClick={() => onCommit(1)}
+        onClick={() => onChange(1)}
         type="button"
       >
         great slider
@@ -218,15 +215,15 @@ describe("OrbPage (Phase 3-A.2 + Phase 3-A.4b)", () => {
     expect(heading.className).toContain("font-display");
   });
 
-  it("renders the ValenceOrb hero at 256/320 sizes", () => {
+  it("renders the ValenceOrb hero at 280/360 sizes", () => {
     render(<OrbPage />);
     const orbs = screen.getAllByTestId("valence-orb");
     const sizes = orbs.map((el) => el.getAttribute("data-size"));
-    expect(sizes).toContain("256");
-    expect(sizes).toContain("320");
+    expect(sizes).toContain("280");
+    expect(sizes).toContain("360");
   });
 
-  it("renders the MoodSliderV2 (continuous slider, Phase 3-A.4c-ii-d-d)", () => {
+  it("renders the ValenceSlider (old bar restored on V2, Phase 3-B)", () => {
     render(<OrbPage />);
     // Mock surfaces the slider under the same testid as the prior picker for
     // compatibility; the real MoodSliderV2 unit tests cover the slider surface.

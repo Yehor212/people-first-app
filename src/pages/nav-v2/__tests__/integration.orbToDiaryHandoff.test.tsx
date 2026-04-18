@@ -80,21 +80,19 @@ vi.mock("@/components/state-of-mind/EmotionTagGrid", () => ({
   ),
 }));
 
-// Phase 3-A.4c-ii-d-d — MoodSliderV2 replaces MoodOrbPicker. Mock drives
-// onCommit(0) to match the neutral-valence "okay" the prior test asserted.
-vi.mock("../MoodSliderV2", () => ({
-  MoodSliderV2: ({
-    onCommit,
+// Phase 3-B — ValenceSlider (old bar) restored on V2 OrbPage. Mock drives
+// onChange(0) to match the neutral-valence "okay" the prior test asserted.
+vi.mock("@/components/state-of-mind/ValenceSlider", () => ({
+  ValenceSlider: ({
+    onChange,
   }: {
-    value: number | null;
-    onDraft?: (v: number) => void;
-    onCommit: (v: number) => void;
-    disabled?: boolean;
+    value: number;
+    onChange: (v: number) => void;
   }) => (
     <button
       type="button"
       data-testid="mood-orb-option-okay"
-      onClick={() => onCommit(0)}
+      onClick={() => onChange(0)}
     >
       okay slider
     </button>
