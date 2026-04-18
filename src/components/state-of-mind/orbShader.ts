@@ -69,13 +69,6 @@ const FRAG_SRC_300 = FRAG_SRC
 // ── Types ──
 
 export interface OrbGLRenderer {
-  /**
-   * Direct access to the underlying GL context.
-   * Used by bloom post-process pipeline (Phase 3-B.2 Apotheosis Task B) to share
-   * the same WebGL context — creating a second context on the same canvas is
-   * forbidden by HTML spec. Null-guard at the callsite is still advised.
-   */
-  gl: WebGLRenderingContext | WebGL2RenderingContext;
   render: (params: {
     valence: number;
     time: number;
@@ -88,35 +81,6 @@ export interface OrbGLRenderer {
     genesis: number;
     touch: { x: number; y: number; age: number };
     shimmer: number;
-    /**
-     * Phase 3-B.2 Task B: optional FBO to render into.
-     * Default (undefined / null) = render to on-screen backbuffer (legacy behavior).
-     * Bloom pipeline sets this to a scene-capture FBO so downstream passes can
-     * threshold/blur/composite over the orb render.
-     */
-    targetFramebuffer?: WebGLFramebuffer | null;
-    /**
-     * Phase 3-B.2 Task B: viewport size for the target FBO (may differ from
-     * canvas size × dpr when rendering to a half-res bloom scene texture).
-     * Defaults to size*dpr when omitted.
-     */
-    targetWidth?: number;
-    targetHeight?: number;
-    // Phase 3-B.2 Apotheosis: optional (back-compatible — defaults kept inside render)
-    orbSize?: number;          // CSS-computed size in px (160..280)
-    shimmerStrength?: number;  // 0..1 (default 0.5). Set to 0 for reduced-motion.
-    shimmerTime?: number;      // independent shimmer clock (pauses on reduced-motion)
-    thickness?: number;        // 0..1 SSS thickness bias (default 0.5)
-    iridBandPhase?: number;    // 0..1 slow iridescence phase drift
-    hdrEnabled?: boolean;      // true = emit HDR core for Task B bloom pass
-    // Phase 3-B.2 Task D: reactive breath + metaball merge.
-    // All optional with zero-defaults → zero visual change when caller omits them.
-    breathRate?: number;       // Hz, 0.25..0.5 driven by |valence|
-    breathAmp?: number;        // 0..0.1 amplitude (p-p ≈ 2 × amp)
-    mergeProgress?: number;    // 0..1 metaball-merge envelope
-    mergeBlob2Pos?: { x: number; y: number }; // UV space (0..1, Y already flipped)
-    mergeBlob2Scale?: number;  // 0..1 relative radius
-    mergePulse?: number;       // 0..1 brief main-orb scale pulse
   }) => void;
   dispose: () => void;
   isContextLost: () => boolean;
@@ -231,35 +195,17 @@ function buildRenderer(
     uGenesis: gl.getUniformLocation(program, 'uGenesis'),
     uTouch: gl.getUniformLocation(program, 'uTouch'),
     uShimmer: gl.getUniformLocation(program, 'uShimmer'),
-    // Phase 3-B.2 Apotheosis uniforms (may be null if shader optimized them out)
-    uOrbSize: gl.getUniformLocation(program, 'uOrbSize'),
-    uShimmerStrength: gl.getUniformLocation(program, 'uShimmerStrength'),
-    uShimmerTime: gl.getUniformLocation(program, 'uShimmerTime'),
-    uThickness: gl.getUniformLocation(program, 'uThickness'),
-    uIridBandPhase: gl.getUniformLocation(program, 'uIridBandPhase'),
-    uHDREnabled: gl.getUniformLocation(program, 'uHDREnabled'),
-    // Phase 3-B.2 Task D
-    uBreathRate: gl.getUniformLocation(program, 'uBreathRate'),
-    uBreathAmp: gl.getUniformLocation(program, 'uBreathAmp'),
-    uMergeProgress: gl.getUniformLocation(program, 'uMergeProgress'),
-    uMergeBlob2Pos: gl.getUniformLocation(program, 'uMergeBlob2Pos'),
-    uMergeBlob2Scale: gl.getUniformLocation(program, 'uMergeBlob2Scale'),
-    uMergePulse: gl.getUniformLocation(program, 'uMergePulse'),
   };
 
   // Pre-allocate particle data buffer (22 particles × 4 floats)
   const particleData = new Float32Array(22 * 4);
 
   return {
-    gl,
     render(params) {
       const { size, dpr, isDark, color, shape, particles } = params;
-      // Phase 3-B.2 Task B: optional FBO target. Default renders to backbuffer.
-      const target = params.targetFramebuffer ?? null;
-      const w = params.targetWidth ?? size * dpr;
-      const h = params.targetHeight ?? size * dpr;
+      const w = size * dpr;
+      const h = size * dpr;
 
-      gl.bindFramebuffer(gl.FRAMEBUFFER, target);
       gl.viewport(0, 0, w, h);
       gl.clearColor(0, 0, 0, 0);
       gl.clear(gl.COLOR_BUFFER_BIT);
@@ -284,27 +230,6 @@ function buildRenderer(
       gl.uniform1f(loc.uGenesis, params.genesis);
       gl.uniform3f(loc.uTouch, params.touch.x, params.touch.y, params.touch.age);
       gl.uniform1f(loc.uShimmer, params.shimmer);
-
-      // Phase 3-B.2 Apotheosis uniforms — back-compat defaults when props absent.
-      // gl.uniform1f on a null location is a no-op (WebGL spec) — safe if shader
-      // stripped the uniform due to optimization.
-      if (loc.uOrbSize) gl.uniform1f(loc.uOrbSize, params.orbSize ?? params.size);
-      if (loc.uShimmerStrength) gl.uniform1f(loc.uShimmerStrength, params.shimmerStrength ?? 0.5);
-      if (loc.uShimmerTime) gl.uniform1f(loc.uShimmerTime, params.shimmerTime ?? params.time);
-      if (loc.uThickness) gl.uniform1f(loc.uThickness, params.thickness ?? 0.5);
-      if (loc.uIridBandPhase) gl.uniform1f(loc.uIridBandPhase, params.iridBandPhase ?? 0.0);
-      if (loc.uHDREnabled) gl.uniform1f(loc.uHDREnabled, params.hdrEnabled ? 1.0 : 0.0);
-
-      // Phase 3-B.2 Task D: reactive breath + metaball merge (zero defaults = rest state)
-      if (loc.uBreathRate) gl.uniform1f(loc.uBreathRate, params.breathRate ?? 0.0);
-      if (loc.uBreathAmp) gl.uniform1f(loc.uBreathAmp, params.breathAmp ?? 0.0);
-      if (loc.uMergeProgress) gl.uniform1f(loc.uMergeProgress, params.mergeProgress ?? 0.0);
-      if (loc.uMergeBlob2Pos) {
-        const b2 = params.mergeBlob2Pos ?? { x: 0.5, y: 0.5 };
-        gl.uniform2f(loc.uMergeBlob2Pos, b2.x, b2.y);
-      }
-      if (loc.uMergeBlob2Scale) gl.uniform1f(loc.uMergeBlob2Scale, params.mergeBlob2Scale ?? 0.0);
-      if (loc.uMergePulse) gl.uniform1f(loc.uMergePulse, params.mergePulse ?? 0.0);
 
       // Pack particles into uniform buffer (UV space, Y-flipped for WebGL)
       for (let i = 0; i < 22; i++) {
