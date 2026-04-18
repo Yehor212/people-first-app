@@ -346,8 +346,10 @@ export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: Vale
       state.time += dt * (1 - idleFactor * 0.4); // idle → 40% slower internal time
 
       // P5: Smoothed valence — organic flow between color/shape states
-      // Factor 0.12 per frame → ~130ms settle time. Responsive on drag, visible on tap.
-      const smoothLerp = 1 - Math.pow(1 - 0.12, dt * 60);
+      // Factor 0.05 per frame → ~900ms slow-breath settle. User feedback 2026-04-18:
+      // "мягкость перехода от орба к орбу как раньше было" — restore very soft
+      // transition between mood states, not snappy.
+      const smoothLerp = 1 - Math.pow(1 - 0.05, dt * 60);
       smoothValenceRef.current += (state.currentValence - smoothValenceRef.current) * smoothLerp;
 
       // Update particles (skip when off-screen to save CPU)
