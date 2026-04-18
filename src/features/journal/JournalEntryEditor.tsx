@@ -547,7 +547,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
     ? {
         layoutId: `entry-${entry?.id}`,
         onLayoutAnimationComplete: () => setContentReady(true),
-        transition: { type: "spring", stiffness: 260, damping: 25 },
+        transition: { type: "spring" as const, stiffness: 260, damping: 25 },
       }
     : {};
 
