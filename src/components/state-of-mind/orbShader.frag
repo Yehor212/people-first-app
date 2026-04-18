@@ -16,6 +16,23 @@ uniform float uGenesis;    // 0→1 birth animation (CPU-eased elastic)
 uniform vec3 uTouch;       // xy = UV touch position, z = age since touch (0 = inactive)
 uniform float uShimmer;    // 0→1 transition burst (large valence change flash)
 
+// ─── Phase 3-B.2: А+++ quality uniforms (Apotheosis) ───
+// Apple Intelligence mesh-gradient always-shimmer (Q8=а) + SSS + iridescence + HDR
+uniform float uOrbSize;           // CSS-computed px size (160..280), drives SDF scale + noise octaves
+uniform float uShimmerStrength;   // 0..1 intensity of always-on rainbow mesh (default 0.5 in JS)
+uniform float uShimmerTime;       // independent shimmer clock (pauses on reduced-motion)
+uniform float uThickness;         // 0..1 SSS thickness bias (default 0.5)
+uniform float uIridBandPhase;     // 0..1 slow phase drift for iridescence animation
+uniform float uHDREnabled;        // 1.0 = emit linear >1.0 core for bloom pass, 0.0 = clamp
+
+// ─── Phase 3-B.2 Task D: reactive breath + long-press metaball merge ───
+uniform float uBreathRate;        // Hz, 0.25..0.5 driven by |valence| (default 0.25)
+uniform float uBreathAmp;         // 0..0.1 breath amplitude (default 0.025)
+uniform float uMergeProgress;     // 0..1 metaball-merge envelope (0 = rest, shader branches early)
+uniform vec2  uMergeBlob2Pos;     // UV-space target for the 2nd blob (defaults to center)
+uniform float uMergeBlob2Scale;   // 0..1 relative radius of the 2nd blob
+uniform float uMergePulse;        // 0..1 brief main-orb scale pulse at merge peak
+
 // ─── glsl-canvas full-cycle preview bridge ───
 // glsl-canvas auto-animates u_time/u_resolution (snake_case).
 // Production WebGL sets uTime/uResolution etc. (camelCase) via JS uniforms.
@@ -182,6 +199,14 @@ vec3 cosinePalette(float t, vec3 a, vec3 b, vec3 c, vec3 d) {
   return a + b * cos(6.2832 * (c * t + d));
 }
 
+// ─── Polynomial smooth-min (Inigo Quilez canonical, C2-continuous) ───
+// Produces an organic fluid merge between two SDFs. k controls the blend
+// radius in the same units as the distances being combined.
+float smin(float a, float b, float k) {
+  float h = max(k - abs(a - b), 0.0) / k;
+  return min(a, b) - h * h * h * k / 6.0;
+}
+
 // ─── Gielis Superformula ───
 
 float superformula(float theta, float m, float n1, float n2, float n3) {
@@ -201,6 +226,29 @@ vec3 hueRotate(vec3 col, float angle) {
   return col * c + cross(k, col) * s + k * dot(k, col) * (1.0 - c);
 }
 
+// ─── Phase 3-B.2 Apotheosis: HSV → RGB (thin-film iridescence) ───
+vec3 hsv2rgb_api(vec3 c) {
+  vec4 K = vec4(1.0, 2.0/3.0, 1.0/3.0, 3.0);
+  vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+  return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+}
+
+// ─── Apple Intelligence 5-color mesh palette ───
+// purple(270°) → pink(330°) → blue(240°) → red(0°) → orange(30°)
+// Source: jacobamobin/AppleIntelligenceGlowEffect hue stops
+vec3 appleIntelligencePalette(float t) {
+  // 5 hue stops in degrees → wrap smoothly
+  float h;
+  float ft = fract(t);
+  if      (ft < 0.20) h = mix(270.0, 330.0, ft / 0.20);
+  else if (ft < 0.40) h = mix(330.0, 240.0 + 360.0, (ft - 0.20) / 0.20); // wrap through 360
+  else if (ft < 0.60) h = mix(240.0, 0.0 + 360.0,   (ft - 0.40) / 0.20);
+  else if (ft < 0.80) h = mix(360.0, 30.0 + 360.0,  (ft - 0.60) / 0.20);
+  else                h = mix(390.0, 630.0,         (ft - 0.80) / 0.20); // 630 = 270+360 → full loop
+  h = mod(h, 360.0) / 360.0;
+  return hsv2rgb_api(vec3(h, 0.72, 1.0));
+}
+
 // ─── Main ───
 
 void main() {
@@ -208,6 +256,11 @@ void main() {
   vec2 center = uv - 0.5;
   float dist = length(center);
   float angle = atan(center.y, center.x);
+
+  // ── Phase 3-B.2: responsive orb size norm (0 @160px, 1 @280px) ──
+  // Used by: noise octaves, SSS thickness, iridescence strength scaling.
+  // Falls back to mid-value 0.5 when uniform is unset (old JS path).
+  float orbSizeNorm = clamp((max(uOrbSize, 160.0) - 160.0) / 120.0, 0.0, 1.0);
 
   // ── Animation parameters ──
   float rotSpeed = mix(0.055, 0.015, (uValence + 1.0) * 0.5);
@@ -217,33 +270,44 @@ void main() {
   float noiseAmp = 0.003 + (uValence < 0.0 ? abs(uValence) * 0.007 : abs(uValence) * 0.003);
 
   // ── Physiological Breathing (inhale 4 → hold 1 → exhale 5 → pause 2 beats) ──
-  // Valence-adaptive period: anxious breathes fast, calm breathes slow
-  float breathPeriod = mix(8.0, 16.0, (uValence + 1.0) * 0.5);
+  // Phase 3-B.2 Task D: rate + amplitude now REACT to |uValence| via uBreathRate/uBreathAmp.
+  //   |v|=0  → rate 0.25 Hz (4s cycle), amp 0.02 (calm)
+  //   |v|=1  → rate 0.5  Hz (2s cycle), amp 0.06 (intense)
+  // Zero-uniform fallback: old CPU path left uBreathRate=0 → reuse the legacy
+  //   valence-adaptive 8..16s period so preview/unit tests stay visually identical.
+  float reactiveRate = max(uBreathRate, 1e-4);
+  float legacyPeriod = mix(8.0, 16.0, (uValence + 1.0) * 0.5);
+  float reactivePeriod = 1.0 / reactiveRate; // seconds per cycle
+  float breathPeriod = (uBreathRate > 0.0) ? reactivePeriod : legacyPeriod;
   float breathJitter = snoise(vec3(uTime * 0.03, 500.0, 0.0)) * 0.05; // ±5% organic drift
   float breathPhase = fract(uTime / (breathPeriod * (1.0 + breathJitter)));
   float breathInhale = smoothstep(0.0, 0.333, breathPhase);
   float breathExhale = 1.0 - smoothstep(0.417, 0.833, breathPhase);
   float breathPause = step(0.833, breathPhase);
   float breathCurve = min(breathInhale, breathExhale) * (1.0 - breathPause);
-  float breath = 1.0 + breathCurve * 0.05 - 0.025;
+  // Reactive amp: uBreathAmp=0 keeps legacy constant 0.05 p-p for safety.
+  float pp = (uBreathAmp > 0.0) ? (uBreathAmp * 2.0) : 0.05;
+  float breath = 1.0 + breathCurve * pp - pp * 0.5;
 
   // ── Noise displacement (3-octave, per-pixel) ──
+  // Phase 3-B.2: noise frequency scales with uOrbSize — bigger orb = finer detail preserved.
   float rotAngle = angle + rotation;
   float ca = cos(rotAngle);
   float sa = sin(rotAngle);
+  float sizeOct = mix(0.90, 1.25, orbSizeNorm); // 160px→0.9×, 280px→1.25× octave frequency
   float nv1 = snoise(vec3(
-    ca * 2.5 + uTime * noiseSpeed,
-    sa * 2.5 + uTime * noiseSpeed * 0.7,
+    ca * 2.5 * sizeOct + uTime * noiseSpeed,
+    sa * 2.5 * sizeOct + uTime * noiseSpeed * 0.7,
     10.0
   ));
   float nv2 = snoise(vec3(
-    ca * 5.0 + uTime * noiseSpeed * 1.3 + 100.0,
-    sa * 5.0 + uTime * noiseSpeed * 0.9 + 100.0,
+    ca * 5.0 * sizeOct + uTime * noiseSpeed * 1.3 + 100.0,
+    sa * 5.0 * sizeOct + uTime * noiseSpeed * 0.9 + 100.0,
     10.0
   ));
   float nv3 = snoise(vec3(
-    ca * 10.0 + uTime * noiseSpeed * 1.7 + 200.0,
-    sa * 10.0 + uTime * noiseSpeed * 1.1 + 200.0,
+    ca * 10.0 * sizeOct + uTime * noiseSpeed * 1.7 + 200.0,
+    sa * 10.0 * sizeOct + uTime * noiseSpeed * 1.1 + 200.0,
     10.0
   ));
   float noiseDisp = (nv1 * 0.55 + nv2 * 0.30 + nv3 * 0.15) * noiseAmp * uGenesis;
@@ -273,11 +337,26 @@ void main() {
   float sfHigh = superformula(warpedAngle, max(mHigh, 3.0), uShapeN1, uShapeN2, uShapeN3);
   float sf = mix(sfLow, sfHigh, mBlend);
   float baseR = 0.25; // smaller body — Apple: delicate flower floating in space, not filling canvas
-  float cleanShapeR = baseR * sf * breath * max(uGenesis, 0.01); // pure superformula (for body contour)
+  // Phase 3-B.2 Task D: merge-peak pulse (1.0 → 1.08 → 1.0 from CPU) multiplies body scale.
+  float mergePulseScale = 1.0 + uMergePulse * 0.08;
+  float cleanShapeR = baseR * sf * breath * max(uGenesis, 0.01) * mergePulseScale; // pure superformula (for body contour)
   float shapeR = cleanShapeR * (1.0 + noiseDisp); // with noise (for body)
 
   // ── Signed Distance Field (Apple Quality: micro-bump removed for clean edges) ──
   float sdf = dist - shapeR;
+
+  // ── Phase 3-B.2 Task D: metaball 2nd-blob merge via polynomial smin ──
+  // Gated by uMergeProgress>0 so the rest path compiles out to the original SDF.
+  // 2nd blob shrinks toward center as progress → 1 (converge + collapse).
+  if (uMergeProgress > 0.0) {
+    vec2 blob2Center = uMergeBlob2Pos - 0.5; // UV → centered coords (match `center`)
+    float blob2R = baseR * max(uMergeBlob2Scale, 1e-4) * (1.0 + noiseDisp * 0.4);
+    float sdf2 = length(center - blob2Center) - blob2R;
+    // k blends between 0.3 (soft early merge) and 0.5 (wide organic join at peak).
+    float k = mix(0.30, 0.50, clamp(uMergeProgress, 0.0, 1.0));
+    float merged = smin(sdf, sdf2, k * baseR);
+    sdf = mix(sdf, merged, uMergeProgress);
+  }
 
   // ── Soft edge (fwidth-based resolution-independent AA, valence-adaptive) ──
   float fw = fwidth(sdf);
@@ -313,9 +392,23 @@ void main() {
   // ── Subsurface Scattering (fake — increased for glass translucency) ──
   float sss = max(dot(-normal, lightDir1), 0.0) * 0.22;
 
+  // ── Phase 3-B.2 SSS enhancement: thickness-driven back-scatter tint ──
+  // Thickness = 1.0 at center (thickest "skin"), 0.0 at rim (thin).
+  // Wavelength-dependent scatter: red transmits deepest (human skin physics).
+  // Scales with orbSizeNorm so large orbs get more visible SSS, tiny orbs stay clean.
+  float thickness = (1.0 - smoothstep(0.0, shapeR * 1.02, dist)) * mix(0.6, 1.0, uThickness);
+  float sssFresnel = pow(1.0 - max(dot(normal, lightDir1), 0.0), 2.0);
+  // Warm skin tint: R>G>B for subsurface (deeper red penetration)
+  vec3 sssSkinTint = vec3(1.0, 0.55, 0.42);
+  float sssPlus = thickness * sssFresnel * mix(0.08, 0.18, orbSizeNorm);
+
   // ── Iridescence (body-wide — visible across entire surface, stronger at rim) ──
-  float filmThickness = 0.3 + 0.7 * (1.0 - max(dot(normal, viewDir), 0.0));
+  // Phase 3-B.2: view-angle driven wavelength shift (soap-bubble/pearl physics).
+  // uIridBandPhase slowly drifts the spectrum so the same viewing angle evolves over time.
+  float viewCos = max(dot(normal, viewDir), 0.0);
+  float filmThickness = 0.3 + 0.7 * (1.0 - viewCos);
   filmThickness += snoise(vec3(center * 4.0, uTime * 0.15)) * 0.12;
+  filmThickness += uIridBandPhase * 0.25; // slow spectral drift (never jarring)
   float iriPhase = uTime * 0.08;
   vec3 iridescent = cosinePalette(
     filmThickness + iriPhase,
@@ -404,15 +497,34 @@ void main() {
   );
   float envStr = fresnel * mix(0.08, 0.24, nv);
 
+  // ── Phase 3-B.2: Apple Intelligence ALWAYS-SHIMMER mesh gradient (Q8=а) ──
+  // Rainbow wave sweeps across orb continuously — purple→pink→blue→red→orange loop.
+  // Masked by Fresnel so edges glow most (body interior gets subtler treatment).
+  // Driven by uShimmerTime (independent clock → reduced-motion pauses phase at 0).
+  // uShimmerStrength=0 fully disables (used by prefers-reduced-motion path).
+  float apiNoise = snoise(vec3(
+    center * 2.2 + uShimmerTime * 0.08,
+    uShimmerTime * 0.05
+  )) * 0.5 + 0.5;
+  float apiPhase = uShimmerTime * 0.07 + apiNoise * 0.4 + angle * 0.15;
+  vec3 apiRainbow = appleIntelligencePalette(apiPhase);
+  // Edge-weighted mask: 0.25 body, 1.0 rim (Fresnel-driven)
+  float apiMask = 0.25 + 0.75 * smoothstep(0.0, 0.65, fresnel);
+  // Intensity: strongest on bright emotional states, subtle on neutral
+  float apiIntensity = uShimmerStrength * apiMask * mix(0.30, 0.55, nv);
+  // Color breathing: gentle valence bias so "angry" orbs still shimmer warm, "calm" cool
+  vec3 apiShimmer = apiRainbow * apiIntensity;
+
   // ── Compose lit surface ──
   vec3 ambient = shimmerColor * 0.25;
   vec3 diffuse = shimmerColor * (diff1 * 0.62 + diff2 * 0.18);
   vec3 rim = mix(shimmerColor, vec3(1.0), 0.40) * fresnel * fresnelStr;
-  vec3 subsurface = shimmerColor * sss;
+  vec3 subsurface = shimmerColor * sss + sssSkinTint * sssPlus; // Apotheosis SSS add
   vec3 depthColor = shimmerColor * depthGlow * depthStr;
   vec3 litColor = (ambient + diffuse + specular + specular2 + rim + subsurface
                 + iridescent * iriStrength + depthColor + hopeColor
-                + envColor * envStr + causticColor)
+                + envColor * envStr + causticColor
+                + apiShimmer)  // Phase 3-B.2: Apple Intelligence mesh gradient (always-on)
                 * ao * surfaceTex;
 
   // ── Inner depth shadow (dark band just inside body edge — glass depth) ──
@@ -605,8 +717,14 @@ void main() {
   }
 
   // ── ACES Filmic Tone Mapping (base scene only — rings bypass) ──
+  // Phase 3-B.2: when uHDREnabled=1.0, boost core above 1.0 BEFORE tone-mapping
+  // so Task B's bloom pass can threshold bright pixels. Standard path is unchanged.
+  float hdrCoreBoost = uHDREnabled * coreGlow * 1.8; // up to +1.8 linear at core
+  vec3 hdrBase = baseColor + shimmerColor * hdrCoreBoost;
   float tmA = 2.51; float tmB = 0.03; float tmC = 2.43; float tmD = 0.59; float tmE = 0.14;
-  vec3 finalColor = clamp((baseColor * (tmA * baseColor + tmB)) / (baseColor * (tmC * baseColor + tmD) + tmE), 0.0, 1.0);
+  // HDR-ready: upper clamp lifted to 4.0 when HDR enabled → Task B bloom samples >1.0 pixels
+  float hdrCeil = mix(1.0, 4.0, uHDREnabled);
+  vec3 finalColor = clamp((hdrBase * (tmA * hdrBase + tmB)) / (hdrBase * (tmC * hdrBase + tmD) + tmE), 0.0, hdrCeil);
 
   // ── Post-ACES ring overlay (additive glow — bypasses tone mapping compression) ──
   // Tone-map shimmerColor to match scene palette, but ring INTENSITY is uncompressed

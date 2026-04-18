@@ -7,7 +7,7 @@ import { zenMotion, zenTap } from "@/lib/animationUtils";
 import { haptics } from "@/lib/haptics";
 import { valenceToColor } from "./colorUtils";
 import { ValenceOrb } from "./ValenceOrb";
-import { ValenceSlider } from "./ValenceSlider";
+import { MoodSliderV2 } from "@/pages/nav-v2/MoodSliderV2";
 import { EmotionTagGrid } from "./EmotionTagGrid";
 import { ContextGrid } from "./ContextGrid";
 import { NoteStep } from "./NoteStep";
@@ -217,7 +217,11 @@ export function StateOfMindModal({ isOpen, onClose, onSave }: StateOfMindModalPr
                         <ValenceOrb valence={som.valence} size={280} />
                       </motion.div>
                       <motion.div variants={stepChild} className="w-full max-w-sm">
-                        <ValenceSlider value={som.valence} onChange={som.setValence} />
+                        <MoodSliderV2
+                          value={som.valence}
+                          onDraft={som.setValence}
+                          onCommit={som.setValence}
+                        />
                       </motion.div>
                     </div>
                   )}
