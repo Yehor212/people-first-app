@@ -13,7 +13,7 @@ import { useCosmicParallax } from "./useCosmicParallax";
 import { ShootingStar } from "./ShootingStar";
 import { CinematicHeading } from "./CinematicHeading";
 import { MoodScopeSelector } from "./MoodScopeSelector";
-import { MoodSliderV2 } from "./MoodSliderV2";
+import { ValenceSlider } from "@/components/state-of-mind/ValenceSlider";
 import { MoodConfirmCta } from "./MoodConfirmCta";
 import { MoodFirstRunHint } from "./MoodFirstRunHint";
 import { useOrbMoodFlow } from "./useOrbMoodFlow";
@@ -194,10 +194,12 @@ export const OrbPage = memo(function OrbPage() {
               className="mx-auto mt-6 md:mt-8"
               data-testid="orb-page-picker"
             >
-              <MoodSliderV2
-                value={draftValence}
-                onDraft={handleSliderDraft}
-                onCommit={handleSliderCommit}
+              <ValenceSlider
+                value={draftValence ?? 0}
+                onChange={(v) => {
+                  handleSliderDraft(v);
+                  handleSliderCommit(v);
+                }}
               />
             </div>
           </Bloom>
