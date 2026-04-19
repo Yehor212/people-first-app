@@ -1,3 +1,6 @@
+// MUST be first import — runs before any other module (incl. React) loads.
+// Decodes GH Pages 404.html SPA redirect URL back to canonical path.
+import "./lib/spaRedirect";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
