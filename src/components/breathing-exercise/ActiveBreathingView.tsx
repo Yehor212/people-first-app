@@ -66,7 +66,7 @@ export function ActiveBreathingView({
 
         {/* Layer 3: Inner glow base */}
         <div
-          className="absolute inset-4 rounded-full transition-all duration-500"
+          className="absolute inset-4 rounded-full motion-safe:transition-all motion-safe:duration-500"
           style={{
             background: `radial-gradient(circle, ${phaseColors[currentPhase]}15 0%, transparent 70%)`,
           }}
@@ -81,7 +81,7 @@ export function ActiveBreathingView({
           }}
         >
           <div
-            className="w-full h-full rounded-full relative overflow-hidden transition-all duration-300"
+            className="w-full h-full rounded-full relative overflow-hidden motion-safe:transition-all motion-safe:duration-300"
             style={{
               background: phaseGradients[currentPhase],
               boxShadow: `0 0 40px ${phaseColors[currentPhase]}60, inset 0 0 30px rgba(255,255,255,0.1)`,
@@ -177,7 +177,7 @@ export function ActiveBreathingView({
             >
               <div
                 className={cn(
-                  "w-3 h-3 rounded-full transition-all duration-300",
+                  "w-3 h-3 rounded-full motion-safe:transition-all motion-safe:duration-300",
                   i < currentCycle
                     ? "bg-gradient-to-br from-cyan-400 to-teal-500 shadow-[0_0_8px_rgba(6,182,212,0.6)]"
                     : "bg-secondary/80"
@@ -202,7 +202,7 @@ export function ActiveBreathingView({
           className={cn(
             "flex-1 py-3.5 rounded-xl font-medium flex items-center justify-center gap-2",
             "bg-secondary backdrop-blur-sm border border-border",
-            "hover:bg-secondary/80 transition-all",
+            "hover:bg-secondary/80 motion-safe:transition-all",
             "shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]"
           )}
           whileHover={{ scale: 1.02 }}
@@ -218,7 +218,7 @@ export function ActiveBreathingView({
           className={cn(
             "py-3.5 px-4 rounded-xl",
             "bg-muted border border-border",
-            "hover:bg-secondary transition-all"
+            "hover:bg-secondary motion-safe:transition-all"
           )}
           whileHover={{ scale: 1.05, rotate: -180 }}
           whileTap={zenTap.button}

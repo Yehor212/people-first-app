@@ -116,7 +116,7 @@ export function AICoachOnboarding({ onComplete, onSkip }: AICoachOnboardingProps
                   key={goal.id}
                   onClick={() => handleGoalSelect(goal.id)}
                   className={cn(
-                    "p-4 rounded-xl flex flex-col items-center gap-2 transition-all active:scale-95",
+                    "p-4 rounded-xl flex flex-col items-center gap-2 motion-safe:transition-all active:scale-95",
                     selectedGoal === goal.id
                       ? "bg-primary text-primary-foreground ring-2 ring-primary"
                       : "bg-secondary hover:bg-secondary/80"
@@ -156,7 +156,7 @@ export function AICoachOnboarding({ onComplete, onSkip }: AICoachOnboardingProps
         <div className="flex gap-3 mt-6">
           <button
             onClick={handleSkip}
-            className="flex-1 py-4 bg-secondary/50 text-secondary-foreground rounded-xl font-semibold hover:bg-secondary transition-colors active:scale-[0.98]"
+            className="flex-1 py-4 bg-secondary/50 text-secondary-foreground rounded-xl font-semibold hover:bg-secondary motion-safe:transition-colors active:scale-[0.98]"
           >
             {getText("buttons", "skip", language)}
           </button>
@@ -164,7 +164,7 @@ export function AICoachOnboarding({ onComplete, onSkip }: AICoachOnboardingProps
             onClick={handleNext}
             disabled={step === "goal" && !selectedGoal}
             className={cn(
-              "flex-1 py-4 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all active:scale-[0.98]",
+              "flex-1 py-4 rounded-xl font-semibold flex items-center justify-center gap-2 motion-safe:transition-all active:scale-[0.98]",
               step !== "goal" || selectedGoal
                 ? "bg-gradient-to-r from-primary to-accent text-primary-foreground hover:opacity-90"
                 : "bg-secondary text-muted-foreground"
@@ -185,7 +185,7 @@ export function AICoachOnboarding({ onComplete, onSkip }: AICoachOnboardingProps
             <div
               key={s}
               className={cn(
-                "h-2 rounded-full transition-all",
+                "h-2 rounded-full motion-safe:transition-all",
                 i === currentStepIndex
                   ? "w-6 bg-primary"
                   : i < currentStepIndex

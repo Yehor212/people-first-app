@@ -80,7 +80,7 @@ export function CompletionView({ onReset, t }: CompletionViewProps) {
         className={cn(
           "w-full py-4 rounded-xl font-semibold",
           "bg-gradient-to-r from-cyan-500 to-teal-500 text-white",
-          "hover:from-cyan-400 hover:to-teal-400 transition-all",
+          "hover:from-cyan-400 hover:to-teal-400 motion-safe:transition-all",
           "shadow-[0_0_20px_hsl(var(--cosmic-nebula-cyan)/0.4)]",
         )}
         whileHover={{ scale: 1.02 }}

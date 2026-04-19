@@ -13,7 +13,7 @@ export function CompactCard({ onOpen, t }: CompactCardProps) {
     <motion.button
       onClick={onOpen}
       className={cn(
-        "w-full rounded-2xl p-4 text-start transition-all relative overflow-hidden",
+        "w-full rounded-2xl p-4 text-start motion-safe:transition-all relative overflow-hidden",
         "bg-gradient-to-br from-cyan-500/10 via-teal-500/5 to-transparent",
         "border border-cyan-500/20",
         "hover:border-cyan-500/40",

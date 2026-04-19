@@ -126,7 +126,7 @@ export const AnimatedCalendar = memo(function AnimatedCalendar({
   return (
     <div
       className={cn(
-        "bg-card rounded-2xl p-6 zen-shadow-card overflow-hidden transition-all duration-500",
+        "bg-card rounded-2xl p-6 zen-shadow-card overflow-hidden motion-safe:transition-all motion-safe:duration-500",
         isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
       )}
     >
@@ -163,14 +163,14 @@ export const AnimatedCalendar = memo(function AnimatedCalendar({
           <button
             onClick={() => handleMonthShift(-1)}
             aria-label={prevMonthLabel}
-            className="p-2 rounded-xl bg-secondary hover:bg-primary/10 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+            className="p-2 rounded-xl bg-secondary hover:bg-primary/10 motion-safe:transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
           >
             <ChevronLeft className="w-4 h-4 rtl:scale-x-[-1]" />
           </button>
           <button
             onClick={() => setShowMonthSelector(!showMonthSelector)}
             aria-label={calT.selectMonth || "Select month"}
-            className="px-4 py-2 min-h-[44px] rounded-xl bg-gradient-to-r from-primary/10 to-accent/10 text-sm font-medium hover:from-primary/20 hover:to-accent/20 transition-all flex items-center gap-2"
+            className="px-4 py-2 min-h-[44px] rounded-xl bg-gradient-to-r from-primary/10 to-accent/10 text-sm font-medium hover:from-primary/20 hover:to-accent/20 motion-safe:transition-all flex items-center gap-2"
           >
             {monthNames[selectedMonth]} {selectedYear}
             {showMonthSelector ? (
@@ -182,7 +182,7 @@ export const AnimatedCalendar = memo(function AnimatedCalendar({
           <button
             onClick={() => handleMonthShift(1)}
             aria-label={nextMonthLabel}
-            className="p-2 rounded-xl bg-secondary hover:bg-primary/10 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+            className="p-2 rounded-xl bg-secondary hover:bg-primary/10 motion-safe:transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
           >
             <ChevronRight className="w-4 h-4 rtl:scale-x-[-1]" />
           </button>
@@ -201,7 +201,7 @@ export const AnimatedCalendar = memo(function AnimatedCalendar({
                 setShowMonthSelector(false);
               }}
               className={cn(
-                "px-2 py-2.5 min-h-[44px] rounded-xl text-xs font-medium transition-all",
+                "px-2 py-2.5 min-h-[44px] rounded-xl text-xs font-medium motion-safe:transition-all",
                 selectedMonth === index
                   ? "bg-gradient-to-r from-primary to-accent text-white shadow-lg"
                   : "bg-secondary text-muted-foreground hover:bg-primary/10"
@@ -218,7 +218,7 @@ export const AnimatedCalendar = memo(function AnimatedCalendar({
         {stats.map((stat, index) => (
           <div
             key={stat.label}
-            className="text-center p-3 bg-secondary/50 rounded-xl hover:bg-secondary transition-colors motion-safe:animate-fade-in"
+            className="text-center p-3 bg-secondary/50 rounded-xl hover:bg-secondary motion-safe:transition-colors motion-safe:animate-fade-in"
             style={{ animationDelay: `${index * 100}ms` }}
           >
             <p
@@ -266,7 +266,7 @@ export const AnimatedCalendar = memo(function AnimatedCalendar({
               aria-pressed={isSelected}
               onClick={() => onDateSelect(cell.dateKey)}
               className={cn(
-                "w-full aspect-square min-h-[44px] min-w-[44px] rounded-xl text-xs font-semibold flex items-center justify-center transition-all duration-200",
+                "w-full aspect-square min-h-[44px] min-w-[44px] rounded-xl text-xs font-semibold flex items-center justify-center motion-safe:transition-all motion-safe:duration-200",
                 "hover:scale-105 hover:shadow-lg",
                 hasEmotion || hasLegacyMood
                   ? `bg-gradient-to-br ${gradient} text-white shadow-md`

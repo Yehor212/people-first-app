@@ -82,7 +82,7 @@ export function AnimatedMoodDistribution({
   return (
     <div
       className={cn(
-        "bg-card rounded-2xl p-6 zen-shadow-card overflow-hidden transition-all duration-500",
+        "bg-card rounded-2xl p-6 zen-shadow-card overflow-hidden motion-safe:transition-all motion-safe:duration-500",
         isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4",
       )}
     >
@@ -92,7 +92,7 @@ export function AnimatedMoodDistribution({
           <div className="p-2.5 bg-gradient-to-br from-pink-500 to-rose-500 rounded-xl shadow-lg shadow-pink-500/20">
             <Heart className="w-5 h-5 text-white" />
           </div>
-          <div className="absolute -top-1 -end-1 w-2 h-2 bg-pink-400 rounded-full animate-pulse" />
+          <div className="absolute -top-1 -end-1 w-2 h-2 bg-pink-400 rounded-full motion-safe:animate-pulse" />
         </div>
         <h3 className="text-lg font-bold text-foreground flex-1">{title}</h3>
         {totalMoods > 0 && (
@@ -113,7 +113,7 @@ export function AnimatedMoodDistribution({
           <select
             value={selectedTag}
             onChange={(e) => onTagChange(e.target.value)}
-            className="w-full p-3 bg-secondary rounded-xl text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 transition-all"
+            className="w-full p-3 bg-secondary rounded-xl text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 motion-safe:transition-all"
             aria-label={tagFilterLabel || "Filter by tag"}
           >
             <option value="all">{allTagsLabel}</option>
@@ -136,14 +136,14 @@ export function AnimatedMoodDistribution({
           return (
             <div
               key={mood}
-              className="group animate-fade-in"
+              className="group motion-safe:animate-fade-in"
               style={{ animationDelay: `${index * 100}ms` }}
             >
               <div className="flex items-center gap-4">
                 {/* Animated Emoji */}
                 <div
                   className={cn(
-                    "w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300",
+                    "w-12 h-12 rounded-xl flex items-center justify-center motion-safe:transition-all motion-safe:duration-300",
                     config.bgLight,
                     "group-hover:scale-110 group-hover:shadow-lg",
                   )}
@@ -157,7 +157,7 @@ export function AnimatedMoodDistribution({
                     {/* Animated Fill */}
                     <div
                       className={cn(
-                        "h-full rounded-full transition-all duration-1000 ease-out relative",
+                        "h-full rounded-full motion-safe:transition-all motion-safe:duration-1000 ease-out relative",
                         `bg-gradient-to-r ${config.gradient}`,
                       )}
                       style={{
@@ -168,7 +168,7 @@ export function AnimatedMoodDistribution({
                       {/* Shimmer Effect */}
                       {percentage > 0 && (
                         <div className="absolute inset-0 overflow-hidden">
-                          <div className="absolute inset-0 animate-shimmer-slide">
+                          <div className="absolute inset-0 motion-safe:animate-shimmer-slide">
                             <div className="h-full w-1/3 bg-gradient-to-r from-transparent via-white/30 to-transparent" />
                           </div>
                         </div>
@@ -187,7 +187,7 @@ export function AnimatedMoodDistribution({
                 {/* Count */}
                 <div
                   className={cn(
-                    "min-w-[3rem] text-end transition-all duration-300",
+                    "min-w-[3rem] text-end motion-safe:transition-all motion-safe:duration-300",
                     "group-hover:scale-110",
                   )}
                 >
