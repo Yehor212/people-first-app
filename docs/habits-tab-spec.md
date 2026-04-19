@@ -447,6 +447,8 @@ session (requires ≥30 days data; target ≥40% by day 45).
 | 2026-04-19 | `bcfea75` | HeroInsightStrip — V1 insightsEngine surfaced |
 | 2026-04-19 | `d3ba792` | Weekly count `N/7` beside chain |
 | 2026-04-19 | `22ccd8f` | Overdue reminder amber pill |
+| 2026-04-19 | `2ccab7d` | This specification authored |
+| 2026-04-19 | `2ddba59` | Focus-return on sheet close (closes §11 a11y gap) |
 
 ---
 
