@@ -28,6 +28,7 @@ import { memo, useCallback, useMemo, useRef } from "react";
 import { Clock } from "lucide-react";
 import { CompactHabitCard } from "@/components/compact-habit-card/CompactHabitCard";
 import { isHabitCompletedOnDate } from "@/lib/habits";
+import { getCurrentStreak } from "@/lib/habitScore";
 import { getToday } from "@/lib/utils";
 import { useShouldAnimate } from "@/hooks/useShouldAnimate";
 import { hapticTap } from "@/lib/haptics";
@@ -62,6 +63,12 @@ export const HeroHabitRow = memo(function HeroHabitRow({
 }: HeroHabitRowProps) {
   const animate = useShouldAnimate();
   const today = getToday();
+
+  // Compute real current streak via V1 habitScore.ts — unlocks the fire glyph
+  // + milestone badge that CompactHabitCard already renders when streak ≥ 1.
+  // Memoized on habit.entries reference (Zustand shallows, so changes create
+  // a new reference).
+  const streak = useMemo(() => getCurrentStreak(habit), [habit]);
 
   // 7-day chain — memoized since habit.entries is stable across renders
   const chainDates = useMemo(() => lastNDates(7, today), [today]);
@@ -146,7 +153,7 @@ export const HeroHabitRow = memo(function HeroHabitRow({
         onToggle={onToggle}
         onDelete={onDelete}
         onEdit={onOpenDetail}
-        streak={0}
+        streak={streak}
         isDueToday
       />
 

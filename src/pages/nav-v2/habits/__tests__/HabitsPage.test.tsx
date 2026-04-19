@@ -132,7 +132,15 @@ describe("HabitsPage (Phase 3-C single-zone)", () => {
 
   it("renders the time-of-day grouped list when habits are present", () => {
     mockHabits = [
-      { id: "h1", name: "Hydrate", isArchived: false, entries: {}, habitType: "boolean", reminders: [] },
+      {
+        id: "h1",
+        name: "Hydrate",
+        isArchived: false,
+        entries: {},
+        habitType: "boolean",
+        reminders: [],
+        frequency: { numerator: 1, denominator: 1 },
+      },
     ];
     render(<HabitsPage />);
     expect(screen.getByTestId("hero-group-anytime")).toBeInTheDocument();
