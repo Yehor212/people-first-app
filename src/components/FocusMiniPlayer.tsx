@@ -123,7 +123,7 @@ export const FocusMiniPlayer = memo(function FocusMiniPlayer({
           <button
             onClick={handleToggle}
             className={cn(
-              "w-9 h-9 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center transition-colors",
+              "w-9 h-9 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center motion-safe:transition-colors",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
               isRunning
                 ? "bg-secondary text-foreground hover:bg-secondary/80"
@@ -141,7 +141,7 @@ export const FocusMiniPlayer = memo(function FocusMiniPlayer({
           {/* Stop */}
           <button
             onClick={handleStop}
-            className="w-9 h-9 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center bg-secondary text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="w-9 h-9 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center bg-secondary text-muted-foreground hover:text-destructive hover:bg-destructive/10 motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             aria-label={t.stop || "Stop"}
           >
             <Square className="w-3.5 h-3.5" aria-hidden="true" />

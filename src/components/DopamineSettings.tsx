@@ -174,7 +174,7 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
             <button
               onClick={onClose}
               aria-label={t.close || "Close"}
-              className="p-2 hover:bg-muted rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+              className="p-2 hover:bg-muted rounded-lg motion-safe:transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
             >
               ×
             </button>
@@ -195,7 +195,7 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
                 aria-label={t.dopamineMinimal || "Minimal"}
                 aria-pressed={settings.intensity === "minimal"}
                 className={cn(
-                  "p-3 rounded-xl text-sm font-medium transition-all",
+                  "p-3 rounded-xl text-sm font-medium motion-safe:transition-all",
                   settings.intensity === "minimal"
                     ? "bg-primary text-primary-foreground zen-shadow"
                     : "bg-muted hover:bg-muted/70"
@@ -212,7 +212,7 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
                 aria-label={t.dopamineNormal || "Normal"}
                 aria-pressed={settings.intensity === "normal"}
                 className={cn(
-                  "p-3 rounded-xl text-sm font-medium transition-all",
+                  "p-3 rounded-xl text-sm font-medium motion-safe:transition-all",
                   settings.intensity === "normal"
                     ? "bg-primary text-primary-foreground zen-shadow"
                     : "bg-muted hover:bg-muted/70"
@@ -229,7 +229,7 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
                 aria-label={t.dopamineADHD || "ADHD"}
                 aria-pressed={settings.intensity === "adhd"}
                 className={cn(
-                  "p-3 rounded-xl text-sm font-medium transition-all",
+                  "p-3 rounded-xl text-sm font-medium motion-safe:transition-all",
                   settings.intensity === "adhd"
                     ? "zen-gradient text-white zen-shadow-xl"
                     : "bg-muted hover:bg-muted/70"
@@ -332,7 +332,7 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
           <button
             onClick={onClose}
             aria-label={t.dopamineSave || "Save & Close"}
-            className="w-full py-3 zen-gradient text-white font-medium rounded-xl hover:opacity-90 transition-opacity"
+            className="w-full py-3 zen-gradient text-white font-medium rounded-xl hover:opacity-90 motion-safe:transition-opacity"
           >
             {t.dopamineSave || "Save & Close"}
           </button>

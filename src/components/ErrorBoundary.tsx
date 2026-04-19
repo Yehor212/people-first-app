@@ -153,13 +153,13 @@ class ErrorBoundaryBase extends React.Component<ErrorBoundaryBaseProps, ErrorBou
             <div className="flex gap-2">
               <button
                 onClick={() => this.props.onExport(this.state.error)}
-                className="px-4 py-2 bg-secondary text-secondary-foreground rounded-xl text-sm font-medium hover:bg-muted transition-colors"
+                className="px-4 py-2 bg-secondary text-secondary-foreground rounded-xl text-sm font-medium hover:bg-muted motion-safe:transition-colors"
               >
                 {this.props.exportLabel}
               </button>
               <button
                 onClick={this.props.onReload}
-                className="px-4 py-2 zen-gradient text-primary-foreground rounded-xl text-sm font-medium hover:opacity-90 transition-opacity"
+                className="px-4 py-2 zen-gradient text-primary-foreground rounded-xl text-sm font-medium hover:opacity-90 motion-safe:transition-opacity"
               >
                 {this.props.reloadLabel}
               </button>
@@ -177,13 +177,13 @@ class ErrorBoundaryBase extends React.Component<ErrorBoundaryBaseProps, ErrorBou
           <div className="flex flex-col gap-3">
             <button
               onClick={() => this.props.onExport(this.state.error)}
-              className="w-full py-3 bg-secondary text-secondary-foreground rounded-xl font-semibold hover:bg-muted transition-colors"
+              className="w-full py-3 bg-secondary text-secondary-foreground rounded-xl font-semibold hover:bg-muted motion-safe:transition-colors"
             >
               {this.props.exportLabel}
             </button>
             <button
               onClick={this.props.onReload}
-              className="w-full py-3 zen-gradient text-primary-foreground rounded-xl font-semibold hover:opacity-90 transition-opacity"
+              className="w-full py-3 zen-gradient text-primary-foreground rounded-xl font-semibold hover:opacity-90 motion-safe:transition-opacity"
             >
               {this.props.reloadLabel}
             </button>
@@ -391,14 +391,14 @@ class ModalErrorBoundaryClass extends React.Component<
         <div className="flex gap-3">
           <button
             onClick={this.handleRetry}
-            className="px-4 py-2 bg-secondary text-secondary-foreground rounded-xl text-sm font-medium hover:bg-muted transition-colors"
+            className="px-4 py-2 bg-secondary text-secondary-foreground rounded-xl text-sm font-medium hover:bg-muted motion-safe:transition-colors"
           >
             {this.props.tryAgainLabel || "Try Again"}
           </button>
           {this.props.onClose && (
             <button
               onClick={this.handleClose}
-              className="px-4 py-2 zen-gradient text-primary-foreground rounded-xl text-sm font-medium hover:opacity-90 transition-opacity"
+              className="px-4 py-2 zen-gradient text-primary-foreground rounded-xl text-sm font-medium hover:opacity-90 motion-safe:transition-opacity"
             >
               {this.props.closeLabel || "Close"}
             </button>

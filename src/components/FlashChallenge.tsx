@@ -59,7 +59,7 @@ export function FlashChallenge({ challenge, onComplete, onDismiss }: FlashChalle
           </div>
           <button
             onClick={onDismiss}
-            className="p-2 hover:bg-red-500/10 rounded-lg transition-colors"
+            className="p-2 hover:bg-red-500/10 rounded-lg motion-safe:transition-colors"
             aria-label={t.dismiss || 'Dismiss'}
           >
             <X className="w-4 h-4 text-red-500" />
@@ -84,7 +84,7 @@ export function FlashChallenge({ challenge, onComplete, onDismiss }: FlashChalle
           </div>
           <button
             onClick={onDismiss}
-            className="p-2 hover:bg-green-500/10 rounded-lg transition-colors"
+            className="p-2 hover:bg-green-500/10 rounded-lg motion-safe:transition-colors"
             aria-label={t.dismiss || 'Dismiss'}
           >
             <X className="w-4 h-4 text-green-500" />
@@ -97,7 +97,7 @@ export function FlashChallenge({ challenge, onComplete, onDismiss }: FlashChalle
   return (
     <div
       className={cn(
-        'rounded-2xl p-4 transition-all',
+        'rounded-2xl p-4 motion-safe:transition-all',
         isUrgent
           ? 'bg-gradient-to-r from-red-500/20 to-orange-500/20 border-2 border-red-500/50 motion-safe:animate-pulse'
           : challenge.type === 'flash'
@@ -136,7 +136,7 @@ export function FlashChallenge({ challenge, onComplete, onDismiss }: FlashChalle
           <div className="relative h-3 bg-muted rounded-full overflow-hidden mb-2">
             <div
               className={cn(
-                'h-full transition-all duration-500',
+                'h-full motion-safe:transition-all motion-safe:duration-500',
                 isUrgent
                   ? 'bg-gradient-to-r from-red-500 to-orange-500'
                   : 'bg-gradient-to-r from-yellow-500 to-orange-500'
@@ -175,7 +175,7 @@ export function FlashChallenge({ challenge, onComplete, onDismiss }: FlashChalle
         {/* Dismiss */}
         <button
           onClick={onDismiss}
-          className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-muted rounded-lg transition-colors opacity-60 hover:opacity-100"
+          className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-muted rounded-lg motion-safe:transition-colors opacity-60 hover:opacity-100"
           aria-label={t.dismiss || 'Dismiss'}
         >
           <X className="w-4 h-4" />
@@ -201,7 +201,7 @@ export function FlashChallengeCompact({ challenge, onClick }: { challenge: TimeC
     <button
       onClick={onClick}
       className={cn(
-        'w-full flex items-center gap-2 p-2 rounded-xl text-start transition-all hover:scale-[1.02]',
+        'w-full flex items-center gap-2 p-2 rounded-xl text-start motion-safe:transition-all hover:scale-[1.02]',
         isUrgent
           ? 'bg-red-500/20 border border-red-500/50 motion-safe:animate-pulse'
           : 'bg-yellow-500/10 border border-yellow-500/30'

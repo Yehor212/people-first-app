@@ -90,7 +90,7 @@ export function FontScaleSettings() {
             >
               <span
                 className={cn(
-                  "w-2 h-2 rounded-full transition-colors",
+                  "w-2 h-2 rounded-full motion-safe:transition-colors",
                   i === currentIndex ? "bg-primary" : "bg-muted-foreground/30"
                 )}
               />

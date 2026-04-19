@@ -115,7 +115,7 @@ export function FocusReflectionModal({
           {/* Close button */}
           <button
             onClick={onDismiss}
-            className="absolute top-3 end-3 p-2 rounded-lg bg-secondary hover:bg-secondary/80 text-slate-600 dark:text-white/60 hover:text-slate-800 dark:hover:text-white transition-colors"
+            className="absolute top-3 end-3 p-2 rounded-lg bg-secondary hover:bg-secondary/80 text-slate-600 dark:text-white/60 hover:text-slate-800 dark:hover:text-white motion-safe:transition-colors"
             aria-label={t.close}
           >
             <X className="w-4 h-4" />
@@ -146,7 +146,7 @@ export function FocusReflectionModal({
                   key={value}
                   onClick={() => onSelectValue(value)}
                   className={cn(
-                    "w-11 h-11 rounded-full text-sm font-bold transition-all",
+                    "w-11 h-11 rounded-full text-sm font-bold motion-safe:transition-all",
                     isSelected
                       ? `bg-gradient-to-br ${colors[value - 1]} text-white shadow-[0_0_16px_hsl(var(--focus-violet)/0.5)]`
                       : "bg-secondary text-muted-foreground hover:bg-secondary/80 hover:text-foreground"
@@ -163,7 +163,7 @@ export function FocusReflectionModal({
           <div className="flex gap-2 mt-6">
             <motion.button
               onClick={onDismiss}
-              className="flex-1 py-3 rounded-xl bg-secondary text-muted-foreground font-medium hover:bg-secondary/80 hover:text-foreground transition-colors"
+              className="flex-1 py-3 rounded-xl bg-secondary text-muted-foreground font-medium hover:bg-secondary/80 hover:text-foreground motion-safe:transition-colors"
               whileTap={zenTap.card}
             >
               {t.focusReflectionSkip}
@@ -197,7 +197,7 @@ export function FocusReflectionModal({
                 onSave(reflectionValue);
                 onExpandToJournal();
               }}
-              className="w-full mt-3 py-2.5 rounded-xl text-sm font-medium text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950/30 transition-colors flex items-center justify-center gap-2"
+              className="w-full mt-3 py-2.5 rounded-xl text-sm font-medium text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950/30 motion-safe:transition-colors flex items-center justify-center gap-2"
             >
               <PenLine className="w-4 h-4" />
               {t.focusExpandToJournal || "Write about it in your journal"}

@@ -167,7 +167,7 @@ export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
             <button
               onClick={handleClose}
               aria-label={t.close || "Close"}
-              className="p-2 rounded-lg hover:bg-muted transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+              className="p-2 rounded-lg hover:bg-muted motion-safe:transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
             >
               <X className="w-5 h-5" />
             </button>
@@ -182,7 +182,7 @@ export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
                   onClick={() => setCategory(cat.value)}
                   aria-pressed={category === cat.value}
                   aria-label={cat.label}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-sm font-medium transition-all ${
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-sm font-medium motion-safe:transition-all ${
                     category === cat.value
                       ? "bg-primary text-primary-foreground"
                       : "bg-secondary text-secondary-foreground hover:bg-muted"
