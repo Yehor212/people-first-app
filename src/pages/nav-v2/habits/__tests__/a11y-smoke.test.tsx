@@ -8,14 +8,13 @@
  * documents why.
  */
 import { render, cleanup, screen } from "@testing-library/react";
-import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 
 vi.mock("@/hooks/useShouldAnimate", () => ({ useShouldAnimate: () => true }));
 vi.mock("@/lib/haptics", () => ({ hapticTap: vi.fn() }));
 vi.mock("@/components/compact-habit-card/CompactHabitCard", () => ({
   CompactHabitCard: ({ habit }: { habit: { id: string; name: string } }) => (
     <li
-      role="listitem"
       aria-label={habit.name}
       data-testid={`card-${habit.id}`}
     >
@@ -75,7 +74,6 @@ vi.mock("@/contexts/LanguageContext", () => ({
 
 import { HeroEmptyJourney } from "../hero/HeroEmptyJourney";
 import { HeroTemplateLibrarySheet } from "../hero/HeroTemplateLibrarySheet";
-import { HeroIdentityPrompt } from "../hero/HeroIdentityPrompt";
 import { HeroHabitRow } from "../hero/HeroHabitRow";
 import { HeroDailyRing } from "../hero/HeroDailyRing";
 import type { Habit } from "@/types";

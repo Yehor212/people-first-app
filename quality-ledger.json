@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-04-18",
+  "lastUpdated": "2026-04-19",
   "phase": "3-a.4c-ii-c-a-emotion-progressive-disclosure",
   "floors": {
     "moodScopeSelectorActive": {
@@ -178,15 +178,15 @@
       "description": "Phase 2-A — staggered choreography helper active (0=absent, 1=active, 2=adopted across >=5 surfaces). src/lib/motion/choreography.ts exports stages (background 0ms, chrome 80ms, primary 140ms, secondary 220ms, cta 360ms), staggerDelay(stage), childrenStagger(count, base). Currently consumed by Index.tsx tab Bloom (primary) and MotionPreview rollout demos. Phase 2-B will expand adoption across every composite surface."
     },
     "tests.total": {
-      "value": 3710,
+      "value": 4010,
       "direction": "up",
       "recorded": "2026-04-19",
       "description": "Total unit test count (vitest, src/ scope). Phase 3-C.2 (2026-04-19) deletion: Garden + MindMap zones removed per user request, HabitsHeroZone rewritten A+++ with 4 sub-components + pure timeOfDay bucketing. Net -76 tests (dropped HabitGardenZone.test + HabitMindMapZone.test, added timeOfDay + HeroDailyRing + HeroIdentityPrompt + HeroEmptyJourney). Prior baseline 3786 reflected legacy 3-zone layout."
     },
     "tests.files": {
-      "value": 206,
+      "value": 224,
       "direction": "up",
-      "recorded": "2026-04-18",
+      "recorded": "2026-04-19",
       "description": "Test file count. Current: 160 (improved +17)."
     },
     "designTokenCoverage": {
@@ -517,6 +517,10 @@
       },
       {
         "date": "2026-04-18",
+        "value": 9.9
+      },
+      {
+        "date": "2026-04-19",
         "value": 9.9
       }
     ]

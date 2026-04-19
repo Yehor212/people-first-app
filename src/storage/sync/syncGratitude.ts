@@ -142,7 +142,7 @@ export const pullGratitudeFromCloud = async (): Promise<boolean> => {
       text: g.text,
       date: g.date,
       timestamp: g.timestamp,
-      updatedAt: (g as any).updated_at ? new Date((g as any).updated_at).getTime() : g.timestamp,
+      updatedAt: g.updated_at ? new Date(g.updated_at).getTime() : g.timestamp,
     }));
     const deletedGratIds = await getDeletedGratitudeIds();
     await db.transaction("rw", db.gratitudeEntries, async () => {
@@ -151,12 +151,12 @@ export const pullGratitudeFromCloud = async (): Promise<boolean> => {
       const merged = mapped.map((remote) => {
         const loc = localMap.get(remote.id);
         if (!loc) return remote;
-        const lt = (loc as any).updatedAt || loc.timestamp || 0;
+        const lt = loc.updatedAt || loc.timestamp || 0;
         return lt > (remote.updatedAt || remote.timestamp || 0) ? loc : remote;
       });
       const toWriteGrat =
         deletedGratIds.size > 0 ? merged.filter((g) => !deletedGratIds.has(g.id)) : merged;
-      if (toWriteGrat.length) await db.gratitudeEntries.bulkPut(toWriteGrat as any);
+      if (toWriteGrat.length) await db.gratitudeEntries.bulkPut(toWriteGrat);
     });
     triggerDataRefresh();
     return true;

@@ -105,7 +105,7 @@ export const pullFocusFromCloud = async (): Promise<boolean> => {
       label: f.label || undefined,
       status: f.status as "completed" | "aborted" | undefined,
       reflection: f.reflection ?? undefined,
-      updatedAt: (f as any).updated_at ? new Date((f as any).updated_at).getTime() : f.completed_at,
+      updatedAt: f.updated_at ? new Date(f.updated_at).getTime() : f.completed_at,
     }));
     const deletedFocusIds = await getDeletedFocusSessionIds();
     await db.transaction("rw", db.focusSessions, async () => {
@@ -114,12 +114,12 @@ export const pullFocusFromCloud = async (): Promise<boolean> => {
       const merged = mapped.map((remote) => {
         const loc = localMap.get(remote.id);
         if (!loc) return remote;
-        const lt = (loc as any).updatedAt || loc.completedAt || 0;
+        const lt = loc.updatedAt || loc.completedAt || 0;
         return lt > (remote.updatedAt || remote.completedAt || 0) ? loc : remote;
       });
       const toWriteFocus =
         deletedFocusIds.size > 0 ? merged.filter((f) => !deletedFocusIds.has(f.id)) : merged;
-      if (toWriteFocus.length) await db.focusSessions.bulkPut(toWriteFocus as any);
+      if (toWriteFocus.length) await db.focusSessions.bulkPut(toWriteFocus);
     });
     triggerDataRefresh();
     return true;
