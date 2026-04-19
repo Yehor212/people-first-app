@@ -151,7 +151,12 @@ export const HeroEmptyJourney = memo(function HeroEmptyJourney({
                 <Icon className="h-5 w-5" />
               </span>
               <span className="text-[11px] font-medium leading-tight text-muted-foreground md:text-xs">
-                <span className="font-display font-semibold text-foreground">{idx + 1}.</span>{" "}
+                <span
+                  className="font-hand text-lg italic text-primary md:text-xl"
+                  aria-hidden="true"
+                >
+                  {idx + 1}.
+                </span>{" "}
                 {step.label}
               </span>
             </li>

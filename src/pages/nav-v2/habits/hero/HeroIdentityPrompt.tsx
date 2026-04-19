@@ -63,11 +63,13 @@ export const HeroIdentityPrompt = memo(function HeroIdentityPrompt({
         {tx.navV2HabitsIdentityToday}
       </span>
       <span
-        className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-sm font-semibold text-primary"
+        className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-base font-semibold text-primary"
         data-testid="hero-identity-verb"
       >
         <span aria-hidden="true">{icon}</span>
-        {verb}
+        <span className="font-hand text-lg italic leading-none tracking-tight md:text-xl">
+          {verb}
+        </span>
       </span>
     </p>
   );
