@@ -3,7 +3,7 @@
  * Tests pattern detection algorithms and statistical analysis
  */
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import {
   generateInsights,
   analyzeMoodHabitCorrelation,
@@ -42,6 +42,17 @@ const createFocusSession = (date: string, label: string, minutes: number, hour: 
 });
 
 describe('insightsEngine', () => {
+  // Test data is anchored to January 2026. Freeze system time so the
+  // engine's lookback window (which filters by "recent" data relative to
+  // Date.now()) catches the fixtures instead of rejecting them as stale.
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-02-15T12:00:00Z'));
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   describe('generateInsights', () => {
     it('returns empty array when insufficient data', () => {
       const moods: MoodEntry[] = [
