@@ -408,11 +408,11 @@
       "description": "TODO/FIXME/HACK/XXX comments in source"
     },
     "bundleSizeKB": {
-      "value": 4989,
+      "value": 5040,
       "direction": "down",
       "tolerance": 0.008,
-      "recorded": "2026-04-17",
-      "description": "Total JS bundle size in KB (dist/assets/*.js). +46KB from Phase 3-A.4c-ii-d-a MoodOrbPicker (5 discrete labeled orbs replacing continuous MoodSlider on V2 OrbPage) + MoodOrbPicker.css + 48 new i18n keys (6 × 8 langs). V1 HomeTab + MoodSlider untouched. Tolerance 0.8% (~40KB) for minor post-merge variance."
+      "recorded": "2026-04-19",
+      "description": "Total JS bundle size in KB (dist/assets/*.js). Phase 3-C A+++ HabitsPage adds +51KB: HeroTemplateLibrarySheet + HeroInsightStrip + HeroHabitRow (long-press/chain/cue/overdue) + HeroEmptyJourney + useStreakMilestones + lazy HabitCompletionCelebration + starterHabits + timeOfDay helpers + 40 i18n keys × 8 langs. All 11 V1 primitives imported, none duplicated. Tolerance 0.8% (~40KB)."
     },
     "enforcement.blockingHooks": {
       "value": 20,
@@ -738,6 +738,13 @@
       "to": 1,
       "reason": "Phase 0-C — paper theme infrastructure READY as opt-in preview. Wiring complete: tokens.json (24 OKLCH tokens), generated/tokens.css (--color-theme-*), styles/themes.css (@layer + data-theme selectors + inline SVG noise + warm vignette), stores/themeStore.ts (Zustand + persist + prefers-color-scheme auto), pages/__dev/ThemePreview.tsx (dev-only live switcher), styles/themes.contrast.test.ts (14 passing assertions). Phase 2 will ratchet to 2 when paper becomes default + surfaces in Settings Panel with full i18n.",
       "date": "2026-04-16"
+    },
+    {
+      "metric": "bundleSizeKB",
+      "from": 4989,
+      "to": 5040,
+      "reason": "Phase 3-C A+++ HabitsPage — +51KB for: Vaul template library drawer, V1 insightsEngine surface, long-press→detail wrapper, 7-day chain + weekly count, cue badge + overdue pill, empty-state illustration + 4-tier entry funnel, streak milestone hook + lazy V1 celebration mount, starterHabits materializer, timeOfDay bucketing, 40 i18n keys × 8 langs. 11 V1 primitives imported, 0 duplicated.",
+      "date": "2026-04-19"
     },
     {
       "metric": "npmOutdated",

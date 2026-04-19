@@ -23,12 +23,22 @@
  * Reuses V1 CompactHabitCard untouched (Law 1: Zero Regression).
  */
 
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Plus } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useShouldAnimate } from "@/hooks/useShouldAnimate";
 import { hapticTap } from "@/lib/haptics";
+import { lazyWithRetry } from "@/lib/lazyWithRetry";
 import { AllHabitsDoneAnimation } from "@/components/animations/AllHabitsDoneAnimation";
+import { useStreakMilestones } from "./hero/useStreakMilestones";
+
+// Lazy: V1 HabitCompletionCelebration pulls in particle helpers + framer
+// variants — only needed on milestone cross (3/7/21/66/100 days).
+const HabitCompletionCelebrationLazy = lazyWithRetry(() =>
+  import("@/components/habit-completion-celebration/HabitCompletionCelebration").then((m) => ({
+    default: m.HabitCompletionCelebration,
+  })),
+);
 import type { Habit } from "@/types";
 import type { HabitsPageDailyProgress } from "./useHabitsPageState";
 import { HeroDailyRing } from "./hero/HeroDailyRing";
@@ -81,6 +91,9 @@ export const HabitsHeroZone = memo(function HabitsHeroZone({
     prevRatioRef.current = now;
   }, [dailyProgress.ratio, dailyProgress.total]);
   const handleCelebrationDone = useCallback(() => setCelebrating(false), []);
+
+  // Streak milestone detection (3/7/21/66/100 days) — V2 spec §3 thresholds
+  const { event: milestoneEvent, dismiss: dismissMilestone } = useStreakMilestones(todaysHabits);
 
   const handleCreate = useCallback(() => {
     void hapticTap();
@@ -160,6 +173,18 @@ export const HabitsHeroZone = memo(function HabitsHeroZone({
 
       {celebrating && animate && (
         <AllHabitsDoneAnimation onComplete={handleCelebrationDone} />
+      )}
+
+      {milestoneEvent && animate && (
+        <Suspense fallback={null}>
+          <HabitCompletionCelebrationLazy
+            habitName={milestoneEvent.habit.name}
+            habitIcon={milestoneEvent.habit.icon}
+            habitColor={milestoneEvent.habit.color}
+            streakDays={milestoneEvent.streak}
+            onComplete={dismissMilestone}
+          />
+        </Suspense>
       )}
     </section>
   );
