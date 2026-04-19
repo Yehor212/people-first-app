@@ -19,13 +19,13 @@
 
 import { memo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CompactHabitCard } from "@/components/compact-habit-card/CompactHabitCard";
 import { isHabitCompletedOnDate } from "@/lib/habits";
 import { getToday } from "@/lib/utils";
 import { useShouldAnimate } from "@/hooks/useShouldAnimate";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { Habit } from "@/types";
 import type { TimeOfDay } from "./timeOfDay";
+import { HeroHabitRow } from "./HeroHabitRow";
 
 interface HeroTimeOfDayGroupProps {
   bucket: TimeOfDay;
@@ -101,13 +101,11 @@ export const HeroTimeOfDayGroup = memo(function HeroTimeOfDayGroup({
               exit={animate ? { opacity: 0, y: -8 } : undefined}
               transition={{ type: "spring", stiffness: 380, damping: 30 }}
             >
-              <CompactHabitCard
+              <HeroHabitRow
                 habit={habit}
                 onToggle={onToggleHabit}
                 onDelete={onDeleteHabit}
-                onEdit={onOpenDetail}
-                streak={0}
-                isDueToday
+                onOpenDetail={onOpenDetail}
               />
             </motion.div>
           ))}

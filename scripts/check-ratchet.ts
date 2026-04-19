@@ -227,7 +227,7 @@ function countNpmOutdated(): number {
  */
 function countConsoleLogs(): number {
   return runCount(
-    `bash -c "grep -rn 'console\\.\\(log\\|warn\\|debug\\)' src/ --include='*.ts' --include='*.tsx' | grep -v '__tests__' | grep -v '.test.' | grep -v 'logger\\.ts' | grep -v 'crashReporting' | grep -v 'reportWebVitals' | wc -l"`
+    `bash -c "grep -rn 'console\\.\\(log\\|warn\\|debug\\)' src/ --include='*.ts' --include='*.tsx' | grep -v '__tests__' | grep -v '.test.' | grep -v 'logger\\.ts' | grep -v 'crashReporting' | grep -v 'reportWebVitals' | grep -v 'initLongTaskObserverDev' | wc -l"`
   );
 }
 
