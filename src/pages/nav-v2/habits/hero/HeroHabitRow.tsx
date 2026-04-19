@@ -181,30 +181,39 @@ export const HeroHabitRow = memo(function HeroHabitRow({
       )}
 
       {hasAnyEntry && (
-        <ul
-          className="mt-1.5 flex items-center gap-1 px-1"
-          aria-label={habit.name}
-          data-testid={`hero-habit-row-${habit.id}-chain`}
-        >
-          {chain.map((c) => (
-            <li
-              key={c.date}
-              className={
-                "h-2 w-2 rounded-full " +
-                (c.completed
-                  ? c.isToday
-                    ? "bg-emerald-500 ring-2 ring-emerald-500/30"
-                    : "bg-emerald-500"
-                  : c.isToday
-                    ? "bg-transparent ring-2 ring-primary/40"
-                    : "bg-muted-foreground/25") +
-                (animate ? " motion-safe:transition-colors" : "")
-              }
-              title={c.date}
-              aria-hidden="true"
-            />
-          ))}
-        </ul>
+        <div className="mt-1.5 flex items-center justify-between gap-3 px-1">
+          <ul
+            className="flex items-center gap-1"
+            aria-label={habit.name}
+            data-testid={`hero-habit-row-${habit.id}-chain`}
+          >
+            {chain.map((c) => (
+              <li
+                key={c.date}
+                className={
+                  "h-2 w-2 rounded-full " +
+                  (c.completed
+                    ? c.isToday
+                      ? "bg-emerald-500 ring-2 ring-emerald-500/30"
+                      : "bg-emerald-500"
+                    : c.isToday
+                      ? "bg-transparent ring-2 ring-primary/40"
+                      : "bg-muted-foreground/25") +
+                  (animate ? " motion-safe:transition-colors" : "")
+                }
+                title={c.date}
+                aria-hidden="true"
+              />
+            ))}
+          </ul>
+          <span
+            className="shrink-0 text-[10px] font-medium tabular-nums text-muted-foreground"
+            data-testid={`hero-habit-row-${habit.id}-weekly`}
+            aria-label={`${chain.filter((c) => c.completed).length} of 7 this week`}
+          >
+            {chain.filter((c) => c.completed).length}/7
+          </span>
+        </div>
       )}
     </div>
   );
