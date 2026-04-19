@@ -31,6 +31,7 @@ import { SK } from "./lib/storageKeys";
 import { safeLocalStorageSet } from "./lib/safeJson";
 import { scheduleIdle } from "./lib/scheduleIdle";
 import { captureOrBuffer, setCaptureSink } from "./lib/errorBuffer";
+import { initWebVitalsDev } from "./observability/reportWebVitals";
 
 // Sentry is deferred to post-mount via requestIdleCallback (see below initializeApp)
 // to keep it off the critical rendering path. Errors thrown before idle-init
@@ -43,6 +44,10 @@ setupChunkErrorHandler();
 
 // Initialize accessibility features (aria-live regions for screen readers)
 initA11y();
+
+// Core Web Vitals dev logger — MUST be synchronous (register listeners before
+// first paint to catch LCP). No-op in production; Sentry handles vitals there.
+void initWebVitalsDev();
 
 // Set html lang attribute early (before React hydrates) for non-EN users (WCAG 3.1.1)
 // CSP blocks inline scripts in index.html, so we do it here in the module entry point.

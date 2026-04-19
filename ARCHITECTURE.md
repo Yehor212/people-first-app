@@ -22,7 +22,7 @@ The table below is **auto-generated** by `scripts/doc-counts.cjs`. CI (`npm run 
 | V2 coexistence files | 18 | `find src -name '*V2*' -o -name '*-v2*'` |
 | `it.todo(` occurrences | 73 | regex walk |
 | `as any` total | 144 (136 in tests, ~8 prod) | regex walk |
-| Console.\* in prod (excl. logger/crashReporting) | **0** | regex walk |
+| Console.\* in prod (excl. logger/crashReporting) | **2** | regex walk |
 | ADR files (`docs/adr/NNNN-*.md`) | 6 | ls |
 | SECURITY.md | yes | fs |
 | CONTRIBUTING.md | yes | fs |

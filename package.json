@@ -165,6 +165,7 @@
     "vite-plugin-compression2": "^2.5.3",
     "vite-plugin-pwa": "^0.21.2",
     "vitest": "^3.2.4",
+    "web-vitals": "^5.2.0",
     "workbox-build": "^7.1.0",
     "workbox-core": "^7.1.0",
     "workbox-expiration": "^7.1.0",
