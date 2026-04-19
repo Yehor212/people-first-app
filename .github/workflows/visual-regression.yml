@@ -47,7 +47,10 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        # Use `npm install` (not `npm ci`) to tolerate Windows-vs-Linux
+        # optional-dep drift in package-lock.json (e.g. @emnapi/runtime).
+        # Mirrors deploy.yml install step.
+        run: npm install
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
