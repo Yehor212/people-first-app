@@ -295,10 +295,19 @@ export default defineConfig(({ mode }) => {
       include: ["react", "react-dom", "@supabase/supabase-js", "dexie", "nanoid"],
     },
 
-    // Strip /*! license */ banners from bundle. Ship THIRD_PARTY_LICENSES.txt
-    // alongside the app for compliance. Saves 0.5-2 KB gzip.
+    // Strip /*! license */ banners + dead debug code from production bundle.
+    // Ship THIRD_PARTY_NOTICES.md alongside for compliance.
+    // `pure` drops calls whose result is unused (all console.* return void),
+    // so every console.log/debug/info/trace invocation becomes dead code and
+    // is tree-shaken. console.error kept for runtime error visibility.
+    // `drop: ['debugger']` removes stray debugger statements in production.
     esbuild: {
       legalComments: "none",
+      pure:
+        mode === "production"
+          ? ["console.log", "console.debug", "console.info", "console.trace"]
+          : [],
+      drop: mode === "production" ? ["debugger"] : [],
     },
   };
 });
