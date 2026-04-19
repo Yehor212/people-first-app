@@ -74,7 +74,7 @@ export function IdentityMappingSection({
           placeholder={ts.identityClusterPlaceholder || "e.g., The Mindful Me"}
           maxLength={40}
           className={cn(
-            "w-full p-2 rounded-lg text-sm transition-all",
+            "w-full p-2 rounded-lg text-sm motion-safe:transition-all",
             "focus:outline-none focus:ring-2",
             isPrimaryCTA
               ? "bg-foreground/10 border border-foreground/20 text-white placeholder:text-foreground/60 focus:ring-violet-500/50"
@@ -107,7 +107,7 @@ export function IdentityMappingSection({
           placeholder={ts.identityVerbPlaceholder || "e.g., I am a meditator"}
           maxLength={60}
           className={cn(
-            "w-full p-2 rounded-lg text-sm transition-all",
+            "w-full p-2 rounded-lg text-sm motion-safe:transition-all",
             "focus:outline-none focus:ring-2",
             isPrimaryCTA
               ? "bg-foreground/10 border border-foreground/20 text-white placeholder:text-foreground/60 focus:ring-violet-500/50"

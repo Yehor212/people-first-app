@@ -47,7 +47,7 @@ export const PremiumGoalCard = memo(function PremiumGoalCard({
       exit={{ opacity: 0, x: -20, scale: 0.95 }}
       className={cn(
         "relative overflow-hidden rounded-2xl border border-border/40",
-        "bg-card backdrop-blur-sm transition-all",
+        "bg-card backdrop-blur-sm motion-safe:transition-all",
         isComplete && "ring-1 ring-emerald-500/40"
       )}
       style={
@@ -154,7 +154,7 @@ export const PremiumGoalCard = memo(function PremiumGoalCard({
             className={cn(
               "p-2.5 rounded-xl min-w-[44px] min-h-[44px] flex items-center justify-center",
               "bg-gradient-to-br from-emerald-400 to-teal-500",
-              "text-white shadow-[0_4px_16px_rgba(16,185,129,0.4)] active:scale-95 transition-transform"
+              "text-white shadow-[0_4px_16px_rgba(16,185,129,0.4)] active:scale-95 motion-safe:transition-transform"
             )}
           >
             <Trophy className="w-4 h-4" />
@@ -162,7 +162,7 @@ export const PremiumGoalCard = memo(function PremiumGoalCard({
         ) : !isComplete ? (
           <button
             onClick={() => onDelete()}
-            className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-destructive/10 transition-colors"
+            className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-destructive/10 motion-safe:transition-colors"
             aria-label={t.delete || "Delete"}
           >
             <X className="w-4 h-4 text-muted-foreground" />

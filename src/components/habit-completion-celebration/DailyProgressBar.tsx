@@ -22,7 +22,7 @@ export function DailyProgressBar({ completedCount, totalCount, className }: Dail
           {t.todayProgress || "Today's Progress"}
         </span>
         <span className={cn(
-          "text-sm font-bold transition-colors",
+          "text-sm font-bold motion-safe:transition-colors",
           isComplete ? "text-mood-good" : "text-foreground"
         )}>
           {completedCount}/{totalCount}
@@ -33,7 +33,7 @@ export function DailyProgressBar({ completedCount, totalCount, className }: Dail
         {/* Progress fill */}
         <div
           className={cn(
-            "absolute inset-y-0 start-0 rounded-full transition-all duration-500 ease-out",
+            "absolute inset-y-0 start-0 rounded-full motion-safe:transition-all motion-safe:duration-500 ease-out",
             isComplete
               ? "bg-gradient-to-r from-mood-good to-emerald-400"
               : "bg-gradient-to-r from-primary to-accent"
@@ -43,7 +43,7 @@ export function DailyProgressBar({ completedCount, totalCount, className }: Dail
 
         {/* Shimmer effect when complete */}
         {isComplete && (
-          <div className="absolute inset-0 animate-shimmer-slide">
+          <div className="absolute inset-0 motion-safe:animate-shimmer-slide">
             <div className="h-full w-1/4 bg-gradient-to-r from-transparent via-white/30 to-transparent" />
           </div>
         )}
@@ -54,7 +54,7 @@ export function DailyProgressBar({ completedCount, totalCount, className }: Dail
             <div
               key={i}
               className={cn(
-                "w-1.5 h-1.5 rounded-full transition-all duration-300",
+                "w-1.5 h-1.5 rounded-full motion-safe:transition-all motion-safe:duration-300",
                 i < completedCount
                   ? "bg-foreground/50 scale-100"
                   : "bg-foreground/20 scale-75"
@@ -67,7 +67,7 @@ export function DailyProgressBar({ completedCount, totalCount, className }: Dail
 
       {/* Completion message */}
       {isComplete && (
-        <div className="mt-2 flex items-center justify-center gap-2 animate-fade-in">
+        <div className="mt-2 flex items-center justify-center gap-2 motion-safe:animate-fade-in">
           <span className="text-mood-good text-sm font-medium">
             🎉 {t.allHabitsComplete || 'All habits complete!'}
           </span>
