@@ -135,6 +135,21 @@ export const HeroHabitRow = memo(function HeroHabitRow({
   const identityIcon = (habit.identityIcon ?? "").trim() || habit.icon;
   const showCueRow = Boolean(reminderTime || identityVerb);
 
+  // Overdue nudge: reminder has passed + habit not yet completed today.
+  // Purely visual signal — never blocks, never auto-completes.
+  const completedToday = useMemo(() => isHabitCompletedOnDate(habit, today), [habit, today]);
+  const overdueMinutes = useMemo(() => {
+    if (!reminderTime || completedToday) return 0;
+    const [h, m] = reminderTime.split(":").map(Number);
+    if (!Number.isFinite(h) || !Number.isFinite(m)) return 0;
+    const now = new Date();
+    const remind = new Date();
+    remind.setHours(h, m, 0, 0);
+    return Math.max(0, Math.round((now.getTime() - remind.getTime()) / 60000));
+  }, [reminderTime, completedToday]);
+  const overdueHours = Math.floor(overdueMinutes / 60);
+  const isOverdue = overdueMinutes >= 30; // 30-min grace period — don't nag early
+
   return (
     <div
       role="group"
@@ -163,9 +178,23 @@ export const HeroHabitRow = memo(function HeroHabitRow({
           data-testid={`hero-habit-row-${habit.id}-cue`}
         >
           {reminderTime && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-muted/50 px-2 py-0.5">
+            <span
+              className={
+                "inline-flex items-center gap-1 rounded-full px-2 py-0.5 " +
+                (isOverdue
+                  ? "bg-amber-500/15 text-amber-700 dark:text-amber-300"
+                  : "bg-muted/50")
+              }
+              data-testid={`hero-habit-row-${habit.id}-reminder`}
+              data-overdue={isOverdue ? "true" : "false"}
+            >
               <Clock className="h-3 w-3" aria-hidden="true" />
               {reminderTime}
+              {isOverdue && (
+                <span className="ms-1 font-semibold" aria-hidden="true">
+                  · {overdueHours > 0 ? `${overdueHours}h` : `${overdueMinutes}m`}
+                </span>
+              )}
             </span>
           )}
           {identityVerb && (
