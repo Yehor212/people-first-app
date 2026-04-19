@@ -24,6 +24,12 @@ interface HabitCreateSheetProps {
   open: boolean;
   onClose: () => void;
   habits: Habit[];
+  /**
+   * Non-null puts the sheet into edit mode: on open, the form is prefilled
+   * from this habit via `useHabitForm.handleEditHabit`, and submit calls
+   * `onUpdateHabit` instead of `onAddHabit`. Null/undefined = create mode.
+   */
+  editHabit?: Habit | null;
   onAddHabit: (habit: Habit) => void;
   onUpdateHabit?: (habit: Habit) => void;
 }
@@ -32,6 +38,7 @@ export function HabitCreateSheet({
   open,
   onClose,
   habits,
+  editHabit,
   onAddHabit,
   onUpdateHabit,
 }: HabitCreateSheetProps) {
@@ -55,18 +62,23 @@ export function HabitCreateSheet({
   );
 
   const form = useHabitForm({ onAddHabit: handleAdd, onUpdateHabit: handleUpdate });
-  const { setIsAdding, resetForm } = form;
+  const { setIsAdding, resetForm, handleEditHabit: formBeginEdit } = form;
 
-  // Open the form whenever the drawer opens — useHabitForm has an internal
-  // `isAdding` flag that gates the form's body; reset it when the drawer
-  // closes so a re-open starts fresh.
+  // Open the form whenever the drawer opens. If an `editHabit` was passed in,
+  // prefill via the V1 hook's `handleEditHabit` (sets editingHabit +
+  // populates every field) so submit dispatches onUpdateHabit instead of
+  // onAddHabit. Reset on close so a re-open starts clean.
   useEffect(() => {
     if (open) {
-      setIsAdding(true);
+      if (editHabit) {
+        formBeginEdit(editHabit);
+      } else {
+        setIsAdding(true);
+      }
     } else {
       resetForm();
     }
-  }, [open, setIsAdding, resetForm]);
+  }, [open, editHabit, setIsAdding, resetForm, formBeginEdit]);
 
   useBackHandler(open, onClose);
 
@@ -91,7 +103,7 @@ export function HabitCreateSheet({
           <div className="mx-auto mt-3 h-1.5 w-12 shrink-0 rounded-full bg-muted" aria-hidden="true" />
           <div className="flex items-center justify-between gap-2 px-4 pt-3 pb-1">
             <Drawer.Title className="font-display text-base font-semibold text-foreground">
-              {tx.navV2HabitsCreate}
+              {editHabit ? tx.edit || "Edit" : tx.navV2HabitsCreate}
             </Drawer.Title>
             <button
               type="button"

@@ -31,7 +31,11 @@ interface HeroTimeOfDayGroupProps {
   bucket: TimeOfDay;
   habits: readonly Habit[];
   onToggleHabit: (habitId: string, date: string) => void;
+  /** +/- for numerical habits (drink water, meditate 10min). Optional. */
+  onAdjustHabit?: (habitId: string, date: string, delta: number) => void;
   onDeleteHabit: (habitId: string) => void;
+  /** Pencil → edit form, distinct from long-press → detail sheet. */
+  onEditHabit?: (habit: Habit) => void;
   /** Opens the V1 HabitDetailSheet (reuses mature stats/streak/actions panel). */
   onOpenDetail?: (habit: Habit) => void;
 }
@@ -54,7 +58,9 @@ export const HeroTimeOfDayGroup = memo(function HeroTimeOfDayGroup({
   bucket,
   habits,
   onToggleHabit,
+  onAdjustHabit,
   onDeleteHabit,
+  onEditHabit,
   onOpenDetail,
 }: HeroTimeOfDayGroupProps) {
   const { t } = useLanguage();
@@ -106,7 +112,9 @@ export const HeroTimeOfDayGroup = memo(function HeroTimeOfDayGroup({
               <HeroHabitRow
                 habit={habit}
                 onToggle={onToggleHabit}
+                onAdjust={onAdjustHabit}
                 onDelete={onDeleteHabit}
+                onEdit={onEditHabit}
                 onOpenDetail={onOpenDetail}
               />
             </motion.div>

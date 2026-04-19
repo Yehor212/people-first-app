@@ -12,7 +12,7 @@
  * way a user gesture would and assert the spy was called.
  */
 
-import { render, cleanup } from "@testing-library/react";
+import { render, cleanup, act } from "@testing-library/react";
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import type { Insight, Habit } from "@/types";
 
@@ -78,9 +78,12 @@ type HeroZoneProps = {
   onPickTemplate: (t: { id: string; names: Record<string, string>; icon: string; color: number; habitType: string }) => void;
   onCreateHabit: () => void;
   onToggleHabit: (habitId: string, date: string) => void;
+  onAdjustHabit?: (habitId: string, date: string, delta: number) => void;
+  onEditHabit?: (h: Habit) => void;
 };
 type CreateSheetProps = {
   onAddHabit: (h: Habit) => void;
+  editHabit?: Habit | null;
 };
 
 let capturedHeroProps: HeroZoneProps | null = null;
@@ -216,6 +219,63 @@ describe("HabitsPage → analytics wiring (§15)", () => {
     render(<HabitsPage />);
     capturedHeroProps!.onToggleHabit("a", "2026-04-19");
     expect(analyticsSpy.habitCompleted).not.toHaveBeenCalled();
+  });
+
+  it("onAdjustHabit crossing atLeast target emits habit_completed (numerical)", () => {
+    const habit = makeHabit("water");
+    habit.habitType = "numerical";
+    habit.targetValue = 2; // 2 units (e.g., litres)
+    habit.targetType = "atLeast";
+    // 1.5 stored as ×1000
+    habit.entries = { "2026-04-19": { value: 1500 } };
+    mockHabits = [habit];
+    render(<HabitsPage />);
+    // +1 unit crosses 1.5 → 2.5 (≥ 2)
+    capturedHeroProps!.onAdjustHabit!("water", "2026-04-19", 1);
+    expect(analyticsSpy.habitCompleted).toHaveBeenCalledTimes(1);
+    expect(analyticsSpy.habitCompleted).toHaveBeenCalledWith("Habit water", 1);
+  });
+
+  it("onAdjustHabit not crossing target does not emit habit_completed", () => {
+    const habit = makeHabit("water");
+    habit.habitType = "numerical";
+    habit.targetValue = 2;
+    habit.targetType = "atLeast";
+    habit.entries = { "2026-04-19": { value: 500 } }; // 0.5 stored ×1000
+    mockHabits = [habit];
+    render(<HabitsPage />);
+    // +0.25 → 0.75 (< 2)
+    capturedHeroProps!.onAdjustHabit!("water", "2026-04-19", 0.25);
+    expect(analyticsSpy.habitCompleted).not.toHaveBeenCalled();
+  });
+
+  it("onAdjustHabit on already-met target does not re-emit (no double-counting)", () => {
+    const habit = makeHabit("water");
+    habit.habitType = "numerical";
+    habit.targetValue = 2;
+    habit.targetType = "atLeast";
+    habit.entries = { "2026-04-19": { value: 2500 } }; // 2.5 already ≥ 2
+    mockHabits = [habit];
+    render(<HabitsPage />);
+    capturedHeroProps!.onAdjustHabit!("water", "2026-04-19", 0.5);
+    expect(analyticsSpy.habitCompleted).not.toHaveBeenCalled();
+  });
+
+  it("onEditHabit routes to HabitCreateSheet with editHabit prefilled (not detail sheet)", () => {
+    const habit = makeHabit("read");
+    mockHabits = [habit];
+    render(<HabitsPage />);
+    // Precondition: edit mode not active on first render.
+    expect(capturedCreateProps!.editHabit ?? null).toBeNull();
+    // Trigger: pencil button path (onEditHabit) — distinct from onOpenDetail.
+    // Wrap in act() so React commits the setEditingHabit state update before
+    // we re-read the captured props on the next render.
+    act(() => {
+      capturedHeroProps!.onEditHabit!(habit);
+    });
+    // The sheet now carries editHabit === the clicked habit → HabitCreationForm
+    // will call onUpdateHabit, not onAddHabit.
+    expect(capturedCreateProps!.editHabit).toEqual(habit);
   });
 });
 

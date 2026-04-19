@@ -53,8 +53,12 @@ interface HabitsHeroZoneProps {
   todaysHabits: Habit[];
   dailyProgress: HabitsPageDailyProgress;
   onToggleHabit: (habitId: string, date: string) => void;
+  /** +/- for numerical habits (drink water etc.). Optional for back-compat. */
+  onAdjustHabit?: (habitId: string, date: string, delta: number) => void;
   onDeleteHabit: (habitId: string) => void;
   onCreateHabit: () => void;
+  /** Pencil button → edit form (distinct from long-press → detail sheet). */
+  onEditHabit?: (habit: Habit) => void;
   onPickTemplate?: (template: HabitTemplate) => void;
   onOpenLibrary?: () => void;
   onOpenDetail?: (habit: Habit) => void;
@@ -64,8 +68,10 @@ export const HabitsHeroZone = memo(function HabitsHeroZone({
   todaysHabits,
   dailyProgress,
   onToggleHabit,
+  onAdjustHabit,
   onDeleteHabit,
   onCreateHabit,
+  onEditHabit,
   onPickTemplate,
   onOpenLibrary,
   onOpenDetail,
@@ -141,7 +147,9 @@ export const HabitsHeroZone = memo(function HabitsHeroZone({
               bucket={g.bucket}
               habits={g.habits}
               onToggleHabit={onToggleHabit}
+              onAdjustHabit={onAdjustHabit}
               onDeleteHabit={onDeleteHabit}
+              onEditHabit={onEditHabit}
               onOpenDetail={onOpenDetail}
             />
           ))}

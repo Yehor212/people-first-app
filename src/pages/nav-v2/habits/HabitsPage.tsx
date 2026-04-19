@@ -24,6 +24,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useUserDataStore } from "@/stores";
 import { hapticTap } from "@/lib/haptics";
 import { analytics } from "@/lib/analytics";
+import { setEntryValue, toStoredValue } from "@/lib/habits";
 import { HabitsHeroZone } from "./HabitsHeroZone";
 import { HabitCreateSheet } from "./HabitCreateSheet";
 import { HeroTemplateLibrarySheet } from "./hero/HeroTemplateLibrarySheet";
@@ -51,6 +52,8 @@ export const HabitsPage = memo(function HabitsPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [detailHabit, setDetailHabit] = useState<Habit | null>(null);
+  /** Habit passed to HabitCreateSheet in edit mode (null = create mode). */
+  const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
 
   /** Per-template emission debounce. Two rapid taps in a single render tick
    *  can both pass the closure-level `habits.some()` guard in handlePickTemplate
@@ -103,6 +106,52 @@ export const HabitsPage = memo(function HabitsPage() {
     [setHabits],
   );
 
+  /**
+   * Numerical habit +/- adjustment. Mirrors V1 `useHabitHandlers.handleAdjustHabit`
+   * semantics: values are stored ×1000 for precision, `toStoredValue` handles
+   * the conversion. Emits `habit_completed` when the delta transitions the
+   * habit across its target threshold (atLeast ≥ target, atMost ≤ target).
+   *
+   * Cross-platform: pointer events are universal (iOS/Android/Desktop); the
+   * haptic wrapper is Capacitor-aware and no-ops on web. The inner CompactHabitCard
+   * +/- buttons are ≥44px per V1 design (Law 9 touch-target).
+   */
+  const handleAdjustHabit = useCallback(
+    (habitId: string, date: string, delta: number) => {
+      const habit = habits.find((h) => h.id === habitId);
+      if (!habit) return;
+      void hapticTap();
+      const currentStored = habit.entries?.[date]?.value ?? 0;
+      const currentReal = currentStored > 0 ? currentStored / 1000 : 0;
+      const newReal = Math.max(0, currentReal + delta);
+      const newStored = toStoredValue(newReal);
+      const target = habit.targetValue ?? 0;
+      const isAtMost = habit.targetType === "atMost";
+      const prevMet =
+        target > 0 &&
+        (isAtMost ? currentReal > 0 && currentReal <= target : currentReal >= target);
+      const nowMet =
+        target > 0 && (isAtMost ? newReal > 0 && newReal <= target : newReal >= target);
+      const justCompleted = !prevMet && nowMet;
+
+      setHabits((prev) =>
+        prev.map((h) =>
+          h.id !== habitId
+            ? h
+            : { ...h, entries: setEntryValue(h.entries || {}, date, newStored) },
+        ),
+      );
+
+      if (justCompleted) {
+        analytics.habitCompleted(
+          habit.name,
+          habits.filter((h) => !h.isArchived).length,
+        );
+      }
+    },
+    [habits, setHabits],
+  );
+
   const handleToggleHabit = useCallback(
     (habitId: string, date: string) => {
       // Compute the completion transition BEFORE the setter runs so the
@@ -141,12 +190,28 @@ export const HabitsPage = memo(function HabitsPage() {
 
   const openCreate = useCallback(() => {
     captureReturnFocus();
+    setEditingHabit(null);
     setCreateOpen(true);
   }, [captureReturnFocus]);
   const closeCreate = useCallback(() => {
     setCreateOpen(false);
+    setEditingHabit(null);
     restoreReturnFocus();
   }, [restoreReturnFocus]);
+  /**
+   * Pencil button on a habit card → opens HabitCreateSheet in edit mode with
+   * the habit prefilled. Shorter path than long-press → detail sheet → Edit
+   * button, which was the complaint that Edit semantics and Detail semantics
+   * had collapsed onto the same affordance.
+   */
+  const openEditForm = useCallback(
+    (habit: Habit) => {
+      captureReturnFocus();
+      setEditingHabit(habit);
+      setCreateOpen(true);
+    },
+    [captureReturnFocus],
+  );
   const openLibrary = useCallback(() => {
     captureReturnFocus();
     setLibraryOpen(true);
@@ -281,8 +346,10 @@ export const HabitsPage = memo(function HabitsPage() {
           todaysHabits={todaysHabits}
           dailyProgress={dailyProgress}
           onToggleHabit={handleToggleHabit}
+          onAdjustHabit={handleAdjustHabit}
           onDeleteHabit={handleDeleteHabit}
           onCreateHabit={openCreate}
+          onEditHabit={openEditForm}
           onPickTemplate={handlePickTemplate}
           onOpenLibrary={openLibrary}
           onOpenDetail={openDetail}
@@ -292,6 +359,7 @@ export const HabitsPage = memo(function HabitsPage() {
           open={createOpen}
           onClose={closeCreate}
           habits={habits}
+          editHabit={editingHabit}
           onAddHabit={handleAddHabit}
           onUpdateHabit={handleUpdateHabit}
         />

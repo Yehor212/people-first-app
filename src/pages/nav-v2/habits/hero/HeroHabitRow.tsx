@@ -37,9 +37,24 @@ import type { Habit } from "@/types";
 interface HeroHabitRowProps {
   habit: Habit;
   onToggle: (habitId: string, date: string) => void;
+  /** +/- for numerical habits (drink 250ml, meditate 10min). Optional. */
+  onAdjust?: (habitId: string, date: string, delta: number) => void;
   onDelete: (habitId: string) => void;
+  /**
+   * Pencil (hover desktop / swipe-reveal mobile) — opens the create sheet in
+   * edit mode. Distinct from `onOpenDetail` which opens the read-only stats
+   * sheet on long-press. Mapping both to detail was the original "пенсил
+   * открывает не то что ожидаешь" complaint.
+   */
+  onEdit?: (habit: Habit) => void;
   onOpenDetail?: (habit: Habit) => void;
 }
+
+/** px threshold past which we treat an ongoing pointer as a swipe, not a
+ *  long-press. Matches the swipe trigger in V1 `CompactHabitCard`
+ *  (`handleTouchEnd` fires at 50px; we cancel at 10px so the user's swipe
+ *  never loses 450 ms to an aborted long-press). */
+const LONG_PRESS_MOVE_TOLERANCE_PX = 10;
 
 /** Pure: YYYY-MM-DD for the day `n` days before today, inclusive-end-today. */
 function lastNDates(n: number, todayISO: string): string[] {
@@ -58,7 +73,9 @@ const LONG_PRESS_MS = 450;
 export const HeroHabitRow = memo(function HeroHabitRow({
   habit,
   onToggle,
+  onAdjust,
   onDelete,
+  onEdit,
   onOpenDetail,
 }: HeroHabitRowProps) {
   const animate = useShouldAnimate();
@@ -89,6 +106,13 @@ export const HeroHabitRow = memo(function HeroHabitRow({
   // Long-press — pointer event based so it works on touch + mouse + pen
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressFiredRef = useRef(false);
+  /** Initial pointerdown coordinates. Used by `handlePointerMove` to cancel
+   *  the long-press timer as soon as the user's finger moves past the swipe
+   *  tolerance (inner V1 CompactHabitCard swipes at 50 px — we cancel at 10
+   *  px so the horizontal swipe reveal of Edit/Delete never fights the
+   *  long-press timer). Cross-platform: pointer events fire identically on
+   *  iOS / Android / Desktop, so one handler covers all. */
+  const pointerOriginRef = useRef<{ x: number; y: number } | null>(null);
 
   const cancelLongPress = useCallback(() => {
     if (timerRef.current) {
@@ -104,6 +128,7 @@ export const HeroHabitRow = memo(function HeroHabitRow({
       const target = e.target as HTMLElement;
       if (target.closest("button, a")) return;
       longPressFiredRef.current = false;
+      pointerOriginRef.current = { x: e.clientX, y: e.clientY };
       cancelLongPress();
       timerRef.current = setTimeout(() => {
         longPressFiredRef.current = true;
@@ -114,8 +139,27 @@ export const HeroHabitRow = memo(function HeroHabitRow({
     [onOpenDetail, habit, cancelLongPress],
   );
 
-  const handlePointerUp = useCallback(() => cancelLongPress(), [cancelLongPress]);
-  const handlePointerLeave = useCallback(() => cancelLongPress(), [cancelLongPress]);
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      const origin = pointerOriginRef.current;
+      if (!origin || !timerRef.current) return;
+      const dx = Math.abs(e.clientX - origin.x);
+      const dy = Math.abs(e.clientY - origin.y);
+      if (dx > LONG_PRESS_MOVE_TOLERANCE_PX || dy > LONG_PRESS_MOVE_TOLERANCE_PX) {
+        cancelLongPress();
+      }
+    },
+    [cancelLongPress],
+  );
+
+  const handlePointerUp = useCallback(() => {
+    cancelLongPress();
+    pointerOriginRef.current = null;
+  }, [cancelLongPress]);
+  const handlePointerLeave = useCallback(() => {
+    cancelLongPress();
+    pointerOriginRef.current = null;
+  }, [cancelLongPress]);
 
   // Keyboard fallback — Enter/Space on the wrapper opens detail (non-touch path)
   const handleKeyDown = useCallback(
@@ -156,6 +200,7 @@ export const HeroHabitRow = memo(function HeroHabitRow({
       aria-label={habit.name}
       tabIndex={onOpenDetail ? 0 : -1}
       onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerUp}
       onPointerLeave={handlePointerLeave}
@@ -166,8 +211,9 @@ export const HeroHabitRow = memo(function HeroHabitRow({
       <CompactHabitCard
         habit={habit}
         onToggle={onToggle}
+        onAdjust={onAdjust}
         onDelete={onDelete}
-        onEdit={onOpenDetail}
+        onEdit={onEdit ?? onOpenDetail}
         streak={streak}
         isDueToday
       />
