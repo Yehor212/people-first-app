@@ -39,6 +39,14 @@ export interface RetryOptions {
   capMs?: number;
   /** Full jitter (default, AWS-recommended) or equal jitter or none. */
   jitter?: "full" | "equal" | "none";
+  /**
+   * Explicit delay schedule in ms per attempt (attempt 1 uses delaysMs[0],
+   * attempt 2 uses delaysMs[1], etc. Overrun reuses the last value).
+   * Overrides baseMs/capMs/jitter when provided. Useful for call-sites with
+   * a tuned fixed schedule (e.g. `[1000, 3000, 5000]`) that predate this util
+   * and cannot change behavior for backwards compatibility.
+   */
+  delaysMs?: number[];
   /** Total time budget in ms. Retry loop aborts if exceeded. Default 30_000. */
   maxElapsedMs?: number;
   /** External cancellation. Throws AbortError if aborted mid-wait. */
@@ -135,6 +143,8 @@ export async function retryWithBackoff<T>(
   const started = Date.now();
   let lastError: unknown;
 
+  const useExplicitDelays = Array.isArray(options.delaysMs) && options.delaysMs.length > 0;
+
   for (let attempt = 1; attempt <= cfg.maxRetries + 1; attempt++) {
     if (options.signal?.aborted) {
       throw new DOMException("Retry cancelled", "AbortError");
@@ -147,7 +157,9 @@ export async function retryWithBackoff<T>(
       if (attempt > cfg.maxRetries) throw err;
       if (Date.now() - started >= cfg.maxElapsedMs) throw err;
 
-      const delay = computeBackoff(attempt, cfg.baseMs, cfg.capMs, cfg.jitter);
+      const delay = useExplicitDelays
+        ? options.delaysMs![Math.min(attempt - 1, options.delaysMs!.length - 1)]
+        : computeBackoff(attempt, cfg.baseMs, cfg.capMs, cfg.jitter);
       options.onRetry?.(attempt, err, delay);
       await waitWithAbort(delay, options.signal);
     }

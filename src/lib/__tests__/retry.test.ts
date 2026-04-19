@@ -159,6 +159,43 @@ describe("retryWithBackoff", () => {
     await expect(promise).rejects.toThrow(/cancelled/i);
   });
 
+  it("uses delaysMs schedule when provided (overrides exponential backoff)", async () => {
+    const delays: number[] = [];
+    const fn = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("x"))
+      .mockRejectedValueOnce(new Error("x"))
+      .mockResolvedValue("ok");
+    const promise = retryWithBackoff(fn, {
+      maxRetries: 5,
+      delaysMs: [1000, 3000, 5000],
+      onRetry: (_attempt, _err, ms) => delays.push(ms),
+    }).catch((e) => e);
+    await vi.runAllTimersAsync();
+    await promise;
+    expect(delays).toEqual([1000, 3000]); // 2 retries used [0] and [1]
+    expect(fn).toHaveBeenCalledTimes(3);
+  });
+
+  it("delaysMs reuses last entry when attempts exceed array length", async () => {
+    const delays: number[] = [];
+    const fn = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("x"))
+      .mockRejectedValueOnce(new Error("x"))
+      .mockRejectedValueOnce(new Error("x"))
+      .mockRejectedValueOnce(new Error("x"))
+      .mockResolvedValue("ok");
+    const promise = retryWithBackoff(fn, {
+      maxRetries: 5,
+      delaysMs: [100, 200], // only 2 entries; attempts 3+ should reuse 200
+      onRetry: (_attempt, _err, ms) => delays.push(ms),
+    }).catch((e) => e);
+    await vi.runAllTimersAsync();
+    await promise;
+    expect(delays).toEqual([100, 200, 200, 200]); // 4 retries, last 2 reuse
+  });
+
   it("gives up when maxElapsedMs is exceeded", async () => {
     // Attach catch before awaiting runAllTimers to avoid phantom unhandled-rejection
     // during fake-timer orchestration.

@@ -32,6 +32,10 @@
  *   node scripts/a11y-icons-audit.cjs --top 10   # show top-N offenders
  *   node scripts/a11y-icons-audit.cjs --file path.tsx  # single file deep-dive
  *
+ * CI-gate modes (Law 27 Ratchet — baseline can only move down):
+ *   --max-icon-only=N       exit 2 if icon-only buttons > N (default OFF)
+ *   --max-decorative=N      exit 2 if decorative-without-aria-hidden > N (default OFF)
+ *
  * DOES NOT modify code. A separate `--fix` mode is a future PR because the
  * classifier has an "ambiguous" bucket that must not be auto-mutated.
  */
@@ -319,10 +323,33 @@ function main() {
     { decorative: 0, iconOnly: 0 },
   );
 
+  // Ratchet gates (Law 27): caller supplies maxima; script exits 2 when
+  // current value exceeds the baseline. Omitting a flag disables that gate.
+  const parseIntFlag = (flag) => {
+    const entry = args.find((a) => a.startsWith(flag + "="));
+    if (!entry) return null;
+    const n = parseInt(entry.split("=")[1], 10);
+    return Number.isFinite(n) ? n : null;
+  };
+  const maxIconOnly = parseIntFlag("--max-icon-only");
+  const maxDecorative = parseIntFlag("--max-decorative");
+  const gateFailures = [];
+  if (maxIconOnly !== null && totals.iconOnly > maxIconOnly) {
+    gateFailures.push(`icon-only buttons: ${totals.iconOnly} > baseline ${maxIconOnly}`);
+  }
+  if (maxDecorative !== null && totals.decorative > maxDecorative) {
+    gateFailures.push(`decorative-without-aria-hidden: ${totals.decorative} > baseline ${maxDecorative}`);
+  }
+
   if (json) {
     console.log(
-      JSON.stringify({ totals, files: results.filter((r) => r.decorative.length || r.iconOnly.length) }, null, 2),
+      JSON.stringify(
+        { totals, gates: { maxIconOnly, maxDecorative, failures: gateFailures }, files: results.filter((r) => r.decorative.length || r.iconOnly.length) },
+        null,
+        2,
+      ),
     );
+    if (gateFailures.length > 0) process.exit(2);
     return;
   }
 
@@ -360,6 +387,13 @@ function main() {
   console.log("");
   console.log("Fix decorative with bulk Edit; investigate each icon-only individually.");
   console.log("Re-run with --file=<path> for file-level detail, --json for machine-readable.");
+
+  if (gateFailures.length > 0) {
+    console.log("");
+    console.error("[a11y-icons] RATCHET FAIL:");
+    for (const f of gateFailures) console.error(`  - ${f}`);
+    process.exit(2);
+  }
 }
 
 main();

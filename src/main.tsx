@@ -34,6 +34,26 @@ import { safeLocalStorageSet } from "./lib/safeJson";
 // to keep it off the critical rendering path. captureError is loaded lazily.
 let captureError: ((err: Error, ctx?: Record<string, unknown>) => void) | null = null;
 
+// Pre-Sentry error buffer — catches errors thrown in the ~2s window before Sentry
+// finishes its idle-callback import. Without this, global handlers silently drop
+// early errors (the `if (captureError)` guard below returns no-op pre-init).
+// Pattern mirrors Sentry JS Loader's `onLoad` queue. Cap at 50 to bound memory on
+// pathological crash loops. Flushed in idleInit() after Sentry is wired.
+// Source: docs.sentry.io/platforms/javascript/install/lazy-load-sentry/ (2025).
+interface BufferedError {
+  error: Error;
+  context: Record<string, unknown>;
+}
+const preSentryErrorBuffer: BufferedError[] = [];
+const BUFFER_CAP = 50;
+function captureOrBuffer(error: Error, context: Record<string, unknown>): void {
+  if (captureError) {
+    captureError(error, context);
+  } else if (preSentryErrorBuffer.length < BUFFER_CAP) {
+    preSentryErrorBuffer.push({ error, context });
+  }
+}
+
 // Setup chunk error handler EARLY to catch lazy loading failures
 // This must be before React renders to catch initial chunk load errors
 setupChunkErrorHandler();
@@ -91,18 +111,35 @@ window.addEventListener("unhandledrejection", (event) => {
   }
 
   logger.error("[Global] Unhandled promise rejection:", reason);
-  // Send to Sentry (if loaded)
-  if (reason instanceof Error && captureError) {
-    captureError(reason, { type: "unhandledrejection" });
+  // Send to Sentry (buffered if Sentry not yet loaded)
+  if (reason instanceof Error) {
+    captureOrBuffer(reason, { type: "unhandledrejection" });
   }
 });
 
 window.addEventListener("error", (event) => {
   logger.error("[Global] Uncaught error:", event.error || event.message);
-  // Send to Sentry (if loaded)
-  if (event.error instanceof Error && captureError) {
-    captureError(event.error, { type: "uncaught" });
+  // Send to Sentry (buffered if Sentry not yet loaded)
+  if (event.error instanceof Error) {
+    captureOrBuffer(event.error, { type: "uncaught" });
   }
+});
+
+// Vite preload-error handler (P1 — research 2026-04-18)
+// Fires when <link rel="modulepreload"> or dynamic `import()` fails (CSS/JS chunk
+// 404 after deploy). Distinct event from generic `error` — has typed `.payload`
+// with the Error. Dispatch the same CHUNK_LOAD_ERROR_EVENT the dialog listens for.
+// Source: vite.dev/guide/build.html#load-error-handling, vitejs/vite#11804.
+window.addEventListener("vite:preloadError", (event) => {
+  const message = event.payload?.message || "vite:preloadError";
+  logger.warn("[Vite] Preload error:", message);
+  // Prevent Vite's default auto-reload — dialog gives user control (see research §4).
+  event.preventDefault();
+  window.dispatchEvent(
+    new CustomEvent("zenflow:chunk-load-error", {
+      detail: { message, chunk: "preload", timestamp: Date.now() },
+    })
+  );
 });
 
 /**
@@ -111,7 +148,10 @@ window.addEventListener("error", (event) => {
  * beforeunload: Web - when tab is closed or refreshed
  * visibilitychange: Both - when app goes to background
  *
- * Uses sendBeacon for reliable data transmission even during page unload.
+ * Synchronous localStorage snapshot is used here — beforeunload handlers have
+ * ~10ms budget and localStorage is the only sync storage. Network transmission
+ * for unload events lives in cloudSync.ts (sendBeacon). Keep first-10 actions
+ * for recovery; full queue is already persisted via offlineQueue's Dexie store.
  */
 // Save critical state before app closes
 window.addEventListener("beforeunload", () => {
@@ -371,16 +411,28 @@ async function initializeApp(): Promise<boolean> {
   return true;
 }
 
+// React 18 `onRecoverableError` forwards recoverable hydration/concurrent errors
+// to Sentry (via buffer pre-load, direct post-load). React 19 adds onCaughtError/
+// onUncaughtError — not yet available here.
+// Source: react.dev/reference/react-dom/client/createRoot#parameters, 2025.
+const rootOptions = {
+  onRecoverableError: (error: unknown) => {
+    if (error instanceof Error) {
+      captureOrBuffer(error, { type: "recoverable", source: "react" });
+    }
+  },
+};
+
 // Initialize app with version check, then render
 initializeApp()
   .then((shouldRender) => {
     if (shouldRender) {
-      createRoot(document.getElementById("root")!).render(<App />);
+      createRoot(document.getElementById("root")!, rootOptions).render(<App />);
     }
   })
   .catch((err) => {
     logger.error("[Init] Fatal:", err);
-    createRoot(document.getElementById("root")!).render(<App />);
+    createRoot(document.getElementById("root")!, rootOptions).render(<App />);
   });
 
 // Defer Sentry initialization to after render — keeps @sentry/* off the critical path
@@ -394,6 +446,18 @@ const idleInit = () => {
         logger.warn("[Main] Sentry init failed:", e);
       }
       captureError = ce;
+      // Flush errors buffered during the pre-Sentry window.
+      if (preSentryErrorBuffer.length > 0) {
+        logger.log(`[Main] Flushing ${preSentryErrorBuffer.length} buffered errors to Sentry`);
+        for (const { error, context } of preSentryErrorBuffer) {
+          try {
+            ce(error, { ...context, buffered: true });
+          } catch (e) {
+            logger.warn("[Main] Buffer flush failed for one error:", e);
+          }
+        }
+        preSentryErrorBuffer.length = 0;
+      }
     })
     .catch((err) => logger.warn("[Main] Sentry lazy load failed:", err));
 };

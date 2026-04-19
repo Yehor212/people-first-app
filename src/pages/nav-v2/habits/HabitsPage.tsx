@@ -25,13 +25,14 @@ import { useUserDataStore } from "@/stores";
 import { hapticTap } from "@/lib/haptics";
 import { HabitsHeroZone } from "./HabitsHeroZone";
 import { HabitGardenZone } from "./HabitGardenZone";
-import { HabitMindMapZone } from "./HabitMindMapZone";
+// MindMap zone deferred per user request 2026-04-19 ("МАЙНДМЕП ПОКА ОСТАВЬ ПОТОМ").
+// Re-enable when identity-map UX is finalized in Phase 3-C.2.
+// import { HabitMindMapZone } from "./HabitMindMapZone";
 import { HabitCreateSheet } from "./HabitCreateSheet";
 import { useHabitsPageState } from "./useHabitsPageState";
 import type { Habit } from "@/types";
 
 const GARDEN_ANCHOR_ID = "habits-zone-garden";
-const MINDMAP_ANCHOR_ID = "habits-zone-mindmap";
 
 export const HabitsPage = memo(function HabitsPage() {
   const { t } = useLanguage();
@@ -94,10 +95,6 @@ export const HabitsPage = memo(function HabitsPage() {
     document.getElementById(GARDEN_ANCHOR_ID)?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, []);
 
-  const handleScrollToMindMap = useCallback(() => {
-    document.getElementById(MINDMAP_ANCHOR_ID)?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, []);
-
   const openCreate = useCallback(() => setCreateOpen(true), []);
   const closeCreate = useCallback(() => setCreateOpen(false), []);
 
@@ -135,16 +132,6 @@ export const HabitsPage = memo(function HabitsPage() {
             >
               {tx.navV2HabitsScrollToGarden}
             </a>
-            <a
-              href={`#${MINDMAP_ANCHOR_ID}`}
-              onClick={(e) => {
-                e.preventDefault();
-                handleScrollToMindMap();
-              }}
-              className="rounded-full border border-border px-3 py-1.5 text-muted-foreground motion-safe:transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-            >
-              {tx.navV2HabitsScrollToMindMap}
-            </a>
           </nav>
         </header>
 
@@ -159,10 +146,6 @@ export const HabitsPage = memo(function HabitsPage() {
 
         <div id={GARDEN_ANCHOR_ID}>
           <HabitGardenZone />
-        </div>
-
-        <div id={MINDMAP_ANCHOR_ID}>
-          <HabitMindMapZone />
         </div>
 
         <HabitCreateSheet

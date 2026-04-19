@@ -2,11 +2,23 @@ import { lazy, ComponentType } from "react";
 import { forceHardReload, markForVersionCheck } from "./versionCheck";
 import { logger } from "@/lib/logger";
 import { SSK } from "@/lib/storageKeys";
+import { retryWithBackoff } from "@/lib/retry";
 
 type ImportFn<T> = () => Promise<{ default: T }>;
 
 const MAX_RETRIES = 2;
 const RETRY_DELAY = 1000;
+
+/** Recognize Vite chunk-load errors — used to classify retryable vs not. */
+function isChunkLoadError(error: unknown): boolean {
+  return (
+    error instanceof TypeError &&
+    (error.message.includes("Failed to fetch dynamically imported module") ||
+      error.message.includes("Importing a module script failed") ||
+      error.message.includes("Loading chunk") ||
+      error.message.includes("Loading CSS chunk"))
+  );
+}
 
 /**
  * Wrapper around React.lazy() that handles chunk loading failures.
@@ -16,6 +28,9 @@ const RETRY_DELAY = 1000;
  * 1. Retries failed chunk loads up to MAX_RETRIES times
  * 2. On persistent failure, reloads the page to get fresh assets
  * 3. Uses sessionStorage to prevent infinite reload loops
+ *
+ * Migrated 2026-04-18 to use shared `retryWithBackoff` — preserves exact
+ * semantics via `delaysMs: [RETRY_DELAY, RETRY_DELAY]` + custom classifier.
  */
 export function lazyWithRetry<T extends ComponentType<any>>(
   importFn: ImportFn<T>,
@@ -24,32 +39,23 @@ export function lazyWithRetry<T extends ComponentType<any>>(
   return lazy(async () => {
     let lastError: Error | null = null;
 
-    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-      try {
-        return await importFn();
-      } catch (error) {
-        lastError = error as Error;
-
-        // Detect ChunkLoadError pattern
-        const isChunkError =
-          error instanceof TypeError &&
-          (error.message.includes("Failed to fetch dynamically imported module") ||
-            error.message.includes("Importing a module script failed") ||
-            error.message.includes("Loading chunk") ||
-            error.message.includes("Loading CSS chunk"));
-
-        if (!isChunkError) {
-          throw error; // Non-chunk errors should not retry
-        }
-
-        logger.warn(
-          `[LazyLoad] Chunk load failed for ${moduleName}, attempt ${attempt + 1}/${MAX_RETRIES + 1}`
-        );
-
-        if (attempt < MAX_RETRIES) {
-          await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
-        }
-      }
+    try {
+      return await retryWithBackoff<{ default: T }>(importFn, {
+        maxRetries: MAX_RETRIES,
+        delaysMs: new Array(MAX_RETRIES).fill(RETRY_DELAY),
+        maxElapsedMs: Number.MAX_SAFE_INTEGER, // preserve: no total-time budget originally
+        classifyError: (err) => (isChunkLoadError(err) ? "retryable" : "non-retryable"),
+        onRetry: (attempt) => {
+          logger.warn(
+            `[LazyLoad] Chunk load failed for ${moduleName}, attempt ${attempt}/${MAX_RETRIES + 1}`
+          );
+        },
+      });
+    } catch (err) {
+      lastError = err as Error;
+      // Non-chunk errors: rethrow immediately (no hard-reload path).
+      if (!isChunkLoadError(err)) throw err;
+      // Fall through to hard-reload recovery below.
     }
 
     // All retries failed - force hard reload to get new index.html

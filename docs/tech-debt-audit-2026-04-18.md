@@ -327,11 +327,18 @@ Source: [rollup-plugin-visualizer](https://github.com/btd/rollup-plugin-visualiz
 **Research consensus:** Capped exponential backoff **with jitter** (AWS Builders' Library); classify network→retry, 4xx→no, 5xx→retry.
 Source: [AWS Backoff with jitter](https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/).
 
-**ZenFlow measurement:**
-- **112 ad-hoc retry/backoff matches** across 15+ files. **No shared util.** Call-sites: `useDeltaSyncEffects.ts`, `useHabitHandlers.ts`, `ambientSounds.ts`, `ModalLayer.tsx`, `PullToRefresh.tsx`.
-- Zero `src/lib/retry.ts` or similar.
+**ZenFlow measurement (updated 2026-04-18 Stage 5 + honest calibration):**
+- `src/lib/retry.ts` **LANDED** with `retryWithBackoff` + `CircuitBreaker` + `delaysMs` option + 28 tests.
+- **2 sites migrated:** `appUpdateManager.ts` (`withRetry`) and `lazyWithRetry.ts` (chunk retry). 9+8=17 existing behavior tests pass unchanged — migration is byte-identical via `delaysMs` + `classifyError` + `onRetry` hooks.
+- **Honest reclassification of the "112 matches":** most are NOT migratable N-attempt-backoff loops. Breakdown after manual review:
+  - Done (2): `appUpdateManager.withRetry`, `lazyWithRetry`
+  - State machines, not loops (skip): `syncOrchestrator.ts` (14 hits), `syncStateMachine.ts` (13 hits)
+  - Single-retry flows, different semantics: `apiClient.ts` (6 hits — 401-after-refresh), `nativeGoogleAuth.ts` (6 hits — nonce-mismatch once)
+  - Delegation log references: `tasksCloudSync.ts` (4 hits — "will retry via orchestrator")
+  - Candidates remaining: `ambientSounds.ts` (17 hits — needs per-site check), `useDeltaSyncEffects.ts`, `PullToRefresh.tsx`, `ModalLayer.tsx`, `leaderboard/useLeaderboardData.ts` (10 hits)
+  - Realistic remaining migratable loops: **~3-8**, not 110.
 
-**Fix (deferred):** create `src/lib/retry.ts` with `retryWithBackoff(fn, { maxRetries, baseMs, jitter })` + `CircuitBreaker`; migrate call-sites incrementally (keep old behavior — each migration is a separate PR with test).
+**Migration pattern proven:** use `delaysMs` array to preserve fixed schedule; wrap classifier logic in `classifyError`; log via `onRetry` callback; keep per-attempt timeout wrapper in caller (util intentionally does not own fn timeout).
 
 ### 10.7 Mobile lifecycle edge cases — **P1**
 
@@ -413,4 +420,123 @@ Adjusted remediation philosophy: Advanced Boy Scout Rule + 1 weekly hotspot spri
 ---
 
 *End of deep-scan extension. Stage 1 and Stage 2 fixes have landed. Stages 3-4 (journal decomposition, upgrades, Android native, iOS Dynamic Island, in-app Acknowledgements, aria-label sweep, strict-flag migration) are roadmapped in `memory/project_tech_debt_roadmap_2026-04-18.md`.*
+
+---
+
+## 13. Sentry config gaps — Stage 5 fixes landed 2026-04-19
+
+Deep audit of `src/lib/sentry.ts` against 2024-2026 Sentry React v10 consensus revealed 8 correctly-implemented criteria + 6 tuning gaps. **4 safe gaps applied (zero visual/behavioral regression):**
+
+| # | Fix | Rationale | Citation |
+|---|---|---|---|
+| 1 | **`denyUrls`** — 5 browser-extension patterns + webkit-masked-url | Quota save: Grammarly/password-managers inject errors burning 5k/mo free-tier | docs.sentry.io/.../filtering/ (2025) |
+| 2 | **`ignoreErrors`** — ResizeObserver loops + Non-Error promise rejection | Early-exit in pipeline; cheaper than beforeSend | Community consensus 2024-2025 |
+| 3 | **`sendDefaultPii: false`** explicit | v10.4.0 made this the default; explicit = future-proof against SDK flip | v9-to-v10 migration notes (2025) |
+| 4 | **Firebase/Google-API domains** in `shouldCreateSpanForRequest` skip | Transaction quota save on Firebase Analytics/Crashlytics/Remote Config | Deep-audit §6 2026-04-19 |
+
+**2 deferred (require decision):**
+- **Canvas in Replay** (`blockAllMedia: true` blocks orb debugging): privacy-vs-debuggability tradeoff
+- **`__SENTRY_EXCLUDE_REPLAY_WORKER__: true`** in vite.config.ts: ~30 KB bundle win if worker compression unused
+
+**Future (React 19 upgrade):**
+- Wire `Sentry.reactErrorHandler()` into `createRoot({ onUncaughtError, onCaughtError, onRecoverableError })` per React 19 docs
+
+---
+
+## 14. Supabase client — 18 months stale, P1 autoRefresh gap
+
+Deep audit of `src/lib/supabaseClient.ts` (144 LOC) + `useAuthSession.ts` against 2024-2026 supabase-js state:
+
+### Dependency staleness
+- **Current:** `@supabase/supabase-js: ^2.45.6` (Jul 2024)
+- **Latest:** `2.103.3` (2026-04-16) — **58 minor versions, 18 months stale**
+- Includes: `startAutoRefresh`/`stopAutoRefresh` helpers (fix iOS background timer), PKCE hardening, navigator-lock timeout fix (#1594 closed 2026-01-07), `userStorage` option, realtime v2.15 line
+
+### Gaps (sorted P0 → P3)
+
+**P0-SUPA-1: OWASP M9 — localStorage JWT exposure (tracked, unfixed).**
+`supabaseClient.ts:91` uses `window.localStorage` for auth session storage. XSS reads JWT + PKCE verifier. Comment L86-89 documents CSP mitigation + TODO. **Blocker:** `@capacitor/preferences` NOT installed (verified via package.json). Required for native Keychain/EncryptedSharedPreferences migration.
+
+**P1-SUPA-1: iOS background token expiration — `startAutoRefresh` NOT wired.**
+`useAuthSession.ts:172` has `App.addListener('appStateChange')` but only checks session during OAuth flow (`if (isActive && loadingProvider)`). No call to `supabase.auth.startAutoRefresh()/stopAutoRefresh()`. iOS pauses `setInterval` when backgrounded → token refresh timer silently dies → user returns to expired session. Canonical Supabase React-Native pattern since 2024.
+**Blocker:** helpers may not exist in 2.45.6 — verify after dep bump to 2.103.3.
+
+**P1-SUPA-2: Supabase-js 58-minor dep bump.**
+Test soak required. Includes security + race-condition fixes (#1594, #2111 both closed upstream). Sentry "lock stolen" filter should remain — #2013 still open.
+
+**P2-SUPA-1: `global.fetch` override missing.**
+No universal retry/circuit-breaker wrap around Supabase requests. Sentry `tracePropagationTargets` adds tracing headers but no retry. Could wire `retryWithBackoff` at this layer for network-blip resilience.
+
+**P2-SUPA-2: Zod user schema loose.**
+`app_metadata: z.record(z.unknown())` and `user_metadata: z.record(z.unknown())` allow any object shape. Defensive but not tight. Tighten if any downstream code trusts metadata fields.
+
+**P3-SUPA-1: No `global.headers` for app version.**
+`X-App-Version`/`X-Platform` tags on Supabase requests would aid backend debugging. Minor.
+
+**P3-SUPA-2: No custom `storageKey`.**
+Default `sb-<project-ref>-auth-token`. Only matters if multi-project (not ZenFlow case).
+
+### Non-issues (research confirmed)
+- **`debug: false` default** — verified, no PII leak risk
+- **Multi-tab sync** — BroadcastChannel works in WebView but moot on mobile (single-tab)
+- **`detectSessionInUrl: !isNative`** — correct; #1697 cosmetic for non-Supabase OAuth (Facebook)
+
+### v3 readiness (future)
+- supabase-js v3 NOT released; still v2. Planned breaks tagged: #1959 (drop `access_token` URL fragment fallback), #1838 (storage `exists()` no longer errors on 404).
+- Monorepo consolidation: `@supabase/auth-js` archived, moved into supabase-js. If any code imports `@supabase/auth-js` directly — update.
+
+**Sources:** github.com/supabase/supabase-js/releases (v2.103.3 2026-04-16), issues #1594 (closed 2026-01-07), #2013 (open), #2111 (closed 2026-02-19), #1697 (open), @capacitor/preferences@8.0.1.
+
+---
+
+## 15. Service Worker deep audit — unsaved-state race + iOS Background Sync gap
+
+Deep audit of `src/sw.ts` (197 LOC) + `vite.config.ts` VitePWA config + `main.tsx` SW wiring vs 2024-2026 Workbox / vite-plugin-pwa / web.dev service-worker-lifecycle consensus.
+
+### ✓ Correctly implemented (8 criteria)
+1. **`injectManifest` justified** — ZenFlow has Web Push + custom version-check (research §2: injectManifest correct when these exist)
+2. **POST bypass** — sw.ts:113-118 comment block. Research §3: POST caching would double-insert mood entries (not precaution — correctness fix)
+3. **Navigation NetworkOnly** — sw.ts:124 prevents stale-SPA deadlock
+4. **`version.json` + `version-check.js` precache exemption** — vite.config.ts globIgnores per research §6 chicken-and-egg deploy-recovery pattern
+5. **`maximumFileSizeToCacheInBytes: 3 MB`** — safer than Workbox 2 MiB default (research §7)
+6. **Origin-check on `message` event** — sw.ts:146 CWE-20/345 defense
+7. **Cache namespacing** — `setCacheNameDetails({prefix: "zenflow", suffix: "v1"})` good rolling-migration hygiene
+8. **Zero Workbox CVEs 2024-2026** — Snyk confirmed `security.snyk.io/package/npm/workbox-build`
+
+### Real gaps (research-revealed)
+
+**P1-SW-1: `registerType: 'autoUpdate'` + explicit `skipWaiting()` = unsaved-state race.**
+`vite.config.ts:69` has `registerType: "autoUpdate"` (forces skipWaiting + clientsClaim per vite-pwa docs). `sw.ts:179` additionally calls `void self.skipWaiting()` on install — double-force. Jake Archibald ([web.dev/articles/service-worker-lifecycle](https://web.dev/articles/service-worker-lifecycle)) warns: mid-session SW swap = two asset-hash versions per page = `Loading chunk failed` errors. ZenFlow has journal entries = unsaved-state. **Real P1 impact:** user mid-typing in journal → deploy → silent auto-update → chunk error → draft lost even with `lazyWithRetry` + `forceHardReload`.
+
+**Fix requires coordinated 4-step change** (NOT autonomous):
+1. Remove `self.skipWaiting()` from sw.ts:179 install handler
+2. Change `registerType: 'autoUpdate'` → `'prompt'` in vite.config.ts
+3. Add toast UI in main.tsx ("New version — save and reload") wiring `Workbox.messageSkipWaiting()` on user confirm
+4. Test deploy-during-active-session scenario in Playwright
+
+Source: [vite-pwa-org.netlify.app/guide/auto-update](https://vite-pwa-org.netlify.app/guide/auto-update) (accessed 2026).
+
+**P2-SW-1: iOS Background Sync NO SUPPORT** — caniuse.com/background-sync confirms Safari 3.1-26.5 unsupported. `self.registration.sync?.register('zenflow-sync')` (sw.ts:170) returns undefined on iOS WKWebView. Optional-chain prevents crash (✓), но iOS users don't get background-sync benefit. Offline queue relies purely on `appStateChange` triggers instead. Alternative: `@capacitor/background-runner` official plugin.
+
+**P2-SW-2: workbox 7.1.0 → 7.4.0 safe bump** (research §1: zero breaking changes, dep updates only). Requires `npm install`.
+
+**P3-SW-1: Supabase Storage CacheFirst with 7-day TTL** (sw.ts:60-69) — mutated-at-same-URL assets stale до expiration. Consider `StaleWhileRevalidate` для mutable stickers/images.
+
+**P3-SW-2: No `fetchDidFail` plugin** on CacheFirst routes — network-fail + empty-cache = Workbox throws. Could degrade gracefully with placeholder.
+
+**P3-SW-3: `CLEAR_CACHES` not atomic** (sw.ts:157-165) — deletes ALL caches including in-flight. Edge case if triggered mid-sync.
+
+### Non-issues (research-confirmed)
+- **Safari ITP 7-day cap** — не применяется к Capacitor WKWebView/WebView (research §5)
+- **CSP для SW** — same-origin on HTTPS/localhost, no additional directive needed (research §9)
+- **`networkTimeoutSeconds` missing** — only applies to `NetworkFirst`; ZenFlow uses CacheFirst + NetworkOnly only (research §12)
+- **iOS 17.4 Cache Storage regression** — fixed 17.5, concerned SW-registration not caches.delete
+
+### Sources
+- Workbox releases: github.com/GoogleChrome/workbox/releases/tag/v7.4.0 (2025-11-19)
+- vite-plugin-pwa autoUpdate: vite-pwa-org.netlify.app/guide/auto-update (2026)
+- Jake Archibald lifecycle: web.dev/articles/service-worker-lifecycle (canonical, unchanged 2020→2026)
+- caniuse background-sync: caniuse.com/background-sync
+- WebKit ITP 7-day: webkit.org/blog/10218/full-third-party-cookie-blocking-and-more/ (2020, still authoritative 2026)
+- Snyk workbox: security.snyk.io/package/npm/workbox-build
 

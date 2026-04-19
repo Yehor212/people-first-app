@@ -105,18 +105,18 @@ describe("HabitsPage (Phase 3-C)", () => {
     expect(screen.getByRole("main")).toHaveAttribute("aria-labelledby", "habits-page-heading");
   });
 
-  it("renders all three section landmarks (Hero / Garden / MindMap)", () => {
+  it("renders Hero + Garden zones (MindMap deferred per Phase 3-C.2)", () => {
     render(<HabitsPage />);
     expect(screen.getByTestId("habits-hero-zone")).toBeInTheDocument();
     expect(screen.getByTestId("habits-garden-zone")).toBeInTheDocument();
-    expect(screen.getByTestId("habits-mindmap-zone")).toBeInTheDocument();
+    expect(screen.queryByTestId("habits-mindmap-zone")).not.toBeInTheDocument();
   });
 
-  it("exposes a table-of-contents nav with both anchor links", () => {
+  it("exposes a table-of-contents nav with the garden anchor link", () => {
     render(<HabitsPage />);
     const toc = screen.getByTestId("habits-page-toc");
     expect(toc).toBeInTheDocument();
-    expect(toc.querySelectorAll("a")).toHaveLength(2);
+    expect(toc.querySelectorAll("a")).toHaveLength(1);
   });
 
   it("renders the empty state when no habits exist", () => {

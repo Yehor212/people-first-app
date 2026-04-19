@@ -15,6 +15,7 @@ import { logger } from '@/lib/logger';
 import { supabase } from '@/lib/supabaseClient';
 import { APP_VERSION } from '@/lib/appVersion';
 import { SSK } from '@/lib/storageKeys';
+import { retryWithBackoff } from '@/lib/retry';
 
 export type UpdatePriority = 'low' | 'medium' | 'high' | 'critical';
 
@@ -54,12 +55,7 @@ const RETRY_DELAYS = [1000, 3000, 5000]; // Exponential backoff: 1s, 3s, 5s
 const CHECK_TIMEOUT = 10000; // 10 second timeout
 
 /**
- * Sleep helper for retry delays
- */
-const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
-
-/**
- * Wrap promise with timeout
+ * Wrap promise with per-attempt timeout.
  */
 async function withTimeout<T>(promise: Promise<T>, ms: number, operation: string): Promise<T> {
   return Promise.race([
@@ -71,7 +67,16 @@ async function withTimeout<T>(promise: Promise<T>, ms: number, operation: string
 }
 
 /**
- * Retry wrapper with exponential backoff
+ * Retry wrapper with exponential backoff.
+ *
+ * Delegates to the shared `retryWithBackoff` util (src/lib/retry.ts) using the
+ * explicit `delaysMs: [1000, 3000, 5000]` schedule to preserve historical
+ * behavior byte-for-byte. The per-attempt 10s timeout and `navigator.onLine`
+ * precheck remain caller-owned so this wrapper stays behavior-identical to the
+ * pre-migration `withRetry` (avoids regressing the existing tests in
+ * `src/lib/__tests__/appUpdateManager.test.ts`).
+ *
+ * Migrated 2026-04-18 as first proof-of-concept for the shared retry util.
  */
 async function withRetry<T>(
   fn: () => Promise<T>,
@@ -79,28 +84,26 @@ async function withRetry<T>(
   maxRetries = MAX_RETRIES,
   delays = RETRY_DELAYS
 ): Promise<T> {
-  let lastError: Error | null = null;
-
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    try {
-      // Check network before attempting
+  return retryWithBackoff<T>(
+    async () => {
       if (!navigator.onLine) {
         throw new Error('Device is offline');
       }
-
-      return await withTimeout(fn(), CHECK_TIMEOUT, operation);
-    } catch (error) {
-      lastError = error instanceof Error ? error : new Error(String(error));
-
-      if (attempt < maxRetries) {
-        const delay = delays[attempt] || delays[delays.length - 1];
-        logger.warn(`[AppUpdate] ${operation} failed (attempt ${attempt + 1}/${maxRetries + 1}), retrying in ${delay}ms:`, lastError.message);
-        await sleep(delay);
-      }
+      return withTimeout(fn(), CHECK_TIMEOUT, operation);
+    },
+    {
+      maxRetries,
+      delaysMs: delays,
+      maxElapsedMs: Number.MAX_SAFE_INTEGER, // preserve: original loop has no total-time budget
+      onRetry: (attempt, error, delayMs) => {
+        const msg = error instanceof Error ? error.message : String(error);
+        logger.warn(
+          `[AppUpdate] ${operation} failed (attempt ${attempt}/${maxRetries + 1}), retrying in ${delayMs}ms:`,
+          msg
+        );
+      },
     }
-  }
-
-  throw lastError || new Error(`${operation} failed after ${maxRetries + 1} attempts`);
+  );
 }
 
 /**

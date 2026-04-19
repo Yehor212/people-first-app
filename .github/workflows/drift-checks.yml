@@ -19,6 +19,7 @@ on:
       - 'scripts/doc-counts.cjs'
       - 'scripts/check-types-freshness.cjs'
       - 'scripts/check-oss-licenses.cjs'
+      - 'scripts/a11y-icons-audit.cjs'
       - '.github/workflows/drift-checks.yml'
   workflow_dispatch:
 
@@ -45,8 +46,17 @@ jobs:
             cmd: node scripts/check-types-freshness.cjs
             fix: npx supabase gen types typescript --project-id <id> > src/types/supabase.ts
           - name: retry-tests
-            cmd: npx vitest run src/lib/__tests__/retry.test.ts
-            fix: fix failing tests in src/lib/retry.ts
+            cmd: npx vitest run src/lib/__tests__/retry.test.ts src/lib/__tests__/appUpdateManager.test.ts src/lib/__tests__/lazyWithRetry.test.ts
+            fix: fix failing tests in src/lib/retry.ts (or migrated call-sites)
+          - name: oss-licenses
+            cmd: node scripts/check-oss-licenses.cjs
+            fix: review new prod dep license; replace or add to EXCLUDE_PACKAGES with rationale
+          # Ratchet mode (Law 27): current baseline is 2 icon-only buttons (HabitNotesSection,
+          # JournalPhotoGallery) + 136 decorative-without-aria-hidden. CI blocks regression.
+          # Tighten baselines as fixes land — the number can only go DOWN.
+          - name: a11y-icons
+            cmd: node scripts/a11y-icons-audit.cjs --max-icon-only=2 --max-decorative=136
+            fix: add aria-label to icon-only buttons or aria-hidden="true" to decorative lucide icons
 
     steps:
       - uses: actions/checkout@v4

@@ -39,6 +39,15 @@ export function initSentry(): void {
         if (url.includes("sentry.io")) return false;
         if (url.includes("google-analytics")) return false;
         if (url.includes("googletagmanager")) return false;
+        // Firebase telemetry (Analytics, Crashlytics, Remote Config) — not our
+        // request path, and tracing them wastes transaction quota. Added per
+        // 2026-04-19 deep audit §6 (research-confirmed canonical skip list).
+        if (url.includes("firebase.googleapis.com")) return false;
+        if (url.includes("firebaseinstallations.googleapis.com")) return false;
+        if (url.includes("firebase-crashlytics.googleapis.com")) return false;
+        if (url.includes("firebaseremoteconfig.googleapis.com")) return false;
+        if (url.includes("firebaseio.com")) return false;
+        if (url.includes("firebaseapp.com")) return false;
         return true;
       },
     }),
@@ -70,6 +79,33 @@ export function initSentry(): void {
     // Session replay rates — only effective on web (integration not added on native)
     replaysSessionSampleRate: 0.1,
     replaysOnErrorSampleRate: 1.0,
+
+    // Explicit opt-out of server-side PII inference (GDPR). v10.4.0 made this
+    // the default, but setting it explicitly future-proofs against SDK default
+    // flips. Source: docs.sentry.io v10 migration notes.
+    sendDefaultPii: false,
+
+    // Quota-saving denylist — browser-extension errors (Grammarly, password
+    // managers, ad-blockers) and Capacitor's own webkit-masked URLs inject
+    // noise that burns the 5k errors/month free-tier quota. Canonical list
+    // per docs.sentry.io/.../filtering/ (2025).
+    denyUrls: [
+      /^chrome-extension:\/\//,
+      /^moz-extension:\/\//,
+      /^safari-web-extension:\/\//,
+      /^webkit-masked-url:\/\//,
+      /\/extensions\//i,
+    ],
+
+    // Early-exit noise filter. `ignoreErrors` stops processing BEFORE beforeSend,
+    // so it's cheaper than a beforeSend return null. ResizeObserver loops are
+    // Chrome/WebKit quirks with no user impact. Non-Error promise rejection
+    // means a caller threw a non-Error value — cannot get meaningful stack.
+    ignoreErrors: [
+      "ResizeObserver loop limit exceeded",
+      "ResizeObserver loop completed with undelivered notifications",
+      "Non-Error promise rejection captured",
+    ],
 
     integrations,
 

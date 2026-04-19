@@ -55,7 +55,10 @@
     "doc-counts:update": "node scripts/doc-counts.cjs --update",
     "doc-counts:print": "node scripts/doc-counts.cjs --print",
     "check:types-fresh": "node scripts/check-types-freshness.cjs",
-    "check:licenses": "node scripts/check-oss-licenses.cjs"
+    "check:licenses": "node scripts/check-oss-licenses.cjs",
+    "bundle:report": "node scripts/bundle-report.cjs",
+    "bundle:report:strict": "node scripts/bundle-report.cjs --strict",
+    "a11y:icons": "node scripts/a11y-icons-audit.cjs --top 20"
   },
   "dependencies": {
     "@capacitor-community/safe-area": "^8.0.1",
