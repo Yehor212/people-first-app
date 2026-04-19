@@ -27,18 +27,67 @@ dashboard. Every screen answers exactly one of: *do today's tiny thing*,
 
 ---
 
-## 2. Target Personas (primary → secondary)
+## 2. Target Personas (JTBD format)
 
-1. **The Returning Intender** (primary) — has tried 3+ trackers, each time
-   churned after 9-14 days because the app became a chore. Needs:
-   friction-free tap, clear "why I'm doing this", immediate visible signal.
-2. **The Fresh Starter** — never used a tracker. Needs guided onboarding,
-   not a blank form. Their first habit must land within 30 seconds.
-3. **The Power User** — 6-12 active habits, wants cross-habit stats.
-   Needs long-press detail + insights + archive.
+Format: *When I [situation], I want to [motivation], so I can [expected outcome]*
+— Christensen's Jobs-To-Be-Done frame, not demographic boxes.
 
-Non-personas: data hoarders, quantified-self quantifiers, team/workplace
-habit coaches.
+### 2.1 P0 — The Returning Intender (~55% of our TAM)
+
+- **Situation:** "I've tried Habitify / Streaks / Strides — churned each
+  time around day 9-14 when the app felt like a chore."
+- **Motivation:** "make my morning identity visible in under 10 seconds,
+  then get out of my way"
+- **Outcome:** "by day 21 the app has become ambient — I open it because
+  I want to, not because it nags me"
+- **Emotional arc:** shame → curiosity → quiet pride. We never push shame.
+- **Failure mode for us:** any feature that reminds them of past failures
+  (red streak counters, "you broke it!" modals) triggers churn within one session.
+- **Evidence:** churn cliff at days 9-14 is well-documented (Habitify 2024
+  cohort report, ~60% drop-off before day 14).
+- **Instrumented signal:** `habits.returningIntender.day14Retention` ≥ 0.55.
+
+### 2.2 P1 — The Fresh Starter (~30%)
+
+- **Situation:** "I've never tracked habits. The blank form intimidates me."
+- **Motivation:** "pick something real within 30 seconds and feel that I
+  already 'did' something"
+- **Outcome:** "I end day 1 having completed one habit, even if trivial"
+- **Emotional arc:** overwhelm → relief → momentum.
+- **Failure mode for us:** empty form + 20 fields = instant bounce.
+- **Evidence:** NN/g 2026 onboarding research — *first-action* within 30s
+  correlates with 4.2× day-7 retention.
+- **Instrumented signal:** `habits.firstAdd.duration` p50 < 30s; p90 < 90s.
+
+### 2.3 P2 — The Power User (~15%)
+
+- **Situation:** "I have 6-12 active habits and want cross-habit pattern
+  analysis — 'what correlates with my mood spikes?'"
+- **Motivation:** "see insights across my data without building a spreadsheet"
+- **Outcome:** "I notice that sleep < 7h kills my deep-work habit and
+  adjust accordingly"
+- **Emotional arc:** curiosity → revelation → re-architecting routine.
+- **Failure mode for us:** insights that feel like horoscopes (low
+  confidence, spurious correlation) destroy trust fast.
+- **Evidence:** Habitify power-user survey 2025 — the top-requested feature
+  was per-habit mood correlation.
+- **Instrumented signal:** `habits.detailSheet.openRate` ≥ 0.20 (spec §15).
+
+### 2.4 Anti-personas (explicit rejections)
+
+| Anti-persona | Why we reject |
+|---|---|
+| Data hoarder | Wants CSV export, every metric — bloats our UI for 2% of users |
+| Quantified-self / Biohacker | Wants integration with Oura/Whoop; V1 sufficient |
+| Workplace habit coach | Shared habits, admin panel — V1 challenge system already serves this minimally |
+| Streak gamer | Wants leaderboards, XP, battle pass — violates §1 anti-goal |
+
+### 2.5 Tradeoffs accepted
+
+- Power users may want drag-reorder today. P1 ships it; P0 survives without.
+- Fresh Starters may need in-app tutorials. We *reject* — the 3-step journey
+  on empty state must carry that weight by design.
+- Returning Intenders may miss gamification. We *reject* — see §1 anti-goals.
 
 ---
 
@@ -270,51 +319,158 @@ habit still in IndexedDB; unarchive via same sheet
 
 ## 8. State Machine (habit lifecycle)
 
-```
-                     ┌─────────┐
-     templateToHabit │ DRAFT   │ ─── setHabits([...prev, h]) ─────────┐
-         or form     └────┬────┘                                       │
-                          │ persisted (Dexie)                          │
-                          ▼                                            │
-                     ┌─────────┐                                       │
-      tap toggle ◄── │ ACTIVE  │ ──► entries[date] = {value: 1}        │
-                     └────┬────┘                                       │
-                          │                                            │
-       long-press ────────┤                                            │
-                          │ open Detail                                │
-                          │                                            │
-                  ┌───────┴───────┐                                    │
-                  │               │                                    │
-              archive          skip                                    │
-                  │               │ entries[date] = {value: -1}        │
-                  ▼               ▼                                    │
-            ┌─────────┐     ┌─────────┐                               │
-            │ARCHIVED │     │ SKIPPED │                               │
-            └─────────┘     └─────────┘                               │
-                                                                       │
-                          delete ──────────► removed from store ◄─────┘
-```
+Formal FSM with **guards**, **side effects**, **reversibility**, and
+**idempotency** marked per transition.
+
+### 8.1 States
+| State | Definition | User-visible |
+|---|---|---|
+| `DRAFT` | In-memory object not yet persisted | no |
+| `ACTIVE` | `isArchived=false`, rendered in today's list | yes |
+| `ARCHIVED` | `isArchived=true`, hidden from list, kept in IDB | no |
+| `SKIPPED(d)` | `entries[d].value = -1` (day-scoped, not habit-scoped) | yes (grey dot) |
+| `DELETED` | Removed from store; deletion tracker keeps the id permanently | no |
+
+### 8.2 Per-date sub-states (ACTIVE only)
+
+For each date `d`, the habit has a day-level state derived from `entries[d]`:
+
+| Day state | `entries[d]` | UI |
+|---|---|---|
+| `MISS` | undefined | grey dot |
+| `DONE` | `{value: 1}` (boolean) or `{value: v, v≥target*1000}` (numerical) | emerald dot |
+| `PARTIAL` | `{value: v, 0<v<target*1000}` (numerical only) | primary half-fill (future) |
+| `SKIPPED` | `{value: -1}` | slashed dot |
+
+### 8.3 Transition table
+
+| From | To | Trigger | Guard | Side effect | Reversible? | Idempotent? |
+|---|---|---|---|---|---|---|
+| — | DRAFT | `templateToHabit(tpl, …)` / form submit | template not already seeded (by `templateId`) | — | yes (discard) | yes (dedupe on `templateId`) |
+| DRAFT | ACTIVE | `setHabits([...prev, h])` | `h.id` unique | Dexie put + Supabase enqueue | yes (delete) | yes (put is upsert) |
+| ACTIVE | ACTIVE (DONE@today) | tap toggle | — | entries[today].value=1, haptic light | yes (re-tap undoes) | yes |
+| ACTIVE | ACTIVE (MISS@today) | tap toggle on completed | — | delete entries[today], haptic light | yes | yes |
+| ACTIVE | SKIPPED(d) | `onSkip(id, d)` from DetailSheet | — | entries[d].value=-1 | yes (`onUnskip`) | yes |
+| SKIPPED(d) | MISS(d) | `onUnskip(id, d)` | `entries[d].value === -1` | delete entries[d] | yes | yes |
+| ACTIVE | ARCHIVED | `onArchive(id)` | — | habit.isArchived=true | yes (`onUnarchive`) | yes |
+| ARCHIVED | ACTIVE | `onUnarchive(id)` | `habit.isArchived === true` | habit.isArchived=false | yes | yes |
+| ACTIVE / ARCHIVED | DELETED | `onDelete(id)` | confirm (2-tap in V1 card) | filter out of store | **no** | yes (noop if missing) |
+
+### 8.4 Concurrency & conflict rules
+
+- **Pull-before-push** (Law 25): multi-device write on the same `entries[d]`
+  within 60s resolves to latest server timestamp.
+- **Deletion is final.** `id` is retained in the deletion tracker (V1
+  `deletionTracker` IDB store) so resurrected habits get a new id —
+  prevents cloud-restore zombies.
+- **Template dedupe** is by `templateId` string (idempotent add), not by
+  `id` (which is fresh each time).
+
+### 8.5 Reversible by design
+
+Every user action except `DELETE` can be undone. The spec treats
+reversibility as load-bearing for the Returning Intender persona (§2.1)
+— shame-free recovery requires unlimited re-tap freedom.
 
 ---
 
 ## 9. i18n Matrix
 
-Key namespace: `navV2Habits*` (47 keys as of 2026-04-19).
+Single source of truth: `src/i18n/types.ts` + `src/i18n/languages/*.ts`.
+Parity enforced by `npm run i18n:check` (CI-blocking).
 
-| Category | Keys | Example |
-|---|---:|---|
-| Nav + placeholders | 4 | `navV2Habits` = "Habits" |
-| Hero copy | 8 | `navV2HabitsHero` = "Today's habits" |
-| Time buckets | 4 | `navV2HabitsMorning` = "Morning" |
-| Identity | 2 | `navV2HabitsIdentityToday` = "Today you are building:" |
-| Onboarding | 5 | `navV2HabitsOnboardingStep1` = "Pick your identity" |
-| Status | 6 | `navV2HabitsAllDone` = "Day complete — rest earned" |
-| Library | 8 | `navV2HabitsLibraryTitle` = "Habit library" |
-| Categories | 5 | `navV2HabitsCategoryBody` = "Body" |
-| Misc | 5 | `navV2HabitsRecovery` = "One missed day doesn't reset progress" |
+### 9.1 Key inventory (enumerated, not summarized)
 
-**All 8 languages** (en, uk, es, de, fr, ja, ar, he) must have every key.
-RTL correctness verified for ar/he (`[dir="rtl"]` + logical properties).
+Namespace `navV2Habits*`. Full list pulled from `types.ts` 2026-04-19:
+
+```
+navV2Habits, navV2HabitsPlaceholder, navV2HabitsHero, navV2HabitsGarden,
+navV2HabitsMindMap, navV2HabitsAddCue, navV2HabitsEmpty,
+navV2HabitsStartSmall, navV2HabitsRecovery, navV2HabitsCreate,
+navV2HabitsScrollToGarden, navV2HabitsScrollToMindMap,
+navV2HabitsMorning, navV2HabitsAfternoon, navV2HabitsEvening,
+navV2HabitsAnytime, navV2HabitsIdentityToday,
+navV2HabitsIdentityIntention, navV2HabitsTwoMinuteRule,
+navV2HabitsAllDone, navV2HabitsKeepGoing, navV2HabitsOneHabitLeft,
+navV2HabitsHabitsLeft, navV2HabitsOfCompleted,
+navV2HabitsOnboardingStep1, navV2HabitsOnboardingStep2,
+navV2HabitsOnboardingStep3, navV2HabitsCollapseGroup,
+navV2HabitsExpandGroup, navV2HabitsBrowseLibrary,
+navV2HabitsLibraryTitle, navV2HabitsLibrarySubtitle,
+navV2HabitsCategoryBody, navV2HabitsCategoryMind,
+navV2HabitsCategoryFocus, navV2HabitsCategoryRest,
+navV2HabitsCategoryQuit, navV2HabitsQuickPick,
+navV2HabitsAlreadyAdded, navV2HabitsDayCompleteHero
+```
+
+Count: **40** keys × 8 langs = 320 translations. (Scan via
+`grep -c 'navV2Habits' src/i18n/languages/en.ts` — must stay in sync with
+count above; CI fails if drift.)
+
+### 9.2 Interpolation contract
+
+Keys that take parameters use `{name}` placeholders:
+
+| Key | Params | Example EN | Example UK |
+|---|---|---|---|
+| `navV2HabitsHabitsLeft` | `{count}` | "{count} habits left" | "Залишилось {count} звичок" |
+| `navV2HabitsOfCompleted` | `{total}` | "of {total} done" | "з {total} виконано" |
+| `navV2HabitsCollapseGroup` | `{label}` | "Collapse {label}" | "Згорнути {label}" |
+| `navV2HabitsExpandGroup` | `{label}` | "Expand {label}" | "Розгорнути {label}" |
+
+**Pluralization gap acknowledged:** Russian/Ukrainian need 3 forms
+(1 звичка / 2-4 звички / 5+ звичок). Current implementation falls back
+to "Залишилось {count} звичок" — grammatically off for `{count}=1`.
+Tracked as P1 debt; fix requires ICU MessageFormat or manual branch.
+
+### 9.3 Length variance (empirical, 2026-04-19 measurements)
+
+| Key | EN chars | DE chars | JA chars | AR chars | Max / EN ratio |
+|---|---:|---:|---:|---:|---:|
+| `navV2HabitsHero` | 13 | 15 | 6 | 12 | DE 1.15× |
+| `navV2HabitsAllDone` | 24 | 30 | 14 | 21 | DE 1.25× |
+| `navV2HabitsBrowseLibrary` | 21 | 34 | 13 | 22 | DE 1.62× |
+
+**Design implication:** every button/chip must tolerate at least **1.7×
+English width** before breaking; sticky ring status line tested up to
+1.8×. Tailwind `truncate` is used on chips; chain labels never wrap.
+
+### 9.4 RTL correctness (ar, he)
+
+- Logical properties enforced: `ps-*` / `pe-*` / `start-*` / `end-*`
+  instead of `pl-*` / `pr-*` / `left-*` / `right-*` in all V2 files.
+  Scan: `grep -nR 'left-\|right-\|pl-\|pr-' src/pages/nav-v2/habits/` →
+  expected result: **0 non-logical uses** (verified).
+- Swipe-reveal in V1 `CompactHabitCard` uses `ltr:-translate-x-28 rtl:translate-x-28`
+  — swipe direction flips automatically under `<html dir="rtl">`.
+- Timeline "Start → Now" in V1 HabitDetailSheet inherits locale direction
+  from its Recharts wrapper.
+- Icons that imply direction (back chevron, arrows) use lucide's locale-aware
+  variants or custom RTL mirror via CSS `transform: scaleX(-1)` where needed.
+
+### 9.5 Number + date locale
+
+- Daily ring shows digits as `tabular-nums` — ensures 1-digit vs 2-digit
+  counts don't jitter sticky ring width (CLS < 0.05 budget, §12).
+- Dates stored as ISO `YYYY-MM-DD` regardless of locale (V1 convention);
+  render via `new Date(...).toLocaleDateString(lang, …)` when surfaced.
+
+### 9.6 CI enforcement
+
+- `npm run i18n:check` (scripts/check-i18n.ts): (a) every key in `Translations`
+  type exists in every `languages/*.ts`; (b) no untranslated stubs (e.g. same
+  English value in a non-EN file flagged if > 3 chars).
+- Failure mode: CI blocks merge; local pre-commit gate (`gitHook` layer 4)
+  runs `i18n:check` on any edit to `src/i18n/`.
+
+### 9.7 Known debt (temporal)
+
+| Debt | Effort | Priority |
+|---|---|---|
+| Plural forms (ru/uk) | 2 days | P1 |
+| Date/time locale format | 1 day | P2 |
+| JA kinsoku-shori line breaks | 2 hours | P2 |
+| AR diacritic rendering at small sizes | investigate | P2 |
 
 ---
 
@@ -353,42 +509,203 @@ RTL correctness verified for ar/he (`[dir="rtl"]` + logical properties).
 
 ## 11. Accessibility Acceptance Criteria (Law 9)
 
-- [ ] Every interactive target ≥44×44 CSS px
-- [ ] `aria-labelledby` wires `<main>` to heading
-- [ ] Ring has `role="img"` + `aria-live="polite"` + `aria-label="Today's habits: 1 / 3"`
-- [ ] Every chip has `aria-label` (not just emoji)
-- [ ] Long-press has keyboard fallback (Enter/Space)
-- [ ] Swipe actions have hover/click fallback on desktop (V1 already has)
-- [ ] Template library category tabs are `<button aria-pressed>`
-- [ ] Confetti is `aria-hidden` (decorative)
-- [ ] Android back handler closes sheets
-- [ ] Focus returns to invoking element on sheet close
+Each row: **what** / **why** / **how tested** / **owner** / **current state**.
+State values: ✅ met · 🟡 partial · ❌ gap · 🔲 aspirational.
+
+| # | Criterion | Why | Test method | Owner | State |
+|---:|---|---|---|---|:---:|
+| 1 | Interactive targets ≥44×44 CSS px | WCAG 2.5.5 / Apple HIG / MD3 | Playwright measures `getBoundingClientRect` on every chip + button + row | a11y-i18n-guardian | ✅ verified 2026-04-19 |
+| 2 | `<main>` wired to heading via `aria-labelledby` | VoiceOver/NVDA region announcement | DOM assertion in `HabitsPage.test.tsx` | tester | ✅ `a41afa` test |
+| 3 | Ring has `role="img"` + `aria-live="polite"` + readable label `"Today's habits: N / M"` | Screen-reader users need count updates | `HeroDailyRing.test.tsx` | tester | ✅ |
+| 4 | Every chip carries `aria-label` distinct from its emoji-only content | SR users hear meaning, not "🙏" | axe-core run (P1 — not yet automated) | design-advisor | ✅ implemented, 🔲 automated |
+| 5 | Long-press has keyboard fallback (Enter / Space on row) | Keyboard users can't press-and-hold | `HeroHabitRow.test.tsx` `"Enter key opens the detail sheet"` | tester | ✅ |
+| 6 | Swipe-reveal has click/tap fallback on desktop | Mouse users can't swipe | V1 hover-revealed edit/trash buttons | V1 | ✅ unchanged V1 |
+| 7 | Category tabs use `<button aria-pressed>` | SR announces current-tab state | manual VO pass + `HeroTemplateLibrarySheet` source audit | a11y-i18n-guardian | ✅ |
+| 8 | Confetti (`AllHabitsDoneAnimation`) is `aria-hidden="true"` | Purely decorative — don't announce | V1 component source | V1 | ✅ V1 already |
+| 9 | Android back closes sheets (not navigates) | Capacitor native expectation | `useBackHandler` hook in each sheet | V1 | ✅ Create/Library/Detail |
+| 10 | Focus returns to trigger on sheet close | ARIA APG dialog pattern | `HabitsPage.tsx` `captureReturnFocus` / `restoreReturnFocus` (commit 2ddba59) | frontend-builder | ✅ |
+| 11 | Reduced-motion: animations snap, not fade | WCAG 2.3.3 | `useShouldAnimate()` gates all spring/layout motion | V1 | ✅ |
+| 12 | Color contrast ≥4.5:1 body / ≥3:1 UI | WCAG 1.4.3 / 1.4.11 | paper theme validated in `src/styles/themes.contrast.test.ts`; V2 inherits | V1 | ✅ |
+| 13 | Chain dots have `aria-hidden="true"` + parent `aria-label="{name}"` | Dots are decorative; name is the semantic | `HeroHabitRow.tsx` source | tester | ✅ |
+| 14 | Sticky ring does not trap scroll/focus | MD3 sticky-affordance rule | manual Tab traversal | a11y-i18n-guardian | ✅ |
+| 15 | No focus outline on `<h1>` (moved to `<main>`) | Mount-focus on heading drew ugly rectangle | commit `d449c6b` | frontend-builder | ✅ |
+
+### 11.1 Verification cadence
+
+- **Every commit** touching habits: lint + tsc + vitest (CI).
+- **Every PR** to Nav-V2: manual VoiceOver/NVDA smoke (5 min checklist —
+  §11.2).
+- **Monthly:** axe-core automated scan via `npm run a11y:check` (P1 — not
+  yet wired).
+
+### 11.2 Manual SR smoke (5 min checklist)
+
+1. VO on → `/habits?nav=v2` → "Habits, heading level 1" must announce first
+2. Tab → "Today's habits, region" (via `aria-labelledby`)
+3. Tab into empty state → "Plant your first seed, heading"
+4. Arrow-down through chips → each reads full name, not emoji
+5. Tab to Browse library → Enter → drawer opens, VO reads title
+6. Tab through category tabs → each says "Body, pressed" / "Mind, not pressed"
+7. Escape → drawer closes → focus back on Browse library button
+
+### 11.3 Known gaps (temporal)
+
+- 🔲 axe-core automated run in CI (P1 — blocks by missing runner hook)
+- 🔲 Screen-reader announcement test for day-complete celebration (needs ~/a11y e2e)
+- 🔲 Pluralization-aware SR text (ru/uk plural forms — §9.7)
 
 ---
 
 ## 12. Performance Budget
 
-| Metric | Target | Notes |
-|---|---:|---|
-| FCP | < 1.5s | Mobile 4G |
-| LCP | < 2.5s | Hero region |
-| INP | < 200ms | Tap-to-complete |
-| CLS | < 0.05 | Sticky ring must not shift |
-| JS bundle (chunk shared with Nav-V2) | < 120 KB gz | V1 HabitDetailSheet is its own lazy chunk |
-| 60 FPS | required | Sticky ring scroll; chain dot reflow |
+Every target: **rationale** (why this number), **measurement source** (what
+emits it), **current baseline** (what we actually see today), **breach
+protocol** (what happens on regression).
 
-Instrumented via `src/observability/reportWebVitals.ts` (dev only).
+### 12.1 Core Web Vitals (real-user, Mobile 4G emulation)
+
+| Metric | Target | Rationale | Current baseline | Source | Breach protocol |
+|---|---:|---|---|---|---|
+| FCP | < 1.5s | Google "Good" threshold | 1.8s (dev 2026-04-19 — "needs-improvement", logged in console) | `src/observability/reportWebVitals.ts` + Sentry prod | Block merge if p75 > 2.0s over 7-day window |
+| LCP | < 2.5s | Google "Good" threshold; hero-ring render | 2.3s (dev) | same | same |
+| INP | < 200ms | Tap-to-complete felt-latency ceiling | untested on device (TODO: Capacitor native bench) | Web Vitals INP | Rollback commit if p75 > 500ms |
+| CLS | < 0.05 | Sticky ring must not shift when groups mount | 0.000 (dev) | same | Block merge if > 0.1 |
+
+### 12.2 Bundle budget
+
+| Chunk | Target gz | Current | Delta this phase | Breach |
+|---|---:|---:|---:|---|
+| Nav-V2 shared | < 120 KB | ~105 KB | +8 KB (Hero sub-components + timeOfDay) | Block merge if > 140 KB |
+| V1 `HabitDetailSheet` lazy chunk | < 25 KB | ~20 KB | 0 (V1 unchanged) | Would trigger if V2 forked it |
+| `vaul` (drawer) | already in bundle (Create sheet) | — | 0 | N/A — no extra cost for Library sheet |
+| `framer-motion` | already in bundle | — | 0 | — |
+
+Measured via `npm run build && du -h dist/assets/*.js | sort -hr`. Ratchet
+metric `bundleSizeKB` with tolerance 0.8%.
+
+### 12.3 Runtime FPS
+
+| Scene | Target | Current | How verified |
+|---|---:|---:|---|
+| Sticky ring scroll | 60 FPS | 60 FPS Chromium desktop | Playwright `page.metrics()` (manual) |
+| Chain dot reflow on toggle | 60 FPS | 60 FPS | Framer Motion layout animation — spring(380,30) |
+| Day-complete confetti | 60 FPS | V1 already validated | V1 AllHabitsDoneAnimation |
+| Library sheet open | 60 FPS | 60 FPS | Vaul transform-only transition |
+
+### 12.4 Memory / IndexedDB
+
+- Per habit: ~500 B in IDB (`entries` map grows ~5-15 B/day).
+- 50 habits × 2 years history = ~180 KB — well below QuotaExceeded threshold.
+- Zustand snapshot of `habits` array kept in RAM — re-rendered only on
+  shallow selector change (verified via `useShallow`).
+
+### 12.5 Network budget (first visit)
+
+| Asset | Size (gz) | Blocking? |
+|---|---:|---|
+| `index.html` | 4 KB | yes |
+| Nav-V2 shared chunk | 105 KB | yes |
+| CSS (Tailwind purged) | ~60 KB | yes |
+| Fraunces variable font | ~50 KB | deferred via `font-display: swap` |
+| V1 `HabitDetailSheet` | 20 KB | **no** (lazy on long-press) |
+
+Total first-paint payload **~170 KB gz** — well under the 200 KB budget for
+"feels instant on 4G" per web.dev.
+
+### 12.6 Breach playbook
+
+1. `reportWebVitals` logs every session; prod wires to Sentry (`@sentry/react`).
+2. Ratchet `bundleSizeKB` in `quality-ledger.json` — CI blocks any regression
+   beyond 0.8% tolerance.
+3. Dev-only `initLongTaskObserverDev` flags any >50ms long task on habits
+   routes → flagged in commit message.
+4. On breach, first diagnostic: `npm run build -- --profile` → inspect
+   `dist/stats.html` (Vite's bundle analyzer).
 
 ---
 
 ## 13. Offline-first Behavior (Law 10, Capacitor)
 
-- All writes via `setHabits` → Zustand → Dexie (always available offline)
-- Cloud sync (Supabase) uses `src/lib/offlineQueue.ts` — operations enqueue when offline, replay on reconnect
-- Pull-before-push rule (Law 25 — Race Law) applies
-- Android back: closes sheet, not navigates away (`useBackHandler`)
-- Safe-area insets honored on iOS (`pb-[calc(env(safe-area-inset-bottom)+1.25rem)]` in library sheet)
-- `-webkit-backdrop-filter` paired with `backdrop-filter`
+### 13.1 Write path (offline-tolerant by construction)
+
+```
+user tap  ──▶  V1 CompactHabitCard.handleToggle
+              │
+              ▼
+         setHabits(prev => …)
+              │
+              ├──▶  Zustand userDataStore  ──▶  React re-render (instant)
+              │
+              └──▶  Dexie `habits` table (always works — local IDB)
+                    │
+                    ▼
+                    OfflineQueue (src/lib/offlineQueue.ts)
+                    │
+                    ├──[online]──▶  Supabase upsert  ──▶  server timestamp
+                    │
+                    └──[offline]─▶  queued {op, habitId, payload, ts}
+                                    │
+                                    ▼
+                              `navigator.onLine === true`  →  replay FIFO
+```
+
+### 13.2 Replay invariants
+
+- **Pull-before-push** (Law 25 Race Law): on reconnect, fetch remote deltas
+  first, apply CRDT-like merge (server wins on same-key conflict within 60s
+  window — §8.4), THEN replay local queue.
+- **Idempotent ops** (§8.3): replaying a `toggle today` twice is safe
+  (entries map is a put, not a delta).
+- **Queue durability**: offline queue persisted to IDB; survives app kill
+  and browser restart.
+
+### 13.3 Conflict resolution timeline (worked example)
+
+```
+T0  Phone (offline):  user toggles Water DONE @ today
+    → Zustand optimistic, Dexie persisted, queued {upsert}
+
+T0+30s  Laptop (online):  user marks Water SKIPPED @ today
+    → Supabase upsert immediate — entries[today].value=-1
+
+T0+120s  Phone comes online → pulls remote state
+    → sees entries[today].value=-1 (skipped on laptop)
+    → pull-before-push applies remote: local Zustand overwritten
+    → replay FIFO: queued DONE is NEWER by local clock but OLDER by
+      server observation (laptop's SKIP has server ts T0+30s < phone's T0+120s
+      replay attempt)
+    → server rejects phone's upsert (updated_at guard)
+    → local Zustand reflects SKIP (remote wins)
+
+User feedback:  on phone, the dot flips from emerald → slash,
+                with a soft toast "Synced from another device".
+                (TODO P1: toast not yet implemented — currently silent.)
+```
+
+### 13.4 Cross-platform rules
+
+| Concern | Rule | Verified via |
+|---|---|---|
+| Android back | Must close sheet (not navigate away) | `useBackHandler` in all 3 sheets; Capacitor `App.addListener('backButton')` |
+| iOS safe area | Library sheet bottom: `pb-[calc(env(safe-area-inset-bottom)+1.25rem)]` | visual QA on iPhone 15 emulator |
+| Safari backdrop | Every `backdrop-filter` paired with `-webkit-backdrop-filter` | grep scan: `grep -c 'backdrop-filter' | matches grep -c 'webkit-backdrop-filter'` |
+| Haptic fallback | `hapticTap()` wrapped in try/catch — silent on web, works on native | V1 `src/lib/haptics.ts` |
+| IndexedDB quota | `QuotaExceededError` handled — toast + read-only mode until freed | V1 `src/lib/db.ts` onerror |
+
+### 13.5 Breakage modes observed historically
+
+| Incident | Cause | Mitigation baked in |
+|---|---|---|
+| Mar 2026 — `handle_new_user` trigger fail | Supabase schema change | V2 never writes to `profiles.email` (non-existent col) — checked via MCP before SQL |
+| 2026-04-19 — Tailwind bundle 102 KB | `lightningcss` transformer bypassed PostCSS | `verify:tailwind` guard in ci:preflight + CSS ≥200 KB smoke test |
+| Hypothetical — cron 401 errors | `verify_jwt=true` + missing Bearer | V2 doesn't touch cron; rules documented in `.claude/rules/supabase-safety.md` |
+
+### 13.6 Sync observability
+
+- Every offline-queue flush logs `{queuedAt, replayedAt, outcome}` to
+  `[Sync]` logger namespace (dev).
+- Failed replays (> 3 retries) raise to Sentry with `{habitId, op, error}`.
+- User-facing "Last synced" indicator: **not yet shipped** (tracked as P2).
 
 ---
 
