@@ -135,7 +135,7 @@ export function DataSection({
                 onClick={exp.handleExport}
                 disabled={exp.isExporting}
                 aria-label={t.settingsExportTitle || t.exportData}
-                className="w-full py-4 zen-gradient text-primary-foreground rounded-xl font-medium hover:opacity-90 transition-opacity zen-shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-4 zen-gradient text-primary-foreground rounded-xl font-medium hover:opacity-90 motion-safe:transition-opacity zen-shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {exp.isExporting ? (
                   <Loader2
@@ -158,7 +158,7 @@ export function DataSection({
                   onClick={exp.handleExportCSV}
                   disabled={exp.isExportingCSV}
                   aria-label={t.exportCSV || "CSV"}
-                  className="flex-1 py-3 bg-secondary text-secondary-foreground rounded-xl font-medium hover:bg-muted transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 py-3 bg-secondary text-secondary-foreground rounded-xl font-medium hover:bg-muted motion-safe:transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {exp.isExportingCSV ? (
                     <Loader2
@@ -174,7 +174,7 @@ export function DataSection({
                   onClick={exp.handleExportPDF}
                   disabled={exp.isExportingPDF}
                   aria-label={t.exportPDF || "PDF Report"}
-                  className="flex-1 py-3 bg-secondary text-secondary-foreground rounded-xl font-medium hover:bg-muted transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 py-3 bg-secondary text-secondary-foreground rounded-xl font-medium hover:bg-muted motion-safe:transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {exp.isExportingPDF ? (
                     <Loader2
@@ -203,7 +203,7 @@ export function DataSection({
                     aria-pressed={imp.importMode === "merge"}
                     aria-label={t.importMerge}
                     className={cn(
-                      "flex-1 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-colors",
+                      "flex-1 py-2 min-h-[44px] rounded-lg text-sm font-medium motion-safe:transition-colors",
                       imp.importMode === "merge"
                         ? "bg-primary/10 ring-2 ring-primary text-foreground"
                         : "bg-secondary text-muted-foreground hover:bg-muted",
@@ -216,7 +216,7 @@ export function DataSection({
                     aria-pressed={imp.importMode === "replace"}
                     aria-label={t.importReplace}
                     className={cn(
-                      "flex-1 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-colors",
+                      "flex-1 py-2 min-h-[44px] rounded-lg text-sm font-medium motion-safe:transition-colors",
                       imp.importMode === "replace"
                         ? "bg-destructive/10 ring-2 ring-destructive text-destructive"
                         : "bg-secondary text-muted-foreground hover:bg-muted",
@@ -248,7 +248,7 @@ export function DataSection({
                   onClick={imp.handleImportClick}
                   disabled={imp.isImporting}
                   aria-label={t.settingsImportTitle || t.importData}
-                  className="w-full py-3 bg-secondary text-secondary-foreground rounded-xl font-medium hover:bg-muted transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full py-3 bg-secondary text-secondary-foreground rounded-xl font-medium hover:bg-muted motion-safe:transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {imp.isImporting ? (
                     <Loader2
@@ -284,7 +284,7 @@ export function DataSection({
                 <button
                   onClick={() => setShowResetConfirm(true)}
                   aria-label={t.resetAllData}
-                  className="w-full py-3 bg-destructive/10 text-destructive rounded-xl font-medium hover:bg-destructive/20 transition-colors flex items-center justify-center gap-2"
+                  className="w-full py-3 bg-destructive/10 text-destructive rounded-xl font-medium hover:bg-destructive/20 motion-safe:transition-colors flex items-center justify-center gap-2"
                 >
                   <Trash2 className="w-4 h-4" />
                   <span>{t.resetAllData}</span>

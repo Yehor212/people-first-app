@@ -117,7 +117,7 @@ function CrystalDay({
     <motion.button
       className={cn(
         "relative w-10 h-10 flex items-center justify-center",
-        "transition-all duration-200 [perspective:200px]",
+        "motion-safe:transition-all motion-safe:duration-200 [perspective:200px]",
         !isCurrentMonth && "opacity-30",
         isCurrentMonth && "cursor-pointer"
       )}
@@ -266,7 +266,7 @@ export function CrystalCalendar({ data, onDayClick, className }: CrystalCalendar
       {/* Header with month navigation */}
       <div className="relative flex items-center justify-between mb-4">
         <motion.button
-          className="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:text-emerald-700 dark:hover:text-emerald-300 hover:bg-emerald-500/10 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+          className="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:text-emerald-700 dark:hover:text-emerald-300 hover:bg-emerald-500/10 motion-safe:transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
           whileHover={{ scale: 1.1 }}
           whileTap={zenTap.icon}
           onClick={goToPrevMonth}
@@ -286,7 +286,7 @@ export function CrystalCalendar({ data, onDayClick, className }: CrystalCalendar
         </motion.h3>
 
         <motion.button
-          className="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:text-emerald-700 dark:hover:text-emerald-300 hover:bg-emerald-500/10 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+          className="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:text-emerald-700 dark:hover:text-emerald-300 hover:bg-emerald-500/10 motion-safe:transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
           whileHover={{ scale: 1.1 }}
           whileTap={zenTap.icon}
           onClick={goToNextMonth}

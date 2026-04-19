@@ -147,7 +147,7 @@ export function UnifiedShareModal(props: UnifiedShareModalProps) {
 
           <button
             onClick={() => onOpenChange(false)}
-            className="absolute top-3 end-4 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+            className="absolute top-3 end-4 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full hover:bg-muted motion-safe:transition-colors"
             aria-label={t.close || "Close"}
           >
             <X className="w-5 h-5 text-muted-foreground" />
@@ -190,7 +190,7 @@ export function UnifiedShareModal(props: UnifiedShareModalProps) {
                   </div>
                   <button
                     onClick={() => void generate()}
-                    className="flex items-center gap-2 px-4 py-2 min-h-[44px] rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+                    className="flex items-center gap-2 px-4 py-2 min-h-[44px] rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 motion-safe:transition-colors"
                   >
                     <RefreshCw className="w-4 h-4" />
                     {t.shareRetry || "Retry"}
@@ -228,7 +228,7 @@ export function UnifiedShareModal(props: UnifiedShareModalProps) {
               disabled={!hasImage || !imageBlob}
               aria-label={t.shareButton || "Share"}
               className={cn(
-                "w-full flex items-center justify-center gap-3 h-14 min-h-[44px] rounded-2xl text-base font-semibold transition-all",
+                "w-full flex items-center justify-center gap-3 h-14 min-h-[44px] rounded-2xl text-base font-semibold motion-safe:transition-all",
                 isSuccess && lastAction === "share"
                   ? "bg-emerald-500 text-white"
                   : "bg-gradient-to-r from-violet-500 to-purple-600 text-white hover:from-violet-600 hover:to-purple-700",
@@ -264,7 +264,7 @@ export function UnifiedShareModal(props: UnifiedShareModalProps) {
               disabled={!hasImage || !imageBlob}
               aria-label={t.shareDownload || "Download"}
               className={cn(
-                "flex items-center justify-center gap-2 h-12 min-h-[44px] rounded-xl text-sm font-medium transition-all",
+                "flex items-center justify-center gap-2 h-12 min-h-[44px] rounded-xl text-sm font-medium motion-safe:transition-all",
                 "bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10",
                 "hover:bg-slate-200 dark:hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
               )}
@@ -294,7 +294,7 @@ export function UnifiedShareModal(props: UnifiedShareModalProps) {
                   : t.shareCopyLink || "Copy"
               }
               className={cn(
-                "flex items-center justify-center gap-2 h-12 min-h-[44px] rounded-xl text-sm font-medium transition-all",
+                "flex items-center justify-center gap-2 h-12 min-h-[44px] rounded-xl text-sm font-medium motion-safe:transition-all",
                 isSuccess && lastAction === "copy"
                   ? "bg-emerald-500/15 border border-emerald-500/30"
                   : "bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:bg-slate-200 dark:hover:bg-white/10",

@@ -109,7 +109,7 @@ export function ProfileSection({ userName, onNameChange }: ProfileSectionProps) 
               />
               <button
                 onClick={handleNameSave}
-                className="px-4 py-2 min-h-[44px] zen-gradient text-primary-foreground rounded-xl font-medium hover:opacity-90 transition-opacity"
+                className="px-4 py-2 min-h-[44px] zen-gradient text-primary-foreground rounded-xl font-medium hover:opacity-90 motion-safe:transition-opacity"
               >
                 {t.save}
               </button>
@@ -131,7 +131,7 @@ export function ProfileSection({ userName, onNameChange }: ProfileSectionProps) 
                   aria-pressed={language === lang}
                   aria-label={languageNames[lang]}
                   className={cn(
-                    "flex items-center gap-2 p-3 rounded-xl transition-all",
+                    "flex items-center gap-2 p-3 rounded-xl motion-safe:transition-all",
                     language === lang
                       ? "bg-primary/10 ring-2 ring-primary"
                       : "bg-secondary hover:bg-muted"
@@ -173,7 +173,7 @@ export function ProfileSection({ userName, onNameChange }: ProfileSectionProps) 
                     onClick={() => changeTheme(option.value)}
                     aria-pressed={currentTheme === option.value}
                     className={cn(
-                      "flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all",
+                      "flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 motion-safe:transition-all",
                       currentTheme === option.value
                         ? "border-primary bg-primary/10"
                         : "border-border hover:border-primary/50 bg-secondary/30"

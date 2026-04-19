@@ -27,7 +27,7 @@ export function NoteStep({ value, onChange }: NoteStepProps) {
           'w-full rounded-xl bg-card ring-1 ring-black/5 dark:ring-white/10',
           'px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50',
           'resize-none focus:outline-none focus:ring-2 focus:ring-primary/50',
-          'transition-shadow',
+          'motion-safe:transition-shadow',
         ].join(' ')}
         aria-label={t.somAddNote}
       />

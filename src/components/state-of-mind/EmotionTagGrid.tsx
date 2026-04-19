@@ -152,7 +152,7 @@ export function EmotionTagGrid({
               onKeyDown={(e) => handleChipKeyDown(e, index)}
               className={[
                 'px-4 py-2.5 rounded-xl text-sm font-medium min-h-[44px]',
-                'ring-1 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50',
+                'ring-1 motion-safe:transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50',
                 isSelected
                   ? 'bg-primary/10 text-primary ring-primary/30'
                   : 'bg-card text-muted-foreground ring-black/5 dark:ring-white/10',
@@ -178,7 +178,7 @@ export function EmotionTagGrid({
               aria-expanded={expanded}
               aria-controls="emotion-tag-chips"
               data-testid="emotion-more-precise"
-              className="text-sm font-medium text-primary/80 hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary/50 rounded-lg px-3 py-1.5 transition-colors"
+              className="text-sm font-medium text-primary/80 hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary/50 rounded-lg px-3 py-1.5 motion-safe:transition-colors"
             >
               {buttonLabel}
             </button>
