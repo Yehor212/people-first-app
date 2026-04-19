@@ -252,7 +252,7 @@ export function ChallengeDetailsView({
               copied ? t.copied || "Copied" : t.copyCode || "Copy code"
             }
             className={cn(
-              "h-14 w-14 rounded-xl flex items-center justify-center transition-all",
+              "h-14 w-14 rounded-xl flex items-center justify-center motion-safe:transition-all",
               copied
                 ? "bg-emerald-500/20 border border-emerald-500/40"
                 : "bg-foreground/5 border border-foreground/10 hover:bg-foreground/10",

@@ -104,7 +104,7 @@ export function ChallengesPanel({
           <button
             onClick={onClose}
             aria-label={t.close || "Close"}
-            className="p-2 rounded-xl bg-white/10 hover:bg-white/20 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+            className="p-2 rounded-xl bg-white/10 hover:bg-white/20 motion-safe:transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
           >
             <X className="w-6 h-6 text-primary-foreground" />
           </button>
@@ -114,7 +114,7 @@ export function ChallengesPanel({
         <div className="flex gap-2 p-4 border-b border-border overflow-x-auto scrollbar-hide snap-x snap-mandatory">
           <button
             onClick={() => setSelectedTab("active")}
-            className={`snap-start flex-shrink-0 py-2.5 px-3 rounded-xl font-medium text-sm transition-all ${
+            className={`snap-start flex-shrink-0 py-2.5 px-3 rounded-xl font-medium text-sm motion-safe:transition-all ${
               selectedTab === "active"
                 ? "bg-primary text-primary-foreground zen-shadow"
                 : "bg-secondary text-secondary-foreground hover:bg-muted"
@@ -132,7 +132,7 @@ export function ChallengesPanel({
           </button>
           <button
             onClick={() => setSelectedTab("available")}
-            className={`snap-start flex-shrink-0 py-2.5 px-3 rounded-xl font-medium text-sm transition-all ${
+            className={`snap-start flex-shrink-0 py-2.5 px-3 rounded-xl font-medium text-sm motion-safe:transition-all ${
               selectedTab === "available"
                 ? "bg-primary text-primary-foreground zen-shadow"
                 : "bg-secondary text-secondary-foreground hover:bg-muted"
@@ -145,7 +145,7 @@ export function ChallengesPanel({
           </button>
           <button
             onClick={() => setSelectedTab("badges")}
-            className={`snap-start flex-shrink-0 py-2.5 px-3 rounded-xl font-medium text-sm transition-all ${
+            className={`snap-start flex-shrink-0 py-2.5 px-3 rounded-xl font-medium text-sm motion-safe:transition-all ${
               selectedTab === "badges"
                 ? "bg-primary text-primary-foreground zen-shadow"
                 : "bg-secondary text-secondary-foreground hover:bg-muted"
@@ -191,7 +191,7 @@ export function ChallengesPanel({
                   return (
                     <div
                       key={challenge.id}
-                      className="bg-secondary rounded-2xl p-4 zen-shadow-card hover:zen-shadow-hover transition-all"
+                      className="bg-secondary rounded-2xl p-4 zen-shadow-card hover:zen-shadow-hover motion-safe:transition-all"
                     >
                       <div className="flex items-start gap-4">
                         <div className="text-4xl">{challenge.icon}</div>
@@ -222,7 +222,7 @@ export function ChallengesPanel({
                             </div>
                             <div className="h-2 bg-muted rounded-full overflow-hidden">
                               <div
-                                className="h-full zen-gradient transition-all duration-500"
+                                className="h-full zen-gradient motion-safe:transition-all motion-safe:duration-500"
                                 style={{ width: `${progressPercent}%` }}
                               />
                             </div>
@@ -269,7 +269,7 @@ export function ChallengesPanel({
                 return (
                   <div
                     key={`${template.type}-${template.target}`}
-                    className={`bg-secondary rounded-2xl p-4 zen-shadow-card transition-all ${
+                    className={`bg-secondary rounded-2xl p-4 zen-shadow-card motion-safe:transition-all ${
                       isActive ? "opacity-50" : "hover:zen-shadow-hover"
                     }`}
                   >
@@ -332,7 +332,7 @@ export function ChallengesPanel({
                             }
                           }}
                           disabled={isActive}
-                          className={`w-full py-2 rounded-xl font-medium transition-all ${
+                          className={`w-full py-2 rounded-xl font-medium motion-safe:transition-all ${
                             isActive
                               ? "bg-muted text-muted-foreground cursor-not-allowed"
                               : "bg-primary text-primary-foreground hover:opacity-90 zen-shadow"

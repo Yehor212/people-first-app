@@ -509,7 +509,7 @@ export const MindMapCanvas = forwardRef<MindMapCanvasRef, MindMapCanvasProps>(
                   stroke="url(#goal-flow-grad)"
                   strokeWidth={2}
                   strokeLinecap="round"
-                  className="animate-pulse"
+                  className="motion-safe:animate-pulse"
                 />
               </svg>
             )}

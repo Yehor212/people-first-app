@@ -73,7 +73,7 @@ export function CreateChallengeView({
                 setDuration(opt.value);
               }}
               className={cn(
-                'p-4 rounded-xl transition-all',
+                'p-4 rounded-xl motion-safe:transition-all',
                 duration === opt.value
                   ? 'bg-gradient-to-br from-violet-500/30 to-purple-600/20 border border-violet-500/40'
                   : 'bg-slate-100/60 dark:bg-white/5 border border-slate-200/60 dark:border-white/10 hover:bg-slate-200/60 dark:hover:bg-white/10'
@@ -126,7 +126,7 @@ export function CreateChallengeView({
         )}
         <span className="relative z-10 flex items-center justify-center gap-2">
           {isCreating ? (
-            <span className="animate-pulse">{t.creating || 'Creating...'}</span>
+            <span className="motion-safe:animate-pulse">{t.creating || 'Creating...'}</span>
           ) : (
             <>
               <Users className="w-5 h-5" />
