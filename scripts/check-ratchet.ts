@@ -217,10 +217,17 @@ function countNpmOutdated(): number {
   }
 }
 
-/** Count console.log/warn/debug in production source (not logger.ts, not tests) */
+/** Count console.log/warn/debug in production source (not logger.ts, not tests)
+ *
+ * Exclusions beyond test files:
+ *   - logger.ts          — this IS the sanctioned logger wrapper
+ *   - crashReporting.ts  — intentional crash/debug fallbacks gated by env
+ *   - reportWebVitals.ts — dev-only Core Web Vitals console output (gated by
+ *                          `import.meta.env.DEV`, carries eslint-disable lines)
+ */
 function countConsoleLogs(): number {
   return runCount(
-    `bash -c "grep -rn 'console\\.\\(log\\|warn\\|debug\\)' src/ --include='*.ts' --include='*.tsx' | grep -v '__tests__' | grep -v '.test.' | grep -v 'logger\\.ts' | grep -v 'crashReporting' | wc -l"`
+    `bash -c "grep -rn 'console\\.\\(log\\|warn\\|debug\\)' src/ --include='*.ts' --include='*.tsx' | grep -v '__tests__' | grep -v '.test.' | grep -v 'logger\\.ts' | grep -v 'crashReporting' | grep -v 'reportWebVitals' | wc -l"`
   );
 }
 
@@ -723,7 +730,7 @@ function checkRatchet(): void {
   }
 
   // Source file drift
-  const docSourceFiles = 785; // updated 2026-04-17 Phase 3-A.4b OrbPage mood flow — scope selector + confirm CTA + first-run hint + draft stores + hook
+  const docSourceFiles = 807; // updated 2026-04-19 Phase 3-C A+++ HabitsPage rewrite — Hero sub-components (HeroDailyRing, HeroIdentityPrompt, HeroTimeOfDayGroup, HeroEmptyJourney) + timeOfDay + starterHabits + tests + parallel agents' chunkErrorDetection/errorBuffer utilities
   const drift = Math.abs(sourceFiles - docSourceFiles);
   if (drift > 20) {
     console.log(

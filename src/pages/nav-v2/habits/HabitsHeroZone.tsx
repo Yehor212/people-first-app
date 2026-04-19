@@ -35,6 +35,7 @@ import { HeroIdentityPrompt } from "./hero/HeroIdentityPrompt";
 import { HeroTimeOfDayGroup } from "./hero/HeroTimeOfDayGroup";
 import { HeroEmptyJourney } from "./hero/HeroEmptyJourney";
 import { groupHabitsByTimeOfDay } from "./hero/timeOfDay";
+import type { StarterTemplate } from "./hero/starterHabits";
 
 interface HabitsHeroZoneProps {
   todaysHabits: Habit[];
@@ -42,6 +43,7 @@ interface HabitsHeroZoneProps {
   onToggleHabit: (habitId: string, date: string) => void;
   onDeleteHabit: (habitId: string) => void;
   onCreateHabit: () => void;
+  onSeedStarter?: (template: StarterTemplate) => void;
 }
 
 export const HabitsHeroZone = memo(function HabitsHeroZone({
@@ -50,6 +52,7 @@ export const HabitsHeroZone = memo(function HabitsHeroZone({
   onToggleHabit,
   onDeleteHabit,
   onCreateHabit,
+  onSeedStarter,
 }: HabitsHeroZoneProps) {
   const { t } = useLanguage();
   const tx = t as unknown as Record<string, string>;
@@ -63,6 +66,8 @@ export const HabitsHeroZone = memo(function HabitsHeroZone({
     onCreateHabit();
   }, [onCreateHabit]);
 
+  const handleSeedStarters = onSeedStarter;
+
   const isEmpty = todaysHabits.length === 0;
 
   return (
@@ -75,21 +80,21 @@ export const HabitsHeroZone = memo(function HabitsHeroZone({
         {tx.navV2HabitsHero}
       </h2>
 
-      <div className="sticky top-2 z-10 -mx-1 rounded-2xl border border-border/60 bg-background/85 px-3 py-3 shadow-sm backdrop-blur-md [-webkit-backdrop-filter:blur(12px)] md:top-4">
-        <HeroDailyRing
-          completed={dailyProgress.completed}
-          total={dailyProgress.total}
-          ratio={dailyProgress.ratio}
-        />
-        {!isEmpty && (
+      {!isEmpty && (
+        <div className="sticky top-2 z-10 -mx-1 rounded-2xl border border-border/60 bg-background/85 px-3 py-3 shadow-sm backdrop-blur-md [-webkit-backdrop-filter:blur(12px)] md:top-4">
+          <HeroDailyRing
+            completed={dailyProgress.completed}
+            total={dailyProgress.total}
+            ratio={dailyProgress.ratio}
+          />
           <div className="mt-3">
             <HeroIdentityPrompt habits={todaysHabits} dayOfMonth={dayOfMonth} />
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {isEmpty ? (
-        <HeroEmptyJourney onCreateHabit={handleCreate} />
+        <HeroEmptyJourney onCreateHabit={handleCreate} onSeedStarters={handleSeedStarters} />
       ) : (
         <>
           {groups.map((g) => (

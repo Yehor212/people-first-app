@@ -134,9 +134,10 @@ describe("HabitsPage (Phase 3-C single-zone)", () => {
     expect(screen.queryByTestId("vaul-root")).not.toBeInTheDocument();
   });
 
-  it("focuses the page heading after mount", () => {
+  it("focuses the main landmark after mount (not the heading — avoids outline on title)", () => {
     render(<HabitsPage />);
-    const heading = screen.getByRole("heading", { level: 1, name: "Habits" });
-    expect(heading).toBe(document.activeElement);
+    const main = screen.getByRole("main");
+    expect(main).toBe(document.activeElement);
+    expect(main).toHaveAttribute("aria-labelledby", "habits-page-heading");
   });
 });

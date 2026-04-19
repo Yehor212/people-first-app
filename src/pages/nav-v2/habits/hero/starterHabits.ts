@@ -1,0 +1,104 @@
+/**
+ * starterHabits — one-tap "popular 2-minute version" habit templates.
+ *
+ * Research basis:
+ *   - BJ Fogg, Tiny Habits (2019): shrink to 2-minute version.
+ *   - James Clear, Atomic Habits: identity-based entry point.
+ *   - Habitify / Streaks onboarding analysis: the 5 most-added starter habits
+ *     are consistently hydrate, walk, read, breathe, gratitude.
+ *
+ * Each starter is a fully-formed {@link Habit} draft — the user taps it and
+ * it's immediately added via `setHabits`. The 2-minute framing is baked into
+ * the name so the user commits to the minimum viable version, not the ideal.
+ */
+
+import type { Habit } from "@/types";
+
+export interface StarterTemplate {
+  key: string;
+  icon: string;
+  name: string;
+  /** Optional reminder time (HH:mm). "07:00" places it in the Morning bucket. */
+  reminderTime?: string;
+  identityVerb?: string;
+  identityIcon?: string;
+}
+
+export const STARTER_TEMPLATES: readonly StarterTemplate[] = [
+  {
+    key: "hydrate",
+    icon: "💧",
+    name: "Drink a glass of water",
+    reminderTime: "08:00",
+    identityVerb: "someone who cares for their body",
+    identityIcon: "🌱",
+  },
+  {
+    key: "walk",
+    icon: "🚶",
+    name: "Walk for 2 minutes",
+    reminderTime: "12:30",
+    identityVerb: "a mover",
+    identityIcon: "🏃",
+  },
+  {
+    key: "read",
+    icon: "📚",
+    name: "Read 1 page",
+    reminderTime: "21:30",
+    identityVerb: "a reader",
+    identityIcon: "📖",
+  },
+  {
+    key: "breathe",
+    icon: "🌬️",
+    name: "Breathe — 4-7-8 once",
+    reminderTime: "15:00",
+    identityVerb: "someone calm",
+    identityIcon: "🧘",
+  },
+  {
+    key: "gratitude",
+    icon: "🙏",
+    name: "Name one gratitude",
+    reminderTime: "22:00",
+    identityVerb: "someone grateful",
+    identityIcon: "✨",
+  },
+];
+
+/** Pure: materialize a starter template into a full Habit with a fresh id. */
+export function starterToHabit(
+  starter: StarterTemplate,
+  position: number,
+  now: number = Date.now(),
+): Habit {
+  return {
+    id: `starter-${starter.key}-${now}`,
+    name: starter.name,
+    icon: starter.icon,
+    color: position % 20,
+    position,
+    createdAt: now,
+    habitType: "boolean",
+    frequency: { numerator: 1, denominator: 1 },
+    question: "",
+    description: "",
+    isArchived: false,
+    targetValue: 1,
+    targetType: "atLeast",
+    unit: "",
+    entries: {},
+    reminders: starter.reminderTime
+      ? [
+          {
+            enabled: true,
+            time: starter.reminderTime,
+            days: [0, 1, 2, 3, 4, 5, 6],
+          },
+        ]
+      : [],
+    identityVerb: starter.identityVerb,
+    identityIcon: starter.identityIcon,
+  };
+}

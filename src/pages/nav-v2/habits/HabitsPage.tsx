@@ -25,12 +25,13 @@ import { hapticTap } from "@/lib/haptics";
 import { HabitsHeroZone } from "./HabitsHeroZone";
 import { HabitCreateSheet } from "./HabitCreateSheet";
 import { useHabitsPageState } from "./useHabitsPageState";
+import { starterToHabit, type StarterTemplate } from "./hero/starterHabits";
 import type { Habit } from "@/types";
 
 export const HabitsPage = memo(function HabitsPage() {
   const { t } = useLanguage();
   const tx = t as unknown as Record<string, string>;
-  const h1Ref = useRef<HTMLHeadingElement>(null);
+  const mainRef = useRef<HTMLElement>(null);
 
   const { habits, todaysHabits, dailyProgress } = useHabitsPageState();
   const setHabits = useUserDataStore((s) => s.setHabits);
@@ -38,7 +39,10 @@ export const HabitsPage = memo(function HabitsPage() {
   const [createOpen, setCreateOpen] = useState(false);
 
   useEffect(() => {
-    h1Ref.current?.focus();
+    // Move focus to the <main> landmark (not the heading) so screen readers
+    // announce the region while keyboard users don't see an outline drawn
+    // around the title itself (A+++ polish — Law 9).
+    mainRef.current?.focus();
   }, []);
 
   const handleAddHabit = useCallback(
@@ -86,9 +90,21 @@ export const HabitsPage = memo(function HabitsPage() {
   const openCreate = useCallback(() => setCreateOpen(true), []);
   const closeCreate = useCallback(() => setCreateOpen(false), []);
 
+  const handleSeedStarter = useCallback(
+    (template: StarterTemplate) => {
+      setHabits((prev) => {
+        // Idempotent by starter key — tapping the same chip twice is a no-op.
+        if (prev.some((h) => h.id.startsWith(`starter-${template.key}-`))) return prev;
+        return [...prev, starterToHabit(template, prev.length)];
+      });
+    },
+    [setHabits],
+  );
+
   return (
     <Bloom key="habits-page" transition={staggerDelay("primary")}>
       <main
+        ref={mainRef}
         id="main-content-v2"
         role="main"
         tabIndex={-1}
@@ -96,12 +112,10 @@ export const HabitsPage = memo(function HabitsPage() {
         aria-labelledby="habits-page-heading"
         data-testid="habits-page"
       >
-        <header className="px-4 pt-8 md:px-6 md:pt-12">
+        <header className="px-4 pt-16 md:px-6 md:pt-12">
           <h1
-            ref={h1Ref}
             id="habits-page-heading"
-            tabIndex={-1}
-            className="font-display text-3xl font-semibold tracking-tight outline-none"
+            className="font-display text-3xl font-semibold tracking-tight text-foreground md:text-4xl"
           >
             {tx.navV2Habits}
           </h1>
@@ -113,6 +127,7 @@ export const HabitsPage = memo(function HabitsPage() {
           onToggleHabit={handleToggleHabit}
           onDeleteHabit={handleDeleteHabit}
           onCreateHabit={openCreate}
+          onSeedStarter={handleSeedStarter}
         />
 
         <HabitCreateSheet
