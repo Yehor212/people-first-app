@@ -165,7 +165,11 @@ docs/visual-aesthetic.md
 .research-pending
 .research-done
 .prettier-circuit-breaker
+# Browser screenshot debug artifacts (Playwright MCP, ad-hoc verification)
 orb-after-fix.png
+*-after-deploy.png
+v2-current.png
+habits-v2-*.png
 
 # Ruflo / AgentDB local databases
 vectors.db
