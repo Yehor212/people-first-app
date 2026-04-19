@@ -77,6 +77,7 @@ type HeroZoneProps = {
   onOpenDetail: (h: Habit) => void;
   onPickTemplate: (t: { id: string; names: Record<string, string>; icon: string; color: number; habitType: string }) => void;
   onCreateHabit: () => void;
+  onToggleHabit: (habitId: string, date: string) => void;
 };
 type CreateSheetProps = {
   onAddHabit: (h: Habit) => void;
@@ -196,6 +197,25 @@ describe("HabitsPage → analytics wiring (§15)", () => {
     capturedCreateProps!.onAddHabit(makeHabit("c"));
     expect(analyticsSpy.habitCreated).toHaveBeenCalledTimes(1);
     expect(analyticsSpy.habitCreated).toHaveBeenCalledWith("custom", 3);
+  });
+
+  it("onToggleHabit transition to completed emits analytics.habitCompleted with total_habits", () => {
+    mockHabits = [makeHabit("a"), makeHabit("b"), makeHabit("c")];
+    render(<HabitsPage />);
+    // Simulate a completion transition (habit a has no entry for this date).
+    capturedHeroProps!.onToggleHabit("a", "2026-04-19");
+    expect(analyticsSpy.habitCompleted).toHaveBeenCalledTimes(1);
+    // habitCompleted(habitName, totalHabits) — total_habits filters archived.
+    expect(analyticsSpy.habitCompleted).toHaveBeenCalledWith("Habit a", 3);
+  });
+
+  it("onToggleHabit un-complete does not emit habit_completed (avoids over-counting)", () => {
+    const habit = makeHabit("a");
+    habit.entries = { "2026-04-19": { value: 1 } };
+    mockHabits = [habit];
+    render(<HabitsPage />);
+    capturedHeroProps!.onToggleHabit("a", "2026-04-19");
+    expect(analyticsSpy.habitCompleted).not.toHaveBeenCalled();
   });
 });
 

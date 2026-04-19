@@ -105,6 +105,12 @@ export const HabitsPage = memo(function HabitsPage() {
 
   const handleToggleHabit = useCallback(
     (habitId: string, date: string) => {
+      // Compute the completion transition BEFORE the setter runs so the
+      // emission is pure (no state-mutation flag inside the updater). This
+      // also keeps the §15 contract parity with V1's useHabitHandlers —
+      // without this, V2 toggles would silently bypass `habit_completed`.
+      const habit = habits.find((h) => h.id === habitId);
+      const isCompletingNow = habit != null && habit.entries?.[date] == null;
       void hapticTap();
       setHabits((prev) =>
         prev.map((h) => {
@@ -120,8 +126,17 @@ export const HabitsPage = memo(function HabitsPage() {
           return { ...h, entries };
         }),
       );
+      if (isCompletingNow && habit) {
+        // §15 retention metric — habit.name carries length-only PII gate at
+        // the Analytics layer (see analytics.ts). total_habits is the active
+        // (non-archived) count so the aggregator can filter ≥3-habit users.
+        analytics.habitCompleted(
+          habit.name,
+          habits.filter((h) => !h.isArchived).length,
+        );
+      }
     },
-    [setHabits],
+    [habits, setHabits],
   );
 
   const openCreate = useCallback(() => {

@@ -1,28 +1,30 @@
 /**
- * §15 success-metrics Playwright smoke.
+ * §15 success-metrics Playwright smoke — real browser, real gtag.
  *
- * Proves the instrumented habits tab actually calls `window.gtag` end-to-end
- * in a real browser — no vitest mocks, no Analytics-class stubs.
+ * Covers ALL four instrumented emitters:
+ *  - habit_created          (quick-pick from empty journey)
+ *  - habit_completed        (toggle a habit row)
+ *  - habit_detail_opened    (focus a row + Enter)
+ *  - insight_strip_rendered (mount HeroInsightStrip with a non-null insight)
  *
- * Two non-obvious environmental details this spec solves:
+ * Two environmental gotchas that cost us an hour of debugging are codified
+ * in helpers below so the next engineer does not retrace them:
  *
- * 1. The useIndexedDB hook's localStorage→IndexedDB migration races with the
- *    Index.tsx privacy-effect on fresh reload, so even with a seeded
- *    `zenflow-privacy={analytics:true}` blob the store can stay at its
- *    defaults and leave Analytics.enabled=false at click-time. We bypass by
- *    forcing both Zustand's `setPrivacy` and `analytics.init` directly on
- *    the exact module instance the app loaded.
+ * 1. Vite HMR appends `?t=TIMESTAMP` to every served source module. A plain
+ *    `import('/path/to/module.ts')` creates a BRAND NEW module instance
+ *    different from the one the app imported at boot. Patching that new
+ *    instance is invisible to the app. Solution: look up the app's actual
+ *    loaded URL via `performance.getEntriesByType('resource')` and dynamic-
+ *    import THAT exact URL so we hit the same cached module.
  *
- * 2. Vite HMR appends `?t=TIMESTAMP` to every served source module, so
- *    `import('/people-first-app/src/lib/analytics.ts')` creates a BRAND NEW
- *    module instance — different from the `@/lib/analytics` the app imported
- *    at boot. If we patch that new instance, our patch is invisible to the
- *    app's track() calls. Solution: read the app's actual loaded URL
- *    (including `?t=…`) via `performance.getEntriesByType('resource')` and
- *    dynamic-import THAT exact URL so we hit the same cached module.
+ * 2. `useIndexedDB`'s localStorage→IndexedDB migration races with the
+ *    Index.tsx privacy-effect. Seeded `zenflow-privacy={analytics:true}`
+ *    alone isn't enough — the store can stay at its defaults at click-time.
+ *    Bypassed by forcing both `setPrivacy` on the Zustand store AND
+ *    `analytics.init` on the singleton.
  *
  * Capacitor iOS/Android are chromium-based webviews, so a green chromium
- * Playwright run is the best proxy available short of a device farm.
+ * run is the closest proxy available short of a device farm.
  */
 
 import { test, expect } from "@playwright/test";
@@ -36,7 +38,7 @@ type GtagArgs = unknown[];
 async function primeForMetrics(page: import("@playwright/test").Page) {
   await page.addInitScript(
     ({ appVersion }: { appVersion: string }) => {
-      // ── onboarding dismissed so we land on the app shell ──
+      // onboarding dismissed so we land on the app shell
       localStorage.setItem("zenflow-language-selected", JSON.stringify(true));
       localStorage.setItem("zenflow-google-auth-checked", JSON.stringify(true));
       localStorage.setItem("zenflow-tutorial-complete", JSON.stringify(true));
@@ -58,15 +60,22 @@ async function primeForMetrics(page: import("@playwright/test").Page) {
       );
       localStorage.setItem("zenflow_last_seen_version", appVersion);
       localStorage.setItem("zenflow-theme", "light");
-
-      // ── privacy.analytics=true seed (used once useIndexedDB migrates) ──
       localStorage.setItem(
         "zenflow-privacy",
         JSON.stringify({ noTracking: false, analytics: true, consentShown: true }),
       );
       localStorage.setItem("zenflow-privacy-acknowledged", JSON.stringify(true));
 
-      // ── gtag capture, installed before any module loads ──
+      // Expand the resource-timing buffer — Chromium's default (250) drops
+      // late-loaded modules like insightsEngine.ts, which breaks our URL
+      // resolution that relies on performance.getEntriesByType('resource').
+      try {
+        performance.setResourceTimingBufferSize(5000);
+      } catch {
+        /* some browsers have this read-only; safe to ignore */
+      }
+
+      // gtag capture — installed before any app module loads
       (window as unknown as { __gtagCalls: GtagArgs[] }).__gtagCalls = [];
       (window as unknown as { gtag: (...args: GtagArgs) => void }).gtag = (
         ...args: GtagArgs
@@ -78,32 +87,35 @@ async function primeForMetrics(page: import("@playwright/test").Page) {
   );
 }
 
-/**
- * Force Analytics.enabled=true on the exact module instance the app uses.
- * Returns the URL we patched (includes Vite's `?t=` cache-buster) so the
- * test can assert we actually found one.
- */
+async function resolveAppModuleUrl(
+  page: import("@playwright/test").Page,
+  pathSubstring: string,
+): Promise<string> {
+  const url = await page.evaluate((needle) => {
+    const entry = performance
+      .getEntriesByType("resource")
+      .find((e) => e.name.includes(needle));
+    return entry?.name ?? null;
+  }, pathSubstring);
+  if (!url) throw new Error(`module not loaded yet: ${pathSubstring}`);
+  return url;
+}
+
 async function forceAnalyticsOnAppInstance(
   page: import("@playwright/test").Page,
-): Promise<string> {
-  return page.evaluate(async () => {
-    const entries = performance.getEntriesByType("resource");
-    const analyticsEntry = entries.find((e) =>
-      e.name.includes("/src/lib/analytics"),
-    );
-    if (!analyticsEntry) throw new Error("analytics.ts not loaded yet");
-
-    // Same-URL dynamic import hits the app's already-cached module instance.
-    const mod = (await import(/* @vite-ignore */ analyticsEntry.name)) as {
-      analytics: { init: (p: { analytics: boolean; noTracking: boolean }) => void };
-    };
-    mod.analytics.init({ analytics: true, noTracking: false });
-
-    // Also flip the Zustand privacy slice so the Index.tsx privacy-effect
-    // doesn't later re-init with the default {analytics:false} and clobber us.
-    const storesEntry = entries.find((e) => e.name.includes("/src/stores/index"));
-    if (storesEntry) {
-      const storesMod = (await import(/* @vite-ignore */ storesEntry.name)) as {
+): Promise<void> {
+  const analyticsUrl = await resolveAppModuleUrl(page, "/src/lib/analytics.ts");
+  const storesUrl = await resolveAppModuleUrl(page, "/src/stores/index.ts");
+  await page.evaluate(
+    async ({ analyticsUrl, storesUrl }) => {
+      const [analyticsMod, storesMod] = await Promise.all([
+        import(/* @vite-ignore */ analyticsUrl),
+        import(/* @vite-ignore */ storesUrl),
+      ]);
+      (analyticsMod as {
+        analytics: { init: (p: { analytics: boolean; noTracking: boolean }) => void };
+      }).analytics.init({ analytics: true, noTracking: false });
+      (storesMod as {
         useUserDataStore: {
           getState: () => {
             setPrivacy: (p: {
@@ -113,74 +125,168 @@ async function forceAnalyticsOnAppInstance(
             }) => void;
           };
         };
-      };
-      storesMod.useUserDataStore
+      }).useUserDataStore
         .getState()
         .setPrivacy({ analytics: true, noTracking: false, consentShown: true });
-    }
-    return analyticsEntry.name;
-  });
+    },
+    { analyticsUrl, storesUrl },
+  );
 }
 
-test.describe("§15 metrics — real-browser smoke", () => {
+async function readGtagCalls(page: import("@playwright/test").Page): Promise<GtagArgs[]> {
+  return page.evaluate(
+    () =>
+      (window as unknown as { __gtagCalls: GtagArgs[] }).__gtagCalls.slice(),
+  );
+}
+
+async function gotoHabitsTab(page: import("@playwright/test").Page) {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto("/?nav=v2");
+  await expect(page.getByTestId("nav-v2-orchestrator")).toBeVisible({ timeout: 15_000 });
+  await forceAnalyticsOnAppInstance(page);
+  await page.keyboard.press("Control+2");
+  await expect(page.getByTestId("habits-hero-empty")).toBeVisible({ timeout: 10_000 });
+  // Let the privacy-effect settle after the forced init.
+  await page.waitForTimeout(400);
+}
+
+test.describe("§15 metrics — real-browser smoke (all 4 events)", () => {
   test.beforeEach(async ({ page }) => {
     await page.context().clearCookies();
   });
 
-  test("quick-pick from empty journey emits habit_created to window.gtag", async ({
+  test("habit_created — quick-pick from empty journey reaches window.gtag", async ({
     page,
   }) => {
     await primeForMetrics(page);
-    // Desktop viewport — Phase 3-A.1 removed MobileNavV2 bottom tabs, so the
-    // keyboard shortcut (ctrl+2 → habits) is the stable cross-viewport route.
-    // On phone-tier the shortcut is suppressed, hence ≥1024px.
-    await page.setViewportSize({ width: 1280, height: 800 });
-
-    await page.goto("/?nav=v2");
-    await expect(page.getByTestId("nav-v2-orchestrator")).toBeVisible({
-      timeout: 15_000,
-    });
-
-    // Deterministically flip Analytics.enabled=true on the app's module
-    // instance. Without this the privacy hydrate race leaves it at false.
-    const patchedUrl = await forceAnalyticsOnAppInstance(page);
-    expect(patchedUrl).toMatch(/\/src\/lib\/analytics\.ts/);
-
-    await page.keyboard.press("Control+2");
-    await expect(page.getByTestId("habits-hero-empty")).toBeVisible({
-      timeout: 10_000,
-    });
-
-    // Settle so the privacy-effect re-run doesn't land between our forced
-    // init and the emission. The effect reads Zustand privacy (already set
-    // to analytics:true above) and re-calls init(true) — a no-op here.
-    await page.waitForTimeout(500);
+    await gotoHabitsTab(page);
 
     const quickPick = page.locator('[data-testid^="hero-quickpick-"]').first();
     await expect(quickPick).toBeVisible();
     await quickPick.click();
+    await page.waitForTimeout(400);
 
-    // gtag is sync; 500 ms covers React commit + any microtask ticks.
-    await page.waitForTimeout(500);
-
-    const calls = await page.evaluate(
-      () =>
-        (window as unknown as { __gtagCalls: GtagArgs[] }).__gtagCalls.slice(),
-    );
-
-    const habitCreated = calls.find(
+    const calls = await readGtagCalls(page);
+    const evt = calls.find(
       (c) => Array.isArray(c) && c[0] === "event" && c[1] === "habit_created",
     );
-    expect(
-      habitCreated,
-      `expected a habit_created event; got ${JSON.stringify(calls)}`,
-    ).toBeDefined();
-
-    const payload = (habitCreated as unknown[])[2] as Record<string, unknown>;
-    // PII contract — only finite-enum + integer + boolean fields.
+    expect(evt, `expected habit_created; got ${JSON.stringify(calls)}`).toBeDefined();
+    const payload = (evt as unknown[])[2] as Record<string, unknown>;
     expect(payload.source).toBe("template");
     expect(payload.total_habits).toBe(1);
     expect(payload.ever_first).toBe(true);
     expect(payload.session_first).toBe(true);
+  });
+
+  test("habit_completed — toggling a habit row reaches window.gtag", async ({
+    page,
+  }) => {
+    await primeForMetrics(page);
+    await gotoHabitsTab(page);
+
+    // Seed one habit so the toggle target exists.
+    await page.locator('[data-testid^="hero-quickpick-"]').first().click();
+    await page.waitForTimeout(300);
+
+    // The V1 CompactHabitCard's toggle button carries an aria-label of the
+    // form "<name>: Mark complete". Use that instead of any specific testid —
+    // it survives copy changes because the shape is stable.
+    const toggle = page
+      .getByRole("button", { name: /mark complete/i })
+      .first();
+    await expect(toggle).toBeVisible();
+    await toggle.click();
+    await page.waitForTimeout(400);
+
+    const calls = await readGtagCalls(page);
+    const evt = calls.find(
+      (c) => Array.isArray(c) && c[0] === "event" && c[1] === "habit_completed",
+    );
+    expect(evt, `expected habit_completed; got ${JSON.stringify(calls)}`).toBeDefined();
+    const payload = (evt as unknown[])[2] as Record<string, unknown>;
+    // PII-safe: integer length + integer total_habits; no name in plain text.
+    expect(typeof payload.habit_length).toBe("number");
+    expect((payload.habit_length as number) > 0).toBe(true);
+    expect(payload.total_habits).toBe(1);
+  });
+
+  test("habit_detail_opened — row activation via keyboard reaches window.gtag", async ({
+    page,
+  }) => {
+    await primeForMetrics(page);
+    await gotoHabitsTab(page);
+
+    // Seed a habit so the row exists.
+    await page.locator('[data-testid^="hero-quickpick-"]').first().click();
+    await page.waitForTimeout(300);
+
+    // The hero row is `role="group" tabIndex=0` and opens detail on Enter/Space.
+    const row = page.locator('[data-testid^="hero-habit-row-"]').first();
+    await expect(row).toBeVisible();
+    await row.focus();
+    await page.keyboard.press("Enter");
+    await page.waitForTimeout(400);
+
+    const calls = await readGtagCalls(page);
+    const evt = calls.find(
+      (c) => Array.isArray(c) && c[0] === "event" && c[1] === "habit_detail_opened",
+    );
+    expect(evt, `expected habit_detail_opened; got ${JSON.stringify(calls)}`).toBeDefined();
+    const payload = (evt as unknown[])[2] as Record<string, unknown>;
+    expect(payload.total_habits).toBe(1);
+  });
+
+  test("insight_strip_rendered — mounting HeroInsightStrip with a non-null insight reaches window.gtag", async ({
+    page,
+  }) => {
+    // Route-intercept insightsEngine.ts at Vite's dev-server boundary so the
+    // module HeroInsightStrip imports is a deterministic version that returns
+    // a fake insight on every call. This is the only reliable way to force a
+    // non-null `topInsight` — ES module live bindings prevent post-import
+    // mutation, and seeding enough real mood+habit data to trip the real
+    // engine's 7-day threshold is fragile to engine internals.
+    await page.route(/\/src\/lib\/insightsEngine\.ts/, async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/javascript",
+        body: `
+          export function generateInsights() {
+            return [{
+              id: "e2e-fake-insight",
+              type: "mood-habit-correlation",
+              severity: "positive",
+              title: "On days you read, your mood is +28% higher",
+              description: "",
+              confidence: 82
+            }];
+          }
+          export {};
+        `,
+      });
+    });
+
+    await primeForMetrics(page);
+    await gotoHabitsTab(page);
+
+    // Seed a habit so HabitsHeroZone takes the non-empty branch and
+    // HeroInsightStrip mounts with our intercepted generateInsights.
+    await page.locator('[data-testid^="hero-quickpick-"]').first().click();
+    await expect(
+      page.locator('[data-testid^="hero-habit-row-"]').first(),
+    ).toBeVisible({ timeout: 10_000 });
+    await page.waitForTimeout(800);
+
+    const calls = await readGtagCalls(page);
+    const evt = calls.find(
+      (c) => Array.isArray(c) && c[0] === "event" && c[1] === "insight_strip_rendered",
+    );
+    expect(
+      evt,
+      `expected insight_strip_rendered; got ${JSON.stringify(calls)}`,
+    ).toBeDefined();
+    const payload = (evt as unknown[])[2] as Record<string, unknown>;
+    expect(payload.insight_type).toBe("mood-habit-correlation");
+    expect(payload.insight_severity).toBe("positive");
   });
 });
