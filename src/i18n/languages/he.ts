@@ -1287,6 +1287,7 @@ const hebrewOverrides: Partial<Translations> = {
   archiveHabit: "העבר לארכיון",
   unarchiveHabit: "שחזר מארכיון",
   skipToday: "דלג היום",
+  unskip: "בטל דילוג",
   skipped: "דולג",
   streakHistory: "היסטוריית רצפים",
   bestStreak: "הרצף הטוב ביותר",

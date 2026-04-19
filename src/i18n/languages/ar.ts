@@ -953,6 +953,7 @@ const arabicOverrides: Partial<Translations> = {
   archiveHabit: "أرشفة",
   unarchiveHabit: "إلغاء الأرشفة",
   skipToday: "تخطي اليوم",
+  unskip: "إلغاء التخطي",
   skipped: "تم التخطي",
   streakHistory: "سجل السلاسل",
   bestStreak: "أفضل سلسلة",

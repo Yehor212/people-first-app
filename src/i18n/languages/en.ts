@@ -1121,6 +1121,7 @@ export const en: Translations = {
   archiveHabit: "Archive",
   unarchiveHabit: "Unarchive",
   skipToday: "Skip Today",
+  unskip: "Unskip Today",
   skipped: "Skipped",
   streakHistory: "Streak History",
   bestStreak: "Best Streak",

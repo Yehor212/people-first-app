@@ -1121,6 +1121,7 @@ export const uk: Translations = {
   archiveHabit: "Архівувати",
   unarchiveHabit: "Розархівувати",
   skipToday: "Пропустити сьогодні",
+  unskip: "Скасувати пропуск",
   skipped: "Пропущено",
   streakHistory: "Історія серій",
   bestStreak: "Найкраща серія",

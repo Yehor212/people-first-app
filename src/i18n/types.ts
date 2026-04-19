@@ -1107,6 +1107,7 @@ export interface Translations {
   archiveHabit: string;
   unarchiveHabit: string;
   skipToday: string;
+  unskip: string;
   skipped: string;
   streakHistory: string;
   bestStreak: string;

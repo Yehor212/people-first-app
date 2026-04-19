@@ -1136,6 +1136,7 @@ export const de: Translations = {
   archiveHabit: "Archivieren",
   unarchiveHabit: "Wiederherstellen",
   skipToday: "Heute überspringen",
+  unskip: "Nicht überspringen",
   skipped: "Übersprungen",
   streakHistory: "Serienhistorie",
   bestStreak: "Beste Serie",

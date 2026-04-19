@@ -118,7 +118,13 @@ export const HeroDailyRing = memo(function HeroDailyRing({
           {tx.navV2HabitsHero}
         </span>
         <span
-          className="mt-1 font-display text-base font-semibold leading-tight text-foreground"
+          key={isAllDone ? "done" : "progress"}
+          className={
+            "mt-1 font-display text-base font-semibold leading-tight text-foreground" +
+            (animate && isAllDone
+              ? " motion-safe:animate-fraunces-soft-wobble"
+              : "")
+          }
           data-testid="hero-daily-ring-status"
         >
           {remainingLabel}

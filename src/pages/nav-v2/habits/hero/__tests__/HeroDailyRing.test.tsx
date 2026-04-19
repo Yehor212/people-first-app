@@ -50,4 +50,16 @@ describe("HeroDailyRing", () => {
     expect(ring).toHaveAttribute("aria-live", "polite");
     expect(ring.getAttribute("aria-label")).toContain("1 / 4");
   });
+
+  it("applies Fraunces SOFT wobble class when day complete (design §4.1 #4)", () => {
+    render(<HeroDailyRing completed={3} total={3} ratio={1} />);
+    const status = screen.getByTestId("hero-daily-ring-status");
+    expect(status.className).toContain("motion-safe:animate-fraunces-soft-wobble");
+  });
+
+  it("omits SOFT wobble class while progress incomplete", () => {
+    render(<HeroDailyRing completed={2} total={3} ratio={2 / 3} />);
+    const status = screen.getByTestId("hero-daily-ring-status");
+    expect(status.className).not.toContain("animate-fraunces-soft-wobble");
+  });
 });

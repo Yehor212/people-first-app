@@ -198,7 +198,7 @@ describe("Habits a11y smoke (converts §11 🟡 rows to ✅)", () => {
       expect(cls).toMatch(/min-h-\[(44|48)px\]|h-(11|12|14)/);
     });
 
-    it("library category tabs have min-h ≥ 40px (chip class contract)", () => {
+    it("library category tabs have min-h ≥ 44px (chip class contract)", () => {
       render(
         <HeroTemplateLibrarySheet
           open={true}
@@ -208,7 +208,8 @@ describe("Habits a11y smoke (converts §11 🟡 rows to ✅)", () => {
         />,
       );
       const tab = screen.getByTestId("habits-library-tab-body");
-      expect(tab.className).toMatch(/min-h-\[40px\]|h-10/);
+      // Law 9 (A11y): touch targets ≥ 44px. Accept any ≥44 utility we ship.
+      expect(tab.className).toMatch(/min-h-\[(44|48)px\]|h-(11|12|14)/);
     });
   });
 });

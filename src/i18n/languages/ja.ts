@@ -1102,6 +1102,7 @@ export const ja: Translations = {
   archiveHabit: "アーカイブする",
   unarchiveHabit: "復元する",
   skipToday: "今日をスキップ",
+  unskip: "スキップを取り消す",
   skipped: "スキップ済み",
   streakHistory: "連続記録の履歴",
   bestStreak: "最高連続記録",

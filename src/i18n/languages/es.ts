@@ -1133,6 +1133,7 @@ export const es: Translations = {
   archiveHabit: "Archivar",
   unarchiveHabit: "Desarchivar",
   skipToday: "Omitir Hoy",
+  unskip: "Retomar hoy",
   skipped: "Omitido",
   streakHistory: "Historial de Rachas",
   bestStreak: "Mejor Racha",

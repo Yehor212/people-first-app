@@ -249,6 +249,10 @@ export default {
           "0%, 100%": { transform: "translateY(0px)" },
           "50%": { transform: "translateY(-4px)" },
         },
+        "fraunces-soft-wobble": {
+          "0%, 100%": { fontVariationSettings: '"SOFT" 0' },
+          "50%": { fontVariationSettings: '"SOFT" 100' },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -256,6 +260,7 @@ export default {
         "spin-slow": "spin-slow 20s linear infinite",
         twinkle: "twinkle 1.5s ease-in-out infinite",
         float: "float 2s ease-in-out infinite",
+        "fraunces-soft-wobble": "fraunces-soft-wobble 800ms ease-out",
       },
     },
   },

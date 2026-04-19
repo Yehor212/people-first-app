@@ -111,7 +111,7 @@ export const HeroTemplateLibrarySheet = memo(function HeroTemplateLibrarySheet({
                     setActiveCategory(cat.key);
                   }}
                   className={
-                    "inline-flex min-h-[40px] shrink-0 items-center rounded-full px-4 py-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 " +
+                    "inline-flex min-h-[44px] shrink-0 items-center rounded-full px-4 py-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 " +
                     (active
                       ? "bg-primary text-primary-foreground shadow-sm"
                       : "bg-muted/60 text-foreground hover:bg-muted") +
