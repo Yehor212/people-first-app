@@ -29,6 +29,7 @@ import { setupChunkErrorHandler } from "./components/UpdateRequiredDialog";
 import { checkDatabaseHealth } from "./storage/db";
 import { SK } from "./lib/storageKeys";
 import { safeLocalStorageSet } from "./lib/safeJson";
+import { scheduleIdle } from "./lib/scheduleIdle";
 
 // Sentry is deferred to post-mount via requestIdleCallback (see below initializeApp)
 // to keep it off the critical rendering path. captureError is loaded lazily.
@@ -461,9 +462,4 @@ const idleInit = () => {
     })
     .catch((err) => logger.warn("[Main] Sentry lazy load failed:", err));
 };
-if ("requestIdleCallback" in window) {
-  requestIdleCallback(idleInit);
-} else {
-  // ROOT-CAUSE: requestIdleCallback not supported in Safari <16.4 — setTimeout(2s) is the standard polyfill pattern
-  setTimeout(idleInit, 2000);
-}
+scheduleIdle(idleInit);

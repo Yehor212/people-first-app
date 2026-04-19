@@ -35,6 +35,20 @@ const PRUNE = [
   // icon-512.png: alt-size output, manifest uses pwa-512.png exclusively.
   // Verified: 0 refs in src/ or vite.config.ts manifest.
   "icon-512.png",
+  // PWA manifest icons — consumed by browser when installing as PWA via
+  // manifest.webmanifest. Capacitor Android/iOS use NATIVE launcher icons
+  // from android/app/src/main/res/mipmap-*/ and ios/App/App/Assets.xcassets/
+  // so these 9 PNGs are dead weight in the APK. VitePWA plugin is also
+  // gated `!isCapacitor` so no manifest is generated in native builds.
+  "pwa-72.png",
+  "pwa-96.png",
+  "pwa-128.png",
+  "pwa-144.png",
+  "pwa-152.png",
+  "pwa-192.png",
+  "pwa-384.png",
+  "pwa-512.png",
+  "pwa-maskable-512.png",
 ];
 
 if (process.env.CAPACITOR_BUILD !== "true") {

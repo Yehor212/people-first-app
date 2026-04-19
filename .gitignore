@@ -168,7 +168,7 @@ docs/visual-aesthetic.md
 # Browser screenshot debug artifacts (Playwright MCP, ad-hoc verification)
 orb-after-fix.png
 *-after-deploy.png
-v2-current.png
+v2-*.png
 habits-v2-*.png
 
 # Ruflo / AgentDB local databases

@@ -211,6 +211,33 @@ export const ErrorBoundary: React.FC<{ children: React.ReactNode }> = ({ childre
 };
 
 /**
+ * RootErrorBoundary — context-free outermost safety net.
+ *
+ * Catches crashes in providers themselves (LanguageProvider, QueryClientProvider,
+ * etc.) that the inner `ErrorBoundary` cannot — because that boundary sits
+ * INSIDE those providers and uses `useLanguage()`. When a provider throws during
+ * render, the inner boundary never mounts.
+ *
+ * Uses hardcoded English strings (no hook calls). Error telemetry still flows
+ * to Sentry/Crashlytics via `componentDidCatch` in the shared base class.
+ * Inner `ErrorBoundary` remains in place for localized app-level errors.
+ * Source: react.dev/reference/react/Component#componentdidcatch "error-boundaries
+ * should be positioned above the providers they protect".
+ */
+export const RootErrorBoundary: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <ErrorBoundaryBase
+    title="Something went wrong"
+    body="The app failed to start. Please reload."
+    exportLabel="Export Debug Report"
+    reloadLabel="Reload App"
+    onExport={(error) => exportDebugReport(error)}
+    onReload={() => window.location.reload()}
+  >
+    {children}
+  </ErrorBoundaryBase>
+);
+
+/**
  * ModalErrorBoundary - Error boundary for modals and lazy-loaded components.
  * Shows a contained error state instead of crashing the entire app.
  * Use this to wrap any Suspense boundaries or modal content.
