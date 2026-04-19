@@ -4,6 +4,7 @@ import path from "path";
 import { readFileSync } from "fs";
 import { componentTagger } from "lovable-tagger";
 import { VitePWA } from "vite-plugin-pwa";
+import { compression } from "vite-plugin-compression2";
 import { changelogPlugin } from "./vite-plugin-changelog";
 import { versionPlugin } from "./vite-plugin-version";
 
@@ -44,6 +45,16 @@ export default defineConfig(({ mode }) => {
       changelogPlugin(),
       versionPlugin(),
       mode === "development" && componentTagger(),
+      // Precompress JS/CSS/HTML/SVG with Brotli (default q=11) + gzip (default q=9).
+      // Production only. Skips < 1 KB. Keeps originals for servers that can't
+      // serve precompressed. Brotli-11 ~17-25% smaller than gzip-9 on minified JS.
+      mode !== "development" &&
+        compression({
+          algorithms: ["brotliCompress", "gzip"],
+          include: [/\.(js|mjs|css|html|svg|json|txt|ico)$/],
+          threshold: 1024,
+          deleteOriginalAssets: false,
+        }),
       // Disable PWA for Capacitor builds (native apps don't need service workers)
       !isCapacitor
         ? VitePWA({
