@@ -22,7 +22,7 @@ export function WidgetSettings({ onBack }: WidgetSettingsProps) {
         <div className="flex items-center gap-4 px-4 py-4 pt-safe">
           <button
             onClick={onBack}
-            className="p-4 hover:bg-accent rounded-xl transition-colors active:scale-95 touch-manipulation"
+            className="p-4 hover:bg-accent rounded-xl motion-safe:transition-colors active:scale-95 touch-manipulation"
             aria-label={t.back}
           >
             <ArrowLeft className="w-6 h-6 rtl:scale-x-[-1]" />
@@ -37,7 +37,7 @@ export function WidgetSettings({ onBack }: WidgetSettingsProps) {
         <div className="flex gap-2 px-6 pb-4">
           <button
             onClick={() => setActiveTab("preview")}
-            className={`flex-1 px-4 py-2 rounded-xl font-medium transition-all ${
+            className={`flex-1 px-4 py-2 rounded-xl font-medium motion-safe:transition-all ${
               activeTab === "preview"
                 ? "bg-primary text-primary-foreground"
                 : "bg-muted text-muted-foreground hover:bg-muted/80"
@@ -48,7 +48,7 @@ export function WidgetSettings({ onBack }: WidgetSettingsProps) {
           </button>
           <button
             onClick={() => setActiveTab("setup")}
-            className={`flex-1 px-4 py-2 rounded-xl font-medium transition-all ${
+            className={`flex-1 px-4 py-2 rounded-xl font-medium motion-safe:transition-all ${
               activeTab === "setup"
                 ? "bg-primary text-primary-foreground"
                 : "bg-muted text-muted-foreground hover:bg-muted/80"

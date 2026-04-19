@@ -399,7 +399,7 @@ function IndexV1Impl() {
           adConsent={true}
           isPremium={false}
         >
-          <div className="min-h-screen zen-gradient-hero lg:ps-[var(--sidebar-width,256px)] transition-[padding] duration-300">
+          <div className="min-h-screen zen-gradient-hero lg:ps-[var(--sidebar-width,256px)] motion-safe:transition-[padding] motion-safe:duration-300">
             {/* Skip to main content link for accessibility */}
             <a
               href="#main-content"
@@ -455,7 +455,7 @@ function IndexV1Impl() {
                   <Suspense
                     fallback={
                       <div className="flex items-center justify-center p-8">
-                        <div className="animate-pulse h-64 w-full rounded-xl bg-muted" />
+                        <div className="motion-safe:animate-pulse h-64 w-full rounded-xl bg-muted" />
                       </div>
                     }
                   >
@@ -546,7 +546,7 @@ function IndexV1Impl() {
                 <Suspense
                   fallback={
                     <div className="flex items-center justify-center p-8">
-                      <div className="animate-pulse h-64 w-full rounded-xl bg-muted" />
+                      <div className="motion-safe:animate-pulse h-64 w-full rounded-xl bg-muted" />
                     </div>
                   }
                 >

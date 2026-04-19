@@ -61,7 +61,7 @@ function ScopeChip({
           ? "px-5 py-2.5 md:px-6 md:py-3 text-sm md:text-base font-semibold"
           : "px-4 py-2 md:px-5 md:py-2.5 text-sm md:text-base font-medium",
         "rounded-full",
-        "transition-all duration-200 ease-out",
+        "motion-safe:transition-all motion-safe:duration-200 ease-out",
         "min-h-[44px]",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-transparent",
         active ? "mood-scope-chip-active" : "mood-scope-chip-idle",

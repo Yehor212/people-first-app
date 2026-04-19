@@ -90,7 +90,7 @@ export default function ThemePreview() {
               key={t}
               type="button"
               onClick={() => setTheme(t)}
-              className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${
+              className={`px-3 py-1.5 text-sm rounded-lg border motion-safe:transition-colors ${
                 theme === t
                   ? 'bg-primary text-primary-foreground border-primary'
                   : 'bg-background border-border hover:bg-muted'

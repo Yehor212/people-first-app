@@ -39,7 +39,7 @@ function MindMapSkeleton() {
       aria-live="polite"
       data-testid="habits-mindmap-skeleton"
     >
-      <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-muted/30 via-transparent to-muted/30" />
+      <div className="absolute inset-0 motion-safe:animate-pulse bg-gradient-to-br from-muted/30 via-transparent to-muted/30" />
       <span className="sr-only">Loading identity map…</span>
     </div>
   );
