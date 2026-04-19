@@ -121,7 +121,7 @@ export function AboutSection() {
             {/* Version History Button */}
             <button
               onClick={() => setShowChangelog(true)}
-              className="w-full py-3 bg-secondary text-secondary-foreground rounded-xl font-medium hover:bg-muted transition-colors flex items-center justify-center gap-2"
+              className="w-full py-3 bg-secondary text-secondary-foreground rounded-xl font-medium hover:bg-muted motion-safe:transition-colors flex items-center justify-center gap-2"
             >
               <History className="w-4 h-4" />
               {t.changelogTitle || "Version History"}
@@ -133,7 +133,7 @@ export function AboutSection() {
                 <button
                   onClick={handleCheckForUpdates}
                   disabled={updateCheckStatus === "checking"}
-                  className="w-full py-3 bg-secondary text-secondary-foreground rounded-xl font-medium hover:bg-muted transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="w-full py-3 bg-secondary text-secondary-foreground rounded-xl font-medium hover:bg-muted motion-safe:transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   <RefreshCw
                     className={`w-4 h-4 ${updateCheckStatus === "checking" ? "motion-safe:animate-spin" : ""}`}
@@ -190,7 +190,7 @@ export function AboutSection() {
             {/* Feedback Button */}
             <button
               onClick={() => setShowFeedback(true)}
-              className="w-full flex items-center justify-between py-3 px-4 bg-secondary rounded-xl hover:bg-muted transition-colors min-h-[48px]"
+              className="w-full flex items-center justify-between py-3 px-4 bg-secondary rounded-xl hover:bg-muted motion-safe:transition-colors min-h-[48px]"
             >
               <div className="flex items-center gap-3">
                 <MessageSquare className="w-5 h-5 text-primary" />
@@ -205,7 +205,7 @@ export function AboutSection() {
                 setLegalTab("privacy");
                 setShowLegal(true);
               }}
-              className="w-full flex items-center justify-between py-3 px-4 bg-secondary rounded-xl hover:bg-muted transition-colors min-h-[48px]"
+              className="w-full flex items-center justify-between py-3 px-4 bg-secondary rounded-xl hover:bg-muted motion-safe:transition-colors min-h-[48px]"
             >
               <div className="flex items-center gap-3">
                 <Shield className="w-5 h-5 text-primary" />
@@ -219,7 +219,7 @@ export function AboutSection() {
                 setLegalTab("terms");
                 setShowLegal(true);
               }}
-              className="w-full flex items-center justify-between py-3 px-4 bg-secondary rounded-xl hover:bg-muted transition-colors min-h-[48px]"
+              className="w-full flex items-center justify-between py-3 px-4 bg-secondary rounded-xl hover:bg-muted motion-safe:transition-colors min-h-[48px]"
             >
               <div className="flex items-center gap-3">
                 <FileText className="w-5 h-5 text-primary" />
@@ -233,7 +233,7 @@ export function AboutSection() {
                 setLegalTab("licenses");
                 setShowLegal(true);
               }}
-              className="w-full flex items-center justify-between py-3 px-4 bg-secondary rounded-xl hover:bg-muted transition-colors min-h-[48px]"
+              className="w-full flex items-center justify-between py-3 px-4 bg-secondary rounded-xl hover:bg-muted motion-safe:transition-colors min-h-[48px]"
             >
               <div className="flex items-center gap-3">
                 <Scale className="w-5 h-5 text-primary" />

@@ -75,7 +75,7 @@ export const QuestCard = memo(function QuestCard({ quest, t, getQuestTypeLabel }
   return (
     <div
       className={cn(
-        'p-6 rounded-xl border-2 transition-all',
+        'p-6 rounded-xl border-2 motion-safe:transition-all',
         quest.completed
           ? 'bg-primary/10 border-primary/50 zen-shadow'
           : isExpired
@@ -128,7 +128,7 @@ export const QuestCard = memo(function QuestCard({ quest, t, getQuestTypeLabel }
         <div className="h-2 bg-secondary rounded-full overflow-hidden">
           <div
             className={cn(
-              'h-full transition-all duration-500',
+              'h-full motion-safe:transition-all motion-safe:duration-500',
               quest.completed
                 ? 'bg-primary'
                 : quest.type === 'bonus'

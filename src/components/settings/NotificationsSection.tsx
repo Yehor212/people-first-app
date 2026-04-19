@@ -148,7 +148,7 @@ export function NotificationsSection({
                       aria-pressed={reminders.days.includes(value)}
                       aria-label={label}
                       className={cn(
-                        "px-3 py-2.5 rounded-lg text-sm font-medium transition-colors min-h-[44px]",
+                        "px-3 py-2.5 rounded-lg text-sm font-medium motion-safe:transition-colors min-h-[44px]",
                         reminders.days.includes(value)
                           ? "bg-primary text-primary-foreground"
                           : "bg-secondary text-muted-foreground hover:bg-muted"
@@ -217,7 +217,7 @@ export function NotificationsSection({
                       aria-pressed={selectedSound === sound.id}
                       aria-label={soundLabel}
                       className={cn(
-                        'p-3 rounded-xl text-start transition-all',
+                        'p-3 rounded-xl text-start motion-safe:transition-all',
                         selectedSound === sound.id
                           ? 'bg-primary/10 ring-2 ring-primary'
                           : 'bg-card hover:bg-muted'

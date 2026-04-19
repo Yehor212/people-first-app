@@ -65,7 +65,7 @@ export const SidebarV2 = memo(function SidebarV2({
         title={collapsed ? item.label : undefined}
         className={cn(
           "group relative flex items-center gap-3 rounded-xl px-3 py-2.5 min-h-[44px]",
-          "font-display text-sm transition-all duration-200",
+          "font-display text-sm motion-safe:transition-all motion-safe:duration-200",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
           isActive
             ? "bg-paper-surface text-ink-primary shadow-sm"
@@ -92,7 +92,7 @@ export const SidebarV2 = memo(function SidebarV2({
         "hidden md:flex fixed inset-y-0 start-0 z-40 flex-col",
         "border-e border-border/60 bg-card/80 backdrop-blur-lg",
         "[-webkit-backdrop-filter:blur(12px)]",
-        "transition-[width] duration-300 ease-out",
+        "motion-safe:transition-[width] motion-safe:duration-300 ease-out",
         collapsed ? "w-[72px]" : "w-64",
       )}
       role="navigation"
@@ -147,7 +147,7 @@ export const SidebarV2 = memo(function SidebarV2({
             "flex items-center gap-2 rounded-lg px-3 py-2 min-h-[44px]",
             "text-muted-foreground hover:text-foreground hover:bg-paper-surface/40",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
-            "transition-colors duration-200",
+            "motion-safe:transition-colors motion-safe:duration-200",
             collapsed && "justify-center px-2",
           )}
           data-testid="sidebar-v2-collapse-toggle"

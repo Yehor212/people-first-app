@@ -89,7 +89,7 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator() {
   return (
     <div
       className={cn(
-        "min-h-screen bg-background transition-[padding] duration-300",
+        "min-h-screen bg-background motion-safe:transition-[padding] motion-safe:duration-300",
         sidebarCollapsed ? "md:ps-[72px]" : "md:ps-64",
       )}
       data-testid="nav-v2-orchestrator"
@@ -125,7 +125,7 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator() {
           "border border-border/60 shadow-md",
           "text-foreground",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
-          "transition-[transform,background-color] duration-200 active:scale-95",
+          "motion-safe:transition-[transform,background-color] motion-safe:duration-200 active:scale-95",
         )}
       >
         {/*

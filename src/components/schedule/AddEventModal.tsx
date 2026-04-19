@@ -149,7 +149,7 @@ export function AddEventModal({
               onClick={onClose}
               whileHover={{ scale: 1.1 }}
               whileTap={zenTap.icon}
-              className="p-2 hover:bg-secondary rounded-xl transition-colors"
+              className="p-2 hover:bg-secondary rounded-xl motion-safe:transition-colors"
               aria-label={t.close || "Close"}
             >
               <X className="w-5 h-5 text-slate-600 dark:text-white/80" aria-hidden="true" />
@@ -199,7 +199,7 @@ export function AddEventModal({
                   aria-pressed={isSelected}
                   aria-label={label}
                   className={cn(
-                    "p-3 rounded-xl flex flex-col items-center gap-1 transition-all",
+                    "p-3 rounded-xl flex flex-col items-center gap-1 motion-safe:transition-all",
                     "backdrop-blur-sm border",
                     isSelected
                       ? `bg-gradient-to-br ${gradient} border-white/30 shadow-lg`
