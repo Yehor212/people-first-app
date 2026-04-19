@@ -32,6 +32,7 @@ import { safeLocalStorageSet } from "./lib/safeJson";
 import { scheduleIdle } from "./lib/scheduleIdle";
 import { captureOrBuffer, setCaptureSink } from "./lib/errorBuffer";
 import { initWebVitalsDev } from "./observability/reportWebVitals";
+import { initLongTaskObserverDev } from "./observability/initLongTaskObserverDev";
 
 // Sentry is deferred to post-mount via requestIdleCallback (see below initializeApp)
 // to keep it off the critical rendering path. Errors thrown before idle-init
@@ -48,6 +49,11 @@ initA11y();
 // Core Web Vitals dev logger — MUST be synchronous (register listeners before
 // first paint to catch LCP). No-op in production; Sentry handles vitals there.
 void initWebVitalsDev();
+
+// Long Animation Frame + Long Task dev observer — complements web-vitals
+// by capturing EVERY slow frame (not just the one behind INP). No-op in
+// prod; Sentry captures longtask spans server-side.
+initLongTaskObserverDev();
 
 // Set html lang attribute early (before React hydrates) for non-EN users (WCAG 3.1.1)
 // CSP blocks inline scripts in index.html, so we do it here in the module entry point.
