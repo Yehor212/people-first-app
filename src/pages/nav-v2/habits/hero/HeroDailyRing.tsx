@@ -33,7 +33,7 @@ export const HeroDailyRing = memo(function HeroDailyRing({
   ratio,
 }: HeroDailyRingProps) {
   const { t } = useLanguage();
-  const tx = t as unknown as Record<string, string>;
+  const tx = t;
   const animate = useShouldAnimate();
 
   const dashOffset = useMemo(

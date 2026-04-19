@@ -89,7 +89,7 @@ export const HeroEmptyJourney = memo(function HeroEmptyJourney({
   onOpenLibrary,
 }: HeroEmptyJourneyProps) {
   const { t, language } = useLanguage();
-  const tx = t as unknown as Record<string, string>;
+  const tx = t;
   const animate = useShouldAnimate();
 
   const handleCreate = useCallback(() => {

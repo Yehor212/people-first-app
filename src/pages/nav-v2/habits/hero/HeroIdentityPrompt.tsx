@@ -47,7 +47,7 @@ export const HeroIdentityPrompt = memo(function HeroIdentityPrompt({
   dayOfMonth,
 }: HeroIdentityPromptProps) {
   const { t } = useLanguage();
-  const tx = t as unknown as Record<string, string>;
+  const tx = t;
 
   const choice = useMemo(() => pickIdentityForDay(habits, dayOfMonth), [habits, dayOfMonth]);
 

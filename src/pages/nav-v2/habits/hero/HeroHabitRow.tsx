@@ -93,7 +93,7 @@ export const HeroHabitRow = memo(function HeroHabitRow({
   const animate = useShouldAnimate();
   const today = getToday();
   const { t } = useLanguage();
-  const tx = t as unknown as Record<string, string>;
+  const tx = t;
   const isSkippedToday = habit.entries?.[today]?.value === ENTRY.SKIP;
   const isArchived = Boolean(habit.isArchived);
   const hasMenu = Boolean(onSkip || onUnskip || onArchive || onUnarchive);

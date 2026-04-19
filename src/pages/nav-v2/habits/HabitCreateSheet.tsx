@@ -43,7 +43,7 @@ export function HabitCreateSheet({
   onUpdateHabit,
 }: HabitCreateSheetProps) {
   const { t } = useLanguage();
-  const tx = t as unknown as Record<string, string>;
+  const tx = t;
 
   const handleAdd = useCallback(
     (habit: Habit) => {

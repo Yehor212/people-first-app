@@ -43,7 +43,7 @@ const HabitDetailSheetLazy = lazyWithRetry(() =>
 
 export const HabitsPage = memo(function HabitsPage() {
   const { t, language } = useLanguage();
-  const tx = t as unknown as Record<string, string>;
+  const tx = t;
   const mainRef = useRef<HTMLElement>(null);
 
   const { habits, todaysHabits, dailyProgress } = useHabitsPageState();

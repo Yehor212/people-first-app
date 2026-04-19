@@ -86,7 +86,7 @@ export const HabitsHeroZone = memo(function HabitsHeroZone({
   onOpenDetail,
 }: HabitsHeroZoneProps) {
   const { t } = useLanguage();
-  const tx = t as unknown as Record<string, string>;
+  const tx = t;
   const animate = useShouldAnimate();
 
   const groups = useMemo(() => groupHabitsByTimeOfDay(todaysHabits), [todaysHabits]);
