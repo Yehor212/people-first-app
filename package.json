@@ -25,7 +25,7 @@
     "test:coverage": "vitest run --coverage",
     "test:i18n": "vitest run test/i18n.test.ts",
     "i18n:check": "npx tsx scripts/check-i18n.ts",
-    "build:android": "cross-env CAPACITOR_BUILD=true npm run tokens:build && cross-env CAPACITOR_BUILD=true vite build",
+    "build:android": "cross-env CAPACITOR_BUILD=true npm run tokens:build && cross-env CAPACITOR_BUILD=true vite build && cross-env CAPACITOR_BUILD=true node scripts/capacitor-prune-assets.cjs",
     "cap:sync": "npm run build:android && npx cap sync",
     "cap:sync:android": "npm run build:android && npx cap sync android",
     "cap:open:android": "npx cap open android",
