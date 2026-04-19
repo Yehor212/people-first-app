@@ -49,7 +49,7 @@ export function TimeInput({
             "h-11 px-4 py-2 text-base md:text-sm",
             "border-2 border-transparent",
             "focus:outline-none focus:border-primary/30 focus:ring-2 focus:ring-primary/20",
-            "hover:bg-secondary transition-all duration-150",
+            "hover:bg-secondary motion-safe:transition-all motion-safe:duration-150",
             "disabled:opacity-50 disabled:cursor-not-allowed",
             // Custom styling for the time input
             "[&::-webkit-calendar-picker-indicator]:opacity-0",
@@ -95,7 +95,7 @@ export function TimeInputInline({
     <div
       className={cn(
         "flex items-center justify-between gap-3 p-3 bg-secondary/50 rounded-xl",
-        "hover:bg-secondary/70 transition-colors",
+        "hover:bg-secondary/70 motion-safe:transition-colors",
         disabled && "opacity-50",
         className
       )}
@@ -123,7 +123,7 @@ export function TimeInputInline({
             "h-9 w-24 px-2 text-base md:text-sm",
             "border border-border",
             "focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20",
-            "transition-all duration-150",
+            "motion-safe:transition-all motion-safe:duration-150",
             "disabled:cursor-not-allowed",
             "[&::-webkit-calendar-picker-indicator]:opacity-0",
             "[&::-webkit-calendar-picker-indicator]:absolute",

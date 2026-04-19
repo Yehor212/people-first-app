@@ -66,7 +66,7 @@ export function SegmentedControl<T extends string>({
             onClick={() => onChange(option.value)}
             aria-pressed={isSelected}
             className={cn(
-              "relative flex items-center justify-center gap-1.5 font-medium transition-all btn-press",
+              "relative flex items-center justify-center gap-1.5 font-medium motion-safe:transition-all btn-press",
               config.button,
               fullWidth && "flex-1",
               isSelected
