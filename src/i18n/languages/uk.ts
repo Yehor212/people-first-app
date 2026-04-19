@@ -2869,6 +2869,8 @@ export const uk: Translations = {
   navV2HabitsCategoryQuit: "Відмова",
   navV2HabitsQuickPick: "Швидкий вибір",
   navV2HabitsAlreadyAdded: "Додано",
+  navV2HabitsActions: "Дії",
+  navV2HabitsOpenDetails: "Відкрити деталі",
   navV2HabitsDayCompleteHero: "День завершено",
   orbWhisper1: "Як твоє серце сьогодні?",
   orbWhisper2: "Що підіймається в тобі зараз?",

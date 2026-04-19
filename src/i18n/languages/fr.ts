@@ -2911,6 +2911,8 @@ export const fr: Translations = {
   navV2HabitsCategoryQuit: "Arrêter",
   navV2HabitsQuickPick: "Choix rapide",
   navV2HabitsAlreadyAdded: "Ajouté",
+  navV2HabitsActions: "Actions",
+  navV2HabitsOpenDetails: "Voir les détails",
   navV2HabitsDayCompleteHero: "Journée complète",
   orbWhisper1: "Comment va ton cœur aujourd'hui ?",
   orbWhisper2: "Qu'est-ce qui monte en toi maintenant ?",

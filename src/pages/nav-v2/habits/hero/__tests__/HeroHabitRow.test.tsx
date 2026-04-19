@@ -111,31 +111,11 @@ describe("HeroHabitRow", () => {
     expect(open).toHaveBeenCalledTimes(1);
   });
 
-  it("renders 7-day chain only when the habit has at least one entry", () => {
-    const today = new Date().toISOString().slice(0, 10);
-    const { rerender } = render(
-      <HeroHabitRow habit={habit()} onToggle={vi.fn()} onDelete={vi.fn()} />,
-    );
-    expect(screen.queryByTestId("hero-habit-row-h1-chain")).not.toBeInTheDocument();
-    rerender(
-      <HeroHabitRow
-        habit={habit({ entries: { [today]: { value: 1 } } })}
-        onToggle={vi.fn()}
-        onDelete={vi.fn()}
-      />,
-    );
-    const chain = screen.getByTestId("hero-habit-row-h1-chain");
-    expect(chain).toBeInTheDocument();
-    expect(chain.querySelectorAll("li")).toHaveLength(7);
-  });
-
-  it("renders reminder + identity badges when configured", () => {
+  it("renders reminder pill when reminder is configured", () => {
     render(
       <HeroHabitRow
         habit={habit({
           reminders: [{ enabled: true, time: "07:00", days: [1, 2, 3, 4, 5] }],
-          identityVerb: "a reader",
-          identityIcon: "📖",
         })}
         onToggle={vi.fn()}
         onDelete={vi.fn()}
@@ -143,6 +123,44 @@ describe("HeroHabitRow", () => {
     );
     const cue = screen.getByTestId("hero-habit-row-h1-cue");
     expect(cue).toHaveTextContent("07:00");
-    expect(cue).toHaveTextContent("a reader");
+  });
+
+  // Revolution-ergonomics (§6 proposal 2026-04-19): card chain + identity
+  // verb removed from the row surface. Identity lives in HeroIdentityPrompt;
+  // chain lives in HabitDetailSheet (opened via action-sheet "Open details").
+
+  it("long-press opens the action sheet when skip/archive handlers are provided", () => {
+    const onSkip = vi.fn();
+    render(
+      <HeroHabitRow
+        habit={habit()}
+        onToggle={vi.fn()}
+        onDelete={vi.fn()}
+        onOpenDetail={vi.fn()}
+        onSkip={onSkip}
+      />,
+    );
+    const row = screen.getByTestId("hero-habit-row-h1");
+    fireEvent.pointerDown(row);
+    void act(() => vi.advanceTimersByTime(500));
+    fireEvent.pointerUp(row);
+    expect(screen.getByTestId("habit-action-sheet-h1")).toBeInTheDocument();
+  });
+
+  it("long-press falls back to onOpenDetail when no skip/archive/edit handlers exist", () => {
+    const open = vi.fn();
+    render(
+      <HeroHabitRow
+        habit={habit()}
+        onToggle={vi.fn()}
+        onDelete={vi.fn()}
+        onOpenDetail={open}
+      />,
+    );
+    const row = screen.getByTestId("hero-habit-row-h1");
+    fireEvent.pointerDown(row);
+    void act(() => vi.advanceTimersByTime(500));
+    fireEvent.pointerUp(row);
+    expect(open).toHaveBeenCalledTimes(1);
   });
 });

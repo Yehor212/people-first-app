@@ -2761,6 +2761,8 @@ const arabicOverrides: Partial<Translations> = {
   navV2HabitsCategoryQuit: "الإقلاع",
   navV2HabitsQuickPick: "اختيار سريع",
   navV2HabitsAlreadyAdded: "مضاف",
+  navV2HabitsActions: "إجراءات",
+  navV2HabitsOpenDetails: "فتح التفاصيل",
   navV2HabitsDayCompleteHero: "اكتمل اليوم",
   orbWhisper1: "كيف حال قلبك اليوم؟",
   orbWhisper2: "ماذا يرتفع فيك الآن؟",

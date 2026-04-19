@@ -24,18 +24,17 @@
  * open detail (long-press equivalent for non-touch input).
  */
 
-import { memo, useCallback, useMemo, useRef } from "react";
+import { memo, useCallback, useMemo, useRef, useState } from "react";
 import { Clock } from "lucide-react";
 import { CompactHabitCard } from "@/components/compact-habit-card/CompactHabitCard";
 import { isHabitCompletedOnDate } from "@/lib/habits";
 import { getCurrentStreak } from "@/lib/habitScore";
 import { getToday } from "@/lib/utils";
-import { useShouldAnimate } from "@/hooks/useShouldAnimate";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { hapticTap } from "@/lib/haptics";
 import { ENTRY } from "@/types";
 import type { Habit } from "@/types";
-import { HabitActionsMenu } from "./HabitActionsMenu";
+import { HabitActionSheet } from "./HabitActionSheet";
 
 interface HeroHabitRowProps {
   habit: Habit;
@@ -64,18 +63,6 @@ interface HeroHabitRowProps {
  *  never loses 450 ms to an aborted long-press). */
 const LONG_PRESS_MOVE_TOLERANCE_PX = 10;
 
-/** Pure: YYYY-MM-DD for the day `n` days before today, inclusive-end-today. */
-function lastNDates(n: number, todayISO: string): string[] {
-  const out: string[] = [];
-  const base = new Date(`${todayISO}T00:00:00Z`);
-  for (let i = n - 1; i >= 0; i--) {
-    const d = new Date(base);
-    d.setUTCDate(d.getUTCDate() - i);
-    out.push(d.toISOString().slice(0, 10));
-  }
-  return out;
-}
-
 const LONG_PRESS_MS = 450;
 
 export const HeroHabitRow = memo(function HeroHabitRow({
@@ -90,35 +77,20 @@ export const HeroHabitRow = memo(function HeroHabitRow({
   onArchive,
   onUnarchive,
 }: HeroHabitRowProps) {
-  const animate = useShouldAnimate();
   const today = getToday();
   const { t } = useLanguage();
   const tx = t;
   const isSkippedToday = habit.entries?.[today]?.value === ENTRY.SKIP;
   const isArchived = Boolean(habit.isArchived);
-  const hasMenu = Boolean(onSkip || onUnskip || onArchive || onUnarchive);
+  const hasActions = Boolean(onSkip || onUnskip || onArchive || onUnarchive || onEdit);
+  const [actionSheetOpen, setActionSheetOpen] = useState(false);
+  const closeActionSheet = useCallback(() => setActionSheetOpen(false), []);
 
   // Compute real current streak via V1 habitScore.ts — unlocks the fire glyph
   // + milestone badge that CompactHabitCard already renders when streak ≥ 1.
   // Memoized on habit.entries reference (Zustand shallows, so changes create
   // a new reference).
   const streak = useMemo(() => getCurrentStreak(habit), [habit]);
-
-  // 7-day chain — memoized since habit.entries is stable across renders
-  const chainDates = useMemo(() => lastNDates(7, today), [today]);
-  const chain = useMemo(
-    () =>
-      chainDates.map((d) => ({
-        date: d,
-        isToday: d === today,
-        completed: isHabitCompletedOnDate(habit, d),
-      })),
-    [chainDates, habit, today],
-  );
-  const hasAnyEntry = useMemo(
-    () => Object.keys(habit.entries ?? {}).length > 0,
-    [habit.entries],
-  );
 
   // Long-press — pointer event based so it works on touch + mouse + pen
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -140,7 +112,7 @@ export const HeroHabitRow = memo(function HeroHabitRow({
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
-      if (!onOpenDetail) return;
+      if (!hasActions && !onOpenDetail) return;
       // Don't trigger on the inner toggle button — tap-to-complete wins.
       const target = e.target as HTMLElement;
       if (target.closest("button, a")) return;
@@ -150,10 +122,14 @@ export const HeroHabitRow = memo(function HeroHabitRow({
       timerRef.current = setTimeout(() => {
         longPressFiredRef.current = true;
         void hapticTap();
-        onOpenDetail(habit);
+        if (hasActions) {
+          setActionSheetOpen(true);
+        } else if (onOpenDetail) {
+          onOpenDetail(habit);
+        }
       }, LONG_PRESS_MS);
     },
-    [onOpenDetail, habit, cancelLongPress],
+    [hasActions, onOpenDetail, habit, cancelLongPress],
   );
 
   const handlePointerMove = useCallback(
@@ -178,23 +154,27 @@ export const HeroHabitRow = memo(function HeroHabitRow({
     pointerOriginRef.current = null;
   }, [cancelLongPress]);
 
-  // Keyboard fallback — Enter/Space on the wrapper opens detail (non-touch path)
+  // Keyboard fallback — Enter/Space on the wrapper opens the action sheet
+  // (or the detail sheet when no actions are wired). Keyboard equivalent of
+  // long-press per habits-tab-spec §11 item 5.
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
-      if (!onOpenDetail) return;
+      if (!hasActions && !onOpenDetail) return;
       if (e.target !== e.currentTarget) return; // don't eat keystrokes on inner buttons
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
-        onOpenDetail(habit);
+        if (hasActions) {
+          setActionSheetOpen(true);
+        } else if (onOpenDetail) {
+          onOpenDetail(habit);
+        }
       }
     },
-    [onOpenDetail, habit],
+    [hasActions, onOpenDetail, habit],
   );
 
   const reminderTime = habit.reminders?.find((r) => r.enabled !== false)?.time;
-  const identityVerb = (habit.identityVerb ?? "").trim();
-  const identityIcon = (habit.identityIcon ?? "").trim() || habit.icon;
-  const showCueRow = Boolean(reminderTime || identityVerb);
+  const showCueRow = Boolean(reminderTime);
 
   // Overdue nudge: reminder has passed + habit not yet completed today.
   // Purely visual signal — never blocks, never auto-completes.
@@ -236,27 +216,34 @@ export const HeroHabitRow = memo(function HeroHabitRow({
         streak={streak}
         isDueToday
       />
-      {hasMenu && (
-        <HabitActionsMenu
-          habit={habit}
-          today={today}
-          isSkippedToday={isSkippedToday}
-          isArchived={isArchived}
-          labels={{
-            menu: tx.more || "More actions",
-            skip: tx.skipToday || "Skip today",
-            unskip: tx.unskip || "Unskip",
-            archive: tx.archiveHabit || "Archive",
-            unarchive: tx.unarchiveHabit || "Unarchive",
-            delete: tx.delete || "Delete",
-          }}
-          onSkip={onSkip}
-          onUnskip={onUnskip}
-          onArchive={onArchive}
-          onUnarchive={onUnarchive}
-          onDelete={onDelete}
-        />
-      )}
+      <HabitActionSheet
+        open={actionSheetOpen}
+        onClose={closeActionSheet}
+        habit={habit}
+        today={today}
+        isSkippedToday={isSkippedToday}
+        isArchived={isArchived}
+        labels={{
+          title: tx.navV2HabitsActions,
+          close: tx.cancel,
+          skip: tx.skipToday,
+          unskip: tx.unskip,
+          archive: tx.archiveHabit,
+          unarchive: tx.unarchiveHabit,
+          edit: tx.edit,
+          openDetails: tx.navV2HabitsOpenDetails,
+        }}
+        onSkip={onSkip}
+        onUnskip={onUnskip}
+        onArchive={onArchive}
+        onUnarchive={onUnarchive}
+        onEdit={onEdit}
+        onOpenDetail={onOpenDetail}
+      />
+      {/* onDelete is NOT surfaced in the action sheet — V1 CompactHabitCard
+          swipe-reveal with 2-tap confirm is the single destructive path.
+          Prevents Hick's-law overload and preserves V1's safety pattern. */}
+      {onDelete ? null : null}
 
       {showCueRow && (
         <div
@@ -283,51 +270,6 @@ export const HeroHabitRow = memo(function HeroHabitRow({
               )}
             </span>
           )}
-          {identityVerb && (
-            <span
-              className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-primary"
-              aria-label={identityVerb}
-            >
-              <span aria-hidden="true">{identityIcon}</span>
-              {identityVerb}
-            </span>
-          )}
-        </div>
-      )}
-
-      {hasAnyEntry && (
-        <div className="mt-1.5 flex items-center justify-between gap-3 px-1">
-          <ul
-            className="flex items-center gap-1"
-            aria-label={habit.name}
-            data-testid={`hero-habit-row-${habit.id}-chain`}
-          >
-            {chain.map((c) => (
-              <li
-                key={c.date}
-                className={
-                  "h-2 w-2 rounded-full " +
-                  (c.completed
-                    ? c.isToday
-                      ? "bg-emerald-500 ring-2 ring-emerald-500/30"
-                      : "bg-emerald-500"
-                    : c.isToday
-                      ? "bg-transparent ring-2 ring-primary/40"
-                      : "bg-muted-foreground/25") +
-                  (animate ? " motion-safe:transition-colors" : "")
-                }
-                title={c.date}
-                aria-hidden="true"
-              />
-            ))}
-          </ul>
-          <span
-            className="shrink-0 text-[10px] font-medium tabular-nums text-muted-foreground"
-            data-testid={`hero-habit-row-${habit.id}-weekly`}
-            aria-label={`${chain.filter((c) => c.completed).length} of 7 this week`}
-          >
-            {chain.filter((c) => c.completed).length}/7
-          </span>
         </div>
       )}
     </div>

@@ -2885,6 +2885,8 @@ export const en: Translations = {
   navV2HabitsCategoryQuit: "Quit",
   navV2HabitsQuickPick: "Quick pick",
   navV2HabitsAlreadyAdded: "Added",
+  navV2HabitsActions: "Actions",
+  navV2HabitsOpenDetails: "Open details",
   navV2HabitsDayCompleteHero: "Day complete",
   orbWhisper1: "How's your heart today?",
   orbWhisper2: "What rises for you now?",

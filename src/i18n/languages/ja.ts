@@ -2847,6 +2847,8 @@ export const ja: Translations = {
   navV2HabitsCategoryQuit: "やめる",
   navV2HabitsQuickPick: "クイック選択",
   navV2HabitsAlreadyAdded: "追加済み",
+  navV2HabitsActions: "アクション",
+  navV2HabitsOpenDetails: "詳細を開く",
   navV2HabitsDayCompleteHero: "今日は完了",
   orbWhisper1: "今日、心の調子はどう？",
   orbWhisper2: "今、何が浮かんでくる？",

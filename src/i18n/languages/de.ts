@@ -2908,6 +2908,8 @@ export const de: Translations = {
   navV2HabitsCategoryQuit: "Aufgeben",
   navV2HabitsQuickPick: "Schnellauswahl",
   navV2HabitsAlreadyAdded: "Hinzugefügt",
+  navV2HabitsActions: "Aktionen",
+  navV2HabitsOpenDetails: "Details öffnen",
   navV2HabitsDayCompleteHero: "Tag vollendet",
   orbWhisper1: "Wie geht es deinem Herzen heute?",
   orbWhisper2: "Was steigt jetzt in dir auf?",

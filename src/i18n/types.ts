@@ -2880,6 +2880,8 @@ export interface Translations {
   navV2HabitsCategoryQuit: string;
   navV2HabitsQuickPick: string;
   navV2HabitsAlreadyAdded: string;
+  navV2HabitsActions: string;
+  navV2HabitsOpenDetails: string;
   navV2HabitsDayCompleteHero: string;
 
   // Phase 3-A.2: Orb whisper prompts (rotate daily via date-of-month)

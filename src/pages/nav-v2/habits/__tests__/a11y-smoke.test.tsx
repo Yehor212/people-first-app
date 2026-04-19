@@ -156,8 +156,8 @@ describe("Habits a11y smoke (converts §11 🟡 rows to ✅)", () => {
     });
   });
 
-  describe("§11 #13 — chain dots are aria-hidden; parent row carries the label", () => {
-    it("HeroHabitRow has role=group with aria-label; chain dots are aria-hidden", () => {
+  describe("§11 #13 — habit row carries aria-label (chain moved to detail sheet per revolution-ergonomics 2026-04-19)", () => {
+    it("HeroHabitRow has role=group with aria-label equal to habit name", () => {
       const today = new Date().toISOString().slice(0, 10);
       render(
         <HeroHabitRow
@@ -169,10 +169,10 @@ describe("Habits a11y smoke (converts §11 🟡 rows to ✅)", () => {
       const row = screen.getByTestId("hero-habit-row-h1");
       expect(row.getAttribute("role")).toBe("group");
       expect(row.getAttribute("aria-label")).toBe("Hydrate");
-      const chain = screen.getByTestId("hero-habit-row-h1-chain");
-      chain.querySelectorAll("li").forEach((li) => {
-        expect(li.getAttribute("aria-hidden")).toBe("true");
-      });
+      // Chain dots were removed from the row surface; the 7-day history
+      // lives inside V1 HabitDetailSheet, opened via the action sheet's
+      // "Open details" item.
+      expect(screen.queryByTestId("hero-habit-row-h1-chain")).not.toBeInTheDocument();
     });
   });
 

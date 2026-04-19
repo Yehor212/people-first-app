@@ -2838,6 +2838,8 @@ const hebrewOverrides: Partial<Translations> = {
   navV2HabitsCategoryQuit: "לוותר",
   navV2HabitsQuickPick: "בחירה מהירה",
   navV2HabitsAlreadyAdded: "נוסף",
+  navV2HabitsActions: "פעולות",
+  navV2HabitsOpenDetails: "פתח פרטים",
   navV2HabitsDayCompleteHero: "היום הושלם",
   orbWhisper1: "מה שלום הלב שלך היום?",
   orbWhisper2: "מה עולה בך עכשיו?",
