@@ -135,7 +135,7 @@ export function AuthGate({ isLoading, children }: AuthGateProps) {
           <p className="text-muted-foreground">{initializationState.error}</p>
           <button
             onClick={() => window.location.reload()}
-            className="w-full py-3 zen-gradient text-primary-foreground rounded-xl font-semibold hover:opacity-90 transition-opacity"
+            className="w-full py-3 zen-gradient text-primary-foreground rounded-xl font-semibold hover:opacity-90 motion-safe:transition-opacity"
           >
             {t.tryAgain || "Try Again"}
           </button>

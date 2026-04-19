@@ -167,7 +167,7 @@ export const ChallengeModal = memo(function ChallengeModal({
               <motion.button
                 onClick={handleBack}
                 aria-label={t.back || "Go back"}
-                className="p-2 rounded-xl bg-slate-100/60 dark:bg-white/5 border border-slate-200/60 dark:border-white/10 text-slate-600 dark:text-white/70 hover:bg-slate-200/60 dark:hover:bg-white/10 transition-colors"
+                className="p-2 rounded-xl bg-slate-100/60 dark:bg-white/5 border border-slate-200/60 dark:border-white/10 text-slate-600 dark:text-white/70 hover:bg-slate-200/60 dark:hover:bg-white/10 motion-safe:transition-colors"
                 whileHover={zenHover.glow}
                 whileTap={zenTap.icon}
               >

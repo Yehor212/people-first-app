@@ -148,7 +148,7 @@ export function DailyRewards({ onClose, onClaimReward }: DailyRewardsProps) {
             {[...Array(30)].map((_, i) => (
               <div
                 key={i}
-                className="absolute animate-bounce"
+                className="absolute motion-safe:animate-bounce"
                 style={{
                   left: `${Math.random() * 100}%`,
                   top: `-20px`,
@@ -162,12 +162,12 @@ export function DailyRewards({ onClose, onClaimReward }: DailyRewardsProps) {
           </div>
         )}
 
-        <div className="bg-card rounded-3xl shadow-2xl max-w-md w-full overflow-hidden animate-scale-in">
+        <div className="bg-card rounded-3xl shadow-2xl max-w-md w-full overflow-hidden motion-safe:animate-scale-in">
           {/* Header */}
           <div className="zen-gradient p-6 text-white relative overflow-hidden">
             <button
               onClick={onClose}
-              className="absolute top-4 end-4 p-2 hover:bg-foreground/20 rounded-full transition-colors"
+              className="absolute top-4 end-4 p-2 hover:bg-foreground/20 rounded-full motion-safe:transition-colors"
               aria-label={t.close}
             >
               <X className="w-5 h-5" />
@@ -201,8 +201,8 @@ export function DailyRewards({ onClose, onClaimReward }: DailyRewardsProps) {
                   <div
                     key={index}
                     className={cn(
-                      "aspect-square rounded-xl flex flex-col items-center justify-center relative transition-all",
-                      isToday && canClaim && "ring-2 ring-primary ring-offset-2 animate-pulse",
+                      "aspect-square rounded-xl flex flex-col items-center justify-center relative motion-safe:transition-all",
+                      isToday && canClaim && "ring-2 ring-primary ring-offset-2 motion-safe:animate-pulse",
                       isPast && "bg-primary/10",
                       isFuture && "bg-muted opacity-60",
                       isToday && !canClaim && "bg-primary/20",
@@ -231,7 +231,7 @@ export function DailyRewards({ onClose, onClaimReward }: DailyRewardsProps) {
             <div
               className={cn(
                 "bg-gradient-to-r from-primary/10 to-accent/10 rounded-2xl p-4 mb-4",
-                canClaim && "animate-pulse"
+                canClaim && "motion-safe:animate-pulse"
               )}
             >
               <div className="flex items-center justify-between">
@@ -249,7 +249,7 @@ export function DailyRewards({ onClose, onClaimReward }: DailyRewardsProps) {
                     onClick={handleClaim}
                     disabled={claiming}
                     className={cn(
-                      "px-4 py-2 zen-gradient text-white rounded-xl font-medium transition-all",
+                      "px-4 py-2 zen-gradient text-white rounded-xl font-medium motion-safe:transition-all",
                       claiming ? "opacity-50" : "hover:scale-105 active:scale-95"
                     )}
                   >

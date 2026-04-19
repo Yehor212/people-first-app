@@ -36,7 +36,7 @@ export function ConfettiBurst({ x, y, onComplete }: ConfettiBurstProps) {
       {particles.map((p) => (
         <div
           key={p.id}
-          className="absolute rounded-full animate-confetti-burst"
+          className="absolute rounded-full motion-safe:animate-confetti-burst"
           style={{
             left: x,
             top: y,

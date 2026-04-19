@@ -32,7 +32,7 @@ export const AchievementCard = memo(function AchievementCard({
 
   return (
     <Card
-      className={`p-4 cursor-pointer transition-all hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+      className={`p-4 cursor-pointer motion-safe:transition-all hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
         isUnlocked ? getBadgeGlow(achievement.rarity) : "opacity-60"
       }`}
       role="button"

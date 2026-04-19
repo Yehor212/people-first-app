@@ -83,7 +83,7 @@ function VersionCard({
       {/* Header */}
       <button
         onClick={onToggle}
-        className="w-full p-4 flex items-center justify-between hover:bg-muted/50 transition-colors"
+        className="w-full p-4 flex items-center justify-between hover:bg-muted/50 motion-safe:transition-colors"
       >
         <div className="flex items-center gap-3">
           <div className="flex flex-col items-start">
@@ -188,7 +188,7 @@ export function ChangelogPanel({ onClose }: ChangelogPanelProps) {
           <button
             onClick={onClose}
             aria-label={t.close || "Close"}
-            className="p-2 hover:bg-muted rounded-full transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+            className="p-2 hover:bg-muted rounded-full motion-safe:transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
           >
             <X className="w-6 h-6" />
           </button>
@@ -198,13 +198,13 @@ export function ChangelogPanel({ onClose }: ChangelogPanelProps) {
         <div className="flex gap-2 p-4 border-b border-border">
           <button
             onClick={expandAll}
-            className="px-3 py-1.5 text-xs bg-secondary text-secondary-foreground rounded-lg hover:bg-muted transition-colors min-h-[44px] flex items-center justify-center"
+            className="px-3 py-1.5 text-xs bg-secondary text-secondary-foreground rounded-lg hover:bg-muted motion-safe:transition-colors min-h-[44px] flex items-center justify-center"
           >
             {t.changelogExpandAll || "Expand All"}
           </button>
           <button
             onClick={collapseAll}
-            className="px-3 py-1.5 text-xs bg-secondary text-secondary-foreground rounded-lg hover:bg-muted transition-colors min-h-[44px] flex items-center justify-center"
+            className="px-3 py-1.5 text-xs bg-secondary text-secondary-foreground rounded-lg hover:bg-muted motion-safe:transition-colors min-h-[44px] flex items-center justify-center"
           >
             {t.changelogCollapseAll || "Collapse All"}
           </button>
