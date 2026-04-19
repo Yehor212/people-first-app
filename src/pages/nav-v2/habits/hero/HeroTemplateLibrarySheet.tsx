@@ -78,7 +78,7 @@ export const HeroTemplateLibrarySheet = memo(function HeroTemplateLibrarySheet({
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 z-[70] bg-black/40 backdrop-blur-sm [-webkit-backdrop-filter:blur(4px)]" />
         <Drawer.Content
-          className="fixed bottom-0 left-0 right-0 z-[71] mt-24 flex max-h-[85vh] flex-col rounded-t-3xl bg-background text-foreground shadow-2xl focus:outline-none"
+          className="fixed inset-x-0 bottom-0 z-[71] mt-24 flex max-h-[85vh] flex-col rounded-t-3xl bg-background text-foreground shadow-2xl focus:outline-none"
           aria-labelledby="habits-library-title"
           data-testid="habits-library-sheet"
         >

@@ -43,9 +43,11 @@ Format: *When I [situation], I want to [motivation], so I can [expected outcome]
 - **Emotional arc:** shame → curiosity → quiet pride. We never push shame.
 - **Failure mode for us:** any feature that reminds them of past failures
   (red streak counters, "you broke it!" modals) triggers churn within one session.
-- **Evidence:** churn cliff at days 9-14 is well-documented (Habitify 2024
-  cohort report, ~60% drop-off before day 14).
-- **Instrumented signal:** `habits.returningIntender.day14Retention` ≥ 0.55.
+- **Evidence:** industry-reported churn cliffs in habit apps cluster in the
+  first 2 weeks (qualitative; see App Store review corpus, Reclaim 2026
+  roundup cited in §18). **We do not have proprietary cohort data.**
+- **Aspirational signal:** `habits.returningIntender.day14Retention` ≥ 0.55
+  (not yet instrumented; P1 work — §15).
 
 ### 2.2 P1 — The Fresh Starter (~30%)
 
@@ -55,9 +57,12 @@ Format: *When I [situation], I want to [motivation], so I can [expected outcome]
 - **Outcome:** "I end day 1 having completed one habit, even if trivial"
 - **Emotional arc:** overwhelm → relief → momentum.
 - **Failure mode for us:** empty form + 20 fields = instant bounce.
-- **Evidence:** NN/g 2026 onboarding research — *first-action* within 30s
-  correlates with 4.2× day-7 retention.
-- **Instrumented signal:** `habits.firstAdd.duration` p50 < 30s; p90 < 90s.
+- **Evidence:** NN/g onboarding writings generally argue that *early
+  value* (any first action) reduces bounce; specific effect sizes vary by
+  domain. **We do not cite a numeric effect here.** The 30s target is our
+  design budget, not a claimed correlate.
+- **Aspirational signal:** `habits.firstAdd.duration` p50 < 30s; p90 < 90s
+  (not yet instrumented; P1).
 
 ### 2.3 P2 — The Power User (~15%)
 
@@ -69,9 +74,11 @@ Format: *When I [situation], I want to [motivation], so I can [expected outcome]
 - **Emotional arc:** curiosity → revelation → re-architecting routine.
 - **Failure mode for us:** insights that feel like horoscopes (low
   confidence, spurious correlation) destroy trust fast.
-- **Evidence:** Habitify power-user survey 2025 — the top-requested feature
-  was per-habit mood correlation.
-- **Instrumented signal:** `habits.detailSheet.openRate` ≥ 0.20 (spec §15).
+- **Evidence:** our own V1 insightsEngine exists precisely because mood-habit
+  correlation was the most-asked question in the V1 beta feedback loop
+  (qualitative, no survey numbers to cite).
+- **Aspirational signal:** `habits.detailSheet.openRate` ≥ 0.20 (spec §15;
+  not yet instrumented).
 
 ### 2.4 Anti-personas (explicit rejections)
 
@@ -514,21 +521,27 @@ State values: ✅ met · 🟡 partial · ❌ gap · 🔲 aspirational.
 
 | # | Criterion | Why | Test method | Owner | State |
 |---:|---|---|---|---|:---:|
-| 1 | Interactive targets ≥44×44 CSS px | WCAG 2.5.5 / Apple HIG / MD3 | Playwright measures `getBoundingClientRect` on every chip + button + row | a11y-i18n-guardian | ✅ verified 2026-04-19 |
-| 2 | `<main>` wired to heading via `aria-labelledby` | VoiceOver/NVDA region announcement | DOM assertion in `HabitsPage.test.tsx` | tester | ✅ `a41afa` test |
-| 3 | Ring has `role="img"` + `aria-live="polite"` + readable label `"Today's habits: N / M"` | Screen-reader users need count updates | `HeroDailyRing.test.tsx` | tester | ✅ |
-| 4 | Every chip carries `aria-label` distinct from its emoji-only content | SR users hear meaning, not "🙏" | axe-core run (P1 — not yet automated) | design-advisor | ✅ implemented, 🔲 automated |
-| 5 | Long-press has keyboard fallback (Enter / Space on row) | Keyboard users can't press-and-hold | `HeroHabitRow.test.tsx` `"Enter key opens the detail sheet"` | tester | ✅ |
-| 6 | Swipe-reveal has click/tap fallback on desktop | Mouse users can't swipe | V1 hover-revealed edit/trash buttons | V1 | ✅ unchanged V1 |
-| 7 | Category tabs use `<button aria-pressed>` | SR announces current-tab state | manual VO pass + `HeroTemplateLibrarySheet` source audit | a11y-i18n-guardian | ✅ |
-| 8 | Confetti (`AllHabitsDoneAnimation`) is `aria-hidden="true"` | Purely decorative — don't announce | V1 component source | V1 | ✅ V1 already |
-| 9 | Android back closes sheets (not navigates) | Capacitor native expectation | `useBackHandler` hook in each sheet | V1 | ✅ Create/Library/Detail |
-| 10 | Focus returns to trigger on sheet close | ARIA APG dialog pattern | `HabitsPage.tsx` `captureReturnFocus` / `restoreReturnFocus` (commit 2ddba59) | frontend-builder | ✅ |
-| 11 | Reduced-motion: animations snap, not fade | WCAG 2.3.3 | `useShouldAnimate()` gates all spring/layout motion | V1 | ✅ |
-| 12 | Color contrast ≥4.5:1 body / ≥3:1 UI | WCAG 1.4.3 / 1.4.11 | paper theme validated in `src/styles/themes.contrast.test.ts`; V2 inherits | V1 | ✅ |
-| 13 | Chain dots have `aria-hidden="true"` + parent `aria-label="{name}"` | Dots are decorative; name is the semantic | `HeroHabitRow.tsx` source | tester | ✅ |
-| 14 | Sticky ring does not trap scroll/focus | MD3 sticky-affordance rule | manual Tab traversal | a11y-i18n-guardian | ✅ |
-| 15 | No focus outline on `<h1>` (moved to `<main>`) | Mount-focus on heading drew ugly rectangle | commit `d449c6b` | frontend-builder | ✅ |
+**Honesty convention:** ✅ = verified by an automated test or grep. 🟡 =
+implemented in code, plausibly correct, **not yet independently verified**
+by axe-core / VoiceOver / NVDA. ❌ = known gap. 🔲 = aspirational.
+
+| # | Criterion | Why | Test method | Owner | State |
+|---:|---|---|---|---|:---:|
+| 1 | Interactive targets ≥44×44 CSS px | WCAG 2.5.5 / Apple HIG / MD3 | **code-reviewed** (`min-h-[44px]` / `min-h-[48px]` in every button); **axe-core run: not yet in CI** | a11y-i18n-guardian | 🟡 |
+| 2 | `<main>` wired to heading via `aria-labelledby` | region announcement | `HabitsPage.test.tsx` asserts `aria-labelledby="habits-page-heading"` | tester | ✅ |
+| 3 | Ring has `role="img"` + `aria-live="polite"` + readable label `"Today's habits: N / M"` | SR count updates | `HeroDailyRing.test.tsx` asserts all three attrs | tester | ✅ |
+| 4 | Every chip carries `aria-label` distinct from emoji | SR users hear meaning, not "🙏" | source audit (every `<button>` has `aria-label`); axe-core automated run — not in CI yet | design-advisor | 🟡 |
+| 5 | Long-press has keyboard fallback (Enter / Space on row) | Keyboard users can't press-and-hold | `HeroHabitRow.test.tsx` — "Enter key opens the detail sheet" | tester | ✅ |
+| 6 | Swipe-reveal has click/tap fallback on desktop | Mouse users can't swipe | V1 hover-revealed edit/trash buttons | V1 | ✅ V1 behavior |
+| 7 | Category tabs use `<button aria-pressed>` | SR announces current-tab | source audit of `HeroTemplateLibrarySheet.tsx` | a11y-i18n-guardian | 🟡 (SR not verified end-to-end) |
+| 8 | Confetti is `aria-hidden="true"` | decorative | V1 source | V1 | ✅ V1 already |
+| 9 | Android back closes sheets (not navigates) | Capacitor native expectation | `useBackHandler` in Create sheet (V1); Library sheet uses Vaul's built-in handler; Detail sheet uses V1's | V1 | 🟡 (not verified on physical device) |
+| 10 | Focus returns to trigger on sheet close | ARIA APG dialog pattern | `captureReturnFocus` / `restoreReturnFocus` in `HabitsPage.tsx` (commit `2ddba59`) | frontend-builder | 🟡 (no e2e test yet) |
+| 11 | Reduced-motion: animations snap, not fade | WCAG 2.3.3 | `useShouldAnimate()` gates all spring/layout motion; V1 hook tested | V1 | ✅ V1 tested |
+| 12 | Color contrast ≥4.5:1 body / ≥3:1 UI | WCAG 1.4.3 / 1.4.11 | paper theme validated by `src/styles/themes.contrast.test.ts` — V2 inherits paper tokens | V1 | ✅ V1 tested; V2 inheritance code-reviewed, not independently validated |
+| 13 | Chain dots have `aria-hidden="true"` + parent `aria-label="{name}"` | dots decorative; name semantic | `HeroHabitRow.tsx` source | tester | ✅ (source) |
+| 14 | Sticky ring does not trap scroll/focus | MD3 sticky-affordance rule | not yet manually traversed | a11y-i18n-guardian | 🟡 |
+| 15 | No focus outline on `<h1>` (moved to `<main>`) | Mount-focus on heading drew ugly rectangle | commit `d449c6b` + `HabitsPage.test.tsx` "focuses main landmark, not heading" | frontend-builder | ✅ |
 
 ### 11.1 Verification cadence
 
@@ -566,22 +579,27 @@ protocol** (what happens on regression).
 
 | Metric | Target | Rationale | Current baseline | Source | Breach protocol |
 |---|---:|---|---|---|---|
-| FCP | < 1.5s | Google "Good" threshold | 1.8s (dev 2026-04-19 — "needs-improvement", logged in console) | `src/observability/reportWebVitals.ts` + Sentry prod | Block merge if p75 > 2.0s over 7-day window |
-| LCP | < 2.5s | Google "Good" threshold; hero-ring render | 2.3s (dev) | same | same |
-| INP | < 200ms | Tap-to-complete felt-latency ceiling | untested on device (TODO: Capacitor native bench) | Web Vitals INP | Rollback commit if p75 > 500ms |
-| CLS | < 0.05 | Sticky ring must not shift when groups mount | 0.000 (dev) | same | Block merge if > 0.1 |
+| FCP | < 1.5s | Google "Good" threshold | **not yet measured on prod RUM** (dev Chrome — 1.8s-3.1s single-sample across 2026-04-19 sessions; not a baseline) | `src/observability/reportWebVitals.ts` (dev only) | Once RUM is wired: block merge if p75 > 2.0s over 7-day window |
+| LCP | < 2.5s | Google "Good" threshold; hero-ring render | **not yet measured on prod RUM** (dev single-sample 2.3s-3.5s) | same | same |
+| INP | < 200ms | Tap-to-complete felt-latency ceiling | **not measured** | Web Vitals INP (not yet wired in prod) | Aspirational until RUM arrives |
+| CLS | < 0.05 | Sticky ring must not shift when groups mount | dev single-sample 0.000 — plausible but not statistically validated | same | Block merge if > 0.1 |
 
-### 12.2 Bundle budget
+### 12.2 Bundle budget (real measurements — `npm run build` 2026-04-19)
 
-| Chunk | Target gz | Current | Delta this phase | Breach |
-|---|---:|---:|---:|---|
-| Nav-V2 shared | < 120 KB | ~105 KB | +8 KB (Hero sub-components + timeOfDay) | Block merge if > 140 KB |
-| V1 `HabitDetailSheet` lazy chunk | < 25 KB | ~20 KB | 0 (V1 unchanged) | Would trigger if V2 forked it |
-| `vaul` (drawer) | already in bundle (Create sheet) | — | 0 | N/A — no extra cost for Library sheet |
-| `framer-motion` | already in bundle | — | 0 | — |
+| Chunk | Raw | Notes | Honesty check |
+|---|---:|---|---|
+| `dist/assets/index-*.js` (main app) | **1.42 MB raw** | includes nav-v2 + v1 + framer-motion + vaul + zustand + dexie + routing | previous spec claim of "Nav-V2 shared 105 KB gz" **was fabricated** — Nav-V2 is not a separate chunk; it ships inside the main index. |
+| `dist/assets/HabitDetailSheet-*.js` lazy | **29 KB raw** | lazy-loaded on long-press | previous claim "~20 KB" was off |
+| `dist/assets/jspdf.es.min-*.js` | 379 KB | PDF export (V1) | not on habits path |
+| `dist/assets/chartTokens-*.js` | 366 KB | Recharts (detail sheet) | lazy — only on long-press |
 
-Measured via `npm run build && du -h dist/assets/*.js | sort -hr`. Ratchet
-metric `bundleSizeKB` with tolerance 0.8%.
+**Ratchet tracking:** `bundleSizeKB` in `quality-ledger.json` currently
+**4989** (whole dist, ~KB); tolerance 0.8%; enforced by CI. Target:
+**no per-feature sub-budget yet** because we don't chunk per-feature —
+only per-lazy-import boundary.
+
+**Follow-up debt:** real gz-size measurement requires `vite build --report`
+or shipping `rollup-plugin-visualizer`. Neither is currently in the pipeline.
 
 ### 12.3 Runtime FPS
 
