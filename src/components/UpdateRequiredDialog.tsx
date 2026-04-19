@@ -34,6 +34,11 @@ const lazyBreadcrumb = (bc: {
     .catch((e) => logger.warn("[Sentry] lazy load skipped:", e));
 };
 import { logger } from "@/lib/logger";
+import {
+  chunkFromFilename,
+  chunkFromMessage,
+  isChunkLoadMessage,
+} from "@/lib/chunkErrorDetection";
 
 // Event name for chunk load failures
 export const CHUNK_LOAD_ERROR_EVENT = "zenflow:chunk-load-error";
@@ -122,39 +127,18 @@ export function setupChunkErrorHandler(): void {
     const message = event.message || "";
     const filename = event.filename || "";
 
-    // Check if this is a chunk load failure
-    const isChunkError =
-      message.includes("Failed to fetch dynamically imported module") ||
-      message.includes("Loading chunk") ||
-      message.includes("Loading CSS chunk") ||
-      message.includes("ChunkLoadError") ||
-      (message.includes("Importing a module script failed") && filename.includes(".js"));
+    if (!isChunkLoadMessage(message)) return;
+    // Prevent the error from being logged to console as unhandled.
+    event.preventDefault();
 
-    if (isChunkError) {
-      // Prevent the error from being logged to console as unhandled
-      event.preventDefault();
-
-      // Extract chunk name from filename if possible
-      const chunkMatch = filename.match(/\/([^/]+\.js)$/);
-      const chunk = chunkMatch ? chunkMatch[1] : "unknown";
-
-      // Dispatch custom event for the dialog
-      window.dispatchEvent(
-        new CustomEvent(CHUNK_LOAD_ERROR_EVENT, {
-          detail: {
-            message,
-            filename,
-            chunk,
-            timestamp: Date.now(),
-          },
-        })
-      );
-
-      // Log as warning, not error (since we're handling it)
-      logger.warn("[ChunkError] Handled chunk load failure:", chunk);
-
-      return true; // Prevent default error handling
-    }
+    const chunk = chunkFromFilename(filename);
+    window.dispatchEvent(
+      new CustomEvent(CHUNK_LOAD_ERROR_EVENT, {
+        detail: { message, filename, chunk, timestamp: Date.now() },
+      })
+    );
+    logger.warn("[ChunkError] Handled chunk load failure:", chunk);
+    return true;
   });
 
   // Handle unhandled promise rejections (dynamic import failures)
@@ -162,35 +146,17 @@ export function setupChunkErrorHandler(): void {
     const reason = event.reason;
     const message = reason?.message || String(reason);
 
-    const isChunkError =
-      message.includes("Failed to fetch dynamically imported module") ||
-      message.includes("Loading chunk") ||
-      message.includes("ChunkLoadError") ||
-      message.includes("Importing a module script failed");
+    if (!isChunkLoadMessage(message)) return;
+    event.preventDefault();
 
-    if (isChunkError) {
-      // Prevent the rejection from being logged as unhandled
-      event.preventDefault();
-
-      // Extract chunk info
-      const urlMatch = message.match(/https?:\/\/[^\s]+/);
-      const url = urlMatch ? urlMatch[0] : "";
-      const chunkMatch = url.match(/\/([^/]+\.js)$/);
-      const chunk = chunkMatch ? chunkMatch[1] : "unknown";
-
-      // Dispatch custom event
-      window.dispatchEvent(
-        new CustomEvent(CHUNK_LOAD_ERROR_EVENT, {
-          detail: {
-            message,
-            url,
-            chunk,
-            timestamp: Date.now(),
-          },
-        })
-      );
-
-      logger.warn("[ChunkError] Handled chunk load rejection:", chunk);
-    }
+    const chunk = chunkFromMessage(message);
+    const urlMatch = message.match(/https?:\/\/[^\s]+/);
+    const url = urlMatch ? urlMatch[0] : "";
+    window.dispatchEvent(
+      new CustomEvent(CHUNK_LOAD_ERROR_EVENT, {
+        detail: { message, url, chunk, timestamp: Date.now() },
+      })
+    );
+    logger.warn("[ChunkError] Handled chunk load rejection:", chunk);
   });
 }

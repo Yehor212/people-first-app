@@ -1,26 +1,40 @@
 /**
- * HabitsHeroZone — Phase 3-C zone 1.
+ * HabitsHeroZone — Phase 3-C "today's habits" hero (A+++ rewrite).
  *
- * Above-the-fold "today's habits" snapshot. Reuses the V1 {@link CompactHabitCard}
- * primitive (no edits to V1 internals — Law 1 / Law 15) and exposes a daily
- * progress ring whose value is derived from {@link useHabitsPageState}.
+ * Decomposed into 4 sub-components (Component Isolation, Law 15) under
+ * `./hero/`:
+ *   - HeroDailyRing       — sticky daily-progress ring + remaining copy
+ *   - HeroIdentityPrompt  — daily-rotating identity statement (Atoms)
+ *   - HeroTimeOfDayGroup  — collapsible group per morning/afternoon/evening
+ *   - HeroEmptyJourney    — 3-step onboarding empty state
  *
- * Empty-state copy is research-grounded:
- *   - Atomic Habits (Clear, 2018) — "start small": 3-habit ceiling.
- *   - Implementation intentions (Gollwitzer, 1999) — "When • Where • Cue".
- *   - Habit recovery (Lally et al., 2010) — "one missed day doesn't reset progress".
+ * Research basis (web research, 2026):
+ *   - Habitify: time-of-day grouping anchors habits to circadian context.
+ *   - Streaks (Apple Design Award 2016): high-density progress ring scannable
+ *     in <200ms.
+ *   - James Clear, Atomic Habits: identity-based prompts ("you ARE someone
+ *     who…") outperform outcome-based prompts ("complete X habits").
+ *   - BJ Fogg, Tiny Habits: cue specificity (When/Where) drives formation.
+ *   - Lally et al., 2010: a single missed day does not break a habit;
+ *     recovery copy reduces all-or-nothing dropout.
  *
- * All animations are gated by {@link useShouldAnimate} (Law 8 / Law 9).
+ * All animations gated by {@link useShouldAnimate} (Law 8 / Law 9).
+ * Sticky daily ring uses CSS sticky — no scroll listeners (Law 8).
+ * Reuses V1 CompactHabitCard untouched (Law 1: Zero Regression).
  */
 
 import { memo, useCallback, useMemo } from "react";
-import { CompactHabitCard } from "@/components/compact-habit-card/CompactHabitCard";
 import { Plus } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useShouldAnimate } from "@/hooks/useShouldAnimate";
 import { hapticTap } from "@/lib/haptics";
 import type { Habit } from "@/types";
 import type { HabitsPageDailyProgress } from "./useHabitsPageState";
+import { HeroDailyRing } from "./hero/HeroDailyRing";
+import { HeroIdentityPrompt } from "./hero/HeroIdentityPrompt";
+import { HeroTimeOfDayGroup } from "./hero/HeroTimeOfDayGroup";
+import { HeroEmptyJourney } from "./hero/HeroEmptyJourney";
+import { groupHabitsByTimeOfDay } from "./hero/timeOfDay";
 
 interface HabitsHeroZoneProps {
   todaysHabits: Habit[];
@@ -28,13 +42,7 @@ interface HabitsHeroZoneProps {
   onToggleHabit: (habitId: string, date: string) => void;
   onDeleteHabit: (habitId: string) => void;
   onCreateHabit: () => void;
-  onScrollToGarden: () => void;
 }
-
-const RING_SIZE = 88;
-const RING_STROKE = 8;
-const RING_RADIUS = (RING_SIZE - RING_STROKE) / 2;
-const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
 
 export const HabitsHeroZone = memo(function HabitsHeroZone({
   todaysHabits,
@@ -42,147 +50,78 @@ export const HabitsHeroZone = memo(function HabitsHeroZone({
   onToggleHabit,
   onDeleteHabit,
   onCreateHabit,
-  onScrollToGarden,
 }: HabitsHeroZoneProps) {
   const { t } = useLanguage();
   const tx = t as unknown as Record<string, string>;
   const animate = useShouldAnimate();
 
-  const dashOffset = useMemo(
-    () => RING_CIRCUMFERENCE * (1 - dailyProgress.ratio),
-    [dailyProgress.ratio],
-  );
+  const groups = useMemo(() => groupHabitsByTimeOfDay(todaysHabits), [todaysHabits]);
+  const dayOfMonth = useMemo(() => new Date().getDate(), []);
 
   const handleCreate = useCallback(() => {
     void hapticTap();
     onCreateHabit();
   }, [onCreateHabit]);
 
-  const handleScroll = useCallback(() => {
-    void hapticTap();
-    onScrollToGarden();
-  }, [onScrollToGarden]);
-
-  const ariaProgressLabel = `${dailyProgress.completed} / ${dailyProgress.total}`;
+  const isEmpty = todaysHabits.length === 0;
 
   return (
     <section
       aria-labelledby="habits-hero-heading"
       data-testid="habits-hero-zone"
-      className="px-4 py-6 md:px-6 md:py-8"
+      className="px-4 py-4 md:px-6 md:py-6"
     >
-      <header className="flex items-center justify-between gap-4">
-        <h2
-          id="habits-hero-heading"
-          className="font-display text-xl font-semibold tracking-tight text-foreground"
-        >
-          {tx.navV2HabitsHero}
-        </h2>
-        <div
-          className="relative shrink-0"
-          style={{ width: RING_SIZE, height: RING_SIZE }}
-          role="img"
-          aria-live="polite"
-          aria-label={`${tx.navV2HabitsHero}: ${ariaProgressLabel}`}
-          data-testid="habits-hero-progress-ring"
-        >
-          <svg
-            width={RING_SIZE}
-            height={RING_SIZE}
-            viewBox={`0 0 ${RING_SIZE} ${RING_SIZE}`}
-            aria-hidden="true"
-            className="-rotate-90"
-          >
-            <circle
-              cx={RING_SIZE / 2}
-              cy={RING_SIZE / 2}
-              r={RING_RADIUS}
-              strokeWidth={RING_STROKE}
-              className="fill-none stroke-muted"
-            />
-            <circle
-              cx={RING_SIZE / 2}
-              cy={RING_SIZE / 2}
-              r={RING_RADIUS}
-              strokeWidth={RING_STROKE}
-              strokeLinecap="round"
-              strokeDasharray={RING_CIRCUMFERENCE}
-              strokeDashoffset={dashOffset}
-              className="fill-none stroke-primary"
-              style={animate ? { transition: "stroke-dashoffset 600ms ease-out" } : undefined}
-            />
-          </svg>
-          <span className="absolute inset-0 flex items-center justify-center font-display text-sm font-semibold text-foreground">
-            {ariaProgressLabel}
-          </span>
-        </div>
-      </header>
+      <h2 id="habits-hero-heading" className="sr-only">
+        {tx.navV2HabitsHero}
+      </h2>
 
-      {todaysHabits.length === 0 ? (
-        <div
-          className="mt-6 rounded-2xl border border-dashed border-border bg-card/40 p-6 text-center"
-          data-testid="habits-hero-empty"
-        >
-          <p className="font-display text-lg font-semibold text-foreground">
-            {tx.navV2HabitsEmpty}
-          </p>
-          <p className="mt-2 text-sm text-muted-foreground font-body">
-            {tx.navV2HabitsStartSmall}
-          </p>
-          <p className="mt-1 text-xs text-muted-foreground/80 font-body">
-            {tx.navV2HabitsAddCue}
-          </p>
-          <button
-            type="button"
-            onClick={handleCreate}
-            className="mt-5 inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground motion-safe:transition-opacity active:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-            aria-label={tx.navV2HabitsCreate}
-            data-testid="habits-hero-create-empty"
-          >
-            <Plus className="h-4 w-4" aria-hidden="true" />
-            {tx.navV2HabitsCreate}
-          </button>
-        </div>
+      <div className="sticky top-2 z-10 -mx-1 rounded-2xl border border-border/60 bg-background/85 px-3 py-3 shadow-sm backdrop-blur-md [-webkit-backdrop-filter:blur(12px)] md:top-4">
+        <HeroDailyRing
+          completed={dailyProgress.completed}
+          total={dailyProgress.total}
+          ratio={dailyProgress.ratio}
+        />
+        {!isEmpty && (
+          <div className="mt-3">
+            <HeroIdentityPrompt habits={todaysHabits} dayOfMonth={dayOfMonth} />
+          </div>
+        )}
+      </div>
+
+      {isEmpty ? (
+        <HeroEmptyJourney onCreateHabit={handleCreate} />
       ) : (
         <>
-          <ul
-            className="mt-6 flex flex-col gap-3"
-            aria-label={tx.navV2HabitsHero}
-            data-testid="habits-hero-list"
+          {groups.map((g) => (
+            <HeroTimeOfDayGroup
+              key={g.bucket}
+              bucket={g.bucket}
+              habits={g.habits}
+              onToggleHabit={onToggleHabit}
+              onDeleteHabit={onDeleteHabit}
+            />
+          ))}
+
+          <p
+            className="mt-6 px-1 text-xs italic text-muted-foreground/80 font-body"
+            data-testid="habits-hero-recovery"
           >
-            {todaysHabits.map((habit) => (
-              <CompactHabitCard
-                key={habit.id}
-                habit={habit}
-                onToggle={onToggleHabit}
-                onDelete={onDeleteHabit}
-                streak={0}
-                isDueToday
-              />
-            ))}
-          </ul>
-          <p className="mt-4 text-xs text-muted-foreground font-body">
             {tx.navV2HabitsRecovery}
           </p>
-          <div className="mt-5 flex flex-wrap items-center gap-3">
+
+          <div className="mt-5 flex justify-center md:justify-end">
             <button
               type="button"
               onClick={handleCreate}
-              className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground motion-safe:transition-opacity active:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+              className={
+                "inline-flex min-h-[48px] items-center gap-2 rounded-2xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 " +
+                (animate ? "motion-safe:transition-transform active:scale-[0.97]" : "")
+              }
               aria-label={tx.navV2HabitsCreate}
               data-testid="habits-hero-create"
             >
               <Plus className="h-4 w-4" aria-hidden="true" />
               {tx.navV2HabitsCreate}
-            </button>
-            <button
-              type="button"
-              onClick={handleScroll}
-              className="inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-border bg-card/60 px-4 py-3 text-sm font-medium text-foreground motion-safe:transition-colors hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-              aria-label={tx.navV2HabitsScrollToGarden}
-              data-testid="habits-hero-scroll-to-garden"
-            >
-              {tx.navV2HabitsScrollToGarden}
             </button>
           </div>
         </>

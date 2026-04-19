@@ -1,10 +1,9 @@
 /**
- * HabitsPage — orchestrator tests for the Phase 3-C scroll-linked layout.
+ * HabitsPage — orchestrator tests for the Phase 3-C single-zone layout.
+ * Garden + MindMap zones removed 2026-04-19; only the Hero zone is rendered.
  */
 import { render, cleanup, screen } from "@testing-library/react";
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
-
-// ---- Module mocks ----------------------------------------------------------
 
 vi.mock("@/hooks/useShouldAnimate", () => ({ useShouldAnimate: () => true }));
 
@@ -13,15 +12,25 @@ vi.mock("@/contexts/LanguageContext", () => ({
     t: {
       navV2Habits: "Habits",
       navV2HabitsHero: "Today's habits",
-      navV2HabitsGarden: "Your garden",
-      navV2HabitsMindMap: "Identity map",
       navV2HabitsAddCue: "When • Where • Cue",
       navV2HabitsEmpty: "Plant your first seed",
       navV2HabitsStartSmall: "Start with 3 habits — small steps win",
       navV2HabitsRecovery: "One missed day doesn't reset progress",
       navV2HabitsCreate: "Create habit",
-      navV2HabitsScrollToGarden: "View garden",
-      navV2HabitsScrollToMindMap: "View identity map",
+      navV2HabitsMorning: "Morning",
+      navV2HabitsAfternoon: "Afternoon",
+      navV2HabitsEvening: "Evening",
+      navV2HabitsAnytime: "Anytime",
+      navV2HabitsIdentityToday: "Today you are building:",
+      navV2HabitsIdentityIntention: "Someone who keeps their word",
+      navV2HabitsTwoMinuteRule: "Start with the 2-minute version",
+      navV2HabitsAllDone: "Day complete",
+      navV2HabitsKeepGoing: "Momentum is yours",
+      navV2HabitsOneHabitLeft: "One habit left",
+      navV2HabitsHabitsLeft: "{count} habits left",
+      navV2HabitsOnboardingStep1: "Pick your identity",
+      navV2HabitsOnboardingStep2: "Set your cue",
+      navV2HabitsOnboardingStep3: "Plant your first habit",
       cancel: "Cancel",
     },
     language: "en",
@@ -52,18 +61,6 @@ vi.mock("@/stores", async () => {
   };
 });
 
-vi.mock("@/hooks/useInnerWorld", () => ({
-  useInnerWorld: () => ({ world: { plants: [], creatures: [], season: "spring" }, isLoading: false }),
-}));
-
-vi.mock("@/components/GardenCanvas", () => ({
-  GardenCanvas: () => <div data-testid="mock-garden-canvas" />,
-}));
-
-vi.mock("@/components/canvas/MindMapCanvas", () => ({
-  MindMapCanvas: () => <div data-testid="mock-mindmap-canvas" />,
-}));
-
 vi.mock("@/components/compact-habit-card/CompactHabitCard", () => ({
   CompactHabitCard: ({ habit }: { habit: { id: string; name: string } }) => (
     <li data-testid={`mock-habit-card-${habit.id}`}>{habit.name}</li>
@@ -89,7 +86,7 @@ vi.mock("@/lib/haptics", () => ({ hapticTap: vi.fn() }));
 
 import { HabitsPage } from "../HabitsPage";
 
-describe("HabitsPage (Phase 3-C)", () => {
+describe("HabitsPage (Phase 3-C single-zone)", () => {
   beforeEach(() => {
     mockHabits = [];
     setHabitsSpy.mockClear();
@@ -105,18 +102,16 @@ describe("HabitsPage (Phase 3-C)", () => {
     expect(screen.getByRole("main")).toHaveAttribute("aria-labelledby", "habits-page-heading");
   });
 
-  it("renders Hero + Garden zones (MindMap deferred per Phase 3-C.2)", () => {
+  it("renders only the Hero zone (Garden + MindMap removed)", () => {
     render(<HabitsPage />);
     expect(screen.getByTestId("habits-hero-zone")).toBeInTheDocument();
-    expect(screen.getByTestId("habits-garden-zone")).toBeInTheDocument();
+    expect(screen.queryByTestId("habits-garden-zone")).not.toBeInTheDocument();
     expect(screen.queryByTestId("habits-mindmap-zone")).not.toBeInTheDocument();
   });
 
-  it("exposes a table-of-contents nav with the garden anchor link", () => {
+  it("does not render a table-of-contents nav (single zone, no need)", () => {
     render(<HabitsPage />);
-    const toc = screen.getByTestId("habits-page-toc");
-    expect(toc).toBeInTheDocument();
-    expect(toc.querySelectorAll("a")).toHaveLength(1);
+    expect(screen.queryByTestId("habits-page-toc")).not.toBeInTheDocument();
   });
 
   it("renders the empty state when no habits exist", () => {
@@ -125,12 +120,12 @@ describe("HabitsPage (Phase 3-C)", () => {
     expect(screen.getByTestId("habits-hero-empty")).toBeInTheDocument();
   });
 
-  it("renders the habit list when habits are present", () => {
+  it("renders the time-of-day grouped list when habits are present", () => {
     mockHabits = [
-      { id: "h1", name: "Hydrate", isArchived: false, entries: {}, habitType: "boolean" },
+      { id: "h1", name: "Hydrate", isArchived: false, entries: {}, habitType: "boolean", reminders: [] },
     ];
     render(<HabitsPage />);
-    expect(screen.getByTestId("habits-hero-list")).toBeInTheDocument();
+    expect(screen.getByTestId("hero-group-anytime")).toBeInTheDocument();
     expect(screen.getByTestId("mock-habit-card-h1")).toBeInTheDocument();
   });
 

@@ -13,6 +13,7 @@ const lazyCaptureError = (error: Error, context?: Record<string, unknown>) => {
 };
 import { createFocusTrap, announceError } from "@/lib/a11y";
 import { logger } from "@/lib/logger";
+import { isChunkLoadError } from "@/lib/chunkErrorDetection";
 
 const logError = (payload: Record<string, unknown>) => {
   try {
@@ -241,17 +242,9 @@ export const RootErrorBoundary: React.FC<{ children: React.ReactNode }> = ({ chi
  * ModalErrorBoundary - Error boundary for modals and lazy-loaded components.
  * Shows a contained error state instead of crashing the entire app.
  * Use this to wrap any Suspense boundaries or modal content.
+ * Chunk-error detection delegated to `@/lib/chunkErrorDetection` (single
+ * source of truth shared with UpdateRequiredDialog + main.tsx handlers).
  */
-function isChunkLoadError(error: Error | null): boolean {
-  if (!error?.message) return false;
-  return (
-    error.message.includes("Failed to fetch dynamically imported module") ||
-    error.message.includes("Importing a module script failed") ||
-    error.message.includes("Loading chunk") ||
-    error.message.includes("Loading CSS chunk")
-  );
-}
-
 interface ModalErrorBoundaryProps {
   children: React.ReactNode;
   onClose?: () => void;

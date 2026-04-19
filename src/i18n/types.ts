@@ -2841,7 +2841,7 @@ export interface Translations {
   navV2DiaryPlaceholder: string;
   navV2SettingsPlaceholder: string;
 
-  // Phase 3-C: HabitsPage scroll-linked zones (Hero / Garden / MindMap)
+  // Phase 3-C: HabitsPage Hero (time-of-day grouping + identity-based prompts)
   navV2HabitsHero: string;
   navV2HabitsGarden: string;
   navV2HabitsMindMap: string;
@@ -2852,6 +2852,23 @@ export interface Translations {
   navV2HabitsCreate: string;
   navV2HabitsScrollToGarden: string;
   navV2HabitsScrollToMindMap: string;
+  navV2HabitsMorning: string;
+  navV2HabitsAfternoon: string;
+  navV2HabitsEvening: string;
+  navV2HabitsAnytime: string;
+  navV2HabitsIdentityToday: string;
+  navV2HabitsIdentityIntention: string;
+  navV2HabitsTwoMinuteRule: string;
+  navV2HabitsAllDone: string;
+  navV2HabitsKeepGoing: string;
+  navV2HabitsOneHabitLeft: string;
+  navV2HabitsHabitsLeft: string;
+  navV2HabitsOfCompleted: string;
+  navV2HabitsOnboardingStep1: string;
+  navV2HabitsOnboardingStep2: string;
+  navV2HabitsOnboardingStep3: string;
+  navV2HabitsCollapseGroup: string;
+  navV2HabitsExpandGroup: string;
 
   // Phase 3-A.2: Orb whisper prompts (rotate daily via date-of-month)
   orbWhisper1: string;

@@ -178,10 +178,10 @@
       "description": "Phase 2-A — staggered choreography helper active (0=absent, 1=active, 2=adopted across >=5 surfaces). src/lib/motion/choreography.ts exports stages (background 0ms, chrome 80ms, primary 140ms, secondary 220ms, cta 360ms), staggerDelay(stage), childrenStagger(count, base). Currently consumed by Index.tsx tab Bloom (primary) and MotionPreview rollout demos. Phase 2-B will expand adoption across every composite surface."
     },
     "tests.total": {
-      "value": 3786,
+      "value": 3710,
       "direction": "up",
-      "recorded": "2026-04-18",
-      "description": "Total unit test count (vitest, src/ scope). Phase 3-A adds +36 (useNavigationV2 hook 17 + SidebarV2 6 + MobileNavV2 6 + DrawerV2 7). Baseline 3408 -> 3444. Floor at 3440 allows minor cleanup."
+      "recorded": "2026-04-19",
+      "description": "Total unit test count (vitest, src/ scope). Phase 3-C.2 (2026-04-19) deletion: Garden + MindMap zones removed per user request, HabitsHeroZone rewritten A+++ with 4 sub-components + pure timeOfDay bucketing. Net -76 tests (dropped HabitGardenZone.test + HabitMindMapZone.test, added timeOfDay + HeroDailyRing + HeroIdentityPrompt + HeroEmptyJourney). Prior baseline 3786 reflected legacy 3-zone layout."
     },
     "tests.files": {
       "value": 206,
@@ -433,10 +433,10 @@
       "description": "Anti-patterns without BLOCK or WARN enforcement"
     },
     "npmOutdated": {
-      "value": 28,
+      "value": 29,
       "direction": "down",
-      "recorded": "2026-04-18",
-      "description": "Outdated npm packages — CANARY ONLY (external dependency, not code-controlled). Floor=999 disables blocking. Actual count tracked as canary only."
+      "recorded": "2026-04-19",
+      "description": "Outdated npm packages — CANARY ONLY (external dependency, not code-controlled). Drift 28→29 on 2026-04-19 is external registry publishing; no code change caused it."
     },
     "navV2InfraReady": {
       "value": 1,
@@ -738,6 +738,20 @@
       "to": 1,
       "reason": "Phase 0-C — paper theme infrastructure READY as opt-in preview. Wiring complete: tokens.json (24 OKLCH tokens), generated/tokens.css (--color-theme-*), styles/themes.css (@layer + data-theme selectors + inline SVG noise + warm vignette), stores/themeStore.ts (Zustand + persist + prefers-color-scheme auto), pages/__dev/ThemePreview.tsx (dev-only live switcher), styles/themes.contrast.test.ts (14 passing assertions). Phase 2 will ratchet to 2 when paper becomes default + surfaces in Settings Panel with full i18n.",
       "date": "2026-04-16"
+    },
+    {
+      "metric": "npmOutdated",
+      "from": 28,
+      "to": 29,
+      "reason": "External npm registry drift (new patch release for one of our direct deps). Not caused by any code change in this commit.",
+      "date": "2026-04-19"
+    },
+    {
+      "metric": "tests.total",
+      "from": 3786,
+      "to": 3710,
+      "reason": "Phase 3-C.2 scope reduction (user request 2026-04-19): Garden + MindMap zones deleted from HabitsPage, HabitsHeroZone rewritten A+++ (Habitify time-of-day grouping + Atoms identity prompts + Streaks ring + BJ Fogg cue specificity). Removed HabitGardenZone.test + HabitMindMapZone.test (-N tests). Added timeOfDay.test (12) + HeroDailyRing.test (5) + HeroIdentityPrompt.test (5) + HeroEmptyJourney.test (3) = +25 tests. Net -76 reflects legacy zone removal. Future phases may re-introduce Garden as a separate route; floor recorded here accurately mirrors new single-zone design.",
+      "date": "2026-04-19"
     }
   ]
 }

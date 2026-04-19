@@ -1,15 +1,14 @@
 /**
- * HabitsPage (Phase 3-C) — scroll-linked single page composing 3 zones:
- *   1. Hero       — today's habits + daily progress ring
- *   2. Garden     — visual identity garden (V1 GardenCanvas wrapper)
- *   3. MindMap    — identity / goal map (V1 MindMapCanvas, lazy)
+ * HabitsPage (Phase 3-C) — single-zone "today's habits" page.
  *
- * Architecture decisions (per the approved 7-point plan):
- *   - One page, three `<section>` landmarks rather than tabbed UI.
- *     Rationale: narrative continuity from "do" → "see" → "be" is the
- *     experience cue this redesign is built around.
- *   - Lazy-loaded MindMap zone keeps the canvas chunk off the initial
- *     bundle (lazyWithRetry handles stale-asset reloads).
+ * Architecture decisions (post-2026-04-19 user feedback):
+ *   - Garden zone removed entirely. Identity-based progress is now expressed
+ *     inline by the Hero zone via {@link HeroIdentityPrompt}, not via a
+ *     separate scrollable canvas. Rationale: a one-screen page beats a
+ *     three-zone scroll page when there's only one primary user task ("do
+ *     today's habits"). Less navigation, more action.
+ *   - MindMap zone deferred per user request 2026-04-19. Will return when
+ *     identity-map UX is finalized in Phase 3-C.2.
  *   - Read-only consumer of {@link useUserDataStore} via
  *     {@link useHabitsPageState} — no mutations cross the page boundary.
  *   - Habit CRUD is delegated to V1 actions through the store directly,
@@ -24,15 +23,9 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useUserDataStore } from "@/stores";
 import { hapticTap } from "@/lib/haptics";
 import { HabitsHeroZone } from "./HabitsHeroZone";
-import { HabitGardenZone } from "./HabitGardenZone";
-// MindMap zone deferred per user request 2026-04-19 ("МАЙНДМЕП ПОКА ОСТАВЬ ПОТОМ").
-// Re-enable when identity-map UX is finalized in Phase 3-C.2.
-// import { HabitMindMapZone } from "./HabitMindMapZone";
 import { HabitCreateSheet } from "./HabitCreateSheet";
 import { useHabitsPageState } from "./useHabitsPageState";
 import type { Habit } from "@/types";
-
-const GARDEN_ANCHOR_ID = "habits-zone-garden";
 
 export const HabitsPage = memo(function HabitsPage() {
   const { t } = useLanguage();
@@ -78,7 +71,6 @@ export const HabitsPage = memo(function HabitsPage() {
           const entries = { ...(h.entries ?? {}) };
           const existing = entries[date];
           if (existing) {
-            // Toggle off — drop the entry for the day.
             const { [date]: _drop, ...rest } = entries;
             void _drop;
             return { ...h, entries: rest };
@@ -90,10 +82,6 @@ export const HabitsPage = memo(function HabitsPage() {
     },
     [setHabits],
   );
-
-  const handleScrollToGarden = useCallback(() => {
-    document.getElementById(GARDEN_ANCHOR_ID)?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, []);
 
   const openCreate = useCallback(() => setCreateOpen(true), []);
   const closeCreate = useCallback(() => setCreateOpen(false), []);
@@ -117,22 +105,6 @@ export const HabitsPage = memo(function HabitsPage() {
           >
             {tx.navV2Habits}
           </h1>
-          <nav
-            className="mt-4 flex flex-wrap gap-2 text-xs"
-            aria-label={tx.navV2Habits}
-            data-testid="habits-page-toc"
-          >
-            <a
-              href={`#${GARDEN_ANCHOR_ID}`}
-              onClick={(e) => {
-                e.preventDefault();
-                handleScrollToGarden();
-              }}
-              className="rounded-full border border-border px-3 py-1.5 text-muted-foreground motion-safe:transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-            >
-              {tx.navV2HabitsScrollToGarden}
-            </a>
-          </nav>
         </header>
 
         <HabitsHeroZone
@@ -141,12 +113,7 @@ export const HabitsPage = memo(function HabitsPage() {
           onToggleHabit={handleToggleHabit}
           onDeleteHabit={handleDeleteHabit}
           onCreateHabit={openCreate}
-          onScrollToGarden={handleScrollToGarden}
         />
-
-        <div id={GARDEN_ANCHOR_ID}>
-          <HabitGardenZone />
-        </div>
 
         <HabitCreateSheet
           open={createOpen}
