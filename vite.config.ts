@@ -180,11 +180,12 @@ export default defineConfig(({ mode }) => {
       },
     },
 
-    // LightningCSS transformer: 2-3x faster than postcss, ~3-5% smaller CSS.
-    // Preserves vendor prefixes (verified for -webkit-backdrop-filter).
-    css: {
-      transformer: "lightningcss",
-    },
+    // LightningCSS transformer DISABLED — bypasses PostCSS pipeline which means
+    // Tailwind directives (@tailwind base/components/utilities) never expand.
+    // Result: CSS bundle ships only custom CSS without Tailwind utilities,
+    // making EVERY md:flex / fixed / hidden / rounded-* class non-functional.
+    // 2026-04-19 root cause of "design missing" visual regression.
+    // Keep `cssMinify: "lightningcss"` below — minifier alone is safe.
     build: {
       target: "esnext",
       // Terser ~1-2% smaller than esbuild (20-40x slower, acceptable on CI only).
