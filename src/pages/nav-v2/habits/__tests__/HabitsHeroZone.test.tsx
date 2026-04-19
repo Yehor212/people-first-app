@@ -46,6 +46,12 @@ vi.mock("@/components/compact-habit-card/CompactHabitCard", () => ({
 
 vi.mock("@/lib/haptics", () => ({ hapticTap: vi.fn() }));
 
+// Celebration overlay pulls in a canvas-based confetti helper; JSDOM has no
+// canvas. Stub to a no-op for unit coverage.
+vi.mock("@/components/animations/AllHabitsDoneAnimation", () => ({
+  AllHabitsDoneAnimation: () => <div data-testid="all-habits-done-stub" />,
+}));
+
 import { HabitsHeroZone } from "../HabitsHeroZone";
 import type { Habit } from "@/types";
 

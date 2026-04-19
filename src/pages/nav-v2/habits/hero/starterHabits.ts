@@ -13,6 +13,8 @@
  */
 
 import type { Habit } from "@/types";
+import type { HabitTemplate } from "@/lib/habitTemplates";
+import type { Language } from "@/i18n/translations";
 
 export interface StarterTemplate {
   key: string;
@@ -66,6 +68,42 @@ export const STARTER_TEMPLATES: readonly StarterTemplate[] = [
     identityIcon: "✨",
   },
 ];
+
+/** Pure: materialize a V1 {@link HabitTemplate} into a full Habit with a fresh id.
+ *
+ * Resolves the localized name via `language`, falling back to English.
+ * The id carries the template id as a suffix so dedupe ("already added")
+ * checks can match idempotently across sessions.
+ */
+export function templateToHabit(
+  template: HabitTemplate,
+  position: number,
+  language: Language,
+  now: number = Date.now(),
+): Habit {
+  const name = template.names[language] || template.names.en;
+  return {
+    id: `tpl-${template.id}-${now}`,
+    name,
+    icon: template.icon,
+    color: template.color,
+    position,
+    createdAt: now,
+    habitType: template.habitType,
+    frequency: { numerator: 1, denominator: 1 },
+    question: "",
+    description: "",
+    isArchived: false,
+    targetValue: template.dailyTarget ?? 1,
+    targetType: "atLeast",
+    unit: "",
+    entries: {},
+    reminders: template.defaultTime
+      ? [{ enabled: true, time: template.defaultTime, days: [0, 1, 2, 3, 4, 5, 6] }]
+      : [],
+    templateId: template.id,
+  };
+}
 
 /** Pure: materialize a starter template into a full Habit with a fresh id. */
 export function starterToHabit(

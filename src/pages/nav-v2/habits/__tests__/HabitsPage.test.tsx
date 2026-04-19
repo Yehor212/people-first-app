@@ -84,6 +84,16 @@ vi.mock("@/components/habit-creation-form/HabitCreationForm", () => ({
 
 vi.mock("@/lib/haptics", () => ({ hapticTap: vi.fn() }));
 
+vi.mock("@/components/animations/AllHabitsDoneAnimation", () => ({
+  AllHabitsDoneAnimation: () => <div data-testid="all-habits-done-stub" />,
+}));
+
+// V1 HabitDetailSheet is lazy-loaded; mock its dynamic import so jsdom
+// doesn't try to evaluate the canvas/d3 deep chunk at parse time.
+vi.mock("@/components/habit-hub/HabitDetailSheet", () => ({
+  HabitDetailSheet: () => <div data-testid="habit-detail-sheet-stub" />,
+}));
+
 import { HabitsPage } from "../HabitsPage";
 
 describe("HabitsPage (Phase 3-C single-zone)", () => {

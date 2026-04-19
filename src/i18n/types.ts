@@ -2869,6 +2869,17 @@ export interface Translations {
   navV2HabitsOnboardingStep3: string;
   navV2HabitsCollapseGroup: string;
   navV2HabitsExpandGroup: string;
+  navV2HabitsBrowseLibrary: string;
+  navV2HabitsLibraryTitle: string;
+  navV2HabitsLibrarySubtitle: string;
+  navV2HabitsCategoryBody: string;
+  navV2HabitsCategoryMind: string;
+  navV2HabitsCategoryFocus: string;
+  navV2HabitsCategoryRest: string;
+  navV2HabitsCategoryQuit: string;
+  navV2HabitsQuickPick: string;
+  navV2HabitsAlreadyAdded: string;
+  navV2HabitsDayCompleteHero: string;
 
   // Phase 3-A.2: Orb whisper prompts (rotate daily via date-of-month)
   orbWhisper1: string;

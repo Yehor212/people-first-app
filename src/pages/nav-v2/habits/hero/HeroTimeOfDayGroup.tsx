@@ -32,6 +32,8 @@ interface HeroTimeOfDayGroupProps {
   habits: readonly Habit[];
   onToggleHabit: (habitId: string, date: string) => void;
   onDeleteHabit: (habitId: string) => void;
+  /** Opens the V1 HabitDetailSheet (reuses mature stats/streak/actions panel). */
+  onOpenDetail?: (habit: Habit) => void;
 }
 
 const BUCKET_LABEL_KEY: Record<TimeOfDay, string> = {
@@ -53,6 +55,7 @@ export const HeroTimeOfDayGroup = memo(function HeroTimeOfDayGroup({
   habits,
   onToggleHabit,
   onDeleteHabit,
+  onOpenDetail,
 }: HeroTimeOfDayGroupProps) {
   const { t } = useLanguage();
   const tx = t as unknown as Record<string, string>;
@@ -102,6 +105,7 @@ export const HeroTimeOfDayGroup = memo(function HeroTimeOfDayGroup({
                 habit={habit}
                 onToggle={onToggleHabit}
                 onDelete={onDeleteHabit}
+                onEdit={onOpenDetail}
                 streak={0}
                 isDueToday
               />

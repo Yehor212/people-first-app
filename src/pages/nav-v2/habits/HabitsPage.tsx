@@ -16,7 +16,8 @@
  *     of truth (Law 14).
  */
 
-import { memo, useCallback, useEffect, useRef, useState } from "react";
+import { memo, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazyWithRetry } from "@/lib/lazyWithRetry";
 import { Bloom } from "@/lib/motion";
 import { staggerDelay } from "@/lib/motion/choreography";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -24,12 +25,22 @@ import { useUserDataStore } from "@/stores";
 import { hapticTap } from "@/lib/haptics";
 import { HabitsHeroZone } from "./HabitsHeroZone";
 import { HabitCreateSheet } from "./HabitCreateSheet";
+import { HeroTemplateLibrarySheet } from "./hero/HeroTemplateLibrarySheet";
 import { useHabitsPageState } from "./useHabitsPageState";
-import { starterToHabit, type StarterTemplate } from "./hero/starterHabits";
+import { templateToHabit } from "./hero/starterHabits";
+import type { HabitTemplate } from "@/lib/habitTemplates";
 import type { Habit } from "@/types";
 
+// Lazy-load V1 HabitDetailSheet — keeps its ~20KB chunk off the initial
+// Habits page bundle; user only pays the cost when they actually open stats.
+const HabitDetailSheetLazy = lazyWithRetry(() =>
+  import("@/components/habit-hub/HabitDetailSheet").then((m) => ({
+    default: m.HabitDetailSheet,
+  })),
+);
+
 export const HabitsPage = memo(function HabitsPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const tx = t as unknown as Record<string, string>;
   const mainRef = useRef<HTMLElement>(null);
 
@@ -37,6 +48,8 @@ export const HabitsPage = memo(function HabitsPage() {
   const setHabits = useUserDataStore((s) => s.setHabits);
 
   const [createOpen, setCreateOpen] = useState(false);
+  const [libraryOpen, setLibraryOpen] = useState(false);
+  const [detailHabit, setDetailHabit] = useState<Habit | null>(null);
 
   useEffect(() => {
     // Move focus to the <main> landmark (not the heading) so screen readers
@@ -89,16 +102,77 @@ export const HabitsPage = memo(function HabitsPage() {
 
   const openCreate = useCallback(() => setCreateOpen(true), []);
   const closeCreate = useCallback(() => setCreateOpen(false), []);
+  const openLibrary = useCallback(() => setLibraryOpen(true), []);
+  const closeLibrary = useCallback(() => setLibraryOpen(false), []);
+  const openDetail = useCallback((habit: Habit) => setDetailHabit(habit), []);
+  const closeDetail = useCallback(() => setDetailHabit(null), []);
 
-  const handleSeedStarter = useCallback(
-    (template: StarterTemplate) => {
-      setHabits((prev) => {
-        // Idempotent by starter key — tapping the same chip twice is a no-op.
-        if (prev.some((h) => h.id.startsWith(`starter-${template.key}-`))) return prev;
-        return [...prev, starterToHabit(template, prev.length)];
-      });
+  const handleArchiveHabit = useCallback(
+    (habitId: string) => {
+      setHabits((prev) =>
+        prev.map((h) => (h.id === habitId ? { ...h, isArchived: true } : h)),
+      );
     },
     [setHabits],
+  );
+
+  const handleUnarchiveHabit = useCallback(
+    (habitId: string) => {
+      setHabits((prev) =>
+        prev.map((h) => (h.id === habitId ? { ...h, isArchived: false } : h)),
+      );
+    },
+    [setHabits],
+  );
+
+  const handleSkipHabit = useCallback(
+    (habitId: string, date: string) => {
+      setHabits((prev) =>
+        prev.map((h) => {
+          if (h.id !== habitId) return h;
+          const entries = { ...(h.entries ?? {}) };
+          entries[date] = { value: -1 };
+          return { ...h, entries };
+        }),
+      );
+    },
+    [setHabits],
+  );
+
+  const handleUnskipHabit = useCallback(
+    (habitId: string, date: string) => {
+      setHabits((prev) =>
+        prev.map((h) => {
+          if (h.id !== habitId) return h;
+          const entries = { ...(h.entries ?? {}) };
+          const { [date]: _skip, ...rest } = entries;
+          void _skip;
+          return { ...h, entries: rest };
+        }),
+      );
+    },
+    [setHabits],
+  );
+
+  /** Set of V1 template ids the user has already adopted — used both by the
+   *  library sheet (to show an "Added" badge) and by the picker to de-dupe. */
+  const seededTemplateIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const h of habits) {
+      if (h.templateId) ids.add(h.templateId);
+    }
+    return ids;
+  }, [habits]);
+
+  const handlePickTemplate = useCallback(
+    (template: HabitTemplate) => {
+      setHabits((prev) => {
+        // Idempotent by templateId — tapping the same template twice is a no-op.
+        if (prev.some((h) => h.templateId === template.id)) return prev;
+        return [...prev, templateToHabit(template, prev.length, language)];
+      });
+    },
+    [setHabits, language],
   );
 
   return (
@@ -127,7 +201,9 @@ export const HabitsPage = memo(function HabitsPage() {
           onToggleHabit={handleToggleHabit}
           onDeleteHabit={handleDeleteHabit}
           onCreateHabit={openCreate}
-          onSeedStarter={handleSeedStarter}
+          onPickTemplate={handlePickTemplate}
+          onOpenLibrary={openLibrary}
+          onOpenDetail={openDetail}
         />
 
         <HabitCreateSheet
@@ -137,6 +213,29 @@ export const HabitsPage = memo(function HabitsPage() {
           onAddHabit={handleAddHabit}
           onUpdateHabit={handleUpdateHabit}
         />
+
+        <HeroTemplateLibrarySheet
+          open={libraryOpen}
+          onClose={closeLibrary}
+          seededIds={seededTemplateIds}
+          onPickTemplate={handlePickTemplate}
+        />
+
+        {detailHabit && (
+          <Suspense fallback={null}>
+            <HabitDetailSheetLazy
+              habit={detailHabit}
+              onClose={closeDetail}
+              onEdit={handleUpdateHabit}
+              onUpdate={handleUpdateHabit}
+              onArchive={handleArchiveHabit}
+              onUnarchive={handleUnarchiveHabit}
+              onSkip={handleSkipHabit}
+              onUnskip={handleUnskipHabit}
+              onDelete={handleDeleteHabit}
+            />
+          </Suspense>
+        )}
       </main>
     </Bloom>
   );

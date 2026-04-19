@@ -23,11 +23,12 @@
  * Reuses V1 CompactHabitCard untouched (Law 1: Zero Regression).
  */
 
-import { memo, useCallback, useMemo } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Plus } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useShouldAnimate } from "@/hooks/useShouldAnimate";
 import { hapticTap } from "@/lib/haptics";
+import { AllHabitsDoneAnimation } from "@/components/animations/AllHabitsDoneAnimation";
 import type { Habit } from "@/types";
 import type { HabitsPageDailyProgress } from "./useHabitsPageState";
 import { HeroDailyRing } from "./hero/HeroDailyRing";
@@ -35,7 +36,7 @@ import { HeroIdentityPrompt } from "./hero/HeroIdentityPrompt";
 import { HeroTimeOfDayGroup } from "./hero/HeroTimeOfDayGroup";
 import { HeroEmptyJourney } from "./hero/HeroEmptyJourney";
 import { groupHabitsByTimeOfDay } from "./hero/timeOfDay";
-import type { StarterTemplate } from "./hero/starterHabits";
+import type { HabitTemplate } from "@/lib/habitTemplates";
 
 interface HabitsHeroZoneProps {
   todaysHabits: Habit[];
@@ -43,7 +44,9 @@ interface HabitsHeroZoneProps {
   onToggleHabit: (habitId: string, date: string) => void;
   onDeleteHabit: (habitId: string) => void;
   onCreateHabit: () => void;
-  onSeedStarter?: (template: StarterTemplate) => void;
+  onPickTemplate?: (template: HabitTemplate) => void;
+  onOpenLibrary?: () => void;
+  onOpenDetail?: (habit: Habit) => void;
 }
 
 export const HabitsHeroZone = memo(function HabitsHeroZone({
@@ -52,7 +55,9 @@ export const HabitsHeroZone = memo(function HabitsHeroZone({
   onToggleHabit,
   onDeleteHabit,
   onCreateHabit,
-  onSeedStarter,
+  onPickTemplate,
+  onOpenLibrary,
+  onOpenDetail,
 }: HabitsHeroZoneProps) {
   const { t } = useLanguage();
   const tx = t as unknown as Record<string, string>;
@@ -61,12 +66,26 @@ export const HabitsHeroZone = memo(function HabitsHeroZone({
   const groups = useMemo(() => groupHabitsByTimeOfDay(todaysHabits), [todaysHabits]);
   const dayOfMonth = useMemo(() => new Date().getDate(), []);
 
+  // Celebration overlay — fires once per transition of dailyProgress.ratio → 1
+  // (i.e. the last habit of the day just got completed). Gate on total>0 so
+  // the trivial 0/0 case doesn't celebrate nothing.
+  const [celebrating, setCelebrating] = useState(false);
+  const prevRatioRef = useRef<number>(dailyProgress.ratio);
+  useEffect(() => {
+    const prev = prevRatioRef.current;
+    const now = dailyProgress.ratio;
+    if (prev < 1 && now >= 1 && dailyProgress.total > 0) {
+      setCelebrating(true);
+    }
+    prevRatioRef.current = now;
+  }, [dailyProgress.ratio, dailyProgress.total]);
+  const handleCelebrationDone = useCallback(() => setCelebrating(false), []);
+
   const handleCreate = useCallback(() => {
     void hapticTap();
     onCreateHabit();
   }, [onCreateHabit]);
 
-  const handleSeedStarters = onSeedStarter;
 
   const isEmpty = todaysHabits.length === 0;
 
@@ -94,7 +113,11 @@ export const HabitsHeroZone = memo(function HabitsHeroZone({
       )}
 
       {isEmpty ? (
-        <HeroEmptyJourney onCreateHabit={handleCreate} onSeedStarters={handleSeedStarters} />
+        <HeroEmptyJourney
+          onCreateHabit={handleCreate}
+          onPickTemplate={onPickTemplate}
+          onOpenLibrary={onOpenLibrary}
+        />
       ) : (
         <>
           {groups.map((g) => (
@@ -104,6 +127,7 @@ export const HabitsHeroZone = memo(function HabitsHeroZone({
               habits={g.habits}
               onToggleHabit={onToggleHabit}
               onDeleteHabit={onDeleteHabit}
+              onOpenDetail={onOpenDetail}
             />
           ))}
 
@@ -130,6 +154,10 @@ export const HabitsHeroZone = memo(function HabitsHeroZone({
             </button>
           </div>
         </>
+      )}
+
+      {celebrating && animate && (
+        <AllHabitsDoneAnimation onComplete={handleCelebrationDone} />
       )}
     </section>
   );
