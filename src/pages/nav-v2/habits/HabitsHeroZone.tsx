@@ -35,6 +35,7 @@ import { HeroDailyRing } from "./hero/HeroDailyRing";
 import { HeroIdentityPrompt } from "./hero/HeroIdentityPrompt";
 import { HeroTimeOfDayGroup } from "./hero/HeroTimeOfDayGroup";
 import { HeroEmptyJourney } from "./hero/HeroEmptyJourney";
+import { HeroInsightStrip } from "./hero/HeroInsightStrip";
 import { groupHabitsByTimeOfDay } from "./hero/timeOfDay";
 import type { HabitTemplate } from "@/lib/habitTemplates";
 
@@ -109,6 +110,7 @@ export const HabitsHeroZone = memo(function HabitsHeroZone({
           <div className="mt-3">
             <HeroIdentityPrompt habits={todaysHabits} dayOfMonth={dayOfMonth} />
           </div>
+          <HeroInsightStrip />
         </div>
       )}
 

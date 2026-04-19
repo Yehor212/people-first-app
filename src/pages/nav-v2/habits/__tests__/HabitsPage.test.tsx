@@ -94,6 +94,10 @@ vi.mock("@/components/habit-hub/HabitDetailSheet", () => ({
   HabitDetailSheet: () => <div data-testid="habit-detail-sheet-stub" />,
 }));
 
+vi.mock("../hero/HeroInsightStrip", () => ({
+  HeroInsightStrip: () => <div data-testid="hero-insight-strip-stub" />,
+}));
+
 import { HabitsPage } from "../HabitsPage";
 
 describe("HabitsPage (Phase 3-C single-zone)", () => {

@@ -52,6 +52,10 @@ vi.mock("@/components/animations/AllHabitsDoneAnimation", () => ({
   AllHabitsDoneAnimation: () => <div data-testid="all-habits-done-stub" />,
 }));
 
+vi.mock("../hero/HeroInsightStrip", () => ({
+  HeroInsightStrip: () => <div data-testid="hero-insight-strip-stub" />,
+}));
+
 import { HabitsHeroZone } from "../HabitsHeroZone";
 import type { Habit } from "@/types";
 
