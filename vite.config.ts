@@ -46,9 +46,13 @@ export default defineConfig(({ mode }) => {
       versionPlugin(),
       mode === "development" && componentTagger(),
       // Precompress JS/CSS/HTML/SVG with Brotli (default q=11) + gzip (default q=9).
-      // Production only. Skips < 1 KB. Keeps originals for servers that can't
-      // serve precompressed. Brotli-11 ~17-25% smaller than gzip-9 on minified JS.
-      mode !== "development" &&
+      // PWA web build only — Capacitor's default WebViewAssetLoader does NOT
+      // do Content-Encoding negotiation, so .br/.gz files shipped inside the
+      // APK would be dead weight (doubling asset footprint).
+      // Skips < 1 KB. Keeps originals for servers that can't serve precompressed.
+      // Brotli-11 ~17-25% smaller than gzip-9 on minified JS.
+      !isCapacitor &&
+        mode !== "development" &&
         compression({
           algorithms: ["brotliCompress", "gzip"],
           include: [/\.(js|mjs|css|html|svg|json|txt|ico)$/],
