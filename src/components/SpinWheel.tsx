@@ -101,12 +101,12 @@ export function SpinWheel({ onClose, onWin, spinsAvailable }: SpinWheelProps) {
         role="dialog"
         aria-modal="true"
       >
-        <div className="bg-card rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden animate-scale-in">
+        <div className="bg-card rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden motion-safe:animate-scale-in">
           {/* Header */}
           <div className="relative p-6 text-center bg-gradient-to-r from-purple-600 to-pink-600 text-white">
             <button
               onClick={onClose}
-              className="absolute top-4 end-4 p-2 hover:bg-foreground/20 rounded-full transition-colors"
+              className="absolute top-4 end-4 p-2 hover:bg-foreground/20 rounded-full motion-safe:transition-colors"
               aria-label={t.close || "Close"}
             >
               <X className="w-5 h-5" />
@@ -176,13 +176,13 @@ export function SpinWheel({ onClose, onWin, spinsAvailable }: SpinWheelProps) {
 
               {/* Glow effect when spinning */}
               {isSpinning && (
-                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500/30 to-pink-500/30 animate-pulse" />
+                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500/30 to-pink-500/30 motion-safe:animate-pulse" />
               )}
             </div>
 
             {/* Result */}
             {showResult && prize && (
-              <div className="mt-6 text-center animate-scale-in">
+              <div className="mt-6 text-center motion-safe:animate-scale-in">
                 <div
                   className={cn(
                     "inline-flex items-center gap-3 px-6 py-4 rounded-2xl",
@@ -210,7 +210,7 @@ export function SpinWheel({ onClose, onWin, spinsAvailable }: SpinWheelProps) {
 
                 <button
                   onClick={handleClaim}
-                  className="mt-4 px-8 py-3 zen-gradient text-white font-bold rounded-xl hover:scale-105 active:scale-95 transition-transform"
+                  className="mt-4 px-8 py-3 zen-gradient text-white font-bold rounded-xl hover:scale-105 active:scale-95 motion-safe:transition-transform"
                 >
                   {t.claimPrize || "Claim Prize!"} 🎉
                 </button>
@@ -223,7 +223,7 @@ export function SpinWheel({ onClose, onWin, spinsAvailable }: SpinWheelProps) {
                 onClick={handleSpin}
                 disabled={isSpinning || spinsAvailable <= 0}
                 className={cn(
-                  "mt-6 px-10 py-4 rounded-2xl font-bold text-lg transition-all",
+                  "mt-6 px-10 py-4 rounded-2xl font-bold text-lg motion-safe:transition-all",
                   isSpinning
                     ? "bg-muted text-muted-foreground cursor-not-allowed"
                     : spinsAvailable > 0

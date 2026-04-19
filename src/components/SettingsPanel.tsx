@@ -139,7 +139,7 @@ export function SettingsPanel({
       {onOpenWidgetSettings && (
         <button
           onClick={onOpenWidgetSettings}
-          className="w-full bg-card rounded-2xl p-5 zen-shadow-card hover:bg-accent/5 transition-colors text-start"
+          className="w-full bg-card rounded-2xl p-5 zen-shadow-card hover:bg-accent/5 motion-safe:transition-colors text-start"
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -171,7 +171,7 @@ export function SettingsPanel({
                   void offlineQueue.processQueue();
                 });
               }}
-              className="text-xs text-primary font-medium hover:text-primary/80 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+              className="text-xs text-primary font-medium hover:text-primary/80 motion-safe:transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
             >
               {(t as Record<string, string>).syncNow || "Sync Now"}
             </button>
@@ -191,7 +191,7 @@ export function SettingsPanel({
         <p className="text-xs text-muted-foreground mb-3">{t.dopamineSettingsDesc}</p>
         <button
           onClick={() => setShowDopamineSettings(true)}
-          className="w-full py-3 zen-gradient text-primary-foreground rounded-xl font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+          className="w-full py-3 zen-gradient text-primary-foreground rounded-xl font-medium hover:opacity-90 motion-safe:transition-opacity flex items-center justify-center gap-2"
         >
           <Sparkles className="w-4 h-4" />
           <span>{t.dopamineCustomize}</span>
@@ -218,7 +218,7 @@ export function SettingsPanel({
           <p className="text-xs text-muted-foreground mb-3">{t.installAppDescription}</p>
           <button
             onClick={() => promptInstall()}
-            className="w-full py-3 zen-gradient text-primary-foreground rounded-xl font-medium hover:opacity-90 transition-opacity btn-press"
+            className="w-full py-3 zen-gradient text-primary-foreground rounded-xl font-medium hover:opacity-90 motion-safe:transition-opacity btn-press"
           >
             {t.installNow}
           </button>

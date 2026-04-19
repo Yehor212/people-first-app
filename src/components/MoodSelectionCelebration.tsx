@@ -90,7 +90,7 @@ export function MoodSelectionCelebration({
       {/* Calendar View */}
       {(phase === 'calendar' || phase === 'done') && (
         <div className={cn(
-          "bg-card rounded-3xl p-6 shadow-2xl border-2 max-w-sm w-full mx-4 transition-all duration-500",
+          "bg-card rounded-3xl p-6 shadow-2xl border-2 max-w-sm w-full mx-4 motion-safe:transition-all motion-safe:duration-500",
           phase === 'calendar' ? "scale-100 opacity-100" : "scale-95 opacity-90"
         )}
         style={{ borderColor: moodColors[mood] }}
@@ -129,7 +129,7 @@ export function MoodSelectionCelebration({
                   <div
                     key={i}
                     className={cn(
-                      "aspect-square rounded-lg flex items-center justify-center text-xs transition-all",
+                      "aspect-square rounded-lg flex items-center justify-center text-xs motion-safe:transition-all",
                       !isValid && "invisible",
                       isToday && "calendar-day-highlight"
                     )}
@@ -163,7 +163,7 @@ export function MoodSelectionCelebration({
                 <div
                   key={time}
                   className={cn(
-                    "flex flex-col items-center gap-1 p-2 rounded-xl transition-all",
+                    "flex flex-col items-center gap-1 p-2 rounded-xl motion-safe:transition-all",
                     isActive ? "bg-primary/20 ring-2 ring-primary/50" : "opacity-40"
                   )}
                 >
@@ -192,7 +192,7 @@ export function MoodSelectionCelebration({
 
           {/* Note bubble if exists */}
           {note && (
-            <div className="flex items-start gap-2 p-3 bg-secondary/30 rounded-xl animate-fade-in">
+            <div className="flex items-start gap-2 p-3 bg-secondary/30 rounded-xl motion-safe:animate-fade-in">
               <MessageCircle className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
               <p className="text-sm text-foreground line-clamp-2">{note}</p>
             </div>
@@ -200,10 +200,10 @@ export function MoodSelectionCelebration({
 
           {/* Sparkles decoration */}
           <div className="absolute top-2 end-2">
-            <div className="text-2xl animate-bounce-gentle">✨</div>
+            <div className="text-2xl motion-safe:animate-bounce-gentle">✨</div>
           </div>
           <div className="absolute top-4 start-4">
-            <div className="text-xl animate-sparkle [animation-delay:0.3s]">⭐</div>
+            <div className="text-xl motion-safe:animate-sparkle [animation-delay:0.3s]">⭐</div>
           </div>
         </div>
       )}
@@ -247,9 +247,9 @@ export function ActionSuccess({
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center pointer-events-none">
-      <div className="flex flex-col items-center animate-scale-in">
-        <div className="text-6xl mb-2 animate-bounce-gentle">{emoji}</div>
-        <div className="text-lg font-bold text-primary animate-fade-in">{text}</div>
+      <div className="flex flex-col items-center motion-safe:animate-scale-in">
+        <div className="text-6xl mb-2 motion-safe:animate-bounce-gentle">{emoji}</div>
+        <div className="text-lg font-bold text-primary motion-safe:animate-fade-in">{text}</div>
       </div>
     </div>
   );

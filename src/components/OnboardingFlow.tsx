@@ -40,7 +40,7 @@ function FloatingParticles() {
       {Array.from({ length: 20 }).map((_, i) => (
         <div
           key={i}
-          className="absolute w-2 h-2 rounded-full animate-float-particle opacity-30"
+          className="absolute w-2 h-2 rounded-full motion-safe:animate-float-particle opacity-30"
           style={{
             left: `${Math.random() * 100}%`,
             top: `${Math.random() * 100}%`,
@@ -290,7 +290,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
                     aria-label={getModuleName(module.id)}
                     onClick={() => toggleModule(module.id)}
                     className={cn(
-                      "relative p-4 rounded-xl flex flex-col items-center gap-2 transition-all duration-200 text-center overflow-hidden",
+                      "relative p-4 rounded-xl flex flex-col items-center gap-2 motion-safe:transition-all motion-safe:duration-200 text-center overflow-hidden",
                       isSelected
                         ? `bg-gradient-to-br ${module.gradient} shadow-lg`
                         : "bg-secondary/50 hover:bg-secondary",
@@ -300,7 +300,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
                   >
                     {/* Emoji */}
                     <span
-                      className={cn("text-3xl transition-transform", isSelected && "scale-110")}
+                      className={cn("text-3xl motion-safe:transition-transform", isSelected && "scale-110")}
                     >
                       {module.emoji}
                     </span>
@@ -357,7 +357,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
                 logger.log("[OnboardingFlow] Skip button clicked");
                 handleSkip();
               }}
-              className="flex-1 py-3 sm:py-4 bg-secondary/50 backdrop-blur-sm text-secondary-foreground rounded-xl sm:rounded-2xl font-semibold hover:bg-secondary transition-colors text-sm sm:text-base active:scale-95"
+              className="flex-1 py-3 sm:py-4 bg-secondary/50 backdrop-blur-sm text-secondary-foreground rounded-xl sm:rounded-2xl font-semibold hover:bg-secondary motion-safe:transition-colors text-sm sm:text-base active:scale-95"
             >
               {t.skip || "Skip"}
             </button>
@@ -367,7 +367,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
                 logger.log("[OnboardingFlow] Start button clicked");
                 handleComplete();
               }}
-              className="flex-1 py-3 sm:py-4 bg-gradient-to-r from-primary to-accent text-primary-foreground rounded-xl sm:rounded-2xl font-semibold hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/30 text-sm sm:text-base active:scale-95"
+              className="flex-1 py-3 sm:py-4 bg-gradient-to-r from-primary to-accent text-primary-foreground rounded-xl sm:rounded-2xl font-semibold hover:opacity-90 motion-safe:transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/30 text-sm sm:text-base active:scale-95"
             >
               {t.getStarted || "Start"}
               <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 rtl:scale-x-[-1]" />

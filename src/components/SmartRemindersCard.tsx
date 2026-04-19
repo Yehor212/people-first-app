@@ -62,7 +62,7 @@ function SuggestionItem({
   };
 
   return (
-    <div className="p-3 bg-card rounded-xl border border-border hover:border-primary/30 transition-colors">
+    <div className="p-3 bg-card rounded-xl border border-border hover:border-primary/30 motion-safe:transition-colors">
       <div className="flex items-start gap-3">
         <div className="text-2xl flex-shrink-0">{suggestion.icon}</div>
         <div className="flex-1 min-w-0">
@@ -113,7 +113,7 @@ function SuggestionItem({
             void hapticSuccess();
             onApply();
           }}
-          className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-primary/10 text-primary text-xs font-medium rounded-lg hover:bg-primary/20 transition-colors"
+          className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-primary/10 text-primary text-xs font-medium rounded-lg hover:bg-primary/20 motion-safe:transition-colors"
         >
           <Check className="w-3 h-3" />
           {t.apply || 'Apply'}
@@ -123,7 +123,7 @@ function SuggestionItem({
             void hapticTap();
             onDismiss();
           }}
-          className="flex items-center justify-center px-3 py-2 bg-muted text-muted-foreground text-xs rounded-lg hover:bg-muted/80 transition-colors"
+          className="flex items-center justify-center px-3 py-2 bg-muted text-muted-foreground text-xs rounded-lg hover:bg-muted/80 motion-safe:transition-colors"
           aria-label={t.dismiss || 'Dismiss'}
         >
           <X className="w-3 h-3" />
@@ -153,7 +153,7 @@ function HabitSuggestionItem({
   };
 
   return (
-    <div className="flex items-center justify-between p-2 bg-muted/50 rounded-lg hover:bg-muted transition-colors">
+    <div className="flex items-center justify-between p-2 bg-muted/50 rounded-lg hover:bg-muted motion-safe:transition-colors">
       <div className="flex items-center gap-2 min-w-0">
         <span className="text-lg flex-shrink-0">{suggestion.habitIcon}</span>
         <div className="min-w-0">
@@ -310,7 +310,7 @@ export const SmartRemindersCard = memo(function SmartRemindersCard({
               void hapticTap();
               setShowHabitSuggestions(!showHabitSuggestions);
             }}
-            className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
+            className="w-full flex items-center justify-between p-4 hover:bg-muted/50 motion-safe:transition-colors"
           >
             <div className="flex items-center gap-2">
               <Clock className="w-4 h-4 text-muted-foreground" />
@@ -329,7 +329,7 @@ export const SmartRemindersCard = memo(function SmartRemindersCard({
           </button>
 
           {showHabitSuggestions && (
-            <div className="px-4 pb-4 space-y-2 animate-fade-in">
+            <div className="px-4 pb-4 space-y-2 motion-safe:animate-fade-in">
               {habitSuggestions.map(suggestion => (
                 <HabitSuggestionItem
                   key={suggestion.habitId}
