@@ -26,7 +26,7 @@ export function AchievementsTab({
   handlePullToRefresh,
 }: AchievementsTabProps) {
   return (
-    <div className="animate-tab-enter">
+    <div className="motion-safe:animate-tab-enter">
       <PullToRefresh onRefresh={handlePullToRefresh}>
         <div className="content-with-nav px-4">
           <LazyErrorBoundary componentName="Achievements">

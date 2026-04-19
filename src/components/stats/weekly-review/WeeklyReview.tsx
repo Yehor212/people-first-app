@@ -200,7 +200,7 @@ export function WeeklyReview({
         {/* Expand button */}
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="w-full flex items-center justify-center gap-1 mt-4 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          className="w-full flex items-center justify-center gap-1 mt-4 py-2 text-xs text-muted-foreground hover:text-foreground motion-safe:transition-colors"
           aria-expanded={isExpanded}
         >
           <span>{isExpanded ? t.showLess || "Show less" : t.viewDetails || "View details"}</span>

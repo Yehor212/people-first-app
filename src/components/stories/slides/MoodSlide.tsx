@@ -280,7 +280,7 @@ export function MoodSlide({ slide, t }: MoodSlideProps) {
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: 1 + i * 0.1, type: 'spring' }}
-                className={`relative transition-transform duration-300 ${
+                className={`relative motion-safe:transition-transform motion-safe:duration-300 ${
                   isSelected ? 'scale-125 z-10' : 'opacity-50'
                 }`}
               >
