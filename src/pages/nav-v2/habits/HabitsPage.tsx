@@ -51,6 +51,20 @@ export const HabitsPage = memo(function HabitsPage() {
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [detailHabit, setDetailHabit] = useState<Habit | null>(null);
 
+  /** Focus-return: track the element that triggered the most recent sheet
+   *  open so the sheet's close handler can restore focus there (spec §11
+   *  a11y criterion: "Focus returns to invoking element on sheet close"). */
+  const returnFocusRef = useRef<HTMLElement | null>(null);
+  const captureReturnFocus = useCallback(() => {
+    const active = document.activeElement;
+    if (active instanceof HTMLElement) returnFocusRef.current = active;
+  }, []);
+  const restoreReturnFocus = useCallback(() => {
+    const el = returnFocusRef.current;
+    if (el && document.contains(el)) el.focus();
+    returnFocusRef.current = null;
+  }, []);
+
   useEffect(() => {
     // Move focus to the <main> landmark (not the heading) so screen readers
     // announce the region while keyboard users don't see an outline drawn
@@ -100,12 +114,33 @@ export const HabitsPage = memo(function HabitsPage() {
     [setHabits],
   );
 
-  const openCreate = useCallback(() => setCreateOpen(true), []);
-  const closeCreate = useCallback(() => setCreateOpen(false), []);
-  const openLibrary = useCallback(() => setLibraryOpen(true), []);
-  const closeLibrary = useCallback(() => setLibraryOpen(false), []);
-  const openDetail = useCallback((habit: Habit) => setDetailHabit(habit), []);
-  const closeDetail = useCallback(() => setDetailHabit(null), []);
+  const openCreate = useCallback(() => {
+    captureReturnFocus();
+    setCreateOpen(true);
+  }, [captureReturnFocus]);
+  const closeCreate = useCallback(() => {
+    setCreateOpen(false);
+    restoreReturnFocus();
+  }, [restoreReturnFocus]);
+  const openLibrary = useCallback(() => {
+    captureReturnFocus();
+    setLibraryOpen(true);
+  }, [captureReturnFocus]);
+  const closeLibrary = useCallback(() => {
+    setLibraryOpen(false);
+    restoreReturnFocus();
+  }, [restoreReturnFocus]);
+  const openDetail = useCallback(
+    (habit: Habit) => {
+      captureReturnFocus();
+      setDetailHabit(habit);
+    },
+    [captureReturnFocus],
+  );
+  const closeDetail = useCallback(() => {
+    setDetailHabit(null);
+    restoreReturnFocus();
+  }, [restoreReturnFocus]);
 
   const handleArchiveHabit = useCallback(
     (habitId: string) => {
