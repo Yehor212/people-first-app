@@ -183,7 +183,21 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       target: "esnext",
-      minify: "esbuild",
+      // Terser ~1-2% smaller than esbuild (20-40x slower, acceptable on CI only).
+      // esbuild stays for dev minification via optimizeDeps.
+      minify: mode === "production" ? "terser" : "esbuild",
+      terserOptions: {
+        compress: {
+          passes: 2,
+          pure_funcs: [
+            "console.log",
+            "console.debug",
+            "console.info",
+            "console.trace",
+          ],
+        },
+        format: { comments: false },
+      },
       // LightningCSS minifier — paired with css.transformer above.
       cssMinify: "lightningcss",
       // Capacitor WebView + modern browsers all support native modulepreload.
