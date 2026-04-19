@@ -217,7 +217,17 @@ export const HabitsPage = memo(function HabitsPage() {
         id="main-content-v2"
         role="main"
         tabIndex={-1}
-        className="mx-auto max-w-3xl pb-16 outline-none"
+        className="relative mx-auto max-w-3xl pb-16 outline-none motion-safe:transition-[background] motion-safe:duration-700"
+        style={
+          // Subliminal progress tint — warm cream → soft emerald wash as completion grows.
+          // Caps at 4% alpha so it stays as subtext, not a chrome take-over.
+          // Design rationale: docs/design-animation-audit.md §4.1 item 3.
+          dailyProgress.total > 0
+            ? {
+                backgroundImage: `linear-gradient(180deg, transparent 0%, hsl(var(--primary) / ${dailyProgress.ratio * 0.04}) 100%)`,
+              }
+            : undefined
+        }
         aria-labelledby="habits-page-heading"
         data-testid="habits-page"
       >

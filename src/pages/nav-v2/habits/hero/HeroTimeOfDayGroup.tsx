@@ -74,13 +74,15 @@ export const HeroTimeOfDayGroup = memo(function HeroTimeOfDayGroup({
       data-testid={`hero-group-${bucket}`}
       className="mt-6 first:mt-4"
     >
-      <header className="mb-2 flex items-center justify-between gap-3 px-1">
-        <h3 className="flex items-center gap-2 font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-          <span aria-hidden="true">{BUCKET_ICON[bucket]}</span>
+      <header className="mb-3 flex items-end justify-between gap-3 px-1">
+        <h3 className="flex items-baseline gap-2 font-display text-2xl font-semibold italic tracking-tight text-foreground md:text-3xl">
+          <span aria-hidden="true" className="not-italic">
+            {BUCKET_ICON[bucket]}
+          </span>
           {label}
         </h3>
         <span
-          className="text-xs font-medium tabular-nums text-muted-foreground"
+          className="text-xs font-medium uppercase tracking-wider tabular-nums text-muted-foreground"
           data-testid={`hero-group-${bucket}-count`}
         >
           {completed} / {habits.length}

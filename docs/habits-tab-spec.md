@@ -787,6 +787,8 @@ session (requires ≥30 days data; target ≥40% by day 45).
 | 2026-04-19 | `1315b26` | A+++ revamp §§ 2, 8, 9, 11, 12, 13 |
 | 2026-04-19 | `0ebd6f8` | Honesty pass — removed fabricated metrics, ✅→🟡 on unverified a11y |
 | 2026-04-19 | (this commit) | Streak milestone celebration — useStreakMilestones hook + lazy V1 HabitCompletionCelebration mount at 3/7/21/66/100 day thresholds |
+| 2026-04-19 | `4899c17` | Design P0 — Caveat hand-lettering on step numbers + identity pill |
+| 2026-04-19 | (next) | Design P0 — italic Fraunces on time-of-day headings + subliminal completion tint |
 
 ---
 
