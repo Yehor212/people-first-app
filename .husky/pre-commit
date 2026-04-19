@@ -1,2 +1,9 @@
 #!/usr/bin/env sh
-npx tsc --noEmit && npx lint-staged
+# Multi-gate pre-commit (ordered fastest-fail):
+#   1. tsc         — 0 TS errors invariant
+#   2. lint-staged — ESLint + oxlint on changed files only (fast)
+#   3. doc-counts  — ARCHITECTURE.md auto-generated block must match filesystem
+#                    (prevents Law 6 Reality Anchor regression — tech-debt audit 2026-04-18)
+#
+# Bypass: `git commit --no-verify` for work-in-progress. CI will re-run these gates.
+npx tsc --noEmit && npx lint-staged && node scripts/doc-counts.cjs --check

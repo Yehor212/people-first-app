@@ -113,7 +113,7 @@ export function WelcomeBackModal({
               <button
                 onClick={onClose}
                 aria-label={t.close || "Close"}
-                className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors"
+                className="p-2 min-w-[44px] min-h-[44px] inline-flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors"
               >
                 <X className="w-5 h-5 text-muted-foreground" />
               </button>

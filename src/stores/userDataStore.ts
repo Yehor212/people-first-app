@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { MoodEntry, Habit, FocusSession, GratitudeEntry, ReminderSettings, PrivacySettings, ScheduleEvent, MicroReflection, CanvasGoal } from '@/types';
 import { defaultReminderSettings } from '@/lib/reminders';
 import { needsMigration, migrateAllHabits } from '@/lib/habitMigration';
+import { logger } from '@/lib/logger';
 
 // Module-level guard: prevents _hydrateFromDB from re-running migration in a loop.
 // The loop occurs when migration calls dbSetter → useIndexedDB setState → useLayoutEffect
@@ -153,14 +154,14 @@ export const useUserDataStore = create<UserDataState & UserDataActions>((set, ge
     // _hydrateFromDB → dbSetter → useIndexedDB setState → useLayoutEffect re-fires → _hydrateFromDB again
     if (habits && habits.length > 0 && !habitsMigrationDone && needsMigration(habits)) {
       habitsMigrationDone = true; // One-shot guard — prevents re-entry even if stale data persists
-      console.info('[habitMigration] Migrating v1 habits to v2 format...');
+      logger.info('[habitMigration] Migrating v1 habits to v2 format...');
       habits = migrateAllHabits(habits);
       // Persist migrated habits back to IndexedDB
       const dbSetter = get()._setters?.setHabits;
       if (dbSetter) {
         dbSetter(habits);
       }
-      console.info(`[habitMigration] Migrated ${habits.length} habits successfully.`);
+      logger.info(`[habitMigration] Migrated ${habits.length} habits successfully.`);
     }
 
     const payload = {

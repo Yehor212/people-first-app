@@ -1,0 +1,56 @@
+# Snyk (https://snyk.io) policy file
+# Suppresses code-scan false-positives for ZenFlow.
+# Reviewed and reaffirmed in docs/tech-debt-audit-2026-04-18.md §3.
+
+version: v1.25.1
+ignore:
+  # i18n translation LABELS, not secrets. Strings are user-facing UI text
+  # for the journal passcode/password-prompt feature (e.g. "Confirm your password").
+  # Snyk's "Hardcoded Password" detector flags them because the key name contains
+  # "password"; no secret material is present in source control.
+  # Re-verified 2026-04-18. Renaming keys to `journalPasscode*` is the long-term fix
+  # (tracked in docs/tech-debt-audit-2026-04-18.md P3-3).
+  'javascript/HardcodedNonCryptoSecret':
+    - 'src/i18n/languages/en.ts':
+        reason: i18n UI label for journal passcode feature, not a credential
+        expires: 2026-10-18T00:00:00.000Z
+        created: 2026-04-18T00:00:00.000Z
+    - 'src/i18n/languages/uk.ts':
+        reason: i18n UI label for journal passcode feature, not a credential
+        expires: 2026-10-18T00:00:00.000Z
+        created: 2026-04-18T00:00:00.000Z
+    - 'src/i18n/languages/es.ts':
+        reason: i18n UI label for journal passcode feature, not a credential
+        expires: 2026-10-18T00:00:00.000Z
+        created: 2026-04-18T00:00:00.000Z
+    - 'src/i18n/languages/de.ts':
+        reason: i18n UI label for journal passcode feature, not a credential
+        expires: 2026-10-18T00:00:00.000Z
+        created: 2026-04-18T00:00:00.000Z
+    - 'src/i18n/languages/fr.ts':
+        reason: i18n UI label for journal passcode feature, not a credential
+        expires: 2026-10-18T00:00:00.000Z
+        created: 2026-04-18T00:00:00.000Z
+    - 'src/i18n/languages/ja.ts':
+        reason: i18n UI label for journal passcode feature, not a credential
+        expires: 2026-10-18T00:00:00.000Z
+        created: 2026-04-18T00:00:00.000Z
+    - 'src/i18n/languages/ar.ts':
+        reason: i18n UI label for journal passcode feature, not a credential
+        expires: 2026-10-18T00:00:00.000Z
+        created: 2026-04-18T00:00:00.000Z
+    - 'src/i18n/languages/he.ts':
+        reason: i18n UI label for journal passcode feature, not a credential
+        expires: 2026-10-18T00:00:00.000Z
+        created: 2026-04-18T00:00:00.000Z
+
+  # versionCheck uses origin-relative URL construction with pathname validation
+  # (lines 110-118 reject absolute URLs and protocol-relative //). Snyk traces
+  # window.location.replace but misses the validation barrier.
+  'javascript/OpenRedirect':
+    - 'src/lib/versionCheck.ts':
+        reason: URL built from origin + validated pathname; absolute/protocol-relative paths rejected at line 110-118
+        expires: 2026-10-18T00:00:00.000Z
+        created: 2026-04-18T00:00:00.000Z
+
+patch: {}

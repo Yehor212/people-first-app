@@ -150,7 +150,7 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
             </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-muted rounded-lg transition-colors"
+              className="p-2 min-w-[44px] min-h-[44px] inline-flex items-center justify-center hover:bg-muted rounded-lg transition-colors"
               aria-label={t.close || "Close"}
             >
               <X className="w-5 h-5" />
@@ -226,8 +226,10 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
                     <button
                       key={mins}
                       onClick={() => setDuration(mins)}
+                      aria-label={(t.nMinutes || "{n} minutes").replace("{n}", String(mins))}
+                      aria-pressed={duration === mins}
                       className={cn(
-                        "py-2 rounded-lg font-medium transition-all",
+                        "py-2 min-h-[44px] rounded-lg font-medium transition-all",
                         duration === mins
                           ? "zen-gradient text-white zen-shadow"
                           : "bg-muted hover:bg-muted/70"
@@ -262,8 +264,10 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
                     <button
                       key={mins}
                       onClick={() => setPingInterval(mins)}
+                      aria-label={(t.nMinutes || "{n} minutes").replace("{n}", String(mins))}
+                      aria-pressed={pingInterval === mins}
                       className={cn(
-                        "py-2 rounded-lg font-medium transition-all text-sm",
+                        "py-2 min-h-[44px] rounded-lg font-medium transition-all text-sm",
                         pingInterval === mins
                           ? "bg-primary text-primary-foreground"
                           : "bg-muted hover:bg-muted/70"
@@ -281,15 +285,18 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
                 <div className="flex gap-2">
                   <button
                     onClick={playNotification}
-                    className="px-3 py-2 rounded-lg bg-muted hover:bg-muted/70 transition-colors text-sm font-medium"
+                    className="px-3 py-2 min-h-[44px] rounded-lg bg-muted hover:bg-muted/70 transition-colors text-sm font-medium"
                     title={t.testSound}
+                    aria-label={(t.testSound || "🔊 Test").replace(/^[^\w]+\s*/u, "") || "Test sound"}
                   >
                     {t.testSound || "🔊 Test"}
                   </button>
                   <button
                     onClick={() => setSoundEnabled(!soundEnabled)}
+                    aria-label={`${t.audioPings || "Audio Pings"} — ${soundEnabled ? t.soundOn || "On" : t.soundOff || "Off"}`}
+                    aria-pressed={soundEnabled}
                     className={cn(
-                      "flex items-center gap-2 px-3 py-2 rounded-lg transition-colors",
+                      "flex items-center gap-2 px-3 py-2 min-h-[44px] rounded-lg transition-colors",
                       soundEnabled
                         ? "bg-primary text-primary-foreground"
                         : "bg-muted text-muted-foreground"

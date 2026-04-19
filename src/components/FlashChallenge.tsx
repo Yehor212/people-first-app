@@ -59,7 +59,7 @@ export function FlashChallenge({ challenge, onComplete, onDismiss }: FlashChalle
           </div>
           <button
             onClick={onDismiss}
-            className="p-2 hover:bg-red-500/10 rounded-lg transition-colors"
+            className="p-2 min-w-[44px] min-h-[44px] inline-flex items-center justify-center hover:bg-red-500/10 rounded-lg transition-colors"
             aria-label={t.dismiss || 'Dismiss'}
           >
             <X className="w-4 h-4 text-red-500" />
@@ -84,7 +84,7 @@ export function FlashChallenge({ challenge, onComplete, onDismiss }: FlashChalle
           </div>
           <button
             onClick={onDismiss}
-            className="p-2 hover:bg-green-500/10 rounded-lg transition-colors"
+            className="p-2 min-w-[44px] min-h-[44px] inline-flex items-center justify-center hover:bg-green-500/10 rounded-lg transition-colors"
             aria-label={t.dismiss || 'Dismiss'}
           >
             <X className="w-4 h-4 text-green-500" />

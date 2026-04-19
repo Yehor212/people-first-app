@@ -193,7 +193,7 @@ export function MoodCompactView({
                           e.stopPropagation();
                           handleStartEdit(entry);
                         }}
-                        className="p-2 hover:bg-primary/10 rounded-lg transition-colors group"
+                        className="p-2 min-w-[44px] min-h-[44px] inline-flex items-center justify-center hover:bg-primary/10 rounded-lg transition-colors group"
                         title={t.editMood || "Edit mood"}
                         aria-label={t.editMood || "Edit mood"}
                       >
@@ -223,7 +223,7 @@ export function MoodCompactView({
                           onClick={() => handleEditMoodSelect(entry, mood.type)}
                           aria-label={mood.label}
                           className={cn(
-                            "flex-1 p-2 rounded-lg transition-all",
+                            "flex-1 p-2 min-h-[44px] inline-flex items-center justify-center rounded-lg transition-all",
                             editingMood === mood.type
                               ? `${mood.color} bg-opacity-30 scale-105`
                               : "hover:bg-secondary hover:scale-105"
@@ -280,7 +280,7 @@ export function MoodCompactView({
               }}
               disabled={!hasEntry && !isCurrent}
               className={cn(
-                "flex flex-col items-center gap-1 transition-all",
+                "flex flex-col items-center gap-1 min-w-[44px] min-h-[44px] justify-center transition-all",
                 !hasEntry && !isCurrent && "opacity-40",
                 (canEdit || (!hasEntry && isCurrent)) && "hover:scale-110 cursor-pointer"
               )}

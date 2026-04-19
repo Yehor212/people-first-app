@@ -1,0 +1,71 @@
+name: Drift Checks
+
+# PR-only gate enforcing regression guards introduced in the 2026-04-18 tech-debt
+# audit. Each job is cheap (<30s). Parallel matrix for fail-fast signal.
+# Not a replacement for the full `ci:preflight` pipeline — complements it.
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      # Run only when something we can drift on actually changes.
+      - 'src/**'
+      - 'docs/**'
+      - 'supabase/migrations/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'ARCHITECTURE.md'
+      - 'CLAUDE.md'
+      - 'scripts/doc-counts.cjs'
+      - 'scripts/check-types-freshness.cjs'
+      - 'scripts/check-oss-licenses.cjs'
+      - '.github/workflows/drift-checks.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: drift-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: ${{ matrix.check.name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        check:
+          - name: doc-counts
+            cmd: node scripts/doc-counts.cjs --check
+            fix: npm run doc-counts:update
+          - name: types-freshness
+            cmd: node scripts/check-types-freshness.cjs
+            fix: npx supabase gen types typescript --project-id <id> > src/types/supabase.ts
+          - name: retry-tests
+            cmd: npx vitest run src/lib/__tests__/retry.test.ts
+            fix: fix failing tests in src/lib/retry.ts
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Full history so `git log -1 --format=%ct` returns committer-time
+          # for check-types-freshness.cjs (see comment in that script).
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: npm
+
+      - run: npm ci --prefer-offline --no-audit --no-fund
+
+      - name: ${{ matrix.check.name }}
+        run: ${{ matrix.check.cmd }}
+
+      - name: On failure — suggest fix
+        if: failure()
+        run: |
+          echo "::error title=${{ matrix.check.name }} failed::Fix suggestion: ${{ matrix.check.fix }}"

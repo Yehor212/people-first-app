@@ -256,4 +256,161 @@ If the Ratchet Law (Law 27) is doing its job *and* we still accumulated ~60-80 h
 
 ---
 
-*End of audit. No code was modified. All findings are evidence-based; line numbers and commands are reproducible.*
+*End of original audit. Section 10 below was appended in the deep-scan extension pass on 2026-04-18.*
+
+---
+
+## 10. Deep-Scan Extension — 10 Categories the First Pass Missed
+
+The original audit (§1-9) focused on code-level, architectural, perf, and security debt. This extension covers **10 categories that a mobile mental-wellness app heading to v2.0 should audit but the first pass did not**: accessibility depth, observability, privacy/GDPR, test pyramid, bundle composition, error recovery patterns, mobile lifecycle edge cases, TypeScript type depth, API contract drift, and OSS licensing/attribution.
+
+Research citations are 2024-2026 only. Every finding has a file:line / command / measurement.
+
+### 10.1 Accessibility depth (WCAG 2.2) — **P1**
+
+**Research consensus (2024-2026):** WCAG 2.2 (W3C Recommendation, Oct 2023) adds 9 criteria. Three are touch-critical: **Target Size Minimum 2.5.8** (24×24 CSS px Level AA), **Dragging Movements 2.5.7**, **Focus Appearance 2.4.13** (AAA). `@axe-core/playwright` is the canonical CI integration.
+Source: [W3C Understanding 2.5.8](https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html).
+
+**ZenFlow measurement:**
+- Touch-target rule already 44px (exceeds 24px AA requirement). GREEN.
+- **aria-label coverage: 39.8%** (168/422 `<button>` openings with labels within 5 lines). **254 buttons missing labels.** Top offenders: `src/components/settings/AboutSection.tsx` (7), `src/features/journal/JournalStickerPicker.tsx` (6), `src/components/TimeHelper.tsx` (6), `src/components/habit-hub/HabitDetailSheet.tsx` (6), `src/components/habit-hub/AddHabitFrequencySection.tsx` (6), `src/components/ErrorBoundary.tsx` (5).
+- `prefers-reduced-motion` per prior backlog: **245 animations** without `motion-safe:` — documented, unfixed.
+
+**Fix (deferred, separate session):** Ratchet `ariaLabelCoverage >= 80%`; install `@axe-core/playwright`; add e2e-a11y step that scans each TabType route; migrate the 7 top offenders first.
+
+### 10.2 Observability / SLO — **P2**
+
+**Research consensus:** OpenTelemetry JS has GA Traces + Metrics, browser instrumentation is **experimental**; Sentry React 19 guidance wires `reactErrorHandler` + `onUncaughtError` + `onCaughtError` on `createRoot`; replay must be disabled on iOS pre-ATT-consent.
+Source: [OpenTelemetry JS Status](https://opentelemetry.io/docs/languages/js/); Sentry docs 2025.
+
+**ZenFlow measurement:** Sentry init is **complete** — `src/lib/sentry.ts` has environment=MODE, release=`zenflow@${__APP_VERSION__}`, tracesSampleRate (0.05 native / 0.10 web), replaysSessionSampleRate=0.1, replaysOnErrorSampleRate=1.0, beforeSend filters AbortError + chunk errors, DJB2-hashed userId, replay masks text/inputs/media. All 6 criteria met. **GREEN.**
+
+**Gap:** no `reactErrorHandler` wiring on `createRoot` (relevant when React 19 ships). No OpenTelemetry. Consider when upgrading to React 19 in Stage 3.
+
+### 10.3 Privacy / GDPR / store declarations — **P2**
+
+**Research consensus:** GDPR Art. 15(3) = right to a copy in electronic form. Google Play Data Safety must declare data transmitted by **third-party SDKs and WebView**, not just first-party code.
+Source: [GDPR Art. 15](https://gdpr-info.eu/art-15-gdpr/); [Play Data Safety guide](https://support.google.com/googleplay/android-developer/answer/10787469).
+
+**ZenFlow measurement:**
+- DSAR: `src/features/journal/journalImport.ts` + export exists. Zod-validated. ✓
+- SDK drift: `npm ls --prod` needs to be diffed against Play Console Data Safety declaration on every dep bump. **No automation today.**
+- ATT (iOS App Tracking Transparency): not surfaced — iOS build pending; track for v2.0 iOS ship.
+
+**Fix:** Add `scripts/check-data-safety-drift.ts` comparing `npm ls --prod --json` hash vs last-declared hash; fail PR on drift.
+
+### 10.4 Test pyramid — **P2**
+
+**Research consensus:** Fowler's "Practical Test Pyramid" canonical; healthy ratio unit:integration:e2e ≈ 20:5:1; E2E flaky rate **<1%**.
+Source: [martinfowler.com/articles/practical-test-pyramid](https://martinfowler.com/articles/practical-test-pyramid.html).
+
+**ZenFlow measurement:**
+- Unit+integration: **3786 test-ratchet floor.** Healthy volume.
+- E2E: Playwright present; visual-regression `visual-regression.yml` workflow (see memory `feedback_local_vs_pushed_state.md` — prior session found it **inert** until merged). Verify status before v2.0.
+- **`it.todo` = 73** (mostly `useAuthSession.test.ts`) — test debt not flaky but eroding.
+
+**Fix (deferred):** triage 73 todos per §7 original audit. Track E2E flaky rate in CI.
+
+### 10.5 Bundle composition — **P2**
+
+**Research consensus:** `rollup-plugin-visualizer` (2.4k★) is Vite-native; `treemap/sunburst/flamegraph` + gzip/brotli sizes. 3G median TTI budget ≈ 200 kB gzip JS.
+Source: [rollup-plugin-visualizer](https://github.com/btd/rollup-plugin-visualizer).
+
+**ZenFlow measurement:**
+- `.size-limit.json`: **1560 kB gzip budget** — 3× mobile 3G budget. manualChunks TDZ-safe.
+- Not currently visualized per commit.
+
+**Fix:** Add `vite-plugin-visualizer` in dev-only config + a CI artifact step publishing `dist/stats.html`. Tighten budget in sprints.
+
+### 10.6 Error recovery patterns — **P2**
+
+**Research consensus:** Capped exponential backoff **with jitter** (AWS Builders' Library); classify network→retry, 4xx→no, 5xx→retry.
+Source: [AWS Backoff with jitter](https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/).
+
+**ZenFlow measurement:**
+- **112 ad-hoc retry/backoff matches** across 15+ files. **No shared util.** Call-sites: `useDeltaSyncEffects.ts`, `useHabitHandlers.ts`, `ambientSounds.ts`, `ModalLayer.tsx`, `PullToRefresh.tsx`.
+- Zero `src/lib/retry.ts` or similar.
+
+**Fix (deferred):** create `src/lib/retry.ts` with `retryWithBackoff(fn, { maxRetries, baseMs, jitter })` + `CircuitBreaker`; migrate call-sites incrementally (keep old behavior — each migration is a separate PR with test).
+
+### 10.7 Mobile lifecycle edge cases — **P1**
+
+**Research consensus:**
+- **Android 15 (API 35) edge-to-edge default** — apps draw behind system bars; must apply `WindowInsets`. ZenFlow targetSdk=35 ✓ (already met mandate).
+- **Predictive back** requires `android:enableOnBackInvokedCallback="true"` + migration off legacy back handling.
+- **iOS Dynamic Island** (iPhone 14 Pro+, iOS 16.1+) — use `env(safe-area-inset-top)` (baseline).
+Source: [Android 15 behavior changes](https://developer.android.com/about/versions/15/behavior-changes-15); [Predictive Back](https://developer.android.com/guide/navigation/predictive-back-gesture).
+
+**ZenFlow measurement:**
+- `android/app/src/main/AndroidManifest.xml`: **no `enableOnBackInvokedCallback` attribute** → merged manifest injects default `false`. 188 `BackHandler`/`backButton`/`App.addListener` usages in `src/` — app relies entirely on legacy onBackPressed.
+- `capacitor.config.ts`: `ios.contentInset: "automatic"` — baseline OK.
+- **Zero Dynamic Island-aware markers** (`dynamic-island|DynamicIsland|data-has-dynamic`).
+
+**Fix (deferred, device-test required):**
+- Add `android:enableOnBackInvokedCallback="true"` to `<application>` in AndroidManifest. Migrate Capacitor `App.addListener('backButton', …)` handlers to `OnBackInvokedCallback` equivalents (Capacitor 8 API).
+- Runtime Dynamic Island detection: `screen.height === 852 || 932` + `env(safe-area-inset-top) > 54px` → set `data-has-dynamic-island` on `<html>`, adjust `.capacitor-safe-area-top` banner positioning.
+
+### 10.8 TypeScript type depth — **P2**
+
+**Research consensus:** 2025 "strict-beyond-strict" = `strict:true` **+** `noUncheckedIndexedAccess` + `exactOptionalPropertyTypes` + `noImplicitOverride` + `useUnknownInCatchVariables`.
+Source: [tsconfig/noUncheckedIndexedAccess](https://www.typescriptlang.org/tsconfig/#noUncheckedIndexedAccess).
+
+**ZenFlow measurement:** `tsconfig.app.json` + `tsconfig.node.json`: `strict: true` ✓, `noFallthroughCasesInSwitch: true` ✓. **OFF: `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `noImplicitOverride`, `noImplicitReturns`.**
+
+Dexie row reads (`db.table.get(id)`) return `T | undefined`; without `noUncheckedIndexedAccess` the `undefined` slips through at runtime — potential `useEffect` crash source.
+
+**Fix (deferred, HIGH scope — will introduce 100+ errors):** enable flags one-at-a-time behind a ratchet; start with `noUncheckedIndexedAccess` (biggest safety win for a Dexie-heavy codebase). Each flag is its own PR with type-migration work.
+
+### 10.9 API contract drift (Supabase) — **P2**
+
+**Research consensus:** Nightly GitHub Action `supabase gen types typescript --project-id $REF > database.types.ts` + auto-commit on diff; Pact for consumer-driven contract tests.
+Source: [Supabase generating types](https://supabase.com/docs/guides/api/rest/generating-types).
+
+**ZenFlow measurement:** `src/types/supabase.ts` mtime 2026-04-16 20:41 vs latest migration `20260417_nav_v2_flag.sql` mtime 2026-04-16 23:34. **Types are ~3 hours older than the latest migration. DRIFT DETECTED.**
+
+**Fix (deferred, needs Supabase auth):** run `npx supabase gen types typescript --project-id <id> > src/types/supabase.ts` + commit. Add nightly GitHub Action.
+
+### 10.10 OSS licensing / attribution — **P1 (partially fixed)**
+
+**Research consensus:** Private apps still carry MIT/Apache-2.0/OFL attribution obligations. `license-checker` CI gate; iOS App Store review expects Acknowledgements screen.
+Source: [license-checker](https://github.com/davglass/license-checker).
+
+**ZenFlow measurement:**
+- `LICENSE` file at root: **MISSING** (pending user decision on MIT vs proprietary).
+- `THIRD_PARTY_NOTICES.md`: **CREATED THIS SESSION** (see repo root) — documents MixKit WAV attribution, SIL OFL fonts, Lucide ISC, runtime deps.
+- `SECURITY.md`: **CREATED THIS SESSION** — responsible disclosure policy.
+- `docs/adr/`: **CREATED THIS SESSION** with README + 0000-template + 0001 first ADR.
+- `public/sounds/*.wav` = 4 MixKit files requiring attribution — now documented, but **not yet surfaced in-app** (iOS App Store requirement for v2.0).
+
+**Fix (remaining):**
+- Add `LICENSE` file — **user decision needed** (MIT for OSS release, proprietary for private).
+- Build in-app Acknowledgements screen (Settings → About → Acknowledgements) rendering `THIRD_PARTY_NOTICES.md` — required for iOS App Store approval. Deferred to frontend sprint.
+
+---
+
+## 11. Deep-Scan Ratchet Additions (already landed)
+
+`scripts/doc-counts.cjs` now tracks in ARCHITECTURE.md (auto-generated):
+- `consoleLeaksInProd` (current: post-fix value)
+- `adrFiles` count
+- `SECURITY.md` / `CONTRIBUTING.md` / `LICENSE` / `THIRD_PARTY_NOTICES` / `CODEOWNERS` presence
+
+CI fails on drift via `npm run doc-counts`.
+
+---
+
+## 12. Updated Remediation Economics (with Deep-Scan items)
+
+| Category | Original estimate | Deep-scan additions | Revised total |
+|---|---:|---:|---:|
+| P0 (blockers) | 50h | +4h (LICENSE decision + in-app Ack screen) | 54h |
+| P1 (v2.0 quality) | 60h | +20h (254 aria-labels, predictive-back native, Dynamic Island detection) | 80h |
+| P2 (interest) | 44h | +26h (retry util migration, strict-flag enables, Supabase CI gate) | 70h |
+| **Total** | **154h** | **+50h** | **~204h** (~5 dev-weeks focused) |
+
+Adjusted remediation philosophy: Advanced Boy Scout Rule + 1 weekly hotspot sprint remains the empirically recommended hybrid (Qafoo 2024; Nijhof-Verhees Medium 2024). The extension categories mostly stack into hot-spot sprints naturally (a11y sprint, mobile-lifecycle sprint, strict-flag sprint).
+
+---
+
+*End of deep-scan extension. Stage 1 and Stage 2 fixes have landed. Stages 3-4 (journal decomposition, upgrades, Android native, iOS Dynamic Island, in-app Acknowledgements, aria-label sweep, strict-flag migration) are roadmapped in `memory/project_tech_debt_roadmap_2026-04-18.md`.*
+

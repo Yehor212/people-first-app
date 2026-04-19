@@ -147,7 +147,6 @@ export const HabitsHeroZone = memo(function HabitsHeroZone({
         <>
           <ul
             className="mt-6 flex flex-col gap-3"
-            role="list"
             aria-label={tx.navV2HabitsHero}
             data-testid="habits-hero-list"
           >

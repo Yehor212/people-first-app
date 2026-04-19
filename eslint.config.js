@@ -19,6 +19,8 @@ export default tseslint.config(
       ".size-limit.json",
       // Agent worktrees (isolated branches) — not part of main lint/type scope.
       ".claude/worktrees/**",
+      // Build-time Vite plugins (Node CLI tooling, console.log allowed for build feedback).
+      "vite-plugin-*.ts",
     ],
   },
   {
@@ -96,6 +98,11 @@ export default tseslint.config(
             "Use SK keys from @/lib/storageKeys + accessors from @/lib/safeJson (storageGetRaw, safeLocalStorageGet, etc.)",
         },
       ],
+      // Tech-debt audit 2026-04-18 §10 / Stage 3: prevent console.log regression.
+      // All production logging MUST go through `@/lib/logger` (Sentry-aware, PII-filtered).
+      // warn-level (not error) so new contributors can still fix before commit fails.
+      // logger.ts + crashReporting.ts are the legitimate sinks and get an override below.
+      "no-console": "warn",
     },
   },
   // Enforce feature module public API boundaries outside feature folders
@@ -130,6 +137,20 @@ export default tseslint.config(
     ],
     rules: {
       "no-restricted-globals": "off",
+    },
+  },
+  // The two legitimate console sinks: the logger abstraction and crashReporting
+  // route to console by design. Also tests may console-log diagnostics.
+  {
+    files: [
+      "src/lib/logger.ts",
+      "src/lib/crashReporting.ts",
+      "**/__tests__/**",
+      "test/**",
+      "e2e/**",
+    ],
+    rules: {
+      "no-console": "off",
     },
   }
 );

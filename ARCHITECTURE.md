@@ -2,34 +2,39 @@
 
 > This document is the "constitution" of the ZenFlow codebase.
 > Every PR, every feature, every refactor MUST follow these rules.
-> Last updated: 2026-04-04 (3202 tests, Team Lead Deep Assessment — metrics refresh, bundle -380kB, 5 memo additions, security fixes, CSS dedup)
+> Last updated: 2026-04-18 (tech-debt audit + doc-drift fix — Law 6 Reality Anchor). Previously stale since 2026-04-04.
 
 ---
 
-## Codebase Metrics (as of 2026-04-04)
+## Codebase Metrics
 
-| Metric                       | Value                                                                                   | Command                                                                            |
-| ---------------------------- | --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| Source files                 | 687 (.ts/.tsx, excl. tests)                                                             | `find src -name "*.ts" -o -name "*.tsx" \| grep -v test \| wc -l`                  |
-| Test files                   | 147                                                                                     | `find src test -name "*.test.*" -o -name "*.spec.*" \| wc -l`                      |
-| Tests passing                | 3202/3202                                                                               | `npx vitest --run`                                                                 |
-| ESLint errors                | 0                                                                                       | `npx eslint src/ --quiet`                                                          |
-| ESLint warnings              | 0                                                                                       | `npx eslint . --max-warnings=0`                                                    |
-| TypeScript errors            | 0                                                                                       | `npx tsc --noEmit`                                                                 |
-| God components (>400L)       | 13 (excl. journal features) + 33 resolved + 1 dead code deleted, 5 journal out-of-scope | See [Known Technical Debt](#known-technical-debt)                                  |
-| Direct localStorage calls    | 0 (was 199)                                                                             | Enforced by ESLint `no-restricted-globals` rule. All access via `SK` + `safeJson`. |
-| Silent .catch(() => {})      | 0 (all annotated with `// graceful:` or have logger calls)                              | `grep -rn '\.catch.*=> {}' src/ \| wc -l`                                          |
-| React.memo components        | 56 / 80+                                                                                | `grep -rl 'memo(' src/ --include="*.tsx" \| wc -l`                                 |
-| lazyWithRetry() imports      | 31                                                                                      | `grep -rn 'lazyWithRetry(' src/ \| grep -v test \| grep -v function \| wc -l`      |
-| exhaustive-deps suppressions | 21 across ~15 files (all intentional)                                                   | `grep -rn 'eslint-disable.*exhaustive-deps' src/ \| wc -l`                         |
-| Hook test coverage           | 39/51 (76%)                                                                             | `ls src/hooks/__tests__/ \| wc -l` vs `ls src/hooks/*.ts \| wc -l`                 |
-| Store test coverage          | 4/4 (100%)                                                                              | `ls src/stores/__tests__/ \| wc -l`                                                |
-| index.css LOC                | 4,480                                                                                   | `wc -l src/index.css`                                                              |
-| Inline style={{}}            | 304 across 136 files                                                                    | `grep -rn 'style={{' src/ --include="*.tsx" \| wc -l`                              |
-| i18n keys                    | 2,429 across 8 languages                                                                | `npm run i18n:check`                                                               |
-| Ratchet score                | 9.9/10.0                                                                                | `npm run ratchet:check`                                                            |
+The table below is **auto-generated** by `scripts/doc-counts.cjs`. CI (`npm run doc-counts`) fails on drift. Regenerate with `npm run doc-counts:update`.
 
-> Update these metrics after each major refactor phase. Compare deltas to track progress.
+<!-- BEGIN:counts -->
+| Metric | Value | Source |
+| --- | ---: | --- |
+| Hooks (src/hooks, non-test) | **71** | `ls src/hooks/*.ts` |
+| Zustand stores (runtime) | **8** | `ls src/stores/*.ts` excl. hydrate + index |
+| Hydrate bridges | 2 | `useHydrate*.ts` |
+| Index.tsx LOC | **607** | `wc -l src/pages/Index.tsx` |
+| Components top-level dirs | **42** | `ls src/components/ -d` |
+| Features modules | 1 | `ls src/features/ -d` |
+| V2 coexistence files | 18 | `find src -name '*V2*' -o -name '*-v2*'` |
+| `it.todo(` occurrences | 73 | regex walk |
+| `as any` total | 144 (136 in tests, ~8 prod) | regex walk |
+| Console.\* in prod (excl. logger/crashReporting) | **0** | regex walk |
+| ADR files (`docs/adr/NNNN-*.md`) | 5 | ls |
+| SECURITY.md | yes | fs |
+| CONTRIBUTING.md | yes | fs |
+| LICENSE | **MISSING** | fs |
+| THIRD_PARTY_NOTICES | yes | fs |
+| CODEOWNERS | **MISSING** | fs |
+| `public/sounds/` weight | 65 MB | `du -sh public/sounds` |
+
+_Generated by `scripts/doc-counts.cjs`. Do not edit between markers — regenerate with `npm run doc-counts:update`._
+<!-- END:counts -->
+
+> Historical snapshot (2026-04-04): 687 source files, 147 test files, 3202 tests, 0 lint/TS errors, React.memo 56/80+, lazyWithRetry 31, exhaustive-deps suppressions 21, index.css 4,480 LOC, inline style 304 in 136 files, i18n 2,429 keys × 8 langs, ratchet 9.9/10. Held here for delta comparisons — do not edit in place.
 
 ---
 
@@ -82,18 +87,22 @@
 ```
 src/
   pages/
-    Index.tsx                   # 452-line orchestrator: hooks → tabs (was 2,800 → 652 → 407 → 452)
+    Index.tsx                   # orchestrator: hooks → tabs (history 2,800 → 652 → 407 → 452 → ~607 current. Live count in Codebase Metrics above; v2.0 target ≤450 per tech-debt audit P1-4)
 
-  stores/                       # Zustand stores + bridge hooks
+  stores/                       # Zustand stores + bridge hooks (8 runtime + 2 bridges; live count in Codebase Metrics)
     appStore.ts                 # Auth, initialization, active tab
     userDataStore.ts            # Moods, habits, focus sessions, gratitude (with array validation)
     uiStore.ts                  # Modals, confetti, focus minutes, getModalToggle utility
     gamificationStore.ts        # XP/treats bridge to useGamification hook
+    themeStore.ts               # Active theme + emotion theme context
+    designFlagStore.ts          # Feature flags for design iterations (nav-v2, etc.)
+    diaryDraftStore.ts          # Journal draft in-memory mirror
+    moodEntryDraftStore.ts      # Mood entry draft in-memory mirror
     useHydrateUserData.ts       # Bridge: IndexedDB → Zustand (15 useIndexedDB calls)
     useHydrateGamification.ts   # Bridge: registers gamification hooks into store
     index.ts                    # Barrel export
 
-  hooks/                        # Custom hooks (54 files)
+  hooks/                        # Custom hooks (live count in Codebase Metrics — auto-generated)
     # Lifecycle hooks (extracted from Index.tsx)
     useAppLifecycle.ts          # App init, splash, loading
     useDateTracking.ts          # Midnight detection, date sync

@@ -308,16 +308,24 @@ export function useAuthHandlers(session: Session, t: Record<string, string>) {
     session.setError(null);
   };
 
+  // Strip HTML-injection chars and control bytes for defense-in-depth before
+  // the blob download. Same pattern as ErrorBoundary's sanitizeReport.
+  const sanitizeAuthDebug = (s: string | undefined | null): string => {
+    if (!s) return "";
+    // eslint-disable-next-line no-control-regex
+    return s.replace(/[<>"'&]/g, "").replace(/[\u0000-\u001F\u007F]/g, " ");
+  };
+
   // Export debug info
   const exportDebugInfo = () => {
     const info = {
       timestamp: new Date().toISOString(),
       platform: isNative ? "native" : "web",
-      redirectUrl: getAuthRedirectUrl(),
+      redirectUrl: sanitizeAuthDebug(getAuthRedirectUrl()),
       supabaseConfigured: !!supabase,
-      error: session.error,
-      debugInfo: session.debugInfo,
-      userAgent: navigator.userAgent,
+      error: sanitizeAuthDebug(session.error),
+      debugInfo: sanitizeAuthDebug(session.debugInfo),
+      userAgent: sanitizeAuthDebug(navigator.userAgent.slice(0, 200)),
     };
 
     const blob = new Blob([JSON.stringify(info, null, 2)], {

@@ -32,6 +32,18 @@ const logError = (payload: Record<string, unknown>) => {
   }
 };
 
+// Strip HTML-injection chars and control bytes from any string that ends up in
+// the downloaded JSON report. Snyk flags the Blob path because error.stack and
+// userAgent are attacker-influenceable; the Blob is `application/json` so browser
+// execution is not possible, but we sanitize for defense-in-depth and to prevent
+// the downloaded file from tripping downstream text editors / viewers that may
+// auto-render HTML from pasted content.
+const sanitizeReport = (s: string | undefined | null): string => {
+  if (!s) return "";
+  // eslint-disable-next-line no-control-regex
+  return s.replace(/[<>"'&]/g, "").replace(/[\u0000-\u001F\u007F]/g, " ");
+};
+
 const exportDebugReport = (error?: Error | null) => {
   const metadata = getAppMetadata();
 
@@ -41,21 +53,19 @@ const exportDebugReport = (error?: Error | null) => {
     updateCount: metadata?.updateCount || 0,
     lastUpdateDate: metadata?.lastUpdateDate || "unknown",
     timestamp: new Date().toISOString(),
-    location: (window.location.origin + window.location.pathname).replace(/[<>"'&]/g, ""),
-    userAgent: navigator.userAgent.slice(0, 200),
+    location: sanitizeReport(window.location.origin + window.location.pathname),
+    userAgent: sanitizeReport(navigator.userAgent.slice(0, 200)),
     error: error
       ? {
-          message: error.message,
-          stack: error.stack,
-          name: error.name,
+          message: sanitizeReport(error.message),
+          stack: sanitizeReport(error.stack),
+          name: sanitizeReport(error.name),
         }
       : null,
-    // Add browser storage info
     storageInfo: {
       localStorageAvailable: typeof localStorage !== "undefined",
       indexedDBAvailable: typeof indexedDB !== "undefined",
     },
-    // Add last 10 errors from log
     recentErrors: safeLocalStorageGet<Record<string, unknown>[]>(SK.ERROR_LOG, []),
   };
 

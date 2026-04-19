@@ -125,7 +125,7 @@ export function MindfulMoment({
             </div>
             <button
               onClick={handleSkip}
-              className="p-2 hover:bg-secondary rounded-full transition-colors"
+              className="p-2 min-w-[44px] min-h-[44px] inline-flex items-center justify-center hover:bg-secondary rounded-full transition-colors"
               aria-label={t.close || "Close"}
             >
               <X className="w-5 h-5" />
@@ -214,7 +214,7 @@ export function MindfulMoment({
                     onClose();
                     onViewProgress();
                   }}
-                  className="w-full py-2 text-sm text-primary hover:text-primary/80 font-medium transition-colors"
+                  className="w-full py-2 min-h-[44px] inline-flex items-center justify-center text-sm text-primary hover:text-primary/80 font-medium transition-colors"
                 >
                   {t.viewProgress || "View Progress →"}
                 </button>
@@ -226,7 +226,7 @@ export function MindfulMoment({
           {!showResponse && (
             <button
               onClick={handleSkip}
-              className="w-full py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              className="w-full py-2 min-h-[44px] inline-flex items-center justify-center text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               {t.skip || "Skip"}
             </button>
