@@ -43,7 +43,7 @@ export function TimerControls({
               aria-label={isRunning ? labels.pause : labels.start}
               className={cn(
                 "relative w-16 h-16 rounded-full flex items-center justify-center",
-                "transition-all",
+                "motion-safe:transition-all",
                 isBreak
                   ? "bg-gradient-to-br from-pink-500 to-rose-600 shadow-[0_0_24px_hsl(var(--focus-pink)/0.5)]"
                   : "bg-gradient-to-br from-violet-500 to-purple-600 shadow-[0_0_24px_hsl(var(--focus-violet)/0.5)]"
@@ -70,7 +70,7 @@ export function TimerControls({
             <motion.button
               onClick={onReset}
               aria-label={labels.resetTimer}
-              className="w-14 h-14 rounded-full flex items-center justify-center bg-secondary backdrop-blur-sm border border-border text-slate-600 dark:text-white/70 hover:text-slate-800 dark:hover:text-white hover:bg-secondary/80 transition-colors"
+              className="w-14 h-14 rounded-full flex items-center justify-center bg-secondary backdrop-blur-sm border border-border text-slate-600 dark:text-white/70 hover:text-slate-800 dark:hover:text-white hover:bg-secondary/80 motion-safe:transition-colors"
               whileHover={{ scale: 1.1, rotate: -90 }}
               whileTap={zenTap.button}
             >
@@ -109,7 +109,7 @@ export function TimerControls({
           disabled={isRunning}
           className={cn(
             "w-full py-3.5 rounded-xl flex items-center justify-center gap-2",
-            "font-semibold transition-all relative z-10",
+            "font-semibold motion-safe:transition-all relative z-10",
             isRunning
               ? "bg-secondary text-slate-400 dark:text-white/40 cursor-not-allowed"
               : "bg-gradient-to-r from-cyan-500/80 to-violet-500/80 text-white hover:from-cyan-500 hover:to-violet-500"

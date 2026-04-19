@@ -42,7 +42,7 @@ export function HabitProgressIndicator({
           <motion.button
             onClick={() => onAdjust?.(habitId, today, -1)}
             aria-label={t.decrease || 'Decrease'}
-            className="w-12 h-12 min-w-[48px] min-h-[48px] rounded-lg bg-muted/50 flex items-center justify-center text-muted-foreground hover:bg-muted/80 transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:outline-none"
+            className="w-12 h-12 min-w-[48px] min-h-[48px] rounded-lg bg-muted/50 flex items-center justify-center text-muted-foreground hover:bg-muted/80 motion-safe:transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:outline-none"
             whileHover={{ scale: 1.05 }}
             whileTap={zenTap.button}
           >
@@ -62,7 +62,7 @@ export function HabitProgressIndicator({
             onClick={() => onAdjust?.(habitId, today, 1)}
             aria-label={t.increase || 'Increase'}
             className={cn(
-              "w-12 h-12 min-w-[48px] min-h-[48px] rounded-lg flex items-center justify-center transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:outline-none",
+              "w-12 h-12 min-w-[48px] min-h-[48px] rounded-lg flex items-center justify-center motion-safe:transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:outline-none",
               "bg-gradient-to-br from-primary/20 to-primary/10 text-primary hover:from-primary/30 hover:to-primary/20",
               "shadow-[0_0_8px_hsl(var(--primary)/0.15)]"
             )}

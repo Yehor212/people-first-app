@@ -131,7 +131,7 @@ export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
       <Command
         className={cn(
           "w-full max-w-lg rounded-2xl border border-border/20 bg-card/95 backdrop-blur-xl shadow-2xl overflow-hidden",
-          "animate-in fade-in slide-in-from-top-4 duration-200"
+          "motion-safe:animate-in fade-in slide-in-from-top-4 motion-safe:duration-200"
         )}
         onClick={(e) => e.stopPropagation()}
         shouldFilter
@@ -161,7 +161,7 @@ export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
                   key={item.id}
                   value={item.label}
                   onSelect={item.action}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm cursor-pointer data-[selected]:bg-muted transition-colors min-h-[44px]"
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm cursor-pointer data-[selected]:bg-muted motion-safe:transition-colors min-h-[44px]"
                 >
                   <item.icon className="w-4 h-4 text-muted-foreground shrink-0" />
                   <span>{item.label}</span>
@@ -176,7 +176,7 @@ export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
                 key={item.id}
                 value={item.label}
                 onSelect={item.action}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm cursor-pointer data-[selected]:bg-muted transition-colors min-h-[44px]"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm cursor-pointer data-[selected]:bg-muted motion-safe:transition-colors min-h-[44px]"
               >
                 <item.icon className="w-4 h-4 text-muted-foreground shrink-0" />
                 <span>{item.label}</span>
@@ -190,7 +190,7 @@ export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
                 key={item.id}
                 value={item.label}
                 onSelect={item.action}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm cursor-pointer data-[selected]:bg-muted transition-colors min-h-[44px]"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm cursor-pointer data-[selected]:bg-muted motion-safe:transition-colors min-h-[44px]"
               >
                 <item.icon className="w-4 h-4 text-muted-foreground shrink-0" />
                 <span>{item.label}</span>

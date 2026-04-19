@@ -128,7 +128,7 @@ export const CompactHabitCard = memo(function CompactHabitCard({
       {/* Actions (revealed on swipe) */}
       <div
         className={cn(
-          "absolute end-0 top-0 bottom-0 flex items-center transition-all duration-200",
+          "absolute end-0 top-0 bottom-0 flex items-center motion-safe:transition-all motion-safe:duration-200",
           isSwiped ? (onChallenge ? "w-[10.5rem]" : "w-28") : "w-0"
         )}
       >
@@ -145,7 +145,7 @@ export const CompactHabitCard = memo(function CompactHabitCard({
               onEdit(habit);
               setIsSwiped(false);
             }}
-            className="flex-1 h-full flex items-center justify-center bg-blue-500 text-white active:opacity-80 transition-opacity"
+            className="flex-1 h-full flex items-center justify-center bg-blue-500 text-white active:opacity-80 motion-safe:transition-opacity"
             aria-label={t.edit || "Edit"}
           >
             <Pencil className="w-5 h-5" />
@@ -164,7 +164,7 @@ export const CompactHabitCard = memo(function CompactHabitCard({
               onChallenge(habit);
               setIsSwiped(false);
             }}
-            className="flex-1 h-full flex items-center justify-center bg-primary text-white active:opacity-80 transition-opacity"
+            className="flex-1 h-full flex items-center justify-center bg-primary text-white active:opacity-80 motion-safe:transition-opacity"
             aria-label={t.createChallenge}
           >
             <Users className="w-5 h-5" />
@@ -185,8 +185,8 @@ export const CompactHabitCard = memo(function CompactHabitCard({
             }
           }}
           className={cn(
-            "flex-1 h-full flex items-center justify-center text-white active:opacity-80 transition-all",
-            showDeleteConfirm ? "bg-red-600 animate-pulse" : "bg-destructive"
+            "flex-1 h-full flex items-center justify-center text-white active:opacity-80 motion-safe:transition-all",
+            showDeleteConfirm ? "bg-red-600 motion-safe:animate-pulse" : "bg-destructive"
           )}
           aria-label={t.delete}
         >
@@ -222,7 +222,7 @@ export const CompactHabitCard = memo(function CompactHabitCard({
         className={cn(
           "relative flex items-center justify-between p-4",
           "bg-card/80 backdrop-blur-sm rounded-2xl",
-          "border border-border/50 transition-all duration-300",
+          "border border-border/50 motion-safe:transition-all motion-safe:duration-300",
           isSwiped &&
             (onChallenge
               ? "ltr:-translate-x-[10.5rem] rtl:translate-x-[10.5rem]"
@@ -239,7 +239,7 @@ export const CompactHabitCard = memo(function CompactHabitCard({
             aria-pressed={completed}
             className={cn(
               "relative w-14 h-14 rounded-xl flex items-center justify-center text-2xl shrink-0",
-              "transition-all duration-300",
+              "motion-safe:transition-all motion-safe:duration-300",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
               completed
                 ? "bg-gradient-to-br from-emerald-500 to-teal-500 text-white"
@@ -277,7 +277,7 @@ export const CompactHabitCard = memo(function CompactHabitCard({
           <div className="flex flex-col min-w-0">
             <p
               className={cn(
-                "font-semibold text-base truncate transition-colors duration-300",
+                "font-semibold text-base truncate motion-safe:transition-colors motion-safe:duration-300",
                 completed ? "text-emerald-600 dark:text-emerald-400" : "text-foreground"
               )}
               title={habit.name}
@@ -333,7 +333,7 @@ export const CompactHabitCard = memo(function CompactHabitCard({
         />
 
         {/* Desktop hover actions (hidden on touch) */}
-        <div className="hidden md:flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity absolute end-16 top-1/2 -translate-y-1/2 z-[2]">
+        <div className="hidden md:flex items-center gap-1 opacity-0 group-hover:opacity-100 motion-safe:transition-opacity absolute end-16 top-1/2 -translate-y-1/2 z-[2]">
           {onEdit && (
             <button
               onClick={() => onEdit(habit)}
@@ -356,7 +356,7 @@ export const CompactHabitCard = memo(function CompactHabitCard({
               }
             }}
             className={cn(
-              "p-2 rounded-lg min-w-[44px] min-h-[44px] flex items-center justify-center transition-colors",
+              "p-2 rounded-lg min-w-[44px] min-h-[44px] flex items-center justify-center motion-safe:transition-colors",
               showDeleteConfirm
                 ? "bg-destructive/15 text-destructive"
                 : "hover:bg-destructive/10 text-muted-foreground hover:text-destructive"

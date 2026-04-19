@@ -31,7 +31,7 @@ export function HoverPreview({
           sideOffset={8}
           className={cn(
             "z-[75] rounded-xl border border-border/20 bg-card/95 backdrop-blur-xl p-3 shadow-lg",
-            "animate-in fade-in zoom-in-95 duration-150",
+            "motion-safe:animate-in fade-in zoom-in-95 motion-safe:duration-150",
             "data-[state=closed]:animate-out data-[state=closed]:fade-out data-[state=closed]:zoom-out-95",
             className
           )}
