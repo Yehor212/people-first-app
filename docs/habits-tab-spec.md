@@ -527,19 +527,19 @@ by axe-core / VoiceOver / NVDA. ❌ = known gap. 🔲 = aspirational.
 
 | # | Criterion | Why | Test method | Owner | State |
 |---:|---|---|---|---|:---:|
-| 1 | Interactive targets ≥44×44 CSS px | WCAG 2.5.5 / Apple HIG / MD3 | **code-reviewed** (`min-h-[44px]` / `min-h-[48px]` in every button); **axe-core run: not yet in CI** | a11y-i18n-guardian | 🟡 |
+| 1 | Interactive targets ≥44×44 CSS px | WCAG 2.5.5 / Apple HIG / MD3 | `a11y-smoke.test.tsx` asserts the CSS contract (`min-h-[44px]` / `min-h-[48px]` / `h-12` / `h-14` utility classes) — JSDOM can't do real pixel layout; real-pixel Playwright follow-up flagged | a11y-i18n-guardian | ✅ contract; 🟡 pixel |
 | 2 | `<main>` wired to heading via `aria-labelledby` | region announcement | `HabitsPage.test.tsx` asserts `aria-labelledby="habits-page-heading"` | tester | ✅ |
 | 3 | Ring has `role="img"` + `aria-live="polite"` + readable label `"Today's habits: N / M"` | SR count updates | `HeroDailyRing.test.tsx` asserts all three attrs | tester | ✅ |
-| 4 | Every chip carries `aria-label` distinct from emoji | SR users hear meaning, not "🙏" | source audit (every `<button>` has `aria-label`); axe-core automated run — not in CI yet | design-advisor | 🟡 |
+| 4 | Every chip carries `aria-label` distinct from emoji | SR users hear meaning, not "🙏" | `a11y-smoke.test.tsx` asserts every quick-pick chip has `aria-label` containing letters (not only emoji) | design-advisor | ✅ |
 | 5 | Long-press has keyboard fallback (Enter / Space on row) | Keyboard users can't press-and-hold | `HeroHabitRow.test.tsx` — "Enter key opens the detail sheet" | tester | ✅ |
 | 6 | Swipe-reveal has click/tap fallback on desktop | Mouse users can't swipe | V1 hover-revealed edit/trash buttons | V1 | ✅ V1 behavior |
-| 7 | Category tabs use `<button aria-pressed>` | SR announces current-tab | source audit of `HeroTemplateLibrarySheet.tsx` | a11y-i18n-guardian | 🟡 (SR not verified end-to-end) |
+| 7 | Category tabs use `<button aria-pressed>` | SR announces current-tab | `a11y-smoke.test.tsx` asserts every tab has `aria-pressed` and exactly one is `true` at a time | a11y-i18n-guardian | ✅ |
 | 8 | Confetti is `aria-hidden="true"` | decorative | V1 source | V1 | ✅ V1 already |
 | 9 | Android back closes sheets (not navigates) | Capacitor native expectation | `useBackHandler` in Create sheet (V1); Library sheet uses Vaul's built-in handler; Detail sheet uses V1's | V1 | 🟡 (not verified on physical device) |
 | 10 | Focus returns to trigger on sheet close | ARIA APG dialog pattern | `captureReturnFocus` / `restoreReturnFocus` in `HabitsPage.tsx` (commit `2ddba59`) | frontend-builder | 🟡 (no e2e test yet) |
 | 11 | Reduced-motion: animations snap, not fade | WCAG 2.3.3 | `useShouldAnimate()` gates all spring/layout motion; V1 hook tested | V1 | ✅ V1 tested |
 | 12 | Color contrast ≥4.5:1 body / ≥3:1 UI | WCAG 1.4.3 / 1.4.11 | paper theme validated by `src/styles/themes.contrast.test.ts` — V2 inherits paper tokens | V1 | ✅ V1 tested; V2 inheritance code-reviewed, not independently validated |
-| 13 | Chain dots have `aria-hidden="true"` + parent `aria-label="{name}"` | dots decorative; name semantic | `HeroHabitRow.tsx` source | tester | ✅ (source) |
+| 13 | Chain dots have `aria-hidden="true"` + parent `aria-label="{name}"` | dots decorative; name semantic | `a11y-smoke.test.tsx` asserts row has `role="group"` + `aria-label={habit.name}` AND every chain `<li>` has `aria-hidden="true"` | tester | ✅ |
 | 14 | Sticky ring does not trap scroll/focus | MD3 sticky-affordance rule | not yet manually traversed | a11y-i18n-guardian | 🟡 |
 | 15 | No focus outline on `<h1>` (moved to `<main>`) | Mount-focus on heading drew ugly rectangle | commit `d449c6b` + `HabitsPage.test.tsx` "focuses main landmark, not heading" | frontend-builder | ✅ |
 
