@@ -11,6 +11,14 @@
  * Why a module instead of inline `<script>` in index.html: the project's
  * CSP `script-src 'self' capacitor: capacitor-electron:` blocks inline
  * scripts. Module imports satisfy `'self'`.
+ *
+ * Example: `https://yehor212.github.io/people-first-app/orb?nav=v2`
+ *   1. GH Pages 404 → serves `public/404.html`
+ *   2. 404.html script redirects → `/people-first-app/?/orb&nav=v2`
+ *   3. This module rewrites → `/people-first-app/orb?nav=v2` via replaceState
+ *   4. React boots, useNavigationV2 reads canonical pathname.
+ *
+ * See `docs/plans/phase-3-d-decomposition-strategy.md` for Phase 3-D plan.
  */
 
 (function decodeSpaRedirect() {
