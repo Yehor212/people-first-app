@@ -52,12 +52,12 @@ export function JournalStickerPicker({ onSelect, onClose, mood }: JournalSticker
   const safeActiveCategory = activeCategory >= enabledCategories.length ? 0 : activeCategory;
 
   const stickerButton =
-    "p-1.5 rounded-xl hover:bg-muted/50 active:scale-90 transition-transform min-h-[44px] flex items-center justify-center";
+    "p-1.5 rounded-xl hover:bg-muted/50 active:scale-90 motion-safe:transition-transform min-h-[44px] flex items-center justify-center";
 
   return (
     <>
       {/* Backdrop */}
-      <div className="fixed inset-0 z-[64] bg-black/30 animate-fade-in" onClick={onClose} />
+      <div className="fixed inset-0 z-[64] bg-black/30 motion-safe:animate-fade-in" onClick={onClose} />
 
       <div
         ref={modalRef}
@@ -67,7 +67,7 @@ export function JournalStickerPicker({ onSelect, onClose, mood }: JournalSticker
         className={cn(
           "fixed bottom-0 inset-x-0 z-[65] pb-safe",
           "bg-card/95 backdrop-blur-xl border-t border-border/40",
-          "rounded-t-2xl shadow-lg animate-slide-up",
+          "rounded-t-2xl shadow-lg motion-safe:animate-slide-up",
           "max-h-[55dvh] flex flex-col",
           "pb-safe"
         )}
@@ -132,7 +132,7 @@ export function JournalStickerPicker({ onSelect, onClose, mood }: JournalSticker
               <button
                 onClick={() => setActiveCategory(-1)}
                 className={cn(
-                  "snap-start flex-shrink-0 px-2.5 py-1 rounded-lg text-sm transition-colors min-h-[40px] flex flex-col items-center justify-center gap-0.5",
+                  "snap-start flex-shrink-0 px-2.5 py-1 rounded-lg text-sm motion-safe:transition-colors min-h-[40px] flex flex-col items-center justify-center gap-0.5",
                   safeActiveCategory === -1 && activeCategory === -1
                     ? "bg-primary/15"
                     : "hover:bg-muted/50"
@@ -154,7 +154,7 @@ export function JournalStickerPicker({ onSelect, onClose, mood }: JournalSticker
                 key={cat.key}
                 onClick={() => setActiveCategory(i)}
                 className={cn(
-                  "snap-start flex-shrink-0 px-2.5 py-1 rounded-lg text-sm transition-colors min-h-[40px] flex flex-col items-center justify-center gap-0.5",
+                  "snap-start flex-shrink-0 px-2.5 py-1 rounded-lg text-sm motion-safe:transition-colors min-h-[40px] flex flex-col items-center justify-center gap-0.5",
                   safeActiveCategory === i && activeCategory >= 0
                     ? "bg-primary/15"
                     : "hover:bg-muted/50"

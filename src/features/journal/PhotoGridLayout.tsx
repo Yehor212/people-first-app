@@ -99,7 +99,7 @@ export const PhotoGridLayout = memo(function PhotoGridLayout({ photoUrls, onPhot
               <button
                 type="button"
                 aria-label={`Remove photo ${i + 1}`}
-                className="absolute top-1.5 right-1.5 bg-black/50 rounded-full w-7 h-7 flex items-center justify-center opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity"
+                className="absolute top-1.5 right-1.5 bg-black/50 rounded-full w-7 h-7 flex items-center justify-center opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 motion-safe:transition-opacity"
                 onClick={(e) => handleRemove(e, photo.id)}
               >
                 <X className="w-4 h-4 text-white" />

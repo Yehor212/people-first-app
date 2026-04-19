@@ -13,11 +13,11 @@ export function RemovePasswordConfirmDialog({
 }: RemovePasswordConfirmDialogProps) {
   return (
     <>
-      <div className="fixed inset-0 z-[70] bg-black/40 animate-fade-in" onClick={onClose} />
+      <div className="fixed inset-0 z-[70] bg-black/40 motion-safe:animate-fade-in" onClick={onClose} />
       <div
         role="dialog"
         aria-modal="true"
-        className="fixed inset-x-4 top-1/2 -translate-y-1/2 z-[71] bg-card rounded-2xl p-6 shadow-xl animate-scale-in max-w-sm lg:max-w-lg mx-auto"
+        className="fixed inset-x-4 top-1/2 -translate-y-1/2 z-[71] bg-card rounded-2xl p-6 shadow-xl motion-safe:animate-scale-in max-w-sm lg:max-w-lg mx-auto"
       >
         <h3 className="text-base font-semibold text-foreground mb-2">
           {ts.journalPasswordRemove || "Remove Password Lock"}

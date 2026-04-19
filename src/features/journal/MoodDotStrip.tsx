@@ -153,7 +153,7 @@ export const MoodDotStrip = memo(function MoodDotStrip({
                 whileHover={{ scale: 1.15 }}
                 whileTap={{ scale: 0.9 }}
                 className={cn(
-                  "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-all relative",
+                  "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 motion-safe:transition-all relative",
                   isActive && mood && `ring-2 ${MOOD_RING_COLOR[mood]}`,
                   isActive && !mood && "ring-2 ring-primary/30",
                   isFocused && "ring-2 ring-primary/50",

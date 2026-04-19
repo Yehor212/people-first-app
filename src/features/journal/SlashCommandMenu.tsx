@@ -256,7 +256,7 @@ export const SlashCommandMenu = memo(function SlashCommandMenu({
               initial={animate ? "hidden" : false}
               animate="visible"
               className={cn(
-                "flex items-center gap-3 px-3 py-2 rounded-xl text-sm cursor-pointer min-h-[44px] transition-colors",
+                "flex items-center gap-3 px-3 py-2 rounded-xl text-sm cursor-pointer min-h-[44px] motion-safe:transition-colors",
                 i === selectedIndex && "bg-primary/10",
               )}
               onClick={() => executeCommand(cmd.id)}

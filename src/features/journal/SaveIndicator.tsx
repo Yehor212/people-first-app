@@ -42,7 +42,7 @@ export const SaveIndicator = memo(function SaveIndicator({
             <Loader2
               className={`w-2.5 h-2.5 ${animate ? "animate-spin" : ""}`}
             />
-            <span className={animate ? "animate-pulse" : ""}>
+            <span className={animate ? "motion-safe:animate-pulse" : ""}>
               {ts.journalSaving || "Saving..."}
             </span>
           </motion.span>
