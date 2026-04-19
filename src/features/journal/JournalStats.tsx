@@ -562,7 +562,7 @@ export const JournalStats = memo(function JournalStats({ entries, onBack }: Jour
                           <div
                             key={dayIdx}
                             className={cn(
-                              "w-full aspect-square rounded-[2px] transition-colors",
+                              "w-full aspect-square rounded-[2px] motion-safe:transition-colors",
                               dayData.isFuture
                                 ? "bg-muted/20"
                                 : dayData.mood
@@ -739,7 +739,7 @@ export const JournalStats = memo(function JournalStats({ entries, onBack }: Jour
                     <div key={d.day} className="flex-1 flex flex-col items-center gap-1">
                       <div
                         className={cn(
-                          "w-full rounded-t-md transition-all",
+                          "w-full rounded-t-md motion-safe:transition-all",
                           d.count > 0 ? "bg-primary/60" : "bg-muted/30"
                         )}
                         style={{ height: `${Math.max(height, 4)}%` }}

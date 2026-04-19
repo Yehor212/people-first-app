@@ -120,8 +120,8 @@ export const JournalPhotoGallery = memo(function JournalPhotoGallery({
                 )}
                 loading="lazy"
               />
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors rounded-xl flex items-center justify-center">
-                <ZoomIn className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 motion-safe:transition-colors rounded-xl flex items-center justify-center">
+                <ZoomIn className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 motion-safe:transition-opacity" />
               </div>
             </button>
             {editable && onRemovePhoto && (
@@ -138,7 +138,7 @@ export const JournalPhotoGallery = memo(function JournalPhotoGallery({
             {editable && onFloatPhoto && (
               <button
                 onClick={() => onFloatPhoto(photo.id)}
-                className="absolute -bottom-1 -end-1 w-6 h-6 bg-emerald-500/80 rounded-full flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
+                className="absolute -bottom-1 -end-1 w-6 h-6 bg-emerald-500/80 rounded-full flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 motion-safe:transition-opacity"
                 aria-label={t.ariaFloatPhoto}
               >
                 <span className="text-[10px]">↗</span>
@@ -191,7 +191,7 @@ export const JournalPhotoGallery = memo(function JournalPhotoGallery({
                     e.stopPropagation();
                     navigateLightbox(-1);
                   }}
-                  className="absolute start-4 top-1/2 -translate-y-1/2 p-2.5 bg-white/10 hover:bg-white/20 rounded-full z-10 min-w-[44px] min-h-[44px] flex items-center justify-center transition-colors"
+                  className="absolute start-4 top-1/2 -translate-y-1/2 p-2.5 bg-white/10 hover:bg-white/20 rounded-full z-10 min-w-[44px] min-h-[44px] flex items-center justify-center motion-safe:transition-colors"
                   aria-label="Previous photo"
                 >
                   <ChevronLeft className="w-5 h-5 text-white" />
@@ -201,7 +201,7 @@ export const JournalPhotoGallery = memo(function JournalPhotoGallery({
                     e.stopPropagation();
                     navigateLightbox(1);
                   }}
-                  className="absolute end-4 top-1/2 -translate-y-1/2 p-2.5 bg-white/10 hover:bg-white/20 rounded-full z-10 min-w-[44px] min-h-[44px] flex items-center justify-center transition-colors"
+                  className="absolute end-4 top-1/2 -translate-y-1/2 p-2.5 bg-white/10 hover:bg-white/20 rounded-full z-10 min-w-[44px] min-h-[44px] flex items-center justify-center motion-safe:transition-colors"
                   aria-label="Next photo"
                 >
                   <ChevronRight className="w-5 h-5 text-white" />

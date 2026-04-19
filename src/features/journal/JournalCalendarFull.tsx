@@ -296,7 +296,7 @@ export function JournalCalendarFull({
                 style={moodBgColor ? { backgroundColor: moodBgColor } : undefined}
                 className={cn(
                   "aspect-square rounded-xl flex flex-col items-center justify-center gap-0.5",
-                  "transition-all duration-150 relative overflow-hidden",
+                  "motion-safe:transition-all motion-safe:duration-150 relative overflow-hidden",
                   "min-h-[36px]",
                   isFuture && "opacity-30",
                   isSelected
@@ -337,7 +337,7 @@ export function JournalCalendarFull({
                         "w-2 h-2 rounded-full ring-1",
                         mood ? MOOD_COLORS[mood] : "bg-primary/60",
                         mood ? MOOD_RING[mood] : "ring-primary/20",
-                        cell.isToday && "animate-pulse-subtle"
+                        cell.isToday && "motion-safe:animate-pulse-subtle"
                       )}
                     />
                     {count > 1 && (
