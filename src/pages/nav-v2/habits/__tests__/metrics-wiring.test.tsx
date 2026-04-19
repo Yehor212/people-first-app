@@ -80,6 +80,11 @@ type HeroZoneProps = {
   onToggleHabit: (habitId: string, date: string) => void;
   onAdjustHabit?: (habitId: string, date: string, delta: number) => void;
   onEditHabit?: (h: Habit) => void;
+  onSkipHabit?: (habitId: string, date: string) => void;
+  onUnskipHabit?: (habitId: string, date: string) => void;
+  onArchiveHabit?: (habitId: string) => void;
+  onUnarchiveHabit?: (habitId: string) => void;
+  onDeleteHabit: (habitId: string) => void;
 };
 type CreateSheetProps = {
   onAddHabit: (h: Habit) => void;
@@ -276,6 +281,36 @@ describe("HabitsPage → analytics wiring (§15)", () => {
     // The sheet now carries editHabit === the clicked habit → HabitCreationForm
     // will call onUpdateHabit, not onAddHabit.
     expect(capturedCreateProps!.editHabit).toEqual(habit);
+  });
+
+  it("onSkipHabit mutates habit entry to SKIP sentinel without emitting habit_completed", () => {
+    const habit = makeHabit("a");
+    mockHabits = [habit];
+    render(<HabitsPage />);
+    expect(capturedHeroProps!.onSkipHabit).toBeDefined();
+    capturedHeroProps!.onSkipHabit!("a", "2026-04-19");
+    expect(setHabitsSpy).toHaveBeenCalled();
+    // Skip is a "rest day" action — it is NOT a completion and must not
+    // inflate the §15 retention metric.
+    expect(analyticsSpy.habitCompleted).not.toHaveBeenCalled();
+  });
+
+  it("onArchiveHabit marks habit isArchived=true without emitting habit_completed", () => {
+    const habit = makeHabit("a");
+    mockHabits = [habit];
+    render(<HabitsPage />);
+    expect(capturedHeroProps!.onArchiveHabit).toBeDefined();
+    capturedHeroProps!.onArchiveHabit!("a");
+    expect(setHabitsSpy).toHaveBeenCalled();
+    expect(analyticsSpy.habitCompleted).not.toHaveBeenCalled();
+  });
+
+  it("exposes onUnskipHabit + onUnarchiveHabit so the ⋯ menu can toggle both directions", () => {
+    const habit = makeHabit("a");
+    mockHabits = [habit];
+    render(<HabitsPage />);
+    expect(typeof capturedHeroProps!.onUnskipHabit).toBe("function");
+    expect(typeof capturedHeroProps!.onUnarchiveHabit).toBe("function");
   });
 });
 

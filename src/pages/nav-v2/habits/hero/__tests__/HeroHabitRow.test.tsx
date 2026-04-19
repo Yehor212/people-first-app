@@ -13,6 +13,17 @@ import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 
 vi.mock("@/hooks/useShouldAnimate", () => ({ useShouldAnimate: () => true }));
 vi.mock("@/lib/haptics", () => ({ hapticTap: vi.fn() }));
+vi.mock("@/contexts/LanguageContext", () => ({
+  useLanguage: () => ({
+    t: {
+      skipToday: "Skip today",
+      archiveHabit: "Archive",
+      unarchiveHabit: "Unarchive",
+      delete: "Delete",
+    },
+    language: "en",
+  }),
+}));
 
 vi.mock("@/components/compact-habit-card/CompactHabitCard", () => ({
   CompactHabitCard: ({ habit }: { habit: { id: string; name: string } }) => (
@@ -60,7 +71,7 @@ describe("HeroHabitRow", () => {
     );
     const row = screen.getByTestId("hero-habit-row-h1");
     fireEvent.pointerDown(row);
-    act(() => vi.advanceTimersByTime(500));
+    void act(() => vi.advanceTimersByTime(500));
     fireEvent.pointerUp(row);
     expect(open).toHaveBeenCalledTimes(1);
   });
@@ -72,7 +83,7 @@ describe("HeroHabitRow", () => {
     );
     const row = screen.getByTestId("hero-habit-row-h1");
     fireEvent.pointerDown(row);
-    act(() => vi.advanceTimersByTime(100));
+    void act(() => vi.advanceTimersByTime(100));
     fireEvent.pointerUp(row);
     expect(open).not.toHaveBeenCalled();
   });
@@ -84,7 +95,7 @@ describe("HeroHabitRow", () => {
     );
     const btn = screen.getByTestId("mock-compact-toggle-h1");
     fireEvent.pointerDown(btn);
-    act(() => vi.advanceTimersByTime(600));
+    void act(() => vi.advanceTimersByTime(600));
     fireEvent.pointerUp(btn);
     expect(open).not.toHaveBeenCalled();
   });

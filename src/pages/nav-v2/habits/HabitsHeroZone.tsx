@@ -59,6 +59,11 @@ interface HabitsHeroZoneProps {
   onCreateHabit: () => void;
   /** Pencil button → edit form (distinct from long-press → detail sheet). */
   onEditHabit?: (habit: Habit) => void;
+  /** ⋯ menu actions (rest day / archive / unarchive). Optional. */
+  onSkipHabit?: (habitId: string, date: string) => void;
+  onUnskipHabit?: (habitId: string, date: string) => void;
+  onArchiveHabit?: (habitId: string) => void;
+  onUnarchiveHabit?: (habitId: string) => void;
   onPickTemplate?: (template: HabitTemplate) => void;
   onOpenLibrary?: () => void;
   onOpenDetail?: (habit: Habit) => void;
@@ -72,6 +77,10 @@ export const HabitsHeroZone = memo(function HabitsHeroZone({
   onDeleteHabit,
   onCreateHabit,
   onEditHabit,
+  onSkipHabit,
+  onUnskipHabit,
+  onArchiveHabit,
+  onUnarchiveHabit,
   onPickTemplate,
   onOpenLibrary,
   onOpenDetail,
@@ -150,6 +159,10 @@ export const HabitsHeroZone = memo(function HabitsHeroZone({
               onAdjustHabit={onAdjustHabit}
               onDeleteHabit={onDeleteHabit}
               onEditHabit={onEditHabit}
+              onSkipHabit={onSkipHabit}
+              onUnskipHabit={onUnskipHabit}
+              onArchiveHabit={onArchiveHabit}
+              onUnarchiveHabit={onUnarchiveHabit}
               onOpenDetail={onOpenDetail}
             />
           ))}

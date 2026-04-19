@@ -36,6 +36,11 @@ interface HeroTimeOfDayGroupProps {
   onDeleteHabit: (habitId: string) => void;
   /** Pencil → edit form, distinct from long-press → detail sheet. */
   onEditHabit?: (habit: Habit) => void;
+  /** ⋯ menu actions (rest day / archive / unarchive). */
+  onSkipHabit?: (habitId: string, date: string) => void;
+  onUnskipHabit?: (habitId: string, date: string) => void;
+  onArchiveHabit?: (habitId: string) => void;
+  onUnarchiveHabit?: (habitId: string) => void;
   /** Opens the V1 HabitDetailSheet (reuses mature stats/streak/actions panel). */
   onOpenDetail?: (habit: Habit) => void;
 }
@@ -61,6 +66,10 @@ export const HeroTimeOfDayGroup = memo(function HeroTimeOfDayGroup({
   onAdjustHabit,
   onDeleteHabit,
   onEditHabit,
+  onSkipHabit,
+  onUnskipHabit,
+  onArchiveHabit,
+  onUnarchiveHabit,
   onOpenDetail,
 }: HeroTimeOfDayGroupProps) {
   const { t } = useLanguage();
@@ -115,6 +124,10 @@ export const HeroTimeOfDayGroup = memo(function HeroTimeOfDayGroup({
                 onAdjust={onAdjustHabit}
                 onDelete={onDeleteHabit}
                 onEdit={onEditHabit}
+                onSkip={onSkipHabit}
+                onUnskip={onUnskipHabit}
+                onArchive={onArchiveHabit}
+                onUnarchive={onUnarchiveHabit}
                 onOpenDetail={onOpenDetail}
               />
             </motion.div>

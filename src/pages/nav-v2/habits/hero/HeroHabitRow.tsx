@@ -31,8 +31,11 @@ import { isHabitCompletedOnDate } from "@/lib/habits";
 import { getCurrentStreak } from "@/lib/habitScore";
 import { getToday } from "@/lib/utils";
 import { useShouldAnimate } from "@/hooks/useShouldAnimate";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { hapticTap } from "@/lib/haptics";
+import { ENTRY } from "@/types";
 import type { Habit } from "@/types";
+import { HabitActionsMenu } from "./HabitActionsMenu";
 
 interface HeroHabitRowProps {
   habit: Habit;
@@ -48,6 +51,11 @@ interface HeroHabitRowProps {
    */
   onEdit?: (habit: Habit) => void;
   onOpenDetail?: (habit: Habit) => void;
+  /** Skip/unskip the habit for today (rest day). */
+  onSkip?: (habitId: string, date: string) => void;
+  onUnskip?: (habitId: string, date: string) => void;
+  onArchive?: (habitId: string) => void;
+  onUnarchive?: (habitId: string) => void;
 }
 
 /** px threshold past which we treat an ongoing pointer as a swipe, not a
@@ -77,9 +85,18 @@ export const HeroHabitRow = memo(function HeroHabitRow({
   onDelete,
   onEdit,
   onOpenDetail,
+  onSkip,
+  onUnskip,
+  onArchive,
+  onUnarchive,
 }: HeroHabitRowProps) {
   const animate = useShouldAnimate();
   const today = getToday();
+  const { t } = useLanguage();
+  const tx = t as unknown as Record<string, string>;
+  const isSkippedToday = habit.entries?.[today]?.value === ENTRY.SKIP;
+  const isArchived = Boolean(habit.isArchived);
+  const hasMenu = Boolean(onSkip || onUnskip || onArchive || onUnarchive);
 
   // Compute real current streak via V1 habitScore.ts — unlocks the fire glyph
   // + milestone badge that CompactHabitCard already renders when streak ≥ 1.
@@ -198,6 +215,8 @@ export const HeroHabitRow = memo(function HeroHabitRow({
     <div
       role="group"
       aria-label={habit.name}
+      // Composite widget: long-press or Enter/Space opens detail sheet per habits-tab-spec.md §11.
+      // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
       tabIndex={onOpenDetail ? 0 : -1}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
@@ -205,7 +224,7 @@ export const HeroHabitRow = memo(function HeroHabitRow({
       onPointerCancel={handlePointerUp}
       onPointerLeave={handlePointerLeave}
       onKeyDown={handleKeyDown}
-      className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-2xl"
+      className="relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-2xl"
       data-testid={`hero-habit-row-${habit.id}`}
     >
       <CompactHabitCard
@@ -217,6 +236,27 @@ export const HeroHabitRow = memo(function HeroHabitRow({
         streak={streak}
         isDueToday
       />
+      {hasMenu && (
+        <HabitActionsMenu
+          habit={habit}
+          today={today}
+          isSkippedToday={isSkippedToday}
+          isArchived={isArchived}
+          labels={{
+            menu: tx.more || "More actions",
+            skip: tx.skipToday || "Skip today",
+            unskip: tx.unskip || "Unskip",
+            archive: tx.archiveHabit || "Archive",
+            unarchive: tx.unarchiveHabit || "Unarchive",
+            delete: tx.delete || "Delete",
+          }}
+          onSkip={onSkip}
+          onUnskip={onUnskip}
+          onArchive={onArchive}
+          onUnarchive={onUnarchive}
+          onDelete={onDelete}
+        />
+      )}
 
       {showCueRow && (
         <div
