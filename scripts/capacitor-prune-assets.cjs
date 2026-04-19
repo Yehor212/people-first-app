@@ -24,9 +24,17 @@ const path = require("path");
 
 const DIST = path.resolve(__dirname, "..", "dist");
 const PRUNE = [
+  // Play Store listing artwork — only for manual uploads, not runtime
   "feature-graphic.png",
   "feature-graphic.webp",
   "feature-graphic.svg",
+  // Icon source vectors — used only by scripts/generate-icons.cjs at build
+  // time to regenerate pwa-*.png. NOT loaded at runtime.
+  "icon-source.svg",
+  "icon-source-round.svg",
+  // icon-512.png: alt-size output, manifest uses pwa-512.png exclusively.
+  // Verified: 0 refs in src/ or vite.config.ts manifest.
+  "icon-512.png",
 ];
 
 if (process.env.CAPACITOR_BUILD !== "true") {
