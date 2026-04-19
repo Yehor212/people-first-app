@@ -241,6 +241,13 @@ export default defineConfig(({ mode }) => {
               return "sentry";
             }
 
+            // Lucide icons (212 imports across 209 files). Tree-shakeable with
+            // no React runtime dependency — SAFE to chunk per TDZ feedback doc.
+            // Splits ~80-150 KB off the main bundle for better HTTP/2 parallelism.
+            if (id.includes("lucide-react")) {
+              return "lucide-icons";
+            }
+
             // Pure utility libs (no React dependency)
             if (
               id.includes("class-variance-authority") ||
