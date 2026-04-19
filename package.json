@@ -3,6 +3,16 @@
   "private": true,
   "version": "1.7.2",
   "type": "module",
+  "engines": {
+    "node": ">=22.12 <25"
+  },
+  "devEngines": {
+    "runtime": {
+      "name": "node",
+      "version": ">=22.12",
+      "onFail": "error"
+    }
+  },
   "scripts": {
     "dev": "vite",
     "tokens:build": "style-dictionary build --config src/design-tokens/sd.config.mjs",
@@ -40,7 +50,10 @@
     "knip": "knip",
     "oxlint": "oxlint -c .oxlintrc.json src/",
     "check:circular": "madge --circular --extensions ts,tsx src/",
-    "check:size": "size-limit"
+    "check:size": "size-limit",
+    "doc-counts": "node scripts/doc-counts.cjs --check",
+    "doc-counts:update": "node scripts/doc-counts.cjs --update",
+    "doc-counts:print": "node scripts/doc-counts.cjs --print"
   },
   "dependencies": {
     "@capacitor-community/safe-area": "^8.0.1",
@@ -80,7 +93,7 @@
     "@sentry/react": "^10.38.0",
     "@supabase/supabase-js": "^2.45.6",
     "@tailwindcss/container-queries": "^0.1.1",
-    "@tanstack/react-query": "^5.83.0",
+    "@tanstack/react-query": "^5.99.1",
     "@tanstack/react-virtual": "^3.13.18",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
