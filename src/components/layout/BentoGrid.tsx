@@ -32,7 +32,7 @@ export function BentoCard({ children, span = "1", className }: BentoCardProps) {
     <div
       className={cn(
         "@container rounded-2xl border border-border/10 bg-card p-4 shadow-sm",
-        "hover:shadow-md hover:-translate-y-0.5 transition-all duration-150",
+        "hover:shadow-md hover:-translate-y-0.5 motion-safe:transition-all motion-safe:duration-150",
         span === "2" && "@sm:col-span-2",
         span === "row" && "col-span-full",
         className

@@ -82,7 +82,7 @@ export function MoodCompactView({
   const LatestTimeIcon = TIME_ICONS[latestTimeOfDay];
 
   return (
-    <Card elevation="raised" className="p-5 animate-fade-in">
+    <Card elevation="raised" className="p-5 motion-safe:animate-fade-in">
       {/* Header with expand toggle */}
       <div
         role="button"
@@ -99,7 +99,7 @@ export function MoodCompactView({
         <h3 className="text-lg font-semibold text-foreground">{t.moodToday || "Today's Mood"}</h3>
         <ChevronDown
           className={cn(
-            "w-5 h-5 text-muted-foreground transition-transform",
+            "w-5 h-5 text-muted-foreground motion-safe:transition-transform",
             isExpanded && "rotate-180"
           )}
         />
@@ -132,7 +132,7 @@ export function MoodCompactView({
               e.stopPropagation();
               onShowAddNew();
             }}
-            className="flex items-center gap-1.5 px-3 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl motion-safe:transition-colors"
           >
             <Plus className="w-4 h-4" />
             <span className="text-sm font-medium">{t.updateMood || "Update"}</span>
@@ -142,7 +142,7 @@ export function MoodCompactView({
 
       {/* Expanded view - show all entries for today */}
       {isExpanded && todayEntries.length > 0 && (
-        <div className="mt-4 pt-4 border-t border-border space-y-3 animate-fade-in">
+        <div className="mt-4 pt-4 border-t border-border space-y-3 motion-safe:animate-fade-in">
           <p className="text-xs text-muted-foreground uppercase tracking-wide">
             {t.moodHistory || "Today's history"}
           </p>
@@ -160,7 +160,7 @@ export function MoodCompactView({
               <div
                 key={entry.id}
                 className={cn(
-                  "p-2 bg-secondary/50 rounded-xl transition-all",
+                  "p-2 bg-secondary/50 rounded-xl motion-safe:transition-all",
                   isEditing && "ring-2 ring-primary/50 bg-secondary"
                 )}
               >
@@ -193,16 +193,16 @@ export function MoodCompactView({
                           e.stopPropagation();
                           handleStartEdit(entry);
                         }}
-                        className="p-2 hover:bg-primary/10 rounded-lg transition-colors group"
+                        className="p-2 hover:bg-primary/10 rounded-lg motion-safe:transition-colors group"
                         title={t.editMood || "Edit mood"}
                         aria-label={t.editMood || "Edit mood"}
                       >
-                        <Edit3 className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                        <Edit3 className="w-4 h-4 text-muted-foreground group-hover:text-primary motion-safe:transition-colors" />
                       </button>
                     )}
                   </div>
                 ) : (
-                  <div className="animate-fade-in space-y-3">
+                  <div className="motion-safe:animate-fade-in space-y-3">
                     <div className="flex items-center gap-2">
                       <TimeIcon className="w-3.5 h-3.5 text-primary" />
                       <span className="text-sm font-medium text-primary">
@@ -223,7 +223,7 @@ export function MoodCompactView({
                           onClick={() => handleEditMoodSelect(entry, mood.type)}
                           aria-label={mood.label}
                           className={cn(
-                            "flex-1 p-2 rounded-lg transition-all",
+                            "flex-1 p-2 rounded-lg motion-safe:transition-all",
                             editingMood === mood.type
                               ? `${mood.color} bg-opacity-30 scale-105`
                               : "hover:bg-secondary hover:scale-105"
@@ -245,7 +245,7 @@ export function MoodCompactView({
 
                     <button
                       onClick={() => handleSaveEdit(entry)}
-                      className="w-full py-2 bg-primary/20 hover:bg-primary/30 text-primary rounded-lg text-sm font-medium transition-colors"
+                      className="w-full py-2 bg-primary/20 hover:bg-primary/30 text-primary rounded-lg text-sm font-medium motion-safe:transition-colors"
                     >
                       {t.save || "Save"}
                     </button>
@@ -280,14 +280,14 @@ export function MoodCompactView({
               }}
               disabled={!hasEntry && !isCurrent}
               className={cn(
-                "flex flex-col items-center gap-1 transition-all",
+                "flex flex-col items-center gap-1 motion-safe:transition-all",
                 !hasEntry && !isCurrent && "opacity-40",
                 (canEdit || (!hasEntry && isCurrent)) && "hover:scale-110 cursor-pointer"
               )}
             >
               <div
                 className={cn(
-                  "w-8 h-8 rounded-full flex items-center justify-center transition-all",
+                  "w-8 h-8 rounded-full flex items-center justify-center motion-safe:transition-all",
                   hasEntry ? `${entryMood?.color} bg-opacity-20` : "bg-secondary",
                   isCurrent && !hasEntry && "ring-2 ring-primary/30 ring-offset-1",
                   canEdit && "hover:ring-2 hover:ring-primary/50"

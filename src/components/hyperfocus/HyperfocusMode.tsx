@@ -102,7 +102,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
       {/* Close Button */}
       <button
         onClick={onExit}
-        className="fixed top-4 end-4 z-[110] p-3 min-w-[48px] min-h-[48px] bg-secondary hover:bg-secondary/80 rounded-xl transition-all text-slate-600 dark:text-white flex items-center justify-center active:scale-95"
+        className="fixed top-4 end-4 z-[110] p-3 min-w-[48px] min-h-[48px] bg-secondary hover:bg-secondary/80 rounded-xl motion-safe:transition-all text-slate-600 dark:text-white flex items-center justify-center active:scale-95"
         style={{
           top: "max(1rem, env(safe-area-inset-top, 1rem))",
           insetInlineEnd: "max(1rem, env(safe-area-inset-right, 1rem))",
@@ -149,7 +149,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
             ) : (
               <motion.button
                 onClick={handlePause}
-                className="px-8 py-4 min-h-[56px] bg-secondary backdrop-blur-sm border border-border rounded-2xl text-slate-700 dark:text-white font-bold text-lg flex items-center gap-3 transition-all"
+                className="px-8 py-4 min-h-[56px] bg-secondary backdrop-blur-sm border border-border rounded-2xl text-slate-700 dark:text-white font-bold text-lg flex items-center gap-3 motion-safe:transition-all"
                 whileHover={{ scale: 1.05 }}
                 whileTap={zenTap.button}
               >
@@ -169,7 +169,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
 
             <motion.button
               onClick={onExit}
-              className="px-6 py-4 min-h-[56px] bg-red-100 dark:bg-red-500/20 backdrop-blur-sm border border-red-300 dark:border-red-500/30 rounded-2xl text-red-600 dark:text-red-300 font-medium transition-all"
+              className="px-6 py-4 min-h-[56px] bg-red-100 dark:bg-red-500/20 backdrop-blur-sm border border-red-300 dark:border-red-500/30 rounded-2xl text-red-600 dark:text-red-300 font-medium motion-safe:transition-all"
               whileHover={{ scale: 1.05 }}
               whileTap={zenTap.button}
             >
@@ -184,7 +184,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
                 onClick={() => void dnd.handleDndToggle()}
                 className={cn(
                   "w-full px-4 py-3 min-h-[52px] rounded-2xl flex items-center justify-between",
-                  "border transition-all",
+                  "border motion-safe:transition-all",
                   dnd.dndEnabled
                     ? "bg-violet-500/20 border-violet-500/40"
                     : "bg-secondary border-border"
@@ -233,7 +233,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
                 </div>
                 <div
                   className={cn(
-                    "w-11 h-6 rounded-full transition-colors flex-shrink-0",
+                    "w-11 h-6 rounded-full motion-safe:transition-colors flex-shrink-0",
                     dnd.dndEnabled ? "bg-violet-500" : "bg-muted"
                   )}
                 >
@@ -277,13 +277,13 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
                 <div className="flex gap-3">
                   <button
                     onClick={() => dnd.setShowDndPermission(false)}
-                    className="flex-1 py-3 min-h-[44px] rounded-xl bg-secondary text-foreground font-medium transition-opacity hover:opacity-80"
+                    className="flex-1 py-3 min-h-[44px] rounded-xl bg-secondary text-foreground font-medium motion-safe:transition-opacity hover:opacity-80"
                   >
                     {t.cancel || "Cancel"}
                   </button>
                   <button
                     onClick={() => void handleOpenDndSettings()}
-                    className="flex-1 py-3 min-h-[44px] rounded-xl bg-violet-500 text-white font-medium transition-opacity hover:opacity-90"
+                    className="flex-1 py-3 min-h-[44px] rounded-xl bg-violet-500 text-white font-medium motion-safe:transition-opacity hover:opacity-90"
                   >
                     {t.focusModeOpenSettings || "Open Settings"}
                   </button>
@@ -324,7 +324,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
                   <motion.button
                     onClick={() => spotify.setSpotifyAutoPlay(!spotify.spotifyAutoPlay)}
                     className={cn(
-                      "px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
+                      "px-3 py-1.5 rounded-lg text-xs font-medium motion-safe:transition-all",
                       spotify.spotifyAutoPlay
                         ? "bg-[hsl(var(--brand-spotify))]/30 border border-[hsl(var(--brand-spotify))]/50 text-[hsl(var(--brand-spotify))]"
                         : "bg-secondary border border-border text-slate-500 dark:text-white/60"

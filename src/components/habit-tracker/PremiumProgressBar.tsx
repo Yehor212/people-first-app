@@ -26,7 +26,7 @@ export function PremiumProgressBar({
           return (
             <motion.div
               key={habit.id}
-              className={cn("flex-1 h-3 rounded-full transition-all", isComplete ? "bg-gradient-to-r from-emerald-400 to-teal-500" : "bg-foreground/10")}
+              className={cn("flex-1 h-3 rounded-full motion-safe:transition-all", isComplete ? "bg-gradient-to-r from-emerald-400 to-teal-500" : "bg-foreground/10")}
               style={isComplete ? { boxShadow: '0 0 8px rgba(16, 185, 129, 0.5)' } : {}}
               initial={{ scaleX: 0 }}
               animate={{ scaleX: 1 }}

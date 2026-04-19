@@ -97,8 +97,8 @@ export type { PanelImperativeHandle };
 
 export function ResizeHandle() {
   return (
-    <Separator className="group w-1.5 bg-transparent hover:bg-primary/20 transition-colors duration-150 flex items-center justify-center">
-      <div className="w-0.5 h-8 rounded-full bg-border group-hover:bg-primary/50 transition-colors" />
+    <Separator className="group w-1.5 bg-transparent hover:bg-primary/20 motion-safe:transition-colors motion-safe:duration-150 flex items-center justify-center">
+      <div className="w-0.5 h-8 rounded-full bg-border group-hover:bg-primary/50 motion-safe:transition-colors" />
     </Separator>
   );
 }

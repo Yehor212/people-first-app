@@ -86,7 +86,7 @@ export function HyperfocusSoundSelector({
               onClick={onToggleSound}
               aria-label={isSoundPlaying ? t.muteSound : t.unmuteSound}
               className={cn(
-                "p-2.5 min-w-[44px] min-h-[44px] rounded-xl transition-all flex items-center justify-center",
+                "p-2.5 min-w-[44px] min-h-[44px] rounded-xl motion-safe:transition-all flex items-center justify-center",
                 isSoundPlaying
                   ? "bg-violet-500/30 border border-violet-500/50"
                   : "bg-secondary border border-border"
@@ -109,7 +109,7 @@ export function HyperfocusSoundSelector({
         <motion.button
           onClick={() => onSoundSelect(null)}
           className={cn(
-            'px-2 py-3 min-h-[52px] rounded-xl text-xs font-medium transition-all flex flex-col items-center justify-center gap-1',
+            'px-2 py-3 min-h-[52px] rounded-xl text-xs font-medium motion-safe:transition-all flex flex-col items-center justify-center gap-1',
             !selectedSoundId
               ? 'bg-gradient-to-br from-violet-500/40 to-purple-600/40 border border-violet-500/50 text-violet-700 dark:text-white'
               : 'bg-secondary border border-border text-slate-600 dark:text-white/70 hover:bg-secondary/80'
@@ -143,7 +143,7 @@ export function HyperfocusSoundSelector({
               key={sound.id}
               onClick={() => onSoundSelect(sound.id)}
               className={cn(
-                'px-2 py-3 min-h-[52px] rounded-xl text-xs font-medium transition-all flex flex-col items-center justify-center gap-1',
+                'px-2 py-3 min-h-[52px] rounded-xl text-xs font-medium motion-safe:transition-all flex flex-col items-center justify-center gap-1',
                 isSelected
                   ? 'bg-gradient-to-br from-violet-500/40 to-purple-600/40 border border-violet-500/50 text-violet-700 dark:text-white'
                   : 'bg-secondary border border-border text-slate-600 dark:text-white/70 hover:bg-secondary/80'

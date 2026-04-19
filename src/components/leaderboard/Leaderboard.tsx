@@ -71,7 +71,7 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
       >
         {trigger || (
           <button
-            className="flex items-center gap-2 px-4 py-2 bg-secondary rounded-lg hover:bg-secondary/80 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-secondary rounded-lg hover:bg-secondary/80 motion-safe:transition-colors"
             aria-label={t.leaderboard || "Leaderboard"}
           >
             <Trophy className="w-5 h-5 text-primary" aria-hidden="true" />
@@ -99,7 +99,7 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
               </h2>
               <button
                 onClick={() => setIsOpen(false)}
-                className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+                className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full hover:bg-muted motion-safe:transition-colors"
                 aria-label={t.close || "Close"}
               >
                 <X className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
@@ -121,7 +121,7 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
                     aria-controls={`leaderboard-${tab.type}`}
                     onClick={() => setActiveTab(tab.type)}
                     className={cn(
-                      "flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg font-medium transition-all",
+                      "flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg font-medium motion-safe:transition-all",
                       activeTab === tab.type
                         ? "bg-gradient-to-r from-violet-500/80 to-purple-600/80 text-white"
                         : "text-foreground/60 hover:text-foreground hover:bg-foreground/5",
@@ -214,7 +214,7 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
                     <p className="text-destructive mb-3">{data.error}</p>
                     <button
                       onClick={() => void data.loadData(0)}
-                      className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+                      className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 motion-safe:transition-colors"
                     >
                       {t.retry || "Retry"}
                     </button>
@@ -245,7 +245,7 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
             <motion.button
               onClick={() => void data.loadData(0)}
               disabled={data.isLoading}
-              className="absolute top-4 end-4 p-2.5 rounded-xl bg-foreground/5 border border-foreground/10 hover:bg-foreground/10 transition-colors"
+              className="absolute top-4 end-4 p-2.5 rounded-xl bg-foreground/5 border border-foreground/10 hover:bg-foreground/10 motion-safe:transition-colors"
               aria-label={t.refresh || "Refresh"}
               whileHover={{ scale: 1.05 }}
               whileTap={zenTap.button}
