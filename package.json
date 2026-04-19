@@ -170,7 +170,9 @@
   },
   "lint-staged": {
     "*.{ts,tsx}": [
-      "eslint",
+      "eslint"
+    ],
+    "src/**/*.{ts,tsx}": [
       "oxlint -c .oxlintrc.json"
     ]
   }
