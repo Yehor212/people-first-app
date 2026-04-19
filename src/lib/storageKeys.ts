@@ -96,6 +96,7 @@ export const SK = {
   HABIT_SWIPE_HINT_SEEN: "habit-swipe-hint-seen",
   DIARY_FORMAT_HINT_SEEN: "diary-format-hint-seen",
   NOTIFICATION_PERMISSION_ASKED: "notification-permission-asked",
+  HABITS_EVER_CREATED: "zenflow-habits-ever-created",
 
   // ─── Version & Updates ───
   APP_METADATA: "zenflow-app-metadata",
@@ -152,6 +153,7 @@ export const SSK = {
   SPOTIFY_TOKENS: "zenflow_spotify_tokens",
   SPOTIFY_PKCE_VERIFIER: "spotify_pkce_verifier",
   DISMISSED_EVENTS: "zenflow_dismissed_events",
+  HABITS_SESSION_CREATED: "zenflow-habits-session-created",
 
   // Dynamic
   chunkReload: (moduleName: string) => `chunk_reload_${moduleName}`,

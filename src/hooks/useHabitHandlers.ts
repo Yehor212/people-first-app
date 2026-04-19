@@ -83,7 +83,9 @@ export function useHabitHandlers({
       void haptics.habitCompleted();
       setConfettiBurst({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
       trackTimeOfDayCompletion();
-      analytics.habitCompleted(habit.name);
+      // §15 retention cohort — emit the total active-habit count so the
+      // aggregator can compute the 7-day completion rate for ≥3-habit users.
+      analytics.habitCompleted(habit.name, habits.filter((h) => !h.isArchived).length);
       plantSeed("habit");
       waterPlants("habit");
 
@@ -111,7 +113,7 @@ export function useHabitHandlers({
         triggerXpPopup(challengeResult.bonusXp, "bonus");
       }
     },
-    [awardXp, earnTreats, plantSeed, waterPlants, setConfettiBurst, trackTimeOfDayCompletion, ts]
+    [awardXp, earnTreats, plantSeed, waterPlants, setConfettiBurst, trackTimeOfDayCompletion, ts, habits]
   );
 
   /**

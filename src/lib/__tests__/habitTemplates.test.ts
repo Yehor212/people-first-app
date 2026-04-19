@@ -13,8 +13,10 @@ const ALL_LANGUAGES: Language[] = ['en', 'uk', 'es', 'de', 'fr', 'ja', 'ar', 'he
 // ============================================
 
 describe('habitTemplates', () => {
-  it('contains 11 templates', () => {
-    expect(habitTemplates).toHaveLength(11);
+  it('contains 19 templates', () => {
+    // Phase 3-C extended the Loop Habit Tracker starter set from 11 → 19
+    // (commit 8f658fd — template library drawer + 5 categories).
+    expect(habitTemplates).toHaveLength(19);
   });
 
   it('each template has id, names, icon, color, and type', () => {

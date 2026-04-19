@@ -23,6 +23,7 @@ import { staggerDelay } from "@/lib/motion/choreography";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useUserDataStore } from "@/stores";
 import { hapticTap } from "@/lib/haptics";
+import { analytics } from "@/lib/analytics";
 import { HabitsHeroZone } from "./HabitsHeroZone";
 import { HabitCreateSheet } from "./HabitCreateSheet";
 import { HeroTemplateLibrarySheet } from "./hero/HeroTemplateLibrarySheet";
@@ -75,8 +76,9 @@ export const HabitsPage = memo(function HabitsPage() {
   const handleAddHabit = useCallback(
     (habit: Habit) => {
       setHabits((prev) => [...prev, habit]);
+      analytics.habitCreated("custom", habits.length + 1);
     },
-    [setHabits],
+    [setHabits, habits.length],
   );
 
   const handleUpdateHabit = useCallback(
@@ -134,8 +136,9 @@ export const HabitsPage = memo(function HabitsPage() {
     (habit: Habit) => {
       captureReturnFocus();
       setDetailHabit(habit);
+      analytics.habitDetailOpened(habits.length);
     },
-    [captureReturnFocus],
+    [captureReturnFocus, habits.length],
   );
   const closeDetail = useCallback(() => {
     setDetailHabit(null);
@@ -201,13 +204,18 @@ export const HabitsPage = memo(function HabitsPage() {
 
   const handlePickTemplate = useCallback(
     (template: HabitTemplate) => {
+      // Idempotent guard at the closure layer so we don't emit a phantom
+      // activation event when the user taps an already-seeded template.
+      if (habits.some((h) => h.templateId === template.id)) return;
       setHabits((prev) => {
-        // Idempotent by templateId — tapping the same template twice is a no-op.
+        // Second guard covers the race where another emitter landed between
+        // render and commit — the setter always wins over stale closure state.
         if (prev.some((h) => h.templateId === template.id)) return prev;
         return [...prev, templateToHabit(template, prev.length, language)];
       });
+      analytics.habitCreated("template", habits.length + 1);
     },
-    [setHabits, language],
+    [habits, setHabits, language],
   );
 
   return (

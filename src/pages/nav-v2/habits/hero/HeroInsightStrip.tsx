@@ -17,12 +17,13 @@
  *     nothing that matters is hidden).
  */
 
-import { memo, useMemo } from "react";
+import { memo, useEffect, useMemo } from "react";
 import { Sparkles, TrendingUp, AlertCircle } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 import { useUserDataStore } from "@/stores";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { generateInsights, type InsightTranslations } from "@/lib/insightsEngine";
+import { analytics } from "@/lib/analytics";
 import type { Insight } from "@/types";
 
 /** The InsightTranslations shape V1 expects — pulled from the t() bag. */
@@ -85,6 +86,17 @@ export const HeroInsightStrip = memo(function HeroInsightStrip() {
       return null;
     }
   }, [moods, habits, focusSessions, tx]);
+
+  // Habits spec §15 cross-habit signal — emit once per distinct insight identity
+  // so the aggregator can compute the "% of users seeing ≥1 insight" funnel.
+  // Depending on the two enum fields (not the memo object) keeps the effect
+  // stable across re-renders but re-fires when the user flips between insights.
+  const insightType = topInsight?.type ?? null;
+  const insightSeverity = topInsight?.severity ?? null;
+  useEffect(() => {
+    if (!insightType || !insightSeverity) return;
+    analytics.insightStripRendered(insightType, insightSeverity);
+  }, [insightType, insightSeverity]);
 
   if (!topInsight) return null;
 
