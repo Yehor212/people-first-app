@@ -12,6 +12,16 @@
     <!-- Security Headers — CSP: unsafe-eval removed from script-src; style-src keeps unsafe-inline for Tailwind/inline styles -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' capacitor: capacitor-electron: https:; script-src 'self' capacitor: capacitor-electron:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https: capacitor: capacitor-electron:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.zenflowapp.online wss://api.zenflowapp.online https://cdn.pixabay.com https://*.sentry.io https://*.ingest.sentry.io https://www.googleapis.com capacitor: capacitor-electron:; media-src 'self' https://cdn.pixabay.com blob: data: capacitor: capacitor-electron:; worker-src 'self' blob:; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <!-- Permissions-Policy — explicit deny for APIs this app does not use.
+         `gyroscope=(self)` is the ONE exception (useCosmicParallax on mobile).
+         `battery=(self)` + `autoplay=(self)` allow AnimationGate + audioManager.
+         `fullscreen=(self)` + `web-share=(self)` support share card + focus mode.
+         Blocks FLoC (`interest-cohort`) and its 2024 Topics successor
+         (`browsing-topics`). `meta` support is partial (Chromium honors,
+         Safari/Firefox ignore); header-level injection is preferred on
+         non-static hosts — kept here for defense-in-depth on GH Pages.
+         Source: MDN Permissions-Policy (2026). -->
+    <meta http-equiv="Permissions-Policy" content="accelerometer=(), ambient-light-sensor=(), autoplay=(self), battery=(self), bluetooth=(), browsing-topics=(), camera=(), cross-origin-isolated=(), display-capture=(), document-domain=(), encrypted-media=(), fullscreen=(self), geolocation=(), gyroscope=(self), hid=(), idle-detection=(), interest-cohort=(), magnetometer=(), microphone=(), midi=(), payment=(), picture-in-picture=(), publickey-credentials-get=(), screen-wake-lock=(), serial=(), sync-xhr=(), usb=(), web-share=(self), xr-spatial-tracking=()">
     <!-- Cache-Control/Pragma/Expires removed: Netlify _headers handles caching at CDN level -->
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <meta name="description" content="ZenFlow — your personal wellness center. Habit tracker, mood tracker, focus timer, and gratitude journal in one app." />

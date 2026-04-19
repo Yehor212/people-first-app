@@ -23,7 +23,7 @@ The table below is **auto-generated** by `scripts/doc-counts.cjs`. CI (`npm run 
 | `it.todo(` occurrences | 73 | regex walk |
 | `as any` total | 144 (136 in tests, ~8 prod) | regex walk |
 | Console.\* in prod (excl. logger/crashReporting) | **2** | regex walk |
-| ADR files (`docs/adr/NNNN-*.md`) | 6 | ls |
+| ADR files (`docs/adr/NNNN-*.md`) | 7 | ls |
 | SECURITY.md | yes | fs |
 | CONTRIBUTING.md | yes | fs |
 | LICENSE | **MISSING** | fs |
