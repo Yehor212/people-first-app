@@ -131,7 +131,7 @@ export const OnThisDayCard = memo(function OnThisDayCard({
               className={cn(
                 "flex items-center justify-center rounded-full",
                 "h-[44px] w-[44px] -m-2 text-muted-foreground",
-                "hover:text-foreground transition-colors",
+                "hover:text-foreground motion-safe:transition-colors",
               )}
             >
               <X className="h-4 w-4" />

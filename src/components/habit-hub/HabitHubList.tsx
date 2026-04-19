@@ -151,7 +151,7 @@ export function HabitHubList({
             whileTap={zenTap.button}
             aria-pressed={categoryFilter === cat.id}
             className={cn(
-              "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors",
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap motion-safe:transition-colors",
               "border min-h-[44px]",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50",
               categoryFilter === cat.id
@@ -180,7 +180,7 @@ export function HabitHubList({
           }}
           aria-expanded={showSortMenu}
           aria-haspopup="listbox"
-          className="flex items-center gap-1.5 text-[10px] text-muted-foreground hover:text-muted-foreground transition-colors min-h-[44px] min-w-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50"
+          className="flex items-center gap-1.5 text-[10px] text-muted-foreground hover:text-muted-foreground motion-safe:transition-colors min-h-[44px] min-w-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50"
         >
           <ArrowUpDown className="w-3 h-3" />
           <span>{sortLabels[sortOption]}</span>
@@ -215,7 +215,7 @@ export function HabitHubList({
                     aria-selected={sortOption === opt}
                     onClick={() => handleSortSelect(opt)}
                     className={cn(
-                      "w-full px-3 py-2 text-xs text-start transition-colors min-h-[44px] flex items-center",
+                      "w-full px-3 py-2 text-xs text-start motion-safe:transition-colors min-h-[44px] flex items-center",
                       sortOption === opt
                         ? "text-violet-300 bg-violet-500/10"
                         : "text-muted-foreground hover:bg-white/[0.05]"
@@ -270,7 +270,7 @@ export function HabitHubList({
           </div>
           <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
             <div
-              className="h-full rounded-full transition-all duration-500"
+              className="h-full rounded-full motion-safe:transition-all motion-safe:duration-500"
               style={{
                 width: `${overallPercent}%`,
                 backgroundColor:

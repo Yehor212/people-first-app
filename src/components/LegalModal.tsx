@@ -122,7 +122,7 @@ export function LegalModal({ open, onOpenChange, initialTab = "privacy" }: Legal
           </h2>
           <button
             onClick={onClose}
-            className="p-2 rounded-xl hover:bg-muted/50 transition-colors min-h-[48px] min-w-[48px] flex items-center justify-center"
+            className="p-2 rounded-xl hover:bg-muted/50 motion-safe:transition-colors min-h-[48px] min-w-[48px] flex items-center justify-center"
             aria-label={t.close}
           >
             <X className="w-5 h-5 text-muted-foreground" />
@@ -137,7 +137,7 @@ export function LegalModal({ open, onOpenChange, initialTab = "privacy" }: Legal
               role="tab"
               aria-selected={activeTab === key}
               onClick={() => setActiveTab(key)}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-sm font-medium transition-colors min-h-[48px] ${
+              className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-sm font-medium motion-safe:transition-colors min-h-[48px] ${
                 activeTab === key
                   ? "text-primary border-b-2 border-primary"
                   : "text-muted-foreground hover:text-foreground"
@@ -156,7 +156,7 @@ export function LegalModal({ open, onOpenChange, initialTab = "privacy" }: Legal
               <p className="text-sm text-muted-foreground">{t.legalPrivacyDescription}</p>
               <button
                 onClick={() => handleOpenExternal(PRIVACY_URL)}
-                className="w-full py-3 bg-primary/10 text-primary rounded-xl font-medium hover:bg-primary/20 transition-colors flex items-center justify-center gap-2 min-h-[48px]"
+                className="w-full py-3 bg-primary/10 text-primary rounded-xl font-medium hover:bg-primary/20 motion-safe:transition-colors flex items-center justify-center gap-2 min-h-[48px]"
               >
                 <ExternalLink className="w-4 h-4" />
                 {t.legalOpenInBrowser}
@@ -169,7 +169,7 @@ export function LegalModal({ open, onOpenChange, initialTab = "privacy" }: Legal
               <p className="text-sm text-muted-foreground">{t.legalTermsDescription}</p>
               <button
                 onClick={() => handleOpenExternal(TERMS_URL)}
-                className="w-full py-3 bg-primary/10 text-primary rounded-xl font-medium hover:bg-primary/20 transition-colors flex items-center justify-center gap-2 min-h-[48px]"
+                className="w-full py-3 bg-primary/10 text-primary rounded-xl font-medium hover:bg-primary/20 motion-safe:transition-colors flex items-center justify-center gap-2 min-h-[48px]"
               >
                 <ExternalLink className="w-4 h-4" />
                 {t.legalOpenInBrowser}
@@ -184,7 +184,7 @@ export function LegalModal({ open, onOpenChange, initialTab = "privacy" }: Legal
                 <button
                   key={name}
                   onClick={() => handleOpenExternal(url)}
-                  className="w-full flex items-center justify-between py-2.5 px-3 rounded-xl hover:bg-muted/50 transition-colors text-start min-h-[48px]"
+                  className="w-full flex items-center justify-between py-2.5 px-3 rounded-xl hover:bg-muted/50 motion-safe:transition-colors text-start min-h-[48px]"
                 >
                   <span className="text-sm font-medium text-foreground">{name}</span>
                   <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">

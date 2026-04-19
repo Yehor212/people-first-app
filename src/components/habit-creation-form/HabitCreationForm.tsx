@@ -139,7 +139,7 @@ export function HabitCreationForm({ form, habits, isPrimaryCTA = false }: HabitC
           }
         }}
         className={cn(
-          "relative text-sm mb-3 flex items-center gap-1 transition-colors",
+          "relative text-sm mb-3 flex items-center gap-1 motion-safe:transition-colors",
           isPrimaryCTA
             ? "text-slate-500 dark:text-foreground/60 hover:text-slate-800 dark:hover:text-foreground"
             : "text-muted-foreground hover:text-foreground"
@@ -200,7 +200,7 @@ export function HabitCreationForm({ form, habits, isPrimaryCTA = false }: HabitC
         </p>
         <div className="flex items-center gap-3">
           <div
-            className="w-12 h-12 rounded-xl flex items-center justify-center text-xl transition-all duration-300"
+            className="w-12 h-12 rounded-xl flex items-center justify-center text-xl motion-safe:transition-all motion-safe:duration-300"
             style={{ backgroundColor: `${resolveHabitColor(selectedColorIndex)}33` }}
           >
             {selectedIcon}
@@ -239,7 +239,7 @@ export function HabitCreationForm({ form, habits, isPrimaryCTA = false }: HabitC
         placeholder={t.habitName}
         aria-label={ts.habitName || "Habit name"}
         className={cn(
-          "relative w-full p-3 rounded-xl mb-3 transition-all",
+          "relative w-full p-3 rounded-xl mb-3 motion-safe:transition-all",
           "focus:outline-none focus:ring-2",
           isPrimaryCTA
             ? "bg-foreground/10 backdrop-blur-sm border border-foreground/20 text-white placeholder:text-foreground/60 focus:ring-violet-500/50 focus:border-violet-500/30"
@@ -265,7 +265,7 @@ export function HabitCreationForm({ form, habits, isPrimaryCTA = false }: HabitC
         maxLength={200}
         aria-label={ts.habitQuestion || "Tracking question"}
         className={cn(
-          "relative w-full p-3 rounded-xl mb-3 transition-all",
+          "relative w-full p-3 rounded-xl mb-3 motion-safe:transition-all",
           "focus:outline-none focus:ring-2",
           isPrimaryCTA
             ? "bg-foreground/10 backdrop-blur-sm border border-foreground/20 text-white placeholder:text-foreground/60 focus:ring-violet-500/50"
@@ -355,7 +355,7 @@ export function HabitCreationForm({ form, habits, isPrimaryCTA = false }: HabitC
           placeholder={ts.habitDescriptionPlaceholder || "Additional details..."}
           rows={2}
           className={cn(
-            "w-full p-2 rounded-lg text-sm resize-none transition-all",
+            "w-full p-2 rounded-lg text-sm resize-none motion-safe:transition-all",
             "focus:outline-none focus:ring-2",
             isPrimaryCTA
               ? "bg-foreground/10 border border-foreground/20 text-white placeholder:text-foreground/60 focus:ring-violet-500/50"
@@ -375,7 +375,7 @@ export function HabitCreationForm({ form, habits, isPrimaryCTA = false }: HabitC
           }}
           disabled={!newHabitName.trim() || isSaving}
           className={cn(
-            "relative w-full py-3.5 rounded-xl font-semibold text-white transition-all overflow-hidden",
+            "relative w-full py-3.5 rounded-xl font-semibold text-white motion-safe:transition-all overflow-hidden",
             newHabitName.trim() && !isSaving
               ? editingHabit
                 ? "bg-gradient-to-r from-blue-500 to-indigo-500"

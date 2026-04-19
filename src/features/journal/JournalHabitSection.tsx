@@ -108,7 +108,7 @@ export const JournalHabitSection = memo(function JournalHabitSection({ date, sna
                   key={item.habitId}
                   onClick={() => toggleHabit(item.habitId)}
                   className={cn(
-                    'w-full flex items-center gap-2.5 py-1.5 px-2 rounded-lg transition-colors min-h-[36px]',
+                    'w-full flex items-center gap-2.5 py-1.5 px-2 rounded-lg motion-safe:transition-colors min-h-[36px]',
                     item.completed ? 'bg-primary/5' : 'hover:bg-muted/30',
                   )}
                 >

@@ -42,7 +42,7 @@ export function SettingsTab({
   const gratitudeEntries = useUserDataStore((s) => s.gratitudeEntries);
 
   return (
-    <div className="animate-tab-enter">
+    <div className="motion-safe:animate-tab-enter">
       <Header userName={userName} />
       <LazyErrorBoundary componentName="Settings">
         <Suspense fallback={<SkeletonSection />}>

@@ -213,7 +213,7 @@ export const HabitTracker = memo(function HabitTracker({
   return (
     <div
       className={cn(
-        "rounded-2xl p-6 animate-fade-in transition-all relative overflow-hidden",
+        "rounded-2xl p-6 motion-safe:animate-fade-in motion-safe:transition-all relative overflow-hidden",
         isPrimaryCTA
           ? "ring-2 ring-emerald-500/40 shadow-lg shadow-emerald-500/20"
           : "bg-card zen-shadow-card"
@@ -288,7 +288,7 @@ export const HabitTracker = memo(function HabitTracker({
                   onOpenChallenge();
                 }}
                 aria-label={t.friendChallenges}
-                className="relative w-11 h-11 rounded-xl flex items-center justify-center bg-slate-100/60 dark:bg-foreground/10 backdrop-blur-sm border border-slate-200/60 dark:border-foreground/20 text-slate-600 dark:text-foreground/70 hover:text-slate-800 dark:hover:text-foreground hover:bg-slate-200/60 dark:hover:bg-foreground/20 transition-colors"
+                className="relative w-11 h-11 rounded-xl flex items-center justify-center bg-slate-100/60 dark:bg-foreground/10 backdrop-blur-sm border border-slate-200/60 dark:border-foreground/20 text-slate-600 dark:text-foreground/70 hover:text-slate-800 dark:hover:text-foreground hover:bg-slate-200/60 dark:hover:bg-foreground/20 motion-safe:transition-colors"
                 whileHover={{ scale: 1.05 }}
                 whileTap={zenTap.button}
               >
@@ -326,7 +326,7 @@ export const HabitTracker = memo(function HabitTracker({
               }}
               aria-label={form.isAdding ? t.cancel || "Cancel" : t.addHabit || "Add habit"}
               className={cn(
-                "w-11 h-11 rounded-xl flex items-center justify-center transition-all",
+                "w-11 h-11 rounded-xl flex items-center justify-center motion-safe:transition-all",
                 form.isAdding
                   ? "bg-red-500/30 border border-red-500/50 text-red-300"
                   : "bg-gradient-to-br from-emerald-500/60 to-teal-600/60 border border-emerald-500/30 text-white"
@@ -335,7 +335,7 @@ export const HabitTracker = memo(function HabitTracker({
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              <Plus className={cn("w-5 h-5 transition-transform", form.isAdding && "rotate-45")} />
+              <Plus className={cn("w-5 h-5 motion-safe:transition-transform", form.isAdding && "rotate-45")} />
             </motion.button>
           ) : (
             <Button
@@ -377,7 +377,7 @@ export const HabitTracker = memo(function HabitTracker({
               <motion.button
                 onClick={() => setCategoryFilter("all")}
                 className={cn(
-                  "snap-start px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all min-h-[44px]",
+                  "snap-start px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap motion-safe:transition-all min-h-[44px]",
                   categoryFilter === "all"
                     ? "bg-primary text-primary-foreground shadow-sm"
                     : "bg-secondary text-muted-foreground hover:bg-muted"
@@ -395,7 +395,7 @@ export const HabitTracker = memo(function HabitTracker({
                     key={id}
                     onClick={() => setCategoryFilter(id)}
                     className={cn(
-                      "snap-start px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all flex items-center gap-1 min-h-[44px]",
+                      "snap-start px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap motion-safe:transition-all flex items-center gap-1 min-h-[44px]",
                       categoryFilter === id
                         ? "bg-primary text-primary-foreground shadow-sm"
                         : "bg-secondary text-muted-foreground hover:bg-muted"

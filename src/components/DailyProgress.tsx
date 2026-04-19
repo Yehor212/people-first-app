@@ -138,7 +138,7 @@ export const DailyProgress = memo(function DailyProgress({
   }
 
   return (
-    <div className="bg-card rounded-2xl p-4 zen-shadow-card animate-fade-in">
+    <div className="bg-card rounded-2xl p-4 zen-shadow-card motion-safe:animate-fade-in">
       {/* Progress header */}
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-medium text-muted-foreground">
@@ -157,7 +157,7 @@ export const DailyProgress = memo(function DailyProgress({
       {/* Progress bar */}
       <div className="h-2 bg-secondary rounded-full mb-4 overflow-hidden">
         <div
-          className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-500 rounded-full"
+          className="h-full bg-gradient-to-r from-primary to-accent motion-safe:transition-all motion-safe:duration-500 rounded-full"
           style={{ width: `${(completedCount / items.length) * 100}%` }}
         />
       </div>
@@ -170,7 +170,7 @@ export const DailyProgress = memo(function DailyProgress({
             ref={item.key === "mood" ? moodItemRef : undefined}
             onClick={item.onClick}
             className={cn(
-              "flex-1 flex flex-col items-center gap-1.5 p-2 rounded-xl transition-all",
+              "flex-1 flex flex-col items-center gap-1.5 p-2 rounded-xl motion-safe:transition-all",
               item.completed
                 ? "bg-secondary/50"
                 : "bg-primary/5 hover:bg-primary/10 ring-1 ring-primary/20",
@@ -178,7 +178,7 @@ export const DailyProgress = memo(function DailyProgress({
           >
             <div
               className={cn(
-                "w-10 h-10 rounded-full flex items-center justify-center transition-all",
+                "w-10 h-10 rounded-full flex items-center justify-center motion-safe:transition-all",
                 item.completed
                   ? `${item.color} bg-opacity-20`
                   : "bg-primary/10",
@@ -214,12 +214,12 @@ export const DailyProgress = memo(function DailyProgress({
               const nextIncomplete = items.find((i) => !i.completed);
               nextIncomplete?.onClick?.();
             }}
-            className="w-full flex items-center justify-between p-2 bg-primary/5 hover:bg-primary/10 rounded-lg transition-colors group"
+            className="w-full flex items-center justify-between p-2 bg-primary/5 hover:bg-primary/10 rounded-lg motion-safe:transition-colors group"
           >
             <span className="text-xs text-primary font-medium">
               {t.continueProgress || "Continue your progress"}
             </span>
-            <ChevronRight className="w-4 h-4 text-primary group-hover:translate-x-1 transition-transform rtl:scale-x-[-1]" />
+            <ChevronRight className="w-4 h-4 text-primary group-hover:translate-x-1 motion-safe:transition-transform rtl:scale-x-[-1]" />
           </button>
         </div>
       )}

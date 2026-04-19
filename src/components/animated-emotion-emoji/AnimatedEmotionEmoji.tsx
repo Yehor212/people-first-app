@@ -49,7 +49,7 @@ export function AnimatedEmotionEmoji({
 
   return (
     <div className={cn(
-      "transition-all duration-300",
+      "motion-safe:transition-all motion-safe:duration-300",
       isSelected && "scale-110 drop-shadow-xl",
       intensityScale,
       className

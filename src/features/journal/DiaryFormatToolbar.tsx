@@ -315,7 +315,7 @@ export const DiaryFormatToolbar = memo(function DiaryFormatToolbar({
                 transition={{ type: "spring", stiffness: 500, damping: 25 }}
                 onClick={() => execFormat(action.cmd)}
                 className={cn(
-                  "min-w-[44px] min-h-[44px] w-11 h-11 rounded-xl flex items-center justify-center text-xs transition-colors",
+                  "min-w-[44px] min-h-[44px] w-11 h-11 rounded-xl flex items-center justify-center text-xs motion-safe:transition-colors",
                   action.style,
                   isActive
                     ? "bg-primary/20 text-primary ring-1 ring-primary/40 shadow-[0_0_8px_rgba(var(--primary-rgb),0.15)]"

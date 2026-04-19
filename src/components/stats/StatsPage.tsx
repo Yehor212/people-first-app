@@ -154,7 +154,7 @@ export const StatsPage = memo(function StatsPage({
   // --- JSX ---
   return (
     <div
-      className="@container space-y-4 animate-fade-in content-with-nav px-4 @lg:max-w-none"
+      className="@container space-y-4 motion-safe:animate-fade-in content-with-nav px-4 @lg:max-w-none"
       ref={statsContainerRef}
     >
       {/* A11Y-OK: ContextMenu uses Radix with built-in aria; header has its own aria-labels */}
@@ -170,7 +170,7 @@ export const StatsPage = memo(function StatsPage({
                   setActiveModal("story");
                 }}
                 aria-label={t.weeklyStory || "Weekly Story"}
-                className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-primary to-accent text-white text-sm font-medium rounded-xl hover:opacity-90 transition-all zen-shadow-soft"
+                className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-primary to-accent text-white text-sm font-medium rounded-xl hover:opacity-90 motion-safe:transition-all zen-shadow-soft"
               >
                 <PlayCircle className="w-4 h-4" />
                 {t.weeklyStory || "Weekly Story"}

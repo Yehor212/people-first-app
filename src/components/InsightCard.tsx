@@ -89,12 +89,12 @@ export const InsightCard = memo(function InsightCard({
 
   return (
     <div
-      className={`rounded-2xl border-2 ${colors.border} ${colors.bg} overflow-hidden transition-all duration-300`}
+      className={`rounded-2xl border-2 ${colors.border} ${colors.bg} overflow-hidden motion-safe:transition-all motion-safe:duration-300`}
     >
       {/* Header */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full p-4 flex items-start gap-3 hover:opacity-80 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="w-full p-4 flex items-start gap-3 hover:opacity-80 motion-safe:transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <div className={`flex-shrink-0 ${colors.icon}`}>{getIcon()}</div>
 
@@ -127,7 +127,7 @@ export const InsightCard = memo(function InsightCard({
         </div>
         <div className="h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
           <div
-            className={`h-full ${getConfidenceColor(insight.confidence)} transition-all duration-500`}
+            className={`h-full ${getConfidenceColor(insight.confidence)} motion-safe:transition-all motion-safe:duration-500`}
             style={{ width: `${insight.confidence}%` }}
           />
         </div>

@@ -78,7 +78,7 @@ export const JournalOnboardingHints = memo(function JournalOnboardingHints({
             type="button"
             onClick={handleDismiss}
             aria-label={closeLabel}
-            className="shrink-0 w-[44px] h-[44px] -m-2 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+            className="shrink-0 w-[44px] h-[44px] -m-2 flex items-center justify-center text-muted-foreground hover:text-foreground motion-safe:transition-colors"
           >
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
               <path d="M2 2l8 8M10 2l-8 8" />

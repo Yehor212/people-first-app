@@ -208,7 +208,7 @@ export function StateOfMindModal({ isOpen, onClose, onSave }: StateOfMindModalPr
                         {/* CSS blur backdrop — GPU-accelerated immersive color wash behind orb */}
                         {/* Radial gradient glow — no blur-[60px] to avoid rectangular haze artifact */}
                         <div
-                          className="absolute inset-0 pointer-events-none scale-[1.8] transition-[background] duration-300 ease-out"
+                          className="absolute inset-0 pointer-events-none scale-[1.8] motion-safe:transition-[background] motion-safe:duration-300 ease-out"
                           style={{
                             background: `radial-gradient(circle, ${valenceToColor(som.valence, 0.35)} 0%, ${valenceToColor(som.valence, 0.15)} 40%, transparent 70%)`,
                           }}

@@ -85,7 +85,7 @@ export const AuxPills = memo(function AuxPills({
               "border border-white/10",
               "text-white text-sm font-medium",
               "cursor-pointer z-20",
-              "hover:bg-white/10 transition-colors",
+              "hover:bg-white/10 motion-safe:transition-colors",
               "origin-right"
             )}
             aria-label={t.emotionsLabel}
@@ -108,7 +108,7 @@ export const AuxPills = memo(function AuxPills({
               "border border-white/10",
               "text-white text-sm font-medium",
               "cursor-pointer z-20",
-              "hover:bg-white/10 transition-colors",
+              "hover:bg-white/10 motion-safe:transition-colors",
               "origin-left"
             )}
             aria-label={t.goalsLabel}

@@ -157,7 +157,7 @@ export function GardenCanvas({ world, atmosphere }: GardenCanvasProps) {
       {/* Atmosphere gradient background — zoom/rotate via keyboard (+/-/r/0) */}
       <div
         className={cn(
-          "relative min-h-[280px] bg-gradient-to-br transition-transform duration-200",
+          "relative min-h-[280px] bg-gradient-to-br motion-safe:transition-transform motion-safe:duration-200",
           gradientClass
         )}
         style={{ transform: `scale(${zoom}) rotate(${rotation}deg)` }}
@@ -170,7 +170,7 @@ export function GardenCanvas({ world, atmosphere }: GardenCanvasProps) {
         </div>
 
         {/* Flora container — wind sway applies to all plants when active */}
-        <div className={cn("absolute inset-0", isWindActive && "animate-wind-sway")}>
+        <div className={cn("absolute inset-0", isWindActive && "motion-safe:animate-wind-sway")}>
           {plants.map((plant) => (
             <PlantIcon key={plant.id} plant={plant} />
           ))}
@@ -185,7 +185,7 @@ export function GardenCanvas({ world, atmosphere }: GardenCanvasProps) {
 
         {/* Companion indicator */}
         <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-1">
-          <div className="animate-garden-breathe rounded-full bg-background/70 backdrop-blur-sm p-2 border border-border/30">
+          <div className="motion-safe:animate-garden-breathe rounded-full bg-background/70 backdrop-blur-sm p-2 border border-border/30">
             <Heart
               className={cn(
                 "w-5 h-5",
@@ -229,8 +229,8 @@ function PlantIcon({ plant }: { plant: GardenPlant }) {
   return (
     <div
       className={cn(
-        "absolute -translate-x-1/2 -translate-y-1/2 transition-none",
-        isMagnificent ? "animate-zen-glow-breathe" : "animate-garden-breathe"
+        "absolute -translate-x-1/2 -translate-y-1/2 motion-safe:transition-none",
+        isMagnificent ? "motion-safe:animate-zen-glow-breathe" : "motion-safe:animate-garden-breathe"
       )}
       style={{
         left: `${plant.position.x}%`,
@@ -256,7 +256,7 @@ function CreatureIcon({ creature }: { creature: GardenCreature }) {
   return (
     <div
       className={cn(
-        "absolute -translate-x-1/2 -translate-y-1/2 animate-zen-float",
+        "absolute -translate-x-1/2 -translate-y-1/2 motion-safe:animate-zen-float",
         isLegendary && "drop-shadow-[0_0_8px_currentColor]"
       )}
       style={{

@@ -3,7 +3,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 
 import { cn } from "@/lib/utils";
 
-const cardVariants = cva("rounded-xl text-card-foreground transition-colors", {
+const cardVariants = cva("rounded-xl text-card-foreground motion-safe:transition-colors", {
   variants: {
     elevation: {
       flat: "bg-card shadow-none",

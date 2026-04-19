@@ -62,7 +62,7 @@ export function IconSelector({
               setSelectedIcon(icon);
             }}
             className={cn(
-              "w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl flex items-center justify-center text-xl transition-all duration-200 cursor-pointer",
+              "w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl flex items-center justify-center text-xl motion-safe:transition-all motion-safe:duration-200 cursor-pointer",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
               isPrimaryCTA
                 ? selectedIcon === icon
@@ -138,7 +138,7 @@ export function ColorSelector({
                 setSelectedColorIndex(idx);
               }}
               className={cn(
-                "w-8 h-8 min-w-[44px] min-h-[44px] rounded-full transition-all duration-200 cursor-pointer",
+                "w-8 h-8 min-w-[44px] min-h-[44px] rounded-full motion-safe:transition-all motion-safe:duration-200 cursor-pointer",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
                 selectedColorIndex === idx
                   ? "ring-2 ring-offset-2 ring-foreground/50 scale-110"
@@ -207,7 +207,7 @@ export function TypeSelector({
               setHabitType(type);
             }}
             className={cn(
-              "p-3 rounded-xl text-sm font-medium transition-all duration-200 cursor-pointer min-h-[44px]",
+              "p-3 rounded-xl text-sm font-medium motion-safe:transition-all motion-safe:duration-200 cursor-pointer min-h-[44px]",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
               isPrimaryCTA
                 ? habitType === type
@@ -290,7 +290,7 @@ export function FrequencySelector({
               setFrequency(preset.ratio);
             }}
             className={cn(
-              "px-3 py-2 rounded-xl text-xs font-medium transition-all min-h-[44px]",
+              "px-3 py-2 rounded-xl text-xs font-medium motion-safe:transition-all min-h-[44px]",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
               activePresetIndex === idx
                 ? isPrimaryCTA
@@ -370,7 +370,7 @@ export function CategorySelector({
               setSelectedCategory(id);
             }}
             className={cn(
-              "p-2 rounded-xl text-xs font-medium transition-all flex flex-col items-center gap-1",
+              "p-2 rounded-xl text-xs font-medium motion-safe:transition-all flex flex-col items-center gap-1",
               selectedCategory === id
                 ? isPrimaryCTA
                   ? `bg-gradient-to-br ${color} text-white shadow-lg`

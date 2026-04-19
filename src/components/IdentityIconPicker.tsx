@@ -98,7 +98,7 @@ export function IdentityIconPicker({
             onChange(name);
           }}
           className={cn(
-            "w-9 h-9 min-w-[44px] min-h-[44px] rounded-lg flex items-center justify-center transition-all duration-200 cursor-pointer",
+            "w-9 h-9 min-w-[44px] min-h-[44px] rounded-lg flex items-center justify-center motion-safe:transition-all motion-safe:duration-200 cursor-pointer",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
             isPrimaryCTA
               ? value === name

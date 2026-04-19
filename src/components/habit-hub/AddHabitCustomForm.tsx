@@ -89,7 +89,7 @@ export function AddHabitCustomForm({
           autoFocus
           className={cn(
             'w-full px-4 py-3 rounded-xl text-sm text-foreground',
-            'bg-white/[0.05] border border-border transition-colors',
+            'bg-white/[0.05] border border-border motion-safe:transition-colors',
             'placeholder:text-muted-foreground/60',
             'focus:outline-none focus:ring-2 focus:ring-violet-500/50',
           )}
@@ -109,7 +109,7 @@ export function AddHabitCustomForm({
           aria-label={ts.questionPrompt || 'Question Prompt'}
           className={cn(
             'w-full px-4 py-2 rounded-xl text-xs text-muted-foreground',
-            'bg-white/[0.03] border border-border transition-colors',
+            'bg-white/[0.03] border border-border motion-safe:transition-colors',
             'placeholder:text-muted-foreground/60',
             'focus:outline-none focus:ring-2 focus:ring-violet-500/50',
           )}
@@ -132,7 +132,7 @@ export function AddHabitCustomForm({
               aria-label={`${ts.selectIcon || 'Icon'}: ${ic}`}
               aria-pressed={selectedIcon === ic}
               className={cn(
-                'w-11 h-11 rounded-xl flex items-center justify-center text-xl transition-all',
+                'w-11 h-11 rounded-xl flex items-center justify-center text-xl motion-safe:transition-all',
                 'border min-h-[44px] min-w-[44px]',
                 selectedIcon === ic
                   ? 'bg-violet-500/20 border-violet-500/40 scale-110 shadow-[0_0_12px_rgba(139,92,246,0.3)]'
@@ -158,7 +158,7 @@ export function AddHabitCustomForm({
               aria-label={`${ts.selectColor || 'Color'} ${idx + 1}`}
               aria-pressed={selectedColorIndex === idx}
               className={cn(
-                'w-7 h-7 rounded-full transition-all min-h-[44px] min-w-[44px] flex items-center justify-center',
+                'w-7 h-7 rounded-full motion-safe:transition-all min-h-[44px] min-w-[44px] flex items-center justify-center',
                 'border',
                 selectedColorIndex === idx
                   ? 'scale-110 border-white/40'
@@ -193,7 +193,7 @@ export function AddHabitCustomForm({
                 onClick={() => setHabitType(typ)}
                 aria-pressed={habitType === typ}
                 className={cn(
-                  'flex-1 px-3 py-2 rounded-xl text-xs font-medium transition-all min-h-[44px]',
+                  'flex-1 px-3 py-2 rounded-xl text-xs font-medium motion-safe:transition-all min-h-[44px]',
                   'border',
                   habitType === typ
                     ? 'bg-violet-500/20 border-violet-500/40 text-violet-300'
@@ -250,7 +250,7 @@ export function AddHabitCustomForm({
                 onClick={() => setTargetType('atLeast')}
                 aria-pressed={targetType === 'atLeast'}
                 className={cn(
-                  'flex-1 px-3 py-2 min-h-[44px] rounded-xl text-xs font-medium transition-all',
+                  'flex-1 px-3 py-2 min-h-[44px] rounded-xl text-xs font-medium motion-safe:transition-all',
                   'border',
                   targetType === 'atLeast'
                     ? 'bg-violet-500/20 border-violet-500/40 text-violet-300'
@@ -263,7 +263,7 @@ export function AddHabitCustomForm({
                 onClick={() => setTargetType('atMost')}
                 aria-pressed={targetType === 'atMost'}
                 className={cn(
-                  'flex-1 px-3 py-2 min-h-[44px] rounded-xl text-xs font-medium transition-all',
+                  'flex-1 px-3 py-2 min-h-[44px] rounded-xl text-xs font-medium motion-safe:transition-all',
                   'border',
                   targetType === 'atMost'
                     ? 'bg-violet-500/20 border-violet-500/40 text-violet-300'
@@ -292,7 +292,7 @@ export function AddHabitCustomForm({
               onClick={() => setSelectedCategory(cat.id)}
               aria-pressed={selectedCategory === cat.id}
               className={cn(
-                'px-3 py-2 rounded-xl text-xs font-medium transition-all min-h-[44px]',
+                'px-3 py-2 rounded-xl text-xs font-medium motion-safe:transition-all min-h-[44px]',
                 'border flex items-center gap-1.5',
                 selectedCategory === cat.id
                   ? `bg-gradient-to-r ${cat.color} text-white border-transparent shadow-lg`
@@ -311,7 +311,7 @@ export function AddHabitCustomForm({
         <button
           onClick={handleClose}
           className={cn(
-            'flex-1 px-4 py-3 rounded-xl text-sm font-medium transition-colors min-h-[44px]',
+            'flex-1 px-4 py-3 rounded-xl text-sm font-medium motion-safe:transition-colors min-h-[44px]',
             'bg-white/[0.05] border border-border text-muted-foreground',
             'hover:bg-white/[0.08]',
           )}
@@ -322,7 +322,7 @@ export function AddHabitCustomForm({
           onClick={submitHabit}
           disabled={!newHabitName.trim() || isAtLimit}
           className={cn(
-            'flex-1 px-4 py-3 rounded-xl text-sm font-semibold transition-all min-h-[44px]',
+            'flex-1 px-4 py-3 rounded-xl text-sm font-semibold motion-safe:transition-all min-h-[44px]',
             'bg-gradient-to-r from-violet-600 to-purple-600 text-white',
             'hover:from-violet-500 hover:to-purple-500 active:scale-[0.98]',
             'shadow-[0_0_20px_rgba(139,92,246,0.25)]',

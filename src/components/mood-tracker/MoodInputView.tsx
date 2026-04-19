@@ -58,7 +58,7 @@ export function MoodInputView({
   return (
     <div
       className={cn(
-        "rounded-2xl p-6 animate-fade-in transition-all relative overflow-hidden",
+        "rounded-2xl p-6 motion-safe:animate-fade-in motion-safe:transition-all relative overflow-hidden",
         isPrimaryCTA
           ? "bg-gradient-to-br from-primary/15 via-card to-accent/15 ring-2 ring-primary/40 shadow-lg shadow-primary/20"
           : "bg-card zen-shadow-card"
@@ -66,7 +66,7 @@ export function MoodInputView({
     >
       {/* Animated background glow for CTA */}
       {isPrimaryCTA && (
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-accent/5 animate-pulse" />
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-accent/5 motion-safe:animate-pulse" />
       )}
 
       {/* Back button if adding new entry */}
@@ -132,7 +132,7 @@ export function MoodInputView({
             aria-label={mood.label}
             tabIndex={selectedMood === mood.type || (!selectedMood && index === 0) ? 0 : -1}
             className={cn(
-              "mood-btn flex flex-col items-center gap-1 p-2 sm:p-3 rounded-xl transition-all relative min-w-[56px] min-h-[56px]",
+              "mood-btn flex flex-col items-center gap-1 p-2 sm:p-3 rounded-xl motion-safe:transition-all relative min-w-[56px] min-h-[56px]",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
               selectedMood === mood.type
                 ? `${mood.color} bg-opacity-20 zen-shadow-soft selected ring-2 ring-primary/50`
@@ -161,13 +161,13 @@ export function MoodInputView({
       </div>
 
       {selectedMood && (
-        <div className="animate-slide-up relative">
+        <div className="motion-safe:animate-slide-up relative">
           <textarea
             value={note}
             onChange={(e) => onNoteChange(e.target.value)}
             placeholder={t.addNote}
             aria-label={t.addNote || "Add a note about your mood"}
-            className="w-full p-4 bg-secondary rounded-lg text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+            className="w-full p-4 bg-secondary rounded-lg text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 motion-safe:transition-all"
             rows={2}
             onFocus={(e) => {
               const el = e.target;
@@ -177,7 +177,7 @@ export function MoodInputView({
           <button
             onClick={onSubmit}
             className={cn(
-              "btn-press mt-4 w-full py-4 zen-gradient text-primary-foreground font-bold rounded-xl transition-all",
+              "btn-press mt-4 w-full py-4 zen-gradient text-primary-foreground font-bold rounded-xl motion-safe:transition-all",
               "hover:opacity-90 hover:scale-[1.02] active:scale-[0.98]",
               "zen-shadow-soft hover:zen-shadow-glow",
               isPrimaryCTA && "text-lg"
@@ -190,7 +190,7 @@ export function MoodInputView({
 
       {/* Hint for Primary CTA */}
       {isPrimaryCTA && !selectedMood && (
-        <p className="text-center text-sm text-muted-foreground mt-2 animate-fade-in relative">
+        <p className="text-center text-sm text-muted-foreground mt-2 motion-safe:animate-fade-in relative">
           {t.tapToStart || "Tap an emoji to start your day"}
         </p>
       )}

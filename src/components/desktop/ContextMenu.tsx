@@ -22,14 +22,14 @@ export function ContextMenu({ trigger, items, enabled = true }: ContextMenuProps
     <RadixContextMenu.Root>
       <RadixContextMenu.Trigger asChild>{trigger}</RadixContextMenu.Trigger>
       <RadixContextMenu.Portal>
-        <RadixContextMenu.Content className="z-[75] min-w-[180px] rounded-xl border border-border/20 bg-card/95 backdrop-blur-xl p-1.5 shadow-lg animate-in fade-in zoom-in-95 duration-150">
+        <RadixContextMenu.Content className="z-[75] min-w-[180px] rounded-xl border border-border/20 bg-card/95 backdrop-blur-xl p-1.5 shadow-lg motion-safe:animate-in fade-in zoom-in-95 motion-safe:duration-150">
           {items.map((item, i) => (
             <RadixContextMenu.Item
               key={i}
               onSelect={item.action}
               className={cn(
                 "flex items-center gap-2 px-3 py-2 rounded-lg text-sm cursor-pointer outline-none min-h-[36px]",
-                "data-[highlighted]:bg-muted transition-colors",
+                "data-[highlighted]:bg-muted motion-safe:transition-colors",
                 item.destructive && "text-destructive"
               )}
             >

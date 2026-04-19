@@ -188,7 +188,7 @@ export function QuestsPanel({ onClose }: QuestsPanelProps) {
               <button
                 onClick={onClose}
                 aria-label={t.close || "Close"}
-                className="p-3 rounded-xl bg-muted hover:bg-muted/80 transition-colors"
+                className="p-3 rounded-xl bg-muted hover:bg-muted/80 motion-safe:transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -217,7 +217,7 @@ export function QuestsPanel({ onClose }: QuestsPanelProps) {
               </div>
               <button
                 onClick={handleRefreshDaily}
-                className="text-sm px-3 py-1 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg transition-colors"
+                className="text-sm px-3 py-1 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg motion-safe:transition-colors"
               >
                 {t.newQuest}
               </button>
@@ -234,7 +234,7 @@ export function QuestsPanel({ onClose }: QuestsPanelProps) {
               </div>
               <button
                 onClick={handleRefreshWeekly}
-                className="text-sm px-3 py-1 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg transition-colors"
+                className="text-sm px-3 py-1 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg motion-safe:transition-colors"
               >
                 {t.newQuest}
               </button>
@@ -255,7 +255,7 @@ export function QuestsPanel({ onClose }: QuestsPanelProps) {
               {(!bonusQuest || shouldRegenerateQuest(bonusQuest)) && (
                 <button
                   onClick={handleGenerateBonus}
-                  className="text-sm px-3 py-1 zen-gradient text-white rounded-lg hover:opacity-90 transition-opacity"
+                  className="text-sm px-3 py-1 zen-gradient text-white rounded-lg hover:opacity-90 motion-safe:transition-opacity"
                 >
                   {t.generate}
                 </button>

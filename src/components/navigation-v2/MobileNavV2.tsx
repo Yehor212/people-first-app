@@ -74,7 +74,7 @@ export const MobileNavV2 = memo(function MobileNavV2({
               className={cn(
                 "flex flex-1 flex-col items-center justify-center gap-0.5 min-w-0",
                 "rounded-xl px-2 py-2 min-h-[48px]",
-                "transition-all duration-200",
+                "motion-safe:transition-all motion-safe:duration-200",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1",
                 isActive
                   ? "bg-paper-surface text-ink-primary"

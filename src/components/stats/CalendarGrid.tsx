@@ -89,7 +89,7 @@ export function CalendarGrid({
               {/* Crystal shape (rotated square) with animated glow */}
               <motion.div
                 className={cn(
-                  "absolute inset-1 rotate-45 rounded-sm border transition-all duration-200",
+                  "absolute inset-1 rotate-45 rounded-sm border motion-safe:transition-all motion-safe:duration-200",
                   "bg-gradient-to-br",
                   crystalStyles.bg,
                   crystalStyles.border,

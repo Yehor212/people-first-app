@@ -133,7 +133,7 @@ export function PremiumDayPill({
       whileHover={{ scale: 1.1, y: -4 }}
       whileTap={zenTap.button}
       className={cn(
-        "snap-start relative flex-shrink-0 flex flex-col items-center py-3 px-4 rounded-2xl transition-all duration-300 min-w-[60px]",
+        "snap-start relative flex-shrink-0 flex flex-col items-center py-3 px-4 rounded-2xl motion-safe:transition-all motion-safe:duration-300 min-w-[60px]",
         "backdrop-blur-md border [perspective:500px]",
         isSelected
           ? "bg-gradient-to-br from-primary/40 to-accent/30 border-primary/50 shadow-lg shadow-primary/30"

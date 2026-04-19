@@ -121,7 +121,7 @@ export function PullToRefresh({
     >
       {/* Error feedback banner */}
       {error && (
-        <div className="absolute left-4 right-4 top-2 z-20 flex items-center gap-2 rounded-xl bg-red-500/10 border border-red-500/20 px-3 py-2 animate-fade-in">
+        <div className="absolute left-4 right-4 top-2 z-20 flex items-center gap-2 rounded-xl bg-red-500/10 border border-red-500/20 px-3 py-2 motion-safe:animate-fade-in">
           <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
           <span className="text-xs text-red-600 dark:text-red-400">
             {t.syncRefreshFailed || "Sync paused — pull again to retry"}
@@ -131,7 +131,7 @@ export function PullToRefresh({
 
       {/* Pull indicator */}
       <div
-        className="absolute left-0 right-0 flex items-center justify-center overflow-hidden transition-all duration-150 ease-out"
+        className="absolute left-0 right-0 flex items-center justify-center overflow-hidden motion-safe:transition-all motion-safe:duration-150 ease-out"
         style={{
           height: refreshing ? 48 : pullDistance,
           top: 0,
@@ -142,7 +142,7 @@ export function PullToRefresh({
           className={cn(
             "flex items-center justify-center w-10 h-10 rounded-full",
             error ? "bg-red-500/10" : "bg-primary/10",
-            refreshing && "animate-pulse"
+            refreshing && "motion-safe:animate-pulse"
           )}
           style={{
             opacity: refreshing ? 1 : progress,
@@ -162,7 +162,7 @@ export function PullToRefresh({
       {/* Content with offset during pull */}
       <div
         className={
-          pullDistance > 0 || refreshing ? "transition-transform duration-150 ease-out" : ""
+          pullDistance > 0 || refreshing ? "motion-safe:transition-transform motion-safe:duration-150 ease-out" : ""
         }
         style={
           pullDistance > 0 || refreshing

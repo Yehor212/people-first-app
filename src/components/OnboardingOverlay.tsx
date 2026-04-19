@@ -103,7 +103,7 @@ export function WelcomeOverlay({ onClose }: { onClose: () => void }) {
                   onClose();
                 }}
                 aria-label={t.close}
-                className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors"
+                className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/5 rounded-lg motion-safe:transition-colors"
               >
                 <X className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground" />
               </button>
@@ -123,7 +123,7 @@ export function WelcomeOverlay({ onClose }: { onClose: () => void }) {
               {steps.map((_, i) => (
                 <div
                   key={i}
-                  className={`h-1.5 sm:h-2 rounded-full transition-all duration-300 ${
+                  className={`h-1.5 sm:h-2 rounded-full motion-safe:transition-all motion-safe:duration-300 ${
                     i === step
                       ? "w-6 sm:w-8 bg-primary"
                       : i < step
@@ -137,7 +137,7 @@ export function WelcomeOverlay({ onClose }: { onClose: () => void }) {
             {/* Action button - responsive */}
             <button
               onClick={handleNext}
-              className="w-full py-2.5 sm:py-3 px-4 bg-primary text-primary-foreground rounded-lg sm:rounded-xl font-medium hover:bg-primary/90 transition-colors zen-shadow-sm flex items-center justify-center gap-2 text-sm sm:text-base"
+              className="w-full py-2.5 sm:py-3 px-4 bg-primary text-primary-foreground rounded-lg sm:rounded-xl font-medium hover:bg-primary/90 motion-safe:transition-colors zen-shadow-sm flex items-center justify-center gap-2 text-sm sm:text-base"
             >
               {step < steps.length - 1
                 ? t.onboardingNext || "Next"
@@ -184,7 +184,7 @@ export function DayProgressIndicator() {
       {/* Progress bar */}
       <div className="w-full h-1.5 sm:h-2 bg-border rounded-full overflow-hidden">
         <div
-          className="h-full bg-primary transition-all duration-500 ease-out"
+          className="h-full bg-primary motion-safe:transition-all motion-safe:duration-500 ease-out"
           style={{
             width: `${(progress.unlockedCount / progress.totalCount) * 100}%`,
           }}

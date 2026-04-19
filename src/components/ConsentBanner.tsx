@@ -33,7 +33,7 @@ export function ConsentBanner({ onConsent }: ConsentBannerProps) {
 
   return (
     <div
-      className="fixed inset-0 flex items-end sm:items-center justify-center p-4 sm:pb-4 bg-black/50 backdrop-blur-sm animate-fade-in"
+      className="fixed inset-0 flex items-end sm:items-center justify-center p-4 sm:pb-4 bg-black/50 backdrop-blur-sm motion-safe:animate-fade-in"
       style={{
         zIndex: "var(--z-overlay)",
         paddingBottom: "calc(var(--nav-height) + var(--safe-bottom))",
@@ -45,7 +45,7 @@ export function ConsentBanner({ onConsent }: ConsentBannerProps) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="consent-title"
-        className="w-full max-w-md bg-card rounded-2xl p-4 sm:p-6 shadow-2xl animate-scale-in max-h-[80dvh] overflow-y-auto"
+        className="w-full max-w-md bg-card rounded-2xl p-4 sm:p-6 shadow-2xl motion-safe:animate-scale-in max-h-[80dvh] overflow-y-auto"
       >
         <div className="flex items-center gap-3 mb-4">
           <div className="p-2 bg-primary/10 rounded-xl">
@@ -79,13 +79,13 @@ export function ConsentBanner({ onConsent }: ConsentBannerProps) {
         <div className="flex gap-3">
           <button
             onClick={handleDecline}
-            className="flex-1 py-3 bg-secondary text-secondary-foreground rounded-xl font-medium hover:bg-muted transition-colors"
+            className="flex-1 py-3 bg-secondary text-secondary-foreground rounded-xl font-medium hover:bg-muted motion-safe:transition-colors"
           >
             {t.consentDecline || "No thanks"}
           </button>
           <button
             onClick={handleAccept}
-            className="flex-1 py-3 zen-gradient text-primary-foreground rounded-xl font-medium hover:opacity-90 transition-opacity"
+            className="flex-1 py-3 zen-gradient text-primary-foreground rounded-xl font-medium hover:opacity-90 motion-safe:transition-opacity"
           >
             {t.consentAccept || "Allow"}
           </button>

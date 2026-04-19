@@ -31,7 +31,7 @@ export function StatsTab({
   const userName = useUserDataStore((s) => s.userName);
 
   return (
-    <div className="animate-tab-enter">
+    <div className="motion-safe:animate-tab-enter">
       <Header userName={userName} />
       <PullToRefresh onRefresh={handlePullToRefresh}>
         <LazyErrorBoundary componentName="Stats">

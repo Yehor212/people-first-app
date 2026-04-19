@@ -85,11 +85,11 @@ export function WelcomeBackModal({
         onClick={onClose}
         aria-hidden="true"
       />
-      <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in md:mx-auto md:my-6 md:max-w-lg md:rounded-2xl md:shadow-2xl">
+      <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm motion-safe:animate-fade-in md:mx-auto md:my-6 md:max-w-lg md:rounded-2xl md:shadow-2xl">
         <div
           {...modalProps}
           aria-labelledby="welcome-back-title"
-          className="relative m-4 max-w-lg w-full bg-card rounded-2xl zen-shadow-card border border-border overflow-hidden animate-scale-in"
+          className="relative m-4 max-w-lg w-full bg-card rounded-2xl zen-shadow-card border border-border overflow-hidden motion-safe:animate-scale-in"
         >
           {/* Header */}
           <div className="p-6 bg-gradient-to-r from-primary/10 to-primary/5 border-b border-border">
@@ -113,7 +113,7 @@ export function WelcomeBackModal({
               <button
                 onClick={onClose}
                 aria-label={t.close || "Close"}
-                className="p-2 min-w-[44px] min-h-[44px] inline-flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors"
+                className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg motion-safe:transition-colors"
               >
                 <X className="w-5 h-5 text-muted-foreground" />
               </button>
@@ -230,7 +230,7 @@ export function WelcomeBackModal({
                 whileHover={zenHover.lift}
                 whileTap={zenTap.button}
                 onClick={handleAcceptChallenge}
-                className="w-full py-2.5 px-4 bg-gradient-to-r from-violet-500 to-purple-500 text-white rounded-xl font-medium hover:from-violet-600 hover:to-purple-600 transition-all zen-shadow-sm flex items-center justify-center gap-2"
+                className="w-full py-2.5 px-4 bg-gradient-to-r from-violet-500 to-purple-500 text-white rounded-xl font-medium hover:from-violet-600 hover:to-purple-600 motion-safe:transition-all zen-shadow-sm flex items-center justify-center gap-2"
               >
                 <Target className="w-4 h-4" />
                 {t.comebackChallengeAccept || "Accept Challenge"}
@@ -251,7 +251,7 @@ export function WelcomeBackModal({
                     <button
                       key={mood.value}
                       onClick={() => handleMoodSelect(mood.value)}
-                      className={`p-3 rounded-xl transition-all ${
+                      className={`p-3 rounded-xl motion-safe:transition-all ${
                         selectedMood === mood.value
                           ? "bg-primary text-primary-foreground scale-110 zen-shadow-sm"
                           : "bg-accent hover:bg-accent/80"
@@ -273,7 +273,7 @@ export function WelcomeBackModal({
             {/* Continue Button */}
             <button
               onClick={handleContinue}
-              className="w-full py-3 px-4 bg-primary text-primary-foreground rounded-xl font-medium hover:bg-primary/90 transition-colors zen-shadow-sm"
+              className="w-full py-3 px-4 bg-primary text-primary-foreground rounded-xl font-medium hover:bg-primary/90 motion-safe:transition-colors zen-shadow-sm"
             >
               {t.reengageContinue || "Let's continue!"}
             </button>

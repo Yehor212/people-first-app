@@ -69,7 +69,7 @@ function FlyingEmojiItem({ emoji, onComplete }: { emoji: FlyingEmoji; onComplete
     <div
       className={cn(
         "fixed pointer-events-none z-[90] text-4xl",
-        "transition-all duration-600 ease-out",
+        "motion-safe:transition-all motion-safe:duration-600 ease-out",
         stage === 'start' && "scale-100 opacity-100",
         stage === 'fly' && "scale-75 opacity-90",
         stage === 'land' && "scale-50 opacity-0"
@@ -115,7 +115,7 @@ export function CalendarLandingEffect({ isActive }: { isActive: boolean }) {
   return (
     <div className="absolute inset-0 pointer-events-none">
       <div className="absolute inset-0 animate-ping bg-primary/20 rounded-full" />
-      <div className="absolute inset-0 animate-pulse bg-primary/10 rounded-full" />
+      <div className="absolute inset-0 motion-safe:animate-pulse bg-primary/10 rounded-full" />
     </div>
   );
 }

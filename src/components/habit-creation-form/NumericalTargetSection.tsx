@@ -107,7 +107,7 @@ export function NumericalTargetSection({
               setTargetType(tt);
             }}
             className={cn(
-              "flex-1 px-3 py-2 rounded-xl text-xs font-medium transition-all min-h-[44px]",
+              "flex-1 px-3 py-2 rounded-xl text-xs font-medium motion-safe:transition-all min-h-[44px]",
               targetType === tt
                 ? isPrimaryCTA
                   ? "bg-emerald-500/20 border border-emerald-500/40 text-emerald-300"

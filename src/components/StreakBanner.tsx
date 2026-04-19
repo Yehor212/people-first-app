@@ -90,7 +90,7 @@ export const StreakBanner = memo(function StreakBanner({ moods, habits, focusSes
 
   return (
     <div className={cn(
-      "relative overflow-hidden rounded-2xl p-3 transition-all",
+      "relative overflow-hidden rounded-2xl p-3 motion-safe:transition-all",
       streak >= 7
         ? "bg-gradient-to-r from-yellow-500/20 via-orange-500/20 to-red-500/20 dark:from-yellow-500/30 dark:via-orange-500/30 dark:to-red-500/30 ring-1 ring-yellow-500/30"
         : streak >= 3
@@ -101,7 +101,7 @@ export const StreakBanner = memo(function StreakBanner({ moods, habits, focusSes
       {streak >= 7 && (
         <div className={cn(
           "absolute inset-0 bg-gradient-to-r from-yellow-500/10 via-transparent to-orange-500/10",
-          showAnimations && "animate-pulse"
+          showAnimations && "motion-safe:animate-pulse"
         )} />
       )}
 
@@ -182,7 +182,7 @@ export const StreakBanner = memo(function StreakBanner({ moods, habits, focusSes
                   key={activity.id}
                   className={cn(
                     "relative w-7 h-7 rounded-full flex items-center justify-center",
-                    "border transition-all",
+                    "border motion-safe:transition-all",
                     activity.done
                       ? `bg-gradient-to-br ${activity.gradient} border-white/30`
                       : "bg-foreground/5 dark:bg-foreground/5 border-foreground/10"
@@ -255,7 +255,7 @@ export const StreakBanner = memo(function StreakBanner({ moods, habits, focusSes
               setShowShareModal(true);
             }}
             className={cn(
-              "p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg transition-colors flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+              "p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg motion-safe:transition-colors flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
               streak >= 7
                 ? "bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-500"
                 : "bg-orange-500/20 hover:bg-orange-500/30 text-orange-500"
@@ -271,7 +271,7 @@ export const StreakBanner = memo(function StreakBanner({ moods, habits, focusSes
       <div className="mt-2 h-1 bg-muted/50 rounded-full overflow-hidden">
         <div
           className={cn(
-            "h-full rounded-full transition-transform duration-500 origin-left rtl:origin-right",
+            "h-full rounded-full motion-safe:transition-transform motion-safe:duration-500 origin-left rtl:origin-right",
             todayProgress.completed === 4
               ? "bg-gradient-to-r from-green-500 to-emerald-500"
               : "bg-gradient-to-r from-primary to-accent"
@@ -286,7 +286,7 @@ export const StreakBanner = memo(function StreakBanner({ moods, habits, focusSes
           {canActivateRestMode ? (
             <button
               onClick={onRestMode}
-              className="w-full py-2.5 flex items-center justify-center gap-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 rounded-xl transition-colors text-sm font-medium"
+              className="w-full py-2.5 flex items-center justify-center gap-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 rounded-xl motion-safe:transition-colors text-sm font-medium"
             >
               <Moon className="w-4 h-4" />
               {t.restDayButton}

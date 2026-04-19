@@ -94,16 +94,16 @@ export function NotificationPermission({ onComplete }: NotificationPermissionPro
         aria-hidden="true"
       />
       <div
-        className="fixed inset-0 bg-background/95 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-fade-in md:mx-auto md:my-6 md:max-w-lg md:rounded-2xl md:shadow-2xl"
+        className="fixed inset-0 bg-background/95 backdrop-blur-sm z-[60] flex items-center justify-center p-4 motion-safe:animate-fade-in md:mx-auto md:my-6 md:max-w-lg md:rounded-2xl md:shadow-2xl"
         role="dialog"
         aria-modal="true"
         aria-label={t.ariaNotificationPermission}
       >
-        <div className="w-full max-w-md bg-card rounded-2xl p-4 sm:p-6 zen-shadow-card animate-scale-in">
+        <div className="w-full max-w-md bg-card rounded-2xl p-4 sm:p-6 zen-shadow-card motion-safe:animate-scale-in">
           {/* Close button */}
           <button
             onClick={handleDeny}
-            className="absolute top-4 end-4 p-2 text-muted-foreground hover:text-foreground transition-colors"
+            className="absolute top-4 end-4 p-2 text-muted-foreground hover:text-foreground motion-safe:transition-colors"
             aria-label={t.close || "Close"}
           >
             <X className="w-5 h-5" />
@@ -168,13 +168,13 @@ export function NotificationPermission({ onComplete }: NotificationPermissionPro
           <div className="space-y-3">
             <button
               onClick={handleAllow}
-              className="btn-press w-full py-3 zen-gradient text-primary-foreground font-semibold rounded-xl zen-shadow-soft hover:opacity-90 transition-opacity"
+              className="btn-press w-full py-3 zen-gradient text-primary-foreground font-semibold rounded-xl zen-shadow-soft hover:opacity-90 motion-safe:transition-opacity"
             >
               {t.notificationAllow || "Enable Notifications"}
             </button>
             <button
               onClick={handleDeny}
-              className="btn-press w-full py-3 bg-secondary text-secondary-foreground font-medium rounded-xl hover:bg-muted transition-colors"
+              className="btn-press w-full py-3 bg-secondary text-secondary-foreground font-medium rounded-xl hover:bg-muted motion-safe:transition-colors"
             >
               {t.notificationDeny || "Maybe Later"}
             </button>

@@ -113,7 +113,7 @@ export const KeyboardShortcutsOverlay = memo(function KeyboardShortcutsOverlay({
               </h2>
               <button
                 onClick={onClose}
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground motion-safe:transition-colors hover:bg-muted hover:text-foreground"
                 aria-label="Close"
               >
                 <X size={18} />

@@ -113,7 +113,7 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit, ac
               <button
                 onClick={resetForm}
                 aria-label={ts.back || 'Back'}
-                className="w-8 h-8 rounded-xl flex items-center justify-center bg-white/[0.06] border border-white/[0.10] min-h-[44px] min-w-[44px] hover:bg-white/[0.10] transition-colors"
+                className="w-8 h-8 rounded-xl flex items-center justify-center bg-white/[0.06] border border-white/[0.10] min-h-[44px] min-w-[44px] hover:bg-white/[0.10] motion-safe:transition-colors"
               >
                 <ChevronLeft className="w-4 h-4 text-muted-foreground rtl:scale-x-[-1]" />
               </button>
@@ -160,7 +160,7 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit, ac
                       onClick={() => { if (isAtLimit || isQuickAddProcessing.current) return; isQuickAddProcessing.current = true; handleQuickAdd(tmpl.id); }}
                       disabled={isAtLimit}
                       className={cn(
-                        'flex flex-col items-center justify-center gap-3 p-4 rounded-2xl transition-all',
+                        'flex flex-col items-center justify-center gap-3 p-4 rounded-2xl motion-safe:transition-all',
                         'bg-white/[0.04] border border-white/[0.08]',
                         'hover:bg-white/[0.07] hover:scale-[1.03] active:scale-95',
                         'min-h-[104px] relative overflow-hidden group',
@@ -168,7 +168,7 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit, ac
                     >
                       {/* Colored glow orb — ambient background */}
                       <div
-                        className="absolute top-1/2 start-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 rounded-full opacity-[0.10] blur-2xl group-hover:opacity-[0.18] transition-opacity"
+                        className="absolute top-1/2 start-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 rounded-full opacity-[0.10] blur-2xl group-hover:opacity-[0.18] motion-safe:transition-opacity"
                         style={{ backgroundColor: color }}
                       />
 
@@ -178,13 +178,13 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit, ac
                       </span>
 
                       {/* Localized name */}
-                      <span className="text-[11px] font-medium text-muted-foreground relative z-10 text-center leading-tight line-clamp-2 group-hover:text-muted-foreground transition-colors">
+                      <span className="text-[11px] font-medium text-muted-foreground relative z-10 text-center leading-tight line-clamp-2 group-hover:text-muted-foreground motion-safe:transition-colors">
                         {tmpl.names[language] || tmpl.names.en}
                       </span>
 
                       {/* Bottom accent line in habit color */}
                       <div
-                        className="absolute bottom-0 start-4 end-4 h-[2px] rounded-full opacity-30 group-hover:opacity-50 transition-opacity"
+                        className="absolute bottom-0 start-4 end-4 h-[2px] rounded-full opacity-30 group-hover:opacity-50 motion-safe:transition-opacity"
                         style={{ backgroundColor: color }}
                       />
                     </button>
@@ -198,7 +198,7 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit, ac
                 <button
                   onClick={() => setShowCustomForm(true)}
                   className={cn(
-                    'flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-medium transition-all min-h-[44px]',
+                    'flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-medium motion-safe:transition-all min-h-[44px]',
                     'text-violet-400 hover:text-violet-300',
                     'border border-violet-500/20 bg-violet-500/[0.06]',
                     'hover:bg-violet-500/[0.10] hover:border-violet-500/30',

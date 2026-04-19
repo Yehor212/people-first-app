@@ -128,7 +128,7 @@ export const TypewriterText = memo(function TypewriterText({ className, onPrompt
         {reducedMotion ? currentPrompt : displayText}
       </span>
       {!reducedMotion && (phase === "typing" || phase === "holding" || phase === "erasing") && (
-        <span className="animate-pulse text-primary/60">|</span>
+        <span className="motion-safe:animate-pulse text-primary/60">|</span>
       )}
     </p>
   );

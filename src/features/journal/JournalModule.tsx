@@ -584,7 +584,7 @@ export const JournalModule = memo(function JournalModule({
           "bg-gradient-to-br from-purple-500/10 via-violet-500/5 to-card/80",
           "backdrop-blur-md border border-purple-500/15 dark:border-purple-500/10",
           "shadow-[0_2px_20px_rgba(139,92,246,0.08)]",
-          "transition-all duration-300",
+          "motion-safe:transition-all motion-safe:duration-300",
           "hover:shadow-[0_4px_25px_rgba(139,92,246,0.15)]"
         )}
       >
@@ -666,7 +666,7 @@ export const JournalModule = memo(function JournalModule({
       aria-modal="true"
       aria-label={ts.journalTitle || "Diary"}
       className={cn(
-        "fixed inset-0 z-[60] bg-background flex items-start justify-center animate-slide-up h-screen overflow-hidden",
+        "fixed inset-0 z-[60] bg-background flex items-start justify-center motion-safe:animate-slide-up h-screen overflow-hidden",
         "md:bg-background/80 md:backdrop-blur-sm",
         "lg:left-[var(--sidebar-width,256px)] lg:bg-background lg:backdrop-blur-none lg:transition-[left] lg:duration-300 lg:items-stretch"
       )}
@@ -708,7 +708,7 @@ export const JournalModule = memo(function JournalModule({
             {/* Secure password reset dialog (email verification) */}
             {resetStep !== "idle" && (
               <div
-                className="fixed inset-0 z-[70] bg-black/50 flex items-center justify-center animate-fade-in"
+                className="fixed inset-0 z-[70] bg-black/50 flex items-center justify-center motion-safe:animate-fade-in"
                 onClick={closeResetDialog}
               >
                 <motion.div
@@ -829,13 +829,13 @@ export const JournalModule = memo(function JournalModule({
                       </div>
                       <button
                         onClick={handleSendResetLink}
-                        className="w-full py-2 text-xs text-muted-foreground hover:text-foreground transition-colors min-h-[44px]"
+                        className="w-full py-2 text-xs text-muted-foreground hover:text-foreground motion-safe:transition-colors min-h-[44px]"
                       >
                         {ts.journalResetResend || "Resend link"}
                       </button>
                       <button
                         onClick={closeResetDialog}
-                        className="w-full py-2 text-xs text-muted-foreground hover:text-foreground transition-colors min-h-[44px]"
+                        className="w-full py-2 text-xs text-muted-foreground hover:text-foreground motion-safe:transition-colors min-h-[44px]"
                       >
                         {ts.cancel || "Cancel"}
                       </button>
@@ -966,7 +966,7 @@ export const JournalModule = memo(function JournalModule({
                             {ts.journalTitle || "Diary"}
                           </h2>
                           {streak > 0 && (
-                            <span className="text-[10px] font-bold text-orange-500 bg-gradient-to-r from-orange-500/15 to-amber-500/10 border border-orange-500/10 px-1.5 py-0.5 rounded-full flex-shrink-0 animate-streak-fire-glow">
+                            <span className="text-[10px] font-bold text-orange-500 bg-gradient-to-r from-orange-500/15 to-amber-500/10 border border-orange-500/10 px-1.5 py-0.5 rounded-full flex-shrink-0 motion-safe:animate-streak-fire-glow">
                               {streak} {"\u{1F525}"}
                             </span>
                           )}
@@ -1090,7 +1090,7 @@ export const JournalModule = memo(function JournalModule({
                           }
                           void haptics.light();
                         }}
-                        className="absolute ltr:left-2 rtl:right-2 top-3 z-40 p-2 bg-card rounded-lg shadow-md hover:bg-accent transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+                        className="absolute ltr:left-2 rtl:right-2 top-3 z-40 p-2 bg-card rounded-lg shadow-md hover:bg-accent motion-safe:transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
                         aria-label={
                           isExpanded
                             ? ts.diarySidebarHide || "Hide entries"
@@ -1278,7 +1278,7 @@ export const JournalModule = memo(function JournalModule({
                               {ts.journalTitle || "Diary"}
                             </h2>
                             {streak > 0 && (
-                              <span className="text-[10px] font-bold text-orange-500 bg-gradient-to-r from-orange-500/15 to-amber-500/10 border border-orange-500/10 px-1.5 py-0.5 rounded-full flex-shrink-0 animate-streak-fire-glow">
+                              <span className="text-[10px] font-bold text-orange-500 bg-gradient-to-r from-orange-500/15 to-amber-500/10 border border-orange-500/10 px-1.5 py-0.5 rounded-full flex-shrink-0 motion-safe:animate-streak-fire-glow">
                                 {streak} {"\u{1F525}"}
                               </span>
                             )}
@@ -1358,7 +1358,7 @@ export const JournalModule = memo(function JournalModule({
                         {!isLgScreen && showPasswordSettings && (
                           <>
                             <div
-                              className="fixed inset-0 z-[64] bg-black/30 animate-fade-in"
+                              className="fixed inset-0 z-[64] bg-black/30 motion-safe:animate-fade-in"
                               onClick={() => {
                                 setShowPasswordSettings(false);
                                 setShowChangePassword(false);
@@ -1368,7 +1368,7 @@ export const JournalModule = memo(function JournalModule({
                               role="dialog"
                               aria-modal="true"
                               aria-label={ts.journalSettings || "Diary Settings"}
-                              className="fixed bottom-0 inset-x-0 z-[65] animate-slide-up pb-safe lg:max-w-4xl lg:mx-auto"
+                              className="fixed bottom-0 inset-x-0 z-[65] motion-safe:animate-slide-up pb-safe lg:max-w-4xl lg:mx-auto"
                               onClick={(e) => e.stopPropagation()}
                             >
                               {/* Handle bar */}
@@ -1399,7 +1399,7 @@ export const JournalModule = memo(function JournalModule({
                                       />
                                       <button
                                         onClick={() => setShowChangePassword(false)}
-                                        className="w-full mt-2 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors min-h-[44px]"
+                                        className="w-full mt-2 py-2 text-xs text-muted-foreground hover:text-foreground motion-safe:transition-colors min-h-[44px]"
                                       >
                                         {ts.cancel || "Cancel"}
                                       </button>
@@ -1681,7 +1681,7 @@ export const JournalModule = memo(function JournalModule({
       {isLgScreen && showPasswordSettings && (
         <>
           <div
-            className="fixed inset-0 z-[64] bg-black/30 animate-fade-in"
+            className="fixed inset-0 z-[64] bg-black/30 motion-safe:animate-fade-in"
             onClick={() => {
               setShowPasswordSettings(false);
               setShowChangePassword(false);
@@ -1729,7 +1729,7 @@ export const JournalModule = memo(function JournalModule({
                     />
                     <button
                       onClick={() => setShowChangePassword(false)}
-                      className="w-full mt-2 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors min-h-[44px]"
+                      className="w-full mt-2 py-2 text-xs text-muted-foreground hover:text-foreground motion-safe:transition-colors min-h-[44px]"
                     >
                       {ts.cancel || "Cancel"}
                     </button>

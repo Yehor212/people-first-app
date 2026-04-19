@@ -151,7 +151,7 @@ export const HomeTab = memo(function HomeTab({
   );
 
   return (
-    <div className="animate-tab-enter">
+    <div className="motion-safe:animate-tab-enter">
       <PullToRefresh onRefresh={handlePullToRefresh}>
         <InstallBanner />
         <Header

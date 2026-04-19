@@ -45,7 +45,7 @@ export function RemindersSection({
             handleAddReminder();
           }}
           className={cn(
-            "text-xs px-3 py-1.5 rounded-lg transition-colors",
+            "text-xs px-3 py-1.5 rounded-lg motion-safe:transition-colors",
             isPrimaryCTA
               ? "bg-violet-500/20 text-violet-300 border border-violet-500/30 hover:bg-violet-500/30"
               : "bg-primary/10 text-primary hover:bg-primary/20"
@@ -110,7 +110,7 @@ export function RemindersSection({
                       handleReminderChange(index, "days", newDays);
                     }}
                     className={cn(
-                      "w-11 h-11 min-w-[44px] min-h-[44px] text-[10px] rounded-lg transition-colors font-medium",
+                      "w-11 h-11 min-w-[44px] min-h-[44px] text-[10px] rounded-lg motion-safe:transition-colors font-medium",
                       "focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:outline-none",
                       isPrimaryCTA
                         ? reminder.days.includes(day)
@@ -139,7 +139,7 @@ export function RemindersSection({
                 }}
                 aria-label={t.removeReminder || "Remove reminder"}
                 className={cn(
-                  "p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg transition-colors",
+                  "p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg motion-safe:transition-colors",
                   isPrimaryCTA
                     ? "text-red-400 hover:bg-red-500/20"
                     : "text-destructive hover:bg-destructive/10"

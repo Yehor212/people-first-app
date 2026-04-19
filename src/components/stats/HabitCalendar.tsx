@@ -188,7 +188,7 @@ export function HabitCalendar({ habits, className }: HabitCalendarProps) {
           <div className="flex items-center gap-2">
             <button
               onClick={() => handleMonthChange(-1)}
-              className="p-1.5 rounded-lg bg-muted/50 hover:bg-muted transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+              className="p-1.5 rounded-lg bg-muted/50 hover:bg-muted motion-safe:transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
               aria-label={t.calendarPrevMonth || 'Previous month'}
             >
               <ChevronLeft className="w-4 h-4 rtl:scale-x-[-1]" />
@@ -198,7 +198,7 @@ export function HabitCalendar({ habits, className }: HabitCalendarProps) {
             </span>
             <button
               onClick={() => handleMonthChange(1)}
-              className="p-1.5 rounded-lg bg-muted/50 hover:bg-muted transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+              className="p-1.5 rounded-lg bg-muted/50 hover:bg-muted motion-safe:transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
               aria-label={t.calendarNextMonth || 'Next month'}
             >
               <ChevronRight className="w-4 h-4 rtl:scale-x-[-1]" />
@@ -250,7 +250,7 @@ export function HabitCalendar({ habits, className }: HabitCalendarProps) {
                 onClick={() => !dayData.isFuture && setSelectedDay(dayData)}
                 disabled={dayData.isFuture}
                 className={cn(
-                  'aspect-square rounded-md flex items-center justify-center relative transition-all',
+                  'aspect-square rounded-md flex items-center justify-center relative motion-safe:transition-all',
                   levelColors.light[level as keyof typeof levelColors.light],
                   dayData.isToday && 'ring-2 ring-primary ring-offset-1 ring-offset-background',
                   isSelected && 'ring-2 ring-accent',

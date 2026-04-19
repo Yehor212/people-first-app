@@ -21,13 +21,13 @@ export function AchievementToast({ achievement }: AchievementToastProps) {
     <Card
       role="status"
       aria-live="polite"
-      className={`p-4 bg-gradient-to-r from-primary/70 to-primary text-primary-foreground ${getBadgeGlow(achievement.rarity)} animate-slide-up`}
+      className={`p-4 bg-gradient-to-r from-primary/70 to-primary text-primary-foreground ${getBadgeGlow(achievement.rarity)} motion-safe:animate-slide-up`}
     >
       <div className="flex items-center gap-4">
         <div className="relative">
-          <div className="text-5xl animate-scale-in">{achievement.icon}</div>
+          <div className="text-5xl motion-safe:animate-scale-in">{achievement.icon}</div>
           <Sparkles
-            className="absolute -top-1 -end-1 w-4 h-4 text-yellow-300 animate-pulse"
+            className="absolute -top-1 -end-1 w-4 h-4 text-yellow-300 motion-safe:animate-pulse"
             aria-hidden="true"
           />
         </div>

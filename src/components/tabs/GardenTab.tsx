@@ -82,7 +82,7 @@ export function GardenTab({
   }, []);
 
   return (
-    <div className="animate-tab-enter">
+    <div className="motion-safe:animate-tab-enter">
       <div className="space-y-6">
         <Header
           userName={userName}

@@ -83,7 +83,7 @@ export function HabitListSections({
           >
             <span>{ts.otherHabits || 'Other Habits'}</span>
             <span className="text-muted-foreground/60">({otherHabits.length})</span>
-            <ChevronDown className={cn('w-3.5 h-3.5 transition-transform ms-auto', showOther && 'rotate-180')} />
+            <ChevronDown className={cn('w-3.5 h-3.5 motion-safe:transition-transform ms-auto', showOther && 'rotate-180')} />
           </button>
           <AnimatePresence>
             {showOther && (
@@ -123,7 +123,7 @@ export function HabitListSections({
             <Archive className="w-3.5 h-3.5" />
             <span>{ts.archivedHabits || 'Archived'}</span>
             <span className="text-muted-foreground/60">({archivedHabits.length})</span>
-            <ChevronDown className={cn('w-3.5 h-3.5 transition-transform ms-auto', showArchived && 'rotate-180')} />
+            <ChevronDown className={cn('w-3.5 h-3.5 motion-safe:transition-transform ms-auto', showArchived && 'rotate-180')} />
           </button>
           <AnimatePresence>
             {showArchived && (
@@ -191,7 +191,7 @@ export function HabitListSections({
               <button
                 onClick={onClearFilter}
                 className={cn(
-                  'px-6 py-3 rounded-2xl text-sm font-medium transition-all min-h-[44px]',
+                  'px-6 py-3 rounded-2xl text-sm font-medium motion-safe:transition-all min-h-[44px]',
                   'bg-white/[0.06] border border-white/[0.08] text-muted-foreground',
                   'hover:bg-white/[0.10] active:scale-[0.97]',
                   'flex items-center gap-2 mx-auto',
@@ -203,7 +203,7 @@ export function HabitListSections({
               <button
                 onClick={onAddClick}
                 className={cn(
-                  'px-6 py-3 rounded-2xl text-sm font-medium transition-all min-h-[44px]',
+                  'px-6 py-3 rounded-2xl text-sm font-medium motion-safe:transition-all min-h-[44px]',
                   'bg-primary text-primary-foreground',
                   'shadow-zen-lg shadow-primary/20',
                   'hover:brightness-110 active:scale-[0.97]',

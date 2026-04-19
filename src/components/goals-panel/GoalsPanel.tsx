@@ -62,7 +62,7 @@ export function GoalsPanel({
         <button
           onClick={() => { void hapticTap(); setShowAddSheet(true); }}
           className={cn(
-            'p-2 rounded-xl transition-all',
+            'p-2 rounded-xl motion-safe:transition-all',
             'bg-gradient-to-br from-primary/10 to-accent/5',
             'hover:from-primary/20 hover:to-accent/10',
             'active:scale-95',

@@ -96,7 +96,7 @@ export const Sidebar = memo(function Sidebar({
         aria-selected={isActive}
         aria-label={tab.label}
         className={cn(
-          "flex items-center w-full rounded-xl transition-all duration-200 min-h-[44px]",
+          "flex items-center w-full rounded-xl motion-safe:transition-all motion-safe:duration-200 min-h-[44px]",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
           collapsed ? "justify-center px-2 py-3" : "gap-3 px-4 py-3",
           isActive
@@ -106,7 +106,7 @@ export const Sidebar = memo(function Sidebar({
       >
         <tab.icon
           className={cn(
-            "w-5 h-5 shrink-0 transition-colors duration-200",
+            "w-5 h-5 shrink-0 motion-safe:transition-colors motion-safe:duration-200",
             isActive ? "text-primary" : "text-muted-foreground"
           )}
           aria-hidden="true"
@@ -114,7 +114,7 @@ export const Sidebar = memo(function Sidebar({
         {!collapsed && (
           <span
             className={cn(
-              "text-sm truncate transition-colors duration-200",
+              "text-sm truncate motion-safe:transition-colors motion-safe:duration-200",
               isActive ? "text-primary font-medium" : "text-muted-foreground"
             )}
           >
@@ -150,7 +150,7 @@ export const Sidebar = memo(function Sidebar({
       <aside
         className={cn(
           "hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 lg:start-0 lg:border-e lg:border-border lg:bg-card/95 lg:backdrop-blur-lg lg:z-50",
-          "transition-[width] duration-300 ease-in-out",
+          "motion-safe:transition-[width] motion-safe:duration-300 ease-in-out",
           collapsed ? "lg:w-16" : "lg:w-64"
         )}
         role="navigation"
@@ -159,7 +159,7 @@ export const Sidebar = memo(function Sidebar({
         {/* Header - brand + toggle */}
         <div
           className={cn(
-            "flex items-center border-b border-border/50 transition-all duration-300 min-h-[60px]",
+            "flex items-center border-b border-border/50 motion-safe:transition-all motion-safe:duration-300 min-h-[60px]",
             collapsed ? "justify-center px-2" : "justify-between px-5"
           )}
         >
@@ -167,7 +167,7 @@ export const Sidebar = memo(function Sidebar({
           <button
             onClick={toggleCollapse}
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            className="p-2 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="p-2 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground motion-safe:transition-colors motion-safe:duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
             {collapsed ? (
               <PanelLeftOpen className="w-5 h-5" aria-hidden="true" />

@@ -133,7 +133,7 @@ export function JoinChallengeView({
           placeholder="ZEN-XXXXXX"
           className={cn(
             "w-full px-4 py-4 rounded-xl border-2 text-center text-xl font-mono tracking-widest",
-            "bg-card focus-visible:outline-none transition-colors",
+            "bg-card focus-visible:outline-none motion-safe:transition-colors",
             error
               ? "border-destructive focus:border-destructive"
               : isValidCode
@@ -181,7 +181,7 @@ export function JoinChallengeView({
           className="h-14 text-lg font-semibold"
         >
           {isJoining ? (
-            <span className="animate-pulse">{t.joining || "Joining..."}</span>
+            <span className="motion-safe:animate-pulse">{t.joining || "Joining..."}</span>
           ) : (
             <>
               <UserPlus className="w-5 h-5 me-2" />

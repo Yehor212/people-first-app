@@ -29,7 +29,7 @@ export function WhatsNewBanner() {
         </div>
         <button
           onClick={handleDismiss}
-          className="text-xs text-primary hover:text-primary/80 transition-colors p-2 min-w-[44px] min-h-[44px] flex items-center justify-center"
+          className="text-xs text-primary hover:text-primary/80 motion-safe:transition-colors p-2 min-w-[44px] min-h-[44px] flex items-center justify-center"
         >
           {t.settingsWhatsNewGotIt || 'Got it!'}
         </button>

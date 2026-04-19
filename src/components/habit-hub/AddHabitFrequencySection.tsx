@@ -33,7 +33,7 @@ export function AddHabitFrequencySection({ frequency, setFrequency, ts }: AddHab
             onClick={() => { setForceCustomFreq(false); setFrequency(preset.ratio); }}
             aria-pressed={isPresetMatch(preset.ratio) && !forceCustomFreq}
             className={cn(
-              'px-3 py-2 rounded-xl text-xs font-medium transition-all min-h-[44px]',
+              'px-3 py-2 rounded-xl text-xs font-medium motion-safe:transition-all min-h-[44px]',
               'border',
               (isPresetMatch(preset.ratio) && !forceCustomFreq)
                 ? 'bg-violet-500/20 border-violet-500/40 text-violet-300'
@@ -46,7 +46,7 @@ export function AddHabitFrequencySection({ frequency, setFrequency, ts }: AddHab
         <button
           onClick={() => setForceCustomFreq(true)}
           className={cn(
-            'px-3 py-2 rounded-xl text-xs font-medium transition-all min-h-[44px]',
+            'px-3 py-2 rounded-xl text-xs font-medium motion-safe:transition-all min-h-[44px]',
             'border',
             (forceCustomFreq || isCustomFreq)
               ? 'bg-violet-500/20 border-violet-500/40 text-violet-300'

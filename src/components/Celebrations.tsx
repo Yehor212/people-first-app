@@ -44,7 +44,7 @@ export function StreakCelebration({ streakDays, onClose }: StreakCelebrationProp
     <div
       className={cn(
         "fixed inset-0 z-[220] flex items-center justify-center bg-black/40 backdrop-blur-sm",
-        showAnimations && "transition-opacity duration-300",
+        showAnimations && "motion-safe:transition-opacity motion-safe:duration-300",
         show ? "opacity-100" : "opacity-0"
       )}
       onClick={onClose}
@@ -52,21 +52,21 @@ export function StreakCelebration({ streakDays, onClose }: StreakCelebrationProp
       <div
         className={cn(
           "relative flex flex-col items-center",
-          showAnimations && "transition-all duration-500",
+          showAnimations && "motion-safe:transition-all motion-safe:duration-500",
           show ? "scale-100 opacity-100" : showAnimations ? "scale-50 opacity-0" : "opacity-0"
         )}
       >
         {/* Fire animation - only if streakFire enabled */}
         <div className="relative">
-          <div className={showStreakFire ? "animate-bounce-fire" : ""}>
+          <div className={showStreakFire ? "motion-safe:animate-bounce-fire" : ""}>
             <EmojiOrIcon emoji="🔥" iconName="fire" size="xl" className="w-20 h-20" />
           </div>
           {showStreakFire && (
             <>
-              <div className="absolute -top-2 -left-4 animate-bounce-fire-delayed">
+              <div className="absolute -top-2 -left-4 motion-safe:animate-bounce-fire-delayed">
                 <EmojiOrIcon emoji="🔥" iconName="fire" size="lg" className="w-14 h-14" />
               </div>
-              <div className="absolute -top-2 -right-4 animate-bounce-fire-delayed-2">
+              <div className="absolute -top-2 -right-4 motion-safe:animate-bounce-fire-delayed-2">
                 <EmojiOrIcon emoji="🔥" iconName="fire" size="lg" className="w-14 h-14" />
               </div>
             </>
@@ -77,7 +77,7 @@ export function StreakCelebration({ streakDays, onClose }: StreakCelebrationProp
         <div
           className={cn(
             "mt-4 text-6xl font-black text-white",
-            showAnimations && "animate-scale-in"
+            showAnimations && "motion-safe:animate-scale-in"
           )}
         >
           {streakDays}
@@ -93,7 +93,7 @@ export function StreakCelebration({ streakDays, onClose }: StreakCelebrationProp
             {Array.from({ length: 20 }).map((_, i) => (
               <div
                 key={i}
-                className="absolute w-2 h-2 bg-yellow-400 rounded-full animate-sparkle"
+                className="absolute w-2 h-2 bg-yellow-400 rounded-full motion-safe:animate-sparkle"
                 style={{
                   left: `${Math.random() * 100}%`,
                   top: `${Math.random() * 100}%`,
@@ -140,7 +140,7 @@ export function HabitCompletion({ habitName, onClose }: HabitCompletionProps) {
     <div
       className={cn(
         "fixed left-1/2 -translate-x-1/2 z-[150] bottom-[calc(6rem+env(safe-area-inset-bottom,0px))]",
-        showAnimations && "transition-all duration-300",
+        showAnimations && "motion-safe:transition-all motion-safe:duration-300",
         show
           ? "opacity-100 translate-y-0"
           : showAnimations
@@ -149,7 +149,7 @@ export function HabitCompletion({ habitName, onClose }: HabitCompletionProps) {
       )}
     >
       <div className="flex items-center gap-3 px-6 py-3 bg-mood-good text-white rounded-full shadow-lg">
-        <span className={cn("text-2xl", showAnimations && "animate-bounce-check")}>✓</span>
+        <span className={cn("text-2xl", showAnimations && "motion-safe:animate-bounce-check")}>✓</span>
         <span className="font-semibold">{habitName}</span>
       </div>
     </div>
@@ -203,7 +203,7 @@ export function AllHabitsComplete({ onClose }: AllHabitsCompleteProps) {
     <div
       className={cn(
         "fixed inset-0 z-[220] flex items-center justify-center bg-black/50 backdrop-blur-sm",
-        showAnimations && "transition-opacity duration-300",
+        showAnimations && "motion-safe:transition-opacity motion-safe:duration-300",
         show ? "opacity-100" : "opacity-0"
       )}
       onClick={onClose}
@@ -214,7 +214,7 @@ export function AllHabitsComplete({ onClose }: AllHabitsCompleteProps) {
           {Array.from({ length: 50 }).map((_, i) => (
             <div
               key={i}
-              className="absolute w-3 h-3 animate-confetti"
+              className="absolute w-3 h-3 motion-safe:animate-confetti"
               style={{
                 left: `${Math.random() * 100}%`,
                 backgroundColor: confettiColors[i % confettiColors.length],
@@ -231,11 +231,11 @@ export function AllHabitsComplete({ onClose }: AllHabitsCompleteProps) {
       <div
         className={cn(
           "relative flex flex-col items-center",
-          showAnimations && "transition-all duration-500",
+          showAnimations && "motion-safe:transition-all motion-safe:duration-500",
           show ? "scale-100 opacity-100" : showAnimations ? "scale-50 opacity-0" : "opacity-0"
         )}
       >
-        <div className={showAnimations ? "animate-bounce" : ""}>
+        <div className={showAnimations ? "motion-safe:animate-bounce" : ""}>
           <EmojiOrIcon emoji="🎉" iconName="celebration" size="xl" className="w-16 h-16" />
         </div>
         <p className="mt-4 text-3xl font-black text-white text-center">
@@ -283,7 +283,7 @@ export function MoodChangedToast({ emoji, message, onClose }: MoodChangedToastPr
       aria-live="polite"
       className={cn(
         "fixed left-1/2 -translate-x-1/2 z-[150] bottom-[calc(6rem+env(safe-area-inset-bottom,0px))]",
-        showAnimations && "transition-all duration-300",
+        showAnimations && "motion-safe:transition-all motion-safe:duration-300",
         show
           ? "opacity-100 translate-y-0"
           : showAnimations
@@ -294,7 +294,7 @@ export function MoodChangedToast({ emoji, message, onClose }: MoodChangedToastPr
       <div
         className={cn(
           "flex items-center gap-3 px-6 py-3 bg-primary text-white rounded-full shadow-lg",
-          showAnimations && "animate-success-pulse"
+          showAnimations && "motion-safe:animate-success-pulse"
         )}
       >
         <EmojiOrIcon emoji={emoji} size="sm" />
@@ -331,7 +331,7 @@ export function ConfirmDialog({
 
   return (
     <div
-      className="fixed inset-0 z-[300] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in"
+      className="fixed inset-0 z-[300] flex items-center justify-center bg-black/40 backdrop-blur-sm motion-safe:animate-fade-in"
       onClick={onCancel}
       onKeyDown={(e) => {
         if (e.key === "Escape") onCancel();
@@ -341,7 +341,7 @@ export function ConfirmDialog({
         role="dialog"
         aria-modal="true"
         aria-label={t.ariaConfirmation}
-        className="bg-card rounded-2xl p-6 mx-4 max-w-sm w-full shadow-2xl animate-scale-in"
+        className="bg-card rounded-2xl p-6 mx-4 max-w-sm w-full shadow-2xl motion-safe:animate-scale-in"
         onClick={(e) => e.stopPropagation()}
       >
         <h3 className="text-lg font-bold text-foreground mb-2">{title}</h3>
@@ -352,14 +352,14 @@ export function ConfirmDialog({
             onKeyDown={(e) => {
               if (e.key === "Escape") onCancel();
             }}
-            className="flex-1 py-3 bg-secondary text-foreground font-medium rounded-xl hover:bg-secondary/80 transition-colors"
+            className="flex-1 py-3 bg-secondary text-foreground font-medium rounded-xl hover:bg-secondary/80 motion-safe:transition-colors"
           >
             {cancelText}
           </button>
           <button
             onClick={onConfirm}
             className={cn(
-              "flex-1 py-3 font-medium rounded-xl transition-colors",
+              "flex-1 py-3 font-medium rounded-xl motion-safe:transition-colors",
               variant === "destructive"
                 ? "bg-destructive text-white hover:bg-destructive/90"
                 : "bg-primary text-white hover:bg-primary/90"

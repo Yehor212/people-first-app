@@ -2,9 +2,7 @@ import { memo, useMemo } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { springs } from "@/config/animations";
-import { formatDecimal } from "@/lib/timeUtils";
 import type { JournalEntry } from "./types";
-import type { Language } from "@/i18n/translations";
 import type { MoodType } from "@/types";
 
 interface MoodCorrelationsProps {
@@ -38,7 +36,6 @@ function getTimeOfDay(hour: number): "morning" | "afternoon" | "evening" {
 function computeInsights(
   entries: JournalEntry[],
   locale: string,
-  language: Language,
 ): Insight[] {
   const scored = entries
     .filter((e) => e.mood && MOOD_SCORE[e.mood] !== undefined)
@@ -66,7 +63,7 @@ function computeInsights(
       insights.push({
         key: "day", emoji: "\uD83D\uDCC5",
         text: `Your mood is highest on ${bestName}s`,
-        stat: `avg ${formatDecimal(avgMood(best[1]), language)} / 5`,
+        stat: `avg ${avgMood(best[1]).toFixed(1)} / 5`,
         significance: diff,
       });
     }
@@ -86,7 +83,7 @@ function computeInsights(
         text: diff > 0
           ? "You tend to feel better when you write longer entries"
           : "Shorter entries correlate with higher mood",
-        stat: `${formatDecimal(Math.abs(diff), language)} point difference`,
+        stat: `${Math.abs(diff).toFixed(1)} point difference`,
         significance: Math.abs(diff),
       });
     }
@@ -110,7 +107,7 @@ function computeInsights(
       insights.push({
         key: "time", emoji: "\u23F0",
         text: `Your mood is highest when writing in the ${best[0]}`,
-        stat: `avg ${formatDecimal(avgMood(best[1]), language)} / 5`,
+        stat: `avg ${avgMood(best[1]).toFixed(1)} / 5`,
         significance: diff,
       });
     }
@@ -132,7 +129,7 @@ function computeInsights(
       insights.push({
         key: "streak", emoji: "\uD83D\uDD25",
         text: "Your mood improves during writing streaks",
-        stat: `+${formatDecimal(diff, language)} points on streak days`,
+        stat: `+${diff.toFixed(1)} points on streak days`,
         significance: diff,
       });
     }
@@ -149,7 +146,7 @@ function computeInsights(
         text: diff > 0
           ? "Entries with photos or audio tend to have better mood"
           : "Text-only entries correlate with higher mood",
-        stat: `${formatDecimal(Math.abs(diff), language)} point difference`,
+        stat: `${Math.abs(diff).toFixed(1)} point difference`,
         significance: Math.abs(diff),
       });
     }
@@ -165,7 +162,7 @@ export const MoodCorrelations = memo(function MoodCorrelations({
   const prefersReducedMotion = useReducedMotion();
 
   const insights = useMemo(
-    () => computeInsights(entries, language, language),
+    () => computeInsights(entries, language),
     [entries, language],
   );
 

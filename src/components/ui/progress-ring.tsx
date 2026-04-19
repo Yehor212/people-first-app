@@ -65,7 +65,7 @@ export function ProgressRing({
           strokeLinecap="round"
           className={cn(
             COLORS[color],
-            'transition-all duration-300 ease-out'
+            'motion-safe:transition-all motion-safe:duration-300 ease-out'
           )}
         />
       </svg>

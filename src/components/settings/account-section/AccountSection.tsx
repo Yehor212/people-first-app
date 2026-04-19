@@ -175,7 +175,7 @@ export function AccountSection({
               onClick={() => {
                 void sync.handleSync();
               }}
-              className="w-full py-3 bg-secondary text-secondary-foreground rounded-xl font-medium hover:bg-muted transition-colors btn-press flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-3 bg-secondary text-secondary-foreground rounded-xl font-medium hover:bg-muted motion-safe:transition-colors btn-press flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={!sync.cloudSyncEnabled || sync.isSyncing}
             >
               {sync.isSyncing && (
@@ -192,7 +192,7 @@ export function AccountSection({
               onClick={() => {
                 void auth.handleSignOut();
               }}
-              className="w-full py-3 bg-secondary text-secondary-foreground rounded-xl font-medium hover:bg-muted transition-colors btn-press flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-3 bg-secondary text-secondary-foreground rounded-xl font-medium hover:bg-muted motion-safe:transition-colors btn-press flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={auth.isSigningOut}
             >
               {auth.isSigningOut && (
@@ -211,7 +211,7 @@ export function AccountSection({
                   del.setShowDeleteConfirm(true);
                   del.setDeleteConfirmInput("");
                 }}
-                className="w-full py-3 bg-destructive/10 text-destructive rounded-xl font-medium hover:bg-destructive/20 transition-colors btn-press"
+                className="w-full py-3 bg-destructive/10 text-destructive rounded-xl font-medium hover:bg-destructive/20 motion-safe:transition-colors btn-press"
               >
                 {t.deleteAccount || "Delete Account"}
               </button>
@@ -308,7 +308,7 @@ export function AccountSection({
                 void auth.handleGoogle();
               }}
               disabled={auth.isSigningIn}
-              className="w-full py-3 zen-gradient text-primary-foreground rounded-xl font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-3 zen-gradient text-primary-foreground rounded-xl font-medium hover:opacity-90 motion-safe:transition-opacity flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {auth.isSigningIn && (
                 <Loader2

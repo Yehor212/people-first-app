@@ -130,7 +130,7 @@ export const HabitBarCard = memo(function HabitBarCard({ habit, className }: Hab
               key={iv}
               onClick={() => setBarInterval(iv)}
               className={cn(
-                "px-3 py-1.5 rounded-md text-[10px] font-medium transition-colors min-h-[44px]",
+                "px-3 py-1.5 rounded-md text-[10px] font-medium motion-safe:transition-colors min-h-[44px]",
                 barInterval === iv
                   ? "bg-white/[0.1] text-foreground"
                   : "text-muted-foreground hover:text-muted-foreground"

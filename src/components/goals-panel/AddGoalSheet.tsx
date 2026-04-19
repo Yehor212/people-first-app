@@ -131,7 +131,7 @@ export function AddGoalSheet({ open, onOpenChange, habits, onAdd, t }: AddGoalSh
                       setType(goalType);
                     }}
                     className={cn(
-                      "p-3 rounded-xl border transition-all flex flex-col items-center gap-1.5",
+                      "p-3 rounded-xl border motion-safe:transition-all flex flex-col items-center gap-1.5",
                       selected
                         ? `border-transparent bg-gradient-to-br ${th.bgGradient}`
                         : "border-border/50 hover:border-border"
@@ -194,7 +194,7 @@ export function AddGoalSheet({ open, onOpenChange, habits, onAdd, t }: AddGoalSh
                     setPeriod(p);
                   }}
                   className={cn(
-                    "p-3 rounded-xl border transition-all text-sm font-medium",
+                    "p-3 rounded-xl border motion-safe:transition-all text-sm font-medium",
                     period === p
                       ? "bg-primary/10 border-primary/40 text-primary"
                       : "border-border/50 text-muted-foreground hover:border-border"
@@ -235,7 +235,7 @@ export function AddGoalSheet({ open, onOpenChange, habits, onAdd, t }: AddGoalSh
                     setTarget(preset);
                   }}
                   className={cn(
-                    "flex-1 p-3 rounded-xl border transition-all text-sm font-bold",
+                    "flex-1 p-3 rounded-xl border motion-safe:transition-all text-sm font-bold",
                     target === preset
                       ? "bg-primary/10 border-primary/40 text-primary"
                       : "border-border/50 text-muted-foreground hover:border-border"
@@ -255,7 +255,7 @@ export function AddGoalSheet({ open, onOpenChange, habits, onAdd, t }: AddGoalSh
               "w-full py-4 px-5 rounded-2xl font-semibold",
               "flex items-center justify-center gap-2",
               `bg-gradient-to-r ${GOAL_THEMES[type].gradient}`,
-              "text-white shadow-xl active:scale-[0.98] transition-transform",
+              "text-white shadow-xl active:scale-[0.98] motion-safe:transition-transform",
               isSaving && "opacity-50"
             )}
             style={{ boxShadow: `0 8px 32px ${GOAL_THEMES[type].glowColor}` }}

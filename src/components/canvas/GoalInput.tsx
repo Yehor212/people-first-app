@@ -132,7 +132,7 @@ export function GoalInput({
                     type="button"
                     onClick={() => handleIconTap(key)}
                     className={cn(
-                      "p-2 rounded-lg transition-all",
+                      "p-2 rounded-lg motion-safe:transition-all",
                       isSelected
                         ? "bg-white/15 ring-1 ring-white/30 text-white"
                         : "text-white/30 hover:text-white/60 hover:bg-white/5"
@@ -173,7 +173,7 @@ export function GoalInput({
                   value.trim()
                     ? "bg-emerald-500/80 text-white hover:bg-emerald-500"
                     : "bg-white/5 text-white/30 cursor-not-allowed",
-                  "transition-colors"
+                  "motion-safe:transition-colors"
                 )}
                 aria-label={t.createGoal || "Create goal"}
               >
@@ -186,7 +186,7 @@ export function GoalInput({
                 className={cn(
                   "p-2.5 rounded-lg",
                   "text-white/60 hover:text-white/70 hover:bg-white/10",
-                  "transition-colors"
+                  "motion-safe:transition-colors"
                 )}
                 aria-label={t.ariaCancel}
               >

@@ -139,7 +139,7 @@ export function EmptyState({
         <button
           onClick={secondaryAction.onClick}
           className={cn(
-            "block mx-auto mt-3 text-muted-foreground hover:text-foreground transition-colors",
+            "block mx-auto mt-3 text-muted-foreground hover:text-foreground motion-safe:transition-colors",
             sizes.message
           )}
         >

@@ -81,7 +81,7 @@ function SupportBanner() {
 
   return (
     <div
-      className="fixed left-4 right-4 z-[60] animate-fade-in bottom-[calc(6rem+env(safe-area-inset-bottom,0px))]"
+      className="fixed left-4 right-4 z-[60] motion-safe:animate-fade-in bottom-[calc(6rem+env(safe-area-inset-bottom,0px))]"
     >
       <div className="mood-support-banner rounded-2xl p-4 flex items-start gap-3 max-w-md mx-auto">
         <div className={cn("p-2 rounded-full", colors.bg)}>
@@ -94,7 +94,7 @@ function SupportBanner() {
         </div>
         <button
           onClick={() => setDismissed(true)}
-          className="text-muted-foreground hover:text-foreground transition-colors p-1 min-w-[44px] min-h-[44px] flex items-center justify-center"
+          className="text-muted-foreground hover:text-foreground motion-safe:transition-colors p-1 min-w-[44px] min-h-[44px] flex items-center justify-center"
           aria-label={t.dismiss}
         >
           <span className="text-lg">&times;</span>

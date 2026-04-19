@@ -189,7 +189,7 @@ export function JournalLockScreen({
           "bg-card/60 backdrop-blur-3xl",
           "border border-white/10 dark:border-white/5",
           "shadow-[0_8px_40px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.06)]",
-          shake && "animate-[shake_0.5s_ease-in-out]"
+          shake && "motion-safe:animate-[shake_0.5s_ease-in-out]"
         )}
       >
         {/* Lock icon with sway + glow animation */}
@@ -270,7 +270,7 @@ export function JournalLockScreen({
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
                 "focus:shadow-[0_0_20px_rgba(var(--primary-rgb,99,102,241),0.15)]",
                 "placeholder:text-muted-foreground/50",
-                "transition-shadow duration-300",
+                "motion-safe:transition-shadow motion-safe:duration-300",
                 wrongGlow && "ring-2 ring-destructive/50 shadow-[0_0_20px_rgba(239,68,68,0.2)]"
               )}
               inputMode="text"
@@ -322,7 +322,7 @@ export function JournalLockScreen({
               "text-primary-foreground",
               "shadow-[0_2px_15px_rgba(var(--primary-rgb,99,102,241),0.25)]",
               "disabled:opacity-40 disabled:shadow-none",
-              "active:scale-[0.98] transition-all duration-150"
+              "active:scale-[0.98] motion-safe:transition-all motion-safe:duration-150"
             )}
           >
             {mode === "change"
@@ -343,7 +343,7 @@ export function JournalLockScreen({
         {mode === "unlock" && biometricAvailable && onBiometricUnlock && (
           <button
             onClick={onBiometricUnlock}
-            className="w-full mt-3 py-2.5 flex items-center justify-center gap-2 rounded-xl bg-muted/50 text-foreground text-sm font-medium min-h-[44px] hover:bg-muted/70 transition-colors"
+            className="w-full mt-3 py-2.5 flex items-center justify-center gap-2 rounded-xl bg-muted/50 text-foreground text-sm font-medium min-h-[44px] hover:bg-muted/70 motion-safe:transition-colors"
           >
             <Fingerprint className="w-5 h-5 text-primary" />
             {ts.journalBiometricUnlock || "Unlock with biometrics"}
@@ -353,7 +353,7 @@ export function JournalLockScreen({
         {mode === "unlock" && onForgotPassword && (
           <button
             onClick={onForgotPassword}
-            className="w-full mt-3 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors text-center min-h-[44px]"
+            className="w-full mt-3 py-2 text-xs text-muted-foreground hover:text-foreground motion-safe:transition-colors text-center min-h-[44px]"
           >
             {ts.journalPasswordForgot || "Forgot password?"}
           </button>
@@ -372,7 +372,7 @@ export function JournalLockScreen({
               }
               setError("");
             }}
-            className="w-full mt-3 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors text-center min-h-[44px]"
+            className="w-full mt-3 py-2 text-xs text-muted-foreground hover:text-foreground motion-safe:transition-colors text-center min-h-[44px]"
           >
             {ts.journalBack || "Back"}
           </button>

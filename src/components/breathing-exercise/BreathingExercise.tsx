@@ -103,7 +103,7 @@ export function BreathingExercise({ onComplete, compact = true }: BreathingExerc
                   onClick={closeModal}
                   aria-label={t.close || 'Close'}
                   className={cn(
-                    "p-2 rounded-xl transition-all",
+                    "p-2 rounded-xl motion-safe:transition-all",
                     "bg-muted border border-border",
                     "hover:bg-secondary"
                   )}

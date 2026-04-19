@@ -210,7 +210,7 @@ export function CalendarTab({
               <button
                 onClick={() => handleMonthShift(-1)}
                 aria-label={t.calendarPrevMonth}
-                className="p-2 rounded-xl bg-secondary hover:bg-primary/10 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+                className="p-2 rounded-xl bg-secondary hover:bg-primary/10 motion-safe:transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
               >
                 <ChevronLeft className="w-4 h-4 rtl:scale-x-[-1]" />
               </button>
@@ -218,7 +218,7 @@ export function CalendarTab({
                 onClick={() => setShowMonthSelector(!showMonthSelector)}
                 aria-expanded={showMonthSelector}
                 aria-label={t.calendarSelectMonth || "Select month"}
-                className="px-4 py-2 rounded-xl bg-gradient-to-r from-primary/20 to-accent/20 text-sm font-medium hover:from-primary/30 hover:to-accent/30 transition-all flex items-center gap-2"
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-primary/20 to-accent/20 text-sm font-medium hover:from-primary/30 hover:to-accent/30 motion-safe:transition-all flex items-center gap-2"
               >
                 {monthNames[selectedMonth]} {selectedYear}
                 {showMonthSelector ? (
@@ -230,7 +230,7 @@ export function CalendarTab({
               <button
                 onClick={() => handleMonthShift(1)}
                 aria-label={t.calendarNextMonth}
-                className="p-2 rounded-xl bg-secondary hover:bg-primary/10 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+                className="p-2 rounded-xl bg-secondary hover:bg-primary/10 motion-safe:transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
               >
                 <ChevronRight className="w-4 h-4 rtl:scale-x-[-1]" />
               </button>
@@ -240,7 +240,7 @@ export function CalendarTab({
           {/* Month Selector Grid */}
           {showMonthSelector && (
             <div
-              className="grid grid-cols-3 sm:grid-cols-4 gap-2 mb-5 animate-fade-in"
+              className="grid grid-cols-3 sm:grid-cols-4 gap-2 mb-5 motion-safe:animate-fade-in"
               role="listbox"
               aria-label={t.calendarSelectMonth || "Select month"}
             >
@@ -255,7 +255,7 @@ export function CalendarTab({
                   aria-selected={selectedMonth === index}
                   role="option"
                   className={cn(
-                    "px-2 py-2.5 rounded-xl text-xs font-medium transition-all",
+                    "px-2 py-2.5 rounded-xl text-xs font-medium motion-safe:transition-all",
                     selectedMonth === index
                       ? "bg-gradient-to-r from-primary to-accent text-white shadow-lg"
                       : "bg-secondary text-muted-foreground hover:bg-primary/10",
@@ -269,7 +269,7 @@ export function CalendarTab({
 
           {/* Stats Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-5">
-            <div className="text-center p-2 sm:p-3 bg-secondary/50 rounded-xl hover:bg-secondary transition-colors">
+            <div className="text-center p-2 sm:p-3 bg-secondary/50 rounded-xl hover:bg-secondary motion-safe:transition-colors">
               <p className="text-lg sm:text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[hsl(var(--chart-mood))] to-[hsl(var(--chart-mood)/0.7)]">
                 {yearStats.moodCount}
               </p>
@@ -277,7 +277,7 @@ export function CalendarTab({
                 {t.moodEntries}
               </p>
             </div>
-            <div className="text-center p-2 sm:p-3 bg-secondary/50 rounded-xl hover:bg-secondary transition-colors">
+            <div className="text-center p-2 sm:p-3 bg-secondary/50 rounded-xl hover:bg-secondary motion-safe:transition-colors">
               <p className="text-lg sm:text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[hsl(var(--chart-focus))] to-[hsl(var(--chart-focus)/0.7)]">
                 {yearStats.focusMinutes}
               </p>
@@ -285,7 +285,7 @@ export function CalendarTab({
                 {t.focusMinutes}
               </p>
             </div>
-            <div className="text-center p-2 sm:p-3 bg-secondary/50 rounded-xl hover:bg-secondary transition-colors">
+            <div className="text-center p-2 sm:p-3 bg-secondary/50 rounded-xl hover:bg-secondary motion-safe:transition-colors">
               <p className="text-lg sm:text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[hsl(var(--chart-habit))] to-[hsl(var(--chart-habit)/0.7)]">
                 {yearStats.habitCompletions}
               </p>
@@ -293,7 +293,7 @@ export function CalendarTab({
                 {t.habitsCompleted}
               </p>
             </div>
-            <div className="text-center p-2 sm:p-3 bg-secondary/50 rounded-xl hover:bg-secondary transition-colors">
+            <div className="text-center p-2 sm:p-3 bg-secondary/50 rounded-xl hover:bg-secondary motion-safe:transition-colors">
               <p className="text-lg sm:text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-accent to-accent/70">
                 {yearStats.gratitudeCount}
               </p>

@@ -131,7 +131,7 @@ export const HabitsPage = memo(function HabitsPage() {
                 e.preventDefault();
                 handleScrollToGarden();
               }}
-              className="rounded-full border border-border px-3 py-1.5 text-muted-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+              className="rounded-full border border-border px-3 py-1.5 text-muted-foreground motion-safe:transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
             >
               {tx.navV2HabitsScrollToGarden}
             </a>
@@ -141,7 +141,7 @@ export const HabitsPage = memo(function HabitsPage() {
                 e.preventDefault();
                 handleScrollToMindMap();
               }}
-              className="rounded-full border border-border px-3 py-1.5 text-muted-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+              className="rounded-full border border-border px-3 py-1.5 text-muted-foreground motion-safe:transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
             >
               {tx.navV2HabitsScrollToMindMap}
             </a>

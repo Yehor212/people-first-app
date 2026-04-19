@@ -47,7 +47,7 @@ export const ChallengeCard = memo(function ChallengeCard({
       className={cn(
         "relative w-full p-4 rounded-2xl text-start overflow-hidden",
         "bg-slate-100/60 dark:bg-white/5 backdrop-blur-sm border border-slate-200/60 dark:border-white/10",
-        "hover:bg-slate-200/60 dark:hover:bg-white/10 transition-all",
+        "hover:bg-slate-200/60 dark:hover:bg-white/10 motion-safe:transition-all",
       )}
       whileHover={{ scale: 1.01, y: -2 }}
       whileTap={zenTap.card}

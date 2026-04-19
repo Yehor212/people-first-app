@@ -151,7 +151,7 @@ export const GoalNode = memo(
               strokeWidth={2}
               strokeLinecap="round"
               strokeDasharray={`${filled} ${RING_PERIMETER}`}
-              className="transition-all duration-700 ease-out -rotate-90 opacity-80"
+              className="motion-safe:transition-all motion-safe:duration-700 ease-out -rotate-90 opacity-80"
               style={{
                 transformOrigin: `${RX}px ${RY}px`,
               }}
@@ -178,7 +178,7 @@ export const GoalNode = memo(
             isComplete ? "border-emerald-400/50 opacity-70" : !goal.color ? "border-border" : "",
             "cursor-pointer",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 focus-visible:ring-offset-0",
-            "transition-colors duration-200",
+            "motion-safe:transition-colors motion-safe:duration-200",
             "bg-card/80 backdrop-blur-sm [-webkit-backdrop-filter:blur(8px)]"
           )}
           style={{

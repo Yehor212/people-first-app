@@ -41,7 +41,7 @@ export const HabitGardenZone = memo(function HabitGardenZone({
       </h2>
       {isLoading ? (
         <div
-          className="min-h-[280px] animate-pulse rounded-xl bg-muted/40"
+          className="min-h-[280px] motion-safe:animate-pulse rounded-xl bg-muted/40"
           aria-hidden="true"
           data-testid="habits-garden-skeleton"
         />

@@ -283,7 +283,7 @@ export const JournalEntryViewer = memo(function JournalEntryViewer({ entry, onEd
             className={cn(
               "flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium min-h-[44px]",
               "bg-primary text-primary-foreground",
-              "active:scale-[0.98] transition-transform"
+              "active:scale-[0.98] motion-safe:transition-transform"
             )}
           >
             <Pencil className="w-3.5 h-3.5" />

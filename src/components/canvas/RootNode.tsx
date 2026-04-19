@@ -2,7 +2,7 @@
  * RootNode — "The Orb" — Central node on the Mind Map Canvas.
  *
  * 80×80 core with conic-gradient SVG progress ring showing goal
- * completion %. Uses CSS animate-orb-breathe for glow pulse.
+ * completion %. Uses CSS motion-safe:animate-orb-breathe for glow pulse.
  * OrbLottie ambient animation renders behind the core.
  *
  * Tap → triggers onTap callback (split mode). Pulses faster in split mode.
@@ -90,7 +90,7 @@ export const RootNode = memo(function RootNode({ latestMood, canvasCenter, compl
           strokeLinecap="round"
           strokeDasharray={`${filled} ${RING_CIRCUMFERENCE}`}
           transform="rotate(-90 50 50)"
-          className="transition-all duration-700 ease-out"
+          className="motion-safe:transition-all motion-safe:duration-700 ease-out"
           style={{ opacity: completionPercent > 0 ? 0.7 : 0 }}
         />
       </svg>
@@ -101,7 +101,7 @@ export const RootNode = memo(function RootNode({ latestMood, canvasCenter, compl
         onPointerUp={handleTap}
         className={cn(
           'w-full h-full rounded-full',
-          isSplit ? 'animate-pulse' : 'animate-orb-breathe',
+          isSplit ? 'motion-safe:animate-pulse' : 'motion-safe:animate-orb-breathe',
           'border-2', borderColor,
           'flex items-center justify-center',
           'text-white text-xl font-bold',

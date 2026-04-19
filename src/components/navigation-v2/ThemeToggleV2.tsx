@@ -139,13 +139,13 @@ export function ThemeToggleV2({ collapsed = false }: { collapsed?: boolean }) {
         "flex items-center gap-3 rounded-lg px-3 py-2 min-h-[44px]",
         "text-muted-foreground hover:text-foreground hover:bg-paper-surface/40",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
-        "transition-colors duration-200",
+        "motion-safe:transition-colors motion-safe:duration-200",
         collapsed && "justify-center px-2",
       )}
     >
       <span
         className={cn(
-          "relative flex-shrink-0 rounded-full transition-all duration-300 shadow-inner",
+          "relative flex-shrink-0 rounded-full motion-safe:transition-all motion-safe:duration-300 shadow-inner",
           "w-[52px] h-[28px]",
           isDark ? "bg-slate-700" : "bg-sky-300",
         )}
@@ -153,7 +153,7 @@ export function ThemeToggleV2({ collapsed = false }: { collapsed?: boolean }) {
       >
         <span
           className={cn(
-            "absolute top-[3px] w-[22px] h-[22px] rounded-full transition-all duration-300 flex items-center justify-center shadow-sm",
+            "absolute top-[3px] w-[22px] h-[22px] rounded-full motion-safe:transition-all motion-safe:duration-300 flex items-center justify-center shadow-sm",
             isDark
               ? "left-[27px] bg-indigo-950 ring-1 ring-slate-500/30"
               : "left-[3px] bg-yellow-400",

@@ -124,7 +124,7 @@ const SheetMotionContent = React.forwardRef<
           <SheetPrimitive.Close
             aria-label={t.close}
             className={cn(
-              'absolute right-4 top-4 rounded-xl p-2 z-50 min-w-[44px] min-h-[44px] flex items-center justify-center transition-all',
+              'absolute right-4 top-4 rounded-xl p-2 z-50 min-w-[44px] min-h-[44px] flex items-center justify-center motion-safe:transition-all',
               'bg-slate-200/80 dark:bg-white/10 backdrop-blur-sm border border-slate-300 dark:border-white/10',
               'opacity-70 hover:opacity-100 hover:bg-slate-300/80 dark:hover:bg-white/20',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background',
@@ -157,7 +157,7 @@ const SheetMotionContent = React.forwardRef<
           <SheetPrimitive.Close
             aria-label={t.close}
             className={cn(
-              'absolute right-4 top-4 rounded-xl p-2 z-50 min-w-[44px] min-h-[44px] flex items-center justify-center transition-all',
+              'absolute right-4 top-4 rounded-xl p-2 z-50 min-w-[44px] min-h-[44px] flex items-center justify-center motion-safe:transition-all',
               'bg-slate-200/80 dark:bg-white/10 backdrop-blur-sm border border-slate-300 dark:border-white/10',
               'opacity-70 hover:opacity-100 hover:bg-slate-300/80 dark:hover:bg-white/20',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background',

@@ -137,7 +137,7 @@ const FloatingPhoto = memo(function FloatingPhoto({
       <div
         className="absolute top-1 left-1/2 -translate-x-1/2
         opacity-0 group-hover:opacity-100
-        transition-opacity cursor-grab active:cursor-grabbing
+        motion-safe:transition-opacity cursor-grab active:cursor-grabbing
         p-1 rounded bg-black/40 text-white"
       >
         <GripVertical className="w-4 h-4" />
@@ -146,7 +146,7 @@ const FloatingPhoto = memo(function FloatingPhoto({
       {/* Size presets — visible on hover */}
       <div
         className="absolute -top-9 left-1/2 -translate-x-1/2
-        opacity-0 group-hover:opacity-100 transition-opacity
+        opacity-0 group-hover:opacity-100 motion-safe:transition-opacity
         flex gap-1 bg-card shadow-lg rounded-lg p-1 border border-border/50"
       >
         {[
@@ -161,7 +161,7 @@ const FloatingPhoto = memo(function FloatingPhoto({
               onPositionChange({ ...position, width: preset.width });
               setLiveWidth(preset.width);
             }}
-            className="px-2 py-0.5 text-xs rounded hover:bg-accent transition-colors"
+            className="px-2 py-0.5 text-xs rounded hover:bg-accent motion-safe:transition-colors"
             aria-label={ts[preset.ariaKey] || preset.fallback}
           >
             {preset.label}
@@ -174,7 +174,7 @@ const FloatingPhoto = memo(function FloatingPhoto({
             onPositionChange({ ...position, width: Math.min(cw, 500) });
             setLiveWidth(Math.min(cw, 500));
           }}
-          className="px-2 py-0.5 text-xs rounded hover:bg-accent transition-colors"
+          className="px-2 py-0.5 text-xs rounded hover:bg-accent motion-safe:transition-colors"
           aria-label={ts.diaryPhotoSizeFull || "Full width"}
         >
           <Maximize2 className="w-3 h-3" />
@@ -188,7 +188,7 @@ const FloatingPhoto = memo(function FloatingPhoto({
           e.stopPropagation();
           onReturn();
         }}
-        className="absolute -top-3 -end-3 w-11 h-11 rounded-full bg-red-500/80 text-white flex items-center justify-center opacity-60 group-hover:opacity-100 transition-opacity shadow-lg"
+        className="absolute -top-3 -end-3 w-11 h-11 rounded-full bg-red-500/80 text-white flex items-center justify-center opacity-60 group-hover:opacity-100 motion-safe:transition-opacity shadow-lg"
       >
         <X className="w-4 h-4" aria-hidden="true" />
       </button>
@@ -202,7 +202,7 @@ const FloatingPhoto = memo(function FloatingPhoto({
         aria-valuenow={liveWidth}
         tabIndex={0}
         onPointerDown={handleResizeStart}
-        className="absolute -bottom-2 -end-2 w-11 h-11 rounded-full bg-emerald-500/60 border-2 border-emerald-400/80 cursor-se-resize opacity-60 group-hover:opacity-100 transition-opacity shadow-lg"
+        className="absolute -bottom-2 -end-2 w-11 h-11 rounded-full bg-emerald-500/60 border-2 border-emerald-400/80 cursor-se-resize opacity-60 group-hover:opacity-100 motion-safe:transition-opacity shadow-lg"
         style={{ touchAction: "none" }}
       />
     </motion.div>

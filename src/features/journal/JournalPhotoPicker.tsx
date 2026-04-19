@@ -79,7 +79,7 @@ export function JournalPhotoPicker({
     <>
       {/* // A11Y-OK: backdrop is decorative overlay dismissed by click — aria-hidden excludes from AT tree */}
       <div
-        className="fixed inset-0 z-[64] bg-black/30 animate-fade-in"
+        className="fixed inset-0 z-[64] bg-black/30 motion-safe:animate-fade-in"
         aria-hidden="true"
         onClick={onClose}
       />
@@ -93,7 +93,7 @@ export function JournalPhotoPicker({
         className={cn(
           "fixed bottom-0 inset-x-0 z-[65] pb-safe lg:max-w-4xl lg:mx-auto",
           "bg-card/95 backdrop-blur-xl border-t border-border/40",
-          "rounded-t-2xl shadow-lg animate-slide-up",
+          "rounded-t-2xl shadow-lg motion-safe:animate-slide-up",
           "pb-safe"
         )}
       >
@@ -135,7 +135,7 @@ export function JournalPhotoPicker({
                   className={cn(
                     "flex-1 flex flex-col items-center gap-2 py-6 rounded-xl",
                     "bg-muted/50 border border-border/30",
-                    "active:scale-95 transition-transform",
+                    "active:scale-95 motion-safe:transition-transform",
                     "disabled:opacity-40",
                     "min-h-[80px]"
                   )}
@@ -153,7 +153,7 @@ export function JournalPhotoPicker({
                 className={cn(
                   "flex-1 flex flex-col items-center gap-2 py-6 rounded-xl",
                   "bg-muted/50 border border-border/30",
-                  "active:scale-95 transition-transform",
+                  "active:scale-95 motion-safe:transition-transform",
                   "disabled:opacity-40",
                   "min-h-[80px]"
                 )}

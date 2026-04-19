@@ -106,7 +106,7 @@ export function AICoachChat() {
             {messages.length > 0 && (
               <motion.button
                 onClick={handleClear}
-                className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-muted border border-border text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+                className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-muted border border-border text-muted-foreground hover:bg-secondary hover:text-foreground motion-safe:transition-colors"
                 aria-label={t.clearHistory || "Clear history"}
                 whileHover={{ scale: 1.05 }}
                 whileTap={zenTap.button}
@@ -118,7 +118,7 @@ export function AICoachChat() {
               onClick={() => {
                 if (!isLoading) closeCoach();
               }}
-              className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-muted transition-colors"
+              className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-muted motion-safe:transition-colors"
               aria-label={t.close || "Close"}
             >
               <X className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
@@ -183,7 +183,7 @@ export function AICoachChat() {
               onKeyDown={handleKeyPress}
               placeholder={t.aiCoachPlaceholder || "Type a message..."}
               className={cn(
-                "flex-1 px-4 py-3.5 rounded-xl transition-all",
+                "flex-1 px-4 py-3.5 rounded-xl motion-safe:transition-all",
                 "bg-secondary backdrop-blur-sm border border-border",
                 "text-foreground placeholder:text-muted-foreground",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50 focus:border-violet-500/30"
@@ -194,7 +194,7 @@ export function AICoachChat() {
               onClick={handleSend}
               disabled={!input.trim() || isLoading}
               className={cn(
-                "p-3.5 rounded-xl min-w-[52px] min-h-[52px] flex items-center justify-center transition-all",
+                "p-3.5 rounded-xl min-w-[52px] min-h-[52px] flex items-center justify-center motion-safe:transition-all",
                 input.trim() && !isLoading
                   ? "bg-gradient-to-r from-violet-500 to-purple-600 text-white"
                   : "bg-secondary text-muted-foreground"
@@ -309,7 +309,7 @@ function QuickAction({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "px-4 py-2.5 min-h-[44px] rounded-full text-xs font-medium transition-all",
+        "px-4 py-2.5 min-h-[44px] rounded-full text-xs font-medium motion-safe:transition-all",
         disabled
           ? "bg-muted text-muted-foreground/50 cursor-not-allowed"
           : "bg-muted border border-border text-muted-foreground hover:bg-secondary hover:text-foreground"

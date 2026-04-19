@@ -343,7 +343,7 @@ export const JournalEntryCard = memo(function JournalEntryCard({
           "relative rounded-2xl overflow-hidden cursor-pointer group",
           "bg-card/60 backdrop-blur-md",
           "border border-white/[0.08] dark:border-white/[0.05]",
-          "transition-all duration-300",
+          "motion-safe:transition-all motion-safe:duration-300",
           isActive && "ring-1 ring-primary/30 border-primary/20",
           dimmed && "opacity-60"
         )}
@@ -496,7 +496,7 @@ export const JournalEntryCard = memo(function JournalEntryCard({
                     void hapticTap();
                     onDelete(entry.id);
                   }}
-                  className="p-2.5 -m-1 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-destructive/10 text-muted-foreground/60 hover:text-destructive transition-all min-w-[44px] min-h-[44px] flex items-center justify-center"
+                  className="p-2.5 -m-1 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-destructive/10 text-muted-foreground/60 hover:text-destructive motion-safe:transition-all min-w-[44px] min-h-[44px] flex items-center justify-center"
                   aria-label={ts.delete || "Delete"}
                 >
                   <Trash2 className="w-4 h-4" />

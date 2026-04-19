@@ -32,7 +32,6 @@ import { YearInPixels } from "./YearInPixels";
 import { MoodCorrelations } from "./MoodCorrelations";
 import { AnimatedCounter } from "@/components/ui/AnimatedCounter";
 import { shouldAnimate } from "@/lib/animationUtils";
-import { formatDecimal } from "@/lib/timeUtils";
 
 const MOOD_COLORS: Record<MoodType, string> = {
   great: "hsl(var(--mood-great))",
@@ -507,7 +506,7 @@ export const JournalStats = memo(function JournalStats({ entries, onBack }: Jour
                   {ts.journalStatsAvgPerWeek || "Avg / Week"}
                 </p>
                 <p className="text-lg font-bold text-foreground mt-0.5">
-                  <AnimatedCounter target={streakData.avgPerWeek} format={(v) => formatDecimal(v, language)} />
+                  <AnimatedCounter target={streakData.avgPerWeek} format={(v) => v.toFixed(1)} />
                 </p>
               </motion.div>
             </div>
@@ -563,7 +562,7 @@ export const JournalStats = memo(function JournalStats({ entries, onBack }: Jour
                           <div
                             key={dayIdx}
                             className={cn(
-                              "w-full aspect-square rounded-[2px] transition-colors",
+                              "w-full aspect-square rounded-[2px] motion-safe:transition-colors",
                               dayData.isFuture
                                 ? "bg-muted/20"
                                 : dayData.mood
@@ -656,7 +655,7 @@ export const JournalStats = memo(function JournalStats({ entries, onBack }: Jour
                 ref={moodTimelineRef}
                 className="p-4 rounded-xl bg-card/70 backdrop-blur-sm border border-border/20"
                 role="img"
-                aria-label={`${ts.journalStatsMoodTime || "Mood Over Time"}: ${moodTimeline.map((w) => `${w.week} ${formatDecimal(w.avg, language)}`).join(", ")}`}
+                aria-label={`${ts.journalStatsMoodTime || "Mood Over Time"}: ${moodTimeline.map((w) => `${w.week} ${w.avg.toFixed(1)}`).join(", ")}`}
               >
                 <h3 className="text-xs font-bold text-muted-foreground/50 uppercase tracking-widest mb-3">
                   {ts.journalStatsMoodTime || "Mood Over Time"}
@@ -740,7 +739,7 @@ export const JournalStats = memo(function JournalStats({ entries, onBack }: Jour
                     <div key={d.day} className="flex-1 flex flex-col items-center gap-1">
                       <div
                         className={cn(
-                          "w-full rounded-t-md transition-all",
+                          "w-full rounded-t-md motion-safe:transition-all",
                           d.count > 0 ? "bg-primary/60" : "bg-muted/30"
                         )}
                         style={{ height: `${Math.max(height, 4)}%` }}

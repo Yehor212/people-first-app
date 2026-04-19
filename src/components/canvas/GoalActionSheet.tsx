@@ -59,7 +59,7 @@ function ActionRow({
       disabled={disabled}
       className={cn(
         "w-full flex items-center gap-3 px-5 py-4",
-        "text-sm font-medium transition-colors",
+        "text-sm font-medium motion-safe:transition-colors",
         disabled
           ? "text-muted-foreground/60 cursor-not-allowed"
           : destructive
@@ -196,7 +196,7 @@ export function GoalActionSheet({
                     type="button"
                     onClick={() => handleIconTap(key)}
                     className={cn(
-                      "p-3 rounded-lg transition-all",
+                      "p-3 rounded-lg motion-safe:transition-all",
                       isSelected
                         ? "bg-primary/15 ring-1 ring-primary/30 text-foreground"
                         : "text-muted-foreground active:text-foreground active:bg-muted/50"
@@ -220,7 +220,7 @@ export function GoalActionSheet({
                     type="button"
                     onClick={() => handleEmojiTap(emoji)}
                     className={cn(
-                      "w-9 h-9 rounded-lg flex items-center justify-center transition-all text-base",
+                      "w-9 h-9 rounded-lg flex items-center justify-center motion-safe:transition-all text-base",
                       isSelected ? "bg-primary/15 ring-1 ring-primary/30" : "active:bg-muted/50"
                     )}
                     aria-label={`Emoji: ${emoji}`}
@@ -242,7 +242,7 @@ export function GoalActionSheet({
                     type="button"
                     onClick={() => handleColorTap(key)}
                     className={cn(
-                      "w-11 h-11 rounded-full transition-all flex-shrink-0",
+                      "w-11 h-11 rounded-full motion-safe:transition-all flex-shrink-0",
                       isSelected
                         ? "ring-2 ring-white/60 ring-offset-2 ring-offset-[rgba(15,20,30,0.95)]"
                         : "ring-1 ring-white/10"

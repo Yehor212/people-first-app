@@ -93,7 +93,7 @@ function _HabitsProgress({ done, total }: { done: number; total: number }) {
     <div className="w-full">
       <div className="h-1.5 bg-muted rounded-full overflow-hidden">
         <div
-          className="h-full bg-emerald-500 rounded-full transition-all duration-500 ease-out"
+          className="h-full bg-emerald-500 rounded-full motion-safe:transition-all motion-safe:duration-500 ease-out"
           style={{ width: `${percentage}%` }}
         />
       </div>

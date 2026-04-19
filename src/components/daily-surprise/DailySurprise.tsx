@@ -65,11 +65,11 @@ export function DailySurprise({ onNavigate }: DailySurpriseProps) {
       <button
         onClick={handleOpen}
         className={cn(
-          "w-full p-4 rounded-2xl border transition-all",
+          "w-full p-4 rounded-2xl border motion-safe:transition-all",
           "bg-gradient-to-r",
           getTypeColor(todaySurprise.type),
           "hover:scale-[1.02] active:scale-[0.98]",
-          "animate-pulse-subtle"
+          "motion-safe:animate-pulse-subtle"
         )}
       >
         <div className="flex items-center gap-3">
@@ -80,7 +80,7 @@ export function DailySurprise({ onNavigate }: DailySurpriseProps) {
             <p className="font-semibold text-foreground">{t.dailySurpriseTitle}</p>
             <p className="text-sm text-muted-foreground">{t.dailySurpriseTap}</p>
           </div>
-          <Sparkles className="w-5 h-5 text-amber-400 animate-pulse" />
+          <Sparkles className="w-5 h-5 text-amber-400 motion-safe:animate-pulse" />
         </div>
       </button>
     );
@@ -92,7 +92,7 @@ export function DailySurprise({ onNavigate }: DailySurpriseProps) {
       <button
         onClick={() => setIsOpen(true)}
         className={cn(
-          "w-full p-3 rounded-xl border transition-all opacity-70 hover:opacity-100",
+          "w-full p-3 rounded-xl border motion-safe:transition-all opacity-70 hover:opacity-100",
           "bg-gradient-to-r",
           getTypeColor(todaySurprise.type)
         )}
@@ -112,7 +112,7 @@ export function DailySurprise({ onNavigate }: DailySurpriseProps) {
   return (
     <div
       className={cn(
-        "relative p-5 rounded-2xl border transition-all animate-scale-in",
+        "relative p-5 rounded-2xl border motion-safe:transition-all motion-safe:animate-scale-in",
         "bg-gradient-to-br",
         getTypeColor(todaySurprise.type)
       )}
@@ -120,7 +120,7 @@ export function DailySurprise({ onNavigate }: DailySurpriseProps) {
       {/* Close button */}
       <button
         onClick={() => setIsOpen(false)}
-        className="absolute top-3 end-3 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full hover:bg-black/10 transition-colors"
+        className="absolute top-3 end-3 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full hover:bg-black/10 motion-safe:transition-colors"
         aria-label={t.close || "Close"}
       >
         <X className="w-4 h-4 text-muted-foreground" />
@@ -150,7 +150,7 @@ export function DailySurprise({ onNavigate }: DailySurpriseProps) {
         <button
           onClick={handleAction}
           className={cn(
-            "w-full py-2.5 rounded-xl font-medium transition-all",
+            "w-full py-2.5 rounded-xl font-medium motion-safe:transition-all",
             "bg-primary/20 hover:bg-primary/30 text-primary",
             "flex items-center justify-center gap-2"
           )}

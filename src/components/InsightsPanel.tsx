@@ -150,7 +150,7 @@ export function InsightsPanel({
                   </div>
                   <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                     <div
-                      className={`h-full rounded-full transition-all duration-500 ${current >= target ? "bg-green-500" : "bg-primary/60"}`}
+                      className={`h-full rounded-full motion-safe:transition-all motion-safe:duration-500 ${current >= target ? "bg-green-500" : "bg-primary/60"}`}
                       style={{
                         width: `${Math.min((current / target) * 100, 100)}%`,
                       }}
@@ -191,7 +191,7 @@ export function InsightsPanel({
       {collapsible ? (
         <button
           onClick={toggleCollapsed}
-          className={`w-full p-4 bg-gradient-to-r from-primary/10 to-primary/5 ${!isCollapsed ? "border-b border-border" : ""} transition-colors hover:from-primary/15 hover:to-primary/10 active:from-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring`}
+          className={`w-full p-4 bg-gradient-to-r from-primary/10 to-primary/5 ${!isCollapsed ? "border-b border-border" : ""} motion-safe:transition-colors hover:from-primary/15 hover:to-primary/10 active:from-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring`}
           aria-expanded={!isCollapsed}
           aria-label={
             isCollapsed
@@ -218,7 +218,7 @@ export function InsightsPanel({
                 {isCollapsed ? t.expand || "Expand" : t.collapse || "Collapse"}
               </span>
               <ChevronDown
-                className={`w-5 h-5 transition-transform duration-200 ${isCollapsed ? "" : "rotate-180"}`}
+                className={`w-5 h-5 motion-safe:transition-transform motion-safe:duration-200 ${isCollapsed ? "" : "rotate-180"}`}
               />
             </div>
           </div>
@@ -244,7 +244,7 @@ export function InsightsPanel({
               onClick={() => setShowHelp(!showHelp)}
               aria-expanded={showHelp}
               aria-label={t.insightsHelpTitle || "About Insights"}
-              className="text-muted-foreground hover:text-foreground transition-colors p-2 -m-2"
+              className="text-muted-foreground hover:text-foreground motion-safe:transition-colors p-2 -m-2"
             >
               <Info className="w-5 h-5" />
             </button>
@@ -261,7 +261,7 @@ export function InsightsPanel({
               <button
                 onClick={() => setShowHelp(!showHelp)}
                 aria-expanded={showHelp}
-                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground motion-safe:transition-colors"
               >
                 <Info className="w-3.5 h-3.5" />
                 <span>{t.insightsHelpTitle || "About Insights"}</span>
@@ -316,7 +316,7 @@ export function InsightsPanel({
                 {/* Dismiss button — touch-friendly visibility */}
                 <button
                   onClick={() => dismissInsight(insight.id)}
-                  className="absolute top-2 end-2 p-1.5 rounded-lg bg-card/80 hover:bg-card text-muted-foreground hover:text-foreground transition-colors zen-shadow-sm opacity-60 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 sm:focus:opacity-100 active:opacity-100 min-w-[44px] min-h-[44px] flex items-center justify-center"
+                  className="absolute top-2 end-2 p-1.5 rounded-lg bg-card/80 hover:bg-card text-muted-foreground hover:text-foreground motion-safe:transition-colors zen-shadow-sm opacity-60 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 sm:focus:opacity-100 active:opacity-100 min-w-[44px] min-h-[44px] flex items-center justify-center"
                   aria-label={t.insightsDismiss || "Dismiss"}
                 >
                   <X className="w-4 h-4" />
@@ -328,7 +328,7 @@ export function InsightsPanel({
             {compact && hasMore && (
               <button
                 onClick={() => setIsExpanded(!isExpanded)}
-                className="w-full py-3 flex items-center justify-center gap-2 text-sm text-primary hover:text-primary/80 transition-colors font-medium"
+                className="w-full py-3 flex items-center justify-center gap-2 text-sm text-primary hover:text-primary/80 motion-safe:transition-colors font-medium"
               >
                 {isExpanded ? (
                   <>
@@ -356,7 +356,7 @@ export function InsightsPanel({
                     {/* Added touch-friendly visibility */}
                     <button
                       onClick={() => dismissInsight(insight.id)}
-                      className="absolute top-2 end-2 p-1.5 rounded-lg bg-card/80 hover:bg-card text-muted-foreground hover:text-foreground transition-colors zen-shadow-sm opacity-60 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 sm:focus:opacity-100 active:opacity-100 min-w-[44px] min-h-[44px] flex items-center justify-center"
+                      className="absolute top-2 end-2 p-1.5 rounded-lg bg-card/80 hover:bg-card text-muted-foreground hover:text-foreground motion-safe:transition-colors zen-shadow-sm opacity-60 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 sm:focus:opacity-100 active:opacity-100 min-w-[44px] min-h-[44px] flex items-center justify-center"
                       aria-label={t.insightsDismiss || "Dismiss"}
                     >
                       <X className="w-4 h-4" />

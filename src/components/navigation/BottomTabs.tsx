@@ -61,7 +61,7 @@ export const BottomTabs = memo(function BottomTabs({
               aria-selected={activeTab === tab.id}
               aria-label={tab.label}
               className={cn(
-                "flex flex-col items-center gap-1 py-2 px-3 flex-1 rounded-xl transition-all duration-200 min-w-0 min-h-[44px]",
+                "flex flex-col items-center gap-1 py-2 px-3 flex-1 rounded-xl motion-safe:transition-all motion-safe:duration-200 min-w-0 min-h-[44px]",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
                 activeTab === tab.id
                   ? "text-primary"
@@ -70,14 +70,14 @@ export const BottomTabs = memo(function BottomTabs({
             >
               <tab.icon
                 className={cn(
-                  "w-6 h-6 transition-colors duration-200",
+                  "w-6 h-6 motion-safe:transition-colors motion-safe:duration-200",
                   activeTab === tab.id ? "text-primary" : "text-muted-foreground"
                 )}
                 aria-hidden="true"
               />
               <span
                 className={cn(
-                  "text-xs truncate max-w-full transition-colors duration-200",
+                  "text-xs truncate max-w-full motion-safe:transition-colors motion-safe:duration-200",
                   activeTab === tab.id ? "text-primary font-medium" : "text-muted-foreground"
                 )}
               >

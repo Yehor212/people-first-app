@@ -18,14 +18,14 @@ interface BadgeCardProps {
 export const BadgeCard = memo(function BadgeCard({ badge, language, t, onShare, virtual = false }: BadgeCardProps) {
   return (
     <div
-      className={`relative bg-secondary rounded-2xl p-4 zen-shadow-card transition-all ${virtual ? 'h-full ' : ''}${
+      className={`relative bg-secondary rounded-2xl p-4 zen-shadow-card motion-safe:transition-all ${virtual ? 'h-full ' : ''}${
         badge.unlocked ? 'hover:zen-shadow-hover' : 'opacity-50'
       }`}
     >
       {badge.unlocked && (
         <button
           onClick={() => onShare(badge)}
-          className="absolute top-2 end-2 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-primary/10 hover:bg-primary/20 text-primary transition-colors"
+          className="absolute top-2 end-2 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-primary/10 hover:bg-primary/20 text-primary motion-safe:transition-colors"
           aria-label={t.shareButton || 'Share'}
         >
           <Share2 className="w-3.5 h-3.5" />

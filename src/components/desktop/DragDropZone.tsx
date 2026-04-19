@@ -85,7 +85,7 @@ export function DragDropZone({
           onDrop={(e) => handleDrop(e, id)}
           onDragLeave={() => setOverId(null)}
           className={cn(
-            "transition-all duration-150",
+            "motion-safe:transition-all motion-safe:duration-150",
             draggedId === id && "opacity-50",
             overId === id && draggedId !== id && "ring-2 ring-primary rounded-xl"
           )}
@@ -148,7 +148,7 @@ export function FileDropZone({
       onDragLeave={() => setIsDragOver(false)}
       onDrop={handleDrop}
       className={cn(
-        "transition-all duration-150",
+        "motion-safe:transition-all motion-safe:duration-150",
         isDragOver && "ring-2 ring-primary ring-dashed bg-primary/5 rounded-xl",
         className
       )}

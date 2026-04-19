@@ -147,7 +147,7 @@ export function ScheduleTimeline({
   // --- JSX ---
 
   return (
-    <div className="relative overflow-hidden rounded-3xl animate-fade-in">
+    <div className="relative overflow-hidden rounded-3xl motion-safe:animate-fade-in">
       {/* Cosmic background - Theme-aware */}
       <div className="absolute inset-0 bg-gradient-to-br from-amber-50/80 via-sky-50/60 to-indigo-50/40 dark:bg-none" />
       <div
@@ -246,7 +246,7 @@ export function ScheduleTimeline({
                 onClick={goToToday}
                 whileHover={{ scale: 1.1 }}
                 whileTap={zenTap.button}
-                className="p-2.5 bg-secondary hover:bg-secondary/80 backdrop-blur-sm rounded-xl border border-border transition-colors"
+                className="p-2.5 bg-secondary hover:bg-secondary/80 backdrop-blur-sm rounded-xl border border-border motion-safe:transition-colors"
                 aria-label={t.today || "Today"}
               >
                 <Home className="w-5 h-5 text-slate-600 dark:text-white/80" />
@@ -259,7 +259,7 @@ export function ScheduleTimeline({
                 onClick={() => setShowAddModal(true)}
                 whileHover={{ scale: 1.1 }}
                 whileTap={zenTap.button}
-                className="p-2.5 bg-gradient-to-br from-primary/40 to-accent/40 hover:from-primary/60 hover:to-accent/60 backdrop-blur-sm rounded-xl border border-primary/30 transition-all shadow-lg shadow-primary/20"
+                className="p-2.5 bg-gradient-to-br from-primary/40 to-accent/40 hover:from-primary/60 hover:to-accent/60 backdrop-blur-sm rounded-xl border border-primary/30 motion-safe:transition-all shadow-lg shadow-primary/20"
                 aria-label={t.scheduleAddEvent || "Add event"}
               >
                 <Plus className="w-5 h-5 text-white" />

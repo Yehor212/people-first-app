@@ -135,7 +135,7 @@ export const HabitsHeroZone = memo(function HabitsHeroZone({
           <button
             type="button"
             onClick={handleCreate}
-            className="mt-5 inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition-opacity active:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+            className="mt-5 inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground motion-safe:transition-opacity active:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
             aria-label={tx.navV2HabitsCreate}
             data-testid="habits-hero-create-empty"
           >
@@ -147,6 +147,7 @@ export const HabitsHeroZone = memo(function HabitsHeroZone({
         <>
           <ul
             className="mt-6 flex flex-col gap-3"
+            role="list"
             aria-label={tx.navV2HabitsHero}
             data-testid="habits-hero-list"
           >
@@ -168,7 +169,7 @@ export const HabitsHeroZone = memo(function HabitsHeroZone({
             <button
               type="button"
               onClick={handleCreate}
-              className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition-opacity active:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+              className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground motion-safe:transition-opacity active:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
               aria-label={tx.navV2HabitsCreate}
               data-testid="habits-hero-create"
             >
@@ -178,7 +179,7 @@ export const HabitsHeroZone = memo(function HabitsHeroZone({
             <button
               type="button"
               onClick={handleScroll}
-              className="inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-border bg-card/60 px-4 py-3 text-sm font-medium text-foreground transition-colors hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+              className="inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-border bg-card/60 px-4 py-3 text-sm font-medium text-foreground motion-safe:transition-colors hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
               aria-label={tx.navV2HabitsScrollToGarden}
               data-testid="habits-hero-scroll-to-garden"
             >

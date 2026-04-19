@@ -127,7 +127,7 @@ export function WeekCrystal({
       <div className="relative w-32 h-40">
         {/* Glow effect */}
         <div
-          className="absolute inset-0 blur-xl opacity-50 animate-crystal-pulse"
+          className="absolute inset-0 blur-xl opacity-50 motion-safe:animate-crystal-pulse"
           style={{
             background: `radial-gradient(circle at 50% 60%, ${theme.glow}, transparent 70%)`,
             '--crystal-color': theme.glow
@@ -189,7 +189,7 @@ export function WeekCrystal({
               cy={sparkle.y}
               r={3 * sparkle.scale}
               fill={theme.sparkleColor}
-              className="animate-fade-in opacity-0"
+              className="motion-safe:animate-fade-in opacity-0"
             />
           ))}
         </svg>

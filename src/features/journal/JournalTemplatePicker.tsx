@@ -35,7 +35,7 @@ export function JournalTemplatePicker({ onSelect, onClose }: JournalTemplatePick
     <>
       {/* // A11Y-OK: backdrop is decorative overlay dismissed by click — aria-hidden excludes from AT tree */}
       <div
-        className="fixed inset-0 z-[64] bg-black/30 animate-fade-in"
+        className="fixed inset-0 z-[64] bg-black/30 motion-safe:animate-fade-in"
         aria-hidden="true"
         onClick={onClose}
       />
@@ -45,7 +45,7 @@ export function JournalTemplatePicker({ onSelect, onClose }: JournalTemplatePick
         role="dialog"
         aria-modal="true"
         aria-label={ts.ariaTemplatePicker || "Template picker"}
-        className="fixed bottom-0 inset-x-0 z-[65] animate-slide-up pb-safe"
+        className="fixed bottom-0 inset-x-0 z-[65] motion-safe:animate-slide-up pb-safe"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Handle bar */}
@@ -75,7 +75,7 @@ export function JournalTemplatePicker({ onSelect, onClose }: JournalTemplatePick
               className={cn(
                 "flex flex-col items-center gap-2 p-4 rounded-xl min-h-[100px]",
                 "bg-muted/30 border border-border/20",
-                "hover:bg-muted/50 transition-colors"
+                "hover:bg-muted/50 motion-safe:transition-colors"
               )}
             >
               <FileText className="w-6 h-6 text-muted-foreground/60" />
@@ -102,7 +102,7 @@ export function JournalTemplatePicker({ onSelect, onClose }: JournalTemplatePick
                   "flex flex-col items-center gap-2 p-4 rounded-xl min-h-[100px]",
                   "bg-card/60 border border-border/15",
                   "hover:bg-card/80 hover:border-primary/20",
-                  "transition-all duration-200"
+                  "motion-safe:transition-all motion-safe:duration-200"
                 )}
               >
                 <StickerRenderer emoji={template.icon} size="sm" />

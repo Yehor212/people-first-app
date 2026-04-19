@@ -273,7 +273,7 @@ export const HabitHeatmapGrid = memo(function HabitHeatmapGrid({
                         : undefined
                     }
                     className={cn(
-                      "w-3 h-3 rounded-[2px] transition-colors",
+                      "w-3 h-3 rounded-[2px] motion-safe:transition-colors",
                       isActionable
                         ? "cursor-pointer hover:brightness-150"
                         : "cursor-default",

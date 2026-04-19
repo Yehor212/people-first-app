@@ -33,7 +33,7 @@ export function JournalStickerPackManager({
     <>
       {/* // A11Y-OK: backdrop is decorative overlay dismissed by click — aria-hidden excludes from AT tree */}
       <div
-        className="fixed inset-0 z-[66] bg-black/40 animate-fade-in"
+        className="fixed inset-0 z-[66] bg-black/40 motion-safe:animate-fade-in"
         aria-hidden="true"
         onClick={onClose}
       />
@@ -46,7 +46,7 @@ export function JournalStickerPackManager({
         className={cn(
           "fixed bottom-0 inset-x-0 z-[67] pb-safe",
           "bg-card/95 backdrop-blur-xl border-t border-border/40",
-          "rounded-t-2xl shadow-lg animate-slide-up",
+          "rounded-t-2xl shadow-lg motion-safe:animate-slide-up",
           "max-h-[70dvh] flex flex-col",
           "pb-safe"
         )}
@@ -82,7 +82,7 @@ export function JournalStickerPackManager({
                 key={cat.key}
                 layout
                 className={cn(
-                  "rounded-xl border p-3 transition-all duration-200",
+                  "rounded-xl border p-3 motion-safe:transition-all motion-safe:duration-200",
                   enabled ? "bg-primary/5 border-primary/20" : "bg-muted/10 border-border/10"
                 )}
               >
@@ -129,7 +129,7 @@ export function JournalStickerPackManager({
                     }}
                     disabled={isLastEnabled}
                     className={cn(
-                      "relative w-12 h-7 rounded-full transition-colors duration-200 flex-shrink-0",
+                      "relative w-12 h-7 rounded-full motion-safe:transition-colors motion-safe:duration-200 flex-shrink-0",
                       "min-w-[48px] min-h-[44px] flex items-center",
                       enabled ? "bg-primary" : "bg-muted/40",
                       isLastEnabled && "opacity-50 cursor-not-allowed"

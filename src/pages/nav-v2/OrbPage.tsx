@@ -148,7 +148,7 @@ export const OrbPage = memo(function OrbPage() {
                   onClick={handleOrbTap}
                   aria-label={tx.somLogFeeling || "Log how you feel"}
                   data-testid="orb-page-hero"
-                  className="relative rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-background transition-transform duration-200 active:scale-[0.98]"
+                  className="relative rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-background motion-safe:transition-transform motion-safe:duration-200 active:scale-[0.98]"
                 >
                   <div className="block md:hidden">
                     <ValenceOrb valence={orbValence} size={280} />
@@ -225,7 +225,7 @@ export const OrbPage = memo(function OrbPage() {
                     href="/support"
                     data-testid="mood-support-link"
                     className={[
-                      "text-xs transition-colors",
+                      "text-xs motion-safe:transition-colors",
                       appliedTheme === "paper"
                         ? "text-warm-brown-ink/50 hover:text-primary"
                         : "text-white/50 hover:text-primary",

@@ -35,7 +35,7 @@ export const LeaderboardEntryRow = memo(function LeaderboardEntryRow({
       exit={{ opacity: 0, x: 20 }}
       transition={{ delay: index * 0.05 }}
       className={cn(
-        "flex items-center gap-3 p-3.5 rounded-xl transition-all",
+        "flex items-center gap-3 p-3.5 rounded-xl motion-safe:transition-all",
         entry.isCurrentUser && "ring-1 ring-violet-500/40",
         !rankConfig &&
           (entry.isCurrentUser

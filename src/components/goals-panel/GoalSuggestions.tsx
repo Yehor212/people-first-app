@@ -85,14 +85,14 @@ export function GoalSuggestions({ habits, currentStreak, existingGoals, onAdd, t
           className={cn(
             'w-full flex items-center gap-3 p-3 rounded-xl',
             'border border-dashed border-border/60 hover:border-primary/40',
-            'hover:bg-muted/30 transition-all text-start group',
+            'hover:bg-muted/30 motion-safe:transition-all text-start group',
           )}
         >
           <span className="text-lg">{s.emoji}</span>
-          <span className="flex-1 text-sm text-muted-foreground group-hover:text-foreground transition-colors">
+          <span className="flex-1 text-sm text-muted-foreground group-hover:text-foreground motion-safe:transition-colors">
             {s.title}
           </span>
-          <Plus className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+          <Plus className="w-4 h-4 text-muted-foreground group-hover:text-primary motion-safe:transition-colors" />
         </motion.button>
       ))}
     </div>

@@ -111,7 +111,7 @@ export function RingDetailSheet({
   return (
     <>
       <div
-        className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm animate-fade-in"
+        className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm motion-safe:animate-fade-in"
         onClick={() => onOpenChange(false)}
         role="button"
         tabIndex={0}
@@ -128,7 +128,7 @@ export function RingDetailSheet({
         onKeyDown={handleKeyDown}
         role="dialog"
         aria-modal="true"
-        className="fixed bottom-0 inset-x-0 z-[60] rounded-t-[2rem] bg-background max-h-[90dvh] overflow-hidden animate-slide-up pb-safe lg:max-w-4xl lg:mx-auto"
+        className="fixed bottom-0 inset-x-0 z-[60] rounded-t-[2rem] bg-background max-h-[90dvh] overflow-hidden motion-safe:animate-slide-up pb-safe lg:max-w-4xl lg:mx-auto"
       >
         <h2 className="sr-only">{t[ringType] || theme.label}</h2>
 
@@ -162,7 +162,7 @@ export function RingDetailSheet({
           {/* Close button */}
           <button
             onClick={() => onOpenChange(false)}
-            className="absolute top-3 end-3 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-foreground/20 hover:bg-foreground/30 transition-colors z-10"
+            className="absolute top-3 end-3 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-foreground/20 hover:bg-foreground/30 motion-safe:transition-colors z-10"
             aria-label={t.close || "Close"}
           >
             <X className="w-5 h-5 text-white" aria-hidden="true" />
@@ -314,7 +314,7 @@ export function RingDetailSheet({
                   <motion.div
                     key={day.date}
                     className={cn(
-                      "flex flex-col items-center py-2 rounded-xl transition-all",
+                      "flex flex-col items-center py-2 rounded-xl motion-safe:transition-all",
                       isToday && "ring-2 ring-primary ring-offset-2 ring-offset-background"
                     )}
                     style={{
@@ -381,7 +381,7 @@ export function RingDetailSheet({
               "w-full py-4 px-5 rounded-2xl font-semibold",
               "flex items-center justify-center gap-2",
               `bg-gradient-to-r ${theme.gradient}`,
-              "text-white shadow-xl transition-all active:scale-[0.98]"
+              "text-white shadow-xl motion-safe:transition-all active:scale-[0.98]"
             )}
             style={{ boxShadow: `0 8px 32px ${theme.glowColor}` }}
             initial={{ y: 20, opacity: 0 }}

@@ -53,7 +53,7 @@ const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
         onKeyDown={handleKeyDown}
         className={cn(
           // Exact ThemeToggle dimensions: 52×28px
-          "relative flex-shrink-0 rounded-full transition-colors duration-300 active:scale-[0.97]",
+          "relative flex-shrink-0 rounded-full motion-safe:transition-colors motion-safe:duration-300 active:scale-[0.97]",
           "w-[52px] h-[28px] min-w-[52px] min-h-[28px]",
           // Colors - semantic theme colors
           isChecked ? "bg-primary" : "bg-muted-foreground/40",

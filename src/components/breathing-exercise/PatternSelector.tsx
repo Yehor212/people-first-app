@@ -26,7 +26,7 @@ export function PatternSelector({ patterns, selected, onSelect, onStart, t }: Pa
             onClick={() => onSelect(pattern)}
             className={cn(
               "w-full p-4 rounded-xl flex items-center gap-3 text-start relative overflow-hidden",
-              "transition-all duration-300",
+              "motion-safe:transition-all motion-safe:duration-300",
               selected.id === pattern.id
                 ? "bg-secondary border border-cyan-500/40"
                 : "bg-muted border border-border hover:bg-secondary hover:border-border"

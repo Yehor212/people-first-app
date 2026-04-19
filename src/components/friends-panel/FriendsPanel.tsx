@@ -111,7 +111,7 @@ export function FriendsPanel({
               <button
                 onClick={() => void actions.handleRefresh()}
                 disabled={actions.isRefreshing}
-                className="p-3 rounded-xl bg-muted hover:bg-muted/80 transition-colors"
+                className="p-3 rounded-xl bg-muted hover:bg-muted/80 motion-safe:transition-colors"
                 aria-label={tRecord.refresh || "Refresh"}
               >
                 <RefreshCw
@@ -121,7 +121,7 @@ export function FriendsPanel({
               </button>
               <button
                 onClick={() => setShowSettings(!showSettings)}
-                className="p-3 rounded-xl bg-muted hover:bg-muted/80 transition-colors"
+                className="p-3 rounded-xl bg-muted hover:bg-muted/80 motion-safe:transition-colors"
                 aria-label={tRecord.settings || "Settings"}
               >
                 <Settings className="w-4 h-4" aria-hidden="true" />
@@ -129,7 +129,7 @@ export function FriendsPanel({
               <button
                 onClick={onClose}
                 aria-label={tRecord.close || "Close"}
-                className="p-3 rounded-xl bg-muted hover:bg-muted/80 transition-colors"
+                className="p-3 rounded-xl bg-muted hover:bg-muted/80 motion-safe:transition-colors"
               >
                 <X className="w-5 h-5" aria-hidden="true" />
               </button>
@@ -302,7 +302,7 @@ export function FriendsPanel({
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, x: -20 }}
-                            className="flex items-center gap-3 p-3 rounded-xl bg-card border cursor-pointer hover:bg-accent/5 transition-colors"
+                            className="flex items-center gap-3 p-3 rounded-xl bg-card border cursor-pointer hover:bg-accent/5 motion-safe:transition-colors"
                             onClick={() => setSelectedFriend(friend)}
                             role="button"
                             tabIndex={0}

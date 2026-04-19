@@ -133,7 +133,7 @@ export function FeatureUnlock({
       role="dialog"
       aria-modal="true"
       aria-labelledby="feature-unlock-title"
-      className={`fixed inset-0 z-[70] flex items-center justify-center bg-black/50 backdrop-blur-sm transition-opacity duration-300 ${
+      className={`fixed inset-0 z-[70] flex items-center justify-center bg-black/50 backdrop-blur-sm motion-safe:transition-opacity motion-safe:duration-300 ${
         isVisible ? "opacity-100" : "opacity-0"
       }`}
       onClick={handleClose}
@@ -155,7 +155,7 @@ export function FeatureUnlock({
 
       {/* Main card */}
       <div
-        className={`relative m-4 max-w-md w-full bg-card rounded-2xl zen-shadow-card border border-border overflow-hidden transform transition-all duration-300 ${
+        className={`relative m-4 max-w-md w-full bg-card rounded-2xl zen-shadow-card border border-border overflow-hidden transform motion-safe:transition-all motion-safe:duration-300 ${
           isVisible ? "scale-100 opacity-100" : "scale-75 opacity-0"
         }`}
         role="button"
@@ -167,7 +167,7 @@ export function FeatureUnlock({
         <div className={`p-6 ${meta.bgClass} border-b border-border`}>
           <div className="flex flex-col items-center text-center">
             <div
-              className={`p-4 rounded-full ${meta.bgClass} ring-4 ring-white dark:ring-gray-900 mb-4 animate-bounce-slow`}
+              className={`p-4 rounded-full ${meta.bgClass} ring-4 ring-white dark:ring-gray-900 mb-4 motion-safe:animate-bounce-slow`}
             >
               <Icon className={`w-12 h-12 ${meta.colorClass}`} />
             </div>
@@ -200,14 +200,14 @@ export function FeatureUnlock({
             {onTryNow && (
               <button
                 onClick={handleTryNow}
-                className="flex-1 py-3 px-4 bg-primary text-primary-foreground rounded-xl font-medium hover:bg-primary/90 transition-colors zen-shadow-sm"
+                className="flex-1 py-3 px-4 bg-primary text-primary-foreground rounded-xl font-medium hover:bg-primary/90 motion-safe:transition-colors zen-shadow-sm"
               >
                 {t.onboardingTryNow || "Try it now"}
               </button>
             )}
             <button
               onClick={handleClose}
-              className="flex-1 py-3 px-4 bg-card border border-border text-foreground rounded-xl font-medium hover:bg-accent transition-colors"
+              className="flex-1 py-3 px-4 bg-card border border-border text-foreground rounded-xl font-medium hover:bg-accent motion-safe:transition-colors"
             >
               {t.onboardingGotIt || "Got it!"}
             </button>

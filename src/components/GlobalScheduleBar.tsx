@@ -86,7 +86,7 @@ export const GlobalScheduleBar = memo(function GlobalScheduleBar({
       onClick={onTap}
       aria-label={t.viewSchedule || "View schedule"}
       className={cn(
-        "w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl transition-all",
+        "w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl motion-safe:transition-all",
         "bg-card/80 backdrop-blur-sm border border-border/50",
         "hover:bg-card hover:border-primary/30",
         "active:scale-[0.98]"

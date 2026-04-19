@@ -55,7 +55,7 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
               session.loadingProvider === "google" ? t.authSigningInGoogle : t.continueWithGoogle
             }
             aria-disabled={session.isLoading || !supabase}
-            className="w-full py-4 bg-card hover:bg-muted text-foreground font-semibold rounded-2xl transition-all zen-shadow-soft text-lg flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-4 bg-card hover:bg-muted text-foreground font-semibold rounded-2xl motion-safe:transition-all zen-shadow-soft text-lg flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {session.loadingProvider === "google" ? (
               <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
@@ -93,7 +93,7 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
                 session.loadingProvider === "apple" ? t.authSigningIn : t.continueWithApple
               }
               aria-disabled={session.isLoading || !supabase}
-              className="w-full py-4 bg-black hover:bg-gray-900 text-white font-semibold rounded-2xl transition-all zen-shadow-soft text-lg flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-4 bg-black hover:bg-gray-900 text-white font-semibold rounded-2xl motion-safe:transition-all zen-shadow-soft text-lg flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {session.loadingProvider === "apple" ? (
                 <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
@@ -117,7 +117,7 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
                 session.loadingProvider === "facebook" ? t.authSigningIn : t.continueWithFacebook
               }
               aria-disabled={session.isLoading || !supabase}
-              className="w-full py-4 bg-[#1877F2] hover:bg-[#166FE5] text-white font-semibold rounded-2xl transition-all zen-shadow-soft text-lg flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-4 bg-[#1877F2] hover:bg-[#166FE5] text-white font-semibold rounded-2xl motion-safe:transition-all zen-shadow-soft text-lg flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {session.loadingProvider === "facebook" ? (
                 <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
@@ -137,7 +137,7 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
             <button
               onClick={handlers.handlePhoneStart}
               disabled={session.isLoading || !supabase}
-              className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-2xl transition-all zen-shadow-soft text-lg flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-2xl motion-safe:transition-all zen-shadow-soft text-lg flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Phone className="w-5 h-5" />
               {t.continueWithPhone || "Continue with Phone"}
@@ -179,7 +179,7 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
               <button
                 onClick={() => void handlers.handleSendOtp()}
                 disabled={session.loadingProvider === "phone" || !session.phoneNumber.trim()}
-                className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-2xl transition-all zen-shadow-soft text-lg flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-2xl motion-safe:transition-all zen-shadow-soft text-lg flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {session.loadingProvider === "phone" ? (
                   <Loader2 className="w-5 h-5 animate-spin" />
@@ -229,7 +229,7 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
               <button
                 onClick={() => void handlers.handleVerifyOtp()}
                 disabled={session.loadingProvider === "phone" || session.otpCode.length !== 6}
-                className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-2xl transition-all zen-shadow-soft text-lg flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-2xl motion-safe:transition-all zen-shadow-soft text-lg flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {session.loadingProvider === "phone" ? (
                   <Loader2 className="w-5 h-5 animate-spin" />
@@ -290,7 +290,7 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
             href="https://yehor212.github.io/people-first-app/privacy.html"
             target="_blank"
             rel="noopener noreferrer"
-            className="underline hover:text-foreground transition-colors"
+            className="underline hover:text-foreground motion-safe:transition-colors"
           >
             {t.privacyPolicy}
           </a>{" "}
@@ -299,7 +299,7 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
             href="https://yehor212.github.io/people-first-app/terms.html"
             target="_blank"
             rel="noopener noreferrer"
-            className="underline hover:text-foreground transition-colors"
+            className="underline hover:text-foreground motion-safe:transition-colors"
           >
             {t.termsOfService}
           </a>

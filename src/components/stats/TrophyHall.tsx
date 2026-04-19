@@ -233,7 +233,7 @@ export function TrophyHall({ streak, focusMinutes, habitsCompleted, className }:
       <motion.button
         onClick={() => { void hapticTap(); setShowShareModal(true); }}
         className={cn(
-          "absolute top-3 end-3 z-20 p-3 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full transition-all",
+          "absolute top-3 end-3 z-20 p-3 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full motion-safe:transition-all",
           "bg-amber-500/20 hover:bg-amber-500/40",
           "backdrop-blur-sm border border-amber-500/30",
         )}

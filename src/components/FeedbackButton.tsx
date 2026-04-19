@@ -104,7 +104,7 @@ export function FeedbackButton({ position = "bottom-right", className }: Feedbac
           onClick={handleOpen}
           className={cn(
             "fixed z-50 p-3 rounded-full bg-primary text-primary-foreground shadow-lg",
-            "hover:bg-primary/90 active:scale-95 transition-all",
+            "hover:bg-primary/90 active:scale-95 motion-safe:transition-all",
             "bottom-[calc(var(--nav-height)+var(--safe-bottom)+1rem)]",
             positionClasses,
             className
@@ -124,7 +124,7 @@ export function FeedbackButton({ position = "bottom-right", className }: Feedbac
           aria-label={t.ariaFeedback}
         >
           <div
-            className="w-full max-w-md bg-card rounded-2xl shadow-xl animate-slide-up"
+            className="w-full max-w-md bg-card rounded-2xl shadow-xl motion-safe:animate-slide-up"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
@@ -132,7 +132,7 @@ export function FeedbackButton({ position = "bottom-right", className }: Feedbac
               <h2 className="text-lg font-semibold">{t.sendFeedback || "Send Feedback"}</h2>
               <button
                 onClick={handleClose}
-                className="p-2 rounded-lg hover:bg-muted transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+                className="p-2 rounded-lg hover:bg-muted motion-safe:transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
                 aria-label={t.close}
               >
                 <X className="w-5 h-5" />
@@ -148,7 +148,7 @@ export function FeedbackButton({ position = "bottom-right", className }: Feedbac
                     key={value}
                     onClick={() => setType(value)}
                     className={cn(
-                      "flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl border transition-all",
+                      "flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl border motion-safe:transition-all",
                       type === value
                         ? "bg-primary text-primary-foreground border-primary"
                         : "bg-muted/50 border-border hover:border-primary/50"
@@ -177,7 +177,7 @@ export function FeedbackButton({ position = "bottom-right", className }: Feedbac
                 onClick={handleSubmit}
                 disabled={!message.trim() || isSubmitting}
                 className={cn(
-                  "w-full py-3 rounded-xl font-medium flex items-center justify-center gap-2 transition-all",
+                  "w-full py-3 rounded-xl font-medium flex items-center justify-center gap-2 motion-safe:transition-all",
                   message.trim()
                     ? "bg-primary text-primary-foreground hover:bg-primary/90"
                     : "bg-muted text-muted-foreground cursor-not-allowed"

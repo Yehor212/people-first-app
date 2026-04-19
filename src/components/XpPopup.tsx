@@ -54,7 +54,7 @@ function XpPopupItem({ event, onComplete }: { event: XpEvent; onComplete: () => 
     <div
       className={cn(
         "fixed pointer-events-none z-[300] flex flex-col items-center gap-1",
-        "transition-all duration-500 ease-out",
+        "motion-safe:transition-all motion-safe:duration-500 ease-out",
         stage === 'enter' && "opacity-0 scale-50",
         stage === 'float' && "opacity-100 scale-100",
         stage === 'exit' && "opacity-0 scale-75"
@@ -205,7 +205,7 @@ export function ConfettiBurst({ x, y }: { x: number; y: number }) {
       {particles.map(p => (
         <div
           key={p.id}
-          className="absolute animate-particle-burst"
+          className="absolute motion-safe:animate-particle-burst"
           style={{
             left: x,
             top: y,
@@ -231,7 +231,7 @@ export function StreakFireAnimation({ streak }: { streak: number }) {
     <div className="relative inline-flex items-center">
       <Flame
         className={cn(
-          "w-6 h-6 text-orange-500 animate-flame-flicker",
+          "w-6 h-6 text-orange-500 motion-safe:animate-flame-flicker",
           streak >= 7 && "text-orange-400",
           streak >= 30 && "text-amber-400"
         )}

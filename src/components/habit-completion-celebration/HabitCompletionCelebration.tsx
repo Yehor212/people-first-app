@@ -74,8 +74,8 @@ export function HabitCompletionCelebration({
       {/* Main completion toast */}
       <div
         className={cn(
-          "relative flex items-center gap-3 px-5 py-3 rounded-2xl shadow-2xl transition-all duration-300",
-          phase === "check" && "animate-habit-complete-bounce scale-110",
+          "relative flex items-center gap-3 px-5 py-3 rounded-2xl shadow-2xl motion-safe:transition-all motion-safe:duration-300",
+          phase === "check" && "motion-safe:animate-habit-complete-bounce scale-110",
           phase !== "done"
             ? "opacity-100 translate-y-0"
             : "opacity-0 translate-y-4",
@@ -87,23 +87,23 @@ export function HabitCompletionCelebration({
           <div
             className={cn(
               "w-10 h-10 rounded-xl bg-foreground/20 flex items-center justify-center",
-              phase === "check" && "animate-check-circle-fill",
+              phase === "check" && "motion-safe:animate-check-circle-fill",
             )}
           >
             <Check
               className={cn(
                 "w-6 h-6 text-white",
-                phase === "check" && "animate-check-draw",
+                phase === "check" && "motion-safe:animate-check-draw",
               )}
               strokeWidth={3}
             />
           </div>
 
           {/* Sparkle effects */}
-          <div className="absolute -top-1 -end-1 animate-sparkle-burst">
+          <div className="absolute -top-1 -end-1 motion-safe:animate-sparkle-burst">
             <Star className="w-4 h-4 text-yellow-300 fill-yellow-300" />
           </div>
-          <div className="absolute -bottom-1 -start-1 animate-sparkle-burst delay-100">
+          <div className="absolute -bottom-1 -start-1 motion-safe:animate-sparkle-burst delay-100">
             <Star className="w-3 h-3 text-yellow-300 fill-yellow-300" />
           </div>
         </div>

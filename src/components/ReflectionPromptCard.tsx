@@ -112,7 +112,7 @@ export const ReflectionPromptCard = memo(function ReflectionPromptCard({ prompt 
         <button
           onClick={handleSubmit}
           disabled={!text.trim()}
-          className="self-end rounded-lg bg-violet-500 hover:bg-violet-600 disabled:opacity-40 disabled:cursor-not-allowed p-2 transition-colors"
+          className="self-end rounded-lg bg-violet-500 hover:bg-violet-600 disabled:opacity-40 disabled:cursor-not-allowed p-2 motion-safe:transition-colors"
           aria-label={t.reflectionSubmitLabel || "Submit reflection"}
         >
           <Send className="w-4 h-4 text-white rtl:scale-x-[-1]" />
@@ -122,7 +122,7 @@ export const ReflectionPromptCard = memo(function ReflectionPromptCard({ prompt 
       {/* Expand to journal */}
       <button
         onClick={handleExpandToJournal}
-        className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+        className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground motion-safe:transition-colors"
       >
         <BookOpen className="w-3.5 h-3.5" />
         {t.reflectionExpandJournal || "Expand to journal"}

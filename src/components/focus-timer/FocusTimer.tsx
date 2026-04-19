@@ -63,7 +63,7 @@ export const FocusTimer = memo(function FocusTimer({
     <div className="lg:max-w-xl lg:mx-auto">
       <div
         className={cn(
-          "rounded-2xl p-6 animate-fade-in transition-all relative",
+          "rounded-2xl p-6 motion-safe:animate-fade-in motion-safe:transition-all relative",
           isPrimaryCTA
             ? "ring-2 ring-violet-500/40 shadow-lg shadow-violet-500/20"
             : "bg-card zen-shadow-card"
@@ -87,7 +87,7 @@ export const FocusTimer = memo(function FocusTimer({
             onChange={(e) => setLabel(e.target.value)}
             placeholder={t.focusLabelPlaceholder}
             className={cn(
-              "w-full p-3 rounded-xl focus-visible:outline-none focus-visible:ring-2 transition-colors",
+              "w-full p-3 rounded-xl focus-visible:outline-none focus-visible:ring-2 motion-safe:transition-colors",
               isPrimaryCTA
                 ? "bg-secondary backdrop-blur-sm border border-border text-slate-800 dark:text-white placeholder:text-slate-500 dark:placeholder:text-white/60 focus-visible:ring-violet-500/50"
                 : "bg-secondary text-foreground placeholder:text-muted-foreground focus-visible:ring-primary/30"
@@ -102,7 +102,7 @@ export const FocusTimer = memo(function FocusTimer({
                   key={item.key}
                   onClick={() => handlePresetSelect(item.key)}
                   className={cn(
-                    "px-4 py-2.5 rounded-xl text-xs font-semibold transition-all",
+                    "px-4 py-2.5 rounded-xl text-xs font-semibold motion-safe:transition-all",
                     isPrimaryCTA
                       ? isSelected
                         ? `bg-gradient-to-br ${colors.bg} backdrop-blur-sm border border-border text-slate-800 dark:text-white`

@@ -68,7 +68,7 @@ export const AllCompleteCelebration = memo(function AllCompleteCelebration({ str
       </div>
 
       {/* Main icon — CSS float instead of FM loop */}
-      <div className="relative mb-6 inline-block animate-zen-float">
+      <div className="relative mb-6 inline-block motion-safe:animate-zen-float">
         <div className="flex items-center justify-center">
           <EmojiOrIcon emoji={message.emoji} iconName={message.iconName} size="xl" />
         </div>

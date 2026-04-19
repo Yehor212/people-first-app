@@ -47,7 +47,7 @@ export function JournalPrompt({ onUsePrompt, category, compact = false }: Journa
     return (
       <button
         onClick={() => setIsExpanded(true)}
-        className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground bg-secondary/50 hover:bg-secondary rounded-lg transition-colors"
+        className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground bg-secondary/50 hover:bg-secondary rounded-lg motion-safe:transition-colors"
       >
         <Lightbulb className="w-4 h-4" />
         <span>{t.needInspiration || "Need inspiration?"}</span>
@@ -57,7 +57,7 @@ export function JournalPrompt({ onUsePrompt, category, compact = false }: Journa
   }
 
   return (
-    <div className="bg-gradient-to-r from-accent/10 to-primary/10 rounded-xl p-4 border border-accent/20 animate-fade-in">
+    <div className="bg-gradient-to-r from-accent/10 to-primary/10 rounded-xl p-4 border border-accent/20 motion-safe:animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
@@ -70,7 +70,7 @@ export function JournalPrompt({ onUsePrompt, category, compact = false }: Journa
         {compact && (
           <button
             onClick={() => setIsExpanded(false)}
-            className="p-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-secondary/50 rounded transition-colors"
+            className="p-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-secondary/50 rounded motion-safe:transition-colors"
             aria-label={t.collapse || "Collapse"}
           >
             <ChevronUp className="w-4 h-4" />
@@ -87,13 +87,13 @@ export function JournalPrompt({ onUsePrompt, category, compact = false }: Journa
       <div className="flex gap-2">
         <button
           onClick={handleUse}
-          className="flex-1 py-2 px-4 bg-accent/20 text-accent hover:bg-accent/30 rounded-lg font-medium text-sm transition-colors"
+          className="flex-1 py-2 px-4 bg-accent/20 text-accent hover:bg-accent/30 rounded-lg font-medium text-sm motion-safe:transition-colors"
         >
           {t.usePrompt || "Use this prompt"}
         </button>
         <button
           onClick={handleShuffle}
-          className="p-2 bg-secondary hover:bg-muted rounded-lg transition-colors"
+          className="p-2 bg-secondary hover:bg-muted rounded-lg motion-safe:transition-colors"
           title={t.shufflePrompt || "Get another prompt"}
           aria-label={t.shufflePrompt || "Get another prompt"}
         >

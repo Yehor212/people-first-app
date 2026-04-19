@@ -401,7 +401,7 @@ export const JournalEntryList = memo(function JournalEntryList({
           <motion.div
             animate={{ y: [0, -8, 0] }}
             transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-            className="w-24 h-24 rounded-full bg-gradient-to-br from-primary/15 via-primary/8 to-transparent flex items-center justify-center animate-float"
+            className="w-24 h-24 rounded-full bg-gradient-to-br from-primary/15 via-primary/8 to-transparent flex items-center justify-center motion-safe:animate-float"
           >
             <StickerRenderer emoji={"\u{1F4D3}"} size="lg" />
           </motion.div>
@@ -446,7 +446,7 @@ export const JournalEntryList = memo(function JournalEntryList({
             "bg-gradient-to-r from-primary to-primary/90 text-primary-foreground text-sm font-semibold",
             "shadow-md",
             "hover:shadow-lg",
-            "transition-shadow duration-300"
+            "motion-safe:transition-shadow motion-safe:duration-300"
           )}
         >
           <Plus className="w-4 h-4" />
@@ -550,7 +550,7 @@ export const JournalEntryList = memo(function JournalEntryList({
             <button
               onClick={toggleAiMode}
               className={cn(
-                "p-2 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center",
+                "p-2 rounded-lg motion-safe:transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center",
                 aiMode
                   ? "bg-purple-500/15 text-purple-500"
                   : "hover:bg-muted/50 text-muted-foreground"
@@ -582,7 +582,7 @@ export const JournalEntryList = memo(function JournalEntryList({
               key={m}
               onClick={() => setSelectedMood(selectedMood === m ? null : m)}
               className={cn(
-                "snap-start flex-shrink-0 text-base px-2 py-0.5 rounded-full transition-colors min-h-[44px]",
+                "snap-start flex-shrink-0 text-base px-2 py-0.5 rounded-full motion-safe:transition-colors min-h-[44px]",
                 selectedMood === m ? "bg-primary/15 ring-1 ring-primary/30" : "hover:bg-muted/50"
               )}
             >
@@ -599,7 +599,7 @@ export const JournalEntryList = memo(function JournalEntryList({
               key={tag}
               onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
               className={cn(
-                "snap-start flex-shrink-0 px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors min-h-[44px]",
+                "snap-start flex-shrink-0 px-2.5 py-0.5 rounded-full text-xs font-medium motion-safe:transition-colors min-h-[44px]",
                 selectedTag === tag
                   ? "bg-primary/15 text-primary ring-1 ring-primary/30"
                   : "bg-muted/50 text-foreground hover:bg-muted/70"
@@ -764,7 +764,7 @@ export const JournalEntryList = memo(function JournalEntryList({
               setSelectedMood(null);
               setSelectedTag(null);
             }}
-            className="text-xs text-primary font-medium px-3 py-1.5 rounded-lg hover:bg-primary/10 transition-colors min-h-[44px]"
+            className="text-xs text-primary font-medium px-3 py-1.5 rounded-lg hover:bg-primary/10 motion-safe:transition-colors min-h-[44px]"
           >
             {ts.journalClearAllFilters || "Clear all filters"}
           </button>
