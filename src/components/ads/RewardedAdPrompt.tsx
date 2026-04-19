@@ -72,7 +72,7 @@ export function RewardedAdPrompt({
         onClick={handleWatch}
         disabled={loading}
         className={cn(
-          'flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all',
+          'flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium motion-safe:transition-all',
           'bg-amber-500/10 text-amber-700 dark:text-amber-400 hover:bg-amber-500/20 active:scale-95',
           loading && 'opacity-50',
           className,
@@ -110,7 +110,7 @@ export function RewardedAdPrompt({
           onClick={handleWatch}
           disabled={loading}
           className={cn(
-            'shrink-0 px-4 py-2 rounded-xl font-medium text-sm transition-all',
+            'shrink-0 px-4 py-2 rounded-xl font-medium text-sm motion-safe:transition-all',
             'bg-amber-500 text-white hover:bg-amber-600 active:scale-95',
             loading && 'opacity-50',
           )}

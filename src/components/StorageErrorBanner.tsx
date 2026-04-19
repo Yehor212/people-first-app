@@ -166,7 +166,7 @@ export function StorageErrorBanner() {
     <div
       role="alert"
       aria-live="polite"
-      className="fixed bottom-[calc(5rem+var(--safe-bottom))] left-4 right-4 z-50 animate-slide-up"
+      className="fixed bottom-[calc(5rem+var(--safe-bottom))] left-4 right-4 z-50 motion-safe:animate-slide-up"
     >
       <div className="bg-amber-500/95 dark:bg-amber-600/95 text-white rounded-xl p-4 shadow-lg backdrop-blur-sm flex items-start gap-3">
         <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" />
@@ -183,7 +183,7 @@ export function StorageErrorBanner() {
         <button
           onClick={handleDismiss}
           aria-label={t.close || "Close"}
-          className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-foreground/20 rounded-lg transition-colors flex-shrink-0"
+          className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-foreground/20 rounded-lg motion-safe:transition-colors flex-shrink-0"
         >
           <X className="w-4 h-4" />
         </button>

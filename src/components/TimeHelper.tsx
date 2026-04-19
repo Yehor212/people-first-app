@@ -150,7 +150,7 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
             </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-muted rounded-lg transition-colors"
+              className="p-2 hover:bg-muted rounded-lg motion-safe:transition-colors"
               aria-label={t.close || "Close"}
             >
               <X className="w-5 h-5" />
@@ -179,7 +179,7 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
                   strokeLinecap="round"
                   strokeDasharray={`${2 * Math.PI * 120}`}
                   strokeDashoffset={`${2 * Math.PI * 120 * (1 - progress / 100)}`}
-                  className="transition-all duration-1000"
+                  className="motion-safe:transition-all motion-safe:duration-1000"
                 />
                 <defs>
                   <linearGradient id="timeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -227,7 +227,7 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
                       key={mins}
                       onClick={() => setDuration(mins)}
                       className={cn(
-                        "py-2 rounded-lg font-medium transition-all",
+                        "py-2 rounded-lg font-medium motion-safe:transition-all",
                         duration === mins
                           ? "zen-gradient text-white zen-shadow"
                           : "bg-muted hover:bg-muted/70"
@@ -263,7 +263,7 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
                       key={mins}
                       onClick={() => setPingInterval(mins)}
                       className={cn(
-                        "py-2 rounded-lg font-medium transition-all text-sm",
+                        "py-2 rounded-lg font-medium motion-safe:transition-all text-sm",
                         pingInterval === mins
                           ? "bg-primary text-primary-foreground"
                           : "bg-muted hover:bg-muted/70"
@@ -281,7 +281,7 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
                 <div className="flex gap-2">
                   <button
                     onClick={playNotification}
-                    className="px-3 py-2 rounded-lg bg-muted hover:bg-muted/70 transition-colors text-sm font-medium"
+                    className="px-3 py-2 rounded-lg bg-muted hover:bg-muted/70 motion-safe:transition-colors text-sm font-medium"
                     title={t.testSound}
                   >
                     {t.testSound || "🔊 Test"}
@@ -289,7 +289,7 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
                   <button
                     onClick={() => setSoundEnabled(!soundEnabled)}
                     className={cn(
-                      "flex items-center gap-2 px-3 py-2 rounded-lg transition-colors",
+                      "flex items-center gap-2 px-3 py-2 rounded-lg motion-safe:transition-colors",
                       soundEnabled
                         ? "bg-primary text-primary-foreground"
                         : "bg-muted text-muted-foreground"
@@ -306,7 +306,7 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
               {/* Start Button */}
               <button
                 onClick={() => setIsRunning(true)}
-                className="w-full py-3 zen-gradient text-white font-bold rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+                className="w-full py-3 zen-gradient text-white font-bold rounded-xl hover:opacity-90 motion-safe:transition-opacity flex items-center justify-center gap-2"
               >
                 <Play className="w-5 h-5" />
                 {t.startTimer || "Start Timer"}
@@ -316,7 +316,7 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
             <div className="flex gap-2">
               <button
                 onClick={() => setIsRunning(false)}
-                className="flex-1 py-3 bg-muted hover:bg-muted/70 font-medium rounded-xl transition-colors flex items-center justify-center gap-2"
+                className="flex-1 py-3 bg-muted hover:bg-muted/70 font-medium rounded-xl motion-safe:transition-colors flex items-center justify-center gap-2"
               >
                 <Pause className="w-5 h-5" />
                 {t.pauseTimer || "Pause"}
@@ -326,7 +326,7 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
                   setIsRunning(false);
                   setTimeLeft(duration * 60);
                 }}
-                className="flex-1 py-3 bg-destructive/10 hover:bg-destructive/20 text-destructive font-medium rounded-xl transition-colors"
+                className="flex-1 py-3 bg-destructive/10 hover:bg-destructive/20 text-destructive font-medium rounded-xl motion-safe:transition-colors"
               >
                 {t.resetTimer || "Reset"}
               </button>

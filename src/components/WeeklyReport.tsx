@@ -207,7 +207,7 @@ export const WeeklyReport = memo(function WeeklyReport({
           {/* Close button */}
           <button
             onClick={onClose}
-            className="absolute top-4 end-4 z-10 p-2 rounded-full bg-background/80 backdrop-blur-sm hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="absolute top-4 end-4 z-10 p-2 rounded-full bg-background/80 backdrop-blur-sm hover:bg-muted motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             aria-label={t.close || "Close"}
           >
             <X className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
@@ -276,7 +276,7 @@ export const WeeklyReport = memo(function WeeklyReport({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.35 }}
                 whileHover={{ y: -2 }}
-                className="relative overflow-hidden rounded-xl bg-card border border-border/50 p-4 shadow-[0_2px_8px_-2px_hsl(var(--foreground)/0.08)] hover:shadow-[0_8px_20px_-4px_hsl(var(--primary)/0.15)] transition-all duration-300"
+                className="relative overflow-hidden rounded-xl bg-card border border-border/50 p-4 shadow-[0_2px_8px_-2px_hsl(var(--foreground)/0.08)] hover:shadow-[0_8px_20px_-4px_hsl(var(--primary)/0.15)] motion-safe:transition-all motion-safe:duration-300"
               >
                 <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center mb-3">
                   <Target className="w-5 h-5 text-primary" aria-hidden="true" />
@@ -310,7 +310,7 @@ export const WeeklyReport = memo(function WeeklyReport({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
                 whileHover={{ y: -2 }}
-                className="relative overflow-hidden rounded-xl bg-card border border-border/50 p-4 shadow-[0_2px_8px_-2px_hsl(var(--foreground)/0.08)] hover:shadow-[0_8px_20px_-4px_hsl(var(--primary)/0.15)] transition-all duration-300"
+                className="relative overflow-hidden rounded-xl bg-card border border-border/50 p-4 shadow-[0_2px_8px_-2px_hsl(var(--foreground)/0.08)] hover:shadow-[0_8px_20px_-4px_hsl(var(--primary)/0.15)] motion-safe:transition-all motion-safe:duration-300"
               >
                 <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500/20 to-cyan-500/10 flex items-center justify-center mb-3">
                   <Brain className="w-5 h-5 text-blue-500" aria-hidden="true" />
@@ -325,7 +325,7 @@ export const WeeklyReport = memo(function WeeklyReport({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.45 }}
                 whileHover={{ y: -2 }}
-                className="relative overflow-hidden rounded-xl bg-card border border-border/50 p-4 shadow-[0_2px_8px_-2px_hsl(var(--foreground)/0.08)] hover:shadow-[0_8px_20px_-4px_hsl(var(--primary)/0.15)] transition-all duration-300"
+                className="relative overflow-hidden rounded-xl bg-card border border-border/50 p-4 shadow-[0_2px_8px_-2px_hsl(var(--foreground)/0.08)] hover:shadow-[0_8px_20px_-4px_hsl(var(--primary)/0.15)] motion-safe:transition-all motion-safe:duration-300"
               >
                 <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-pink-500/20 to-rose-500/10 flex items-center justify-center mb-3">
                   <Heart className="w-5 h-5 text-pink-500" aria-hidden="true" />
@@ -340,7 +340,7 @@ export const WeeklyReport = memo(function WeeklyReport({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5 }}
                 whileHover={{ y: -2 }}
-                className="relative overflow-hidden rounded-xl bg-card border border-border/50 p-4 shadow-[0_2px_8px_-2px_hsl(var(--foreground)/0.08)] hover:shadow-[0_8px_20px_-4px_hsl(var(--primary)/0.15)] transition-all duration-300"
+                className="relative overflow-hidden rounded-xl bg-card border border-border/50 p-4 shadow-[0_2px_8px_-2px_hsl(var(--foreground)/0.08)] hover:shadow-[0_8px_20px_-4px_hsl(var(--primary)/0.15)] motion-safe:transition-all motion-safe:duration-300"
               >
                 <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-500/20 to-orange-500/10 flex items-center justify-center mb-3">
                   <Award className="w-5 h-5 text-amber-500" aria-hidden="true" />
@@ -357,7 +357,7 @@ export const WeeklyReport = memo(function WeeklyReport({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.55 }}
                 onClick={onClose}
-                className="w-full py-4 bg-gradient-to-r from-primary to-accent text-white font-bold rounded-xl hover:shadow-lg hover:shadow-primary/25 transition-all active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                className="w-full py-4 bg-gradient-to-r from-primary to-accent text-white font-bold rounded-xl hover:shadow-lg hover:shadow-primary/25 motion-safe:transition-all active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
               >
                 {t.continueBtn}
               </motion.button>

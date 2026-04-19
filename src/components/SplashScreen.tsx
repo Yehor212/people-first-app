@@ -42,12 +42,12 @@ export function SplashScreen({ loadingFadeOut, subtitle }: SplashScreenProps) {
       />
 
       {/* Floating bokeh orbs */}
-      <div className="absolute w-24 h-24 rounded-full bg-primary/[0.05] blur-[20px] animate-float top-[20%] left-[15%] [animation-duration:6s]" />
-      <div className="absolute w-16 h-16 rounded-full bg-primary/[0.07] blur-[20px] animate-float top-[15%] right-[20%] [animation-duration:7s] [animation-delay:-2s]" />
-      <div className="absolute w-20 h-20 rounded-full bg-primary/[0.04] blur-[20px] animate-float bottom-[25%] left-[20%] [animation-duration:5s] [animation-delay:-1s]" />
-      <div className="absolute w-14 h-14 rounded-full bg-primary/[0.06] blur-[20px] animate-float bottom-[20%] right-[15%] [animation-duration:8s] [animation-delay:-3s]" />
-      <div className="absolute w-10 h-10 rounded-full bg-primary/[0.08] blur-[20px] animate-float top-[45%] left-[10%] [animation-duration:6.5s] [animation-delay:-4s]" />
-      <div className="absolute w-12 h-12 rounded-full bg-primary/[0.05] blur-[20px] animate-float top-[40%] right-[10%] [animation-duration:7.5s] [animation-delay:-2.5s]" />
+      <div className="absolute w-24 h-24 rounded-full bg-primary/[0.05] blur-[20px] motion-safe:animate-float top-[20%] left-[15%] [animation-duration:6s]" />
+      <div className="absolute w-16 h-16 rounded-full bg-primary/[0.07] blur-[20px] motion-safe:animate-float top-[15%] right-[20%] [animation-duration:7s] [animation-delay:-2s]" />
+      <div className="absolute w-20 h-20 rounded-full bg-primary/[0.04] blur-[20px] motion-safe:animate-float bottom-[25%] left-[20%] [animation-duration:5s] [animation-delay:-1s]" />
+      <div className="absolute w-14 h-14 rounded-full bg-primary/[0.06] blur-[20px] motion-safe:animate-float bottom-[20%] right-[15%] [animation-duration:8s] [animation-delay:-3s]" />
+      <div className="absolute w-10 h-10 rounded-full bg-primary/[0.08] blur-[20px] motion-safe:animate-float top-[45%] left-[10%] [animation-duration:6.5s] [animation-delay:-4s]" />
+      <div className="absolute w-12 h-12 rounded-full bg-primary/[0.05] blur-[20px] motion-safe:animate-float top-[40%] right-[10%] [animation-duration:7.5s] [animation-delay:-2.5s]" />
 
       {/* Glow ring behind logo — CSS-driven pulse for battery savings */}
       <div

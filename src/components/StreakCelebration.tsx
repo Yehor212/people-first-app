@@ -40,7 +40,7 @@ export function StreakCelebration({ streak, habitName, onClose }: StreakCelebrat
   return (
     <div
       className={cn(
-        "fixed inset-0 z-[220] flex items-center justify-center p-4 transition-all duration-300",
+        "fixed inset-0 z-[220] flex items-center justify-center p-4 motion-safe:transition-all motion-safe:duration-300",
         isVisible ? "bg-black/50 backdrop-blur-md" : "bg-black/0"
       )}
       onClick={handleClose}
@@ -58,7 +58,7 @@ export function StreakCelebration({ streak, habitName, onClose }: StreakCelebrat
         {Array.from({ length: 30 }).map((_, i) => (
           <div
             key={i}
-            className="absolute w-2 h-2 rounded-full animate-sparkle"
+            className="absolute w-2 h-2 rounded-full motion-safe:animate-sparkle"
             style={{
               left: `${Math.random() * 100}%`,
               top: `${Math.random() * 100}%`,
@@ -72,7 +72,7 @@ export function StreakCelebration({ streak, habitName, onClose }: StreakCelebrat
 
       <div
         className={cn(
-          "relative max-w-sm w-full rounded-3xl p-8 shadow-2xl transition-all duration-500 overflow-hidden",
+          "relative max-w-sm w-full rounded-3xl p-8 shadow-2xl motion-safe:transition-all motion-safe:duration-500 overflow-hidden",
           "bg-gradient-to-b from-orange-950/90 via-orange-900/80 to-red-950/90",
           "border-2 border-orange-500/40",
           isVisible ? "scale-100 opacity-100 translate-y-0" : "scale-75 opacity-0 translate-y-8"
@@ -85,7 +85,7 @@ export function StreakCelebration({ streak, habitName, onClose }: StreakCelebrat
         {/* Close button */}
         <button
           onClick={handleClose}
-          className="absolute top-4 end-4 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors z-10"
+          className="absolute top-4 end-4 p-2 rounded-full bg-white/10 hover:bg-white/20 motion-safe:transition-colors z-10"
           aria-label={t.close || "Close"}
         >
           <X className="w-5 h-5 text-white/70" />
@@ -95,21 +95,21 @@ export function StreakCelebration({ streak, habitName, onClose }: StreakCelebrat
         <div className="relative flex justify-center mb-4">
           <div className="relative">
             {/* Main fire */}
-            <div className="text-8xl animate-bounce-fire drop-shadow-[0_0_30px_rgba(255,100,0,0.8)]">
+            <div className="text-8xl motion-safe:animate-bounce-fire drop-shadow-[0_0_30px_rgba(255,100,0,0.8)]">
               🔥
             </div>
             {/* Side fires */}
-            <div className="absolute -top-4 -left-6 text-5xl animate-bounce-fire-delayed opacity-80">
+            <div className="absolute -top-4 -left-6 text-5xl motion-safe:animate-bounce-fire-delayed opacity-80">
               🔥
             </div>
-            <div className="absolute -top-4 -right-6 text-5xl animate-bounce-fire-delayed-2 opacity-80">
+            <div className="absolute -top-4 -right-6 text-5xl motion-safe:animate-bounce-fire-delayed-2 opacity-80">
               🔥
             </div>
             {/* Small flames */}
-            <div className="absolute bottom-0 left-8 text-3xl animate-bounce-fire opacity-60">
+            <div className="absolute bottom-0 left-8 text-3xl motion-safe:animate-bounce-fire opacity-60">
               🔥
             </div>
-            <div className="absolute bottom-0 right-8 text-3xl animate-bounce-fire-delayed opacity-60">
+            <div className="absolute bottom-0 right-8 text-3xl motion-safe:animate-bounce-fire-delayed opacity-60">
               🔥
             </div>
           </div>
@@ -117,7 +117,7 @@ export function StreakCelebration({ streak, habitName, onClose }: StreakCelebrat
 
         {/* Streak count - Duolingo style */}
         <div className="flex flex-col items-center mb-4">
-          <div className="text-7xl font-black text-white drop-shadow-lg animate-scale-in">
+          <div className="text-7xl font-black text-white drop-shadow-lg motion-safe:animate-scale-in">
             {streak}
           </div>
           <div className="flex items-center gap-2 mt-1">
@@ -148,7 +148,7 @@ export function StreakCelebration({ streak, habitName, onClose }: StreakCelebrat
         <button
           onClick={handleClose}
           className={cn(
-            "w-full py-4 font-bold text-lg rounded-2xl transition-all duration-300",
+            "w-full py-4 font-bold text-lg rounded-2xl motion-safe:transition-all motion-safe:duration-300",
             "bg-gradient-to-r from-orange-500 to-orange-600",
             "hover:from-orange-400 hover:to-orange-500",
             "text-white shadow-lg shadow-orange-500/30",

@@ -124,7 +124,7 @@ export function ThemeToggle() {
   if (!mounted) {
     return (
       <button
-        className="relative flex-shrink-0 w-[52px] h-[36px] rounded-full bg-muted transition-colors"
+        className="relative flex-shrink-0 w-[52px] h-[36px] rounded-full bg-muted motion-safe:transition-colors"
         aria-label={t.toggleTheme || 'Toggle theme'}
         disabled
       >
@@ -139,7 +139,7 @@ export function ThemeToggle() {
     <button
       onClick={toggleTheme}
       className={cn(
-        "relative flex-shrink-0 rounded-full transition-all duration-300",
+        "relative flex-shrink-0 rounded-full motion-safe:transition-all motion-safe:duration-300",
         "w-[52px] h-[36px]",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
         effectiveTheme === 'light' ? 'bg-sky-300' : 'bg-slate-700'
@@ -149,7 +149,7 @@ export function ThemeToggle() {
       {/* Toggle circle */}
       <div
         className={cn(
-          "absolute top-[7px] w-[22px] h-[22px] rounded-full transition-all duration-300 flex items-center justify-center shadow-sm",
+          "absolute top-[7px] w-[22px] h-[22px] rounded-full motion-safe:transition-all motion-safe:duration-300 flex items-center justify-center shadow-sm",
           effectiveTheme === 'light'
             ? 'left-[3px] bg-yellow-400'
             : 'left-[27px] bg-indigo-950 ring-1 ring-slate-500/30'
