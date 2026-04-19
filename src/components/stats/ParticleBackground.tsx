@@ -70,11 +70,11 @@ export function ParticleBackground({
           className={cn(
             'absolute rounded-full blur-[1px]',
             COLOR_CLASSES[color],
-            particle.id % 5 === 0 && 'animate-particle-float-1',
-            particle.id % 5 === 1 && 'animate-particle-float-2',
-            particle.id % 5 === 2 && 'animate-particle-float-3',
-            particle.id % 5 === 3 && 'animate-particle-float-4',
-            particle.id % 5 === 4 && 'animate-particle-float-5'
+            particle.id % 5 === 0 && 'motion-safe:animate-particle-float-1',
+            particle.id % 5 === 1 && 'motion-safe:animate-particle-float-2',
+            particle.id % 5 === 2 && 'motion-safe:animate-particle-float-3',
+            particle.id % 5 === 3 && 'motion-safe:animate-particle-float-4',
+            particle.id % 5 === 4 && 'motion-safe:animate-particle-float-5'
           )}
           style={{
             left: `${particle.x}%`,

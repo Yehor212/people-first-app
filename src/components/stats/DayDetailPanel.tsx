@@ -43,7 +43,7 @@ export function DayDetailPanel({ selectedDay, habits, onClose }: DayDetailPanelP
               </div>
               <button
                 onClick={onClose}
-                className="p-1 rounded-lg hover:bg-muted/50 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+                className="p-1 rounded-lg hover:bg-muted/50 motion-safe:transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
                 aria-label={t.close || 'Close'}
               >
                 <X className="w-4 h-4" />

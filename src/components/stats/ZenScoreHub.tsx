@@ -186,9 +186,9 @@ export function ZenScoreHub({
               )}
             >
               {weeklyChange > 0 ? (
-                <TrendingUp className="w-3 h-3 animate-trend-up" aria-hidden="true" />
+                <TrendingUp className="w-3 h-3 motion-safe:animate-trend-up" aria-hidden="true" />
               ) : (
-                <TrendingDown className="w-3 h-3 animate-trend-down" aria-hidden="true" />
+                <TrendingDown className="w-3 h-3 motion-safe:animate-trend-down" aria-hidden="true" />
               )}
               <span>
                 {weeklyChange > 0 ? "+" : ""}
@@ -279,7 +279,7 @@ export function ZenScoreHub({
                     tabIndex={item.ringId ? 0 : undefined}
                     className={cn(
                       "text-center",
-                      item.ringId && "cursor-pointer active:scale-95 transition-transform"
+                      item.ringId && "cursor-pointer active:scale-95 motion-safe:transition-transform"
                     )}
                     onClick={(e) => {
                       if (item.ringId) {

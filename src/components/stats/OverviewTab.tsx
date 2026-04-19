@@ -98,7 +98,7 @@ export function OverviewTab({
                 void hapticTap();
                 onQuickAction?.("logMood");
               }}
-              className="flex flex-col items-center gap-1.5 p-3 bg-secondary/80 hover:bg-secondary rounded-xl transition-colors"
+              className="flex flex-col items-center gap-1.5 p-3 bg-secondary/80 hover:bg-secondary rounded-xl motion-safe:transition-colors"
             >
               <Heart className="w-5 h-5 text-pink-500" />
               <span className="text-xs font-medium text-foreground truncate w-full text-center">
@@ -110,7 +110,7 @@ export function OverviewTab({
                 void hapticTap();
                 onQuickAction?.("startFocus");
               }}
-              className="flex flex-col items-center gap-1.5 p-3 bg-secondary/80 hover:bg-secondary rounded-xl transition-colors"
+              className="flex flex-col items-center gap-1.5 p-3 bg-secondary/80 hover:bg-secondary rounded-xl motion-safe:transition-colors"
             >
               <Target className="w-5 h-5 text-blue-500" />
               <span className="text-xs font-medium text-foreground truncate w-full text-center">
@@ -123,7 +123,7 @@ export function OverviewTab({
                   void hapticTap();
                   onShowStory();
                 }}
-                className="flex flex-col items-center gap-1.5 p-3 bg-secondary/80 hover:bg-secondary rounded-xl transition-colors"
+                className="flex flex-col items-center gap-1.5 p-3 bg-secondary/80 hover:bg-secondary rounded-xl motion-safe:transition-colors"
               >
                 <PlayCircle className="w-5 h-5 text-primary" />
                 <span className="text-xs font-medium text-foreground truncate w-full text-center">
@@ -154,7 +154,7 @@ export function OverviewTab({
                       </div>
                       <div className="h-1.5 bg-muted rounded-full overflow-hidden mt-1">
                         <div
-                          className="h-full bg-primary rounded-full transition-all"
+                          className="h-full bg-primary rounded-full motion-safe:transition-all"
                           style={{ width: `${cluster.alignmentPercent}%` }}
                         />
                       </div>

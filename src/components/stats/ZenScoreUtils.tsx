@@ -59,7 +59,7 @@ export function MiniSparkline({ data, color }: { data: number[]; color: string }
     <svg
       width={width}
       height={height}
-      className="opacity-60 hover:opacity-100 transition-opacity"
+      className="opacity-60 hover:opacity-100 motion-safe:transition-opacity"
     >
       <path
         d={pathD}
