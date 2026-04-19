@@ -236,7 +236,22 @@ export default defineConfig(({ mode }) => {
               return "capacitor";
             }
 
-            // Sentry error tracking (no React dependency in core)
+            // Sentry Replay (rrweb-based session recording) — web only, big chunk,
+            // changes independently from core → separate chunk for better cache.
+            // TDZ-safe (no React dep — verified via @sentry-internal/replay pkg.json).
+            if (
+              id.includes("@sentry-internal/replay") ||
+              id.includes("@sentry-internal/replay-canvas")
+            ) {
+              return "sentry-replay";
+            }
+
+            // Sentry Feedback widget — optional integration, split for cache.
+            if (id.includes("@sentry-internal/feedback")) {
+              return "sentry-feedback";
+            }
+
+            // Sentry core (error tracking + tracing + browser-utils). No React dep.
             if (id.includes("@sentry") && !id.includes("react")) {
               return "sentry";
             }
