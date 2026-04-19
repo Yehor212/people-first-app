@@ -132,7 +132,7 @@ export function MoodCompactView({
               e.stopPropagation();
               onShowAddNew();
             }}
-            className="flex items-center gap-1.5 px-3 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 min-h-[44px] bg-primary/10 hover:bg-primary/20 text-primary rounded-xl transition-colors"
           >
             <Plus className="w-4 h-4" />
             <span className="text-sm font-medium">{t.updateMood || "Update"}</span>
