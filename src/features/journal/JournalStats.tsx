@@ -32,6 +32,7 @@ import { YearInPixels } from "./YearInPixels";
 import { MoodCorrelations } from "./MoodCorrelations";
 import { AnimatedCounter } from "@/components/ui/AnimatedCounter";
 import { shouldAnimate } from "@/lib/animationUtils";
+import { formatDecimal } from "@/lib/timeUtils";
 
 const MOOD_COLORS: Record<MoodType, string> = {
   great: "hsl(var(--mood-great))",
@@ -506,7 +507,7 @@ export const JournalStats = memo(function JournalStats({ entries, onBack }: Jour
                   {ts.journalStatsAvgPerWeek || "Avg / Week"}
                 </p>
                 <p className="text-lg font-bold text-foreground mt-0.5">
-                  <AnimatedCounter target={streakData.avgPerWeek} format={(v) => v.toFixed(1)} />
+                  <AnimatedCounter target={streakData.avgPerWeek} format={(v) => formatDecimal(v, language)} />
                 </p>
               </motion.div>
             </div>
@@ -655,7 +656,7 @@ export const JournalStats = memo(function JournalStats({ entries, onBack }: Jour
                 ref={moodTimelineRef}
                 className="p-4 rounded-xl bg-card/70 backdrop-blur-sm border border-border/20"
                 role="img"
-                aria-label={`${ts.journalStatsMoodTime || "Mood Over Time"}: ${moodTimeline.map((w) => `${w.week} ${w.avg.toFixed(1)}`).join(", ")}`}
+                aria-label={`${ts.journalStatsMoodTime || "Mood Over Time"}: ${moodTimeline.map((w) => `${w.week} ${formatDecimal(w.avg, language)}`).join(", ")}`}
               >
                 <h3 className="text-xs font-bold text-muted-foreground/50 uppercase tracking-widest mb-3">
                   {ts.journalStatsMoodTime || "Mood Over Time"}
