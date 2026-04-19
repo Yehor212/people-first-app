@@ -33,6 +33,10 @@ Use the template at `./0000-template.md`. Numbering is sequential. Filenames: `N
 | --- | --- | --- |
 | 0000 | Template | (not an ADR) |
 | 0001 | Record architecture decisions | Accepted |
+| 0002 | Zustand/Dexie bridge pattern | Accepted |
+| 0003 | 28-law enforcement hooks | Accepted |
+| 0004 | Custom i18n over i18next | Accepted |
+| 0005 | Bootstrap error-handling architecture | Accepted |
 
 ## Relationship to other docs
 
