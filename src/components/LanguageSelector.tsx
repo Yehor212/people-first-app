@@ -27,7 +27,7 @@ export function LanguageSelector({ onComplete }: LanguageSelectorProps) {
 
   return (
     <div className="min-h-screen zen-gradient-hero flex items-center justify-center p-4">
-      <div className="w-full max-w-md animate-fade-in">
+      <div className="w-full max-w-md motion-safe:animate-fade-in">
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-3 mb-4">
@@ -52,7 +52,7 @@ export function LanguageSelector({ onComplete }: LanguageSelectorProps) {
                 onClick={() => handleSelect(lang)}
                 aria-label={languageNames[lang]}
                 className={cn(
-                  "flex items-center gap-3 p-4 rounded-xl transition-all",
+                  "flex items-center gap-3 p-4 rounded-xl motion-safe:transition-all",
                   language === lang
                     ? "bg-primary/10 ring-2 ring-primary zen-shadow-soft"
                     : "bg-secondary hover:bg-muted"
@@ -71,7 +71,7 @@ export function LanguageSelector({ onComplete }: LanguageSelectorProps) {
         {/* Continue Button */}
         <button
           onClick={handleContinue}
-          className="w-full py-4 zen-gradient text-primary-foreground font-semibold rounded-2xl hover:opacity-90 transition-opacity zen-shadow-soft text-lg mb-3"
+          className="w-full py-4 zen-gradient text-primary-foreground font-semibold rounded-2xl hover:opacity-90 motion-safe:transition-opacity zen-shadow-soft text-lg mb-3"
         >
           {t.continue}
         </button>
@@ -79,7 +79,7 @@ export function LanguageSelector({ onComplete }: LanguageSelectorProps) {
         {/* Skip Button */}
         <button
           onClick={handleSkip}
-          className="w-full py-3 bg-secondary text-secondary-foreground font-medium rounded-2xl hover:bg-muted transition-colors"
+          className="w-full py-3 bg-secondary text-secondary-foreground font-medium rounded-2xl hover:bg-muted motion-safe:transition-colors"
         >
           {t.skip || "Skip"}
         </button>

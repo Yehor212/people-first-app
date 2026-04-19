@@ -176,7 +176,7 @@ export function MoodInsights({
         <button
           onClick={() => handleDismiss(featuredInsight.id)}
           aria-label={t.insightsDismiss || "Dismiss insight"}
-          className="absolute top-3 end-3 p-1.5 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-black/10 rounded-lg transition-colors"
+          className="absolute top-3 end-3 p-1.5 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-black/10 rounded-lg motion-safe:transition-colors"
         >
           <X className="w-4 h-4 text-muted-foreground" />
         </button>
@@ -227,7 +227,7 @@ export function MoodInsights({
                 ? t.hideInsights || "Hide insights"
                 : t.moreInsights || "Show more insights"
             }
-            className="mt-4 flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+            className="mt-4 flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 motion-safe:transition-colors"
           >
             <span>
               {showAll
@@ -236,7 +236,7 @@ export function MoodInsights({
             </span>
             <ChevronRight
               className={cn(
-                "w-4 h-4 transition-transform rtl:scale-x-[-1]",
+                "w-4 h-4 motion-safe:transition-transform rtl:scale-x-[-1]",
                 showAll && "rotate-90",
               )}
             />
@@ -265,7 +265,7 @@ export function MoodInsights({
                 <button
                   onClick={() => handleDismiss(insight.id)}
                   aria-label={t.insightsDismiss || "Dismiss insight"}
-                  className="absolute top-2 end-2 p-1 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-black/10 rounded-lg transition-colors"
+                  className="absolute top-2 end-2 p-1 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-black/10 rounded-lg motion-safe:transition-colors"
                 >
                   <X className="w-3 h-3 text-muted-foreground" />
                 </button>

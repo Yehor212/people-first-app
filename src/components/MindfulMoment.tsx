@@ -104,12 +104,12 @@ export function MindfulMoment({
         aria-hidden="true"
       />
       <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[70] p-4 animate-fade-in md:mx-auto md:my-6 md:max-w-lg md:rounded-2xl md:shadow-2xl"
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[70] p-4 motion-safe:animate-fade-in md:mx-auto md:my-6 md:max-w-lg md:rounded-2xl md:shadow-2xl"
         role="dialog"
         aria-modal="true"
         aria-label={t.ariaMindfulMoment}
       >
-        <div className="bg-card rounded-3xl p-6 w-full max-w-sm animate-scale-in shadow-2xl">
+        <div className="bg-card rounded-3xl p-6 w-full max-w-sm motion-safe:animate-scale-in shadow-2xl">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-2">
@@ -125,7 +125,7 @@ export function MindfulMoment({
             </div>
             <button
               onClick={handleSkip}
-              className="p-2 hover:bg-secondary rounded-full transition-colors"
+              className="p-2 hover:bg-secondary rounded-full motion-safe:transition-colors"
               aria-label={t.close || "Close"}
             >
               <X className="w-5 h-5" />
@@ -135,7 +135,7 @@ export function MindfulMoment({
           {/* Prompt */}
           <div className="text-center mb-6">
             {currentPrompt.emoji && (
-              <div className="text-5xl mb-4 animate-pulse">{currentPrompt.emoji}</div>
+              <div className="text-5xl mb-4 motion-safe:animate-pulse">{currentPrompt.emoji}</div>
             )}
             <p className="text-xl font-medium text-foreground leading-relaxed">{promptText}</p>
           </div>
@@ -164,7 +164,7 @@ export function MindfulMoment({
                     strokeLinecap="round"
                     strokeDasharray={`${2 * Math.PI * 36}`}
                     strokeDashoffset={`${2 * Math.PI * 36 * (1 - countdown / currentPrompt.duration)}`}
-                    className="transition-all duration-1000"
+                    className="motion-safe:transition-all motion-safe:duration-1000"
                   />
                 </svg>
                 <span className="absolute inset-0 flex items-center justify-center text-2xl font-bold text-foreground">
@@ -184,7 +184,7 @@ export function MindfulMoment({
                     <button
                       key={response.labelKey}
                       onClick={handleResponse}
-                      className="flex flex-col items-center gap-1 p-3 bg-secondary hover:bg-secondary/80 rounded-xl transition-colors min-w-[70px]"
+                      className="flex flex-col items-center gap-1 p-3 bg-secondary hover:bg-secondary/80 rounded-xl motion-safe:transition-colors min-w-[70px]"
                     >
                       <span className="text-2xl">{response.emoji}</span>
                       <span className="text-xs text-muted-foreground">
@@ -214,7 +214,7 @@ export function MindfulMoment({
                     onClose();
                     onViewProgress();
                   }}
-                  className="w-full py-2 text-sm text-primary hover:text-primary/80 font-medium transition-colors"
+                  className="w-full py-2 text-sm text-primary hover:text-primary/80 font-medium motion-safe:transition-colors"
                 >
                   {t.viewProgress || "View Progress →"}
                 </button>
@@ -226,7 +226,7 @@ export function MindfulMoment({
           {!showResponse && (
             <button
               onClick={handleSkip}
-              className="w-full py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              className="w-full py-2 text-sm text-muted-foreground hover:text-foreground motion-safe:transition-colors"
             >
               {t.skip || "Skip"}
             </button>
