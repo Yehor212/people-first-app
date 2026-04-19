@@ -357,7 +357,7 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
                   onClose();
                 }}
                 className={cn(
-                  "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors min-h-[44px]",
+                  "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm motion-safe:transition-colors min-h-[44px]",
                   "bg-white/[0.03] border border-border",
                   "hover:bg-white/[0.06] active:scale-[0.98]",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50",
@@ -373,7 +373,7 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
               <button
                 onClick={handleSkipToggle}
                 className={cn(
-                  "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors min-h-[44px]",
+                  "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm motion-safe:transition-colors min-h-[44px]",
                   "bg-white/[0.03] border border-border",
                   "hover:bg-white/[0.06] active:scale-[0.98]",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50",
@@ -397,7 +397,7 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
               <button
                 onClick={handleArchiveToggle}
                 className={cn(
-                  "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors min-h-[44px]",
+                  "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm motion-safe:transition-colors min-h-[44px]",
                   "bg-white/[0.03] border border-border",
                   "hover:bg-white/[0.06] active:scale-[0.98]",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50",
@@ -436,7 +436,7 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
                         setShowDeleteConfirm(true);
                       }}
                       className={cn(
-                        "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors min-h-[44px]",
+                        "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm motion-safe:transition-colors min-h-[44px]",
                         "bg-red-500/[0.05] border border-red-500/[0.1]",
                         "hover:bg-red-500/[0.1] active:scale-[0.98]",
                         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50",
@@ -465,7 +465,7 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
                         <button
                           onClick={() => setShowDeleteConfirm(false)}
                           className={cn(
-                            "flex-1 px-4 py-3 rounded-xl text-sm font-medium transition-colors min-h-[44px]",
+                            "flex-1 px-4 py-3 rounded-xl text-sm font-medium motion-safe:transition-colors min-h-[44px]",
                             "bg-white/[0.05] border border-border text-muted-foreground",
                             "hover:bg-white/[0.08]",
                             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50",
@@ -477,7 +477,7 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
                           onClick={handleDelete}
                           disabled={isDeleting}
                           className={cn(
-                            "flex-1 px-4 py-3 rounded-xl text-sm font-medium transition-colors min-h-[44px]",
+                            "flex-1 px-4 py-3 rounded-xl text-sm font-medium motion-safe:transition-colors min-h-[44px]",
                             "bg-red-600 text-white",
                             "hover:bg-red-500 active:scale-[0.98]",
                             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50",

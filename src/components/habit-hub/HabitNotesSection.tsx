@@ -91,7 +91,7 @@ export function HabitNotesSection({ habit, onUpdate }: HabitNotesSectionProps) {
               setNoteText(getEntryNote(habit, today) ?? "");
               setIsEditing(true);
             }}
-            className="flex items-center gap-1 text-[10px] text-violet-400 hover:text-violet-300 transition-colors min-h-[44px] min-w-[44px] justify-center"
+            className="flex items-center gap-1 text-[10px] text-violet-400 hover:text-violet-300 motion-safe:transition-colors min-h-[44px] min-w-[44px] justify-center"
           >
             <MessageSquarePlus className="w-3 h-3" />
             {todayHasNote ? ts.editNote || "Edit" : ts.addNote || "Add note"}

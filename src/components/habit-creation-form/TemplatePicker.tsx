@@ -60,7 +60,7 @@ export function TemplatePicker({
               <motion.button
                 key={template.id}
                 onClick={() => handleQuickAdd(template.id)}
-                className="flex items-center gap-2 px-3 py-3 min-h-[52px] rounded-xl bg-foreground/5 border border-foreground/10 text-foreground/80 hover:bg-foreground/10 hover:text-foreground transition-all text-start"
+                className="flex items-center gap-2 px-3 py-3 min-h-[52px] rounded-xl bg-foreground/5 border border-foreground/10 text-foreground/80 hover:bg-foreground/10 hover:text-foreground motion-safe:transition-all text-start"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}

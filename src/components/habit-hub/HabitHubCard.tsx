@@ -130,7 +130,7 @@ export const HabitHubCard = memo(function HabitHubCard({
       role="button"
       aria-label={habit.name}
       className={cn(
-        "w-full rounded-2xl text-start transition-colors cursor-pointer",
+        "w-full rounded-2xl text-start motion-safe:transition-colors cursor-pointer",
         "bg-white/[0.03] border border-white/[0.06] backdrop-blur-sm",
         "hover:bg-white/[0.06] active:scale-[0.98]",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50",
@@ -215,7 +215,7 @@ export const HabitHubCard = memo(function HabitHubCard({
           <div className="flex items-center gap-2">
             <div className="flex-1 h-1 rounded-full bg-white/[0.06] overflow-hidden">
               <div
-                className="h-full rounded-full transition-all duration-300 motion-reduce:duration-0"
+                className="h-full rounded-full motion-safe:transition-all motion-safe:duration-300 motion-reduce:duration-0"
                 style={{
                   width: `${Math.min(progress * 100, 100)}%`,
                   backgroundColor: isCompleted ? "hsl(var(--mood-great))" : habitColor,

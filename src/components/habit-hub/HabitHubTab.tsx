@@ -32,7 +32,7 @@ export function HabitHubTab({
   onUnskipHabit,
 }: HabitHubTabProps) {
   return (
-    <div className="animate-tab-enter pt-2">
+    <div className="motion-safe:animate-tab-enter pt-2">
       <HabitHubList
         habits={habits}
         onToggleHabit={onToggleHabit}
