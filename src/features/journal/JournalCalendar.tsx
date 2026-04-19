@@ -233,7 +233,7 @@ export function JournalCalendar({
               aria-label={`${dayNames[d.dayOfWeek]} ${d.day}${hasEntry ? ` (${mood || "entry"})` : ""}`}
               style={moodBgColor ? { backgroundColor: moodBgColor } : undefined}
               className={cn(
-                "snap-start flex flex-col items-center gap-0.5 min-w-[44px] min-h-[44px] py-1.5 rounded-xl transition-all duration-200 relative overflow-hidden",
+                "snap-start flex flex-col items-center gap-0.5 min-w-[44px] min-h-[44px] py-1.5 rounded-xl motion-safe:transition-all motion-safe:duration-200 relative overflow-hidden",
                 isSelected
                   ? "bg-gradient-to-b from-primary/20 to-primary/10 shadow-sm"
                   : !moodBgColor && "hover:bg-muted/50",
@@ -276,7 +276,7 @@ export function JournalCalendar({
                     "w-2 h-2 rounded-full ring-2 relative z-[1]",
                     mood ? MOOD_COLORS[mood] : "bg-primary/60",
                     mood ? MOOD_RING[mood] : "ring-primary/20",
-                    isToday && "animate-pulse-subtle"
+                    isToday && "motion-safe:animate-pulse-subtle"
                   )}
                 />
               ) : (

@@ -167,7 +167,7 @@ export const DiaryEmptyCanvas = memo(function DiaryEmptyCanvas({
           whileTap={reducedMotion ? undefined : { scale: 0.97 }}
           transition={springPresets.snappy}
           onClick={onNewEntry}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-primary/10 text-primary text-sm font-medium hover:bg-primary/15 transition-colors min-h-[44px]"
+          className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-primary/10 text-primary text-sm font-medium hover:bg-primary/15 motion-safe:transition-colors min-h-[44px]"
           aria-label={ts.journalNewEntry || "Write"}
         >
           <PenLine className="w-4 h-4" />
@@ -179,7 +179,7 @@ export const DiaryEmptyCanvas = memo(function DiaryEmptyCanvas({
           whileTap={reducedMotion ? undefined : { scale: 0.97 }}
           transition={springPresets.snappy}
           onClick={() => onNewEntryWithPrompt(currentPrompt)}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-muted/50 text-muted-foreground text-sm font-medium hover:bg-muted/70 transition-colors min-h-[44px]"
+          className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-muted/50 text-muted-foreground text-sm font-medium hover:bg-muted/70 motion-safe:transition-colors min-h-[44px]"
           aria-label={ts.journalPrompt || "Prompt"}
         >
           <Target className="w-4 h-4" />

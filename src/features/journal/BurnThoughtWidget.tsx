@@ -704,7 +704,7 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
     >
       {/* Card warm glow - GPU-only opacity transition */}
       <div
-        className="absolute inset-0 rounded-2xl pointer-events-none transition-opacity duration-500 ease-out shadow-[inset_0_0_80px_rgba(239,68,68,0.1),0_0_24px_rgba(239,68,68,0.12)]"
+        className="absolute inset-0 rounded-2xl pointer-events-none motion-safe:transition-opacity motion-safe:duration-500 ease-out shadow-[inset_0_0_80px_rgba(239,68,68,0.1),0_0_24px_rgba(239,68,68,0.12)]"
         style={{
           opacity: burning ? 1 : 0,
         }}
@@ -724,7 +724,7 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
           {Array.from({ length: 8 }, (_, i) => (
             <span
               key={i}
-              className="absolute w-1 h-1 rounded-full animate-burn-float-ember"
+              className="absolute w-1 h-1 rounded-full motion-safe:animate-burn-float-ember"
               style={{
                 left: `${8 + (i * 12) % 84}%`,
                 bottom: '-2px',
@@ -742,7 +742,7 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
           {Array.from({ length: 14 }, (_, i) => (
             <span
               key={i}
-              className="absolute rounded-full animate-burn-rise-ember"
+              className="absolute rounded-full motion-safe:animate-burn-rise-ember"
               style={{
                 width: `${2 + (i % 3)}px`,
                 height: `${2 + (i % 3)}px`,
@@ -759,7 +759,7 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2">
         <div className={`flex items-center gap-2 ${burned ? 'text-muted-foreground/70' : 'text-red-400'}`}>
-          <Flame className={`w-4 h-4 ${showAmbientEmbers ? 'animate-burn-flame-pulse' : ''}`} />
+          <Flame className={`w-4 h-4 ${showAmbientEmbers ? 'motion-safe:animate-burn-flame-pulse' : ''}`} />
           <span className="text-sm font-medium">
             {burned ? (ts.journalBurnReleased || 'Released') : (ts.journalBurnTitle || 'Burn a thought')}
           </span>
@@ -823,7 +823,7 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 placeholder={ts.journalBurnPlaceholder || 'Write what worries you...'}
-                className={`w-full rounded-xl px-4 py-3 text-sm outline-none resize-none bg-white/[0.03] ring-1 ring-white/[0.06] focus:ring-red-500/20 placeholder:text-muted-foreground/60 transition-colors duration-150 min-h-16 max-h-[200px] ${burning ? 'text-orange-400/80' : 'text-foreground/90'}`}
+                className={`w-full rounded-xl px-4 py-3 text-sm outline-none resize-none bg-white/[0.03] ring-1 ring-white/[0.06] focus:ring-red-500/20 placeholder:text-muted-foreground/60 motion-safe:transition-colors motion-safe:duration-150 min-h-16 max-h-[200px] ${burning ? 'text-orange-400/80' : 'text-foreground/90'}`}
                 rows={2}
                 maxLength={500}
                 disabled={burning}
@@ -832,7 +832,7 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
 
               {/* Character counter */}
               {text.length > 0 && !burning && (
-                <div className={`text-end text-xs mt-1 transition-opacity duration-200 ${text.length > 450 ? 'text-red-400/70' : 'text-muted-foreground/60'}`}>
+                <div className={`text-end text-xs mt-1 motion-safe:transition-opacity motion-safe:duration-200 ${text.length > 450 ? 'text-red-400/70' : 'text-muted-foreground/60'}`}>
                   {text.length}/500
                 </div>
               )}
@@ -842,7 +842,7 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
                   whileTap={zenTap.button}
                   onClick={startBurn}
                   disabled={!hasText}
-                  className={`mt-3 w-full py-3 rounded-full text-sm font-medium transition-all flex items-center justify-center gap-2 min-h-[44px] ${hasText ? 'bg-red-500/15 text-red-300 ring-1 ring-red-500/20 hover:bg-red-500/20' : 'bg-white/[0.03] text-muted-foreground/50 ring-1 ring-white/[0.06]'} ${hasText && animate ? 'burn-glow-pulse-wrap' : ''}`}
+                  className={`mt-3 w-full py-3 rounded-full text-sm font-medium motion-safe:transition-all flex items-center justify-center gap-2 min-h-[44px] ${hasText ? 'bg-red-500/15 text-red-300 ring-1 ring-red-500/20 hover:bg-red-500/20' : 'bg-white/[0.03] text-muted-foreground/50 ring-1 ring-white/[0.06]'} ${hasText && animate ? 'burn-glow-pulse-wrap' : ''}`}
                 >
                   <Flame className="w-4 h-4" />
                   {ts.journalBurnAction || 'Burn it'}

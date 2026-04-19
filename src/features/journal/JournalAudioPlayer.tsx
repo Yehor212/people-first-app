@@ -68,7 +68,7 @@ export const JournalAudioPlayer = memo(function JournalAudioPlayer({ src, durati
           'w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0',
           'bg-primary/15 text-primary',
           'disabled:opacity-40',
-          'active:scale-95 transition-transform',
+          'active:scale-95 motion-safe:transition-transform',
         )}
       >
         {playing ? (
@@ -82,7 +82,7 @@ export const JournalAudioPlayer = memo(function JournalAudioPlayer({ src, durati
         {/* Progress bar */}
         <div className="w-full h-1 rounded-full bg-muted/50 overflow-hidden">
           <div
-            className="h-full bg-primary/60 rounded-full transition-all duration-200"
+            className="h-full bg-primary/60 rounded-full motion-safe:transition-all motion-safe:duration-200"
             style={{ width: `${progress}%` }}
           />
         </div>

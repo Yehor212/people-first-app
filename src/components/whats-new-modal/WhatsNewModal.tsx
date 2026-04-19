@@ -98,7 +98,7 @@ export function WhatsNewModal({ onClose }: WhatsNewModalProps) {
   return (
     <div
       role="presentation"
-      className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in"
+      className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm motion-safe:animate-fade-in"
       onClick={handleDismiss}
       onKeyDown={(e) => {
         if (e.key === "Escape") handleDismiss();
@@ -117,7 +117,7 @@ export function WhatsNewModal({ onClose }: WhatsNewModalProps) {
         <div className="relative px-6 py-5 bg-gradient-to-r from-primary/10 to-primary/5 border-b border-border">
           <button
             onClick={handleDismiss}
-            className="absolute top-4 end-4 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+            className="absolute top-4 end-4 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full hover:bg-muted motion-safe:transition-colors"
             aria-label={t.close}
           >
             <X className="w-5 h-5 text-muted-foreground" />
@@ -146,7 +146,7 @@ export function WhatsNewModal({ onClose }: WhatsNewModalProps) {
                 key={index}
                 className={cn(
                   "flex items-start gap-3 p-3 rounded-xl",
-                  "bg-muted/50 hover:bg-muted transition-colors"
+                  "bg-muted/50 hover:bg-muted motion-safe:transition-colors"
                 )}
               >
                 <div className="flex-shrink-0 p-2 rounded-lg bg-background">{change.icon}</div>
@@ -170,7 +170,7 @@ export function WhatsNewModal({ onClose }: WhatsNewModalProps) {
             className={cn(
               "w-full py-3 px-4 rounded-xl font-medium",
               "bg-primary text-primary-foreground",
-              "hover:bg-primary/90 transition-colors",
+              "hover:bg-primary/90 motion-safe:transition-colors",
               "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
             )}
           >

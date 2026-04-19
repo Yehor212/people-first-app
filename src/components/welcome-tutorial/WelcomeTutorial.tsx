@@ -162,7 +162,7 @@ export function WelcomeTutorial({ onComplete, onSkip }: WelcomeTutorialProps) {
       <div className="flex justify-end p-3 sm:p-4">
         <button
           onClick={onSkip}
-          className="text-sm text-muted-foreground hover:text-foreground transition-colors px-3 py-2 sm:px-4"
+          className="text-sm text-muted-foreground hover:text-foreground motion-safe:transition-colors px-3 py-2 sm:px-4"
         >
           {t.skip || "Skip"}
         </button>
@@ -173,7 +173,7 @@ export function WelcomeTutorial({ onComplete, onSkip }: WelcomeTutorialProps) {
         {/* Animated icon - responsive sizes */}
         <div
           className={cn(
-            "relative w-24 h-24 sm:w-28 sm:h-28 md:w-36 md:h-36 lg:w-44 lg:h-44 rounded-2xl sm:rounded-3xl flex items-center justify-center mb-6 sm:mb-8 md:mb-10 transition-all duration-500",
+            "relative w-24 h-24 sm:w-28 sm:h-28 md:w-36 md:h-36 lg:w-44 lg:h-44 rounded-2xl sm:rounded-3xl flex items-center justify-center mb-6 sm:mb-8 md:mb-10 motion-safe:transition-all motion-safe:duration-500",
             `bg-gradient-to-br ${slide.gradient}`,
             isAnimating &&
               (direction === "next" ? "translate-x-10 opacity-0" : "-translate-x-10 opacity-0")
@@ -181,27 +181,27 @@ export function WelcomeTutorial({ onComplete, onSkip }: WelcomeTutorialProps) {
         >
           <Icon
             className={cn(
-              "w-12 h-12 sm:w-14 sm:h-14 md:w-18 md:h-18 lg:w-22 lg:h-22 transition-all",
+              "w-12 h-12 sm:w-14 sm:h-14 md:w-18 md:h-18 lg:w-22 lg:h-22 motion-safe:transition-all",
               slide.iconColor,
-              slide.animation === "float" && "animate-float",
-              slide.animation === "pulse" && "animate-pulse",
-              slide.animation === "bounce" && "animate-bounce",
-              slide.animation === "heartbeat" && "animate-heartbeat",
-              slide.animation === "spin-slow" && "animate-spin-slow",
-              slide.animation === "zap" && "animate-zap",
-              slide.animation === "color-shift" && "animate-color-shift"
+              slide.animation === "float" && "motion-safe:animate-float",
+              slide.animation === "pulse" && "motion-safe:animate-pulse",
+              slide.animation === "bounce" && "motion-safe:animate-bounce",
+              slide.animation === "heartbeat" && "motion-safe:animate-heartbeat",
+              slide.animation === "spin-slow" && "motion-safe:animate-spin-slow",
+              slide.animation === "zap" && "motion-safe:animate-zap",
+              slide.animation === "color-shift" && "motion-safe:animate-color-shift"
             )}
           />
 
           {/* Decorative circles - responsive */}
           <div className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 w-4 h-4 sm:w-6 sm:h-6 rounded-full bg-primary/20 animate-ping" />
-          <div className="absolute -bottom-2 -left-2 sm:-bottom-3 sm:-left-3 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-accent/20 animate-pulse" />
+          <div className="absolute -bottom-2 -left-2 sm:-bottom-3 sm:-left-3 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-accent/20 motion-safe:animate-pulse" />
         </div>
 
         {/* Text content - responsive */}
         <div
           className={cn(
-            "text-center max-w-sm md:max-w-md lg:max-w-lg transition-all duration-300 px-2",
+            "text-center max-w-sm md:max-w-md lg:max-w-lg motion-safe:transition-all motion-safe:duration-300 px-2",
             isAnimating &&
               (direction === "next" ? "translate-x-10 opacity-0" : "-translate-x-10 opacity-0")
           )}
@@ -222,7 +222,7 @@ export function WelcomeTutorial({ onComplete, onSkip }: WelcomeTutorialProps) {
               {content.features.map((feature, index) => (
                 <div
                   key={index}
-                  className="flex items-center gap-3 p-3 bg-card rounded-xl animate-fade-in"
+                  className="flex items-center gap-3 p-3 bg-card rounded-xl motion-safe:animate-fade-in"
                   style={{ animationDelay: `${index * 100}ms` }}
                 >
                   <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0" />
@@ -248,7 +248,7 @@ export function WelcomeTutorial({ onComplete, onSkip }: WelcomeTutorialProps) {
             >
               <span
                 className={cn(
-                  "h-1.5 sm:h-2 rounded-full transition-all duration-300",
+                  "h-1.5 sm:h-2 rounded-full motion-safe:transition-all motion-safe:duration-300",
                   index === currentSlide
                     ? "w-6 sm:w-8 bg-primary"
                     : "w-1.5 sm:w-2 bg-muted hover:bg-muted-foreground/50"
@@ -264,7 +264,7 @@ export function WelcomeTutorial({ onComplete, onSkip }: WelcomeTutorialProps) {
             <button
               onClick={handlePrev}
               aria-label={t.back || "Back"}
-              className="p-3 sm:p-4 bg-secondary rounded-xl hover:bg-muted transition-colors"
+              className="p-3 sm:p-4 bg-secondary rounded-xl hover:bg-muted motion-safe:transition-colors"
             >
               <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 rtl:scale-x-[-1]" />
             </button>
@@ -273,7 +273,7 @@ export function WelcomeTutorial({ onComplete, onSkip }: WelcomeTutorialProps) {
           <button
             onClick={handleNext}
             className={cn(
-              "flex-1 py-3 sm:py-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 text-sm sm:text-base",
+              "flex-1 py-3 sm:py-4 rounded-xl font-semibold motion-safe:transition-all flex items-center justify-center gap-2 text-sm sm:text-base",
               currentSlide === slides.length - 1
                 ? "zen-gradient text-primary-foreground hover:opacity-90"
                 : "zen-gradient text-primary-foreground hover:opacity-90"

@@ -81,7 +81,7 @@ export function RecommendationCard({
       onClick={handleClick}
       aria-label={title}
       className={cn(
-        "relative w-full text-start p-3 rounded-xl border transition-all duration-200 overflow-hidden",
+        "relative w-full text-start p-3 rounded-xl border motion-safe:transition-all motion-safe:duration-200 overflow-hidden",
         "active:scale-[0.98]",
         style.base,
         style.hover,
@@ -91,7 +91,7 @@ export function RecommendationCard({
       {/* Gradient overlay on hover */}
       <div
         className={cn(
-          "absolute inset-0 bg-gradient-to-r to-transparent opacity-0 hover:opacity-100 transition-opacity pointer-events-none",
+          "absolute inset-0 bg-gradient-to-r to-transparent opacity-0 hover:opacity-100 motion-safe:transition-opacity pointer-events-none",
           style.glow,
         )}
       />

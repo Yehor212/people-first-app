@@ -339,7 +339,7 @@ export const GratitudeBloomWidget = memo(function GratitudeBloomWidget({ onClose
               value={text}
               onChange={(e) => setText(e.target.value)}
               placeholder={ts.journalGratitudePlaceholder || 'What are you grateful for?'}
-              className="w-full rounded-xl px-4 py-3 text-base font-hand italic outline-none resize-none bg-white/[0.03] text-foreground/90 ring-1 ring-white/[0.06] focus:ring-emerald-500/20 placeholder:text-muted-foreground/60 transition-shadow min-h-16 leading-relaxed"
+              className="w-full rounded-xl px-4 py-3 text-base font-hand italic outline-none resize-none bg-white/[0.03] text-foreground/90 ring-1 ring-white/[0.06] focus:ring-emerald-500/20 placeholder:text-muted-foreground/60 motion-safe:transition-shadow min-h-16 leading-relaxed"
               rows={2}
               maxLength={500}
               aria-label={ts.journalGratitudePlaceholder || 'What are you grateful for?'}
@@ -364,7 +364,7 @@ export const GratitudeBloomWidget = memo(function GratitudeBloomWidget({ onClose
               whileTap={{ scale: 0.95 }}
               onClick={handlePlant}
               disabled={!text.trim()}
-              className={`mt-3 w-full py-3 rounded-full text-sm font-medium transition-all flex items-center justify-center gap-2 min-h-[44px] ${
+              className={`mt-3 w-full py-3 rounded-full text-sm font-medium motion-safe:transition-all flex items-center justify-center gap-2 min-h-[44px] ${
                 text.trim()
                   ? 'bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-500/20 hover:bg-emerald-500/20'
                   : 'bg-white/[0.03] text-muted-foreground/50 ring-1 ring-white/[0.06]'
