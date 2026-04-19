@@ -30,30 +30,12 @@ import { checkDatabaseHealth } from "./storage/db";
 import { SK } from "./lib/storageKeys";
 import { safeLocalStorageSet } from "./lib/safeJson";
 import { scheduleIdle } from "./lib/scheduleIdle";
+import { captureOrBuffer, setCaptureSink } from "./lib/errorBuffer";
 
 // Sentry is deferred to post-mount via requestIdleCallback (see below initializeApp)
-// to keep it off the critical rendering path. captureError is loaded lazily.
-let captureError: ((err: Error, ctx?: Record<string, unknown>) => void) | null = null;
-
-// Pre-Sentry error buffer — catches errors thrown in the ~2s window before Sentry
-// finishes its idle-callback import. Without this, global handlers silently drop
-// early errors (the `if (captureError)` guard below returns no-op pre-init).
-// Pattern mirrors Sentry JS Loader's `onLoad` queue. Cap at 50 to bound memory on
-// pathological crash loops. Flushed in idleInit() after Sentry is wired.
-// Source: docs.sentry.io/platforms/javascript/install/lazy-load-sentry/ (2025).
-interface BufferedError {
-  error: Error;
-  context: Record<string, unknown>;
-}
-const preSentryErrorBuffer: BufferedError[] = [];
-const BUFFER_CAP = 50;
-function captureOrBuffer(error: Error, context: Record<string, unknown>): void {
-  if (captureError) {
-    captureError(error, context);
-  } else if (preSentryErrorBuffer.length < BUFFER_CAP) {
-    preSentryErrorBuffer.push({ error, context });
-  }
-}
+// to keep it off the critical rendering path. Errors thrown before idle-init
+// completes are buffered in `./lib/errorBuffer` and flushed once the Sentry sink
+// is wired via `setCaptureSink(captureError)`.
 
 // Setup chunk error handler EARLY to catch lazy loading failures
 // This must be before React renders to catch initial chunk load errors
@@ -446,19 +428,9 @@ const idleInit = () => {
       } catch (e) {
         logger.warn("[Main] Sentry init failed:", e);
       }
-      captureError = ce;
-      // Flush errors buffered during the pre-Sentry window.
-      if (preSentryErrorBuffer.length > 0) {
-        logger.log(`[Main] Flushing ${preSentryErrorBuffer.length} buffered errors to Sentry`);
-        for (const { error, context } of preSentryErrorBuffer) {
-          try {
-            ce(error, { ...context, buffered: true });
-          } catch (e) {
-            logger.warn("[Main] Buffer flush failed for one error:", e);
-          }
-        }
-        preSentryErrorBuffer.length = 0;
-      }
+      // Wires the sink and auto-flushes the pre-Sentry buffer. Buffered errors
+      // carry a `buffered: true` context tag (see errorBuffer.ts).
+      setCaptureSink(ce);
     })
     .catch((err) => logger.warn("[Main] Sentry lazy load failed:", err));
 };
