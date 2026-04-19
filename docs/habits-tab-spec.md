@@ -755,6 +755,44 @@ validates the long-press discovery).
 **Cross-habit signal:** % of users who see ≥1 HeroInsightStrip render in a
 session (requires ≥30 days data; target ≥40% by day 45).
 
+### 15.1 Event → metric mapping (instrumented 2026-04-19)
+
+Every metric above is derivable from the events the habits tab emits through
+`src/lib/analytics.ts`. The table is the source-of-truth contract — if the
+columns drift, `§17` records the event-schema change and aggregator SQL
+needs a matching migration.
+
+| Metric | Event | Key field(s) | Aggregator formula |
+|---|---|---|---|
+| Activation | `habit_created` | `ever_first = true` | `users_with(ever_first=true) / first_visit_users` |
+| Session activation | `habit_created` | `session_first = true` | `sessions_with(session_first=true) / total_sessions` |
+| Retention cohort filter | `habit_completed` | `total_habits ≥ 3` | 7-day rolling `count(distinct users) where total_habits≥3 and emitted in day` |
+| Depth | `habit_detail_opened` | — (presence) | `users_with(≥1 event) / dau` |
+| Cross-habit signal | `insight_strip_rendered` | — (presence) | `users_with(≥1 event in last 24h) / users_with(≥30d data)` |
+
+**PII contract.** No habit names, no ids, no free-text. Only finite enums
+(`source ∈ {custom, template, quick-pick}`, `insight_type`, `insight_severity`),
+integer counts, and booleans. Existing `privacy.analytics && !privacy.noTracking`
+gate applies to every event.
+
+**Scope notes (known edges, documented on purpose).**
+
+- `ever_first` is **device-scoped** via `SK.HABITS_EVER_CREATED`, not user-
+  scoped. A returning user on a fresh device will emit `ever_first=true`
+  again. We chose this over user-scoped because (a) it's honest about device
+  acquisition funnels, and (b) it does not require authenticated analytics
+  pipes. Server-side dedupe-by-user can still compute a true "first-ever"
+  number when needed.
+- `session_first` is **tab/app-session-scoped** via
+  `SSK.HABITS_SESSION_CREATED`. Capacitor cold-start and web browser-tab
+  open both count as new sessions.
+- One-shot flag reads are best-effort: private-browsing / quota-full
+  storage failures degrade to `false` rather than crashing the emitter
+  (`analytics.ts → readFlagOnce`).
+- Insight events emitted before `analytics.init` runs on first boot are
+  silently dropped — see the JSDoc on `Analytics` for the invariant and
+  the operational-impact assessment.
+
 ---
 
 ## 16. Out of Scope (P2 / future)
@@ -789,7 +827,8 @@ session (requires ≥30 days data; target ≥40% by day 45).
 | 2026-04-19 | (this commit) | Streak milestone celebration — useStreakMilestones hook + lazy V1 HabitCompletionCelebration mount at 3/7/21/66/100 day thresholds |
 | 2026-04-19 | `4899c17` | Design P0 — Caveat hand-lettering on step numbers + identity pill |
 | 2026-04-19 | `003d547` | Design P0 — italic Fraunces on time-of-day headings + subliminal completion tint |
-| 2026-04-19 | (this commit) | §15 metrics instrumented — 4 events (`habit_created`, `habit_completed`, `habit_detail_opened`, `insight_strip_rendered`) wired at 4 choke points. PII-safe contract: finite-enum `source`, integer counts, boolean `ever_first`/`session_first` flags backed by `SK.HABITS_EVER_CREATED` + `SSK.HABITS_SESSION_CREATED`. No habit names or IDs leave the device. 12 new analytics tests covering activation funnel, retention cohort annotation, depth, and cross-habit signal |
+| 2026-04-19 | `3982b91` | §15 metrics instrumented — 4 events (`habit_created`, `habit_completed`, `habit_detail_opened`, `insight_strip_rendered`) wired at 4 choke points. PII-safe contract: finite-enum `source`, integer counts, boolean `ever_first`/`session_first` flags backed by `SK.HABITS_EVER_CREATED` + `SSK.HABITS_SESSION_CREATED`. No habit names or IDs leave the device. 12 new analytics tests covering activation funnel, retention cohort annotation, depth, and cross-habit signal |
+| 2026-04-19 | (this commit) | §15 root-fix pass: (1) `readFlagOnce` now uses `raw !== null` — empty-string storage no longer mis-reports `ever_first=true`; (2) `handlePickTemplate` gains a `templateEmitGuardRef` with a 500 ms per-template debounce — two rapid taps in the same React tick no longer phantom-fire `habit_created`; (3) `analytics.init` ordering invariant documented on the `Analytics` class — insight-strip mount-effect drops before init are explicit and bounded. (4) metrics-wiring.test.tsx adds 7 integration tests proving HabitsPage → analytics and HeroInsightStrip → analytics actually fire on real prop flow, not just at the unit level. (5) §15 gains an event→metric mapping table (§15.1) plus device-scope notes for `ever_first` / `session_first`. **Known gap:** real-browser Playwright smoke still deferred — wiring tests cover the React chain; gtag sink verification needs a Playwright helper that primes IndexedDB `privacy.analytics=true` (the existing `primeApp` only writes localStorage). Own task, not in this commit. |
 
 ---
 

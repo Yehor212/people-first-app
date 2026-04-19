@@ -52,6 +52,14 @@ export const HabitsPage = memo(function HabitsPage() {
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [detailHabit, setDetailHabit] = useState<Habit | null>(null);
 
+  /** Per-template emission debounce. Two rapid taps in a single render tick
+   *  can both pass the closure-level `habits.some()` guard in handlePickTemplate
+   *  (state hasn't committed yet). The setter's inner guard suppresses the
+   *  duplicate write, but without this ref the `habit_created` emission would
+   *  double-fire and over-count activations. 500ms matches the completion-
+   *  toggle debounce in useHabitHandlers (processingTimeoutsRef). */
+  const templateEmitGuardRef = useRef<Map<string, number>>(new Map());
+
   /** Focus-return: track the element that triggered the most recent sheet
    *  open so the sheet's close handler can restore focus there (spec §11
    *  a11y criterion: "Focus returns to invoking element on sheet close"). */
@@ -204,12 +212,18 @@ export const HabitsPage = memo(function HabitsPage() {
 
   const handlePickTemplate = useCallback(
     (template: HabitTemplate) => {
-      // Idempotent guard at the closure layer so we don't emit a phantom
-      // activation event when the user taps an already-seeded template.
+      // Closure-level idempotency — already-seeded template is a no-op.
       if (habits.some((h) => h.templateId === template.id)) return;
+      // Race guard — if two taps land before React commits the first add,
+      // both closures would see "not seeded" and both would emit. The ref
+      // survives re-renders and is the only authority on "did we JUST emit
+      // for this templateId".
+      const lastEmit = templateEmitGuardRef.current.get(template.id) ?? 0;
+      const now = Date.now();
+      if (now - lastEmit < 500) return;
+      templateEmitGuardRef.current.set(template.id, now);
       setHabits((prev) => {
-        // Second guard covers the race where another emitter landed between
-        // render and commit — the setter always wins over stale closure state.
+        // Final setter-level guard — belt-and-suspenders for cross-render races.
         if (prev.some((h) => h.templateId === template.id)) return prev;
         return [...prev, templateToHabit(template, prev.length, language)];
       });
