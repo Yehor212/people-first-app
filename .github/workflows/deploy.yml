@@ -99,9 +99,11 @@ jobs:
 
       - name: Upload artifact
         if: github.event_name == 'push'
-        uses: actions/upload-pages-artifact@v4.0.0
+        uses: actions/upload-pages-artifact@v3.0.1
         with:
           path: dist
+          # v3.0.1 preserves hidden files in tar; v4 may filter dotfiles like .nojekyll.
+          # We need .nojekyll to disable Jekyll on GH Pages so 404.html SPA fallback ships.
 
   android-gate:
     runs-on: ubuntu-latest
