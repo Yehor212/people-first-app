@@ -123,6 +123,12 @@ export function HabitCreationForm({ form, habits, isPrimaryCTA = false }: HabitC
       ? ts[frequencyPresets[activePresetIndex].i18nKey] ||
         frequencyPresets[activePresetIndex].label
       : `${frequency.numerator}Г— / ${frequency.denominator}${ts.daysAbbr || "d"}`;
+  const targetPreviewText =
+    habitType === "boolean"
+      ? ts.habitTypeBoolean || "Yes/No"
+      : targetType === "atMost"
+        ? `${ts.atMost || "At Most"} ${targetValue}${unit ? ` ${unit}` : ""}`
+        : `${targetValue}${unit ? ` ${unit}` : ""}`;
 
   const showTypeSelector = settingsMode === "advanced" || !selectedTemplateId;
 
@@ -307,9 +313,7 @@ export function HabitCreationForm({ form, habits, isPrimaryCTA = false }: HabitC
                 isPrimaryCTA ? "text-slate-500 dark:text-foreground/60" : "text-muted-foreground",
               )}
             >
-              {habitType === "boolean"
-                ? ts.habitTypeBoolean || "Yes/No"
-                : `${targetValue} ${unit || ""}`}
+              {targetPreviewText}
               {" В· "}
               {freqText}
             </p>

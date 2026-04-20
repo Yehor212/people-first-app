@@ -10,6 +10,23 @@ import { formatDecimal } from "@/lib/timeUtils";
 import { getToday } from "@/lib/utils";
 import type { Habit } from "@/types";
 
+function getCurrentISOWeek(todayStr: string): string[] {
+  const [year, month, day] = todayStr.split("-").map(Number);
+  const today = new Date(year, month - 1, day);
+  const dow = today.getDay();
+  const mondayOffset = dow === 0 ? -6 : 1 - dow;
+  const monday = new Date(today);
+  monday.setDate(monday.getDate() + mondayOffset);
+  return Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(monday);
+    date.setDate(monday.getDate() + index);
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  });
+}
+
 interface HeroWeeklyHabitCardProps {
   habit: Habit;
   onToggle: (habitId: string, date: string) => void;
@@ -29,12 +46,29 @@ export const HeroWeeklyHabitCard = memo(function HeroWeeklyHabitCard({
   const isCompletedToday = isHabitCompletedOnDate(habit, today);
   const streak = useMemo(() => getCurrentStreak(habit), [habit]);
   const isNumeric = habit.habitType === "numerical";
+  const weekDates = useMemo(() => getCurrentISOWeek(today), [today]);
 
   const currentValue = isNumeric ? getNumericalValue(habit, today) : 0;
   const targetValue = habit.targetValue || 1;
   const numericSummary = isNumeric
     ? `${formatDecimal(currentValue, language)}/${formatDecimal(targetValue, language)}${habit.unit ? ` ${habit.unit}` : ""}`
     : null;
+  const weekSummary = useMemo(() => {
+    const thisWeekLabel = t.thisWeek || "This week";
+    if (isNumeric) {
+      const total = weekDates.reduce(
+        (sum, date) => sum + getNumericalValue(habit, date),
+        0,
+      );
+      return `${formatDecimal(total, language)}${habit.unit ? ` ${habit.unit}` : ""} · ${thisWeekLabel}`;
+    }
+
+    const done = weekDates.reduce(
+      (sum, date) => sum + (isHabitCompletedOnDate(habit, date) ? 1 : 0),
+      0,
+    );
+    return `${done}× · ${thisWeekLabel}`;
+  }, [habit, isNumeric, language, t.thisWeek, weekDates]);
 
   const freqLabel = useMemo(() => {
     const { numerator: n, denominator: d } = habit.frequency;
@@ -116,7 +150,7 @@ export const HeroWeeklyHabitCard = memo(function HeroWeeklyHabitCard({
           className="truncate text-right tabular-nums"
           data-testid={`hero-weekly-card-${habit.id}-meta`}
         >
-          {isNumeric ? numericSummary : freqLabel}
+          {weekSummary || freqLabel}
         </span>
         {onOpenDetail && (
           <button

@@ -92,4 +92,37 @@ describe("useHabitForm", () => {
     expect(result.current.targetValue).toBe(2000);
     expect(result.current.targetStep).toBe(250);
   });
+
+  it("hydrates minute-based templates as measurable habits", () => {
+    const { result } = renderHook(() =>
+      useHabitForm({ onAddHabit, onUpdateHabit }),
+    );
+
+    act(() => {
+      result.current.setIsAdding(true);
+      result.current.handleQuickAdd("deep-work");
+    });
+
+    expect(result.current.habitType).toBe("numerical");
+    expect(result.current.unit).toBe("min");
+    expect(result.current.targetValue).toBe(25);
+    expect(result.current.targetStep).toBe(5);
+  });
+
+  it("hydrates bad-habit limit templates with atMost semantics", () => {
+    const { result } = renderHook(() =>
+      useHabitForm({ onAddHabit, onUpdateHabit }),
+    );
+
+    act(() => {
+      result.current.setIsAdding(true);
+      result.current.handleQuickAdd("smoking-limit");
+    });
+
+    expect(result.current.habitType).toBe("numerical");
+    expect(result.current.targetType).toBe("atMost");
+    expect(result.current.unit).toBe("cigarettes");
+    expect(result.current.targetValue).toBe(2);
+    expect(result.current.targetStep).toBe(1);
+  });
 });

@@ -24,6 +24,7 @@ import { hapticTap } from "@/lib/haptics";
 import { useShouldAnimate } from "@/hooks/useShouldAnimate";
 import {
   habitTemplates,
+  resolveHabitTemplateSetup,
   type HabitTemplate,
   type HabitTemplateCategory,
 } from "@/lib/habitTemplates";
@@ -133,6 +134,15 @@ export const HeroTemplateLibrarySheet = memo(function HeroTemplateLibrarySheet({
             {filtered.map((tpl) => {
               const added = seededIds.has(tpl.id);
               const name = tpl.names[language] || tpl.names.en;
+              const setup = resolveHabitTemplateSetup(tpl);
+              const templateMeta =
+                tpl.habitType === "numerical"
+                  ? `${
+                      setup.targetType === "atMost" ? `${tx.atMost || "At Most"} ` : ""
+                    }${setup.targetValue}${setup.unit ? ` ${setup.unit}` : ""}`
+                  : tpl.defaultTime
+                    ? `⏰ ${tpl.defaultTime}`
+                    : null;
               return (
                 <li key={tpl.id}>
                   <button
@@ -157,9 +167,9 @@ export const HeroTemplateLibrarySheet = memo(function HeroTemplateLibrarySheet({
                     </span>
                     <span className="flex min-w-0 flex-1 flex-col">
                       <span className="truncate text-sm font-medium">{name}</span>
-                      {tpl.defaultTime && (
+                      {templateMeta && (
                         <span className="truncate text-[11px] text-muted-foreground">
-                          ⏰ {tpl.defaultTime}
+                          {templateMeta}
                         </span>
                       )}
                     </span>
