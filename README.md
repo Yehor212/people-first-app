@@ -14,6 +14,11 @@ npm install
 npm run dev
 ```
 
+## Git workflow
+- Single-branch workflow: work only on `main` unless a different branch is explicitly requested.
+- Before push: sync `main`, keep the worktree intentional, and run `npm run ci:preflight`.
+- Do not spread one task across multiple long-lived feature branches by default.
+
 ## Environment variables
 Copy `.env.example` into one of:
 - `.env.local` (dev)
@@ -41,11 +46,20 @@ npx cap sync
 
 **Required for multi-device sync!**
 
-1. Go to https://supabase.com/dashboard
-2. Open your project → **SQL Editor**
-3. Run these 2 migrations:
-   - `supabase/migrations/20260113_challenges_badges.sql`
-   - `supabase/migrations/20260114_tasks_quests.sql`
+Preferred path:
+```sh
+supabase login
+supabase link --project-ref <your-project-ref>
+supabase db push
+```
+
+If you use the Supabase SQL Editor manually, do not stop at the first 2 historical migrations. The current repo state expects the full migration chain, including later security/performance fixes.
+
+Minimum migrations to be aware of:
+- `supabase/migrations/20260113_challenges_badges.sql`
+- `supabase/migrations/20260114_tasks_quests.sql`
+- `supabase/migrations/20260204_optimize_rls_policies.sql`
+- `supabase/migrations/20260222_optimize_journal_rls.sql`
 
 📖 **Full guide:** See [SUPABASE_SETUP.md](./SUPABASE_SETUP.md)
 
