@@ -42,6 +42,7 @@ export interface HabitActionSheetLabels {
   unarchive: string;
   edit: string;
   openDetails: string;
+  delete: string;
 }
 
 export interface HabitActionSheetProps {
@@ -58,10 +59,13 @@ export interface HabitActionSheetProps {
   onUnarchive?: (habitId: string) => void;
   onEdit?: (habit: Habit) => void;
   onOpenDetail?: (habit: Habit) => void;
+  onDelete?: (habitId: string) => void;
 }
 
 const ITEM_CLASS =
   "flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-medium text-foreground outline-none min-h-[44px] motion-safe:transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2";
+const DELETE_ITEM_CLASS =
+  "flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-medium text-destructive outline-none min-h-[44px] motion-safe:transition-colors hover:bg-destructive/10 focus-visible:bg-destructive/10 focus-visible:ring-2 focus-visible:ring-destructive focus-visible:ring-offset-2";
 
 export const HabitActionSheet = memo(function HabitActionSheet({
   open,
@@ -77,6 +81,7 @@ export const HabitActionSheet = memo(function HabitActionSheet({
   onUnarchive,
   onEdit,
   onOpenDetail,
+  onDelete,
 }: HabitActionSheetProps) {
   const fire = useCallback(
     (fn: () => void) => {
@@ -91,6 +96,7 @@ export const HabitActionSheet = memo(function HabitActionSheet({
   const showArchiveItem = isArchived ? Boolean(onUnarchive) : Boolean(onArchive);
   const showEditItem = Boolean(onEdit);
   const showDetailsItem = Boolean(onOpenDetail);
+  const showDeleteItem = Boolean(onDelete);
 
   return (
     <Drawer.Root
@@ -190,6 +196,16 @@ export const HabitActionSheet = memo(function HabitActionSheet({
                 onClick={() => fire(() => onOpenDetail?.(habit))}
               >
                 {labels.openDetails}
+              </button>
+            )}
+            {showDeleteItem && (
+              <button
+                type="button"
+                className={DELETE_ITEM_CLASS}
+                data-testid={`habit-action-sheet-${habit.id}-delete`}
+                onClick={() => fire(() => onDelete?.(habit.id))}
+              >
+                {labels.delete}
               </button>
             )}
           </div>

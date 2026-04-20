@@ -359,6 +359,10 @@ export interface Translations {
   increaseTarget: string;
   habitUpdated: string;
   saveChanges: string;
+  habitFormSimple: string;
+  habitFormAdvanced: string;
+  habitSetupHint: string;
+  habitTemplateBadge: string;
   habitCompleted: string;
   habitUnchecked: string;
   habitDeleted: string;

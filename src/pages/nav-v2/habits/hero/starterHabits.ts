@@ -13,7 +13,11 @@
  */
 
 import type { Habit } from "@/types";
-import type { HabitTemplate } from "@/lib/habitTemplates";
+import {
+  mapTemplateCategoryToHabitCategory,
+  resolveHabitTemplateSetup,
+  type HabitTemplate,
+} from "@/lib/habitTemplates";
 import type { Language } from "@/i18n/translations";
 
 export interface StarterTemplate {
@@ -82,6 +86,7 @@ export function templateToHabit(
   now: number = Date.now(),
 ): Habit {
   const name = template.names[language] || template.names.en;
+  const resolved = resolveHabitTemplateSetup(template);
   return {
     id: `tpl-${template.id}-${now}`,
     name,
@@ -94,14 +99,15 @@ export function templateToHabit(
     question: "",
     description: "",
     isArchived: false,
-    targetValue: template.dailyTarget ?? 1,
-    targetType: "atLeast",
-    unit: "",
+    targetValue: template.habitType === "numerical" ? resolved.targetValue : 1,
+    targetType: resolved.targetType,
+    unit: template.habitType === "numerical" ? resolved.unit : "",
     entries: {},
     reminders: template.defaultTime
       ? [{ enabled: true, time: template.defaultTime, days: [0, 1, 2, 3, 4, 5, 6] }]
       : [],
     templateId: template.id,
+    category: mapTemplateCategoryToHabitCategory(template.category),
   };
 }
 

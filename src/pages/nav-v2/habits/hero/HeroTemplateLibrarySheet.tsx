@@ -90,9 +90,9 @@ export const HeroTemplateLibrarySheet = memo(function HeroTemplateLibrarySheet({
             >
               {tx.navV2HabitsLibraryTitle}
             </Drawer.Title>
-            <p className="text-sm text-muted-foreground font-body">
+            <Drawer.Description className="text-sm text-muted-foreground font-body">
               {tx.navV2HabitsLibrarySubtitle}
-            </p>
+            </Drawer.Description>
           </div>
 
           <nav

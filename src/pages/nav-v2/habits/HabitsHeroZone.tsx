@@ -1,26 +1,10 @@
 /**
- * HabitsHeroZone — Phase 3-C "today's habits" hero (A+++ rewrite).
+ * HabitsHeroZone — Phase 3-C "today's habits" hero.
  *
- * Decomposed into 4 sub-components (Component Isolation, Law 15) under
- * `./hero/`:
- *   - HeroDailyRing       — sticky daily-progress ring + remaining copy
- *   - HeroIdentityPrompt  — daily-rotating identity statement (Atoms)
- *   - HeroTimeOfDayGroup  — collapsible group per morning/afternoon/evening
- *   - HeroEmptyJourney    — 3-step onboarding empty state
- *
- * Research basis (web research, 2026):
- *   - Habitify: time-of-day grouping anchors habits to circadian context.
- *   - Streaks (Apple Design Award 2016): high-density progress ring scannable
- *     in <200ms.
- *   - James Clear, Atomic Habits: identity-based prompts ("you ARE someone
- *     who…") outperform outcome-based prompts ("complete X habits").
- *   - BJ Fogg, Tiny Habits: cue specificity (When/Where) drives formation.
- *   - Lally et al., 2010: a single missed day does not break a habit;
- *     recovery copy reduces all-or-nothing dropout.
- *
- * All animations gated by {@link useShouldAnimate} (Law 8 / Law 9).
- * Sticky daily ring uses CSS sticky — no scroll listeners (Law 8).
- * Reuses V1 CompactHabitCard untouched (Law 1: Zero Regression).
+ * The top support chrome now stays lean:
+ *   - HeroIdentityPrompt
+ *   - HeroInsightStrip
+ *   - grouped weekly-first habit rows below
  */
 
 import { memo, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -32,16 +16,14 @@ import { lazyWithRetry } from "@/lib/lazyWithRetry";
 import { AllHabitsDoneAnimation } from "@/components/animations/AllHabitsDoneAnimation";
 import { useStreakMilestones } from "./hero/useStreakMilestones";
 
-// Lazy: V1 HabitCompletionCelebration pulls in particle helpers + framer
-// variants — only needed on milestone cross (3/7/21/66/100 days).
 const HabitCompletionCelebrationLazy = lazyWithRetry(() =>
   import("@/components/habit-completion-celebration/HabitCompletionCelebration").then((m) => ({
     default: m.HabitCompletionCelebration,
   })),
 );
+
 import type { Habit } from "@/types";
 import type { HabitsPageDailyProgress } from "./useHabitsPageState";
-import { HeroDailyRing } from "./hero/HeroDailyRing";
 import { HeroIdentityPrompt } from "./hero/HeroIdentityPrompt";
 import { HeroTimeOfDayGroup } from "./hero/HeroTimeOfDayGroup";
 import { HeroEmptyJourney } from "./hero/HeroEmptyJourney";
@@ -53,13 +35,10 @@ interface HabitsHeroZoneProps {
   todaysHabits: Habit[];
   dailyProgress: HabitsPageDailyProgress;
   onToggleHabit: (habitId: string, date: string) => void;
-  /** +/- for numerical habits (drink water etc.). Optional for back-compat. */
   onAdjustHabit?: (habitId: string, date: string, delta: number) => void;
   onDeleteHabit: (habitId: string) => void;
   onCreateHabit: () => void;
-  /** Pencil button → edit form (distinct from long-press → detail sheet). */
   onEditHabit?: (habit: Habit) => void;
-  /** ⋯ menu actions (rest day / archive / unarchive). Optional. */
   onSkipHabit?: (habitId: string, date: string) => void;
   onUnskipHabit?: (habitId: string, date: string) => void;
   onArchiveHabit?: (habitId: string) => void;
@@ -92,9 +71,6 @@ export const HabitsHeroZone = memo(function HabitsHeroZone({
   const groups = useMemo(() => groupHabitsByTimeOfDay(todaysHabits), [todaysHabits]);
   const dayOfMonth = useMemo(() => new Date().getDate(), []);
 
-  // Celebration overlay — fires once per transition of dailyProgress.ratio → 1
-  // (i.e. the last habit of the day just got completed). Gate on total>0 so
-  // the trivial 0/0 case doesn't celebrate nothing.
   const [celebrating, setCelebrating] = useState(false);
   const prevRatioRef = useRef<number>(dailyProgress.ratio);
   useEffect(() => {
@@ -107,14 +83,12 @@ export const HabitsHeroZone = memo(function HabitsHeroZone({
   }, [dailyProgress.ratio, dailyProgress.total]);
   const handleCelebrationDone = useCallback(() => setCelebrating(false), []);
 
-  // Streak milestone detection (3/7/21/66/100 days) — V2 spec §3 thresholds
   const { event: milestoneEvent, dismiss: dismissMilestone } = useStreakMilestones(todaysHabits);
 
   const handleCreate = useCallback(() => {
     void hapticTap();
     onCreateHabit();
   }, [onCreateHabit]);
-
 
   const isEmpty = todaysHabits.length === 0;
 
@@ -130,14 +104,7 @@ export const HabitsHeroZone = memo(function HabitsHeroZone({
 
       {!isEmpty && (
         <div className="sticky top-2 z-10 -mx-1 rounded-2xl border border-border/60 bg-background/85 px-3 py-3 shadow-sm backdrop-blur-md [-webkit-backdrop-filter:blur(12px)] md:top-4">
-          <HeroDailyRing
-            completed={dailyProgress.completed}
-            total={dailyProgress.total}
-            ratio={dailyProgress.ratio}
-          />
-          <div className="mt-3">
-            <HeroIdentityPrompt habits={todaysHabits} dayOfMonth={dayOfMonth} />
-          </div>
+          <HeroIdentityPrompt habits={todaysHabits} dayOfMonth={dayOfMonth} />
           <HeroInsightStrip />
         </div>
       )}
@@ -168,7 +135,7 @@ export const HabitsHeroZone = memo(function HabitsHeroZone({
           ))}
 
           <p
-            className="mt-6 px-1 text-xs italic text-muted-foreground/80 font-body"
+            className="mt-6 px-1 text-xs font-body italic text-muted-foreground/80"
             data-testid="habits-hero-recovery"
           >
             {tx.navV2HabitsRecovery}
@@ -192,9 +159,7 @@ export const HabitsHeroZone = memo(function HabitsHeroZone({
         </>
       )}
 
-      {celebrating && animate && (
-        <AllHabitsDoneAnimation onComplete={handleCelebrationDone} />
-      )}
+      {celebrating && animate && <AllHabitsDoneAnimation onComplete={handleCelebrationDone} />}
 
       {milestoneEvent && animate && (
         <Suspense fallback={null}>

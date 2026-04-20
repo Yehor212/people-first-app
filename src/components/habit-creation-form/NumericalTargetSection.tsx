@@ -1,5 +1,5 @@
 /**
- * NumericalTargetSection — Target value, unit, and at-least/at-most controls.
+ * NumericalTargetSection вЂ” Target value, unit, and at-least/at-most controls.
  */
 
 import { motion } from "framer-motion";
@@ -11,25 +11,69 @@ interface NumericalTargetSectionProps {
   isPrimaryCTA: boolean;
   ts: Record<string, string>;
   targetValue: number;
+  targetStep: number;
   setTargetValue: (v: number) => void;
   targetType: "atLeast" | "atMost";
   setTargetType: (t: "atLeast" | "atMost") => void;
   unit: string;
   setUnit: (u: string) => void;
+  unitOptions?: readonly { value: string }[];
+  onTemplateUnitChange?: (value: string) => void;
 }
 
 export function NumericalTargetSection({
   isPrimaryCTA,
   ts,
   targetValue,
+  targetStep,
   setTargetValue,
   targetType,
   setTargetType,
   unit,
   setUnit,
+  unitOptions,
+  onTemplateUnitChange,
 }: NumericalTargetSectionProps) {
+  const normalize = (value: number) => Number(value.toFixed(3));
+  const decrement = () =>
+    setTargetValue(Math.max(targetStep, normalize(targetValue - targetStep)));
+  const increment = () => setTargetValue(normalize(targetValue + targetStep));
+
   return (
     <div className="relative mb-4 space-y-3">
+      {unitOptions && unitOptions.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {unitOptions.map((option) => {
+            const active = unit === option.value;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => {
+                  if (onTemplateUnitChange) {
+                    onTemplateUnitChange(option.value);
+                  } else {
+                    setUnit(option.value);
+                  }
+                }}
+                className={cn(
+                  "min-h-[44px] rounded-full px-3 py-2 text-xs font-medium motion-safe:transition-colors",
+                  active
+                    ? isPrimaryCTA
+                      ? "border border-emerald-400/40 bg-emerald-500/20 text-emerald-200"
+                      : "bg-primary text-primary-foreground"
+                    : isPrimaryCTA
+                      ? "border border-foreground/15 bg-foreground/5 text-foreground/70"
+                      : "border border-border bg-background text-muted-foreground hover:bg-muted",
+                )}
+              >
+                {option.value}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {/* Target value */}
       <div>
         <label
@@ -45,7 +89,7 @@ export function NumericalTargetSection({
         <div className="flex items-center gap-2">
           <motion.button
             type="button"
-            onClick={() => setTargetValue(Math.max(1, targetValue - 1))}
+            onClick={decrement}
             className="w-10 h-10 min-w-[44px] min-h-[44px] rounded-lg bg-muted/50 flex items-center justify-center"
             whileTap={zenTap.button}
           >
@@ -53,11 +97,11 @@ export function NumericalTargetSection({
           </motion.button>
           <input
             type="number"
-            min="1"
-            step="0.5"
+            min={targetStep}
+            step={targetStep}
             value={targetValue}
             onChange={(e) =>
-              setTargetValue(Math.max(0.1, parseFloat(e.target.value) || 1))
+              setTargetValue(Math.max(targetStep, parseFloat(e.target.value) || targetStep))
             }
             className={cn(
               "w-20 p-2 rounded-lg text-center text-lg font-bold",
@@ -70,7 +114,7 @@ export function NumericalTargetSection({
           />
           <motion.button
             type="button"
-            onClick={() => setTargetValue(targetValue + 1)}
+            onClick={increment}
             className={cn(
               "w-10 h-10 min-w-[44px] min-h-[44px] rounded-lg flex items-center justify-center",
               "bg-gradient-to-br from-primary/20 to-primary/10 text-primary",

@@ -46,6 +46,7 @@ const labels = {
   unarchive: "Unarchive",
   edit: "Edit",
   openDetails: "Open details",
+  delete: "Delete",
 };
 
 describe("HabitActionSheet", () => {
@@ -154,6 +155,28 @@ describe("HabitActionSheet", () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
+  it("renders Delete as the destructive fallback when onDelete is provided", () => {
+    const onDelete = vi.fn();
+    const onClose = vi.fn();
+    render(
+      <HabitActionSheet
+        open
+        onClose={onClose}
+        habit={habit()}
+        today="2026-04-19"
+        isSkippedToday={false}
+        isArchived={false}
+        labels={labels}
+        onDelete={onDelete}
+      />,
+    );
+    const item = screen.getByTestId("habit-action-sheet-h1-delete");
+    expect(item).toHaveTextContent("Delete");
+    fireEvent.click(item);
+    expect(onDelete).toHaveBeenCalledWith("h1");
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
   it("close button fires onClose without firing any action", () => {
     const onClose = vi.fn();
     const onSkip = vi.fn();
@@ -188,6 +211,7 @@ describe("HabitActionSheet", () => {
         onArchive={vi.fn()}
         onEdit={vi.fn()}
         onOpenDetail={vi.fn()}
+        onDelete={vi.fn()}
       />,
     );
     const testIds = [
@@ -195,6 +219,7 @@ describe("HabitActionSheet", () => {
       "habit-action-sheet-h1-archive",
       "habit-action-sheet-h1-edit",
       "habit-action-sheet-h1-details",
+      "habit-action-sheet-h1-delete",
       "habit-action-sheet-h1-close",
     ];
     testIds.forEach((tid) => {

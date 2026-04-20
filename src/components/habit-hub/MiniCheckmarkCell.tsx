@@ -133,7 +133,7 @@ export const MiniCheckmarkCell = memo(function MiniCheckmarkCell({
         className={cn(
           "w-8 h-8 rounded-lg flex items-center justify-center",
           "hover:brightness-125",
-          isToday && "ring-1 ring-white/30",
+          isToday && "ring-1 ring-foreground/30",
         )}
         style={{
           backgroundColor: isCompleted
@@ -141,10 +141,10 @@ export const MiniCheckmarkCell = memo(function MiniCheckmarkCell({
               ? `${habitColor}18`
               : `${habitColor}30`
             : isSkipped
-              ? "rgba(96,165,250,0.12)"
+              ? "hsl(var(--chart-focus) / 0.12)"
               : isNo
-                ? "rgba(255,255,255,0.04)"
-                : "rgba(255,255,255,0.02)",
+                ? "hsl(var(--foreground) / 0.04)"
+                : "hsl(var(--foreground) / 0.02)",
         }}
       >
         <AnimatePresence mode="wait">
@@ -234,7 +234,7 @@ export const MiniCheckmarkCell = memo(function MiniCheckmarkCell({
                 y1="2.5"
                 x2="7.5"
                 y2="7.5"
-                stroke="rgba(255,255,255,0.2)"
+                stroke="hsl(var(--foreground) / 0.2)"
                 strokeWidth={1.5}
                 strokeLinecap="round"
               />
@@ -243,7 +243,7 @@ export const MiniCheckmarkCell = memo(function MiniCheckmarkCell({
                 y1="2.5"
                 x2="2.5"
                 y2="7.5"
-                stroke="rgba(255,255,255,0.2)"
+                stroke="hsl(var(--foreground) / 0.2)"
                 strokeWidth={1.5}
                 strokeLinecap="round"
               />
@@ -252,7 +252,7 @@ export const MiniCheckmarkCell = memo(function MiniCheckmarkCell({
           {value === ENTRY.UNKNOWN && (
             <motion.div
               key="unknown"
-              className="w-1.5 h-1.5 rounded-full bg-white/[0.12]"
+              className="w-1.5 h-1.5 rounded-full bg-foreground/[0.12]"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}

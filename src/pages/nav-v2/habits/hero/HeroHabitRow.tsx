@@ -1,66 +1,35 @@
 /**
- * HeroHabitRow — V2 wrapper around V1 {@link CompactHabitCard}.
+ * HeroHabitRow — weekly-first V2 habit row.
  *
- * Law 1 / Law 15: CompactHabitCard is NOT modified. This wrapper adds
- * three additive, research-backed enhancements:
- *
- *   1. **Long-press (450 ms) → open Actions sheet** when secondary handlers
- *      are wired. Falls back to opening the detail sheet only when actions are
- *      absent. Medium-intensity haptic fires at the threshold so users "feel"
- *      the reveal before they see it.
- *
- *   2. **Edit remains explicit; delete remains singular.** The V1 card still
- *      owns swipe/hover affordances, and destructive delete stays exclusively
- *      on that V1 path instead of being duplicated in the action sheet.
- *
- *   3. **Reminder cue row** — pulls `reminders[0].time` into a tiny strip so
- *      the "when" is still visible on the card (BJ Fogg cue specificity),
- *      without re-adding removed chain/identity clutter to the surface.
- *
- * All motion gated by {@link useShouldAnimate}. The wrapper element is
- * keyboard-focusable with `role="group"` so keyboard users can Enter/Space to
- * open the same action surface touch users reach by long-press.
+ * Primary interaction stays on the week cells, as in V1.
+ * Secondary actions stay behind long-press / keyboard on the row shell.
  */
 
 import { memo, useCallback, useMemo, useRef, useState } from "react";
 import { Clock } from "lucide-react";
-import { CompactHabitCard } from "@/components/compact-habit-card/CompactHabitCard";
 import { isHabitCompletedOnDate } from "@/lib/habits";
-import { getCurrentStreak } from "@/lib/habitScore";
 import { getToday } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { hapticTap } from "@/lib/haptics";
 import { ENTRY } from "@/types";
 import type { Habit } from "@/types";
 import { HabitActionSheet } from "./HabitActionSheet";
+import { HeroWeeklyHabitCard } from "./HeroWeeklyHabitCard";
 
 interface HeroHabitRowProps {
   habit: Habit;
   onToggle: (habitId: string, date: string) => void;
-  /** +/- for numerical habits (drink 250ml, meditate 10min). Optional. */
   onAdjust?: (habitId: string, date: string, delta: number) => void;
-  onDelete: (habitId: string) => void;
-  /**
-   * Pencil (hover desktop / swipe-reveal mobile) — opens the create sheet in
-   * edit mode. Distinct from `onOpenDetail` which opens the read-only stats
-   * sheet on long-press. Mapping both to detail was the original "пенсил
-   * открывает не то что ожидаешь" complaint.
-   */
+  onDelete?: (habitId: string) => void;
   onEdit?: (habit: Habit) => void;
   onOpenDetail?: (habit: Habit) => void;
-  /** Skip/unskip the habit for today (rest day). */
   onSkip?: (habitId: string, date: string) => void;
   onUnskip?: (habitId: string, date: string) => void;
   onArchive?: (habitId: string) => void;
   onUnarchive?: (habitId: string) => void;
 }
 
-/** px threshold past which we treat an ongoing pointer as a swipe, not a
- *  long-press. Matches the swipe trigger in V1 `CompactHabitCard`
- *  (`handleTouchEnd` fires at 50px; we cancel at 10px so the user's swipe
- *  never loses 450 ms to an aborted long-press). */
 const LONG_PRESS_MOVE_TOLERANCE_PX = 10;
-
 const LONG_PRESS_MS = 450;
 
 export const HeroHabitRow = memo(function HeroHabitRow({
@@ -80,25 +49,14 @@ export const HeroHabitRow = memo(function HeroHabitRow({
   const tx = t;
   const isSkippedToday = habit.entries?.[today]?.value === ENTRY.SKIP;
   const isArchived = Boolean(habit.isArchived);
-  const hasActions = Boolean(onSkip || onUnskip || onArchive || onUnarchive || onEdit);
+  const hasActions = Boolean(
+    onSkip || onUnskip || onArchive || onUnarchive || onEdit || onDelete,
+  );
   const [actionSheetOpen, setActionSheetOpen] = useState(false);
   const closeActionSheet = useCallback(() => setActionSheetOpen(false), []);
 
-  // Compute real current streak via V1 habitScore.ts — unlocks the fire glyph
-  // + milestone badge that CompactHabitCard already renders when streak ≥ 1.
-  // Memoized on habit.entries reference (Zustand shallows, so changes create
-  // a new reference).
-  const streak = useMemo(() => getCurrentStreak(habit), [habit]);
-
-  // Long-press — pointer event based so it works on touch + mouse + pen
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressFiredRef = useRef(false);
-  /** Initial pointerdown coordinates. Used by `handlePointerMove` to cancel
-   *  the long-press timer as soon as the user's finger moves past the swipe
-   *  tolerance (inner V1 CompactHabitCard swipes at 50 px — we cancel at 10
-   *  px so the horizontal swipe reveal of Edit/Delete never fights the
-   *  long-press timer). Cross-platform: pointer events fire identically on
-   *  iOS / Android / Desktop, so one handler covers all. */
   const pointerOriginRef = useRef<{ x: number; y: number } | null>(null);
 
   const cancelLongPress = useCallback(() => {
@@ -111,9 +69,8 @@ export const HeroHabitRow = memo(function HeroHabitRow({
   const handlePointerDown = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
       if (!hasActions && !onOpenDetail) return;
-      // Don't trigger on the inner toggle button — tap-to-complete wins.
       const target = e.target as HTMLElement;
-      if (target.closest("button, a")) return;
+      if (target.closest("button, a, [role='button'], [role='checkbox']")) return;
       longPressFiredRef.current = false;
       pointerOriginRef.current = { x: e.clientX, y: e.clientY };
       cancelLongPress();
@@ -127,7 +84,7 @@ export const HeroHabitRow = memo(function HeroHabitRow({
         }
       }, LONG_PRESS_MS);
     },
-    [hasActions, onOpenDetail, habit, cancelLongPress],
+    [cancelLongPress, habit, hasActions, onOpenDetail],
   );
 
   const handlePointerMove = useCallback(
@@ -147,17 +104,11 @@ export const HeroHabitRow = memo(function HeroHabitRow({
     cancelLongPress();
     pointerOriginRef.current = null;
   }, [cancelLongPress]);
-  const handlePointerLeave = useCallback(() => {
-    cancelLongPress();
-    pointerOriginRef.current = null;
-  }, [cancelLongPress]);
 
-  // Keyboard fallback — Enter/Space mirrors the touch long-press behavior:
-  // action sheet when actions exist, otherwise direct detail open.
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
       if (!hasActions && !onOpenDetail) return;
-      if (e.target !== e.currentTarget) return; // don't eat keystrokes on inner buttons
+      if (e.target !== e.currentTarget) return;
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
         if (hasActions) {
@@ -167,14 +118,12 @@ export const HeroHabitRow = memo(function HeroHabitRow({
         }
       }
     },
-    [hasActions, onOpenDetail, habit],
+    [habit, hasActions, onOpenDetail],
   );
 
   const reminderTime = habit.reminders?.find((r) => r.enabled !== false)?.time;
   const showCueRow = Boolean(reminderTime);
 
-  // Overdue nudge: reminder has passed + habit not yet completed today.
-  // Purely visual signal — never blocks, never auto-completes.
   const completedToday = useMemo(() => isHabitCompletedOnDate(habit, today), [habit, today]);
   const overdueMinutes = useMemo(() => {
     if (!reminderTime || completedToday) return 0;
@@ -184,36 +133,32 @@ export const HeroHabitRow = memo(function HeroHabitRow({
     const remind = new Date();
     remind.setHours(h, m, 0, 0);
     return Math.max(0, Math.round((now.getTime() - remind.getTime()) / 60000));
-  }, [reminderTime, completedToday]);
+  }, [completedToday, reminderTime]);
   const overdueHours = Math.floor(overdueMinutes / 60);
-  const isOverdue = overdueMinutes >= 30; // 30-min grace period — don't nag early
+  const isOverdue = overdueMinutes >= 30;
 
   return (
     <div
       role="group"
       aria-label={habit.name}
-      // Composite widget: long-press or Enter/Space opens the row action
-      // surface (or falls back to detail when no secondary actions are wired).
       // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
-      tabIndex={onOpenDetail ? 0 : -1}
+      tabIndex={hasActions || onOpenDetail ? 0 : -1}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerUp}
-      onPointerLeave={handlePointerLeave}
+      onPointerLeave={handlePointerUp}
       onKeyDown={handleKeyDown}
-      className="relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-2xl"
+      className="relative rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
       data-testid={`hero-habit-row-${habit.id}`}
     >
-      <CompactHabitCard
+      <HeroWeeklyHabitCard
         habit={habit}
         onToggle={onToggle}
         onAdjust={onAdjust}
-        onDelete={onDelete}
-        onEdit={onEdit ?? onOpenDetail}
-        streak={streak}
-        isDueToday
+        onOpenDetail={onOpenDetail}
       />
+
       <HabitActionSheet
         open={actionSheetOpen}
         onClose={closeActionSheet}
@@ -229,7 +174,8 @@ export const HeroHabitRow = memo(function HeroHabitRow({
           archive: tx.archiveHabit,
           unarchive: tx.unarchiveHabit,
           edit: tx.edit,
-          openDetails: tx.navV2HabitsOpenDetails,
+          openDetails: tx.statistics || tx.navV2HabitsOpenDetails,
+          delete: tx.delete,
         }}
         onSkip={onSkip}
         onUnskip={onUnskip}
@@ -237,11 +183,8 @@ export const HeroHabitRow = memo(function HeroHabitRow({
         onUnarchive={onUnarchive}
         onEdit={onEdit}
         onOpenDetail={onOpenDetail}
+        onDelete={onDelete}
       />
-      {/* onDelete is NOT surfaced in the action sheet — V1 CompactHabitCard
-          swipe-reveal with 2-tap confirm is the single destructive path.
-          Prevents Hick's-law overload and preserves V1's safety pattern. */}
-      {onDelete ? null : null}
 
       {showCueRow && (
         <div

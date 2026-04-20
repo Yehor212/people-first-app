@@ -1,8 +1,21 @@
 import { Language } from '@/i18n/translations';
-import type { LoopHabitType } from '@/types';
+import type { HabitCategory, LoopHabitType, TargetType } from '@/types';
 
 /** Broad category for UI grouping inside the template picker (Phase 3-C). */
 export type HabitTemplateCategory = 'body' | 'mind' | 'focus' | 'rest' | 'quit';
+
+export interface HabitTemplateUnitOption {
+  value: string;
+  defaultTarget: number;
+  step?: number;
+}
+
+export interface HabitTemplateSetup {
+  defaultUnit?: string;
+  unitOptions?: readonly HabitTemplateUnitOption[];
+  targetStep?: number;
+  targetType?: TargetType;
+}
 
 export interface HabitTemplate {
   id: string;
@@ -13,50 +26,117 @@ export interface HabitTemplate {
   dailyTarget?: number;      // For numerical habits
   defaultTime?: string;
   category?: HabitTemplateCategory;
+  setup?: HabitTemplateSetup;
 }
 
 export const habitTemplates: HabitTemplate[] = [
   // ------- BODY ---------
-  { id: 'water', names: { en: 'Drink water', uk: 'Пити воду', es: 'Beber agua', de: 'Wasser trinken', fr: 'Boire de l\'eau', ja: '水を飲む', ar: 'شرب الماء', he: 'לשתות מים' }, icon: '💧', color: 10, habitType: 'numerical', dailyTarget: 8, category: 'body' },
-  { id: 'exercise', names: { en: 'Exercise', uk: 'Вправи', es: 'Ejercicio', de: 'Sport', fr: 'Exercice', ja: '運動', ar: 'تمرين', he: 'פעילות גופנית' }, icon: '🏃', color: 2, habitType: 'boolean', category: 'body' },
-  { id: 'healthy-food', names: { en: 'Eat healthy', uk: 'Здорове харчування', es: 'Comer sano', de: 'Gesund essen', fr: 'Manger sainement', ja: '健康的な食事', ar: 'أكل صحي', he: 'לאכול בריא' }, icon: '🥗', color: 5, habitType: 'boolean', defaultTime: '12:00', category: 'body' },
-  { id: 'vitamins', names: { en: 'Take vitamins', uk: 'Вітаміни', es: 'Vitaminas', de: 'Vitamine', fr: 'Vitamines', ja: 'ビタミンを摂る', ar: 'تناول الفيتامينات', he: 'לקחת ויטמינים' }, icon: '💊', color: 15, habitType: 'boolean', defaultTime: '09:00', category: 'body' },
-  // Phase 3-C addition (2026 trending, Huberman protocol): morning sunlight 10-15 min
-  { id: 'sunlight', names: { en: 'Morning sunlight — 10 min', uk: 'Ранкове сонце — 10 хв', es: 'Sol matutino — 10 min', de: 'Morgensonne — 10 Min', fr: 'Soleil du matin — 10 min', ja: '朝日 — 10分', ar: 'شمس الصباح — 10 د', he: 'שמש בוקר — 10 ד׳' }, icon: '🌅', color: 16, habitType: 'boolean', defaultTime: '07:30', category: 'body' },
-  // Phase 3-C addition (2026 trending): cold exposure 1-3 min (Huberman dopamine +250%)
-  { id: 'cold-exposure', names: { en: 'Cold exposure — 1 min', uk: 'Холодний душ — 1 хв', es: 'Ducha fría — 1 min', de: 'Kaltdusche — 1 Min', fr: 'Douche froide — 1 min', ja: '冷水浴 — 1分', ar: 'دش بارد — 1 د', he: 'מקלחת קרה — 1 ד׳' }, icon: '🧊', color: 17, habitType: 'boolean', defaultTime: '08:00', category: 'body' },
-  // Phase 3-C addition (Attia + Huberman): protein target
-  { id: 'protein', names: { en: 'Protein target — 30 g', uk: 'Білок — 30 г', es: 'Proteína — 30 g', de: 'Eiweiß — 30 g', fr: 'Protéine — 30 g', ja: 'たんぱく質 — 30g', ar: 'بروتين — 30غ', he: 'חלבון — 30 גר׳' }, icon: '🥚', color: 4, habitType: 'numerical', dailyTarget: 30, defaultTime: '08:30', category: 'body' },
+  {
+    id: 'water',
+    names: { en: 'Drink water', uk: 'РџРёС‚Рё РІРѕРґСѓ', es: 'Beber agua', de: 'Wasser trinken', fr: 'Boire de l\'eau', ja: 'ж°ґг‚’йЈІг‚Ђ', ar: 'ШґШ±ШЁ Ш§Щ„Щ…Ш§ШЎ', he: 'ЧњЧ©ЧЄЧ•ЧЄ ЧћЧ™Чќ' },
+    icon: 'рџ’§',
+    color: 10,
+    habitType: 'numerical',
+    dailyTarget: 2,
+    category: 'body',
+    setup: {
+      defaultUnit: 'L',
+      targetStep: 0.25,
+      targetType: 'atLeast',
+      unitOptions: [
+        { value: 'L', defaultTarget: 2, step: 0.25 },
+        { value: 'ml', defaultTarget: 2000, step: 250 },
+        { value: 'glasses', defaultTarget: 8, step: 1 },
+      ],
+    },
+  },
+  { id: 'exercise', names: { en: 'Exercise', uk: 'Р’РїСЂР°РІРё', es: 'Ejercicio', de: 'Sport', fr: 'Exercice', ja: 'йЃ‹е‹•', ar: 'ШЄЩ…Ш±ЩЉЩ†', he: 'Ч¤ЧўЧ™ЧњЧ•ЧЄ Ч’Ч•Ч¤Ч Ч™ЧЄ' }, icon: 'рџЏѓ', color: 2, habitType: 'boolean', category: 'body' },
+  { id: 'healthy-food', names: { en: 'Eat healthy', uk: 'Р—РґРѕСЂРѕРІРµ С…Р°СЂС‡СѓРІР°РЅРЅСЏ', es: 'Comer sano', de: 'Gesund essen', fr: 'Manger sainement', ja: 'еЃҐеє·зљ„гЃЄйЈџдє‹', ar: 'ШЈЩѓЩ„ ШµШ­ЩЉ', he: 'ЧњЧђЧ›Ч•Чљ Ч‘ЧЁЧ™Чђ' }, icon: 'рџҐ—', color: 5, habitType: 'boolean', defaultTime: '12:00', category: 'body' },
+  { id: 'vitamins', names: { en: 'Take vitamins', uk: 'Р’С–С‚Р°РјС–РЅРё', es: 'Vitaminas', de: 'Vitamine', fr: 'Vitamines', ja: 'гѓ“г‚їгѓџгѓіг‚’ж‘‚г‚‹', ar: 'ШЄЩ†Ш§Щ€Щ„ Ш§Щ„ЩЃЩЉШЄШ§Щ…ЩЉЩ†Ш§ШЄ', he: 'ЧњЧ§Ч—ЧЄ Ч•Ч™ЧЧћЧ™Ч Ч™Чќ' }, icon: 'рџ’Љ', color: 15, habitType: 'boolean', defaultTime: '09:00', category: 'body' },
+  { id: 'sunlight', names: { en: 'Morning sunlight вЂ” 10 min', uk: 'Р Р°РЅРєРѕРІРµ СЃРѕРЅС†Рµ вЂ” 10 С…РІ', es: 'Sol matutino вЂ” 10 min', de: 'Morgensonne вЂ” 10 Min', fr: 'Soleil du matin вЂ” 10 min', ja: 'жњќж—Ґ вЂ” 10е€†', ar: 'ШґЩ…Ші Ш§Щ„ШµШЁШ§Ш­ вЂ” 10 ШЇ', he: 'Ч©ЧћЧ© Ч‘Ч•Ч§ЧЁ вЂ” 10 Ч“Чі' }, icon: 'рџЊ…', color: 16, habitType: 'boolean', defaultTime: '07:30', category: 'body' },
+  { id: 'cold-exposure', names: { en: 'Cold exposure вЂ” 1 min', uk: 'РҐРѕР»РѕРґРЅРёР№ РґСѓС€ вЂ” 1 С…РІ', es: 'Ducha frГ­a вЂ” 1 min', de: 'Kaltdusche вЂ” 1 Min', fr: 'Douche froide вЂ” 1 min', ja: 'е†·ж°ґжµґ вЂ” 1е€†', ar: 'ШЇШґ ШЁШ§Ш±ШЇ вЂ” 1 ШЇ', he: 'ЧћЧ§ЧњЧ—ЧЄ Ч§ЧЁЧ” вЂ” 1 Ч“Чі' }, icon: 'рџ§Љ', color: 17, habitType: 'boolean', defaultTime: '08:00', category: 'body' },
+  {
+    id: 'protein',
+    names: { en: 'Protein target вЂ” 30 g', uk: 'Р‘С–Р»РѕРє вЂ” 30 Рі', es: 'ProteГ­na вЂ” 30 g', de: 'EiweiГџ вЂ” 30 g', fr: 'ProtГ©ine вЂ” 30 g', ja: 'гЃџг‚“гЃ±гЃЏиіЄ вЂ” 30g', ar: 'ШЁШ±Щ€ШЄЩЉЩ† вЂ” 30Шє', he: 'Ч—ЧњЧ‘Ч•Чџ вЂ” 30 Ч’ЧЁЧі' },
+    icon: 'рџҐљ',
+    color: 4,
+    habitType: 'numerical',
+    dailyTarget: 30,
+    defaultTime: '08:30',
+    category: 'body',
+    setup: {
+      defaultUnit: 'g',
+      targetStep: 5,
+      targetType: 'atLeast',
+      unitOptions: [{ value: 'g', defaultTarget: 30, step: 5 }],
+    },
+  },
 
   // ------- MIND ---------
-  { id: 'meditate', names: { en: 'Meditate', uk: 'Медитація', es: 'Meditar', de: 'Meditieren', fr: 'Méditer', ja: '瞑想', ar: 'تأمل', he: 'מדיטציה' }, icon: '🧘', color: 13, habitType: 'boolean', category: 'mind' },
-  { id: 'journal', names: { en: 'Journal', uk: 'Щоденник', es: 'Diario', de: 'Tagebuch', fr: 'Journal', ja: '日記', ar: 'يوميات', he: 'יומן' }, icon: '✍️', color: 7, habitType: 'boolean', category: 'mind' },
-  // Phase 3-C addition: gratitude practice
-  { id: 'gratitude', names: { en: 'Name one gratitude', uk: 'Назвати одну вдячність', es: 'Una gratitud', de: 'Eine Dankbarkeit', fr: 'Une gratitude', ja: '感謝を一つ', ar: 'امتنان واحد', he: 'הכרת תודה אחת' }, icon: '🙏', color: 11, habitType: 'boolean', defaultTime: '22:00', category: 'mind' },
-  // Phase 3-C addition: breathwork (4-7-8 once)
-  { id: 'breathwork', names: { en: 'Breathe — 4-7-8 once', uk: 'Подих — 4-7-8 раз', es: 'Respiración 4-7-8', de: 'Atmen 4-7-8', fr: 'Respiration 4-7-8', ja: '4-7-8呼吸', ar: 'تنفس 4-7-8', he: 'נשימה 4-7-8' }, icon: '🌬️', color: 12, habitType: 'boolean', defaultTime: '15:00', category: 'mind' },
+  { id: 'meditate', names: { en: 'Meditate', uk: 'РњРµРґРёС‚Р°С†С–СЏ', es: 'Meditar', de: 'Meditieren', fr: 'MГ©diter', ja: 'зћ‘жѓі', ar: 'ШЄШЈЩ…Щ„', he: 'ЧћЧ“Ч™ЧЧ¦Ч™Ч”' }, icon: 'рџ§', color: 13, habitType: 'boolean', category: 'mind' },
+  { id: 'journal', names: { en: 'Journal', uk: 'Р©РѕРґРµРЅРЅРёРє', es: 'Diario', de: 'Tagebuch', fr: 'Journal', ja: 'ж—ҐиЁ', ar: 'ЩЉЩ€Щ…ЩЉШ§ШЄ', he: 'Ч™Ч•ЧћЧџ' }, icon: 'вњЌпёЏ', color: 7, habitType: 'boolean', category: 'mind' },
+  { id: 'gratitude', names: { en: 'Name one gratitude', uk: 'РќР°Р·РІР°С‚Рё РѕРґРЅСѓ РІРґСЏС‡РЅС–СЃС‚СЊ', es: 'Una gratitud', de: 'Eine Dankbarkeit', fr: 'Une gratitude', ja: 'ж„џи¬ќг‚’дёЂгЃ¤', ar: 'Ш§Щ…ШЄЩ†Ш§Щ† Щ€Ш§Ш­ШЇ', he: 'Ч”Ч›ЧЁЧЄ ЧЄЧ•Ч“Ч” ЧђЧ—ЧЄ' }, icon: 'рџ™Џ', color: 11, habitType: 'boolean', defaultTime: '22:00', category: 'mind' },
+  { id: 'breathwork', names: { en: 'Breathe вЂ” 4-7-8 once', uk: 'РџРѕРґРёС… вЂ” 4-7-8 СЂР°Р·', es: 'RespiraciГіn 4-7-8', de: 'Atmen 4-7-8', fr: 'Respiration 4-7-8', ja: '4-7-8е‘јеђё', ar: 'ШЄЩ†ЩЃШі 4-7-8', he: 'Ч Ч©Ч™ЧћЧ” 4-7-8' }, icon: 'рџЊ¬пёЏ', color: 12, habitType: 'boolean', defaultTime: '15:00', category: 'mind' },
 
   // ------- FOCUS ---------
-  { id: 'read', names: { en: 'Read 10 pages', uk: 'Читати 10 сторінок', es: 'Leer 10 páginas', de: '10 Seiten lesen', fr: 'Lire 10 pages', ja: '10ページ読む', ar: 'قراءة 10 صفحات', he: 'לקרוא 10 עמודים' }, icon: '📚', color: 7, habitType: 'boolean', category: 'focus' },
-  { id: 'learn-english', names: { en: 'Learn English', uk: 'Вивчити англійську', es: 'Aprender inglés', de: 'Englisch lernen', fr: 'Apprendre l\'anglais', ja: '英語を学ぶ', ar: 'تعلم الإنجليزية', he: 'ללמוד אנגלית' }, icon: '🗣️', color: 2, habitType: 'boolean', category: 'focus' },
-  // Phase 3-C addition (2026): phone-free first hour (dopamine detox)
-  { id: 'phone-free-morning', names: { en: 'Phone-free first hour', uk: 'Без телефону першу годину', es: 'Sin móvil la 1ª hora', de: 'Eine Stunde ohne Handy', fr: '1 h sans téléphone', ja: '朝1時間スマホなし', ar: 'ساعة بدون هاتف', he: 'שעה בלי טלפון' }, icon: '📵', color: 14, habitType: 'boolean', defaultTime: '07:00', category: 'focus' },
-  // Phase 3-C addition: deep work 25 min
-  { id: 'deep-work', names: { en: 'Deep work — 25 min', uk: 'Глибока робота — 25 хв', es: 'Trabajo profundo — 25 min', de: 'Deep Work — 25 Min', fr: 'Travail profond — 25 min', ja: 'ディープワーク 25分', ar: 'عمل عميق — 25 د', he: 'עבודה עמוקה — 25 ד׳' }, icon: '🎯', color: 3, habitType: 'boolean', defaultTime: '09:30', category: 'focus' },
+  { id: 'read', names: { en: 'Read 10 pages', uk: 'Р§РёС‚Р°С‚Рё 10 СЃС‚РѕСЂС–РЅРѕРє', es: 'Leer 10 pГЎginas', de: '10 Seiten lesen', fr: 'Lire 10 pages', ja: '10гѓљгѓјг‚ёиЄ­г‚Ђ', ar: 'Щ‚Ш±Ш§ШЎШ© 10 ШµЩЃШ­Ш§ШЄ', he: 'ЧњЧ§ЧЁЧ•Чђ 10 ЧўЧћЧ•Ч“Ч™Чќ' }, icon: 'рџ“љ', color: 7, habitType: 'boolean', category: 'focus' },
+  { id: 'learn-english', names: { en: 'Learn English', uk: 'Р’РёРІС‡РёС‚Рё Р°РЅРіР»С–Р№СЃСЊРєСѓ', es: 'Aprender inglГ©s', de: 'Englisch lernen', fr: 'Apprendre l\'anglais', ja: 'и‹±иЄћг‚’е­¦гЃ¶', ar: 'ШЄШ№Щ„Щ… Ш§Щ„ШҐЩ†Ш¬Щ„ЩЉШІЩЉШ©', he: 'ЧњЧњЧћЧ•Ч“ ЧђЧ Ч’ЧњЧ™ЧЄ' }, icon: 'рџ—ЈпёЏ', color: 2, habitType: 'boolean', category: 'focus' },
+  { id: 'phone-free-morning', names: { en: 'Phone-free first hour', uk: 'Р‘РµР· С‚РµР»РµС„РѕРЅСѓ РїРµСЂС€Сѓ РіРѕРґРёРЅСѓ', es: 'Sin mГіvil la 1ВЄ hora', de: 'Eine Stunde ohne Handy', fr: '1 h sans tГ©lГ©phone', ja: 'жњќ1ж™‚й–“г‚№гѓћгѓ›гЃЄгЃ—', ar: 'ШіШ§Ш№Ш© ШЁШЇЩ€Щ† Щ‡Ш§ШЄЩЃ', he: 'Ч©ЧўЧ” Ч‘ЧњЧ™ ЧЧњЧ¤Ч•Чџ' }, icon: 'рџ“µ', color: 14, habitType: 'boolean', defaultTime: '07:00', category: 'focus' },
+  { id: 'deep-work', names: { en: 'Deep work вЂ” 25 min', uk: 'Р“Р»РёР±РѕРєР° СЂРѕР±РѕС‚Р° вЂ” 25 С…РІ', es: 'Trabajo profundo вЂ” 25 min', de: 'Deep Work вЂ” 25 Min', fr: 'Travail profond вЂ” 25 min', ja: 'гѓ‡г‚Јгѓјгѓ—гѓЇгѓјг‚Ї 25е€†', ar: 'Ш№Щ…Щ„ Ш№Щ…ЩЉЩ‚ вЂ” 25 ШЇ', he: 'ЧўЧ‘Ч•Ч“Ч” ЧўЧћЧ•Ч§Ч” вЂ” 25 Ч“Чі' }, icon: 'рџЋЇ', color: 3, habitType: 'boolean', defaultTime: '09:30', category: 'focus' },
 
   // ------- REST ---------
-  { id: 'sleep', names: { en: 'Sleep 8 hours', uk: 'Сон 8 годин', es: 'Dormir 8 horas', de: '8 Stunden schlafen', fr: 'Dormir 8 heures', ja: '8時間睡眠', ar: 'النوم 8 ساعات', he: 'לישון 8 שעות' }, icon: '😴', color: 2, habitType: 'boolean', category: 'rest' },
-  // Phase 3-C addition (2026 Huberman): delayed caffeine (wait 90-120 min)
-  { id: 'delayed-caffeine', names: { en: 'Delay caffeine 90 min', uk: 'Кава через 90 хв', es: 'Retrasar cafeína 90 min', de: 'Koffein 90 Min später', fr: 'Retarder caféine 90 min', ja: 'カフェインを90分遅らせる', ar: 'تأجيل الكافيين 90 د', he: 'לעכב קפאין 90 ד׳' }, icon: '☕', color: 6, habitType: 'boolean', defaultTime: '08:30', category: 'rest' },
+  { id: 'sleep', names: { en: 'Sleep 8 hours', uk: 'РЎРѕРЅ 8 РіРѕРґРёРЅ', es: 'Dormir 8 horas', de: '8 Stunden schlafen', fr: 'Dormir 8 heures', ja: '8ж™‚й–“зќЎзњ ', ar: 'Ш§Щ„Щ†Щ€Щ… 8 ШіШ§Ш№Ш§ШЄ', he: 'ЧњЧ™Ч©Ч•Чџ 8 Ч©ЧўЧ•ЧЄ' }, icon: 'рџґ', color: 2, habitType: 'boolean', category: 'rest' },
+  { id: 'delayed-caffeine', names: { en: 'Delay caffeine 90 min', uk: 'РљР°РІР° С‡РµСЂРµР· 90 С…РІ', es: 'Retrasar cafeГ­na 90 min', de: 'Koffein 90 Min spГ¤ter', fr: 'Retarder cafГ©ine 90 min', ja: 'г‚«гѓ•г‚§г‚¤гѓіг‚’90е€†йЃ…г‚‰гЃ›г‚‹', ar: 'ШЄШЈШ¬ЩЉЩ„ Ш§Щ„ЩѓШ§ЩЃЩЉЩЉЩ† 90 ШЇ', he: 'ЧњЧўЧ›Ч‘ Ч§Ч¤ЧђЧ™Чџ 90 Ч“Чі' }, icon: 'в•', color: 6, habitType: 'boolean', defaultTime: '08:30', category: 'rest' },
 
   // ------- QUIT ---------
-  { id: 'quit-smoking', names: { en: 'Quit smoking', uk: 'Кинути палити', es: 'Dejar de fumar', de: 'Mit Rauchen aufhören', fr: 'Arrêter de fumer', ja: '禁煙', ar: 'الإقلاع عن التدخين', he: 'להפסיק לעשן' }, icon: '🚭', color: 15, habitType: 'boolean', category: 'quit' },
-  { id: 'quit-drinking', names: { en: 'Quit drinking', uk: 'Кинути пити', es: 'Dejar de beber', de: 'Aufhören zu trinken', fr: 'Arrêter de boire', ja: '禁酒', ar: 'الإقلاع عن الشرب', he: 'להפסיק לשתות' }, icon: '🍷', color: 13, habitType: 'boolean', category: 'quit' },
+  { id: 'quit-smoking', names: { en: 'Quit smoking', uk: 'РљРёРЅСѓС‚Рё РїР°Р»РёС‚Рё', es: 'Dejar de fumar', de: 'Mit Rauchen aufhГ¶ren', fr: 'ArrГЄter de fumer', ja: 'з¦Ѓз…™', ar: 'Ш§Щ„ШҐЩ‚Щ„Ш§Ш№ Ш№Щ† Ш§Щ„ШЄШЇШ®ЩЉЩ†', he: 'ЧњЧ”Ч¤ЧЎЧ™Ч§ ЧњЧўЧ©Чџ' }, icon: 'рџљ­', color: 15, habitType: 'boolean', category: 'quit' },
+  { id: 'quit-drinking', names: { en: 'Quit drinking', uk: 'РљРёРЅСѓС‚Рё РїРёС‚Рё', es: 'Dejar de beber', de: 'AufhГ¶ren zu trinken', fr: 'ArrГЄter de boire', ja: 'з¦Ѓй…’', ar: 'Ш§Щ„ШҐЩ‚Щ„Ш§Ш№ Ш№Щ† Ш§Щ„ШґШ±ШЁ', he: 'ЧњЧ”Ч¤ЧЎЧ™Ч§ ЧњЧ©ЧЄЧ•ЧЄ' }, icon: 'рџЌ·', color: 13, habitType: 'boolean', category: 'quit' },
 ];
 
 export function getHabitTemplateName(templateId: string, language: Language): string {
   const template = habitTemplates.find(t => t.id === templateId);
   return template?.names[language] || template?.names.en || templateId;
+}
+
+export function mapTemplateCategoryToHabitCategory(
+  category?: HabitTemplateCategory,
+): HabitCategory {
+  switch (category) {
+    case 'mind':
+      return 'mindfulness';
+    case 'focus':
+      return 'productivity';
+    case 'rest':
+      return 'self-care';
+    case 'quit':
+      return 'health';
+    case 'body':
+    default:
+      return 'health';
+  }
+}
+
+export function resolveHabitTemplateSetup(
+  template: HabitTemplate,
+  requestedUnit?: string,
+): {
+  targetType: TargetType;
+  targetValue: number;
+  targetStep: number;
+  unit: string;
+} {
+  const fallbackTarget = template.dailyTarget ?? 1;
+  const options = template.setup?.unitOptions ?? [];
+  const preferredUnit = requestedUnit ?? template.setup?.defaultUnit;
+  const matchedOption =
+    options.find((option) => option.value === preferredUnit) ?? options[0];
+
+  return {
+    targetType: template.setup?.targetType ?? 'atLeast',
+    targetValue: matchedOption?.defaultTarget ?? fallbackTarget,
+    targetStep: matchedOption?.step ?? template.setup?.targetStep ?? 1,
+    unit: matchedOption?.value ?? template.setup?.defaultUnit ?? '',
+  };
 }
 
 export function findTemplateIdByName(name: string): string | undefined {

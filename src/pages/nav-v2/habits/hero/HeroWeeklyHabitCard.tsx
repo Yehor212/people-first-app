@@ -1,0 +1,137 @@
+import { memo, useMemo } from "react";
+import { AnimatedFire } from "@/components/compact-habit-card/AnimatedFire";
+import { MiniWeekRow } from "@/components/habit-hub/MiniWeekRow";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { frequencyPresets } from "@/hooks/useHabitForm";
+import { resolveHabitColor } from "@/lib/habitColorUtils";
+import { getNumericalValue, isHabitCompletedOnDate } from "@/lib/habits";
+import { getCurrentStreak } from "@/lib/habitScore";
+import { formatDecimal } from "@/lib/timeUtils";
+import { getToday } from "@/lib/utils";
+import type { Habit } from "@/types";
+
+interface HeroWeeklyHabitCardProps {
+  habit: Habit;
+  onToggle: (habitId: string, date: string) => void;
+  onAdjust?: (habitId: string, date: string, delta: number) => void;
+  onOpenDetail?: (habit: Habit) => void;
+}
+
+export const HeroWeeklyHabitCard = memo(function HeroWeeklyHabitCard({
+  habit,
+  onToggle,
+  onAdjust,
+  onOpenDetail,
+}: HeroWeeklyHabitCardProps) {
+  const { t, language } = useLanguage();
+  const today = getToday();
+  const habitColor = resolveHabitColor(habit.color);
+  const isCompletedToday = isHabitCompletedOnDate(habit, today);
+  const streak = useMemo(() => getCurrentStreak(habit), [habit]);
+  const isNumeric = habit.habitType === "numerical";
+
+  const currentValue = isNumeric ? getNumericalValue(habit, today) : 0;
+  const targetValue = habit.targetValue || 1;
+  const numericSummary = isNumeric
+    ? `${formatDecimal(currentValue, language)}/${formatDecimal(targetValue, language)}${habit.unit ? ` ${habit.unit}` : ""}`
+    : null;
+
+  const freqLabel = useMemo(() => {
+    const { numerator: n, denominator: d } = habit.frequency;
+    const ts = t as unknown as Record<string, string>;
+    const preset = frequencyPresets.find(
+      (item) => item.ratio.numerator === n && item.ratio.denominator === d,
+    );
+    if (preset) return ts[preset.i18nKey] || preset.label;
+    return `${n}x / ${d}${ts.daysAbbr || "d"}`;
+  }, [habit.frequency, t]);
+
+  return (
+      <article
+        role="listitem"
+        aria-label={habit.icon ? `${habit.icon} ${habit.name}` : habit.name}
+        className="rounded-[26px] border border-border/60 bg-card/80 shadow-sm backdrop-blur-sm"
+        data-testid={`hero-weekly-card-${habit.id}`}
+      >
+      <div className="flex items-start justify-between gap-3 px-4 pt-4">
+        <div className="flex min-w-0 items-center gap-3">
+          <div
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl text-lg"
+            style={{
+              backgroundColor: `${habitColor}1c`,
+              color: habitColor,
+            }}
+            aria-hidden="true"
+          >
+            {habit.icon}
+          </div>
+          <div className="min-w-0">
+            <p
+              className={
+                "truncate text-sm font-semibold leading-tight md:text-base " +
+                (isCompletedToday ? "text-foreground/70" : "text-foreground")
+              }
+              title={habit.name}
+            >
+              {habit.name}
+            </p>
+          </div>
+        </div>
+        {numericSummary ? (
+          <span
+            className="rounded-full border border-border/60 bg-background/70 px-2.5 py-1 text-[11px] font-medium tabular-nums text-muted-foreground"
+            data-testid={`hero-weekly-card-${habit.id}-summary`}
+          >
+            {numericSummary}
+          </span>
+        ) : null}
+      </div>
+
+      <div className="px-4 pt-3" onClick={(e) => e.stopPropagation()}>
+        <MiniWeekRow
+          habit={habit}
+          habitColor={habitColor}
+          onToggle={onToggle}
+          onAdjust={onAdjust}
+          tone="hero"
+        />
+      </div>
+
+      <div className="flex items-center justify-between gap-3 px-4 pt-3 pb-4 text-[11px] text-muted-foreground">
+        <div
+          className="min-h-[20px] tabular-nums"
+          data-testid={`hero-weekly-card-${habit.id}-streak`}
+        >
+          {streak > 0 ? (
+            <span className="inline-flex items-center gap-1">
+              <AnimatedFire intensity={Math.min(1 + streak / 7, 3)} size="sm" />
+              <span className="font-medium text-orange-500/90">
+                {streak}
+                {t.dStreak}
+              </span>
+            </span>
+          ) : null}
+        </div>
+        <span
+          className="truncate text-right tabular-nums"
+          data-testid={`hero-weekly-card-${habit.id}-meta`}
+        >
+          {isNumeric ? numericSummary : freqLabel}
+        </span>
+        {onOpenDetail && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenDetail(habit);
+            }}
+            className="inline-flex min-h-[44px] shrink-0 items-center rounded-full border border-border/60 bg-background/80 px-3 py-2 text-[11px] font-medium text-foreground motion-safe:transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+            data-testid={`hero-weekly-card-${habit.id}-stats`}
+          >
+            {t.statistics || "Statistics"}
+          </button>
+        )}
+      </div>
+    </article>
+  );
+});

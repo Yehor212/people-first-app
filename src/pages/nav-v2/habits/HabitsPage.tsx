@@ -29,7 +29,6 @@ import { HabitsHeroZone } from "./HabitsHeroZone";
 import { HabitCreateSheet } from "./HabitCreateSheet";
 import { HeroTemplateLibrarySheet } from "./hero/HeroTemplateLibrarySheet";
 import { useHabitsPageState } from "./useHabitsPageState";
-import { templateToHabit } from "./hero/starterHabits";
 import type { HabitTemplate } from "@/lib/habitTemplates";
 import type { Habit } from "@/types";
 
@@ -42,7 +41,7 @@ const HabitDetailSheetLazy = lazyWithRetry(() =>
 );
 
 export const HabitsPage = memo(function HabitsPage() {
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   const tx = t;
   const mainRef = useRef<HTMLElement>(null);
 
@@ -52,16 +51,11 @@ export const HabitsPage = memo(function HabitsPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [detailHabit, setDetailHabit] = useState<Habit | null>(null);
+  const [pendingDetailEditHabit, setPendingDetailEditHabit] = useState<Habit | null>(null);
   /** Habit passed to HabitCreateSheet in edit mode (null = create mode). */
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
-
-  /** Per-template emission debounce. Two rapid taps in a single render tick
-   *  can both pass the closure-level `habits.some()` guard in handlePickTemplate
-   *  (state hasn't committed yet). The setter's inner guard suppresses the
-   *  duplicate write, but without this ref the `habit_created` emission would
-   *  double-fire and over-count activations. 500ms matches the completion-
-   *  toggle debounce in useHabitHandlers (processingTimeoutsRef). */
-  const templateEmitGuardRef = useRef<Map<string, number>>(new Map());
+  /** Template passed to HabitCreateSheet for setup-before-save flow. */
+  const [selectedTemplate, setSelectedTemplate] = useState<HabitTemplate | null>(null);
 
   /** Focus-return: track the element that triggered the most recent sheet
    *  open so the sheet's close handler can restore focus there (spec §11
@@ -84,12 +78,23 @@ export const HabitsPage = memo(function HabitsPage() {
     mainRef.current?.focus();
   }, []);
 
+  useEffect(() => {
+    if (!pendingDetailEditHabit || detailHabit) return;
+    setEditingHabit(pendingDetailEditHabit);
+    setSelectedTemplate(null);
+    setCreateOpen(true);
+    setPendingDetailEditHabit(null);
+  }, [detailHabit, pendingDetailEditHabit]);
+
   const handleAddHabit = useCallback(
     (habit: Habit) => {
+      if (habit.templateId && habits.some((h) => h.templateId === habit.templateId)) {
+        return;
+      }
       setHabits((prev) => [...prev, habit]);
-      analytics.habitCreated("custom", habits.length + 1);
+      analytics.habitCreated(habit.templateId ? "template" : "custom", habits.length + 1);
     },
-    [setHabits, habits.length],
+    [setHabits, habits],
   );
 
   const handleUpdateHabit = useCallback(
@@ -191,11 +196,13 @@ export const HabitsPage = memo(function HabitsPage() {
   const openCreate = useCallback(() => {
     captureReturnFocus();
     setEditingHabit(null);
+    setSelectedTemplate(null);
     setCreateOpen(true);
   }, [captureReturnFocus]);
   const closeCreate = useCallback(() => {
     setCreateOpen(false);
     setEditingHabit(null);
+    setSelectedTemplate(null);
     restoreReturnFocus();
   }, [restoreReturnFocus]);
   /**
@@ -208,6 +215,17 @@ export const HabitsPage = memo(function HabitsPage() {
     (habit: Habit) => {
       captureReturnFocus();
       setEditingHabit(habit);
+      setSelectedTemplate(null);
+      setCreateOpen(true);
+    },
+    [captureReturnFocus],
+  );
+  const openTemplateSetup = useCallback(
+    (template: HabitTemplate) => {
+      captureReturnFocus();
+      setEditingHabit(null);
+      setSelectedTemplate(template);
+      setLibraryOpen(false);
       setCreateOpen(true);
     },
     [captureReturnFocus],
@@ -232,6 +250,10 @@ export const HabitsPage = memo(function HabitsPage() {
     setDetailHabit(null);
     restoreReturnFocus();
   }, [restoreReturnFocus]);
+  const openEditFromDetail = useCallback((habit: Habit) => {
+    setPendingDetailEditHabit(habit);
+    setDetailHabit(null);
+  }, []);
 
   const handleArchiveHabit = useCallback(
     (habitId: string) => {
@@ -292,24 +314,10 @@ export const HabitsPage = memo(function HabitsPage() {
 
   const handlePickTemplate = useCallback(
     (template: HabitTemplate) => {
-      // Closure-level idempotency — already-seeded template is a no-op.
       if (habits.some((h) => h.templateId === template.id)) return;
-      // Race guard — if two taps land before React commits the first add,
-      // both closures would see "not seeded" and both would emit. The ref
-      // survives re-renders and is the only authority on "did we JUST emit
-      // for this templateId".
-      const lastEmit = templateEmitGuardRef.current.get(template.id) ?? 0;
-      const now = Date.now();
-      if (now - lastEmit < 500) return;
-      templateEmitGuardRef.current.set(template.id, now);
-      setHabits((prev) => {
-        // Final setter-level guard — belt-and-suspenders for cross-render races.
-        if (prev.some((h) => h.templateId === template.id)) return prev;
-        return [...prev, templateToHabit(template, prev.length, language)];
-      });
-      analytics.habitCreated("template", habits.length + 1);
+      openTemplateSetup(template);
     },
-    [habits, setHabits, language],
+    [habits, openTemplateSetup],
   );
 
   return (
@@ -364,6 +372,7 @@ export const HabitsPage = memo(function HabitsPage() {
           onClose={closeCreate}
           habits={habits}
           editHabit={editingHabit}
+          template={selectedTemplate}
           onAddHabit={handleAddHabit}
           onUpdateHabit={handleUpdateHabit}
         />
@@ -380,7 +389,7 @@ export const HabitsPage = memo(function HabitsPage() {
             <HabitDetailSheetLazy
               habit={detailHabit}
               onClose={closeDetail}
-              onEdit={handleUpdateHabit}
+              onEdit={openEditFromDetail}
               onUpdate={handleUpdateHabit}
               onArchive={handleArchiveHabit}
               onUnarchive={handleUnarchiveHabit}

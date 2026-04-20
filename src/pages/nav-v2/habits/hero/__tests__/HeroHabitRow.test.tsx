@@ -15,7 +15,12 @@ vi.mock("@/lib/haptics", () => ({ hapticTap: vi.fn() }));
 vi.mock("@/contexts/LanguageContext", () => ({
   useLanguage: () => ({
     t: {
+      navV2HabitsActions: "Actions",
+      navV2HabitsOpenDetails: "Open details",
+      cancel: "Cancel",
+      edit: "Edit",
       skipToday: "Skip today",
+      unskip: "Unskip today",
       archiveHabit: "Archive",
       unarchiveHabit: "Unarchive",
       delete: "Delete",
@@ -24,11 +29,18 @@ vi.mock("@/contexts/LanguageContext", () => ({
   }),
 }));
 
-vi.mock("@/components/compact-habit-card/CompactHabitCard", () => ({
-  CompactHabitCard: ({ habit }: { habit: { id: string; name: string } }) => (
-    <div data-testid={`mock-compact-${habit.id}`}>
+vi.mock("../HeroWeeklyHabitCard", () => ({
+  HeroWeeklyHabitCard: ({ habit }: { habit: { id: string; name: string } }) => (
+    <div data-testid={`mock-weekly-card-${habit.id}`}>
       {habit.name}
-      <button data-testid={`mock-compact-toggle-${habit.id}`}>toggle</button>
+      <div
+        role="checkbox"
+        aria-checked="false"
+        tabIndex={0}
+        data-testid={`mock-week-cell-${habit.id}`}
+      >
+        week-cell
+      </div>
     </div>
   ),
 }));
@@ -66,7 +78,7 @@ describe("HeroHabitRow", () => {
   it("long-press (>=450ms) opens the detail sheet", () => {
     const open = vi.fn();
     render(
-      <HeroHabitRow habit={habit()} onToggle={vi.fn()} onDelete={vi.fn()} onOpenDetail={open} />,
+      <HeroHabitRow habit={habit()} onToggle={vi.fn()} onOpenDetail={open} />,
     );
     const row = screen.getByTestId("hero-habit-row-h1");
     fireEvent.pointerDown(row);
@@ -78,7 +90,7 @@ describe("HeroHabitRow", () => {
   it("short tap does not open the detail sheet", () => {
     const open = vi.fn();
     render(
-      <HeroHabitRow habit={habit()} onToggle={vi.fn()} onDelete={vi.fn()} onOpenDetail={open} />,
+      <HeroHabitRow habit={habit()} onToggle={vi.fn()} onOpenDetail={open} />,
     );
     const row = screen.getByTestId("hero-habit-row-h1");
     fireEvent.pointerDown(row);
@@ -87,12 +99,12 @@ describe("HeroHabitRow", () => {
     expect(open).not.toHaveBeenCalled();
   });
 
-  it("press on the inner toggle button does not trigger long-press", () => {
+  it("press on the inner week cell does not trigger long-press", () => {
     const open = vi.fn();
     render(
-      <HeroHabitRow habit={habit()} onToggle={vi.fn()} onDelete={vi.fn()} onOpenDetail={open} />,
+      <HeroHabitRow habit={habit()} onToggle={vi.fn()} onOpenDetail={open} />,
     );
-    const btn = screen.getByTestId("mock-compact-toggle-h1");
+    const btn = screen.getByTestId("mock-week-cell-h1");
     fireEvent.pointerDown(btn);
     void act(() => vi.advanceTimersByTime(600));
     fireEvent.pointerUp(btn);
@@ -102,7 +114,7 @@ describe("HeroHabitRow", () => {
   it("Enter key opens the detail sheet", () => {
     const open = vi.fn();
     render(
-      <HeroHabitRow habit={habit()} onToggle={vi.fn()} onDelete={vi.fn()} onOpenDetail={open} />,
+      <HeroHabitRow habit={habit()} onToggle={vi.fn()} onOpenDetail={open} />,
     );
     const row = screen.getByTestId("hero-habit-row-h1");
     row.focus();
@@ -126,6 +138,22 @@ describe("HeroHabitRow", () => {
     expect(screen.getByTestId("habit-action-sheet-h1")).toBeInTheDocument();
   });
 
+  it("passes delete through to the action sheet when destructive fallback is needed", () => {
+    render(
+      <HeroHabitRow
+        habit={habit()}
+        onToggle={vi.fn()}
+        onDelete={vi.fn()}
+        onOpenDetail={vi.fn()}
+        onSkip={vi.fn()}
+      />,
+    );
+    const row = screen.getByTestId("hero-habit-row-h1");
+    row.focus();
+    fireEvent.keyDown(row, { key: "Enter" });
+    expect(screen.getByTestId("habit-action-sheet-h1-delete")).toBeInTheDocument();
+  });
+
   it("renders reminder pill when reminder is configured", () => {
     render(
       <HeroHabitRow
@@ -133,7 +161,6 @@ describe("HeroHabitRow", () => {
           reminders: [{ enabled: true, time: "07:00", days: [1, 2, 3, 4, 5] }],
         })}
         onToggle={vi.fn()}
-        onDelete={vi.fn()}
       />,
     );
     const cue = screen.getByTestId("hero-habit-row-h1-cue");
@@ -167,7 +194,6 @@ describe("HeroHabitRow", () => {
       <HeroHabitRow
         habit={habit()}
         onToggle={vi.fn()}
-        onDelete={vi.fn()}
         onOpenDetail={open}
       />,
     );

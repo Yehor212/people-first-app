@@ -12,7 +12,7 @@
  * way a user gesture would and assert the spy was called.
  */
 
-import { render, cleanup, act } from "@testing-library/react";
+import { render, cleanup, act, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import type { Insight, Habit } from "@/types";
 
@@ -89,10 +89,16 @@ type HeroZoneProps = {
 type CreateSheetProps = {
   onAddHabit: (h: Habit) => void;
   editHabit?: Habit | null;
+  template?: { id: string } | null;
+};
+type DetailSheetProps = {
+  habit: Habit | null;
+  onEdit: (h: Habit) => void;
 };
 
 let capturedHeroProps: HeroZoneProps | null = null;
 let capturedCreateProps: CreateSheetProps | null = null;
+let capturedDetailProps: DetailSheetProps | null = null;
 
 vi.mock("../HabitsHeroZone", () => ({
   HabitsHeroZone: (props: HeroZoneProps) => {
@@ -110,7 +116,10 @@ vi.mock("../hero/HeroTemplateLibrarySheet", () => ({
   HeroTemplateLibrarySheet: () => <div data-testid="hero-template-library" />,
 }));
 vi.mock("@/components/habit-hub/HabitDetailSheet", () => ({
-  HabitDetailSheet: () => <div data-testid="habit-detail-sheet-stub" />,
+  HabitDetailSheet: (props: DetailSheetProps) => {
+    capturedDetailProps = props;
+    return <div data-testid="habit-detail-sheet-stub" />;
+  },
 }));
 
 import { HabitsPage } from "../HabitsPage";
@@ -150,6 +159,7 @@ beforeEach(() => {
   mockHabits = [];
   capturedHeroProps = null;
   capturedCreateProps = null;
+  capturedDetailProps = null;
   mockTopInsight = null;
   setHabitsSpy.mockClear();
   analyticsSpy.habitCreated.mockClear();
@@ -174,37 +184,47 @@ describe("HabitsPage → analytics wiring (§15)", () => {
     expect(analyticsSpy.habitDetailOpened).toHaveBeenCalledWith(3);
   });
 
-  it("onPickTemplate prop calls analytics.habitCreated('template', total+1)", () => {
+  it("onPickTemplate opens the create sheet in template setup mode without emitting analytics yet", () => {
     mockHabits = [makeHabit("a")]; // one existing habit — post-add count is 2
     render(<HabitsPage />);
-    capturedHeroProps!.onPickTemplate(makeTemplate("meditate"));
-    expect(analyticsSpy.habitCreated).toHaveBeenCalledTimes(1);
-    expect(analyticsSpy.habitCreated).toHaveBeenCalledWith("template", 2);
+    act(() => {
+      capturedHeroProps!.onPickTemplate(makeTemplate("meditate"));
+    });
+    expect(analyticsSpy.habitCreated).not.toHaveBeenCalled();
+    expect(capturedCreateProps!.template).toEqual(
+      expect.objectContaining({ id: "meditate" }),
+    );
   });
 
-  it("onPickTemplate is a no-op for already-seeded templateId (no phantom emission)", () => {
+  it("onPickTemplate is a no-op for already-seeded templateId (no phantom sheet open)", () => {
     mockHabits = [makeHabit("meditate")]; // templateId = "tpl-meditate"
     render(<HabitsPage />);
     capturedHeroProps!.onPickTemplate(makeTemplate("tpl-meditate")); // same id
+    expect(capturedCreateProps!.template ?? null).toBeNull();
     expect(analyticsSpy.habitCreated).not.toHaveBeenCalled();
-  });
-
-  it("race guard dedupes two rapid taps of the same template within 500ms", () => {
-    mockHabits = [];
-    render(<HabitsPage />);
-    const tpl = makeTemplate("read");
-    capturedHeroProps!.onPickTemplate(tpl);
-    capturedHeroProps!.onPickTemplate(tpl); // 2nd tap in same tick
-    expect(analyticsSpy.habitCreated).toHaveBeenCalledTimes(1);
   });
 
   it("onAddHabit prop (from HabitCreateSheet) calls analytics.habitCreated('custom', total+1)", () => {
     mockHabits = [makeHabit("a"), makeHabit("b")];
     render(<HabitsPage />);
     expect(capturedCreateProps).not.toBeNull();
-    capturedCreateProps!.onAddHabit(makeHabit("c"));
+    const customHabit = makeHabit("c");
+    delete customHabit.templateId;
+    capturedCreateProps!.onAddHabit(customHabit);
     expect(analyticsSpy.habitCreated).toHaveBeenCalledTimes(1);
     expect(analyticsSpy.habitCreated).toHaveBeenCalledWith("custom", 3);
+  });
+
+  it("onAddHabit emits template analytics only after the template habit is saved", () => {
+    mockHabits = [makeHabit("a")];
+    render(<HabitsPage />);
+    expect(capturedCreateProps).not.toBeNull();
+    capturedCreateProps!.onAddHabit({
+      ...makeHabit("water"),
+      templateId: "water",
+    });
+    expect(analyticsSpy.habitCreated).toHaveBeenCalledTimes(1);
+    expect(analyticsSpy.habitCreated).toHaveBeenCalledWith("template", 2);
   });
 
   it("onToggleHabit transition to completed emits analytics.habitCompleted with total_habits", () => {
@@ -281,6 +301,22 @@ describe("HabitsPage → analytics wiring (§15)", () => {
     // The sheet now carries editHabit === the clicked habit → HabitCreationForm
     // will call onUpdateHabit, not onAddHabit.
     expect(capturedCreateProps!.editHabit).toEqual(habit);
+  });
+
+  it("detail-sheet edit reopens HabitCreateSheet in edit mode", async () => {
+    const habit = makeHabit("detail-edit");
+    mockHabits = [habit];
+    render(<HabitsPage />);
+
+    act(() => {
+      capturedHeroProps!.onOpenDetail(habit);
+    });
+    await waitFor(() => expect(capturedDetailProps?.habit).toEqual(habit));
+
+    act(() => {
+      capturedDetailProps!.onEdit(habit);
+    });
+    await waitFor(() => expect(capturedCreateProps!.editHabit).toEqual(habit));
   });
 
   it("onSkipHabit mutates habit entry to SKIP sentinel without emitting habit_completed", () => {

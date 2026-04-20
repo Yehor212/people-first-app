@@ -75,6 +75,7 @@ vi.mock("vaul", () => ({
     Overlay: () => <div data-testid="vaul-overlay" />,
     Content: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
     Title: ({ children }: { children: React.ReactNode }) => <h3>{children}</h3>,
+    Description: ({ children }: { children: React.ReactNode }) => <p>{children}</p>,
   },
 }));
 
@@ -152,7 +153,7 @@ describe("HabitsPage (Phase 3-C single-zone)", () => {
     ];
     render(<HabitsPage />);
     expect(screen.getByTestId("hero-group-anytime")).toBeInTheDocument();
-    expect(screen.getByTestId("mock-habit-card-h1")).toBeInTheDocument();
+    expect(screen.getByTestId("hero-weekly-card-h1")).toBeInTheDocument();
   });
 
   it("does not render the create sheet when closed", () => {

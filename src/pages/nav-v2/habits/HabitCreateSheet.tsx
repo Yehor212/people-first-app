@@ -18,6 +18,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useBackHandler } from "@/hooks/useBackHandler";
 import { useHabitForm } from "@/hooks/useHabitForm";
 import { HabitCreationForm } from "@/components/habit-creation-form/HabitCreationForm";
+import type { HabitTemplate } from "@/lib/habitTemplates";
 import type { Habit } from "@/types";
 
 interface HabitCreateSheetProps {
@@ -30,6 +31,8 @@ interface HabitCreateSheetProps {
    * `onUpdateHabit` instead of `onAddHabit`. Null/undefined = create mode.
    */
   editHabit?: Habit | null;
+  /** Non-null puts the sheet into "template setup" mode before save. */
+  template?: HabitTemplate | null;
   onAddHabit: (habit: Habit) => void;
   onUpdateHabit?: (habit: Habit) => void;
 }
@@ -39,6 +42,7 @@ export function HabitCreateSheet({
   onClose,
   habits,
   editHabit,
+  template,
   onAddHabit,
   onUpdateHabit,
 }: HabitCreateSheetProps) {
@@ -62,7 +66,12 @@ export function HabitCreateSheet({
   );
 
   const form = useHabitForm({ onAddHabit: handleAdd, onUpdateHabit: handleUpdate });
-  const { setIsAdding, resetForm, handleEditHabit: formBeginEdit } = form;
+  const {
+    setIsAdding,
+    resetForm,
+    handleEditHabit: formBeginEdit,
+    startFromTemplate: formBeginTemplate,
+  } = form;
 
   // Open the form whenever the drawer opens. If an `editHabit` was passed in,
   // prefill via the V1 hook's `handleEditHabit` (sets editingHabit +
@@ -72,13 +81,15 @@ export function HabitCreateSheet({
     if (open) {
       if (editHabit) {
         formBeginEdit(editHabit);
+      } else if (template) {
+        formBeginTemplate(template.id);
       } else {
         setIsAdding(true);
       }
     } else {
       resetForm();
     }
-  }, [open, editHabit, setIsAdding, resetForm, formBeginEdit]);
+  }, [open, editHabit, template, setIsAdding, resetForm, formBeginEdit, formBeginTemplate]);
 
   useBackHandler(open, onClose);
 

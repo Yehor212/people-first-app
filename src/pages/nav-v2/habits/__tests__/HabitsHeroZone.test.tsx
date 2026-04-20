@@ -2,8 +2,9 @@
  * HabitsHeroZone — orchestrator-level coverage.
  *
  * Sub-component internals are tested in `hero/__tests__/`.
- * This file verifies the public contract: zone renders, ring is wired,
- * empty vs grouped branching works, and CTAs delegate.
+ * This file verifies the public contract: zone renders, sticky supporting
+ * chrome stays lean (no daily ring), empty vs grouped branching works, and
+ * CTAs delegate.
  */
 import { render, cleanup, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi, afterEach } from "vitest";
@@ -38,9 +39,9 @@ vi.mock("@/contexts/LanguageContext", () => ({
   }),
 }));
 
-vi.mock("@/components/compact-habit-card/CompactHabitCard", () => ({
-  CompactHabitCard: ({ habit }: { habit: { id: string; name: string } }) => (
-    <li data-testid={`hero-card-${habit.id}`}>{habit.name}</li>
+vi.mock("../hero/HeroHabitRow", () => ({
+  HeroHabitRow: ({ habit }: { habit: { id: string; name: string } }) => (
+    <li data-testid={`hero-row-${habit.id}`}>{habit.name}</li>
   ),
 }));
 
@@ -102,7 +103,7 @@ describe("HabitsHeroZone", () => {
     expect(onCreate).toHaveBeenCalledTimes(1);
   });
 
-  it("renders the daily-progress ring with aria-live and label", () => {
+  it("keeps the sticky header but does not render the daily-progress ring", () => {
     render(
       <HabitsHeroZone
         todaysHabits={[baseHabit]}
@@ -112,12 +113,12 @@ describe("HabitsHeroZone", () => {
         onCreateHabit={vi.fn()}
       />,
     );
-    const ring = screen.getByTestId("habits-hero-progress-ring");
-    expect(ring).toHaveAttribute("aria-live", "polite");
-    expect(ring.getAttribute("aria-label")).toContain("1 / 3");
+    expect(screen.queryByTestId("habits-hero-progress-ring")).not.toBeInTheDocument();
+    expect(screen.getByTestId("hero-insight-strip-stub")).toBeInTheDocument();
+    expect(screen.getByText("Today you are building:")).toBeInTheDocument();
   });
 
-  it("renders one CompactHabitCard per habit and groups by time-of-day", () => {
+  it("renders one weekly row per habit and groups by time-of-day", () => {
     const morning: Habit = {
       ...baseHabit,
       id: "morn",
@@ -139,8 +140,8 @@ describe("HabitsHeroZone", () => {
         onCreateHabit={vi.fn()}
       />,
     );
-    expect(screen.getByTestId("hero-card-morn")).toBeInTheDocument();
-    expect(screen.getByTestId("hero-card-eve")).toBeInTheDocument();
+    expect(screen.getByTestId("hero-row-morn")).toBeInTheDocument();
+    expect(screen.getByTestId("hero-row-eve")).toBeInTheDocument();
     expect(screen.getByTestId("hero-group-morning")).toBeInTheDocument();
     expect(screen.getByTestId("hero-group-evening")).toBeInTheDocument();
   });

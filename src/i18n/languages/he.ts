@@ -899,6 +899,10 @@ const hebrewOverrides: Partial<Translations> = {
   increaseTarget: "הגדל יעד",
   habitUpdated: "ההרגל עודכן",
   saveChanges: "שמור שינויים",
+  habitFormSimple: "בסיסי",
+  habitFormAdvanced: "מתקדם",
+  habitSetupHint: "בדוק את היעד, היחידה והתזכורות לפני שמירת התבנית הזו.",
+  habitTemplateBadge: "תבנית",
   thisMonth: "החודש",
 
   // Personal Goals

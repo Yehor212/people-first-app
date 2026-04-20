@@ -20,6 +20,7 @@ interface MiniWeekRowProps {
   habitColor: string; // resolved hex
   onToggle: (habitId: string, date: string) => void;
   onAdjust?: (habitId: string, date: string, delta: number) => void;
+  tone?: "hub" | "hero";
 }
 
 // DOW_LABELS moved inside component for i18n (see useMemo below)
@@ -60,6 +61,7 @@ export const MiniWeekRow = memo(function MiniWeekRow({
   habitColor,
   onToggle,
   onAdjust,
+  tone = "hub",
 }: MiniWeekRowProps) {
   const { t, language } = useLanguage();
   const today = getToday();
@@ -113,7 +115,13 @@ export const MiniWeekRow = memo(function MiniWeekRow({
               key={`label-${date}`}
               className={cn(
                 "min-w-[44px] text-center text-[10px] leading-none",
-                isToday ? "text-white/60 font-medium" : "text-white/40"
+                tone === "hero"
+                  ? isToday
+                    ? "font-medium text-foreground/80"
+                    : "text-muted-foreground"
+                  : isToday
+                    ? "text-white/60 font-medium"
+                    : "text-white/40"
               )}
             >
               {DOW_LABELS[dow]}
