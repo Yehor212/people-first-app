@@ -31,7 +31,6 @@ import { HeroTemplateLibrarySheet } from "./hero/HeroTemplateLibrarySheet";
 import { useHabitsPageState } from "./useHabitsPageState";
 import type { HabitTemplate } from "@/lib/habitTemplates";
 import type { Habit } from "@/types";
-
 // Lazy-load V1 HabitDetailSheet — keeps its ~20KB chunk off the initial
 // Habits page bundle; user only pays the cost when they actually open stats.
 const HabitDetailSheetLazy = lazyWithRetry(() =>
@@ -44,10 +43,8 @@ export const HabitsPage = memo(function HabitsPage() {
   const { t } = useLanguage();
   const tx = t;
   const mainRef = useRef<HTMLElement>(null);
-
   const { habits, todaysHabits, dailyProgress } = useHabitsPageState();
   const setHabits = useUserDataStore((s) => s.setHabits);
-
   const [createOpen, setCreateOpen] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [detailHabit, setDetailHabit] = useState<Habit | null>(null);
@@ -103,7 +100,6 @@ export const HabitsPage = memo(function HabitsPage() {
     },
     [setHabits],
   );
-
   const handleDeleteHabit = useCallback(
     (habitId: string) => {
       setHabits((prev) => prev.filter((h) => h.id !== habitId));
@@ -156,7 +152,6 @@ export const HabitsPage = memo(function HabitsPage() {
     },
     [habits, setHabits],
   );
-
   const handleToggleHabit = useCallback(
     (habitId: string, date: string) => {
       // Compute the completion transition BEFORE the setter runs so the
@@ -192,7 +187,6 @@ export const HabitsPage = memo(function HabitsPage() {
     },
     [habits, setHabits],
   );
-
   const openCreate = useCallback(() => {
     captureReturnFocus();
     setEditingHabit(null);
@@ -254,7 +248,6 @@ export const HabitsPage = memo(function HabitsPage() {
     setPendingDetailEditHabit(habit);
     setDetailHabit(null);
   }, []);
-
   const handleArchiveHabit = useCallback(
     (habitId: string) => {
       setHabits((prev) =>

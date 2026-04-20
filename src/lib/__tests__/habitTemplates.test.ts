@@ -13,10 +13,10 @@ const ALL_LANGUAGES: Language[] = ['en', 'uk', 'es', 'de', 'fr', 'ja', 'ar', 'he
 // ============================================
 
 describe('habitTemplates', () => {
-  it('contains 19 templates', () => {
-    // Phase 3-C extended the Loop Habit Tracker starter set from 11 → 19
-    // (commit 8f658fd — template library drawer + 5 categories).
-    expect(habitTemplates).toHaveLength(19);
+  it('contains 22 templates', () => {
+    // Phase 3-C originally extended the starter set from 11 -> 19.
+    // Measurable-template expansion added walk-distance + 2 limit templates.
+    expect(habitTemplates).toHaveLength(22);
   });
 
   it('each template has id, names, icon, color, and type', () => {
@@ -41,7 +41,7 @@ describe('habitTemplates', () => {
   });
 
   it('all template ids are unique', () => {
-    const ids = habitTemplates.map(t => t.id);
+    const ids = habitTemplates.map((t) => t.id);
     expect(new Set(ids).size).toBe(ids.length);
   });
 });
@@ -58,7 +58,7 @@ describe('getHabitTemplateName', () => {
 
   it('returns Ukrainian name for uk language', () => {
     const name = getHabitTemplateName('water', 'uk');
-    expect(name).toBe('\u041F\u0438\u0442\u0438 \u0432\u043E\u0434\u0443');
+    expect(name).toBe('Пити воду');
   });
 
   it('returns template id as fallback for unknown template', () => {
@@ -77,7 +77,7 @@ describe('findTemplateIdByName', () => {
   });
 
   it('finds template by Ukrainian name (case-insensitive)', () => {
-    expect(findTemplateIdByName('\u041F\u0438\u0442\u0438 \u0432\u043E\u0434\u0443')).toBe('water');
+    expect(findTemplateIdByName('Пити воду')).toBe('water');
   });
 
   it('is case-insensitive', () => {
