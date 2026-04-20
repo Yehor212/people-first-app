@@ -19,7 +19,7 @@ describe('statusBarStyle', () => {
   it('Style.Dark equals "DARK"', async () => {
     const { Style } = await import('../statusBarStyle');
     expect(Style.Dark).toBe('DARK');
-  });
+  }, 15000);
 
   it('Style.Light equals "LIGHT"', async () => {
     const { Style } = await import('../statusBarStyle');

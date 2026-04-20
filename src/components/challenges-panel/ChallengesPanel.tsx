@@ -12,6 +12,7 @@ import { hapticTap } from "@/lib/haptics";
 import { VirtualGrid, shouldVirtualize } from "@/components/ui/virtual-list";
 import { EmojiOrIcon } from "@/components/icons";
 import { useBackHandler } from "@/hooks/useBackHandler";
+import { useModalA11y } from "@/hooks/useModalA11y";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { UnifiedShareModal } from "@/components/share";
 import { BadgeCard } from "./BadgeCard";

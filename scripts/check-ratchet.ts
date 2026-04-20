@@ -730,7 +730,7 @@ function checkRatchet(): void {
   }
 
   // Source file drift
-  const docSourceFiles = 807; // updated 2026-04-19 Phase 3-C A+++ HabitsPage rewrite — Hero sub-components (HeroDailyRing, HeroIdentityPrompt, HeroTimeOfDayGroup, HeroEmptyJourney) + timeOfDay + starterHabits + tests + parallel agents' chunkErrorDetection/errorBuffer utilities
+  const docSourceFiles = 785; // updated 2026-04-20 legacy UI purge removed 22 orphan source files (AI coach onboarding, comeback challenge, daily surprise, goals panel)
   const drift = Math.abs(sourceFiles - docSourceFiles);
   if (drift > 20) {
     console.log(

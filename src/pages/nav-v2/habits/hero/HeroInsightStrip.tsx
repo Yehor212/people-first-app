@@ -1,5 +1,5 @@
 /**
- * HeroInsightStrip — surfaces the top V1 insight on the Habits page.
+ * HeroInsightStrip - surfaces the top V1 insight on the Habits page.
  *
  * Law 1 / feedback_v2_reuse_v1: we do NOT rebuild insight math. We import
  * {@link generateInsights} from V1 `src/lib/insightsEngine.ts` and render
@@ -7,7 +7,7 @@
  *
  * Why here: the Habits page is where users decide "what am I doing today?",
  * and that's exactly the moment an "on days you meditate, mood is +28%"
- * signal is most actionable (BJ Fogg — cue-to-motivation alignment).
+ * signal is most actionable (BJ Fogg - cue-to-motivation alignment).
  *
  * Renders nothing when:
  *   - there are no insights yet (insufficient data)
@@ -18,36 +18,31 @@
  */
 
 import { memo, useEffect, useMemo } from "react";
-import { Sparkles, TrendingUp, AlertCircle } from "lucide-react";
+import { AlertCircle, Sparkles, TrendingUp } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
-import { useUserDataStore } from "@/stores";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { generateInsights, type InsightTranslations } from "@/lib/insightsEngine";
+import type { Translations } from "@/i18n/types";
 import { analytics } from "@/lib/analytics";
+import { generateInsights, type InsightTranslations } from "@/lib/insightsEngine";
+import { useUserDataStore } from "@/stores";
 import type { Insight } from "@/types";
 
-/** The InsightTranslations shape V1 expects — pulled from the t() bag. */
-function buildInsightTranslations(tx: Record<string, string>): InsightTranslations {
+/** The InsightTranslations shape V1 expects - pulled from the typed i18n bag. */
+function buildInsightTranslations(tx: Translations): InsightTranslations {
   return {
-    moodHabitPositive:
-      tx.insightMoodHabitPositive ??
-      "On days you {habit}, your mood is {delta}% higher",
-    moodHabitNegative:
-      tx.insightMoodHabitNegative ??
-      "On days you {habit}, your mood is {delta}% lower",
-    focusConsistency:
-      tx.insightFocusConsistency ??
-      "You focus best at {hour}:00 — {rate}% completion rate",
-    habitTimingBest:
-      tx.insightHabitTimingBest ??
-      "You're {delta}% more consistent {when}",
-    moodTagPositive:
-      tx.insightMoodTagPositive ??
-      "Days tagged {tag} rate {delta}% higher on mood",
-    moodTagNegative:
-      tx.insightMoodTagNegative ??
-      "Days tagged {tag} rate {delta}% lower on mood",
-    dataInsufficient: tx.insightDataInsufficient ?? "",
+    morning: tx.insightMorning,
+    afternoon: tx.insightAfternoon,
+    evening: tx.insightEvening,
+    habitImprovesMood: tx.insightHabitImprovesMood,
+    habitImprovesMoodDesc: tx.insightHabitImprovesMoodDesc,
+    focusBestLabel: tx.insightFocusBestLabel,
+    focusBestLabelDesc: tx.insightFocusBestLabelDesc,
+    peakFocusTime: tx.insightPeakFocusTime,
+    peakFocusTimeDesc: tx.insightPeakFocusTimeDesc,
+    bestTimeForHabit: tx.insightBestTimeForHabit,
+    bestTimeForHabitDesc: tx.insightBestTimeForHabitDesc,
+    tagBoostsMood: tx.insightTagBoostsMood,
+    tagBoostsMoodDesc: tx.insightTagBoostsMoodDesc,
   };
 }
 
@@ -59,7 +54,7 @@ function iconFor(insight: Insight) {
 
 export const HeroInsightStrip = memo(function HeroInsightStrip() {
   const { t } = useLanguage();
-  const tx = t as unknown as Record<string, string>;
+  const tx = t;
 
   // Pull the three slices needed by generateInsights via a shallow-stable selector
   // so this component does not re-render on unrelated store changes.
@@ -82,13 +77,13 @@ export const HeroInsightStrip = memo(function HeroInsightStrip() {
       );
       return list[0] ?? null;
     } catch {
-      // V1 insightsEngine throws on bad shape — never let insights break the page.
+      // V1 insightsEngine throws on bad shape - never let insights break the page.
       return null;
     }
   }, [moods, habits, focusSessions, tx]);
 
-  // Habits spec §15 cross-habit signal — emit once per distinct insight identity
-  // so the aggregator can compute the "% of users seeing ≥1 insight" funnel.
+  // Habits spec Section 15 cross-habit signal - emit once per distinct insight identity
+  // so the aggregator can compute the "% of users seeing >=1 insight" funnel.
   // Depending on the two enum fields (not the memo object) keeps the effect
   // stable across re-renders but re-fires when the user flips between insights.
   const insightType = topInsight?.type ?? null;

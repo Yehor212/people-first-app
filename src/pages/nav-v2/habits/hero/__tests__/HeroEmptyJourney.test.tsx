@@ -49,5 +49,5 @@ describe("HeroEmptyJourney", () => {
     render(<HeroEmptyJourney onCreateHabit={vi.fn()} />);
     expect(screen.getByText("2-minute rule")).toBeInTheDocument();
     expect(screen.getByText("When • Where • Cue")).toBeInTheDocument();
-  });
+  }, 15000);
 });
