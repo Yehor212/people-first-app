@@ -38,6 +38,7 @@ import {
   runtimeGratitudeEntrySchema,
   validateArray,
 } from "@/lib/schemas";
+import { decodeHabitCompletionFromCloud } from "./sync/habitCompletionCodec";
 
 // Re-export all per-entity sync functions so existing imports continue to work
 export {
@@ -200,6 +201,13 @@ export const pullFromCloud = async (): Promise<boolean> => {
       "cloud-moods"
     ) as MoodEntry[];
 
+    const cloudHabitTypes = new Map<string, "boolean" | "numerical">(
+      habitsData.map((h) => [
+        h.id,
+        h.type === "multiple" || h.type === "reduce" ? "numerical" : "boolean",
+      ])
+    );
+
     // Group completions by habit → convert to entries format
     const entriesByHabit = new Map<string, Record<string, { value: number }>>();
     for (const c of completionsData) {
@@ -208,8 +216,14 @@ export const pullFromCloud = async (): Promise<boolean> => {
         habitEntries = {};
         entriesByHabit.set(c.habit_id, habitEntries);
       }
-      // If count > 1, it's numerical (value × 1000), otherwise YES_MANUAL (2)
-      habitEntries[c.date] = { value: (c.count ?? 1) > 1 ? (c.count ?? 1) * 1000 : 2 };
+      const habitType = cloudHabitTypes.get(c.habit_id) ?? "boolean";
+      habitEntries[c.date] = {
+        value: decodeHabitCompletionFromCloud({
+          habitType,
+          count: c.count,
+          duration: c.duration,
+        }),
+      };
     }
 
     const remindersByHabit = new Map<

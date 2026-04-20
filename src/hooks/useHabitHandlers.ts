@@ -227,9 +227,13 @@ export function useHabitHandlers({
       }
 
       triggerSync();
-      void syncHabitCompletion(habitId, date, realValue > 0, Math.round(realValue)).catch((err) =>
-        logger.warn("[Habits] Completion sync failed:", err)
-      );
+      void syncHabitCompletion(
+        habitId,
+        date,
+        realValue > 0,
+        Math.max(1, Math.round(realValue)),
+        storedValue,
+      ).catch((err) => logger.warn("[Habits] Completion sync failed:", err));
     },
     [habits, setHabits, fireCompletionEffects]
   );
@@ -293,9 +297,13 @@ export function useHabitHandlers({
       }
 
       triggerSync();
-      void syncHabitCompletion(habitId, date, newReal > 0, Math.round(newReal)).catch((err) =>
-        logger.warn("[Habits] Completion sync failed:", err)
-      );
+      void syncHabitCompletion(
+        habitId,
+        date,
+        newReal > 0,
+        Math.max(1, Math.round(newReal)),
+        toStoredValue(newReal),
+      ).catch((err) => logger.warn("[Habits] Completion sync failed:", err));
     },
     [habits, setHabits, fireCompletionEffects]
   );

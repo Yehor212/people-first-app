@@ -11,6 +11,7 @@ import { isAbortError, isValidUUID } from "@/lib/validation";
 import { supabase, getCurrentUserId } from "@/lib/supabaseClient";
 import { Habit } from "@/types";
 import { offlineQueue } from "@/lib/offlineQueue";
+import { encodeHabitCompletionForCloud } from "./habitCompletionCodec";
 
 // ============================================
 // HABIT SYNC
@@ -73,13 +74,19 @@ export const syncHabit = async (habit: Habit): Promise<void> => {
       .map(([date]) => date);
 
     if (completedDates.length > 0) {
-      const completions = completedDates.map((date) => ({
-        user_id: userId,
-        habit_id: habit.id,
-        date,
-        count: habit.habitType === "numerical" ? Math.round((entries[date]?.value || 0) / 1000) : 1,
-        duration: null,
-      }));
+      const completions = completedDates.map((date) => {
+        const { count, duration } = encodeHabitCompletionForCloud({
+          habitType: habit.habitType,
+          entryValue: entries[date]?.value || 0,
+        });
+        return {
+          user_id: userId,
+          habit_id: habit.id,
+          date,
+          count,
+          duration,
+        };
+      });
 
       const { error: completionError } = await supabase
         .from("habit_completions")
@@ -239,8 +246,8 @@ export const syncHabitCompletion = async (
           user_id: userId,
           habit_id: habitId,
           date,
-          count: count || 1,
-          duration: duration || null,
+          count: count ?? 1,
+          duration: duration ?? null,
         },
         { onConflict: "habit_id,date" }
       );
