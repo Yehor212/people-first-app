@@ -4,24 +4,22 @@
  * Law 1 / Law 15: CompactHabitCard is NOT modified. This wrapper adds
  * three additive, research-backed enhancements:
  *
- *   1. **Long-press (450 ms) → open detail sheet.** iOS Haptic-Touch pattern
- *      (Apple HIG 2026). Medium-intensity haptic fires when the threshold is
- *      met so users "feel" the reveal before they see it. Tap still toggles
- *      (fallback remains — every gesture has a visible alternative per Material
- *      Design 2026 accessibility guidance).
+ *   1. **Long-press (450 ms) → open Actions sheet** when secondary handlers
+ *      are wired. Falls back to opening the detail sheet only when actions are
+ *      absent. Medium-intensity haptic fires at the threshold so users "feel"
+ *      the reveal before they see it.
  *
- *   2. **Inline 7-day chain dots** below the card (Streaks / Habitify pattern,
- *      "chain of completed squares" — NN/g 2026). Filled = completed, hollow
- *      = missed, today ringed. Progressive disclosure: only renders once a
- *      user has ≥1 entry so empty habits don't get noise.
+ *   2. **Edit remains explicit; delete remains singular.** The V1 card still
+ *      owns swipe/hover affordances, and destructive delete stays exclusively
+ *      on that V1 path instead of being duplicated in the action sheet.
  *
- *   3. **Cue + identity badge row** — pulls `reminders[0].time` +
- *      `identityVerb` into a tiny strip so the "when/where/why" is visible
- *      on the card (BJ Fogg cue specificity research), not buried in a sheet.
+ *   3. **Reminder cue row** — pulls `reminders[0].time` into a tiny strip so
+ *      the "when" is still visible on the card (BJ Fogg cue specificity),
+ *      without re-adding removed chain/identity clutter to the surface.
  *
  * All motion gated by {@link useShouldAnimate}. The wrapper element is
  * keyboard-focusable with `role="group"` so keyboard users can Enter/Space to
- * open detail (long-press equivalent for non-touch input).
+ * open the same action surface touch users reach by long-press.
  */
 
 import { memo, useCallback, useMemo, useRef, useState } from "react";
@@ -154,9 +152,8 @@ export const HeroHabitRow = memo(function HeroHabitRow({
     pointerOriginRef.current = null;
   }, [cancelLongPress]);
 
-  // Keyboard fallback — Enter/Space on the wrapper opens the action sheet
-  // (or the detail sheet when no actions are wired). Keyboard equivalent of
-  // long-press per habits-tab-spec §11 item 5.
+  // Keyboard fallback — Enter/Space mirrors the touch long-press behavior:
+  // action sheet when actions exist, otherwise direct detail open.
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
       if (!hasActions && !onOpenDetail) return;
@@ -195,7 +192,8 @@ export const HeroHabitRow = memo(function HeroHabitRow({
     <div
       role="group"
       aria-label={habit.name}
-      // Composite widget: long-press or Enter/Space opens detail sheet per habits-tab-spec.md §11.
+      // Composite widget: long-press or Enter/Space opens the row action
+      // surface (or falls back to detail when no secondary actions are wired).
       // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
       tabIndex={onOpenDetail ? 0 : -1}
       onPointerDown={handlePointerDown}

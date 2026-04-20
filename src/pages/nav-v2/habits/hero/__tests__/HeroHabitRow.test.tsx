@@ -4,9 +4,8 @@
  * Covers:
  *   - Long-press (>=450ms) opens detail sheet, short tap doesn't.
  *   - Long-press on inner toggle button is NOT intercepted (tap wins).
- *   - Enter / Space keyboard equivalent invokes onOpenDetail.
- *   - 7-day chain renders only when the habit has at least one entry.
- *   - Cue + identity badges render when configured.
+ *   - Enter / Space keyboard equivalent mirrors long-press semantics.
+ *   - Reminder cue renders when configured.
  */
 import { render, cleanup, screen, fireEvent, act } from "@testing-library/react";
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
@@ -111,6 +110,22 @@ describe("HeroHabitRow", () => {
     expect(open).toHaveBeenCalledTimes(1);
   });
 
+  it("Enter key opens the action sheet when row actions are wired", () => {
+    render(
+      <HeroHabitRow
+        habit={habit()}
+        onToggle={vi.fn()}
+        onDelete={vi.fn()}
+        onOpenDetail={vi.fn()}
+        onSkip={vi.fn()}
+      />,
+    );
+    const row = screen.getByTestId("hero-habit-row-h1");
+    row.focus();
+    fireEvent.keyDown(row, { key: "Enter" });
+    expect(screen.getByTestId("habit-action-sheet-h1")).toBeInTheDocument();
+  });
+
   it("renders reminder pill when reminder is configured", () => {
     render(
       <HeroHabitRow
@@ -126,8 +141,7 @@ describe("HeroHabitRow", () => {
   });
 
   // Revolution-ergonomics (§6 proposal 2026-04-19): card chain + identity
-  // verb removed from the row surface. Identity lives in HeroIdentityPrompt;
-  // chain lives in HabitDetailSheet (opened via action-sheet "Open details").
+  // verb removed from the row surface. Identity lives in HeroIdentityPrompt.
 
   it("long-press opens the action sheet when skip/archive handlers are provided", () => {
     const onSkip = vi.fn();

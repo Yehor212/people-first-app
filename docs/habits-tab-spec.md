@@ -208,6 +208,13 @@ user opens /habits
 long-press any habit row
       │
       ▼
+[HabitActionSheet opens]
+      ├── Skip / Unskip
+      ├── Archive / Unarchive
+      ├── Edit
+      └── Open details
+              │
+              ▼
 [V1 HabitDetailSheet opens via lazy chunk]
       ├── Score %
       ├── Total · Current streak · Best streak · Monthly 0/30
@@ -215,7 +222,7 @@ long-press any habit row
       ├── Completions (Weekly / Monthly toggle)
       ├── History heatmap (Miss / Done / Auto / Skip)
       ├── Weekday Frequency
-      └── Actions: Edit, Archive, Skip/Unskip, Delete
+      └── Deep stats only; operational actions stay on the action sheet / V1 swipe path
 ```
 
 All actions plumb back through `setHabits` so IndexedDB + Supabase sync stay
@@ -239,7 +246,7 @@ user taps today → chain extends → streak math via V1 habitScore
 ### 5.5 Archival / pause
 
 ```
-long-press → HabitDetailSheet → Archive
+long-press → HabitActionSheet → Archive
       │
       ▼
 habit.isArchived = true → filtered out by useHabitsPageState
@@ -488,13 +495,13 @@ English width** before breaking; sticky ring status line tested up to
 |---|---|---|---|
 | tap habit icon | V1 CompactHabitCard toggle button | complete/uncomplete today | light |
 | tap habit row (not icon) | V2 HeroHabitRow wrapper | no-op (long-press is the gesture) | — |
-| long-press 450ms on row | V2 HeroHabitRow | open V1 HabitDetailSheet | medium at threshold |
+| long-press 450ms on row | V2 HeroHabitRow | open `HabitActionSheet` when actions are wired; otherwise open V1 HabitDetailSheet | medium at threshold |
 | swipe-left on card | V1 CompactHabitCard | reveal edit/delete panel | — |
 | swipe-right on card | V1 CompactHabitCard | dismiss edit/delete panel | — |
 | hover on card (desktop) | V1 CompactHabitCard | reveal edit/trash icons | — |
 | tap quick-pick chip | HeroEmptyJourney | add habit via `templateToHabit` | light |
 | tap library tile | HeroTemplateLibrarySheet | add habit; chip flips to "Added" | light |
-| keyboard Enter/Space on row | HeroHabitRow | = long-press (open detail) | — |
+| keyboard Enter/Space on row | HeroHabitRow | = long-press (action sheet first when actions exist) | — |
 
 ### 10.2 Motion grammar
 - **Bloom** — page entry (staggerDelay primary)

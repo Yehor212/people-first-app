@@ -4,7 +4,7 @@
  * Covers ALL four instrumented emitters:
  *  - habit_created          (quick-pick from empty journey)
  *  - habit_completed        (toggle a habit row)
- *  - habit_detail_opened    (focus a row + Enter)
+ *  - habit_detail_opened    (focus a row + Enter -> Actions -> Open details)
  *  - insight_strip_rendered (mount HeroInsightStrip with a non-null insight)
  *
  * Two environmental gotchas that cost us an hour of debugging are codified
@@ -211,7 +211,7 @@ test.describe("§15 metrics — real-browser smoke (all 4 events)", () => {
     expect(payload.total_habits).toBe(1);
   });
 
-  test("habit_detail_opened — row activation via keyboard reaches window.gtag", async ({
+  test("habit_detail_opened — keyboard row action reaches window.gtag via action sheet", async ({
     page,
   }) => {
     await primeForMetrics(page);
@@ -221,11 +221,16 @@ test.describe("§15 metrics — real-browser smoke (all 4 events)", () => {
     await page.locator('[data-testid^="hero-quickpick-"]').first().click();
     await page.waitForTimeout(300);
 
-    // The hero row is `role="group" tabIndex=0` and opens detail on Enter/Space.
+    // Revolution-ergonomics UX: when row actions are wired, Enter/Space opens
+    // the Actions sheet first. "Open details" is the explicit user-visible
+    // affordance that should emit `habit_detail_opened`.
     const row = page.locator('[data-testid^="hero-habit-row-"]').first();
     await expect(row).toBeVisible();
     await row.focus();
     await page.keyboard.press("Enter");
+    const actionsDialog = page.getByRole("dialog", { name: /actions/i });
+    await expect(actionsDialog).toBeVisible();
+    await actionsDialog.getByRole("button", { name: /open details/i }).click();
     await page.waitForTimeout(400);
 
     const calls = await readGtagCalls(page);
