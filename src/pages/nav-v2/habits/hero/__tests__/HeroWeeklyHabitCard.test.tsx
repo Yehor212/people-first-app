@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { HeroWeeklyHabitCard } from "../HeroWeeklyHabitCard";
 import { toStoredValue } from "@/lib/habits";
 import { getToday } from "@/lib/utils";
@@ -45,6 +45,15 @@ const habit = (overrides: Partial<Habit> = {}): Habit => ({
 });
 
 describe("HeroWeeklyHabitCard", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 3, 20, 12, 0, 0));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("renders a one-tap statistics button on the card", () => {
     const onOpenDetail = vi.fn();
     render(
