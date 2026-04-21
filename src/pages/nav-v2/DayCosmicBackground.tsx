@@ -118,7 +118,7 @@ export const DayCosmicBackground = memo(function DayCosmicBackground() {
                 opacity: m.opacity,
                 animationDuration: `${m.duration}s`,
                 animationDelay: `${m.delay}s`,
-              } as React.CSSProperties
+              }
             }
           />
         ))}

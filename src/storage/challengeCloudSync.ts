@@ -114,7 +114,7 @@ export async function syncChallengesWithCloud(userId: string): Promise<{
       // Use the version with more progress (not just cloud wins)
       const cloudMap = new Map<string, Record<string, unknown>>();
       (cloudChallenges || []).forEach(cc => {
-        cloudMap.set(cc.challenge_id, cc as Record<string, unknown>);
+        cloudMap.set(cc.challenge_id, cc);
       });
 
       const localMap = new Map<string, Challenge>();
@@ -320,7 +320,7 @@ export async function syncBadgesWithCloud(userId: string): Promise<{
       // 3. Merge logic: cloud wins for unlocked status
       const cloudMap = new Map<string, Record<string, unknown>>();
       (cloudBadges || []).forEach(cb => {
-        cloudMap.set(cb.badge_id, cb as Record<string, unknown>);
+        cloudMap.set(cb.badge_id, cb);
       });
 
       const localMap = new Map<string, Badge>();

@@ -192,7 +192,7 @@ describe("offlineQueueHandlers", () => {
         .mocked(offlineQueue.registerHandler)
         .mock.calls.find((c) => c[0] === actionType);
       if (!call) throw new Error(`No handler registered for ${actionType}`);
-      return call[1] as (action: OfflineAction) => Promise<void>;
+      return call[1];
     }
 
     function makeAction(type: string, payload: unknown, entityId = "entity-1"): OfflineAction {

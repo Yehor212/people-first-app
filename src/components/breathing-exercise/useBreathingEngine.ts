@@ -93,7 +93,7 @@ export function useBreathingEngine({ selectedPattern, onComplete }: UseBreathing
         const phaseDuration = getPhaseDuration(currentPhase);
 
         if (prev >= phaseDuration) {
-          const nextPhase = getNextPhase(currentPhase as BreathingPhase);
+          const nextPhase = getNextPhase(currentPhase);
 
           if (nextPhase === 'inhale' && currentPhase !== 'inhale') {
             if (currentCycle >= selectedPattern.cycles) {

@@ -3,7 +3,7 @@ import { computeStreaks } from '../computeStreaks';
 import type { MoodType } from '@/types';
 
 function makeMap(dates: string[]): Map<string, MoodType | undefined> {
-  return new Map(dates.map((d) => [d, 'good' as MoodType]));
+  return new Map(dates.map((d) => [d, 'good']));
 }
 
 describe('computeStreaks', () => {

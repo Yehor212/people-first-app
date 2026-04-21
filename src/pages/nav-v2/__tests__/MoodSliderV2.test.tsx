@@ -104,7 +104,7 @@ describe("MoodSliderV2", () => {
       .spyOn(window, "requestAnimationFrame")
       .mockImplementation((cb: FrameRequestCallback) => {
         cb(0);
-        return 0 as unknown as number;
+        return 0;
       });
     try {
       render(<MoodSliderV2 value={0} onDraft={onDraft} onCommit={onCommit} />);
@@ -130,7 +130,7 @@ describe("MoodSliderV2", () => {
       .spyOn(window, "requestAnimationFrame")
       .mockImplementation((cb: FrameRequestCallback) => {
         cb(0);
-        return 0 as unknown as number;
+        return 0;
       });
     try {
       render(<MoodSliderV2 value={0} onDraft={onDraft} onCommit={onCommit} />);
@@ -357,7 +357,7 @@ describe("MoodSliderV2", () => {
       .spyOn(window, "requestAnimationFrame")
       .mockImplementation((cb: FrameRequestCallback) => {
         cb(0);
-        return 0 as unknown as number;
+        return 0;
       });
     try {
       render(

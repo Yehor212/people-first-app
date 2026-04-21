@@ -39,7 +39,7 @@ vi.mock("@/components/FocusReflectionModal", () => ({
 
 vi.mock("framer-motion", () => ({
   motion: {
-    div: (props: Record<string, unknown>) => <div {...(props as object)} />,
+    div: (props: Record<string, unknown>) => <div {...(props)} />,
   },
 }));
 

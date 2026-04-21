@@ -307,7 +307,7 @@ export const pullFromCloud = async (): Promise<boolean> => {
         reflection: f.reflection || undefined,
       })),
       "cloud-focusSessions"
-    ) as FocusSession[];
+    );
 
     const gratitudeEntries: GratitudeEntry[] = validateArray(
       runtimeGratitudeEntrySchema,
@@ -318,7 +318,7 @@ export const pullFromCloud = async (): Promise<boolean> => {
         timestamp: g.timestamp,
       })),
       "cloud-gratitudeEntries"
-    ) as GratitudeEntry[];
+    );
 
     // Transform journal data from cloud to local format
     // Note: photos/audio only have metadata here — binary data lives in Storage
@@ -713,7 +713,7 @@ const _handleRealtimeChange = async (
           };
           const validated = runtimeFocusSessionSchema.safeParse(mapped);
           if (validated.success) {
-            await db.focusSessions.put(validated.data as FocusSession);
+            await db.focusSessions.put(validated.data);
           } else {
             logger.warn(
               "[Realtime] Invalid focus session data received, skipping:",
@@ -738,7 +738,7 @@ const _handleRealtimeChange = async (
           };
           const validated = runtimeGratitudeEntrySchema.safeParse(mapped);
           if (validated.success) {
-            await db.gratitudeEntries.put(validated.data as GratitudeEntry);
+            await db.gratitudeEntries.put(validated.data);
           } else {
             logger.warn(
               "[Realtime] Invalid gratitude data received, skipping:",

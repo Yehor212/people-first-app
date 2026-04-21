@@ -14,7 +14,7 @@ const mockMatchMedia = (width: number) => {
       addListener: vi.fn(),
       removeListener: vi.fn(),
       dispatchEvent: vi.fn(),
-    } as unknown as MediaQueryList;
+    };
   });
 };
 

@@ -12,7 +12,7 @@ const mockPointer = (coarse: boolean, hover: boolean) => {
     addListener: vi.fn(),
     removeListener: vi.fn(),
     dispatchEvent: vi.fn(),
-  })) as unknown as typeof window.matchMedia;
+  }));
 };
 
 describe("useInputMethod", () => {

@@ -97,7 +97,7 @@ const SheetMotionContent = React.forwardRef<
 >(({ side = 'right', className, children, ...props }, ref) => {
   const { t } = useLanguage();
   const animate = useShouldAnimate();
-  const sideKey: SheetSide = (side ?? 'right') as SheetSide;
+  const sideKey: SheetSide = (side ?? 'right');
 
   const safeStyle =
     sideKey === 'bottom'

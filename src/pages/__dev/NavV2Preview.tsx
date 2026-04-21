@@ -61,7 +61,7 @@ export default function NavV2Preview() {
             width: `${vp.width}px`,
             height: `${vp.height}px`,
             maxWidth: "100%",
-          } as React.CSSProperties
+          }
         }
       >
         <div className="h-full overflow-auto">

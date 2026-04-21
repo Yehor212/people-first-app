@@ -151,7 +151,7 @@ export function initLongTaskObserverDev(): void {
     if (hasLoAF) {
       new PerformanceObserver((list) => {
         for (const entry of list.getEntries()) {
-          recordScripts(store, entry as LoAFEntry);
+          recordScripts(store, entry);
         }
       }).observe({ type: "long-animation-frame", buffered: true });
     } else if (hasLongTask) {

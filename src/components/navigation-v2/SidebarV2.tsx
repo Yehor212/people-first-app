@@ -33,10 +33,10 @@ export const SidebarV2 = memo(function SidebarV2({
   const tx = t as unknown as Record<string, string>;
 
   const items = useMemo(
-    () => [
-      { id: "orb" as NavV2Page, icon: Sparkles, label: tx.navV2Orb || "Orb" },
-      { id: "habits" as NavV2Page, icon: Repeat, label: tx.navV2Habits || t.habits || "Habits" },
-      { id: "diary" as NavV2Page, icon: BookOpen, label: tx.navV2Diary || t.diary || "Diary" },
+    (): Array<{ id: NavV2Page; icon: typeof Sparkles; label: string }> => [
+      { id: "orb", icon: Sparkles, label: tx.navV2Orb || "Orb" },
+      { id: "habits", icon: Repeat, label: tx.navV2Habits || t.habits || "Habits" },
+      { id: "diary", icon: BookOpen, label: tx.navV2Diary || t.diary || "Diary" },
     ],
     [tx, t.habits, t.diary],
   );

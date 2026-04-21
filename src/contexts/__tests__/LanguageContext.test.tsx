@@ -164,7 +164,7 @@ describe('LanguageContext', () => {
     const { result } = renderHook(() => useLanguage(), { wrapper });
 
     act(() => {
-      result.current.setLanguage('es' as any);
+      result.current.setLanguage('es');
     });
 
     expect(mockSetLanguage).toHaveBeenCalledWith('es');

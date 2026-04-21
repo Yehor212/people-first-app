@@ -8,13 +8,13 @@ export const translations: Record<string, Translations> = { en };
 
 // Dynamic loaders for code-split per-language chunks
 const languageLoaders: Record<string, () => Promise<Record<string, Translations>>> = {
-  uk: () => import("./languages/uk") as Promise<Record<string, Translations>>,
-  es: () => import("./languages/es") as Promise<Record<string, Translations>>,
-  de: () => import("./languages/de") as Promise<Record<string, Translations>>,
-  fr: () => import("./languages/fr") as Promise<Record<string, Translations>>,
-  ja: () => import("./languages/ja") as Promise<Record<string, Translations>>,
-  ar: () => import("./languages/ar") as Promise<Record<string, Translations>>,
-  he: () => import("./languages/he") as Promise<Record<string, Translations>>,
+  uk: () => import("./languages/uk"),
+  es: () => import("./languages/es"),
+  de: () => import("./languages/de"),
+  fr: () => import("./languages/fr"),
+  ja: () => import("./languages/ja"),
+  ar: () => import("./languages/ar"),
+  he: () => import("./languages/he"),
 };
 
 /** Load a language dynamically and cache it. Returns English as fallback. */

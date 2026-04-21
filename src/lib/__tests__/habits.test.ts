@@ -6,7 +6,6 @@ import {
   isHabitCompletedOnDate,
   getHabitCompletionTotal,
 } from '../habits';
-import type { Habit } from '@/types';
 import { makeTestHabit, datesToEntries, numericalEntries } from '@/test/habitFixtures';
 
 // ============================================
@@ -14,25 +13,25 @@ import { makeTestHabit, datesToEntries, numericalEntries } from '@/test/habitFix
 // ============================================
 describe('normalizeHabit', () => {
   it('returns habit with default habitType "boolean" when habitType is undefined', () => {
-    const habit = makeTestHabit({ habitType: undefined } as Partial<Habit>);
+    const habit = makeTestHabit({ habitType: undefined });
     const result = normalizeHabit(habit);
     expect(result.habitType).toBe('boolean');
   });
 
   it('returns habit with default frequency when frequency is undefined', () => {
-    const habit = makeTestHabit({ frequency: undefined } as Partial<Habit>);
+    const habit = makeTestHabit({ frequency: undefined });
     const result = normalizeHabit(habit);
     expect(result.frequency).toEqual({ numerator: 1, denominator: 1 });
   });
 
   it('returns habit with empty entries when undefined', () => {
-    const habit = makeTestHabit({ entries: undefined } as Partial<Habit>);
+    const habit = makeTestHabit({ entries: undefined });
     const result = normalizeHabit(habit);
     expect(result.entries).toEqual({});
   });
 
   it('returns habit with empty reminders when undefined', () => {
-    const habit = makeTestHabit({ reminders: undefined } as Partial<Habit>);
+    const habit = makeTestHabit({ reminders: undefined });
     const result = normalizeHabit(habit);
     expect(result.reminders).toEqual([]);
   });

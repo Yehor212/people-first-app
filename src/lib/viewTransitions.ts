@@ -101,5 +101,5 @@ export async function transition(
  * styles via spread.
  */
 export function withTransitionName(name: string): CSSProperties {
-  return { viewTransitionName: name } as CSSProperties;
+  return { viewTransitionName: name };
 }

@@ -24,7 +24,7 @@ function mockMatchMedia(initial: boolean): { mql: MqlMock; restore: () => void }
     onchange: null,
   };
   const originalMm = window.matchMedia;
-  window.matchMedia = vi.fn(() => mql as unknown as MediaQueryList) as typeof window.matchMedia;
+  window.matchMedia = vi.fn(() => mql as unknown as MediaQueryList);
   // Attach dispatcher for tests.
   (mql as MqlMock & { dispatchChange: (matches: boolean) => void }).dispatchChange = (matches: boolean) => {
     mql.matches = matches;

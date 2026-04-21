@@ -1023,7 +1023,7 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
         ...diaryTheme.themeVars,
         backgroundColor: diaryTheme.themeVars["--diary-bg"],
         color: diaryTheme.themeVars["--diary-text"],
-      }) as React.CSSProperties,
+      }),
     [diaryTheme.themeVars]
   );
 

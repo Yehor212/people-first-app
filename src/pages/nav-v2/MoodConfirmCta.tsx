@@ -70,14 +70,14 @@ export const MoodConfirmCta = memo(function MoodConfirmCta({
       const elapsed = Date.now() - startedAtRef.current;
       const remaining = Math.max(0, UNDO_WINDOW_MS - elapsed);
       setToastRemaining(remaining);
-    }, 100) as unknown as number;
+    }, 100);
 
     // Commit after the undo window expires
     timerRef.current = window.setTimeout(() => {
       clearTimers();
       setToastVisible(false);
       onConfirm();
-    }, UNDO_WINDOW_MS) as unknown as number;
+    }, UNDO_WINDOW_MS);
   }, [enabled, onConfirm, clearTimers]);
 
   const handleUndo = useCallback(() => {

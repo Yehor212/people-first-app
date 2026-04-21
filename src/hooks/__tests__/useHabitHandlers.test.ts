@@ -190,7 +190,7 @@ describe("useHabitHandlers", () => {
   it("handleUpdateHabit replaces habit by id", () => {
     const { result } = renderAndClearEffects();
 
-    const updatedHabit = { ...mockHabits[0], name: "Yoga" } as Habit;
+    const updatedHabit = { ...mockHabits[0], name: "Yoga" };
 
     act(() => {
       result.current.handleUpdateHabit(updatedHabit);

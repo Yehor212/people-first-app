@@ -21,7 +21,7 @@ vi.mock("@/components/FocusReflectionModal", () => ({
 // framer-motion — render plain div so RTL can assert on structure.
 vi.mock("framer-motion", () => ({
   motion: {
-    div: (props: Record<string, unknown>) => <div {...(props as object)} />,
+    div: (props: Record<string, unknown>) => <div {...(props)} />,
   },
 }));
 

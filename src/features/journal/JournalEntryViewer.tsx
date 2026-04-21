@@ -205,7 +205,7 @@ export const JournalEntryViewer = memo(function JournalEntryViewer({ entry, onEd
       ...vars,
       backgroundColor: vars["--diary-bg"],
       color: vars["--diary-text"],
-    } as React.CSSProperties;
+    };
   }, [entry.theme]);
 
   const fontFamily = entry.font ? DIARY_FONTS[entry.font]?.family : undefined;

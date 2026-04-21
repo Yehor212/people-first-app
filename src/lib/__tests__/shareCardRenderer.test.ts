@@ -260,7 +260,7 @@ describe('shareCardRenderer', () => {
 
     it('rejects when toBlob returns null', async () => {
       const canvas = document.createElement('canvas');
-      vi.spyOn(canvas, 'toBlob').mockImplementation((cb) => { if (cb) cb(null as unknown as Blob); });
+      vi.spyOn(canvas, 'toBlob').mockImplementation((cb) => { if (cb) cb(null); });
 
       await expect(canvasToBlob(canvas)).rejects.toThrow('Failed to generate image');
     });

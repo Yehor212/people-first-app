@@ -132,7 +132,7 @@ export function StorageErrorBanner() {
     );
     window.addEventListener(
       "zenflow:indexeddb-queue-overflow",
-      handleQueueOverflow as EventListener,
+      handleQueueOverflow,
     );
 
     return () => {
@@ -150,7 +150,7 @@ export function StorageErrorBanner() {
       );
       window.removeEventListener(
         "zenflow:indexeddb-queue-overflow",
-        handleQueueOverflow as EventListener,
+        handleQueueOverflow,
       );
     };
   }, [isDismissed]);

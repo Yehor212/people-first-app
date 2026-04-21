@@ -67,7 +67,7 @@ describe('needsMigration', () => {
 describe('migrateHabitV1toV2', () => {
   it('converts completedDates to YES_MANUAL entries', () => {
     const v1 = makeV1Habit({ completedDates: ['2024-01-01', '2024-01-02'] });
-    const result = migrateHabitV1toV2(v1 as any, 0);
+    const result = migrateHabitV1toV2(v1, 0);
 
     expect(result.entries['2024-01-01'].value).toBe(ENTRY.YES_MANUAL);
     expect(result.entries['2024-01-02'].value).toBe(ENTRY.YES_MANUAL);
@@ -75,7 +75,7 @@ describe('migrateHabitV1toV2', () => {
 
   it('converts skippedDates to SKIP entries', () => {
     const v1 = makeV1Habit({ skippedDates: ['2024-01-03'] });
-    const result = migrateHabitV1toV2(v1 as any, 0);
+    const result = migrateHabitV1toV2(v1, 0);
 
     expect(result.entries['2024-01-03'].value).toBe(ENTRY.SKIP);
   });
@@ -85,7 +85,7 @@ describe('migrateHabitV1toV2', () => {
       completedDates: ['2024-01-01'],
       skippedDates: ['2024-01-01'],
     });
-    const result = migrateHabitV1toV2(v1 as any, 0);
+    const result = migrateHabitV1toV2(v1, 0);
 
     expect(result.entries['2024-01-01'].value).toBe(ENTRY.SKIP);
   });
@@ -95,7 +95,7 @@ describe('migrateHabitV1toV2', () => {
       type: 'multiple',
       completionsByDate: { '2024-01-01': 3, '2024-01-02': 5 },
     });
-    const result = migrateHabitV1toV2(v1 as any, 0);
+    const result = migrateHabitV1toV2(v1, 0);
 
     expect(result.entries['2024-01-01'].value).toBe(3000);
     expect(result.entries['2024-01-02'].value).toBe(5000);
@@ -106,7 +106,7 @@ describe('migrateHabitV1toV2', () => {
       type: 'reduce',
       progressByDate: { '2024-01-01': 2 },
     });
-    const result = migrateHabitV1toV2(v1 as any, 0);
+    const result = migrateHabitV1toV2(v1, 0);
 
     expect(result.entries['2024-01-01'].value).toBe(2000);
   });
@@ -116,7 +116,7 @@ describe('migrateHabitV1toV2', () => {
       completedDates: ['2024-01-01'],
       notesByDate: { '2024-01-01': 'Felt great', '2024-01-02': 'Note without entry' },
     });
-    const result = migrateHabitV1toV2(v1 as any, 0);
+    const result = migrateHabitV1toV2(v1, 0);
 
     expect(result.entries['2024-01-01'].notes).toBe('Felt great');
     // Date with note only gets UNKNOWN value
@@ -126,33 +126,33 @@ describe('migrateHabitV1toV2', () => {
 
   it('maps type "multiple" to habitType "numerical"', () => {
     const v1 = makeV1Habit({ type: 'multiple' });
-    const result = migrateHabitV1toV2(v1 as any, 0);
+    const result = migrateHabitV1toV2(v1, 0);
     expect(result.habitType).toBe('numerical');
   });
 
   it('maps type "reduce" to habitType "numerical" and targetType "atMost"', () => {
     const v1 = makeV1Habit({ type: 'reduce' });
-    const result = migrateHabitV1toV2(v1 as any, 0);
+    const result = migrateHabitV1toV2(v1, 0);
     expect(result.habitType).toBe('numerical');
     expect(result.targetType).toBe('atMost');
   });
 
   it('maps type "daily" to habitType "boolean" and targetType "atLeast"', () => {
     const v1 = makeV1Habit({ type: 'daily' });
-    const result = migrateHabitV1toV2(v1 as any, 0);
+    const result = migrateHabitV1toV2(v1, 0);
     expect(result.habitType).toBe('boolean');
     expect(result.targetType).toBe('atLeast');
   });
 
   it('maps frequency "weekly" to ratio 1/7', () => {
     const v1 = makeV1Habit({ frequency: 'weekly' });
-    const result = migrateHabitV1toV2(v1 as any, 0);
+    const result = migrateHabitV1toV2(v1, 0);
     expect(result.frequency).toEqual({ numerator: 1, denominator: 7 });
   });
 
   it('maps frequency "once" to ratio 1/30', () => {
     const v1 = makeV1Habit({ frequency: 'once' });
-    const result = migrateHabitV1toV2(v1 as any, 0);
+    const result = migrateHabitV1toV2(v1, 0);
     expect(result.frequency).toEqual({ numerator: 1, denominator: 30 });
   });
 
@@ -162,7 +162,7 @@ describe('migrateHabitV1toV2', () => {
       frequencyNumerator: 3,
       frequencyDenominator: 7,
     });
-    const result = migrateHabitV1toV2(v1 as any, 0);
+    const result = migrateHabitV1toV2(v1, 0);
     expect(result.frequency).toEqual({ numerator: 3, denominator: 7 });
   });
 
@@ -171,37 +171,37 @@ describe('migrateHabitV1toV2', () => {
       frequency: 'custom',
       customDays: [1, 3, 5],
     });
-    const result = migrateHabitV1toV2(v1 as any, 0);
+    const result = migrateHabitV1toV2(v1, 0);
     expect(result.frequency).toEqual({ numerator: 3, denominator: 7 });
   });
 
   it('defaults frequency to 1/1 for unknown frequency', () => {
     const v1 = makeV1Habit({});
-    const result = migrateHabitV1toV2(v1 as any, 0);
+    const result = migrateHabitV1toV2(v1, 0);
     expect(result.frequency).toEqual({ numerator: 1, denominator: 1 });
   });
 
   it('converts color string to palette index', () => {
     const v1 = makeV1Habit({ color: '#D32F2F' }); // index 0 exact
-    const result = migrateHabitV1toV2(v1 as any, 0);
+    const result = migrateHabitV1toV2(v1, 0);
     expect(result.color).toBe(0);
   });
 
   it('preserves numeric color if already migrated', () => {
     const v1 = makeV1Habit({ color: 5 });
-    const result = migrateHabitV1toV2(v1 as any, 0);
+    const result = migrateHabitV1toV2(v1, 0);
     expect(result.color).toBe(5);
   });
 
   it('uses index parameter as position fallback', () => {
     const v1 = makeV1Habit({});
-    const result = migrateHabitV1toV2(v1 as any, 7);
+    const result = migrateHabitV1toV2(v1, 7);
     expect(result.position).toBe(7);
   });
 
   it('preserves existing position over index', () => {
     const v1 = makeV1Habit({ position: 3 });
-    const result = migrateHabitV1toV2(v1 as any, 7);
+    const result = migrateHabitV1toV2(v1, 7);
     expect(result.position).toBe(3);
   });
 
@@ -211,7 +211,7 @@ describe('migrateHabitV1toV2', () => {
       entries: { '2024-01-01': { value: 2 } },
       completedDates: ['2024-01-01'], // leftover v1 field
     });
-    const result = migrateHabitV1toV2(v1 as any, 0);
+    const result = migrateHabitV1toV2(v1, 0);
     // Should strip completedDates and return clean
     expect(result.entries).toEqual({ '2024-01-01': { value: 2 } });
     expect((result as any).completedDates).toBeUndefined();
@@ -224,7 +224,7 @@ describe('migrateHabitV1toV2', () => {
       category: 'health',
       identityCluster: 'fitness',
     });
-    const result = migrateHabitV1toV2(v1 as any, 0);
+    const result = migrateHabitV1toV2(v1, 0);
     expect(result.reminders).toHaveLength(1);
     expect(result.templateId).toBe('tmpl-1');
     expect(result.category).toBe('health');
@@ -240,7 +240,7 @@ describe('migrateAllHabits', () => {
       makeV1Habit({ id: 'a', completedDates: ['2024-01-01'] }),
       makeV1Habit({ id: 'b', completedDates: ['2024-01-02'] }),
     ];
-    const result = migrateAllHabits(habits as any);
+    const result = migrateAllHabits(habits);
     expect(result).toHaveLength(2);
     expect(result[0].id).toBe('a');
     expect(result[1].id).toBe('b');
@@ -251,7 +251,7 @@ describe('migrateAllHabits', () => {
       makeV1Habit({ id: 'a' }),
       makeV1Habit({ id: 'b' }),
     ];
-    const result = migrateAllHabits(habits as any);
+    const result = migrateAllHabits(habits);
     expect(result[0].position).toBe(0);
     expect(result[1].position).toBe(1);
   });
@@ -259,7 +259,7 @@ describe('migrateAllHabits', () => {
   it('does not mutate original array', () => {
     const original = makeV1Habit({ completedDates: ['2024-01-01'] });
     const arr = [original];
-    migrateAllHabits(arr as any);
+    migrateAllHabits(arr);
     // Original should still have completedDates
     expect((original as any).completedDates).toEqual(['2024-01-01']);
   });

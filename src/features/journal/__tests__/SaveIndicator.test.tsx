@@ -21,7 +21,7 @@ vi.mock("framer-motion", () => ({
       void animate;
       void exit;
       void transition;
-      return <span {...(rest as React.HTMLAttributes<HTMLSpanElement>)}>{children as React.ReactNode}</span>;
+      return <span {...(rest)}>{children as React.ReactNode}</span>;
     },
   },
   AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,

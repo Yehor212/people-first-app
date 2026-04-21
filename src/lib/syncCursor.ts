@@ -51,7 +51,7 @@ export async function loadSyncCursor(): Promise<SyncCursor> {
 /** Save sync cursor to IndexedDB settings table */
 export async function saveSyncCursor(cursor: SyncCursor): Promise<void> {
   try {
-    await db.settings.put({ key: CURSOR_KEY, value: cursor as unknown as string });
+    await db.settings.put({ key: CURSOR_KEY, value: cursor });
   } catch (err) {
     logger.error("[SyncCursor] Failed to save cursor:", err);
   }

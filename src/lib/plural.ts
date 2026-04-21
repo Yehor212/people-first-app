@@ -40,7 +40,7 @@ export function plural(
   language: Language
 ): string {
   const rules = getRules(language);
-  const category = rules.select(count) as PluralCategory;
+  const category = rules.select(count);
 
   // Try the specific plural form first, fall back to base key (other)
   const suffixedKey = `${String(key)}${SUFFIX_MAP[category]}` as keyof Translations;

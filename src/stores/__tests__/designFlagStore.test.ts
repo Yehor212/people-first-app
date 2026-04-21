@@ -95,7 +95,7 @@ describe("designFlagStore", () => {
     const data = sampleFlags();
     mockSupabaseFrom.mockReturnValue({
       select: vi.fn().mockResolvedValue({ data, error: null }),
-    } as unknown as ReturnType<typeof mockSupabase.from>);
+    });
 
     await useDesignFlagStore.getState().fetchFlags();
 
@@ -130,7 +130,7 @@ describe("designFlagStore", () => {
       select: vi
         .fn()
         .mockResolvedValue({ data: null, error: new Error("offline") }),
-    } as unknown as ReturnType<typeof mockSupabase.from>);
+    });
 
     await useDesignFlagStore.getState().fetchFlags();
 
@@ -142,9 +142,7 @@ describe("designFlagStore", () => {
 
   it("fetchFlags debounces subsequent calls within 5-minute interval", async () => {
     const selectMock = vi.fn().mockResolvedValue({ data: [], error: null });
-    mockSupabaseFrom.mockReturnValue({ select: selectMock } as unknown as ReturnType<
-      typeof mockSupabase.from
-    >);
+    mockSupabaseFrom.mockReturnValue({ select: selectMock });
 
     await useDesignFlagStore.getState().fetchFlags();
     await useDesignFlagStore.getState().fetchFlags();
@@ -174,7 +172,7 @@ describe("designFlagStore", () => {
   it("handles null data from Supabase gracefully", async () => {
     mockSupabaseFrom.mockReturnValue({
       select: vi.fn().mockResolvedValue({ data: null, error: null }),
-    } as unknown as ReturnType<typeof mockSupabase.from>);
+    });
 
     await useDesignFlagStore.getState().fetchFlags();
 

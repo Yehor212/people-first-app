@@ -13,7 +13,6 @@
  */
 
 import { SocialLogin } from "@capgo/capacitor-social-login";
-import type { GoogleLoginOptions } from "@capgo/capacitor-social-login";
 import { supabase } from "./supabaseClient";
 import { logger } from "./logger";
 import { GOOGLE_WEB_CLIENT_ID } from "./env";
@@ -114,7 +113,7 @@ export async function authenticateWithGoogleNative(retry = false): Promise<{
       options: {
         scopes: ["email", "profile"],
         nonce: nonceDigest,
-      } as GoogleLoginOptions,
+      },
     });
 
     if (response.result.responseType !== "online") {

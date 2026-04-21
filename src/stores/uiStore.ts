@@ -126,7 +126,7 @@ const MODAL_DEFAULTS: Record<ModalName, boolean> = {
 export const useUIStore = create<UIState & UIActions>((set, get) => ({
   ...MODAL_DEFAULTS,
 
-  canvasMode: "idle" as CanvasMode,
+  canvasMode: "idle",
 
   challengeInvite: undefined,
   challengeHabit: undefined,

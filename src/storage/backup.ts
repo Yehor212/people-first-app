@@ -109,10 +109,8 @@ export const BACKUP_SCHEMA_VERSION = 3;
 
 const getOrCreateDeviceId = async () => {
   const existing = await db.settings.get("zenflow-device-id");
-  if (existing?.value) {
-    return typeof existing.value === "string"
-      ? existing.value
-      : String(existing.value as string | number | boolean);
+  if (typeof existing?.value === "string" && existing.value.trim().length > 0) {
+    return existing.value;
   }
   const deviceId = `device_${generateId()}`;
   await db.settings.put({ key: "zenflow-device-id", value: deviceId });

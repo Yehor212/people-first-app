@@ -273,7 +273,7 @@ export const syncHabitCompletion = async (
           `${habitId}_${date}`,
           completed ? "upsert" : "delete",
           completed
-            ? ({ habitId, date, count, duration } as unknown as Record<string, unknown>)
+            ? ({ habitId, date, count, duration })
             : null,
           did
         )
