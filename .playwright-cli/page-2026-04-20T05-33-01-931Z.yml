@@ -1,0 +1,244 @@
+- generic:
+  - generic:
+    - generic:
+      - navigation:
+        - link:
+          - /url: "#main-content-v2"
+          - text: Skip to main content
+        - generic:
+          - generic: ZenFlow
+        - navigation:
+          - button:
+            - img
+            - generic: Orb
+          - button:
+            - img
+            - generic: Habits
+          - button:
+            - img
+            - generic: Diary
+        - generic:
+          - button:
+            - generic:
+              - generic:
+                - img
+            - generic: Dark
+          - button:
+            - img
+            - generic: Settings
+          - button:
+            - img
+            - generic: Collapse sidebar
+      - generic:
+        - main:
+          - generic:
+            - heading [level=1]: Habits
+          - region:
+            - heading [level=2]: Today's habits
+            - generic:
+              - paragraph:
+                - generic: "Today you are building:"
+                - generic:
+                  - generic: ✨
+                  - generic: Someone who keeps their word
+            - region:
+              - generic:
+                - heading [level=3]:
+                  - generic: ✨
+                  - text: Anytime
+                - generic: 0 / 1
+              - list:
+                - generic:
+                  - group:
+                    - listitem:
+                      - generic:
+                        - generic:
+                          - generic: рџ’§
+                          - generic:
+                            - paragraph: Drink water
+                        - generic: 0/2 L
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic: Mon
+                            - generic: Tue
+                            - generic: Wed
+                            - generic: Thu
+                            - generic: Fri
+                            - generic: Sat
+                            - generic: Sun
+                          - generic:
+                            - button:
+                              - generic: ·
+                            - button [disabled]:
+                              - generic: ·
+                            - button [disabled]:
+                              - generic: ·
+                            - button [disabled]:
+                              - generic: ·
+                            - button [disabled]:
+                              - generic: ·
+                            - button [disabled]:
+                              - generic: ·
+                            - button [disabled]:
+                              - generic: ·
+                      - generic:
+                        - generic: 0/2 L
+                        - button: Statistics
+            - paragraph: One missed day doesn't reset progress
+            - generic:
+              - button:
+                - img
+                - text: Create habit
+  - status
+  - alert
+  - dialog "Drink water" [ref=e299]:
+    - button "Close" [active] [ref=e300] [cursor=pointer]:
+      - img [ref=e301]
+      - generic [ref=e304]: Close
+    - generic [ref=e305]:
+      - generic [ref=e306]:
+        - generic [ref=e307]: рџ’§
+        - generic [ref=e308]:
+          - heading "Drink water" [level=2] [ref=e309]
+          - text: health
+        - generic [ref=e310]:
+          - img [ref=e311]
+          - generic [ref=e314]: 0%
+      - generic [ref=e316]:
+        - generic [ref=e317]: 0%
+        - generic [ref=e318]: Score
+      - generic [ref=e320]:
+        - generic [ref=e321]:
+          - img [ref=e322]
+          - generic [ref=e325]:
+            - generic [ref=e326]: "0"
+            - generic [ref=e327]: Total
+        - generic [ref=e328]:
+          - img [ref=e329]
+          - generic [ref=e331]:
+            - generic [ref=e332]: 0d
+            - generic [ref=e333]: Current streak
+        - generic [ref=e334]:
+          - img [ref=e335]
+          - generic [ref=e341]:
+            - generic [ref=e342]: 0d
+            - generic [ref=e343]: Best Streak
+        - generic [ref=e344]:
+          - img [ref=e345]
+          - generic [ref=e347]:
+            - generic [ref=e348]: 0/30
+            - generic [ref=e349]: This month
+      - generic [ref=e351]:
+        - heading "Target Progress" [level=4] [ref=e352]
+        - generic [ref=e353]:
+          - generic [ref=e354]:
+            - generic [ref=e355]:
+              - img [ref=e356]
+              - generic [ref=e359]: 0%
+            - generic [ref=e360]:
+              - generic [ref=e361]: This week
+              - generic [ref=e362]: 0/2
+          - generic [ref=e363]:
+            - generic [ref=e364]:
+              - img [ref=e365]
+              - generic [ref=e368]: 0%
+            - generic [ref=e369]:
+              - generic [ref=e370]: This month
+              - generic [ref=e371]: 0/40
+          - generic [ref=e372]:
+            - generic [ref=e373]:
+              - img [ref=e374]
+              - generic [ref=e377]: 0%
+            - generic [ref=e378]:
+              - generic [ref=e379]: Year
+              - generic [ref=e380]: 0/220
+      - generic [ref=e382]:
+        - generic [ref=e383]:
+          - generic [ref=e384]: Score History
+          - generic [ref=e385]:
+            - button "3mo" [ref=e386] [cursor=pointer]
+            - button "6mo" [ref=e387] [cursor=pointer]
+            - button "1yr" [ref=e388] [cursor=pointer]
+            - button "All" [ref=e389] [cursor=pointer]
+        - img [ref=e391]:
+          - generic [ref=e393]: 0%
+          - generic [ref=e395]: 25%
+          - generic [ref=e397]: 50%
+          - generic [ref=e399]: 75%
+          - generic [ref=e401]: 100%
+      - generic [ref=e404]:
+        - generic [ref=e405]:
+          - heading "Completions" [level=4] [ref=e406]
+          - generic [ref=e407]:
+            - button "Weekly" [ref=e408] [cursor=pointer]
+            - button "Monthly" [ref=e409] [cursor=pointer]
+        - img [ref=e411]:
+          - generic [ref=e414]: W-11
+          - generic [ref=e417]: W-10
+          - generic [ref=e420]: W-9
+          - generic [ref=e423]: W-8
+          - generic [ref=e426]: W-7
+          - generic [ref=e429]: W-6
+          - generic [ref=e432]: W-5
+          - generic [ref=e435]: W-4
+          - generic [ref=e438]: W-3
+          - generic [ref=e441]: W-2
+          - generic [ref=e444]: W-1
+          - generic [ref=e447]: Now
+      - generic [ref=e449]:
+        - heading "History" [level=4] [ref=e450]
+        - generic [ref=e451]:
+          - generic [ref=e452]:
+            - generic [ref=e453]: M
+            - generic [ref=e455]: W
+            - generic [ref=e457]: F
+            - generic [ref=e459]: S
+          - 'button "2026-04-20: unknown" [ref=e670] [cursor=pointer]'
+        - generic [ref=e677]:
+          - generic [ref=e678]: Miss
+          - generic [ref=e680]: Done
+          - generic [ref=e682]: Auto
+          - generic [ref=e684]: Skip
+      - generic [ref=e687]:
+        - heading "Weekday Frequency" [level=4] [ref=e688]
+        - 'img "Weekday Frequency: Mon 0, Tue 0, Wed 0, Thu 0, Fri 0, Sat 0, Sun 0" [ref=e689]':
+          - img [ref=e693]:
+            - generic [ref=e697]:
+              - generic [ref=e699]: Mon
+              - generic [ref=e701]: Tue
+              - generic [ref=e703]: Wed
+              - generic [ref=e705]: Thu
+              - generic [ref=e707]: Fri
+              - generic [ref=e709]: Sat
+              - generic [ref=e711]: Sun
+            - generic [ref=e713]:
+              - generic [ref=e715]: "0"
+              - generic [ref=e717]: "1"
+              - generic [ref=e719]: "2"
+              - generic [ref=e721]: "3"
+              - generic [ref=e723]: "4"
+      - generic [ref=e725]:
+        - heading "Streak History" [level=4] [ref=e726]
+        - paragraph [ref=e727]: No streaks yet
+      - generic [ref=e729]:
+        - generic [ref=e730]:
+          - generic [ref=e731]: Notes
+          - button "Add a note (optional)..." [ref=e732] [cursor=pointer]:
+            - img [ref=e733]
+            - text: Add a note (optional)...
+        - paragraph [ref=e735]: No notes yet
+      - generic [ref=e736]:
+        - button "Edit Habit" [ref=e737] [cursor=pointer]:
+          - img [ref=e738]
+          - generic [ref=e741]: Edit Habit
+        - button "Skip Today" [ref=e742] [cursor=pointer]:
+          - img [ref=e743]
+          - generic [ref=e745]: Skip Today
+        - button "Archive" [ref=e746] [cursor=pointer]:
+          - img [ref=e747]
+          - generic [ref=e750]: Archive
+        - button "Delete Habit" [ref=e752] [cursor=pointer]:
+          - img [ref=e753]
+          - generic [ref=e756]: Delete Habit
+  - generic: "0"

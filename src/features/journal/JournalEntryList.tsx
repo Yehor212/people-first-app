@@ -855,7 +855,7 @@ const SpeedDialFab = memo(function SpeedDialFab({ onNewEntry, onAddGratitude }: 
       <AnimatePresence>
         {open && (
           <motion.div
-            className="fixed inset-0 z-[54] bg-black/20"
+            className="fixed inset-0 z-[54] bg-black/20 dark:bg-black/20"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -926,7 +926,7 @@ const SpeedDialFab = memo(function SpeedDialFab({ onNewEntry, onAddGratitude }: 
           "bg-gradient-to-br from-primary to-primary/80",
           "text-primary-foreground",
           "flex items-center justify-center",
-          "shadow-[0_4px_20px_rgba(var(--primary-rgb,99,102,241),0.35)]"
+          "shadow-[0_4px_20px_hsl(var(--primary)/0.35)]"
         )}
       >
         <motion.div animate={{ rotate: open ? 45 : 0 }} transition={zenMotion.snappy}>

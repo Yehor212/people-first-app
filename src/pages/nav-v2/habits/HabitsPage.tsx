@@ -37,6 +37,7 @@ const HabitDetailSheetLazy = lazyWithRetry(() =>
   import("@/components/habit-hub/HabitDetailSheet").then((m) => ({
     default: m.HabitDetailSheet,
   })),
+  "HabitDetailSheet"
 );
 
 export const HabitsPage = memo(function HabitsPage() {

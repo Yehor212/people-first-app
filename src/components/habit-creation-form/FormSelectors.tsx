@@ -19,8 +19,6 @@ interface SelectorProps {
   ts: Record<string, string>;
 }
 
-/* ═══ ICON SELECTOR ═══ */
-
 interface IconSelectorProps extends SelectorProps {
   selectedIcon: string;
   setSelectedIcon: (icon: string) => void;
@@ -74,7 +72,7 @@ export function IconSelector({
             )}
             style={
               isPrimaryCTA && selectedIcon === icon
-                ? { boxShadow: "0 0 16px rgba(139, 92, 246, 0.4)" }
+                ? { boxShadow: "0 0 16px hsl(var(--cosmic-nebula-purple) / 0.4)" }
                 : undefined
             }
             whileHover={{ scale: 1.05 }}
@@ -87,8 +85,6 @@ export function IconSelector({
     </div>
   );
 }
-
-/* ═══ COLOR SELECTOR ═══ */
 
 const colorIndices = Array.from(
   { length: LOOP_PALETTE_LIGHT.length },
@@ -159,8 +155,6 @@ export function ColorSelector({
   );
 }
 
-/* ═══ TYPE SELECTOR ═══ */
-
 interface TypeSelectorProps extends SelectorProps {
   habitType: LoopHabitType;
   setHabitType: (type: LoopHabitType) => void;
@@ -219,7 +213,7 @@ export function TypeSelector({
             )}
             style={
               isPrimaryCTA && habitType === type
-                ? { boxShadow: "0 0 12px rgba(16, 185, 129, 0.4)" }
+                ? { boxShadow: "0 0 12px hsl(var(--chart-habit) / 0.4)" }
                 : undefined
             }
             whileHover={{ scale: 1.02 }}
@@ -248,8 +242,6 @@ export function TypeSelector({
     </div>
   );
 }
-
-/* ═══ FREQUENCY SELECTOR ═══ */
 
 interface FrequencySelectorProps extends SelectorProps {
   frequency: { numerator: number; denominator: number };
@@ -315,7 +307,7 @@ export function FrequencySelector({
                 : "border-primary text-primary",
             )}
           >
-            {frequency.numerator}× / {frequency.denominator}
+            {frequency.numerator}x / {frequency.denominator}
             {ts.daysAbbr || "d"}
           </span>
         )}
@@ -323,8 +315,6 @@ export function FrequencySelector({
     </div>
   );
 }
-
-/* ═══ CATEGORY SELECTOR ═══ */
 
 interface CategorySelectorProps extends SelectorProps {
   selectedCategory: HabitCategory;

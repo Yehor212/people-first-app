@@ -267,7 +267,7 @@ export function MoodSlide({ slide, t }: MoodSlideProps) {
 
         {/* Mood scale */}
         <motion.div
-          className="flex gap-4 p-4 rounded-2xl bg-black/20 backdrop-blur-md border border-white/10"
+            className="flex gap-4 p-4 rounded-2xl bg-black/20 dark:bg-black/20 backdrop-blur-md border border-white/10 dark:border-white/10"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.9 }}
@@ -287,7 +287,7 @@ export function MoodSlide({ slide, t }: MoodSlideProps) {
                 <AnimatedMoodEmoji mood={mood} size="md" isSelected={isSelected} />
                 {isSelected && (
                   <motion.div
-                    className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-white"
+            className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-white dark:bg-white"
                     layoutId="moodIndicator"
                   />
                 )}

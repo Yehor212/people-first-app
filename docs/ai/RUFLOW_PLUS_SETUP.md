@@ -1,0 +1,54 @@
+# Ruflow+ Setup
+
+This is the shortest reliable way to bootstrap the local Ruflow+ layer on a new machine.
+
+## What This Does
+
+The setup syncs tracked templates into local working copies under:
+- `.Codex/`
+- `.agents/`
+
+It also ensures the project-local Ruflow+ shell defaults exist in:
+- `.Codex/config.toml`
+
+## One-Time Setup
+
+```bash
+npm run ai:ruflow-plus:sync
+```
+
+## Verification
+
+```bash
+npm run ai:ruflow-plus:check
+```
+
+Expected result:
+- the command exits successfully
+- local role prompts match tracked templates
+- the local skill matches the tracked template
+- `.Codex/config.toml` contains the Ruflow+ shell defaults
+
+## Why This Exists
+
+This repo keeps `.Codex/` and `.agents/` as local-first working areas on this machine.
+That is useful, but it creates a portability problem unless we provide:
+- tracked templates
+- a sync command
+- a check command
+
+Ruflow+ setup closes that gap.
+
+## Source Of Truth
+
+Human-readable reference:
+- [RUFLOW_PLUS_BLUEPRINT.md](</C:/project/people-first-app/docs/ai/RUFLOW_PLUS_BLUEPRINT.md>)
+- [RUFLOW_PLUS_REPO_INTEGRATION.md](</C:/project/people-first-app/docs/ai/RUFLOW_PLUS_REPO_INTEGRATION.md>)
+
+Machine-readable templates:
+- [tools/ruflow-plus/templates](</C:/project/people-first-app/tools/ruflow-plus/templates>)
+
+## Notes
+
+- The sync is intentionally repo-local and does not change application runtime code.
+- The config defaults help standardize prompts and workflow, but they do not magically replace deliberate orchestration.

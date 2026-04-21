@@ -2,14 +2,19 @@ import { motion } from "framer-motion";
 import { zenTap } from "@/lib/animationUtils";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { HabitReminder } from "@/types";
 
 interface RemindersSectionProps {
   isPrimaryCTA: boolean;
   t: Record<string, string>;
-  reminders: Array<{ time: string; days: number[] }>;
+  reminders: HabitReminder[];
   handleAddReminder: () => void;
   handleRemoveReminder: (index: number) => void;
-  handleReminderChange: (index: number, field: string, value: unknown) => void;
+  handleReminderChange: <K extends keyof HabitReminder>(
+    index: number,
+    field: K,
+    value: HabitReminder[K]
+  ) => void;
 }
 
 export function RemindersSection({
@@ -122,7 +127,7 @@ export function RemindersSection({
                     )}
                     style={
                       isPrimaryCTA && reminder.days.includes(day)
-                        ? { boxShadow: "0 0 8px rgba(139, 92, 246, 0.4)" }
+                        ? { boxShadow: "0 0 8px hsl(var(--cosmic-nebula-purple) / 0.4)" }
                         : undefined
                     }
                     whileTap={zenTap.button}

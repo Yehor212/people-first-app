@@ -2911,3 +2911,5 @@ export interface Translations {
   orbFirstRunStep3: string;
   orbFirstRunGotIt: string;
 }
+
+export type TranslationStrings = Translations;

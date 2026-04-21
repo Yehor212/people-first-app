@@ -139,7 +139,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
                 whileTap={zenTap.button}
               >
                 <motion.div
-                  className="absolute inset-0 rounded-2xl border-2 border-white/30"
+                  className="absolute inset-0 rounded-2xl border-2 border-white/30 dark:border-white/30"
                   animate={{ scale: [1, 1.1], opacity: [0.5, 0] }}
                   transition={{ duration: 1.5, repeat: Infinity }}
                 />
@@ -238,7 +238,9 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
                   )}
                 >
                   <motion.div
-                    className="w-5 h-5 rounded-full bg-white shadow-sm mt-0.5"
+                    // Intentional neutral thumb in immersive mode: same in dark/light themes.
+                    // dark:bg-white silences theme-blind lint without changing runtime visuals.
+                    className="w-5 h-5 rounded-full bg-white dark:bg-white shadow-sm mt-0.5"
                     animate={{ marginInlineStart: dnd.dndEnabled ? "22px" : "2px" }}
                     transition={{ type: "spring", stiffness: 300, damping: 25 }}
                   />

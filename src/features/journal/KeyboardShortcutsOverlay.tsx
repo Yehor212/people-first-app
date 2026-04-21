@@ -53,6 +53,7 @@ export const KeyboardShortcutsOverlay = memo(function KeyboardShortcutsOverlay({
 }: KeyboardShortcutsOverlayProps) {
   const prefersReduced = useReducedMotion();
   const { t } = useLanguage();
+  const ts = t as unknown as Record<string, string>;
   const returnRef = useRef<HTMLElement | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -109,7 +110,7 @@ export const KeyboardShortcutsOverlay = memo(function KeyboardShortcutsOverlay({
           >
             <div className="flex items-center justify-between border-b border-border/50 px-5 py-4">
               <h2 className="text-base font-semibold text-foreground">
-                {t.settings?.title ? "Keyboard Shortcuts" : "Keyboard Shortcuts"}
+                {ts.keyboardShortcuts || "Keyboard Shortcuts"}
               </h2>
               <button
                 onClick={onClose}

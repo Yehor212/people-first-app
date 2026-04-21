@@ -27,6 +27,7 @@ export function NotificationsSection({
   focusSessions = [],
 }: NotificationsSectionProps) {
   const { t } = useLanguage();
+  const tx = t as unknown as Record<string, string>;
 
   // Quick Actions for lock screen (Android only)
   const { isEnabled: quickActionsEnabled, isAndroid, toggle: toggleQuickActions } = useQuickActions();
@@ -57,7 +58,7 @@ export function NotificationsSection({
     <AccordionItem value="notifications" className="bg-card rounded-2xl shadow-zen-sm border overflow-hidden">
       <AccordionTrigger className="px-5 py-4 hover:no-underline hover:bg-muted/30 data-[state=open]:bg-primary/5">
         <div className="flex items-center gap-3">
-          <div className="p-2 zen-gradient-warm rounded-xl shadow-[0_4px_20px_-4px_hsl(28_75%_65%/0.25)]">
+          <div className="p-2 zen-gradient-warm rounded-xl shadow-[0_4px_20px_-4px_hsl(var(--accent)/0.25)]">
             <Bell className="w-5 h-5 text-primary-foreground" />
           </div>
           <span className="text-lg font-semibold text-foreground">{t.settingsGroupNotifications}</span>
@@ -209,7 +210,7 @@ export function NotificationsSection({
               </div>
               <div className="grid grid-cols-2 gap-2" role="group" aria-label={t.notificationSound}>
                 {NOTIFICATION_SOUNDS.map((sound) => {
-                  const soundLabel = t[sound.labelKey] || sound.id;
+                  const soundLabel = tx[sound.labelKey] || sound.id;
                   return (
                     <button
                       key={sound.id}
@@ -227,7 +228,7 @@ export function NotificationsSection({
                         {soundLabel}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {t[`${sound.labelKey}Desc`] || sound.description}
+                        {tx[`${sound.labelKey}Desc`] || sound.description}
                       </p>
                     </button>
                   );

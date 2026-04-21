@@ -68,7 +68,7 @@ export const OverlayLayer = memo(function OverlayLayer({ awardXp, earnTreats }: 
       )}
 
       {/* GDPR Consent Banner - shows once after onboarding */}
-      {!privacy.consentShown && onboardingComplete && (
+      {!privacy.consentShown && onboardingComplete && !showWelcomeOverlay && (
         <ConsentBanner
           onConsent={(analyticsAllowed) => {
             setPrivacy({

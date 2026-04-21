@@ -113,7 +113,7 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit, ac
               <button
                 onClick={resetForm}
                 aria-label={ts.back || 'Back'}
-                className="w-8 h-8 rounded-xl flex items-center justify-center bg-white/[0.06] border border-white/[0.10] min-h-[44px] min-w-[44px] hover:bg-white/[0.10] motion-safe:transition-colors"
+                className="w-8 h-8 rounded-xl flex items-center justify-center bg-foreground/[0.06] border border-foreground/[0.10] min-h-[44px] min-w-[44px] hover:bg-foreground/[0.10] motion-safe:transition-colors"
               >
                 <ChevronLeft className="w-4 h-4 text-muted-foreground rtl:scale-x-[-1]" />
               </button>
@@ -161,8 +161,8 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit, ac
                       disabled={isAtLimit}
                       className={cn(
                         'flex flex-col items-center justify-center gap-3 p-4 rounded-2xl motion-safe:transition-all',
-                        'bg-white/[0.04] border border-white/[0.08]',
-                        'hover:bg-white/[0.07] hover:scale-[1.03] active:scale-95',
+                        'bg-foreground/[0.04] border border-foreground/[0.08]',
+                        'hover:bg-foreground/[0.07] hover:scale-[1.03] active:scale-95',
                         'min-h-[104px] relative overflow-hidden group',
                       )}
                     >

@@ -49,9 +49,9 @@ export function JournalLockScreen({
   const [step, setStep] = useState<"current" | "enter" | "confirm">(
     mode === "change" ? "current" : "enter"
   );
-  const inputRef = useRef<HTMLInputElement>(null);
-  const shakeTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
-  const glowTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const shakeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const glowTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     return () => {

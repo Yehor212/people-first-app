@@ -1,180 +1,176 @@
-# 📝 Инструкция по настройке Supabase
+# 📝 Инструкция по Supabase для ZenFlow
 
-## Что нужно сделать
+## Коротко
 
-Вам нужно применить **2 SQL миграции** в вашем Supabase проекте для включения multi-device синхронизации.
+Для этого проекта нельзя больше ориентироваться на старую схему “применить 2 SQL-файла вручную и всё готово”.
 
----
+Текущий источник истины:
+- весь каталог `supabase/migrations/`
+- linked project в Supabase CLI
+- история `supabase_migrations.schema_migrations`
 
-## 🔧 Вариант 1: Через веб-интерфейс Supabase (Рекомендуется)
+Если нужно проверить или обновить remote проект, рабочий путь только такой:
 
-### Шаг 1: Откройте Supabase Dashboard
-1. Перейдите на https://supabase.com/dashboard
-2. Войдите в свой аккаунт
-3. Выберите проект **ZenFlow** (или как вы его назвали)
-
-### Шаг 2: Откройте SQL Editor
-1. В левом меню найдите **SQL Editor**
-2. Нажмите **+ New Query**
-
-### Шаг 3: Применить первую миграцию (Challenges & Badges)
-
-1. Скопируйте **весь код** из файла:
-   ```
-   supabase/migrations/20260113_challenges_badges.sql
-   ```
-
-2. Вставьте код в SQL Editor
-
-3. Нажмите кнопку **Run** (или `Ctrl + Enter`)
-
-4. ✅ Вы должны увидеть сообщение **Success**
-
-5. **Проверка**: В левом меню откройте **Table Editor** и убедитесь, что появились таблицы:
-   - `user_challenges`
-   - `user_badges`
-
-### Шаг 4: Применить вторую миграцию (Tasks & Quests)
-
-1. Создайте **новый запрос** (+ New Query)
-
-2. Скопируйте **весь код** из файла:
-   ```
-   supabase/migrations/20260114_tasks_quests.sql
-   ```
-
-3. Вставьте код в SQL Editor
-
-4. Нажмите кнопку **Run** (или `Ctrl + Enter`)
-
-5. ✅ Вы должны увидеть сообщение **Success**
-
-6. **Проверка**: В **Table Editor** убедитесь, что появились таблицы:
-   - `user_tasks`
-   - `user_quests`
-
----
-
-## 🖥️ Вариант 2: Через Supabase CLI (Для продвинутых)
-
-### Предварительные требования
 ```bash
-# Установите Supabase CLI (если еще не установлен)
-npm install -g supabase
-
-# Войдите в Supabase
 supabase login
-```
-
-### Применить миграции
-```bash
-cd c:\project\people-first-app
-
-# Инициализация (если нужно)
-supabase init
-
-# Привязка к проекту
-supabase link --project-ref your-project-ref
-
-# Применить все миграции
+supabase projects list
+supabase migration list
+supabase db push --dry-run
 supabase db push
 ```
 
----
+## Важно: исторический debt
 
-## ✅ Проверка успешной установки
+В репозитории есть **legacy миграции с повторяющимися date-prefix**:
+- `20260113`
+- `20260125`
+- `20260201`
+- `20260203`
+- `20260215`
+- `20260307`
+- `20260311`
+- `20260314`
 
-### 1. Проверьте таблицы
-В Supabase Dashboard → **Table Editor** должны быть видны 4 новые таблицы:
+Это важно, потому что Supabase CLI сравнивает migration history по numeric version/timestamp.  
+Из-за этого слепой `supabase db push --include-all` может попытаться повторно прогнать то, что уже частично есть в remote схеме.
 
-| Таблица | Назначение |
-|---------|-----------|
-| `user_challenges` | Синхронизация активных челленджей |
-| `user_badges` | Синхронизация разблокированных бейджей |
-| `user_tasks` | Синхронизация задач Task Momentum |
-| `user_quests` | Синхронизация Random Quests |
+### Правило на будущее
 
-### 2. Проверьте Row Level Security (RLS)
-Для каждой таблицы должны быть включены **RLS policies**:
+Новые миграции создавайте только через CLI:
 
-1. Откройте **Authentication** → **Policies**
-2. Для каждой таблицы должно быть 4 политики:
-   - `Users can view their own...` (SELECT)
-   - `Users can insert their own...` (INSERT)
-   - `Users can update their own...` (UPDATE)
-   - `Users can delete their own...` (DELETE)
-
-### 3. Проверьте индексы
-В SQL Editor выполните:
-```sql
-SELECT tablename, indexname
-FROM pg_indexes
-WHERE tablename IN ('user_challenges', 'user_badges', 'user_tasks', 'user_quests');
+```bash
+supabase migration new <name>
 ```
 
-Должны быть видны индексы для каждой таблицы.
+или через schema diff:
 
----
+```bash
+supabase db diff -f <name>
+```
 
-## 🚀 После применения миграций
+Не создавайте вручную файлы с prefix вида `YYYYMMDD_name.sql`.  
+Нужен уникальный timestamp, который генерирует сам CLI.
 
-### Что заработает автоматически:
+## Рекомендуемый workflow для remote проекта
 
-1. **Multi-device синхронизация**
-   - Войдите в приложение на компьютере
-   - Создайте челлендж или задачу
-   - Откройте приложение на телефоне → всё синхронизировано!
+### 1. Убедиться, что проект привязан
 
-2. **Real-time обновления**
-   - Изменения на одном устройстве
-   - Автоматически появляются на других устройствах
-   - Без перезагрузки страницы
+```bash
+supabase projects list
+```
 
-3. **Cloud backup**
-   - Все данные сохраняются в Supabase
-   - Даже если удалите приложение → данные не потеряются
-   - При повторном входе → всё восстановится
+Если проект не linked:
 
----
+```bash
+supabase link --project-ref <project-ref>
+```
 
-## 🐛 Возможные проблемы
+### 2. Проверить состояние истории миграций
 
-### Ошибка: "relation already exists"
-**Решение**: Таблица уже создана, это нормально. Пропустите эту миграцию.
+```bash
+supabase migration list
+```
 
-### Ошибка: "permission denied"
-**Решение**:
-1. Убедитесь, что вы вошли под правильным аккаунтом
-2. Проверьте, что у вас есть права администратора проекта
+Смотрите на три сценария:
 
-### Ошибка: "syntax error"
-**Решение**:
-1. Убедитесь, что скопировали **весь файл** полностью
-2. Проверьте, что не добавили лишних символов
+- `Local == Remote`  
+  Значит история согласована.
 
-### Данные не синхронизируются
-**Проверьте**:
-1. RLS policies включены для всех таблиц
-2. Пользователь авторизован через Google
-3. В консоли браузера (F12) нет ошибок
+- есть `Remote migration versions not found in local migrations directory`  
+  Значит remote history ушла вперед или была записана под другими version ids. Не делайте сразу `db push`.
 
----
+- есть `Found local migration files to be inserted before the last migration on remote database`  
+  Значит локальная файловая история и remote history расходятся. Не делайте сразу `--include-all`.
 
-## 📞 Нужна помощь?
+### 3. Перед любым push сначала dry-run
 
-Если что-то пошло не так:
-1. Проверьте консоль браузера (F12 → Console)
-2. Проверьте Supabase logs (Dashboard → Logs)
-3. Создайте issue на GitHub с описанием проблемы
+```bash
+supabase db push --dry-run
+```
 
----
+Только если dry-run показывает ожидаемый и безопасный список миграций, переходите к реальному push.
 
-## 🎉 Готово!
+### 4. Если CLI предлагает repair
 
-После успешного применения миграций:
-- ✅ Multi-device синхронизация работает
-- ✅ Real-time updates активны
-- ✅ Cloud backup включен
-- ✅ Row Level Security защищает данные
+Используйте только те команды `supabase migration repair`, которые вы:
+- понимаете по смыслу
+- можете подтвердить по реальной remote схеме
+- прогнали сначала через анализ, а не наугад
 
-**ZenFlow теперь полностью готов к использованию на нескольких устройствах!** 🚀
+Если remote схема менялась вручную через Dashboard, сначала:
+
+```bash
+supabase db pull
+```
+
+## Что уже проверено для ZenFlow
+
+На linked проекте `ZenFlow` подтверждено:
+- `20260204_optimize_rls_policies.sql` уже присутствует в remote history
+- journal RLS оптимизация после него живет отдельной миграцией `20260222_optimize_journal_rls.sql`
+
+Это значит, что вопрос по `20260204` как по “висящему непримененному SQL” закрыт.  
+Оставшийся риск — не сам этот SQL, а согласованность общей migration history.
+
+## Что проверять после изменения схемы
+
+### 1. История миграций
+
+```bash
+supabase migration list
+```
+
+### 2. Dry-run deploy
+
+```bash
+supabase db push --dry-run
+```
+
+### 3. Типы
+
+```bash
+npx supabase gen types typescript --project-id <project-ref> > src/types/supabase.ts
+```
+
+### 4. Drift guards
+
+```bash
+node scripts/check-types-freshness.cjs
+node scripts/check-supabase-migration-prefixes.cjs
+```
+
+## Частые ошибки
+
+### `Remote migration versions not found in local migrations directory`
+
+Причина:
+- в remote history есть version ids, для которых нет локальных файлов
+- или история была записана старыми именами/timestamp
+
+Правильный ход:
+- не делать сразу `db push`
+- проверить `migration list`
+- при необходимости сделать `db pull`
+- только потом `migration repair`
+
+### `Found local migration files to be inserted before the last migration on remote database`
+
+Причина:
+- локальная история не совпадает с remote history
+- часто это происходит из-за duplicate prefixes в старых миграциях
+
+Правильный ход:
+- не использовать сразу `--include-all`
+- сначала проверить, существуют ли объекты этих миграций в remote схеме
+
+### `relation already exists`
+
+Чаще всего это признак, что вы пытаетесь повторно прогнать уже отраженную в схеме миграцию.  
+Это сигнал остановиться и перепроверить history, а не просто “продолжать”.
+
+## Резюме
+
+Для ZenFlow правильная ментальная модель такая:
+- проблема не в одном старом SQL
+- проблема в согласованности `local files <-> remote history <-> actual remote schema`
+- future-safe путь — только уникальные CLI-generated timestamps и обязательный dry-run перед push

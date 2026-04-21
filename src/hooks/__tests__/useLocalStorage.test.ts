@@ -161,7 +161,9 @@ describe('useLocalStorage', () => {
         vi.advanceTimersByTime(DEBOUNCE_MS);
       });
 
-      expect(JSON.parse(localStorage.getItem('user'))).toEqual({
+      const stored = localStorage.getItem('user');
+      expect(stored).not.toBeNull();
+      expect(JSON.parse(stored ?? '')).toEqual({
         name: 'Jane',
         age: 25,
       });

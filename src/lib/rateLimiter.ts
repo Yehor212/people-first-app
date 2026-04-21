@@ -59,6 +59,15 @@ class RateLimiter {
     }
   }
 
+  private getOrCreateState(service: string): RateLimitState {
+    const existing = this.states.get(service);
+    if (existing) return existing;
+
+    const state: RateLimitState = { requests: [], blockedUntil: 0 };
+    this.states.set(service, state);
+    return state;
+  }
+
   /**
    * Check if a request is allowed and record it
    * @returns true if request is allowed, false if rate limited
@@ -70,7 +79,7 @@ class RateLimiter {
       return true;
     }
 
-    const state = this.states.get(service);
+    const state = this.getOrCreateState(service);
     const now = Date.now();
 
     // Check if currently blocked
@@ -103,7 +112,7 @@ class RateLimiter {
     const config = this.configs.get(service);
     if (!config) return true;
 
-    const state = this.states.get(service);
+    const state = this.getOrCreateState(service);
     const now = Date.now();
 
     if (state.blockedUntil > now) return false;
@@ -119,7 +128,7 @@ class RateLimiter {
     const config = this.configs.get(service);
     if (!config) return Infinity;
 
-    const state = this.states.get(service);
+    const state = this.getOrCreateState(service);
     const now = Date.now();
 
     if (state.blockedUntil > now) return 0;
@@ -135,7 +144,7 @@ class RateLimiter {
     const config = this.configs.get(service);
     if (!config) return 0;
 
-    const state = this.states.get(service);
+    const state = this.getOrCreateState(service);
     const now = Date.now();
 
     if (state.blockedUntil > now) {

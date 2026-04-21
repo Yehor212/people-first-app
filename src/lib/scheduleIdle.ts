@@ -20,13 +20,14 @@ export interface IdleHandle {
 type IdleFn = () => void;
 
 export function scheduleIdle(fn: IdleFn, fallbackMs = 2000): IdleHandle {
-  if (typeof window === "undefined") {
+  const win = typeof window === "undefined" ? null : window;
+  if (!win) {
     return { cancel: () => {} };
   }
-  if ("requestIdleCallback" in window) {
-    const id = window.requestIdleCallback(fn);
-    return { cancel: () => window.cancelIdleCallback(id) };
+  if ("requestIdleCallback" in win) {
+    const id = win.requestIdleCallback(fn);
+    return { cancel: () => win.cancelIdleCallback(id) };
   }
-  const id = window.setTimeout(fn, fallbackMs);
-  return { cancel: () => window.clearTimeout(id) };
+  const id = globalThis.setTimeout(fn, fallbackMs);
+  return { cancel: () => globalThis.clearTimeout(id) };
 }

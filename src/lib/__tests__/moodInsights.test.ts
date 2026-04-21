@@ -29,6 +29,18 @@ vi.mock('@/lib/validation', () => ({
 
 import { generateMoodInsights, getFeaturedInsight } from '../moodInsights';
 
+function expectDefined<T>(value: T | undefined, message = 'Expected value to be defined'): T {
+  expect(value).toBeDefined();
+  if (value === undefined) throw new Error(message);
+  return value;
+}
+
+function expectNotNull<T>(value: T | null, message = 'Expected value to be non-null'): T {
+  expect(value).not.toBeNull();
+  if (value === null) throw new Error(message);
+  return value;
+}
+
 // ============================================
 // HELPERS
 // ============================================
@@ -197,12 +209,11 @@ describe('moodInsights', () => {
         });
 
         const result = generateMoodInsights(moods, [], [], []);
-        const bestDayInsight = result.find(i => i.id === 'best-mood-day');
-        expect(bestDayInsight).toBeDefined();
+        const bestDayInsight = expectDefined(result.find(i => i.id === 'best-mood-day'));
         expect(bestDayInsight.type).toBe('pattern');
         expect(bestDayInsight.data).toHaveProperty('bestDay');
         // Monday = day 1
-        expect(bestDayInsight.data.bestDay).toBe(1);
+        expect((bestDayInsight.data as { bestDay: number }).bestDay).toBe(1);
       });
 
       it('should return null for best mood day with fewer than 7 moods', () => {
@@ -245,7 +256,7 @@ describe('moodInsights', () => {
         if (timeInsight) {
           expect(timeInsight.type).toBe('pattern');
           expect(timeInsight.data).toHaveProperty('bestPeriod');
-          expect(timeInsight.data.bestPeriod).toBe('morning');
+          expect((timeInsight.data as { bestPeriod: string }).bestPeriod).toBe('morning');
         }
       });
 
@@ -263,7 +274,7 @@ describe('moodInsights', () => {
         const result = generateMoodInsights(moods, [], [], []);
         const timeInsight = result.find(i => i.id === 'best-time-of-day');
         if (timeInsight) {
-          expect(timeInsight.data.bestPeriod).toBe('afternoon');
+          expect((timeInsight.data as { bestPeriod: string }).bestPeriod).toBe('afternoon');
         }
       });
     });
@@ -281,8 +292,7 @@ describe('moodInsights', () => {
         const habits = [makeHabit('h1', 'Meditation', habitDates)];
 
         const result = generateMoodInsights(moods, habits, [], []);
-        const correlationInsight = result.find(i => i.id === 'habit-mood-correlation');
-        expect(correlationInsight).toBeDefined();
+        const correlationInsight = expectDefined(result.find(i => i.id === 'habit-mood-correlation'));
         expect(correlationInsight.type).toBe('correlation');
         expect(correlationInsight.title).toContain('Meditation');
       });
@@ -331,8 +341,7 @@ describe('moodInsights', () => {
         const focus = focusDates.map(d => makeFocusSession(d, 25));
 
         const result = generateMoodInsights(moods, [], focus, []);
-        const focusInsight = result.find(i => i.id === 'focus-mood-correlation');
-        expect(focusInsight).toBeDefined();
+        const focusInsight = expectDefined(result.find(i => i.id === 'focus-mood-correlation'));
         expect(focusInsight.type).toBe('correlation');
         expect(focusInsight.icon).toBe('🎯');
       });
@@ -361,8 +370,9 @@ describe('moodInsights', () => {
         const gratitude = gratitudeDates.map(d => makeGratitude(d));
 
         const result = generateMoodInsights(moods, [], [], gratitude);
-        const gratitudeInsight = result.find(i => i.id === 'gratitude-mood-correlation');
-        expect(gratitudeInsight).toBeDefined();
+        const gratitudeInsight = expectDefined(
+          result.find(i => i.id === 'gratitude-mood-correlation')
+        );
         expect(gratitudeInsight.type).toBe('correlation');
         expect(gratitudeInsight.icon).toBe('🙏');
       });
@@ -390,8 +400,7 @@ describe('moodInsights', () => {
         ];
 
         const result = generateMoodInsights(moods, [], [], []);
-        const trendInsight = result.find(i => i.id === 'mood-trend-up');
-        expect(trendInsight).toBeDefined();
+        const trendInsight = expectDefined(result.find(i => i.id === 'mood-trend-up'));
         expect(trendInsight.type).toBe('achievement');
         expect(trendInsight.title).toContain('improving');
       });
@@ -406,8 +415,7 @@ describe('moodInsights', () => {
         ];
 
         const result = generateMoodInsights(moods, [], [], []);
-        const trendInsight = result.find(i => i.id === 'mood-trend-down');
-        expect(trendInsight).toBeDefined();
+        const trendInsight = expectDefined(result.find(i => i.id === 'mood-trend-down'));
         expect(trendInsight.type).toBe('tip');
         expect(trendInsight.priority).toBe(10);
       });
@@ -432,8 +440,7 @@ describe('moodInsights', () => {
         const moods = dates.map(d => makeMood('good', d));
 
         const result = generateMoodInsights(moods, [], [], []);
-        const consistencyInsight = result.find(i => i.id === 'high-consistency');
-        expect(consistencyInsight).toBeDefined();
+        const consistencyInsight = expectDefined(result.find(i => i.id === 'high-consistency'));
         expect(consistencyInsight.type).toBe('achievement');
       });
 
@@ -499,10 +506,11 @@ describe('moodInsights', () => {
 
       const result = getFeaturedInsight(moods, [], [], []);
       expect(result).not.toBeNull();
+      const featured = expectNotNull(result);
       // The featured insight should be the one with highest priority
       const allInsights = generateMoodInsights(moods, [], [], []);
       if (allInsights.length > 0) {
-        expect(result.id).toBe(allInsights[0].id);
+        expect(featured.id).toBe(allInsights[0].id);
       }
     });
 

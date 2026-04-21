@@ -823,7 +823,7 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 placeholder={ts.journalBurnPlaceholder || 'Write what worries you...'}
-                className={`w-full rounded-xl px-4 py-3 text-sm outline-none resize-none bg-white/[0.03] ring-1 ring-white/[0.06] focus:ring-red-500/20 placeholder:text-muted-foreground/60 motion-safe:transition-colors motion-safe:duration-150 min-h-16 max-h-[200px] ${burning ? 'text-orange-400/80' : 'text-foreground/90'}`}
+                className={`w-full rounded-xl px-4 py-3 text-sm outline-none resize-none bg-white/[0.03] dark:bg-white/[0.03] ring-1 ring-white/[0.06] focus:ring-red-500/20 placeholder:text-muted-foreground/60 motion-safe:transition-colors motion-safe:duration-150 min-h-16 max-h-[200px] ${burning ? 'text-orange-400/80' : 'text-foreground/90'}`}
                 rows={2}
                 maxLength={500}
                 disabled={burning}
@@ -842,7 +842,7 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
                   whileTap={zenTap.button}
                   onClick={startBurn}
                   disabled={!hasText}
-                  className={`mt-3 w-full py-3 rounded-full text-sm font-medium motion-safe:transition-all flex items-center justify-center gap-2 min-h-[44px] ${hasText ? 'bg-red-500/15 text-red-300 ring-1 ring-red-500/20 hover:bg-red-500/20' : 'bg-white/[0.03] text-muted-foreground/50 ring-1 ring-white/[0.06]'} ${hasText && animate ? 'burn-glow-pulse-wrap' : ''}`}
+                  className={`mt-3 w-full py-3 rounded-full text-sm font-medium motion-safe:transition-all flex items-center justify-center gap-2 min-h-[44px] ${hasText ? 'bg-red-500/15 text-red-300 ring-1 ring-red-500/20 hover:bg-red-500/20' : 'bg-white/[0.03] dark:bg-white/[0.03] text-muted-foreground/50 ring-1 ring-white/[0.06]'} ${hasText && animate ? 'burn-glow-pulse-wrap' : ''}`}
                 >
                   <Flame className="w-4 h-4" />
                   {ts.journalBurnAction || 'Burn it'}

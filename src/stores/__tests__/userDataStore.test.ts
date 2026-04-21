@@ -530,4 +530,25 @@ describe('_hydrateFromDB', () => {
     useUserDataStore.getState()._hydrateFromDB({ userName: 'OnlyName' });
     expect(useUserDataStore.getState().moods).toEqual(existingMoods);
   });
+
+  it('migrates legacy habits without crashing when migration logging runs', () => {
+    const setters = createMockSetters();
+    useUserDataStore.getState()._registerSetters(setters);
+
+    const legacyHabit = {
+      id: 'legacy-h1',
+      name: 'Legacy habit',
+      icon: 'star',
+      color: '#4a9d7c',
+      createdAt: 1000,
+      completedDates: ['2025-01-01'],
+    } as unknown as Habit;
+
+    expect(() => {
+      useUserDataStore.getState()._hydrateFromDB({ habits: [legacyHabit] });
+    }).not.toThrow();
+
+    expect(setters.setHabits).toHaveBeenCalledTimes(1);
+    expect(useUserDataStore.getState().habits[0]?.entries['2025-01-01']?.value).toBe(2);
+  });
 });

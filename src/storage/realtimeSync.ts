@@ -11,6 +11,7 @@
 import { logger } from "@/lib/logger";
 import type { SeverityLevel } from "@sentry/core";
 import type { ErrorCategory } from "@/lib/sentry";
+import { calculateHabitEndDate } from "@/lib/habitPlan";
 
 // Lazy-load sentry to keep @sentry/* (~250 KB) off the critical rendering path.
 // Breadcrumbs are fire-and-forget telemetry — async import is safe.
@@ -283,6 +284,12 @@ export const pullFromCloud = async (): Promise<boolean> => {
           targetValue: h.daily_target || h.target_count || 0,
           targetType: cloudType === "reduce" ? "atMost" : "atLeast",
           unit: "",
+          durationDays: h.requires_duration ? h.target_duration || undefined : undefined,
+          startDate: h.requires_duration ? h.start_date || undefined : undefined,
+          endDate:
+            h.requires_duration && h.start_date && h.target_duration
+              ? calculateHabitEndDate(h.start_date, h.target_duration)
+              : undefined,
         };
       }),
       "cloud-habits"

@@ -66,7 +66,7 @@ export const HabitFrequencyChart = memo(function HabitFrequencyChart({
             <BarChart data={data} margin={CHART_MARGIN}>
               <CartesianGrid
                 strokeDasharray="3 3"
-                stroke="rgba(255,255,255,0.04)"
+                stroke="hsl(0 0% 100% / 0.04)"
                 vertical={false}
               />
               <XAxis
@@ -75,7 +75,7 @@ export const HabitFrequencyChart = memo(function HabitFrequencyChart({
                   fill: "hsl(var(--muted-foreground))",
                   fontSize: chartFonts.axis,
                 }}
-                axisLine={{ stroke: "rgba(255,255,255,0.06)" }}
+                axisLine={{ stroke: "hsl(0 0% 100% / 0.06)" }}
                 tickLine={false}
               />
               <YAxis

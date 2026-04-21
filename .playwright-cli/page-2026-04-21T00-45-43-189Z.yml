@@ -1,0 +1,28 @@
+- generic [ref=e1]:
+  - generic [ref=e5]:
+    - button "Open menu" [expanded] [ref=e6] [cursor=pointer]:
+      - img [ref=e7]
+    - main "Settings" [ref=e9]:
+      - heading "Settings" [level=1] [ref=e10]
+      - paragraph [ref=e11]: Settings page — Phase 3-E will wire SettingsTab here.
+  - status [ref=e2]
+  - alert [ref=e3]
+  - dialog "Menu" [ref=e13]:
+    - banner [ref=e14]:
+      - generic [ref=e15]: Menu
+      - button "Close menu" [active] [ref=e16] [cursor=pointer]:
+        - img [ref=e17]
+    - navigation "drawer-actions" [ref=e20]:
+      - button "Search" [ref=e21] [cursor=pointer]:
+        - img [ref=e22]
+        - generic [ref=e25]: Search
+        - img [ref=e26]
+      - button "Theme" [disabled] [ref=e28]:
+        - img [ref=e29]
+        - generic [ref=e35]: Theme
+      - button "Archive" [disabled] [ref=e36]:
+        - img [ref=e37]
+        - generic [ref=e40]: Archive
+      - button "Account" [disabled] [ref=e41]:
+        - img [ref=e42]
+        - generic [ref=e45]: Account

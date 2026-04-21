@@ -602,7 +602,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
               <motion.button
                 whileTap={{ scale: 0.92 }}
                 onClick={onToggleSidebar}
-                className="p-2 rounded-lg text-muted-foreground hover:bg-white/10 hover:text-foreground motion-safe:transition-all min-w-[44px] min-h-[44px] flex items-center justify-center"
+                className="p-2 rounded-lg text-muted-foreground hover:bg-white/10 dark:hover:bg-white/10 hover:text-foreground motion-safe:transition-all min-w-[44px] min-h-[44px] flex items-center justify-center"
                 aria-label={
                   sidebarCollapsed
                     ? ts.diarySidebarShow || "Show entries"
@@ -621,7 +621,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
             <motion.button
               whileTap={{ scale: 0.92 }}
               onClick={handleBack}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-muted-foreground hover:bg-white/10 hover:text-foreground motion-safe:transition-all min-h-[44px]"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-muted-foreground hover:bg-white/10 dark:hover:bg-white/10 hover:text-foreground motion-safe:transition-all min-h-[44px]"
               aria-label={ts.back || "Back"}
             >
               <ArrowLeft className="w-4 h-4 rtl:scale-x-[-1]" />
@@ -682,7 +682,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
               <motion.button
                 whileTap={{ scale: 0.92 }}
                 onClick={() => setShowDeleteConfirm(true)}
-                className="p-2 rounded-lg hover:bg-white/10 text-muted-foreground hover:text-red-400 motion-safe:transition-all min-w-[44px] min-h-[44px] flex items-center justify-center"
+                className="p-2 rounded-lg hover:bg-white/10 dark:hover:bg-white/10 text-muted-foreground hover:text-red-400 motion-safe:transition-all min-w-[44px] min-h-[44px] flex items-center justify-center"
                 aria-label={ts.delete || "Delete"}
               >
                 <Trash2 className="w-4 h-4" />
@@ -756,7 +756,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
             >
               <div className="flex items-center gap-2 overflow-x-auto scrollbar-none -mx-1.5 px-1.5 pt-1">
                 {/* Atmosphere capsule */}
-                <div className="flex items-center gap-1.5 bg-black/30 p-1.5 rounded-xl border border-white/5 flex-shrink-0">
+                <div className="flex items-center gap-1.5 bg-black/30 dark:bg-black/30 p-1.5 rounded-xl border border-white/5 dark:border-white/5 flex-shrink-0">
                   {ATMOSPHERE_THEMES.map((at) => {
                     const isActive = at.name === diaryTheme.theme;
                     return (
@@ -772,7 +772,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                           "px-3 py-1.5 rounded-lg text-xs font-medium border motion-safe:transition-all",
                           isActive
                             ? `${at.activeBg} ${at.activeText} ${at.activeBorder}`
-                            : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 hover:text-foreground"
+                            : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 dark:hover:bg-white/10 hover:text-foreground"
                         )}
                       >
                         {ts[at.i18nKey] || at.label}
@@ -782,7 +782,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                 </div>
 
                 {/* Fonts + Size capsule */}
-                <div className="flex items-center gap-1.5 bg-black/30 p-1.5 rounded-xl border border-white/5 flex-shrink-0">
+                <div className="flex items-center gap-1.5 bg-black/30 dark:bg-black/30 p-1.5 rounded-xl border border-white/5 dark:border-white/5 flex-shrink-0">
                   {DIARY_FONT_NAMES_LOCAL.map((name) => {
                     const isActive = name === diaryTheme.font;
                     const label =
@@ -802,7 +802,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                           "px-4 py-2 rounded-lg text-sm font-medium border motion-safe:transition-all flex items-center gap-1.5",
                           isActive
                             ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
-                            : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 hover:text-foreground"
+                            : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 dark:hover:bg-white/10 hover:text-foreground"
                         )}
                         style={{ fontFamily: DIARY_FONTS_LOCAL[name].family }}
                       >
@@ -813,7 +813,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                   <motion.button
                     whileTap={{ scale: 0.95 }}
                     onClick={cycleFontSize}
-                    className="px-3 py-2 rounded-lg text-sm font-medium border border-transparent text-muted-foreground hover:bg-white/10 hover:text-foreground motion-safe:transition-all"
+                    className="px-3 py-2 rounded-lg text-sm font-medium border border-transparent text-muted-foreground hover:bg-white/10 dark:hover:bg-white/10 hover:text-foreground motion-safe:transition-all"
                     aria-label={t.ariaFontSize}
                   >
                     A<span className="text-[10px] ms-0.5 opacity-60">{FONT_SIZES[fontSize]}</span>
@@ -830,7 +830,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                         "px-3 py-2 rounded-lg text-sm font-medium border motion-safe:transition-all flex items-center gap-1.5",
                         showPromptsDropdown
                           ? "bg-amber-500/15 text-amber-400 border-amber-500/30"
-                          : "bg-black/30 text-muted-foreground border-white/5 hover:bg-white/10 hover:text-foreground"
+                          : "bg-black/30 dark:bg-black/30 text-muted-foreground border-white/5 dark:border-white/5 hover:bg-white/10 dark:hover:bg-white/10 hover:text-foreground"
                       )}
                     >
                       💡{" "}
@@ -842,7 +842,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                 )}
 
                 {/* Features capsule */}
-                <div className="flex items-center gap-1.5 bg-black/30 p-1.5 rounded-xl border border-white/5 flex-shrink-0">
+                <div className="flex items-center gap-1.5 bg-black/30 dark:bg-black/30 p-1.5 rounded-xl border border-white/5 dark:border-white/5 flex-shrink-0">
                   {MOOD_OPTIONS.map((opt) => (
                     <motion.button
                       key={opt.mood}
@@ -852,7 +852,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                         "w-9 h-9 rounded-full flex items-center justify-center motion-safe:transition-all",
                         mood === opt.mood
                           ? `${opt.activeBg} ring-2 ${opt.activeRing}`
-                          : "hover:bg-white/10"
+                          : "hover:bg-white/10 dark:hover:bg-white/10"
                       )}
                     >
                       <span
@@ -872,7 +872,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                       "px-3 py-2 rounded-lg text-sm font-medium border motion-safe:transition-all",
                       showTags
                         ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
-                        : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 hover:text-foreground"
+                        : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 dark:hover:bg-white/10 hover:text-foreground"
                     )}
                   >
                     #
@@ -881,14 +881,14 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                     whileTap={{ scale: 0.95 }}
                     onClick={() => setShowStickers(true)}
                     disabled={stickers.length >= MAX_STICKERS_PER_ENTRY}
-                    className="px-3 py-2 rounded-lg text-sm border border-transparent bg-transparent text-muted-foreground hover:bg-white/10 motion-safe:transition-all disabled:opacity-40"
+                    className="px-3 py-2 rounded-lg text-sm border border-transparent bg-transparent text-muted-foreground hover:bg-white/10 dark:hover:bg-white/10 motion-safe:transition-all disabled:opacity-40"
                   >
                     ⭐
                   </motion.button>
                 </div>
 
                 {/* Paper color capsule */}
-                <div className="flex items-center gap-1.5 bg-black/30 p-1.5 rounded-xl border border-white/5 flex-shrink-0">
+                <div className="flex items-center gap-1.5 bg-black/30 dark:bg-black/30 p-1.5 rounded-xl border border-white/5 dark:border-white/5 flex-shrink-0">
                   {(["dark", "milky", "white"] as PaperColor[]).map((pc) => (
                     <motion.button
                       key={pc}
@@ -896,7 +896,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                       onClick={() => setPaperColor(pc)}
                       className={cn(
                         "w-7 h-7 rounded-full border-2 motion-safe:transition-all",
-                        paperColor === pc ? "border-white/60 scale-110" : "border-white/10"
+                        paperColor === pc ? "border-white/60 dark:border-white/60 scale-110" : "border-white/10 dark:border-white/10"
                       )}
                       style={{ background: PAPER_COLORS[pc].bg }}
                       aria-label={PAPER_COLORS[pc].label}
@@ -905,7 +905,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                 </div>
 
                 {/* Ink capsule */}
-                <div className="flex items-center gap-1.5 bg-black/30 p-1.5 rounded-xl border border-white/5 flex-shrink-0">
+                <div className="flex items-center gap-1.5 bg-black/30 dark:bg-black/30 p-1.5 rounded-xl border border-white/5 dark:border-white/5 flex-shrink-0">
                   {INK_COLORS.map((c) => (
                     <motion.button
                       key={c.hex}
@@ -913,7 +913,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                       onClick={() => setInkColor(c.hex)}
                       className={cn(
                         "w-7 h-7 rounded-full border-2 motion-safe:transition-all",
-                        inkColor === c.hex ? "border-white/60 scale-110" : "border-white/10"
+                        inkColor === c.hex ? "border-white/60 dark:border-white/60 scale-110" : "border-white/10 dark:border-white/10"
                       )}
                       style={{ background: c.hex }}
                       aria-label={c.label}
@@ -922,12 +922,12 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                 </div>
 
                 {/* Media capsule (Record + Voice — Photo moved to bottom toolbar) */}
-                <div className="flex items-center gap-1.5 bg-black/30 p-1.5 rounded-xl border border-white/5 flex-shrink-0">
+                <div className="flex items-center gap-1.5 bg-black/30 dark:bg-black/30 p-1.5 rounded-xl border border-white/5 dark:border-white/5 flex-shrink-0">
                   <motion.button
                     whileTap={{ scale: 0.95 }}
                     onClick={() => handleStartRecording()}
                     disabled={audioIds.length >= MAX_AUDIO_PER_ENTRY}
-                    className="px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground border border-transparent hover:bg-white/10 hover:text-foreground motion-safe:transition-all flex items-center gap-2 disabled:opacity-40"
+                    className="px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground border border-transparent hover:bg-white/10 dark:hover:bg-white/10 hover:text-foreground motion-safe:transition-all flex items-center gap-2 disabled:opacity-40"
                   >
                     🎤 {ts.diaryRecord || "Record"}
                   </motion.button>
@@ -938,7 +938,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                       "px-4 py-2 rounded-lg text-sm font-medium border motion-safe:transition-all flex items-center gap-2",
                       voice.isListening
                         ? "bg-red-500/15 text-red-400 border-red-500/30"
-                        : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 hover:text-foreground"
+                        : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 dark:hover:bg-white/10 hover:text-foreground"
                     )}
                   >
                     🎙️{" "}
@@ -947,7 +947,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                 </div>
 
                 {/* Visual capsule (BG + Speed + Texture) */}
-                <div className="flex items-center gap-1.5 bg-black/30 p-1.5 rounded-xl border border-white/5 flex-shrink-0">
+                <div className="flex items-center gap-1.5 bg-black/30 dark:bg-black/30 p-1.5 rounded-xl border border-white/5 dark:border-white/5 flex-shrink-0">
                   <motion.button
                     whileTap={{ scale: 0.95 }}
                     onClick={() =>
@@ -961,7 +961,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                         ? "bg-purple-500/15 text-purple-400 border-purple-500/30"
                         : bgIntensity === "dim"
                           ? "bg-muted-foreground/15 text-muted-foreground border-muted-foreground/30"
-                          : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 hover:text-foreground"
+                          : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 dark:hover:bg-white/10 hover:text-foreground"
                     )}
                   >
                     {bgIntensity === "full" ? "🌌" : bgIntensity === "dim" ? "🌑" : "⊘"} BG
@@ -979,7 +979,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                         ? "bg-cyan-500/15 text-cyan-400 border-cyan-500/30"
                         : particleSpeed === "slow"
                           ? "bg-indigo-500/15 text-indigo-300 border-indigo-500/30"
-                          : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 hover:text-foreground"
+                          : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 dark:hover:bg-white/10 hover:text-foreground"
                     )}
                   >
                     {particleSpeed === "slow" ? "🐌" : particleSpeed === "drift" ? "🌊" : "⊘"}{" "}
@@ -995,7 +995,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                       "px-3 py-1.5 rounded-lg text-xs font-medium border motion-safe:transition-all flex items-center gap-1.5",
                       paperTexture !== "clean"
                         ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
-                        : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 hover:text-foreground"
+                        : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 dark:hover:bg-white/10 hover:text-foreground"
                     )}
                   >
                     ⏺ {paperTexture === "clean" ? ts.diaryTexture || "Texture" : paperTexture}
@@ -1003,7 +1003,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                 </div>
 
                 {/* Atmospheric pattern capsule */}
-                <div className="flex items-center gap-1 bg-black/30 p-1.5 rounded-xl border border-white/5 flex-shrink-0">
+                <div className="flex items-center gap-1 bg-black/30 dark:bg-black/30 p-1.5 rounded-xl border border-white/5 dark:border-white/5 flex-shrink-0">
                   {BG_PATTERN_LIST.map((pat) => {
                     const isActive = pat.name === bgPattern;
                     const isNone = pat.name === "none";
@@ -1015,9 +1015,9 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                         className={cn(
                           "w-8 h-8 rounded-lg border-2 motion-safe:transition-all flex-shrink-0 flex items-center justify-center",
                           isActive
-                            ? "border-white/60 scale-110 shadow-lg"
-                            : "border-white/10 hover:border-white/25",
-                          isNone && !isActive && "border-dashed border-white/20"
+                            ? "border-white/60 dark:border-white/60 scale-110 shadow-lg"
+                            : "border-white/10 dark:border-white/10 hover:border-white/25 dark:hover:border-white/25",
+                          isNone && !isActive && "border-dashed border-white/20 dark:border-white/20"
                         )}
                         style={isNone ? undefined : { background: pat.swatch }}
                         aria-label={ts[pat.i18nKey] || pat.name}
@@ -1035,7 +1035,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                 {showPromptsDropdown && (
                   <motion.div
                     ref={promptsDropdownRef}
-                    className="mx-4 mt-2 p-3 rounded-xl bg-popover/95 backdrop-blur-xl border border-white/10 shadow-2xl space-y-1.5"
+                    className="mx-4 mt-2 p-3 rounded-xl bg-popover/95 backdrop-blur-xl border border-white/10 dark:border-white/10 shadow-2xl space-y-1.5"
                     initial={{ opacity: 0, y: -8 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -8 }}
@@ -1048,14 +1048,14 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                       <div className="flex items-center gap-1">
                         <button
                           onClick={() => setPromptSeed((s) => s + 1)}
-                          className="p-1.5 rounded-lg hover:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center"
+                          className="p-1.5 rounded-lg hover:bg-white/10 dark:hover:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center"
                           aria-label={t.ariaShufflePrompts}
                         >
                           <Shuffle className="w-3 h-3 text-foreground0" />
                         </button>
                         <button
                           onClick={() => setShowPromptsDropdown(false)}
-                          className="p-1 rounded hover:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center"
+                          className="p-1 rounded hover:bg-white/10 dark:hover:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center"
                           aria-label={ts.close || "Close"}
                         >
                           <X className="w-3 h-3 text-foreground0" />
@@ -1075,7 +1075,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                           damping: 25,
                         }}
                         onClick={() => handlePromptTap(prompt)}
-                        className="block w-full text-start text-xs px-3 py-2.5 rounded-xl min-h-[40px] text-muted-foreground hover:text-white hover:bg-white/10 motion-safe:transition-all"
+                        className="block w-full text-start text-xs px-3 py-2.5 rounded-xl min-h-[40px] text-muted-foreground hover:text-white hover:bg-white/10 dark:hover:bg-white/10 motion-safe:transition-all"
                       >
                         {prompt}
                       </motion.button>
@@ -1289,7 +1289,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                       onChange={(e) => setTagInput(e.target.value)}
                       placeholder={ts.journalTagPlaceholder || "Add tag..."}
                       aria-label={ts.journalTagPlaceholder || "Add tag"}
-                      className="flex-1 px-3 py-2.5 rounded-lg bg-white/5 border border-white/10 text-sm text-foreground outline-none placeholder:text-foreground0 min-h-[44px]"
+                      className="flex-1 px-3 py-2.5 rounded-lg bg-white/5 dark:bg-white/5 border border-white/10 dark:border-white/10 text-sm text-foreground outline-none placeholder:text-foreground0 min-h-[44px]"
                       autoFocus
                       maxLength={30}
                     />
@@ -1362,7 +1362,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
               ref={editorRef}
               contentEditable
               suppressContentEditableWarning
-              className="w-full max-w-prose mx-auto min-h-[260px] bg-transparent border-none outline-none resize-none [&_blockquote]:border-l-2 [&_blockquote]:border-current/20 [&_blockquote]:ps-3 [&_blockquote]:italic [&_code]:bg-black/5 [&_code]:px-1 [&_code]:rounded [&_code]:font-mono [&_del]:line-through empty:before:content-[attr(data-placeholder)] empty:before:opacity-40 empty:before:pointer-events-none leading-[1.8]"
+              className="w-full max-w-prose mx-auto min-h-[260px] bg-transparent border-none outline-none resize-none [&_blockquote]:border-l-2 [&_blockquote]:border-current/20 [&_blockquote]:ps-3 [&_blockquote]:italic [&_code]:bg-black/5 dark:[&_code]:bg-black/5 [&_code]:px-1 [&_code]:rounded [&_code]:font-mono [&_del]:line-through empty:before:content-[attr(data-placeholder)] empty:before:opacity-40 empty:before:pointer-events-none leading-[1.8]"
               style={{
                 fontSize: FONT_SIZES[fontSize],
                 fontFamily: diaryTheme.fontFamily,
@@ -1440,7 +1440,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
             whileTap={{ scale: 0.95 }}
             onClick={() => { void hapticTap(); setShowPhotos(true); }}
             disabled={photoIds.length >= MAX_PHOTOS_PER_ENTRY}
-            className="px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground border border-transparent hover:bg-white/10 hover:text-foreground motion-safe:transition-all flex items-center gap-2 flex-shrink-0 disabled:opacity-40 min-h-[44px]"
+            className="px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground border border-transparent hover:bg-white/10 dark:hover:bg-white/10 hover:text-foreground motion-safe:transition-all flex items-center gap-2 flex-shrink-0 disabled:opacity-40 min-h-[44px]"
           >
             📸 {ts.diarySnapshot || "Photo"}
           </motion.button>
@@ -1455,7 +1455,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
               "px-4 py-2 rounded-lg text-sm font-medium border motion-safe:transition-all flex items-center gap-2 flex-shrink-0 min-h-[44px]",
               showBurnWidget
                 ? "bg-orange-500/15 text-orange-400 border-orange-500/30"
-                : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 hover:text-foreground"
+                : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 dark:hover:bg-white/10 hover:text-foreground"
             )}
           >
             🔥 {ts.journalBurnTitle ? ts.journalBurnTitle.split(" ")[0] : "Burn"}
@@ -1472,7 +1472,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                 "px-4 py-2 rounded-lg text-sm font-medium border motion-safe:transition-all flex items-center gap-2 flex-shrink-0 min-h-[44px]",
                 showGratitudeWidget
                   ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
-                  : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 hover:text-foreground"
+                  : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 dark:hover:bg-white/10 hover:text-foreground"
               )}
             >
               🌱 {ts.journalGratitudeAction ? ts.journalGratitudeAction.split(" ")[0] : "Gratitude"}
@@ -1485,7 +1485,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
               "px-4 py-2 rounded-lg text-sm font-medium border motion-safe:transition-all flex items-center gap-2 flex-shrink-0 min-h-[44px]",
               showBreathe
                 ? "bg-teal-500/15 text-teal-400 border-teal-500/30"
-                : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 hover:text-foreground"
+                : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 dark:hover:bg-white/10 hover:text-foreground"
             )}
           >
             🧘 {ts.diaryBreathe || "Breathe"}
@@ -1497,7 +1497,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
               "px-4 py-2 rounded-lg text-sm font-medium border motion-safe:transition-all flex items-center gap-2 flex-shrink-0 min-h-[44px]",
               zenFocusActive
                 ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
-                : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 hover:text-foreground"
+                : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 dark:hover:bg-white/10 hover:text-foreground"
             )}
           >
             ✍️ {ts.diaryFocusRay || "Focus"}
@@ -1555,7 +1555,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
             role="dialog"
             aria-modal="true"
             aria-label={t.ariaRecording}
-            className="fixed inset-0 z-[65] bg-black/60 flex items-center justify-center"
+            className="fixed inset-0 z-[65] bg-black/60 dark:bg-black/60 flex items-center justify-center"
           >
             <motion.div
               initial={{ opacity: 0, scale: 0.92, y: 20 }}
@@ -1611,7 +1611,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
       {/* Delete confirmation */}
       {showDeleteConfirm && (
         <div
-          className="fixed inset-0 z-[70] bg-black/50 flex items-center justify-center motion-safe:animate-fade-in"
+          className="fixed inset-0 z-[70] bg-black/50 dark:bg-black/50 flex items-center justify-center motion-safe:animate-fade-in"
           onClick={() => setShowDeleteConfirm(false)}
         >
           <motion.div
@@ -1651,7 +1651,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
       {/* Unsaved changes dialog */}
       {showUnsavedDialog && (
         <div
-          className="fixed inset-0 z-[70] bg-black/50 flex items-center justify-center motion-safe:animate-fade-in"
+          className="fixed inset-0 z-[70] bg-black/50 dark:bg-black/50 flex items-center justify-center motion-safe:animate-fade-in"
           onClick={() => setShowUnsavedDialog(false)}
         >
           <motion.div
@@ -1715,7 +1715,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
             <DiaryBreatheWidget />
             <button
               onClick={() => setPanicLocked(false)}
-              className="flex items-center gap-2 px-6 py-3 rounded-xl bg-white/10 border border-white/20 text-white/80 text-sm font-medium backdrop-blur-sm active:scale-95 motion-safe:transition-transform"
+              className="flex items-center gap-2 px-6 py-3 rounded-xl bg-white/10 dark:bg-white/10 border border-white/20 dark:border-white/20 text-white/80 text-sm font-medium backdrop-blur-sm active:scale-95 motion-safe:transition-transform"
             >
               <Fingerprint className="w-5 h-5" />
               {ts.journalUnlockBiometric || "Unlock"}

@@ -1,0 +1,82 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - navigation "Primary navigation" [ref=e4]:
+      - link "Skip to main content" [ref=e5] [cursor=pointer]:
+        - /url: "#main-content-v2"
+      - generic [ref=e8]: ZenFlow
+      - navigation "pages" [ref=e9]:
+        - button "Orb" [ref=e10] [cursor=pointer]:
+          - img [ref=e11]
+          - generic [ref=e13]: Orb
+        - button "Habits" [ref=e14] [cursor=pointer]:
+          - img [ref=e16]
+          - generic [ref=e21]: Habits
+        - button "Diary" [ref=e22] [cursor=pointer]:
+          - img [ref=e23]
+          - generic [ref=e25]: Diary
+      - generic [ref=e26]:
+        - button "Switch to dark mode" [ref=e27] [cursor=pointer]:
+          - img [ref=e30]
+          - generic [ref=e36]: Dark
+        - button "Settings" [ref=e37] [cursor=pointer]:
+          - img [ref=e38]
+          - generic [ref=e41]: Settings
+        - button "Collapse sidebar" [ref=e42] [cursor=pointer]:
+          - img [ref=e43]
+          - generic [ref=e46]: Collapse sidebar
+    - main "Habits" [ref=e48]:
+      - heading "Habits" [level=1] [ref=e50]
+      - region "Today's habits" [ref=e51]:
+        - heading "Today's habits" [level=2] [ref=e52]
+        - paragraph [ref=e169]:
+          - generic [ref=e170]: "Today you are building:"
+          - generic [ref=e171]:
+            - generic [ref=e172]: ✨
+            - generic [ref=e173]: Someone who keeps their word
+        - region "Anytime" [ref=e174]:
+          - generic [ref=e175]:
+            - heading "Anytime" [level=3] [ref=e176]:
+              - generic [ref=e177]: ✨
+              - text: Anytime
+            - generic [ref=e178]: 0 / 1
+          - list "Anytime" [ref=e179]:
+            - group "Drink water" [ref=e181]:
+              - listitem "рџ’§ Drink water" [ref=e182]:
+                - generic [ref=e183]:
+                  - generic [ref=e184]:
+                    - generic [ref=e185]: рџ’§
+                    - paragraph [ref=e187]: Drink water
+                  - generic [ref=e188]: 0/2 L
+                - generic [ref=e190]:
+                  - generic [ref=e191]:
+                    - generic [ref=e192]: Mon
+                    - generic [ref=e193]: Tue
+                    - generic [ref=e194]: Wed
+                    - generic [ref=e195]: Thu
+                    - generic [ref=e196]: Fri
+                    - generic [ref=e197]: Sat
+                    - generic [ref=e198]: Sun
+                  - generic [ref=e199]:
+                    - 'button "2026-04-20: 0" [ref=e200] [cursor=pointer]':
+                      - generic [ref=e201]: ·
+                    - 'button "2026-04-21: 0" [disabled] [ref=e202]':
+                      - generic [ref=e203]: ·
+                    - 'button "2026-04-22: 0" [disabled] [ref=e204]':
+                      - generic [ref=e205]: ·
+                    - 'button "2026-04-23: 0" [disabled] [ref=e206]':
+                      - generic [ref=e207]: ·
+                    - 'button "2026-04-24: 0" [disabled] [ref=e208]':
+                      - generic [ref=e209]: ·
+                    - 'button "2026-04-25: 0" [disabled] [ref=e210]':
+                      - generic [ref=e211]: ·
+                    - 'button "2026-04-26: 0" [disabled] [ref=e212]':
+                      - generic [ref=e213]: ·
+                - generic [ref=e214]:
+                  - generic [ref=e215]: 0/2 L
+                  - button "Statistics" [ref=e216] [cursor=pointer]
+        - paragraph [ref=e217]: One missed day doesn't reset progress
+        - button "Create habit" [ref=e219] [cursor=pointer]:
+          - img [ref=e220]
+          - text: Create habit
+  - status [ref=e112]
+  - alert [ref=e113]

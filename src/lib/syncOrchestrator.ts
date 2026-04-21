@@ -297,8 +297,10 @@ class SyncOrchestrator {
             // 401 might be a transient error, check actual session state
             let sessionValid = false;
             try {
-              const { data } = await supabase.auth.getSession();
-              sessionValid = !!data.session;
+              if (supabase) {
+                const { data } = await supabase.auth.getSession();
+                sessionValid = !!data.session;
+              }
             } catch (sessionError) {
               logger.error("[SyncOrchestrator] Error checking session:", sessionError);
             }

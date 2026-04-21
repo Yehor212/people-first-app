@@ -1,0 +1,122 @@
+- generic:
+  - generic:
+    - generic:
+      - navigation:
+        - link:
+          - /url: "#main-content-v2"
+          - text: Skip to main content
+        - generic:
+          - generic: ZenFlow
+        - navigation:
+          - button:
+            - img
+            - generic: Orb
+          - button:
+            - img
+            - generic: Habits
+          - button:
+            - img
+            - generic: Diary
+        - generic:
+          - button:
+            - generic:
+              - generic:
+                - img
+            - generic: Dark
+          - button:
+            - img
+            - generic: Settings
+          - button:
+            - img
+            - generic: Collapse sidebar
+      - generic:
+        - main:
+          - generic:
+            - heading [level=1]: Habits
+          - region:
+            - heading [level=2]: Today's habits
+            - generic:
+              - generic:
+                - img
+              - paragraph: Plant your first seed
+              - paragraph: Start with 3 habits — small steps win
+              - list:
+                - listitem:
+                  - generic:
+                    - img
+                  - generic:
+                    - generic: "1."
+                    - text: Pick your identity
+                - listitem:
+                  - generic:
+                    - img
+                  - generic:
+                    - generic: "2."
+                    - text: Set your cue
+                - listitem:
+                  - generic:
+                    - img
+                  - generic:
+                    - generic: "3."
+                    - text: Plant your first habit
+              - paragraph: Start with the 2-minute version
+              - generic:
+                - paragraph: Quick pick
+                - list:
+                  - listitem:
+                    - button:
+                      - generic: рџ’§
+                      - text: Drink water
+                  - listitem:
+                    - button:
+                      - generic: рџЊ…
+                      - text: Morning sunlight вЂ” 10 min
+                  - listitem:
+                    - button:
+                      - generic: рџЊ¬пёЏ
+                      - text: Breathe вЂ” 4-7-8 once
+                  - listitem:
+                    - button:
+                      - generic: рџ™Џ
+                      - text: Name one gratitude
+              - button:
+                - img
+                - text: Browse habit library
+              - generic:
+                - button:
+                  - img
+                  - text: Create habit
+              - paragraph: When • Where • Cue
+  - status
+  - alert
+  - dialog "Create habit" [active] [ref=e254]:
+    - generic [ref=e256]:
+      - heading "Create habit" [level=2] [ref=e257]
+      - button "Cancel" [ref=e258] [cursor=pointer]:
+        - img [ref=e259]
+    - generic [ref=e306]:
+      - paragraph [ref=e307]: Quick Add
+      - generic [ref=e308]:
+        - button "рџ’§ Drink water" [ref=e309] [cursor=pointer]:
+          - generic [ref=e310]: рџ’§
+          - generic [ref=e311]: Drink water
+        - button "рџЏѓ Exercise" [ref=e312] [cursor=pointer]:
+          - generic [ref=e313]: рџЏѓ
+          - generic [ref=e314]: Exercise
+        - button "рџҐ— Eat healthy" [ref=e315] [cursor=pointer]:
+          - generic [ref=e316]: рџҐ—
+          - generic [ref=e317]: Eat healthy
+        - button "рџ’Љ Take vitamins" [ref=e318] [cursor=pointer]:
+          - generic [ref=e319]: рџ’Љ
+          - generic [ref=e320]: Take vitamins
+        - button "рџЊ… Morning sunlight вЂ” 10 min" [ref=e321] [cursor=pointer]:
+          - generic [ref=e322]: рџЊ…
+          - generic [ref=e323]: Morning sunlight вЂ” 10 min
+        - button "рџ§Љ Cold exposure вЂ” 1 min" [ref=e324] [cursor=pointer]:
+          - generic [ref=e325]: рџ§Љ
+          - generic [ref=e326]: Cold exposure вЂ” 1 min
+      - button "Create custom habit" [ref=e327] [cursor=pointer]:
+        - generic [ref=e328]:
+          - img
+          - generic [ref=e329]: Create custom habit
+        - img

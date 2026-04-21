@@ -254,7 +254,7 @@ describe("Integration #1 — Orb → Diary handoff via pendingMoodContext", () =
     });
     // Confirm is disabled because emotion was never chosen. Clicking = no-op.
     const save = screen.getByTestId("orb-confirm-save");
-    expect(save.disabled).toBe(true);
+    expect(save.getAttribute("disabled")).not.toBeNull();
     act(() => {
       fireEvent.click(save);
     });

@@ -56,6 +56,7 @@ export const StatsPage = memo(function StatsPage({
   onQuickAction,
 }: StatsPageProps) {
   const { t, language } = useLanguage();
+  const ts = t as unknown as Record<string, string>;
   const todayKey = getToday();
 
   // --- State ---
@@ -179,7 +180,7 @@ export const StatsPage = memo(function StatsPage({
           </div>
         }
         items={[
-          { label: t.share || "Share", action: () => setActiveModal("share") },
+          { label: ts.share || "Share", action: () => setActiveModal("share") },
           { label: t.weeklyStory || "Weekly Story", action: () => setActiveModal("story") },
         ]}
       />

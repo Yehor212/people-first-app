@@ -20,6 +20,7 @@ const HabitCompletionCelebrationLazy = lazyWithRetry(() =>
   import("@/components/habit-completion-celebration/HabitCompletionCelebration").then((m) => ({
     default: m.HabitCompletionCelebration,
   })),
+  "HabitCompletionCelebration"
 );
 
 import type { Habit } from "@/types";

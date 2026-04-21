@@ -202,7 +202,7 @@ export function AchievementSlide({ slide, language }: AchievementSlideProps) {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5 }}
           >
-            <div className="w-20 h-20 rounded-2xl bg-white/5 flex items-center justify-center mb-4">
+            <div className="w-20 h-20 rounded-2xl bg-white/5 dark:bg-white/5 flex items-center justify-center mb-4">
               <TrophyIcon size="xl" />
             </div>
             <p className="text-white/60">{t.storyKeepGoingAchievements || 'Keep going to unlock achievements!'}</p>

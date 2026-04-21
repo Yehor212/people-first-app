@@ -76,6 +76,7 @@ export function WeekCrystal({
   lastWeekScore,
 }: WeekCrystalProps) {
   const { t } = useLanguage();
+  const tx = t as unknown as Record<string, string>;
   const [isExpanded, setIsExpanded] = useState(false);
   const theme = useMemo(() => getCrystalTheme(score), [score]);
 
@@ -240,7 +241,7 @@ export function WeekCrystal({
           {score}%
         </p>
         <p className="text-xs text-muted-foreground">
-          {t[`crystal${theme.label.replace(/\s/g, '')}`] || theme.label}
+          {tx[`crystal${theme.label.replace(/\s/g, "")}`] || theme.label}
         </p>
       </motion.div>
 

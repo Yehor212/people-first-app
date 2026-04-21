@@ -49,7 +49,8 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
     intervalRef.current = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
-          clearInterval(intervalRef.current);
+          const interval = intervalRef.current;
+          if (interval) clearInterval(interval);
           if (soundEnabled) playLevelUp();
           return 0;
         }
@@ -166,7 +167,7 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
                   cy="128"
                   r="120"
                   fill="none"
-                  stroke="rgba(139, 92, 246, 0.1)"
+                  stroke="hsl(var(--cosmic-clock-ring) / 0.2)"
                   strokeWidth="12"
                 />
                 <circle
@@ -183,8 +184,8 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
                 />
                 <defs>
                   <linearGradient id="timeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#8B5CF6" />
-                    <stop offset="100%" stopColor="#EC4899" />
+                    <stop offset="0%" stopColor="hsl(var(--cosmic-nebula-purple))" />
+                    <stop offset="100%" stopColor="hsl(var(--cosmic-nebula-pink))" />
                   </linearGradient>
                 </defs>
               </svg>

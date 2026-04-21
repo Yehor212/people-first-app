@@ -326,6 +326,7 @@ export function ConfirmDialog({
   onCancel,
   variant = "default",
 }: ConfirmDialogProps) {
+  const { t } = useLanguage();
   const stableOnCancel = useCallback(() => onCancel(), [onCancel]);
   useModalA11y(true, stableOnCancel);
 

@@ -15,6 +15,12 @@ export const logger = {
     }
   },
 
+  info: (...args: unknown[]) => {
+    if (isDev) {
+      console.log(...sanitizeArgs(args));
+    }
+  },
+
   warn: (...args: unknown[]) => {
     if (isDev) {
       console.warn(...sanitizeArgs(args));

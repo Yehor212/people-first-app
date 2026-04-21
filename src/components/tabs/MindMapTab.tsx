@@ -21,7 +21,7 @@ interface MindMapTabProps {
   onGoalUpdateEmoji: (goalId: string, emoji: string | undefined) => void;
   onGoalUpdateColor: (goalId: string, color: string | undefined) => void;
   onGoalCancel: () => void;
-  canvasRef: RefObject<MindMapCanvasRef | null>;
+  canvasRef: RefObject<MindMapCanvasRef>;
 }
 
 export function MindMapTab({

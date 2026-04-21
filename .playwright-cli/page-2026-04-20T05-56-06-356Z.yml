@@ -1,0 +1,122 @@
+- generic:
+  - generic:
+    - generic:
+      - navigation:
+        - link:
+          - /url: "#main-content-v2"
+          - text: Skip to main content
+        - generic:
+          - generic: ZenFlow
+        - navigation:
+          - button:
+            - img
+            - generic: Orb
+          - button:
+            - img
+            - generic: Habits
+          - button:
+            - img
+            - generic: Diary
+        - generic:
+          - button:
+            - generic:
+              - generic:
+                - img
+            - generic: Dark
+          - button:
+            - img
+            - generic: Settings
+          - button:
+            - img
+            - generic: Collapse sidebar
+      - generic:
+        - main:
+          - generic:
+            - heading [level=1]: Habits
+          - region:
+            - heading [level=2]: Today's habits
+            - generic:
+              - generic:
+                - img
+              - paragraph: Plant your first seed
+              - paragraph: Start with 3 habits — small steps win
+              - list:
+                - listitem:
+                  - generic:
+                    - img
+                  - generic:
+                    - generic: "1."
+                    - text: Pick your identity
+                - listitem:
+                  - generic:
+                    - img
+                  - generic:
+                    - generic: "2."
+                    - text: Set your cue
+                - listitem:
+                  - generic:
+                    - img
+                  - generic:
+                    - generic: "3."
+                    - text: Plant your first habit
+              - paragraph: Start with the 2-minute version
+              - generic:
+                - paragraph: Quick pick
+                - list:
+                  - listitem:
+                    - button:
+                      - generic: рџ’§
+                      - text: Drink water
+                  - listitem:
+                    - button:
+                      - generic: рџЊ…
+                      - text: Morning sunlight вЂ” 10 min
+                  - listitem:
+                    - button:
+                      - generic: рџЊ¬пёЏ
+                      - text: Breathe вЂ” 4-7-8 once
+                  - listitem:
+                    - button:
+                      - generic: рџ™Џ
+                      - text: Name one gratitude
+              - button:
+                - img
+                - text: Browse habit library
+              - generic:
+                - button:
+                  - img
+                  - text: Create habit
+              - paragraph: When • Where • Cue
+  - status
+  - alert
+  - dialog "Habit library" [ref=e331]:
+    - generic [ref=e333]:
+      - heading "Habit library" [level=2] [ref=e334]
+      - paragraph [ref=e335]: Tap any habit to add it instantly
+    - navigation "Habit library" [ref=e336]:
+      - button "Body" [ref=e337] [cursor=pointer]
+      - button "Mind" [ref=e338] [cursor=pointer]
+      - button "Focus" [ref=e339] [cursor=pointer]
+      - button "Rest" [ref=e340] [cursor=pointer]
+      - button "Quit" [active] [pressed] [ref=e341] [cursor=pointer]
+    - list [ref=e342]:
+      - listitem [ref=e390]:
+        - button "Quit smoking" [ref=e391] [cursor=pointer]:
+          - generic [ref=e392]: рџљ
+          - generic [ref=e394]: Quit smoking
+      - listitem [ref=e395]:
+        - button "Quit drinking" [ref=e396] [cursor=pointer]:
+          - generic [ref=e397]: рџЌ·
+          - generic [ref=e399]: Quit drinking
+      - listitem [ref=e400]:
+        - button "No more than 2 cigarettes" [ref=e401] [cursor=pointer]:
+          - generic [ref=e402]: рџљ¬
+          - generic [ref=e403]:
+            - generic [ref=e404]: No more than 2 cigarettes
+            - generic [ref=e405]: At Most 2 cigarettes
+      - listitem [ref=e406]:
+        - button "No more than 1 drink" [ref=e407] [cursor=pointer]:
+          - generic [ref=e408]: рџЌ·
+          - generic [ref=e409]:
+            - generic [ref=e410]: No more than 1 drink
+            - generic [ref=e411]: At Most 1 drinks

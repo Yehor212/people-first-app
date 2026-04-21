@@ -137,7 +137,7 @@ export async function isCalendarConnected(): Promise<boolean> {
       user?.app_metadata?.provider === "google" ||
       user?.identities?.some((i) => i.provider === "google");
 
-    return isGoogle && !!session.provider_token;
+    return !!isGoogle && !!session.provider_token;
   } catch (error) {
     logger.error("[Calendar] Connection check failed:", error);
     return false;
@@ -212,18 +212,24 @@ export async function fetchCalendarEvents(date: Date = new Date()): Promise<Cale
 
     // Parse events - filter out items without valid dates
     const events: CalendarEvent[] = ((data.items || []) as GoogleCalendarEventItem[])
-      .filter((item) => {
-        // Must have either dateTime or date for both start and end
-        const hasStart = item.start?.dateTime || item.start?.date;
-        const hasEnd = item.end?.dateTime || item.end?.date;
-        return hasStart && hasEnd;
-      })
+      .filter(
+        (
+          item,
+        ): item is GoogleCalendarEventItem & {
+          start: { dateTime?: string; date?: string };
+          end: { dateTime?: string; date?: string };
+        } => {
+          const hasStart = item.start?.dateTime || item.start?.date;
+          const hasEnd = item.end?.dateTime || item.end?.date;
+          return !!hasStart && !!hasEnd;
+        }
+      )
       .map((item) => ({
         id: item.id,
         title: item.summary || "Untitled Event",
         description: item.description,
-        startTime: new Date(item.start.dateTime || item.start.date),
-        endTime: new Date(item.end.dateTime || item.end.date),
+        startTime: new Date(item.start.dateTime ?? item.start.date ?? ""),
+        endTime: new Date(item.end.dateTime ?? item.end.date ?? ""),
         isAllDay: !item.start.dateTime,
         location: item.location,
         color: item.colorId ? getColorForId(item.colorId) : undefined,

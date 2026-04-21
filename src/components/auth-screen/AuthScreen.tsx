@@ -10,6 +10,7 @@ import { useAuthHandlers } from "./useAuthHandlers";
 
 export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScreenProps) {
   const { t } = useLanguage();
+  const ts = t as unknown as Record<string, string>;
 
   const session = useAuthSession({ onComplete, webOAuthError, onClearError });
   const handlers = useAuthHandlers(session, t as unknown as Record<string, string>);
@@ -169,7 +170,7 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
                 placeholder="+1234567890"
                 autoFocus
                 autoComplete="tel"
-                aria-label={t.phoneNumberLabel || "Phone number"}
+                aria-label={ts.phoneNumberLabel || "Phone number"}
                 aria-describedby={session.error ? "auth-error" : undefined}
                 className={cn(
                   "w-full px-4 py-3.5 rounded-xl text-base bg-muted/50 border border-border/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 placeholder:text-muted-foreground/50",
@@ -219,7 +220,7 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
                 }}
                 placeholder="000000"
                 autoFocus
-                aria-label={t.otpCodeLabel || "Verification code"}
+                aria-label={ts.otpCodeLabel || "Verification code"}
                 aria-describedby={session.error ? "auth-error" : undefined}
                 className={cn(
                   "w-full px-4 py-3.5 rounded-xl text-center text-2xl tracking-[0.5em] font-mono bg-muted/50 border border-border/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 placeholder:text-muted-foreground/60",

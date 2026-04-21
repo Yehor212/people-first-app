@@ -70,6 +70,9 @@ export function RecommendationCard({
   };
 
   const title = t[recommendation.titleKey] || recommendation.title;
+  const actionLabel = recommendation.actionKey
+    ? t[recommendation.actionKey] || recommendation.action
+    : recommendation.action;
   const style = priorityStyles[recommendation.priority];
 
   return (
@@ -118,7 +121,7 @@ export function RecommendationCard({
                 className="w-3 h-3 rtl:scale-x-[-1]"
                 aria-hidden="true"
               />
-              {t[recommendation.actionKey] || recommendation.action}
+              {actionLabel}
             </p>
           )}
         </div>

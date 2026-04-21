@@ -10,7 +10,7 @@
 import { memo, useMemo } from "react";
 import { ProgressRing } from "@/components/ui/progress-ring";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { formatDecimal } from "@/lib/timeUtils";
+import { formatHabitValue } from "@/lib/habits";
 import { ENTRY } from "@/types";
 import type { Habit } from "@/types";
 
@@ -147,7 +147,7 @@ export const HabitTargetCard = memo(function HabitTargetCard({ habit, className 
             <div className="text-center">
               <div className="text-[10px] text-muted-foreground">{intervalLabels[stat.label]}</div>
               <div className="text-[10px] font-medium text-muted-foreground tabular-nums">
-                {formatDecimal(stat.actual, language)}/{formatDecimal(stat.expected, language)}
+                {formatHabitValue(stat.actual, language)}/{formatHabitValue(stat.expected, language)}
               </div>
             </div>
           </div>

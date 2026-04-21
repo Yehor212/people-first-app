@@ -11,6 +11,7 @@ import { isAbortError, isValidUUID } from "@/lib/validation";
 import { supabase, getCurrentUserId } from "@/lib/supabaseClient";
 import { Habit } from "@/types";
 import { offlineQueue } from "@/lib/offlineQueue";
+import { getHabitPlanState } from "@/lib/habitPlan";
 import { encodeHabitCompletionForCloud } from "./habitCompletionCodec";
 
 // ============================================
@@ -44,6 +45,7 @@ export const syncHabit = async (habit: Habit): Promise<void> => {
     const freq = habit.frequency || { numerator: 1, denominator: 1 };
     const cloudFrequency = freq.denominator === 1 ? "daily" : "weekly";
     const cloudType = habit.habitType === "numerical" ? "multiple" : "daily";
+    const planState = getHabitPlanState(habit);
 
     const { error: habitError } = await supabase.from("habits").upsert(
       {
@@ -55,9 +57,9 @@ export const syncHabit = async (habit: Habit): Promise<void> => {
         type: cloudType,
         frequency: cloudFrequency,
         custom_days: [],
-        requires_duration: false,
-        target_duration: null,
-        start_date: null,
+        requires_duration: Boolean(planState),
+        target_duration: planState?.durationDays ?? null,
+        start_date: planState?.startDate ?? null,
         daily_target: habit.targetValue || 1,
         target_count: habit.targetValue || null,
         template_id: habit.templateId || null,

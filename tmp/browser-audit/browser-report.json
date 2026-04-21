@@ -1,0 +1,45 @@
+{
+  "orchestratorMs": 4082,
+  "firstRunVisible": true,
+  "quickPickName": "hero-quickpick-water",
+  "actionLabels": [
+    "Skip Today",
+    "Archive",
+    "Edit",
+    "Open details"
+  ],
+  "diaryText": "Diary\n\nDiary page — Phase 3-D will wire the JournalModule experience here.",
+  "settingsText": "Settings\n\nSettings page — Phase 3-E will wire SettingsTab here.",
+  "mobileActions": [
+    {
+      "id": "command-palette",
+      "text": "Search",
+      "disabled": false
+    },
+    {
+      "id": "theme",
+      "text": "Theme",
+      "disabled": true
+    },
+    {
+      "id": "archive",
+      "text": "Archive",
+      "disabled": true
+    },
+    {
+      "id": "account",
+      "text": "Account",
+      "disabled": true
+    }
+  ],
+  "screenshots": [
+    "01-orb-initial.png",
+    "02-orb-dismissed.png",
+    "03-habits-empty.png",
+    "04-habits-populated.png",
+    "05-habit-action-sheet.png",
+    "06-diary.png",
+    "07-settings.png",
+    "08-mobile-drawer.png"
+  ]
+}

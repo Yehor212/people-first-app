@@ -1,0 +1,66 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e5]:
+    - navigation "Primary navigation" [ref=e6]:
+      - link "Skip to main content" [ref=e7] [cursor=pointer]:
+        - /url: "#main-content-v2"
+      - generic [ref=e10]: ZenFlow
+      - navigation "pages" [ref=e11]:
+        - button "Orb" [ref=e12] [cursor=pointer]:
+          - img [ref=e14]
+          - generic [ref=e16]: Orb
+        - button "Habits" [ref=e17] [cursor=pointer]:
+          - img [ref=e18]
+          - generic [ref=e23]: Habits
+        - button "Diary" [ref=e24] [cursor=pointer]:
+          - img [ref=e25]
+          - generic [ref=e27]: Diary
+      - generic [ref=e28]:
+        - button "Switch to dark mode" [ref=e103] [cursor=pointer]:
+          - img [ref=e106]
+          - generic [ref=e112]: Dark
+        - button "Settings" [ref=e31] [cursor=pointer]:
+          - img [ref=e32]
+          - generic [ref=e35]: Settings
+        - button "Collapse sidebar" [ref=e36] [cursor=pointer]:
+          - img [ref=e37]
+          - generic [ref=e40]: Collapse sidebar
+    - main "Good evening, Friend" [ref=e42]:
+      - generic:
+        - img
+      - generic [ref=e43]:
+        - heading "Good evening, Friend" [level=1] [ref=e46]:
+          - generic [ref=e47]:
+            - generic [ref=e48]: G
+            - generic [ref=e49]: o
+            - generic [ref=e50]: o
+            - generic [ref=e51]: d
+            - generic [ref=e53]: e
+            - generic [ref=e54]: v
+            - generic [ref=e55]: e
+            - generic [ref=e56]: "n"
+            - generic [ref=e57]: i
+            - generic [ref=e58]: "n"
+            - generic [ref=e59]: g
+            - generic [ref=e60]: ","
+          - generic [ref=e62]:
+            - generic [ref=e63]: F
+            - generic [ref=e64]: r
+            - generic [ref=e65]: i
+            - generic [ref=e66]: e
+            - generic [ref=e67]: "n"
+            - generic [ref=e68]: d
+        - button "Log how you're feeling" [ref=e72] [cursor=pointer]
+        - paragraph [ref=e77]: What's the weather inside?
+        - radiogroup "When did this apply?" [ref=e80]:
+          - generic [ref=e81]:
+            - radio "In this moment" [checked] [ref=e82] [cursor=pointer]
+            - radio "At a specific time" [ref=e83] [cursor=pointer]
+            - radio "For the whole day" [ref=e84] [cursor=pointer]
+        - generic [ref=e88]:
+          - generic [ref=e89]: Neutral
+          - slider "Mood valence" [ref=e90] [cursor=pointer]
+          - generic [ref=e100]:
+            - generic [ref=e101]: Very Unpleasant
+            - generic [ref=e102]: Very Pleasant
+  - status [ref=e2]
+  - alert [ref=e3]

@@ -89,7 +89,7 @@ export function AddHabitCustomForm({
           autoFocus
           className={cn(
             'w-full px-4 py-3 rounded-xl text-sm text-foreground',
-            'bg-white/[0.05] border border-border motion-safe:transition-colors',
+            'bg-foreground/[0.05] border border-border motion-safe:transition-colors',
             'placeholder:text-muted-foreground/60',
             'focus:outline-none focus:ring-2 focus:ring-violet-500/50',
           )}
@@ -109,7 +109,7 @@ export function AddHabitCustomForm({
           aria-label={ts.questionPrompt || 'Question Prompt'}
           className={cn(
             'w-full px-4 py-2 rounded-xl text-xs text-muted-foreground',
-            'bg-white/[0.03] border border-border motion-safe:transition-colors',
+            'bg-foreground/[0.03] border border-border motion-safe:transition-colors',
             'placeholder:text-muted-foreground/60',
             'focus:outline-none focus:ring-2 focus:ring-violet-500/50',
           )}
@@ -135,8 +135,8 @@ export function AddHabitCustomForm({
                 'w-11 h-11 rounded-xl flex items-center justify-center text-xl motion-safe:transition-all',
                 'border min-h-[44px] min-w-[44px]',
                 selectedIcon === ic
-                  ? 'bg-violet-500/20 border-violet-500/40 scale-110 shadow-[0_0_12px_rgba(139,92,246,0.3)]'
-                  : 'bg-white/[0.03] border-border hover:bg-white/[0.06]',
+                  ? 'bg-violet-500/20 border-violet-500/40 scale-110 shadow-[0_0_12px_hsl(var(--cosmic-nebula-purple)/0.3)]'
+                  : 'bg-foreground/[0.03] border-border hover:bg-foreground/[0.06]',
               )}
             >
               {ic}
@@ -197,7 +197,7 @@ export function AddHabitCustomForm({
                   'border',
                   habitType === typ
                     ? 'bg-violet-500/20 border-violet-500/40 text-violet-300'
-                    : 'bg-white/[0.03] border-border text-muted-foreground hover:bg-white/[0.06]',
+                    : 'bg-foreground/[0.03] border-border text-muted-foreground hover:bg-foreground/[0.06]',
                 )}
               >
                 {label}
@@ -215,7 +215,7 @@ export function AddHabitCustomForm({
                 <button
                   onClick={() => setTargetValue(Math.max(1, targetValue - 1))}
                   aria-label={ts.decreaseTarget || 'Decrease target'}
-                  className="w-8 h-8 rounded-lg bg-white/[0.05] border border-border text-muted-foreground flex items-center justify-center min-h-[44px] min-w-[44px]"
+                  className="w-8 h-8 rounded-lg bg-foreground/[0.05] border border-border text-muted-foreground flex items-center justify-center min-h-[44px] min-w-[44px]"
                 >
                   -
                 </button>
@@ -223,7 +223,7 @@ export function AddHabitCustomForm({
                 <button
                   onClick={() => setTargetValue(targetValue + 1)}
                   aria-label={ts.increaseTarget || 'Increase target'}
-                  className="w-8 h-8 rounded-lg bg-white/[0.05] border border-border text-muted-foreground flex items-center justify-center min-h-[44px] min-w-[44px]"
+                  className="w-8 h-8 rounded-lg bg-foreground/[0.05] border border-border text-muted-foreground flex items-center justify-center min-h-[44px] min-w-[44px]"
                 >
                   +
                 </button>
@@ -239,7 +239,7 @@ export function AddHabitCustomForm({
                 maxLength={20}
                 className={cn(
                   'flex-1 px-3 py-2 rounded-xl text-xs text-muted-foreground',
-                  'bg-white/[0.03] border border-border',
+                  'bg-foreground/[0.03] border border-border',
                   'placeholder:text-muted-foreground/60',
                   'focus:outline-none focus:ring-2 focus:ring-violet-500/50',
                 )}
@@ -254,7 +254,7 @@ export function AddHabitCustomForm({
                   'border',
                   targetType === 'atLeast'
                     ? 'bg-violet-500/20 border-violet-500/40 text-violet-300'
-                    : 'bg-white/[0.03] border-border text-muted-foreground',
+                    : 'bg-foreground/[0.03] border-border text-muted-foreground',
                 )}
               >
                 {ts.atLeast || 'At Least'}
@@ -267,7 +267,7 @@ export function AddHabitCustomForm({
                   'border',
                   targetType === 'atMost'
                     ? 'bg-violet-500/20 border-violet-500/40 text-violet-300'
-                    : 'bg-white/[0.03] border-border text-muted-foreground',
+                    : 'bg-foreground/[0.03] border-border text-muted-foreground',
                 )}
               >
                 {ts.atMost || 'At Most'}
@@ -296,7 +296,7 @@ export function AddHabitCustomForm({
                 'border flex items-center gap-1.5',
                 selectedCategory === cat.id
                   ? `bg-gradient-to-r ${cat.color} text-white border-transparent shadow-lg`
-                  : 'bg-white/[0.03] border-border text-muted-foreground hover:bg-white/[0.06]',
+                  : 'bg-foreground/[0.03] border-border text-muted-foreground hover:bg-foreground/[0.06]',
               )}
             >
               <span>{cat.icon}</span>
@@ -312,8 +312,8 @@ export function AddHabitCustomForm({
           onClick={handleClose}
           className={cn(
             'flex-1 px-4 py-3 rounded-xl text-sm font-medium motion-safe:transition-colors min-h-[44px]',
-            'bg-white/[0.05] border border-border text-muted-foreground',
-            'hover:bg-white/[0.08]',
+            'bg-foreground/[0.05] border border-border text-muted-foreground',
+            'hover:bg-foreground/[0.08]',
           )}
         >
           {ts.cancel || 'Cancel'}
@@ -325,7 +325,7 @@ export function AddHabitCustomForm({
             'flex-1 px-4 py-3 rounded-xl text-sm font-semibold motion-safe:transition-all min-h-[44px]',
             'bg-gradient-to-r from-violet-600 to-purple-600 text-white',
             'hover:from-violet-500 hover:to-purple-500 active:scale-[0.98]',
-            'shadow-[0_0_20px_rgba(139,92,246,0.25)]',
+            'shadow-[0_0_20px_hsl(var(--cosmic-nebula-purple)/0.25)]',
             'disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none',
           )}
         >

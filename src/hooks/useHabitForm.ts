@@ -7,12 +7,13 @@ import type {
   TargetType,
   HabitFrequencyRatio,
 } from '@/types';
-import { generateId } from '@/lib/utils';
+import { generateId, getToday } from '@/lib/utils';
 import {
   habitTemplates,
   mapTemplateCategoryToHabitCategory,
   resolveHabitTemplateSetup,
 } from '@/lib/habitTemplates';
+import { calculateHabitEndDate } from '@/lib/habitPlan';
 import { hapticTap } from '@/lib/haptics';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -20,20 +21,20 @@ import { useLanguage } from '@/contexts/LanguageContext';
 // CONSTANTS (shared with HabitCreationForm)
 // ============================================
 
-export const habitIcons = ['рџ’§', 'рџЏѓ', 'рџ“љ', 'рџ§', 'рџ’Љ', 'рџҐ—', 'рџґ', 'вњЌпёЏ', 'рџЋµ', 'рџЊї', 'рџљ­', 'рџЌ·', 'рџ—ЈпёЏ', 'рџ’Є', 'рџ§ '];
+export const habitIcons = ['💧', '🏃', '📚', '🧘', '💊', '🥗', '😴', '✌️', '🎵', '🌿', '🚭', '🍷', '🗣️', '💪', '🧠'];
 
 export const habitCategories: { id: HabitCategory; icon: string; color: string }[] = [
-  { id: 'health', icon: 'рџ’Є', color: 'from-emerald-500 to-teal-500' },
-  { id: 'mindfulness', icon: 'рџ§', color: 'from-violet-500 to-purple-500' },
-  { id: 'productivity', icon: 'рџљЂ', color: 'from-blue-500 to-cyan-500' },
-  { id: 'social', icon: 'рџ‘Ґ', color: 'from-pink-500 to-rose-500' },
-  { id: 'creativity', icon: 'рџЋЁ', color: 'from-amber-500 to-orange-500' },
-  { id: 'finance', icon: 'рџ’°', color: 'from-green-500 to-emerald-500' },
-  { id: 'self-care', icon: 'рџЊё', color: 'from-fuchsia-500 to-pink-500' },
-  { id: 'other', icon: 'вњЁ', color: 'from-slate-500 to-gray-500' },
+  { id: 'health', icon: '💪', color: 'from-emerald-500 to-teal-500' },
+  { id: 'mindfulness', icon: '🧘', color: 'from-violet-500 to-purple-500' },
+  { id: 'productivity', icon: '🎯', color: 'from-blue-500 to-cyan-500' },
+  { id: 'social', icon: '👥', color: 'from-pink-500 to-rose-500' },
+  { id: 'creativity', icon: '🎨', color: 'from-amber-500 to-orange-500' },
+  { id: 'finance', icon: '💰', color: 'from-green-500 to-emerald-500' },
+  { id: 'self-care', icon: '🛀', color: 'from-fuchsia-500 to-pink-500' },
+  { id: 'other', icon: '✦', color: 'from-slate-500 to-gray-500' },
 ];
 
-/** Frequency presets вЂ” i18nKey resolved at render time via ts[key] */
+/** Frequency presets — i18nKey resolved at render time via ts[key] */
 export const frequencyPresets: { label: string; i18nKey: string; ratio: HabitFrequencyRatio }[] = [
   { label: 'Daily', i18nKey: 'habitFrequencyDaily', ratio: { numerator: 1, denominator: 1 } },
   { label: '3x / week', i18nKey: 'habitFrequency3xWeek', ratio: { numerator: 3, denominator: 7 } },
@@ -79,6 +80,10 @@ export function useHabitForm({ onAddHabit, onUpdateHabit }: UseHabitFormOptions)
   const [unit, setUnit] = useState('');
   const [targetStep, setTargetStep] = useState(1);
 
+  // Optional program window
+  const [hasDurationLimit, setHasDurationLimit] = useState(false);
+  const [durationDays, setDurationDays] = useState(30);
+
   // Reminders
   const [reminders, setReminders] = useState<HabitReminder[]>([]);
 
@@ -87,7 +92,6 @@ export function useHabitForm({ onAddHabit, onUpdateHabit }: UseHabitFormOptions)
   const [identityVerb, setIdentityVerb] = useState('');
   const [identityIcon, setIdentityIcon] = useState('');
 
-  // Reset form to defaults
   const resetForm = useCallback(() => {
     setNewHabitName('');
     setSelectedIcon(habitIcons[0]);
@@ -101,6 +105,8 @@ export function useHabitForm({ onAddHabit, onUpdateHabit }: UseHabitFormOptions)
     setTargetType('atLeast');
     setUnit('');
     setTargetStep(1);
+    setHasDurationLimit(false);
+    setDurationDays(30);
     setReminders([]);
     setIdentityCluster('');
     setIdentityVerb('');
@@ -145,6 +151,8 @@ export function useHabitForm({ onAddHabit, onUpdateHabit }: UseHabitFormOptions)
     setTargetType(resolved.targetType);
     setUnit(template.habitType === 'numerical' ? resolved.unit : '');
     setTargetStep(resolved.targetStep);
+    setHasDurationLimit(false);
+    setDurationDays(30);
     setReminders(
       template.defaultTime
         ? [{ enabled: true, time: template.defaultTime, days: [0, 1, 2, 3, 4, 5, 6] }]
@@ -158,7 +166,6 @@ export function useHabitForm({ onAddHabit, onUpdateHabit }: UseHabitFormOptions)
     setShowCustomForm(true);
   }, [language]);
 
-  // Populate form for editing
   const handleEditHabit = useCallback((habit: Habit) => {
     const template = habit.templateId
       ? habitTemplates.find((item) => item.id === habit.templateId)
@@ -181,6 +188,8 @@ export function useHabitForm({ onAddHabit, onUpdateHabit }: UseHabitFormOptions)
     setTargetType(habit.targetType || 'atLeast');
     setUnit(habit.unit || '');
     setTargetStep(resolved?.targetStep ?? 1);
+    setHasDurationLimit(Boolean(habit.durationDays));
+    setDurationDays(habit.durationDays || 30);
     setReminders(habit.reminders || []);
     setIdentityCluster(habit.identityCluster || '');
     setIdentityVerb(habit.identityVerb || '');
@@ -190,11 +199,23 @@ export function useHabitForm({ onAddHabit, onUpdateHabit }: UseHabitFormOptions)
     setShowCustomForm(true);
   }, []);
 
-  // Submit: create or update habit
   const handleAddHabit = useCallback(() => {
     if (!newHabitName.trim()) return;
 
-    // Identity fields вЂ” only include when user filled them
+    const normalizedDurationDays = hasDurationLimit
+      ? Math.max(1, Math.round(durationDays || 1))
+      : undefined;
+    const planStartDate = normalizedDurationDays
+      ? (
+          editingHabit?.durationDays && editingHabit.startDate
+            ? editingHabit.startDate
+            : getToday()
+        )
+      : undefined;
+    const planEndDate = normalizedDurationDays && planStartDate
+      ? calculateHabitEndDate(planStartDate, normalizedDurationDays)
+      : undefined;
+
     const identityFields = {
       ...(identityCluster.trim() && { identityCluster: identityCluster.trim() }),
       ...(identityVerb.trim() && { identityVerb: identityVerb.trim() }),
@@ -215,22 +236,23 @@ export function useHabitForm({ onAddHabit, onUpdateHabit }: UseHabitFormOptions)
         targetValue: habitType === 'numerical' ? targetValue : 0,
         targetType: habitType === 'numerical' ? targetType : 'atLeast',
         unit: habitType === 'numerical' ? unit.trim() : '',
+        durationDays: normalizedDurationDays,
+        startDate: planStartDate,
+        endDate: planEndDate,
         reminders,
         templateId: selectedTemplateId || editingHabit.templateId,
         ...identityFields,
         updatedAt: new Date().toISOString(),
       };
-      // Clear identity fields if user removed them
+
       if (!identityCluster.trim()) delete updatedHabit.identityCluster;
       if (!identityVerb.trim()) delete updatedHabit.identityVerb;
       if (!identityIcon) delete updatedHabit.identityIcon;
 
-      // Clear entries when habit type changes вЂ” old values are incompatible
-      // Guard: require explicit confirmation to prevent accidental data loss
       if (editingHabit.habitType && editingHabit.habitType !== habitType) {
         const hasEntries = Object.keys(editingHabit.entries || {}).length > 0;
         if (hasEntries && !window.confirm(ts.confirmTypeChangeDeletesHistory || 'Changing the habit type will delete all tracking history. Continue?')) {
-          return; // User cancelled вЂ” abort save
+          return;
         }
         updatedHabit.entries = {};
       }
@@ -242,7 +264,7 @@ export function useHabitForm({ onAddHabit, onUpdateHabit }: UseHabitFormOptions)
         name: newHabitName.trim(),
         icon: selectedIcon,
         color: selectedColorIndex,
-        position: Date.now(), // new habits at end, will be sorted
+        position: Date.now(),
         createdAt: Date.now(),
         habitType,
         frequency,
@@ -252,6 +274,13 @@ export function useHabitForm({ onAddHabit, onUpdateHabit }: UseHabitFormOptions)
         targetValue: habitType === 'numerical' ? targetValue : 0,
         targetType: habitType === 'numerical' ? targetType : 'atLeast',
         unit: habitType === 'numerical' ? unit.trim() : '',
+        ...(normalizedDurationDays
+          ? {
+              durationDays: normalizedDurationDays,
+              startDate: planStartDate,
+              endDate: planEndDate,
+            }
+          : {}),
         entries: {},
         reminders,
         category: selectedCategory,
@@ -265,6 +294,8 @@ export function useHabitForm({ onAddHabit, onUpdateHabit }: UseHabitFormOptions)
     resetForm();
   }, [
     newHabitName,
+    hasDurationLimit,
+    durationDays,
     editingHabit,
     onUpdateHabit,
     onAddHabit,
@@ -287,13 +318,11 @@ export function useHabitForm({ onAddHabit, onUpdateHabit }: UseHabitFormOptions)
     ts,
   ]);
 
-  // Template quick-start now opens a lightweight setup pass instead of instantly adding.
   const handleQuickAdd = useCallback((templateId: string) => {
     void hapticTap();
     startFromTemplate(templateId);
   }, [startFromTemplate]);
 
-  // Reminder CRUD
   const handleAddReminder = useCallback(() => {
     setReminders(prev => [...prev, { enabled: true, time: '09:00', days: [1, 2, 3, 4, 5] }]);
   }, []);
@@ -315,21 +344,20 @@ export function useHabitForm({ onAddHabit, onUpdateHabit }: UseHabitFormOptions)
   }, []);
 
   return {
-    // State
     isAdding, showCustomForm, editingHabit, selectedTemplateId, settingsMode,
     newHabitName, selectedIcon, selectedColorIndex, selectedCategory,
     habitType, frequency, question, description,
     targetValue, targetType, unit, targetStep,
+    hasDurationLimit, durationDays,
     reminders,
     identityCluster, identityVerb, identityIcon,
-    // Setters
     setIsAdding, setShowCustomForm, setSettingsMode,
     setNewHabitName, setSelectedIcon, setSelectedColorIndex,
     setSelectedCategory,
     setHabitType, setFrequency, setQuestion, setDescription,
     setTargetValue, setTargetType, setUnit,
+    setHasDurationLimit, setDurationDays,
     setIdentityCluster, setIdentityVerb, setIdentityIcon,
-    // Actions
     resetForm, handleEditHabit, handleAddHabit, handleQuickAdd, handleTemplateUnitChange, startFromTemplate,
     handleAddReminder, handleRemoveReminder, handleReminderChange,
   };

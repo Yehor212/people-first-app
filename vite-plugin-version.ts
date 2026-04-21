@@ -29,6 +29,7 @@ export function versionPlugin(): Plugin {
   let buildTime: number;
   let outDir: string;
   let base: string;
+  let shouldInjectVersionScript = false;
 
   return {
     name: 'version-plugin',
@@ -42,9 +43,14 @@ export function versionPlugin(): Plugin {
       buildTime = Date.now();
       outDir = config.build.outDir;
       base = config.base || '/';
+      shouldInjectVersionScript = config.command === 'build';
     },
 
     transformIndexHtml() {
+      if (!shouldInjectVersionScript) {
+        return undefined;
+      }
+
       // Inject <script src> at head-prepend so it runs BEFORE Vite's
       // module scripts and modulepreload hints. This is critical —
       // 'head' (default) injects AFTER modules, causing stale chunk downloads.

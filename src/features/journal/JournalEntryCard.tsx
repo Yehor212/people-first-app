@@ -372,12 +372,12 @@ export const JournalEntryCard = memo(function JournalEntryCard({
             <div className="absolute inset-0 bg-gradient-to-t from-card/90 via-card/30 to-transparent" />
             {/* Photo count badge */}
             {entry.photoIds.length > 1 && (
-              <span className="absolute top-2 end-2 text-[10px] text-white/90 bg-black/40 backdrop-blur-sm px-1.5 py-0.5 rounded-md">
+              <span className="absolute top-2 end-2 text-[10px] text-white/90 bg-black/40 dark:bg-black/40 backdrop-blur-sm px-1.5 py-0.5 rounded-md">
                 {"\u{1F4F7}"} {entry.photoIds.length}
               </span>
             )}
             {/* Time badge on photo */}
-            <span className="absolute top-2 start-2 flex items-center gap-0.5 text-[10px] text-white/80 bg-black/30 backdrop-blur-sm px-1.5 py-0.5 rounded-md">
+            <span className="absolute top-2 start-2 flex items-center gap-0.5 text-[10px] text-white/80 bg-black/30 dark:bg-black/30 backdrop-blur-sm px-1.5 py-0.5 rounded-md">
               <Clock className="w-2.5 h-2.5" />
               {time}
             </span>

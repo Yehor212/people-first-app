@@ -1,0 +1,82 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e5]:
+    - link "Skip to main content" [ref=e6] [cursor=pointer]:
+      - /url: "#main-content"
+    - dialog "Privacy Settings" [ref=e8]:
+      - generic [ref=e9]:
+        - img [ref=e11]
+        - heading "Privacy Settings" [level=2] [ref=e13]
+      - paragraph [ref=e14]: We respect your privacy. Help us improve the app by allowing anonymous analytics?
+      - generic [ref=e16]:
+        - img [ref=e17]
+        - generic [ref=e19]:
+          - paragraph [ref=e20]: Anonymous Analytics
+          - paragraph [ref=e21]: Usage patterns only. No personal data. You can change this anytime in Settings.
+      - generic [ref=e22]:
+        - button "No thanks" [ref=e23] [cursor=pointer]
+        - button "Allow" [ref=e24] [cursor=pointer]
+      - paragraph [ref=e25]: You can change this anytime in Settings > Privacy
+    - main [ref=e47]:
+      - generic [ref=e50]:
+        - img [ref=e52]
+        - generic [ref=e57]:
+          - generic [ref=e58]:
+            - generic [ref=e59]:
+              - paragraph [ref=e61]: Sunday, April 19
+              - generic [ref=e62]:
+                - img "Cloud sync disabled." [ref=e63]
+                - button "Switch to dark mode" [ref=e67] [cursor=pointer]:
+                  - img [ref=e69]
+            - heading "Good evening, Friend" [level=1] [ref=e75]
+            - generic [ref=e76]:
+              - button "Add Event" [ref=e77] [cursor=pointer]:
+                - img [ref=e78]
+                - generic [ref=e80]: Add Event
+              - button "Open Quests" [ref=e81] [cursor=pointer]:
+                - img [ref=e82]
+                - generic [ref=e84]: Quests
+              - button "Open Challenges" [ref=e85] [cursor=pointer]:
+                - img [ref=e86]
+                - generic [ref=e92]: Challenges
+          - generic [ref=e93]:
+            - generic [ref=e96]:
+              - generic [ref=e97]:
+                - img [ref=e98]
+                - generic [ref=e100]: Day 1 of 4
+              - generic [ref=e101]: 8/8 features
+            - generic [ref=e105]:
+              - generic [ref=e106]:
+                - img [ref=e107]
+                - paragraph [ref=e109]: How was your day? Even one word helps.
+              - generic [ref=e110]:
+                - textbox "1-2 sentences..." [ref=e111]
+                - button "Submit reflection" [disabled] [ref=e112]:
+                  - img [ref=e113]
+              - button "Expand to journal" [ref=e116] [cursor=pointer]:
+                - img [ref=e117]
+                - text: Expand to journal
+            - button "Log how you're feeling" [ref=e121] [cursor=pointer]:
+              - paragraph [ref=e128]: Log how you're feeling
+    - navigation "Main navigation" [ref=e129]:
+      - generic [ref=e130]:
+        - generic [ref=e131]: ZenFlow
+        - button "Collapse sidebar" [ref=e132] [cursor=pointer]:
+          - img [ref=e133]
+      - tablist [ref=e136]:
+        - tab "Home" [selected] [ref=e139] [cursor=pointer]:
+          - img [ref=e140]
+          - generic [ref=e143]: Home
+        - tab "Habits" [ref=e145] [cursor=pointer]:
+          - img [ref=e146]
+          - generic [ref=e151]: Habits
+        - tab "Diary" [ref=e153] [cursor=pointer]:
+          - img [ref=e154]
+          - generic [ref=e156]: Diary
+        - tab "Stats" [ref=e158] [cursor=pointer]:
+          - img [ref=e159]
+          - generic [ref=e161]: Stats
+      - tab "Settings" [ref=e164] [cursor=pointer]:
+        - img [ref=e165]
+        - generic [ref=e168]: Settings
+  - status [ref=e2]
+  - alert [ref=e3]

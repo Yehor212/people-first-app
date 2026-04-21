@@ -55,7 +55,7 @@ export const HeroTemplateLibrarySheet = memo(function HeroTemplateLibrarySheet({
   onPickTemplate,
 }: HeroTemplateLibrarySheetProps) {
   const { t, language } = useLanguage();
-  const tx = t;
+  const tx = t as unknown as Record<string, string>;
   const animate = useShouldAnimate();
 
   const [activeCategory, setActiveCategory] = useState<HabitTemplateCategory>("body");

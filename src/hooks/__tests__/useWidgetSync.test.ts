@@ -35,7 +35,12 @@ vi.mock('@/lib/platform', () => ({
 // Mock Widget plugin
 const mockIsSupported = vi.fn(() => Promise.resolve({ supported: true }));
 const mockUpdateWidget = vi.fn((_data: any) => Promise.resolve());
-const mockGetWidgetData = vi.fn(() => Promise.resolve(null));
+const mockGetWidgetData = vi.fn<() => Promise<{
+  streak: number;
+  habitsToday: number;
+  habitsTotalToday: number;
+  focusMinutes: number;
+} | null>>(() => Promise.resolve(null));
 
 vi.mock('@/plugins/WidgetPlugin', () => ({
   default: {

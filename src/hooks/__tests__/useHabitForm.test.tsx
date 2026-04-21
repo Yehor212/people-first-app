@@ -125,4 +125,39 @@ describe("useHabitForm", () => {
     expect(result.current.targetValue).toBe(2);
     expect(result.current.targetStep).toBe(1);
   });
+
+  it("saves an optional finite habit plan with derived start/end dates", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-04-20T12:00:00Z"));
+
+    const { result } = renderHook(() =>
+      useHabitForm({ onAddHabit, onUpdateHabit }),
+    );
+
+    act(() => {
+      result.current.setIsAdding(true);
+      result.current.setShowCustomForm(true);
+    });
+
+    act(() => {
+      result.current.setNewHabitName("Spring reset");
+      result.current.setHasDurationLimit(true);
+      result.current.setDurationDays(14);
+    });
+
+    act(() => {
+      result.current.handleAddHabit();
+    });
+
+    expect(onAddHabit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "Spring reset",
+        durationDays: 14,
+        startDate: "2026-04-20",
+        endDate: "2026-05-03",
+      }),
+    );
+
+    vi.useRealTimers();
+  });
 });

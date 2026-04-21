@@ -6,7 +6,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useModalA11y } from "@/hooks/useModalA11y";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { useBackHandler } from "@/hooks/useBackHandler";
-import { Trophy, Flame, Star, Users, Eye, EyeOff, Medal, X } from "lucide-react";
+import { Trophy, Flame, Star, Users, Eye, EyeOff, Medal, X, RefreshCw } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { SkeletonList } from "@/components/ui/skeleton";

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+  formatHabitValue,
   normalizeHabit,
   getHabitCompletedDates,
   isHabitCompletedOnDate,
@@ -169,5 +170,17 @@ describe('getHabitCompletionTotal', () => {
   it('returns 0 for a habit with no entries', () => {
     const habit = makeTestHabit({ entries: {} });
     expect(getHabitCompletionTotal(habit)).toBe(0);
+  });
+});
+
+describe('formatHabitValue', () => {
+  it('preserves quarter steps for measurable habits', () => {
+    expect(formatHabitValue(0.25, 'en')).toBe('0.25');
+    expect(formatHabitValue(1.5, 'en')).toBe('1.5');
+  });
+
+  it('keeps integers clean for whole-number targets', () => {
+    expect(formatHabitValue(2, 'en')).toBe('2');
+    expect(formatHabitValue(2000, 'en')).toBe('2,000');
   });
 });

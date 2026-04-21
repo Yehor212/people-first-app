@@ -130,7 +130,8 @@ export function useAuthSession({
 
   // Check session when app resumes from OAuth browser
   useEffect(() => {
-    if (!supabase) return;
+    const client = supabase;
+    if (!client) return;
 
     let isMounted = true;
     let listenerHandle: { remove: () => Promise<void> } | null = null;
@@ -142,7 +143,7 @@ export function useAuthSession({
       if (!isMounted || hasCompletedRef.current) return;
 
       try {
-        const { data } = await supabase.auth.getSession();
+        const { data } = await client.auth.getSession();
         if (!isMounted) return;
 
         if (data.session?.user) {

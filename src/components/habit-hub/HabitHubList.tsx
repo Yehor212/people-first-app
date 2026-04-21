@@ -156,7 +156,7 @@ export function HabitHubList({
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50",
               categoryFilter === cat.id
                 ? "bg-violet-500/20 border-violet-500/40 text-violet-300"
-                : "bg-white/[0.03] border-white/[0.06] text-muted-foreground hover:bg-white/[0.06]"
+                : "bg-foreground/[0.03] border-foreground/[0.06] text-muted-foreground hover:bg-foreground/[0.06]"
             )}
           >
             <span>{cat.icon}</span>
@@ -218,7 +218,7 @@ export function HabitHubList({
                       "w-full px-3 py-2 text-xs text-start motion-safe:transition-colors min-h-[44px] flex items-center",
                       sortOption === opt
                         ? "text-violet-300 bg-violet-500/10"
-                        : "text-muted-foreground hover:bg-white/[0.05]"
+                        : "text-muted-foreground hover:bg-foreground/[0.05]"
                     )}
                   >
                     {sortLabels[opt]}
@@ -268,7 +268,7 @@ export function HabitHubList({
               {overallPercent}%
             </span>
           </div>
-          <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+          <div className="h-1.5 rounded-full bg-foreground/[0.06] overflow-hidden">
             <div
               className="h-full rounded-full motion-safe:transition-all motion-safe:duration-500"
               style={{

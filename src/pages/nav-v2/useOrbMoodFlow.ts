@@ -22,7 +22,7 @@ function valenceToMood(v: number): MoodType {
 
 export interface UseOrbMoodFlowReturn {
   // snapshot
-  moods: ReturnType<typeof useUserDataStore>["moods"];
+  moods: MoodEntry[];
   userName: string;
   todayMoods: MoodEntry[];
   orbValence: number;

@@ -169,8 +169,6 @@ export function GoalActionSheet({
           {/* Sheet */}
           <motion.div
             key="sheet-body"
-            role="dialog"
-            aria-modal="true"
             aria-label={`Goal: ${goal.title}`}
             className="fixed bottom-0 inset-x-0 z-[60] rounded-t-2xl overflow-hidden bg-card/95 backdrop-blur-md [-webkit-backdrop-filter:blur(12px)] pb-safe lg:max-w-4xl lg:mx-auto"
             initial={{ y: "100%" }}

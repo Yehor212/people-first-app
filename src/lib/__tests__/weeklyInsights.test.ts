@@ -102,6 +102,18 @@ function getPrevWeekDates(): string[] {
   return dates;
 }
 
+function expectDefined<T>(value: T | undefined, message = 'Expected value to be defined'): T {
+  expect(value).toBeDefined();
+  if (value === undefined) throw new Error(message);
+  return value;
+}
+
+function expectNotNull<T>(value: T | null, message = 'Expected value to be non-null'): T {
+  expect(value).not.toBeNull();
+  if (value === null) throw new Error(message);
+  return value;
+}
+
 // ============================================
 // TESTS
 // ============================================
@@ -287,8 +299,8 @@ describe('weeklyInsights', () => {
       ];
 
       const result = generateWeeklyInsights(moods, habits, focus);
-      expect(result.comparison).not.toBeNull();
-      expect(result.comparison.trend).toBe('improving');
+      const comparison = expectNotNull(result.comparison);
+      expect(comparison.trend).toBe('improving');
     });
 
     it('should detect declining trend when current week is worse', () => {
@@ -309,8 +321,8 @@ describe('weeklyInsights', () => {
       ];
 
       const result = generateWeeklyInsights(moods, habits, focus);
-      expect(result.comparison).not.toBeNull();
-      expect(result.comparison.trend).toBe('declining');
+      const comparison = expectNotNull(result.comparison);
+      expect(comparison.trend).toBe('declining');
     });
 
     it('should detect stable trend when weeks are similar', () => {
@@ -323,8 +335,8 @@ describe('weeklyInsights', () => {
       ];
 
       const result = generateWeeklyInsights(moods, [], []);
-      expect(result.comparison).not.toBeNull();
-      expect(result.comparison.trend).toBe('stable');
+      const comparison = expectNotNull(result.comparison);
+      expect(comparison.trend).toBe('stable');
     });
 
     it('should have previousWeek populated when previous week has data', () => {
@@ -336,8 +348,8 @@ describe('weeklyInsights', () => {
       ];
 
       const result = generateWeeklyInsights(moods, [], []);
-      expect(result.previousWeek).not.toBeNull();
-      expect(result.previousWeek.moodCount).toBe(7);
+      const previousWeek = expectNotNull(result.previousWeek);
+      expect(previousWeek.moodCount).toBe(7);
     });
   });
 
@@ -354,8 +366,7 @@ describe('weeklyInsights', () => {
       ];
 
       const result = generateWeeklyInsights(moods, [], []);
-      const moodRec = result.recommendations.find(r => r.id === 'low-mood-week');
-      expect(moodRec).toBeDefined();
+      const moodRec = expectDefined(result.recommendations.find(r => r.id === 'low-mood-week'));
       expect(moodRec.type).toBe('mood');
       expect(moodRec.priority).toBe('high');
     });
@@ -366,15 +377,13 @@ describe('weeklyInsights', () => {
       const focus = [makeFocusSession(weekDates[0], 20)];
 
       const result = generateWeeklyInsights([], [], focus);
-      const focusRec = result.recommendations.find(r => r.id === 'low-focus');
-      expect(focusRec).toBeDefined();
+      const focusRec = expectDefined(result.recommendations.find(r => r.id === 'low-focus'));
       expect(focusRec.type).toBe('focus');
     });
 
     it('should recommend gratitude when count is low', () => {
       const result = generateWeeklyInsights([], [], [], []);
-      const gratitudeRec = result.recommendations.find(r => r.id === 'more-gratitude');
-      expect(gratitudeRec).toBeDefined();
+      const gratitudeRec = expectDefined(result.recommendations.find(r => r.id === 'more-gratitude'));
       expect(gratitudeRec.type).toBe('general');
     });
 
@@ -384,8 +393,7 @@ describe('weeklyInsights', () => {
       const habits = [makeHabit('h1', 'Exercise', weekDates)];
 
       const result = generateWeeklyInsights([], habits, []);
-      const perfectRec = result.recommendations.find(r => r.id === 'perfect-week');
-      expect(perfectRec).toBeDefined();
+      const perfectRec = expectDefined(result.recommendations.find(r => r.id === 'perfect-week'));
       expect(perfectRec.type).toBe('habit');
     });
 

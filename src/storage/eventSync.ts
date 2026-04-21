@@ -12,6 +12,8 @@ import { db } from "@/storage/db";
 import { logger } from "@/lib/logger";
 import { isAbortError } from "@/lib/validation";
 import { triggerDataRefresh } from "@/hooks/useIndexedDB";
+import type { Json } from "@/types/supabase";
+import type { IndexableType, Table } from "dexie";
 
 // ── Types ─────────────────────────────────────────────────────────────
 
@@ -131,7 +133,7 @@ export async function writeEvent(
       entity_type: entityType,
       entity_id: entityId,
       op,
-      payload,
+      payload: payload as Json,
       device_id: deviceId,
     });
 
@@ -152,6 +154,8 @@ export async function writeEvent(
  */
 export async function fetchDelta(lastSeq: number, limit = 200): Promise<DeltaResult> {
   if (!supabase) return { events: [], hasMore: false };
+  const userId = await getCurrentUserId();
+  if (!userId) return { events: [], hasMore: false };
 
   const { data, error } = await supabase
     .from("sync_events")
@@ -219,8 +223,11 @@ export async function applyDelta(events: SyncEvent[], currentDeviceId: string): 
     if (tableName) tableNames.add(tableName);
   }
 
-  const tables = [...tableNames].map((name) => db.table(name));
-  tables.push(db.settings);
+  type TransactionTable = Table<unknown, IndexableType, unknown>;
+  const tables: TransactionTable[] = [...tableNames].map(
+    (name) => db.table(name) as unknown as TransactionTable
+  );
+  tables.push(db.settings as unknown as TransactionTable);
 
   const maxSeq = events[events.length - 1].seq;
   let applied = 0;
@@ -284,6 +291,8 @@ export async function applyDelta(events: SyncEvent[], currentDeviceId: string): 
 
 export async function getServerMaxSeq(): Promise<number> {
   if (!supabase) return 0;
+  const userId = await getCurrentUserId();
+  if (!userId) return 0;
 
   const { data, error } = await supabase.from("sync_seq_counters").select("last_seq").single();
 

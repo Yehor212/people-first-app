@@ -708,7 +708,7 @@ export const JournalModule = memo(function JournalModule({
             {/* Secure password reset dialog (email verification) */}
             {resetStep !== "idle" && (
               <div
-                className="fixed inset-0 z-[70] bg-black/50 flex items-center justify-center motion-safe:animate-fade-in"
+                className="fixed inset-0 z-[70] bg-black/50 dark:bg-black/50 flex items-center justify-center motion-safe:animate-fade-in"
                 onClick={closeResetDialog}
               >
                 <motion.div
@@ -1358,7 +1358,7 @@ export const JournalModule = memo(function JournalModule({
                         {!isLgScreen && showPasswordSettings && (
                           <>
                             <div
-                              className="fixed inset-0 z-[64] bg-black/30 motion-safe:animate-fade-in"
+                              className="fixed inset-0 z-[64] bg-black/30 dark:bg-black/30 motion-safe:animate-fade-in"
                               onClick={() => {
                                 setShowPasswordSettings(false);
                                 setShowChangePassword(false);
@@ -1681,7 +1681,7 @@ export const JournalModule = memo(function JournalModule({
       {isLgScreen && showPasswordSettings && (
         <>
           <div
-            className="fixed inset-0 z-[64] bg-black/30 motion-safe:animate-fade-in"
+            className="fixed inset-0 z-[64] bg-black/30 dark:bg-black/30 motion-safe:animate-fade-in"
             onClick={() => {
               setShowPasswordSettings(false);
               setShowChangePassword(false);

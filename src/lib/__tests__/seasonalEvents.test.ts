@@ -36,6 +36,22 @@ import {
 } from '../seasonalEvents';
 import type { SeasonalEvent, SeasonalChallenge, UserSeasonalProgress } from '../seasonalEvents';
 
+function expectDefined<T>(value: T | undefined, message = 'Expected value to be defined'): T {
+  expect(value).toBeDefined();
+  if (value === undefined) {
+    throw new Error(message);
+  }
+  return value;
+}
+
+function expectNotNull<T>(value: T | null, message = 'Expected value not to be null'): T {
+  expect(value).not.toBeNull();
+  if (value === null) {
+    throw new Error(message);
+  }
+  return value;
+}
+
 // ─── Helpers ────────────────────────────────────────────────────
 
 function makeEvent(overrides: Partial<SeasonalEvent> = {}): SeasonalEvent {
@@ -117,8 +133,7 @@ describe('getSeasonalEventsConfig', () => {
 
   it('Winter event spans into the following year', () => {
     const events = getSeasonalEventsConfig(2026);
-    const winter = events.find(e => e.id.startsWith('winter-'));
-    expect(winter).toBeDefined();
+    const winter = expectDefined(events.find(e => e.id.startsWith('winter-')));
     expect(winter.endDate).toContain('2027');
   });
 });
@@ -288,8 +303,7 @@ describe('updateChallengeProgress', () => {
   it('increments progress for a challenge in an active event', () => {
     vi.setSystemTime(new Date('2026-06-25T12:00:00'));
     const events = getActiveEvents(new Date());
-    const summerEvent = events.find(e => e.id.startsWith('summer-'));
-    expect(summerEvent).toBeDefined();
+    const summerEvent = expectDefined(events.find(e => e.id.startsWith('summer-')));
 
     initializeEventProgress(summerEvent.id, summerEvent.challenges);
     const challengeId = summerEvent.challenges[0].id;
@@ -302,8 +316,7 @@ describe('updateChallengeProgress', () => {
   it('caps progress at target and marks completed', () => {
     vi.setSystemTime(new Date('2026-06-25T12:00:00'));
     const events = getActiveEvents(new Date());
-    const summerEvent = events.find(e => e.id.startsWith('summer-'));
-    expect(summerEvent).toBeDefined();
+    const summerEvent = expectDefined(events.find(e => e.id.startsWith('summer-')));
 
     initializeEventProgress(summerEvent.id, summerEvent.challenges);
     const challenge = summerEvent.challenges[0];
@@ -317,8 +330,7 @@ describe('updateChallengeProgress', () => {
   it('does not increment already completed challenge', () => {
     vi.setSystemTime(new Date('2026-06-25T12:00:00'));
     const events = getActiveEvents(new Date());
-    const summerEvent = events.find(e => e.id.startsWith('summer-'));
-    expect(summerEvent).toBeDefined();
+    const summerEvent = expectDefined(events.find(e => e.id.startsWith('summer-')));
 
     initializeEventProgress(summerEvent.id, summerEvent.challenges);
     const challenge = summerEvent.challenges[0];
@@ -343,8 +355,7 @@ describe('claimCompletionReward', () => {
   it('returns null when not all challenges are completed', () => {
     vi.setSystemTime(new Date('2026-06-25T12:00:00'));
     const events = getActiveEvents(new Date());
-    const summerEvent = events.find(e => e.id.startsWith('summer-'));
-    expect(summerEvent).toBeDefined();
+    const summerEvent = expectDefined(events.find(e => e.id.startsWith('summer-')));
 
     initializeEventProgress(summerEvent.id, summerEvent.challenges);
     expect(claimCompletionReward(summerEvent.id)).toBeNull();
@@ -353,8 +364,7 @@ describe('claimCompletionReward', () => {
   it('returns completion reward when all challenges done', () => {
     vi.setSystemTime(new Date('2026-01-05T12:00:00'));
     const events = getActiveEvents(new Date());
-    const nyEvent = events.find(e => e.id.startsWith('new-year-'));
-    expect(nyEvent).toBeDefined();
+    const nyEvent = expectDefined(events.find(e => e.id.startsWith('new-year-')));
     expect(nyEvent.completionReward).toBeDefined();
 
     initializeEventProgress(nyEvent.id, nyEvent.challenges);
@@ -363,16 +373,14 @@ describe('claimCompletionReward', () => {
       updateChallengeProgress(nyEvent.id, ch.id, ch.target);
     }
 
-    const reward = claimCompletionReward(nyEvent.id);
-    expect(reward).toBeDefined();
+    const reward = expectNotNull(claimCompletionReward(nyEvent.id));
     expect(reward.type).toBe('badge');
   });
 
   it('returns null on second claim attempt', () => {
     vi.setSystemTime(new Date('2026-01-05T12:00:00'));
     const events = getActiveEvents(new Date());
-    const nyEvent = events.find(e => e.id.startsWith('new-year-'));
-    expect(nyEvent).toBeDefined();
+    const nyEvent = expectDefined(events.find(e => e.id.startsWith('new-year-')));
 
     initializeEventProgress(nyEvent.id, nyEvent.challenges);
     for (const ch of nyEvent.challenges) {
@@ -396,8 +404,7 @@ describe('event trigger hooks', () => {
     const progress = getSeasonalProgress();
     // Summer event has a focus_minutes challenge (not habit_streak)
     // so let's verify it got initialized
-    const summerKey = Object.keys(progress).find(k => k.startsWith('summer-'));
-    expect(summerKey).toBeDefined();
+    expectDefined(Object.keys(progress).find(k => k.startsWith('summer-')));
   });
 
   it('onMoodLogged updates mood_logs challenges', () => {
@@ -405,12 +412,12 @@ describe('event trigger hooks', () => {
     onMoodLogged();
 
     const progress = getSeasonalProgress();
-    const nyKey = Object.keys(progress).find(k => k.startsWith('new-year-'));
-    expect(nyKey).toBeDefined();
+    const nyKey = expectDefined(Object.keys(progress).find(k => k.startsWith('new-year-')));
     // New Year event has a mood_logs challenge
     const nyProgress = progress[nyKey];
-    const moodChallengeId = Object.keys(nyProgress.challenges).find(k => k.includes('mood'));
-    expect(moodChallengeId).toBeDefined();
+    const moodChallengeId = expectDefined(
+      Object.keys(nyProgress.challenges).find(k => k.includes('mood')),
+    );
     expect(nyProgress.challenges[moodChallengeId].progress).toBe(1);
   });
 
@@ -419,11 +426,11 @@ describe('event trigger hooks', () => {
     onFocusCompleted(30);
 
     const progress = getSeasonalProgress();
-    const summerKey = Object.keys(progress).find(k => k.startsWith('summer-'));
-    expect(summerKey).toBeDefined();
+    const summerKey = expectDefined(Object.keys(progress).find(k => k.startsWith('summer-')));
     const summerProgress = progress[summerKey];
-    const focusChallengeId = Object.keys(summerProgress.challenges).find(k => k.includes('focus'));
-    expect(focusChallengeId).toBeDefined();
+    const focusChallengeId = expectDefined(
+      Object.keys(summerProgress.challenges).find(k => k.includes('focus')),
+    );
     expect(summerProgress.challenges[focusChallengeId].progress).toBe(30);
   });
 
@@ -432,11 +439,11 @@ describe('event trigger hooks', () => {
     onGratitudeAdded();
 
     const progress = getSeasonalProgress();
-    const valKey = Object.keys(progress).find(k => k.startsWith('valentine-'));
-    expect(valKey).toBeDefined();
+    const valKey = expectDefined(Object.keys(progress).find(k => k.startsWith('valentine-')));
     const valProgress = progress[valKey];
-    const gratChallengeId = Object.keys(valProgress.challenges).find(k => k.includes('gratitude'));
-    expect(gratChallengeId).toBeDefined();
+    const gratChallengeId = expectDefined(
+      Object.keys(valProgress.challenges).find(k => k.includes('gratitude')),
+    );
     expect(valProgress.challenges[gratChallengeId].progress).toBe(1);
   });
 });
@@ -454,8 +461,7 @@ describe('getEventWithProgress', () => {
   it('merges stored progress into challenge fields', () => {
     vi.setSystemTime(new Date('2026-06-25T12:00:00'));
     const events = getActiveEvents(new Date());
-    const summerEvent = events.find(e => e.id.startsWith('summer-'));
-    expect(summerEvent).toBeDefined();
+    const summerEvent = expectDefined(events.find(e => e.id.startsWith('summer-')));
 
     initializeEventProgress(summerEvent.id, summerEvent.challenges);
     const challenge = summerEvent.challenges[0];

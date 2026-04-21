@@ -231,7 +231,7 @@ export function IntroSlide({ slide }: IntroSlideProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 1.2, duration: 0.6 }}
       >
-        <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 backdrop-blur-sm border border-white/10">
+          <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 dark:bg-white/5 backdrop-blur-sm border border-white/10 dark:border-white/10">
           <motion.div
             animate={{ rotate: 360 }}
             transition={{ duration: 8, repeat: Infinity, ease: "linear" }}

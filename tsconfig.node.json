@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "lib": ["ES2023"],
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "skipLibCheck": true,
 
@@ -11,12 +11,30 @@
     "isolatedModules": true,
     "moduleDetection": "force",
     "noEmit": true,
+    "types": ["node"],
 
     /* Linting */
     "strict": true,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   },
-  "include": ["vite.config.ts"]
+  "include": [
+    "src/**/*.d.ts",
+    "test/**/*.ts",
+    "e2e/**/*.ts",
+    "scripts/**/*.ts",
+    "vite.config.ts",
+    "vite-plugin-version.ts",
+    "capacitor.config.ts",
+    "playwright.config.ts",
+    "tailwind.config.ts",
+    "vitest.config.ts",
+    "knip.config.ts"
+  ]
 }

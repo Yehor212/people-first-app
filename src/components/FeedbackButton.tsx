@@ -118,7 +118,7 @@ export function FeedbackButton({ position = "bottom-right", className }: Feedbac
       {/* Feedback Modal */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-[100] flex items-end justify-center p-4 pb-[calc(1rem+var(--safe-bottom))] bg-black/50"
+          className="fixed inset-0 z-[100] flex items-end justify-center p-4 pb-[calc(1rem+var(--safe-bottom))] bg-black/50 dark:bg-black/50"
           role="dialog"
           aria-modal="true"
           aria-label={t.ariaFeedback}

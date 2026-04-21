@@ -165,7 +165,7 @@ export function SettingsPanel({
           {supabase && navigator.onLine && (
             <button
               // A11Y-OK: aria-label provided with translated text for screen readers
-              aria-label={(t as Record<string, string>).syncNow || "Sync Now"}
+              aria-label={(t as unknown as Record<string, string>).syncNow || "Sync Now"}
               onClick={() => {
                 void import("@/lib/offlineQueue").then(({ offlineQueue }) => {
                   void offlineQueue.processQueue();
@@ -173,7 +173,7 @@ export function SettingsPanel({
               }}
               className="text-xs text-primary font-medium hover:text-primary/80 motion-safe:transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
             >
-              {(t as Record<string, string>).syncNow || "Sync Now"}
+              {(t as unknown as Record<string, string>).syncNow || "Sync Now"}
             </button>
           )}
         </div>

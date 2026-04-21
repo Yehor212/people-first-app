@@ -43,6 +43,7 @@ import { HabitStreakTimeline } from "./HabitStreakTimeline";
 import { HabitNotesSection } from "./HabitNotesSection";
 import { cn, getToday } from "@/lib/utils";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
+import { getHabitPlanState } from "@/lib/habitPlan";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useBackHandler } from "@/hooks/useBackHandler";
 import { ENTRY } from "@/types";
@@ -143,6 +144,10 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
   const habitColor = habit
     ? resolveHabitColor(habit.color)
     : "hsl(var(--primary))";
+  const planState = useMemo(
+    () => (habit ? getHabitPlanState(habit, today) : null),
+    [habit, today],
+  );
 
   const handleArchiveToggle = useCallback(() => {
     if (!habit) return;
@@ -240,12 +245,20 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
                     {habit.category}
                   </span>
                 )}
+                {planState && (
+                  <div className="mt-1 text-[11px] text-muted-foreground">
+                    {planState.durationDays}-{ts.habitDurationDaysLabel || "day"} {ts.habitPlanLabel || "plan"}
+                    {" · "}
+                    {planState.isComplete
+                      ? (ts.completed || "Completed")
+                      : `${planState.remainingDays} ${ts.daysLeft || "days left"}`}
+                  </div>
+                )}
               </div>
               {/* Score ring */}
               <ProgressRing
                 progress={scorePercent}
                 size="md"
-                showPercentage
                 color={
                   scorePercent >= 60
                     ? "success"
@@ -275,7 +288,7 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
                   {scorePercent}%
                 </div>
                 <div className="text-[10px] text-muted-foreground/60 mt-0.5">
-                  {ts.habitScore || "Score"}
+                  {ts.habitConsistency || "Consistency"}
                 </div>
               </div>
               {streak > 0 && (
@@ -297,6 +310,14 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
             </motion.div>
 
             {/* ═══ STATISTICS ═══ */}
+            <motion.p
+              variants={sectionEntrance}
+              className="text-center text-xs text-muted-foreground"
+            >
+              {ts.habitConsistencyHint ||
+                "Weighted from your recent check-ins and target progress, not just today."}
+            </motion.p>
+
             <motion.div variants={sectionEntrance}>
               <HabitStatsSection
                 currentStreak={streak}

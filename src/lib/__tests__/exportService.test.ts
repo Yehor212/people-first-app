@@ -31,7 +31,7 @@ vi.mock('@/lib/logger', () => ({
 const mockClick = vi.fn();
 const mockAppendChild = vi.fn();
 const mockRemoveChild = vi.fn();
-const mockCreateObjectURL = vi.fn(() => 'blob:mock-url');
+const mockCreateObjectURL = vi.fn((_: Blob | MediaSource) => 'blob:mock-url');
 const mockRevokeObjectURL = vi.fn();
 
 beforeEach(() => {
@@ -110,7 +110,8 @@ describe('exportMoodsToCSV', () => {
 
   it('creates a blob with CSV data including headers', () => {
     exportMoodsToCSV(mockMoods as any);
-    const blobCall = mockCreateObjectURL.mock.calls[0][0];
+    expect(mockCreateObjectURL.mock.calls.length).toBeGreaterThan(0);
+    const blobCall = mockCreateObjectURL.mock.calls[0]?.[0];
     expect(blobCall).toBeInstanceOf(Blob);
   });
 

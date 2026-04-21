@@ -6,7 +6,7 @@ import type { StickerCategory, StickerPackPrefs } from './stickerUtils';
 
 export function useStickerPacks() {
   const [prefs, setPrefs] = useState<StickerPackPrefs>(() => {
-    const stored = safeLocalStorageGet<StickerPackPrefs>(SK.JOURNAL_STICKER_PACKS, null);
+    const stored = safeLocalStorageGet<StickerPackPrefs | null>(SK.JOURNAL_STICKER_PACKS, null);
     if (!stored) return DEFAULT_STICKER_PACK_PREFS;
     // Merge with defaults to handle newly added packs
     return {

@@ -131,7 +131,7 @@ export function EmotionPanel({ isVisible, anchorX, anchorY, onSave, onCancel }: 
           <div
             className={cn(
               "rounded-2xl p-4",
-              "border border-white/10",
+              "border border-white/10 dark:border-white/10",
               "shadow-zen-lg",
               "bg-[var(--surface-glass)] backdrop-blur-[var(--surface-glass-blur,20px)] [-webkit-backdrop-filter:blur(var(--surface-glass-blur,20px))]"
             )}
@@ -141,7 +141,7 @@ export function EmotionPanel({ isVisible, anchorX, anchorY, onSave, onCancel }: 
             <button
               type="button"
               onClick={handleCancel}
-              className="absolute top-2 end-2 p-1.5 rounded-lg text-white/60 hover:text-white/70 hover:bg-white/10 motion-safe:transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+              className="absolute top-2 end-2 p-1.5 rounded-lg text-white/60 hover:text-white/70 hover:bg-white/10 dark:hover:bg-white/10 motion-safe:transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
               aria-label={t.close || "Close"}
             >
               <X className="w-4 h-4" />
@@ -187,7 +187,7 @@ export function EmotionPanel({ isVisible, anchorX, anchorY, onSave, onCancel }: 
                     rows={2}
                     className={cn(
                       "w-full rounded-xl px-3 py-2 mb-3",
-                      "bg-white/5 border border-white/10",
+                      "bg-white/5 dark:bg-white/5 border border-white/10 dark:border-white/10",
                       "text-white text-sm placeholder:text-white/60",
                       "resize-none",
                       "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/20"
@@ -213,7 +213,7 @@ export function EmotionPanel({ isVisible, anchorX, anchorY, onSave, onCancel }: 
                       className={cn(
                         "px-4 py-2 rounded-xl text-sm",
                         "text-white/50 hover:text-white/70",
-                        "hover:bg-white/5 motion-safe:transition-colors"
+                        "hover:bg-white/5 dark:hover:bg-white/5 motion-safe:transition-colors"
                       )}
                     >
                       {t.cancel || "Cancel"}

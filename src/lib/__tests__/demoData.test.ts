@@ -91,8 +91,9 @@ describe('DEMO_DATA.focusSessions', () => {
 
   it('each session has a label', () => {
     for (const session of DEMO_DATA.focusSessions) {
+      expect(session.label).toBeDefined();
       expect(typeof session.label).toBe('string');
-      expect(session.label.length).toBeGreaterThan(0);
+      expect((session.label ?? '').length).toBeGreaterThan(0);
     }
   });
 });

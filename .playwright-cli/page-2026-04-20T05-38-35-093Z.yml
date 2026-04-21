@@ -1,0 +1,146 @@
+- generic:
+  - generic:
+    - generic:
+      - navigation:
+        - link:
+          - /url: "#main-content-v2"
+          - text: Skip to main content
+        - generic:
+          - generic: ZenFlow
+        - navigation:
+          - button:
+            - img
+            - generic: Orb
+          - button:
+            - img
+            - generic: Habits
+          - button:
+            - img
+            - generic: Diary
+        - generic:
+          - button:
+            - generic:
+              - generic:
+                - img
+            - generic: Dark
+          - button:
+            - img
+            - generic: Settings
+          - button:
+            - img
+            - generic: Collapse sidebar
+      - generic:
+        - main:
+          - generic:
+            - heading [level=1]: Habits
+          - region:
+            - heading [level=2]: Today's habits
+            - generic:
+              - paragraph:
+                - generic: "Today you are building:"
+                - generic:
+                  - generic: ✨
+                  - generic: Someone who keeps their word
+            - region:
+              - generic:
+                - heading [level=3]:
+                  - generic: ✨
+                  - text: Anytime
+                - generic: 0 / 1
+              - list:
+                - generic:
+                  - group:
+                    - listitem:
+                      - generic:
+                        - generic:
+                          - generic: рџ’§
+                          - generic:
+                            - paragraph: Drink water
+                        - generic: 0/2 L
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic: Mon
+                            - generic: Tue
+                            - generic: Wed
+                            - generic: Thu
+                            - generic: Fri
+                            - generic: Sat
+                            - generic: Sun
+                          - generic:
+                            - button:
+                              - generic: ·
+                            - button [disabled]:
+                              - generic: ·
+                            - button [disabled]:
+                              - generic: ·
+                            - button [disabled]:
+                              - generic: ·
+                            - button [disabled]:
+                              - generic: ·
+                            - button [disabled]:
+                              - generic: ·
+                            - button [disabled]:
+                              - generic: ·
+                      - generic:
+                        - generic: 0/2 L
+                        - button: Statistics
+            - paragraph: One missed day doesn't reset progress
+            - generic:
+              - button:
+                - img
+                - text: Create habit
+  - status
+  - alert
+  - generic: "0"
+  - dialog "Edit" [ref=e681]:
+    - generic [ref=e683]:
+      - heading "Edit" [level=2] [ref=e684]
+      - button "Cancel" [ref=e685] [cursor=pointer]:
+        - img [ref=e686]
+    - generic [ref=e690]:
+      - button "в†ђ Cancel" [ref=e691] [cursor=pointer]:
+        - generic [ref=e692]: в†ђ
+        - text: Cancel
+      - paragraph [ref=e694]: Edit Habit
+      - generic [ref=e695]:
+        - generic [ref=e696]:
+          - paragraph [ref=e697]: Template
+          - paragraph [ref=e698]: Drink water
+          - paragraph [ref=e699]: Review the goal, unit, and reminders before saving this template.
+        - tablist "Settings" [ref=e700]:
+          - tab "Essentials" [selected] [ref=e701] [cursor=pointer]
+          - tab "Advanced" [ref=e702] [cursor=pointer]
+      - generic [ref=e703]:
+        - paragraph [ref=e704]: Preview
+        - generic [ref=e705]:
+          - generic [ref=e706]: рџ’§
+          - generic [ref=e707]:
+            - paragraph [ref=e708]: Drink water
+            - paragraph [ref=e709]: 2 L В· Daily
+      - textbox "Habit name..." [active] [ref=e710]: Drink water
+      - generic [ref=e711]:
+        - paragraph [ref=e712]: "Frequency:"
+        - generic [ref=e713]:
+          - button "Daily" [ref=e714] [cursor=pointer]
+          - button "3x / week" [ref=e715] [cursor=pointer]
+          - button "2x / week" [ref=e716] [cursor=pointer]
+          - button "Weekly" [ref=e717] [cursor=pointer]
+      - generic [ref=e718]:
+        - generic [ref=e719]:
+          - button "L" [ref=e720] [cursor=pointer]
+          - button "ml" [ref=e721] [cursor=pointer]
+          - button "glasses" [ref=e722] [cursor=pointer]
+        - generic [ref=e723]:
+          - generic [ref=e724]: "Target:"
+          - generic [ref=e725]:
+            - button [ref=e726] [cursor=pointer]:
+              - img [ref=e727]
+            - spinbutton "Target" [ref=e728]: "2"
+            - button [ref=e729] [cursor=pointer]:
+              - img [ref=e730]
+            - textbox "Unit (L, km, min...)" [ref=e731]: L
+        - generic [ref=e732]:
+          - button "At Least" [ref=e733] [cursor=pointer]
+          - button "At Most" [ref=e734] [cursor=pointer]
+      - button "Save Changes" [ref=e735] [cursor=pointer]

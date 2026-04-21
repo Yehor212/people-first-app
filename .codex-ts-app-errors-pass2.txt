@@ -1,0 +1,183 @@
+src/components/__tests__/WelcomeBackModal.test.tsx(204,21): error TS2345: Argument of type 'HTMLButtonElement | null' is not assignable to parameter of type 'Element | Node | Window | Document'.
+  Type 'null' is not assignable to type 'Element | Node | Window | Document'.
+src/components/__tests__/WelcomeBackModal.test.tsx(226,21): error TS2345: Argument of type 'HTMLButtonElement | null' is not assignable to parameter of type 'Element | Node | Window | Document'.
+  Type 'null' is not assignable to type 'Element | Node | Window | Document'.
+src/components/auth-screen/AuthScreen.tsx(172,31): error TS2339: Property 'phoneNumberLabel' does not exist on type 'Translations'.
+src/components/auth-screen/AuthScreen.tsx(222,31): error TS2339: Property 'otpCodeLabel' does not exist on type 'Translations'.
+src/components/canvas/GoalInput.tsx(178,31): error TS2339: Property 'createGoal' does not exist on type 'Translations'.
+src/components/FontScaleSettings.tsx(31,13): error TS2352: Conversion of type 'Translations' to type 'Record<string, string>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Index signature for type 'string' is missing in type 'Translations'.
+src/components/FontScaleSettings.tsx(38,13): error TS2352: Conversion of type 'Translations' to type 'Record<string, string>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Index signature for type 'string' is missing in type 'Translations'.
+src/components/FontScaleSettings.tsx(41,13): error TS2352: Conversion of type 'Translations' to type 'Record<string, string>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Index signature for type 'string' is missing in type 'Translations'.
+src/components/FontScaleSettings.tsx(50,13): error TS2352: Conversion of type 'Translations' to type 'Record<string, string>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Index signature for type 'string' is missing in type 'Translations'.
+src/components/FontScaleSettings.tsx(74,24): error TS2352: Conversion of type 'Translations' to type 'Record<string, string>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Index signature for type 'string' is missing in type 'Translations'.
+src/components/settings/NotificationsSection.tsx(212,38): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type 'Translations'.
+  No index signature with a parameter of type 'string' was found on type 'Translations'.
+src/components/settings/NotificationsSection.tsx(230,26): error TS7053: Element implicitly has an 'any' type because expression of type '`${string}Desc`' can't be used to index type 'Translations'.
+src/components/settings/SecuritySection.tsx(23,16): error TS2352: Conversion of type 'Translations' to type 'Record<string, string>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Index signature for type 'string' is missing in type 'Translations'.
+src/components/SettingsPanel.tsx(168,28): error TS2352: Conversion of type 'Translations' to type 'Record<string, string>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Index signature for type 'string' is missing in type 'Translations'.
+src/components/SettingsPanel.tsx(176,17): error TS2352: Conversion of type 'Translations' to type 'Record<string, string>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Index signature for type 'string' is missing in type 'Translations'.
+src/components/stats/StatsPage.tsx(182,22): error TS2339: Property 'share' does not exist on type 'Translations'.
+src/components/stats/WeekCrystal.tsx(243,12): error TS7053: Element implicitly has an 'any' type because expression of type '`crystal${string}`' can't be used to index type 'Translations'.
+src/components/tabs/MindMapTab.tsx(50,7): error TS2322: Type 'RefObject<MindMapCanvasRef | null>' is not assignable to type 'LegacyRef<MindMapCanvasRef> | undefined'.
+  Type 'RefObject<MindMapCanvasRef | null>' is not assignable to type 'RefObject<MindMapCanvasRef>'.
+    Type 'MindMapCanvasRef | null' is not assignable to type 'MindMapCanvasRef'.
+      Type 'null' is not assignable to type 'MindMapCanvasRef'.
+src/components/TimeHelper.tsx(52,25): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(timeout: string | number | Timeout | undefined): void', gave the following error.
+    Argument of type 'Timeout | null' is not assignable to parameter of type 'string | number | Timeout | undefined'.
+      Type 'null' is not assignable to type 'string | number | Timeout | undefined'.
+  Overload 2 of 3, '(id: number | undefined): void', gave the following error.
+    Argument of type 'Timeout | null' is not assignable to parameter of type 'number | undefined'.
+      Type 'null' is not assignable to type 'number | undefined'.
+  Overload 3 of 3, '(id: number | undefined): void', gave the following error.
+    Argument of type 'Timeout | null' is not assignable to parameter of type 'number | undefined'.
+      Type 'null' is not assignable to type 'number | undefined'.
+src/components/weekly-insights-card/WeeklyInsightsParts.tsx(121,18): error TS2538: Type 'undefined' cannot be used as an index type.
+src/features/journal/KeyboardShortcutsOverlay.tsx(112,30): error TS2339: Property 'title' does not exist on type 'string'.
+src/features/journal/useStickerPacks.ts(9,84): error TS2345: Argument of type 'null' is not assignable to parameter of type 'StickerPackPrefs'.
+src/hooks/__tests__/focusTimerTypes.test.ts(93,12): error TS18047: 'result' is possibly 'null'.
+src/hooks/__tests__/focusTimerTypes.test.ts(94,12): error TS18047: 'result' is possibly 'null'.
+src/hooks/__tests__/focusTimerTypes.test.ts(95,12): error TS18047: 'result' is possibly 'null'.
+src/hooks/__tests__/useLocalStorage.test.ts(164,25): error TS2345: Argument of type 'string | null' is not assignable to parameter of type 'string'.
+  Type 'null' is not assignable to type 'string'.
+src/hooks/__tests__/useWidgetSync.test.ts(432,41): error TS2345: Argument of type '{ streak: number; habitsToday: number; habitsTotalToday: number; focusMinutes: number; }' is not assignable to parameter of type 'null'.
+src/hooks/useEntryTransition.test.ts(14,24): error TS2558: Expected 0-1 type arguments, but got 2.
+src/hooks/useEntryTransition.test.ts(17,14): error TS2345: Argument of type '[string, () => void | Promise<void>]' is not assignable to parameter of type 'never'.
+src/lib/__tests__/challengeStorage.test.ts(239,12): error TS18047: 'result' is possibly 'null'.
+src/lib/__tests__/challengeStorage.test.ts(240,12): error TS18047: 'result' is possibly 'null'.
+src/lib/__tests__/challengeStorage.test.ts(265,12): error TS18047: 'result' is possibly 'null'.
+src/lib/__tests__/challengeStorage.test.ts(266,12): error TS18047: 'result' is possibly 'null'.
+src/lib/__tests__/challengeStorage.test.ts(273,12): error TS18047: 'result' is possibly 'null'.
+src/lib/__tests__/challengeStorage.test.ts(274,12): error TS18047: 'result' is possibly 'null'.
+src/lib/__tests__/challengeStorage.test.ts(280,12): error TS18047: 'result' is possibly 'null'.
+src/lib/__tests__/challengeStorage.test.ts(290,12): error TS18048: 'badge' is possibly 'undefined'.
+src/lib/__tests__/demoData.test.ts(95,14): error TS18048: 'session.label' is possibly 'undefined'.
+src/lib/__tests__/exportService.test.ts(113,56): error TS2493: Tuple type '[]' of length '0' has no element at index '0'.
+src/lib/__tests__/gardenAtmosphere.test.ts(25,5): error TS2783: 'startHour' is specified more than once, so this usage will be overwritten.
+src/lib/__tests__/gardenAtmosphere.test.ts(27,5): error TS2783: 'endHour' is specified more than once, so this usage will be overwritten.
+src/lib/__tests__/moodInsights.test.ts(202,16): error TS18048: 'bestDayInsight' is possibly 'undefined'.
+src/lib/__tests__/moodInsights.test.ts(203,16): error TS18048: 'bestDayInsight' is possibly 'undefined'.
+src/lib/__tests__/moodInsights.test.ts(205,16): error TS18048: 'bestDayInsight' is possibly 'undefined'.
+src/lib/__tests__/moodInsights.test.ts(205,16): error TS18048: 'bestDayInsight.data' is possibly 'undefined'.
+src/lib/__tests__/moodInsights.test.ts(248,18): error TS18048: 'timeInsight.data' is possibly 'undefined'.
+src/lib/__tests__/moodInsights.test.ts(266,18): error TS18048: 'timeInsight.data' is possibly 'undefined'.
+src/lib/__tests__/moodInsights.test.ts(286,16): error TS18048: 'correlationInsight' is possibly 'undefined'.
+src/lib/__tests__/moodInsights.test.ts(287,16): error TS18048: 'correlationInsight' is possibly 'undefined'.
+src/lib/__tests__/moodInsights.test.ts(336,16): error TS18048: 'focusInsight' is possibly 'undefined'.
+src/lib/__tests__/moodInsights.test.ts(337,16): error TS18048: 'focusInsight' is possibly 'undefined'.
+src/lib/__tests__/moodInsights.test.ts(366,16): error TS18048: 'gratitudeInsight' is possibly 'undefined'.
+src/lib/__tests__/moodInsights.test.ts(367,16): error TS18048: 'gratitudeInsight' is possibly 'undefined'.
+src/lib/__tests__/moodInsights.test.ts(395,16): error TS18048: 'trendInsight' is possibly 'undefined'.
+src/lib/__tests__/moodInsights.test.ts(396,16): error TS18048: 'trendInsight' is possibly 'undefined'.
+src/lib/__tests__/moodInsights.test.ts(411,16): error TS18048: 'trendInsight' is possibly 'undefined'.
+src/lib/__tests__/moodInsights.test.ts(412,16): error TS18048: 'trendInsight' is possibly 'undefined'.
+src/lib/__tests__/moodInsights.test.ts(437,16): error TS18048: 'consistencyInsight' is possibly 'undefined'.
+src/lib/__tests__/moodInsights.test.ts(505,16): error TS18047: 'result' is possibly 'null'.
+src/lib/__tests__/progressStories.test.ts(254,14): error TS18048: 'moodSlide' is possibly 'undefined'.
+src/lib/__tests__/progressStories.test.ts(264,14): error TS18048: 'habitSlide' is possibly 'undefined'.
+src/lib/__tests__/progressStories.test.ts(298,14): error TS18048: 'focusSlide' is possibly 'undefined'.
+src/lib/__tests__/progressStories.test.ts(308,14): error TS18048: 'gratitudeSlide' is possibly 'undefined'.
+src/lib/__tests__/progressStories.test.ts(315,14): error TS18048: 'streakSlide' is possibly 'undefined'.
+src/lib/__tests__/progressStories.test.ts(328,14): error TS18048: 'streak30' is possibly 'undefined'.
+src/lib/__tests__/progressStories.test.ts(333,14): error TS18048: 'streak14' is possibly 'undefined'.
+src/lib/__tests__/progressStories.test.ts(338,14): error TS18048: 'streak7' is possibly 'undefined'.
+src/lib/__tests__/progressStories.test.ts(343,14): error TS18048: 'streak3' is possibly 'undefined'.
+src/lib/__tests__/progressStories.test.ts(351,14): error TS18048: 'achievementSlide' is possibly 'undefined'.
+src/lib/__tests__/progressStories.test.ts(367,14): error TS18048: 'summarySlide' is possibly 'undefined'.
+src/lib/__tests__/shareCardRenderer.test.ts(166,8): error TS2352: Conversion of type 'CanvasRenderingContext2D' to type 'Record<string, unknown>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Index signature for type 'string' is missing in type 'CanvasRenderingContext2D'.
+src/lib/__tests__/weeklyInsights.test.ts(291,14): error TS18047: 'result.comparison' is possibly 'null'.
+src/lib/__tests__/weeklyInsights.test.ts(313,14): error TS18047: 'result.comparison' is possibly 'null'.
+src/lib/__tests__/weeklyInsights.test.ts(327,14): error TS18047: 'result.comparison' is possibly 'null'.
+src/lib/__tests__/weeklyInsights.test.ts(340,14): error TS18047: 'result.previousWeek' is possibly 'null'.
+src/lib/__tests__/weeklyInsights.test.ts(359,14): error TS18048: 'moodRec' is possibly 'undefined'.
+src/lib/__tests__/weeklyInsights.test.ts(360,14): error TS18048: 'moodRec' is possibly 'undefined'.
+src/lib/__tests__/weeklyInsights.test.ts(371,14): error TS18048: 'focusRec' is possibly 'undefined'.
+src/lib/__tests__/weeklyInsights.test.ts(378,14): error TS18048: 'gratitudeRec' is possibly 'undefined'.
+src/lib/__tests__/weeklyInsights.test.ts(389,14): error TS18048: 'perfectRec' is possibly 'undefined'.
+src/lib/googleCalendar.ts(140,5): error TS2322: Type 'boolean | undefined' is not assignable to type 'boolean'.
+  Type 'undefined' is not assignable to type 'boolean'.
+src/lib/googleCalendar.ts(225,29): error TS18048: 'item.start' is possibly 'undefined'.
+src/lib/googleCalendar.ts(225,29): error TS2769: No overload matches this call.
+  Overload 1 of 4, '(value: string | number | Date): Date', gave the following error.
+    Argument of type 'string | undefined' is not assignable to parameter of type 'string | number | Date'.
+      Type 'undefined' is not assignable to type 'string | number | Date'.
+  Overload 2 of 4, '(value: string | number): Date', gave the following error.
+    Argument of type 'string | undefined' is not assignable to parameter of type 'string | number'.
+      Type 'undefined' is not assignable to type 'string | number'.
+src/lib/googleCalendar.ts(225,52): error TS18048: 'item.start' is possibly 'undefined'.
+src/lib/googleCalendar.ts(226,27): error TS18048: 'item.end' is possibly 'undefined'.
+src/lib/googleCalendar.ts(226,27): error TS2769: No overload matches this call.
+  Overload 1 of 4, '(value: string | number | Date): Date', gave the following error.
+    Argument of type 'string | undefined' is not assignable to parameter of type 'string | number | Date'.
+      Type 'undefined' is not assignable to type 'string | number | Date'.
+  Overload 2 of 4, '(value: string | number): Date', gave the following error.
+    Argument of type 'string | undefined' is not assignable to parameter of type 'string | number'.
+      Type 'undefined' is not assignable to type 'string | number'.
+src/lib/googleCalendar.ts(226,48): error TS18048: 'item.end' is possibly 'undefined'.
+src/lib/googleCalendar.ts(227,20): error TS18048: 'item.start' is possibly 'undefined'.
+src/lib/leaderboard.ts(53,29): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(relation: "challenges" | "badges" | "habits" | "friend_challenges" | "profiles" | "friend_challenge_members" | "adhd_state" | "analytics_events" | "app_config" | "design_flags" | ... 28 more ... | "user_tasks"): PostgrestQueryBuilder<...>', gave the following error.
+    Argument of type 'string' is not assignable to parameter of type '"challenges" | "badges" | "habits" | "friend_challenges" | "profiles" | "friend_challenge_members" | "adhd_state" | "analytics_events" | "app_config" | "design_flags" | "feedback" | ... 27 more ... | "user_tasks"'.
+  Overload 2 of 2, '(relation: never): PostgrestQueryBuilder<{ PostgrestVersion: "14.1"; }, { Tables: { adhd_state: { Row: { combo_count: number | null; combo_expires_at: number | null; combo_last_action: number | null; combo_multiplier: number | null; ... 5 more ...; user_id: string; }; Insert: { ...; }; Update: { ...; }; Relationships: []; }; ... 37 more ...; user_tasks: { ...; }; }; Views: {}; Functions: { ...; }; Enums: {}; CompositeTypes: {}; }, never, never, never>', gave the following error.
+    Argument of type 'string' is not assignable to parameter of type 'never'.
+src/lib/moodInsights.ts(232,21): error TS2339: Property 'icon' does not exist on type 'never'.
+src/lib/moodInsights.ts(235,32): error TS2339: Property 'name' does not exist on type 'never'.
+src/lib/moodInsights.ts(236,25): error TS2339: Property 'name' does not exist on type 'never'.
+src/lib/moodInsights.ts(237,50): error TS2339: Property 'name' does not exist on type 'never'.
+src/lib/moodInsights.ts(239,32): error TS2339: Property 'id' does not exist on type 'never'.
+src/lib/motion/components/Breathe.tsx(26,6): error TS2322: Type '{ children: ReactNode; ref?: LegacyRef<HTMLDivElement> | undefined; slot?: string | undefined; title?: string | undefined; key?: Key | null | undefined; ... 319 more ...; className: string | undefined; }' is not assignable to type 'Omit<HTMLMotionProps<"div">, "ref">'.
+  Types of property 'animate' are incompatible.
+    Type 'boolean | { readonly scale: readonly [1, 1.015, 1]; readonly opacity: readonly [0.88, 1, 0.88]; } | TargetAndTransition | VariantLabels | LegacyAnimationControls' is not assignable to type 'boolean | TargetAndTransition | VariantLabels | LegacyAnimationControls | undefined'.
+      Type '{ readonly scale: readonly [1, 1.015, 1]; readonly opacity: readonly [0.88, 1, 0.88]; }' is not assignable to type 'boolean | TargetAndTransition | VariantLabels | LegacyAnimationControls | undefined'.
+        Type '{ readonly scale: readonly [1, 1.015, 1]; readonly opacity: readonly [0.88, 1, 0.88]; }' is not assignable to type 'TargetAndTransition'.
+          Type '{ readonly scale: readonly [1, 1.015, 1]; readonly opacity: readonly [0.88, 1, 0.88]; }' is not assignable to type 'Target'.
+            Type '{ readonly scale: readonly [1, 1.015, 1]; readonly opacity: readonly [0.88, 1, 0.88]; }' is not assignable to type 'StyleKeyframesDefinition'.
+              Types of property 'opacity' are incompatible.
+                Type 'readonly [0.88, 1, 0.88]' is not assignable to type 'ValueKeyframesDefinition | undefined'.
+                  The type 'readonly [0.88, 1, 0.88]' is 'readonly' and cannot be assigned to the mutable type 'UnresolvedValueKeyframe<AnyResolvedKeyframe>[]'.
+src/lib/randomQuests.ts(491,19): error TS2345: Argument of type 'null' is not assignable to parameter of type '{ daily?: Quest | null | undefined; weekly?: Quest | null | undefined; bonus?: Quest | null | undefined; }'.
+src/lib/randomQuests.ts(498,21): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ daily?: Quest | null | undefined; weekly?: Quest | null | undefined; bonus?: Quest | null | undefined; }'.
+  No index signature with a parameter of type 'string' was found on type '{ daily?: Quest | null | undefined; weekly?: Quest | null | undefined; bonus?: Quest | null | undefined; }'.
+src/lib/randomQuests.ts(509,7): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ daily?: Quest | null | undefined; weekly?: Quest | null | undefined; bonus?: Quest | null | undefined; }'.
+  No index signature with a parameter of type 'string' was found on type '{ daily?: Quest | null | undefined; weekly?: Quest | null | undefined; bonus?: Quest | null | undefined; }'.
+src/lib/retry.ts(63,7): error TS2741: Property 'delaysMs' is missing in type '{ maxRetries: number; baseMs: number; capMs: number; jitter: "full"; maxElapsedMs: number; }' but required in type 'Required<Omit<RetryOptions, "signal" | "classifyError" | "onRetry">>'.
+src/lib/scheduleIdle.ts(30,21): error TS2339: Property 'setTimeout' does not exist on type 'never'.
+src/pages/nav-v2/__tests__/integration.orbToDiaryHandoff.test.tsx(257,17): error TS2339: Property 'disabled' does not exist on type 'HTMLElement'.
+src/pages/nav-v2/habits/HabitsHeroZone.tsx(19,40): error TS2554: Expected 2 arguments, but got 1.
+src/pages/nav-v2/habits/HabitsPage.tsx(36,30): error TS2554: Expected 2 arguments, but got 1.
+src/pages/nav-v2/habits/hero/HeroTemplateLibrarySheet.tsx(124,20): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type 'Translations'.
+  No index signature with a parameter of type 'string' was found on type 'Translations'.
+src/pages/nav-v2/useOrbMoodFlow.ts(25,46): error TS2339: Property 'moods' does not exist on type 'unknown'.
+src/storage/eventSync.ts(129,58): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(values: RejectExcessProperties<{ created_at?: string | undefined; device_id: string; entity_id: string; entity_type: string; id?: string | undefined; idempotency_key?: string | null | undefined; op: string; payload?: Json | undefined; seq?: number | undefined; user_id: string; version?: number | undefined; }, { ...; }>, options?: { ...; } | undefined): PostgrestFilterBuilder<...>', gave the following error.
+    Type 'Record<string, unknown> | null' is not assignable to type 'Json | undefined'.
+      Type 'Record<string, unknown>' is not assignable to type 'Json | undefined'.
+        Type 'Record<string, unknown>' is missing the following properties from type 'Json[]': length, pop, push, concat, and 29 more.
+  Overload 2 of 2, '(values: RejectExcessProperties<{ created_at?: string | undefined; device_id: string; entity_id: string; entity_type: string; id?: string | undefined; idempotency_key?: string | null | undefined; op: string; payload?: Json | undefined; seq?: number | undefined; user_id: string; version?: number | undefined; }, { ...; }>[], options?: { ...; } | undefined): PostgrestFilterBuilder<...>', gave the following error.
+    Object literal may only specify known properties, and 'user_id' does not exist in type 'RejectExcessProperties<{ created_at?: string | undefined; device_id: string; entity_id: string; entity_type: string; id?: string | undefined; idempotency_key?: string | null | undefined; op: string; payload?: Json | undefined; seq?: number | undefined; user_id: string; version?: number | undefined; }, { ...; }>[]'.
+src/storage/eventSync.ts(225,15): error TS2345: Argument of type 'Table<{ key: string; value: unknown; }, string, { key: string; value: unknown; }>' is not assignable to parameter of type 'Table<any, IndexableType, any>'.
+  Types of property 'hook' are incompatible.
+    Types of parameters 'subscriber' and 'subscriber' are incompatible.
+      Type 'void | IndexableType | undefined' is not assignable to type 'string | void | undefined'.
+        Type 'number' is not assignable to type 'string | void | undefined'.
+src/storage/reminderSync.ts(21,15): error TS18047: 'supabase' is possibly 'null'.
+src/storage/reminderSync.ts(60,29): error TS18047: 'supabase' is possibly 'null'.
+src/stores/__tests__/designFlagStore.test.ts(97,39): error TS18047: 'supabase' is possibly 'null'.
+src/stores/__tests__/designFlagStore.test.ts(132,39): error TS18047: 'supabase' is possibly 'null'.
+src/stores/__tests__/designFlagStore.test.ts(145,14): error TS18047: 'supabase' is possibly 'null'.
+src/stores/__tests__/designFlagStore.test.ts(176,39): error TS18047: 'supabase' is possibly 'null'.
+src/stores/designFlagStore.ts(53,12): error TS2352: Conversion of type '{ getItem: () => null; setItem: () => undefined; removeItem: () => undefined; }' to type 'Storage' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type '{ getItem: () => null; setItem: () => undefined; removeItem: () => undefined; }' is missing the following properties from type 'Storage': length, clear, key
+src/stores/userDataStore.ts(102,20): error TS2352: Conversion of type 'Setter<MoodEntry[]> | Setter<Habit[]> | Setter<FocusSession[]> | Setter<GratitudeEntry[]> | Setter<...> | ... 5 more ... | Setter<...>' to type 'Setter<T>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'Setter<CanvasGoal[]>' is not comparable to type 'Setter<T>'.
+    Type 'CanvasGoal[]' is not comparable to type 'T'.
+      'T' could be instantiated with an arbitrary type which could be unrelated to 'CanvasGoal[]'.

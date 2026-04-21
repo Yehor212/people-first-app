@@ -1,16 +1,25 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { db } from "@/storage/db";
-import { exportBackup, importBackup, BACKUP_SCHEMA_VERSION } from "@/storage/backup";
+import {
+  exportBackup,
+  importBackup,
+  BACKUP_SCHEMA_VERSION,
+  type BackupPayload,
+} from "@/storage/backup";
 
 describe("backup", () => {
   beforeEach(async () => {
-    await db.transaction("rw", db.moods, db.habits, db.focusSessions, db.gratitudeEntries, db.settings, async () => {
-      await db.moods.clear();
-      await db.habits.clear();
-      await db.focusSessions.clear();
-      await db.gratitudeEntries.clear();
-      await db.settings.clear();
-    });
+    await db.transaction(
+      "rw",
+      [db.moods, db.habits, db.focusSessions, db.gratitudeEntries, db.settings],
+      async () => {
+        await db.moods.clear();
+        await db.habits.clear();
+        await db.focusSessions.clear();
+        await db.gratitudeEntries.clear();
+        await db.settings.clear();
+      },
+    );
   });
 
   it("exports schema version and device id", async () => {
@@ -29,20 +38,23 @@ describe("backup", () => {
     });
 
     const payload = {
-      schemaVersion: 2 as const,
+      schemaVersion: BACKUP_SCHEMA_VERSION,
       createdAt: new Date().toISOString(),
       deviceId: "device_test",
       data: {
         moods: [
-          { id: "m1", mood: "great", date: "2026-01-01", timestamp: 2 },
-          { id: "m2", mood: "okay", date: "2026-01-02", timestamp: 3 }
+          { id: "m1", mood: "great" as const, date: "2026-01-01", timestamp: 2 },
+          { id: "m2", mood: "okay" as const, date: "2026-01-02", timestamp: 3 },
         ],
         habits: [],
         focusSessions: [],
         gratitudeEntries: [],
-        settings: []
-      }
-    };
+        settings: [],
+        journalEntries: [],
+        journalPhotos: [],
+        journalAudio: [],
+      },
+    } satisfies BackupPayload;
 
     const report = await importBackup(payload, "merge");
     expect(report.moods.added).toBe(1);

@@ -1,0 +1,285 @@
+- generic:
+  - generic:
+    - generic:
+      - navigation:
+        - link:
+          - /url: "#main-content-v2"
+          - text: Skip to main content
+        - generic:
+          - generic: ZenFlow
+        - navigation:
+          - button:
+            - img
+            - generic: Orb
+          - button:
+            - img
+            - generic: Habits
+          - button:
+            - img
+            - generic: Diary
+        - generic:
+          - button:
+            - generic:
+              - generic:
+                - img
+            - generic: Dark
+          - button:
+            - img
+            - generic: Settings
+          - button:
+            - img
+            - generic: Collapse sidebar
+      - generic:
+        - main:
+          - generic:
+            - heading [level=1]: Habits
+          - region:
+            - heading [level=2]: Today's habits
+            - generic:
+              - paragraph:
+                - generic: "Today you are building:"
+                - generic:
+                  - generic: ✨
+                  - generic: Someone who keeps their word
+            - region:
+              - generic:
+                - heading [level=3]:
+                  - generic: ✨
+                  - text: Anytime
+                - generic: 0 / 1
+              - list:
+                - generic:
+                  - group:
+                    - listitem:
+                      - generic:
+                        - generic:
+                          - generic: рџ’§
+                          - generic:
+                            - paragraph: Drink water
+                        - generic: 0/2 L
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic: Mon
+                            - generic: Tue
+                            - generic: Wed
+                            - generic: Thu
+                            - generic: Fri
+                            - generic: Sat
+                            - generic: Sun
+                          - generic:
+                            - button:
+                              - generic: ·
+                            - button [disabled]:
+                              - generic: ·
+                            - button [disabled]:
+                              - generic: ·
+                            - button [disabled]:
+                              - generic: ·
+                            - button [disabled]:
+                              - generic: ·
+                            - button [disabled]:
+                              - generic: ·
+                            - button [disabled]:
+                              - generic: ·
+                      - generic:
+                        - generic: 0/2 L
+                        - button: Statistics
+            - paragraph: One missed day doesn't reset progress
+            - generic:
+              - button:
+                - img
+                - text: Create habit
+  - status
+  - alert
+  - generic: "0"
+  - dialog "Edit" [ref=e681]:
+    - generic [ref=e683]:
+      - heading "Edit" [level=2] [ref=e684]
+      - button "Cancel" [ref=e685] [cursor=pointer]:
+        - img [ref=e686]
+    - generic [ref=e690]:
+      - button "в†ђ Cancel" [ref=e691] [cursor=pointer]:
+        - generic [ref=e692]: в†ђ
+        - text: Cancel
+      - paragraph [ref=e694]: Edit Habit
+      - generic [ref=e695]:
+        - generic [ref=e696]:
+          - paragraph [ref=e697]: Template
+          - paragraph [ref=e698]: Drink water
+        - tablist "Settings" [ref=e700]:
+          - tab "Essentials" [ref=e701] [cursor=pointer]
+          - tab "Advanced" [active] [selected] [ref=e702] [cursor=pointer]
+      - generic [ref=e703]:
+        - paragraph [ref=e704]: Preview
+        - generic [ref=e705]:
+          - generic [ref=e706]: рџ’§
+          - generic [ref=e707]:
+            - paragraph [ref=e708]: Drink water
+            - paragraph [ref=e709]: 2 L В· Daily
+      - textbox "Habit name..." [ref=e710]: Drink water
+      - textbox "Question (e.g., \"Did you exercise today?\")" [ref=e736]
+      - generic [ref=e737]:
+        - paragraph [ref=e738]: "Habit type:"
+        - generic [ref=e739]:
+          - button "✓ Simple Just check it off (Yes/No)" [ref=e740] [cursor=pointer]:
+            - generic [ref=e741]: ✓ Simple
+            - generic [ref=e742]: Just check it off (Yes/No)
+          - button "🔢 Measurable Track a number per day" [ref=e743] [cursor=pointer]:
+            - generic [ref=e744]: 🔢 Measurable
+            - generic [ref=e745]: Track a number per day
+      - generic [ref=e711]:
+        - paragraph [ref=e712]: "Frequency:"
+        - generic [ref=e713]:
+          - button "Daily" [ref=e714] [cursor=pointer]
+          - button "3x / week" [ref=e715] [cursor=pointer]
+          - button "2x / week" [ref=e716] [cursor=pointer]
+          - button "Weekly" [ref=e717] [cursor=pointer]
+      - generic [ref=e718]:
+        - generic [ref=e719]:
+          - button "L" [ref=e720] [cursor=pointer]
+          - button "ml" [ref=e721] [cursor=pointer]
+          - button "glasses" [ref=e722] [cursor=pointer]
+        - generic [ref=e723]:
+          - generic [ref=e724]: "Target:"
+          - generic [ref=e725]:
+            - button [ref=e726] [cursor=pointer]:
+              - img [ref=e727]
+            - spinbutton "Target" [ref=e728]: "2"
+            - button [ref=e729] [cursor=pointer]:
+              - img [ref=e730]
+            - textbox "Unit (L, km, min...)" [ref=e731]: L
+        - generic [ref=e732]:
+          - button "At Least" [ref=e733] [cursor=pointer]
+          - button "At Most" [ref=e734] [cursor=pointer]
+      - generic [ref=e746]:
+        - paragraph [ref=e747]: "Icon:"
+        - radiogroup "Icon:" [ref=e748]:
+          - radio "Select icon рџ’§" [checked] [ref=e749] [cursor=pointer]: рџ’§
+          - radio "Select icon рџЏѓ" [ref=e750] [cursor=pointer]: рџЏѓ
+          - radio "Select icon рџ“љ" [ref=e751] [cursor=pointer]: рџ“љ
+          - 'radio "Select icon рџ§" [ref=e752] [cursor=pointer]': "рџ§\x98"
+          - radio "Select icon рџ’Љ" [ref=e753] [cursor=pointer]: рџ’Љ
+          - radio "Select icon рџҐ—" [ref=e754] [cursor=pointer]: рџҐ—
+          - 'radio "Select icon рџґ" [ref=e755] [cursor=pointer]': "рџ\x98ґ"
+          - radio "Select icon вњЌпёЏ" [ref=e756] [cursor=pointer]: вњЌпёЏ
+          - radio "Select icon рџЋµ" [ref=e757] [cursor=pointer]: рџЋµ
+          - radio "Select icon рџЊї" [ref=e758] [cursor=pointer]: рџЊї
+          - radio "Select icon рџљ" [ref=e759] [cursor=pointer]: рџљ
+          - radio "Select icon рџЌ·" [ref=e760] [cursor=pointer]: рџЌ·
+          - radio "Select icon рџ—ЈпёЏ" [ref=e761] [cursor=pointer]: рџ—ЈпёЏ
+          - radio "Select icon рџ’Є" [ref=e762] [cursor=pointer]: рџ’Є
+          - radio "Select icon рџ§" [ref=e763] [cursor=pointer]: рџ§
+      - generic [ref=e764]:
+        - paragraph [ref=e765]: "Color:"
+        - radiogroup "Color:" [ref=e766]:
+          - radio "Select color 1" [ref=e767] [cursor=pointer]
+          - radio "Select color 2" [ref=e768] [cursor=pointer]
+          - radio "Select color 3" [ref=e769] [cursor=pointer]
+          - radio "Select color 4" [ref=e770] [cursor=pointer]
+          - radio "Select color 5" [ref=e771] [cursor=pointer]
+          - radio "Select color 6" [ref=e772] [cursor=pointer]
+          - radio "Select color 7" [ref=e773] [cursor=pointer]
+          - radio "Select color 8" [ref=e774] [cursor=pointer]
+          - radio "Select color 9" [ref=e775] [cursor=pointer]
+          - radio "Select color 10" [ref=e776] [cursor=pointer]
+          - radio "Select color 11" [checked] [ref=e777] [cursor=pointer]
+          - radio "Select color 12" [ref=e778] [cursor=pointer]
+          - radio "Select color 13" [ref=e779] [cursor=pointer]
+          - radio "Select color 14" [ref=e780] [cursor=pointer]
+          - radio "Select color 15" [ref=e781] [cursor=pointer]
+          - radio "Select color 16" [ref=e782] [cursor=pointer]
+          - radio "Select color 17" [ref=e783] [cursor=pointer]
+          - radio "Select color 18" [ref=e784] [cursor=pointer]
+          - radio "Select color 19" [ref=e785] [cursor=pointer]
+          - radio "Select color 20" [ref=e786] [cursor=pointer]
+      - generic [ref=e787]:
+        - generic [ref=e788]: "Category:"
+        - generic [ref=e789]:
+          - button "рџ’Є Health" [ref=e790] [cursor=pointer]:
+            - generic [ref=e791]: рџ’Є
+            - generic [ref=e792]: Health
+          - 'button "рџ§ Mindfulness" [ref=e793] [cursor=pointer]':
+            - generic [ref=e794]: "рџ§\x98"
+            - generic [ref=e795]: Mindfulness
+          - button "рџљЂ Productivity" [ref=e796] [cursor=pointer]:
+            - generic [ref=e797]: рџљЂ
+            - generic [ref=e798]: Productivity
+          - button "рџ‘Ґ Social" [ref=e799] [cursor=pointer]:
+            - generic [ref=e800]: рџ‘Ґ
+            - generic [ref=e801]: Social
+          - button "рџЋЁ Creativity" [ref=e802] [cursor=pointer]:
+            - generic [ref=e803]: рџЋЁ
+            - generic [ref=e804]: Creativity
+          - button "рџ’° Finance" [ref=e805] [cursor=pointer]:
+            - generic [ref=e806]: рџ’°
+            - generic [ref=e807]: Finance
+          - button "рџЊё Self-care" [ref=e808] [cursor=pointer]:
+            - generic [ref=e809]: рџЊё
+            - generic [ref=e810]: Self-care
+          - button "вњЁ Other" [ref=e811] [cursor=pointer]:
+            - generic [ref=e812]: вњЁ
+            - generic [ref=e813]: Other
+      - generic [ref=e814]:
+        - generic [ref=e815]:
+          - img [ref=e816]
+          - paragraph [ref=e825]: Identity Mapping
+        - paragraph [ref=e826]: Connect this habit to who you're becoming
+        - generic [ref=e827]:
+          - generic [ref=e828]: Cluster
+          - textbox "e.g., The Mindful Me" [ref=e829]
+        - generic [ref=e830]:
+          - generic [ref=e831]: Affirmation
+          - textbox "e.g., I am a meditator" [ref=e832]
+        - generic [ref=e833]:
+          - generic [ref=e834]: Icon
+          - radiogroup "Icon" [ref=e835]:
+            - radio "Brain" [ref=e836] [cursor=pointer]:
+              - img [ref=e837]
+            - radio "Heart" [ref=e847] [cursor=pointer]:
+              - img [ref=e848]
+            - radio "Dumbbell" [ref=e850] [cursor=pointer]:
+              - img [ref=e851]
+            - radio "BookOpen" [ref=e857] [cursor=pointer]:
+              - img [ref=e858]
+            - radio "Leaf" [ref=e860] [cursor=pointer]:
+              - img [ref=e861]
+            - radio "Flame" [ref=e864] [cursor=pointer]:
+              - img [ref=e865]
+            - radio "Target" [ref=e867] [cursor=pointer]:
+              - img [ref=e868]
+            - radio "Sparkles" [ref=e872] [cursor=pointer]:
+              - img [ref=e873]
+            - radio "Palette" [ref=e875] [cursor=pointer]:
+              - img [ref=e876]
+            - radio "Music" [ref=e882] [cursor=pointer]:
+              - img [ref=e883]
+            - radio "Sun" [ref=e887] [cursor=pointer]:
+              - img [ref=e888]
+            - radio "Moon" [ref=e894] [cursor=pointer]:
+              - img [ref=e895]
+            - radio "Coffee" [ref=e897] [cursor=pointer]:
+              - img [ref=e898]
+            - radio "Shield" [ref=e900] [cursor=pointer]:
+              - img [ref=e901]
+            - radio "GraduationCap" [ref=e903] [cursor=pointer]:
+              - img [ref=e904]
+            - radio "Briefcase" [ref=e907] [cursor=pointer]:
+              - img [ref=e908]
+            - radio "Users" [ref=e911] [cursor=pointer]:
+              - img [ref=e912]
+            - radio "Pencil" [ref=e917] [cursor=pointer]:
+              - img [ref=e918]
+            - radio "Eye" [ref=e921] [cursor=pointer]:
+              - img [ref=e922]
+            - radio "Star" [ref=e925] [cursor=pointer]:
+              - img [ref=e926]
+      - generic [ref=e928]:
+        - generic [ref=e929]:
+          - generic [ref=e930]: Reminders
+          - button "+ Add" [ref=e931] [cursor=pointer]
+        - paragraph [ref=e932]: No reminders set
+      - generic [ref=e933]:
+        - generic [ref=e934]: "Notes (optional):"
+        - textbox "Additional details..." [ref=e935]
+      - button "Save Changes" [ref=e735] [cursor=pointer]

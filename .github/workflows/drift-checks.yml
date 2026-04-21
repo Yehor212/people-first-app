@@ -18,6 +18,7 @@ on:
       - 'CLAUDE.md'
       - 'scripts/doc-counts.cjs'
       - 'scripts/check-types-freshness.cjs'
+      - 'scripts/check-supabase-migration-prefixes.cjs'
       - 'scripts/check-oss-licenses.cjs'
       - 'scripts/a11y-icons-audit.cjs'
       - '.github/workflows/drift-checks.yml'
@@ -45,6 +46,9 @@ jobs:
           - name: types-freshness
             cmd: node scripts/check-types-freshness.cjs
             fix: npx supabase gen types typescript --project-id <id> > src/types/supabase.ts
+          - name: supabase-migration-prefixes
+            cmd: node scripts/check-supabase-migration-prefixes.cjs
+            fix: create new migrations via `supabase migration new <name>` and avoid duplicate numeric prefixes in supabase/migrations
           - name: retry-tests
             cmd: npx vitest run src/lib/__tests__/retry.test.ts src/lib/__tests__/appUpdateManager.test.ts src/lib/__tests__/lazyWithRetry.test.ts
             fix: fix failing tests in src/lib/retry.ts (or migrated call-sites)

@@ -23,6 +23,22 @@ import {
 } from '../adhdHooks';
 import type { MysteryBox } from '../adhdHooks';
 
+function expectDefined<T>(value: T | undefined, message = 'Expected value to be defined'): T {
+  expect(value).toBeDefined();
+  if (value === undefined) {
+    throw new Error(message);
+  }
+  return value;
+}
+
+function expectNotNull<T>(value: T | null, message = 'Expected value not to be null'): T {
+  expect(value).not.toBeNull();
+  if (value === null) {
+    throw new Error(message);
+  }
+  return value;
+}
+
 // ─── Setup ──────────────────────────────────────────────────────
 
 beforeEach(() => {
@@ -175,20 +191,17 @@ describe('getComboMessage', () => {
   });
 
   it('returns message at count 3', () => {
-    const msg = getComboMessage(3);
-    expect(msg).not.toBeNull();
+    const msg = expectNotNull(getComboMessage(3));
     expect(msg.text).toContain('x3');
   });
 
   it('returns message at count 5', () => {
-    const msg = getComboMessage(5);
-    expect(msg).not.toBeNull();
+    const msg = expectNotNull(getComboMessage(5));
     expect(msg.text).toContain('SUPER');
   });
 
   it('returns message at count 10', () => {
-    const msg = getComboMessage(10);
-    expect(msg).not.toBeNull();
+    const msg = expectNotNull(getComboMessage(10));
     expect(msg.text).toContain('UNSTOPPABLE');
   });
 
@@ -346,23 +359,20 @@ describe('generateWeekendChallenge', () => {
   it('returns a challenge on Saturday', () => {
     // 2026-06-20 is Saturday
     vi.setSystemTime(new Date('2026-06-20T10:00:00'));
-    const challenge = generateWeekendChallenge();
-    expect(challenge).not.toBeNull();
+    const challenge = expectNotNull(generateWeekendChallenge());
     expect(challenge.type).toBe('weekend');
   });
 
   it('returns a challenge on Sunday', () => {
     // 2026-06-21 is Sunday
     vi.setSystemTime(new Date('2026-06-21T10:00:00'));
-    const challenge = generateWeekendChallenge();
-    expect(challenge).not.toBeNull();
+    const challenge = expectNotNull(generateWeekendChallenge());
     expect(challenge.type).toBe('weekend');
   });
 
   it('weekend challenge has positive xpReward', () => {
     vi.setSystemTime(new Date('2026-06-20T10:00:00'));
-    const challenge = generateWeekendChallenge();
-    expect(challenge).not.toBeNull();
+    const challenge = expectNotNull(generateWeekendChallenge());
     expect(challenge.xpReward).toBeGreaterThan(0);
   });
 });
@@ -390,17 +400,16 @@ describe('getAvailablePowerUps', () => {
 
 describe('activatePowerUp', () => {
   it('returns a PowerUp with activatedAt and expiresAt for valid id', () => {
-    const result = activatePowerUp('2x_xp');
-    expect(result).not.toBeNull();
+    const result = expectNotNull(activatePowerUp('2x_xp'));
     expect(result.activatedAt).toBeDefined();
     expect(result.expiresAt).toBeDefined();
     expect(result.effect).toBe('2x_xp');
   });
 
   it('sets expiresAt = activatedAt + duration in ms', () => {
-    const result = activatePowerUp('2x_xp');
-    expect(result).not.toBeNull();
-    const expectedExpiry = result.activatedAt + result.duration * 60 * 1000;
+    const result = expectNotNull(activatePowerUp('2x_xp'));
+    const activatedAt = expectDefined(result.activatedAt);
+    const expectedExpiry = activatedAt + result.duration * 60 * 1000;
     expect(result.expiresAt).toBe(expectedExpiry);
   });
 
@@ -409,8 +418,7 @@ describe('activatePowerUp', () => {
   });
 
   it('activates streak freeze with 1440 min duration', () => {
-    const result = activatePowerUp('freeze');
-    expect(result).not.toBeNull();
+    const result = expectNotNull(activatePowerUp('freeze'));
     expect(result.effect).toBe('freeze_streak');
     expect(result.duration).toBe(1440);
   });
@@ -425,20 +433,17 @@ describe('getStreakRiskNotification', () => {
   });
 
   it('returns notification when 3 hours or less until midnight', () => {
-    const notif = getStreakRiskNotification(5, 2);
-    expect(notif).not.toBeNull();
+    const notif = expectNotNull(getStreakRiskNotification(5, 2));
     expect(notif.type).toBe('streak_risk');
   });
 
   it('sets urgency to "critical" when less than 1 hour', () => {
-    const notif = getStreakRiskNotification(10, 0.5);
-    expect(notif).not.toBeNull();
+    const notif = expectNotNull(getStreakRiskNotification(10, 0.5));
     expect(notif.urgency).toBe('critical');
   });
 
   it('sets urgency to "high" when between 1-3 hours', () => {
-    const notif = getStreakRiskNotification(10, 2);
-    expect(notif).not.toBeNull();
+    const notif = expectNotNull(getStreakRiskNotification(10, 2));
     expect(notif.urgency).toBe('high');
   });
 });
@@ -450,34 +455,29 @@ describe('getComebackNotification', () => {
   });
 
   it('returns notification for 1 day absence', () => {
-    const notif = getComebackNotification(1);
-    expect(notif).not.toBeNull();
+    const notif = expectNotNull(getComebackNotification(1));
     expect(notif.type).toBe('comeback');
   });
 
   it('returns different message for 3+ days', () => {
-    const notif = getComebackNotification(3);
-    expect(notif).not.toBeNull();
+    const notif = expectNotNull(getComebackNotification(3));
     expect(notif.icon).toBe('🎁');
   });
 
   it('returns special message for 7+ days', () => {
-    const notif = getComebackNotification(10);
-    expect(notif).not.toBeNull();
+    const notif = expectNotNull(getComebackNotification(10));
     expect(notif.title).toContain('С возвращением');
   });
 });
 
 describe('getMilestoneNotification', () => {
   it('returns notification for habits milestone at 10', () => {
-    const notif = getMilestoneNotification('habits', 10);
-    expect(notif).not.toBeNull();
+    const notif = expectNotNull(getMilestoneNotification('habits', 10));
     expect(notif.type).toBe('milestone');
   });
 
   it('returns notification for xp milestone at 1000', () => {
-    const notif = getMilestoneNotification('xp', 1000);
-    expect(notif).not.toBeNull();
+    const notif = expectNotNull(getMilestoneNotification('xp', 1000));
     expect(notif.title).toContain('1000');
   });
 
@@ -491,8 +491,7 @@ describe('getMilestoneNotification', () => {
   });
 
   it('returns notification for focus milestone at 60', () => {
-    const notif = getMilestoneNotification('focus', 60);
-    expect(notif).not.toBeNull();
+    const notif = expectNotNull(getMilestoneNotification('focus', 60));
     expect(notif.type).toBe('milestone');
   });
 });

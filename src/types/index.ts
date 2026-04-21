@@ -144,6 +144,11 @@ export interface Habit {
   targetType: TargetType;     // 'atLeast' | 'atMost'
   unit: string;               // "L", "km", "min"
 
+  // === Optional program window ===
+  durationDays?: number;      // e.g. 30-day habit plan
+  startDate?: string;         // YYYY-MM-DD when finite plan starts
+  endDate?: string;           // YYYY-MM-DD derived from startDate + durationDays
+
   // === Entry data (user-entered only) ===
   entries: Record<string, HabitEntry>;  // YYYY-MM-DD → entry
 

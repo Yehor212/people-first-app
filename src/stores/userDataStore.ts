@@ -99,7 +99,7 @@ function createFieldAction<T>(
         : value,
     }));
     const dbSetter = get()._setters?.[setterKey];
-    if (dbSetter) (dbSetter as Setter<T>)(get()[fieldName as keyof UserDataState] as T);
+    if (dbSetter) (dbSetter as unknown as Setter<T>)(get()[fieldName as keyof UserDataState] as T);
   };
 }
 

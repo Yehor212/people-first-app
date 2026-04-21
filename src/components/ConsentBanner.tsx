@@ -35,7 +35,7 @@ export function ConsentBanner({ onConsent }: ConsentBannerProps) {
     <div
       className="fixed inset-0 flex items-end sm:items-center justify-center p-4 sm:pb-4 bg-black/50 backdrop-blur-sm motion-safe:animate-fade-in"
       style={{
-        zIndex: "var(--z-overlay)",
+        zIndex: "var(--z-modal-overlay)",
         paddingBottom: "calc(var(--nav-height) + var(--safe-bottom))",
       }}
     >

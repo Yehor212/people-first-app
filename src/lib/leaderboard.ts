@@ -45,7 +45,7 @@ export type LeaderboardType = "weekly" | "monthly" | "streak";
  * Deduplicates the repeated select→count→filter pattern used in getUserRanks.
  */
 async function getLeaderboardCount(
-  table: string,
+  table: "leaderboards",
   baseFilters: { column: string; value: string | number | boolean }[],
   gtFilter?: { column: string; value: number }
 ): Promise<number> {

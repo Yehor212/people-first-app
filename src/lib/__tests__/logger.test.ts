@@ -32,6 +32,15 @@ describe('logger.log', () => {
     logger.log('count:', 42, true);
     expect(consoleSpy.log).toHaveBeenCalledWith('count:', 42, true);
   });
+
+  it('exposes logger.info as an alias of logger.log for production-safe call sites', () => {
+    const info = (logger as { info?: (...args: unknown[]) => void }).info;
+
+    expect(info).toBeTypeOf('function');
+    info?.('migration complete', 2);
+
+    expect(consoleSpy.log).toHaveBeenCalledWith('migration complete', 2);
+  });
 });
 
 // ─── logger.warn ────────────────────────────────────────────────

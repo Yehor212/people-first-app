@@ -5,6 +5,8 @@
  * Pure functions — no React dependencies.
  */
 
+import { getLocale } from '@/lib/timeUtils';
+import type { Language } from '@/i18n/translations';
 import type { Habit, HabitEntry, EntryValue } from '@/types';
 import { ENTRY } from '@/types';
 
@@ -145,6 +147,14 @@ export function getNumericalValue(habit: Habit, date: string): number {
   const val = getEntryValue(habit, date);
   if (val <= 0) return 0;
   return val / 1000;
+}
+
+export function formatHabitValue(value: number, language: Language): string {
+  const rounded = Math.round(value * 100) / 100;
+  return new Intl.NumberFormat(getLocale(language), {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(rounded);
 }
 
 /** Convert a real numerical value to the stored integer format (× 1000) */

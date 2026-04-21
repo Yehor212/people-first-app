@@ -230,7 +230,7 @@ export function OutroSlide({ slide, t }: OutroSlideProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 1.2 }}
       >
-        <div className="flex flex-col items-center px-8 py-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20">
+          <div className="flex flex-col items-center px-8 py-4 rounded-2xl bg-white/10 dark:bg-white/10 backdrop-blur-md border border-white/20 dark:border-white/20">
           <div className="flex items-center gap-2 mb-1">
             <SeedlingIcon size="sm" animated />
             <span className="text-sm text-white/60">

@@ -69,7 +69,7 @@ function XpPopupItem({ event, onComplete }: { event: XpEvent; onComplete: () => 
       <div
         className={cn(
           "flex items-center gap-1.5 px-3 py-1.5 rounded-full",
-          "bg-black/80 backdrop-blur-sm border border-white/20",
+          "bg-black/80 dark:bg-black/80 backdrop-blur-sm border border-white/20 dark:border-white/20",
           "shadow-lg"
         )}
         style={{
@@ -85,7 +85,7 @@ function XpPopupItem({ event, onComplete }: { event: XpEvent; onComplete: () => 
 
       {/* Optional message */}
       {event.message && (
-        <span className="text-xs text-white/70 bg-black/60 px-2 py-0.5 rounded-full backdrop-blur-sm">
+        <span className="text-xs text-white/70 bg-black/60 dark:bg-black/60 px-2 py-0.5 rounded-full backdrop-blur-sm">
           {event.message}
         </span>
       )}

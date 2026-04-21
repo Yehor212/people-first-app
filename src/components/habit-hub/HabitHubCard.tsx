@@ -16,11 +16,10 @@ import { cn, getToday } from "@/lib/utils";
 import { zenMotion } from "@/lib/animationUtils";
 import { hapticTap } from "@/lib/haptics";
 import { resolveHabitColor } from "@/lib/habitColorUtils";
-import { isHabitCompletedOnDate, getNumericalValue } from "@/lib/habits";
+import { formatHabitValue, getNumericalValue, isHabitCompletedOnDate } from "@/lib/habits";
 import { getCurrentStreak } from "@/lib/habitScore";
 import { computeEntriesWithAuto } from "@/lib/habitComputedEntries";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { formatDecimal } from "@/lib/timeUtils";
 import { frequencyPresets } from "@/hooks/useHabitForm";
 import { AnimatedFire } from "@/components/compact-habit-card/AnimatedFire";
 import { ScoreRing } from "./ScoreRing";
@@ -131,8 +130,8 @@ export const HabitHubCard = memo(function HabitHubCard({
       aria-label={habit.name}
       className={cn(
         "w-full rounded-2xl text-start motion-safe:transition-colors cursor-pointer",
-        "bg-white/[0.03] border border-white/[0.06] backdrop-blur-sm",
-        "hover:bg-white/[0.06] active:scale-[0.98]",
+        "bg-foreground/[0.03] border border-foreground/[0.06] backdrop-blur-sm",
+        "hover:bg-foreground/[0.06] active:scale-[0.98]",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50",
         isCompleted && "bg-emerald-500/[0.06] border-emerald-500/[0.12]",
         className
@@ -190,7 +189,7 @@ export const HabitHubCard = memo(function HabitHubCard({
               "px-2 py-0.5 rounded-lg border text-xs font-semibold tabular-nums flex-shrink-0",
               weeklyProgress.done >= weeklyProgress.target
                 ? "bg-emerald-500/15 border-emerald-500/20 text-emerald-400"
-                : "bg-white/[0.04] border-white/[0.06] text-muted-foreground"
+                : "bg-foreground/[0.04] border-foreground/[0.06] text-muted-foreground"
             )}
           >
             {weeklyProgress.done}/{weeklyProgress.target}
@@ -213,7 +212,7 @@ export const HabitHubCard = memo(function HabitHubCard({
         {isNumeric ? (
           /* Numerical: progress bar + value label */
           <div className="flex items-center gap-2">
-            <div className="flex-1 h-1 rounded-full bg-white/[0.06] overflow-hidden">
+            <div className="flex-1 h-1 rounded-full bg-foreground/[0.06] overflow-hidden">
               <div
                 className="h-full rounded-full motion-safe:transition-all motion-safe:duration-300 motion-reduce:duration-0"
                 style={{
@@ -223,7 +222,7 @@ export const HabitHubCard = memo(function HabitHubCard({
               />
             </div>
             <span className="text-[10px] font-medium tabular-nums text-muted-foreground flex-shrink-0">
-              {formatDecimal(currentValue, language)}/{target}
+              {formatHabitValue(currentValue, language)}/{formatHabitValue(target, language)}
               {habit.unit ? ` ${habit.unit}` : ""}
             </span>
           </div>

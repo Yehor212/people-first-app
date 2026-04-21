@@ -89,7 +89,7 @@ export function HabitScoreChart({ habit }: HabitScoreChartProps) {
               className={cn(
                 "px-3 py-1.5 rounded-md text-[10px] font-medium motion-safe:transition-colors min-h-[44px]",
                 range === r
-                  ? "bg-white/[0.1] text-foreground"
+                  ? "bg-foreground/[0.10] text-foreground"
                   : "text-muted-foreground hover:text-muted-foreground"
               )}
             >
@@ -99,7 +99,7 @@ export function HabitScoreChart({ habit }: HabitScoreChartProps) {
         </div>
       </div>
 
-      <div className="w-full rounded-xl bg-white/[0.03] border border-white/[0.06] overflow-x-auto scrollbar-hide">
+      <div className="w-full rounded-xl bg-foreground/[0.03] border border-foreground/[0.06] overflow-x-auto scrollbar-hide">
         {/* VISUAL-VERIFIED: overflow-x-auto + min-w prevents score chart clipping on narrow mobile */}
         <svg
           ref={svgRef}

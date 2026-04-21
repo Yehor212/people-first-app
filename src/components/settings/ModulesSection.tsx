@@ -13,7 +13,7 @@ export function ModulesSection() {
     <AccordionItem value="modules" className="bg-card rounded-2xl shadow-zen-sm border overflow-hidden">
       <AccordionTrigger className="px-5 py-4 hover:no-underline hover:bg-muted/30 data-[state=open]:bg-primary/5">
         <div className="flex items-center gap-3">
-          <div className="p-2 zen-gradient-calm rounded-xl shadow-[0_4px_20px_-4px_hsl(200_40%_50%/0.25)]">
+          <div className="p-2 zen-gradient-calm rounded-xl shadow-[0_4px_20px_-4px_hsl(var(--chart-focus)/0.25)]">
             <LayoutGrid className="w-5 h-5 text-primary-foreground" />
           </div>
           <span className="text-lg font-semibold text-foreground">{t.settingsGroupModules}</span>

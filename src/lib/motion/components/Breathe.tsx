@@ -22,8 +22,15 @@ export function Breathe({ children, className, disabled, ...rest }: BreatheProps
   if (!animate || disabled) {
     return <div className={className}>{children}</div>;
   }
+  const motionProps = {
+    ...breathe,
+    animate: {
+      scale: [...breathe.animate.scale],
+      opacity: [...breathe.animate.opacity],
+    },
+  };
   return (
-    <motion.div className={className} {...breathe} {...rest}>
+    <motion.div className={className} {...motionProps} {...rest}>
       {children}
     </motion.div>
   );

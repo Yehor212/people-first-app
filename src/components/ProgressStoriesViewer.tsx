@@ -70,7 +70,7 @@ function StoryProgressBar({
       {Array.from({ length: total }).map((_, i) => (
         <div
           key={i}
-          className="flex-1 h-1 bg-white/20 rounded-full overflow-hidden backdrop-blur-sm"
+          className="flex-1 h-1 bg-white/20 dark:bg-white/20 rounded-full overflow-hidden backdrop-blur-sm"
         >
           <motion.div
             className="h-full rounded-full"
@@ -278,7 +278,7 @@ export function ProgressStoriesViewer({
       role="dialog"
       aria-modal="true"
       aria-label={t.weeklyStory || "Weekly Story"}
-      className="fixed inset-0 z-[100] bg-black"
+      className="fixed inset-0 z-[100] bg-black dark:bg-black"
     >
       {/* Story container */}
       <div
@@ -305,15 +305,15 @@ export function ProgressStoriesViewer({
 
         {/* Header controls */}
         <div className="absolute top-8 left-0 right-0 flex items-center justify-between px-4 z-10">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              void hapticTap();
-              onClose();
-            }}
-            className="p-2 rounded-full bg-black/20 text-white"
-            aria-label={t.close || "Close"}
-          >
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                void hapticTap();
+                onClose();
+              }}
+              className="p-2 rounded-full bg-black/20 dark:bg-black/20 text-white"
+              aria-label={t.close || "Close"}
+            >
             <X className="w-5 h-5" />
           </button>
 
@@ -323,7 +323,7 @@ export function ProgressStoriesViewer({
                 e.stopPropagation();
                 togglePause();
               }}
-              className="p-2 rounded-full bg-black/20 text-white"
+              className="p-2 rounded-full bg-black/20 dark:bg-black/20 text-white"
               aria-label={isPaused ? t.play || "Play" : t.pause || "Pause"}
             >
               {isPaused ? <Play className="w-5 h-5" /> : <Pause className="w-5 h-5" />}
@@ -334,7 +334,7 @@ export function ProgressStoriesViewer({
                 e.stopPropagation();
                 handleShare();
               }}
-              className="p-2 rounded-full bg-black/20 text-white min-h-[44px] min-w-[44px] flex items-center justify-center"
+              className="p-2 rounded-full bg-black/20 dark:bg-black/20 text-white min-h-[44px] min-w-[44px] flex items-center justify-center"
               aria-label={t.shareButton || "Share"}
             >
               <Share2 className="w-5 h-5" />
@@ -354,8 +354,8 @@ export function ProgressStoriesViewer({
 
         {/* Pause indicator */}
         {isPaused && !showShareModal && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-            <div className="bg-white/20 rounded-full p-4">
+          <div className="absolute inset-0 flex items-center justify-center bg-black/30 dark:bg-black/30">
+            <div className="bg-white/20 dark:bg-white/20 rounded-full p-4">
               <Pause className="w-12 h-12 text-white" />
             </div>
           </div>

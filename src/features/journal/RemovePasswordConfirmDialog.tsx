@@ -1,7 +1,5 @@
-import type { TranslationStrings } from "@/i18n/types";
-
 interface RemovePasswordConfirmDialogProps {
-  ts: TranslationStrings;
+  ts: Record<string, string>;
   onClose: () => void;
   onConfirm: () => Promise<void>;
 }
@@ -13,7 +11,7 @@ export function RemovePasswordConfirmDialog({
 }: RemovePasswordConfirmDialogProps) {
   return (
     <>
-      <div className="fixed inset-0 z-[70] bg-black/40 motion-safe:animate-fade-in" onClick={onClose} />
+      <div className="fixed inset-0 z-[70] bg-black/40 dark:bg-black/40 motion-safe:animate-fade-in" onClick={onClose} />
       <div
         role="dialog"
         aria-modal="true"

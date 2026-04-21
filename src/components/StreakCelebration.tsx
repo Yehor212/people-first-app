@@ -41,7 +41,7 @@ export function StreakCelebration({ streak, habitName, onClose }: StreakCelebrat
     <div
       className={cn(
         "fixed inset-0 z-[220] flex items-center justify-center p-4 motion-safe:transition-all motion-safe:duration-300",
-        isVisible ? "bg-black/50 backdrop-blur-md" : "bg-black/0"
+        isVisible ? "bg-black/50 dark:bg-black/50 backdrop-blur-md" : "bg-black/0 dark:bg-black/0"
       )}
       onClick={handleClose}
       role="button"
@@ -85,7 +85,7 @@ export function StreakCelebration({ streak, habitName, onClose }: StreakCelebrat
         {/* Close button */}
         <button
           onClick={handleClose}
-          className="absolute top-4 end-4 p-2 rounded-full bg-white/10 hover:bg-white/20 motion-safe:transition-colors z-10"
+          className="absolute top-4 end-4 p-2 rounded-full bg-white/10 dark:bg-white/10 hover:bg-white/20 dark:hover:bg-white/20 motion-safe:transition-colors z-10"
           aria-label={t.close || "Close"}
         >
           <X className="w-5 h-5 text-white/70" />

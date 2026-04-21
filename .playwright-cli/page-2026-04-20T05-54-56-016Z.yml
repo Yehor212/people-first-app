@@ -1,0 +1,148 @@
+- generic:
+  - generic:
+    - generic:
+      - navigation:
+        - link:
+          - /url: "#main-content-v2"
+          - text: Skip to main content
+        - generic:
+          - generic: ZenFlow
+        - navigation:
+          - button:
+            - img
+            - generic: Orb
+          - button:
+            - img
+            - generic: Habits
+          - button:
+            - img
+            - generic: Diary
+        - generic:
+          - button:
+            - generic:
+              - generic:
+                - img
+            - generic: Dark
+          - button:
+            - img
+            - generic: Settings
+          - button:
+            - img
+            - generic: Collapse sidebar
+      - generic:
+        - main:
+          - generic:
+            - heading [level=1]: Habits
+          - region:
+            - heading [level=2]: Today's habits
+            - generic:
+              - generic:
+                - img
+              - paragraph: Plant your first seed
+              - paragraph: Start with 3 habits — small steps win
+              - list:
+                - listitem:
+                  - generic:
+                    - img
+                  - generic:
+                    - generic: "1."
+                    - text: Pick your identity
+                - listitem:
+                  - generic:
+                    - img
+                  - generic:
+                    - generic: "2."
+                    - text: Set your cue
+                - listitem:
+                  - generic:
+                    - img
+                  - generic:
+                    - generic: "3."
+                    - text: Plant your first habit
+              - paragraph: Start with the 2-minute version
+              - generic:
+                - paragraph: Quick pick
+                - list:
+                  - listitem:
+                    - button:
+                      - generic: рџ’§
+                      - text: Drink water
+                  - listitem:
+                    - button:
+                      - generic: рџЊ…
+                      - text: Morning sunlight вЂ” 10 min
+                  - listitem:
+                    - button:
+                      - generic: рџЊ¬пёЏ
+                      - text: Breathe вЂ” 4-7-8 once
+                  - listitem:
+                    - button:
+                      - generic: рџ™Џ
+                      - text: Name one gratitude
+              - button [active]:
+                - img
+                - text: Browse habit library
+              - generic:
+                - button:
+                  - img
+                  - text: Create habit
+              - paragraph: When • Where • Cue
+  - status
+  - alert
+  - dialog "Habit library" [ref=e194]:
+    - generic [ref=e196]:
+      - heading "Habit library" [level=2] [ref=e197]
+      - paragraph [ref=e198]: Tap any habit to add it instantly
+    - navigation "Habit library" [ref=e199]:
+      - button "Body" [pressed] [ref=e200] [cursor=pointer]
+      - button "Mind" [ref=e201] [cursor=pointer]
+      - button "Focus" [ref=e202] [cursor=pointer]
+      - button "Rest" [ref=e203] [cursor=pointer]
+      - button "Quit" [ref=e204] [cursor=pointer]
+    - list [ref=e205]:
+      - listitem [ref=e206]:
+        - button "Drink water" [ref=e207] [cursor=pointer]:
+          - generic [ref=e208]: рџ’§
+          - generic [ref=e209]:
+            - generic [ref=e210]: Drink water
+            - generic [ref=e211]: 2 L
+      - listitem [ref=e212]:
+        - button "Exercise" [ref=e213] [cursor=pointer]:
+          - generic [ref=e214]: рџЏѓ
+          - generic [ref=e216]: Exercise
+      - listitem [ref=e217]:
+        - button "Eat healthy" [ref=e218] [cursor=pointer]:
+          - generic [ref=e219]: рџҐ—
+          - generic [ref=e220]:
+            - generic [ref=e221]: Eat healthy
+            - generic [ref=e222]: ⏰ 12:00
+      - listitem [ref=e223]:
+        - button "Take vitamins" [ref=e224] [cursor=pointer]:
+          - generic [ref=e225]: рџ’Љ
+          - generic [ref=e226]:
+            - generic [ref=e227]: Take vitamins
+            - generic [ref=e228]: ⏰ 09:00
+      - listitem [ref=e229]:
+        - button "Morning sunlight вЂ” 10 min" [ref=e230] [cursor=pointer]:
+          - generic [ref=e231]: рџЊ…
+          - generic [ref=e232]:
+            - generic [ref=e233]: Morning sunlight вЂ” 10 min
+            - generic [ref=e234]: 10 min
+      - listitem [ref=e235]:
+        - button "Cold exposure вЂ” 1 min" [ref=e236] [cursor=pointer]:
+          - generic [ref=e237]: рџ§Љ
+          - generic [ref=e238]:
+            - generic [ref=e239]: Cold exposure вЂ” 1 min
+            - generic [ref=e240]: 1 min
+      - listitem [ref=e241]:
+        - button "Protein target вЂ” 30 g" [ref=e242] [cursor=pointer]:
+          - generic [ref=e243]: рџҐљ
+          - generic [ref=e244]:
+            - generic [ref=e245]: Protein target вЂ” 30 g
+            - generic [ref=e246]: 30 g
+      - listitem [ref=e247]:
+        - button "Walk вЂ” 3 km" [ref=e248] [cursor=pointer]:
+          - generic [ref=e249]: рџљ¶
+          - generic [ref=e250]:
+            - generic [ref=e251]: Walk вЂ” 3 km
+            - generic [ref=e252]: 3 km

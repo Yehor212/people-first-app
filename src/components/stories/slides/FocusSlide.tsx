@@ -75,7 +75,7 @@ function OrbitingStat({
       style={{ x, y }}
     >
       <motion.div
-        className="flex flex-col items-center px-3 py-2 rounded-xl bg-black/40 backdrop-blur-sm border border-white/10"
+        className="flex flex-col items-center px-3 py-2 rounded-xl bg-black/40 dark:bg-black/40 backdrop-blur-sm border border-white/10 dark:border-white/10"
         style={{
           boxShadow: `0 0 20px ${color}40`,
         }}
@@ -121,7 +121,7 @@ export function FocusSlide({ slide, t }: FocusSlideProps) {
         <div className="relative w-[300px] h-[300px]">
           {/* Outer orbit ring */}
           <motion.div
-            className="absolute inset-0 rounded-full border border-white/10"
+            className="absolute inset-0 rounded-full border border-white/10 dark:border-white/10"
             animate={{ rotate: 360 }}
             transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
           />
@@ -218,7 +218,7 @@ export function FocusSlide({ slide, t }: FocusSlideProps) {
       {/* Top label badge */}
       {data?.topLabel && (
         <motion.div
-          className="absolute bottom-24 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/10"
+          className="absolute bottom-24 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full bg-white/10 dark:bg-white/10 backdrop-blur-sm border border-white/10 dark:border-white/10"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 1 }}

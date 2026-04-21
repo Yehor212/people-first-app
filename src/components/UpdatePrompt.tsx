@@ -109,7 +109,7 @@ export function UpdatePrompt({ updateState, onDismiss }: UpdatePromptProps) {
     >
       <div className="bg-gradient-to-r from-primary to-primary/90 text-primary-foreground rounded-2xl p-4 shadow-lg">
         <div className="flex items-start gap-3">
-          <div className="p-2 bg-white/20 rounded-xl">
+          <div className="p-2 bg-primary-foreground/20 rounded-xl">
             <Download className="w-6 h-6" />
           </div>
           <div className="flex-1 min-w-0">
@@ -137,7 +137,7 @@ export function UpdatePrompt({ updateState, onDismiss }: UpdatePromptProps) {
           {!isCritical && (
             <button
               onClick={handleDismiss}
-              className="p-1.5 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-white/20 rounded-lg motion-safe:transition-colors"
+              className="p-1.5 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-primary-foreground/20 rounded-lg motion-safe:transition-colors"
               aria-label={t.dismiss}
             >
               <X className="w-5 h-5" />
@@ -148,7 +148,7 @@ export function UpdatePrompt({ updateState, onDismiss }: UpdatePromptProps) {
         <button
           onClick={handleUpdate}
           disabled={isLoading}
-          className="mt-3 w-full py-2.5 bg-white/20 hover:bg-white/30 disabled:opacity-50 rounded-xl font-medium motion-safe:transition-colors flex items-center justify-center gap-2"
+          className="mt-3 w-full py-2.5 bg-primary-foreground/20 hover:bg-primary-foreground/30 disabled:opacity-50 rounded-xl font-medium motion-safe:transition-colors flex items-center justify-center gap-2"
         >
           <ButtonIcon
             className={`w-4 h-4 ${isLoading ? "motion-safe:animate-pulse" : ""}`}

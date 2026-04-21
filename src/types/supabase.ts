@@ -257,6 +257,7 @@ export type Database = {
           label: string | null
           reflection: number | null
           status: string | null
+          updated_at: string | null
           user_id: string
         }
         Insert: {
@@ -268,6 +269,7 @@ export type Database = {
           label?: string | null
           reflection?: number | null
           status?: string | null
+          updated_at?: string | null
           user_id: string
         }
         Update: {
@@ -279,6 +281,7 @@ export type Database = {
           label?: string | null
           reflection?: number | null
           status?: string | null
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: []
@@ -382,6 +385,7 @@ export type Database = {
           id: string
           text: string
           timestamp: number
+          updated_at: string | null
           user_id: string
         }
         Insert: {
@@ -390,6 +394,7 @@ export type Database = {
           id?: string
           text: string
           timestamp: number
+          updated_at?: string | null
           user_id: string
         }
         Update: {
@@ -398,6 +403,64 @@ export type Database = {
           id?: string
           text?: string
           timestamp?: number
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      sync_events: {
+        Row: {
+          created_at: string
+          device_id: string
+          entity_id: string
+          entity_type: string
+          id: string
+          idempotency_key: string | null
+          op: string
+          payload: Json | null
+          seq: number
+          user_id: string
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          device_id: string
+          entity_id: string
+          entity_type: string
+          id?: string
+          idempotency_key?: string | null
+          op: string
+          payload?: Json | null
+          seq?: number
+          user_id: string
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          device_id?: string
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          idempotency_key?: string | null
+          op?: string
+          payload?: Json | null
+          seq?: number
+          user_id?: string
+          version?: number
+        }
+        Relationships: []
+      }
+      sync_seq_counters: {
+        Row: {
+          last_seq: number
+          user_id: string
+        }
+        Insert: {
+          last_seq?: number
+          user_id: string
+        }
+        Update: {
+          last_seq?: number
           user_id?: string
         }
         Relationships: []

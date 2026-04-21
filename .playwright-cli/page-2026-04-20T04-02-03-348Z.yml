@@ -1,0 +1,68 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e5]:
+    - link "Skip to main content" [ref=e6] [cursor=pointer]:
+      - /url: "#main-content"
+    - main [ref=e28]:
+      - generic [ref=e31]:
+        - img [ref=e33]
+        - generic [ref=e38]:
+          - generic [ref=e39]:
+            - generic [ref=e40]:
+              - paragraph [ref=e42]: Sunday, April 19
+              - generic [ref=e43]:
+                - img "Cloud sync disabled." [ref=e44]
+                - button "Switch to dark mode" [ref=e48] [cursor=pointer]:
+                  - img [ref=e50]
+            - heading "Good evening, Friend" [level=1] [ref=e56]
+            - generic [ref=e57]:
+              - button "Add Event" [ref=e58] [cursor=pointer]:
+                - img [ref=e59]
+                - generic [ref=e61]: Add Event
+              - button "Open Quests" [ref=e62] [cursor=pointer]:
+                - img [ref=e63]
+                - generic [ref=e65]: Quests
+              - button "Open Challenges" [ref=e66] [cursor=pointer]:
+                - img [ref=e67]
+                - generic [ref=e73]: Challenges
+          - generic [ref=e74]:
+            - generic [ref=e77]:
+              - generic [ref=e78]:
+                - img [ref=e79]
+                - generic [ref=e81]: Day 1 of 4
+              - generic [ref=e82]: 8/8 features
+            - generic [ref=e86]:
+              - generic [ref=e87]:
+                - img [ref=e88]
+                - paragraph [ref=e90]: How was your day? Even one word helps.
+              - generic [ref=e91]:
+                - textbox "1-2 sentences..." [ref=e92]
+                - button "Submit reflection" [disabled] [ref=e93]:
+                  - img [ref=e94]
+              - button "Expand to journal" [ref=e97] [cursor=pointer]:
+                - img [ref=e98]
+                - text: Expand to journal
+            - button "Log how you're feeling" [ref=e102] [cursor=pointer]:
+              - paragraph [ref=e109]: Log how you're feeling
+    - navigation "Main navigation" [ref=e110]:
+      - generic [ref=e111]:
+        - generic [ref=e112]: ZenFlow
+        - button "Collapse sidebar" [ref=e113] [cursor=pointer]:
+          - img [ref=e114]
+      - tablist [ref=e117]:
+        - tab "Home" [selected] [ref=e120] [cursor=pointer]:
+          - img [ref=e121]
+          - generic [ref=e124]: Home
+        - tab "Habits" [ref=e126] [cursor=pointer]:
+          - img [ref=e127]
+          - generic [ref=e132]: Habits
+        - tab "Diary" [ref=e134] [cursor=pointer]:
+          - img [ref=e135]
+          - generic [ref=e137]: Diary
+        - tab "Stats" [ref=e139] [cursor=pointer]:
+          - img [ref=e140]
+          - generic [ref=e142]: Stats
+      - tab "Settings" [ref=e145] [cursor=pointer]:
+        - img [ref=e146]
+        - generic [ref=e149]: Settings
+  - status [ref=e2]
+  - alert [ref=e3]

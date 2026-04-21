@@ -31,10 +31,11 @@ export function useAccountSync({ sessionEmail, setAuthStatus, t }: UseAccountSyn
 
   // Load weekly digest setting
   useEffect(() => {
-    if (!supabase || !sessionEmail) return;
+    const client = supabase;
+    if (!client || !sessionEmail) return;
     const loadWeeklyDigestSetting = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { user } } = await client.auth.getUser();
         if (!user) return;
         const value = await loadWeeklyDigest(user.id);
         if (weeklyDigestTouchedRef.current) return;
@@ -82,10 +83,11 @@ export function useAccountSync({ sessionEmail, setAuthStatus, t }: UseAccountSyn
   };
 
   const handleWeeklyDigestToggle = async (enabled: boolean) => {
-    if (!supabase) return;
+    const client = supabase;
+    if (!client) return;
     setWeeklyDigestLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await client.auth.getUser();
       if (!user) {
         setWeeklyDigestEnabled(!enabled);
         logger.warn('[AccountSection] No user for weekly digest');

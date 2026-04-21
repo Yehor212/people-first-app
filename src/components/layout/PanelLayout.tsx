@@ -14,6 +14,7 @@ interface PanelLayoutProps {
   children: ReactNode;
   onLayoutChange?: (layout: Record<string, number>) => void;
   className?: string;
+  autoSaveId?: string;
 }
 
 export function PanelLayout({
@@ -21,6 +22,7 @@ export function PanelLayout({
   children,
   onLayoutChange,
   className,
+  autoSaveId: _autoSaveId,
 }: PanelLayoutProps) {
   return (
     <Group
@@ -62,7 +64,7 @@ export function LayoutPanel({
 
   const handleResize = useCallback(
     (size: PanelSize) => {
-      const currentPct = typeof size === "object" ? size.sizePercentage : size;
+      const currentPct = typeof size === "object" ? size.asPercentage : size;
       const isNowCollapsed = currentPct <= (collapsedSize ?? 0);
 
       if (isNowCollapsed && !wasCollapsedRef.current) {

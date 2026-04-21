@@ -6,11 +6,11 @@
 
 import { memo, useMemo, useCallback } from "react";
 import { cn, getToday } from "@/lib/utils";
-import { getNumericalValue } from "@/lib/habits";
+import { formatHabitValue, getNumericalValue } from "@/lib/habits";
 import { computeEntriesWithAuto } from "@/lib/habitComputedEntries";
 import { hapticTap } from "@/lib/haptics";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { formatDecimal } from "@/lib/timeUtils";
+import { habitTemplates, resolveHabitTemplateSetup } from "@/lib/habitTemplates";
 import { ENTRY } from "@/types";
 import type { Habit } from "@/types";
 import { MiniCheckmarkCell } from "./MiniCheckmarkCell";
@@ -56,6 +56,24 @@ function getDowIndex(dateStr: string): number {
   return jsDay === 0 ? 6 : jsDay - 1;
 }
 
+function getNumericalTapStep(habit: Habit): number {
+  if (habit.templateId) {
+    const template = habitTemplates.find((item) => item.id === habit.templateId);
+    if (template?.habitType === "numerical") {
+      return resolveHabitTemplateSetup(template, habit.unit || undefined).targetStep;
+    }
+  }
+
+  const unit = habit.unit.trim().toLowerCase();
+  if (unit === "l") return 0.25;
+  if (unit === "ml") return 250;
+  if (unit === "km" || unit === "mi") return 0.5;
+  if (unit === "min" || unit === "mins" || unit === "minutes") return 5;
+  if (unit === "hr" || unit === "hrs" || unit === "hour" || unit === "hours") return 0.25;
+
+  return 1;
+}
+
 export const MiniWeekRow = memo(function MiniWeekRow({
   habit,
   habitColor,
@@ -86,7 +104,7 @@ export const MiniWeekRow = memo(function MiniWeekRow({
     (date: string): string => {
       const val = getNumericalValue(habit, date);
       if (val === 0) return "";
-      return formatDecimal(val, language);
+      return formatHabitValue(val, language);
     },
     [habit, language]
   );
@@ -95,12 +113,12 @@ export const MiniWeekRow = memo(function MiniWeekRow({
     (date: string) => {
       void hapticTap();
       if (isNumerical && onAdjust) {
-        onAdjust(habit.id, date, 1);
+        onAdjust(habit.id, date, getNumericalTapStep(habit));
       } else {
         onToggle(habit.id, date);
       }
     },
-    [habit.id, isNumerical, onToggle, onAdjust]
+    [habit, isNumerical, onToggle, onAdjust]
   );
 
   return (

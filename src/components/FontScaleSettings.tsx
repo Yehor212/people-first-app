@@ -19,6 +19,7 @@ const SCALE_LABELS: Record<number, string> = {
  */
 export function FontScaleSettings() {
   const { t } = useLanguage();
+  const ts = t as unknown as Record<string, string>;
   const { scale, setFontScale } = useFontScale();
 
   const currentIndex = FONT_SCALE_LEVELS.indexOf(scale);
@@ -28,17 +29,17 @@ export function FontScaleSettings() {
       <div className="flex items-center gap-3 mb-4">
         <Type className="w-5 h-5 text-primary" aria-hidden="true" />
         <h3 className="text-base font-semibold text-foreground">
-          {(t as Record<string, string>).fontScaleTitle || "Text Size"}
+          {ts.fontScaleTitle || "Text Size"}
         </h3>
       </div>
 
       {/* Preview text */}
       <div className="bg-muted/50 rounded-xl p-4 mb-4">
         <p className="text-foreground">
-          {(t as Record<string, string>).fontScalePreview || "Preview: How your text will look"}
+          {ts.fontScalePreview || "Preview: How your text will look"}
         </p>
         <p className="text-sm text-muted-foreground mt-1">
-          {(t as Record<string, string>).fontScalePreviewSub ||
+          {ts.fontScalePreviewSub ||
             "Adjust the slider below to change text size across the app."}
         </p>
       </div>
@@ -47,7 +48,7 @@ export function FontScaleSettings() {
       <div className="flex items-center justify-between mb-2 px-1">
         <span className="text-xs text-muted-foreground">A</span>
         <span className="text-sm font-medium text-foreground">
-          {(t as Record<string, string>)[SCALE_LABELS[scale]] ||
+          {ts[SCALE_LABELS[scale]] ||
             (scale === 1.0 ? "Default" : `${Math.round(scale * 100)}%`)}
         </span>
         <span className="text-xl text-muted-foreground">A</span>
@@ -71,7 +72,7 @@ export function FontScaleSettings() {
             [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-background
             [&::-moz-range-thumb]:w-6 [&::-moz-range-thumb]:h-6 [&::-moz-range-thumb]:rounded-full
             [&::-moz-range-thumb]:bg-primary [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-background"
-          aria-label={(t as Record<string, string>).fontScaleTitle || "Text Size"}
+          aria-label={ts.fontScaleTitle || "Text Size"}
           aria-valuemin={0}
           aria-valuemax={FONT_SCALE_LEVELS.length - 1}
           aria-valuenow={currentIndex}

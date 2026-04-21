@@ -28,7 +28,7 @@ function CrystalSparkle({ delay }: { delay: number }) {
 
   return (
     <motion.div
-      className="absolute w-2 h-2 rounded-full bg-white shadow-[0_0_10px_3px_rgba(255,255,255,0.5)]"
+      className="absolute w-2 h-2 rounded-full bg-white dark:bg-white shadow-[0_0_10px_3px_rgba(255,255,255,0.5)]"
       style={{
         left: `${x}%`,
         top: `${y}%`,

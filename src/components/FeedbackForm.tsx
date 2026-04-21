@@ -136,12 +136,12 @@ export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
     <>
       {/* A11Y-OK: decorative backdrop — aria-hidden="true" removes from a11y tree, no aria-label needed */}
       <div
-        className="hidden md:block fixed inset-0 z-[59] bg-black/80 backdrop-blur-sm [-webkit-backdrop-filter:blur(4px)]"
+        className="hidden md:block fixed inset-0 z-[59] bg-black/80 dark:bg-black/80 backdrop-blur-sm [-webkit-backdrop-filter:blur(4px)]"
         onClick={handleClose}
         aria-hidden="true"
       />
       <div
-        className="fixed inset-0 z-[60] bg-black/80 flex items-end justify-center md:items-center md:mx-auto md:my-6 md:max-w-lg md:rounded-2xl md:shadow-2xl"
+        className="fixed inset-0 z-[60] bg-black/80 dark:bg-black/80 flex items-end justify-center md:items-center md:mx-auto md:my-6 md:max-w-lg md:rounded-2xl md:shadow-2xl"
         onMouseDown={handleOverlayMouseDown}
         onTouchEnd={handleOverlayTouchEnd}
         role="dialog"

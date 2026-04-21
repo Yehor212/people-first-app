@@ -20,6 +20,7 @@ function makeEvent(
   },
 ): ScheduleEvent {
   return {
+    ...overrides,
     id: 'evt-test',
     title: overrides.title ?? 'Test Event',
     startHour: overrides.startHour,
@@ -27,7 +28,6 @@ function makeEvent(
     endHour: overrides.endHour,
     endMinute: overrides.endMinute ?? 0,
     colorVar: overrides.colorVar,
-    ...overrides,
   } as ScheduleEvent;
 }
 

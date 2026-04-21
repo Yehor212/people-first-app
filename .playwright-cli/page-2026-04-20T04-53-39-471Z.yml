@@ -1,0 +1,79 @@
+- generic [ref=e1]:
+  - generic [ref=e5]:
+    - navigation "Primary navigation" [ref=e6]:
+      - link "Skip to main content" [ref=e7] [cursor=pointer]:
+        - /url: "#main-content-v2"
+      - generic [ref=e10]: ZenFlow
+      - navigation "pages" [ref=e11]:
+        - button "Orb" [ref=e12] [cursor=pointer]:
+          - img [ref=e14]
+          - generic [ref=e16]: Orb
+        - button "Habits" [ref=e17] [cursor=pointer]:
+          - img [ref=e18]
+          - generic [ref=e23]: Habits
+        - button "Diary" [ref=e24] [cursor=pointer]:
+          - img [ref=e25]
+          - generic [ref=e27]: Diary
+      - generic [ref=e28]:
+        - button "Switch to dark mode" [ref=e103] [cursor=pointer]:
+          - img [ref=e106]
+          - generic [ref=e112]: Dark
+        - button "Settings" [ref=e31] [cursor=pointer]:
+          - img [ref=e32]
+          - generic [ref=e35]: Settings
+        - button "Collapse sidebar" [ref=e36] [cursor=pointer]:
+          - img [ref=e37]
+          - generic [ref=e40]: Collapse sidebar
+    - main "Habits" [active] [ref=e129]:
+      - heading "Habits" [level=1] [ref=e131]
+      - region "Today's habits" [ref=e132]:
+        - heading "Today's habits" [level=2] [ref=e133]
+        - generic [ref=e134]:
+          - img [ref=e136]
+          - paragraph [ref=e149]: Plant your first seed
+          - paragraph [ref=e150]: Start with 3 habits — small steps win
+          - list "Plant your first seed" [ref=e151]:
+            - listitem [ref=e152]:
+              - img [ref=e154]
+              - generic [ref=e156]:
+                - generic [ref=e157]: "1."
+                - text: Pick your identity
+            - listitem [ref=e158]:
+              - img [ref=e160]
+              - generic [ref=e163]:
+                - generic [ref=e164]: "2."
+                - text: Set your cue
+            - listitem [ref=e165]:
+              - img [ref=e167]
+              - generic [ref=e168]:
+                - generic [ref=e169]: "3."
+                - text: Plant your first habit
+          - paragraph [ref=e170]: Start with the 2-minute version
+          - generic [ref=e171]:
+            - paragraph [ref=e172]: Quick pick
+            - list [ref=e173]:
+              - listitem [ref=e174]:
+                - button "Drink water" [ref=e175] [cursor=pointer]:
+                  - generic [ref=e176]: 💧
+                  - text: Drink water
+              - listitem [ref=e177]:
+                - button "Morning sunlight — 10 min" [ref=e178] [cursor=pointer]:
+                  - generic [ref=e179]: 🌅
+                  - text: Morning sunlight — 10 min
+              - listitem [ref=e180]:
+                - button "Breathe — 4-7-8 once" [ref=e181] [cursor=pointer]:
+                  - generic [ref=e182]: 🌬️
+                  - text: Breathe — 4-7-8 once
+              - listitem [ref=e183]:
+                - button "Name one gratitude" [ref=e184] [cursor=pointer]:
+                  - generic [ref=e185]: 🙏
+                  - text: Name one gratitude
+          - button "Browse habit library" [ref=e186] [cursor=pointer]:
+            - img [ref=e187]
+            - text: Browse habit library
+          - button "Create habit" [ref=e190] [cursor=pointer]:
+            - img [ref=e191]
+            - text: Create habit
+          - paragraph [ref=e192]: When • Where • Cue
+  - status [ref=e2]
+  - alert [ref=e3]

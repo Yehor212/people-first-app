@@ -4,9 +4,9 @@ import { MiniWeekRow } from "@/components/habit-hub/MiniWeekRow";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { frequencyPresets } from "@/hooks/useHabitForm";
 import { resolveHabitColor } from "@/lib/habitColorUtils";
-import { getNumericalValue, isHabitCompletedOnDate } from "@/lib/habits";
+import { getHabitPlanState } from "@/lib/habitPlan";
+import { formatHabitValue, getNumericalValue, isHabitCompletedOnDate } from "@/lib/habits";
 import { getCurrentStreak } from "@/lib/habitScore";
-import { formatDecimal } from "@/lib/timeUtils";
 import { getToday } from "@/lib/utils";
 import type { Habit } from "@/types";
 
@@ -47,11 +47,12 @@ export const HeroWeeklyHabitCard = memo(function HeroWeeklyHabitCard({
   const streak = useMemo(() => getCurrentStreak(habit), [habit]);
   const isNumeric = habit.habitType === "numerical";
   const weekDates = useMemo(() => getCurrentISOWeek(today), [today]);
+  const planState = useMemo(() => getHabitPlanState(habit, today), [habit, today]);
 
   const currentValue = isNumeric ? getNumericalValue(habit, today) : 0;
   const targetValue = habit.targetValue || 1;
   const numericSummary = isNumeric
-    ? `${formatDecimal(currentValue, language)}/${formatDecimal(targetValue, language)}${habit.unit ? ` ${habit.unit}` : ""}`
+    ? `${formatHabitValue(currentValue, language)}/${formatHabitValue(targetValue, language)}${habit.unit ? ` ${habit.unit}` : ""}`
     : null;
   const weekSummary = useMemo(() => {
     const thisWeekLabel = t.thisWeek || "This week";
@@ -60,14 +61,14 @@ export const HeroWeeklyHabitCard = memo(function HeroWeeklyHabitCard({
         (sum, date) => sum + getNumericalValue(habit, date),
         0,
       );
-      return `${formatDecimal(total, language)}${habit.unit ? ` ${habit.unit}` : ""} · ${thisWeekLabel}`;
+      return `${formatHabitValue(total, language)}${habit.unit ? ` ${habit.unit}` : ""} · ${thisWeekLabel}`;
     }
 
     const done = weekDates.reduce(
       (sum, date) => sum + (isHabitCompletedOnDate(habit, date) ? 1 : 0),
       0,
     );
-    return `${done}× · ${thisWeekLabel}`;
+    return `${done}x · ${thisWeekLabel}`;
   }, [habit, isNumeric, language, t.thisWeek, weekDates]);
 
   const freqLabel = useMemo(() => {
@@ -80,13 +81,22 @@ export const HeroWeeklyHabitCard = memo(function HeroWeeklyHabitCard({
     return `${n}x / ${d}${ts.daysAbbr || "d"}`;
   }, [habit.frequency, t]);
 
+  const planLabel = planState
+    ? planState.isComplete
+      ? t.completed || "Completed"
+      : `${planState.remainingDays} ${t.daysLeft || "days left"}`
+    : null;
+  const planSubLabel = planState
+    ? `${planState.durationDays}-${(t as unknown as Record<string, string>).habitDurationDaysLabel || "day"} ${(t as unknown as Record<string, string>).habitPlanLabel || "plan"}`
+    : null;
+
   return (
-      <article
-        role="listitem"
-        aria-label={habit.icon ? `${habit.icon} ${habit.name}` : habit.name}
-        className="rounded-[26px] border border-border/60 bg-card/80 shadow-sm backdrop-blur-sm"
-        data-testid={`hero-weekly-card-${habit.id}`}
-      >
+    <article
+      role="listitem"
+      aria-label={habit.icon ? `${habit.icon} ${habit.name}` : habit.name}
+      className="rounded-[26px] border border-border/60 bg-card/80 shadow-sm backdrop-blur-sm"
+      data-testid={`hero-weekly-card-${habit.id}`}
+    >
       <div className="flex items-start justify-between gap-3 px-4 pt-4">
         <div className="flex min-w-0 items-center gap-3">
           <div
@@ -109,16 +119,32 @@ export const HeroWeeklyHabitCard = memo(function HeroWeeklyHabitCard({
             >
               {habit.name}
             </p>
+            {planSubLabel ? (
+              <p className="mt-1 truncate text-[11px] text-muted-foreground">
+                {planSubLabel}
+                {planLabel ? ` · ${planLabel}` : ""}
+              </p>
+            ) : null}
           </div>
         </div>
-        {numericSummary ? (
-          <span
-            className="rounded-full border border-border/60 bg-background/70 px-2.5 py-1 text-[11px] font-medium tabular-nums text-muted-foreground"
-            data-testid={`hero-weekly-card-${habit.id}-summary`}
-          >
-            {numericSummary}
-          </span>
-        ) : null}
+        <div className="flex flex-col items-end gap-1">
+          {numericSummary ? (
+            <span
+              className="rounded-full border border-border/60 bg-background/70 px-2.5 py-1 text-[11px] font-medium tabular-nums text-muted-foreground"
+              data-testid={`hero-weekly-card-${habit.id}-summary`}
+            >
+              {numericSummary}
+            </span>
+          ) : null}
+          {!numericSummary && planLabel ? (
+            <span
+              className="rounded-full border border-border/60 bg-background/70 px-2.5 py-1 text-[11px] font-medium text-muted-foreground"
+              data-testid={`hero-weekly-card-${habit.id}-plan`}
+            >
+              {planLabel}
+            </span>
+          ) : null}
+        </div>
       </div>
 
       <div className="px-4 pt-3" onClick={(e) => e.stopPropagation()}>

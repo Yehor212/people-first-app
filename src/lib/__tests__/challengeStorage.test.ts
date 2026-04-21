@@ -2,6 +2,18 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import type { Challenge, Badge, UserStats, Habit } from '@/types';
 
+function expectNotNull<T>(value: T | null, message = 'Expected value to be non-null'): T {
+  expect(value).not.toBeNull();
+  if (value === null) throw new Error(message);
+  return value;
+}
+
+function expectDefined<T>(value: T | undefined, message = 'Expected value to be defined'): T {
+  expect(value).toBeDefined();
+  if (value === undefined) throw new Error(message);
+  return value;
+}
+
 // ─── In-memory storage mock ────────────────────────────────────
 let mockStorage: Record<string, unknown> = {};
 
@@ -235,9 +247,9 @@ describe('unlockBadge', () => {
   it('unlocks a locked badge and returns it', () => {
     initializeBadges();
     const result = unlockBadge('badge_streak_7');
-    expect(result).not.toBeNull();
-    expect(result.unlocked).toBe(true);
-    expect(result.unlockedDate).toBe('2026-02-17');
+    const unlocked = expectNotNull(result);
+    expect(unlocked.unlocked).toBe(true);
+    expect(unlocked.unlockedDate).toBe('2026-02-17');
   });
 
   it('returns null if badge is already unlocked', () => {
@@ -261,23 +273,23 @@ describe('updateChallengeProgress', () => {
   it('updates progress for an incomplete challenge', () => {
     mockStorage[SK.CHALLENGES] = [makeChallenge({ id: 'ch-1', target: 10, progress: 0 })];
     const result = updateChallengeProgress('ch-1', 5);
-    expect(result).not.toBeNull();
-    expect(result.progress).toBe(5);
-    expect(result.completed).toBe(false);
+    const updated = expectNotNull(result);
+    expect(updated.progress).toBe(5);
+    expect(updated.completed).toBe(false);
   });
 
   it('marks challenge completed when progress reaches target', () => {
     mockStorage[SK.CHALLENGES] = [makeChallenge({ id: 'ch-1', target: 10, progress: 0 })];
     const result = updateChallengeProgress('ch-1', 10);
-    expect(result).not.toBeNull();
-    expect(result.completed).toBe(true);
-    expect(result.completedDate).toBe('2026-02-17');
+    const completed = expectNotNull(result);
+    expect(completed.completed).toBe(true);
+    expect(completed.completedDate).toBe('2026-02-17');
   });
 
   it('marks challenge completed when progress exceeds target', () => {
     mockStorage[SK.CHALLENGES] = [makeChallenge({ id: 'ch-1', target: 5, progress: 0 })];
     const result = updateChallengeProgress('ch-1', 8);
-    expect(result.completed).toBe(true);
+    expect(expectNotNull(result).completed).toBe(true);
   });
 
   it('unlocks reward badge when challenge completes', () => {
@@ -285,8 +297,7 @@ describe('updateChallengeProgress', () => {
     mockStorage[SK.CHALLENGES] = [makeChallenge({ id: 'ch-1', target: 7, progress: 0, reward: 'badge_streak_7' })];
     updateChallengeProgress('ch-1', 7);
     const badges = mockStorage[SK.BADGES] as Badge[];
-    const badge = badges.find(b => b.id === 'badge_streak_7');
-    expect(badge).toBeDefined();
+    const badge = expectDefined(badges.find(b => b.id === 'badge_streak_7'));
     expect(badge.unlocked).toBe(true);
   });
 

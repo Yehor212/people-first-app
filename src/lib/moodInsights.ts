@@ -199,7 +199,7 @@ function analyzeHabitMoodCorrelation(
   let bestHabit: Habit | null = null;
   let bestCorrelation = 0;
 
-  habits.forEach(habit => {
+  for (const habit of habits) {
     const datesWithHabit = getHabitCompletedDates(habit);
     // Use Set for O(1) lookup instead of O(n) includes()
     const habitDatesSet = new Set(datesWithHabit);
@@ -222,7 +222,7 @@ function analyzeHabitMoodCorrelation(
         bestHabit = habit;
       }
     }
-  });
+  }
 
   if (!bestHabit || bestCorrelation < 0.3) return null;
 

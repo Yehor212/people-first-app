@@ -50,6 +50,7 @@ export function GoalInput({
   onCancel,
 }: GoalInputProps) {
   const { t } = useLanguage();
+  const ts = t as unknown as Record<string, string>;
   const [value, setValue] = useState("");
   const [selectedIcon, setSelectedIcon] = useState<string | undefined>(undefined);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -175,7 +176,7 @@ export function GoalInput({
                     : "bg-white/5 text-white/30 cursor-not-allowed",
                   "motion-safe:transition-colors"
                 )}
-                aria-label={t.createGoal || "Create goal"}
+                aria-label={ts.createGoal || "Create goal"}
               >
                 <Check className="w-3.5 h-3.5" />
                 Create

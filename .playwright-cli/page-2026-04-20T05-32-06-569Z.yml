@@ -1,0 +1,66 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e5]:
+    - navigation "Primary navigation" [ref=e6]:
+      - link "Skip to main content" [ref=e7] [cursor=pointer]:
+        - /url: "#main-content-v2"
+      - generic [ref=e10]: ZenFlow
+      - navigation "pages" [ref=e11]:
+        - button "Orb" [ref=e12] [cursor=pointer]:
+          - img [ref=e14]
+          - generic [ref=e16]: Orb
+        - button "Habits" [ref=e17] [cursor=pointer]:
+          - img [ref=e18]
+          - generic [ref=e23]: Habits
+        - button "Diary" [ref=e24] [cursor=pointer]:
+          - img [ref=e25]
+          - generic [ref=e27]: Diary
+      - generic [ref=e28]:
+        - button "Switch to dark mode" [ref=e29] [cursor=pointer]:
+          - img [ref=e32]
+          - generic [ref=e38]: Dark
+        - button "Settings" [ref=e39] [cursor=pointer]:
+          - img [ref=e40]
+          - generic [ref=e43]: Settings
+        - button "Collapse sidebar" [ref=e44] [cursor=pointer]:
+          - img [ref=e45]
+          - generic [ref=e48]: Collapse sidebar
+    - main "Good morning, Friend" [ref=e50]:
+      - generic:
+        - img
+      - generic [ref=e51]:
+        - heading "Good morning, Friend" [level=1] [ref=e54]:
+          - generic [ref=e55]:
+            - generic [ref=e56]: G
+            - generic [ref=e57]: o
+            - generic [ref=e58]: o
+            - generic [ref=e59]: d
+            - generic [ref=e61]: m
+            - generic [ref=e62]: o
+            - generic [ref=e63]: r
+            - generic [ref=e64]: "n"
+            - generic [ref=e65]: i
+            - generic [ref=e66]: "n"
+            - generic [ref=e67]: g
+            - generic [ref=e68]: ","
+          - generic [ref=e70]:
+            - generic [ref=e71]: F
+            - generic [ref=e72]: r
+            - generic [ref=e73]: i
+            - generic [ref=e74]: e
+            - generic [ref=e75]: "n"
+            - generic [ref=e76]: d
+        - button "Log how you're feeling" [ref=e80] [cursor=pointer]
+        - paragraph [ref=e85]: How's your heart today?
+        - radiogroup "When did this apply?" [ref=e88]:
+          - generic [ref=e89]:
+            - radio "In this moment" [checked] [ref=e90] [cursor=pointer]
+            - radio "At a specific time" [ref=e91] [cursor=pointer]
+            - radio "For the whole day" [ref=e92] [cursor=pointer]
+        - generic [ref=e96]:
+          - generic [ref=e97]: Neutral
+          - slider "Mood valence" [ref=e98] [cursor=pointer]
+          - generic [ref=e108]:
+            - generic [ref=e109]: Very Unpleasant
+            - generic [ref=e110]: Very Pleasant
+  - status [ref=e2]
+  - alert [ref=e3]

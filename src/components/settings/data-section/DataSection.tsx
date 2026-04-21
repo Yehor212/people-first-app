@@ -111,7 +111,7 @@ export function DataSection({
       >
         <AccordionTrigger className="px-5 py-4 hover:no-underline hover:bg-muted/30 data-[state=open]:bg-primary/5">
           <div className="flex items-center gap-3">
-            <div className="p-2 zen-gradient-sunset rounded-xl shadow-[0_4px_20px_-4px_hsl(350_60%_65%/0.25)]">
+            <div className="p-2 zen-gradient-sunset rounded-xl shadow-[0_4px_20px_-4px_hsl(var(--accent)/0.25)]">
               <Download className="w-5 h-5 text-primary-foreground" />
             </div>
             <span className="text-lg font-semibold text-foreground">

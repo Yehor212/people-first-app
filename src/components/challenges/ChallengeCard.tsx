@@ -43,7 +43,7 @@ export const ChallengeCard = memo(function ChallengeCard({
   return (
     <motion.button
       onClick={onClick}
-      aria-label={`${challenge.title} — ${challenge.status}`}
+      aria-label={`${challenge.habitName} — ${challenge.status}`}
       className={cn(
         "relative w-full p-4 rounded-2xl text-start overflow-hidden",
         "bg-slate-100/60 dark:bg-white/5 backdrop-blur-sm border border-slate-200/60 dark:border-white/10",

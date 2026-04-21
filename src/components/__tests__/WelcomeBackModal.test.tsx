@@ -11,6 +11,12 @@ import { LanguageProvider } from '@/contexts/LanguageContext';
 import { Habit } from '@/types';
 import { makeTestHabit } from '@/test/habitFixtures';
 
+function expectNotNull<T>(value: T | null, message = 'Expected value to be non-null'): T {
+  expect(value).not.toBeNull();
+  if (value === null) throw new Error(message);
+  return value;
+}
+
 // Mock habits for testing
 const mockHabits: Array<{ habit: Habit; successRate: number }> = [
   {
@@ -199,8 +205,7 @@ describe('WelcomeBackModal', () => {
     );
 
     // Click on great mood (😊)
-    const greatButton = screen.getByText('😊').closest('button');
-    expect(greatButton).toBeTruthy();
+    const greatButton = expectNotNull(screen.getByText('😊').closest('button'));
     fireEvent.click(greatButton);
     expect(onQuickMoodLog).toHaveBeenCalledWith('great');
   });
@@ -221,8 +226,7 @@ describe('WelcomeBackModal', () => {
     );
 
     // Click on good mood (🙂)
-    const goodButton = screen.getByText('🙂').closest('button');
-    expect(goodButton).toBeTruthy();
+    const goodButton = expectNotNull(screen.getByText('🙂').closest('button'));
     fireEvent.click(goodButton);
 
     // Should show confirmation

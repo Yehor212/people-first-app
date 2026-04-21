@@ -90,6 +90,7 @@ describe("loadTimerState", () => {
     rawStorage[SK.TIMER_STATE] = JSON.stringify(state);
     const result = loadTimerState();
     expect(result).not.toBeNull();
+    if (!result) throw new Error("Expected timer state");
     expect(result.focusMinutes).toBe(25);
     expect(result.isRunning).toBe(true);
     expect(result.label).toBe("Work");

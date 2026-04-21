@@ -280,7 +280,7 @@ export const HabitHeatmapGrid = memo(function HabitHeatmapGrid({
                       (cell.status === "before" || cell.status === "future") &&
                         "bg-transparent",
                       (cell.status === "no" || cell.status === "unknown") &&
-                        "bg-white/[0.04]",
+                        "bg-foreground/[0.04]",
                     )}
                     style={
                       cell.status === "yes_manual"
@@ -315,7 +315,7 @@ export const HabitHeatmapGrid = memo(function HabitHeatmapGrid({
       {/* Legend */}
       <div className="flex items-center gap-3 mt-3 text-[10px] text-muted-foreground">
         <span className="flex items-center gap-1">
-          <div className="w-2.5 h-2.5 rounded-[2px] bg-white/[0.04]" />{" "}
+          <div className="w-2.5 h-2.5 rounded-[2px] bg-foreground/[0.04]" />{" "}
           {ts.legendMiss || "Miss"}
         </span>
         <span className="flex items-center gap-1">

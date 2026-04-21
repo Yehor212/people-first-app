@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { extractBearerToken } from "../_shared/auth.ts";
 import { createJsonResponse, createNoContentResponse } from "../_shared/http.ts";
+import { deleteUserJournalMedia } from "./storageCleanup.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -26,6 +27,8 @@ Deno.serve(async (req) => {
     }
 
     const userId = data.user.id;
+
+    await deleteUserJournalMedia(supabase.storage, userId);
 
     // Pre-delete user data from tables that may not CASCADE automatically.
     // Individual failures are non-critical: auth.users ON DELETE CASCADE

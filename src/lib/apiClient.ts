@@ -220,6 +220,7 @@ const tryRefreshSession = async (): Promise<boolean> => {
  */
 const notifySessionExpired = async (): Promise<void> => {
   logger.warn("[API] Checking session before notifying expired...");
+  if (!supabase) return;
 
   // Double-check session state before triggering logout
   try {

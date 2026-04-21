@@ -355,11 +355,12 @@ export function subscribeToChallenge(
   challengeId: string,
   onUpdate: (members: ChallengeMember[]) => void
 ): () => void {
-  if (!supabase) {
+  const client = supabase;
+  if (!client) {
     return () => {}; // No-op unsubscribe
   }
 
-  const channel = supabase
+  const channel = client
     .channel(`challenge:${challengeId}`)
     .on(
       'postgres_changes',
@@ -380,7 +381,7 @@ export function subscribeToChallenge(
     .subscribe();
 
   return () => {
-    void supabase.removeChannel(channel);
+    void client.removeChannel(channel);
   };
 }
 

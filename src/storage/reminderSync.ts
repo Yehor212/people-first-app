@@ -11,14 +11,15 @@ export const syncReminderSettings = async (
   reminders: ReminderSettings,
   language: string
 ) => {
-  if (!supabase || reminderSyncDisabled) return;
+  const client = supabase;
+  if (!client || reminderSyncDisabled) return;
 
   // Use orchestrator for queue-based sync
   await syncOrchestrator.sync('reminders', async () => {
     const {
       data: { session },
       error: authError
-    } = await supabase.auth.getSession();
+    } = await client.auth.getSession();
 
     if (authError || !session?.user) {
       // Silently skip if not authenticated - not an error condition
@@ -57,7 +58,7 @@ export const syncReminderSettings = async (
       updated_at: new Date().toISOString()
     };
 
-    const { error } = await supabase.from("user_reminder_settings").upsert(payload, {
+    const { error } = await client.from("user_reminder_settings").upsert(payload, {
       onConflict: "user_id"
     });
 

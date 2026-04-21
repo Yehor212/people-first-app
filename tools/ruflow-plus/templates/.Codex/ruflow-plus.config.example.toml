@@ -1,0 +1,39 @@
+# Ruflow+ repo-local example configuration.
+# This is intentionally an example file, not an automatic override of any existing Codex config.
+# Merge selectively into your actual Codex configuration if desired.
+
+[ruflow_plus]
+mode = "hierarchical"
+max_workers_medium = 3
+max_workers_large = 5
+require_written_plan = true
+require_verification = true
+require_learning_writeback = true
+prefer_official_sources = true
+
+[ruflow_plus.routing]
+small_change = "solo"
+medium_change = "guided"
+large_change = "ruflow_plus"
+release_hardening = "ruflow_plus"
+
+[ruflow_plus.anti_drift]
+topology = "hierarchical"
+specialist_roles_only = true
+disjoint_write_sets = true
+checkpoint_after_research = true
+checkpoint_before_completion = true
+
+[ruflow_plus.memory]
+record_template = "docs/ai/RUFLOW_PLUS_LEARNING_RECORD.md"
+write_on_bugfix = true
+write_on_arch_decision = true
+write_on_new_pattern = true
+write_on_failed_attempt = true
+
+[ruflow_plus.roles]
+coordinator = "scope, planning, sequencing, integration"
+researcher = "repo and web evidence gathering"
+implementer = "bounded code changes in a narrow write set"
+reviewer = "regressions, missing tests, policy and safety checks"
+memory_keeper = "distill reusable patterns and routing hints"

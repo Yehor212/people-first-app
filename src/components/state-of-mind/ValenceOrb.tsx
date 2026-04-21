@@ -169,7 +169,7 @@ export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: Vale
     // Per HTML spec, once getContext('webgl2') succeeds, getContext('2d')
     // on the same canvas returns null — a new <canvas> element is required.
 
-    let activeCanvas: HTMLCanvasElement;
+    let activeCanvas: HTMLCanvasElement | null = null;
     let glRenderer: OrbGLRenderer | null = null;
     let ctx2d: CanvasRenderingContext2D | null = null;
 
@@ -213,6 +213,11 @@ export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: Vale
         return;
       }
       activeCanvas = c2dCanvas;
+    }
+
+    if (!activeCanvas) {
+      setCtxFailed(true);
+      return;
     }
 
     glRendererRef.current = glRenderer;

@@ -25,7 +25,7 @@ export function JoinChallengeView({
   const [code, setCode] = useState(initialInvite?.code || "");
   const [error, setError] = useState("");
   const [isJoining, setIsJoining] = useState(false);
-  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
+  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     return () => {

@@ -16,6 +16,7 @@ export interface Task {
   description?: string;
   urgent: boolean;
   estimatedMinutes: number;
+  breakMinutes?: number;
   userRating?: number;
   completed: boolean;
   dueDate?: string;

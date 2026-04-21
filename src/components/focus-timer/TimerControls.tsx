@@ -54,7 +54,7 @@ export function TimerControls({
               {/* Pulse ring when paused */}
               {!isRunning && (
                 <motion.div
-                  className="absolute inset-0 rounded-full border-2 border-white/30"
+                  className="absolute inset-0 rounded-full border-2 border-white/30 dark:border-white/30"
                   animate={{ scale: [1, 1.3], opacity: [0.6, 0] }}
                   transition={{ duration: 1.5, repeat: Infinity }}
                 />

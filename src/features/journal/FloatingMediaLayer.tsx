@@ -129,7 +129,7 @@ const FloatingPhoto = memo(function FloatingPhoto({
       <img
         src={photo.thumbnail || photo.data}
         alt=""
-        className="w-full h-full object-cover rounded-xl shadow-lg shadow-black/40 border border-white/10"
+        className="w-full h-full object-cover rounded-xl shadow-lg shadow-black/40 border border-white/10 dark:border-white/10"
         draggable={false}
       />
 

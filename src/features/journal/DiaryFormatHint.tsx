@@ -31,7 +31,7 @@ export function DiaryFormatHint({ onDismiss }: DiaryFormatHintProps) {
       tabIndex={0}
       onClick={onDismiss}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onDismiss(); } }}
-      className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm cursor-pointer"
+      className="flex items-center gap-2 px-3 py-2 rounded-xl bg-foreground/5 border border-foreground/10 backdrop-blur-sm cursor-pointer"
     >
       <span className="text-sm">✨</span>
       <span className="text-xs text-muted-foreground">

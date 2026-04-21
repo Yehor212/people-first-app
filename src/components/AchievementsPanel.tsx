@@ -1,4 +1,4 @@
-import { useState, useEffect, memo, useCallback } from "react";
+import { useState, useEffect, memo, useCallback, useMemo } from "react";
 import { interpolate } from "@/lib/utils";
 import { useBackHandler } from "@/hooks/useBackHandler";
 import { Card } from "@/components/ui/card";
@@ -69,12 +69,16 @@ export const AchievementsPanel = memo(function AchievementsPanel({
   }, [stats, unlockedAchievements, t.achievementUnlocked, onAchievementUnlock]);
 
   const { unlockedList, lockedList, allAchievements, completionPercentage } = useMemo(() => {
-    const allAchievements = Object.values(ACHIEVEMENTS);
+    const allAchievements = Object.values(ACHIEVEMENTS) as Achievement[];
     const unlockedCount = unlockedAchievements.length;
     const totalCount = allAchievements.length;
     const completionPercentage = (unlockedCount / totalCount) * 100;
-    const unlockedList = allAchievements.filter((a) => unlockedAchievements.includes(a.id));
-    const lockedList = allAchievements.filter((a) => !unlockedAchievements.includes(a.id));
+    const unlockedList = allAchievements.filter((achievement) =>
+      unlockedAchievements.includes(achievement.id),
+    );
+    const lockedList = allAchievements.filter(
+      (achievement) => !unlockedAchievements.includes(achievement.id),
+    );
     return {
       unlockedList,
       lockedList,
@@ -109,7 +113,10 @@ export const AchievementsPanel = memo(function AchievementsPanel({
               {userLevel.nextLevelXp - stats.totalXp} {t.xp || "XP"}
             </span>
           </div>
-          <Progress value={(stats.totalXp / userLevel.nextLevelXp) * 100} className="bg-white/20" />
+          <Progress
+            value={(stats.totalXp / userLevel.nextLevelXp) * 100}
+            className="bg-primary-foreground/20"
+          />
         </div>
       </Card>
 

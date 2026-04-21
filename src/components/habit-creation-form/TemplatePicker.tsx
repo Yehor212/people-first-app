@@ -5,11 +5,12 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { habitTemplates } from "@/lib/habitTemplates";
 import type { Habit } from "@/types";
+import type { Language } from "@/i18n/types";
 
 interface TemplatePickerProps {
   isPrimaryCTA: boolean;
   habits: Habit[];
-  language: string;
+  language: Language;
   t: Record<string, string>;
   handleQuickAdd: (templateId: string) => void;
   setShowCustomForm: (show: boolean) => void;

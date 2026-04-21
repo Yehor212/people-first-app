@@ -31,7 +31,7 @@ export function useFocusHandlers({
 }: UseFocusHandlersParams) {
   const setFocusSessions = useUserDataStore((s) => s.setFocusSessions);
   const rewardUser = useGamificationStore((s) => s.rewardUser);
-  const mindfulTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
+  const mindfulTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Guarantee cleanup of mindful timeout on unmount
   useEffect(() => {

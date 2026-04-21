@@ -79,7 +79,7 @@ export const HabitTracker = memo(function HabitTracker({
   const celebrationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const celebrationHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const toggleDebounceRef = useRef<Set<string>>(new Set());
-  const debounceTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
+  const debounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Cleanup timeouts on unmount
   useEffect(() => {
@@ -226,12 +226,12 @@ export const HabitTracker = memo(function HabitTracker({
             className="absolute inset-0"
             style={{
               background: `radial-gradient(ellipse at top,
-                rgba(34, 197, 94, 0.12) 0%,
-                rgba(16, 185, 129, 0.08) 30%,
+                hsl(var(--chart-habit) / 0.12) 0%,
+                hsl(var(--chart-habit) / 0.08) 30%,
                 hsl(var(--card)) 60%)`,
             }}
           />
-          <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_70%_20%,rgba(34,197,94,0.1)_0%,transparent_40%)] [animation:nature-energy-glow_4s_ease-in-out_infinite]" />
+          <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_70%_20%,hsl(var(--chart-habit)/0.1)_0%,transparent_40%)] [animation:nature-energy-glow_4s_ease-in-out_infinite]" />
         </>
       )}
 
@@ -331,7 +331,7 @@ export const HabitTracker = memo(function HabitTracker({
                   ? "bg-red-500/30 border border-red-500/50 text-red-300"
                   : "bg-gradient-to-br from-emerald-500/60 to-teal-600/60 border border-emerald-500/30 text-white"
               )}
-              style={!form.isAdding ? { boxShadow: "0 0 12px rgba(16, 185, 129, 0.3)" } : {}}
+              style={!form.isAdding ? { boxShadow: "0 0 12px hsl(var(--chart-habit) / 0.3)" } : {}}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >

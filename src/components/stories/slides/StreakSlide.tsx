@@ -73,7 +73,7 @@ function OrbitingFire({
       style={{ x, y }}
     >
       <motion.div
-        className="p-2 rounded-full bg-black/30 backdrop-blur-sm border border-orange-500/30 shadow-[0_0_20px_rgba(255,150,0,0.4)]"
+              className="p-2 rounded-full bg-black/30 dark:bg-black/30 backdrop-blur-sm border border-orange-500/30 shadow-[0_0_20px_rgba(255,150,0,0.4)]"
         animate={{
           boxShadow: [
             "0 0 20px rgba(255, 150, 0, 0.4)",

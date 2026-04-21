@@ -120,7 +120,7 @@ export const JournalPhotoGallery = memo(function JournalPhotoGallery({
                 )}
                 loading="lazy"
               />
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 motion-safe:transition-colors rounded-xl flex items-center justify-center">
+              <div className="absolute inset-0 bg-black/0 dark:bg-black/0 group-hover:bg-black/20 dark:group-hover:bg-black/20 motion-safe:transition-colors rounded-xl flex items-center justify-center">
                 <ZoomIn className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 motion-safe:transition-opacity" />
               </div>
             </button>
@@ -158,12 +158,12 @@ export const JournalPhotoGallery = memo(function JournalPhotoGallery({
             role="dialog"
             aria-modal="true"
             aria-label={t.ariaPhotoLightbox}
-            className="fixed inset-0 z-[70] bg-black/90 flex items-center justify-center"
+            className="fixed inset-0 z-[70] bg-black/90 dark:bg-black/90 flex items-center justify-center"
             onClick={closeLightbox}
           >
             <button
               onClick={closeLightbox}
-              className="absolute top-[max(1rem,env(safe-area-inset-top))] end-4 p-2.5 bg-white/10 rounded-full z-10 min-w-[44px] min-h-[44px] flex items-center justify-center"
+              className="absolute top-[max(1rem,env(safe-area-inset-top))] end-4 p-2.5 bg-white/10 dark:bg-white/10 rounded-full z-10 min-w-[44px] min-h-[44px] flex items-center justify-center"
               aria-label={ts.close || "Close"}
             >
               <X className="w-5 h-5 text-white" />
@@ -191,7 +191,7 @@ export const JournalPhotoGallery = memo(function JournalPhotoGallery({
                     e.stopPropagation();
                     navigateLightbox(-1);
                   }}
-                  className="absolute start-4 top-1/2 -translate-y-1/2 p-2.5 bg-white/10 hover:bg-white/20 rounded-full z-10 min-w-[44px] min-h-[44px] flex items-center justify-center motion-safe:transition-colors"
+                  className="absolute start-4 top-1/2 -translate-y-1/2 p-2.5 bg-white/10 dark:bg-white/10 hover:bg-white/20 dark:hover:bg-white/20 rounded-full z-10 min-w-[44px] min-h-[44px] flex items-center justify-center motion-safe:transition-colors"
                   aria-label="Previous photo"
                 >
                   <ChevronLeft className="w-5 h-5 text-white" />
@@ -201,7 +201,7 @@ export const JournalPhotoGallery = memo(function JournalPhotoGallery({
                     e.stopPropagation();
                     navigateLightbox(1);
                   }}
-                  className="absolute end-4 top-1/2 -translate-y-1/2 p-2.5 bg-white/10 hover:bg-white/20 rounded-full z-10 min-w-[44px] min-h-[44px] flex items-center justify-center motion-safe:transition-colors"
+                  className="absolute end-4 top-1/2 -translate-y-1/2 p-2.5 bg-white/10 dark:bg-white/10 hover:bg-white/20 dark:hover:bg-white/20 rounded-full z-10 min-w-[44px] min-h-[44px] flex items-center justify-center motion-safe:transition-colors"
                   aria-label="Next photo"
                 >
                   <ChevronRight className="w-5 h-5 text-white" />
@@ -211,7 +211,7 @@ export const JournalPhotoGallery = memo(function JournalPhotoGallery({
 
             {/* Photo counter */}
             {photos.length > 1 && (
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1 bg-black/50 rounded-full text-xs text-white/80 z-10">
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1 bg-black/50 dark:bg-black/50 rounded-full text-xs text-white/80 z-10">
                 {lightboxIndex + 1} / {photos.length}
               </div>
             )}

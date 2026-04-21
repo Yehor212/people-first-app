@@ -31,6 +31,7 @@ interface UIState {
   showChallengeModal: boolean;
   showTimeHelper: boolean;
   showTasksPanel: boolean;
+  showAddEvent: boolean;
   showQuestsPanel: boolean;
   showFriendsPanel: boolean;
   showWelcomeOverlay: boolean;
@@ -101,6 +102,7 @@ const MODAL_CLOSE_PRIORITY: ModalName[] = [
   "showWidgetSettings",
   "showWeeklyReport",
   "showTimeHelper",
+  "showAddEvent",
   "showMindfulMoment",
   "showWelcomeBack",
   "showWelcomeOverlay",
@@ -113,6 +115,7 @@ const MODAL_DEFAULTS: Record<ModalName, boolean> = {
   showChallengeModal: false,
   showTimeHelper: false,
   showTasksPanel: false,
+  showAddEvent: false,
   showQuestsPanel: false,
   showFriendsPanel: false,
   showWelcomeOverlay: false,

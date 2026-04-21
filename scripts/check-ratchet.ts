@@ -32,6 +32,7 @@ interface FloorEntry {
   direction: "up" | "down";
   recorded: string;
   description: string;
+  tolerance?: number;
 }
 
 interface QualityLedger {

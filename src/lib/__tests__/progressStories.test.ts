@@ -79,6 +79,12 @@ function getCurrentWeekDates(): string[] {
   return dates;
 }
 
+function expectDefined<T>(value: T | undefined, message = 'Expected value to be defined'): T {
+  expect(value).toBeDefined();
+  if (value === undefined) throw new Error(message);
+  return value;
+}
+
 // ============================================
 // TESTS
 // ============================================
@@ -249,8 +255,7 @@ describe('progressStories', () => {
       const moods = weekDates.slice(0, 3).map(d => makeMood('good', d));
 
       const slides = generateWeeklyStory(moods, [], [], []);
-      const moodSlide = slides.find(s => s.type === 'mood');
-      expect(moodSlide).toBeDefined();
+      const moodSlide = expectDefined(slides.find(s => s.type === 'mood'));
       expect(moodSlide.title).toBeDefined();
     });
 
@@ -259,8 +264,7 @@ describe('progressStories', () => {
       const habits = [makeHabit('h1', 'Exercise', weekDates.slice(0, 3), '💪')];
 
       const slides = generateWeeklyStory([], habits, [], []);
-      const habitSlide = slides.find(s => s.type === 'habits');
-      expect(habitSlide).toBeDefined();
+      const habitSlide = expectDefined(slides.find(s => s.type === 'habits'));
       expect(habitSlide.value).toBeDefined();
     });
 
@@ -292,8 +296,7 @@ describe('progressStories', () => {
       ];
 
       const slides = generateWeeklyStory([], [], focus, []);
-      const focusSlide = slides.find(s => s.type === 'focus');
-      expect(focusSlide).toBeDefined();
+      const focusSlide = expectDefined(slides.find(s => s.type === 'focus'));
       // 1 completed session
       expect(focusSlide.subtitle).toContain('1');
     });
@@ -303,15 +306,13 @@ describe('progressStories', () => {
       const gratitude = weekDates.slice(0, 2).map(d => makeGratitude(d));
 
       const slides = generateWeeklyStory([], [], [], gratitude);
-      const gratitudeSlide = slides.find(s => s.type === 'gratitude');
-      expect(gratitudeSlide).toBeDefined();
+      const gratitudeSlide = expectDefined(slides.find(s => s.type === 'gratitude'));
       expect(gratitudeSlide.value).toBe(2);
     });
 
     it('should include streak slide when streak > 0', () => {
       const slides = generateWeeklyStory([], [], [], [], [], 7);
-      const streakSlide = slides.find(s => s.type === 'streak');
-      expect(streakSlide).toBeDefined();
+      const streakSlide = expectDefined(slides.find(s => s.type === 'streak'));
       expect(streakSlide.value).toBe(7);
     });
 
@@ -324,30 +325,29 @@ describe('progressStories', () => {
     it('should show correct streak text for different streak levels', () => {
       // streak >= 30 -> Legendary
       const slides30 = generateWeeklyStory([], [], [], [], [], 30);
-      const streak30 = slides30.find(s => s.type === 'streak');
+      const streak30 = expectDefined(slides30.find(s => s.type === 'streak'));
       expect(streak30.subtitle).toContain('Legendary');
 
       // streak >= 14 -> Amazing
       const slides14 = generateWeeklyStory([], [], [], [], [], 14);
-      const streak14 = slides14.find(s => s.type === 'streak');
+      const streak14 = expectDefined(slides14.find(s => s.type === 'streak'));
       expect(streak14.subtitle).toContain('Amazing');
 
       // streak >= 7 -> On Fire
       const slides7 = generateWeeklyStory([], [], [], [], [], 7);
-      const streak7 = slides7.find(s => s.type === 'streak');
+      const streak7 = expectDefined(slides7.find(s => s.type === 'streak'));
       expect(streak7.subtitle).toContain('Fire');
 
       // streak < 7 -> Keep Going
       const slides3 = generateWeeklyStory([], [], [], [], [], 3);
-      const streak3 = slides3.find(s => s.type === 'streak');
+      const streak3 = expectDefined(slides3.find(s => s.type === 'streak'));
       expect(streak3.subtitle).toContain('Keep Going');
     });
 
     it('should include achievement slide when new badges exist', () => {
       const badges = [makeBadge('badge-1'), makeBadge('badge-2')];
       const slides = generateWeeklyStory([], [], [], [], badges);
-      const achievementSlide = slides.find(s => s.type === 'achievement');
-      expect(achievementSlide).toBeDefined();
+      const achievementSlide = expectDefined(slides.find(s => s.type === 'achievement'));
       expect(achievementSlide.value).toBe(2);
     });
 
@@ -362,8 +362,7 @@ describe('progressStories', () => {
       const moods = [makeMood('good', weekDates[0])];
 
       const slides = generateWeeklyStory(moods, [], [], []);
-      const summarySlide = slides.find(s => s.type === 'summary');
-      expect(summarySlide).toBeDefined();
+      const summarySlide = expectDefined(slides.find(s => s.type === 'summary'));
       expect(summarySlide.subtitle).toContain('avg mood');
     });
 

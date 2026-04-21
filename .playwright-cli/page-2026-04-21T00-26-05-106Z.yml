@@ -1,0 +1,44 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e5]:
+    - button "Open menu" [ref=e6] [cursor=pointer]:
+      - img [ref=e7]
+    - main "Good evening, Friend" [ref=e9]:
+      - generic:
+        - img
+      - generic [ref=e10]:
+        - heading "Good evening, Friend" [level=1] [ref=e13]:
+          - generic [ref=e14]:
+            - generic [ref=e15]: G
+            - generic [ref=e16]: o
+            - generic [ref=e17]: o
+            - generic [ref=e18]: d
+            - generic [ref=e20]: e
+            - generic [ref=e21]: v
+            - generic [ref=e22]: e
+            - generic [ref=e23]: "n"
+            - generic [ref=e24]: i
+            - generic [ref=e25]: "n"
+            - generic [ref=e26]: g
+            - generic [ref=e27]: ","
+          - generic [ref=e29]:
+            - generic [ref=e30]: F
+            - generic [ref=e31]: r
+            - generic [ref=e32]: i
+            - generic [ref=e33]: e
+            - generic [ref=e34]: "n"
+            - generic [ref=e35]: d
+        - button "Log how you're feeling" [ref=e39] [cursor=pointer]
+        - paragraph [ref=e44]: How's your heart today?
+        - radiogroup "When did this apply?" [ref=e47]:
+          - generic [ref=e48]:
+            - radio "In this moment" [checked] [ref=e49] [cursor=pointer]
+            - radio "At a specific time" [ref=e50] [cursor=pointer]
+            - radio "For the whole day" [ref=e51] [cursor=pointer]
+        - generic [ref=e55]:
+          - generic [ref=e56]: Neutral
+          - slider "Mood valence" [ref=e57] [cursor=pointer]
+          - generic [ref=e67]:
+            - generic [ref=e68]: Very Unpleasant
+            - generic [ref=e69]: Very Pleasant
+  - status [ref=e2]
+  - alert [ref=e3]

@@ -1,0 +1,31 @@
+- generic [ref=e1]:
+  - generic [ref=e5]:
+    - navigation "Primary navigation" [ref=e6]:
+      - link "Skip to main content" [ref=e7] [cursor=pointer]:
+        - /url: "#main-content-v2"
+      - generic [ref=e10]: ZenFlow
+      - navigation "pages" [ref=e11]:
+        - button "Orb" [ref=e12] [cursor=pointer]:
+          - img [ref=e14]
+          - generic [ref=e16]: Orb
+        - button "Habits" [ref=e17] [cursor=pointer]:
+          - img [ref=e18]
+          - generic [ref=e23]: Habits
+        - button "Diary" [ref=e24] [cursor=pointer]:
+          - img [ref=e25]
+          - generic [ref=e27]: Diary
+      - generic [ref=e28]:
+        - button "Switch to dark mode" [ref=e29] [cursor=pointer]:
+          - img [ref=e32]
+          - generic [ref=e38]: Dark
+        - button "Settings" [ref=e39] [cursor=pointer]:
+          - img [ref=e40]
+          - generic [ref=e43]: Settings
+        - button "Collapse sidebar" [ref=e44] [cursor=pointer]:
+          - img [ref=e45]
+          - generic [ref=e48]: Collapse sidebar
+    - main "Diary" [ref=e193]:
+      - heading "Diary" [active] [level=1] [ref=e194]
+      - paragraph [ref=e195]: Diary page — Phase 3-D will wire the JournalModule experience here.
+  - status [ref=e2]
+  - alert [ref=e3]

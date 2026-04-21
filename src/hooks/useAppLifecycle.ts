@@ -19,7 +19,7 @@ export function useAppLifecycle(): void {
   const setLoadingFadeOut = useAppStore(s => s.setLoadingFadeOut);
   const currentDate = useAppStore(s => s.currentDate);
   const setCurrentDate = useAppStore(s => s.setCurrentDate);
-  const initTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
+  const initTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // App initialization + splash + loading fade
   useEffect(() => {

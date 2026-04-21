@@ -192,6 +192,9 @@ export const runtimeHabitSchema = z
     targetValue: z.number().default(0),
     targetType: targetType.default("atLeast"),
     unit: z.string().default(""),
+    durationDays: z.number().int().min(1).optional(),
+    startDate: dateString.optional(),
+    endDate: dateString.optional(),
     // ZenFlow extensions
     templateId: z.string().optional(),
     category: z.string().optional(),

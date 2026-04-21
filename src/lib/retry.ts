@@ -65,6 +65,7 @@ const DEFAULTS: Required<Omit<RetryOptions, "signal" | "classifyError" | "onRetr
   baseMs: 200,
   capMs: 10_000,
   jitter: "full",
+  delaysMs: [],
   maxElapsedMs: 30_000,
 };
 

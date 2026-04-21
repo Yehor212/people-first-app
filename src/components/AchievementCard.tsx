@@ -25,10 +25,9 @@ export const AchievementCard = memo(function AchievementCard({
   hiddenTitle,
 }: AchievementCardProps) {
   const { t } = useLanguage();
-  const hasProgress = progress !== undefined && achievement.total;
-  const progressPercentage = hasProgress
-    ? (progress / achievement.total) * 100
-    : 0;
+  const total = achievement.total ?? 0;
+  const hasProgress = progress !== undefined && total > 0;
+  const progressPercentage = hasProgress ? (progress / total) * 100 : 0;
 
   return (
     <Card
@@ -69,7 +68,7 @@ export const AchievementCard = memo(function AchievementCard({
           <div className="pt-2">
             <Progress value={progressPercentage} className="h-1" />
             <p className="text-xs text-muted-foreground mt-1">
-              {progress} / {achievement.total}
+              {progress} / {total}
             </p>
           </div>
         )}

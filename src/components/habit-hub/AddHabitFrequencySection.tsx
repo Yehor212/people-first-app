@@ -37,7 +37,7 @@ export function AddHabitFrequencySection({ frequency, setFrequency, ts }: AddHab
               'border',
               (isPresetMatch(preset.ratio) && !forceCustomFreq)
                 ? 'bg-violet-500/20 border-violet-500/40 text-violet-300'
-                : 'bg-white/[0.03] border-border text-muted-foreground hover:bg-white/[0.06]',
+                : 'bg-foreground/[0.03] border-border text-muted-foreground hover:bg-foreground/[0.06]',
             )}
           >
             {ts[preset.i18nKey] || preset.label}
@@ -50,7 +50,7 @@ export function AddHabitFrequencySection({ frequency, setFrequency, ts }: AddHab
             'border',
             (forceCustomFreq || isCustomFreq)
               ? 'bg-violet-500/20 border-violet-500/40 text-violet-300'
-              : 'bg-white/[0.03] border-border text-muted-foreground hover:bg-white/[0.06]',
+              : 'bg-foreground/[0.03] border-border text-muted-foreground hover:bg-foreground/[0.06]',
           )}
         >
           {ts.customFreq || 'Custom'}
@@ -63,14 +63,14 @@ export function AddHabitFrequencySection({ frequency, setFrequency, ts }: AddHab
           <div className="flex items-center gap-1.5">
             <button
               onClick={() => setFrequency({ ...frequency, numerator: Math.max(1, frequency.numerator - 1) })}
-              className="w-7 h-7 rounded-lg bg-white/[0.05] border border-border text-muted-foreground flex items-center justify-center text-xs min-h-[44px] min-w-[44px]"
+              className="w-7 h-7 rounded-lg bg-foreground/[0.05] border border-border text-muted-foreground flex items-center justify-center text-xs min-h-[44px] min-w-[44px]"
             >
               -
             </button>
             <span className="text-sm text-foreground w-5 text-center tabular-nums">{frequency.numerator}</span>
             <button
               onClick={() => setFrequency({ ...frequency, numerator: Math.min(frequency.denominator, frequency.numerator + 1) })}
-              className="w-7 h-7 rounded-lg bg-white/[0.05] border border-border text-muted-foreground flex items-center justify-center text-xs min-h-[44px] min-w-[44px]"
+              className="w-7 h-7 rounded-lg bg-foreground/[0.05] border border-border text-muted-foreground flex items-center justify-center text-xs min-h-[44px] min-w-[44px]"
             >
               +
             </button>
@@ -79,14 +79,14 @@ export function AddHabitFrequencySection({ frequency, setFrequency, ts }: AddHab
           <div className="flex items-center gap-1.5">
             <button
               onClick={() => { const newD = Math.max(1, frequency.denominator - 1); setFrequency({ ...frequency, denominator: newD, numerator: Math.min(frequency.numerator, newD) }); }}
-              className="w-7 h-7 rounded-lg bg-white/[0.05] border border-border text-muted-foreground flex items-center justify-center text-xs min-h-[44px] min-w-[44px]"
+              className="w-7 h-7 rounded-lg bg-foreground/[0.05] border border-border text-muted-foreground flex items-center justify-center text-xs min-h-[44px] min-w-[44px]"
             >
               -
             </button>
             <span className="text-sm text-foreground w-5 text-center tabular-nums">{frequency.denominator}</span>
             <button
               onClick={() => setFrequency({ ...frequency, denominator: Math.min(365, frequency.denominator + 1) })}
-              className="w-7 h-7 rounded-lg bg-white/[0.05] border border-border text-muted-foreground flex items-center justify-center text-xs min-h-[44px] min-w-[44px]"
+              className="w-7 h-7 rounded-lg bg-foreground/[0.05] border border-border text-muted-foreground flex items-center justify-center text-xs min-h-[44px] min-w-[44px]"
             >
               +
             </button>

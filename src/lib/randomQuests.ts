@@ -488,14 +488,14 @@ export function updateAllQuestsProgress(action: {
       daily?: Quest | null;
       weekly?: Quest | null;
       bonus?: Quest | null;
-    }>(SK.QUESTS, null);
+    } | null>(SK.QUESTS, null);
     if (!data) return [];
 
     const newlyCompleted: Quest[] = [];
 
     // Update each quest type
-    ["daily", "weekly", "bonus"].forEach((questType) => {
-      const quest = data[questType] as Quest | null;
+    (["daily", "weekly", "bonus"] as const).forEach((questType) => {
+      const quest = data[questType];
       if (!quest || quest.completed || Date.now() > quest.expiresAt) return;
 
       const wasCompleted = quest.completed;

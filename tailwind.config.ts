@@ -266,9 +266,7 @@ export default {
   },
   /* eslint-disable @typescript-eslint/no-require-imports */
   plugins: [
-    // @ts-expect-error — CJS require for Tailwind plugins (no ESM export available)
     require("tailwindcss-animate"),
-    // @ts-expect-error — CJS require for Tailwind plugins (no ESM export available)
     require("@tailwindcss/container-queries"),
     platformVariants,
   ],

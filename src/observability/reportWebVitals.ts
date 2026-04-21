@@ -54,7 +54,7 @@ interface AttributedMetric {
   delta: number;
   id: string;
   navigationType: string;
-  attribution?: Record<string, unknown>;
+  attribution?: unknown;
 }
 
 /**

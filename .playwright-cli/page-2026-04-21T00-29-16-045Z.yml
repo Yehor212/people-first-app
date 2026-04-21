@@ -1,0 +1,156 @@
+- generic:
+  - generic:
+    - generic:
+      - navigation:
+        - link:
+          - /url: "#main-content-v2"
+          - text: Skip to main content
+        - generic:
+          - generic: ZenFlow
+        - navigation:
+          - button:
+            - img
+            - generic: Orb
+          - button:
+            - img
+            - generic: Habits
+          - button:
+            - img
+            - generic: Diary
+        - generic:
+          - button:
+            - generic:
+              - generic:
+                - img
+            - generic: Dark
+          - button:
+            - img
+            - generic: Settings
+          - button:
+            - img
+            - generic: Collapse sidebar
+      - generic:
+        - main:
+          - generic:
+            - heading [level=1]: Habits
+          - region:
+            - heading [level=2]: Today's habits
+            - generic:
+              - generic:
+                - img
+              - paragraph: Plant your first seed
+              - paragraph: Start with 3 habits — small steps win
+              - list:
+                - listitem:
+                  - generic:
+                    - img
+                  - generic:
+                    - generic: "1."
+                    - text: Pick your identity
+                - listitem:
+                  - generic:
+                    - img
+                  - generic:
+                    - generic: "2."
+                    - text: Set your cue
+                - listitem:
+                  - generic:
+                    - img
+                  - generic:
+                    - generic: "3."
+                    - text: Plant your first habit
+              - paragraph: Start with the 2-minute version
+              - generic:
+                - paragraph: Quick pick
+                - list:
+                  - listitem:
+                    - button:
+                      - generic: 💧
+                      - text: Drink water
+                  - listitem:
+                    - button:
+                      - generic: 🌅
+                      - text: Morning sunlight — 10 min
+                  - listitem:
+                    - button:
+                      - generic: 🌬️
+                      - text: Breathe — 4-7-8 once
+                  - listitem:
+                    - button:
+                      - generic: 🙏
+                      - text: Name one gratitude
+              - button:
+                - img
+                - text: Browse habit library
+              - generic:
+                - button:
+                  - img
+                  - text: Create habit
+              - paragraph: When • Where • Cue
+  - status
+  - alert
+  - dialog "Create habit" [ref=e231]:
+    - generic [ref=e233]:
+      - heading "Create habit" [level=2] [ref=e234]
+      - button "Cancel" [ref=e235] [cursor=pointer]:
+        - img [ref=e236]
+    - generic [ref=e240]:
+      - button "← Back" [ref=e241] [cursor=pointer]:
+        - generic [ref=e242]: ←
+        - text: Back
+      - generic [ref=e243]:
+        - generic [ref=e244]:
+          - paragraph [ref=e245]: Template
+          - paragraph [ref=e246]: Drink water
+          - paragraph [ref=e247]: Review the goal, unit, and reminders before saving this template.
+        - tablist "Settings" [ref=e248]:
+          - tab "Essentials" [selected] [ref=e249] [cursor=pointer]
+          - tab "Advanced" [ref=e250] [cursor=pointer]
+      - generic [ref=e251]:
+        - paragraph [ref=e252]: Preview
+        - generic [ref=e253]:
+          - generic [ref=e254]: 💧
+          - generic [ref=e255]:
+            - paragraph [ref=e256]: Drink water
+            - paragraph [ref=e257]: 2 L · Daily · 30 days
+      - textbox "Habit name..." [ref=e258]: Drink water
+      - generic [ref=e259]:
+        - paragraph [ref=e260]: "Frequency:"
+        - generic [ref=e261]:
+          - button "Daily" [ref=e262] [cursor=pointer]
+          - button "3x / week" [ref=e263] [cursor=pointer]
+          - button "2x / week" [ref=e264] [cursor=pointer]
+          - button "Weekly" [ref=e265] [cursor=pointer]
+      - generic [ref=e266]:
+        - generic [ref=e267]:
+          - generic [ref=e268]: "Duration:"
+          - generic [ref=e269]:
+            - button "Ongoing" [ref=e270] [cursor=pointer]
+            - button "Set days" [active] [ref=e271] [cursor=pointer]
+        - generic [ref=e290]:
+          - generic [ref=e291]:
+            - button [ref=e292] [cursor=pointer]:
+              - img [ref=e293]
+            - spinbutton "Duration" [ref=e294]: "30"
+            - button [ref=e295] [cursor=pointer]:
+              - img [ref=e296]
+            - generic [ref=e297]: days
+          - paragraph [ref=e298]: Useful for 7-day resets, 30-day experiments, or quit programs.
+      - generic [ref=e272]:
+        - generic [ref=e273]:
+          - button "L" [ref=e274] [cursor=pointer]
+          - button "ml" [ref=e275] [cursor=pointer]
+          - button "glasses" [ref=e276] [cursor=pointer]
+        - generic [ref=e277]:
+          - generic [ref=e278]: "Target:"
+          - generic [ref=e279]:
+            - button [ref=e280] [cursor=pointer]:
+              - img [ref=e281]
+            - spinbutton "Target" [ref=e282]: "2"
+            - button [ref=e283] [cursor=pointer]:
+              - img [ref=e284]
+            - textbox "Unit (L, km, min...)" [ref=e285]: L
+        - generic [ref=e286]:
+          - button "At Least" [ref=e287] [cursor=pointer]
+          - button "At Most" [ref=e288] [cursor=pointer]
+      - button "Add habit" [ref=e289] [cursor=pointer]

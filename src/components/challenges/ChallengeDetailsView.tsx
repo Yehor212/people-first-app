@@ -243,7 +243,7 @@ export function ChallengeDetailsView({
           {t.challengeCode || "Challenge Code"}
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex-1 rounded-xl px-4 py-4 font-mono text-2xl text-center tracking-widest bg-white/5 text-emerald-400 [text-shadow:0_0_10px_theme(colors.emerald.400/0.5)]">
+          <div className="flex-1 rounded-xl px-4 py-4 font-mono text-2xl text-center tracking-widest bg-background/40 text-emerald-400 [text-shadow:0_0_10px_theme(colors.emerald.400/0.5)]">
             {challenge.code}
           </div>
           <motion.button

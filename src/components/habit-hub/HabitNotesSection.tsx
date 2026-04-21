@@ -112,7 +112,7 @@ export function HabitNotesSection({ habit, onUpdate }: HabitNotesSectionProps) {
             maxLength={1000}
             className={cn(
               "w-full px-3 py-2 rounded-xl text-sm text-foreground resize-none",
-              "bg-white/[0.05] border border-white/[0.08]",
+              "bg-foreground/[0.05] border border-foreground/[0.08]",
               "placeholder:text-muted-foreground/60",
               "focus:outline-none focus:ring-2 focus:ring-violet-500/50"
             )}
@@ -123,7 +123,7 @@ export function HabitNotesSection({ habit, onUpdate }: HabitNotesSectionProps) {
           <div className="flex gap-2">
             <button
               onClick={handleCancel}
-              className="flex-1 px-3 py-1.5 rounded-xl text-xs text-muted-foreground bg-white/[0.05] border border-white/[0.08] min-h-[44px]"
+              className="flex-1 px-3 py-1.5 rounded-xl text-xs text-muted-foreground bg-foreground/[0.05] border border-foreground/[0.08] min-h-[44px]"
             >
               {ts.cancel || "Cancel"}
             </button>
@@ -145,7 +145,7 @@ export function HabitNotesSection({ habit, onUpdate }: HabitNotesSectionProps) {
               key={date}
               className={cn(
                 "px-3 py-2 rounded-xl text-xs",
-                "bg-white/[0.02] border border-white/[0.04]"
+                "bg-foreground/[0.02] border border-foreground/[0.04]"
               )}
             >
               <span className="text-muted-foreground tabular-nums">{formatNoteDate(date)}</span>

@@ -231,6 +231,9 @@ export const habitSchema = z.object({
   targetValue: z.number().min(0),
   targetType: z.enum(['atLeast', 'atMost']),
   unit: z.string().max(50),
+  durationDays: z.number().int().min(1).optional(),
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   entries: z.record(z.string(), z.object({
     value: z.number(),
     notes: z.string().max(1000).optional(),

@@ -220,7 +220,8 @@ export function useCloudSyncEffects({
 
   // Cross-device sync broadcast: instant notification when other device changes data
   useEffect(() => {
-    if (!supabase) return;
+    const client = supabase;
+    if (!client) return;
 
     let unsubRemote: (() => void) | null = null;
 
@@ -228,7 +229,7 @@ export function useCloudSyncEffects({
       try {
         const {
           data: { session },
-        } = await supabase.auth.getSession();
+        } = await client.auth.getSession();
         if (!session?.user) return;
 
         initSyncBroadcast(session.user.id);

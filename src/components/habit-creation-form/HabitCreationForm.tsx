@@ -17,9 +17,10 @@ import {
   TypeSelector,
   FrequencySelector,
   CategorySelector,
-} from "./FormSelectors";
+} from "@/components/habit-creation-form/FormSelectors";
 import { NumericalTargetSection } from "./NumericalTargetSection";
 import { IdentityMappingSection } from "./IdentityMappingSection";
+import { HabitDurationSection } from "./HabitDurationSection";
 
 interface HabitCreationFormProps {
   form: ReturnType<typeof useHabitForm>;
@@ -30,7 +31,7 @@ interface HabitCreationFormProps {
 export function HabitCreationForm({ form, habits, isPrimaryCTA = false }: HabitCreationFormProps) {
   const { t, language } = useLanguage();
   const ts = t as unknown as Record<string, string>;
-  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
+  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -57,6 +58,8 @@ export function HabitCreationForm({ form, habits, isPrimaryCTA = false }: HabitC
     targetType,
     unit,
     targetStep,
+    hasDurationLimit,
+    durationDays,
     reminders,
     identityCluster,
     identityVerb,
@@ -74,6 +77,8 @@ export function HabitCreationForm({ form, habits, isPrimaryCTA = false }: HabitC
     setTargetValue,
     setTargetType,
     setUnit,
+    setHasDurationLimit,
+    setDurationDays,
     setIdentityCluster,
     setIdentityVerb,
     setIdentityIcon,
@@ -122,13 +127,17 @@ export function HabitCreationForm({ form, habits, isPrimaryCTA = false }: HabitC
     activePresetIndex >= 0
       ? ts[frequencyPresets[activePresetIndex].i18nKey] ||
         frequencyPresets[activePresetIndex].label
-      : `${frequency.numerator}Г— / ${frequency.denominator}${ts.daysAbbr || "d"}`;
+      : `${frequency.numerator}x / ${frequency.denominator}${ts.daysAbbr || "d"}`;
   const targetPreviewText =
     habitType === "boolean"
       ? ts.habitTypeBoolean || "Yes/No"
       : targetType === "atMost"
         ? `${ts.atMost || "At Most"} ${targetValue}${unit ? ` ${unit}` : ""}`
         : `${targetValue}${unit ? ` ${unit}` : ""}`;
+  const durationDayLabel = ts.habitDurationDaysLabel || "days";
+  const durationPreviewText = hasDurationLimit
+    ? `${durationDays} ${durationDayLabel}`
+    : ts.habitDurationOngoing || "Ongoing";
 
   const showTypeSelector = settingsMode === "advanced" || !selectedTemplateId;
 
@@ -173,7 +182,7 @@ export function HabitCreationForm({ form, habits, isPrimaryCTA = false }: HabitC
         )}
         whileHover={{ x: -2 }}
       >
-        <span className="inline-block rtl:rotate-180">в†ђ</span>{" "}
+        <span className="inline-block rtl:rotate-180">←</span>{" "}
         {editingHabit ? t.cancel || "Cancel" : t.back || "Back"}
       </motion.button>
 
@@ -314,8 +323,10 @@ export function HabitCreationForm({ form, habits, isPrimaryCTA = false }: HabitC
               )}
             >
               {targetPreviewText}
-              {" В· "}
+              {" · "}
               {freqText}
+              {" · "}
+              {durationPreviewText}
             </p>
           </div>
         </div>
@@ -326,7 +337,7 @@ export function HabitCreationForm({ form, habits, isPrimaryCTA = false }: HabitC
         value={newHabitName}
         onChange={(e) => setNewHabitName(e.target.value)}
         maxLength={100}
-        placeholder={t.habitName}
+        placeholder={ts.habitName || "Habit name"}
         aria-label={ts.habitName || "Habit name"}
         className={cn(
           "relative w-full p-3 rounded-xl mb-3 motion-safe:transition-all",
@@ -378,6 +389,15 @@ export function HabitCreationForm({ form, habits, isPrimaryCTA = false }: HabitC
         setFrequency={setFrequency}
         isPrimaryCTA={isPrimaryCTA}
         ts={ts}
+      />
+
+      <HabitDurationSection
+        isPrimaryCTA={isPrimaryCTA}
+        ts={ts}
+        hasDurationLimit={hasDurationLimit}
+        setHasDurationLimit={setHasDurationLimit}
+        durationDays={durationDays}
+        setDurationDays={setDurationDays}
       />
 
       {habitType === "numerical" && (

@@ -105,7 +105,7 @@ export function ChallengesPanel({
           <button
             onClick={onClose}
             aria-label={t.close || "Close"}
-            className="p-2 rounded-xl bg-white/10 hover:bg-white/20 motion-safe:transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+            className="p-2 rounded-xl bg-primary-foreground/10 hover:bg-primary-foreground/20 motion-safe:transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
           >
             <X className="w-6 h-6 text-primary-foreground" />
           </button>

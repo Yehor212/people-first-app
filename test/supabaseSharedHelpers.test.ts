@@ -73,10 +73,12 @@ describe("supabase shared http helpers", () => {
     expect(allowed["Access-Control-Allow-Origin"]).toBe(
       "capacitor://localhost",
     );
+    expect(allowed.Vary).toBe("Origin");
     expect(allowed["X-Frame-Options"]).toBe("DENY");
 
     const fallback = getCorsHeaders("https://unknown.origin");
     expect(fallback["Access-Control-Allow-Origin"]).toBeUndefined();
+    expect(fallback.Vary).toBe("Origin");
   });
 
   it("builds json and no-content responses", async () => {

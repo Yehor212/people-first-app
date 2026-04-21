@@ -11,6 +11,10 @@ vi.mock("@/contexts/LanguageContext", () => ({
       dStreak: "d streak",
       statistics: "Statistics",
       thisWeek: "This week",
+      habitDurationDaysLabel: "day",
+      habitPlanLabel: "plan",
+      daysLeft: "days left",
+      completed: "Completed",
     },
     language: "en",
   }),
@@ -73,9 +77,26 @@ describe("HeroWeeklyHabitCard", () => {
     expect(screen.getByTestId("hero-weekly-card-water-summary")).toHaveTextContent(
       "1.5/2 L",
     );
-    expect(screen.getByTestId("hero-weekly-card-water-meta")).toHaveTextContent(
-      "1.5 L · This week",
+    expect(screen.getByTestId("hero-weekly-card-water-meta")).toHaveTextContent("1.5 L");
+  });
+
+  it("keeps quarter-step values readable for measurable habits", () => {
+    const today = getToday();
+    render(
+      <HeroWeeklyHabitCard
+        habit={habit({
+          entries: {
+            [today]: { value: toStoredValue(0.25) },
+          },
+        })}
+        onToggle={vi.fn()}
+      />,
     );
+
+    expect(screen.getByTestId("hero-weekly-card-water-summary")).toHaveTextContent(
+      "0.25/2 L",
+    );
+    expect(screen.getByTestId("hero-weekly-card-water-meta")).toHaveTextContent("0.25 L");
   });
 
   it("shows a lightweight boolean week summary on the card footer", () => {
@@ -97,7 +118,30 @@ describe("HeroWeeklyHabitCard", () => {
     );
 
     expect(screen.getByTestId("hero-weekly-card-gratitude-meta")).toHaveTextContent(
-      "1× · This week",
+      "1x · This week",
+    );
+  });
+
+  it("shows finite-plan progress when duration is set", () => {
+    render(
+      <HeroWeeklyHabitCard
+        habit={habit({
+          id: "plan",
+          name: "No sugar",
+          habitType: "boolean",
+          targetValue: 0,
+          unit: "",
+          durationDays: 14,
+          startDate: "2026-04-20",
+          endDate: "2026-05-03",
+        })}
+        onToggle={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText(/14-day plan/i)).toBeInTheDocument();
+    expect(screen.getByTestId("hero-weekly-card-plan-plan")).toHaveTextContent(
+      "14 days left",
     );
   });
 });

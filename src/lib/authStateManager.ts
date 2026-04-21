@@ -52,9 +52,10 @@ class AuthStateManager {
 
     // This is the winner - execute the callback
     logger.log(`[AuthStateManager] Completing auth from ${source}`);
+    const completionTimestamp = Date.now();
     this.isCompleted = true;
     this.completionSource = source;
-    this.completionTimestamp = Date.now();
+    this.completionTimestamp = completionTimestamp;
 
     this.completionPromise = (async (): Promise<AuthCompletionResult> => {
       try {
@@ -63,7 +64,7 @@ class AuthStateManager {
         return {
           completed: true,
           source,
-          timestamp: this.completionTimestamp,
+          timestamp: completionTimestamp,
         };
       } catch (error) {
         logger.error(`[AuthStateManager] Auth completion failed from ${source}:`, error);

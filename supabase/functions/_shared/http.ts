@@ -17,6 +17,7 @@ export function getCorsHeaders(origin: string | null): Record<string, string> {
       "authorization, x-client-info, apikey, content-type, x-cron-secret",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Access-Control-Max-Age": "86400",
+    Vary: "Origin",
     "X-Content-Type-Options": "nosniff",
     "X-Frame-Options": "DENY",
     "X-XSS-Protection": "1; mode=block",

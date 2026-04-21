@@ -163,7 +163,7 @@ describe('shareCardRenderer', () => {
     it('falls back to arcTo when roundRect is missing', () => {
       const ctx = makeMockCtx();
       // Remove roundRect to simulate older browser
-      (ctx as Record<string, unknown>).roundRect = undefined;
+      (ctx as Partial<CanvasRenderingContext2D>).roundRect = undefined;
       drawRoundedRect(ctx, 0, 0, 100, 50, 8, '#fff');
       expect(ctx.arcTo).toHaveBeenCalled();
       expect(ctx.closePath).toHaveBeenCalled();

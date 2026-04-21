@@ -1,10 +1,8 @@
 import { cn } from "@/lib/utils";
 import { logger } from "@/lib/logger";
-import type { TranslationStrings } from "@/i18n/types";
-
 interface ExportPickerDialogProps {
-  ts: TranslationStrings;
-  language: string;
+  ts: Record<string, string>;
+  language: import("@/i18n/types").Language;
   exporting: boolean;
   setExporting: (v: boolean) => void;
   onClose: () => void;

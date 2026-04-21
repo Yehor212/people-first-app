@@ -181,7 +181,7 @@ export function HabitsSlide({ slide, t }: HabitsSlideProps) {
       {/* Top habit card - bottom left */}
       {data?.topHabit && (
         <motion.div
-          className="absolute bottom-24 left-6 bg-black/30 backdrop-blur-md rounded-2xl px-5 py-4 border border-emerald-500/20 shadow-[0_0_30px_rgba(74,222,128,0.1)]"
+        className="absolute bottom-24 left-6 bg-black/30 dark:bg-black/30 backdrop-blur-md rounded-2xl px-5 py-4 border border-emerald-500/20 shadow-[0_0_30px_rgba(74,222,128,0.1)]"
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 1 }}

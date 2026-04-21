@@ -11,10 +11,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 
-const morphSpy = vi.fn<[string, () => void | Promise<void>], Promise<void>>();
+const morphSpy = vi.fn();
 vi.mock('@/lib/motion/morph', () => ({
   morph: (name: string, fn: () => void | Promise<void>) => {
-    morphSpy(name, fn);
+    void morphSpy(name, fn);
     // Execute mutation synchronously so test observes state change.
     void fn();
     return Promise.resolve();

@@ -158,6 +158,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
       challenges: t.moduleChallenges || t.settingsModuleChallenges || "Challenges",
       innerWorld: t.moduleGarden || t.settingsModuleGarden || "Garden",
       aiCoach: "AI Coach", // Not shown
+      deltaSync: "Sync",
     };
     return names[id];
   };
@@ -176,6 +177,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         t.moduleChallengesDesc || t.settingsModuleChallengesDesc || "Compete with friends",
       innerWorld: t.moduleGardenDesc || t.settingsModuleGardenDesc || "Virtual companion & garden",
       aiCoach: "", // Not shown
+      deltaSync: "Cross-device sync",
     };
     return descs[id];
   };
