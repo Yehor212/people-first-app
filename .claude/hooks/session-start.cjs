@@ -272,7 +272,8 @@ process.stdin.on('end', () => {
   const auditActive = fs.existsSync(path.join(ROOT, '.audit-active'));
 
   const enforcementReminder = [
-    'ENFORCEMENT: Hooks enforce rules automatically.',
+    'ENFORCEMENT SYSTEM: Hooks enforce rules automatically.',
+    `${hookCount} hooks registered (${blockingCount} blocking, ${advisoryCount} advisory).`,
     'preflight-gate blocks edits without token.',
     'commit-gate blocks commits without .verification-done.',
     'PostToolUse A6-A10 warnings fire after every edit.',

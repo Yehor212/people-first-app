@@ -2,17 +2,19 @@
 /**
  * PreToolUse hook for Edit/Write — PRE-FLIGHT enforcement gate.
  *
- * BLOCKS code edits on .ts/.tsx files unless .preflight-token exists
+ * BLOCKS repo-impacting edits unless .preflight-token exists
  * with valid content (must contain "7checks", "verdict", "GO").
  *
- * AgentSpec tuple: (Edit/Write on .ts/.tsx, no valid .preflight-token, BLOCK)
+ * AgentSpec tuple: (Edit/Write on guarded file, no valid .preflight-token, BLOCK)
+ *
+ * Guarded by default:
+ * - Runtime/test/build files (.ts/.tsx/.js/.cjs/.mjs and related paths)
+ * - Governance/enforcement docs (docs/ai/, AGENTS.md, ARCHITECTURE.md)
+ * - Configs, lockfiles, manifests, and hook/agent templates
  *
  * Exceptions (always allowed):
- * - Non-TypeScript files (.css, .json, .md, .html, etc.)
- * - Files in .claude/hooks/ (hook development)
- * - Files in docs/ (documentation)
- * - Files in memory/ (memory system)
- * - Test token files (.preflight-token, .postflight-done, etc.)
+ * - Session artifact token files (.preflight-token, .postflight-done, etc.)
+ * - memory/ notes
  */
 const fs = require('fs');
 const path = require('path');
@@ -27,17 +29,68 @@ function audit(event, detail) {
 
 const TOKEN = path.join(ROOT, '.preflight-token');
 
-// Paths that bypass the gate (not production code)
-const BYPASS_PATTERNS = [
-  '.claude/hooks/',
-  '.claude/settings',
-  'docs/',
+// Paths that always bypass the gate (session artifacts / memory)
+const ALWAYS_ALLOW_PATTERNS = [
   'memory/',
   '.preflight-token',
   '.postflight-done',
   '.fullcycle-active',
   '.fullcycle-laws-read',
+  '.verification-done',
+  '.ci-evidence',
+  '.ide-ack-pending',
+  '.ide-ack-done',
 ];
+
+const GUARDED_PREFIXES = [
+  '.claude/hooks/',
+  '.Codex/',
+  '.agents/',
+  'src/',
+  'e2e/',
+  'scripts/',
+  'supabase/',
+  'android/',
+  'ios/',
+  'tools/ruflow-plus/templates/',
+  'docs/ai/',
+];
+
+const GUARDED_EXACT_FILES = new Set([
+  'AGENTS.md',
+  'ARCHITECTURE.md',
+  'package.json',
+  'package-lock.json',
+  'pnpm-lock.yaml',
+  'yarn.lock',
+  'bun.lockb',
+  'netlify.toml',
+]);
+
+const GUARDED_CODE_EXT = /\.(ts|tsx|js|jsx|cjs|mjs|cts|mts)$/i;
+const GUARDED_CONFIG_PATTERNS = [
+  /(^|\/)(tsconfig(\..+)?\.json)$/i,
+  /(^|\/)(playwright|vite|vitest|tailwind|capacitor|eslint|postcss)\.config\.[cm]?[jt]s$/i,
+  /(^|\/)(knip|vercel)\.json$/i,
+  /\.toml$/i,
+];
+
+function requiresPreflight(relPath) {
+  if (!relPath) return false;
+  if (ALWAYS_ALLOW_PATTERNS.some(p => relPath.startsWith(p))) {
+    return false;
+  }
+  if (GUARDED_EXACT_FILES.has(relPath)) {
+    return true;
+  }
+  if (GUARDED_PREFIXES.some(p => relPath.startsWith(p))) {
+    return true;
+  }
+  if (GUARDED_CODE_EXT.test(relPath)) {
+    return true;
+  }
+  return GUARDED_CONFIG_PATTERNS.some(pattern => pattern.test(relPath));
+}
 
 let input = '';
 process.stdin.on('data', d => input += d);
@@ -46,15 +99,9 @@ process.stdin.on('end', () => {
     const data = JSON.parse(input);
     const filePath = (data.tool_input?.file_path || '').replace(/\\/g, '/');
 
-    // Only gate TypeScript files
-    if (!filePath.match(/\.(ts|tsx)$/)) {
-      process.exit(0); // Allow non-TS files
-    }
-
-    // Check bypass patterns
     const relPath = filePath.replace(ROOT.replace(/\\/g, '/'), '').replace(/^\//, '');
-    if (BYPASS_PATTERNS.some(p => relPath.startsWith(p))) {
-      process.exit(0); // Allow bypassed paths
+    if (!requiresPreflight(relPath)) {
+      process.exit(0); // Allow non-guarded paths
     }
 
     // §A: Check .ide-ack-pending — if exists, must have .ide-ack-done before next edit
@@ -119,13 +166,16 @@ process.stdin.on('end', () => {
     // BLOCK — no valid token
     process.stderr.write(
       'PRE-FLIGHT GATE BLOCKED!\n\n' +
-      'You MUST complete the <thinking> block with 7 checks + VERDICT: GO before editing TypeScript files.\n\n' +
+      'You MUST complete the <thinking> block with 7 checks + VERDICT: GO before editing guarded repo files.\n' +
+      'Use docs/ai/PREFLIGHT_OPERATOR_TEMPLATE.md as the operator contract.\n\n' +
       'Write structured JSON to .preflight-token:\n' +
-      '  { timestamp, goal, depth (L1/L2/L3), transmutation, checks_completed,\n' +
+      '  { timestamp, goal, depth (L1/L2/L3/L4), transmutation, checks_completed,\n' +
       '    evidence: {read[], search[], assumed[]}, pre_mortem,\n' +
       '    confidence: {codebase_familiarity, change_scope, regression_risk,\n' +
       '    platform_coverage, state_integrity} (1-9, 10 forbidden),\n' +
-      '    overall_score, unknowns, verdict: "GO" }\n\n' +
+      '    overall_score, scope_boundaries, post_verification_plan,\n' +
+      '    anti_patterns_checked, unknowns, verdict: "GO" }\n\n' +
+      'Repo-touching work defaults to L2 minimum. Cross-platform/stateful/prompt/config/build/CI/sync/auth work usually requires L3.\n\n' +
       'Or legacy format:\n' +
       '  echo "preflight-7checks-verdict-GO" > .preflight-token && echo "GOAL: [your goal]" >> .preflight-token\n'
     );

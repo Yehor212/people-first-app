@@ -9,6 +9,12 @@ max_workers_large = 5
 require_written_plan = true
 require_verification = true
 require_learning_writeback = true
+preflight_template = "docs/ai/PREFLIGHT_OPERATOR_TEMPLATE.md"
+min_preflight_depth = "L2"
+require_platform_matrix = true
+require_anti_pattern_scan = true
+require_go_stop_ask = true
+verify_time_sensitive_externals = true
 prefer_official_sources = true
 
 [ruflow_plus.routing]

@@ -22,6 +22,7 @@ import { hapticTap } from "@/lib/haptics";
 import { getLocale } from "@/lib/timeUtils";
 import type {
   JournalEntry,
+  JournalEntryPrefill,
   JournalPhoto,
   JournalAudio,
   DiaryThemeName,
@@ -69,6 +70,7 @@ import { useJournalEditorState } from "./useJournalEditorState";
 import { formatRecordingTime } from "./useJournalEditorHelpers";
 import { useTypingDynamics } from "@/hooks/useTypingDynamics";
 import { TypingDynamicsMirror } from "@/components/diary/TypingDynamicsMirror";
+import type { SidebarState } from "@/hooks/useSidebarState";
 
 // Local aliases to avoid name collision with the hook's `theme` state
 const DIARY_FONTS_LOCAL = DIARY_FONTS;
@@ -190,6 +192,7 @@ const INK_COLORS = [
 
 interface JournalEntryEditorProps {
   entry: JournalEntry | null;
+  entryPrefill?: JournalEntryPrefill | null;
   onSave: (data: {
     title: string;
     content: string;
@@ -231,13 +234,14 @@ interface JournalEntryEditorProps {
   onAddGratitude?: (entry: import("@/types").GratitudeEntry) => void;
   /** Desktop master-detail mode: render inline instead of fixed overlay */
   desktop?: boolean;
-  /** Desktop sidebar toggle (passed from JournalModule) */
-  sidebarCollapsed?: boolean;
+  /** Desktop diary panel visibility state (passed from JournalModule) */
+  sidebarState?: SidebarState;
   onToggleSidebar?: () => void;
 }
 
 export const JournalEntryEditor = memo(function JournalEntryEditor({
   entry,
+  entryPrefill,
   onSave,
   onAddPhoto,
   onRemovePhoto,
@@ -248,7 +252,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
   onToggleHabit,
   onAddGratitude,
   desktop,
-  sidebarCollapsed,
+  sidebarState = "expanded",
   onToggleSidebar,
 }: JournalEntryEditorProps) {
   const reducedMotion = useReducedMotion();
@@ -256,6 +260,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
   const [_contentReady, setContentReady] = useState(!desktop || !!reducedMotion);
   const state = useJournalEditorState({
     entry,
+    entryPrefill,
     onSave,
     onAddPhoto,
     onRemovePhoto,
@@ -542,6 +547,12 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
     return () => editor.removeEventListener("input", handleMarkdownShortcuts);
   }, [editorRef, handleMarkdownShortcuts]);
 
+  const isSidebarCollapsed = sidebarState !== "expanded";
+  const sidebarHidden = isSidebarCollapsed;
+  const sidebarToggleLabel = sidebarHidden
+    ? ts.diarySidebarShow || "Show diary panel"
+    : ts.diarySidebarHide || "Hide diary panel";
+
   const EditorWrapper = desktop ? motion.div : "div";
   const editorWrapperProps = desktop
     ? {
@@ -603,15 +614,12 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                 whileTap={{ scale: 0.92 }}
                 onClick={onToggleSidebar}
                 className="p-2 rounded-lg text-muted-foreground hover:bg-white/10 dark:hover:bg-white/10 hover:text-foreground motion-safe:transition-all min-w-[44px] min-h-[44px] flex items-center justify-center"
-                aria-label={
-                  sidebarCollapsed
-                    ? ts.diarySidebarShow || "Show entries"
-                    : ts.diarySidebarHide || "Hide entries"
-                }
-                aria-expanded={!sidebarCollapsed}
+                aria-label={sidebarToggleLabel}
+                title={sidebarToggleLabel}
+                aria-expanded={!isSidebarCollapsed}
                 aria-controls="journal-sidebar-panel"
               >
-                {sidebarCollapsed ? (
+                {isSidebarCollapsed ? (
                   <PanelLeftOpen className="w-4 h-4" />
                 ) : (
                   <PanelLeftClose className="w-4 h-4" />

@@ -34,6 +34,22 @@ describe("diaryDraftStore", () => {
     expect(useDiaryDraftStore.getState().pendingMoodContext).toBeNull();
   });
 
+  it("consumePendingMoodContext returns the current context and clears it", () => {
+    const ctx = {
+      valence: 0.4,
+      scope: "now" as const,
+      specificTime: null,
+      emotion: "hopeful",
+      committedAt: 123,
+    };
+    useDiaryDraftStore.getState().setPendingMoodContext(ctx);
+
+    const consumed = useDiaryDraftStore.getState().consumePendingMoodContext();
+
+    expect(consumed).toEqual(ctx);
+    expect(useDiaryDraftStore.getState().pendingMoodContext).toBeNull();
+  });
+
   it("setPendingMoodContext overwrites prior context", () => {
     useDiaryDraftStore.getState().setPendingMoodContext({
       valence: -0.5,

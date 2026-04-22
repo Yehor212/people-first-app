@@ -9,6 +9,7 @@ import { hapticSuccess, hapticTap } from "@/lib/haptics";
 import type { SaveState } from "./SaveIndicator";
 import type {
   JournalEntry,
+  JournalEntryPrefill,
   JournalPhoto,
   JournalAudio,
   DiaryThemeName,
@@ -40,12 +41,19 @@ import { sanitizeRichContent } from "@/lib/sanitize";
 
 interface DraftData {
   title: string;
+  date: string;
   content: string;
   stickers: string[];
   photoIds: string[];
   audioIds?: string[];
   mood?: MoodType;
   tags: string[];
+  habitSnapshot?: {
+    habitId: string;
+    habitName: string;
+    habitIcon: string;
+    completed: boolean;
+  }[];
   savedAt: number;
   // Customizations (optional for backward compat with old drafts)
   theme?: DiaryThemeName;
@@ -132,6 +140,55 @@ async function clearDraft(key: string) {
   storageRemove(key);
 }
 
+interface EditorSnapshot {
+  title: string;
+  date: string;
+  content: string;
+  stickers: string;
+  photoIds: string;
+  audioIds: string;
+  mood?: MoodType;
+  tags: string;
+  habitSnapshot: string;
+  theme: DiaryThemeName;
+  font: DiaryFontName;
+  inkColor: string;
+  paperTexture: PaperTexture;
+  paperColor: PaperColor;
+  bgIntensity: BackgroundIntensity;
+  particleSpeed: ParticleSpeed;
+  bgPattern: DiaryBgPattern;
+  fontSize: FontSizeName;
+  photoLayout: string;
+}
+
+function createEditorSnapshot(
+  entry: JournalEntry | null,
+  prefill: JournalEntryPrefill | null,
+): EditorSnapshot {
+  return {
+    title: entry?.title || prefill?.title || "",
+    date: entry?.date || prefill?.date || getToday(),
+    content: entry?.content || prefill?.content || "",
+    stickers: JSON.stringify(entry?.stickers || []),
+    photoIds: JSON.stringify(entry?.photoIds || []),
+    audioIds: JSON.stringify(entry?.audioIds || []),
+    mood: entry?.mood || prefill?.mood,
+    tags: JSON.stringify(entry?.tags || prefill?.tags || []),
+    habitSnapshot: JSON.stringify(entry?.habitSnapshot || []),
+    theme: entry?.theme || "dark",
+    font: entry?.font || "caveat",
+    inkColor: entry?.inkColor || "#ffffff",
+    paperTexture: entry?.paperTexture || "clean",
+    paperColor: entry?.paperColor || "dark",
+    bgIntensity: entry?.bgIntensity || "full",
+    particleSpeed: entry?.particleSpeed || "slow",
+    bgPattern: entry?.bgPattern || "none",
+    fontSize: entry?.fontSize || "medium",
+    photoLayout: JSON.stringify(entry?.photoLayout || {}),
+  };
+}
+
 // ── Prompt constants ──
 
 const DEFAULT_PROMPTS = [
@@ -164,6 +221,7 @@ const PROMPT_KEYS = [
 
 export interface JournalEditorStateProps {
   entry: JournalEntry | null;
+  entryPrefill?: JournalEntryPrefill | null;
   onSave: (data: {
     title: string;
     content: string;
@@ -208,11 +266,23 @@ export interface JournalEditorStateProps {
 // ── Hook ──
 
 export function useJournalEditorState(props: JournalEditorStateProps) {
-  const { entry, onSave, onAddPhoto, onRemovePhoto, onAddAudio, onRemoveAudio, onBack } = props;
+  const {
+    entry,
+    entryPrefill,
+    onSave,
+    onAddPhoto,
+    onRemovePhoto,
+    onAddAudio,
+    onRemoveAudio,
+    onBack,
+  } = props;
 
   const { t, language } = useLanguage();
   useScrollLock(true);
   const ts = t as unknown as Record<string, string>;
+
+  const prefill = !entry ? entryPrefill ?? null : null;
+  const initialSnapshotRef = useRef(createEditorSnapshot(entry, prefill));
 
   // === Refs ===
   const editorRef = useRef<HTMLDivElement>(null);
@@ -224,7 +294,7 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
   const contentAreaRef = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const scrollYRef = useRef(0);
-  const contentRef = useRef(entry?.content || "");
+  const contentRef = useRef(initialSnapshotRef.current.content);
   const contentSyncRef = useRef<ReturnType<typeof setTimeout>>();
   const lastScrollTopRef = useRef(0);
   const promptsDropdownRef = useRef<HTMLDivElement>(null);
@@ -232,15 +302,17 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
   const draftKey = getDraftKey(entry?.id || null);
 
   // === Content State ===
-  const [title, setTitle] = useState(entry?.title || "");
-  const [date, setDate] = useState(entry?.date || getToday());
-  const [content, setContent] = useState(entry?.content || "");
+  const [title, setTitle] = useState(initialSnapshotRef.current.title);
+  const [date, setDate] = useState(initialSnapshotRef.current.date);
+  const [content, setContent] = useState(initialSnapshotRef.current.content);
   const [stickers, setStickers] = useState<string[]>(entry?.stickers || []);
   const [photoIds, setPhotoIds] = useState<string[]>(entry?.photoIds || []);
   const [audioIds, setAudioIds] = useState<string[]>(entry?.audioIds || []);
   const [audioRecordings, setAudioRecordings] = useState<JournalAudio[]>([]);
-  const [mood, setMood] = useState<MoodType | undefined>(entry?.mood);
-  const [tags, setTags] = useState<string[]>(entry?.tags || []);
+  const [mood, setMood] = useState<MoodType | undefined>(initialSnapshotRef.current.mood);
+  const [tags, setTags] = useState<string[]>(
+    safeJsonParse<string[]>(initialSnapshotRef.current.tags, []),
+  );
   const [habitSnapshot, setHabitSnapshot] = useState<
     {
       habitId: string;
@@ -329,28 +401,50 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
   const wasListeningRef = useRef(false);
 
   // === Derived values ===
-  const initialRef = useRef({
-    title: entry?.title || "",
-    content: entry?.content || "",
-    stickers: JSON.stringify(entry?.stickers || []),
-    photoIds: JSON.stringify(entry?.photoIds || []),
-    audioIds: JSON.stringify(entry?.audioIds || []),
-    mood: entry?.mood,
-    tags: JSON.stringify(entry?.tags || []),
-  });
-
   const isDirty = useMemo(() => {
-    const init = initialRef.current;
+    const init = initialSnapshotRef.current;
     return (
       title !== init.title ||
+      date !== init.date ||
       content !== init.content ||
       JSON.stringify(stickers) !== init.stickers ||
       JSON.stringify(photoIds) !== init.photoIds ||
       JSON.stringify(audioIds) !== init.audioIds ||
       mood !== init.mood ||
-      JSON.stringify(tags) !== init.tags
+      JSON.stringify(tags) !== init.tags ||
+      JSON.stringify(habitSnapshot) !== init.habitSnapshot ||
+      diaryTheme.theme !== init.theme ||
+      diaryTheme.font !== init.font ||
+      inkColor !== init.inkColor ||
+      paperTexture !== init.paperTexture ||
+      paperColor !== init.paperColor ||
+      bgIntensity !== init.bgIntensity ||
+      particleSpeed !== init.particleSpeed ||
+      bgPattern !== init.bgPattern ||
+      fontSize !== init.fontSize ||
+      JSON.stringify(photoLayout) !== init.photoLayout
     );
-  }, [title, content, stickers, photoIds, audioIds, mood, tags]);
+  }, [
+    title,
+    date,
+    content,
+    stickers,
+    photoIds,
+    audioIds,
+    mood,
+    tags,
+    habitSnapshot,
+    diaryTheme.theme,
+    diaryTheme.font,
+    inkColor,
+    paperTexture,
+    paperColor,
+    bgIntensity,
+    particleSpeed,
+    bgPattern,
+    fontSize,
+    photoLayout,
+  ]);
 
   const wordCount = useMemo(() => countWordsHtml(content), [content]);
 
@@ -403,7 +497,8 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
     stickers.length > 0 ||
     photoIds.length > 0 ||
     audioIds.length > 0 ||
-    mood;
+    mood ||
+    habitSnapshot.length > 0;
 
   // === Effects ===
 
@@ -426,20 +521,24 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
     draftTimerRef.current = setTimeout(() => {
       if (
         title ||
+        photoIds.length > 0 ||
         contentRef.current ||
         stickers.length > 0 ||
         mood ||
         tags.length > 0 ||
-        audioIds.length > 0
+        audioIds.length > 0 ||
+        habitSnapshot.length > 0
       ) {
         void saveDraft(draftKey, {
           title,
+          date,
           content: contentRef.current,
           stickers,
           photoIds,
           audioIds,
           mood,
           tags,
+          habitSnapshot,
           theme: diaryTheme.theme,
           font: diaryTheme.font,
           inkColor,
@@ -460,11 +559,13 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
     };
   }, [
     title,
+    date,
     stickers,
     photoIds,
     audioIds,
     mood,
     tags,
+    habitSnapshot,
     draftKey,
     diaryTheme.theme,
     diaryTheme.font,
@@ -828,6 +929,7 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
   const handleRestoreDraft = useCallback(() => {
     if (!draftAvailable) return;
     setTitle(draftAvailable.title);
+    setDate(draftAvailable.date || getToday());
     contentRef.current = draftAvailable.content;
     setContent(draftAvailable.content);
     setStickers(draftAvailable.stickers);
@@ -835,6 +937,7 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
     if (draftAvailable.audioIds) setAudioIds(draftAvailable.audioIds);
     setMood(draftAvailable.mood);
     setTags(draftAvailable.tags);
+    setHabitSnapshot(draftAvailable.habitSnapshot || []);
     // Restore customizations (if present in draft)
     if (draftAvailable.theme) diaryTheme.setTheme(draftAvailable.theme);
     if (draftAvailable.font) diaryTheme.setFont(draftAvailable.font);

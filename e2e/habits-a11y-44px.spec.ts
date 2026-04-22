@@ -1,16 +1,10 @@
 /**
  * §11 #1 — 44×44 px touch-target Playwright smoke.
  *
- * Converts habits-tab-spec §11 item #1 from 🟡 (static class assertion only)
- * to ✅ (real rendered pixel dimensions in chromium) by measuring the
- * bounding box of every critical interactive element on /habits.
- *
- * Law 9 (A11y) — all touch targets ≥ 44×44 px. Apple HIG + WCAG AA 2.5.5.
- *
- * The onboarding-prime block mirrors `habits-metrics.spec.ts` so the page
- * lands on the Habits hero zone rather than the welcome flow. We do NOT
- * seed analytics — this test is presentational and does not care about
- * gtag traffic.
+ * Measures the rendered touch targets that matter in the CURRENT V2 flow:
+ *   - empty-state quick-picks
+ *   - first weekly cell after template setup
+ *   - weekly-card statistics button
  */
 
 import { test, expect, type Locator, type Page } from "@playwright/test";
@@ -21,9 +15,38 @@ const packageJson = require("../package.json") as { version: string };
 
 const MIN_TARGET_PX = 44;
 
+function getAppBasePath(page: Page) {
+  const { pathname } = new URL(page.url());
+  return pathname === "/" ? "" : pathname.replace(/\/$/, "");
+}
+
 async function primeOnboarding(page: Page) {
-  await page.addInitScript(
-    ({ appVersion }: { appVersion: string }) => {
+  await page.goto("/?nav=v2");
+  await page.evaluate(
+    async ({ appVersion }: { appVersion: string }) => {
+      const deleteDatabase = (name: string) =>
+        new Promise<void>((resolve) => {
+          const request = indexedDB.deleteDatabase(name);
+          request.onsuccess = () => resolve();
+          request.onerror = () => resolve();
+          request.onblocked = () => resolve();
+        });
+
+      localStorage.clear();
+      sessionStorage.clear();
+      try {
+        const databases =
+          typeof indexedDB.databases === "function" ? await indexedDB.databases() : [];
+        await Promise.all(
+          (databases ?? [])
+            .map((db) => db.name)
+            .filter((name): name is string => Boolean(name))
+            .map(deleteDatabase),
+        );
+      } catch {
+        /* some browsers may not expose indexedDB.databases */
+      }
+      localStorage.setItem("zenflow-language", JSON.stringify("en"));
       localStorage.setItem("zenflow-language-selected", JSON.stringify(true));
       localStorage.setItem("zenflow-google-auth-checked", JSON.stringify(true));
       localStorage.setItem("zenflow-tutorial-complete", JSON.stringify(true));
@@ -44,6 +67,7 @@ async function primeOnboarding(page: Page) {
         }),
       );
       localStorage.setItem("zenflow_last_seen_version", appVersion);
+      localStorage.setItem("zenflow-orb-first-run-dismissed", "1");
       localStorage.setItem("zenflow-theme", "light");
       localStorage.setItem(
         "zenflow-privacy",
@@ -61,15 +85,25 @@ async function primeOnboarding(page: Page) {
 
 async function gotoHabitsTab(page: Page) {
   await page.setViewportSize({ width: 1280, height: 800 });
-  await page.goto("/?nav=v2");
-  await expect(page.getByTestId("nav-v2-orchestrator")).toBeVisible({
+  const appBase = getAppBasePath(page);
+  await page.goto(`${appBase}/habits?nav=v2`);
+  await expect(page.getByTestId("habits-page")).toBeVisible({
     timeout: 15_000,
   });
-  await page.keyboard.press("Control+2");
   await expect(page.getByTestId("habits-hero-empty")).toBeVisible({
     timeout: 10_000,
   });
   await page.waitForTimeout(200);
+}
+
+async function completeTemplateSetup(page: Page, quickPickId: string) {
+  await page.getByTestId(`hero-quickpick-${quickPickId}`).click();
+  await expect(page.getByTestId("habits-create-sheet")).toBeVisible({ timeout: 10_000 });
+  await page.getByRole("button", { name: /add habit/i }).click();
+  await expect(page.getByTestId("habits-create-sheet")).not.toBeVisible({ timeout: 10_000 });
+  await expect(page.locator('[data-testid^="hero-weekly-card-"]').first()).toBeVisible({
+    timeout: 10_000,
+  });
 }
 
 /** Pure: assert rendered width AND height are ≥ 44 px each. */
@@ -97,6 +131,7 @@ test.describe("§11 #1 — Habits touch targets ≥ 44×44 px", () => {
     await primeOnboarding(page);
     await gotoHabitsTab(page);
 
+    await expect(page.getByTestId("hero-quickpick-water")).toBeVisible({ timeout: 10_000 });
     const quickPicks = page.locator('[data-testid^="hero-quickpick-"]');
     const count = await quickPicks.count();
     expect(count, "at least one quick-pick rendered").toBeGreaterThan(0);
@@ -106,31 +141,19 @@ test.describe("§11 #1 — Habits touch targets ≥ 44×44 px", () => {
     }
   });
 
-  test("complete toggle + ⋯ menu trigger meet the threshold after seeding", async ({
+  test("weekly card touch targets meet the threshold after template setup", async ({
     page,
   }) => {
     await primeOnboarding(page);
     await gotoHabitsTab(page);
 
-    // Seed one habit from quick-pick so the hero row + its affordances render.
-    await page.locator('[data-testid^="hero-quickpick-"]').first().click();
+    await completeTemplateSetup(page, "breathwork");
 
-    const row = page.locator('[data-testid^="hero-habit-row-"]').first();
-    await expect(row).toBeVisible({ timeout: 10_000 });
+    const card = page.locator('[data-testid^="hero-weekly-card-"]').first();
+    const weekCell = card.getByRole("checkbox").first();
+    await expectTouchTarget(weekCell, "weekly cell toggle");
 
-    // V1 CompactHabitCard exposes the toggle via aria-label "<name>: Mark complete".
-    const toggle = page
-      .getByRole("button", { name: /mark complete/i })
-      .first();
-    await expectTouchTarget(toggle, "complete toggle button");
-
-    // HabitActionsMenu trigger: data-testid ends with "-menu" (content/items
-    // have further suffixes like "-menu-content" / "-menu-skip").
-    const menuTrigger = page
-      .locator(
-        '[data-testid^="hero-habit-row-"][data-testid$="-menu"]:not([data-testid$="-menu-content"])',
-      )
-      .first();
-    await expectTouchTarget(menuTrigger, "⋯ menu trigger");
+    const statsButton = card.getByRole("button", { name: /statistics/i }).first();
+    await expectTouchTarget(statsButton, "weekly card statistics button");
   });
 });

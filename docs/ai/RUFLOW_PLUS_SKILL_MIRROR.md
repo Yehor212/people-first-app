@@ -31,12 +31,20 @@ Do not use this skill for trivial single-file edits.
 ## Mandatory Pre-Flight
 
 Before substantial work:
-- identify missing constraints
-- name likely failure modes
+- produce a written pre-flight using [docs/ai/PREFLIGHT_OPERATOR_TEMPLATE.md](PREFLIGHT_OPERATOR_TEMPLATE.md) or an equivalent structure
+- use `L2` as the minimum depth for repo-touching work
+- escalate to `L3` for cross-platform, stateful, prompt/config, CI/build, sync/auth, or 4+ file work
+- escalate to `L4` for orchestration, law, architecture, or enforcement-rule changes
+- identify missing constraints, hidden dependencies, and systemic impact
+- include a platform/domain impact scan when product or state is involved
+- name likely failure modes and how the implementation will preempt them
 - decide whether solo, guided, or Ruflow+ mode is justified
-- define evidence you expect to collect
+- define evidence, verification, scope boundaries, anti-pattern scan, and rollback expectations
+- end with an explicit `GO / STOP / ASK` verdict before execution
 
 If the task is external or time-sensitive, verify with authoritative sources first.
+If the task depends on factual correctness, self-reflection alone is not enough — require evidence, tools, or both.
+Only grounding reads/searches may happen before the written pre-flight, and they must be cited as evidence inside it.
 
 ## Operating Modes
 
@@ -88,6 +96,7 @@ Default Ruflow+ shape:
 - keep teams small
 - checkpoint often
 - tighten the write set before editing
+- require every specialist to inherit the same pre-flight bar, even when their scope is narrower than the coordinator's
 
 ## Required Skill Composition
 

@@ -1,12 +1,15 @@
 /**
  * HeroInsightStrip — V1 insightsEngine → V2 UI wiring tests.
  */
-import { render, cleanup, screen } from "@testing-library/react";
+import { render, cleanup, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
+import type { Habit } from "@/types";
 
 vi.mock("@/contexts/LanguageContext", () => ({
   useLanguage: () => ({
     t: {
+      insightsTitle: "Personal Insights",
+      statistics: "Statistics",
       insightMorning: "mornings-win",
       insightAfternoon: "afternoons-win",
       insightEvening: "evenings-win",
@@ -27,6 +30,7 @@ vi.mock("@/contexts/LanguageContext", () => ({
 
 let mockInsights: Array<{ id: string; title: string; description: string; severity: string; confidence: number; type: string }> = [];
 let capturedTranslations: Record<string, string> | null = null;
+let mockHabits: Habit[] = [];
 vi.mock("@/lib/insightsEngine", () => ({
   generateInsights: (
     _moods: unknown[],
@@ -41,7 +45,7 @@ vi.mock("@/lib/insightsEngine", () => ({
 
 vi.mock("@/stores", () => ({
   useUserDataStore: (selector: (s: unknown) => unknown) =>
-    selector({ moods: [], habits: [], focusSessions: [] }),
+    selector({ moods: [], habits: mockHabits, focusSessions: [] }),
 }));
 
 import { HeroInsightStrip } from "../HeroInsightStrip";
@@ -50,6 +54,7 @@ describe("HeroInsightStrip", () => {
   beforeEach(() => {
     mockInsights = [];
     capturedTranslations = null;
+    mockHabits = [];
   });
   afterEach(() => cleanup());
 
@@ -95,6 +100,51 @@ describe("HeroInsightStrip", () => {
       "On days you meditate, mood +28%",
     );
     expect(strip).toHaveTextContent("87%");
+  });
+
+  it("renders a statistics CTA for habit-linked insights and opens the linked habit", () => {
+    mockHabits = [
+      {
+        id: "habit-1",
+        name: "Meditate",
+        icon: "🧘",
+        color: 0,
+        position: 0,
+        createdAt: 0,
+        habitType: "boolean",
+        frequency: { numerator: 1, denominator: 1 },
+        question: "",
+        description: "",
+        isArchived: false,
+        targetValue: 1,
+        targetType: "atLeast",
+        unit: "",
+        entries: {},
+        reminders: [],
+      },
+    ];
+    mockInsights = [
+      {
+        id: "i1",
+        title: "Meditation is carrying your week",
+        description: "On days you meditate, mood +28%",
+        severity: "celebration",
+        confidence: 87,
+        type: "mood-habit-correlation",
+        metadata: {
+          type: "mood-habit-correlation",
+          habitId: "habit-1",
+          habitName: "Meditate",
+        },
+      } as never,
+    ];
+    const onOpenHabitInsight = vi.fn();
+    render(<HeroInsightStrip onOpenHabitInsight={onOpenHabitInsight} />);
+    fireEvent.click(screen.getByTestId("habits-hero-insight-cta"));
+    expect(onOpenHabitInsight).toHaveBeenCalledTimes(1);
+    expect(onOpenHabitInsight).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "habit-1", name: "Meditate" }),
+    );
   });
 
   it("applies warning styling for warning severity", () => {

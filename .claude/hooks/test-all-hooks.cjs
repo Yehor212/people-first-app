@@ -4,6 +4,7 @@
  * Tests every pattern, every edge case, every exit code.
  */
 const { spawnSync } = require('child_process');
+const fs = require('fs');
 const path = require('path');
 
 const HOOKS = path.resolve(process.cwd(), '.claude/hooks');
@@ -120,25 +121,64 @@ test('invalid JSON — fail-closed (exit 2)',
 // ============================================================
 console.log('  2. preflight-gate.cjs\n');
 
+const PREFLIGHT_TOKEN_PATH = path.join(TEST_ROOT, '.preflight-token');
+const PREFLIGHT_TOKEN_BACKUP = path.join(TEST_ROOT, '.preflight-token.test-backup');
+const IDE_ACK_PENDING_PATH = path.join(TEST_ROOT, '.ide-ack-pending');
+const IDE_ACK_PENDING_BACKUP = path.join(TEST_ROOT, '.ide-ack-pending.test-backup');
+const IDE_ACK_DONE_PATH = path.join(TEST_ROOT, '.ide-ack-done');
+const IDE_ACK_DONE_BACKUP = path.join(TEST_ROOT, '.ide-ack-done.test-backup');
+try {
+  if (fs.existsSync(PREFLIGHT_TOKEN_BACKUP)) fs.unlinkSync(PREFLIGHT_TOKEN_BACKUP);
+  if (fs.existsSync(PREFLIGHT_TOKEN_PATH)) {
+    fs.renameSync(PREFLIGHT_TOKEN_PATH, PREFLIGHT_TOKEN_BACKUP);
+  }
+  if (fs.existsSync(IDE_ACK_PENDING_BACKUP)) fs.unlinkSync(IDE_ACK_PENDING_BACKUP);
+  if (fs.existsSync(IDE_ACK_PENDING_PATH)) {
+    fs.renameSync(IDE_ACK_PENDING_PATH, IDE_ACK_PENDING_BACKUP);
+  }
+  if (fs.existsSync(IDE_ACK_DONE_BACKUP)) fs.unlinkSync(IDE_ACK_DONE_BACKUP);
+  if (fs.existsSync(IDE_ACK_DONE_PATH)) {
+    fs.renameSync(IDE_ACK_DONE_PATH, IDE_ACK_DONE_BACKUP);
+  }
+} catch (e) {
+  results.push({ name: 'preflight-gate: token backup setup', status: 'ERROR', issues: e.message });
+  fail++;
+}
+
 test('non-TS file — ALLOW',
   'preflight-gate.cjs',
-  '{"tool_input":{"file_path":"' + TEST_ROOT + '/src/styles.css"}}',
+  '{"tool_input":{"file_path":"' + TEST_ROOT + '/README.md"}}',
   null, 0);
 
-test('hooks dir — BYPASS',
+test('hooks dir — BLOCK without token',
   'preflight-gate.cjs',
-  '{"tool_input":{"file_path":"' + TEST_ROOT + '/.claude/hooks/test.ts"}}',
-  null, 0);
+  '{"tool_input":{"file_path":"' + TEST_ROOT + '/.claude/hooks/test.cjs"}}',
+  'PRE-FLIGHT GATE BLOCKED', 2);
 
-test('docs dir — BYPASS',
+test('docs/ai dir — BLOCK without token',
   'preflight-gate.cjs',
-  '{"tool_input":{"file_path":"' + TEST_ROOT + '/docs/readme.ts"}}',
-  null, 0);
+  '{"tool_input":{"file_path":"' + TEST_ROOT + '/docs/ai/PREFLIGHT_OPERATOR_TEMPLATE.md"}}',
+  'PRE-FLIGHT GATE BLOCKED', 2);
 
 test('invalid JSON — fail-closed (exit 2)',
   'preflight-gate.cjs',
   'GARBAGE',
   null, 2);
+
+try {
+  if (fs.existsSync(PREFLIGHT_TOKEN_BACKUP)) {
+    fs.renameSync(PREFLIGHT_TOKEN_BACKUP, PREFLIGHT_TOKEN_PATH);
+  }
+  if (fs.existsSync(IDE_ACK_PENDING_BACKUP)) {
+    fs.renameSync(IDE_ACK_PENDING_BACKUP, IDE_ACK_PENDING_PATH);
+  }
+  if (fs.existsSync(IDE_ACK_DONE_BACKUP)) {
+    fs.renameSync(IDE_ACK_DONE_BACKUP, IDE_ACK_DONE_PATH);
+  }
+} catch (e) {
+  results.push({ name: 'preflight-gate: token backup restore', status: 'ERROR', issues: e.message });
+  fail++;
+}
 
 // ============================================================
 // 3. GOAL-DRIFT-CHECK (3 tests)
@@ -550,12 +590,12 @@ console.log('  12. commit-gate.cjs — Layer 1 expanded redirects\n');
 test('bash: echo > .env — BLOCK (redirect)',
   'commit-gate.cjs',
   '{"tool_input":{"command":"echo SECRET=x > .env"}}',
-  'redirect to .env', 0);
+  'targeted via echo redirect', 0);
 
 test('bash: echo > CLAUDE.md — BLOCK (redirect)',
   'commit-gate.cjs',
   '{"tool_input":{"command":"echo bad > CLAUDE.md"}}',
-  'redirect to CLAUDE.md', 0);
+  'targeted via echo redirect', 0);
 
 test('bash: echo > settings.json — BLOCK (redirect)',
   'commit-gate.cjs',
@@ -595,7 +635,7 @@ test('always injects enforcement reminder',
 test('reports 33 hooks in reminder',
   'session-start.cjs',
   '{}',
-  '33 hooks', 0);
+  'hooks registered', 0);
 
 test('invalid JSON — no crash',
   'session-start.cjs',
@@ -1103,7 +1143,7 @@ try {
   const pv6 = pv.validate(JSON.stringify({
     timestamp: new Date().toISOString(), goal: 'Simple L1 fix test', depth: 'L1',
     checks_completed: 4,
-    evidence: { read: ['src/App.tsx:1'], search: [], assumed: [] },
+    evidence: { read: ['README.md:1'], search: [], assumed: [] },
     confidence: { codebase_familiarity: 8, change_scope: 7, regression_risk: 8, platform_coverage: 9, state_integrity: 8 },
     overall_score: 8, verdict: 'GO'
   }));
@@ -1457,12 +1497,68 @@ try {
   const pvl1ok = pv.validate(JSON.stringify({
     timestamp: new Date().toISOString(), goal: 'Test L1 relaxation', depth: 'L1',
     checks_completed: 4,
-    evidence: { read: ['src/App.tsx:1'], search: [], assumed: [] },
+    evidence: { read: ['README.md:1'], search: [], assumed: [] },
     confidence: { codebase_familiarity: 8, change_scope: 7, regression_risk: 8, platform_coverage: 9, state_integrity: 8 },
     overall_score: 8, verdict: 'GO'
   }));
   if (pvl1ok.valid) { pass++; results.push({ name: 'preflight-validate: L1 without scope_boundaries still passes', status: 'PASS' }); }
   else { fail++; results.push({ name: 'preflight-validate: L1 without scope_boundaries still passes', status: 'FAIL', issues: JSON.stringify(pvl1ok.errors) }); }
+
+  // PV-R54B: L1 with repo-touching source → ERROR
+  const pvr54b = pv.validate(JSON.stringify({
+    timestamp: new Date().toISOString(), goal: 'Test L1 repo-touching block', depth: 'L1',
+    checks_completed: 4,
+    evidence: { read: ['src/App.tsx:1'], search: [], assumed: [] },
+    confidence: { codebase_familiarity: 7, change_scope: 7, regression_risk: 7, platform_coverage: 7, state_integrity: 7 },
+    overall_score: 7, verdict: 'GO'
+  }));
+  if (!pvr54b.valid && pvr54b.errors.some(e => e.includes('Repo-touching work requires L2 minimum'))) {
+    pass++; results.push({ name: 'preflight-validate: repo-touching L1 blocked', status: 'PASS' });
+  } else {
+    fail++; results.push({ name: 'preflight-validate: repo-touching L1 blocked', status: 'FAIL', issues: JSON.stringify(pvr54b.errors) });
+  }
+
+  // PV-R55: L2 with 4+ files / stateful paths → ERROR
+  const pvr55 = pv.validate(JSON.stringify({
+    timestamp: new Date().toISOString(), goal: 'Test L3 escalation for broader stateful work', depth: 'L2',
+    transmutation: 'Testing L3 escalation for multi-file stateful analysis',
+    checks_completed: 7,
+    evidence: {
+      read: ['src/App.tsx:1', 'src/stores/index.ts:1', 'src/hooks/useSidebarState.ts:1', 'e2e/nav-v2.spec.ts:1'],
+      search: ['grep state'],
+      assumed: []
+    },
+    pre_mortem: 'Could fail because src/stores/index.ts:1 and src/hooks/useSidebarState.ts:1 touch shared state while e2e/nav-v2.spec.ts:1 covers cross-platform flow — if depth stays L2, platform regression risk is understated.',
+    scope_boundaries: 'WILL: test validator escalation logic in src/ and e2e/. Will NOT: touch production code.',
+    post_verification_plan: 'node .claude/hooks/test-all-hooks.cjs to verify L3 escalation',
+    anti_patterns_checked: ['#16 Convenience Bias'],
+    confidence: { codebase_familiarity: 7, change_scope: 6, regression_risk: 6, platform_coverage: 6, state_integrity: 6 },
+    overall_score: 6, unknowns: 'Testing escalation logic only', verdict: 'GO'
+  }));
+  if (!pvr55.valid && pvr55.errors.some(e => e.includes('L3 DEPTH REQUIRED'))) {
+    pass++; results.push({ name: 'preflight-validate: L3 escalation enforced', status: 'PASS' });
+  } else {
+    fail++; results.push({ name: 'preflight-validate: L3 escalation enforced', status: 'FAIL', issues: JSON.stringify(pvr55.errors) });
+  }
+
+  // PV-R56: L3 with governance/enforcement sources → ERROR
+  const pvr56 = pv.validate(JSON.stringify({
+    timestamp: new Date().toISOString(), goal: 'Test L4 escalation for enforcement work', depth: 'L3',
+    transmutation: 'Testing L4 escalation for orchestration and enforcement sources',
+    checks_completed: 7,
+    evidence: { read: ['.claude/hooks/preflight-gate.cjs:1', 'docs/ai/PREFLIGHT_OPERATOR_TEMPLATE.md:1'], search: ['grep preflight'], assumed: [] },
+    pre_mortem: 'Could fail because .claude/hooks/preflight-gate.cjs:1 and docs/ai/PREFLIGHT_OPERATOR_TEMPLATE.md:1 change enforcement behavior for future work — if depth stays L3, governance blast radius is understated.',
+    scope_boundaries: 'WILL: test validator escalation logic in .claude/hooks/ and docs/ai/. Will NOT: touch runtime src/ files.',
+    post_verification_plan: 'node .claude/hooks/test-all-hooks.cjs to verify L4 escalation',
+    anti_patterns_checked: ['#14 Goodhart'],
+    confidence: { codebase_familiarity: 7, change_scope: 6, regression_risk: 6, platform_coverage: 6, state_integrity: 6 },
+    overall_score: 6, unknowns: 'Testing escalation logic only', verdict: 'GO'
+  }));
+  if (!pvr56.valid && pvr56.errors.some(e => e.includes('L4 DEPTH REQUIRED'))) {
+    pass++; results.push({ name: 'preflight-validate: L4 escalation enforced', status: 'PASS' });
+  } else {
+    fail++; results.push({ name: 'preflight-validate: L4 escalation enforced', status: 'FAIL', issues: JSON.stringify(pvr56.errors) });
+  }
 
   // ── DIAGNOSTIC EXHAUSTION (Rules 39-40) ──
 

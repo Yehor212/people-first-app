@@ -134,6 +134,7 @@ function flushSummary(store: LoAFInspection): void {
 export function initLongTaskObserverDev(): void {
   if (!import.meta.env.DEV) return;
   if (typeof PerformanceObserver === "undefined") return;
+  if (window.__zenflowLoAF) return;
 
   const supported = PerformanceObserver.supportedEntryTypes ?? [];
   const hasLoAF = supported.includes("long-animation-frame");

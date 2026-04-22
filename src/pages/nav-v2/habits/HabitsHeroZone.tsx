@@ -90,6 +90,12 @@ export const HabitsHeroZone = memo(function HabitsHeroZone({
     void hapticTap();
     onCreateHabit();
   }, [onCreateHabit]);
+  const handleOpenInsightHabit = useCallback(
+    (habit: Habit) => {
+      onOpenDetail?.(habit);
+    },
+    [onOpenDetail],
+  );
 
   const isEmpty = todaysHabits.length === 0;
 
@@ -106,7 +112,7 @@ export const HabitsHeroZone = memo(function HabitsHeroZone({
       {!isEmpty && (
         <div className="sticky top-2 z-10 -mx-1 rounded-2xl border border-border/60 bg-background/85 px-3 py-3 shadow-sm backdrop-blur-md [-webkit-backdrop-filter:blur(12px)] md:top-4">
           <HeroIdentityPrompt habits={todaysHabits} dayOfMonth={dayOfMonth} />
-          <HeroInsightStrip />
+          <HeroInsightStrip onOpenHabitInsight={handleOpenInsightHabit} />
         </div>
       )}
 

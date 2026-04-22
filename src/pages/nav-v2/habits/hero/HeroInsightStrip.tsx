@@ -25,7 +25,7 @@ import type { Translations } from "@/i18n/types";
 import { analytics } from "@/lib/analytics";
 import { generateInsights, type InsightTranslations } from "@/lib/insightsEngine";
 import { useUserDataStore } from "@/stores";
-import type { Insight } from "@/types";
+import type { Habit, Insight } from "@/types";
 
 /** The InsightTranslations shape V1 expects - pulled from the typed i18n bag. */
 function buildInsightTranslations(tx: Translations): InsightTranslations {
@@ -52,7 +52,20 @@ function iconFor(insight: Insight) {
   return Sparkles;
 }
 
-export const HeroInsightStrip = memo(function HeroInsightStrip() {
+function getLinkedHabit(insight: Insight | null, habits: Habit[]): Habit | null {
+  if (!insight?.metadata || !("habitId" in insight.metadata)) return null;
+  const habitId = insight.metadata.habitId;
+  if (typeof habitId !== "string" || !habitId) return null;
+  return habits.find((habit) => habit.id === habitId) ?? null;
+}
+
+interface HeroInsightStripProps {
+  onOpenHabitInsight?: (habit: Habit) => void;
+}
+
+export const HeroInsightStrip = memo(function HeroInsightStrip({
+  onOpenHabitInsight,
+}: HeroInsightStripProps) {
   const { t } = useLanguage();
   const tx = t;
 
@@ -96,6 +109,7 @@ export const HeroInsightStrip = memo(function HeroInsightStrip() {
   if (!topInsight) return null;
 
   const Icon = iconFor(topInsight);
+  const linkedHabit = getLinkedHabit(topInsight, habits);
   const severityClass =
     topInsight.severity === "warning"
       ? "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20"
@@ -108,28 +122,44 @@ export const HeroInsightStrip = memo(function HeroInsightStrip() {
       role="note"
       aria-live="polite"
       aria-atomic="true"
-      className={
-        "mt-3 flex items-start gap-2 rounded-2xl border px-3 py-2 text-xs font-body " +
-        severityClass
-      }
+      className={"mt-3 rounded-2xl border px-3 py-3 text-xs font-body " + severityClass}
       data-testid="habits-hero-insight-strip"
       data-severity={topInsight.severity}
     >
-      <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-      <div className="min-w-0 flex-1">
-        <p className="font-semibold" data-testid="habits-hero-insight-title">
-          {topInsight.title}
-        </p>
-        {topInsight.description && topInsight.description !== topInsight.title && (
-          <p className="mt-0.5 text-muted-foreground">{topInsight.description}</p>
-        )}
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-background/60">
+          <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-current/70">
+            {tx.insightsTitle || "Insight"}
+          </p>
+          <p className="mt-1 font-semibold leading-5" data-testid="habits-hero-insight-title">
+            {topInsight.title}
+          </p>
+          {topInsight.description && topInsight.description !== topInsight.title && (
+            <p className="mt-1 text-muted-foreground">{topInsight.description}</p>
+          )}
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <span
+              className="rounded-full bg-background/60 px-2 py-1 text-[10px] font-medium tabular-nums"
+              aria-label={`confidence ${topInsight.confidence}%`}
+            >
+              {topInsight.confidence}%
+            </span>
+            {linkedHabit && onOpenHabitInsight && (
+              <button
+                type="button"
+                onClick={() => onOpenHabitInsight(linkedHabit)}
+                className="inline-flex min-h-[44px] items-center rounded-full border border-border/60 bg-background/70 px-3 py-2 text-[11px] font-medium text-foreground motion-safe:transition-colors hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                data-testid="habits-hero-insight-cta"
+              >
+                {tx.statistics || tx.navV2HabitsOpenDetails || "Statistics"}
+              </button>
+            )}
+          </div>
+        </div>
       </div>
-      <span
-        className="shrink-0 rounded-full bg-background/60 px-1.5 py-0.5 text-[10px] font-medium tabular-nums"
-        aria-label={`confidence ${topInsight.confidence}%`}
-      >
-        {topInsight.confidence}%
-      </span>
     </aside>
   );
 });

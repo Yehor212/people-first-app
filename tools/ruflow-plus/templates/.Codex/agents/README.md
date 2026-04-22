@@ -15,6 +15,8 @@ Recommended usage:
 - researcher for evidence gathering
 - reviewer before completion
 - memory-keeper after completion or after a failed attempt
+- all roles inherit `../../docs/ai/PREFLIGHT_OPERATOR_TEMPLATE.md`
+- repo-touching work defaults to `L2`; cross-platform/stateful/prompt/config/governance work escalates to `L3` or `L4`
 
 Default topology:
 - hierarchical

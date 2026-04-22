@@ -30,6 +30,9 @@ These tracked files now mirror the ignored local content:
 - [RUFLOW_PLUS_ROLE_PROMPTS.md](</C:/project/people-first-app/docs/ai/RUFLOW_PLUS_ROLE_PROMPTS.md>)
 - [RUFLOW_PLUS_SKILL_MIRROR.md](</C:/project/people-first-app/docs/ai/RUFLOW_PLUS_SKILL_MIRROR.md>)
 
+Tracked operator contract:
+- [PREFLIGHT_OPERATOR_TEMPLATE.md](</C:/project/people-first-app/docs/ai/PREFLIGHT_OPERATOR_TEMPLATE.md>)
+
 ## Tracked Templates
 
 Machine-readable tracked templates live here:
@@ -51,13 +54,19 @@ These values were merged into the live local `.Codex/config.toml` as project-loc
 | `RUFLOW_PLUS_REQUIRE_WRITTEN_PLAN` | `1` | forces preflight discipline |
 | `RUFLOW_PLUS_REQUIRE_VERIFICATION` | `1` | completion gate |
 | `RUFLOW_PLUS_REQUIRE_LEARNING_WRITEBACK` | `1` | explicit memory loop |
+| `RUFLOW_PLUS_PREFLIGHT_TEMPLATE` | `docs/ai/PREFLIGHT_OPERATOR_TEMPLATE.md` | operator contract location |
+| `RUFLOW_PLUS_MIN_PREFLIGHT_DEPTH` | `L2` | repo-touching work must not fall below L2 |
+| `RUFLOW_PLUS_REQUIRE_PLATFORM_MATRIX` | `1` | force platform/domain impact scan |
+| `RUFLOW_PLUS_REQUIRE_ANTI_PATTERN_SCAN` | `1` | force law / anti-pattern awareness |
+| `RUFLOW_PLUS_REQUIRE_GO_STOP_ASK` | `1` | explicit gate verdict required |
+| `RUFLOW_PLUS_VERIFY_TIME_SENSITIVE_EXTERNALS` | `1` | external/time-sensitive facts need source verification |
 | `RUFLOW_PLUS_ROLE_DIR` | `.Codex/agents` | role prompt location |
 | `RUFLOW_PLUS_LEARNING_RECORD` | `docs/ai/RUFLOW_PLUS_LEARNING_RECORD.md` | tracked template |
 
 Important:
 - these defaults are useful shared conventions for prompts, scripts, and shell tasks
 - they do not, by themselves, make Codex automatically adopt Ruflow+ behavior
-- the actual orchestration still depends on using the skill, docs, and role prompts deliberately
+- the actual orchestration still depends on using the skill, docs, role prompts, and pre-flight template deliberately
 
 ## Role Prompt Summary
 

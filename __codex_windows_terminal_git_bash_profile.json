@@ -1,0 +1,13 @@
+{
+  "defaultProfile": "Git Bash",
+  "profiles": {
+    "list": [
+      {
+        "name": "Git Bash",
+        "commandline": "C:\\Program Files\\Git\\bin\\bash.exe -li",
+        "icon": "C:\\Program Files\\Git\\mingw64\\share\\git\\git-for-windows.ico",
+        "startingDirectory": "%USERPROFILE%"
+      }
+    ]
+  }
+}

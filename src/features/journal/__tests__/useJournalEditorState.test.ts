@@ -7,6 +7,7 @@
  *
  * T01: Save state machine transitions
  * T02: Word count milestone detection
+ * T03: Dirty baseline / unsaved detection
  * T06: Draft persistence lifecycle
  */
 
@@ -89,6 +90,81 @@ function useMilestoneDetection(wordCount: number) {
   }, [milestoneTriggered]);
 
   return { milestoneTriggered, showConfetti, hapticFired };
+}
+
+// ══════════════════════════════════════════════════════════════
+// Extracted logic: Dirty baseline (mirrors useJournalEditorState)
+// ══════════════════════════════════════════════════════════════
+
+interface EditorSnapshot {
+  title: string;
+  date: string;
+  content: string;
+  stickers: string;
+  photoIds: string;
+  audioIds: string;
+  mood?: string;
+  tags: string;
+  habitSnapshot: string;
+  theme: string;
+  font: string;
+  inkColor: string;
+  paperTexture: string;
+  paperColor: string;
+  bgIntensity: string;
+  particleSpeed: string;
+  bgPattern: string;
+  fontSize: string;
+  photoLayout: string;
+}
+
+function makeSnapshot(overrides: Partial<EditorSnapshot> = {}): EditorSnapshot {
+  return {
+    title: "Hopeful",
+    date: "2026-04-21",
+    content: "<p>Prompt</p>",
+    stickers: JSON.stringify([]),
+    photoIds: JSON.stringify([]),
+    audioIds: JSON.stringify([]),
+    mood: "good",
+    tags: JSON.stringify(["hopeful"]),
+    habitSnapshot: JSON.stringify([]),
+    theme: "dark",
+    font: "caveat",
+    inkColor: "#ffffff",
+    paperTexture: "clean",
+    paperColor: "dark",
+    bgIntensity: "full",
+    particleSpeed: "slow",
+    bgPattern: "none",
+    fontSize: "medium",
+    photoLayout: JSON.stringify({}),
+    ...overrides,
+  };
+}
+
+function computeIsDirty(initial: EditorSnapshot, current: EditorSnapshot) {
+  return (
+    current.title !== initial.title ||
+    current.date !== initial.date ||
+    current.content !== initial.content ||
+    current.stickers !== initial.stickers ||
+    current.photoIds !== initial.photoIds ||
+    current.audioIds !== initial.audioIds ||
+    current.mood !== initial.mood ||
+    current.tags !== initial.tags ||
+    current.habitSnapshot !== initial.habitSnapshot ||
+    current.theme !== initial.theme ||
+    current.font !== initial.font ||
+    current.inkColor !== initial.inkColor ||
+    current.paperTexture !== initial.paperTexture ||
+    current.paperColor !== initial.paperColor ||
+    current.bgIntensity !== initial.bgIntensity ||
+    current.particleSpeed !== initial.particleSpeed ||
+    current.bgPattern !== initial.bgPattern ||
+    current.fontSize !== initial.fontSize ||
+    current.photoLayout !== initial.photoLayout
+  );
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -332,17 +408,59 @@ describe("T02: Word count milestones", () => {
 });
 
 // ══════════════════════════════════════════════════════════════
+// T03: Dirty baseline / unsaved detection
+// ══════════════════════════════════════════════════════════════
+
+describe("T03: Dirty baseline", () => {
+  it("prefill-backed editor starts clean when current state matches the prefill snapshot", () => {
+    const initial = makeSnapshot({
+      title: "Hopeful",
+      content: "<p><strong>Specific - 14:30</strong></p><p>Describe a moment that stood out today.</p>",
+      tags: JSON.stringify(["hopeful"]),
+    });
+
+    expect(computeIsDirty(initial, initial)).toBe(false);
+  });
+
+  it("changing only the date marks the editor dirty", () => {
+    const initial = makeSnapshot();
+    const current = makeSnapshot({ date: "2026-04-22" });
+
+    expect(computeIsDirty(initial, current)).toBe(true);
+  });
+
+  it("changing only theme metadata or habit snapshot marks the editor dirty", () => {
+    const initial = makeSnapshot();
+    const current = makeSnapshot({
+      theme: "ocean",
+      habitSnapshot: JSON.stringify([
+        { habitId: "habit-1", habitName: "Read", habitIcon: "book", completed: true },
+      ]),
+    });
+
+    expect(computeIsDirty(initial, current)).toBe(true);
+  });
+});
+
+// ══════════════════════════════════════════════════════════════
 // Extracted logic: Draft persistence (mirrors useJournalEditorState)
 // ══════════════════════════════════════════════════════════════
 
 interface DraftData {
   title: string;
+  date: string;
   content: string;
   stickers: string[];
   photoIds: string[];
   audioIds?: string[];
   mood?: string;
   tags: string[];
+  habitSnapshot?: {
+    habitId: string;
+    habitName: string;
+    habitIcon: string;
+    completed: boolean;
+  }[];
   savedAt: number;
   theme?: string;
   font?: string;
@@ -365,6 +483,7 @@ function useDraftPersistence(opts: {
 
   // === Content State ===
   const [title, setTitle] = useState("");
+  const [date, setDate] = useState("2026-04-21");
   const [content, setContent] = useState("");
   const contentRef = useRef("");
   const [stickers, setStickers] = useState<string[]>([]);
@@ -372,6 +491,7 @@ function useDraftPersistence(opts: {
   const [audioIds, setAudioIds] = useState<string[]>([]);
   const [mood, setMood] = useState<string | undefined>(undefined);
   const [tags, setTags] = useState<string[]>([]);
+  const [habitSnapshot, setHabitSnapshot] = useState<DraftData["habitSnapshot"]>([]);
 
   // === Draft State ===
   const [draftAvailable, setDraftAvailable] = useState<DraftData | null>(initialDraft);
@@ -383,15 +503,26 @@ function useDraftPersistence(opts: {
   useEffect(() => {
     if (draftTimerRef.current) clearTimeout(draftTimerRef.current);
     draftTimerRef.current = setTimeout(() => {
-      if (title || contentRef.current || stickers.length > 0 || mood || tags.length > 0 || audioIds.length > 0) {
+      if (
+        title ||
+        photoIds.length > 0 ||
+        contentRef.current ||
+        stickers.length > 0 ||
+        mood ||
+        tags.length > 0 ||
+        audioIds.length > 0 ||
+        (habitSnapshot?.length || 0) > 0
+      ) {
         void saveDraftFn(draftKey, {
           title,
+          date,
           content: contentRef.current,
           stickers,
           photoIds,
           audioIds,
           mood,
           tags,
+          habitSnapshot,
           savedAt: Date.now(),
         });
         setDraftSavedAt(Date.now());
@@ -400,7 +531,7 @@ function useDraftPersistence(opts: {
     return () => {
       if (draftTimerRef.current) clearTimeout(draftTimerRef.current);
     };
-  }, [title, stickers, photoIds, audioIds, mood, tags, draftKey, saveDraftFn]);
+  }, [title, date, stickers, photoIds, audioIds, mood, tags, habitSnapshot, draftKey, saveDraftFn]);
 
   // === Save State ===
   const [saveState, setSaveState] = useState<SaveState>("idle");
@@ -421,6 +552,7 @@ function useDraftPersistence(opts: {
   const handleRestoreDraft = useCallback(() => {
     if (!draftAvailable) return;
     setTitle(draftAvailable.title);
+    setDate(draftAvailable.date);
     contentRef.current = draftAvailable.content;
     setContent(draftAvailable.content);
     setStickers(draftAvailable.stickers);
@@ -428,6 +560,7 @@ function useDraftPersistence(opts: {
     if (draftAvailable.audioIds) setAudioIds(draftAvailable.audioIds);
     setMood(draftAvailable.mood);
     setTags(draftAvailable.tags);
+    setHabitSnapshot(draftAvailable.habitSnapshot || []);
     setDraftAvailable(null);
   }, [draftAvailable]);
 
@@ -440,12 +573,17 @@ function useDraftPersistence(opts: {
   return {
     title,
     setTitle,
+    date,
+    setDate,
     content,
+    setPhotoIds,
     stickers,
     photoIds,
     audioIds,
     mood,
     tags,
+    habitSnapshot,
+    setHabitSnapshot,
     draftAvailable,
     draftSavedAt,
     saveState,
@@ -464,12 +602,16 @@ describe("T06: Draft persistence lifecycle", () => {
 
   const makeDraft = (overrides?: Partial<DraftData>): DraftData => ({
     title: "My Draft Title",
+    date: "2026-04-21",
     content: "<p>Some draft content here</p>",
     stickers: ["star", "heart"],
     photoIds: ["photo-1"],
     audioIds: ["audio-1"],
     mood: "happy",
     tags: ["reflection", "morning"],
+    habitSnapshot: [
+      { habitId: "habit-1", habitName: "Read", habitIcon: "book", completed: true },
+    ],
     savedAt: Date.now() - 60_000,
     ...overrides,
   });
@@ -570,12 +712,16 @@ describe("T06: Draft persistence lifecycle", () => {
 
     // State populated from draft
     expect(result.current.title).toBe("Restored Title");
+    expect(result.current.date).toBe("2026-04-21");
     expect(result.current.content).toBe("<p>Restored content</p>");
     expect(result.current.stickers).toStrictEqual(["moon"]);
     expect(result.current.photoIds).toStrictEqual(["photo-99"]);
     expect(result.current.audioIds).toStrictEqual(["audio-42"]);
     expect(result.current.mood).toBe("calm");
     expect(result.current.tags).toStrictEqual(["evening"]);
+    expect(result.current.habitSnapshot).toStrictEqual([
+      { habitId: "habit-1", habitName: "Read", habitIcon: "book", completed: true },
+    ]);
 
     // draftAvailable cleared after restore
     expect(result.current.draftAvailable).toBeNull();
@@ -661,7 +807,7 @@ describe("T06: Draft persistence lifecycle", () => {
     expect(saveDraftFn).toHaveBeenCalledTimes(1);
     expect(saveDraftFn).toHaveBeenCalledWith(
       DRAFT_KEY,
-      expect.objectContaining({ title: "New title" })
+      expect.objectContaining({ title: "New title", date: "2026-04-21" })
     );
   });
 
@@ -706,7 +852,40 @@ describe("T06: Draft persistence lifecycle", () => {
     expect(saveDraftFn).toHaveBeenCalledTimes(1);
     expect(saveDraftFn).toHaveBeenCalledWith(
       DRAFT_KEY,
-      expect.objectContaining({ title: "AB" })
+      expect.objectContaining({ title: "AB", date: "2026-04-21" })
+    );
+  });
+
+  it("auto-save fires when only habitSnapshot exists and persists it", () => {
+    const { result } = renderHook(() =>
+      useDraftPersistence({
+        draftKey: DRAFT_KEY,
+        initialDraft: null,
+        clearDraftFn,
+        saveDraftFn,
+        onSave,
+        hasContent: true,
+      })
+    );
+
+    act(() => {
+      result.current.setHabitSnapshot([
+        { habitId: "habit-9", habitName: "Walk", habitIcon: "shoe", completed: true },
+      ]);
+    });
+
+    act(() => {
+      vi.advanceTimersByTime(3000);
+    });
+
+    expect(saveDraftFn).toHaveBeenCalledWith(
+      DRAFT_KEY,
+      expect.objectContaining({
+        date: "2026-04-21",
+        habitSnapshot: [
+          { habitId: "habit-9", habitName: "Walk", habitIcon: "shoe", completed: true },
+        ],
+      })
     );
   });
 

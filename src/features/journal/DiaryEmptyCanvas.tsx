@@ -3,11 +3,12 @@ import { motion, useReducedMotion } from "framer-motion";
 import { PenLine, Target } from "lucide-react";
 
 import { useLanguage } from "@/contexts/LanguageContext";
-import { TimeOfDayGradient } from "./TimeOfDayGradient";
-import { TypewriterText } from "./TypewriterText";
-import { ValenceOrb } from "@/components/state-of-mind/ValenceOrb";
+import { MiniValenceOrb } from "@/components/state-of-mind/MiniValenceOrb";
 import { ParticleBackground } from "@/components/stats/ParticleBackground";
 import { springs as springPresets } from "@/config/animations";
+
+import { TimeOfDayGradient } from "./TimeOfDayGradient";
+import { TypewriterText } from "./TypewriterText";
 
 /** Detect low-end device: skip orb if < 4GB RAM or no WebGL */
 function isLowEndDevice(): boolean {
@@ -40,43 +41,43 @@ function getCurrentTimePeriod(): string {
 const TIME_GREETINGS: Record<string, Record<string, string>> = {
   morning: {
     en: "Good morning",
-    uk: "\u0414\u043E\u0431\u0440\u043E\u0433\u043E \u0440\u0430\u043D\u043A\u0443",
-    es: "Buenos d\u00EDas",
+    uk: "Доброго ранку",
+    es: "Buenos días",
     de: "Guten Morgen",
     fr: "Bonjour",
-    ja: "\u304A\u306F\u3088\u3046",
-    ar: "\u0635\u0628\u0627\u062D \u0627\u0644\u062E\u064A\u0631",
-    he: "\u05D1\u05D5\u05E7\u05E8 \u05D8\u05D5\u05D1",
+    ja: "おはよう",
+    ar: "صباح الخير",
+    he: "בוקר טוב",
   },
   afternoon: {
     en: "Good afternoon",
-    uk: "\u0414\u043E\u0431\u0440\u0438\u0439 \u0434\u0435\u043D\u044C",
+    uk: "Добрий день",
     es: "Buenas tardes",
     de: "Guten Tag",
-    fr: "Bon apr\u00E8s-midi",
-    ja: "\u3053\u3093\u306B\u3061\u306F",
-    ar: "\u0645\u0633\u0627\u0621 \u0627\u0644\u062E\u064A\u0631",
-    he: "\u05E6\u05D4\u05E8\u05D9\u05D9\u05DD \u05D8\u05D5\u05D1\u05D9\u05DD",
+    fr: "Bon après-midi",
+    ja: "こんにちは",
+    ar: "مساء الخير",
+    he: "צהריים טובים",
   },
   evening: {
     en: "Good evening",
-    uk: "\u0414\u043E\u0431\u0440\u0438\u0439 \u0432\u0435\u0447\u0456\u0440",
+    uk: "Добрий вечір",
     es: "Buenas noches",
     de: "Guten Abend",
     fr: "Bonsoir",
-    ja: "\u3053\u3093\u3070\u3093\u306F",
-    ar: "\u0645\u0633\u0627\u0621 \u0627\u0644\u062E\u064A\u0631",
-    he: "\u05E2\u05E8\u05D1 \u05D8\u05D5\u05D1",
+    ja: "こんばんは",
+    ar: "مساء الخير",
+    he: "ערב טוב",
   },
   night: {
     en: "Still up?",
-    uk: "\u0429\u0435 \u043D\u0435 \u0441\u043F\u0438\u0448?",
-    es: "\u00BFA\u00FAn despierto?",
+    uk: "Ще не спиш?",
+    es: "¿Aún despierto?",
     de: "Noch wach?",
-    fr: "Encore debout\u00A0?",
-    ja: "\u307E\u3060\u8D77\u304D\u3066\u308B\uFF1F",
-    ar: "\u0645\u0627 \u0632\u0644\u062A \u0645\u0633\u062A\u064A\u0642\u0638\u061F",
-    he: "\u05E2\u05D3\u05D9\u05D9\u05DF \u05E2\u05E8\uFF1F",
+    fr: "Encore debout ?",
+    ja: "まだ起きてる？",
+    ar: "ما زلت مستيقظ؟",
+    he: "עדיין ער?",
   },
 };
 
@@ -106,7 +107,7 @@ export const DiaryEmptyCanvas = memo(function DiaryEmptyCanvas({
   }, []);
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center gap-6 select-none relative overflow-hidden">
+    <div className="relative flex flex-1 select-none flex-col items-center justify-center gap-6 overflow-hidden">
       {/* Layer 1: Time-of-day gradient */}
       <TimeOfDayGradient />
 
@@ -120,15 +121,22 @@ export const DiaryEmptyCanvas = memo(function DiaryEmptyCanvas({
         />
       )}
 
-      {/* Layer 3: ValenceOrb (skip on low-end or reduced motion) */}
+      {/* Layer 3: Shared orb badge */}
       {!reducedMotion && !lowEnd && (
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ type: "spring", stiffness: 200, damping: 20, delay: 0.2 }}
-          className="relative z-[1]"
+          className="relative z-[1] flex h-16 w-16 items-center justify-center rounded-full border border-border/40 bg-card/80 backdrop-blur-sm"
+          aria-hidden="true"
         >
-          <ValenceOrb valence={0} size={64} />
+          <div className="pointer-events-none absolute inset-[3px] rounded-full border border-border/20" />
+          <MiniValenceOrb
+            valence={0}
+            hasEntry={false}
+            containerClassName="absolute inset-[6px] rounded-full overflow-hidden"
+            orbClassName="scale-[0.52] opacity-90"
+          />
         </motion.div>
       )}
 
@@ -137,7 +145,7 @@ export const DiaryEmptyCanvas = memo(function DiaryEmptyCanvas({
         initial={reducedMotion ? false : { opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.25, duration: 0.35 }}
-        className="relative z-[1] text-2xl font-display font-medium text-foreground/80 text-center tracking-tight"
+        className="relative z-[1] text-center font-display text-2xl font-medium tracking-tight text-foreground/80"
       >
         {greeting}
       </motion.h2>
@@ -147,15 +155,15 @@ export const DiaryEmptyCanvas = memo(function DiaryEmptyCanvas({
         initial={reducedMotion ? false : { opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.35, duration: 0.4 }}
-        className="relative z-[1] text-center px-8"
+        className="relative z-[1] px-8 text-center"
       >
         <TypewriterText
-          className="text-lg font-light italic min-h-[2em]"
+          className="min-h-[2em] text-lg font-light italic"
           onPromptChange={handlePromptChange}
         />
       </motion.div>
 
-      {/* Layer 5: CTA pills */}
+      {/* Layer 6: CTA pills */}
       <motion.div
         initial={reducedMotion ? false : { opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
@@ -163,26 +171,34 @@ export const DiaryEmptyCanvas = memo(function DiaryEmptyCanvas({
         className="relative z-[1] flex items-center gap-3"
       >
         <motion.button
-          whileHover={reducedMotion ? undefined : { y: -2, boxShadow: "0 4px 20px rgba(var(--primary-rgb), 0.15)" }}
+          whileHover={
+            reducedMotion
+              ? undefined
+              : { y: -2, boxShadow: "0 4px 20px rgba(var(--primary-rgb), 0.15)" }
+          }
           whileTap={reducedMotion ? undefined : { scale: 0.97 }}
           transition={springPresets.snappy}
           onClick={onNewEntry}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-primary/10 text-primary text-sm font-medium hover:bg-primary/15 motion-safe:transition-colors min-h-[44px]"
+          className="flex min-h-[44px] items-center gap-2 rounded-full bg-primary/10 px-4 py-2.5 text-sm font-medium text-primary hover:bg-primary/15 motion-safe:transition-colors"
           aria-label={ts.journalNewEntry || "Write"}
         >
-          <PenLine className="w-4 h-4" />
+          <PenLine className="h-4 w-4" />
           {ts.journalNewEntry || "Write"}
         </motion.button>
 
         <motion.button
-          whileHover={reducedMotion ? undefined : { y: -2, boxShadow: "0 4px 20px rgba(var(--primary-rgb), 0.10)" }}
+          whileHover={
+            reducedMotion
+              ? undefined
+              : { y: -2, boxShadow: "0 4px 20px rgba(var(--primary-rgb), 0.10)" }
+          }
           whileTap={reducedMotion ? undefined : { scale: 0.97 }}
           transition={springPresets.snappy}
           onClick={() => onNewEntryWithPrompt(currentPrompt)}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-muted/50 text-muted-foreground text-sm font-medium hover:bg-muted/70 motion-safe:transition-colors min-h-[44px]"
+          className="flex min-h-[44px] items-center gap-2 rounded-full bg-muted/50 px-4 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted/70 motion-safe:transition-colors"
           aria-label={ts.journalPrompt || "Prompt"}
         >
-          <Target className="w-4 h-4" />
+          <Target className="h-4 w-4" />
           {ts.journalPrompt || "Prompt"}
         </motion.button>
       </motion.div>
@@ -203,7 +219,7 @@ export const DiaryEmptyCanvas = memo(function DiaryEmptyCanvas({
           <motion.span
             animate={reducedMotion ? undefined : { scale: [1, 1.1, 1] }}
             transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
-            className="flex items-center gap-1 text-orange-500 font-semibold"
+            className="flex items-center gap-1 font-semibold text-orange-500"
           >
             {"\u{1F525}"} {streak} {ts.diaryStreak || "streak"}
           </motion.span>

@@ -26,6 +26,8 @@ interface AuthGateProps {
  */
 export function AuthGate({ isLoading, children }: AuthGateProps) {
   const { t } = useLanguage();
+  const searchParams =
+    typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
 
   // App store — single subscription with shallow comparison (was 12 individual)
   const {
@@ -108,10 +110,7 @@ export function AuthGate({ isLoading, children }: AuthGateProps) {
   };
 
   // ── DEV BYPASS: ?dev=true skips all gates (development only) ──
-  const isDevBypass =
-    import.meta.env.DEV &&
-    typeof window !== "undefined" &&
-    new URLSearchParams(window.location.search).get("dev") === "true";
+  const isDevBypass = import.meta.env.DEV && searchParams?.get("dev") === "true";
   if (isDevBypass) {
     return <>{children}</>;
   }

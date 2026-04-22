@@ -185,7 +185,7 @@ export const HeroEmptyJourney = memo(function HeroEmptyJourney({
                     type="button"
                     onClick={() => handlePick(tpl)}
                     className={
-                      "inline-flex min-h-[44px] items-center gap-1.5 rounded-full border border-border bg-card/80 px-3.5 py-2 text-xs font-medium text-foreground shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 " +
+                      "inline-flex h-12 min-w-[44px] items-center gap-1.5 rounded-full border border-border bg-card/80 px-4 text-xs font-medium leading-none text-foreground shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 " +
                       (animate
                         ? "motion-safe:transition-transform hover:-translate-y-0.5 hover:bg-primary/10 active:scale-[0.97]"
                         : "")

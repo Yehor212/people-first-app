@@ -32,6 +32,7 @@ import { JournalLockScreen } from "./JournalLockScreen";
 import { JournalEntryList } from "./JournalEntryList";
 import { SidebarCompact } from "./SidebarCompact";
 import { DiaryEmptyCanvas } from "./DiaryEmptyCanvas";
+import { DiaryEntrySuggestionCard } from "./DiaryEntrySuggestionCard";
 import { OnThisDayCard } from "./OnThisDayCard";
 import { JournalOnboardingHints, useJournalOnboarding } from "./JournalOnboardingHints";
 import { KeyboardShortcutsOverlay } from "./KeyboardShortcutsOverlay";
@@ -50,6 +51,8 @@ import {
   PanelLayout,
   LayoutPanel,
   ResizeHandle,
+  type Layout,
+  useGroupRef,
   usePanelRef,
 } from "@/components/layout/PanelLayout";
 import { useJournalReminder, getDaysSinceLastEntry } from "./useJournalReminder";
@@ -66,6 +69,7 @@ import { springs } from "@/config/animations";
 import { StreakCelebration } from "./StreakCelebration";
 import { useStreakFreeze, StreakFreezeIndicator } from "./StreakFreeze";
 import { useEdgeSwipe } from "@/hooks/useEdgeSwipe";
+import type { JournalEntryPrefill, JournalEntrySuggestion } from "./types";
 
 // Lazy-load JournalStats to avoid CJS TDZ (Recharts)
 const LazyJournalStats = lazyWithRetry(
@@ -78,6 +82,12 @@ type ModuleState = "card" | "open";
 interface JournalModuleProps {
   onToggleHabit?: (habitId: string, date: string) => void;
   onAddGratitude?: (entry: import("@/types").GratitudeEntry) => void;
+  startOpen?: boolean;
+  disableCardShell?: boolean;
+  hideCloseButton?: boolean;
+  presentation?: "dialog" | "page";
+  initialEntrySuggestion?: JournalEntrySuggestion | null;
+  onInitialEntrySuggestionConsumed?: () => void;
 }
 
 const MOOD_EMOJI: Record<string, string> = {
@@ -88,14 +98,38 @@ const MOOD_EMOJI: Record<string, string> = {
   terrible: "\u{1F622}",
 };
 
+const JOURNAL_PANEL_IDS = {
+  sidebar: "journal-sidebar-layout-panel",
+  detail: "journal-detail-layout-panel",
+} as const;
+
+const DEFAULT_JOURNAL_LAYOUT: Layout = {
+  [JOURNAL_PANEL_IDS.sidebar]: 30,
+  [JOURNAL_PANEL_IDS.detail]: 70,
+};
+
+const HIDDEN_JOURNAL_LAYOUT: Layout = {
+  [JOURNAL_PANEL_IDS.sidebar]: 0,
+  [JOURNAL_PANEL_IDS.detail]: 100,
+};
+
 export const JournalModule = memo(function JournalModule({
   onToggleHabit,
   onAddGratitude,
+  startOpen = false,
+  disableCardShell = false,
+  hideCloseButton = false,
+  presentation = "dialog",
+  initialEntrySuggestion = null,
+  onInitialEntrySuggestionConsumed,
 }: JournalModuleProps = {}) {
   const { t, isRTL, language } = useLanguage();
   const ts = t as unknown as Record<string, string>;
+  const isPagePresentation = presentation === "page";
   const rewardUser = useGamificationStore((s) => s.rewardUser);
-  const [moduleState, setModuleState] = useState<ModuleState>("card");
+  const [moduleState, setModuleState] = useState<ModuleState>(
+    startOpen || disableCardShell || isPagePresentation ? "open" : "card",
+  );
   const [entryCount, setEntryCount] = useState(0);
   const [showPasswordSettings, setShowPasswordSettings] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
@@ -117,8 +151,24 @@ export const JournalModule = memo(function JournalModule({
   const [showRemovePasswordConfirm, setShowRemovePasswordConfirm] = useState(false);
   const [celebratingStreak, setCelebratingStreak] = useState<number | null>(null);
   const [showShortcuts, setShowShortcuts] = useState(false);
-  const { sidebarState, setSidebarState, toggleSidebar, isExpanded, isCompact, isHidden } = useSidebarState();
+  const {
+    sidebarState,
+    setSidebarState,
+    toggleSidebar,
+    toggleSidebarCollapsed,
+    isExpanded,
+    isCompact,
+    isHidden,
+  } = useSidebarState();
+  const initialSuggestionConsumedRef = useRef(false);
+  const initialSuggestionRef = useRef<JournalEntrySuggestion | null>(initialEntrySuggestion);
+
+  if (initialEntrySuggestion && !initialSuggestionConsumedRef.current) {
+    initialSuggestionRef.current = initialEntrySuggestion;
+  }
   const sidebarPanelRef = usePanelRef();
+  const panelGroupRef = useGroupRef();
+  const lastExpandedLayoutRef = useRef<Layout>({ ...DEFAULT_JOURNAL_LAYOUT });
   useSidebarKeyboard(sidebarState, toggleSidebar, setSidebarState);
   // ? key → show keyboard shortcuts overlay
   useEffect(() => {
@@ -135,6 +185,8 @@ export const JournalModule = memo(function JournalModule({
   const entryTransition = useEntryTransition();
   const onboarding = useJournalOnboarding();
   const sidebarContentRef = useRef<HTMLDivElement>(null);
+  const sidebarToggleIntentRef = useRef<"collapse" | "expand" | null>(null);
+  const isSidebarCollapsed = isCompact || isHidden;
 
   useBackHandler(showExportPicker, () => setShowExportPicker(false));
 
@@ -264,14 +316,47 @@ export const JournalModule = memo(function JournalModule({
     if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
     entryTransition.cancelTransition();
     journal.goBack();
-    setModuleState("card");
-    security.lock();
+    if (!disableCardShell) {
+      setModuleState("card");
+      security.lock();
+    }
   };
 
-  const handleNewEntry = () => {
+  const handleNewEntry = useCallback(() => {
     entryModeRef.current = "fab";
     journal.editEntry(null);
-  };
+  }, [journal]);
+
+  const handleUseInitialEntrySuggestion = useCallback(() => {
+    if (!initialSuggestionRef.current) return;
+    initialSuggestionConsumedRef.current = true;
+    handleNewEntry();
+    onInitialEntrySuggestionConsumed?.();
+  }, [handleNewEntry, onInitialEntrySuggestionConsumed]);
+
+  const handleDismissInitialEntrySuggestion = useCallback(() => {
+    initialSuggestionConsumedRef.current = true;
+    initialSuggestionRef.current = null;
+    onInitialEntrySuggestionConsumed?.();
+  }, [onInitialEntrySuggestionConsumed]);
+
+  useEffect(() => {
+    if (
+      journal.view === "list" &&
+      !initialEntrySuggestion &&
+      initialSuggestionConsumedRef.current
+    ) {
+      initialSuggestionRef.current = null;
+    }
+  }, [journal.view, initialEntrySuggestion]);
+
+  const activeEntryPrefill: JournalEntryPrefill | null =
+    !journal.activeEntry ? initialSuggestionRef.current?.prefill ?? null : null;
+
+  const hasInitialEntrySuggestion =
+    !!initialSuggestionRef.current &&
+    !initialSuggestionConsumedRef.current &&
+    journal.view === "list";
 
   const handleOpenEntry = useCallback((id: string) => {
     entryModeRef.current = "card";
@@ -297,6 +382,30 @@ export const JournalModule = memo(function JournalModule({
       journal.goBack();
     }
   }, [journal, entryTransition]);
+
+  const handleToggleDiaryPanel = useCallback(() => {
+    const nextState = toggleSidebarCollapsed();
+
+    if (nextState === "expanded") {
+      sidebarToggleIntentRef.current = "expand";
+      sidebarPanelRef.current?.expand();
+      requestAnimationFrame(() => sidebarContentRef.current?.focus());
+      void haptics.light();
+      return;
+    }
+
+    sidebarToggleIntentRef.current = "collapse";
+    sidebarPanelRef.current?.collapse();
+    void haptics.light();
+  }, [sidebarPanelRef, toggleSidebarCollapsed]);
+
+  const handleJournalLayoutChange = useCallback(
+    (layout: Layout) => {
+      if (sidebarState !== "expanded" || layout[JOURNAL_PANEL_IDS.sidebar] <= 0) return;
+      lastExpandedLayoutRef.current = { ...layout };
+    },
+    [sidebarState]
+  );
 
   const handleSaveEntry = useCallback(
     async (data: Parameters<typeof journal.createEntry>[0]) => {
@@ -446,23 +555,75 @@ export const JournalModule = memo(function JournalModule({
 
   // --- HOOKS (all callbacks declared above — safe from TDZ in production minified chunks) ---
   const isLgScreen = useMediaQuery("(min-width: 1024px)");
+  useEffect(() => {
+    if (sidebarToggleIntentRef.current !== "collapse") return;
+
+    if (sidebarState === "hidden") {
+      setSidebarState("compact");
+      return;
+    }
+
+    if (sidebarState === "compact") {
+      sidebarToggleIntentRef.current = null;
+    }
+  }, [setSidebarState, sidebarState]);
+
+  useEffect(() => {
+    if (!isLgScreen || moduleState !== "open" || sidebarState !== "hidden") return;
+    setSidebarState("compact");
+  }, [isLgScreen, moduleState, setSidebarState, sidebarState]);
+
+  useEffect(() => {
+    if (journal.view !== "editing" || !isLgScreen) return;
+
+    if (sidebarState === "expanded") {
+      setSidebarState("compact");
+      sidebarPanelRef.current?.collapse();
+      return;
+    }
+
+    if (sidebarState === "hidden") {
+      setSidebarState("compact");
+    }
+  }, [journal.view, isLgScreen, setSidebarState, sidebarPanelRef, sidebarState]);
   useEdgeSwipe({
     enabled: moduleState === "open" && isLgScreen,
     isRTL,
     onSwipeRight: () => {
       if (isHidden || isCompact) {
         setSidebarState("expanded");
-        sidebarPanelRef.current?.expand();
+        panelGroupRef.current?.setLayout(lastExpandedLayoutRef.current);
+        requestAnimationFrame(() => sidebarContentRef.current?.focus());
       }
     },
     onSwipeLeft: () => {
       if (isExpanded) {
-        sidebarPanelRef.current?.collapse();
+        const layout = panelGroupRef.current?.getLayout();
+        if (layout && layout[JOURNAL_PANEL_IDS.sidebar] > 0) {
+          lastExpandedLayoutRef.current = { ...layout };
+        }
+        panelGroupRef.current?.setLayout(HIDDEN_JOURNAL_LAYOUT);
+        setSidebarState("hidden");
       }
     },
   });
-  useScrollLock(moduleState === "open");
-  useModalA11y(moduleState === "open" && !isLgScreen, handleClose);
+  useScrollLock(moduleState === "open" && !isPagePresentation);
+  useModalA11y(
+    moduleState === "open" && !isLgScreen && !disableCardShell && !isPagePresentation,
+    handleClose,
+  );
+
+  // Keep split layout aligned with shared sidebar state regardless of trigger source.
+  useEffect(() => {
+    if (!isLgScreen || moduleState !== "open") return;
+
+    if (sidebarState === "expanded") {
+      panelGroupRef.current?.setLayout(lastExpandedLayoutRef.current);
+      return;
+    }
+
+    panelGroupRef.current?.setLayout(HIDDEN_JOURNAL_LAYOUT);
+  }, [isLgScreen, moduleState, sidebarState, panelGroupRef]);
 
   // Collapse sidebar on mount if user preference says hidden or compact (default: expanded)
   const initialCollapseApplied = useRef(false);
@@ -470,22 +631,29 @@ export const JournalModule = memo(function JournalModule({
     if (!isLgScreen || initialCollapseApplied.current) return;
     initialCollapseApplied.current = true;
     if (isHidden || isCompact) {
-      sidebarPanelRef.current?.collapse();
+      panelGroupRef.current?.setLayout(HIDDEN_JOURNAL_LAYOUT);
+    } else {
+      panelGroupRef.current?.setLayout(lastExpandedLayoutRef.current);
     }
-  }, [isLgScreen, isHidden, isCompact, sidebarPanelRef]);
+  }, [isLgScreen, isHidden, isCompact, panelGroupRef]);
 
   // Auto-collapse sidebar when entering edit mode on desktop (writing focus)
   useEffect(() => {
     if (journal.view === "editing" && isLgScreen && isExpanded) {
-      sidebarPanelRef.current?.collapse();
+      const layout = panelGroupRef.current?.getLayout();
+      if (layout && layout[JOURNAL_PANEL_IDS.sidebar] > 0) {
+        lastExpandedLayoutRef.current = { ...layout };
+      }
+      panelGroupRef.current?.setLayout(HIDDEN_JOURNAL_LAYOUT);
+      setSidebarState("hidden");
     }
-  }, [journal.view, isLgScreen, isExpanded, sidebarPanelRef]);
+  }, [journal.view, isLgScreen, isExpanded, panelGroupRef, setSidebarState]);
 
   // Focus trap for main overlay (skip on desktop — sidebar must be accessible)
   useEffect(() => {
-    if (moduleState !== "open" || !overlayRef.current || isLgScreen) return;
+    if (moduleState !== "open" || !overlayRef.current || isLgScreen || isPagePresentation) return;
     return createFocusTrap(overlayRef.current);
-  }, [moduleState, isLgScreen]);
+  }, [moduleState, isLgScreen, isPagePresentation]);
 
   // Load entry count for card preview
   useEffect(() => {
@@ -535,12 +703,13 @@ export const JournalModule = memo(function JournalModule({
         return true;
       });
     }
+    if (isPagePresentation) return;
     return registerModalCloseCallback(() => {
       setModuleState("card");
       security.lock();
       return true;
     });
-  }, [moduleState, resetStep, showPasswordSettings, journal, security, handleGoBack]);
+  }, [moduleState, resetStep, showPasswordSettings, journal, security, handleGoBack, isPagePresentation]);
 
   // Security touch on interaction
   useEffect(() => {
@@ -573,7 +742,7 @@ export const JournalModule = memo(function JournalModule({
   }, [resetStep, security]);
 
   // ── Card View (collapsed in garden tab) ──
-  if (moduleState === "card") {
+  if (moduleState === "card" && !disableCardShell && !isPagePresentation) {
     return (
       <motion.button
         whileTap={{ scale: 0.97 }}
@@ -659,38 +828,32 @@ export const JournalModule = memo(function JournalModule({
   }
 
   // ── Full-screen overlay (portal to escape PullToRefresh transform ancestor) ──
-  return createPortal(
+  const moduleContent = (
     <div
-      ref={overlayRef}
-      role="dialog"
-      aria-modal="true"
-      aria-label={ts.journalTitle || "Diary"}
       className={cn(
-        "fixed inset-0 z-[60] bg-background flex items-start justify-center motion-safe:animate-slide-up h-screen overflow-hidden",
-        "md:bg-background/80 md:backdrop-blur-sm",
-        "lg:left-[var(--sidebar-width,256px)] lg:bg-background lg:backdrop-blur-none lg:transition-[left] lg:duration-300 lg:items-stretch"
-      )}
-      dir={isRTL ? "rtl" : "ltr"}
-    >
-      <div
-        className={cn(
-          "w-full h-full flex flex-col md:my-4 md:mx-4 md:h-[calc(100%-2rem)] md:rounded-2xl md:bg-background md:shadow-2xl md:border md:border-border/20 md:overflow-hidden",
+        "w-full h-full flex flex-col",
+        isPagePresentation
+          ? "min-h-screen bg-background overflow-hidden"
+          : "md:my-4 md:mx-4 md:h-[calc(100%-2rem)] md:rounded-2xl md:bg-background md:shadow-2xl md:border md:border-border/20 md:overflow-hidden",
+        !isPagePresentation &&
           "lg:max-w-none lg:mx-0 lg:my-0 lg:h-full lg:rounded-none lg:shadow-none lg:border-0 lg:overflow-hidden"
-        )}
-      >
+      )}
+    >
         {/* Security gate */}
         {security.isLocked && !security.loading && (
           <>
             {/* Header with close */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-border/30">
               <h2 className="text-base font-bold text-foreground">{ts.journalTitle || "Diary"}</h2>
-              <button
-                onClick={handleClose}
-                className="p-2 rounded-lg hover:bg-muted/50 min-w-[44px] min-h-[44px] flex items-center justify-center"
-                aria-label={ts.close || "Close"}
-              >
-                <X className="w-5 h-5 text-foreground" />
-              </button>
+              {!hideCloseButton && (
+                <button
+                  onClick={handleClose}
+                  className="p-2 rounded-lg hover:bg-muted/50 min-w-[44px] min-h-[44px] flex items-center justify-center"
+                  aria-label={ts.close || "Close"}
+                >
+                  <X className="w-5 h-5 text-foreground" />
+                </button>
+              )}
             </div>
             <JournalLockScreen
               mode="unlock"
@@ -919,17 +1082,23 @@ export const JournalModule = memo(function JournalModule({
                       onNewEntry={handleNewEntry}
                       onOpenStats={() => journal.openStats()}
                       onOpenSettings={() => setShowPasswordSettings(true)}
-                      onExpandSidebar={() => {
-                        setSidebarState("expanded");
-                        sidebarPanelRef.current?.expand();
-                        void haptics.light();
+                        onExpandSidebar={() => {
+                          setSidebarState("expanded");
+                          panelGroupRef.current?.setLayout(lastExpandedLayoutRef.current);
+                          void haptics.light();
+                          requestAnimationFrame(() => sidebarContentRef.current?.focus());
                       }}
                     />
                   )}
                 </AnimatePresence>
-                <PanelLayout className="flex-1 min-h-0">
+                <PanelLayout
+                  groupRef={panelGroupRef}
+                  onLayoutChange={handleJournalLayoutChange}
+                  className="flex-1 min-h-0"
+                >
                   {/* LEFT PANEL: collapsible entry list */}
                   <LayoutPanel
+                    id={JOURNAL_PANEL_IDS.sidebar}
                     panelRef={sidebarPanelRef}
                     defaultSize={30}
                     minSize={20}
@@ -937,11 +1106,18 @@ export const JournalModule = memo(function JournalModule({
                     collapsible
                     collapsedSize={0}
                     onCollapse={() => {
-                      setSidebarState("hidden");
+                      if (sidebarToggleIntentRef.current === "expand") {
+                        sidebarToggleIntentRef.current = null;
+                        return;
+                      }
+
+                      setSidebarState("compact");
+                      sidebarToggleIntentRef.current = null;
                       void haptics.light();
                     }}
                     onExpand={() => {
                       setSidebarState("expanded");
+                      sidebarToggleIntentRef.current = null;
                       void haptics.light();
                       // WCAG 2.4.3: move focus into expanded sidebar content
                       requestAnimationFrame(() => sidebarContentRef.current?.focus());
@@ -992,13 +1168,15 @@ export const JournalModule = memo(function JournalModule({
                           >
                             <Settings className="w-4 h-4" />
                           </button>
-                          <button
-                            onClick={handleClose}
-                            className="p-2 rounded-lg hover:bg-muted/50 min-w-[44px] min-h-[44px] flex items-center justify-center"
-                            aria-label={ts.close || "Close"}
-                          >
-                            <X className="w-5 h-5 text-foreground" />
-                          </button>
+                          {!hideCloseButton && (
+                            <button
+                              onClick={handleClose}
+                              className="p-2 rounded-lg hover:bg-muted/50 min-w-[44px] min-h-[44px] flex items-center justify-center"
+                              aria-label={ts.close || "Close"}
+                            >
+                              <X className="w-5 h-5 text-foreground" />
+                            </button>
+                          )}
                         </div>
                       </motion.div>
 
@@ -1076,38 +1254,41 @@ export const JournalModule = memo(function JournalModule({
                   <ResizeHandle />
 
                   {/* RIGHT PANEL: editor / viewer / stats / empty */}
-                  <LayoutPanel defaultSize={70} maxSize={85}>
+                  <LayoutPanel
+                    id={JOURNAL_PANEL_IDS.detail}
+                    defaultSize={70}
+                    maxSize={85}
+                  >
                     <div className="flex flex-col min-w-0 h-full bg-background relative">
-                      {/* Toggle button: expand/collapse sidebar */}
+                      {/* Toggle button: hide/show diary panel */}
                       <motion.button
                         whileTap={reducedMotion ? undefined : { scale: 0.93 }}
                         transition={springs.snappy}
-                        onClick={() => {
-                          if (isHidden || isCompact) {
-                            sidebarPanelRef.current?.expand();
-                          } else {
-                            sidebarPanelRef.current?.collapse();
-                          }
-                          void haptics.light();
-                        }}
+                        onClick={handleToggleDiaryPanel}
                         className="absolute ltr:left-2 rtl:right-2 top-3 z-40 p-2 bg-card rounded-lg shadow-md hover:bg-accent motion-safe:transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
                         aria-label={
-                          isExpanded
-                            ? ts.diarySidebarHide || "Hide entries"
-                            : ts.diarySidebarShow || "Show entries"
+                          isSidebarCollapsed
+                            ? ts.diarySidebarShow || "Show diary panel"
+                            : ts.diarySidebarHide || "Hide diary panel"
                         }
-                        aria-expanded={isExpanded}
+                        title={
+                          isSidebarCollapsed
+                            ? ts.diarySidebarShow || "Show diary panel"
+                            : ts.diarySidebarHide || "Hide diary panel"
+                        }
+                        aria-expanded={!isSidebarCollapsed}
                         aria-controls="journal-sidebar-panel"
                       >
-                        {isExpanded ? (
-                          <PanelLeftClose className="w-4 h-4" />
-                        ) : (
+                        {isSidebarCollapsed ? (
                           <PanelLeftOpen className="w-4 h-4" />
+                        ) : (
+                          <PanelLeftClose className="w-4 h-4" />
                         )}
                       </motion.button>
                       {journal.view === "editing" ? (
                         <JournalEntryEditor
                           entry={journal.activeEntry}
+                          entryPrefill={activeEntryPrefill}
                           onSave={handleSaveEntry}
                           onAddPhoto={journal.addPhoto}
                           onRemovePhoto={journal.removePhoto}
@@ -1122,14 +1303,8 @@ export const JournalModule = memo(function JournalModule({
                           onToggleHabit={onToggleHabit}
                           onAddGratitude={onAddGratitude}
                           desktop
-                          sidebarCollapsed={!isExpanded}
-                          onToggleSidebar={() => {
-                            if (isHidden || isCompact) {
-                              sidebarPanelRef.current?.expand();
-                            } else {
-                              sidebarPanelRef.current?.collapse();
-                            }
-                          }}
+                          sidebarState={sidebarState}
+                          onToggleSidebar={handleToggleDiaryPanel}
                         />
                       ) : journal.view === "viewing" && journal.activeEntry ? (
                         <JournalEntryViewer
@@ -1153,17 +1328,31 @@ export const JournalModule = memo(function JournalModule({
                         </Suspense>
                       ) : (
                         /* Empty state — cinematic living canvas */
-                        <DiaryEmptyCanvas
-                          onNewEntry={handleNewEntry}
-                          onNewEntryWithPrompt={(_prompt) => {
-                            handleNewEntry();
-                          }}
-                          streak={streak}
-                          entriesThisWeek={journal.entries.filter((e) => {
-                            const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-                            return e.createdAt > weekAgo;
-                          }).length}
-                        />
+                        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 pb-4 pt-16">
+                          <div className="flex min-h-full flex-col gap-4">
+                            {hasInitialEntrySuggestion ? (
+                              <DiaryEntrySuggestionCard
+                                suggestion={initialSuggestionRef.current!}
+                                onStart={handleUseInitialEntrySuggestion}
+                                onDismiss={handleDismissInitialEntrySuggestion}
+                              />
+                            ) : null}
+
+                            <div className="relative min-h-[420px] flex-1 overflow-hidden rounded-[28px] border border-border/40 bg-card/30">
+                              <DiaryEmptyCanvas
+                                onNewEntry={handleNewEntry}
+                                onNewEntryWithPrompt={(_prompt) => {
+                                  handleNewEntry();
+                                }}
+                                streak={streak}
+                                entriesThisWeek={journal.entries.filter((e) => {
+                                  const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+                                  return e.createdAt > weekAgo;
+                                }).length}
+                              />
+                            </div>
+                          </div>
+                        </div>
                       )}
                     </div>
                   </LayoutPanel>
@@ -1200,6 +1389,7 @@ export const JournalModule = memo(function JournalModule({
                     >
                     <JournalEntryEditor
                       entry={journal.activeEntry}
+                      entryPrefill={activeEntryPrefill}
                       onSave={handleSaveEntry}
                       onAddPhoto={journal.addPhoto}
                       onRemovePhoto={journal.removePhoto}
@@ -1300,13 +1490,15 @@ export const JournalModule = memo(function JournalModule({
                             >
                               <Settings className="w-4 h-4" />
                             </button>
-                            <button
-                              onClick={handleClose}
-                              className="p-2 rounded-lg hover:bg-muted/50 min-w-[44px] min-h-[44px] flex items-center justify-center"
-                              aria-label={ts.close || "Close"}
-                            >
-                              <X className="w-5 h-5 text-foreground" />
-                            </button>
+                            {!hideCloseButton && (
+                              <button
+                                onClick={handleClose}
+                                className="p-2 rounded-lg hover:bg-muted/50 min-w-[44px] min-h-[44px] flex items-center justify-center"
+                                aria-label={ts.close || "Close"}
+                              >
+                                <X className="w-5 h-5 text-foreground" />
+                              </button>
+                            )}
                           </div>
                         </div>
 
@@ -1339,6 +1531,16 @@ export const JournalModule = memo(function JournalModule({
                         <div className="relative flex-1 overflow-y-auto px-4 py-3">
                           <ParticleBackground count={6} color="primary" />
                           <div className="relative z-[1]">
+                            {hasInitialEntrySuggestion ? (
+                              <div className="mb-3">
+                                <DiaryEntrySuggestionCard
+                                  suggestion={initialSuggestionRef.current!}
+                                  onStart={handleUseInitialEntrySuggestion}
+                                  onDismiss={handleDismissInitialEntrySuggestion}
+                                  compact
+                                />
+                              </div>
+                            ) : null}
                             <JournalEntryList
                               groupedEntries={journal.groupedEntries}
                               onOpenEntry={handleOpenEntry}
@@ -1672,10 +1874,9 @@ export const JournalModule = memo(function JournalModule({
                   </AnimatePresence>
                 </>
                 </LayoutGroup>
-              )}
+      )}
             </>
           )}
-      </div>
 
       {/* Desktop: Password settings modal (mobile uses bottom sheet inside its branch) */}
       {isLgScreen && showPasswordSettings && (
@@ -1878,6 +2079,37 @@ export const JournalModule = memo(function JournalModule({
           />
         )}
       </AnimatePresence>
+    </div>
+  );
+
+  if (isPagePresentation) {
+    return (
+      <section
+        ref={overlayRef}
+        aria-label={ts.journalTitle || "Diary"}
+        className="relative flex min-h-screen w-full flex-col bg-background lg:h-screen lg:overflow-hidden"
+        dir={isRTL ? "rtl" : "ltr"}
+        data-testid="journal-page-shell"
+      >
+        {moduleContent}
+      </section>
+    );
+  }
+
+  return createPortal(
+    <div
+      ref={overlayRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label={ts.journalTitle || "Diary"}
+      className={cn(
+        "fixed inset-0 z-[60] bg-background flex items-start justify-center motion-safe:animate-slide-up h-screen overflow-hidden",
+        "md:bg-background/80 md:backdrop-blur-sm",
+        "lg:left-[var(--sidebar-width,256px)] lg:bg-background lg:backdrop-blur-none lg:transition-[left] lg:duration-300 lg:items-stretch"
+      )}
+      dir={isRTL ? "rtl" : "ltr"}
+    >
+      {moduleContent}
     </div>,
     document.body
   );

@@ -496,17 +496,18 @@ export function HabitCreationForm({ form, habits, isPrimaryCTA = false }: HabitC
           className={cn(
             "relative w-full py-3.5 rounded-xl font-semibold text-white motion-safe:transition-all overflow-hidden",
             newHabitName.trim() && !isSaving
-              ? editingHabit
-                ? "bg-gradient-to-r from-blue-500 to-indigo-500"
-                : "bg-gradient-to-r from-emerald-500 to-teal-500"
+              ? "bg-primary"
               : "bg-foreground/10 text-foreground/60 cursor-not-allowed",
           )}
           style={
             newHabitName.trim()
               ? {
+                  backgroundImage: editingHabit
+                    ? "var(--zen-gradient-calm)"
+                    : "var(--zen-gradient)",
                   boxShadow: editingHabit
-                    ? "0 0 20px rgba(99, 102, 241, 0.4)"
-                    : "0 0 20px rgba(16, 185, 129, 0.4)",
+                    ? "0 0 20px hsl(var(--accent) / 0.28)"
+                    : "0 0 20px hsl(var(--primary) / 0.28)",
                 }
               : undefined
           }

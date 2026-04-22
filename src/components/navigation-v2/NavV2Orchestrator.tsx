@@ -55,6 +55,17 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator() {
     return unregister;
   }, [handleBackButton]);
 
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    document.documentElement.style.setProperty(
+      "--sidebar-width",
+      sidebarCollapsed ? "72px" : "256px",
+    );
+    return () => {
+      document.documentElement.style.removeProperty("--sidebar-width");
+    };
+  }, [sidebarCollapsed]);
+
   // Keyboard shortcuts (desktop/tablet only)
   const togglePalette = useCallback(() => setCommandPaletteOpen(!commandPaletteOpen), [
     commandPaletteOpen,

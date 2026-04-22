@@ -101,6 +101,35 @@ export interface JournalEntry {
   updatedAt: number;
 }
 
+/**
+ * Transient prefill used when another V2 surface (for example Orb) hands the
+ * user into Diary with a suggested starting point for a new entry.
+ *
+ * Never persisted directly — it only seeds the new-entry editor state.
+ */
+export interface JournalEntryPrefill {
+  title?: string;
+  content?: string;
+  mood?: MoodType;
+  tags?: string[];
+  date?: string;
+}
+
+/**
+ * A contextual suggestion offered when another surface hands the user into
+ * Diary, but Diary still opens history-first. The user stays in the list /
+ * calendar shell and can decide whether to turn the context into a new entry.
+ */
+export interface JournalEntrySuggestion {
+  source: "orb";
+  emotion?: string | null;
+  mood?: MoodType;
+  scope?: "now" | "specific" | "day";
+  specificTime?: string | null;
+  committedAt?: number;
+  prefill: JournalEntryPrefill;
+}
+
 /** Compressed photo attached to a journal entry */
 export interface JournalPhoto {
   id: string;

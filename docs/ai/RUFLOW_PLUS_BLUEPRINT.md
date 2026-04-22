@@ -93,23 +93,38 @@ Recommended role set:
 - `reviewer`: checks regressions, missing tests, and rule violations
 - `memory-keeper`: distills reusable patterns and updates the learning log
 
+Inheritance rule:
+- every specialist inherits the same pre-flight contract: evidence, failure modes, platform/domain impact scan, verification plan, and explicit `GO / STOP / ASK`
+
 ## Anti-Drift Contract
 
 Use these defaults unless there is a strong reason not to:
 
 1. Start with a written plan
 - Required for any task that spans multiple domains or more than 3 files.
+- Default operator format: [docs/ai/PREFLIGHT_OPERATOR_TEMPLATE.md](PREFLIGHT_OPERATOR_TEMPLATE.md)
+- Repo-touching work defaults to `L2` minimum. Cross-platform, stateful, prompt/config, sync/auth, CI/build, or 4+ file work defaults to `L3`. Governance/law/orchestration changes default to `L4`.
 
 2. Keep write scopes disjoint
 - Parallel workers may not share the same write set.
 
 3. Research before edits
 - Research is local-first, then official web/docs when facts are time-sensitive or external.
+- Self-reflection does not replace external verification. For external facts, use primary or official sources before acting.
 
-4. Verify before claiming success
+4. Scan platform and domain impact before implementation
+- If the task can touch product behavior, explicitly check Web, iOS, Android, Desktop, and CI relevance.
+- For large or stateful work, explicitly consider UI, state, storage, sync, auth, i18n, analytics, performance, accessibility, and security.
+
+5. Verify before claiming success
 - Prefer fresh command output or a precise checklist of what could not be run.
+- Missing evidence is a blocker, not a footnote.
 
-5. Distill after success or failure
+6. Gate every pass with a verdict
+- No substantial implementation starts until the pass reaches `GO`.
+- `STOP` and `ASK` are valid outcomes and should be used early when evidence is weak.
+
+7. Distill after success or failure
 - Every meaningful run should update memory with what worked, what failed, and what should route differently next time.
 
 ## Learning Loop

@@ -24,6 +24,56 @@ const CONFIDENCE_KEYS = [
   'state_integrity',
 ];
 
+const L2_MINIMUM_READ_PATTERNS = [
+  /^src\//i,
+  /^e2e\//i,
+  /^scripts\//i,
+  /^supabase\//i,
+  /^android\//i,
+  /^ios\//i,
+  /^package(-lock)?\.json$/i,
+  /(^|\/)(playwright|vite|vitest|tailwind|capacitor|eslint|postcss)\.config\.[cm]?[jt]s$/i,
+  /\.toml$/i,
+];
+
+const L3_MINIMUM_READ_PATTERNS = [
+  /^e2e\//i,
+  /^scripts\//i,
+  /^supabase\//i,
+  /^android\//i,
+  /^ios\//i,
+  /^src\/stores\//i,
+  /^src\/storage\//i,
+  /^src\/hooks\//i,
+  /^src\/components\/AuthGate\.tsx$/i,
+  /^src\/components\/navigation-v2\//i,
+  /^package(-lock)?\.json$/i,
+  /(^|\/)(playwright|vite|vitest|tailwind|capacitor|eslint|postcss)\.config\.[cm]?[jt]s$/i,
+  /\.toml$/i,
+];
+
+const L4_MINIMUM_READ_PATTERNS = [
+  /^docs\/ai\//i,
+  /^docs\/law/i,
+  /^laws\d/i,
+  /^law\d/i,
+  /^visual-aesthetic\.md$/i,
+  /^ARCHITECTURE\.md$/i,
+  /^AGENTS\.md$/i,
+  /^\.claude\/hooks\//i,
+  /^\.Codex\//i,
+  /^\.agents\//i,
+  /^tools\/ruflow-plus\/templates\//i,
+];
+
+function stripEvidenceLine(entry) {
+  return typeof entry === 'string' ? entry.replace(/:\d+(-\d+)?$/, '') : '';
+}
+
+function matchesAnyPath(paths, patterns) {
+  return paths.some(filePath => patterns.some(pattern => pattern.test(filePath)));
+}
+
 function validate(content) {
   const errors = [];
   const warnings = [];
@@ -57,9 +107,9 @@ function validate(content) {
     errors.push('Missing/too-short goal (need 5+ chars)');
   }
 
-  // Rule 4: depth — L1, L2, or L3
-  if (!['L1', 'L2', 'L3'].includes(parsed.depth)) {
-    errors.push('Invalid depth level (must be L1, L2, or L3)');
+  // Rule 4: depth — L1, L2, L3, or L4
+  if (!['L1', 'L2', 'L3', 'L4'].includes(parsed.depth)) {
+    errors.push('Invalid depth level (must be L1, L2, L3, or L4)');
   }
 
   // Rule 54: L1 Abuse Prevention — force upgrade to L2 if task is clearly not trivial
@@ -95,6 +145,7 @@ function validate(content) {
 
     if (Array.isArray(ev.read) && Array.isArray(ev.search) && Array.isArray(ev.assumed)) {
       const total = ev.read.length + ev.search.length + ev.assumed.length;
+      const normalizedReadPaths = ev.read.map(stripEvidenceLine);
 
       // Rule 8: evidence ratio — >30% assumed = FAIL
       if (total > 0 && ev.assumed.length / total > 0.3) {
@@ -104,6 +155,22 @@ function validate(content) {
       // Rule 9: evidence minimum — at least 1 verified source
       if (ev.read.length + ev.search.length < 1) {
         errors.push('No verified evidence (need at least 1 READ or SEARCH)');
+      }
+
+      const requiresL2 = matchesAnyPath(normalizedReadPaths, L2_MINIMUM_READ_PATTERNS);
+      const requiresL3 =
+        normalizedReadPaths.length >= 4 ||
+        matchesAnyPath(normalizedReadPaths, L3_MINIMUM_READ_PATTERNS);
+      const requiresL4 = matchesAnyPath(normalizedReadPaths, L4_MINIMUM_READ_PATTERNS);
+
+      if (isL1 && requiresL2) {
+        errors.push('L1 DEPTH ABUSE BLOCKED: evidence.read[] touches repo-impacting files. Repo-touching work requires L2 minimum.');
+      }
+      if ((parsed.depth === 'L1' || parsed.depth === 'L2') && requiresL3) {
+        errors.push('L3 DEPTH REQUIRED: evidence.read[] touches stateful/cross-platform/auth/build/CI/config/sync paths or 4+ files. Upgrade depth to L3.');
+      }
+      if (parsed.depth !== 'L4' && requiresL4) {
+        errors.push('L4 DEPTH REQUIRED: evidence.read[] touches laws/architecture/orchestration/enforcement paths. Upgrade depth to L4.');
       }
     }
   }
@@ -271,7 +338,7 @@ function validate(content) {
   // Rule 27: pre_mortem content quality — must be substantive (L2+)
   if (!isL1 && typeof parsed.pre_mortem === 'string') {
     if (parsed.pre_mortem.length < 50) {
-      warnings.push('L2+ pre_mortem must be ≥50 chars (got ' + parsed.pre_mortem.length + ') — be specific about failure modes');
+      errors.push('L2+ pre_mortem must be ≥50 chars (got ' + parsed.pre_mortem.length + ') — be specific about failure modes');
     }
   }
 
@@ -292,7 +359,7 @@ function validate(content) {
     }
     const CMD_PATTERN = /npm|node|git|vitest|eslint|tsc|grep|ci:|ratchet/i;
     if (!CMD_PATTERN.test(parsed.post_verification_plan)) {
-      warnings.push('L2+ post_verification_plan must reference concrete commands (npm, node, git, vitest, eslint, tsc, grep, ci:, ratchet)');
+      errors.push('L2+ post_verification_plan must reference concrete commands (npm, node, git, vitest, eslint, tsc, grep, ci:, ratchet)');
     }
   }
 
@@ -307,7 +374,7 @@ function validate(content) {
   if (!isL1 && typeof parsed.unknowns === 'string') {
     const DISMISSIVE = /^(none|no|nothing|n\/a|na|nil|-)$/i;
     if (DISMISSIVE.test(parsed.unknowns.trim())) {
-      warnings.push('L2+ unknowns cannot be dismissive ("none"/"n/a") — there are ALWAYS unknowns. List at least one.');
+      errors.push('L2+ unknowns cannot be dismissive ("none"/"n/a") — there are ALWAYS unknowns. List at least one.');
     }
     if (parsed.unknowns.length < 15) {
       warnings.push('L2+ unknowns is very short (' + parsed.unknowns.length + ' chars) — be specific about what you do NOT know');
