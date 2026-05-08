@@ -2826,6 +2826,17 @@ export interface Translations {
   metaTitle: string;
   metaDescription: string;
 
+  // V1-to-V2 preview portal
+  v2PortalEyebrow: string;
+  v2PortalTitle: string;
+  v2PortalBody: string;
+  v2PortalStatus: string;
+  v2PortalCta: string;
+  v2PortalOrb: string;
+  v2PortalHabits: string;
+  v2PortalDiary: string;
+  v2PortalAria: string;
+
   // Phase 3-A: Navigation V2
   navV2Orb: string;
   navV2Habits: string;

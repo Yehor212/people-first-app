@@ -2859,6 +2859,17 @@ export const fr: Translations = {
     "Suivi d'habitudes, d'humeur et de productivité. Commencez votre voyage vers une vie consciente.",
 
   // Phase 3-A: Navigation V2
+  v2PortalEyebrow: "Aper?u V2",
+  v2PortalTitle: "Entre dans le nouvel espace rituel",
+  v2PortalBody:
+    "Teste le flux V2 pens? pour mobile pendant que ZenFlow classique reste ta base s?re.",
+  v2PortalStatus: "Mode aper?u, m?mes donn?es",
+  v2PortalCta: "Ouvrir V2",
+  v2PortalOrb: "Orbe d?humeur",
+  v2PortalHabits: "Habitudes",
+  v2PortalDiary: "Journal",
+  v2PortalAria: "Ouvrir l?aper?u ZenFlow V2",
+
   navV2Orb: "Orbe",
   navV2Habits: "Habitudes",
   navV2Diary: "Journal",

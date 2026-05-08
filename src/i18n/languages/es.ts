@@ -2844,6 +2844,17 @@ export const es: Translations = {
     "Rastreador de hábitos, estado de ánimo y productividad. Comienza tu camino hacia una vida consciente.",
 
   // Phase 3-A: Navigation V2
+  v2PortalEyebrow: "Vista previa V2",
+  v2PortalTitle: "Entra en el nuevo espacio ritual",
+  v2PortalBody:
+    "Prueba el flujo V2 pensado para m?vil mientras ZenFlow cl?sico sigue siendo tu base segura.",
+  v2PortalStatus: "Modo preview, con tus mismos datos",
+  v2PortalCta: "Abrir V2",
+  v2PortalOrb: "Orbe de ?nimo",
+  v2PortalHabits: "H?bitos",
+  v2PortalDiary: "Diario",
+  v2PortalAria: "Abrir la vista previa de ZenFlow V2",
+
   navV2Orb: "Orbe",
   navV2Habits: "Hábitos",
   navV2Diary: "Diario",

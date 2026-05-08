@@ -9,6 +9,7 @@ import { RestModeCard } from "@/components/RestModeCard";
 import { AllCompleteCelebration } from "@/components/AllCompleteCelebration";
 import { ReflectionPromptCard } from "@/components/ReflectionPromptCard";
 import { StateOfMindModal } from "@/components/state-of-mind/StateOfMindModal";
+import { V2PreviewPortal } from "@/components/tabs/PreviewPortal";
 import { BentoGrid, BentoCard } from "@/components/layout/BentoGrid";
 import { useFeatureFlags } from "@/contexts/FeatureFlagsContext";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -130,6 +131,8 @@ export const HomeTab = memo(function HomeTab({
           onOpenEvents={() => setShowAddEvent(true)}
           onOpenQuests={isFeatureVisible("quests") ? () => setShowQuestsPanel(true) : undefined}
         />
+
+        <V2PreviewPortal />
 
         {/* Session expired banner */}
         {hasValidSession === false && googleAuthChecked && userName !== "Friend" && (

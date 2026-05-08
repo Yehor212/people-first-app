@@ -2856,6 +2856,17 @@ export const de: Translations = {
     "Gewohnheits-, Stimmungs- und Produktivitätstracker. Starte deine Reise zu einem achtsamen Leben.",
 
   // Phase 3-A: Navigation V2
+  v2PortalEyebrow: "V2-Vorschau",
+  v2PortalTitle: "Betritt den neuen Ritualraum",
+  v2PortalBody:
+    "Teste den mobil gedachten V2-Flow, w?hrend klassisches ZenFlow deine sichere Basis bleibt.",
+  v2PortalStatus: "Vorschau-Modus, gleiche Daten",
+  v2PortalCta: "V2 ?ffnen",
+  v2PortalOrb: "Stimmungsorb",
+  v2PortalHabits: "Gewohnheiten",
+  v2PortalDiary: "Tagebuch",
+  v2PortalAria: "ZenFlow V2-Vorschau ?ffnen",
+
   navV2Orb: "Orb",
   navV2Habits: "Gewohnheiten",
   navV2Diary: "Tagebuch",

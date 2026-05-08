@@ -2833,6 +2833,17 @@ export const en: Translations = {
   metaDescription: "Habit, mood and productivity tracker. Start your journey to a mindful life.",
 
   // Phase 3-A: Navigation V2
+  v2PortalEyebrow: "V2 preview",
+  v2PortalTitle: "Step into the new ritual space",
+  v2PortalBody:
+    "Try the phone-first V2 flow while classic ZenFlow stays here as your safe home base.",
+  v2PortalStatus: "Preview mode, using your same data",
+  v2PortalCta: "Open V2",
+  v2PortalOrb: "Mood orb",
+  v2PortalHabits: "Habits",
+  v2PortalDiary: "Diary",
+  v2PortalAria: "Open ZenFlow V2 preview",
+
   navV2Orb: "Orb",
   navV2Habits: "Habits",
   navV2Diary: "Diary",
