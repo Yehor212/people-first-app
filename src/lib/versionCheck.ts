@@ -52,10 +52,11 @@ export async function checkAppVersion(): Promise<boolean> {
 
     const serverVersion: VersionManifest = await response.json();
     const clientVersion = __APP_VERSION__;
+    const clientBuildTime = __APP_BUILD_TIME__;
 
-    if (serverVersion.version !== clientVersion) {
+    if (serverVersion.version !== clientVersion || serverVersion.buildTime !== clientBuildTime) {
       logger.log(
-        `[VersionCheck] Version mismatch! Client: ${clientVersion}, Server: ${serverVersion.version}`
+        `[VersionCheck] Version mismatch! Client: ${clientVersion}@${clientBuildTime}, Server: ${serverVersion.version}@${serverVersion.buildTime}`
       );
       return false;
     }

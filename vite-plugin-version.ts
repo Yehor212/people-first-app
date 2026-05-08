@@ -7,6 +7,10 @@ interface VersionManifest {
   buildTime: number;
 }
 
+interface VersionPluginOptions {
+  buildTime?: number;
+}
+
 /**
  * Vite plugin that generates a version.json file during build
  * AND loads an external version check script via index.html.
@@ -24,7 +28,7 @@ interface VersionManifest {
  * NOTE: The script is external (not inline) to comply with CSP
  * script-src without 'unsafe-inline'.
  */
-export function versionPlugin(): Plugin {
+export function versionPlugin(options: VersionPluginOptions = {}): Plugin {
   let version: string;
   let buildTime: number;
   let outDir: string;
@@ -40,7 +44,7 @@ export function versionPlugin(): Plugin {
         readFileSync(resolve(config.root, 'package.json'), 'utf-8')
       );
       version = packageJson.version;
-      buildTime = Date.now();
+      buildTime = options.buildTime ?? Date.now();
       outDir = config.build.outDir;
       base = config.base || '/';
       shouldInjectVersionScript = config.command === 'build';
@@ -57,7 +61,7 @@ export function versionPlugin(): Plugin {
       return [
         {
           tag: 'script',
-          attrs: { src: `${base}version-check.js` },
+          attrs: { src: `${base}version-check.js?bt=${buildTime}` },
           injectTo: 'head-prepend' as const,
         },
       ];
@@ -76,7 +80,9 @@ export function versionPlugin(): Plugin {
       const script = `(function(){
 try{
 var RL='_zf_rl';var VCF='zenflow_check_version';
-var V='${version}';var BT=${buildTime};var B='${base}';
+var V='${version}';var B='${base}';
+var S=document.currentScript&&document.currentScript.src;
+var BT=Number(S?new URL(S,location.href).searchParams.get('bt'):0)||${buildTime};
 var t=sessionStorage.getItem(RL);
 if(t&&Date.now()-Number(t)<30000)return;
 function mismatch(d){return d.version!==V||d.buildTime!==BT;}

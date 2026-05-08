@@ -18,6 +18,7 @@ export default defineConfig(({ mode }) => {
   // Read version from package.json
   const packageJson = JSON.parse(readFileSync("./package.json", "utf-8"));
   const appVersion = packageJson.version;
+  const appBuildTime = Number(process.env.VITE_APP_BUILD_TIME || Date.now());
 
   return {
     base,
@@ -31,6 +32,7 @@ export default defineConfig(({ mode }) => {
     },
     define: {
       __APP_VERSION__: JSON.stringify(appVersion),
+      __APP_BUILD_TIME__: JSON.stringify(appBuildTime),
       // Sentry tree-shaking (docs: getsentry/sentry-javascript CONTRIBUTING.md)
       // Replaces __DEBUG_BUILD__ → false in Sentry's bundles, strips all logger.* calls.
       __SENTRY_DEBUG__: false,
@@ -43,7 +45,7 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
       changelogPlugin(),
-      versionPlugin(),
+      versionPlugin({ buildTime: appBuildTime }),
       mode === "development" && componentTagger(),
       // Precompress JS/CSS/HTML/SVG with Brotli (default q=11) + gzip (default q=9).
       // PWA web build only — Capacitor's default WebViewAssetLoader does NOT

@@ -37,8 +37,9 @@ const sessionStorageMock = {
 };
 Object.defineProperty(globalThis, 'sessionStorage', { value: sessionStorageMock, writable: true });
 
-// Stub __APP_VERSION__
+// Stub build constants
 vi.stubGlobal('__APP_VERSION__', '1.0.0');
+vi.stubGlobal('__APP_BUILD_TIME__', 1000);
 
 import {
   checkAppVersion,
@@ -145,6 +146,17 @@ describe('checkAppVersion', () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ version: '2.0.0', buildTime: 2000 }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const result = await checkAppVersion();
+    expect(result).toBe(false);
+  });
+
+  it('returns false on same-version rebuild mismatch', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ version: '1.0.0', buildTime: 2000 }),
     });
     vi.stubGlobal('fetch', fetchMock);
 
