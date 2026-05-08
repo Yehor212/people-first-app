@@ -3,16 +3,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Bookmark } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { StickerRenderer } from "./StickerRenderer";
 import type { JournalEntry } from "./types";
-
-const MOOD_STICKER: Record<string, string> = {
-  great: "\u{1F604}",
-  good: "\u{1F642}",
-  okay: "\u{1F610}",
-  bad: "\u{1F614}",
-  terrible: "\u{1F622}",
-};
+import { DiaryMiniOrb } from "./DiaryMiniOrb";
 
 const MOOD_RING_COLOR: Record<string, string> = {
   great: "ring-green-400/40",
@@ -161,7 +153,7 @@ export const MoodDotStrip = memo(function MoodDotStrip({
                 )}
               >
                 {mood ? (
-                  <StickerRenderer emoji={MOOD_STICKER[mood]} size="xs" />
+                  <DiaryMiniOrb mood={mood} size="micro" className="scale-[0.72]" />
                 ) : (
                   <Bookmark className="w-3.5 h-3.5 text-muted-foreground/50" />
                 )}

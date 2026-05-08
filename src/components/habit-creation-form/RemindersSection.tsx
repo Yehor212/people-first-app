@@ -41,7 +41,7 @@ export function RemindersSection({
             isPrimaryCTA ? "text-slate-600 dark:text-foreground/70" : "text-muted-foreground"
           )}
         >
-          {t.reminders || "Reminders"}
+          {t.reminders}
         </label>
         <motion.button
           type="button"
@@ -58,7 +58,7 @@ export function RemindersSection({
           whileHover={{ scale: 1.02 }}
           whileTap={zenTap.card}
         >
-          + {t.addReminder || "Add"}
+          + {t.addReminder}
         </motion.button>
       </div>
 
@@ -69,7 +69,7 @@ export function RemindersSection({
             isPrimaryCTA ? "text-slate-400 dark:text-foreground/60" : "text-muted-foreground"
           )}
         >
-          {t.noReminders || "No reminders set"}
+          {t.noReminders}
         </p>
       ) : (
         <div className="space-y-2">
@@ -91,17 +91,17 @@ export function RemindersSection({
                     ? "bg-foreground/10 border border-foreground/20 text-white focus:ring-violet-500/50"
                     : "bg-secondary text-foreground focus:ring-primary/30"
                 )}
-                aria-label={t.reminderTime || "Reminder time"}
+                aria-label={t.habitReminderTime}
               />
               <div className="flex gap-1">
                 {[
-                  { day: 1, label: t.mon || "Mo" },
-                  { day: 2, label: t.tue || "Tu" },
-                  { day: 3, label: t.wed || "We" },
-                  { day: 4, label: t.thu || "Th" },
-                  { day: 5, label: t.fri || "Fr" },
-                  { day: 6, label: t.sat || "Sa" },
-                  { day: 0, label: t.sun || "Su" },
+                  { day: 1, label: t.mon },
+                  { day: 2, label: t.tue },
+                  { day: 3, label: t.wed },
+                  { day: 4, label: t.thu },
+                  { day: 5, label: t.fri },
+                  { day: 6, label: t.sat },
+                  { day: 0, label: t.sun },
                 ].map(({ day, label }) => (
                   <motion.button
                     key={day}
@@ -142,7 +142,7 @@ export function RemindersSection({
                   e.preventDefault();
                   handleRemoveReminder(index);
                 }}
-                aria-label={t.removeReminder || "Remove reminder"}
+                aria-label={t.delete}
                 className={cn(
                   "p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg motion-safe:transition-colors",
                   isPrimaryCTA

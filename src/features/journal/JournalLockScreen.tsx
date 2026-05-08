@@ -231,7 +231,7 @@ export function JournalLockScreen({
 
         {mode === "setup" && step === "enter" && (
           <p className="text-xs text-muted-foreground text-center mb-4 px-2">
-            {ts.journalPasswordHint ||
+            {ts.journalLockHint ||
               "This password protects only your diary. There is no recovery \u2014 remember it well."}
           </p>
         )}
@@ -288,7 +288,7 @@ export function JournalLockScreen({
               }
               className="absolute end-1 top-1/2 -translate-y-1/2 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center text-muted-foreground rounded-lg hover:bg-muted/50"
             >
-              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              {showPassword ? <EyeOff className="w-4 h-4" aria-hidden="true" /> : <Eye className="w-4 h-4" aria-hidden="true" />}
             </button>
           </div>
 
@@ -345,7 +345,7 @@ export function JournalLockScreen({
             onClick={onBiometricUnlock}
             className="w-full mt-3 py-2.5 flex items-center justify-center gap-2 rounded-xl bg-muted/50 text-foreground text-sm font-medium min-h-[44px] hover:bg-muted/70 motion-safe:transition-colors"
           >
-            <Fingerprint className="w-5 h-5 text-primary" />
+            <Fingerprint className="w-5 h-5 text-primary" aria-hidden="true" />
             {ts.journalBiometricUnlock || "Unlock with biometrics"}
           </button>
         )}

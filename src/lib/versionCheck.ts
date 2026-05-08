@@ -110,14 +110,14 @@ export async function forceHardReload(): Promise<void> {
   // 3. Reload with cache-busting query param (origin-locked to prevent open redirect CWE-601)
   // Validate pathname is a safe relative path (no protocol/scheme injection via //evil.com)
   const pathname = window.location.pathname;
-  if (!pathname.startsWith("/") || pathname.startsWith("//")) {
+  const safePathname = pathname.startsWith("/") && !pathname.startsWith("//") ? pathname : "/";
+  if (safePathname !== pathname) {
     logger.warn("[VersionCheck] Suspicious pathname, using root");
-    window.location.replace(`${window.location.origin}/?_v=${now}`);
-    return;
   }
-  const url = new URL(pathname, window.location.origin);
+  const url = new URL(window.location.origin);
+  url.pathname = safePathname;
   url.searchParams.set("_v", now.toString());
-  window.location.replace(url.toString());
+  window.location.replace(url.href);
 }
 
 /**

@@ -1,10 +1,10 @@
 /**
- * IdentityMappingSection — "Who are you becoming?" identity cluster/verb/icon fields.
+ * IdentityMappingSection — identity-based habit fields.
  */
 
-import { Fingerprint } from "lucide-react";
+import { BadgeCheck, Fingerprint } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { IdentityIconPicker } from "@/components/IdentityIconPicker";
+import { IdentityVisual } from "@/components/IdentityIconPicker";
 
 interface IdentityMappingSectionProps {
   isPrimaryCTA: boolean;
@@ -14,7 +14,7 @@ interface IdentityMappingSectionProps {
   identityVerb: string;
   setIdentityVerb: (v: string) => void;
   identityIcon: string;
-  setIdentityIcon: (v: string) => void;
+  habitIcon: string;
   existingClusters: string[];
 }
 
@@ -26,111 +26,192 @@ export function IdentityMappingSection({
   identityVerb,
   setIdentityVerb,
   identityIcon,
-  setIdentityIcon,
+  habitIcon,
   existingClusters,
 }: IdentityMappingSectionProps) {
+  const clusterText = identityCluster.trim();
+  const identityText = identityVerb.trim() || clusterText || ts.identityDefaultVerb;
+  const displayIcon = identityIcon.trim() || habitIcon.trim() || "Sparkles";
+  const votePreview = (ts.identityVoteFor || "Vote for {identity}").replace(
+    "{identity}",
+    identityText,
+  );
+
   return (
     <div
       className={cn(
-        "relative mb-4 rounded-xl p-3 space-y-3",
-        isPrimaryCTA ? "bg-foreground/5 border border-foreground/10" : "bg-card"
+        "relative mb-4 overflow-hidden rounded-[20px] border p-3 space-y-4",
+        isPrimaryCTA
+          ? "border-[hsl(var(--zf-role-rest)/0.32)] bg-[radial-gradient(circle_at_12%_0%,hsl(var(--zf-role-rest)/0.14),transparent_34%),hsl(var(--zf-night-0)/0.36)]"
+          : "border-border bg-card"
       )}
     >
+      {isPrimaryCTA ? (
+        <span
+          className="pointer-events-none absolute -right-12 -top-12 h-28 w-28 rounded-full bg-[hsl(var(--zf-role-rest)/0.14)] blur-2xl"
+          aria-hidden="true"
+        />
+      ) : null}
       <div className="flex items-center gap-2">
-        <Fingerprint className={cn("w-4 h-4", isPrimaryCTA ? "text-violet-400" : "text-primary")} />
+        <Fingerprint
+          className={cn(
+            "w-4 h-4",
+            isPrimaryCTA ? "text-[hsl(var(--zf-role-rest))]" : "text-primary",
+          )}
+        />
         <p
           className={cn(
             "text-sm font-medium",
-            isPrimaryCTA ? "text-slate-700 dark:text-foreground/80" : "text-foreground"
+            isPrimaryCTA ? "text-[hsl(var(--zf-text-strong))]" : "text-foreground",
           )}
         >
-          {ts.identityMapping || "Identity Mapping"}
+          {ts.identityMapping}
         </p>
       </div>
       <p
         className={cn(
           "text-xs",
-          isPrimaryCTA ? "text-slate-500 dark:text-foreground/60" : "text-muted-foreground"
+          isPrimaryCTA ? "text-[hsl(var(--zf-text-soft))]" : "text-muted-foreground",
         )}
       >
-        {ts.identityMappingHint || "Optional — connect this habit to who you're becoming"}
+        {ts.identityMappingHint}
       </p>
 
-      {/* Cluster name */}
-      <div>
-        <label
-          className={cn(
-            "text-xs mb-1 block",
-            isPrimaryCTA ? "text-slate-500 dark:text-foreground/50" : "text-muted-foreground"
-          )}
-        >
-          {ts.identityCluster || "Cluster"}
-        </label>
-        <input
-          type="text"
-          list="identity-clusters-list"
-          value={identityCluster}
-          onChange={(e) => setIdentityCluster(e.target.value)}
-          placeholder={ts.identityClusterPlaceholder || "e.g., The Mindful Me"}
-          maxLength={40}
-          className={cn(
-            "w-full p-2 rounded-lg text-sm motion-safe:transition-all",
-            "focus:outline-none focus:ring-2",
-            isPrimaryCTA
-              ? "bg-foreground/10 border border-foreground/20 text-white placeholder:text-foreground/60 focus:ring-violet-500/50"
-              : "bg-background text-foreground placeholder:text-muted-foreground focus:ring-primary/30"
-          )}
-        />
-        {existingClusters.length > 0 && (
-          <datalist id="identity-clusters-list">
-            {existingClusters.map((c) => (
-              <option key={c} value={c} aria-label={c} />
-            ))}
-          </datalist>
+      <div
+        className={cn(
+          "relative rounded-[18px] border p-3",
+          isPrimaryCTA
+            ? "border-[hsl(var(--zf-role-rest)/0.28)] bg-[hsl(var(--zf-role-rest)/0.10)]"
+            : "border-border bg-background/70",
         )}
+        data-testid="identity-vote-preview"
+      >
+        <div className="flex items-start gap-2">
+          <span
+            className={cn(
+              "mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[14px] border",
+              isPrimaryCTA
+                ? "border-[hsl(var(--zf-role-rest)/0.32)] bg-[hsl(var(--zf-role-rest)/0.14)] text-[hsl(var(--zf-role-rest))]"
+                : "border-border bg-card text-primary",
+            )}
+            aria-hidden="true"
+          >
+            <IdentityVisual
+              name={displayIcon}
+              fallback="Sparkles"
+              iconClassName="h-4 w-4"
+              textClassName="text-base leading-none"
+            />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p
+              className={cn(
+                "text-xs font-semibold",
+                isPrimaryCTA ? "text-[hsl(var(--zf-text-strong))]" : "text-foreground",
+              )}
+            >
+              {votePreview}
+            </p>
+            <p
+              className={cn(
+                "mt-1 text-[11px] leading-snug",
+                isPrimaryCTA ? "text-[hsl(var(--zf-text-soft))]" : "text-muted-foreground",
+              )}
+            >
+              {ts.identityVotePreview}
+            </p>
+          </div>
+          <BadgeCheck
+            className={cn(
+              "mt-1 h-4 w-4 shrink-0",
+              isPrimaryCTA ? "text-[hsl(var(--zf-role-energy))]" : "text-primary",
+            )}
+            aria-hidden="true"
+          />
+        </div>
       </div>
 
-      {/* Identity verb */}
-      <div>
-        <label
-          className={cn(
-            "text-xs mb-1 block",
-            isPrimaryCTA ? "text-slate-500 dark:text-foreground/50" : "text-muted-foreground"
+      <div className="space-y-3">
+        <div>
+          <label
+            className={cn(
+              "text-xs mb-1 block",
+              isPrimaryCTA ? "text-[hsl(var(--zf-text-soft))]" : "text-muted-foreground",
+            )}
+          >
+            {ts.identityVerb}
+          </label>
+          <input
+            type="text"
+            value={identityVerb}
+            onChange={(e) => setIdentityVerb(e.target.value)}
+            placeholder={ts.identityVerbPlaceholder}
+            maxLength={60}
+            data-testid="identity-verb-input"
+            className={cn(
+              "w-full p-3 rounded-[16px] text-sm motion-safe:transition-all",
+              "focus:outline-none focus:ring-2",
+              isPrimaryCTA
+                ? "bg-[hsl(var(--zf-role-rest)/0.12)] border border-[hsl(var(--zf-role-rest)/0.30)] text-[hsl(var(--zf-text-strong))] placeholder:text-[hsl(var(--zf-text-soft))] focus:ring-[hsl(var(--zf-role-rest)/0.62)]"
+                : "bg-background text-foreground placeholder:text-muted-foreground focus:ring-primary/30"
+            )}
+          />
+        </div>
+
+        <div>
+          <label
+            className={cn(
+              "text-xs mb-1 block",
+              isPrimaryCTA ? "text-[hsl(var(--zf-text-soft))]" : "text-muted-foreground",
+            )}
+          >
+            {ts.identityCluster}
+          </label>
+          <input
+            type="text"
+            list="identity-clusters-list"
+            value={identityCluster}
+            onChange={(e) => setIdentityCluster(e.target.value)}
+            placeholder={ts.identityClusterPlaceholder}
+            maxLength={40}
+            data-testid="identity-cluster-input"
+            className={cn(
+              "w-full p-3 rounded-[16px] text-sm motion-safe:transition-all",
+              "focus:outline-none focus:ring-2",
+              isPrimaryCTA
+                ? "bg-[hsl(var(--zf-role-rest)/0.12)] border border-[hsl(var(--zf-role-rest)/0.30)] text-[hsl(var(--zf-text-strong))] placeholder:text-[hsl(var(--zf-text-soft))] focus:ring-[hsl(var(--zf-role-rest)/0.62)]"
+                : "bg-background text-foreground placeholder:text-muted-foreground focus:ring-primary/30"
+            )}
+          />
+          {existingClusters.length > 0 && (
+            <datalist id="identity-clusters-list">
+              {existingClusters.map((c) => (
+                <option key={c} value={c} aria-label={c} />
+              ))}
+            </datalist>
           )}
-        >
-          {ts.identityVerb || "Affirmation"}
-        </label>
-        <input
-          type="text"
-          value={identityVerb}
-          onChange={(e) => setIdentityVerb(e.target.value)}
-          placeholder={ts.identityVerbPlaceholder || "e.g., I am a meditator"}
-          maxLength={60}
+        </div>
+
+        <p
+          data-testid="identity-icon-inherited"
           className={cn(
-            "w-full p-2 rounded-lg text-sm motion-safe:transition-all",
-            "focus:outline-none focus:ring-2",
+            "rounded-[14px] border px-3 py-2 text-[11px] leading-snug",
+            isPrimaryCTA ? "text-[hsl(var(--zf-text-soft))]" : "text-muted-foreground",
             isPrimaryCTA
-              ? "bg-foreground/10 border border-foreground/20 text-white placeholder:text-foreground/60 focus:ring-violet-500/50"
-              : "bg-background text-foreground placeholder:text-muted-foreground focus:ring-primary/30"
-          )}
-        />
-      </div>
-
-      {/* Identity icon */}
-      <div>
-        <label
-          className={cn(
-            "text-xs mb-1.5 block",
-            isPrimaryCTA ? "text-slate-500 dark:text-foreground/50" : "text-muted-foreground"
+              ? "border-[hsl(var(--zf-role-rest)/0.22)] bg-[hsl(var(--zf-role-rest)/0.08)]"
+              : "border-border bg-background/55",
           )}
         >
-          {ts.identityIcon || "Icon"}
-        </label>
-        <IdentityIconPicker
-          value={identityIcon}
-          onChange={setIdentityIcon}
-          isPrimaryCTA={isPrimaryCTA}
-        />
+          <span className="inline-flex items-center gap-1.5">
+            <IdentityVisual
+              name={displayIcon}
+              fallback="Sparkles"
+              iconClassName="h-3.5 w-3.5"
+              textClassName="text-sm leading-none"
+            />
+            <span>{ts.identityIcon}</span>
+          </span>
+        </p>
       </div>
     </div>
   );

@@ -3,7 +3,7 @@
  *
  * Glassy, floating chips that don't break the cosmic aesthetic. Both themes:
  *   - Cosmic (night): white text, cool glass, translucent indigo active.
- *   - Paper (day):    warm-ink text, warm glass, soft amber active.
+ *   - Paper (day):    calm ink text, soft glass, seafoam active.
  *
  * No hardcoded colors; uses theme tokens. `backdrop-filter` + `-webkit-`
  * pair keeps Safari happy (Law 10 cross-platform).
@@ -17,6 +17,11 @@
   width: 100%;
   max-width: 28rem;
   margin: 0 auto;
+}
+
+.mood-scope-wrapper[data-density="compact"] {
+  gap: 0.5rem;
+  max-width: 26rem;
 }
 
 .mood-scope-chip-row {
@@ -35,13 +40,18 @@
     0 8px 24px -12px rgba(0, 0, 0, 0.15);
 }
 
-/* Day variant — warmer glass */
+/* Day variant — calmer glass */
 .orb-day-scope .mood-scope-chip-row {
   background: color-mix(in oklab, hsl(var(--card)) 55%, transparent);
   border-color: color-mix(in oklab, hsl(var(--foreground)) 10%, transparent);
   box-shadow:
-    0 1px 2px rgba(120, 80, 40, 0.06),
-    0 8px 24px -12px rgba(120, 80, 40, 0.18);
+    0 1px 2px color-mix(in oklab, hsl(var(--zf-primary)) 8%, transparent),
+    0 8px 24px -12px color-mix(in oklab, hsl(var(--zf-primary)) 18%, transparent);
+}
+
+.mood-scope-wrapper[data-density="compact"] .mood-scope-chip-row {
+  gap: 0.375rem;
+  padding: 0.3125rem;
 }
 
 .mood-scope-chip {
@@ -64,7 +74,7 @@
   box-shadow: 0 2px 8px -2px color-mix(in oklab, hsl(var(--primary)) 30%, transparent);
 }
 
-/* Day variant — warmer active state */
+/* Day variant — calmer active state */
 .orb-day-scope .mood-scope-chip-active {
   color: hsl(var(--foreground));
   background: color-mix(in oklab, hsl(var(--primary)) 30%, transparent);
@@ -85,10 +95,19 @@
   animation: mood-scope-reveal 240ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
+.mood-scope-wrapper[data-density="compact"] .mood-scope-time-reveal {
+  gap: 0.5rem;
+  padding: 0.375rem 0.875rem;
+}
+
 .mood-scope-time-label {
   font-size: 0.875rem;
   color: hsl(var(--muted-foreground));
   white-space: nowrap;
+}
+
+.mood-scope-wrapper[data-density="compact"] .mood-scope-time-label {
+  font-size: 0.8125rem;
 }
 
 .mood-scope-time-input {
@@ -100,6 +119,12 @@
   padding: 0.25rem 0.25rem;
   min-width: 5rem;
   min-height: 32px;
+}
+
+.mood-scope-wrapper[data-density="compact"] .mood-scope-time-input {
+  min-width: 4.5rem;
+  min-height: 30px;
+  font-size: 0.875rem;
 }
 
 .mood-scope-time-input::-webkit-calendar-picker-indicator {

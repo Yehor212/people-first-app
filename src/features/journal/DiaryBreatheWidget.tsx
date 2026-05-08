@@ -13,12 +13,13 @@ import { hapticTap } from '@/lib/haptics';
 
 type Phase = 'in' | 'hold' | 'out';
 
-export const DiaryBreatheWidget = memo(function DiaryBreatheWidget() {
+export const DiaryBreatheWidget = memo(function DiaryBreatheWidget({ animate = true }: { animate?: boolean }) {
   const { t } = useLanguage();
   const [phase, setPhase] = useState<Phase>('in');
   const prevPhaseRef = useRef<Phase>('in');
 
   useEffect(() => {
+    if (!animate) return undefined;
     const start = Date.now();
     const id = setInterval(() => {
       const elapsed = ((Date.now() - start) / 1000) % 8;
@@ -37,14 +38,14 @@ export const DiaryBreatheWidget = memo(function DiaryBreatheWidget() {
       }
     }, 200);
     return () => clearInterval(id);
-  }, []);
+  }, [animate]);
 
   const label = phase === 'in' ? t.breatheIn : phase === 'hold' ? t.hold : t.breatheOut;
 
   return (
     <motion.div
       className="w-[70px] h-[70px] mx-auto my-6 rounded-full border-2 border-emerald-500/60 bg-emerald-500/15 flex items-center justify-center"
-      animate={{
+      animate={animate ? {
         scale: [1, 1.6, 1.6, 1],
         boxShadow: [
           '0 0 25px rgba(16, 185, 129, 0.3)',
@@ -52,13 +53,13 @@ export const DiaryBreatheWidget = memo(function DiaryBreatheWidget() {
           '0 0 50px rgba(16, 185, 129, 0.6)',
           '0 0 25px rgba(16, 185, 129, 0.3)',
         ],
-      }}
-      transition={{
+      } : { scale: 1 }}
+      transition={animate ? {
         duration: 8,
         repeat: Infinity,
         times: [0, 0.4375, 0.5625, 1],
         ease: 'easeInOut',
-      }}
+      } : undefined}
     >
       <motion.span
         key={phase}

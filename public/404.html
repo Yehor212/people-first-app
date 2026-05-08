@@ -11,27 +11,24 @@
     -->
     <script>
       (function () {
-        var pathSegmentsToKeep = 1; // "/people-first-app" base prefix
+        var appBasePaths = ["/people-first-app/v2", "/people-first-app"];
         var l = window.location;
-        l.replace(
-          l.protocol +
-            "//" +
-            l.hostname +
-            (l.port ? ":" + l.port : "") +
-            l.pathname
-              .split("/")
-              .slice(0, 1 + pathSegmentsToKeep)
-              .join("/") +
-            "/?/" +
-            l.pathname
-              .slice(1)
-              .split("/")
-              .slice(pathSegmentsToKeep)
-              .join("/")
-              .replace(/&/g, "~and~") +
-            (l.search ? "&" + l.search.slice(1).replace(/&/g, "~and~") : "") +
-            l.hash,
-        );
+        var appBasePath = "/people-first-app";
+        for (var i = 0; i < appBasePaths.length; i += 1) {
+          var candidate = appBasePaths[i];
+          if (l.pathname === candidate || l.pathname.indexOf(candidate + "/") === 0) {
+            appBasePath = candidate;
+            break;
+          }
+        }
+        var routePath = "/";
+        if (l.pathname.indexOf(appBasePath + "/") === 0) {
+          routePath = l.pathname.slice(appBasePath.length) || "/";
+        }
+        try {
+          sessionStorage.setItem("zenflow:spa-redirect", routePath + l.search + l.hash);
+        } catch (error) {}
+        window.location.replace(appBasePath + "/");
       })();
     </script>
   </head>

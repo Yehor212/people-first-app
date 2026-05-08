@@ -1,6 +1,7 @@
 /**
  * DISMISSAL DETECTOR v2 (Anti-Skip Hook)
  * Event: Stop
+ * Hook input: not required; validates .postflight-done and session evidence files.
  * Purpose: Detects and blocks "skip language" without evidence.
  *
  * v2 fixes (adversarial audit 2026-04-07):

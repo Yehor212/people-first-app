@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { MoodEntry, MoodType, Habit, FocusSession, GratitudeEntry } from '@/types';
 import { makeTestHabit, datesToEntries } from '@/test/habitFixtures';
 
@@ -106,6 +106,12 @@ function generateDates(count: number, startDate: string = '2026-02-17'): string[
 describe('moodInsights', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-02-17T12:00:00Z'));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   describe('generateMoodInsights', () => {

@@ -119,7 +119,7 @@ export function RewardedAdPrompt({
             <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
           ) : (
             <span className="flex items-center gap-1.5">
-              <Play className="w-4 h-4" />
+              <Play className="w-4 h-4" aria-hidden="true" />
               {t.adWatch || 'Watch'}
             </span>
           )}

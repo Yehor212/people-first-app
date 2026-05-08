@@ -8,6 +8,10 @@ import { memo } from "react";
 import { Habit } from "@/types";
 import { cn, getToday } from "@/lib/utils";
 import { isHabitCompletedOnDate, getNumericalValue } from "@/lib/habits";
+import {
+  getNumericalAdjustmentStep,
+  getNumericalQuickToggleDelta,
+} from "@/lib/habitNumericalInteraction";
 import { Check, Trash2, Users, Pencil } from "lucide-react";
 import { useState, useRef, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -97,6 +101,10 @@ export const CompactHabitCard = memo(function CompactHabitCard({
 
   const handleToggle = () => {
     void hapticTap();
+    if (habitType === "numerical" && onAdjust) {
+      onAdjust(habit.id, today, getNumericalQuickToggleDelta(habit, progress));
+      return;
+    }
     onToggle(habit.id, today);
   };
 
@@ -195,7 +203,7 @@ export const CompactHabitCard = memo(function CompactHabitCard({
               {(t as unknown as Record<string, string>).confirmDelete || "Delete?"}
             </span>
           ) : (
-            <Trash2 className="w-5 h-5" />
+            <Trash2 className="w-5 h-5" aria-hidden="true" />
           )}
         </button>
       </div>
@@ -329,6 +337,7 @@ export const CompactHabitCard = memo(function CompactHabitCard({
           habitId={habit.id}
           today={today}
           onAdjust={onAdjust}
+          adjustStep={habitType === "numerical" ? getNumericalAdjustmentStep(habit) : 1}
           t={t as unknown as Record<string, string>}
         />
 

@@ -40,12 +40,12 @@ export const DIARY_FONT_NAMES: DiaryFontName[] = ['caveat', 'cormorant', 'outfit
 
 export type DiaryBgPattern =
   | 'none'
-  | 'sakura' | 'honey' | 'cloud' | 'matcha' | 'peach' | 'aurora'
+  | 'sakura' | 'honey' | 'washi-morning' | 'cloud' | 'matcha' | 'peach' | 'aurora'
   | 'moonlight' | 'watercolor' | 'stardust' | 'garden' | 'cotton-candy'
   | 'sunset-beach' | 'snowfall';
 
 export const DIARY_BG_PATTERN_NAMES: DiaryBgPattern[] = [
-  'none', 'sakura', 'honey', 'cloud', 'matcha', 'peach', 'aurora',
+  'none', 'sakura', 'honey', 'washi-morning', 'cloud', 'matcha', 'peach', 'aurora',
   'moonlight', 'watercolor', 'stardust', 'garden', 'cotton-candy',
   'sunset-beach', 'snowfall',
 ];
@@ -69,9 +69,9 @@ export type ParticleSpeed = 'off' | 'slow' | 'drift';
 export type PaperColor = 'white' | 'dark' | 'milky';
 
 export const PAPER_COLORS: Record<PaperColor, { bg: string; text: string; muted: string; border: string; label: string }> = {
-  white: { bg: '#FFFFFF', text: '#1a1a2e', muted: '#6b7280', border: 'rgba(0,0,0,0.08)', label: 'White' },
+  white: { bg: '#FBFDF8', text: '#17302F', muted: '#657A76', border: 'rgba(23,48,47,0.10)', label: 'Soft white' },
   dark:  { bg: '#0D0D14', text: '#e2e8f0', muted: '#94a3b8', border: 'rgba(255,255,255,0.06)', label: 'Dark' },
-  milky: { bg: '#FFFEF5', text: '#2D2D2D', muted: '#999999', border: 'rgba(0,0,0,0.06)', label: 'Paper' },
+  milky: { bg: '#F6F3E9', text: '#243936', muted: '#71827E', border: 'rgba(36,57,54,0.10)', label: 'Paper' },
 };
 
 /** A single journal/diary entry */
@@ -113,6 +113,8 @@ export interface JournalEntryPrefill {
   mood?: MoodType;
   tags?: string[];
   date?: string;
+  spaceId?: string;
+  spaceIds?: string[];
 }
 
 /**
@@ -121,13 +123,133 @@ export interface JournalEntryPrefill {
  * calendar shell and can decide whether to turn the context into a new entry.
  */
 export interface JournalEntrySuggestion {
-  source: "orb";
+  id?: string;
+  source:
+    | "orb"
+    | "mood"
+    | "focus"
+    | "habit"
+    | "ritual-opening"
+    | "ritual-closing"
+    | "weekly-review";
   emotion?: string | null;
   mood?: MoodType;
   scope?: "now" | "specific" | "day";
   specificTime?: string | null;
   committedAt?: number;
+  note?: string | null;
+  contextLabel?: string | null;
   prefill: JournalEntryPrefill;
+}
+
+export type JournalHubView = "today" | "entries" | "spaces" | "practices" | "library";
+
+export type JournalHubAction =
+  | "write"
+  | "quickNote"
+  | "photo"
+  | "gratitude"
+  | "resetThought"
+  | "focusNote"
+  | "template";
+
+export type JournalHubDensity = "compact" | "balanced" | "calm";
+
+export type JournalHubMotion = "system" | "quiet" | "expressive";
+
+export type JournalHubBackground = "clean" | "grain" | "depth";
+
+export type JournalIconKey =
+  | "bookOpen"
+  | "briefcase"
+  | "compass"
+  | "feather"
+  | "flame"
+  | "folder"
+  | "heart"
+  | "leaf"
+  | "lightbulb"
+  | "moon"
+  | "penLine"
+  | "sparkles"
+  | "sprout"
+  | "target"
+  | "timer"
+  | "waves";
+
+export interface JournalHubPreferences {
+  id: "default";
+  homeView: JournalHubView;
+  visibleViews: JournalHubView[];
+  dockActions: JournalHubAction[];
+  density: JournalHubDensity;
+  motion: JournalHubMotion;
+  background: JournalHubBackground;
+  updatedAt: number;
+}
+
+export interface JournalSpace {
+  id: string;
+  nameKey?: string;
+  name?: string;
+  descriptionKey?: string;
+  description?: string;
+  iconKey: JournalIconKey;
+  accent: "primary" | "mint" | "amber" | "rose" | "violet" | "sky";
+  private: boolean;
+  kind?: "user" | "system";
+  coverKey?: string;
+  coverImage?: string;
+  autoSource?: "gratitude";
+  locked?: boolean;
+  pinnedTemplateId?: string;
+  pinnedAction?: JournalHubAction;
+  sortOrder: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface JournalPracticeSession {
+  id: string;
+  practiceId: string;
+  entryId?: string;
+  durationSeconds?: number;
+  startedAt: number;
+  completedAt?: number;
+}
+
+export interface JournalReleaseTraceSummary {
+  date: string;
+  count: number;
+  latestAt: number;
+}
+
+export interface JournalEntryLink {
+  id: string;
+  entryId: string;
+  targetType: "space" | "practice" | "template" | "project";
+  targetId: string;
+  createdAt: number;
+}
+
+export interface JournalSpaceCaptureField {
+  prompt: string;
+  value: string;
+}
+
+export interface JournalSpaceCapture {
+  id: string;
+  spaceId: string;
+  spaceName: string;
+  mode: string;
+  title: string;
+  fields: JournalSpaceCaptureField[];
+  date: string;
+  createdAt: number;
+  updatedAt: number;
+  entryId?: string;
+  sourceType?: "gratitude";
+  sourceId?: string;
 }
 
 /** Compressed photo attached to a journal entry */

@@ -24,7 +24,9 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:i18n": "vitest run test/i18n.test.ts",
-    "i18n:check": "npx tsx scripts/check-i18n.ts",
+    "i18n:check": "npx tsx scripts/check-i18n.ts && npm run i18n:v2-copy",
+    "i18n:v2-copy": "npx tsx scripts/check-v2-ui-copy.ts",
+    "i18n:deep": "npx tsx scripts/check-i18n-deep.ts",
     "build:android": "cross-env CAPACITOR_BUILD=true npm run tokens:build && cross-env CAPACITOR_BUILD=true vite build && cross-env CAPACITOR_BUILD=true node scripts/capacitor-prune-assets.cjs",
     "cap:sync": "npm run build:android && npx cap sync",
     "cap:sync:android": "npm run build:android && npx cap sync android",
@@ -37,9 +39,13 @@
     "ratchet:check": "npx tsx scripts/check-ratchet.ts",
     "ratchet:update": "npx tsx scripts/check-ratchet.ts --update",
     "enforcement:check": "npx tsx scripts/check-enforcement-health.ts",
-    "check:visual": "npx tsx scripts/check-visual-guards.ts",
-    "check:all": "npm run typecheck && npm run lint && npm run i18n:check && npm run check:colors && npm run check:visual",
-    "ci:preflight": "npx eslint . --max-warnings=0 && npm run typecheck && npm run i18n:check && npm run oxlint && npm run check:circular && vitest run --coverage && npm run tokens:build && vite build && npm run verify:tailwind && npm run check:size && npm run ratchet:check",
+    "check:v2-paper": "npx tsx scripts/check-v2-paper-theme.ts",
+    "check:visual": "npx tsx scripts/check-visual-guards.ts && npm run check:v2-paper",
+    "check:all": "npm run typecheck && npm run lint && npm run i18n:check && npm run i18n:deep && npm run check:colors && npm run check:visual",
+    "smoke:v2-splash": "node scripts/smoke-v2-splash.cjs",
+    "diagnose:dev-performance": "node scripts/diagnose-dev-performance.cjs",
+    "cleanup:dev-processes": "node scripts/cleanup-dev-processes.cjs",
+    "ci:preflight": "npx eslint . --max-warnings=0 && npm run typecheck && npm run i18n:check && npm run i18n:deep && npm run oxlint && npm run check:circular && vitest run --coverage && npm run tokens:build && vite build && npm run verify:tailwind && npm run check:size && npm run ratchet:check",
     "ci:remote": "npx tsx scripts/check-remote-ci.ts",
     "ci:remote:wait": "npx tsx scripts/check-remote-ci.ts --wait",
     "test:e2e": "playwright test",
@@ -57,12 +63,18 @@
     "doc-counts:print": "node scripts/doc-counts.cjs --print",
     "ai:ruflow-plus:sync": "node scripts/sync-ruflow-plus.mjs --write",
     "ai:ruflow-plus:check": "node scripts/sync-ruflow-plus.mjs --check",
+    "ai:context": "node tools/zenflow-context/server.mjs --cli",
+    "ai:context:mcp": "node tools/zenflow-context/server.mjs",
+    "ai:context:check": "node tools/zenflow-context/server.mjs --cli --context startup --topic \"startup verification\" --max-chars 5000",
+    "ai:context:auto": "node tools/zenflow-context/auto-context.mjs",
+    "ai:context:auto-check": "node tools/zenflow-context/auto-context.mjs --check",
     "check:types-fresh": "node scripts/check-types-freshness.cjs",
     "check:supabase-migration-prefixes": "node scripts/check-supabase-migration-prefixes.cjs",
     "check:licenses": "node scripts/check-oss-licenses.cjs",
     "bundle:report": "node scripts/bundle-report.cjs",
     "bundle:report:strict": "node scripts/bundle-report.cjs --strict",
-    "a11y:icons": "node scripts/a11y-icons-audit.cjs --top 20"
+    "a11y:icons": "node scripts/a11y-icons-audit.cjs --top 20",
+    "assets:splash:dark": "node scripts/generate-dark-splash.cjs"
   },
   "dependencies": {
     "@capacitor-community/safe-area": "^8.0.1",
@@ -121,6 +133,7 @@
     "@emotion/is-prop-valid": "^1.4.0",
     "@eslint/js": "^9.32.0",
     "@playwright/test": "^1.58.1",
+    "@sentry/cli": "^3.4.0",
     "@size-limit/file": "^12.0.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
@@ -171,7 +184,7 @@
   },
   "lint-staged": {
     "*.{ts,tsx}": [
-      "eslint --max-warnings 0"
+      "eslint --max-warnings 0 --no-warn-ignored"
     ],
     "src/**/*.{ts,tsx}": [
       "oxlint -c .oxlintrc.json"

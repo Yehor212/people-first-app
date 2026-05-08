@@ -222,9 +222,9 @@ export function CalendarTab({
               >
                 {monthNames[selectedMonth]} {selectedYear}
                 {showMonthSelector ? (
-                  <ChevronUp className="w-4 h-4" />
+                  <ChevronUp className="w-4 h-4" aria-hidden="true" />
                 ) : (
-                  <ChevronDown className="w-4 h-4" />
+                  <ChevronDown className="w-4 h-4" aria-hidden="true" />
                 )}
               </button>
               <button

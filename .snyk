@@ -10,7 +10,7 @@ ignore:
   # "password"; no secret material is present in source control.
   # Re-verified 2026-04-18. Renaming keys to `journalPasscode*` is the long-term fix
   # (tracked in docs/tech-debt-audit-2026-04-18.md P3-3).
-  'javascript/HardcodedNonCryptoSecret':
+  'javascript/NoHardcodedPasswords':
     - 'src/i18n/languages/en.ts':
         reason: i18n UI label for journal passcode feature, not a credential
         expires: 2026-10-18T00:00:00.000Z
@@ -43,6 +43,10 @@ ignore:
         reason: i18n UI label for journal passcode feature, not a credential
         expires: 2026-10-18T00:00:00.000Z
         created: 2026-04-18T00:00:00.000Z
+    - 'scripts/check-enforcement-health.ts':
+        reason: status enum label PASS is not a credential
+        expires: 2026-10-18T00:00:00.000Z
+        created: 2026-04-25T00:00:00.000Z
 
   # versionCheck uses origin-relative URL construction with pathname validation
   # (lines 110-118 reject absolute URLs and protocol-relative //). Snyk traces

@@ -28,6 +28,7 @@ export const BG_PATTERN_LIST: BgPatternMeta[] = [
   { name: 'none',         i18nKey: 'diaryBgNone',         swatch: 'repeating-conic-gradient(#64748b33 0% 25%, transparent 0% 50%) 0 0 / 8px 8px', category: 'warm' },
   { name: 'sakura',       i18nKey: 'diaryBgSakura',       swatch: 'linear-gradient(135deg, #FFE4EC, #FFB7C5)',   category: 'pastel' },
   { name: 'honey',        i18nKey: 'diaryBgHoney',        swatch: 'linear-gradient(135deg, #FFF3D6, #F0C060)',   category: 'warm' },
+  { name: 'washi-morning', i18nKey: 'diaryBgWashiMorning', swatch: 'linear-gradient(135deg, hsl(var(--card)), hsl(var(--zf-role-body) / 0.42), hsl(var(--zf-role-energy) / 0.36))', category: 'warm' },
   { name: 'cloud',        i18nKey: 'diaryBgCloud',        swatch: 'linear-gradient(135deg, #E8F4FD, #B8D8F0)',   category: 'cool' },
   { name: 'matcha',       i18nKey: 'diaryBgMatcha',       swatch: 'linear-gradient(135deg, #E8F5E0, #A3D9A5)',   category: 'cool' },
   { name: 'peach',        i18nKey: 'diaryBgPeach',        swatch: 'linear-gradient(135deg, #FFF0E6, #FFB088)',   category: 'warm' },
@@ -86,6 +87,20 @@ export function getBgPatternStyle(pattern: DiaryBgPattern): React.CSSProperties 
           'radial-gradient(ellipse at 40% 50%, rgba(255,243,214,0.6) 0%, transparent 60%)',
           'linear-gradient(165deg, #FFFAEB 0%, #FFF3D6 30%, #FFEEBB 60%, #FFF8E7 100%)',
         ].join(','),
+      };
+
+    // -- WASHI MORNING: sunlit handmade paper fibers + pressed botanical shadow --
+    case 'washi-morning':
+      return {
+        background: [
+          'radial-gradient(ellipse 150px 90px at 16% 12%, hsl(var(--zf-role-energy) / 0.16) 0%, transparent 66%)',
+          'radial-gradient(ellipse 130px 120px at 78% 18%, hsl(var(--zf-role-body) / 0.16) 0%, transparent 62%)',
+          'radial-gradient(ellipse 220px 150px at 72% 92%, hsl(var(--zf-role-focus) / 0.10) 0%, transparent 66%)',
+          'repeating-linear-gradient(86deg, transparent 0px, transparent 22px, hsl(var(--foreground) / 0.030) 22px, hsl(var(--foreground) / 0.030) 23px, transparent 23px, transparent 48px)',
+          'repeating-linear-gradient(176deg, transparent 0px, transparent 18px, hsl(var(--zf-role-body) / 0.034) 18px, hsl(var(--zf-role-body) / 0.034) 19px, transparent 19px, transparent 44px)',
+          'linear-gradient(150deg, hsl(var(--card)) 0%, hsl(var(--surface-elevated) / 0.78) 46%, hsl(var(--background)) 100%)',
+        ].join(','),
+        backgroundBlendMode: 'normal, normal, normal, multiply, multiply, normal',
       };
 
     // ── CLOUD: Dreamy sky + soft cloud puffs + light rays ──

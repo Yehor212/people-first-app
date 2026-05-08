@@ -16,14 +16,20 @@ const path = require('path');
 const ROOT = process.cwd();
 const FULLCYCLE_FLAG = path.join(ROOT, '.fullcycle-active');
 const PREFLIGHT_TOKEN = path.join(ROOT, '.preflight-token');
+const RUFLOW_AUTO_ACTIVATE = (process.env.RUFLOW_PLUS_AUTO_ACTIVATE || 'always').toLowerCase();
+const RUFLOW_HEAD_ROLE = (process.env.RUFLOW_PLUS_HEAD_ROLE || 'coordinator').toLowerCase();
+const RUFLOW_SIMPLE_ROUTE = process.env.RUFLOW_PLUS_SIMPLE_ROUTE || 'solo_lightweight';
+const RUFLOW_DEFAULT_ROUTE = process.env.RUFLOW_PLUS_DEFAULT_ROUTE || 'guided';
+const RUFLOW_COMPLEX_ROUTE = process.env.RUFLOW_PLUS_COMPLEX_ROUTE || 'ruflow_plus';
 
 const PREFLIGHT_PROTOCOL = [
   'PRE-FLIGHT CHECK: before editing guarded repo files, write .preflight-token as JSON using docs/ai/PREFLIGHT_OPERATOR_TEMPLATE.md:',
-  '{ timestamp, goal (include SUCCESS criterion), depth (L1/L2/L3/L4),',
+  '{ timestamp, goal (include SUCCESS criterion), depth (L1/L2/L3/L4), checks_completed, transmutation,',
   '  evidence: { read: [files read], search: [grep/git queries], assumed: [] },',
+  '  diagnostic_sources: [logic/state/ui/infra/test/pattern-search as applicable],',
   '  confidence: { codebase_familiarity, change_scope, regression_risk,',
   '    platform_coverage, state_integrity } (each 1-9),',
-  '  overall_score, pre_mortem (specific file:line risks),',
+  '  overall_score, pre_mortem (specific file:line risks + root cause hypothesis),',
   '  scope_boundaries, post_verification_plan, anti_patterns_checked, unknowns,',
   '  verdict: "GO" }',
   '',
@@ -32,14 +38,135 @@ const PREFLIGHT_PROTOCOL = [
   'L3 for cross-platform/stateful/prompt/config/sync/auth/build/CI or 4+ files.',
   'L4 for laws, architecture, orchestration, and enforcement-rule changes.',
   'L2+ adds: transmutation, pre_mortem, scope_boundaries, post_verification_plan,',
-  '  anti_patterns_checked, unknowns, and a platform/domain impact scan.',
+  '  anti_patterns_checked, unknowns, diagnostic_sources, and a platform/domain impact scan.',
   '',
   'Read affected files first. Run git log and grep on affected areas.',
+  'For audit/fix work, do not stop at symptoms — name a root cause hypothesis and diagnostic sources across multiple layers.',
+  'For UI/visual work, read docs/visual-aesthetic.md and scripts/check-visual-guards.ts first.',
+  'For UI/visual work, audit hierarchy/spacing, contrast/focus, touch targets, reflow/responsive layout, motion/reduced-motion, transparency/blur fallbacks, states, and focus order.',
+  'Visual PASS requires proof: screenshot/trace/inspector output or a manual viewport+state checklist, plus check:visual when applicable.',
   'For external or time-sensitive facts, use primary or official web sources.',
   'Self-reflection alone is not enough for factual correctness — require evidence, tools, or both.',
   'preflight-gate.cjs validates the token — fix any errors it reports.',
   'Verifier runs automatically on Stop. Fix any failures it reports.',
 ].join('\n');
+
+function hasAnyPattern(text, patterns) {
+  return patterns.some((pattern) => pattern.test(text));
+}
+
+function classifyRuflowRoute({
+  rawMsgOriginal,
+  fullCycleActivated,
+  foundActionsRu = [],
+  foundActionsEn = [],
+  foundConstraints = [],
+  matchedTools = [],
+}) {
+  const trimmed = rawMsgOriginal.trim();
+  const toolNames = matchedTools.map((tool) => tool.name);
+  const repoTouchSignals = (foundActionsRu.length + foundActionsEn.length) > 0 ||
+    /\b(?:app|component|tsx|ts|js|jsx|hook|hooks|config|json|toml|script|scripts|test|tests|playwright|vitest|eslint|build|ci|file|files|repo|project|code)\b/i.test(rawMsgOriginal) ||
+    /(?:код|компонент|файл|файлы|репо|проект|хуки?|конфиг|синк|тест|билд|сборк)/i.test(rawMsgOriginal);
+  const crossDomainSignals = [
+    /(?:cross-platform|кроссплатформ|ios|android|desktop|stateful|zustand|store|sync|hook|hooks|config|prompt|orchestrat|координатор|swarm|ruflow|ruflo|audit|аудит|law|архитектур|ci|build|auth|routing|enforcement)/i,
+    /(?:ui|ux|visual|browser|скриншот|визуал|layout|motion|a11y|accessibility)/i,
+    /(?:4\+\s*files?|4\s*\+\s*files?|много файлов|несколько файлов)/i,
+  ];
+  const forceComplex = fullCycleActivated ||
+    foundConstraints.includes('full_cycle') ||
+    toolNames.includes('ALL') ||
+    /(?:multi-agent|agent team|hierarchical|teamlead|specialist|web[- ]?search|веб[- ]?ресерч|глубок|deep\s+analysis|deep\s+self)/i.test(rawMsgOriginal);
+  const complexSignals = [
+    hasAnyPattern(rawMsgOriginal, crossDomainSignals),
+    toolNames.filter((name) => name !== '/tdd' && name !== '/review').length >= 2,
+    /(?:\band\b|\bplus\b|\balso\b|\bи\b|\bта\b)/i.test(rawMsgOriginal) && repoTouchSignals,
+    trimmed.length > 180,
+  ].filter(Boolean).length;
+  const simpleIntent = !repoTouchSignals && trimmed.length <= 80 && !forceComplex;
+
+  if (RUFLOW_AUTO_ACTIVATE === 'off' || RUFLOW_AUTO_ACTIVATE === '0') {
+    return {
+      active: false,
+      headRole: RUFLOW_HEAD_ROLE,
+      route: 'disabled',
+      reasons: ['disabled via RUFLOW_PLUS_AUTO_ACTIVATE'],
+      repoTouchSignals,
+      maxSpecialists: 0,
+      depthFloor: repoTouchSignals ? 'L2 minimum' : 'L1 allowed',
+    };
+  }
+
+  if (forceComplex || complexSignals >= 2) {
+    return {
+      active: true,
+      headRole: RUFLOW_HEAD_ROLE,
+      route: RUFLOW_COMPLEX_ROUTE,
+      reasons: [
+        fullCycleActivated ? 'full-cycle trigger' : null,
+        hasAnyPattern(rawMsgOriginal, crossDomainSignals) ? 'cross-domain/stateful signals' : null,
+        toolNames.filter((name) => name !== '/tdd' && name !== '/review').length >= 2 ? 'multiple specialist tools matched' : null,
+        trimmed.length > 180 ? 'high-complexity prompt length' : null,
+      ].filter(Boolean),
+      repoTouchSignals,
+      maxSpecialists: Number.parseInt(process.env.RUFLOW_PLUS_MAX_WORKERS_MEDIUM || '3', 10) || 3,
+      depthFloor: 'L3 default, escalate to L4 for orchestration/law/architecture changes',
+    };
+  }
+
+  if (simpleIntent) {
+    return {
+      active: true,
+      headRole: RUFLOW_HEAD_ROLE,
+      route: RUFLOW_SIMPLE_ROUTE,
+      reasons: ['lightweight request', 'no repo-touch signals'],
+      repoTouchSignals,
+      maxSpecialists: 0,
+      depthFloor: 'L1 allowed unless the task expands into repo edits',
+    };
+  }
+
+  return {
+    active: true,
+    headRole: RUFLOW_HEAD_ROLE,
+    route: RUFLOW_DEFAULT_ROUTE,
+    reasons: [
+      repoTouchSignals ? 'repo-touching request' : 'default guided fallback',
+      foundActionsRu.length + foundActionsEn.length > 0 ? 'implementation verbs detected' : null,
+    ].filter(Boolean),
+    repoTouchSignals,
+    maxSpecialists: 1,
+    depthFloor: repoTouchSignals ? 'L2 minimum, escalate to L3 if hidden complexity appears' : 'L1-L2 depending on scope',
+  };
+}
+
+function buildRuflowRoutingContext(routing) {
+  const lines = ['', 'RUFLOW AUTO-ROUTING:'];
+
+  if (!routing.active) {
+    lines.push(`- Disabled by config. Head role would otherwise be ${routing.headRole}.`);
+    return lines.join('\n');
+  }
+
+  lines.push(`- Head agent defaults to ${routing.headRole} discipline.`);
+  lines.push(`- Route: ${routing.route}`);
+  lines.push(`- Why: ${routing.reasons.join('; ') || 'default Ruflow policy'}`);
+  lines.push(`- Depth floor: ${routing.depthFloor}`);
+
+  if (routing.route === RUFLOW_SIMPLE_ROUTE) {
+    lines.push('- Execution shape: stay single-agent and lightweight; do not spawn specialists unless evidence shows hidden complexity.');
+    lines.push('- Specialist cap: 0');
+  } else if (routing.route === RUFLOW_DEFAULT_ROUTE) {
+    lines.push('- Execution shape: coordinator stays primary; at most one specialist if evidence gathering or review is needed.');
+    lines.push(`- Specialist cap: ${routing.maxSpecialists}`);
+  } else {
+    lines.push('- Execution shape: coordinator-led hierarchical pass with disjoint write scopes for specialists.');
+    lines.push(`- Specialist cap: ${routing.maxSpecialists}`);
+  }
+
+  lines.push('- Routing is mechanical: this decision is derived from prompt complexity + repo-touch signals and mirrored into .user-requirements.');
+  return lines.join('\n');
+}
 
 let input = '';
 process.stdin.on('data', d => input += d);
@@ -155,6 +282,11 @@ process.stdin.on('end', () => {
       { pattern: /best\s*practic/i, key: 'best_practices' },
     ];
 
+    let ruflowRouting = classifyRuflowRoute({
+      rawMsgOriginal,
+      fullCycleActivated,
+    });
+
     try {
       const msgLower = rawMsgOriginal.toLowerCase();
       const foundActionsRu = ACTION_VERBS_RU.filter(v => msgLower.includes(v));
@@ -217,7 +349,7 @@ process.stdin.on('end', () => {
         { pattern: /ревью|review|код.ревью|code.review/i, tools: ['/review'], level: 'MANDATORY', desc: 'Use /review for forced categorical decomposition' },
         { pattern: /полный цикл|полній цикл/i, tools: ['ALL'], level: 'MANDATORY', desc: 'Full cycle: use ALL tools (audit-suite, AgentShield, Snyk, /tdd, /review)' },
         { pattern: /документац|docs|api.*доку|library/i, tools: ['Context7 MCP'], level: 'MANDATORY', desc: 'Use Context7 MCP for library documentation lookup' },
-        { pattern: /визуал|browser|скриншот|screenshot|ui.test/i, tools: ['Playwright MCP'], level: 'MANDATORY', desc: 'Use Playwright MCP for visual/browser testing' },
+        { pattern: /визуал|browser|скриншот|screenshot|ui.test/i, tools: ['Playwright MCP'], level: 'MANDATORY', desc: 'Use Playwright MCP for visual/browser testing and screenshot/trace evidence' },
         { pattern: /(?:интернет|веб[- ]?ресерч|web[- ]?search|источник[а-яёіїєґ]*|свежи[а-яёійїєґ]*\s*(?:ресерч|исследован)|фреш\s*(?:ресерч|research))/i, tools: ['WebSearch'], level: 'MANDATORY', desc: 'Use WebSearch for web research (BLOCKING: .research-pending gate)' },
       ];
 
@@ -236,13 +368,34 @@ process.stdin.on('end', () => {
 
       if (matchedTools.length > 0) {
         requirements.tools_recommended = matchedTools.map(t => ({ name: t.name, level: t.level }));
-        // Re-write with tools_recommended included
-        fs.writeFileSync(USER_REQ_FILE, JSON.stringify(requirements, null, 2), 'utf8');
       }
+
+      ruflowRouting = classifyRuflowRoute({
+        rawMsgOriginal,
+        fullCycleActivated,
+        foundActionsRu,
+        foundActionsEn,
+        foundConstraints,
+        matchedTools,
+      });
+
+      requirements.ruflow = {
+        auto_activate: ruflowRouting.active,
+        head_role: ruflowRouting.headRole,
+        route: ruflowRouting.route,
+        repo_touching: ruflowRouting.repoTouchSignals,
+        max_specialists: ruflowRouting.maxSpecialists,
+        depth_floor: ruflowRouting.depthFloor,
+        reasons: ruflowRouting.reasons,
+      };
+
+      // Re-write with tools_recommended and ruflow routing included
+      fs.writeFileSync(USER_REQ_FILE, JSON.stringify(requirements, null, 2), 'utf8');
     } catch { /* non-critical — don't block on extraction failure */ }
 
     // 4. Always inject protocol + optional full cycle notice + injection warnings + tool routing
     let context = PREFLIGHT_PROTOCOL;
+    context += buildRuflowRoutingContext(ruflowRouting);
 
     // 5b. Append tool routing to context
     try {

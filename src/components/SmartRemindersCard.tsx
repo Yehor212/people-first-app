@@ -115,7 +115,7 @@ function SuggestionItem({
           }}
           className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-primary/10 text-primary text-xs font-medium rounded-lg hover:bg-primary/20 motion-safe:transition-colors"
         >
-          <Check className="w-3 h-3" />
+          <Check className="w-3 h-3" aria-hidden="true" />
           {t.apply || 'Apply'}
         </button>
         <button
@@ -313,7 +313,7 @@ export const SmartRemindersCard = memo(function SmartRemindersCard({
             className="w-full flex items-center justify-between p-4 hover:bg-muted/50 motion-safe:transition-colors"
           >
             <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-muted-foreground" />
+              <Clock className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
               <span className="text-sm font-medium text-foreground">
                 {t.habitRemindersOptimal || 'Optimal habit times'}
               </span>
@@ -322,9 +322,9 @@ export const SmartRemindersCard = memo(function SmartRemindersCard({
               </span>
             </div>
             {showHabitSuggestions ? (
-              <ChevronUp className="w-4 h-4 text-muted-foreground" />
+              <ChevronUp className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
             ) : (
-              <ChevronDown className="w-4 h-4 text-muted-foreground" />
+              <ChevronDown className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
             )}
           </button>
 

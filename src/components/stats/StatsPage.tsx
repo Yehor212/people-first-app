@@ -173,7 +173,7 @@ export const StatsPage = memo(function StatsPage({
                 aria-label={t.weeklyStory || "Weekly Story"}
                 className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-primary to-accent text-white text-sm font-medium rounded-xl hover:opacity-90 motion-safe:transition-all zen-shadow-soft"
               >
-                <PlayCircle className="w-4 h-4" />
+                <PlayCircle className="w-4 h-4" aria-hidden="true" />
                 {t.weeklyStory || "Weekly Story"}
               </button>
             )}

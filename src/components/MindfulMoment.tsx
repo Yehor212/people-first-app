@@ -201,7 +201,7 @@ export function MindfulMoment({
                   onClick={handleResponse}
                   className="w-full py-3 zen-gradient text-primary-foreground rounded-xl font-semibold flex items-center justify-center gap-2"
                 >
-                  <Heart className="w-5 h-5" />
+                  <Heart className="w-5 h-5" aria-hidden="true" />
                   {t.done || "Done"}
                 </button>
               )}

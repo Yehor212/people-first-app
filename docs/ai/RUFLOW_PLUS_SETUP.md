@@ -45,12 +45,21 @@ Human-readable reference:
 - [PREFLIGHT_OPERATOR_TEMPLATE.md](</C:/project/people-first-app/docs/ai/PREFLIGHT_OPERATOR_TEMPLATE.md>)
 - [RUFLOW_PLUS_BLUEPRINT.md](</C:/project/people-first-app/docs/ai/RUFLOW_PLUS_BLUEPRINT.md>)
 - [RUFLOW_PLUS_REPO_INTEGRATION.md](</C:/project/people-first-app/docs/ai/RUFLOW_PLUS_REPO_INTEGRATION.md>)
+- [AGENT_CONTEXT_PERSISTENCE.md](</C:/project/people-first-app/docs/ai/AGENT_CONTEXT_PERSISTENCE.md>)
 
 Machine-readable templates:
 - [tools/ruflow-plus/templates](</C:/project/people-first-app/tools/ruflow-plus/templates>)
+
+Context retrieval:
+- [ZenFlow Context MCP](</C:/project/people-first-app/tools/zenflow-context/README.md>)
+- `npm run ai:context:check`
+- `npm run ai:context:auto-check`
 
 ## Notes
 
 - The sync is intentionally repo-local and does not change application runtime code.
 - The config defaults help standardize prompts and workflow, but they do not magically replace deliberate orchestration.
 - The pre-flight template is the operator contract that coordinator and specialist prompts inherit.
+- Persistent cross-session context is handled through MCP memory plus explicit learning writeback. See `AGENT_CONTEXT_PERSISTENCE.md` before changing memory behavior.
+- Project-specific retrieval is handled through ZenFlow Context MCP; external library documentation still belongs to Context7.
+- Automatic project-context injection is handled by Claude Code `SessionStart`, `UserPromptSubmit`, and `SubagentStart` hooks. MCP remains available for explicit retrieval.

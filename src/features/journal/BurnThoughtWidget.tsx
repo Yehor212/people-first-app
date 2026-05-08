@@ -1,633 +1,506 @@
 /**
- * BurnThoughtWidget — Premium "burn a worry" section for the journal editor.
+ * BurnThoughtWidget - legacy component name for the journal "release a worry" action.
  *
- * "Paper Burning" cinematic text disintegration — the card itself burns away:
- *   STATE MACHINE: IDLE -> BURNING -> RELEASED -> COLLAPSING -> closed
+ * Snap Release cinematic:
+ *   IDLE -> RELEASING -> RELEASED -> COLLAPSING -> closed
  *
- *   Director's Arc (sub-phases within BURNING, tracked by elapsed time):
- *     1. IGNITION     (0-400ms)     — spark burst at bottom-center, card glow builds
- *     2. BURN_SPREAD  (400-2800ms)  — burn line advances bottom→top, text crumbles
- *                                      at fire edge, embers rise from burn line,
- *                                      card content clipped away progressively
- *     3. FINAL_EMBERS (2800-4200ms) — remaining particles + embers float away
- *     4. FADE_OUT     (4200-4800ms) — last embers fade → RELEASED
+ * The active scene is a calm Telegram-style vaporize pass:
+ *   1. RITUAL PAUSE    0-650ms    - readable card takes a quiet breath
+ *   2. SOFT SNAP     650-1050ms   - pressure wave and DOM handoff
+ *   3. DISSOLVE     1050-3200ms   - entered text scatters into slow fragments
+ *   4. AFTERGLOW    3200-4000ms   - sparse dust trail, then release mark
  *
- *   IDLE: Ambient ember particles float along card edges when text is entered.
- *         Flame icon pulses gently. Burn button glows with warm pulse.
- *         Character counter at bottom-right. Textarea auto-grows.
- *
- *   BURNING: Three particle systems on single canvas:
- *     - TextDust (1200): tiny 0.5-1.5px particles from text pixel sampling,
- *       activated by burn line position (text crumbles at fire edge)
- *     - Embers (80): 2-4px glowing particles spawned from burn line,
- *       deep orange core + yellow halo
- *     - Sparks (30): 0.3-1px white-hot burst at ignition point
- *     Card content clipped via GPU-composited clip-path: inset()
- *     Burn line rendered as 12px horizontal gradient band
- *
- *   RELEASED: Animated check circle draws itself + "Released" text.
- *   COLLAPSING: Telegram-style height collapse -> onClose().
- *   FALLBACK: shouldAnimate() false -> instant RELEASED (no animation).
- *
- *   Safari/iOS: Uses standard font stack for canvas (Safari returns
- *   .AppleSystemUIFont which Canvas API can't parse). willReadFrequently
- *   hint for getImageData. Keyboard dismissed before animation.
- *
- * No html2canvas - fillText is GPU-accelerated, <1ms.
- * Memory-safe: offscreen canvas + particle arrays destroyed in cleanup.
- * Haptic feedback via Capacitor. Respects in-app Dopamine toggle only.
- * Performance: fillRect for 95% of particles, shadowBlur reserved for embers.
+ * Reduced motion skips the particle field and goes directly to released state.
  */
 
-import { useState, useRef, useCallback, useEffect, memo } from 'react';
-import { Flame, X } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState, memo } from 'react';
+import { X } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { zenMotion, zenTap, shouldAnimate } from '@/lib/animationUtils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { hapticWarning, hapticMedium, hapticSuccess, hapticTap } from '@/lib/haptics';
 import { announceSuccess } from '@/lib/a11y';
+import { cn } from '@/lib/utils';
+import { logger } from '@/lib/logger';
+import { V2_JOURNAL_ICONS } from '@/lib/v2IconSystem';
 
 interface BurnThoughtWidgetProps {
   onClose: () => void;
+  onReleased?: () => void | Promise<void>;
+  surfaceClassName?: string;
 }
 
-// -- Text dust particle (sampled from text pixels) -------------------------
-
-interface TextDustParticle {
-  x: number; y: number;
-  originX: number; originY: number;
-  vx: number; vy: number;
+interface SnapParticle {
+  x: number;
+  y: number;
+  originX: number;
+  originY: number;
+  vx: number;
+  vy: number;
   size: number;
   alpha: number;
   color: string;
-  ashColor: string;
-  glow: boolean;
+  glowColor: string;
+  delay: number;
   life: number;
   maxLife: number;
-
-  phase: number;
+  drag: number;
+  driftPhase: number;
   started: boolean;
+  glow: boolean;
 }
 
-// -- Ember particle (spawned from burn line) --------------------------------
-
-interface EmberParticle {
-  x: number; y: number;
-  vx: number; vy: number;
-  size: number;
-  alpha: number;
-  coreColor: string;
-  haloColor: string;
-  haloRadius: number;
-  life: number;
-  maxLife: number;
-  flickerPhase: number;
-  active: boolean;
+interface SnapPalette {
+  card: string;
+  cardAlt: string;
+  text: string;
+  mutedText: string;
+  border: string;
+  depth: string;
+  purple: string;
+  purpleSoft: string;
+  cyan: string;
+  cyanSoft: string;
+  primary: string;
+  clear: string;
+  sourceDust: string[];
+  glowDust: string[];
 }
 
-// -- Spark particle (ignition burst) ----------------------------------------
-
-interface SparkParticle {
-  x: number; y: number;
-  vx: number; vy: number;
-  size: number;
-  alpha: number;
-  color: string;
-  life: number;
-  maxLife: number;
-}
-
-// -- Color palettes ---------------------------------------------------------
-
-// Hot ember palette - bright, warm colors for fresh particles
-const COLORS_HOT = [
-  '#fbbf24',  // amber-400
-  '#fb923c',  // orange-400
-  '#f87171',  // red-400
-  '#fca5a5',  // red-300
+const SNAP_AMBIENT_MOTES = [
+  'hsl(var(--cosmic-nebula-purple) / 0.82)',
+  'hsl(var(--cosmic-nebula-cyan) / 0.7)',
+  'hsl(var(--foreground) / 0.58)',
+  'hsl(var(--cosmic-nebula-cyan) / 0.42)',
 ];
 
-// Ash palette - cool, muted colors for dying particles
-const COLORS_ASH = [
-  '#d4d4d8',  // zinc-300
-  '#a1a1aa',  // zinc-400
-  '#71717a',  // zinc-500
-];
-
-// Ember core colors
-const EMBER_CORES = ['#ea580c', '#dc2626', '#c2410c'];
-// Ember halo colors
-const EMBER_HALOS = ['#fbbf24', '#fb923c', '#fde68a'];
-
-// Ambient ember colors (for floating CSS particles)
-const EMBER_AMBIENT = ['#fbbf24', '#fb923c', '#f87171', '#ef4444'];
-
-// -- Animation constants (Director's pacing) --------------------------------
-
-const TOTAL_DURATION   = 4800;   // ms - full burn arc
-const IGNITION_PHASE   = 400;    // ms - spark burst + glow build
-const BURN_PHASE       = 2400;   // ms - burn line sweeps bottom→top
-const MAX_PARTICLES    = 1200;   // text dust budget
-const MAX_EMBERS       = 80;     // dedicated ember particles
-const MAX_SPARKS       = 30;     // ignition spark burst
-const SAMPLE_STEP      = 2;      // sample every 2nd pixel (finer than before)
-const HARD_TIMEOUT     = 6500;   // ms - safety cutoff
-const RELEASED_PAUSE   = 800;    // ms - serenity pause before collapse
-
-// Safari-safe font stack for Canvas API
+const TOTAL_DURATION = 4000;
+const RITUAL_PAUSE_PHASE = 650;
+const DOM_HANDOFF_PHASE = 1050;
+const PRESSURE_WAVE_DURATION = 1050;
+const HARD_TIMEOUT = 5600;
+const RELEASED_PAUSE = 1250;
+const MOBILE_PARTICLE_BUDGET = 820;
+const DESKTOP_PARTICLE_BUDGET = 1180;
 const CANVAS_FONT_FAMILY = 'system-ui, -apple-system, BlinkMacSystemFont, sans-serif';
+const QuietReleaseIcon = V2_JOURNAL_ICONS.quietRelease;
+function readHslToken(styles: CSSStyleDeclaration, name: string, fallback: string, alpha = 1): string {
+  const value = styles.getPropertyValue(name).trim() || fallback;
+  return `hsl(${value} / ${alpha})`;
+}
 
-// -- Word-wrap helper (canvas fillText doesn't auto-wrap) -------------------
+function createSnapPalette(): SnapPalette {
+  const styles = getComputedStyle(document.documentElement);
+  const purple = readHslToken(styles, '--cosmic-nebula-purple', '263 84% 66%', 0.9);
+  const cyan = readHslToken(styles, '--cosmic-nebula-cyan', '189 94% 43%', 0.82);
+  const primary = readHslToken(styles, '--primary', '158 60% 50%', 0.68);
+  const text = readHslToken(styles, '--foreground', '0 0% 100%', 0.9);
+  const mutedText = readHslToken(styles, '--cosmic-text-muted', '0 0% 60%', 0.74);
+
+  return {
+    card: readHslToken(styles, '--cosmic-space-deep', '240 40% 6%', 0.94),
+    cardAlt: readHslToken(styles, '--cosmic-space-surface', '240 32% 16%', 0.78),
+    text,
+    mutedText,
+    border: readHslToken(styles, '--cosmic-nebula-purple', '263 84% 66%', 0.28),
+    depth: readHslToken(styles, '--cosmic-space-mid', '240 40% 10%', 0.42),
+    purple,
+    purpleSoft: readHslToken(styles, '--cosmic-nebula-purple', '263 84% 66%', 0.2),
+    cyan,
+    cyanSoft: readHslToken(styles, '--cosmic-nebula-cyan', '189 94% 43%', 0.18),
+    primary,
+    clear: readHslToken(styles, '--foreground', '46 4% 92%', 0),
+    sourceDust: [
+      purple,
+      cyan,
+      text,
+      mutedText,
+      readHslToken(styles, '--cosmic-space-surface', '240 32% 16%', 0.74),
+    ],
+    glowDust: [
+      readHslToken(styles, '--cosmic-nebula-purple', '263 84% 66%', 0.34),
+      readHslToken(styles, '--cosmic-nebula-cyan', '189 94% 43%', 0.28),
+      readHslToken(styles, '--foreground', '0 0% 100%', 0.18),
+    ],
+  };
+}
+
+function smoothStep(t: number): number {
+  return t * t * (3 - 2 * t);
+}
 
 function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
-  const words = text.split(/\s+/);
+  const words = text.trim().split(/\s+/);
   const lines: string[] = [];
   let currentLine = '';
+
   for (const word of words) {
-    const testLine = currentLine ? `${currentLine} ${word}` : word;
-    if (ctx.measureText(testLine).width > maxWidth && currentLine) {
+    const nextLine = currentLine ? `${currentLine} ${word}` : word;
+    if (ctx.measureText(nextLine).width > maxWidth && currentLine) {
       lines.push(currentLine);
       currentLine = word;
     } else {
-      currentLine = testLine;
+      currentLine = nextLine;
     }
   }
+
   if (currentLine) lines.push(currentLine);
-  return lines;
+  return lines.slice(0, 4);
 }
 
-// -- Text-to-pixel sampling -------------------------------------------------
-
-function sampleTextPixels(
+function paintSnapTextMask(
+  ctx: CanvasRenderingContext2D,
   text: string,
-  areaW: number,
-  areaH: number,
-  dpr: number,
-  textareaEl: HTMLTextAreaElement | null,
-): Array<{ x: number; y: number }> {
-  const offscreen = document.createElement('canvas');
-  const scaledW = Math.round(areaW * dpr);
-  const scaledH = Math.round(areaH * dpr);
-  offscreen.width = scaledW;
-  offscreen.height = scaledH;
+  width: number,
+  height: number,
+  palette: SnapPalette,
+  isRTL: boolean,
+) {
+  const cardX = 2;
+  const cardY = 10;
+  const cardW = Math.max(1, width - 4);
+  const textX = isRTL ? cardX + cardW - 20 : cardX + 20;
+  const textY = cardY + 20;
+  const maxWidth = Math.max(40, cardW - 40);
 
-  // willReadFrequently hint - optimizes getImageData on Safari/iOS
+  ctx.clearRect(0, 0, width, height);
+  ctx.font = `600 15px ${CANVAS_FONT_FAMILY}`;
+  ctx.direction = isRTL ? 'rtl' : 'ltr';
+  ctx.textAlign = isRTL ? 'right' : 'left';
+  ctx.textBaseline = 'top';
+  ctx.lineWidth = 1.2;
+  ctx.strokeStyle = palette.purpleSoft;
+  ctx.fillStyle = palette.text;
+
+  const lines = wrapText(ctx, text, maxWidth);
+  lines.forEach((line, index) => {
+    const lineY = textY + index * 23;
+    ctx.strokeText(line, textX, lineY);
+    ctx.fillText(line, textX, lineY);
+  });
+}
+
+function colorFromSource(
+  data: Uint8ClampedArray,
+  index: number,
+  palette: SnapPalette,
+  fallbackIndex: number,
+): string {
+  const r = data[index];
+  const g = data[index + 1];
+  const b = data[index + 2];
+  const a = data[index + 3] / 255;
+  const luminance = (r + g + b) / 3;
+  const warmParticle = r > 150 && r > b * 1.25 && b < 170 && g > 40;
+
+  if (a < 0.08 || luminance < 34 || warmParticle) {
+    return palette.sourceDust[fallbackIndex % palette.sourceDust.length];
+  }
+
+  return `rgba(${r}, ${g}, ${b}, ${Math.max(0.42, Math.min(0.96, a))})`;
+}
+
+function buildSnapParticles(
+  text: string,
+  width: number,
+  height: number,
+  palette: SnapPalette,
+  isRTL: boolean,
+): SnapParticle[] {
+  const offscreen = document.createElement('canvas');
+  offscreen.width = Math.max(1, Math.floor(width));
+  offscreen.height = Math.max(1, Math.floor(height));
+
   const ctx = offscreen.getContext('2d', { willReadFrequently: true });
   if (!ctx) return [];
 
-  ctx.scale(dpr, dpr);
+  paintSnapTextMask(ctx, text, offscreen.width, offscreen.height, palette, isRTL);
 
-  // Match textarea styling - use standard font stack for Safari compatibility
-  const computed = textareaEl ? getComputedStyle(textareaEl) : null;
-  const fontSize = computed ? (parseFloat(computed.fontSize) || 14) : 14;
-  const lineHeight = computed ? (parseFloat(computed.lineHeight) || fontSize * 1.5) : fontSize * 1.5;
-  const borderLeft = computed ? (parseFloat(computed.borderLeftWidth) || 0) : 1;
-  const borderTop = computed ? (parseFloat(computed.borderTopWidth) || 0) : 1;
-  const paddingLeft = (computed ? (parseFloat(computed.paddingLeft) || 14) : 14) + borderLeft;
-  const paddingTop = (computed ? (parseFloat(computed.paddingTop) || 10) : 10) + borderTop;
-  const textAreaWidth = areaW - paddingLeft * 2;
+  const image = ctx.getImageData(0, 0, offscreen.width, offscreen.height);
+  const data = image.data;
+  const isMobile = Math.min(window.innerWidth || width, width) < 430;
+  const budget = isMobile ? MOBILE_PARTICLE_BUDGET : DESKTOP_PARTICLE_BUDGET;
+  const sampleStep = text.length <= 24 ? 1 : isMobile ? 3 : 2;
+  const candidates: Array<{ x: number; y: number; color: string; alpha: number }> = [];
 
-  // Use standard font stack instead of computed fontFamily
-  ctx.font = `${fontSize}px ${CANVAS_FONT_FAMILY}`;
-  ctx.fillStyle = '#ffffff';
-  ctx.textBaseline = 'top';
+  for (let y = 0; y < offscreen.height; y += sampleStep) {
+    for (let x = 0; x < offscreen.width; x += sampleStep) {
+      const index = (y * offscreen.width + x) * 4;
+      const alpha = data[index + 3] / 255;
+      if (alpha < 0.08) continue;
 
-  const lines = wrapText(ctx, text, textAreaWidth);
-  for (let i = 0; i < lines.length; i++) {
-    ctx.fillText(lines[i], paddingLeft, paddingTop + i * lineHeight);
-  }
-
-  // Read pixel data and collect positions where text exists
-  const imageData = ctx.getImageData(0, 0, scaledW, scaledH);
-  const pixels = imageData.data;
-  const positions: Array<{ x: number; y: number }> = [];
-
-  for (let py = 0; py < scaledH; py += SAMPLE_STEP) {
-    for (let px = 0; px < scaledW; px += SAMPLE_STEP) {
-      const idx = (py * scaledW + px) * 4;
-      if (pixels[idx + 3] > 30) {
-        positions.push({ x: px / dpr, y: py / dpr });
-      }
-    }
-  }
-
-  // Cleanup offscreen canvas
-  offscreen.width = 0;
-  offscreen.height = 0;
-
-  // Cap at MAX_PARTICLES via random subsampling (Fisher-Yates partial shuffle)
-  if (positions.length > MAX_PARTICLES) {
-    for (let i = positions.length - 1; i > 0 && i >= positions.length - MAX_PARTICLES; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [positions[i], positions[j]] = [positions[j], positions[i]];
-    }
-    positions.length = MAX_PARTICLES;
-  }
-
-  return positions;
-}
-
-// -- Ignition spark creation ------------------------------------------------
-
-function createIgnitionSparks(centerX: number, bottomY: number): SparkParticle[] {
-  const sparks: SparkParticle[] = [];
-  for (let i = 0; i < MAX_SPARKS; i++) {
-    // Radial burst — mostly upward with wide spread
-    const angle = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 1.2;
-    const speed = 40 + Math.random() * 80;
-    sparks.push({
-      x: centerX + (Math.random() - 0.5) * 20,
-      y: bottomY - Math.random() * 5,
-      vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed,
-      size: 0.3 + Math.random() * 0.7,
-      alpha: 1,
-      color: Math.random() > 0.3 ? '#fef3c7' : '#ffffff', // warm white / pure white
-      life: 0,
-      maxLife: 300 + Math.random() * 500,
-    });
-  }
-  return sparks;
-}
-
-// -- Component --------------------------------------------------------------
-
-export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: BurnThoughtWidgetProps) {
-  const { t, isRTL } = useLanguage();
-  const ts = (t as unknown as Record<string, string>) ?? {};
-  const [text, setText] = useState('');
-  const [burned, setBurned] = useState(false);
-  const [burning, setBurning] = useState(false);
-  const [collapsing, setCollapsing] = useState(false);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const contentWrapRef = useRef<HTMLDivElement>(null);
-  const hotGlowRef = useRef<HTMLDivElement>(null);
-  const rafRef = useRef(0);
-  const closeTimerRef = useRef<ReturnType<typeof setTimeout>>();
-  const hapticTimerRef = useRef<ReturnType<typeof setTimeout>>();
-  const midHapticRef = useRef<ReturnType<typeof setTimeout>>();
-
-  // -- Textarea auto-grow --
-  useEffect(() => {
-    const el = textareaRef.current;
-    if (!el) return;
-    el.style.height = 'auto';
-    el.style.height = `${Math.min(el.scrollHeight, 200)}px`;
-  }, [text]);
-
-  // -- Cinematic burn animation --
-
-  const startBurn = useCallback(() => {
-    if (!text.trim() || burning) return;
-
-    // Dismiss iOS virtual keyboard before animation
-    textareaRef.current?.blur();
-
-    // Haptic: burn initiation (Beat 1 - the decision)
-    void hapticWarning();
-
-    // Reduced motion: skip animation entirely
-    if (!shouldAnimate()) {
-      setBurned(true);
-      announceSuccess(ts.journalBurnReleasedMessage || 'Your thought has been released.');
-      void hapticSuccess();
-      return;
-    }
-
-    setBurning(true);
-
-    // Fallback helper - instant release if canvas setup fails
-    const instantRelease = () => {
-      setBurned(true);
-      setBurning(false);
-      void hapticSuccess();
-      announceSuccess(ts.journalBurnReleasedMessage || 'Your thought has been released.');
-    };
-
-    const container = containerRef.current;
-    if (!container) { instantRelease(); return; }
-
-    const canvas = canvasRef.current;
-    if (!canvas) { instantRelease(); return; }
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) { instantRelease(); return; }
-
-    // Size canvas to container
-    const rect = container.getBoundingClientRect();
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const w = Math.round(rect.width * dpr);
-    const h = Math.round(rect.height * dpr);
-    canvas.width = w;
-    canvas.height = h;
-    canvas.style.width = `${rect.width}px`;
-    canvas.style.height = `${rect.height}px`;
-    ctx.scale(dpr, dpr);
-
-    const areaW = rect.width;
-    const areaH = rect.height;
-
-    // Sample text pixel positions
-    const textareaEl = container.querySelector('textarea');
-    let positions: Array<{ x: number; y: number }>;
-    try {
-      positions = sampleTextPixels(text, areaW, areaH, dpr, textareaEl);
-    } catch {
-      instantRelease();
-      return;
-    }
-
-    // If no pixels sampled, instant release
-    if (positions.length === 0) {
-      instantRelease();
-      return;
-    }
-
-    // Create text dust particles — activated by burn line position
-    const dustParticles: TextDustParticle[] = positions.map(pos => {
-      const maxLife = 1200 + Math.random() * 1200;
-      return {
-        x: pos.x,
-        y: pos.y,
-        originX: pos.x,
-        originY: pos.y,
-        vx: 0,
-        vy: 0,
-        size: 0.5 + Math.random() * 1, // 0.5-1.5px (much finer)
-        alpha: 0.9,
-        color: COLORS_HOT[Math.floor(Math.random() * COLORS_HOT.length)],
-        ashColor: COLORS_ASH[Math.floor(Math.random() * COLORS_ASH.length)],
-        glow: Math.random() < 0.05, // 5% glow rate (performance)
-        life: 0,
-        maxLife,
-
-        phase: Math.random() * Math.PI * 2,
-        started: false,
-      };
-    });
-
-    // Create ignition sparks
-    const sparks = createIgnitionSparks(areaW / 2, areaH);
-
-    // Ember pool (pre-allocated, activated during burn)
-    const embers: EmberParticle[] = [];
-    const emberSpawnRate = MAX_EMBERS / (BURN_PHASE / 1000); // embers per second
-
-    function spawnEmber(burnY: number) {
-      if (embers.length >= MAX_EMBERS) return;
-      embers.push({
-        x: Math.random() * areaW,
-        y: burnY + (Math.random() - 0.5) * 8,
-        vx: (Math.random() - 0.5) * 30,
-        vy: -(10 + Math.random() * 25),
-        size: 2 + Math.random() * 2,
-        alpha: 0.9,
-        coreColor: EMBER_CORES[Math.floor(Math.random() * EMBER_CORES.length)],
-        haloColor: EMBER_HALOS[Math.floor(Math.random() * EMBER_HALOS.length)],
-        haloRadius: 3 + Math.random() * 3,
-        life: 0,
-        maxLife: 1000 + Math.random() * 1500,
-        flickerPhase: Math.random() * Math.PI * 2,
-        active: true,
+      candidates.push({
+        x,
+        y,
+        alpha,
+        color: colorFromSource(data, index, palette, x + y),
       });
     }
+  }
 
-    // Haptic at burn start (Beat 2 - fire catches)
-    hapticTimerRef.current = setTimeout(() => { void hapticMedium(); }, IGNITION_PHASE);
+  if (candidates.length > budget) {
+    for (let i = candidates.length - 1; i > 0 && i >= candidates.length - budget; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
+    }
+    candidates.length = budget;
+  }
 
-    // Midway haptic (Beat 3 - past midpoint)
-    midHapticRef.current = setTimeout(() => { void hapticTap(); }, IGNITION_PHASE + BURN_PHASE);
+  const centerX = candidates.length
+    ? candidates.reduce((sum, pixel) => sum + pixel.x, 0) / candidates.length
+    : width * (isRTL ? 0.46 : 0.54);
+  const centerY = candidates.length
+    ? candidates.reduce((sum, pixel) => sum + pixel.y, 0) / candidates.length
+    : height * 0.42;
+  const wind = isRTL ? -1 : 1;
 
-    let lastTime = performance.now();
-    const startTime = lastTime;
-    let lastEmberSpawn = 0;
+  return candidates.map((pixel, index): SnapParticle => {
+    const angle = Math.atan2(pixel.y - centerY, pixel.x - centerX);
+    const outward = 10 + Math.random() * 24;
+    const diagonal = 12 + Math.random() * 34;
+    const vertical = 18 + Math.random() * 50;
+
+    return {
+      x: pixel.x,
+      y: pixel.y,
+      originX: pixel.x,
+      originY: pixel.y,
+      vx: Math.cos(angle) * outward + wind * diagonal + (Math.random() - 0.5) * 14,
+      vy: Math.sin(angle) * outward - vertical,
+      size: 0.65 + Math.random() * 1.25,
+      alpha: Math.min(0.94, pixel.alpha + 0.16),
+      color: pixel.color,
+      glowColor: palette.glowDust[index % palette.glowDust.length],
+      delay: DOM_HANDOFF_PHASE + Math.random() * 720 + Math.max(0, pixel.y - centerY) * 0.6,
+      life: 0,
+      maxLife: 1600 + Math.random() * 1600,
+      drag: 0.955 + Math.random() * 0.03,
+      driftPhase: Math.random() * Math.PI * 2,
+      started: false,
+      glow: Math.random() < 0.025,
+    };
+  });
+}
+
+export const BurnThoughtWidget = memo(function BurnThoughtWidget({
+  onClose,
+  onReleased,
+  surfaceClassName,
+}: BurnThoughtWidgetProps) {
+  const { t, isRTL } = useLanguage();
+  const ts = t as unknown as Record<string, string>;
+
+  const [text, setText] = useState('');
+  const [released, setReleased] = useState(false);
+  const [releasing, setReleasing] = useState(false);
+  const [collapsing, setCollapsing] = useState(false);
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const contentWrapRef = useRef<HTMLDivElement>(null);
+  const pressureRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const rafRef = useRef(0);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pressureTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const releaseCallbackCalledRef = useRef(false);
+
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    textarea.style.height = 'auto';
+    textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
+  }, [text]);
+
+  const notifyReleased = useCallback(() => {
+    if (releaseCallbackCalledRef.current) return;
+    releaseCallbackCalledRef.current = true;
+    if (!onReleased) return;
+    void Promise.resolve(onReleased()).catch((error) => {
+      logger.warn("[Journal] Quiet release trace callback failed", error);
+    });
+  }, [onReleased]);
+
+  const finishRelease = useCallback(() => {
+    if (contentWrapRef.current) {
+      contentWrapRef.current.style.opacity = '0';
+      contentWrapRef.current.style.transform = '';
+      contentWrapRef.current.style.filter = '';
+      contentWrapRef.current.style.willChange = '';
+    }
+    if (pressureRef.current) {
+      pressureRef.current.style.opacity = '0';
+      pressureRef.current.style.transform = '';
+    }
+
+    setReleasing(false);
+    setReleased(true);
+    notifyReleased();
+    void hapticSuccess();
+    announceSuccess(ts.journalReleaseFinalTitle || ts.journalBurnReleasedMessage || 'Your thought has been released.');
+  }, [notifyReleased, ts.journalBurnReleasedMessage, ts.journalReleaseFinalTitle]);
+
+  const startSnapRelease = useCallback(() => {
+    const releaseText = text.trim();
+    if (!releaseText || releasing) {
+      void hapticWarning();
+      return;
+    }
+
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+
+    if (!shouldAnimate()) {
+      setReleased(true);
+      notifyReleased();
+      announceSuccess(ts.journalReleaseFinalTitle || ts.journalBurnReleasedMessage || 'Your thought has been released.');
+      return;
+    }
+
+    setReleasing(true);
+    void hapticMedium();
+
+    const canvas = canvasRef.current;
+    const stage = containerRef.current;
+    if (!canvas || !stage) {
+      finishRelease();
+      return;
+    }
+
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) {
+      finishRelease();
+      return;
+    }
+    const context = ctx;
+
+    const rect = stage.getBoundingClientRect();
+    const cssWidth = Math.max(1, Math.round(rect.width));
+    const cssHeight = Math.max(1, Math.round(rect.height || 168));
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+    canvas.width = Math.round(cssWidth * dpr);
+    canvas.height = Math.round(cssHeight * dpr);
+    canvas.style.width = `${cssWidth}px`;
+    canvas.style.height = `${cssHeight}px`;
+    context.setTransform?.(dpr, 0, 0, dpr, 0, 0);
+
+    const palette = createSnapPalette();
+    const particles = buildSnapParticles(releaseText, cssWidth, cssHeight, palette, isRTL);
+    const startTime = performance.now();
+    let lastTime = startTime;
+
+    if (contentWrapRef.current) {
+      contentWrapRef.current.style.willChange = 'transform, opacity, filter';
+      contentWrapRef.current.style.transformOrigin = isRTL ? '46% 56%' : '54% 56%';
+    }
+
+    pressureTimerRef.current = setTimeout(() => { void hapticTap(); }, RITUAL_PAUSE_PHASE);
+    successTimerRef.current = setTimeout(() => { void hapticTap(); }, DOM_HANDOFF_PHASE);
 
     function frame(now: number) {
-      if (!ctx) return;
-      const dt = Math.min((now - lastTime) / 1000, 0.05);
       const elapsed = now - startTime;
+      const dt = Math.min((now - lastTime) / 1000, 0.05);
       lastTime = now;
 
-      ctx.clearRect(0, 0, areaW, areaH);
+      context.clearRect(0, 0, cssWidth, cssHeight);
 
-      // -- Calculate burn line position --
-      let currentBurnLineY = areaH; // starts at bottom
-      let burnT = 0;
-      if (elapsed > IGNITION_PHASE) {
-        burnT = Math.min(1, (elapsed - IGNITION_PHASE) / BURN_PHASE);
-        const burnEased = burnT * burnT; // ease-in: slow start, accelerates
-        currentBurnLineY = areaH * (1 - burnEased);
+      const pauseT = Math.min(1, elapsed / RITUAL_PAUSE_PHASE);
+      const pressureT = Math.min(1, Math.max(0, (elapsed - RITUAL_PAUSE_PHASE) / (DOM_HANDOFF_PHASE - RITUAL_PAUSE_PHASE)));
+      const handoffT = pressureT;
+      const releaseT = Math.min(1, elapsed / TOTAL_DURATION);
 
-        // Direct DOM mutation — zero React re-renders (was setBurnProgress at 60fps)
-        if (contentWrapRef.current) {
-          contentWrapRef.current.style.clipPath = `inset(0 0 ${burnEased * 100}% 0)`;
-        }
-        if (hotGlowRef.current) {
-          hotGlowRef.current.style.opacity = String(Math.min(1, burnEased * 2));
-        }
+      if (contentWrapRef.current) {
+        const breath = Math.sin(smoothStep(pauseT) * Math.PI);
+        const pulse = Math.sin(pressureT * Math.PI);
+        const fade = smoothStep(handoffT);
+        const driftX = (isRTL ? -1 : 1) * fade * 5;
+        const liftY = -fade * 6;
+        const scale = 1 - breath * 0.018 - pulse * 0.014 - fade * 0.05;
+        const blur = fade * 2.1;
+
+        contentWrapRef.current.style.transform = `translate3d(${driftX.toFixed(2)}px, ${liftY.toFixed(2)}px, 0) scale(${scale.toFixed(3)})`;
+        contentWrapRef.current.style.opacity = String(Math.max(0, 1 - fade));
+        contentWrapRef.current.style.filter = `blur(${blur.toFixed(2)}px) saturate(${(1 + breath * 0.08 + pulse * 0.06).toFixed(2)})`;
       }
 
-      // -- Spawn embers along burn line --
-      if (elapsed > IGNITION_PHASE && burnT < 1) {
-        const timeSinceLastEmber = elapsed - lastEmberSpawn;
-        const spawnInterval = 1000 / emberSpawnRate;
-        if (timeSinceLastEmber > spawnInterval) {
-          spawnEmber(currentBurnLineY);
-          lastEmberSpawn = elapsed;
-        }
+      if (pressureRef.current) {
+        const pressureElapsed = Math.max(0, elapsed - RITUAL_PAUSE_PHASE);
+        const ring = smoothStep(Math.min(1, pressureElapsed / PRESSURE_WAVE_DURATION));
+        pressureRef.current.style.opacity = String(pressureElapsed > 0 ? Math.max(0, (1 - ring) * 0.72) : 0);
+        pressureRef.current.style.transform = `translate(-50%, -50%) scale(${(0.58 + ring * 1.48).toFixed(3)})`;
       }
 
-      // -- Render burn line glow (12px gradient band) --
-      if (elapsed > IGNITION_PHASE && currentBurnLineY > -12 && currentBurnLineY < areaH + 12) {
-        const glowIntensity = burnT < 1 ? Math.min(1, burnT * 3) : Math.max(0, 1 - (burnT - 1) * 5);
-        const gradient = ctx.createLinearGradient(0, currentBurnLineY - 8, 0, currentBurnLineY + 8);
-        gradient.addColorStop(0, `rgba(239, 68, 68, 0)`);
-        gradient.addColorStop(0.25, `rgba(234, 88, 12, ${0.4 * glowIntensity})`);
-        gradient.addColorStop(0.5, `rgba(251, 191, 36, ${0.85 * glowIntensity})`);
-        gradient.addColorStop(0.75, `rgba(234, 88, 12, ${0.4 * glowIntensity})`);
-        gradient.addColorStop(1, `rgba(239, 68, 68, 0)`);
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, currentBurnLineY - 8, areaW, 16);
-      }
+      const globalLift = Math.max(0, 1 - releaseT) * 4;
 
-      let alive = 0;
-
-      // -- Update & render text dust particles --
-      for (let i = 0; i < dustParticles.length; i++) {
-        const p = dustParticles[i];
-        if (p.alpha <= 0) continue;
-
-        // Activate when burn line reaches this particle's Y position
-        if (!p.started) {
-          if (currentBurnLineY > p.originY) {
-            // Burn line hasn't reached yet — only render tremble within 25px proximity
-            // (farther particles stay invisible — real text is visible via clip-path)
-            const distToBurnLine = currentBurnLineY - p.originY;
-            if (distToBurnLine < 25 && elapsed > IGNITION_PHASE) {
-              const proximity = 1 - (distToBurnLine / 25); // 0=far, 1=at burn line
-              const trembleAmp = proximity * proximity * 3;
-              p.x = p.originX + (Math.random() - 0.5) * trembleAmp;
-              p.y = p.originY + (Math.random() - 0.5) * trembleAmp * 0.7;
-
-              alive++;
-              // Fade in as burn line approaches — avoids popping
-              ctx.globalAlpha = 0.85 * proximity;
-              ctx.fillStyle = p.color;
-              const hs = p.size * 0.5;
-              ctx.fillRect(p.x - hs, p.y - hs, p.size, p.size);
+      for (const particle of particles) {
+        if (!particle.started) {
+          if (elapsed < particle.delay) {
+            if (elapsed > RITUAL_PAUSE_PHASE && handoffT > 0.08) {
+              context.globalAlpha = Math.min(0.34, handoffT * 0.36) * particle.alpha;
+              context.fillStyle = particle.color;
+              context.fillRect(particle.originX, particle.originY, particle.size, particle.size);
             }
             continue;
           }
 
-          // -- Activate: upward release velocity --
-          p.started = true;
-          p.life = 0;
-          const angle = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 0.8;
-          const speed = 15 + Math.random() * 40;
-          const windBias = isRTL ? -8 : 8;
-          p.vx = Math.cos(angle) * speed + windBias;
-          p.vy = Math.sin(angle) * speed;
+          particle.started = true;
+          particle.life = 0;
         }
 
-        // -- Physics update --
-        p.life += dt * 1000;
-        if (p.life >= p.maxLife) { p.alpha = 0; continue; }
-
-        // Gentle wind drift
-        p.vx += Math.sin(now * 0.002 + p.phase) * 5 * dt;
-        // Slight upward pull
-        p.vy -= 8 * dt;
-
-        // Move
-        p.x += p.vx * dt;
-        p.y += p.vy * dt;
-
-        // Alpha: quadratic ease-out fade
-        const lifeT = p.life / p.maxLife;
-        p.alpha = Math.max(0, 1 - lifeT * lifeT);
-
-        // Size: very slow shrink
-        p.size *= (1 - 0.0015 * (dt * 60));
-
-        if (p.alpha <= 0.01 || p.size < 0.15) { p.alpha = 0; continue; }
-
-        alive++;
-
-        // Temperature-based color
-        const temp = 1 - Math.min(lifeT * 1.3, 1);
-        const currentColor = temp > 0.35 ? p.color : p.ashColor;
-
-        // Render glow halo (only 5% of particles)
-        if (p.glow && temp > 0.3) {
-          ctx.globalAlpha = p.alpha * 0.25;
-          ctx.shadowBlur = Math.min(p.size * 4, 4);
-          ctx.shadowColor = currentColor;
-          ctx.fillStyle = currentColor;
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, p.size * 2, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.shadowBlur = 0;
+        particle.life += dt * 1000;
+        if (particle.life >= particle.maxLife) {
+          particle.alpha = 0;
+          continue;
         }
 
-        // Render core particle (fillRect for performance)
-        ctx.globalAlpha = p.alpha;
-        ctx.fillStyle = currentColor;
-        const hs = p.size * 0.5;
-        ctx.fillRect(p.x - hs, p.y - hs, p.size, p.size);
+        const drag = Math.pow(particle.drag, dt * 60);
+        particle.vx *= drag;
+        particle.vy = particle.vy * Math.pow(0.985, dt * 60) - globalLift * dt;
+        particle.vx += Math.sin(now * 0.0016 + particle.driftPhase) * 5 * dt;
+        particle.x += particle.vx * dt;
+        particle.y += particle.vy * dt;
+
+        const lifeT = particle.life / particle.maxLife;
+        particle.alpha = Math.max(0, (1 - smoothStep(lifeT)) * (1 - lifeT * 0.18));
+        particle.size *= 1 - 0.0007 * (dt * 60);
+
+        if (particle.alpha <= 0.015 || particle.size < 0.16) {
+          particle.alpha = 0;
+          continue;
+        }
+
+        if (particle.glow && lifeT < 0.58) {
+          context.globalAlpha = particle.alpha * 0.16;
+          context.shadowBlur = 3;
+          context.shadowColor = particle.glowColor;
+          context.fillStyle = particle.glowColor;
+          context.fillRect(
+            particle.x - particle.size,
+            particle.y - particle.size,
+            particle.size * 2.2,
+            particle.size * 2.2,
+          );
+          context.shadowBlur = 0;
+        }
+
+        context.globalAlpha = particle.alpha;
+        context.fillStyle = particle.color;
+        context.fillRect(
+          particle.x - particle.size * 0.5,
+          particle.y - particle.size * 0.5,
+          particle.size,
+          particle.size,
+        );
       }
 
-      // -- Update & render sparks --
-      for (let i = 0; i < sparks.length; i++) {
-        const s = sparks[i];
-        if (s.alpha <= 0) continue;
+      context.globalAlpha = 1;
 
-        s.life += dt * 1000;
-        if (s.life >= s.maxLife) { s.alpha = 0; continue; }
-
-        // Gravity (sparks arc downward slightly)
-        s.vy += 60 * dt;
-        s.x += s.vx * dt;
-        s.y += s.vy * dt;
-
-        // Quick fade
-        const sparkT = s.life / s.maxLife;
-        s.alpha = Math.max(0, 1 - sparkT * sparkT);
-
-        if (s.alpha <= 0.02) { s.alpha = 0; continue; }
-
-        alive++;
-
-        // Render spark (tiny bright dot)
-        ctx.globalAlpha = s.alpha;
-        ctx.fillStyle = s.color;
-        ctx.fillRect(s.x - s.size * 0.5, s.y - s.size * 0.5, s.size, s.size);
-      }
-
-      // -- Update & render embers --
-      for (let i = 0; i < embers.length; i++) {
-        const e = embers[i];
-        if (!e.active || e.alpha <= 0) continue;
-
-        e.life += dt * 1000;
-        if (e.life >= e.maxLife) { e.alpha = 0; e.active = false; continue; }
-
-        // Embers: slow rise with lateral drift
-        e.vy -= 12 * dt;
-        e.vx += Math.sin(now * 0.003 + e.flickerPhase) * 15 * dt;
-        e.x += e.vx * dt;
-        e.y += e.vy * dt;
-
-        // Alpha with flicker
-        const emberT = e.life / e.maxLife;
-        const flickerAlpha = 0.7 + 0.3 * Math.sin(now * 0.01 + e.flickerPhase);
-        e.alpha = Math.max(0, (1 - emberT * emberT) * flickerAlpha);
-
-        // Size: slow shrink
-        e.size *= (1 - 0.001 * (dt * 60));
-
-        if (e.alpha <= 0.02 || e.size < 0.5) { e.alpha = 0; e.active = false; continue; }
-
-        alive++;
-
-        // Render ember halo (glow)
-        ctx.globalAlpha = e.alpha * 0.3;
-        ctx.shadowBlur = Math.min(e.haloRadius, 4);
-        ctx.shadowColor = e.haloColor;
-        ctx.fillStyle = e.haloColor;
-        ctx.beginPath();
-        ctx.arc(e.x, e.y, e.haloRadius, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.shadowBlur = 0;
-
-        // Render ember core
-        ctx.globalAlpha = e.alpha;
-        ctx.fillStyle = e.coreColor;
-        ctx.beginPath();
-        ctx.arc(e.x, e.y, e.size, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
-      ctx.globalAlpha = 1;
-
-      // End condition: past total duration AND no alive particles
-      if (elapsed > TOTAL_DURATION && alive === 0) {
-        if (hotGlowRef.current) hotGlowRef.current.style.opacity = '0';
-        setBurning(false);
-        setBurned(true);
-        void hapticSuccess(); // Beat 4 - resolution
-        announceSuccess(ts.journalBurnReleasedMessage || 'Your thought has been released.');
-        return;
-      }
-
-      // Hard timeout safety
-      if (elapsed > HARD_TIMEOUT) {
-        if (hotGlowRef.current) hotGlowRef.current.style.opacity = '0';
-        setBurning(false);
-        setBurned(true);
-        void hapticSuccess();
-        announceSuccess(ts.journalBurnReleasedMessage || 'Your thought has been released.');
+      if (elapsed > TOTAL_DURATION || elapsed > HARD_TIMEOUT) {
+        finishRelease();
         return;
       }
 
@@ -635,29 +508,28 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
     }
 
     rafRef.current = requestAnimationFrame(frame);
-  }, [text, burning, ts.journalBurnReleasedMessage, isRTL]);
+  }, [finishRelease, isRTL, notifyReleased, releasing, text, ts.journalBurnReleasedMessage, ts.journalReleaseFinalTitle]);
 
-  // -- Telegram-style collapse: burned -> serenity pause -> collapse -> close --
   useEffect(() => {
-    if (burned && !collapsing) {
+    if (released && !collapsing) {
       closeTimerRef.current = setTimeout(() => {
         setCollapsing(true);
       }, RELEASED_PAUSE);
     }
-    return () => { if (closeTimerRef.current) clearTimeout(closeTimerRef.current); };
-  }, [burned, collapsing]);
+    return () => {
+      if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    };
+  }, [released, collapsing]);
 
-  // -- Cleanup rAF + timers --
   useEffect(() => {
     return () => {
       cancelAnimationFrame(rafRef.current);
       if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
-      if (hapticTimerRef.current) clearTimeout(hapticTimerRef.current);
-      if (midHapticRef.current) clearTimeout(midHapticRef.current);
+      if (pressureTimerRef.current) clearTimeout(pressureTimerRef.current);
+      if (successTimerRef.current) clearTimeout(successTimerRef.current);
     };
   }, []);
 
-  // Determine animation states
   const getAnimateProps = () => {
     if (collapsing) {
       return {
@@ -678,22 +550,28 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
     if (collapsing) {
       return { duration: 0.55, ease: [0.32, 0.72, 0, 1] as const };
     }
-    if (burned) {
-      return { duration: 0.3, ease: 'easeOut' as const };
+    if (released) {
+      return { duration: 0.24, ease: 'easeOut' as const };
     }
-    if (burning) {
-      return { duration: 0.8, ease: 'easeOut' as const };
+    if (releasing) {
+      return { duration: 0.42, ease: 'easeOut' as const };
     }
     return zenMotion.gentle;
   };
 
   const hasText = text.trim().length > 0;
+  const releaseThought = text.trim();
   const animate = shouldAnimate();
-  const showAmbientEmbers = hasText && !burning && !burned && animate;
+  const showAmbientMotes = hasText && !releasing && !released && animate;
 
   return (
     <motion.div
-      className="my-8 p-6 rounded-2xl relative overflow-hidden bg-surface-glass backdrop-blur-[var(--surface-glass-blur)] border border-[var(--surface-glass-border)] zen-shadow-soft shadow-[inset_0_0_60px_rgba(239,68,68,0.04),var(--zen-shadow-soft)]"
+      className={cn(
+        "snap-release-panel my-8 w-full p-6 rounded-2xl relative overflow-hidden bg-surface-glass backdrop-blur-[var(--surface-glass-blur)] border border-[var(--surface-glass-border)] zen-shadow-soft shadow-[inset_0_0_60px_hsl(var(--cosmic-nebula-purple)/0.04),var(--zen-shadow-soft)]",
+        surfaceClassName,
+      )}
+      data-burn-state={releasing ? "burning" : released ? "released" : "idle"}
+      data-release-mode="snap"
       initial={{ opacity: 0, y: -16, scale: 0.97 }}
       animate={getAnimateProps()}
       exit={{ opacity: 0, height: 0, scaleY: 0.92, y: -8, marginTop: 0, marginBottom: 0, paddingTop: 0, paddingBottom: 0 }}
@@ -702,163 +580,179 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
         if (collapsing) onClose();
       }}
     >
-      {/* Card warm glow - GPU-only opacity transition */}
       <div
-        className="absolute inset-0 rounded-2xl pointer-events-none motion-safe:transition-opacity motion-safe:duration-500 ease-out shadow-[inset_0_0_80px_rgba(239,68,68,0.1),0_0_24px_rgba(239,68,68,0.12)]"
-        style={{
-          opacity: burning ? 1 : 0,
-        }}
+        className="absolute inset-0 rounded-2xl pointer-events-none motion-safe:transition-opacity motion-safe:duration-300 ease-out shadow-[inset_0_0_80px_hsl(var(--cosmic-nebula-purple)/0.1),0_0_24px_hsl(var(--cosmic-nebula-cyan)/0.1)]"
+        style={{ opacity: releasing ? 1 : 0 }}
         aria-hidden="true"
       />
 
-      {/* Card hot glow - bottom-heavy fire glow, driven by burn line via ref (no re-renders) */}
-      <div
-        ref={hotGlowRef}
-        className="absolute inset-0 rounded-2xl pointer-events-none shadow-[inset_0_40px_60px_-20px_rgba(251,191,36,0.15),0_0_40px_rgba(234,88,12,0.2)] opacity-0"
-        aria-hidden="true"
-      />
-
-      {/* Ambient floating embers - visible when text is entered */}
-      {showAmbientEmbers && (
+      {showAmbientMotes && (
         <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl" aria-hidden="true">
           {Array.from({ length: 8 }, (_, i) => (
             <span
               key={i}
-              className="absolute w-1 h-1 rounded-full motion-safe:animate-burn-float-ember"
+              className="absolute w-1 h-1 rounded-full motion-safe:animate-snap-idle-mote"
               style={{
                 left: `${8 + (i * 12) % 84}%`,
                 bottom: '-2px',
                 animationDelay: `${i * 0.5}s`,
-                backgroundColor: EMBER_AMBIENT[i % EMBER_AMBIENT.length],
+                backgroundColor: SNAP_AMBIENT_MOTES[i % SNAP_AMBIENT_MOTES.length],
               }}
             />
           ))}
         </div>
       )}
 
-      {/* Rising embers during dissolution */}
-      {burning && animate && (
-        <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl z-[3]" aria-hidden="true">
-          {Array.from({ length: 14 }, (_, i) => (
-            <span
-              key={i}
-              className="absolute rounded-full motion-safe:animate-burn-rise-ember"
-              style={{
-                width: `${2 + (i % 3)}px`,
-                height: `${2 + (i % 3)}px`,
-                left: `${5 + (i * 7) % 88}%`,
-                bottom: '5%',
-                animationDelay: `${i * 0.15}s`,
-                backgroundColor: COLORS_HOT[i % COLORS_HOT.length],
-              }}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* Header */}
       <div className="flex items-center justify-between px-4 py-2">
-        <div className={`flex items-center gap-2 ${burned ? 'text-muted-foreground/70' : 'text-red-400'}`}>
-          <Flame className={`w-4 h-4 ${showAmbientEmbers ? 'motion-safe:animate-burn-flame-pulse' : ''}`} />
+        <div className={`flex items-center gap-2 ${released ? 'text-muted-foreground/70' : 'text-[hsl(var(--cosmic-nebula-purple))]'}`}>
+          <QuietReleaseIcon className={`w-4 h-4 ${showAmbientMotes ? 'motion-safe:animate-snap-icon-pulse' : ''}`} />
           <span className="text-sm font-medium">
-            {burned ? (ts.journalBurnReleased || 'Released') : (ts.journalBurnTitle || 'Burn a thought')}
+            {released ? (ts.journalBurnReleased || 'Released') : (ts.journalBurnTitle || 'Burn a thought')}
           </span>
         </div>
-        {!burned && !burning && (
+        {!released && !releasing && (
           <motion.button
             whileTap={zenTap.icon}
             onClick={onClose}
             className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full"
             aria-label={ts.close || 'Close'}
           >
-            <X className="w-3.5 h-3.5 text-red-400/60" />
+            <X className="w-3.5 h-3.5 text-muted-foreground/60" />
           </motion.button>
         )}
       </div>
 
-      {/* Body */}
       <div className="relative px-4 pb-4">
-        {burned ? (
+        {released ? (
           <motion.div
-            className="flex flex-col items-center gap-3 py-6"
+            className="snap-release-result flex flex-col items-center gap-3 py-6"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={collapsing ? { opacity: 0, y: -12 } : { opacity: 1, scale: 1 }}
             transition={collapsing ? { duration: 0.25 } : zenMotion.gentle}
             aria-live="polite"
           >
-            {/* Animated check circle */}
-            <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center">
-              <svg
-                viewBox="0 0 24 24"
-                className="w-5 h-5 text-emerald-400"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path
-                  d="M5 13l4 4L19 7"
-                  style={animate ? {
-                    strokeDasharray: 22,
-                    strokeDashoffset: 22,
-                    animation: 'burn-draw-check 0.5s ease-out 0.15s forwards',
-                  } : undefined}
-                />
-              </svg>
+              <div className="relative w-16 h-16 flex items-center justify-center">
+              {animate && (
+                <>
+                  <span className="absolute inset-1 rounded-full snap-release-halo" aria-hidden="true" />
+                  {Array.from({ length: 12 }, (_, i) => (
+                    <span
+                      key={i}
+                      className="absolute rounded-full snap-release-speck"
+                      style={{
+                        width: `${2 + (i % 3)}px`,
+                        height: `${2 + (i % 3)}px`,
+                        left: `${50 + Math.cos((i / 12) * Math.PI * 2) * 34}%`,
+                        top: `${50 + Math.sin((i / 12) * Math.PI * 2) * 34}%`,
+                        animationDelay: `${i * 0.045}s`,
+                      }}
+                      aria-hidden="true"
+                    />
+                  ))}
+                </>
+              )}
+              <div className="relative w-11 h-11 rounded-full bg-[hsl(var(--cosmic-nebula-cyan)/0.10)] ring-1 ring-[hsl(var(--cosmic-nebula-cyan)/0.25)] flex items-center justify-center snap-release-core">
+                <svg
+                  viewBox="0 0 24 24"
+                  className="w-5 h-5 text-[hsl(var(--cosmic-nebula-cyan))]"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path
+                    d="M5 13l4 4L19 7"
+                    style={animate ? {
+                      strokeDasharray: 22,
+                      strokeDashoffset: 22,
+                      animation: 'snap-draw-check 0.5s ease-out 0.15s forwards',
+                    } : undefined}
+                  />
+                </svg>
+              </div>
             </div>
-            <p className="text-sm text-muted-foreground/60">
-              {ts.journalBurnReleasedMessage || 'Your thought has been released.'}
-            </p>
+            <div className="text-center">
+              <h4 className="text-base font-semibold text-foreground">
+                {ts.journalReleaseFinalTitle || ts.journalBurnReleased || 'Released'}
+              </h4>
+              <p className="snap-release-copy mt-1 text-sm text-muted-foreground/60">
+                {ts.journalReleaseFinalSubtitle || 'Text was not saved.'}
+              </p>
+            </div>
           </motion.div>
         ) : (
-          <div ref={containerRef} className="relative overflow-hidden">
-            {/* Content wrapper — clip-path driven by burn line via ref (zero re-renders).
-                No opacity fade: real text stays visible above burn line, clip-path
-                clips it from bottom as fire advances. Canvas particles tremble at
-                the burn edge (25px proximity) to create the "crumbling" transition. */}
-            <div ref={contentWrapRef}>
-              <textarea
-                ref={textareaRef}
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                placeholder={ts.journalBurnPlaceholder || 'Write what worries you...'}
-                className={`w-full rounded-xl px-4 py-3 text-sm outline-none resize-none bg-white/[0.03] dark:bg-white/[0.03] ring-1 ring-white/[0.06] focus:ring-red-500/20 placeholder:text-muted-foreground/60 motion-safe:transition-colors motion-safe:duration-150 min-h-16 max-h-[200px] ${burning ? 'text-orange-400/80' : 'text-foreground/90'}`}
-                rows={2}
-                maxLength={500}
-                disabled={burning}
-                aria-label={ts.journalBurnPlaceholder || 'Write what worries you...'}
-              />
-
-              {/* Character counter */}
-              {text.length > 0 && !burning && (
-                <div className={`text-end text-xs mt-1 motion-safe:transition-opacity motion-safe:duration-200 ${text.length > 450 ? 'text-red-400/70' : 'text-muted-foreground/60'}`}>
-                  {text.length}/500
-                </div>
+          <div
+            ref={containerRef}
+            className={cn(
+              "snap-release-stage relative overflow-hidden rounded-[1.35rem]",
+              releasing && "min-h-[154px]",
+            )}
+          >
+            <div
+              ref={contentWrapRef}
+              className={cn(
+                "relative z-[1]",
+                releasing ? "snap-fragment-surface" : "snap-message-surface",
               )}
+            >
+              {releasing ? (
+                <div className="snap-fragment-card" aria-hidden="true">
+                  <span className="snap-card-depth" />
+                  <span className="snap-card-grid" />
+                  <p className="snap-fragment-text">
+                    {releaseThought}
+                  </p>
+                  <span className="snap-card-scan snap-card-scan-a" />
+                  <span className="snap-card-scan snap-card-scan-b" />
+                  <span className="snap-card-scan snap-card-scan-c" />
+                </div>
+              ) : (
+                <>
+                  <textarea
+                    ref={textareaRef}
+                    value={text}
+                    onChange={(event) => setText(event.target.value)}
+                    placeholder={ts.journalBurnPlaceholder || 'Write what worries you...'}
+                    className="w-full rounded-xl px-4 py-3 text-sm outline-none resize-none bg-white/[0.03] dark:bg-white/[0.03] ring-1 ring-white/[0.06] focus:ring-[hsl(var(--cosmic-nebula-purple)/0.24)] placeholder:text-muted-foreground/60 motion-safe:transition-colors motion-safe:duration-150 min-h-16 max-h-[200px] text-foreground/90"
+                    rows={2}
+                    maxLength={500}
+                    spellCheck={false}
+                    autoCorrect="off"
+                    autoCapitalize="off"
+                    data-gramm="false"
+                    data-gramm_editor="false"
+                    data-enable-grammarly="false"
+                    aria-label={ts.journalBurnPlaceholder || 'Write what worries you...'}
+                  />
 
-              {!burning && (
-                <motion.button
-                  whileTap={zenTap.button}
-                  onClick={startBurn}
-                  disabled={!hasText}
-                  className={`mt-3 w-full py-3 rounded-full text-sm font-medium motion-safe:transition-all flex items-center justify-center gap-2 min-h-[44px] ${hasText ? 'bg-red-500/15 text-red-300 ring-1 ring-red-500/20 hover:bg-red-500/20' : 'bg-white/[0.03] dark:bg-white/[0.03] text-muted-foreground/50 ring-1 ring-white/[0.06]'} ${hasText && animate ? 'burn-glow-pulse-wrap' : ''}`}
-                >
-                  <Flame className="w-4 h-4" />
-                  {ts.journalBurnAction || 'Burn it'}
-                </motion.button>
+                  {text.length > 0 && (
+                    <div className={`text-end text-xs mt-1 motion-safe:transition-opacity motion-safe:duration-200 ${text.length > 450 ? 'text-red-400/70' : 'text-muted-foreground/60'}`}>
+                      {text.length}/500
+                    </div>
+                  )}
+
+                  <motion.button
+                    whileTap={zenTap.button}
+                    onClick={startSnapRelease}
+                    disabled={!hasText}
+                    className={`mt-3 w-full py-3 rounded-full text-sm font-medium motion-safe:transition-all flex items-center justify-center gap-2 min-h-[44px] ${hasText ? 'snap-release-action-active' : 'bg-white/[0.03] dark:bg-white/[0.03] text-muted-foreground/50 ring-1 ring-white/[0.06]'} ${hasText && animate ? 'snap-glow-pulse-wrap' : ''}`}
+                  >
+                    <QuietReleaseIcon className="w-4 h-4" />
+                    {ts.journalBurnAction || 'Burn it'}
+                  </motion.button>
+                </>
               )}
             </div>
 
-            {/* Dust canvas - ALWAYS in DOM so ref is available synchronously.
-                React 18 batches setState, so {burning && <canvas>} would make
-                canvasRef.current null when startBurn() accesses it. */}
+            {releasing && animate && (
+              <div ref={pressureRef} className="snap-pressure-wave" aria-hidden="true" />
+            )}
+
             <canvas
               ref={canvasRef}
-              className="absolute inset-0 w-full h-full rounded-xl z-[2] pointer-events-none"
-              style={{
-                opacity: burning ? 1 : 0,
-              }}
+              className="absolute inset-0 w-full h-full rounded-xl z-[4] pointer-events-none"
+              style={{ opacity: releasing ? 1 : 0 }}
               aria-hidden="true"
             />
           </div>

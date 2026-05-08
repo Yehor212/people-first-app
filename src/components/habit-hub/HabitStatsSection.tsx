@@ -7,6 +7,7 @@
 import { useMemo } from 'react';
 import { Hash, Flame, Trophy, CalendarDays } from 'lucide-react';
 import type { HabitStreak } from '@/lib/habitScore';
+import type { HabitStatsSnapshot } from '@/lib/habitStatsSnapshot';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 interface HabitStatsSectionProps {
@@ -14,13 +15,25 @@ interface HabitStatsSectionProps {
   currentStreak: number;
   allStreaks: HabitStreak[];
   completedDates: string[];
+  snapshot?: HabitStatsSnapshot;
 }
 
-export function HabitStatsSection({ currentStreak, allStreaks, completedDates }: HabitStatsSectionProps) {
+export function HabitStatsSection({ currentStreak, allStreaks, completedDates, snapshot }: HabitStatsSectionProps) {
   const { t } = useLanguage();
   const ts = t as unknown as Record<string, string>;
 
   const stats = useMemo(() => {
+    if (snapshot) {
+      return {
+        total: snapshot.totalCompleted,
+        currentStreak: snapshot.currentStreak,
+        bestStreak: snapshot.bestStreak,
+        thisMonth: snapshot.thisMonthCompleted,
+        daysInMonth: snapshot.daysInMonth,
+        weekPace: snapshot.periods[0]?.percentToDate ?? 0,
+      };
+    }
+
     const total = completedDates.length;
     const bestStreak = allStreaks.length > 0
       ? Math.max(...allStreaks.map(s => s.length))
@@ -32,8 +45,8 @@ export function HabitStatsSection({ currentStreak, allStreaks, completedDates }:
     const thisMonth = completedDates.filter(d => d.startsWith(yearMonth)).length;
     const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
 
-    return { total, currentStreak, bestStreak, thisMonth, daysInMonth };
-  }, [completedDates, allStreaks, currentStreak]);
+    return { total, currentStreak, bestStreak, thisMonth, daysInMonth, weekPace: 0 };
+  }, [completedDates, allStreaks, currentStreak, snapshot]);
 
   const cells = [
     {
@@ -58,9 +71,9 @@ export function HabitStatsSection({ currentStreak, allStreaks, completedDates }:
     },
     {
       icon: CalendarDays,
-      value: stats.thisMonth,
-      suffix: `/${stats.daysInMonth}`,
-      label: ts.thisMonth || 'This Month',
+      value: Math.round(stats.weekPace),
+      suffix: '%',
+      label: ts.habitStatsPace || ts.thisMonth || 'Pace',
       color: 'text-cyan-400',
     },
   ];

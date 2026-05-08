@@ -67,6 +67,8 @@ const dateString = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const moodType = z.enum(["great", "good", "okay", "bad", "terrible"]);
 const loopHabitType = z.enum(["boolean", "numerical"]);
 const targetType = z.enum(["atLeast", "atMost"]);
+const habitNumericalEntryMode = z.enum(["completeTarget", "incrementStep", "limitCheck"]);
+const habitScheduleMode = z.enum(["daily", "flexiblePerPeriod", "specificDays"]);
 const focusStatus = z.enum(["completed", "aborted"]);
 const primaryEmotion = z.enum([
   "joy",
@@ -175,6 +177,14 @@ export const runtimeHabitSchema = z
         denominator: z.number(),
       })
       .default({ numerator: 1, denominator: 1 }),
+    schedule: z
+      .object({
+        mode: habitScheduleMode,
+        period: z.literal("week"),
+        targetCount: z.number(),
+        dueDays: z.array(z.number()).optional(),
+      })
+      .optional(),
     entries: z
       .record(
         z.string(),
@@ -192,6 +202,7 @@ export const runtimeHabitSchema = z
     targetValue: z.number().default(0),
     targetType: targetType.default("atLeast"),
     unit: z.string().default(""),
+    quickEntryMode: habitNumericalEntryMode.optional(),
     durationDays: z.number().int().min(1).optional(),
     startDate: dateString.optional(),
     endDate: dateString.optional(),
@@ -376,6 +387,75 @@ export const microReflectionSchema = z
     linkedHabitIds: z.array(z.string()).optional(),
     linkedFocusSessionId: z.string().optional(),
     expandedToJournalId: z.string().optional(),
+  })
+  .passthrough();
+
+const dayRitualType = z.enum(["opening", "closing"]);
+const ritualEnergy = z.union([
+  z.literal(1),
+  z.literal(2),
+  z.literal(3),
+  z.literal(4),
+  z.literal(5),
+]);
+
+export const dayRitualSchema = z
+  .object({
+    id: z.string().min(1),
+    type: dayRitualType,
+    date: dateString,
+    timestamp: z.number(),
+    updatedAt: z.number(),
+    mood: moodType.optional(),
+    energy: ritualEnergy.optional(),
+    priorities: z.array(z.string()),
+    focusIntent: z.string().optional(),
+    habitIntent: z.string().optional(),
+    wins: z.array(z.string()),
+    drains: z.array(z.string()),
+    carryForward: z.string().optional(),
+    gratitude: z.string().optional(),
+    note: z.string().optional(),
+  })
+  .passthrough();
+
+const reflectionInsightStatus = z.enum([
+  "new",
+  "saved",
+  "testing",
+  "learned",
+  "dismissed",
+]);
+
+const reflectionInsightImpact = z.enum(["high", "medium", "low"]);
+const reflectionInsightSource = z.enum([
+  "behavior-pattern",
+  "ritual-pattern",
+  "focus-pattern",
+  "mood-pattern",
+]);
+
+const reflectionInsightEvidenceSchema = z
+  .object({
+    label: z.string().min(1),
+    detail: z.string().min(1),
+    metric: z.string().optional(),
+  })
+  .passthrough();
+
+export const reflectionInsightCardSchema = z
+  .object({
+    id: z.string().min(1),
+    source: reflectionInsightSource,
+    title: z.string().min(1),
+    summary: z.string().min(1),
+    experiment: z.string().min(1),
+    confidence: z.number().min(0).max(1),
+    impact: reflectionInsightImpact,
+    evidence: z.array(reflectionInsightEvidenceSchema),
+    status: reflectionInsightStatus,
+    createdAt: z.number(),
+    updatedAt: z.number(),
   })
   .passthrough();
 

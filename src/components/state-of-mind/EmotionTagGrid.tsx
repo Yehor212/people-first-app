@@ -4,7 +4,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { zenMotion, zenTap, zenHover } from '@/lib/animationUtils';
 import { haptics } from '@/lib/haptics';
 import { getTagsForValence, sortByWarmth } from './emotionTags';
-import type { Translations } from '@/i18n/types';
+import { emotionTagToI18nKey } from './emotionI18n';
 
 interface EmotionTagGridProps {
   valence: number;
@@ -23,12 +23,6 @@ interface EmotionTagGridProps {
 
 /** Legacy V1 fallback: first 8 tags, flip to all on click (no collapse). */
 const INITIAL_VISIBLE = 8;
-
-/** Map emotion tag key to i18n key */
-const tagToI18nKey = (key: string): keyof Translations => {
-  const capitalized = key.charAt(0).toUpperCase() + key.slice(1);
-  return `somTag${capitalized}` as keyof Translations;
-};
 
 /** Parent variant: orchestrates stagger cascade (like HabitHubList pattern) */
 const chipContainer = {
@@ -129,7 +123,7 @@ export function EmotionTagGrid({
       >
         {visibleTags.map((tag, index) => {
           const isSelected = selected.includes(tag.key);
-          const i18nKey = tagToI18nKey(tag.key);
+          const i18nKey = emotionTagToI18nKey(tag.key);
           const label = (t[i18nKey] as string) || tag.key;
 
           return (

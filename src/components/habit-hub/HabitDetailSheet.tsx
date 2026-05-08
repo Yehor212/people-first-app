@@ -1,39 +1,32 @@
-/**
- * HabitDetailSheet — Bottom sheet with full Loop-style analytics for a single habit.
- * Uses Radix Sheet (existing ui/sheet.tsx). Deep Space aesthetic.
- *
- * Sections: Header → Stats → Score Chart → Heatmap → Frequency → Streaks → Notes → Actions.
- */
-
+import { memo, useState, useMemo, useCallback, useEffect, Suspense } from "react";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
-  memo,
-  useState,
-  useMemo,
-  useCallback,
-  useEffect,
-  Suspense,
-} from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  Archive,
-  ArchiveRestore,
+  CalendarDays,
+  ChevronRight,
+  Flame,
   Pencil,
+  ShieldCheck,
   SkipForward,
+  Sparkles,
+  Target,
   Trash2,
+  TrendingUp,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { ProgressRing } from "@/components/ui/progress-ring";
 import {
-  computeHabitScore,
-  computeAllStreaks,
-  type HabitStreak,
-} from "@/lib/habitScore";
-import { getHabitCompletedDates } from "@/lib/habits";
-import { computeEntriesWithAuto } from "@/lib/habitComputedEntries";
+  computeHabitStatsSnapshot,
+  type HabitStatsSnapshot,
+  type HabitStatsTone,
+} from "@/lib/habitStatsSnapshot";
+import {
+  doesNumericalStoredValueMeetTarget,
+  formatHabitQuantity,
+  formatHabitValue,
+} from "@/lib/habits";
 import { resolveHabitColor } from "@/lib/habitColorUtils";
 import { zenMotion } from "@/lib/animationUtils";
 import { hapticTap } from "@/lib/haptics";
-import { AnimatedFire } from "@/components/compact-habit-card/AnimatedFire";
 import { HabitStatsSection } from "./HabitStatsSection";
 import { HabitTargetCard } from "./HabitTargetCard";
 import { HabitScoreChart } from "./HabitScoreChart";
@@ -45,24 +38,28 @@ import { cn, getToday } from "@/lib/utils";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
 import { getHabitPlanState } from "@/lib/habitPlan";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { formatLocalizedCount } from "@/features/journal";
 import { useBackHandler } from "@/hooks/useBackHandler";
 import { ENTRY } from "@/types";
 import type { Habit } from "@/types";
 
-// Lazy-load HabitFrequencyChart to keep recharts out of main bundle (prevents TDZ errors)
 const LazyHabitFrequencyChart = lazyWithRetry(
   () =>
     import("./HabitFrequencyChart").then((m) => ({
       default: m.HabitFrequencyChart,
     })),
-  "HabitFrequencyChart",
+  "HabitFrequencyChart"
 );
 
-/** Stagger parent for sheet sections */
+type DetailTab = "overview" | "calendar" | "trends" | "history";
+
+const detailTabs: DetailTab[] = ["overview", "calendar", "trends", "history"];
+
 const sheetStagger = {
   hidden: {},
-  visible: { transition: { staggerChildren: 0.04, delayChildren: 0.15 } },
+  visible: { transition: { staggerChildren: 0.04, delayChildren: 0.12 } },
 };
+
 const sectionEntrance = {
   hidden: { opacity: 0, y: 8 },
   visible: { opacity: 1, y: 0, transition: zenMotion.gentle },
@@ -73,11 +70,173 @@ interface HabitDetailSheetProps {
   onClose: () => void;
   onEdit: (habit: Habit) => void;
   onUpdate: (habit: Habit) => void;
-  onArchive: (id: string) => void;
-  onUnarchive: (id: string) => void;
   onSkip: (id: string, date: string) => void;
   onUnskip: (id: string, date: string) => void;
   onDelete: (id: string) => void;
+}
+
+function formatTargetValue(habit: Habit, value: number | undefined, language: string): string {
+  if (value === undefined) return "";
+  return formatHabitQuantity(value, habit.unit, language as Parameters<typeof formatHabitValue>[1]);
+}
+
+function getToneClasses(tone: HabitStatsTone): string {
+  if (tone === "success") return "border-mood-great/30 bg-mood-great/10 text-mood-great";
+  if (tone === "warning") return "border-mood-okay/35 bg-mood-okay/10 text-mood-okay";
+  if (tone === "danger") return "border-destructive/35 bg-destructive/10 text-destructive";
+  if (tone === "skipped") return "border-primary/25 bg-primary/10 text-primary";
+  return "border-border bg-secondary/40 text-muted-foreground";
+}
+
+function getStatusCopy(
+  snapshot: HabitStatsSnapshot,
+  habit: Habit,
+  ts: Record<string, string>,
+  language: string
+): { title: string; detail: string; action: string } {
+  const today = snapshot.today;
+  const value = formatTargetValue(habit, today.realValue, language);
+  const target = formatTargetValue(habit, today.targetValue, language);
+  const remaining = formatTargetValue(habit, today.remaining, language);
+
+  if (today.status === "done" && habit.habitType === "numerical" && habit.targetType === "atMost") {
+    return {
+      title: ts.habitStatsLimitSafe || "Within the limit",
+      detail: value ? `${value} / ${target}` : target,
+      action: ts.habitStatsActionHold || "Keep the line tomorrow.",
+    };
+  }
+
+  if (today.status === "done") {
+    return {
+      title: ts.habitStatsDoneToday || "Today is counted",
+      detail: value ? `${value} / ${target}` : ts.habitStatsProofCounted || "Check-in counted",
+      action: ts.habitStatsActionHold || "Keep the line tomorrow.",
+    };
+  }
+
+  if (today.status === "partial") {
+    return {
+      title: ts.habitStatsPartial || "Progress started",
+      detail: remaining
+        ? `${ts.habitStatsRemaining || "Remaining"}: ${remaining}`
+        : `${value} / ${target}`,
+      action: ts.habitStatsActionFinish || "Finish the target while it is still easy.",
+    };
+  }
+
+  if (today.status === "skipped") {
+    return {
+      title: ts.habitStatsSkippedSafe || "Skip kept the streak safe",
+      detail: ts.habitStatsSkipNotDone || "It does not count as a completion.",
+      action: ts.habitStatsActionReturn || "Return with one clean mark tomorrow.",
+    };
+  }
+
+  if (today.status === "overLimit") {
+    return {
+      title: ts.habitStatsLimitOver || "Limit exceeded",
+      detail: value ? `${value} / ${target}` : target,
+      action: ts.habitStatsActionReset || "Use tomorrow as the reset point.",
+    };
+  }
+
+  if (today.status === "missed") {
+    return {
+      title: ts.habitStatsNotCounted || "Not counted yet",
+      detail: ts.habitStatsNoProof || "No check-in for today yet.",
+      action: ts.habitStatsActionCheckIn || "Add a real check-in.",
+    };
+  }
+
+  return {
+    title: ts.habitStatsNeedsCheckIn || "Needs a check-in",
+    detail: target
+      ? `${ts.habitStatsTodayTarget || "Today target"}: ${target}`
+      : ts.habitStatsNoDataYet || "No data for today yet.",
+    action: ts.habitStatsActionCheckIn || "Add a real check-in.",
+  };
+}
+
+function getTabLabel(tab: DetailTab, ts: Record<string, string>): string {
+  const labels: Record<DetailTab, string> = {
+    overview: ts.habitStatsTabOverview || "Overview",
+    calendar: ts.habitStatsTabCalendar || "Calendar",
+    trends: ts.habitStatsTabTrends || "Trends",
+    history: ts.habitStatsTabHistory || "History",
+  };
+  return labels[tab];
+}
+
+function getRecentDays(habit: Habit, today: string) {
+  const result: Array<{
+    date: string;
+    day: string;
+    status: "done" | "partial" | "skip" | "miss" | "empty";
+  }> = [];
+  const base = new Date(`${today}T00:00:00`);
+
+  for (let i = 13; i >= 0; i -= 1) {
+    const date = new Date(base);
+    date.setDate(date.getDate() - i);
+    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    const entry = habit.entries?.[dateStr];
+    let status: "done" | "partial" | "skip" | "miss" | "empty" = "empty";
+
+    if (entry?.value === ENTRY.SKIP) {
+      status = "skip";
+    } else if (habit.habitType === "boolean") {
+      status =
+        entry?.value === ENTRY.YES_MANUAL || entry?.value === ENTRY.YES_AUTO
+          ? "done"
+          : entry
+            ? "miss"
+            : "empty";
+    } else if (entry) {
+      if (doesNumericalStoredValueMeetTarget(habit, entry.value)) {
+        status = "done";
+      } else if (entry.value > 0) {
+        status = habit.targetType === "atMost" ? "miss" : "partial";
+      } else {
+        status = habit.targetType === "atMost" ? "done" : "miss";
+      }
+    }
+
+    result.push({ date: dateStr, day: String(date.getDate()), status });
+  }
+
+  return result;
+}
+
+function recentDayClasses(status: ReturnType<typeof getRecentDays>[number]["status"]): string {
+  if (status === "done") return "border-mood-great/35 bg-mood-great/15 text-mood-great";
+  if (status === "partial") return "border-mood-okay/35 bg-mood-okay/15 text-mood-okay";
+  if (status === "skip") return "border-primary/35 bg-primary/15 text-primary";
+  if (status === "miss") return "border-destructive/25 bg-destructive/10 text-destructive";
+  return "border-border bg-secondary/35 text-muted-foreground";
+}
+
+function OverviewMetric({
+  icon: Icon,
+  label,
+  value,
+  detail,
+}: {
+  icon: typeof Flame;
+  label: string;
+  value: string;
+  detail?: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-border bg-secondary/35 p-3">
+      <div className="flex items-center gap-2 text-muted-foreground">
+        <Icon className="h-4 w-4" aria-hidden="true" />
+        <span className="text-[10px] font-semibold uppercase tracking-[0.18em]">{label}</span>
+      </div>
+      <div className="mt-2 text-xl font-semibold tabular-nums text-foreground">{value}</div>
+      {detail && <div className="mt-1 text-[11px] text-muted-foreground">{detail}</div>}
+    </div>
+  );
 }
 
 export const HabitDetailSheet = memo(function HabitDetailSheet({
@@ -85,107 +244,47 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
   onClose,
   onEdit,
   onUpdate,
-  onArchive,
-  onUnarchive,
   onSkip,
   onUnskip,
   onDelete,
 }: HabitDetailSheetProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const ts = t as unknown as Record<string, string>;
   const today = getToday();
+  const planDurationFallback = "day plan";
+  const reduceMotion = useReducedMotion();
 
-  // P0: Android back button must close sheet, not navigate away
-  // Delete confirmation gets its own handler so back dismisses it instead of the whole sheet
+  const [activeTab, setActiveTab] = useState<DetailTab>("overview");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   useBackHandler(showDeleteConfirm, () => setShowDeleteConfirm(false));
   useBackHandler(!!habit && !showDeleteConfirm, onClose);
 
-  // Compute all derived data once — passed down to child components to avoid redundant computation
-  const derived = useMemo(() => {
-    if (!habit)
-      return {
-        score: 0,
-        streak: 0,
-        allStreaks: [] as HabitStreak[],
-        completedDates: [] as string[],
-      };
-    const allStreaks = computeAllStreaks(habit);
-    const todayStr = getToday();
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, "0")}-${String(yesterday.getDate()).padStart(2, "0")}`;
-    // Derive current streak from allStreaks (same logic as getCurrentStreak)
-    let streak = 0;
-    if (allStreaks.length > 0) {
-      const recent = allStreaks.reduce(
-        (best, s) => (s.end > best.end ? s : best),
-        allStreaks[0],
-      );
-      if (recent.end === todayStr || recent.end === yesterdayStr)
-        streak = recent.length;
-    }
-    // Use computed entries (YES_AUTO fills) so Total matches heatmap green cells
-    const computedEntries = computeEntriesWithAuto(habit);
-    return {
-      score: computeHabitScore(habit),
-      streak,
-      allStreaks,
-      completedDates: getHabitCompletedDates(habit, computedEntries),
-    };
-  }, [habit]);
-  const { score, streak, allStreaks, completedDates } = derived;
-  const scorePercent = Math.round(score * 100);
+  useEffect(() => {
+    setIsDeleting(false);
+    setShowDeleteConfirm(false);
+    setActiveTab("overview");
+  }, [habit?.id]);
+
+  const snapshot = useMemo(
+    () => (habit ? computeHabitStatsSnapshot(habit, today) : null),
+    [habit, today]
+  );
+
+  const habitColor = habit ? resolveHabitColor(habit.color) : "hsl(var(--primary))";
+  const planState = useMemo(() => (habit ? getHabitPlanState(habit, today) : null), [habit, today]);
   const isSkippedToday = useMemo(
     () => habit?.entries?.[today]?.value === ENTRY.SKIP || false,
-    [habit, today],
+    [habit, today]
   );
-
-  const habitColor = habit
-    ? resolveHabitColor(habit.color)
-    : "hsl(var(--primary))";
-  const planState = useMemo(
-    () => (habit ? getHabitPlanState(habit, today) : null),
-    [habit, today],
-  );
-
-  const handleArchiveToggle = useCallback(() => {
-    if (!habit) return;
-    void hapticTap();
-    if (habit.isArchived) {
-      onUnarchive(habit.id);
-    } else {
-      onArchive(habit.id);
-    }
-    onClose();
-  }, [habit, onArchive, onUnarchive, onClose]);
 
   const handleSkipToggle = useCallback(() => {
     if (!habit) return;
     void hapticTap();
-    if (isSkippedToday) {
-      onUnskip(habit.id, today);
-    } else {
-      onSkip(habit.id, today);
-    }
+    if (isSkippedToday) onUnskip(habit.id, today);
+    else onSkip(habit.id, today);
   }, [habit, isSkippedToday, today, onSkip, onUnskip]);
-
-  const handleNoteUpdate = useCallback(
-    (updatedHabit: Habit) => {
-      onUpdate(updatedHabit);
-    },
-    [onUpdate],
-  );
-
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  // Reset delete UI state when a different habit is selected or sheet reopens.
-  // Radix Sheet stays mounted in DOM (open={false}), so state persists across opens.
-  // Without this reset, isDeleting=true from a previous delete permanently blocks future deletes.
-  useEffect(() => {
-    setIsDeleting(false);
-    setShowDeleteConfirm(false);
-  }, [habit?.id]);
 
   const handleDelete = useCallback(() => {
     if (!habit || isDeleting) return;
@@ -195,6 +294,30 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
     setShowDeleteConfirm(false);
     onClose();
   }, [habit, isDeleting, onDelete, onClose]);
+
+  const handleNoteUpdate = useCallback(
+    (updatedHabit: Habit) => {
+      onUpdate(updatedHabit);
+    },
+    [onUpdate]
+  );
+
+  if (!habit || !snapshot) {
+    return (
+      <Sheet open={false} onOpenChange={onClose}>
+        <SheetContent side="bottom" />
+      </Sheet>
+    );
+  }
+
+  const statusCopy = getStatusCopy(snapshot, habit, ts, language);
+  const week = snapshot.periods[0];
+  const month = snapshot.periods[1];
+  const bestWeekdayLabels = [t.daySun, t.dayMon, t.dayTue, t.dayWed, t.dayThu, t.dayFri, t.daySat];
+  const bestWeekday = snapshot.bestWeekday
+    ? bestWeekdayLabels[snapshot.bestWeekday.index]
+    : ts.habitStatsDataGrowing || "Data is growing";
+  const recentDays = getRecentDays(habit, today);
 
   return (
     <Sheet
@@ -210,311 +333,376 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
       <SheetContent
         side="bottom"
         className={cn(
-          "max-h-[85dvh] rounded-t-3xl overflow-y-auto",
+          "max-h-[90dvh] rounded-t-3xl overflow-y-auto",
           "bg-card border-t border-border",
-          "p-0",
+          "p-0"
         )}
       >
-        {habit && (
+        <motion.div
+          className="px-5 pt-5 space-y-5 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))]"
+          variants={sheetStagger}
+          initial="hidden"
+          animate="visible"
+        >
           <motion.div
-            className="px-6 pt-6 space-y-6 pb-[calc(2rem+env(safe-area-inset-bottom,0px))]"
-            variants={sheetStagger}
-            initial="hidden"
-            animate="visible"
+            variants={sectionEntrance}
+            className="relative overflow-hidden rounded-3xl border border-border bg-secondary/25 p-4"
           >
-            {/* ═══ HEADER ═══ */}
             <motion.div
-              variants={sectionEntrance}
-              className="flex items-center gap-3"
-            >
+              aria-hidden="true"
+              className="absolute -left-10 -top-16 h-40 w-40 rounded-full blur-3xl"
+              style={{ backgroundColor: habitColor, opacity: 0.22 }}
+              animate={
+                reduceMotion ? undefined : { scale: [1, 1.08, 1], opacity: [0.18, 0.28, 0.18] }
+              }
+              transition={
+                reduceMotion ? undefined : { duration: 4.5, repeat: Infinity, ease: "easeInOut" }
+              }
+            />
+            <div className="relative flex items-center gap-3">
               <div
-                className="w-12 h-12 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
+                className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border text-2xl shadow-sm"
                 style={{
-                  backgroundColor: `${habitColor}20`,
-                  color: habitColor,
+                  borderColor: `${habitColor}66`,
+                  backgroundColor: `${habitColor}24`,
                 }}
               >
                 {habit.icon}
               </div>
-              <div className="flex-1 min-w-0">
-                <SheetTitle className="text-lg font-semibold text-foreground truncate">
+              <div className="min-w-0 flex-1">
+                <SheetTitle className="truncate text-xl font-semibold text-foreground">
                   {habit.name}
                 </SheetTitle>
-                {habit.category && (
-                  <span className="text-xs text-muted-foreground capitalize">
-                    {habit.category}
-                  </span>
-                )}
+                <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
+                  {habit.category && <span className="capitalize">{habit.category}</span>}
+                  {snapshot.identityProof.text && (
+                    <span className="rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-primary">
+                      {snapshot.identityProof.icon || "✦"} {snapshot.identityProof.text}
+                    </span>
+                  )}
+                </div>
                 {planState && (
                   <div className="mt-1 text-[11px] text-muted-foreground">
-                    {planState.durationDays}-{ts.habitDurationDaysLabel || "day"} {ts.habitPlanLabel || "plan"}
+                    {formatLocalizedCount(
+                      planState.durationDays,
+                      language,
+                      ts,
+                      "habitPlanDurationCount",
+                      planDurationFallback
+                    )}
                     {" · "}
                     {planState.isComplete
-                      ? (ts.completed || "Completed")
-                      : `${planState.remainingDays} ${ts.daysLeft || "days left"}`}
+                      ? ts.completed
+                      : formatLocalizedCount(
+                          planState.remainingDays,
+                          language,
+                          ts,
+                          "daysLeftCount",
+                          ts.daysLeft
+                        )}
                   </div>
                 )}
               </div>
-              {/* Score ring */}
               <ProgressRing
-                progress={scorePercent}
-                size="md"
+                progress={snapshot.scorePercent}
+                size="lg"
+                showPercentage
                 color={
-                  scorePercent >= 60
+                  snapshot.scorePercent >= 60
                     ? "success"
-                    : scorePercent >= 30
+                    : snapshot.scorePercent >= 30
                       ? "warning"
                       : "primary"
                 }
               />
-            </motion.div>
-
-            {/* ═══ SCORE + STREAK SUMMARY ═══ */}
-            <motion.div
-              variants={sectionEntrance}
-              className="flex items-center justify-center gap-6 py-2"
-            >
-              <div className="text-center">
-                <div
-                  className={cn(
-                    "text-2xl font-bold tabular-nums",
-                    scorePercent >= 60
-                      ? "text-emerald-400"
-                      : scorePercent >= 30
-                        ? "text-amber-400"
-                        : "text-muted-foreground",
-                  )}
-                >
-                  {scorePercent}%
-                </div>
-                <div className="text-[10px] text-muted-foreground/60 mt-0.5">
-                  {ts.habitConsistency || "Consistency"}
-                </div>
-              </div>
-              {streak > 0 && (
-                <div className="text-center">
-                  <div className="flex items-center justify-center gap-1">
-                    <AnimatedFire
-                      intensity={Math.min(streak / 7, 3)}
-                      size="md"
-                    />
-                    <span className="text-2xl font-bold text-orange-400 tabular-nums">
-                      {streak}
-                    </span>
-                  </div>
-                  <div className="text-[10px] text-muted-foreground/60 mt-0.5">
-                    {ts.currentStreak || "Current Streak"}
-                  </div>
-                </div>
-              )}
-            </motion.div>
-
-            {/* ═══ STATISTICS ═══ */}
-            <motion.p
-              variants={sectionEntrance}
-              className="text-center text-xs text-muted-foreground"
-            >
-              {ts.habitConsistencyHint ||
-                "Weighted from your recent check-ins and target progress, not just today."}
-            </motion.p>
-
-            <motion.div variants={sectionEntrance}>
-              <HabitStatsSection
-                currentStreak={streak}
-                allStreaks={allStreaks}
-                completedDates={completedDates}
-              />
-            </motion.div>
-
-            {/* ═══ TARGET PROGRESS (numerical only) ═══ */}
-            <motion.div variants={sectionEntrance}>
-              <HabitTargetCard habit={habit} />
-            </motion.div>
-
-            {/* ═══ SCORE HISTORY LINE CHART ═══ */}
-            <motion.div variants={sectionEntrance}>
-              <HabitScoreChart habit={habit} />
-            </motion.div>
-
-            {/* ═══ COMPLETION BAR CHART ═══ */}
-            <motion.div variants={sectionEntrance}>
-              <HabitBarCard habit={habit} />
-            </motion.div>
-
-            {/* ═══ HEATMAP ═══ */}
-            <motion.div variants={sectionEntrance}>
-              <HabitHeatmapGrid habit={habit} />
-            </motion.div>
-
-            {/* ═══ FREQUENCY CHART ═══ */}
-            <motion.div variants={sectionEntrance}>
-              <Suspense fallback={<div className="h-48" />}>
-                <LazyHabitFrequencyChart habit={habit} />
-              </Suspense>
-            </motion.div>
-
-            {/* ═══ STREAK TIMELINE ═══ */}
-            <motion.div variants={sectionEntrance}>
-              <HabitStreakTimeline
-                allStreaks={allStreaks}
-                currentStreak={streak}
-              />
-            </motion.div>
-
-            {/* ═══ NOTES ═══ */}
-            <motion.div variants={sectionEntrance}>
-              <HabitNotesSection habit={habit} onUpdate={handleNoteUpdate} />
-            </motion.div>
-
-            {/* ═══ ACTIONS ═══ */}
-            <motion.div
-              variants={sectionEntrance}
-              className="space-y-2 pt-2 border-t border-border"
-            >
-              {/* Edit habit */}
-              <button
-                onClick={() => {
-                  onEdit(habit);
-                  onClose();
-                }}
-                className={cn(
-                  "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm motion-safe:transition-colors min-h-[44px]",
-                  "bg-white/[0.03] border border-border",
-                  "hover:bg-white/[0.06] active:scale-[0.98]",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50",
-                )}
-              >
-                <Pencil className="w-4 h-4 text-violet-400" />
-                <span className="text-muted-foreground">
-                  {ts.editHabit || "Edit Habit"}
-                </span>
-              </button>
-
-              {/* Skip today */}
-              <button
-                onClick={handleSkipToggle}
-                className={cn(
-                  "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm motion-safe:transition-colors min-h-[44px]",
-                  "bg-white/[0.03] border border-border",
-                  "hover:bg-white/[0.06] active:scale-[0.98]",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50",
-                  isSkippedToday &&
-                    "bg-blue-500/[0.08] border-blue-500/[0.15] text-blue-400",
-                )}
-              >
-                <SkipForward className="w-4 h-4 text-blue-400" />
-                <span
-                  className={
-                    isSkippedToday ? "text-blue-300" : "text-muted-foreground"
-                  }
-                >
-                  {isSkippedToday
-                    ? ts.skipped || "Skipped Today"
-                    : ts.skipToday || "Skip Today"}
-                </span>
-              </button>
-
-              {/* Archive / Unarchive */}
-              <button
-                onClick={handleArchiveToggle}
-                className={cn(
-                  "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm motion-safe:transition-colors min-h-[44px]",
-                  "bg-white/[0.03] border border-border",
-                  "hover:bg-white/[0.06] active:scale-[0.98]",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50",
-                )}
-              >
-                {habit.isArchived ? (
-                  <>
-                    <ArchiveRestore className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">
-                      {ts.unarchiveHabit || "Unarchive"}
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <Archive className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">
-                      {ts.archiveHabit || "Archive Habit"}
-                    </span>
-                  </>
-                )}
-              </button>
-
-              {/* Delete — danger with confirmation */}
-              <AnimatePresence mode="wait" initial={false}>
-                {!showDeleteConfirm ? (
-                  <motion.div
-                    key="del-btn"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={zenMotion.exit}
-                  >
-                    <button
-                      onClick={() => {
-                        void hapticTap();
-                        setShowDeleteConfirm(true);
-                      }}
-                      className={cn(
-                        "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm motion-safe:transition-colors min-h-[44px]",
-                        "bg-red-500/[0.05] border border-red-500/[0.1]",
-                        "hover:bg-red-500/[0.1] active:scale-[0.98]",
-                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50",
-                        "text-red-400",
-                      )}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      <span>{ts.deleteHabit || "Delete Habit"}</span>
-                    </button>
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key="del-confirm"
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={zenMotion.snappy}
-                    className="overflow-hidden"
-                  >
-                    <div className="space-y-2">
-                      <p className="text-xs text-red-400 text-center px-2">
-                        {ts.confirmDeleteHabit ||
-                          "Are you sure? This cannot be undone."}
-                      </p>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => setShowDeleteConfirm(false)}
-                          className={cn(
-                            "flex-1 px-4 py-3 rounded-xl text-sm font-medium motion-safe:transition-colors min-h-[44px]",
-                            "bg-white/[0.05] border border-border text-muted-foreground",
-                            "hover:bg-white/[0.08]",
-                            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50",
-                          )}
-                        >
-                          {ts.cancel || "Cancel"}
-                        </button>
-                        <button
-                          onClick={handleDelete}
-                          disabled={isDeleting}
-                          className={cn(
-                            "flex-1 px-4 py-3 rounded-xl text-sm font-medium motion-safe:transition-colors min-h-[44px]",
-                            "bg-red-600 text-white",
-                            "hover:bg-red-500 active:scale-[0.98]",
-                            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50",
-                            isDeleting && "opacity-50 cursor-not-allowed",
-                          )}
-                        >
-                          {ts.delete || "Delete"}
-                        </button>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </motion.div>
+            </div>
           </motion.div>
-        )}
+
+          <motion.div
+            variants={sectionEntrance}
+            role="tablist"
+            aria-label={ts.habitStatsTabsLabel || "Habit statistics sections"}
+            className="grid grid-cols-4 gap-1 rounded-2xl border border-border bg-secondary/30 p-1"
+          >
+            {detailTabs.map((tab) => (
+              <button
+                key={tab}
+                type="button"
+                role="tab"
+                aria-selected={activeTab === tab}
+                onClick={() => setActiveTab(tab)}
+                className={cn(
+                  "min-h-[44px] rounded-xl px-1 text-[11px] font-semibold motion-safe:transition",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
+                  activeTab === tab
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {getTabLabel(tab, ts)}
+              </button>
+            ))}
+          </motion.div>
+
+          <AnimatePresence mode="wait" initial={false}>
+            {activeTab === "overview" && (
+              <motion.section
+                key="overview"
+                role="tabpanel"
+                variants={sectionEntrance}
+                initial="hidden"
+                animate="visible"
+                exit={{ opacity: 0, y: -6 }}
+                className="space-y-4"
+              >
+                <div className={cn("rounded-3xl border p-4", getToneClasses(snapshot.today.tone))}>
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-current/20 bg-background/45 text-2xl">
+                      {habit.icon}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-semibold">{statusCopy.title}</div>
+                      <div className="mt-1 text-xs opacity-80">{statusCopy.detail}</div>
+                    </div>
+                    <ChevronRight className="mt-1 h-4 w-4 opacity-50" aria-hidden="true" />
+                  </div>
+                  <div className="mt-4 rounded-2xl border border-current/15 bg-background/35 px-3 py-2 text-xs">
+                    <span className="font-semibold">
+                      {ts.habitStatsNextAction || "Next action"}:
+                    </span>{" "}
+                    {statusCopy.action}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+                  <OverviewMetric
+                    icon={TrendingUp}
+                    label={ts.habitStatsPace || "Completion"}
+                    value={`${Math.round(week.percentToDate)}%`}
+                    detail={
+                      week.isOnPace
+                        ? ts.habitStatsOnTrack || "On track"
+                        : ts.habitStatsNeedsToday || "Needs a check-in"
+                    }
+                  />
+                  <OverviewMetric
+                    icon={Flame}
+                    label={ts.currentStreak || "Streak"}
+                    value={`${snapshot.currentStreak}${ts.daysAbbr || "d"}`}
+                    detail={
+                      ts.bestStreak
+                        ? `${ts.bestStreak}: ${snapshot.bestStreak}${ts.daysAbbr || "d"}`
+                        : undefined
+                    }
+                  />
+                  <OverviewMetric
+                    icon={ShieldCheck}
+                    label={ts.habitStatsProof || "Check-ins"}
+                    value={`${snapshot.totalCompleted}`}
+                    detail={
+                      snapshot.lowData ? ts.habitStatsLowData || "Needs more check-ins" : bestWeekday
+                    }
+                  />
+                </div>
+
+                <HabitStatsSection
+                  currentStreak={snapshot.currentStreak}
+                  allStreaks={snapshot.allStreaks}
+                  completedDates={snapshot.completedDates}
+                  snapshot={snapshot}
+                />
+              </motion.section>
+            )}
+
+            {activeTab === "calendar" && (
+              <motion.section
+                key="calendar"
+                role="tabpanel"
+                variants={sectionEntrance}
+                initial="hidden"
+                animate="visible"
+                exit={{ opacity: 0, y: -6 }}
+                className="space-y-4"
+              >
+                <div>
+                  <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                    <CalendarDays className="h-4 w-4" aria-hidden="true" />
+                    {ts.habitStatsRecentProof || "Recent check-ins"}
+                  </div>
+                  <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                    {recentDays.map((day) => (
+                      <div
+                        key={day.date}
+                        className={cn(
+                          "flex h-14 min-w-[48px] flex-col items-center justify-center rounded-2xl border text-xs font-semibold",
+                          recentDayClasses(day.status)
+                        )}
+                        aria-label={`${day.date}: ${day.status}`}
+                      >
+                        <span>{day.day}</span>
+                        <span className="mt-1 text-[10px] opacity-70">•</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <HabitHeatmapGrid habit={habit} />
+                <HabitTargetCard habit={habit} snapshot={snapshot} />
+              </motion.section>
+            )}
+
+            {activeTab === "trends" && (
+              <motion.section
+                key="trends"
+                role="tabpanel"
+                variants={sectionEntrance}
+                initial="hidden"
+                animate="visible"
+                exit={{ opacity: 0, y: -6 }}
+                className="space-y-5"
+              >
+                <div className="grid grid-cols-2 gap-2">
+                  <OverviewMetric
+                    icon={Target}
+                    label={ts.habitStatsThisMonth || ts.thisMonth || "Month"}
+                    value={`${Math.round(month.percentToDate)}%`}
+                    detail={`${formatHabitValue(month.actual, language)}/${formatHabitValue(month.expectedToDate, language)}`}
+                  />
+                  <OverviewMetric
+                    icon={Sparkles}
+                    label={ts.habitStatsBestDay || "Best day"}
+                    value={bestWeekday}
+                    detail={
+                      snapshot.bestWeekday
+                        ? `${snapshot.bestWeekday.count}`
+                        : ts.habitStatsLowData || "More data soon"
+                    }
+                  />
+                </div>
+                <HabitScoreChart habit={habit} />
+                <HabitBarCard habit={habit} />
+                <Suspense fallback={<div className="h-48" />}>
+                  <LazyHabitFrequencyChart habit={habit} />
+                </Suspense>
+              </motion.section>
+            )}
+
+            {activeTab === "history" && (
+              <motion.section
+                key="history"
+                role="tabpanel"
+                variants={sectionEntrance}
+                initial="hidden"
+                animate="visible"
+                exit={{ opacity: 0, y: -6 }}
+                className="space-y-5"
+              >
+                <HabitStreakTimeline
+                  allStreaks={snapshot.allStreaks}
+                  currentStreak={snapshot.currentStreak}
+                />
+                <HabitNotesSection habit={habit} onUpdate={handleNoteUpdate} />
+              </motion.section>
+            )}
+          </AnimatePresence>
+
+          <motion.div variants={sectionEntrance} className="space-y-2 border-t border-border pt-2">
+            <button
+              onClick={() => {
+                onEdit(habit);
+                onClose();
+              }}
+              className={cn(
+                "flex min-h-[44px] w-full items-center gap-3 rounded-xl border border-border bg-secondary/35 px-4 py-3 text-sm motion-safe:transition",
+                "hover:bg-secondary/55 active:scale-[0.98]",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+              )}
+            >
+              <Pencil className="h-4 w-4 text-primary" aria-hidden="true" />
+              <span className="text-muted-foreground">{ts.editHabit || "Edit Habit"}</span>
+            </button>
+
+            <button
+              onClick={handleSkipToggle}
+              className={cn(
+                "flex min-h-[44px] w-full items-center gap-3 rounded-xl border border-border bg-secondary/35 px-4 py-3 text-sm motion-safe:transition",
+                "hover:bg-secondary/55 active:scale-[0.98]",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
+                isSkippedToday && "border-primary/25 bg-primary/10 text-primary"
+              )}
+            >
+              <SkipForward className="h-4 w-4 text-primary" aria-hidden="true" />
+              <span className={isSkippedToday ? "text-primary" : "text-muted-foreground"}>
+                {isSkippedToday ? ts.skipped || "Skipped Today" : ts.skipToday || "Skip Today"}
+              </span>
+            </button>
+
+            <AnimatePresence mode="wait" initial={false}>
+              {!showDeleteConfirm ? (
+                <motion.div
+                  key="del-btn"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={zenMotion.exit}
+                >
+                  <button
+                    onClick={() => {
+                      void hapticTap();
+                      setShowDeleteConfirm(true);
+                    }}
+                    className={cn(
+                      "flex min-h-[44px] w-full items-center gap-3 rounded-xl border border-destructive/15 bg-destructive/10 px-4 py-3 text-sm text-destructive motion-safe:transition",
+                      "hover:bg-destructive/15 active:scale-[0.98]",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/50"
+                    )}
+                  >
+                    <Trash2 className="h-4 w-4" aria-hidden="true" />
+                    <span>{ts.deleteHabit || "Delete Habit"}</span>
+                  </button>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="del-confirm"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={zenMotion.snappy}
+                  className="overflow-hidden"
+                >
+                  <div className="space-y-2">
+                    <p className="px-2 text-center text-xs text-destructive">
+                      {ts.confirmDeleteHabit || "Are you sure? This cannot be undone."}
+                    </p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setShowDeleteConfirm(false)}
+                        className={cn(
+                          "min-h-[44px] flex-1 rounded-xl border border-border bg-secondary/35 px-4 py-3 text-sm font-medium text-muted-foreground motion-safe:transition",
+                          "hover:bg-secondary/55",
+                          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+                        )}
+                      >
+                        {ts.cancel || "Cancel"}
+                      </button>
+                      <button
+                        onClick={handleDelete}
+                        disabled={isDeleting}
+                        className={cn(
+                          "min-h-[44px] flex-1 rounded-xl bg-destructive px-4 py-3 text-sm font-medium text-destructive-foreground motion-safe:transition",
+                          "hover:bg-destructive/90 active:scale-[0.98]",
+                          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/50",
+                          isDeleting && "cursor-not-allowed opacity-50"
+                        )}
+                      >
+                        {ts.delete || "Delete"}
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+        </motion.div>
       </SheetContent>
     </Sheet>
   );

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+  formatHabitQuantity,
   formatHabitValue,
   normalizeHabit,
   getHabitCompletedDates,
@@ -78,6 +79,7 @@ describe('getHabitCompletedDates', () => {
     // 0 → value=0 which is ENTRY.NO, not meeting target
     // 3 → 3 > 2, not meeting atMost target
     // 1 → 1 <= 2, meets atMost target
+    expect(result).toContain('2026-01-01');
     expect(result).toContain('2026-01-03');
     expect(result).not.toContain('2026-01-02');
   });
@@ -136,6 +138,18 @@ describe('isHabitCompletedOnDate', () => {
     });
     expect(isHabitCompletedOnDate(habit, '2026-02-10')).toBe(false);
   });
+
+  it('returns true for atMost numerical habit when an explicit zero entry meets target', () => {
+    const habit = makeTestHabit({
+      habitType: 'numerical',
+      targetValue: 2,
+      targetType: 'atMost',
+      entries: numericalEntries({ '2026-02-10': 0 }),
+    });
+
+    expect(isHabitCompletedOnDate(habit, '2026-02-10')).toBe(true);
+    expect(isHabitCompletedOnDate(habit, '2026-02-11')).toBe(false);
+  });
 });
 
 // ============================================
@@ -181,5 +195,14 @@ describe('formatHabitValue', () => {
   it('keeps integers clean for whole-number targets', () => {
     expect(formatHabitValue(2, 'en')).toBe('2');
     expect(formatHabitValue(2000, 'en')).toBe('2,000');
+  });
+});
+
+describe('formatHabitQuantity', () => {
+  it('uses singular labels for one-page and one-glass quantities', () => {
+    expect(formatHabitQuantity(1, 'pages', 'en')).toBe('1 page');
+    expect(formatHabitQuantity(2, 'pages', 'en')).toBe('2 pages');
+    expect(formatHabitQuantity(1, 'glasses', 'en')).toBe('1 glass');
+    expect(formatHabitQuantity(1, 'drinks', 'en')).toBe('1 drink');
   });
 });

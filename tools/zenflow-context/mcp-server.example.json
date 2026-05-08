@@ -1,0 +1,16 @@
+{
+  "zenflow-context": {
+    "type": "stdio",
+    "command": "cmd",
+    "args": [
+      "/c",
+      "node",
+      "tools/zenflow-context/server.mjs"
+    ],
+    "env": {
+      "ZENFLOW_CONTEXT_AUTO": "1",
+      "ZENFLOW_CONTEXT_AUTO_MAX_CHARS": "8500",
+      "ZENFLOW_CONTEXT_ROOT": "C:\\project\\people-first-app"
+    }
+  }
+}

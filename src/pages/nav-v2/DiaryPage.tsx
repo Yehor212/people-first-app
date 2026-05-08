@@ -1,12 +1,15 @@
 import { memo, Suspense, useEffect, useMemo, useRef } from "react";
-import { Loader2 } from "lucide-react";
 import { Bloom } from "@/lib/motion";
 import { staggerDelay } from "@/lib/motion/choreography";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { SplashScreen } from "@/components/SplashScreen";
+import { useThemeStore } from "@/stores/themeStore";
 import type { JournalEntryPrefill, JournalEntrySuggestion } from "@/features/journal";
 import { useDiaryDraftStore } from "@/stores/diaryDraftStore";
-import type { MoodType } from "@/types";
+import { formatDate } from "@/lib/utils";
+import type { GratitudeEntry, MoodType } from "@/types";
+import { getLocalizedEmotionLabel } from "@/components/state-of-mind/emotionI18n";
 
 const JournalModule = lazyWithRetry(
   () => import("@/features/journal/JournalModule").then((m) => ({ default: m.JournalModule })),
@@ -51,32 +54,17 @@ function buildInitialPrefill(
 ): JournalEntryPrefill | null {
   if (!pendingMoodContext) return null;
 
-  const prompt =
-    pendingMoodContext.scope === "day"
-      ? tx.reflectionEvening || tx.journalPrompt7 || tx.howAreYouFeeling || "How are you feeling?"
-      : pendingMoodContext.scope === "specific"
-        ? tx.journalPrompt4 || tx.journalPrompt6 || tx.howAreYouFeeling || "How are you feeling?"
-        : tx.journalPrompt6 || tx.howAreYouFeeling || "How are you feeling?";
-  const contextLabel =
-    pendingMoodContext.scope === "specific"
-      ? pendingMoodContext.specificTime
-        ? `${tx.orbScopeSpecific || "At a specific time"} - ${pendingMoodContext.specificTime}`
-        : tx.orbScopeSpecific || "At a specific time"
-      : pendingMoodContext.scope === "day"
-        ? tx.orbScopeDay || "For the whole day"
-        : "";
-
+  const committedDate = new Date(pendingMoodContext.committedAt);
   const emotion = pendingMoodContext.emotion?.trim() || "";
-  const contentParts = [
-    contextLabel ? `<p><strong>${escapeHtml(contextLabel)}</strong></p>` : "",
-    prompt ? `<p>${escapeHtml(prompt)}</p>` : "",
-  ].filter(Boolean);
+  const emotionLabel = emotion ? getLocalizedEmotionLabel(emotion, tx) : "";
+  const note = pendingMoodContext.note?.trim() || "";
 
   return {
-    title: emotion ? capitalizeFirst(emotion) : "",
-    content: contentParts.join(""),
-    mood: valenceToMood(pendingMoodContext.valence),
+    title: emotionLabel || (emotion ? capitalizeFirst(emotion) : ""),
+    content: note ? `<p>${escapeHtml(note)}</p>` : "",
+    mood: pendingMoodContext.mood || valenceToMood(pendingMoodContext.valence),
     tags: emotion ? [emotion] : [],
+    date: formatDate(committedDate),
   };
 }
 
@@ -90,12 +78,19 @@ function buildInitialSuggestion(
   return {
     source: "orb",
     emotion: pendingMoodContext.emotion,
-    mood: valenceToMood(pendingMoodContext.valence),
+    mood: pendingMoodContext.mood || valenceToMood(pendingMoodContext.valence),
     scope: pendingMoodContext.scope,
     specificTime: pendingMoodContext.specificTime,
     committedAt: pendingMoodContext.committedAt,
+    note: pendingMoodContext.note,
     prefill,
   };
+}
+
+interface DiaryPageProps {
+  onOpenNavMenu?: () => void;
+  navMenuOpen?: boolean;
+  onAddGratitude?: (entry: GratitudeEntry) => void;
 }
 
 /**
@@ -105,10 +100,15 @@ function buildInitialSuggestion(
  * as a placeholder. Diary stays history-first like V1, while Orb handoff is
  * exposed as a soft suggestion instead of force-opening the editor.
  */
-export const DiaryPage = memo(function DiaryPage() {
+export const DiaryPage = memo(function DiaryPage({
+  onOpenNavMenu,
+  navMenuOpen = false,
+  onAddGratitude,
+}: DiaryPageProps) {
   const { t } = useLanguage();
   const tx = t as unknown as Record<string, string>;
   const h1Ref = useRef<HTMLHeadingElement>(null);
+  const appliedTheme = useThemeStore((s) => s.appliedTheme);
   const pendingMoodContext = useDiaryDraftStore((s) => s.pendingMoodContext);
   const consumePendingMoodContext = useDiaryDraftStore(
     (s) => s.consumePendingMoodContext,
@@ -122,7 +122,6 @@ export const DiaryPage = memo(function DiaryPage() {
     () => buildInitialSuggestion(pendingMoodContext, tx),
     [pendingMoodContext, tx],
   );
-
   return (
     <Bloom key="diary-page" transition={staggerDelay("primary")}>
       <main
@@ -144,12 +143,12 @@ export const DiaryPage = memo(function DiaryPage() {
 
         <Suspense
           fallback={
-            <div className="flex min-h-[60vh] items-center justify-center px-4 py-10">
-              <div className="flex items-center gap-3 rounded-2xl border border-border/50 bg-card/70 px-4 py-3 text-sm text-muted-foreground backdrop-blur-md">
-                <Loader2 className="h-4 w-4 animate-spin text-primary" aria-hidden="true" />
-                <span>{tx.loading || "Loading..."}</span>
-              </div>
-            </div>
+            <SplashScreen
+              loadingFadeOut={false}
+              subtitle={tx.initializingApp || "Preparing your zen space..."}
+              theme={appliedTheme}
+              instant
+            />
           }
         >
           <JournalModule
@@ -158,7 +157,12 @@ export const DiaryPage = memo(function DiaryPage() {
             hideCloseButton
             presentation="page"
             initialEntrySuggestion={initialEntrySuggestion}
+            autoCreateInitialEntry
             onInitialEntrySuggestionConsumed={consumePendingMoodContext}
+            loadingTheme={appliedTheme}
+            onOpenNavMenu={onOpenNavMenu}
+            navMenuOpen={navMenuOpen}
+            onAddGratitude={onAddGratitude}
           />
         </Suspense>
       </main>

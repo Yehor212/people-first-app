@@ -13,9 +13,11 @@ describe("diaryDraftStore", () => {
   it("setPendingMoodContext stores context", () => {
     const ctx = {
       valence: 0.7,
+      mood: "good" as const,
       scope: "now" as const,
       specificTime: null,
       emotion: "grateful",
+      note: "A small bright spot.",
       committedAt: Date.now(),
     };
     useDiaryDraftStore.getState().setPendingMoodContext(ctx);
@@ -25,6 +27,7 @@ describe("diaryDraftStore", () => {
   it("clearPendingMoodContext resets to null", () => {
     useDiaryDraftStore.getState().setPendingMoodContext({
       valence: 0.0,
+      mood: "okay",
       scope: "day",
       specificTime: null,
       emotion: "neutral",
@@ -37,9 +40,11 @@ describe("diaryDraftStore", () => {
   it("consumePendingMoodContext returns the current context and clears it", () => {
     const ctx = {
       valence: 0.4,
+      mood: "good" as const,
       scope: "now" as const,
       specificTime: null,
       emotion: "hopeful",
+      note: null,
       committedAt: 123,
     };
     useDiaryDraftStore.getState().setPendingMoodContext(ctx);
@@ -53,6 +58,7 @@ describe("diaryDraftStore", () => {
   it("setPendingMoodContext overwrites prior context", () => {
     useDiaryDraftStore.getState().setPendingMoodContext({
       valence: -0.5,
+      mood: "bad",
       scope: "now",
       specificTime: null,
       emotion: "anxious",
@@ -60,6 +66,7 @@ describe("diaryDraftStore", () => {
     });
     useDiaryDraftStore.getState().setPendingMoodContext({
       valence: 0.8,
+      mood: "great",
       scope: "day",
       specificTime: null,
       emotion: "joyful",
@@ -74,6 +81,7 @@ describe("diaryDraftStore", () => {
   it("preserves specific scope with specificTime", () => {
     useDiaryDraftStore.getState().setPendingMoodContext({
       valence: 0.2,
+      mood: "okay",
       scope: "specific",
       specificTime: "2026-04-16T14:30",
       emotion: "calm",
@@ -82,5 +90,21 @@ describe("diaryDraftStore", () => {
     const ctx = useDiaryDraftStore.getState().pendingMoodContext;
     expect(ctx?.scope).toBe("specific");
     expect(ctx?.specificTime).toBe("2026-04-16T14:30");
+  });
+
+  it("preserves optional note in the pending context", () => {
+    useDiaryDraftStore.getState().setPendingMoodContext({
+      valence: 0.2,
+      mood: "okay",
+      scope: "now",
+      specificTime: null,
+      emotion: "calm",
+      note: "Take this with you.",
+      committedAt: Date.now(),
+    });
+
+    expect(useDiaryDraftStore.getState().pendingMoodContext?.note).toBe(
+      "Take this with you.",
+    );
   });
 });

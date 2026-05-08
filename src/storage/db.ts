@@ -1,6 +1,15 @@
 import Dexie, { Table } from "dexie";
 import { MoodEntry, Habit, FocusSession, GratitudeEntry } from "@/types";
-import type { JournalEntry, JournalPhoto, JournalAudio } from "@/features/journal/types";
+import type {
+  JournalAudio,
+  JournalEntry,
+  JournalEntryLink,
+  JournalHubPreferences,
+  JournalPhoto,
+  JournalPracticeSession,
+  JournalSpace,
+  JournalSpaceCapture,
+} from "@/features/journal/types";
 import { logger } from "@/lib/logger";
 import { SK } from "@/lib/storageKeys";
 import { storageRemove } from "@/lib/safeJson";
@@ -42,6 +51,11 @@ export class ZenFlowDB extends Dexie {
   journalEntries!: Table<JournalEntry, string>;
   journalPhotos!: Table<JournalPhoto, string>;
   journalAudio!: Table<JournalAudio, string>;
+  journalHubPreferences!: Table<JournalHubPreferences, string>;
+  journalSpaces!: Table<JournalSpace, string>;
+  journalPracticeSessions!: Table<JournalPracticeSession, string>;
+  journalEntryLinks!: Table<JournalEntryLink, string>;
+  journalSpaceCaptures!: Table<JournalSpaceCapture, string>;
 
   constructor() {
     super("ZenFlowDB");
@@ -141,6 +155,43 @@ export class ZenFlowDB extends Dexie {
       journalPhotos: "id, entryId, createdAt",
       journalAudio: "id, entryId, createdAt",
     });
+
+    // Version 9: Journal V2 Hub local-first model
+    this.version(9).stores({
+      moods: "id, timestamp, date, valence, updatedAt",
+      habits: "id, createdAt, type",
+      focusSessions: "id, startTime, date, updatedAt",
+      gratitudeEntries: "id, timestamp, date, updatedAt",
+      settings: "key",
+      offlineQueue: "id, type, entityId, timestamp",
+      deadLetterQueue: "id, type, entityId, failedAt",
+      journalEntries: "id, date, createdAt, updatedAt",
+      journalPhotos: "id, entryId, createdAt",
+      journalAudio: "id, entryId, createdAt",
+      journalHubPreferences: "id, updatedAt",
+      journalSpaces: "id, sortOrder, updatedAt",
+      journalPracticeSessions: "id, practiceId, entryId, startedAt, completedAt",
+      journalEntryLinks: "id, entryId, targetType, targetId, createdAt",
+    });
+
+    // Version 10: Local-first space capture cards for Journal V2 mobile workspaces
+    this.version(10).stores({
+      moods: "id, timestamp, date, valence, updatedAt",
+      habits: "id, createdAt, type",
+      focusSessions: "id, startTime, date, updatedAt",
+      gratitudeEntries: "id, timestamp, date, updatedAt",
+      settings: "key",
+      offlineQueue: "id, type, entityId, timestamp",
+      deadLetterQueue: "id, type, entityId, failedAt",
+      journalEntries: "id, date, createdAt, updatedAt",
+      journalPhotos: "id, entryId, createdAt",
+      journalAudio: "id, entryId, createdAt",
+      journalHubPreferences: "id, updatedAt",
+      journalSpaces: "id, sortOrder, updatedAt",
+      journalPracticeSessions: "id, practiceId, entryId, startedAt, completedAt",
+      journalEntryLinks: "id, entryId, targetType, targetId, createdAt",
+      journalSpaceCaptures: "id, spaceId, date, createdAt, updatedAt",
+    });
   }
 }
 
@@ -153,6 +204,11 @@ export const gratitudeRepo = db.gratitudeEntries;
 export const settingsRepo = db.settings;
 export const journalEntriesRepo = db.journalEntries;
 export const journalPhotosRepo = db.journalPhotos;
+export const journalHubPreferencesRepo = db.journalHubPreferences;
+export const journalSpacesRepo = db.journalSpaces;
+export const journalPracticeSessionsRepo = db.journalPracticeSessions;
+export const journalEntryLinksRepo = db.journalEntryLinks;
+export const journalSpaceCapturesRepo = db.journalSpaceCaptures;
 
 /**
  * User-specific settings keys stored in db.settings IndexedDB table.
@@ -173,6 +229,8 @@ const USER_SETTINGS_KEYS = [
   "zenflow-last-weekly-report",
   "zenflow-micro-reflections",
   "zenflow-canvas-goals",
+  "zenflow-day-rituals",
+  "zenflow-reflection-insights",
   "gamification",
 ];
 
@@ -195,6 +253,11 @@ export const clearLocalUserData = async (): Promise<void> => {
         db.journalEntries,
         db.journalPhotos,
         db.journalAudio,
+        db.journalHubPreferences,
+        db.journalSpaces,
+        db.journalPracticeSessions,
+        db.journalEntryLinks,
+        db.journalSpaceCaptures,
         db.offlineQueue,
         db.settings,
       ],
@@ -206,6 +269,11 @@ export const clearLocalUserData = async (): Promise<void> => {
         await db.journalEntries.clear();
         await db.journalPhotos.clear();
         await db.journalAudio.clear();
+        await db.journalHubPreferences.clear();
+        await db.journalSpaces.clear();
+        await db.journalPracticeSessions.clear();
+        await db.journalEntryLinks.clear();
+        await db.journalSpaceCaptures.clear();
         await db.offlineQueue.clear();
         // Delete user-specific settings rows (keep device-level settings)
         await db.settings.bulkDelete(USER_SETTINGS_KEYS);

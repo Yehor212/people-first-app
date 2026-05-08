@@ -1,149 +1,740 @@
 /**
  * DayCosmicBackground.css — Phase 3-A.4a-day
  *
- * 7-layer warm daylight scene. OKLCH palette with time-of-day switcher
+ * 7-layer aurora daylight scene. Semantic palette with time-of-day switcher
  * through [data-daymode] selectors on <html>. All animations gated via
  * prefers-reduced-motion so reduced-motion users see the static scene
  * (still beautiful — motes freeze in place, bokeh holds its tint).
  *
  * Custom properties set on <html>[data-daymode] drive all layers. Defaults
  * match 'afternoon' so when the attr is absent (SSR, tests) we still paint
- * a warm scene.
+ * a calm bioluminescent scene.
  */
 
 /* Default palette — afternoon (kicks in when data-daymode absent) */
 html {
-  --day-base: oklch(0.96 0.025 75);
-  --day-base-edge: oklch(0.90 0.05 40);
-  --day-accent-1: oklch(0.88 0.10 45 / 0.45);
-  --day-accent-2: oklch(0.82 0.12 30 / 0.35);
-  --day-atmosphere: oklch(0.85 0.08 50 / 0.30);
-  --day-vignette: oklch(0.85 0.06 55 / 0.15);
-  --day-mote: oklch(0.98 0.02 85 / 0.85);
-  --day-ray: 255 230 180;
+  --day-base: hsl(185 58% 70%);
+  --day-base-edge: hsl(157 46% 58%);
+  --day-zenith: hsl(194 82% 74%);
+  --day-horizon: hsl(43 72% 70%);
+  --day-horizon-glow: hsl(48 100% 78% / 0.34);
+  --day-thread: hsl(54 100% 92% / 0.62);
+  --day-solar-core: hsl(38 92% 72% / 0.66);
+  --day-solar-halo: hsl(154 70% 68% / 0.22);
+  --day-portal-core: hsl(44 98% 78% / 0.78);
+  --day-portal-ring: hsl(var(--zf-role-focus) / 0.56);
+  --day-portal-ruby: hsl(var(--zf-role-release) / 0.58);
+  --day-accent-1: hsl(var(--zf-role-focus) / 0.24);
+  --day-accent-2: hsl(var(--zf-role-mind) / 0.20);
+  --day-prism: hsl(var(--zf-role-release) / 0.18);
+  --day-atmosphere: hsl(var(--zf-role-body) / 0.14);
+  --day-vignette: hsl(176 44% 8% / 0.24);
+  --day-mote: hsl(var(--zf-role-focus) / 0.38);
+  --day-ray: var(--zf-trace);
 }
 
 html[data-daymode="dawn"] {
-  --day-base: oklch(0.96 0.02 70);
-  --day-base-edge: oklch(0.88 0.06 20);
-  --day-accent-1: oklch(0.88 0.08 20 / 0.45);
-  --day-accent-2: oklch(0.82 0.10 30 / 0.35);
-  --day-atmosphere: oklch(0.86 0.06 25 / 0.30);
-  --day-vignette: oklch(0.80 0.08 20 / 0.18);
-  --day-mote: oklch(0.98 0.02 75 / 0.85);
-  --day-ray: 255 210 170;
+  --day-base: hsl(184 58% 72%);
+  --day-base-edge: hsl(42 62% 64%);
+  --day-zenith: hsl(190 78% 76%);
+  --day-horizon: hsl(24 82% 68%);
+  --day-horizon-glow: hsl(30 100% 76% / 0.36);
+  --day-thread: hsl(34 100% 88% / 0.64);
+  --day-solar-core: hsl(24 94% 70% / 0.68);
+  --day-solar-halo: hsl(42 88% 70% / 0.24);
+  --day-portal-core: hsl(28 98% 76% / 0.82);
+  --day-portal-ring: hsl(var(--zf-role-energy) / 0.58);
+  --day-portal-ruby: hsl(var(--zf-role-release) / 0.60);
+  --day-accent-1: hsl(var(--zf-role-release) / 0.20);
+  --day-accent-2: hsl(var(--zf-role-focus) / 0.18);
+  --day-prism: hsl(var(--zf-role-mind) / 0.18);
+  --day-atmosphere: hsl(var(--zf-role-energy) / 0.12);
+  --day-vignette: hsl(176 44% 8% / 0.20);
+  --day-mote: hsl(var(--zf-role-release) / 0.34);
+  --day-ray: var(--zf-memory);
 }
 
 html[data-daymode="morning"] {
-  --day-base: oklch(0.97 0.015 85);
-  --day-base-edge: oklch(0.90 0.04 85);
-  --day-accent-1: oklch(0.86 0.08 240 / 0.35);
-  --day-accent-2: oklch(0.88 0.07 85 / 0.35);
-  --day-atmosphere: oklch(0.88 0.05 85 / 0.25);
-  --day-vignette: oklch(0.86 0.04 85 / 0.13);
-  --day-mote: oklch(0.99 0.015 85 / 0.85);
-  --day-ray: 255 245 210;
+  --day-base: hsl(178 58% 70%);
+  --day-base-edge: hsl(154 48% 60%);
+  --day-zenith: hsl(188 82% 75%);
+  --day-horizon: hsl(44 70% 70%);
+  --day-horizon-glow: hsl(48 100% 80% / 0.34);
+  --day-thread: hsl(58 100% 92% / 0.64);
+  --day-solar-core: hsl(42 92% 72% / 0.62);
+  --day-solar-halo: hsl(162 72% 70% / 0.24);
+  --day-portal-core: hsl(48 96% 78% / 0.80);
+  --day-portal-ring: hsl(var(--zf-role-body) / 0.58);
+  --day-portal-ruby: hsl(var(--zf-role-focus) / 0.56);
+  --day-accent-1: hsl(var(--zf-role-focus) / 0.24);
+  --day-accent-2: hsl(var(--zf-role-body) / 0.18);
+  --day-prism: hsl(var(--zf-role-mind) / 0.16);
+  --day-atmosphere: hsl(var(--zf-role-body) / 0.12);
+  --day-vignette: hsl(176 44% 8% / 0.22);
+  --day-mote: hsl(var(--zf-role-focus) / 0.36);
+  --day-ray: var(--zf-trace);
 }
 
 html[data-daymode="afternoon"] {
-  --day-base: oklch(0.94 0.04 75);
-  --day-base-edge: oklch(0.88 0.07 55);
-  --day-accent-1: oklch(0.88 0.10 45 / 0.45);
-  --day-accent-2: oklch(0.82 0.10 35 / 0.35);
-  --day-atmosphere: oklch(0.85 0.08 50 / 0.30);
-  --day-vignette: oklch(0.82 0.08 55 / 0.18);
-  --day-mote: oklch(0.98 0.02 85 / 0.85);
-  --day-ray: 255 230 180;
+  --day-base: hsl(185 58% 70%);
+  --day-base-edge: hsl(157 46% 58%);
+  --day-zenith: hsl(197 78% 74%);
+  --day-horizon: hsl(43 72% 70%);
+  --day-horizon-glow: hsl(48 100% 78% / 0.34);
+  --day-thread: hsl(54 100% 92% / 0.62);
+  --day-solar-core: hsl(38 92% 72% / 0.66);
+  --day-solar-halo: hsl(154 70% 68% / 0.22);
+  --day-portal-core: hsl(44 98% 78% / 0.78);
+  --day-portal-ring: hsl(var(--zf-role-focus) / 0.56);
+  --day-portal-ruby: hsl(var(--zf-role-release) / 0.58);
+  --day-accent-1: hsl(var(--zf-role-focus) / 0.24);
+  --day-accent-2: hsl(var(--zf-role-mind) / 0.20);
+  --day-prism: hsl(var(--zf-role-release) / 0.18);
+  --day-atmosphere: hsl(var(--zf-role-body) / 0.14);
+  --day-vignette: hsl(176 44% 8% / 0.24);
+  --day-mote: hsl(var(--zf-role-focus) / 0.38);
+  --day-ray: var(--zf-trace);
 }
 
 html[data-daymode="golden"] {
-  --day-base: oklch(0.88 0.10 60);
-  --day-base-edge: oklch(0.78 0.13 35);
-  --day-accent-1: oklch(0.82 0.14 45 / 0.55);
-  --day-accent-2: oklch(0.72 0.15 25 / 0.45);
-  --day-atmosphere: oklch(0.82 0.12 50 / 0.35);
-  --day-vignette: oklch(0.70 0.12 30 / 0.22);
-  --day-mote: oklch(0.99 0.04 80 / 0.90);
-  --day-ray: 255 200 140;
+  --day-base: hsl(168 54% 66%);
+  --day-base-edge: hsl(42 58% 60%);
+  --day-zenith: hsl(186 66% 68%);
+  --day-horizon: hsl(34 82% 64%);
+  --day-horizon-glow: hsl(35 100% 72% / 0.42);
+  --day-thread: hsl(42 100% 86% / 0.68);
+  --day-solar-core: hsl(32 94% 67% / 0.70);
+  --day-solar-halo: hsl(42 90% 66% / 0.28);
+  --day-portal-core: hsl(35 98% 72% / 0.84);
+  --day-portal-ring: hsl(var(--zf-role-energy) / 0.62);
+  --day-portal-ruby: hsl(var(--zf-role-release) / 0.56);
+  --day-accent-1: hsl(var(--zf-role-energy) / 0.26);
+  --day-accent-2: hsl(var(--zf-role-focus) / 0.18);
+  --day-prism: hsl(var(--zf-role-release) / 0.18);
+  --day-atmosphere: hsl(var(--zf-role-energy) / 0.14);
+  --day-vignette: hsl(176 44% 8% / 0.28);
+  --day-mote: hsl(var(--zf-role-energy) / 0.36);
+  --day-ray: var(--zf-growth);
 }
 
 html[data-daymode="dusk"] {
-  --day-base: oklch(0.78 0.08 25);
-  --day-base-edge: oklch(0.68 0.10 295);
-  --day-accent-1: oklch(0.72 0.10 30 / 0.50);
-  --day-accent-2: oklch(0.60 0.08 290 / 0.40);
-  --day-atmosphere: oklch(0.72 0.09 35 / 0.35);
-  --day-vignette: oklch(0.55 0.08 295 / 0.25);
-  --day-mote: oklch(0.96 0.03 60 / 0.85);
-  --day-ray: 255 180 130;
+  --day-base: hsl(188 46% 62%);
+  --day-base-edge: hsl(258 34% 58%);
+  --day-zenith: hsl(210 58% 64%);
+  --day-horizon: hsl(28 66% 60%);
+  --day-horizon-glow: hsl(30 88% 66% / 0.28);
+  --day-thread: hsl(44 92% 82% / 0.46);
+  --day-solar-core: hsl(30 86% 66% / 0.48);
+  --day-solar-halo: hsl(264 62% 72% / 0.26);
+  --day-portal-core: hsl(34 86% 70% / 0.64);
+  --day-portal-ring: hsl(var(--zf-role-mind) / 0.60);
+  --day-portal-ruby: hsl(var(--zf-role-release) / 0.50);
+  --day-accent-1: hsl(var(--zf-role-mind) / 0.28);
+  --day-accent-2: hsl(var(--zf-role-focus) / 0.18);
+  --day-prism: hsl(var(--zf-role-release) / 0.20);
+  --day-atmosphere: hsl(var(--zf-role-mind) / 0.12);
+  --day-vignette: hsl(176 44% 8% / 0.32);
+  --day-mote: hsl(var(--zf-role-mind) / 0.34);
+  --day-ray: var(--zf-memory);
 }
 
-/* ==================== Layer 1 — Base warm OKLCH mesh ==================== */
+/* ==================== Layer 1 — Base aurora mesh ==================== */
 .day-cosmic__base {
   position: absolute;
   inset: 0;
+  overflow: hidden;
   background:
-    radial-gradient(
-      ellipse 140% 100% at 50% 40%,
-      var(--day-base) 0%,
-      var(--day-base-edge) 85%
-    );
+    radial-gradient(ellipse 92% 54% at 50% 115%, var(--day-horizon) 0%, transparent 68%),
+    radial-gradient(ellipse 84% 48% at 50% 40%, hsl(56 100% 90% / 0.22) 0%, transparent 60%),
+    radial-gradient(ellipse 96% 62% at 58% 12%, hsl(var(--zf-role-focus) / 0.34) 0%, transparent 58%),
+    radial-gradient(ellipse 72% 44% at 88% 38%, hsl(var(--zf-role-mind) / 0.26) 0%, transparent 62%),
+    radial-gradient(ellipse 86% 58% at 8% 24%, hsl(var(--zf-role-body) / 0.24) 0%, transparent 60%),
+    linear-gradient(164deg, var(--day-zenith) 0%, var(--day-base) 42%, hsl(166 54% 64% / 0.98) 66%, var(--day-base-edge) 100%);
 }
 
-/* ==================== Layer 2 — Warm bokeh pools ==================== */
+.day-cosmic__base::before,
+.day-cosmic__base::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+}
+
+.day-cosmic__base::before {
+  left: 50%;
+  top: 9%;
+  height: min(54vw, 18rem);
+  width: min(54vw, 18rem);
+  border-radius: 9999px;
+  background:
+    radial-gradient(circle, var(--day-solar-core) 0 10%, transparent 32%),
+    radial-gradient(circle, var(--day-solar-halo) 0 42%, transparent 72%),
+    conic-gradient(from 210deg, transparent, hsl(var(--zf-role-focus) / 0.26), hsl(var(--zf-role-body) / 0.18), transparent 62%);
+  filter: blur(0.8px) saturate(1.08);
+  opacity: 0.88;
+  transform: translateX(-50%);
+}
+
+.day-cosmic__base::after {
+  inset: -18% -20% auto -20%;
+  height: 64%;
+  background:
+    radial-gradient(ellipse 58% 22% at 50% 80%, hsl(var(--zf-role-body) / 0.18), transparent 70%),
+    repeating-linear-gradient(102deg, transparent 0 34px, hsl(var(--zf-role-focus) / 0.07) 36px 38px);
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 28%, transparent 100%);
+  mask-image: linear-gradient(180deg, transparent 0%, #000 28%, transparent 100%);
+  opacity: 0.75;
+}
+
+/* ==================== Layer 2 — Aurora bokeh pools ==================== */
+/* ==================== Layer 2 — Solar prism portal ===================== */
+.day-cosmic__solar-portal {
+  position: absolute;
+  left: 50%;
+  top: 27%;
+  width: min(112vw, 42rem);
+  aspect-ratio: 1;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  opacity: 0.28;
+  filter: blur(12px) saturate(1.08);
+}
+
+.day-cosmic__solar-portal::before,
+.day-cosmic__solar-portal::after,
+.day-cosmic__solar-portal-core,
+.day-cosmic__solar-portal-orbit {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  pointer-events: none;
+}
+
+.day-cosmic__solar-portal::before {
+  inset: 4%;
+  background:
+    radial-gradient(circle, var(--day-portal-core) 0 8%, transparent 25%),
+    radial-gradient(circle, hsl(var(--zf-role-body) / 0.22) 0 34%, transparent 62%),
+    radial-gradient(circle, hsl(var(--zf-role-focus) / 0.14) 42%, transparent 72%);
+  opacity: 0.46;
+  filter: blur(18px);
+  animation: day-cosmic-portal-breathe 9s ease-in-out infinite;
+}
+
+.day-cosmic__solar-portal::after {
+  inset: 23%;
+  border: 1px solid hsl(var(--zf-role-focus) / 0.28);
+  background:
+    radial-gradient(circle, transparent 0 56%, hsl(var(--zf-role-body) / 0.20) 58% 59%, transparent 62%),
+    radial-gradient(circle, hsl(var(--zf-role-focus) / 0.08), transparent 68%);
+  box-shadow:
+    0 0 0 1px hsl(var(--zf-role-energy) / 0.18),
+    0 0 34px hsl(var(--zf-role-body) / 0.30),
+    inset 0 0 34px hsl(var(--zf-role-focus) / 0.18);
+  -webkit-mask-image: radial-gradient(circle, transparent 0 55%, #000 57% 62%, transparent 65%);
+  mask-image: radial-gradient(circle, transparent 0 55%, #000 57% 62%, transparent 65%);
+  opacity: 0.48;
+  animation: day-cosmic-portal-spin 26s linear infinite;
+}
+
+.day-cosmic__solar-portal-core {
+  inset: 35%;
+  background:
+    radial-gradient(circle, hsl(56 100% 92% / 0.92) 0 10%, transparent 33%),
+    radial-gradient(circle, var(--day-portal-core) 0 42%, transparent 72%);
+  box-shadow:
+    0 0 28px hsl(var(--zf-role-energy) / 0.34),
+    0 0 82px hsl(var(--zf-role-body) / 0.28);
+  filter: blur(0.3px);
+  animation: day-cosmic-core-pulse 5.6s ease-in-out infinite;
+}
+
+.day-cosmic__solar-portal-orbit {
+  inset: 19%;
+  border: 1px solid hsl(var(--zf-role-focus) / 0.22);
+  box-shadow:
+    1.4rem 0 0 -1.25rem hsl(var(--zf-role-body) / 0.70),
+    -1.1rem -0.7rem 0 -1rem hsl(var(--zf-role-release) / 0.55),
+    0 0 22px hsl(var(--zf-role-focus) / 0.14);
+  opacity: 0.82;
+  animation: day-cosmic-orbit-drift 18s ease-in-out infinite;
+}
+
+.day-cosmic__solar-portal-orbit--two {
+  inset: 30%;
+  rotate: 74deg;
+  border-color: hsl(var(--zf-role-mind) / 0.22);
+  animation-duration: 22s;
+  animation-direction: reverse;
+  opacity: 0.66;
+}
+
 .day-cosmic__bokeh {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(
-      circle at 15% 20%,
-      var(--day-accent-1) 0%,
-      transparent 45%
-    ),
-    radial-gradient(
-      circle at 85% 80%,
-      var(--day-accent-2) 0%,
-      transparent 45%
-    );
-  filter: blur(80px);
-  -webkit-filter: blur(80px);
+    radial-gradient(circle at 12% 18%, var(--day-accent-1) 0%, transparent 43%),
+    radial-gradient(circle at 88% 16%, var(--day-prism) 0%, transparent 42%),
+    radial-gradient(circle at 86% 82%, var(--day-accent-2) 0%, transparent 45%),
+    radial-gradient(circle at 20% 88%, hsl(var(--zf-role-energy) / 0.16) 0%, transparent 42%);
+  filter: blur(62px) saturate(1.16);
+  -webkit-filter: blur(62px) saturate(1.16);
+}
+
+.day-cosmic__bokeh::before,
+.day-cosmic__bokeh::after {
+  content: "";
+  position: absolute;
+  border-radius: 9999px;
+  pointer-events: none;
+}
+
+.day-cosmic__bokeh::before {
+  left: -18%;
+  top: 34%;
+  height: 22rem;
+  width: 26rem;
+  background: hsl(var(--zf-role-body) / 0.22);
+  filter: blur(42px);
+  opacity: 0.76;
+}
+
+.day-cosmic__bokeh::after {
+  right: -14%;
+  top: 18%;
+  height: 18rem;
+  width: 18rem;
+  background: hsl(var(--zf-role-mind) / 0.18);
+  filter: blur(46px);
+  opacity: 0.70;
 }
 
 /* ==================== Layer 3 — Soft-light atmosphere sheet ============= */
 .day-cosmic__atmosphere {
   position: absolute;
   inset: 0;
-  background: var(--day-atmosphere);
+  background:
+    linear-gradient(180deg, hsl(var(--zf-role-focus) / 0.10), transparent 42%),
+    linear-gradient(90deg, hsl(var(--zf-role-body) / 0.12), transparent 52%, hsl(var(--zf-role-mind) / 0.09)),
+    var(--day-atmosphere);
   mix-blend-mode: soft-light;
+  opacity: 0.88;
+}
+
+/* A calm daylight "stage" behind the orb: horizon glow, glass curtain,
+ * and slow vertical sun threads. This keeps the wow effect in the rear
+ * scene instead of drawing petal-like shapes around the orb itself. */
+.day-cosmic__horizon-glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 82% 24% at 50% 56%, var(--day-horizon-glow) 0%, transparent 72%),
+    radial-gradient(ellipse 68% 32% at 50% 34%, hsl(var(--zf-role-body) / 0.18) 0%, transparent 66%),
+    radial-gradient(ellipse 54% 18% at 50% 78%, hsl(var(--zf-role-focus) / 0.22) 0%, transparent 74%);
+  filter: blur(10px) saturate(1.16);
+  -webkit-filter: blur(10px) saturate(1.16);
+  mix-blend-mode: screen;
+  opacity: 0.88;
+}
+
+.day-cosmic__horizon-glow::before,
+.day-cosmic__horizon-glow::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  border-radius: 9999px;
+}
+
+.day-cosmic__horizon-glow::before {
+  left: 50%;
+  top: 37%;
+  width: min(76vw, 30rem);
+  height: min(34vw, 13rem);
+  background:
+    radial-gradient(ellipse at center, hsl(56 100% 92% / 0.34) 0%, transparent 64%),
+    linear-gradient(90deg, transparent, hsl(var(--zf-role-body) / 0.28), transparent);
+  filter: blur(14px);
+  -webkit-filter: blur(14px);
+  opacity: 0.84;
+  transform: translate(-50%, -50%);
+}
+
+.day-cosmic__horizon-glow::after {
+  left: 50%;
+  top: 38%;
+  width: min(66vw, 25rem);
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    hsl(56 100% 90% / 0.76),
+    hsl(var(--zf-role-body) / 0.52),
+    transparent
+  );
+  box-shadow:
+    0 1.8rem 0 -0.5px hsl(var(--zf-role-focus) / 0.22),
+    0 4.8rem 0 -0.5px hsl(var(--zf-role-energy) / 0.18);
+  filter: blur(0.35px);
+  -webkit-filter: blur(0.35px);
+  opacity: 0.66;
+  transform: translateX(-50%) rotate(-4deg);
+}
+
+.day-cosmic__light-curtain {
+  position: absolute;
+  inset: -12% -20%;
+  pointer-events: none;
+  background:
+    linear-gradient(96deg, transparent 0 16%, hsl(58 100% 92% / 0.26) 27%, transparent 41%),
+    linear-gradient(108deg, transparent 0 38%, hsl(var(--zf-role-body) / 0.24) 50%, transparent 64%),
+    repeating-linear-gradient(
+      104deg,
+      transparent 0 34px,
+      hsl(54 100% 92% / 0.09) 38px 40px,
+      transparent 45px 98px
+    );
+  -webkit-mask-image: radial-gradient(ellipse 88% 76% at 50% 12%, #000 0%, transparent 82%);
+  mask-image: radial-gradient(ellipse 88% 76% at 50% 12%, #000 0%, transparent 82%);
+  mix-blend-mode: screen;
+  opacity: 0.72;
+  animation: day-cosmic-curtain-breathe 18s cubic-bezier(0.45, 0, 0.2, 1) infinite;
+}
+
+.day-cosmic__light-curtain::before {
+  content: "";
+  position: absolute;
+  inset: 4% 24% auto 18%;
+  height: 62%;
+  background:
+    radial-gradient(ellipse 8% 82% at 36% 20%, hsl(58 100% 94% / 0.22), transparent 76%),
+    radial-gradient(ellipse 7% 80% at 57% 10%, hsl(var(--zf-role-focus) / 0.18), transparent 78%),
+    radial-gradient(ellipse 9% 86% at 78% 18%, hsl(var(--zf-role-body) / 0.18), transparent 76%);
+  filter: blur(1.5px);
+  -webkit-filter: blur(1.5px);
+  opacity: 0.78;
+}
+
+.day-cosmic__sun-threads {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  mix-blend-mode: screen;
+}
+
+.day-cosmic__sun-thread {
+  position: absolute;
+  left: var(--thread-x);
+  top: var(--thread-y);
+  width: var(--thread-width);
+  height: var(--thread-length);
+  border-radius: 9999px;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    var(--day-thread) 22%,
+    hsl(var(--zf-role-body) / 0.30) 48%,
+    transparent 78%
+  );
+  opacity: var(--thread-opacity);
+  filter: blur(0.35px);
+  -webkit-filter: blur(0.35px);
+  transform: rotate(var(--thread-tilt));
+  transform-origin: top center;
+  animation: day-cosmic-thread-float var(--thread-duration) ease-in-out var(--thread-delay) infinite;
+  will-change: transform, opacity;
+}
+
+.day-cosmic__sun-thread::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 38%;
+  width: calc(var(--thread-width) * 4);
+  height: 28%;
+  border-radius: 9999px;
+  background: hsl(56 100% 94% / 0.24);
+  filter: blur(7px);
+  -webkit-filter: blur(7px);
+  transform: translateX(-50%);
 }
 
 /* ==================== Layer 4 — God-ray masque ========================= */
 /* Diagonal repeating rays masked by a radial so they emerge from the
- * top-left "window corner" and fade toward opposite edge. Uses rgb()
- * with alpha tokenised via --day-ray so palettes shift ray colour too. */
+ * top-left "window corner" and fade toward opposite edge. */
 .day-cosmic__god-rays {
   position: absolute;
   inset: 0;
-  background: repeating-linear-gradient(
-    115deg,
-    transparent 0px,
-    transparent 40px,
-    rgb(var(--day-ray) / 0.05) 40px,
-    rgb(var(--day-ray) / 0.05) 80px
-  );
+  background:
+    linear-gradient(105deg, transparent 15%, hsl(var(--day-ray) / 0.11) 46%, transparent 58%),
+    repeating-linear-gradient(
+      114deg,
+      transparent 0px,
+      transparent 36px,
+      hsl(var(--day-ray) / 0.06) 36px,
+      hsl(var(--day-ray) / 0.06) 72px
+    );
   -webkit-mask-image: radial-gradient(
-    ellipse 70% 60% at 20% 10%,
+    ellipse 86% 62% at 25% 8%,
     #000 0%,
-    transparent 70%
+    transparent 74%
   );
   mask-image: radial-gradient(
-    ellipse 70% 60% at 20% 10%,
+    ellipse 86% 62% at 25% 8%,
     #000 0%,
-    transparent 70%
+    transparent 74%
   );
+  opacity: 0.88;
 }
 
 /* ==================== Layer 5 — 35 dust motes ========================== */
+/* ==================== Layer 6 — Prism ribbon =========================== */
+/* ==================== Layer 5 — Daylight particle shower ================= */
+.day-cosmic__sun-shower {
+  position: absolute;
+  inset: -8% -26%;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      104deg,
+      transparent 0 18%,
+      hsl(54 100% 86% / 0.00) 24%,
+      hsl(54 100% 86% / 0.46) 34%,
+      hsl(var(--zf-role-body) / 0.34) 44%,
+      transparent 58% 100%
+    ),
+    repeating-linear-gradient(
+      104deg,
+      transparent 0 30px,
+      hsl(56 100% 90% / 0.20) 34px 36px,
+      transparent 40px 76px
+    );
+  filter: blur(0.6px) saturate(1.2);
+  opacity: 0.94;
+  -webkit-mask-image: radial-gradient(ellipse 86% 72% at 48% 22%, #000 0%, transparent 78%);
+  mask-image: radial-gradient(ellipse 86% 72% at 48% 22%, #000 0%, transparent 78%);
+  animation: day-cosmic-sun-shower 19s cubic-bezier(0.45, 0, 0.2, 1) infinite;
+}
+
+.day-cosmic__sun-shower::before,
+.day-cosmic__sun-shower::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  border-radius: 9999px;
+}
+
+.day-cosmic__sun-shower::before {
+  left: 10%;
+  top: 22%;
+  width: 78%;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    hsl(var(--zf-role-energy) / 0.78),
+    hsl(var(--zf-role-body) / 0.62),
+    transparent
+  );
+  box-shadow:
+    0 18px 0 -1px hsl(var(--zf-role-focus) / 0.34),
+    0 44px 0 -1px hsl(var(--zf-role-mind) / 0.26);
+  filter: blur(0.4px);
+  transform: rotate(-14deg);
+}
+
+.day-cosmic__sun-shower::after {
+  right: 28%;
+  top: 25%;
+  width: 0.72rem;
+  height: 0.72rem;
+  background: hsl(54 100% 88% / 0.95);
+  box-shadow:
+    0 0 0 10px hsl(54 100% 84% / 0.12),
+    -7rem 3rem 0 -0.18rem hsl(var(--zf-role-body) / 0.78),
+    5rem 5.4rem 0 -0.22rem hsl(var(--zf-role-focus) / 0.72),
+    -3rem 12rem 0 -0.18rem hsl(var(--zf-role-energy) / 0.74),
+    0 0 36px hsl(var(--zf-role-energy) / 0.46);
+  animation: day-cosmic-sun-glints 7.8s ease-in-out infinite;
+}
+
+.day-cosmic__prism-ribbon {
+  position: absolute;
+  left: -18%;
+  top: 17%;
+  height: min(42vw, 12rem);
+  width: 142%;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      98deg,
+      transparent 0 12%,
+      hsl(var(--zf-role-release) / 0.00) 18%,
+      hsl(var(--zf-role-release) / 0.30) 27%,
+      hsl(var(--zf-role-energy) / 0.24) 36%,
+      hsl(var(--zf-role-body) / 0.30) 48%,
+      hsl(var(--zf-role-focus) / 0.26) 60%,
+      hsl(var(--zf-role-mind) / 0.22) 70%,
+      transparent 86% 100%
+    );
+  filter: blur(14px) saturate(1.3);
+  -webkit-filter: blur(14px) saturate(1.3);
+  opacity: 0.62;
+  transform: rotate(-12deg);
+  -webkit-mask-image: radial-gradient(ellipse 72% 46% at 50% 50%, #000 0%, transparent 72%);
+  mask-image: radial-gradient(ellipse 72% 46% at 50% 50%, #000 0%, transparent 72%);
+  animation: day-cosmic-prism-pass 13s ease-in-out infinite;
+}
+
+.day-cosmic__prism-ribbon::before {
+  content: "";
+  position: absolute;
+  inset: 38% 8%;
+  border-radius: 9999px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    hsl(var(--zf-role-energy) / 0.52),
+    hsl(var(--zf-role-body) / 0.44),
+    transparent
+  );
+  filter: blur(1px);
+  opacity: 0.74;
+}
+
+/* ==================== Layer 7 — Refracted caustics ===================== */
+.day-cosmic__caustics {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    repeating-radial-gradient(
+      ellipse at 52% 28%,
+      transparent 0 13px,
+      hsl(var(--zf-role-body) / 0.09) 15px 17px,
+      transparent 20px 38px
+    ),
+    repeating-linear-gradient(
+      116deg,
+      transparent 0 44px,
+      hsl(var(--zf-role-focus) / 0.07) 48px 51px,
+      transparent 55px 98px
+    );
+  mix-blend-mode: soft-light;
+  opacity: 0.74;
+  -webkit-mask-image: radial-gradient(ellipse 78% 62% at 50% 30%, #000 0%, transparent 76%);
+  mask-image: radial-gradient(ellipse 78% 62% at 50% 30%, #000 0%, transparent 76%);
+  animation: day-cosmic-caustic-shimmer 16s ease-in-out infinite;
+}
+
+.day-cosmic__glass-depth {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 52% 34% at 50% 30%, transparent 0 48%, hsl(var(--zf-role-focus) / 0.11) 62%, transparent 78%),
+    radial-gradient(ellipse 74% 54% at 50% 52%, transparent 0 62%, hsl(var(--zf-role-body) / 0.10) 74%, transparent 88%),
+    linear-gradient(180deg, hsl(56 100% 96% / 0.10), transparent 34%, hsl(var(--zf-role-focus) / 0.08));
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 78%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 0%, #000 78%, transparent 100%);
+  mix-blend-mode: soft-light;
+  opacity: 0.92;
+}
+
+.day-cosmic__photon-field {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.day-cosmic__photon {
+  position: absolute;
+  left: var(--photon-x);
+  top: var(--photon-y);
+  width: var(--photon-size);
+  height: var(--photon-size);
+  border-radius: 9999px;
+  opacity: var(--photon-opacity);
+  transform: translate3d(-50%, -50%, 0);
+  animation: day-cosmic-photon-twinkle var(--photon-duration) ease-in-out var(--photon-delay) infinite;
+  will-change: transform, opacity;
+}
+
+.day-cosmic__photon::before,
+.day-cosmic__photon::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+.day-cosmic__photon::before {
+  width: calc(var(--photon-size) * 4.2);
+  height: 1px;
+  border-radius: 9999px;
+  background: currentColor;
+  opacity: 0.28;
+}
+
+.day-cosmic__photon::after {
+  width: 1px;
+  height: calc(var(--photon-size) * 4.2);
+  border-radius: 9999px;
+  background: currentColor;
+  opacity: 0.20;
+}
+
+.day-cosmic__photon--aqua {
+  color: hsl(var(--zf-role-focus) / 0.88);
+  background: hsl(var(--zf-role-focus) / 0.88);
+  box-shadow:
+    0 0 9px hsl(var(--zf-role-focus) / 0.66),
+    0 0 24px hsl(var(--zf-role-body) / 0.40);
+}
+
+.day-cosmic__photon--gold {
+  color: hsl(46 100% 76% / 0.95);
+  background: hsl(46 100% 76% / 0.95);
+  box-shadow:
+    0 0 10px hsl(46 100% 74% / 0.76),
+    0 0 26px hsl(var(--zf-role-energy) / 0.46);
+}
+
+.day-cosmic__photon--mint {
+  color: hsl(var(--zf-role-body) / 0.92);
+  background: hsl(var(--zf-role-body) / 0.92);
+  box-shadow:
+    0 0 9px hsl(var(--zf-role-body) / 0.74),
+    0 0 24px hsl(var(--zf-role-focus) / 0.36);
+}
+
+.day-cosmic__photon--iris {
+  color: hsl(var(--zf-role-mind) / 0.78);
+  background: hsl(var(--zf-role-mind) / 0.78);
+  box-shadow:
+    0 0 9px hsl(var(--zf-role-mind) / 0.58),
+    0 0 24px hsl(var(--zf-role-focus) / 0.30);
+}
+
+.day-cosmic__photon--rose {
+  color: hsl(var(--zf-role-release) / 0.74);
+  background: hsl(var(--zf-role-release) / 0.74);
+  box-shadow:
+    0 0 9px hsl(var(--zf-role-release) / 0.56),
+    0 0 24px hsl(var(--zf-role-energy) / 0.32);
+}
+
+.day-cosmic__photon-field[data-animated="false"] .day-cosmic__photon {
+  animation: none;
+}
+
+.day-cosmic__sun-threads[data-animated="false"] .day-cosmic__sun-thread {
+  animation: none;
+}
+
 .day-cosmic__motes {
   position: absolute;
   inset: 0;
@@ -153,11 +744,43 @@ html[data-daymode="dusk"] {
   position: absolute;
   border-radius: 9999px;
   background: var(--day-mote);
-  box-shadow: 0 0 6px 1px oklch(0.98 0.02 85 / 0.4);
+  box-shadow:
+    0 0 6px 1px hsl(var(--zf-trace) / 0.24),
+    0 0 18px hsl(var(--zf-role-body) / 0.18);
   animation-name: day-cosmic-drift;
   animation-timing-function: linear;
   animation-iteration-count: infinite;
   will-change: transform, opacity;
+}
+
+@keyframes day-cosmic-curtain-breathe {
+  0%,
+  100% {
+    opacity: 0.46;
+    transform: scale3d(0.985, 0.99, 1) rotate(-0.4deg);
+    filter: saturate(1.02) blur(0);
+  }
+  52% {
+    opacity: 0.72;
+    transform: scale3d(1.015, 1.02, 1) rotate(0.35deg);
+    filter: saturate(1.12) blur(0.45px);
+  }
+}
+
+@keyframes day-cosmic-thread-float {
+  0%,
+  100% {
+    opacity: calc(var(--thread-opacity) * 0.48);
+    transform: rotate(calc(var(--thread-tilt) - 0.8deg)) scaleY(0.88) scaleX(0.94);
+  }
+  48% {
+    opacity: var(--thread-opacity);
+    transform: rotate(calc(var(--thread-tilt) + 0.9deg)) scaleY(1.08) scaleX(1.03);
+  }
+  78% {
+    opacity: calc(var(--thread-opacity) * 0.62);
+    transform: rotate(calc(var(--thread-tilt) - 0.25deg)) scaleY(0.98) scaleX(0.99);
+  }
 }
 
 @keyframes day-cosmic-drift {
@@ -183,14 +806,138 @@ html[data-daymode="dusk"] {
 /* Reduced motion — freeze motes at their initial position, still visible.
  * data-animated="false" toggled by useShouldAnimate() in TSX for tests,
  * plus the media query belt-and-suspenders for native-resolution override. */
+@keyframes day-cosmic-portal-breathe {
+  0%,
+  100% {
+    opacity: 0.58;
+    transform: scale(0.92) rotate(-4deg);
+  }
+  48% {
+    opacity: 0.92;
+    transform: scale(1.04) rotate(3deg);
+  }
+}
+
+@keyframes day-cosmic-portal-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@keyframes day-cosmic-core-pulse {
+  0%,
+  100% {
+    opacity: 0.64;
+    transform: scale(0.94);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+}
+
+@keyframes day-cosmic-orbit-drift {
+  0%,
+  100% {
+    transform: rotate(-8deg) scale(0.96);
+  }
+  50% {
+    transform: rotate(18deg) scale(1.03);
+  }
+}
+
+@keyframes day-cosmic-prism-pass {
+  0%,
+  100% {
+    opacity: 0.34;
+    transform: translate3d(-6%, 0, 0) rotate(-13deg) scaleX(0.92);
+  }
+  44% {
+    opacity: 0.72;
+    transform: translate3d(4%, -1.3rem, 0) rotate(-10deg) scaleX(1.06);
+  }
+}
+
+@keyframes day-cosmic-sun-shower {
+  0%,
+  100% {
+    opacity: 0.42;
+    transform: rotate(-1deg) scale3d(0.985, 0.985, 1);
+    filter: saturate(1.02) blur(0);
+  }
+  46% {
+    opacity: 0.78;
+    transform: rotate(0.85deg) scale3d(1.012, 1.018, 1);
+    filter: saturate(1.12) blur(0.35px);
+  }
+}
+
+@keyframes day-cosmic-sun-glints {
+  0%,
+  100% {
+    opacity: 0.36;
+    transform: translate3d(0, 0, 0) scale(0.84);
+  }
+  38% {
+    opacity: 1;
+    transform: translate3d(-1.4rem, 1rem, 0) scale(1.06);
+  }
+  72% {
+    opacity: 0.58;
+    transform: translate3d(0.9rem, 2rem, 0) scale(0.92);
+  }
+}
+
+@keyframes day-cosmic-photon-twinkle {
+  0%,
+  100% {
+    opacity: calc(var(--photon-opacity) * 0.34);
+    transform: translate3d(-50%, -50%, 0) scale(0.72);
+  }
+  42% {
+    opacity: var(--photon-opacity);
+    transform: translate3d(calc(-50% + var(--photon-drift)), calc(-50% - var(--photon-drift)), 0) scale(1.22);
+  }
+  72% {
+    opacity: calc(var(--photon-opacity) * 0.72);
+    transform: translate3d(calc(-50% - 6px), calc(-50% - 14px), 0) scale(0.92);
+  }
+}
+
+@keyframes day-cosmic-caustic-shimmer {
+  0%,
+  100% {
+    opacity: 0.42;
+    transform: translate3d(-1.4rem, 0, 0) scale(1);
+  }
+  50% {
+    opacity: 0.78;
+    transform: translate3d(1.2rem, -0.8rem, 0) scale(1.02);
+  }
+}
+
 .day-cosmic__motes[data-animated="false"] .day-cosmic__mote {
   animation: none;
   opacity: 0.6;
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .day-cosmic__solar-portal::before,
+  .day-cosmic__solar-portal::after,
+  .day-cosmic__solar-portal-core,
+  .day-cosmic__solar-portal-orbit,
+  .day-cosmic__light-curtain,
+  .day-cosmic__sun-thread,
+  .day-cosmic__sun-shower,
+  .day-cosmic__sun-shower::after,
+  .day-cosmic__prism-ribbon,
+  .day-cosmic__caustics,
+  .day-cosmic__photon,
   .day-cosmic__mote {
     animation: none;
+  }
+
+  .day-cosmic__mote {
     opacity: 0.6;
   }
 }
@@ -210,26 +957,191 @@ html[data-daymode="dusk"] {
 .day-cosmic__vignette {
   position: absolute;
   inset: 0;
-  background: radial-gradient(
-    ellipse closest-corner at 50% 50%,
-    transparent 55%,
-    var(--day-vignette) 100%
-  );
+  background:
+    radial-gradient(ellipse closest-corner at 50% 48%, transparent 50%, var(--day-vignette) 100%),
+    linear-gradient(180deg, hsl(var(--zf-role-focus) / 0.08), transparent 30%, hsl(var(--foreground) / 0.08));
 }
 
 /* ==================== orb-day-scope — text tokens ===================== */
-/* Applied on OrbPage <main> when appliedTheme === 'paper'. Drives warm
- * brown-ink text color for greeting/whisper, WCAG AA ≥ 4.5:1 on all five
+/* Applied on OrbPage <main> when appliedTheme === 'paper'. Drives calm
+ * green-ink text color for greeting/whisper, WCAG AA ≥ 4.5:1 on all five
  * time-of-day palettes. Also flips foreground/muted-foreground tokens so
  * Tailwind `text-foreground`/`text-muted-foreground` inside the subtree
  * resolve to the ink pair, not the light-mode defaults. */
 .orb-day-scope {
-  --zen-ink: oklch(0.28 0.04 50);
-  --zen-ink-muted: oklch(0.45 0.05 45);
+  --zen-ink: hsl(var(--foreground));
+  --zen-ink-muted: hsl(var(--muted-foreground));
   /* Tailwind bridge tokens (HSL triplets consumed by `text-foreground`). */
-  --foreground: 28 25% 18%;
-  --muted-foreground: 30 15% 36%;
+  --foreground: 176 38% 9%;
+  --muted-foreground: 174 12% 38%;
   color-scheme: light;
+}
+
+.orb-day-scope .orb-page-rim-glow {
+  isolation: isolate;
+  --orb-portal-size: calc(var(--orb-hero-size, 260px) * 1.34);
+  --orb-portal-outer: calc(var(--orb-hero-size, 260px) * 1.74);
+}
+
+.orb-day-scope .orb-page-rim-glow::before,
+.orb-day-scope .orb-page-rim-glow::after {
+  content: "";
+  position: absolute;
+  border-radius: 9999px;
+  pointer-events: none;
+}
+
+.orb-day-scope .orb-page-rim-glow::before {
+  left: 50%;
+  top: 50%;
+  height: var(--orb-portal-outer);
+  width: var(--orb-portal-outer);
+  z-index: -1;
+  background:
+    radial-gradient(circle, hsl(54 100% 94% / 0.68) 0 8%, transparent 24%),
+    radial-gradient(circle, hsl(var(--zf-role-body) / 0.34) 0 34%, transparent 66%),
+    radial-gradient(circle, hsl(var(--zf-role-focus) / 0.18) 42%, transparent 72%);
+  filter: blur(12px) saturate(1.18);
+  opacity: 0.72;
+  transform: translate(-50%, -50%);
+  animation: orb-day-hero-corona 7.5s ease-in-out infinite;
+}
+
+.orb-day-scope .orb-page-rim-glow::after {
+  left: 50%;
+  top: 50%;
+  height: var(--orb-portal-size);
+  width: var(--orb-portal-size);
+  z-index: 0;
+  border: 1px solid hsl(var(--zf-role-focus) / 0.34);
+  background:
+    radial-gradient(circle, transparent 0 55%, hsl(54 100% 88% / 0.34) 57% 58%, transparent 60%),
+    radial-gradient(circle, transparent 0 65%, hsl(var(--zf-role-body) / 0.26) 66% 67%, transparent 69%);
+  box-shadow:
+    0 0 0 10px hsl(var(--zf-role-body) / 0.08),
+    0 0 68px hsl(var(--zf-role-focus) / 0.34),
+    inset 0 0 34px hsl(var(--zf-role-energy) / 0.16);
+  opacity: 0.82;
+  transform: translate(-50%, -50%);
+  animation: orb-day-hero-ring 20s linear infinite;
+}
+
+.orb-day-scope .orb-day-anchor-field {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 1;
+  height: calc(var(--orb-hero-size, 260px) * 1.56);
+  width: calc(var(--orb-hero-size, 260px) * 1.56);
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+.orb-day-scope .orb-day-anchor-field::before,
+.orb-day-scope .orb-day-anchor-field::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  pointer-events: none;
+}
+
+.orb-day-scope .orb-day-anchor-field::before {
+  background:
+    radial-gradient(circle, transparent 0 47%, hsl(var(--zf-role-body) / 0.34) 49% 50%, transparent 52%),
+    radial-gradient(circle, transparent 0 61%, hsl(var(--zf-role-focus) / 0.22) 62% 63%, transparent 65%);
+  -webkit-mask-image: radial-gradient(circle, transparent 0 44%, #000 47% 66%, transparent 70%);
+  mask-image: radial-gradient(circle, transparent 0 44%, #000 47% 66%, transparent 70%);
+  filter: drop-shadow(0 0 18px hsl(var(--zf-role-body) / 0.42));
+  opacity: 0.76;
+  animation: orb-day-anchored-star-ring 14s linear infinite;
+}
+
+.orb-day-scope .orb-day-anchor-field::after {
+  inset: 17%;
+  border: 1px solid hsl(var(--zf-role-energy) / 0.28);
+  box-shadow:
+    0 -3.15rem 0 -1.42rem hsl(54 100% 86% / 0.95),
+    3.4rem -0.9rem 0 -1.48rem hsl(var(--zf-role-body) / 0.85),
+    1.8rem 3.1rem 0 -1.56rem hsl(var(--zf-role-focus) / 0.78),
+    -3.2rem 1.1rem 0 -1.52rem hsl(var(--zf-role-energy) / 0.84),
+    -2.2rem -2.6rem 0 -1.58rem hsl(var(--zf-role-release) / 0.70),
+    0 0 36px hsl(var(--zf-role-body) / 0.30);
+  opacity: 0.96;
+  animation: orb-day-anchored-points 9.5s ease-in-out infinite;
+}
+
+.orb-day-scope .orb-day-anchor-spark {
+  position: absolute;
+  height: 0.7rem;
+  width: 0.7rem;
+  border-radius: 9999px;
+  background: hsl(54 100% 86% / 0.98);
+  box-shadow:
+    0 0 0 9px hsl(54 100% 86% / 0.13),
+    0 0 30px hsl(var(--zf-role-energy) / 0.52);
+  animation: orb-day-anchor-spark 8s ease-in-out infinite;
+}
+
+.orb-day-scope .orb-day-anchor-spark--one {
+  left: 15%;
+  top: 46%;
+}
+
+.orb-day-scope .orb-day-anchor-spark--two {
+  right: 17%;
+  top: 31%;
+  background: hsl(var(--zf-role-body) / 0.92);
+  animation-delay: -2.1s;
+}
+
+.orb-day-scope .orb-day-anchor-spark--three {
+  right: 31%;
+  bottom: 15%;
+  height: 0.55rem;
+  width: 0.55rem;
+  background: hsl(var(--zf-role-focus) / 0.90);
+  animation-delay: -4.6s;
+}
+
+.orb-day-scope .orb-day-anchor-spark--four {
+  left: 32%;
+  top: 16%;
+  height: 0.5rem;
+  width: 0.5rem;
+  background: hsl(var(--zf-role-release) / 0.82);
+  animation-delay: -6.3s;
+}
+
+.orb-day-scope .orb-page-rim-glow > button {
+  z-index: 2;
+  box-shadow:
+    0 0 0 1px hsl(54 100% 90% / 0.38),
+    0 0 0 calc(var(--orb-hero-size, 260px) * 0.075) hsl(var(--zf-role-body) / 0.10),
+    0 0 0 calc(var(--orb-hero-size, 260px) * 0.18) hsl(var(--zf-role-focus) / 0.055),
+    0 18px 72px hsl(var(--zf-role-focus) / 0.28),
+    0 0 96px hsl(var(--zf-role-body) / 0.30);
+}
+
+.orb-day-scope .orb-page-rim-glow > button canvas {
+  filter:
+    saturate(1.24)
+    contrast(1.08)
+    brightness(1.04)
+    drop-shadow(0 0 20px hsl(var(--zf-role-body) / 0.24))
+    drop-shadow(0 20px 42px hsl(var(--zf-role-focus) / 0.20));
+  -webkit-mask-image: radial-gradient(circle, #000 0 45%, rgba(0, 0, 0, 0.76) 49%, transparent 58%);
+  mask-image: radial-gradient(circle, #000 0 45%, rgba(0, 0, 0, 0.76) 49%, transparent 58%);
+}
+
+.orb-day-scope .orb-page-rim-glow::before,
+.orb-day-scope .orb-page-rim-glow::after,
+.orb-day-scope .orb-day-anchor-field::before,
+.orb-day-scope .orb-day-anchor-field::after,
+.orb-day-flourish::before,
+.orb-day-flourish::after,
+.day-cosmic__solar-portal {
+  display: none;
 }
 
 .orb-day-scope h1,
@@ -240,4 +1152,368 @@ html[data-daymode="dusk"] {
 
 .orb-day-scope [data-testid="orb-page-whisper"] {
   color: var(--zen-ink-muted);
+}
+
+/* Paper-mode Orb flourish.
+ * Night gets ShootingStar. Day gets a quiet caustic field: a prism source,
+ * chromatic pools, and slow anchored motes instead of scanning light stripes.
+ */
+.orb-day-flourish {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.orb-day-flourish::before,
+.orb-day-flourish::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  border-radius: 9999px;
+  will-change: transform, opacity;
+}
+
+.orb-day-flourish::before {
+  left: 50%;
+  top: 12%;
+  height: min(66vw, 24rem);
+  width: min(66vw, 24rem);
+  background:
+    radial-gradient(circle at 50% 50%, hsl(var(--card) / 0.30), transparent 34%),
+    conic-gradient(
+      from 132deg,
+      transparent 0 12%,
+      hsl(var(--zf-role-energy) / 0.18) 17%,
+      hsl(var(--zf-role-body) / 0.24) 27%,
+      hsl(var(--zf-role-focus) / 0.18) 38%,
+      transparent 54% 100%
+    );
+  filter: blur(1.4px);
+  opacity: 0.68;
+  transform: translateX(-50%);
+  animation: orb-day-solar-breathe 10s ease-in-out infinite;
+}
+
+.orb-day-flourish::after {
+  right: 12%;
+  top: 25%;
+  height: 0.72rem;
+  width: 0.72rem;
+  background: hsl(var(--zf-role-body));
+  box-shadow:
+    0 0 0 8px hsl(var(--zf-role-body) / 0.12),
+    -4.4rem 4.1rem 0 -0.12rem hsl(var(--zf-role-focus) / 0.72),
+    -2.2rem 8.2rem 0 -0.18rem hsl(var(--zf-role-mind) / 0.62),
+    0 0 28px hsl(var(--zf-role-body) / 0.54);
+  animation: orb-day-orb-field 12s ease-in-out infinite;
+}
+
+.orb-day-flourish__prism,
+.orb-day-flourish__caustic,
+.orb-day-flourish__veil,
+.orb-day-flourish__glint,
+.orb-day-flourish__spark {
+  position: absolute;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+.orb-day-flourish__prism {
+  top: 4%;
+  right: 12%;
+  width: clamp(7.75rem, 18vw, 13rem);
+  height: clamp(7.75rem, 18vw, 13rem);
+  clip-path: polygon(49% 0%, 96% 86%, 4% 86%);
+  transform: rotate(12deg);
+  background:
+    linear-gradient(130deg, hsl(var(--card) / 0.52), hsl(var(--zf-role-body) / 0.26) 42%, hsl(var(--zf-role-focus) / 0.18)),
+    linear-gradient(38deg, transparent 0 48%, hsl(var(--foreground) / 0.10) 48% 50%, transparent 50% 100%);
+  box-shadow:
+    inset 0 1px 0 hsl(var(--foreground) / 0.12),
+    inset 0 -1.1rem 2.2rem hsl(var(--zf-role-focus) / 0.18),
+    0 22px 48px -34px hsl(var(--foreground) / 0.36);
+  filter:
+    drop-shadow(0 0 1.1rem hsl(var(--zf-role-body) / 0.20))
+    drop-shadow(0 18px 30px hsl(var(--foreground) / 0.10));
+  opacity: 0.58;
+  animation: orb-day-prism-breathe 18s ease-in-out infinite;
+}
+
+.orb-day-flourish__caustic {
+  width: min(72vw, 34rem);
+  height: min(58vw, 25rem);
+  border-radius: 999px;
+  filter: blur(0.45rem);
+  opacity: 0.42;
+  mix-blend-mode: multiply;
+  background:
+    radial-gradient(ellipse at 28% 44%, hsl(var(--zf-role-energy) / 0.22), transparent 42%),
+    radial-gradient(ellipse at 68% 36%, hsl(var(--zf-role-body) / 0.20), transparent 44%),
+    conic-gradient(
+      from 210deg at 54% 54%,
+      transparent 0 16%,
+      hsl(var(--zf-role-focus) / 0.18) 20%,
+      hsl(var(--zf-role-body) / 0.16) 31%,
+      transparent 46% 100%
+    );
+  -webkit-mask-image: radial-gradient(ellipse at center, hsl(var(--foreground)) 0 46%, transparent 78%);
+  mask-image: radial-gradient(ellipse at center, hsl(var(--foreground)) 0 46%, transparent 78%);
+  animation: orb-day-caustic-drift 20s ease-in-out infinite;
+}
+
+.orb-day-flourish__caustic--one {
+  --orb-day-caustic-rotate: -10deg;
+  left: -15%;
+  top: 4%;
+  transform: rotate(var(--orb-day-caustic-rotate));
+}
+
+.orb-day-flourish__caustic--two {
+  --orb-day-caustic-rotate: 18deg;
+  right: -18%;
+  bottom: 3%;
+  opacity: 0.34;
+  transform: rotate(var(--orb-day-caustic-rotate)) scale(0.92);
+  animation-delay: -7s;
+}
+
+.orb-day-flourish__veil {
+  width: min(44vw, 19rem);
+  height: min(62vw, 28rem);
+  border-radius: 48% 52% 46% 54%;
+  background:
+    radial-gradient(ellipse at 50% 30%, hsl(var(--card) / 0.24), transparent 44%),
+    linear-gradient(172deg, hsl(var(--zf-role-body) / 0.11), transparent 58%);
+  filter: blur(0.25rem);
+  opacity: 0.38;
+  animation: orb-day-veil-float 24s ease-in-out infinite;
+}
+
+.orb-day-flourish__veil--one {
+  --orb-day-veil-rotate: -12deg;
+  left: 10%;
+  top: 8%;
+  transform: rotate(var(--orb-day-veil-rotate));
+}
+
+.orb-day-flourish__veil--two {
+  --orb-day-veil-rotate: 11deg;
+  right: 5%;
+  top: 38%;
+  transform: rotate(var(--orb-day-veil-rotate)) scale(0.88);
+  animation-delay: -11s;
+  opacity: 0.28;
+}
+
+.orb-day-flourish__glint {
+  height: 0.54rem;
+  width: 0.54rem;
+  border-radius: 9999px;
+  background: hsl(var(--zf-role-focus) / 0.72);
+  box-shadow:
+    0 0 0 7px hsl(var(--zf-role-focus) / 0.12),
+    0 0 32px hsl(var(--zf-role-body) / 0.42);
+  animation: orb-day-glint-float 9.5s ease-in-out infinite;
+}
+
+.orb-day-flourish__glint--one {
+  left: 12%;
+  top: 19%;
+}
+
+.orb-day-flourish__glint--two {
+  right: 16%;
+  top: 37%;
+  animation-delay: -3.2s;
+  background: hsl(var(--zf-role-body) / 0.70);
+}
+
+.orb-day-flourish__glint--three {
+  left: 56%;
+  bottom: 18%;
+  animation-delay: -6.1s;
+  background: hsl(var(--zf-role-mind) / 0.54);
+}
+
+.orb-day-flourish__spark {
+  height: 0.72rem;
+  width: 0.72rem;
+  border-radius: 9999px;
+  background: hsl(var(--zf-role-energy) / 0.82);
+  box-shadow:
+    0 0 0 10px hsl(var(--zf-role-energy) / 0.10),
+    0 0 34px hsl(var(--zf-role-body) / 0.42);
+  animation: orb-day-spark-dance 11s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.orb-day-flourish__spark--one {
+  left: 26%;
+  top: 29%;
+}
+
+.orb-day-flourish__spark--two {
+  right: 22%;
+  top: 23%;
+  height: 0.56rem;
+  width: 0.56rem;
+  background: hsl(var(--zf-role-body) / 0.78);
+  animation-delay: -4.8s;
+}
+
+@keyframes orb-day-hero-corona {
+  0%,
+  100% {
+    opacity: 0.50;
+    transform: translate(-50%, -50%) scale(0.94) rotate(-5deg);
+  }
+  45% {
+    opacity: 0.86;
+    transform: translate(-50%, -50%) scale(1.04) rotate(4deg);
+  }
+}
+
+@keyframes orb-day-hero-ring {
+  to {
+    transform: translate(-50%, -50%) rotate(1turn);
+  }
+}
+
+@keyframes orb-day-anchored-star-ring {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@keyframes orb-day-anchored-points {
+  0%,
+  100% {
+    opacity: 0.72;
+    transform: rotate(-8deg) scale(0.96);
+  }
+  50% {
+    opacity: 1;
+    transform: rotate(10deg) scale(1.04);
+  }
+}
+
+@keyframes orb-day-anchor-spark {
+  0%,
+  100% {
+    opacity: 0.42;
+    transform: translate3d(0, 0, 0) scale(0.78);
+  }
+  42% {
+    opacity: 1;
+    transform: translate3d(0.7rem, -1.1rem, 0) scale(1.08);
+  }
+  72% {
+    opacity: 0.66;
+    transform: translate3d(-0.45rem, 0.55rem, 0) scale(0.92);
+  }
+}
+
+@keyframes orb-day-spark-dance {
+  0%,
+  100% {
+    opacity: 0.32;
+    transform: translate3d(0, 0, 0) scale(0.8);
+  }
+  42% {
+    opacity: 0.96;
+    transform: translate3d(1.6rem, -2.4rem, 0) scale(1);
+  }
+  68% {
+    opacity: 0.62;
+    transform: translate3d(-0.7rem, 0.8rem, 0) scale(0.92);
+  }
+}
+
+@keyframes orb-day-prism-breathe {
+  0%,
+  100% {
+    opacity: 0.42;
+    transform: rotate(10deg) scale(0.96);
+  }
+  48% {
+    opacity: 0.66;
+    transform: rotate(15deg) scale(1.04);
+  }
+}
+
+@keyframes orb-day-caustic-drift {
+  0%,
+  100% {
+    opacity: 0.28;
+    transform: rotate(var(--orb-day-caustic-rotate, -10deg)) scale(0.94);
+  }
+  45% {
+    opacity: 0.48;
+    transform: rotate(calc(var(--orb-day-caustic-rotate, -10deg) + 8deg)) scale(1.04);
+  }
+}
+
+@keyframes orb-day-veil-float {
+  0%,
+  100% {
+    opacity: 0.24;
+    transform: rotate(var(--orb-day-veil-rotate, -12deg)) scale(0.96);
+  }
+  50% {
+    opacity: 0.42;
+    transform: rotate(calc(var(--orb-day-veil-rotate, -12deg) + 6deg)) scale(1.04);
+  }
+}
+
+@keyframes orb-day-solar-breathe {
+  0%,
+  100% {
+    opacity: 0.56;
+    transform: translateX(-50%) scale(0.94) rotate(-3deg);
+  }
+  50% {
+    opacity: 0.82;
+    transform: translateX(-50%) scale(1.04) rotate(3deg);
+  }
+}
+
+@keyframes orb-day-orb-field {
+  0%,
+  100% {
+    opacity: 0.38;
+    transform: translate3d(0, 0, 0) scale(0.9);
+  }
+  45% {
+    opacity: 0.88;
+    transform: translate3d(-1.25rem, 0.8rem, 0) scale(1);
+  }
+}
+
+@keyframes orb-day-glint-float {
+  0%,
+  100% {
+    opacity: 0.28;
+    transform: translate3d(0, 0, 0) scale(0.82);
+  }
+  50% {
+    opacity: 0.82;
+    transform: translate3d(0.75rem, -1.1rem, 0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .orb-day-scope .orb-page-rim-glow::before,
+  .orb-day-scope .orb-page-rim-glow::after,
+  .orb-day-scope .orb-day-anchor-field::before,
+  .orb-day-scope .orb-day-anchor-field::after,
+  .orb-day-scope .orb-day-anchor-spark,
+  .orb-day-flourish::before,
+  .orb-day-flourish::after,
+  .orb-day-flourish__prism,
+  .orb-day-flourish__caustic,
+  .orb-day-flourish__veil,
+  .orb-day-flourish__glint,
+  .orb-day-flourish__spark {
+    animation: none;
+  }
 }

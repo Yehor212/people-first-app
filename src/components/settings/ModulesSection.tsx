@@ -42,7 +42,7 @@ export function ModulesSection() {
 
           {/* Toggleable modules */}
           <FeatureToggleItem
-            icon={<Timer className="w-4 h-4 text-orange-500" />}
+            icon={<Timer className="w-4 h-4 text-[hsl(var(--zf-trace))]" />}
             title={t.settingsModuleFocus}
             description={t.settingsModuleFocusDesc}
             enabled={isFeatureEnabled('focusTimer')}
@@ -51,14 +51,14 @@ export function ModulesSection() {
             lockedMessage={t.settingsModuleUnlockHint}
           />
           <FeatureToggleItem
-            icon={<Wind className="w-4 h-4 text-sky-500" />}
+            icon={<Wind className="w-4 h-4 text-primary" />}
             title={t.settingsModuleBreathing}
             description={t.settingsModuleBreathingDesc}
             enabled={isFeatureEnabled('breathingExercise')}
             onToggle={(enabled) => setFlag('breathingExercise', enabled)}
           />
           <FeatureToggleItem
-            icon={<Target className="w-4 h-4 text-yellow-500" />}
+            icon={<Target className="w-4 h-4 text-[hsl(var(--zf-memory))]" />}
             title={t.settingsModuleQuests}
             description={t.settingsModuleQuestsDesc}
             enabled={isFeatureEnabled('quests')}
@@ -67,7 +67,7 @@ export function ModulesSection() {
             lockedMessage={t.settingsModuleUnlockHint}
           />
           <FeatureToggleItem
-            icon={<ClipboardList className="w-4 h-4 text-blue-500" />}
+            icon={<ClipboardList className="w-4 h-4 text-[hsl(var(--zf-trace))]" />}
             title={t.settingsModuleTasks}
             description={t.settingsModuleTasksDesc}
             enabled={isFeatureEnabled('tasks')}
@@ -76,7 +76,7 @@ export function ModulesSection() {
             lockedMessage={t.settingsModuleUnlockHint}
           />
           <FeatureToggleItem
-            icon={<Trophy className="w-4 h-4 text-amber-500" />}
+            icon={<Trophy className="w-4 h-4 text-[hsl(var(--zf-warm))]" />}
             title={t.settingsModuleChallenges}
             description={t.settingsModuleChallengesDesc}
             enabled={isFeatureEnabled('challenges')}
@@ -85,7 +85,7 @@ export function ModulesSection() {
             lockedMessage={t.settingsModuleUnlockHint}
           />
           <FeatureToggleItem
-            icon={<Flower2 className="w-4 h-4 text-green-500" />}
+            icon={<Flower2 className="w-4 h-4 text-[hsl(var(--zf-growth))]" />}
             title={t.settingsModuleGarden}
             description={t.settingsModuleGardenDesc}
             enabled={isFeatureEnabled('innerWorld')}

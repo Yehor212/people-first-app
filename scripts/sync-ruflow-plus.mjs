@@ -20,6 +20,10 @@ const desiredEnv = {
   RUFLOW_PLUS_VERIFY_TIME_SENSITIVE_EXTERNALS: "1",
   RUFLOW_PLUS_ROLE_DIR: ".Codex/agents",
   RUFLOW_PLUS_LEARNING_RECORD: "docs/ai/RUFLOW_PLUS_LEARNING_RECORD.md",
+  ZENFLOW_CONTEXT_AUTO: "1",
+  ZENFLOW_CONTEXT_AUTO_MAX_CHARS: "8500",
+  ZENFLOW_CONTEXT_CURRENT: ".Codex/auto-context/current.md",
+  ZENFLOW_CONTEXT_MCP_SERVER: "zenflow-context",
 };
 
 async function listFiles(dir) {

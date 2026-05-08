@@ -8,12 +8,19 @@ import { compression } from "vite-plugin-compression2";
 import { changelogPlugin } from "./vite-plugin-changelog";
 import { versionPlugin } from "./vite-plugin-version";
 
+function normalizeBasePath(value: string): string {
+  if (!value || value === "/") return "/";
+  return value.endsWith("/") ? value : `${value}/`;
+}
+
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   // Use relative paths for Capacitor/Android builds
   // Automatically determined by npm script (build vs build:android)
   const isCapacitor = process.env.CAPACITOR_BUILD === "true";
-  const base = isCapacitor ? "./" : "/people-first-app/";
+  const webBase = normalizeBasePath(process.env.VITE_APP_BASE || "/people-first-app/");
+  const base = isCapacitor ? "./" : webBase;
+  const pwaEnabled = !isCapacitor && process.env.VITE_DISABLE_PWA !== "true";
 
   // Read version from package.json
   const packageJson = JSON.parse(readFileSync("./package.json", "utf-8"));
@@ -25,6 +32,21 @@ export default defineConfig(({ mode }) => {
     server: {
       host: "localhost",
       port: 8080,
+      watch: {
+        ignored: [
+          "**/.claude/**",
+          "**/.codex-artifacts/**",
+          "**/.swarm/**",
+          "**/android/app/build/**",
+          "**/coverage/**",
+          "**/dist/**",
+          "**/output/**",
+          "**/playwright-report/**",
+          "**/screenshots/**",
+          "**/test-results/**",
+          "**/tmp/**",
+        ],
+      },
     },
     preview: {
       host: "localhost",
@@ -53,7 +75,7 @@ export default defineConfig(({ mode }) => {
       // APK would be dead weight (doubling asset footprint).
       // Skips < 1 KB. Keeps originals for servers that can't serve precompressed.
       // Brotli-11 ~17-25% smaller than gzip-9 on minified JS.
-      !isCapacitor &&
+      pwaEnabled &&
         mode !== "development" &&
         compression({
           algorithms: ["brotliCompress", "gzip"],
@@ -62,7 +84,7 @@ export default defineConfig(({ mode }) => {
           deleteOriginalAssets: false,
         }),
       // Disable PWA for Capacitor builds (native apps don't need service workers)
-      !isCapacitor
+      pwaEnabled
         ? VitePWA({
             // P1 Fix: Use injectManifest for custom SW with Background Sync support
             strategies: "injectManifest",
@@ -314,6 +336,10 @@ export default defineConfig(({ mode }) => {
 
     optimizeDeps: {
       include: ["react", "react-dom", "@supabase/supabase-js", "dexie", "nanoid"],
+      // Vite's default dep scan crawls every HTML file under the project root.
+      // Android build intermediates and Playwright reports contain generated
+      // HTML that points at bundled JS, which must never become dev-server input.
+      entries: ["index.html"],
     },
 
     // Strip /*! license */ banners + dead debug code from production bundle.

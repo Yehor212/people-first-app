@@ -1,18 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { logger } from '@/lib/logger';
-import { safeJsonParse } from '@/lib/safeJson';
+import { safeLocalStorageGet, safeLocalStorageSet } from '@/lib/safeJson';
 
 const DEBOUNCE_MS = 300;
 
 export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T | ((prev: T) => T)) => void] {
   const [storedValue, setStoredValue] = useState<T>(() => {
-    try {
-      const item = window.localStorage.getItem(key);
-      return item ? safeJsonParse<T>(item, initialValue) : initialValue;
-    } catch (error) {
-      logger.error(`Error reading localStorage key "${key}":`, error);
-      return initialValue;
-    }
+    return safeLocalStorageGet<T>(key, initialValue);
   });
 
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -24,10 +18,8 @@ export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T 
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
         // Flush pending write on unmount
-        try {
-          window.localStorage.setItem(key, JSON.stringify(pendingValueRef.current));
-        } catch (error) {
-          logger.error(`Error flushing localStorage key "${key}":`, error);
+        if (!safeLocalStorageSet(key, pendingValueRef.current)) {
+          logger.error(`Error flushing localStorage key "${key}"`);
         }
       }
     };
@@ -42,10 +34,8 @@ export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T 
     }
 
     timeoutRef.current = setTimeout(() => {
-      try {
-        window.localStorage.setItem(key, JSON.stringify(storedValue));
-      } catch (error) {
-        logger.error(`Error setting localStorage key "${key}":`, error);
+      if (!safeLocalStorageSet(key, storedValue)) {
+        logger.error(`Error setting localStorage key "${key}"`);
         // Emit storage error event for user notification
         window.dispatchEvent(new CustomEvent('zenflow:storage-error', {
           detail: {

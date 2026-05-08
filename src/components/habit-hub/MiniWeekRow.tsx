@@ -10,7 +10,13 @@ import { formatHabitValue, getNumericalValue } from "@/lib/habits";
 import { computeEntriesWithAuto } from "@/lib/habitComputedEntries";
 import { hapticTap } from "@/lib/haptics";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { habitTemplates, resolveHabitTemplateSetup } from "@/lib/habitTemplates";
+import {
+  getNumericalActionDelta,
+  getNumericalQuickEntryAction,
+  getNumericalWeekCellDelta,
+  type NumericalEntryAction,
+} from "@/lib/habitNumericalInteraction";
+import { isHabitDueOnDate } from "@/lib/habitScheduling";
 import { ENTRY } from "@/types";
 import type { Habit } from "@/types";
 import { MiniCheckmarkCell } from "./MiniCheckmarkCell";
@@ -18,9 +24,18 @@ import { MiniCheckmarkCell } from "./MiniCheckmarkCell";
 interface MiniWeekRowProps {
   habit: Habit;
   habitColor: string; // resolved hex
+  roleAccent?: {
+    color: string;
+    softBg: string;
+    strongBg: string;
+    border: string;
+    mutedBg: string;
+  };
   onToggle: (habitId: string, date: string) => void;
   onAdjust?: (habitId: string, date: string, delta: number) => void;
+  onNumericalAction?: (habitId: string, date: string, action: NumericalEntryAction) => void;
   tone?: "hub" | "hero";
+  interactionScope?: "history" | "today";
 }
 
 // DOW_LABELS moved inside component for i18n (see useMemo below)
@@ -56,30 +71,15 @@ function getDowIndex(dateStr: string): number {
   return jsDay === 0 ? 6 : jsDay - 1;
 }
 
-function getNumericalTapStep(habit: Habit): number {
-  if (habit.templateId) {
-    const template = habitTemplates.find((item) => item.id === habit.templateId);
-    if (template?.habitType === "numerical") {
-      return resolveHabitTemplateSetup(template, habit.unit || undefined).targetStep;
-    }
-  }
-
-  const unit = habit.unit.trim().toLowerCase();
-  if (unit === "l") return 0.25;
-  if (unit === "ml") return 250;
-  if (unit === "km" || unit === "mi") return 0.5;
-  if (unit === "min" || unit === "mins" || unit === "minutes") return 5;
-  if (unit === "hr" || unit === "hrs" || unit === "hour" || unit === "hours") return 0.25;
-
-  return 1;
-}
-
 export const MiniWeekRow = memo(function MiniWeekRow({
   habit,
   habitColor,
+  roleAccent,
   onToggle,
   onAdjust,
+  onNumericalAction,
   tone = "hub",
+  interactionScope = "history",
 }: MiniWeekRowProps) {
   const { t, language } = useLanguage();
   const today = getToday();
@@ -103,7 +103,8 @@ export const MiniWeekRow = memo(function MiniWeekRow({
   const getNumericDisplay = useCallback(
     (date: string): string => {
       const val = getNumericalValue(habit, date);
-      if (val === 0) return "";
+      const hasEntry = Boolean(habit.entries?.[date]);
+      if (val === 0 && !hasEntry) return "";
       return formatHabitValue(val, language);
     },
     [habit, language]
@@ -111,14 +112,33 @@ export const MiniWeekRow = memo(function MiniWeekRow({
 
   const handleTap = useCallback(
     (date: string) => {
+      if (interactionScope === "today" && date !== today) return;
+      if (!isHabitDueOnDate(habit, date)) return;
       void hapticTap();
       if (isNumerical && onAdjust) {
-        onAdjust(habit.id, date, getNumericalTapStep(habit));
+        const currentValue = getNumericalValue(habit, date);
+        const hasEntry = Boolean(habit.entries?.[date]);
+        const mode = interactionScope === "today" ? "quickToggle" : "increment";
+        if (mode === "quickToggle" && onNumericalAction) {
+          onNumericalAction(habit.id, date, getNumericalQuickEntryAction(habit, currentValue, hasEntry));
+          return;
+        }
+        onAdjust(habit.id, date, getNumericalWeekCellDelta(habit, currentValue, mode));
+      } else if (isNumerical && onNumericalAction) {
+        const currentValue = getNumericalValue(habit, date);
+        const hasEntry = Boolean(habit.entries?.[date]);
+        const action = getNumericalQuickEntryAction(habit, currentValue, hasEntry);
+        const delta = getNumericalActionDelta(action, currentValue);
+        if (delta !== null && onAdjust) {
+          onAdjust(habit.id, date, delta);
+          return;
+        }
+        onNumericalAction(habit.id, date, action);
       } else {
         onToggle(habit.id, date);
       }
     },
-    [habit, isNumerical, onToggle, onAdjust]
+    [habit, interactionScope, isNumerical, onToggle, onAdjust, onNumericalAction, today]
   );
 
   return (
@@ -155,8 +175,10 @@ export const MiniWeekRow = memo(function MiniWeekRow({
             date={date}
             value={getEntryVal(date)}
             habitColor={habitColor}
+            roleAccent={roleAccent}
             isToday={date === today}
             isFuture={date > today}
+            isLocked={(interactionScope === "today" && date !== today) || !isHabitDueOnDate(habit, date)}
             isNumerical={isNumerical}
             numericDisplay={isNumerical ? getNumericDisplay(date) : undefined}
             onTap={() => handleTap(date)}

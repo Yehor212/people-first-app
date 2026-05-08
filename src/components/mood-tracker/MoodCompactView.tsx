@@ -134,7 +134,7 @@ export function MoodCompactView({
             }}
             className="flex items-center gap-1.5 px-3 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl motion-safe:transition-colors"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-4 h-4" aria-hidden="true" />
             <span className="text-sm font-medium">{t.updateMood || "Update"}</span>
           </button>
         )}

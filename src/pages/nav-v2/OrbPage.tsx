@@ -1,38 +1,31 @@
-import { memo, useCallback, useEffect, useMemo, useRef } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Bloom } from "@/lib/motion";
 import { staggerDelay } from "@/lib/motion/choreography";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useThemeStore } from "@/stores/themeStore";
-import { ValenceOrb } from "@/components/state-of-mind/ValenceOrb";
-import { EmotionTagGrid } from "@/components/state-of-mind/EmotionTagGrid";
-import { isSensitiveTag } from "@/components/state-of-mind/emotionTags";
+import { cn } from "@/lib/utils";
 import { haptics } from "@/lib/haptics";
 import { CosmicBgAdapter } from "./CosmicBgAdapter";
 import { useCosmicParallax } from "./useCosmicParallax";
 import { ShootingStar } from "./ShootingStar";
-import { CinematicHeading } from "./CinematicHeading";
-import { MoodScopeSelector } from "./MoodScopeSelector";
-import { ValenceSlider } from "@/components/state-of-mind/ValenceSlider";
-import { MoodConfirmCta } from "./MoodConfirmCta";
 import { MoodFirstRunHint } from "./MoodFirstRunHint";
+import { OrbRefineStep, OrbSelectStep } from "./OrbPageSteps";
 import { useOrbMoodFlow } from "./useOrbMoodFlow";
+import type { NavV2Page } from "@/hooks/useNavigationV2";
+import type { MoodEntry } from "@/types";
+
+const V1_VALENCE_ORB_SIZE = 280;
+const PHONE_ORB_ANIMATION_SPEED = 0.82;
 
 /**
  * OrbPage — Phase 3-A.2 cosmic cinematic mindfulness surface with
  * Phase 3-A.4b complete mood entry flow (scope + emotion + confirm + auto-flow).
  *
  * Visual: CosmicBgAdapter + ShootingStar + glass chips over the cosmic
- * aesthetic. Paper theme swaps to warm day variant via orb-day-scope class.
+ * aesthetic. Paper theme swaps to aurora day variant via orb-day-scope class.
  *
  * Flow orchestration lives in useOrbMoodFlow() — this file is presentational.
  */
-
-function pickGreetingKey(): "goodMorning" | "goodAfternoon" | "goodEvening" {
-  const hour = new Date().getHours();
-  if (hour < 12) return "goodMorning";
-  if (hour < 18) return "goodAfternoon";
-  return "goodEvening";
-}
 
 const WHISPER_KEYS = [
   "orbWhisper1",
@@ -46,39 +39,87 @@ function pickWhisperKey(date = new Date()): (typeof WHISPER_KEYS)[number] {
   return WHISPER_KEYS[date.getDate() % WHISPER_KEYS.length];
 }
 
-export const OrbPage = memo(function OrbPage() {
+function OrbDayFlourish() {
+  return (
+    <div
+      className="orb-day-flourish"
+      data-testid="orb-day-flourish"
+      aria-hidden="true"
+    >
+      <span className="orb-day-flourish__prism" />
+      <span className="orb-day-flourish__caustic orb-day-flourish__caustic--one" />
+      <span className="orb-day-flourish__caustic orb-day-flourish__caustic--two" />
+      <span className="orb-day-flourish__veil orb-day-flourish__veil--one" />
+      <span className="orb-day-flourish__veil orb-day-flourish__veil--two" />
+      <span className="orb-day-flourish__glint orb-day-flourish__glint--one" />
+      <span className="orb-day-flourish__glint orb-day-flourish__glint--two" />
+      <span className="orb-day-flourish__glint orb-day-flourish__glint--three" />
+      <span className="orb-day-flourish__spark orb-day-flourish__spark--one" />
+      <span className="orb-day-flourish__spark orb-day-flourish__spark--two" />
+    </div>
+  );
+}
+
+interface OrbPageProps {
+  navigateToPage?: (page: NavV2Page) => void;
+  onAddMood?: (entry: MoodEntry) => void;
+}
+
+export const OrbPage = memo(function OrbPage({
+  navigateToPage,
+  onAddMood,
+}: OrbPageProps) {
   const { t } = useLanguage();
   const tx = t as unknown as Record<string, string>;
-  const h1Ref = useRef<HTMLHeadingElement>(null);
+  const mainRef = useRef<HTMLElement>(null);
   const parallaxRef = useCosmicParallax<HTMLDivElement>();
   const appliedTheme = useThemeStore((s) => s.appliedTheme);
+  const [viewport, setViewport] = useState(() => ({
+    width: typeof window === "undefined" ? 1280 : window.innerWidth,
+    height: typeof window === "undefined" ? 900 : window.innerHeight,
+  }));
 
-  const scopeClass =
-    appliedTheme === "paper" ? "orb-day-scope" : "dark orb-cosmic-scope";
+  const isPaperTheme = appliedTheme === "paper";
+  const scopeClass = isPaperTheme ? "orb-day-scope" : "dark orb-cosmic-scope";
 
   const {
-    userName,
     orbValence,
     auraHue,
     shouldAnimate,
+    step,
     draftValence,
+    resolvedValence,
+    draftMood,
+    draftScope,
+    draftSpecificTime,
     draftEmotion,
-    valenceChosen,
-    confirmEnabled,
+    draftNote,
+    canProceedFromSelect,
+    canOpenDiary,
     firstRunEligible,
-    handleSliderDraft,
     handleSliderCommit,
     handleEmotionToggle,
-    handleConfirm,
-    handleSkip,
-  } = useOrbMoodFlow();
+    handleNoteChange,
+    handleNextStep,
+    handleBackStep,
+    handleOpenDiary,
+  } = useOrbMoodFlow({ navigateToPage, onAddMood });
 
   useEffect(() => {
-    h1Ref.current?.focus();
+    mainRef.current?.focus();
   }, []);
 
-  const greetingKey = pickGreetingKey();
-  const greetingText = tx[greetingKey] || "Hello";
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const syncViewport = () =>
+      setViewport({ width: window.innerWidth, height: window.innerHeight });
+
+    syncViewport();
+    window.addEventListener("resize", syncViewport);
+    return () => window.removeEventListener("resize", syncViewport);
+  }, []);
+
   const whisperKey = useMemo(() => pickWhisperKey(), []);
   const whisperText = tx[whisperKey] || "How's your heart today?";
 
@@ -96,9 +137,83 @@ export const OrbPage = memo(function OrbPage() {
     }
   }, [shouldAnimate]);
 
+  const moodLabel = useMemo(() => {
+    const moodKey =
+      draftMood === "great"
+        ? "moodGreat"
+        : draftMood === "good"
+          ? "moodGood"
+          : draftMood === "bad"
+            ? "moodBad"
+            : draftMood === "terrible"
+              ? "moodTerrible"
+              : "moodOkay";
+    return tx[moodKey] || draftMood;
+  }, [draftMood, tx]);
+
+  const scopeLabel = useMemo(() => {
+    if (draftScope === "day") return tx.orbScopeDay || "For the whole day";
+    if (draftScope === "specific") {
+      return draftSpecificTime
+        ? `${tx.orbScopeSpecific || "At a specific time"} - ${draftSpecificTime}`
+        : tx.orbScopeSpecific || "At a specific time";
+    }
+    return tx.orbScopeNow || "In this moment";
+  }, [draftScope, draftSpecificTime, tx]);
+
+  const isDesktopViewport = viewport.width >= 768;
+  const isShortViewport = viewport.height < 820;
+  const isUltraDenseSelectStep =
+    step === "orb-select" &&
+    draftScope === "specific" &&
+    isDesktopViewport &&
+    viewport.height < 820;
+  const isDenseSelectStep =
+    step === "orb-select" &&
+    (viewport.height < 860 || (draftScope === "specific" && viewport.height < 940));
+  const heroOrbSize = useMemo(() => {
+    if (!isDenseSelectStep && !isUltraDenseSelectStep) {
+      return V1_VALENCE_ORB_SIZE;
+    }
+
+    const denseMin = isUltraDenseSelectStep ? 220 : isDesktopViewport ? 260 : 240;
+    const denseScale = isUltraDenseSelectStep ? 0.3 : isDesktopViewport ? 0.34 : 0.32;
+    return Math.round(
+      Math.max(denseMin, Math.min(V1_VALENCE_ORB_SIZE, viewport.height * denseScale)),
+    );
+  }, [
+    isDenseSelectStep,
+    isDesktopViewport,
+    isUltraDenseSelectStep,
+    viewport.height,
+  ]);
+
+  const contentGapClass = isUltraDenseSelectStep
+    ? "gap-1.5 md:gap-2"
+    : isDenseSelectStep
+    ? "gap-2.5 md:gap-3"
+    : isShortViewport
+      ? "gap-3 md:gap-4"
+      : "gap-6 md:gap-7";
+  const pageChromePaddingClass = isUltraDenseSelectStep
+    ? "pt-[calc(env(safe-area-inset-top)+0.75rem)]"
+    : isDenseSelectStep
+    ? "pt-[calc(env(safe-area-inset-top)+0.75rem)]"
+    : isShortViewport
+    ? "pt-[calc(env(safe-area-inset-top)+1rem)]"
+    : "pt-[calc(env(safe-area-inset-top)+1.25rem)]";
+  const selectContentLayoutClass = isUltraDenseSelectStep
+    ? "flex flex-1 min-h-0 flex-col justify-center overflow-y-auto px-1 pb-24 pt-12 md:pb-28 md:pt-10"
+    : isDenseSelectStep
+    ? "flex flex-1 min-h-0 flex-col justify-center overflow-y-auto px-1 pb-24 pt-12 md:pb-28 md:pt-8"
+    : isShortViewport
+    ? "flex flex-1 min-h-0 flex-col justify-center overflow-y-auto px-1 pb-24 pt-8 md:pb-28"
+    : "flex flex-1 min-h-0 flex-col justify-center overflow-y-auto px-1 pb-24 md:pb-28";
+
   return (
     <Bloom key="orb-page" transition={staggerDelay("primary")}>
       <main
+        ref={mainRef}
         id="main-content-v2"
         role="main"
         tabIndex={-1}
@@ -106,6 +221,10 @@ export const OrbPage = memo(function OrbPage() {
         aria-labelledby="orb-page-heading"
         data-testid="orb-page"
       >
+        <h1 id="orb-page-heading" className="sr-only">
+          {tx.somLogFeeling || tx.navV2Orb || "Log how you feel"}
+        </h1>
+
         <CosmicBgAdapter />
 
         <div
@@ -114,132 +233,54 @@ export const OrbPage = memo(function OrbPage() {
           className="pointer-events-none absolute inset-0 z-0 overflow-hidden"
           data-testid="cosmic-orb-flourish-layer"
         >
-          <ShootingStar />
+          {isPaperTheme ? <OrbDayFlourish /> : <ShootingStar />}
         </div>
 
-        <div className="relative z-10 mx-auto max-w-3xl px-4 py-10 md:px-6 md:py-16">
-          <Bloom key="orb-greeting" transition={staggerDelay("chrome")}>
-            <div ref={h1Ref} tabIndex={-1} className="outline-none">
-              <CinematicHeading
-                id="orb-page-heading"
-                leadText={`${greetingText}, `}
-                emphasis={userName === "Friend" ? (tx.defaultUserName || "Friend") : userName}
-                className="font-display text-3xl md:text-5xl font-semibold tracking-tight text-foreground text-center outline-none"
-              />
-            </div>
-          </Bloom>
-
-          <Bloom key="orb-hero" transition={staggerDelay("primary")}>
-            <div className="mt-12 md:mt-16 flex items-center justify-center">
-              <div
-                className="relative orb-page-rim-glow"
-                data-orb-breathing={shouldAnimate ? "true" : "false"}
-                style={{ "--orb-aura-hue": auraHue } as React.CSSProperties}
-              >
-                <div
-                  ref={auraRef}
-                  className="orb-aura"
-                  data-testid="orb-aura"
-                  data-aura-hue={auraHue}
-                  aria-hidden="true"
-                />
-                <button
-                  type="button"
-                  onClick={handleOrbTap}
-                  aria-label={tx.somLogFeeling || "Log how you feel"}
-                  data-testid="orb-page-hero"
-                  className="relative rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-background motion-safe:transition-transform motion-safe:duration-200 active:scale-[0.98]"
-                >
-                  <div className="block md:hidden">
-                    <ValenceOrb valence={orbValence} size={280} />
-                  </div>
-                  <div className="hidden md:block">
-                    <ValenceOrb valence={orbValence} size={360} />
-                  </div>
-                </button>
-              </div>
-            </div>
-          </Bloom>
-
-          <Bloom key="orb-whisper" transition={staggerDelay("secondary")}>
-            <p
-              data-testid="orb-page-whisper"
-              data-whisper-key={whisperKey}
-              className="mt-10 md:mt-12 text-center font-serif italic text-lg md:text-xl text-muted-foreground tracking-wide"
-            >
-              {whisperText}
-            </p>
-          </Bloom>
-
-          <Bloom key="orb-scope" transition={staggerDelay("secondary")}>
-            <div className="mt-6 md:mt-8" data-testid="orb-page-scope">
-              <MoodScopeSelector />
-            </div>
-          </Bloom>
-
-          <Bloom key="orb-picker" transition={staggerDelay("cta")}>
-            <div
-              className="mx-auto mt-6 md:mt-8"
-              data-testid="orb-page-picker"
-            >
-              {/* data-testid="orb-page-slider" preserves infrastructure test
-                  contract after Phase 3-B swap from MoodSliderV2 → ValenceSlider. */}
-              <div data-testid="orb-page-slider">
-                <ValenceSlider
-                  value={draftValence ?? 0}
-                  onChange={(v) => {
-                    handleSliderDraft(v);
-                    handleSliderCommit(v);
-                  }}
-                />
-              </div>
-            </div>
-          </Bloom>
-
-          {valenceChosen && draftValence !== null && (
-            <Bloom key="orb-emotion" transition={staggerDelay("cta")}>
-              <div
-                className="mx-auto mt-8 max-w-xl px-2"
-                data-testid="orb-page-emotion-spectrum"
-              >
-                <EmotionTagGrid
-                  valence={draftValence}
-                  selected={draftEmotion ? [draftEmotion] : []}
-                  onToggle={handleEmotionToggle}
-                  expandable
-                />
-              </div>
-            </Bloom>
+        <div
+          className={cn(
+            "relative z-10 mx-auto flex h-[100svh] max-w-3xl flex-col px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] md:px-6 md:pb-[calc(env(safe-area-inset-bottom)+1.5rem)]",
+            pageChromePaddingClass,
           )}
-
-          {valenceChosen && (
-            <div data-testid="orb-page-confirm">
-              <MoodConfirmCta
-                enabled={confirmEnabled}
-                onConfirm={handleConfirm}
-                onSkip={handleSkip}
-              />
-              {draftEmotion && isSensitiveTag(draftEmotion) && (
-                <div className="mt-3 flex justify-center">
-                  <a
-                    href="/support"
-                    data-testid="mood-support-link"
-                    className={[
-                      "text-xs motion-safe:transition-colors",
-                      appliedTheme === "paper"
-                        ? "text-warm-brown-ink/50 hover:text-primary"
-                        : "text-white/50 hover:text-primary",
-                    ].join(" ")}
-                    onClick={(e) => {
-                      // Future: route to /support. For now, soft intent signal only.
-                      e.preventDefault();
-                    }}
-                  >
-                    {tx.moodSupportLink || "Need support?"}
-                  </a>
-                </div>
-              )}
-            </div>
+        >
+          {step === "orb-select" ? (
+            <OrbSelectStep
+              tx={tx}
+              selectContentLayoutClass={selectContentLayoutClass}
+              contentGapClass={contentGapClass}
+              shouldAnimate={shouldAnimate}
+              auraHue={auraHue}
+              auraRef={auraRef}
+              showOrbAura={isDesktopViewport}
+              handleOrbTap={handleOrbTap}
+              orbValence={orbValence}
+              heroOrbSize={heroOrbSize}
+              orbAnimationSpeed={isDesktopViewport ? 1 : PHONE_ORB_ANIMATION_SPEED}
+              draftScope={draftScope}
+              draftValence={draftValence}
+              isDenseSelectStep={isDenseSelectStep}
+              isUltraDenseSelectStep={isUltraDenseSelectStep}
+              isShortViewport={isShortViewport}
+              whisperKey={whisperKey}
+              whisperText={whisperText}
+              canProceedFromSelect={canProceedFromSelect}
+              handleSliderCommit={handleSliderCommit}
+              handleNextStep={handleNextStep}
+            />
+          ) : (
+            <OrbRefineStep
+              tx={tx}
+              contentGapClass={contentGapClass}
+              resolvedValence={resolvedValence}
+              scopeLabel={scopeLabel}
+              moodLabel={moodLabel}
+              draftEmotion={draftEmotion}
+              draftNote={draftNote}
+              canOpenDiary={canOpenDiary}
+              handleEmotionToggle={handleEmotionToggle}
+              handleNoteChange={handleNoteChange}
+              handleBackStep={handleBackStep}
+              handleOpenDiary={handleOpenDiary}
+            />
           )}
         </div>
       </main>

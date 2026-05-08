@@ -3,6 +3,7 @@
  * ANTI-SKIP GATE — Blocks agent from stopping when skips/simplifications detected.
  *
  * Hook event: Stop
+ * Hook input: not required; reads git diff, checklist/Ruflo state, and session token files.
  * Exit 2 = BLOCK (hard), Exit 0 = PASS
  *
  * 6 checks:

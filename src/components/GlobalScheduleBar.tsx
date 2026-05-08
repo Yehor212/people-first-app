@@ -140,7 +140,7 @@ export const GlobalScheduleBar = memo(function GlobalScheduleBar({
       </div>
 
       {/* Arrow */}
-      <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0 rtl:scale-x-[-1]" />
+      <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0 rtl:scale-x-[-1]" aria-hidden="true" />
     </button>
   );
 });

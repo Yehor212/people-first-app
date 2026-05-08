@@ -201,7 +201,7 @@ export function InsightsPanel({
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-primary" />
+              <Sparkles className="w-5 h-5 text-primary" aria-hidden="true" />
               <h3 className="font-semibold text-start">
                 {t.insightsTitle || "Personal Insights"}
               </h3>
@@ -218,8 +218,7 @@ export function InsightsPanel({
                 {isCollapsed ? t.expand || "Expand" : t.collapse || "Collapse"}
               </span>
               <ChevronDown
-                className={`w-5 h-5 motion-safe:transition-transform motion-safe:duration-200 ${isCollapsed ? "" : "rotate-180"}`}
-              />
+                className={`w-5 h-5 motion-safe:transition-transform motion-safe:duration-200 ${isCollapsed ? "" : "rotate-180"}`} aria-hidden="true" />
             </div>
           </div>
         </button>
@@ -263,7 +262,7 @@ export function InsightsPanel({
                 aria-expanded={showHelp}
                 className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground motion-safe:transition-colors"
               >
-                <Info className="w-3.5 h-3.5" />
+                <Info className="w-3.5 h-3.5" aria-hidden="true" />
                 <span>{t.insightsHelpTitle || "About Insights"}</span>
               </button>
               {showHelp && (
@@ -333,7 +332,7 @@ export function InsightsPanel({
                 {isExpanded ? (
                   <>
                     <span>{t.insightsShowLess || "Show less"}</span>
-                    <ChevronUp className="w-4 h-4" />
+                    <ChevronUp className="w-4 h-4" aria-hidden="true" />
                   </>
                 ) : (
                   <>
@@ -341,7 +340,7 @@ export function InsightsPanel({
                       {t.insightsShowMore ||
                         `Show ${insights.length - 3} more insights`}
                     </span>
-                    <ChevronDown className="w-4 h-4" />
+                    <ChevronDown className="w-4 h-4" aria-hidden="true" />
                   </>
                 )}
               </button>

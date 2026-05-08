@@ -41,6 +41,7 @@ import { Navigation } from "@/components/Navigation";
 import { OverlayLayer } from "@/components/OverlayLayer";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { AuthGate } from "@/components/AuthGate";
+import { useThemeStore } from "@/stores/themeStore";
 import { useDeepLinkHandler } from "@/hooks/useDeepLinkHandler";
 import { HomeTab } from "@/components/tabs/HomeTab";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
@@ -98,6 +99,24 @@ import { useScrollLock } from "@/hooks/useScrollLock";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useDeviceTier } from "@/hooks/useDeviceTier";
 import { analytics } from "@/lib/analytics";
+import { FORCE_NAV_V2 } from "@/lib/env";
+
+const NAV_V2_ROUTE_PATHS = new Set(["/orb", "/habits", "/diary", "/settings"]);
+
+function isNavV2RouteLocation(): boolean {
+  if (typeof window === "undefined") return false;
+
+  const base = (import.meta.env?.BASE_URL || "/").replace(/\/$/, "");
+  const pathname = window.location.pathname;
+  const rawAppPath = base && pathname.startsWith(base)
+    ? pathname.slice(base.length) || "/"
+    : pathname;
+  const appPath = rawAppPath.length > 1 && rawAppPath.endsWith("/")
+    ? rawAppPath.slice(0, -1)
+    : rawAppPath;
+
+  return NAV_V2_ROUTE_PATHS.has(appPath);
+}
 
 /**
  * Index — V1/V2 shell selector (Phase 3-A).
@@ -113,10 +132,68 @@ export function Index() {
     return new URLSearchParams(window.location.search).get("nav") === "v2";
   }, []);
 
-  if (navV2Flag || navV2QueryOverride) {
-    return <NavV2Orchestrator />;
+  const navV2PathOverride = useMemo(isNavV2RouteLocation, []);
+
+  if (FORCE_NAV_V2 || navV2Flag || navV2QueryOverride || navV2PathOverride) {
+    return <IndexV2Impl />;
   }
   return <IndexV1Impl />;
+}
+
+function IndexV2Impl() {
+  // V2 must use the same boot contract as V1: native splash handoff,
+  // premium web loading screen, data hydration, and auth/onboarding gates.
+  useAppLifecycle();
+  useDateTracking();
+  useHydrateUserData();
+
+  const [, setChallenges] = useState(() => getChallenges());
+  const [, setBadges] = useState(() => getBadges());
+  const moods = useUserDataStore((s) => s.moods);
+  const habits = useUserDataStore((s) => s.habits);
+  const focusSessions = useUserDataStore((s) => s.focusSessions);
+  const gratitudeEntries = useUserDataStore((s) => s.gratitudeEntries);
+  const appliedTheme = useThemeStore((s) => s.appliedTheme);
+  const isLoadingUserData = useUserDataStore((s) => s.isLoading);
+  const {
+    world: innerWorld,
+    isLoading: isLoadingInnerWorld,
+    earnTreats,
+    attractCreature,
+    feedCreatures,
+  } = useInnerWorld();
+  const isLoading = isLoadingUserData || isLoadingInnerWorld;
+
+  useAuthSession(isLoading);
+
+  const { updateChallengeProgress } = useChallengeHandlers({
+    safeMoods: moods,
+    safeHabits: habits,
+    safeFocusSessions: focusSessions,
+    safeGratitudeEntries: gratitudeEntries,
+    currentActiveStreak: innerWorld.currentActiveStreak,
+    setChallenges,
+    setBadges,
+  });
+
+  const { handleAddMood } = useMoodHandlers({
+    updateChallengeProgress,
+  });
+  const { handleAddGratitude } = useGratitudeHandlers({
+    earnTreats,
+    attractCreature,
+    feedCreatures,
+    updateChallengeProgress,
+  });
+
+  return (
+    <>
+      <OfflineBanner />
+      <AuthGate isLoading={isLoading} splashTheme={appliedTheme}>
+        <NavV2Orchestrator onAddMood={handleAddMood} onAddGratitude={handleAddGratitude} />
+      </AuthGate>
+    </>
+  );
 }
 
 /** V1 orchestrator — original 7-tab home. Unchanged from pre-Phase-3-A aside from rename. */

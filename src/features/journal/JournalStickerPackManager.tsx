@@ -8,6 +8,7 @@ import { hapticTap } from "@/lib/haptics";
 import { STICKER_CATEGORIES } from "./stickerUtils";
 import type { StickerPackPrefs } from "./stickerUtils";
 import { StickerRenderer } from "./StickerRenderer";
+import { formatLocalizedCount } from "./journalWordCount";
 
 interface JournalStickerPackManagerProps {
   prefs: StickerPackPrefs;
@@ -24,7 +25,7 @@ export function JournalStickerPackManager({
   enabledCount,
   onClose,
 }: JournalStickerPackManagerProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const ts = t as unknown as Record<string, string>;
   const { modalRef, handleKeyDown } = useModalA11y(true, onClose);
   useScrollLock(true);
@@ -115,7 +116,13 @@ export function JournalStickerPackManager({
                       )}
                     </div>
                     <span className="text-[10px] text-muted-foreground/50">
-                      {cat.stickers.length} {ts.stickers || "stickers"}
+                      {formatLocalizedCount(
+                        cat.stickers.length,
+                        language,
+                        ts,
+                        "stickerCount",
+                        ts.stickers || "stickers"
+                      )}
                     </span>
                   </div>
 

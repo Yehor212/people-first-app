@@ -48,6 +48,7 @@ const SKIP_FILE_PATTERNS = [
   /\.stories\.tsx$/,
   /__tests__/,
   /__mocks__/,
+  /src[\\/]+pages[\\/]+__dev[\\/]+/,
 ];
 
 interface Finding {
@@ -361,7 +362,7 @@ function main() {
   }
 
   console.log(`\nFound ${allFindings.length} potential hardcoded string(s) in ${filesWithFindings.size} file(s).`);
-  process.exit(0);
+  process.exit(1);
 }
 
 main();

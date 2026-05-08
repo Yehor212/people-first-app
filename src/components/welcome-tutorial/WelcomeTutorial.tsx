@@ -280,7 +280,7 @@ export function WelcomeTutorial({ onComplete, onSkip }: WelcomeTutorialProps) {
             )}
           >
             {currentSlide === slides.length - 1 ? t.tutorialStart || "Let's Go!" : t.next || "Next"}
-            <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 rtl:scale-x-[-1]" />
+            <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 rtl:scale-x-[-1]" aria-hidden="true" />
           </button>
         </div>
       </div>

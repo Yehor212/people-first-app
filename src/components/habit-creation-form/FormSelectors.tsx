@@ -4,6 +4,7 @@
  */
 
 import { motion } from "framer-motion";
+import { CheckCircle2, ListChecks } from "lucide-react";
 import { zenTap } from "@/lib/animationUtils";
 import { cn } from "@/lib/utils";
 import {
@@ -12,7 +13,14 @@ import {
   frequencyPresets,
 } from "@/hooks/useHabitForm";
 import { LOOP_PALETTE_LIGHT, resolveHabitColor } from "@/lib/habitColorUtils";
-import type { HabitCategory, LoopHabitType } from "@/types";
+import {
+  getSuggestedDueDays,
+  getWeeklyTargetCountFromFrequency,
+  isDailyFrequency,
+  normalizeDueDays,
+  WEEK_DAYS,
+} from "@/lib/habitScheduling";
+import type { HabitCategory, HabitFrequencyRatio, HabitScheduleMode, LoopHabitType } from "@/types";
 
 interface SelectorProps {
   isPrimaryCTA: boolean;
@@ -36,12 +44,12 @@ export function IconSelector({
         className={cn(
           "text-sm font-medium mb-2",
           isPrimaryCTA
-            ? "text-slate-700 dark:text-foreground/80"
+            ? "text-[hsl(var(--zf-text-soft))]"
             : "text-foreground",
         )}
         id="icon-selector-label"
       >
-        {ts.icon || "Icon"}:
+        {ts.icon}:
       </p>
       <div
         className="flex gap-2 flex-wrap"
@@ -54,7 +62,7 @@ export function IconSelector({
             type="button"
             role="radio"
             aria-checked={selectedIcon === icon}
-            aria-label={`${ts.selectIcon || "Select icon"} ${icon}`}
+            aria-label={`${ts.selectIcon} ${icon}`}
             onClick={(e) => {
               e.preventDefault();
               setSelectedIcon(icon);
@@ -108,12 +116,12 @@ export function ColorSelector({
         className={cn(
           "text-sm font-medium mb-2",
           isPrimaryCTA
-            ? "text-slate-700 dark:text-foreground/80"
+            ? "text-[hsl(var(--zf-text-soft))]"
             : "text-foreground",
         )}
         id="color-selector-label"
       >
-        {ts.color || "Color"}:
+        {ts.color}:
       </p>
       <div
         className="grid grid-cols-10 gap-1.5"
@@ -128,7 +136,7 @@ export function ColorSelector({
               type="button"
               role="radio"
               aria-checked={selectedColorIndex === idx}
-              aria-label={`${ts.selectColor || "Select color"} ${idx + 1}`}
+              aria-label={`${ts.selectColor} ${idx + 1}`}
               onClick={(e) => {
                 e.preventDefault();
                 setSelectedColorIndex(idx);
@@ -172,27 +180,27 @@ export function TypeSelector({
         className={cn(
           "text-sm font-medium mb-2",
           isPrimaryCTA
-            ? "text-slate-700 dark:text-foreground/80"
+            ? "text-[hsl(var(--zf-text-soft))]"
             : "text-foreground",
         )}
       >
-        {ts.habitType || "Type"}:
+        {ts.habitType}:
       </p>
       <div className="grid grid-cols-2 gap-2">
         {[
           {
             type: "boolean" as LoopHabitType,
-            icon: "✓",
-            label: ts.habitTypeBoolean || "Yes/No",
-            desc: ts.habitTypeBooleanDesc || "Check off once a day",
+            Icon: CheckCircle2,
+            label: ts.habitTypeBoolean,
+            desc: ts.habitTypeBooleanDesc,
           },
           {
             type: "numerical" as LoopHabitType,
-            icon: "🔢",
-            label: ts.habitTypeNumerical || "Measurable",
-            desc: ts.habitTypeNumericalDesc || "Track a number per day",
+            Icon: ListChecks,
+            label: ts.habitTypeNumerical,
+            desc: ts.habitTypeNumericalDesc,
           },
-        ].map(({ type, icon, label, desc }) => (
+        ].map(({ type, Icon, label, desc }) => (
           <motion.button
             key={type}
             type="button"
@@ -206,7 +214,7 @@ export function TypeSelector({
               isPrimaryCTA
                 ? habitType === type
                   ? "bg-gradient-to-br from-emerald-500/30 to-teal-600/20 border border-emerald-500/40 text-white"
-                  : "bg-foreground/5 border border-foreground/10 text-foreground/70 hover:bg-foreground/10 hover:text-foreground"
+                  : "bg-foreground/5 border border-foreground/10 text-[hsl(var(--zf-text-soft))] hover:bg-foreground/10 hover:text-[hsl(var(--zf-text-strong))]"
                 : habitType === type
                   ? "bg-primary text-primary-foreground shadow-md"
                   : "bg-background hover:bg-muted border border-border/50",
@@ -220,15 +228,16 @@ export function TypeSelector({
             whileTap={zenTap.card}
           >
             <span>
-              {icon} {label}
+              <Icon className="me-1.5 inline h-4 w-4 align-[-0.125em]" aria-hidden="true" />
+              {label}
             </span>
             <span
               className={cn(
                 "text-[10px] block mt-0.5",
                 isPrimaryCTA
                   ? habitType === type
-                    ? "text-foreground/50"
-                    : "text-foreground/60"
+                    ? "text-white/70"
+                    : "text-[hsl(var(--zf-text-soft)/0.72)]"
                   : habitType === type
                     ? "text-primary-foreground/60"
                     : "text-muted-foreground/60",
@@ -244,13 +253,21 @@ export function TypeSelector({
 }
 
 interface FrequencySelectorProps extends SelectorProps {
-  frequency: { numerator: number; denominator: number };
-  setFrequency: (f: { numerator: number; denominator: number }) => void;
+  frequency: HabitFrequencyRatio;
+  setFrequency: (f: HabitFrequencyRatio) => void;
+  scheduleMode?: HabitScheduleMode;
+  setScheduleMode?: (mode: HabitScheduleMode) => void;
+  scheduleDueDays?: number[];
+  setScheduleDueDays?: (days: number[]) => void;
 }
 
 export function FrequencySelector({
   frequency,
   setFrequency,
+  scheduleMode = isDailyFrequency(frequency) ? "daily" : "flexiblePerPeriod",
+  setScheduleMode,
+  scheduleDueDays = [],
+  setScheduleDueDays,
   isPrimaryCTA,
   ts,
 }: FrequencySelectorProps) {
@@ -259,6 +276,18 @@ export function FrequencySelector({
       p.ratio.numerator === frequency.numerator &&
       p.ratio.denominator === frequency.denominator,
   );
+  const isDaily = isDailyFrequency(frequency);
+  const weeklyTargetCount = getWeeklyTargetCountFromFrequency(frequency);
+  const normalizedDueDays = normalizeDueDays(scheduleDueDays);
+  const dayLabels = [
+    { day: 1, label: ts.mon || ts.dayMon || "Mon" },
+    { day: 2, label: ts.tue || ts.dayTue || "Tue" },
+    { day: 3, label: ts.wed || ts.dayWed || "Wed" },
+    { day: 4, label: ts.thu || ts.dayThu || "Thu" },
+    { day: 5, label: ts.fri || ts.dayFri || "Fri" },
+    { day: 6, label: ts.sat || ts.daySat || "Sat" },
+    { day: 0, label: ts.sun || ts.daySun || "Sun" },
+  ];
 
   return (
     <div className="relative mb-4">
@@ -266,11 +295,11 @@ export function FrequencySelector({
         className={cn(
           "text-sm font-medium mb-2",
           isPrimaryCTA
-            ? "text-slate-700 dark:text-foreground/80"
+            ? "text-[hsl(var(--zf-text-soft))]"
             : "text-foreground",
         )}
       >
-        {ts.habitFrequency || "Frequency"}:
+        {ts.habitFrequency}:
       </p>
       <div className="flex gap-2 flex-wrap">
         {frequencyPresets.map((preset, idx) => (
@@ -289,13 +318,13 @@ export function FrequencySelector({
                   ? "bg-gradient-to-br from-violet-500/30 to-purple-600/20 border border-violet-500/40 text-white"
                   : "bg-primary text-primary-foreground shadow-sm"
                 : isPrimaryCTA
-                  ? "bg-foreground/5 border border-foreground/10 text-foreground/70"
+                  ? "bg-foreground/5 border border-foreground/10 text-[hsl(var(--zf-text-soft))]"
                   : "bg-background border border-border/50 hover:bg-muted",
             )}
             whileHover={{ scale: 1.02 }}
             whileTap={zenTap.card}
           >
-            {ts[preset.i18nKey] || preset.label}
+            {ts[preset.i18nKey]}
           </motion.button>
         ))}
         {activePresetIndex < 0 && (
@@ -308,10 +337,122 @@ export function FrequencySelector({
             )}
           >
             {frequency.numerator}x / {frequency.denominator}
-            {ts.daysAbbr || "d"}
+            {ts.daysAbbr}
           </span>
         )}
       </div>
+      {!isDaily && (
+        <div
+          className={cn(
+            "mt-3 rounded-2xl border p-3",
+            isPrimaryCTA
+              ? "border-foreground/10 bg-foreground/5"
+              : "border-border/60 bg-muted/30",
+          )}
+        >
+          <p
+            className={cn(
+              "mb-2 text-xs font-medium",
+              isPrimaryCTA ? "text-[hsl(var(--zf-text-soft))]" : "text-muted-foreground",
+            )}
+          >
+            {ts.habitScheduleRule || `${weeklyTargetCount}x this week`}
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              {
+                mode: "flexiblePerPeriod" as HabitScheduleMode,
+                label: ts.habitScheduleFlexibleAnyDays || "Any days this week",
+                hint: ts.habitScheduleFlexibleHint || "Missed weekdays do not fail the habit until the week ends.",
+              },
+              {
+                mode: "specificDays" as HabitScheduleMode,
+                label: ts.habitScheduleSpecificDays || ts.habitFrequencySelectDays || "Choose days",
+                hint: ts.habitScheduleSpecificHint || "Only selected days count as due.",
+              },
+            ].map((option) => {
+              const active = scheduleMode === option.mode;
+              return (
+                <motion.button
+                  key={option.mode}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setScheduleMode?.(option.mode);
+                    if (option.mode === "specificDays" && normalizedDueDays.length === 0) {
+                      setScheduleDueDays?.(getSuggestedDueDays(weeklyTargetCount));
+                    }
+                  }}
+                  className={cn(
+                    "min-h-[72px] rounded-xl border px-3 py-2 text-left motion-safe:transition-all",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                    active
+                      ? isPrimaryCTA
+                        ? "border-emerald-400/45 bg-emerald-400/12 text-white"
+                        : "border-primary bg-primary/10 text-foreground"
+                      : isPrimaryCTA
+                        ? "border-foreground/10 bg-foreground/5 text-[hsl(var(--zf-text-soft))]"
+                        : "border-border/50 bg-background text-muted-foreground",
+                  )}
+                  whileTap={zenTap.card}
+                >
+                  <span className="block text-xs font-semibold">{option.label}</span>
+                  <span className="mt-1 block text-[10px] leading-snug opacity-75">{option.hint}</span>
+                </motion.button>
+              );
+            })}
+          </div>
+          {scheduleMode === "specificDays" && (
+            <div className="mt-3">
+              <p
+                className={cn(
+                  "mb-2 text-xs font-medium",
+                  isPrimaryCTA ? "text-[hsl(var(--zf-text-soft))]" : "text-muted-foreground",
+                )}
+              >
+                {ts.habitScheduleDueDays || ts.habitFrequencySelectDays || "Due days"}
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {dayLabels.map(({ day, label }) => {
+                  const active = normalizedDueDays.includes(day);
+                  return (
+                    <motion.button
+                      key={day}
+                      type="button"
+                      aria-pressed={active}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        const rawDays = active
+                          ? normalizedDueDays.filter((item) => item !== day)
+                          : [...normalizedDueDays, day];
+                        const nextDays = WEEK_DAYS.filter((item) => rawDays.includes(item));
+                        setScheduleDueDays?.(
+                          nextDays.length > 0 ? nextDays : getSuggestedDueDays(weeklyTargetCount),
+                        );
+                      }}
+                      className={cn(
+                        "min-h-[44px] min-w-[44px] rounded-xl px-2 text-[10px] font-semibold motion-safe:transition-all",
+                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                        active
+                          ? isPrimaryCTA
+                            ? "bg-emerald-400/20 text-emerald-100 ring-1 ring-emerald-300/35"
+                            : "bg-primary text-primary-foreground"
+                          : isPrimaryCTA
+                            ? "bg-foreground/5 text-[hsl(var(--zf-text-soft))]"
+                            : "bg-background text-muted-foreground",
+                      )}
+                      whileTap={zenTap.button}
+                    >
+                      {label}
+                    </motion.button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -328,14 +469,14 @@ export function CategorySelector({
   ts,
 }: CategorySelectorProps) {
   const categoryLabels: Record<HabitCategory, string> = {
-    health: ts.categoryHealth || "Health",
-    mindfulness: ts.categoryMindfulness || "Mindfulness",
-    productivity: ts.categoryProductivity || "Productivity",
-    social: ts.categorySocial || "Social",
-    creativity: ts.categoryCreativity || "Creativity",
-    finance: ts.categoryFinance || "Finance",
-    "self-care": ts.categorySelfCare || "Self-care",
-    other: ts.categoryOther || "Other",
+    health: ts.categoryHealth,
+    mindfulness: ts.categoryMindfulness,
+    productivity: ts.categoryProductivity,
+    social: ts.categorySocial,
+    creativity: ts.categoryCreativity,
+    finance: ts.categoryFinance,
+    "self-care": ts.categorySelfCare,
+    other: ts.categoryOther,
   };
 
   return (
@@ -344,11 +485,11 @@ export function CategorySelector({
         className={cn(
           "text-sm mb-2 block",
           isPrimaryCTA
-            ? "text-slate-500 dark:text-foreground/60"
+            ? "text-[hsl(var(--zf-text-soft))]"
             : "text-muted-foreground",
         )}
       >
-        {ts.habitCategory || "Category"}:
+        {ts.habitCategory}:
       </label>
       <div className="grid grid-cols-4 gap-2">
         {habitCategories.map(({ id, icon, color }) => (
@@ -366,7 +507,7 @@ export function CategorySelector({
                   ? `bg-gradient-to-br ${color} text-white shadow-lg`
                   : "bg-primary text-primary-foreground shadow-md"
                 : isPrimaryCTA
-                  ? "bg-foreground/5 border border-foreground/10 text-foreground/70 hover:bg-foreground/10"
+                  ? "bg-foreground/5 border border-foreground/10 text-[hsl(var(--zf-text-soft))] hover:bg-foreground/10 hover:text-[hsl(var(--zf-text-strong))]"
                   : "bg-background hover:bg-muted border border-border/50",
             )}
             whileHover={{ scale: 1.02 }}

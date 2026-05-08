@@ -7,8 +7,8 @@
  * Fraunces italic mood label, reset-to-center chip. Drives hero ValenceOrb
  * via split draft/committed state + rAF throttle.
  *
- * All colors via theme tokens. No hardcoded hex. OKLCH stops computed from
- * the same 5 hues MoodOrbPicker used (250 / 220 / 40 / 80 / 120).
+ * All colors via theme tokens. No hardcoded hex. The rail uses Aurora roles
+ * so positive mood reads as growth/seafoam, not orange.
  *
  * Law 8 (60 FPS): single `left` write per frame, no layout thrash, glow pulse
  * via CSS animation (GPU-accelerated transform/opacity only).
@@ -75,16 +75,15 @@
   /* Fallback sRGB gradient for browsers without `in oklch` interpolation */
   background: linear-gradient(
     to right,
-    hsl(258 32% 48% / 0.85),
-    hsl(232 32% 58% / 0.85),
-    hsl(42 38% 78% / 0.95),
-    hsl(88 42% 68% / 0.95),
-    hsl(128 42% 66% / 0.95)
+    hsl(var(--zf-memory) / 0.86),
+    hsl(var(--zf-trace) / 0.88),
+    hsl(var(--zf-primary) / 0.92),
+    hsl(var(--zf-growth) / 0.95),
+    hsl(var(--mood-great) / 0.95)
   );
   /* Shell: inner hairline + subtle drop shadow so the gradient reads as a
-     physical object against paper-cream backgrounds (Phase 3-A.4c-ii-d-d-fix:
-     the warm mid-gradient stops were blending into the paper bg without a
-     frame). Law 8 — shadows are static (no blur animation), GPU-cheap. */
+     physical object against calm paper backgrounds. Law 8 — shadows are
+     static (no blur animation), GPU-cheap. */
   box-shadow:
     inset 0 0 0 1px hsl(var(--foreground) / 0.14),
     inset 0 1px 2px hsl(var(--foreground) / 0.08),
@@ -96,11 +95,11 @@
   .mood-slider-v2-track {
     background: linear-gradient(
       to right in oklch,
-      oklch(0.58 0.09 250 / 0.9),
-      oklch(0.64 0.08 220 / 0.9),
-      oklch(0.80 0.05 40 / 0.95),
-      oklch(0.82 0.09 80 / 0.95),
-      oklch(0.84 0.10 120 / 0.95)
+      hsl(var(--zf-memory) / 0.9),
+      hsl(var(--zf-trace) / 0.9),
+      hsl(var(--zf-primary) / 0.95),
+      hsl(var(--zf-growth) / 0.95),
+      hsl(var(--mood-great) / 0.95)
     );
   }
 }
@@ -109,11 +108,11 @@
 [dir="rtl"] .mood-slider-v2-track {
   background: linear-gradient(
     to left,
-    hsl(258 32% 48% / 0.85),
-    hsl(232 32% 58% / 0.85),
-    hsl(42 38% 78% / 0.95),
-    hsl(88 42% 68% / 0.95),
-    hsl(128 42% 66% / 0.95)
+    hsl(var(--zf-memory) / 0.86),
+    hsl(var(--zf-trace) / 0.88),
+    hsl(var(--zf-primary) / 0.92),
+    hsl(var(--zf-growth) / 0.95),
+    hsl(var(--mood-great) / 0.95)
   );
 }
 
@@ -121,32 +120,28 @@
   [dir="rtl"] .mood-slider-v2-track {
     background: linear-gradient(
       to left in oklch,
-      oklch(0.58 0.09 250 / 0.9),
-      oklch(0.64 0.08 220 / 0.9),
-      oklch(0.80 0.05 40 / 0.95),
-      oklch(0.82 0.09 80 / 0.95),
-      oklch(0.84 0.10 120 / 0.95)
+      hsl(var(--zf-memory) / 0.9),
+      hsl(var(--zf-trace) / 0.9),
+      hsl(var(--zf-primary) / 0.95),
+      hsl(var(--zf-growth) / 0.95),
+      hsl(var(--mood-great) / 0.95)
     );
   }
 }
 
 /* Paper theme polish — Phase 3-A.4c-ii-d-e.
  *
- * Paper bg is warm peach-cream. Two problems the d-d commit carried as debt:
- *   D1 Gradient midpoint: hue 40 (warm peach) mid stop blends into the paper
- *      bg and the track reads as 2-tone. Fix: bump contrast via a tighter dark
- *      inner shadow + a filter:contrast() nudge so the 5 hues read as bands.
- *   D2 Handle glow: `0 0 16px hue` disappears on warm bg at neg1 (indigo glow
- *      vs apricot bg = low contrast). Fix: wider + stronger glow, subtle dark
- *      ring for shape legibility. No new tokens — uses existing --foreground.
+ * Paper bg is calm green-ink paper. The rail keeps enough contrast via a
+ * tighter dark inner shadow + filter:contrast() nudge so the 5 roles read as
+ * bands. Handle glow gets a wider + stronger radius plus a subtle dark ring
+ * for shape legibility. No new tokens — uses existing --foreground.
  *
  * Ink/oled themes are UNAFFECTED — dark backgrounds already give the track
  * and the handle enough contrast.
  */
 [data-theme="paper"] .mood-slider-v2-track {
   /* Darker inner hairline + slightly deeper inset shadow = visible frame
-     around the warm mid-gradient. 1.05 contrast lifts the mid-stops just
-     enough to break the paper-bg blend without going painterly. */
+     around the Aurora rail without going painterly. */
   box-shadow:
     inset 0 0 0 1px hsl(var(--foreground) / 0.22),
     inset 0 1px 3px hsl(var(--foreground) / 0.14),
@@ -156,7 +151,7 @@
 
 [data-theme="paper"] .mood-slider-v2-handle {
   /* Wider glow radius + stronger drop shadow for shape legibility against
-     the paper-cream bg. Outline via currentColor isn't used — we stay on
+     the paper bg. Outline via currentColor isn't used — we stay on
      the --handle-hue custom prop so neg1 (indigo) and pos1 (green) both
      still read as the tint color. */
   box-shadow:
@@ -189,7 +184,7 @@
 
 /* Snap-point ghosts: 5 subtle ticks at valence [-1, -0.5, 0, 0.5, 1].
    Neutral muted-foreground ensures even contrast across the 5-hue gradient
-   (Phase 3-A.4c-ii-d-d-fix: hue-matched ticks were invisible on warm right
+   (Phase 3-A.4c-ii-d-d-fix: hue-matched ticks were invisible on the right
    half vs violet left half — now symmetric). */
 .mood-slider-v2-tick {
   position: absolute;

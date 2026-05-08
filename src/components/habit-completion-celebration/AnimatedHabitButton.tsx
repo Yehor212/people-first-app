@@ -51,8 +51,7 @@ export function AnimatedHabitButton({
               "w-7 h-7",
               isAnimating && "motion-safe:animate-check-pop"
             )}
-            strokeWidth={3}
-          />
+            strokeWidth={3} aria-hidden="true" />
         ) : (
           <span className={cn(
             "motion-safe:transition-transform",

@@ -1,55 +1,161 @@
 /**
  * ShootingStar — Phase 3-A.3 A+++ WOW-3 keyframes.
  *
- * Single short streak across upper third. Starts off-screen left, travels to
- * upper-right with a fading trail. Transform + opacity only (GPU compositor).
+ * Quiet meteor across upper sky. Starts off-screen left, follows a shallow
+ * living arc, and fades before the final travel point. Transform + opacity only.
  */
 
 .shooting-star {
   position: absolute;
-  top: 18%;
-  left: -10%;
-  width: 120px;
-  height: 1.5px;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    hsl(var(--paper-warm-2, 38 60% 92%) / 0.0) 5%,
-    hsl(var(--paper-warm-2, 38 60% 92%) / 0.9) 60%,
-    hsl(var(--paper-warm-3, 30 70% 80%) / 1) 100%
-  );
-  border-radius: 9999px;
+  top: var(--meteor-top);
+  left: -24vw;
+  width: var(--meteor-tail);
+  height: 34px;
   pointer-events: none;
-  transform: rotate(20deg) translate3d(0, 0, 0);
+  transform-origin: 100% 50%;
   will-change: transform, opacity;
-  animation: shooting-star-fly 1.1s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+  animation: shooting-star-fly var(--meteor-duration) linear both;
   opacity: 0;
   z-index: 1;
+}
+
+.shooting-star__tail,
+.shooting-star__core,
+.shooting-star__halo,
+.shooting-star__dust {
+  position: absolute;
+  pointer-events: none;
+}
+
+.shooting-star__tail {
+  top: 50%;
+  right: 8px;
+  width: 100%;
+  height: 2px;
+  border-radius: 9999px;
+  background: linear-gradient(
+    90deg,
+    hsl(var(--zf-trace) / 0) 0%,
+    hsl(var(--zf-trace) / 0.18) 22%,
+    hsl(var(--zf-trace) / 0.72) 68%,
+    hsl(var(--zf-text-strong) / 0.96) 100%
+  );
+  box-shadow:
+    0 0 10px hsl(var(--zf-trace) / 0.42),
+    0 0 22px hsl(var(--zf-memory) / 0.22);
+  transform: translateY(-50%);
+}
+
+.shooting-star__core {
+  top: 50%;
+  right: 0;
+  width: 7px;
+  height: 7px;
+  border-radius: 9999px;
+  background:
+    radial-gradient(circle, hsl(var(--zf-text-strong) / 0.98) 0%, hsl(var(--zf-trace) / 0.92) 48%, hsl(var(--zf-memory) / 0.08) 100%);
+  box-shadow:
+    0 0 8px hsl(var(--zf-text-strong) / 0.78),
+    0 0 18px hsl(var(--zf-trace) / 0.42);
+  transform: translate3d(0, -50%, 0);
+}
+
+.shooting-star__halo {
+  top: 50%;
+  right: -12px;
+  width: 32px;
+  height: 32px;
+  border-radius: 9999px;
+  background: radial-gradient(circle, hsl(var(--zf-trace) / 0.28) 0%, hsl(var(--zf-memory) / 0.12) 34%, hsl(var(--zf-trace) / 0) 70%);
+  opacity: 0.88;
+  transform: translate3d(0, -50%, 0);
+}
+
+.shooting-star__dust {
+  width: 3px;
+  height: 3px;
+  border-radius: 9999px;
+  background: hsl(var(--zf-text-strong) / 0.82);
+  box-shadow: 0 0 8px hsl(var(--zf-trace) / 0.42);
+  animation: shooting-star-dust var(--meteor-duration) linear both;
+}
+
+.shooting-star__dust--one {
+  top: 9px;
+  right: 38%;
+  animation-delay: 70ms;
+}
+
+.shooting-star__dust--two {
+  top: 22px;
+  right: 58%;
+  width: 2px;
+  height: 2px;
+  opacity: 0.72;
+  animation-delay: 130ms;
+}
+
+.shooting-star__dust--three {
+  top: 14px;
+  right: 76%;
+  width: 2px;
+  height: 2px;
+  opacity: 0.58;
+  animation-delay: 190ms;
 }
 
 @keyframes shooting-star-fly {
   0% {
     opacity: 0;
-    transform: rotate(20deg) translate3d(0, 0, 0) scaleX(0.4);
+    transform: translate3d(0, 0, 0) rotate(var(--meteor-angle)) scaleX(0.54);
   }
-  20% {
+  12% {
+    opacity: 0.82;
+    transform: translate3d(var(--meteor-arc-a-x), var(--meteor-arc-a-y), 0) rotate(var(--meteor-angle)) scaleX(0.92);
+  }
+  38% {
     opacity: 1;
-    transform: rotate(20deg) translate3d(20vw, 12vh, 0) scaleX(1);
+    transform: translate3d(var(--meteor-arc-b-x), var(--meteor-arc-b-y), 0) rotate(var(--meteor-angle)) scaleX(1);
   }
-  80% {
-    opacity: 0.8;
-    transform: rotate(20deg) translate3d(80vw, 48vh, 0) scaleX(1);
+  60% {
+    opacity: 0.36;
+    transform: translate3d(var(--meteor-arc-c-x), var(--meteor-arc-c-y), 0) rotate(var(--meteor-angle)) scaleX(0.78);
+  }
+  70% {
+    opacity: 0;
+    transform: translate3d(108vw, calc(var(--meteor-arc-c-y) + 1vh), 0) rotate(var(--meteor-angle)) scaleX(0.6);
   }
   100% {
     opacity: 0;
-    transform: rotate(20deg) translate3d(110vw, 66vh, 0) scaleX(0.4);
+    transform: translate3d(var(--meteor-travel-x), var(--meteor-travel-y), 0) rotate(var(--meteor-angle)) scaleX(0.48);
+  }
+}
+
+@keyframes shooting-star-dust {
+  0%,
+  18% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(0.7);
+  }
+  30% {
+    opacity: 0.78;
+    transform: translate3d(-6px, 1px, 0) scale(1);
+  }
+  64% {
+    opacity: 0.24;
+    transform: translate3d(-16px, 3px, 0) scale(0.78);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(-28px, 5px, 0) scale(0.58);
   }
 }
 
 /* Reduced motion: component already gates at render level; keep this as an
    extra safety net so preferred-reduced-motion browsers never animate. */
 @media (prefers-reduced-motion: reduce) {
-  .shooting-star {
+  .shooting-star,
+  .shooting-star__dust {
     animation: none;
     opacity: 0;
   }

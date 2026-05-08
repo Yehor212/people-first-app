@@ -26,9 +26,11 @@ import {
 } from "./lib/versionCheck";
 import { pauseAllAudio, resumeAllAudio } from "./lib/audioLifecycle";
 import { setupChunkErrorHandler } from "./components/UpdateRequiredDialog";
+import { isChunkLoadMessage } from "./lib/chunkErrorDetection";
+import { isTrustedServiceWorkerMessage } from "./lib/serviceWorkerMessages";
 import { checkDatabaseHealth } from "./storage/db";
 import { SK } from "./lib/storageKeys";
-import { safeLocalStorageSet } from "./lib/safeJson";
+import { safeLocalStorageGet, safeLocalStorageSet } from "./lib/safeJson";
 import { scheduleIdle } from "./lib/scheduleIdle";
 import { captureOrBuffer, setCaptureSink } from "./lib/errorBuffer";
 import { initWebVitalsDev } from "./observability/reportWebVitals";
@@ -59,12 +61,9 @@ initLongTaskObserverDev();
 // CSP blocks inline scripts in index.html, so we do it here in the module entry point.
 // useLocalStorage stores values as JSON strings, so we parse accordingly.
 try {
-  const storedLang = localStorage.getItem("zenflow-language");
-  if (storedLang) {
-    const parsed = JSON.parse(storedLang);
-    if (typeof parsed === "string" && parsed.length >= 2) {
-      document.documentElement.lang = parsed;
-    }
+  const storedLang = safeLocalStorageGet<string>(SK.LANGUAGE, "");
+  if (storedLang.length >= 2) {
+    document.documentElement.lang = storedLang;
   }
 } catch {
   // Ignore — React LanguageContext will set it once mounted
@@ -72,10 +71,9 @@ try {
 
 // Listen for SW activation — new SW means new deploy, check version immediately
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.addEventListener("message", (event) => {
-    // Security: validate origin for defense-in-depth (CWE-20, CWE-345)
-    if (!event.origin || event.origin !== window.location.origin) return;
-    if (event.data?.type === "SW_UPDATED") {
+  navigator.serviceWorker.onmessage = (event) => {
+    if (!isTrustedServiceWorkerMessage(event, window.location.origin)) return;
+    if (event.data.type === "SW_UPDATED") {
       logger.log("[Main] New SW activated, checking version...");
       checkAppVersion()
         .then((isUpToDate) => {
@@ -89,13 +87,57 @@ if ("serviceWorker" in navigator) {
           logger.warn("[Main] SW update version check failed:", err);
         });
     }
-  });
+  };
 }
+
+const LOCAL_DEV_CACHE_RESET_KEY = "zenflow:local-dev-cache-reset:v1";
+
+function isLocalDevCacheResetRequest() {
+  const hostname = window.location.hostname;
+  return (
+    new URLSearchParams(window.location.search).get("dev") === "true" &&
+    (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1")
+  );
+}
+
+async function resetLocalDevPwaCaches() {
+  if (!isLocalDevCacheResetRequest()) return;
+  if (window.sessionStorage.getItem(LOCAL_DEV_CACHE_RESET_KEY) === "done") return;
+
+  window.sessionStorage.setItem(LOCAL_DEV_CACHE_RESET_KEY, "done");
+  const hadController = Boolean(navigator.serviceWorker?.controller);
+
+  try {
+    if ("serviceWorker" in navigator) {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(registrations.map((registration) => registration.unregister()));
+    }
+    if ("caches" in window) {
+      const names = await window.caches.keys();
+      await Promise.all(names.map((name) => window.caches.delete(name)));
+    }
+    if (hadController) {
+      window.location.reload();
+    }
+  } catch (error) {
+    logger.warn("[Main] Local dev cache reset failed:", error);
+  }
+}
+
+void resetLocalDevPwaCaches();
 
 // Global error handlers for unhandled exceptions and promise rejections
 // These catch errors that escape React's error boundary
 window.addEventListener("unhandledrejection", (event) => {
+  if (event.defaultPrevented) return;
+
   const reason = event.reason;
+  const message = reason instanceof Error ? reason.message : String(reason);
+
+  if (isChunkLoadMessage(message)) {
+    event.preventDefault();
+    return;
+  }
 
   // Suppress generic browser/Capacitor permission rejections (e.g. notification denied)
   if (reason === "Rejected" || (reason instanceof Error && reason.message === "Rejected")) {
@@ -112,6 +154,14 @@ window.addEventListener("unhandledrejection", (event) => {
 });
 
 window.addEventListener("error", (event) => {
+  if (event.defaultPrevented) return;
+
+  const message = event.error instanceof Error ? event.error.message : event.message;
+  if (isChunkLoadMessage(message)) {
+    event.preventDefault();
+    return;
+  }
+
   logger.error("[Global] Uncaught error:", event.error || event.message);
   // Send to Sentry (buffered if Sentry not yet loaded)
   if (event.error instanceof Error) {

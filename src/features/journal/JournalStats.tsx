@@ -32,6 +32,7 @@ import { YearInPixels } from "./YearInPixels";
 import { MoodCorrelations } from "./MoodCorrelations";
 import { AnimatedCounter } from "@/components/ui/AnimatedCounter";
 import { shouldAnimate } from "@/lib/animationUtils";
+import { formatLocalizedCount } from "./journalWordCount";
 
 const MOOD_COLORS: Record<MoodType, string> = {
   great: "hsl(var(--mood-great))",
@@ -50,11 +51,11 @@ const MOOD_SCORE: Record<MoodType, number> = {
 };
 
 const MOOD_PIXEL_BG: Record<MoodType, string> = {
-  great: "bg-green-400",
-  good: "bg-emerald-400",
-  okay: "bg-amber-400",
-  bad: "bg-orange-400",
-  terrible: "bg-red-400",
+  great: "bg-[hsl(var(--mood-great))]",
+  good: "bg-[hsl(var(--mood-good))]",
+  okay: "bg-[hsl(var(--mood-okay))]",
+  bad: "bg-[hsl(var(--mood-bad))]",
+  terrible: "bg-[hsl(var(--mood-terrible))]",
 };
 
 /**
@@ -122,7 +123,7 @@ const StreakFireIcon = memo(function StreakFireIcon() {
       className="inline-flex"
       aria-hidden="true"
     >
-      <Flame className="w-4 h-4 text-orange-500" />
+      <Flame className="w-4 h-4 text-[hsl(var(--zf-warm))]" />
     </motion.span>
   );
 });
@@ -598,7 +599,13 @@ export const JournalStats = memo(function JournalStats({ entries, onBack }: Jour
                   </span>
                 </div>
                 <span className="text-[9px] text-muted-foreground/60 tabular-nums flex-shrink-0">
-                  {pixelData.totalDaysWithEntry} {ts.journalStatsDays || "days"}
+                  {formatLocalizedCount(
+                    pixelData.totalDaysWithEntry,
+                    language,
+                    ts,
+                    "journalStatsDayCount",
+                    ts.journalStatsDays || "days"
+                  )}
                 </span>
               </div>
             </div>

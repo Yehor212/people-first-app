@@ -296,7 +296,7 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
                         : "bg-muted text-muted-foreground"
                     )}
                   >
-                    {soundEnabled ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
+                    {soundEnabled ? <Bell className="w-4 h-4" aria-hidden="true" /> : <BellOff className="w-4 h-4" aria-hidden="true" />}
                     <span className="text-sm">
                       {soundEnabled ? t.soundOn || "On" : t.soundOff || "Off"}
                     </span>
@@ -309,7 +309,7 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
                 onClick={() => setIsRunning(true)}
                 className="w-full py-3 zen-gradient text-white font-bold rounded-xl hover:opacity-90 motion-safe:transition-opacity flex items-center justify-center gap-2"
               >
-                <Play className="w-5 h-5" />
+                <Play className="w-5 h-5" aria-hidden="true" />
                 {t.startTimer || "Start Timer"}
               </button>
             </>
@@ -319,7 +319,7 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
                 onClick={() => setIsRunning(false)}
                 className="flex-1 py-3 bg-muted hover:bg-muted/70 font-medium rounded-xl motion-safe:transition-colors flex items-center justify-center gap-2"
               >
-                <Pause className="w-5 h-5" />
+                <Pause className="w-5 h-5" aria-hidden="true" />
                 {t.pauseTimer || "Pause"}
               </button>
               <button

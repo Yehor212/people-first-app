@@ -30,6 +30,8 @@ const CHUNK_ERROR_PHRASES = [
   "Loading CSS chunk",
   "ChunkLoadError",
   "Importing a module script failed",
+  "error loading dynamically imported module",
+  "Unable to preload CSS",
 ] as const;
 
 /** Returns true if the error message matches any known chunk-load phrase. */

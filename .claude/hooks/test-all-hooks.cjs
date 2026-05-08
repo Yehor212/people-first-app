@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Comprehensive test suite for ALL 33 hooks.
+ * Comprehensive test suite for ALL registered hooks.
  * Tests every pattern, every edge case, every exit code.
  */
 const { spawnSync } = require('child_process');
@@ -62,8 +62,27 @@ function test(name, hookFile, stdin, expectMatch, expectExit) {
   }
 }
 
+function runHook(hookFile, stdin) {
+  const hookPath = path.join(HOOKS, hookFile);
+  return spawnSync('node', [hookPath], {
+    input: stdin,
+    encoding: 'utf8',
+    timeout: 10000,
+    stdio: ['pipe', 'pipe', 'pipe'],
+  });
+}
+
+function getAdditionalContext(stdout) {
+  try {
+    const parsed = JSON.parse(stdout);
+    return parsed?.hookSpecificOutput?.additionalContext || '';
+  } catch {
+    return stdout || '';
+  }
+}
+
 console.log('==================================================');
-console.log('  FULL HOOK TEST SUITE (33 hooks)');
+console.log('  FULL HOOK TEST SUITE');
 console.log('==================================================\n');
 
 // ============================================================
@@ -201,7 +220,7 @@ test('invalid JSON — no crash',
   null, 0);
 
 // ============================================================
-// 4. PREFLIGHT-INJECT (6 tests)
+// 4. PREFLIGHT-INJECT
 // ============================================================
 console.log('  4. preflight-inject.cjs\n');
 
@@ -267,6 +286,93 @@ test('invalid JSON — no crash',
   'preflight-inject.cjs',
   'NOT_JSON',
   null, undefined);
+
+// ============================================================
+// 4b. ZENFLOW AUTO-CONTEXT
+// ============================================================
+console.log('  4b. zenflow-auto-context.cjs\n');
+
+test('auto context hook — injects context pack',
+  'zenflow-auto-context.cjs',
+  '{"hook_event_name":"UserPromptSubmit","prompt":"агенты теряют контекст между сессиями как Context7"}',
+  'ZENFLOW AUTO-CONTEXT', 0);
+
+test('auto context hook — handles subagent start',
+  'zenflow-auto-context.cjs',
+  '{"hook_event_name":"SubagentStart","agent_type":"Explore","agent_id":"agent-test"}',
+  'pack_path: .Codex/auto-context/current.md', 0);
+
+try {
+  const simpleRouteResult = runHook('preflight-inject.cjs', '{"prompt":"hello world"}');
+  const simpleContext = getAdditionalContext((simpleRouteResult.stdout || '') + (simpleRouteResult.stderr || ''));
+  if (
+    simpleRouteResult.status === 0 &&
+    simpleContext.includes('RUFLOW AUTO-ROUTING') &&
+    simpleContext.includes('Route: solo_lightweight') &&
+    simpleContext.includes('Specialist cap: 0')
+  ) {
+    pass++; results.push({ name: 'preflight-inject: lightweight solo route', status: 'PASS' });
+  } else {
+    fail++; results.push({
+      name: 'preflight-inject: lightweight solo route',
+      status: 'FAIL',
+      issues: `exit=${simpleRouteResult.status}; context=${simpleContext.slice(0, 240)}`,
+    });
+  }
+} catch (e) {
+  fail++; results.push({ name: 'preflight-inject: lightweight solo route', status: 'ERROR', issues: e.message });
+}
+
+try {
+  const guidedRouteResult = runHook('preflight-inject.cjs', '{"prompt":"please fix the bug in App.tsx"}');
+  const guidedContext = getAdditionalContext((guidedRouteResult.stdout || '') + (guidedRouteResult.stderr || ''));
+  const guidedReq = JSON.parse(fs.readFileSync(path.join(TEST_ROOT, '.user-requirements'), 'utf8'));
+  if (
+    guidedRouteResult.status === 0 &&
+    guidedContext.includes('Route: guided') &&
+    guidedContext.includes('Head agent defaults to coordinator discipline') &&
+    guidedReq.ruflow &&
+    guidedReq.ruflow.route === 'guided' &&
+    guidedReq.ruflow.max_specialists === 1
+  ) {
+    pass++; results.push({ name: 'preflight-inject: guided repo-touch route persisted', status: 'PASS' });
+  } else {
+    fail++; results.push({
+      name: 'preflight-inject: guided repo-touch route persisted',
+      status: 'FAIL',
+      issues: `exit=${guidedRouteResult.status}; route=${guidedReq?.ruflow?.route}; context=${guidedContext.slice(0, 240)}`,
+    });
+  }
+} catch (e) {
+  fail++; results.push({ name: 'preflight-inject: guided repo-touch route persisted', status: 'ERROR', issues: e.message });
+}
+
+try {
+  const complexPrompt = JSON.stringify({
+    prompt: 'perform a deep cross-platform audit for hooks, config, and CI routing with web research and coordinator review',
+  });
+  const complexRouteResult = runHook('preflight-inject.cjs', complexPrompt);
+  const complexContext = getAdditionalContext((complexRouteResult.stdout || '') + (complexRouteResult.stderr || ''));
+  const complexReq = JSON.parse(fs.readFileSync(path.join(TEST_ROOT, '.user-requirements'), 'utf8'));
+  if (
+    complexRouteResult.status === 0 &&
+    complexContext.includes('Route: ruflow_plus') &&
+    complexContext.includes('hierarchical pass') &&
+    complexReq.ruflow &&
+    complexReq.ruflow.route === 'ruflow_plus' &&
+    complexReq.ruflow.max_specialists >= 2
+  ) {
+    pass++; results.push({ name: 'preflight-inject: complex route escalates to ruflow_plus', status: 'PASS' });
+  } else {
+    fail++; results.push({
+      name: 'preflight-inject: complex route escalates to ruflow_plus',
+      status: 'FAIL',
+      issues: `exit=${complexRouteResult.status}; route=${complexReq?.ruflow?.route}; context=${complexContext.slice(0, 240)}`,
+    });
+  }
+} catch (e) {
+  fail++; results.push({ name: 'preflight-inject: complex route escalates to ruflow_plus', status: 'ERROR', issues: e.message });
+}
 
 // ============================================================
 // 5. IDE-DIAGNOSTIC-GATE (3 tests)

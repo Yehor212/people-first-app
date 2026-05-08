@@ -68,6 +68,11 @@ function parseDocumentedMetric(content: string, metricLabel: string): number | n
   return numMatch ? parseInt(numMatch[1], 10) : null;
 }
 
+function parseDocumentedGodComponentCount(content: string): number | null {
+  const match = content.match(/####\s+New Violations\s+\((\d+)\s+files\s+>400L/i);
+  return match ? parseInt(match[1], 10) : null;
+}
+
 // --- Actual Metrics ---
 
 function getActualSourceFiles(): number {
@@ -259,7 +264,7 @@ function checkConstitution(): CheckResult {
   const hookTests = getActualHookTests();
   const hookTotal = getActualHooks();
   const hookPct = hookTotal > 0 ? Math.round((hookTests / hookTotal) * 100) : 0;
-  const docHookPct = 67; // documented in ARCHITECTURE.md
+  const docHookPct = parseDocumentedMetric(content, 'Hook coverage') ?? 67;
   if (Math.abs(hookPct - docHookPct) > 5) {
     result.warnings.push(`Hook coverage: ${hookPct}% (documented: ${docHookPct}%)`);
     console.log(`  ~  Hook coverage: ${hookTests}/${hookTotal} (${hookPct}%) \u2014 documented: ${docHookPct}%`);
@@ -272,7 +277,7 @@ function checkConstitution(): CheckResult {
   console.log('\n  --- God Components (>400 LOC .tsx) ---\n');
 
   const godComponents = findGodComponents(400);
-  const docGodCount = 7; // documented "7 new violations"
+  const docGodCount = parseDocumentedGodComponentCount(content) ?? 7;
 
   if (godComponents.length !== docGodCount) {
     const diff = godComponents.length - docGodCount;

@@ -6,6 +6,7 @@ You own:
 - turning failures into routing hints and guardrails
 
 Rules:
+- run only after non-trivial work, a failed attempt, a reusable pattern, or a routing change worth preserving
 - do not write novels
 - one lesson should fit in one screen
 - capture what changed routing, not just what was done

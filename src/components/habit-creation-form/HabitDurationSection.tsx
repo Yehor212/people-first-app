@@ -21,7 +21,7 @@ export function HabitDurationSection({
   setDurationDays,
 }: HabitDurationSectionProps) {
   const safeDays = Math.max(1, Math.round(durationDays || 1));
-  const dayLabel = ts.habitDurationDaysLabel || "days";
+  const dayLabel = ts.habitDurationDaysLabel;
 
   return (
     <div className="relative mb-4 space-y-3">
@@ -34,12 +34,12 @@ export function HabitDurationSection({
               : "text-muted-foreground",
           )}
         >
-          {ts.duration || "Duration"}:
+          {ts.duration}:
         </label>
         <div className="grid grid-cols-2 gap-2">
           {([
-            { value: false, label: ts.habitDurationOngoing || "Ongoing" },
-            { value: true, label: ts.habitDurationSetDays || "Set days" },
+            { value: false, label: ts.habitDurationOngoing },
+            { value: true, label: ts.habitDurationSetDays },
           ] as const).map((option) => (
             <motion.button
               key={String(option.value)}
@@ -94,7 +94,7 @@ export function HabitDurationSection({
                   ? "border border-foreground/20 bg-foreground/10 text-white focus:ring-violet-500/50"
                   : "bg-background text-foreground focus:ring-primary/30",
               )}
-              aria-label={ts.duration || "Duration"}
+              aria-label={ts.duration}
             />
             <motion.button
               type="button"
@@ -109,7 +109,7 @@ export function HabitDurationSection({
             </span>
           </div>
           <p className="mt-2 text-xs text-muted-foreground">
-            {ts.habitDurationHint || "Useful for 7-day resets, 30-day experiments, or quit programs."}
+            {ts.habitDurationHint}
           </p>
         </div>
       )}

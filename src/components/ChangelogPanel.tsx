@@ -99,9 +99,9 @@ function VersionCard({
           </div>
         </div>
         {isExpanded ? (
-          <ChevronUp className="w-5 h-5 text-muted-foreground" />
+          <ChevronUp className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
         ) : (
-          <ChevronDown className="w-5 h-5 text-muted-foreground" />
+          <ChevronDown className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
         )}
       </button>
 

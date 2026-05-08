@@ -178,7 +178,7 @@ export function GoalInput({
                 )}
                 aria-label={ts.createGoal || "Create goal"}
               >
-                <Check className="w-3.5 h-3.5" />
+                <Check className="w-3.5 h-3.5" aria-hidden="true" />
                 Create
               </button>
               <button

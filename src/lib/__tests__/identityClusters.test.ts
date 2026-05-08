@@ -285,6 +285,17 @@ describe('computeIdentityClusters', () => {
     expect(result[0].icon).toBe('Target');
   });
 
+  it('uses the habit emoji when an identity has no separate identityIcon', () => {
+    const habits = [
+      makeHabit('h1', 'Run', {
+        identityCluster: 'Athlete',
+        identityVerb: 'someone who moves daily',
+      }),
+    ];
+    const result = computeIdentityClusters(habits);
+    expect(result[0].icon).toBe('⭐');
+  });
+
   it('skips habits without identityVerb to find the first one that does have it', () => {
     const habits = [
       // h1 has no verb

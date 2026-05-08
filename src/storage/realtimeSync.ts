@@ -217,12 +217,16 @@ export const pullFromCloud = async (): Promise<boolean> => {
         habitEntries = {};
         entriesByHabit.set(c.habit_id, habitEntries);
       }
-      const habitType = cloudHabitTypes.get(c.habit_id) ?? "boolean";
+      const habitType =
+        c.habit_type === "numerical" || c.habit_type === "boolean"
+          ? c.habit_type
+          : (cloudHabitTypes.get(c.habit_id) ?? "boolean");
       habitEntries[c.date] = {
         value: decodeHabitCompletionFromCloud({
           habitType,
           count: c.count,
           duration: c.duration,
+          entryValue: c.entry_value,
         }),
       };
     }

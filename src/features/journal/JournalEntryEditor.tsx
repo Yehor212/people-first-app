@@ -1,21 +1,36 @@
-import { memo, useEffect, useCallback, useState, useRef } from "react";
+import { memo, useEffect, useCallback, useState, useRef, useLayoutEffect } from "react";
 import {
   ArrowLeft,
+  Camera,
+  ChevronDown,
+  ChevronUp,
   Check,
+  CircleOff,
   Trash2,
   X,
   Calendar,
+  Flame,
+  Gauge,
+  Layers,
+  Leaf,
+  Lightbulb,
+  ListChecks,
+  Mic,
+  Mic2,
+  Moon,
+  Palette,
   Shuffle,
   Square,
   Sparkles,
+  Sticker,
+  Target,
   Eye,
   EyeOff,
   Fingerprint,
   SlidersHorizontal,
-  PanelLeftOpen,
-  PanelLeftClose,
+  Wind,
 } from "lucide-react";
-import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { cn, getToday } from "@/lib/utils";
 import { zenMotion } from "@/lib/animationUtils";
 import { hapticTap } from "@/lib/haptics";
@@ -55,13 +70,14 @@ import { DiaryCanvas } from "./DiaryCanvas";
 import { BurnThoughtWidget } from "./BurnThoughtWidget";
 import { GratitudeBloomWidget } from "./GratitudeBloomWidget";
 import { DiaryBreatheWidget } from "./DiaryBreatheWidget";
+import { DiaryMiniOrb } from "./DiaryMiniOrb";
 import { ZenFocusMode } from "./ZenFocusMode";
 import { PrivacyShield } from "./PrivacyShield";
 import { FloatingMediaLayer } from "./FloatingMediaLayer";
 import { DiaryFormatToolbar } from "./DiaryFormatToolbar";
 import { SlashCommandMenu } from "./SlashCommandMenu";
-import { MoodSlider } from "./MoodSlider";
 import { ThemeTransitionOverlay, useThemeTransition } from "./ThemeTransitionOverlay";
+import { formatJournalWordCount, formatLocalizedCount } from "./journalWordCount";
 // PhotoGridLayout available for viewer/card use — editor uses FloatingMediaLayer + JournalPhotoGallery
 export { PhotoGridLayout } from "./PhotoGridLayout";
 import { DiaryFormatHint } from "./DiaryFormatHint";
@@ -70,7 +86,6 @@ import { useJournalEditorState } from "./useJournalEditorState";
 import { formatRecordingTime } from "./useJournalEditorHelpers";
 import { useTypingDynamics } from "@/hooks/useTypingDynamics";
 import { TypingDynamicsMirror } from "@/components/diary/TypingDynamicsMirror";
-import type { SidebarState } from "@/hooks/useSidebarState";
 
 // Local aliases to avoid name collision with the hook's `theme` state
 const DIARY_FONTS_LOCAL = DIARY_FONTS;
@@ -145,38 +160,38 @@ const ATMOSPHERE_THEMES = [
 
 const MOOD_OPTIONS: {
   mood: MoodType;
-  emoji: string;
   activeBg: string;
+  activeText: string;
   activeRing: string;
 }[] = [
   {
     mood: "great",
-    emoji: "\u{1F604}",
     activeBg: "bg-green-500/15",
+    activeText: "text-green-400",
     activeRing: "ring-green-400/40",
   },
   {
     mood: "good",
-    emoji: "\u{1F642}",
     activeBg: "bg-emerald-500/15",
+    activeText: "text-emerald-400",
     activeRing: "ring-emerald-400/40",
   },
   {
     mood: "okay",
-    emoji: "\u{1F610}",
     activeBg: "bg-amber-500/15",
+    activeText: "text-amber-400",
     activeRing: "ring-amber-400/40",
   },
   {
     mood: "bad",
-    emoji: "\u{1F614}",
     activeBg: "bg-orange-500/15",
+    activeText: "text-orange-400",
     activeRing: "ring-orange-400/40",
   },
   {
     mood: "terrible",
-    emoji: "\u{1F622}",
     activeBg: "bg-red-500/15",
+    activeText: "text-red-400",
     activeRing: "ring-red-400/40",
   },
 ];
@@ -234,9 +249,8 @@ interface JournalEntryEditorProps {
   onAddGratitude?: (entry: import("@/types").GratitudeEntry) => void;
   /** Desktop master-detail mode: render inline instead of fixed overlay */
   desktop?: boolean;
-  /** Desktop diary panel visibility state (passed from JournalModule) */
-  sidebarState?: SidebarState;
-  onToggleSidebar?: () => void;
+  onRequestSettings?: () => void;
+  onBindSettingsRequestHandler?: (handler: (() => void) | null) => void;
 }
 
 export const JournalEntryEditor = memo(function JournalEntryEditor({
@@ -252,12 +266,10 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
   onToggleHabit,
   onAddGratitude,
   desktop,
-  sidebarState = "expanded",
-  onToggleSidebar,
+  onRequestSettings,
+  onBindSettingsRequestHandler,
 }: JournalEntryEditorProps) {
-  const reducedMotion = useReducedMotion();
   const themeTransition = useThemeTransition();
-  const [_contentReady, setContentReady] = useState(!desktop || !!reducedMotion);
   const state = useJournalEditorState({
     entry,
     entryPrefill,
@@ -270,6 +282,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
     onBack,
     onToggleHabit,
     onAddGratitude,
+    desktop,
   });
 
   const {
@@ -320,6 +333,8 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
     setShowDeleteConfirm,
     showUnsavedDialog,
     setShowUnsavedDialog,
+    showSettingsConfirm,
+    setShowSettingsConfirm,
     showTemplatePicker,
     showRecordingOverlay,
     showPromptsDropdown,
@@ -372,6 +387,8 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
     setPromptSeed,
     randomPrompts,
     // derived
+    isDirty,
+    hasImmediateChanges,
     wordCount,
     completedHabitCount,
     hasContent,
@@ -384,6 +401,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
     handleBack,
     handleSave,
     handleSaveAndClose,
+    persistDraftNow,
     handleDiscard,
     handleRestoreDraft,
     handleDismissDraft,
@@ -411,7 +429,25 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
   // EP8_US002: Typing dynamics for mini-orb with delayed unmount
   const typingDynamics = useTypingDynamics(editorRef);
   const [orbMounted, setOrbMounted] = useState(false);
+  const [mobileToolsCollapsed, setMobileToolsCollapsed] = useState(false);
   const orbTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleMobileToolsCollapse = useCallback(() => {
+    void hapticTap();
+    setMobileToolsCollapsed(true);
+    setShowStyleBar(false);
+  }, [setShowStyleBar]);
+
+  const handleMobileToolsExpand = useCallback(() => {
+    void hapticTap();
+    setMobileToolsCollapsed(false);
+  }, []);
+
+  const handleMobileStyleToggle = useCallback(() => {
+    void hapticTap();
+    setMobileToolsCollapsed(false);
+    setShowStyleBar((value) => !value);
+  }, [setShowStyleBar]);
 
   useEffect(() => {
     if (typingDynamics.isTyping) {
@@ -432,112 +468,115 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
   }, [typingDynamics.isTyping, orbMounted]);
 
   // T3: Markdown shortcut auto-conversion on input
-  const handleMarkdownShortcuts = useCallback((_e: Event) => {
-    const editor = editorRef.current;
-    if (!editor) return;
+  const handleMarkdownShortcuts = useCallback(
+    (_e: Event) => {
+      const editor = editorRef.current;
+      if (!editor) return;
 
-    const sel = window.getSelection();
-    if (!sel || sel.rangeCount === 0) return;
-    const range = sel.getRangeAt(0);
+      const sel = window.getSelection();
+      if (!sel || sel.rangeCount === 0) return;
+      const range = sel.getRangeAt(0);
 
-    // Only process if cursor is inside editor
-    if (!editor.contains(range.commonAncestorContainer)) return;
+      // Only process if cursor is inside editor
+      if (!editor.contains(range.commonAncestorContainer)) return;
 
-    const node = range.startContainer;
-    if (node.nodeType !== Node.TEXT_NODE) return;
-    const text = node.textContent || "";
-    const cursorPos = range.startOffset;
+      const node = range.startContainer;
+      if (node.nodeType !== Node.TEXT_NODE) return;
+      const text = node.textContent || "";
+      const cursorPos = range.startOffset;
 
-    // Get text up to cursor
-    const textBefore = text.slice(0, cursorPos);
+      // Get text up to cursor
+      const textBefore = text.slice(0, cursorPos);
 
-    // Bold: **text**
-    const boldMatch = textBefore.match(/\*\*(.+?)\*\*$/);
-    if (boldMatch) {
-      const fullMatch = boldMatch[0];
-      const content = boldMatch[1];
-      const startIdx = cursorPos - fullMatch.length;
+      // Bold: **text**
+      const boldMatch = textBefore.match(/\*\*(.+?)\*\*$/);
+      if (boldMatch) {
+        const fullMatch = boldMatch[0];
+        const content = boldMatch[1];
+        const startIdx = cursorPos - fullMatch.length;
 
-      // Replace markdown with plain text, then apply bold
-      const textNode = node as Text;
-      const before = text.slice(0, startIdx);
-      const after = text.slice(cursorPos);
-      textNode.textContent = before + content + after;
+        // Replace markdown with plain text, then apply bold
+        const textNode = node as Text;
+        const before = text.slice(0, startIdx);
+        const after = text.slice(cursorPos);
+        textNode.textContent = before + content + after;
 
-      // Select the content text and apply bold
-      const newRange = document.createRange();
-      newRange.setStart(textNode, startIdx);
-      newRange.setEnd(textNode, startIdx + content.length);
-      sel.removeAllRanges();
-      sel.addRange(newRange);
-      document.execCommand("bold", false);
+        // Select the content text and apply bold
+        const newRange = document.createRange();
+        newRange.setStart(textNode, startIdx);
+        newRange.setEnd(textNode, startIdx + content.length);
+        sel.removeAllRanges();
+        sel.addRange(newRange);
+        document.execCommand("bold", false);
 
-      // Collapse cursor to end
-      sel.collapseToEnd();
-      void hapticTap();
-      handleEditorInput();
-      return;
-    }
-
-    // Italic: *text* (but not **)
-    const italicMatch = textBefore.match(/(?<!\*)\*([^*]+?)\*$/);
-    if (italicMatch) {
-      const fullMatch = italicMatch[0];
-      const content = italicMatch[1];
-      const startIdx = cursorPos - fullMatch.length;
-
-      const textNode = node as Text;
-      const before = text.slice(0, startIdx);
-      const after = text.slice(cursorPos);
-      textNode.textContent = before + content + after;
-
-      const newRange = document.createRange();
-      newRange.setStart(textNode, startIdx);
-      newRange.setEnd(textNode, startIdx + content.length);
-      sel.removeAllRanges();
-      sel.addRange(newRange);
-      document.execCommand("italic", false);
-
-      sel.collapseToEnd();
-      void hapticTap();
-      handleEditorInput();
-      return;
-    }
-
-    // Link: [text](url)
-    const linkMatch = textBefore.match(/\[(.+?)\]\((https?:\/\/[^\s)]+)\)$/);
-    if (linkMatch) {
-      const fullMatch = linkMatch[0];
-      const linkText = linkMatch[1];
-      const url = linkMatch[2];
-      const startIdx = cursorPos - fullMatch.length;
-
-      const textNode = node as Text;
-      const before = text.slice(0, startIdx);
-      const after = text.slice(cursorPos);
-      textNode.textContent = before + linkText + after;
-
-      const newRange = document.createRange();
-      newRange.setStart(textNode, startIdx);
-      newRange.setEnd(textNode, startIdx + linkText.length);
-      sel.removeAllRanges();
-      sel.addRange(newRange);
-
-      // Validate URL before creating link
-      try {
-        const parsed = new URL(url);
-        if (["http:", "https:"].includes(parsed.protocol)) {
-          document.execCommand("createLink", false, url);
-        }
-      } catch {
-        // Invalid URL — skip link creation
+        // Collapse cursor to end
+        sel.collapseToEnd();
+        void hapticTap();
+        handleEditorInput();
+        return;
       }
 
-      sel.collapseToEnd();
-      void hapticTap();
-      handleEditorInput();
-    }
-  }, [editorRef, handleEditorInput]);
+      // Italic: *text* (but not **)
+      const italicMatch = textBefore.match(/(?<!\*)\*([^*]+?)\*$/);
+      if (italicMatch) {
+        const fullMatch = italicMatch[0];
+        const content = italicMatch[1];
+        const startIdx = cursorPos - fullMatch.length;
+
+        const textNode = node as Text;
+        const before = text.slice(0, startIdx);
+        const after = text.slice(cursorPos);
+        textNode.textContent = before + content + after;
+
+        const newRange = document.createRange();
+        newRange.setStart(textNode, startIdx);
+        newRange.setEnd(textNode, startIdx + content.length);
+        sel.removeAllRanges();
+        sel.addRange(newRange);
+        document.execCommand("italic", false);
+
+        sel.collapseToEnd();
+        void hapticTap();
+        handleEditorInput();
+        return;
+      }
+
+      // Link: [text](url)
+      const linkMatch = textBefore.match(/\[(.+?)\]\((https?:\/\/[^\s)]+)\)$/);
+      if (linkMatch) {
+        const fullMatch = linkMatch[0];
+        const linkText = linkMatch[1];
+        const url = linkMatch[2];
+        const startIdx = cursorPos - fullMatch.length;
+
+        const textNode = node as Text;
+        const before = text.slice(0, startIdx);
+        const after = text.slice(cursorPos);
+        textNode.textContent = before + linkText + after;
+
+        const newRange = document.createRange();
+        newRange.setStart(textNode, startIdx);
+        newRange.setEnd(textNode, startIdx + linkText.length);
+        sel.removeAllRanges();
+        sel.addRange(newRange);
+
+        // Validate URL before creating link
+        try {
+          const parsed = new URL(url);
+          if (["http:", "https:"].includes(parsed.protocol)) {
+            document.execCommand("createLink", false, url);
+          }
+        } catch {
+          // Invalid URL — skip link creation
+        }
+
+        sel.collapseToEnd();
+        void hapticTap();
+        handleEditorInput();
+      }
+    },
+    [editorRef, handleEditorInput]
+  );
 
   // T3: Attach markdown shortcut listener to editor
   useEffect(() => {
@@ -547,35 +586,41 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
     return () => editor.removeEventListener("input", handleMarkdownShortcuts);
   }, [editorRef, handleMarkdownShortcuts]);
 
-  const isSidebarCollapsed = sidebarState !== "expanded";
-  const sidebarHidden = isSidebarCollapsed;
-  const sidebarToggleLabel = sidebarHidden
-    ? ts.diarySidebarShow || "Show diary panel"
-    : ts.diarySidebarHide || "Hide diary panel";
+  const handleRequestSettings = useCallback(() => {
+    if (!onRequestSettings) return;
 
-  const EditorWrapper = desktop ? motion.div : "div";
-  const editorWrapperProps = desktop
-    ? {
-        layoutId: `entry-${entry?.id}`,
-        onLayoutAnimationComplete: () => setContentReady(true),
-        transition: { type: "spring" as const, stiffness: 260, damping: 25 },
-      }
-    : {};
+    if (isDirty || hasImmediateChanges()) {
+      setShowSettingsConfirm(true);
+      return;
+    }
+
+    onRequestSettings();
+  }, [hasImmediateChanges, isDirty, onRequestSettings, setShowSettingsConfirm]);
+
+  const handleSaveDraftAndOpenSettings = useCallback(async () => {
+    await persistDraftNow();
+    setShowSettingsConfirm(false);
+    onRequestSettings?.();
+  }, [persistDraftNow, onRequestSettings, setShowSettingsConfirm]);
+
+  useLayoutEffect(() => {
+    onBindSettingsRequestHandler?.(onRequestSettings ? handleRequestSettings : null);
+    return () => onBindSettingsRequestHandler?.(null);
+  }, [handleRequestSettings, onBindSettingsRequestHandler, onRequestSettings]);
 
   return (
-    <EditorWrapper
+    <div
       ref={editorOverlayRef}
-      role="dialog"
-      aria-modal="true"
+      role={desktop ? undefined : "dialog"}
+      aria-modal={desktop ? undefined : true}
       aria-label={ts.journalEntryTitle || "Diary Entry"}
       className={cn(
         "flex flex-col overflow-hidden text-foreground",
         desktop
-          ? "relative h-full"
+          ? "relative isolate h-full min-h-0 overflow-hidden"
           : "fixed inset-0 z-[60] h-screen supports-[height:100svh]:h-[100svh]"
       )}
       style={diaryStyle}
-      {...editorWrapperProps}
     >
       {/* Canvas decorative background */}
       <DiaryCanvas
@@ -585,6 +630,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
         intensity={bgIntensity}
         particleSpeed={particleSpeed}
         scrollContainerRef={scrollAreaRef}
+        scope={desktop ? "container" : "viewport"}
       />
 
       {/* Atmospheric background pattern overlay (Layer 1 — behind paper, above canvas) */}
@@ -598,46 +644,34 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
       {/* ═══ GLASS TOOLBAR ═══ */}
       <div
         className={cn(
-          "relative z-50 flex-shrink-0 w-full flex flex-col gap-3 px-6 py-3 pt-[max(0.75rem,var(--safe-top))] border-b",
+          "relative z-50 flex-shrink-0 w-full flex flex-col border-b",
           desktop
-            ? "bg-background/95 backdrop-blur-sm shadow-sm border-border/15"
-            : "backdrop-blur-[20px] shadow-[0_10px_40px_rgba(0,0,0,0.5)] bg-[linear-gradient(135deg,rgba(15,23,42,0.7),rgba(2,6,23,0.85))] border-b-[rgba(255,255,255,0.08)]"
+            ? "gap-3 px-6 py-3 pt-[max(0.75rem,var(--safe-top))] bg-background/95 backdrop-blur-sm shadow-sm border-border/15"
+            : "gap-2 px-3 py-2 pt-[max(0.5rem,var(--safe-top))] bg-background/90 backdrop-blur-xl shadow-lg border-border/20"
         )}
       >
         {/* ROW 1: Navigation & Atmosphere */}
-        <div className="flex items-center justify-between gap-3">
-          {/* LEFT: Sidebar toggle + Back + Title */}
-          <div className="flex items-center gap-3 min-w-0">
-            {/* Desktop sidebar toggle — integrated into editor header (Bear/Notion pattern) */}
-            {desktop && onToggleSidebar && (
-              <motion.button
-                whileTap={{ scale: 0.92 }}
-                onClick={onToggleSidebar}
-                className="p-2 rounded-lg text-muted-foreground hover:bg-white/10 dark:hover:bg-white/10 hover:text-foreground motion-safe:transition-all min-w-[44px] min-h-[44px] flex items-center justify-center"
-                aria-label={sidebarToggleLabel}
-                title={sidebarToggleLabel}
-                aria-expanded={!isSidebarCollapsed}
-                aria-controls="journal-sidebar-panel"
-              >
-                {isSidebarCollapsed ? (
-                  <PanelLeftOpen className="w-4 h-4" />
-                ) : (
-                  <PanelLeftClose className="w-4 h-4" />
-                )}
-              </motion.button>
-            )}
+        <div className="flex items-center justify-between gap-2">
+          {/* LEFT: Back + Title */}
+          <div className={cn("flex items-center min-w-0", desktop ? "gap-3" : "gap-1.5 flex-1")}>
             <motion.button
               whileTap={{ scale: 0.92 }}
               onClick={handleBack}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-muted-foreground hover:bg-white/10 dark:hover:bg-white/10 hover:text-foreground motion-safe:transition-all min-h-[44px]"
+              className={cn(
+                "flex items-center gap-1.5 py-2 rounded-lg text-muted-foreground hover:bg-white/10 dark:hover:bg-white/10 hover:text-foreground motion-safe:transition-all min-h-[44px]",
+                desktop ? "px-3" : "px-2"
+              )}
               aria-label={ts.back || "Back"}
             >
               <ArrowLeft className="w-4 h-4 rtl:scale-x-[-1]" />
-              <span className="text-sm">{t.journalMapLabel}</span>
+              <span className="text-sm max-[420px]:sr-only">{t.journalMapLabel}</span>
             </motion.button>
-            <div className="min-w-0">
+            <div className={cn("min-w-0", !desktop && "max-w-[8rem]")}>
               <div
-                className="text-sm font-bold tracking-tight truncate font-display"
+                className={cn(
+                  "font-bold tracking-tight truncate font-display",
+                  desktop ? "text-sm" : "text-xs"
+                )}
                 style={{ color: diaryTheme.accentColor }}
               >
                 {title || ts.diaryTimeCapsule || "TIME CAPSULE"}
@@ -645,9 +679,9 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
               <div className="relative">
                 <button
                   onClick={() => dateInputRef.current?.showPicker?.()}
-                  className="text-[11px] flex items-center gap-1 text-foreground0 hover:text-muted-foreground motion-safe:transition-colors"
+                  className="text-[11px] flex items-center gap-1 text-foreground/70 hover:text-muted-foreground motion-safe:transition-colors whitespace-nowrap"
                 >
-                  <Calendar className="w-3 h-3" />
+                  <Calendar className="w-3 h-3" aria-hidden="true" />
                   {new Date(date + "T00:00:00").toLocaleDateString(getLocale(language), {
                     month: "short",
                     day: "numeric",
@@ -670,21 +704,23 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
           </div>
 
           {/* RIGHT: Style toggle + Actions */}
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {/* Style panel toggle — reveals atmosphere, fonts, colors, etc. */}
-            <motion.button
-              whileTap={{ scale: 0.92 }}
-              onClick={() => setShowStyleBar((v) => !v)}
-              className={cn(
-                "p-2 rounded-lg motion-safe:transition-all min-w-[44px] min-h-[44px] flex items-center justify-center",
-                showStyleBar
-                  ? "bg-emerald-500/15 text-emerald-400"
-                  : "hover:bg-white/10 text-muted-foreground"
-              )}
-              aria-label={ts.diaryStyle || "Style"}
-            >
-              <SlidersHorizontal className="w-4 h-4" />
-            </motion.button>
+          <div className={cn("flex items-center flex-shrink-0", desktop ? "gap-2" : "gap-1")}>
+            {/* Style panel toggle stays in the desktop header; mobile exposes it in the bottom tool tray. */}
+            {desktop && (
+              <motion.button
+                whileTap={{ scale: 0.92 }}
+                onClick={() => setShowStyleBar((v) => !v)}
+                className={cn(
+                  "p-2 rounded-lg motion-safe:transition-all min-w-[44px] min-h-[44px] flex items-center justify-center",
+                  showStyleBar
+                    ? "bg-primary/15 text-primary"
+                    : "hover:bg-white/10 text-muted-foreground"
+                )}
+                aria-label={ts.diaryStyle || "Style"}
+              >
+                <SlidersHorizontal className="w-4 h-4" />
+              </motion.button>
+            )}
 
             {entry && onDelete && (
               <motion.button
@@ -718,10 +754,11 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
               onClick={saveSuccess ? undefined : handleSave}
               disabled={!saveSuccess && (saveState === "saving" || !hasContent)}
               className={cn(
-                "flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium min-h-[44px] motion-safe:transition-all",
+                "flex items-center gap-1.5 py-2 rounded-xl text-sm font-medium min-h-[44px] motion-safe:transition-all",
+                desktop ? "px-4" : "px-3 min-w-[44px]",
                 saveSuccess
-                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-[0_0_12px_rgba(16,185,129,0.2)]"
-                  : "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25 hover:shadow-[0_0_8px_rgba(16,185,129,0.12)]",
+                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-sm"
+                  : "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25 hover:shadow-sm",
                 "disabled:opacity-40"
               )}
             >
@@ -744,7 +781,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                     className="flex items-center gap-1"
                   >
                     <Check className="w-4 h-4" />
-                    {ts.journalSave || "Save"}
+                    <span className="max-[380px]:sr-only">{ts.journalSave || "Save"}</span>
                   </motion.span>
                 )}
               </AnimatePresence>
@@ -754,7 +791,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
 
         {/* ROW 2: Collapsible style panel */}
         <AnimatePresence>
-          {showStyleBar && (
+          {desktop && showStyleBar && (
             <motion.div
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: "auto", opacity: 1 }}
@@ -837,14 +874,12 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                       className={cn(
                         "px-3 py-2 rounded-lg text-sm font-medium border motion-safe:transition-all flex items-center gap-1.5",
                         showPromptsDropdown
-                          ? "bg-amber-500/15 text-amber-400 border-amber-500/30"
+                          ? "bg-[hsl(var(--zf-memory)/0.14)] text-[hsl(var(--zf-memory))] border-[hsl(var(--zf-memory)/0.30)]"
                           : "bg-black/30 dark:bg-black/30 text-muted-foreground border-white/5 dark:border-white/5 hover:bg-white/10 dark:hover:bg-white/10 hover:text-foreground"
                       )}
                     >
-                      💡{" "}
-                      {ts.journalWritingPrompts
-                        ? ts.journalWritingPrompts.split(" ")[0]
-                        : "Prompts"}
+                      <Lightbulb className="w-4 h-4" aria-hidden="true" />
+                      {ts.journalPromptsShort || ts.journalPrompt || "Prompts"}
                     </motion.button>
                   </div>
                 )}
@@ -856,21 +891,23 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                       key={opt.mood}
                       whileTap={{ scale: 0.85 }}
                       onClick={() => setMood(mood === opt.mood ? undefined : opt.mood)}
+                      aria-label={opt.mood}
+                      aria-pressed={mood === opt.mood}
                       className={cn(
-                        "w-9 h-9 rounded-full flex items-center justify-center motion-safe:transition-all",
+                        "w-9 h-9 rounded-full flex items-center justify-center text-muted-foreground motion-safe:transition-all",
                         mood === opt.mood
-                          ? `${opt.activeBg} ring-2 ${opt.activeRing}`
+                          ? `${opt.activeBg} ${opt.activeText} ring-2 ${opt.activeRing}`
                           : "hover:bg-white/10 dark:hover:bg-white/10"
                       )}
                     >
-                      <span
+                      <DiaryMiniOrb
+                        mood={opt.mood}
+                        size="micro"
                         className={cn(
-                          "text-base motion-safe:transition-transform",
-                          mood === opt.mood && "scale-110"
+                          "scale-[0.56] opacity-70 motion-safe:transition-all",
+                          mood === opt.mood && "scale-[0.72] opacity-100"
                         )}
-                      >
-                        {opt.emoji}
-                      </span>
+                      />
                     </motion.button>
                   ))}
                   <motion.button
@@ -890,8 +927,9 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                     onClick={() => setShowStickers(true)}
                     disabled={stickers.length >= MAX_STICKERS_PER_ENTRY}
                     className="px-3 py-2 rounded-lg text-sm border border-transparent bg-transparent text-muted-foreground hover:bg-white/10 dark:hover:bg-white/10 motion-safe:transition-all disabled:opacity-40"
+                    aria-label={ts.journalToolbarSticker || "Sticker"}
                   >
-                    ⭐
+                    <Sticker className="w-4 h-4" aria-hidden="true" />
                   </motion.button>
                 </div>
 
@@ -904,7 +942,9 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                       onClick={() => setPaperColor(pc)}
                       className={cn(
                         "w-7 h-7 rounded-full border-2 motion-safe:transition-all",
-                        paperColor === pc ? "border-white/60 dark:border-white/60 scale-110" : "border-white/10 dark:border-white/10"
+                        paperColor === pc
+                          ? "border-white/60 dark:border-white/60 scale-110"
+                          : "border-white/10 dark:border-white/10"
                       )}
                       style={{ background: PAPER_COLORS[pc].bg }}
                       aria-label={PAPER_COLORS[pc].label}
@@ -921,7 +961,9 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                       onClick={() => setInkColor(c.hex)}
                       className={cn(
                         "w-7 h-7 rounded-full border-2 motion-safe:transition-all",
-                        inkColor === c.hex ? "border-white/60 dark:border-white/60 scale-110" : "border-white/10 dark:border-white/10"
+                        inkColor === c.hex
+                          ? "border-white/60 dark:border-white/60 scale-110"
+                          : "border-white/10 dark:border-white/10"
                       )}
                       style={{ background: c.hex }}
                       aria-label={c.label}
@@ -937,7 +979,8 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                     disabled={audioIds.length >= MAX_AUDIO_PER_ENTRY}
                     className="px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground border border-transparent hover:bg-white/10 dark:hover:bg-white/10 hover:text-foreground motion-safe:transition-all flex items-center gap-2 disabled:opacity-40"
                   >
-                    🎤 {ts.diaryRecord || "Record"}
+                    <Mic className="w-4 h-4" aria-hidden="true" />
+                    {ts.diaryRecord || "Record"}
                   </motion.button>
                   <motion.button
                     whileTap={{ scale: 0.95 }}
@@ -949,7 +992,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                         : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 dark:hover:bg-white/10 hover:text-foreground"
                     )}
                   >
-                    🎙️{" "}
+                    <Mic2 className="w-4 h-4" aria-hidden="true" />
                     {voice.isListening ? ts.journalDictateStop || "Stop" : ts.diaryVoice || "Voice"}
                   </motion.button>
                 </div>
@@ -972,7 +1015,14 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                           : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 dark:hover:bg-white/10 hover:text-foreground"
                     )}
                   >
-                    {bgIntensity === "full" ? "🌌" : bgIntensity === "dim" ? "🌑" : "⊘"} BG
+                    {bgIntensity === "full" ? (
+                      <Sparkles className="w-3.5 h-3.5" aria-hidden="true" />
+                    ) : bgIntensity === "dim" ? (
+                      <Moon className="w-3.5 h-3.5" aria-hidden="true" />
+                    ) : (
+                      <CircleOff className="w-3.5 h-3.5" aria-hidden="true" />
+                    )}
+                    <span>BG</span>
                   </motion.button>
                   <motion.button
                     whileTap={{ scale: 0.95 }}
@@ -990,7 +1040,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                           : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 dark:hover:bg-white/10 hover:text-foreground"
                     )}
                   >
-                    {particleSpeed === "slow" ? "🐌" : particleSpeed === "drift" ? "🌊" : "⊘"}{" "}
+                    <Gauge className="w-3.5 h-3.5" aria-hidden="true" />
                     {ts.diaryParticleSpeed || "Speed"}
                   </motion.button>
                   <motion.button
@@ -1006,7 +1056,8 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                         : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 dark:hover:bg-white/10 hover:text-foreground"
                     )}
                   >
-                    ⏺ {paperTexture === "clean" ? ts.diaryTexture || "Texture" : paperTexture}
+                    <Layers className="w-3.5 h-3.5" aria-hidden="true" />
+                    {paperTexture === "clean" ? ts.diaryTexture || "Texture" : paperTexture}
                   </motion.button>
                 </div>
 
@@ -1025,13 +1076,15 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                           isActive
                             ? "border-white/60 dark:border-white/60 scale-110 shadow-lg"
                             : "border-white/10 dark:border-white/10 hover:border-white/25 dark:hover:border-white/25",
-                          isNone && !isActive && "border-dashed border-white/20 dark:border-white/20"
+                          isNone &&
+                            !isActive &&
+                            "border-dashed border-white/20 dark:border-white/20"
                         )}
                         style={isNone ? undefined : { background: pat.swatch }}
                         aria-label={ts[pat.i18nKey] || pat.name}
                         title={ts[pat.i18nKey] || pat.name}
                       >
-                        {isNone && <span className="text-xs text-muted-foreground">⊘</span>}
+                        {isNone && <CircleOff className="w-3.5 h-3.5 text-muted-foreground" />}
                       </motion.button>
                     );
                   })}
@@ -1050,8 +1103,9 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                     transition={zenMotion.gentle}
                   >
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-[11px] font-semibold uppercase tracking-[0.15em] text-foreground0 flex items-center gap-1.5">
-                        {"\u{270F}\uFE0F"} {ts.journalWritingPrompts || "Writing prompts"}
+                      <span className="text-[11px] font-semibold uppercase tracking-[0.15em] text-foreground/70 flex items-center gap-1.5">
+                        <Lightbulb className="w-3 h-3" aria-hidden="true" />
+                        {ts.journalWritingPrompts || "Writing prompts"}
                       </span>
                       <div className="flex items-center gap-1">
                         <button
@@ -1059,14 +1113,14 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                           className="p-1.5 rounded-lg hover:bg-white/10 dark:hover:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center"
                           aria-label={t.ariaShufflePrompts}
                         >
-                          <Shuffle className="w-3 h-3 text-foreground0" />
+                          <Shuffle className="w-3 h-3 text-foreground/70" />
                         </button>
                         <button
                           onClick={() => setShowPromptsDropdown(false)}
                           className="p-1 rounded hover:bg-white/10 dark:hover:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center"
                           aria-label={ts.close || "Close"}
                         >
-                          <X className="w-3 h-3 text-foreground0" />
+                          <X className="w-3 h-3 text-foreground/70" />
                         </button>
                       </div>
                     </div>
@@ -1112,15 +1166,17 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
         <div
           ref={scrollAreaRef}
           className={cn(
-            "absolute inset-0 overflow-y-auto pt-[clamp(80px,18vh,140px)] pb-[clamp(100px,22vh,160px)] z-10",
-            desktop ? "px-8" : "px-4"
+            "absolute inset-0 overflow-y-auto z-10",
+            desktop
+              ? "px-8 pt-[clamp(80px,18vh,140px)] pb-[clamp(100px,22vh,160px)]"
+              : "px-3 pt-6 pb-8"
           )}
           onScroll={handleContentScroll}
         >
           <div
             className={cn(
               "relative max-w-4xl mx-auto rounded-2xl border p-4 sm:p-6 md:p-8 min-h-[60dvh] space-y-4 [contain:layout_style_paint]",
-              desktop ? "shadow-md max-w-3xl" : "shadow-[0_0_80px_rgba(0,0,0,0.5)]",
+              desktop ? "shadow-md max-w-3xl" : "shadow-2xl",
               zenFocusActive && "zen-focus-active"
             )}
             style={{
@@ -1181,9 +1237,6 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                 setTimeout(() => el.scrollIntoView({ behavior: "smooth", block: "center" }), 300);
               }}
             />
-
-            {/* Mood slider */}
-            <MoodSlider value={mood} onChange={setMood} className="my-1" />
 
             {/* Stickers */}
             {stickers.length > 0 && (
@@ -1297,7 +1350,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                       onChange={(e) => setTagInput(e.target.value)}
                       placeholder={ts.journalTagPlaceholder || "Add tag..."}
                       aria-label={ts.journalTagPlaceholder || "Add tag"}
-                      className="flex-1 px-3 py-2.5 rounded-lg bg-white/5 dark:bg-white/5 border border-white/10 dark:border-white/10 text-sm text-foreground outline-none placeholder:text-foreground0 min-h-[44px]"
+                      className="flex-1 px-3 py-2.5 rounded-lg bg-white/5 dark:bg-white/5 border border-white/10 dark:border-white/10 text-sm text-foreground outline-none placeholder:text-foreground/50 min-h-[44px]"
                       autoFocus
                       maxLength={30}
                     />
@@ -1389,14 +1442,26 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
               {wordCount > 0 && (
                 <div className="flex items-center gap-2" style={{ color: paperColors.muted }}>
                   <span className="text-[10px] opacity-60">
-                    {wordCount} {ts.journalWords || "words"}
+                    {formatJournalWordCount(wordCount, language, ts)}
                   </span>
                   <span className="text-[10px] opacity-40">
-                    {content.length} {ts.journalChars || "chars"}
+                    {formatLocalizedCount(
+                      content.length,
+                      language,
+                      ts,
+                      "journalCharacterCount",
+                      ts.journalChars || "chars"
+                    )}
                   </span>
                   {wordCount >= 50 && (
                     <span className="text-[10px] opacity-40">
-                      ~{Math.ceil(wordCount / 200)} {ts.journalMinRead || "min read"}
+                      ~{formatLocalizedCount(
+                        Math.ceil(wordCount / 200),
+                        language,
+                        ts,
+                        "journalReadingTimeCount",
+                        ts.journalMinRead || "min read"
+                      )}
                     </span>
                   )}
                 </div>
@@ -1442,92 +1507,484 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
       {/* END content area */}
 
       {/* ═══ BOTTOM GLASS TOOLBAR (Magic) ═══ */}
-      <div className="relative z-50 flex-shrink-0 w-full px-6 py-3 pb-[max(0.75rem,var(--safe-bottom))] backdrop-blur-[20px] shadow-[0_10px_40px_rgba(0,0,0,0.5)] bg-[linear-gradient(135deg,rgba(15,23,42,0.7),rgba(2,6,23,0.85))] border-t border-t-[rgba(255,255,255,0.08)]">
-        <div className="flex items-center gap-2 overflow-x-auto scrollbar-none -mx-1.5 px-1.5">
+      <div
+        className={cn(
+          "relative z-50 flex-shrink-0 w-full border-t backdrop-blur-[20px] motion-safe:transition-all",
+          desktop
+            ? "px-6 py-3 pb-[max(0.75rem,var(--safe-bottom))] bg-background/85 border-border/20 shadow-lg"
+            : mobileToolsCollapsed
+              ? "px-3 py-1.5 pb-[max(0.5rem,var(--safe-bottom))] bg-background/85 border-primary/10 shadow-xl"
+              : "px-3 py-2 pb-[max(0.75rem,var(--safe-bottom))] bg-background/90 border-primary/15 shadow-2xl"
+        )}
+      >
+        {!desktop && mobileToolsCollapsed ? (
           <motion.button
-            whileTap={{ scale: 0.95 }}
-            onClick={() => { void hapticTap(); setShowPhotos(true); }}
-            disabled={photoIds.length >= MAX_PHOTOS_PER_ENTRY}
-            className="px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground border border-transparent hover:bg-white/10 dark:hover:bg-white/10 hover:text-foreground motion-safe:transition-all flex items-center gap-2 flex-shrink-0 disabled:opacity-40 min-h-[44px]"
+            type="button"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+            whileTap={{ scale: 0.96 }}
+            onClick={handleMobileToolsExpand}
+            className="mx-auto flex min-h-[44px] items-center justify-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 text-xs font-semibold text-primary shadow-sm"
+            aria-expanded={false}
+            aria-label={ts.journalMobileTools || "Tools"}
           >
-            📸 {ts.diarySnapshot || "Photo"}
+            <ChevronUp className="h-4 w-4" aria-hidden="true" />
+            <span>{ts.journalMobileTools || "Tools"}</span>
           </motion.button>
-          <motion.button
-            whileTap={{ scale: 0.95 }}
-            onClick={() => {
-              void hapticTap();
-              setShowBurnWidget((v) => !v);
-              setShowGratitudeWidget(false);
-            }}
-            className={cn(
-              "px-4 py-2 rounded-lg text-sm font-medium border motion-safe:transition-all flex items-center gap-2 flex-shrink-0 min-h-[44px]",
-              showBurnWidget
-                ? "bg-orange-500/15 text-orange-400 border-orange-500/30"
-                : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 dark:hover:bg-white/10 hover:text-foreground"
+        ) : (
+          <>
+            {!desktop && (
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                    <Sparkles className="h-4 w-4" aria-hidden="true" />
+                  </span>
+                  <span className="truncate text-xs font-semibold text-foreground/80">
+                    {ts.journalMobileTools || "Tools"}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleMobileToolsCollapse}
+                  className="flex min-h-[36px] min-w-[44px] items-center justify-center rounded-full border border-border/60 bg-background/70 text-muted-foreground motion-safe:transition-colors hover:bg-primary/10 hover:text-primary"
+                  aria-expanded={true}
+                  aria-label={ts.close || "Close"}
+                >
+                  <ChevronDown className="h-4 w-4" aria-hidden="true" />
+                </button>
+              </div>
             )}
-          >
-            🔥 {ts.journalBurnTitle ? ts.journalBurnTitle.split(" ")[0] : "Burn"}
-          </motion.button>
-          {onAddGratitude && (
-            <motion.button
-              whileTap={{ scale: 0.95 }}
-              onClick={() => {
-                void hapticTap();
-                setShowGratitudeWidget((v) => !v);
-                setShowBurnWidget(false);
-              }}
+
+            <AnimatePresence initial={false}>
+              {!desktop && showStyleBar && (
+                <motion.div
+                  key="mobile-style-tray"
+                  initial={{ opacity: 0, height: 0, y: 10 }}
+                  animate={{ opacity: 1, height: "auto", y: 0 }}
+                  exit={{ opacity: 0, height: 0, y: 10 }}
+                  transition={{ duration: 0.24, ease: [0.32, 0.72, 0, 1] }}
+                  className="mb-2 overflow-hidden rounded-3xl border border-primary/15 bg-primary/5 p-2 shadow-inner"
+                >
+                  <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+                    <div className="flex shrink-0 items-center gap-1 rounded-2xl border border-border/50 bg-background/75 p-1">
+                      {ATMOSPHERE_THEMES.map((at) => {
+                        const isActive = at.name === diaryTheme.theme;
+                        return (
+                          <button
+                            key={at.name}
+                            type="button"
+                            onClick={() => {
+                              themeTransition.triggerTransition();
+                              diaryTheme.setTheme(at.name);
+                              setBgPattern("none");
+                            }}
+                            className={cn(
+                              "min-h-[36px] rounded-xl border px-3 text-xs font-semibold motion-safe:transition-all",
+                              isActive
+                                ? "border-primary/30 bg-primary text-primary-foreground"
+                                : "border-transparent text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                            )}
+                          >
+                            {ts[at.i18nKey] || at.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={cycleFontSize}
+                      className="flex min-h-[44px] shrink-0 items-center gap-1 rounded-2xl border border-border/60 bg-background/75 px-3 text-sm font-semibold text-foreground"
+                      aria-label={t.ariaFontSize}
+                    >
+                      A
+                      <span className="text-[10px] text-muted-foreground">
+                        {FONT_SIZES[fontSize]}
+                      </span>
+                    </button>
+
+                    {!entry && (
+                      <button
+                        type="button"
+                        onClick={() => setShowPromptsDropdown(!showPromptsDropdown)}
+                        className={cn(
+                          "flex min-h-[44px] shrink-0 items-center gap-2 rounded-2xl border px-3 text-xs font-semibold motion-safe:transition-all",
+                          showPromptsDropdown
+                            ? "border-primary/30 bg-primary/15 text-primary"
+                            : "border-border/60 bg-background/75 text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                        )}
+                      >
+                        <Lightbulb className="h-4 w-4" aria-hidden="true" />
+                        {ts.journalWritingPrompts || "Prompts"}
+                      </button>
+                    )}
+
+                    <div className="flex shrink-0 items-center gap-1 rounded-2xl border border-border/50 bg-background/75 p-1">
+                      {MOOD_OPTIONS.map((opt) => (
+                        <button
+                          key={opt.mood}
+                          type="button"
+                          onClick={() => setMood(mood === opt.mood ? undefined : opt.mood)}
+                          aria-label={opt.mood}
+                          aria-pressed={mood === opt.mood}
+                          className={cn(
+                            "flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground motion-safe:transition-all",
+                            mood === opt.mood
+                              ? `${opt.activeBg} ${opt.activeText} ring-2 ${opt.activeRing}`
+                              : "hover:bg-primary/10 hover:text-primary"
+                          )}
+                        >
+                          <DiaryMiniOrb
+                            mood={opt.mood}
+                            size="micro"
+                            className={cn(
+                              "scale-[0.56] opacity-70 motion-safe:transition-all",
+                              mood === opt.mood && "scale-[0.72] opacity-100"
+                            )}
+                          />
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="flex shrink-0 items-center gap-1 rounded-2xl border border-border/50 bg-background/75 p-1">
+                      {(["dark", "milky", "white"] as PaperColor[]).map((pc) => (
+                        <button
+                          key={pc}
+                          type="button"
+                          onClick={() => setPaperColor(pc)}
+                          className={cn(
+                            "h-9 w-9 rounded-full border-2 motion-safe:transition-all",
+                            paperColor === pc ? "scale-110 border-primary" : "border-border"
+                          )}
+                          style={{ background: PAPER_COLORS[pc].bg }}
+                          aria-label={PAPER_COLORS[pc].label}
+                        />
+                      ))}
+                    </div>
+
+                    <div className="flex shrink-0 items-center gap-1 rounded-2xl border border-border/50 bg-background/75 p-1">
+                      {INK_COLORS.map((c) => (
+                        <button
+                          key={c.hex}
+                          type="button"
+                          onClick={() => setInkColor(c.hex)}
+                          className={cn(
+                            "h-9 w-9 rounded-full border-2 motion-safe:transition-all",
+                            inkColor === c.hex ? "scale-110 border-primary" : "border-border"
+                          )}
+                          style={{ background: c.hex }}
+                          aria-label={c.label}
+                        />
+                      ))}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setBgIntensity((prev) =>
+                          prev === "full" ? "dim" : prev === "dim" ? "off" : "full"
+                        )
+                      }
+                      className={cn(
+                        "flex min-h-[44px] shrink-0 items-center gap-2 rounded-2xl border px-3 text-xs font-semibold motion-safe:transition-all",
+                        bgIntensity !== "off"
+                          ? "border-primary/30 bg-primary/15 text-primary"
+                          : "border-border/60 bg-background/75 text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                      )}
+                    >
+                      {bgIntensity === "full" ? (
+                        <Sparkles className="h-4 w-4" aria-hidden="true" />
+                      ) : bgIntensity === "dim" ? (
+                        <Moon className="h-4 w-4" aria-hidden="true" />
+                      ) : (
+                        <CircleOff className="h-4 w-4" aria-hidden="true" />
+                      )}
+                      BG
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setParticleSpeed((prev) =>
+                          prev === "slow" ? "drift" : prev === "drift" ? "off" : "slow"
+                        )
+                      }
+                      className={cn(
+                        "flex min-h-[44px] shrink-0 items-center gap-2 rounded-2xl border px-3 text-xs font-semibold motion-safe:transition-all",
+                        particleSpeed !== "off"
+                          ? "border-primary/30 bg-primary/15 text-primary"
+                          : "border-border/60 bg-background/75 text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                      )}
+                    >
+                      <Gauge className="h-4 w-4" aria-hidden="true" />
+                      {ts.diaryParticleSpeed || "Speed"}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const idx = PAPER_TEXTURE_NAMES.indexOf(paperTexture);
+                        setPaperTexture(
+                          PAPER_TEXTURE_NAMES[(idx + 1) % PAPER_TEXTURE_NAMES.length]
+                        );
+                      }}
+                      className={cn(
+                        "flex min-h-[44px] shrink-0 items-center gap-2 rounded-2xl border px-3 text-xs font-semibold motion-safe:transition-all",
+                        paperTexture !== "clean"
+                          ? "border-primary/30 bg-primary/15 text-primary"
+                          : "border-border/60 bg-background/75 text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                      )}
+                    >
+                      <Layers className="h-4 w-4" aria-hidden="true" />
+                      {paperTexture === "clean" ? ts.diaryTexture || "Texture" : paperTexture}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowTags(!showTags)}
+                      className={cn(
+                        "flex min-h-[44px] shrink-0 items-center rounded-2xl border px-3 text-sm font-semibold motion-safe:transition-all",
+                        showTags
+                          ? "border-primary/30 bg-primary/15 text-primary"
+                          : "border-border/60 bg-background/75 text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                      )}
+                    >
+                      #
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowStickers(true)}
+                      disabled={stickers.length >= MAX_STICKERS_PER_ENTRY}
+                      className="flex min-h-[44px] shrink-0 items-center gap-2 rounded-2xl border border-border/60 bg-background/75 px-3 text-xs font-semibold text-muted-foreground motion-safe:transition-all hover:bg-primary/10 hover:text-primary disabled:opacity-40"
+                      aria-label={ts.journalToolbarSticker || "Sticker"}
+                    >
+                      <Sticker className="h-4 w-4" aria-hidden="true" />
+                      {ts.journalToolbarSticker || "Sticker"}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleStartRecording()}
+                      disabled={audioIds.length >= MAX_AUDIO_PER_ENTRY}
+                      className="flex min-h-[44px] shrink-0 items-center gap-2 rounded-2xl border border-border/60 bg-background/75 px-3 text-xs font-semibold text-muted-foreground motion-safe:transition-all hover:bg-primary/10 hover:text-primary disabled:opacity-40"
+                    >
+                      <Mic className="h-4 w-4" aria-hidden="true" />
+                      {ts.journalToolbarRecord || ts.diaryRecord || "Record"}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleToggleDictation}
+                      className={cn(
+                        "flex min-h-[44px] shrink-0 items-center gap-2 rounded-2xl border px-3 text-xs font-semibold motion-safe:transition-all",
+                        voice.isListening
+                          ? "border-destructive/30 bg-destructive/10 text-destructive"
+                          : "border-border/60 bg-background/75 text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                      )}
+                    >
+                      <Mic2 className="h-4 w-4" aria-hidden="true" />
+                      {voice.isListening
+                        ? ts.journalDictateStop || "Stop"
+                        : ts.journalToolbarVoice || "Voice"}
+                    </button>
+                  </div>
+
+                  <AnimatePresence>
+                    {showPromptsDropdown && (
+                      <motion.div
+                        ref={promptsDropdownRef}
+                        className="mt-2 rounded-2xl border border-border/60 bg-popover/95 p-2 shadow-xl backdrop-blur-xl"
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 8 }}
+                        transition={zenMotion.gentle}
+                      >
+                        <div className="mb-1 flex items-center justify-between">
+                          <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-foreground/70">
+                            <Lightbulb className="h-3 w-3" aria-hidden="true" />
+                            {ts.journalWritingPrompts || "Writing prompts"}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setPromptSeed((s) => s + 1)}
+                            className="flex min-h-[36px] min-w-[44px] items-center justify-center rounded-xl text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                            aria-label={t.ariaShufflePrompts}
+                          >
+                            <Shuffle className="h-3.5 w-3.5" aria-hidden="true" />
+                          </button>
+                        </div>
+                        {randomPrompts.map((prompt, i) => (
+                          <button
+                            key={`${promptSeed}-${i}`}
+                            type="button"
+                            onClick={() => handlePromptTap(prompt)}
+                            className="block min-h-[40px] w-full rounded-xl px-3 py-2 text-start text-xs text-muted-foreground motion-safe:transition-colors hover:bg-primary/10 hover:text-foreground"
+                          >
+                            {prompt}
+                          </button>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <div
               className={cn(
-                "px-4 py-2 rounded-lg text-sm font-medium border motion-safe:transition-all flex items-center gap-2 flex-shrink-0 min-h-[44px]",
-                showGratitudeWidget
-                  ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
-                  : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 dark:hover:bg-white/10 hover:text-foreground"
+                desktop
+                  ? "flex items-center gap-2 overflow-x-auto scrollbar-none -mx-1.5 px-1.5"
+                  : "grid grid-cols-4 gap-1.5"
               )}
             >
-              🌱 {ts.journalGratitudeAction ? ts.journalGratitudeAction.split(" ")[0] : "Gratitude"}
-            </motion.button>
-          )}
-          <motion.button
-            whileTap={{ scale: 0.95 }}
-            onClick={() => { void hapticTap(); setShowBreathe(!showBreathe); }}
-            className={cn(
-              "px-4 py-2 rounded-lg text-sm font-medium border motion-safe:transition-all flex items-center gap-2 flex-shrink-0 min-h-[44px]",
-              showBreathe
-                ? "bg-teal-500/15 text-teal-400 border-teal-500/30"
-                : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 dark:hover:bg-white/10 hover:text-foreground"
-            )}
-          >
-            🧘 {ts.diaryBreathe || "Breathe"}
-          </motion.button>
-          <motion.button
-            whileTap={{ scale: 0.95 }}
-            onClick={() => { void hapticTap(); setZenFocusActive(!zenFocusActive); }}
-            className={cn(
-              "px-4 py-2 rounded-lg text-sm font-medium border motion-safe:transition-all flex items-center gap-2 flex-shrink-0 min-h-[44px]",
-              zenFocusActive
-                ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
-                : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 dark:hover:bg-white/10 hover:text-foreground"
-            )}
-          >
-            ✍️ {ts.diaryFocusRay || "Focus"}
-          </motion.button>
-          <motion.button
-            whileTap={{ scale: 0.95 }}
-            onClick={() => { void hapticTap(); setShowHabits(!showHabits); }}
-            className={cn(
-              "px-4 py-2 rounded-lg text-sm font-medium border motion-safe:transition-all flex items-center gap-2 flex-shrink-0 min-h-[44px]",
-              showHabits
-                ? "bg-green-500/15 text-green-400 border-green-500/30"
-                : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 hover:text-foreground"
-            )}
-          >
-            ✅ {ts.journalHabitsSection || "Habits"}
-            {completedHabitCount > 0 && (
-              <span className="text-[10px] bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded-full leading-none">
-                {completedHabitCount}/{habitSnapshot.length}
-              </span>
-            )}
-          </motion.button>
-        </div>
+              {!desktop && (
+                <motion.button
+                  type="button"
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleMobileStyleToggle}
+                  className={cn(
+                    "rounded-2xl font-medium border motion-safe:transition-all flex items-center min-h-[50px] min-w-0 px-2 py-2 text-[10px] leading-tight flex-col justify-center gap-1",
+                    showStyleBar
+                      ? "bg-primary/15 text-primary border-primary/30"
+                      : "bg-transparent text-muted-foreground border-transparent hover:bg-primary/10 hover:text-primary"
+                  )}
+                  aria-expanded={showStyleBar}
+                  aria-label={ts.diaryStyle || "Style"}
+                >
+                  <Palette className="w-4 h-4" aria-hidden="true" />
+                  <span className="max-w-full truncate">{ts.diaryStyle || "Style"}</span>
+                </motion.button>
+              )}
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={() => {
+                  void hapticTap();
+                  setShowPhotos(true);
+                }}
+                disabled={photoIds.length >= MAX_PHOTOS_PER_ENTRY}
+                className={cn(
+                  "rounded-2xl font-medium text-muted-foreground border border-transparent hover:bg-primary/10 hover:text-primary motion-safe:transition-all flex items-center disabled:opacity-40",
+                  desktop
+                    ? "px-4 py-2 text-sm gap-2 flex-shrink-0 min-h-[48px]"
+                    : "min-h-[50px] min-w-0 px-2 py-2 text-[10px] leading-tight flex-col justify-center gap-1"
+                )}
+              >
+                <Camera className="w-4 h-4" aria-hidden="true" />
+                <span className="max-w-full truncate">{ts.diarySnapshot || "Photo"}</span>
+              </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={() => {
+                  void hapticTap();
+                  setShowBurnWidget((v) => !v);
+                  setShowGratitudeWidget(false);
+                }}
+                className={cn(
+                  "rounded-2xl font-medium border motion-safe:transition-all flex items-center",
+                  desktop
+                    ? "px-4 py-2 text-sm gap-2 flex-shrink-0 min-h-[48px]"
+                    : "min-h-[50px] min-w-0 px-2 py-2 text-[10px] leading-tight flex-col justify-center gap-1",
+                  showBurnWidget
+                    ? "bg-destructive/10 text-destructive border-destructive/25"
+                    : "bg-transparent text-muted-foreground border-transparent hover:bg-primary/10 hover:text-primary"
+                )}
+              >
+                <Flame className="w-4 h-4" aria-hidden="true" />
+                <span className="max-w-full truncate">
+                  {ts.journalBurnShort || ts.journalBurnButton || "Burn"}
+                </span>
+              </motion.button>
+              {onAddGratitude && (
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => {
+                    void hapticTap();
+                    setShowGratitudeWidget((v) => !v);
+                    setShowBurnWidget(false);
+                  }}
+                  className={cn(
+                    "rounded-2xl font-medium border motion-safe:transition-all flex items-center",
+                    desktop
+                      ? "px-4 py-2 text-sm gap-2 flex-shrink-0 min-h-[48px]"
+                      : "min-h-[50px] min-w-0 px-2 py-2 text-[10px] leading-tight flex-col justify-center gap-1",
+                    showGratitudeWidget
+                      ? "bg-primary/15 text-primary border-primary/30"
+                      : "bg-transparent text-muted-foreground border-transparent hover:bg-primary/10 hover:text-primary"
+                  )}
+                >
+                  <Leaf className="w-4 h-4" aria-hidden="true" />
+                  <span className="max-w-full truncate">
+                    {ts.journalGratitudeShort || ts.journalGratitudeTitle || "Gratitude"}
+                  </span>
+                </motion.button>
+              )}
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={() => {
+                  void hapticTap();
+                  setShowBreathe(!showBreathe);
+                }}
+                className={cn(
+                  "rounded-2xl font-medium border motion-safe:transition-all flex items-center",
+                  desktop
+                    ? "px-4 py-2 text-sm gap-2 flex-shrink-0 min-h-[48px]"
+                    : "min-h-[50px] min-w-0 px-2 py-2 text-[10px] leading-tight flex-col justify-center gap-1",
+                  showBreathe
+                    ? "bg-primary/15 text-primary border-primary/30"
+                    : "bg-transparent text-muted-foreground border-transparent hover:bg-primary/10 hover:text-primary"
+                )}
+              >
+                <Wind className="w-4 h-4" aria-hidden="true" />
+                <span className="max-w-full truncate">{ts.diaryBreathe || "Breathe"}</span>
+              </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={() => {
+                  void hapticTap();
+                  setZenFocusActive(!zenFocusActive);
+                }}
+                className={cn(
+                  "rounded-2xl font-medium border motion-safe:transition-all flex items-center",
+                  desktop
+                    ? "px-4 py-2 text-sm gap-2 flex-shrink-0 min-h-[48px]"
+                    : "min-h-[50px] min-w-0 px-2 py-2 text-[10px] leading-tight flex-col justify-center gap-1",
+                  zenFocusActive
+                    ? "bg-primary/15 text-primary border-primary/30"
+                    : "bg-transparent text-muted-foreground border-transparent hover:bg-primary/10 hover:text-primary"
+                )}
+              >
+                <Target className="w-4 h-4" aria-hidden="true" />
+                <span className="max-w-full truncate">{ts.diaryFocusRay || "Focus"}</span>
+              </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={() => {
+                  void hapticTap();
+                  setShowHabits(!showHabits);
+                }}
+                className={cn(
+                  "rounded-2xl font-medium border motion-safe:transition-all flex items-center",
+                  desktop
+                    ? "px-4 py-2 text-sm gap-2 flex-shrink-0 min-h-[48px]"
+                    : "min-h-[50px] min-w-0 px-2 py-2 text-[10px] leading-tight flex-col justify-center gap-1",
+                  showHabits
+                    ? "bg-primary/15 text-primary border-primary/30"
+                    : "bg-transparent text-muted-foreground border-transparent hover:bg-primary/10 hover:text-primary"
+                )}
+              >
+                <ListChecks className="w-4 h-4" aria-hidden="true" />
+                <span className="max-w-full truncate">{ts.journalHabitsSection || "Habits"}</span>
+                {completedHabitCount > 0 && (
+                  <span className="rounded-full bg-primary/20 px-1.5 py-0.5 text-[10px] leading-none text-primary">
+                    {completedHabitCount}/{habitSnapshot.length}
+                  </span>
+                )}
+              </motion.button>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Sub-pickers */}
@@ -1608,7 +2065,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                   "active:scale-[0.98] motion-safe:transition-transform min-h-[44px]"
                 )}
               >
-                <Square className="w-4 h-4" />
+                <Square className="w-4 h-4" aria-hidden="true" />
                 {ts.journalRecordingStop || "Stop Recording"}
               </button>
             </motion.div>
@@ -1704,6 +2161,45 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
         </div>
       )}
 
+      {showSettingsConfirm && (
+        <div
+          className="fixed inset-0 z-[70] bg-black/50 dark:bg-black/50 flex items-center justify-center motion-safe:animate-fade-in"
+          onClick={() => setShowSettingsConfirm(false)}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.92, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={zenMotion.gentle}
+            className="rounded-2xl p-5 max-w-[320px] mx-4 shadow-xl bg-[var(--diary-bg,hsl(var(--card)))] border border-[var(--diary-border,hsl(var(--border)/0.3))]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-base font-semibold mb-2 text-[var(--diary-text,hsl(var(--foreground)))]">
+              {ts.journalSettings || "Diary Settings"}
+            </h3>
+            <p className="text-sm mb-4 text-[var(--diary-muted,hsl(var(--muted-foreground)))]">
+              Save this draft before opening settings so you can continue exactly where you left
+              off.
+            </p>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => {
+                  void handleSaveDraftAndOpenSettings();
+                }}
+                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-primary to-primary/90 text-primary-foreground text-sm font-medium min-h-[44px]"
+              >
+                Save Draft & Open Settings
+              </button>
+              <button
+                onClick={() => setShowSettingsConfirm(false)}
+                className="w-full py-2.5 rounded-xl bg-muted text-foreground text-sm font-medium min-h-[44px]"
+              >
+                {ts.journalKeepWriting || "Keep Writing"}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
       {/* Zen Focus — paragraph dimming + typewriter scroll */}
       <ZenFocusMode isActive={zenFocusActive} editorRef={editorRef} />
 
@@ -1725,7 +2221,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
               onClick={() => setPanicLocked(false)}
               className="flex items-center gap-2 px-6 py-3 rounded-xl bg-white/10 dark:bg-white/10 border border-white/20 dark:border-white/20 text-white/80 text-sm font-medium backdrop-blur-sm active:scale-95 motion-safe:transition-transform"
             >
-              <Fingerprint className="w-5 h-5" />
+              <Fingerprint className="w-5 h-5" aria-hidden="true" />
               {ts.journalUnlockBiometric || "Unlock"}
             </button>
           </motion.div>
@@ -1746,21 +2242,45 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
         editorRef={editorRef}
         onCommand={(cmd) => {
           switch (cmd) {
-            case "mood": /* scroll to mood section — already visible at top */ break;
-            case "heading": document.execCommand("formatBlock", false, "h2"); break;
-            case "quote": document.execCommand("formatBlock", false, "blockquote"); break;
-            case "checklist": document.execCommand("insertHTML", false, '<div><input type="checkbox" /> </div>'); break;
-            case "breathe": setShowBreathe(true); break;
-            case "gratitude": setShowGratitudeWidget(true); setShowBurnWidget(false); break;
-            case "burn": setShowBurnWidget(true); setShowGratitudeWidget(false); break;
-            case "focus": setZenFocusActive(true); break;
-            case "template": /* template auto-shows for new entries */ break;
-            case "photo": setShowPhotos(true); break;
-            case "audio": void handleStartRecording(); break;
+            case "mood":
+              /* scroll to mood section — already visible at top */ break;
+            case "heading":
+              document.execCommand("formatBlock", false, "h2");
+              break;
+            case "quote":
+              document.execCommand("formatBlock", false, "blockquote");
+              break;
+            case "checklist":
+              document.execCommand("insertHTML", false, '<div><input type="checkbox" /> </div>');
+              break;
+            case "breathe":
+              setShowBreathe(true);
+              break;
+            case "gratitude":
+              setShowGratitudeWidget(true);
+              setShowBurnWidget(false);
+              break;
+            case "burn":
+              setShowBurnWidget(true);
+              setShowGratitudeWidget(false);
+              break;
+            case "focus":
+              setZenFocusActive(true);
+              break;
+            case "template":
+              /* template auto-shows for new entries */ break;
+            case "photo":
+              setShowPhotos(true);
+              break;
+            case "audio":
+              void handleStartRecording();
+              break;
           }
         }}
-        onClose={() => {/* handled internally */}}
+        onClose={() => {
+          /* handled internally */
+        }}
       />
-    </EditorWrapper>
+    </div>
   );
 });

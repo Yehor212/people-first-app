@@ -37,11 +37,12 @@ describe("useHabitForm", () => {
     expect(result.current.showCustomForm).toBe(true);
     expect(result.current.selectedTemplateId).toBe("water");
     expect(result.current.settingsMode).toBe("simple");
-    expect(result.current.newHabitName).toBe("Drink water");
+    expect(result.current.newHabitName).toBe("Drink 2 L water");
     expect(result.current.habitType).toBe("numerical");
     expect(result.current.unit).toBe("L");
     expect(result.current.targetValue).toBe(2);
     expect(result.current.targetStep).toBe(0.25);
+    expect(result.current.quickEntryMode).toBe("incrementStep");
   });
 
   it("saves a template habit with templateId and edited goal", () => {
@@ -68,8 +69,83 @@ describe("useHabitForm", () => {
         templateId: "water",
         habitType: "numerical",
         targetValue: 2.5,
+        targetStep: 0.25,
         unit: "L",
-        name: "Drink water",
+        name: "Drink 2 L water",
+        quickEntryMode: "incrementStep",
+      }),
+    );
+  });
+
+  it("hydrates reading as a one-page accumulator rather than a one-tap completion", () => {
+    const { result } = renderHook(() =>
+      useHabitForm({ onAddHabit, onUpdateHabit }),
+    );
+
+    act(() => {
+      result.current.setIsAdding(true);
+      result.current.handleQuickAdd("read");
+    });
+
+    expect(result.current.habitType).toBe("numerical");
+    expect(result.current.unit).toBe("pages");
+    expect(result.current.targetValue).toBe(10);
+    expect(result.current.targetStep).toBe(1);
+    expect(result.current.quickEntryMode).toBe("incrementStep");
+  });
+
+  it("normalizes old saved read habits when opening edit settings", () => {
+    const { result } = renderHook(() =>
+      useHabitForm({ onAddHabit, onUpdateHabit }),
+    );
+
+    act(() => {
+      result.current.handleEditHabit({
+        id: "legacy-read",
+        name: "Read 10 pages",
+        icon: "read",
+        color: 11,
+        position: 0,
+        createdAt: 0,
+        habitType: "numerical",
+        frequency: { numerator: 1, denominator: 1 },
+        question: "",
+        description: "",
+        isArchived: false,
+        targetValue: 10,
+        targetType: "atLeast",
+        unit: "pages",
+        quickEntryMode: "completeTarget",
+        templateId: "read",
+        entries: {},
+        reminders: [],
+      });
+    });
+
+    expect(result.current.targetStep).toBe(1);
+    expect(result.current.quickEntryMode).toBe("incrementStep");
+  });
+
+  it("saves the emoji selected in the basic setup", () => {
+    const { result } = renderHook(() =>
+      useHabitForm({ onAddHabit, onUpdateHabit }),
+    );
+
+    act(() => {
+      result.current.setIsAdding(true);
+      result.current.setShowCustomForm(true);
+      result.current.setNewHabitName("Strength practice");
+      result.current.setSelectedIcon("💪");
+    });
+
+    act(() => {
+      result.current.handleAddHabit();
+    });
+
+    expect(onAddHabit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "Strength practice",
+        icon: "💪",
       }),
     );
   });
@@ -107,6 +183,7 @@ describe("useHabitForm", () => {
     expect(result.current.unit).toBe("min");
     expect(result.current.targetValue).toBe(25);
     expect(result.current.targetStep).toBe(5);
+    expect(result.current.quickEntryMode).toBe("completeTarget");
   });
 
   it("hydrates bad-habit limit templates with atMost semantics", () => {
@@ -124,6 +201,7 @@ describe("useHabitForm", () => {
     expect(result.current.unit).toBe("cigarettes");
     expect(result.current.targetValue).toBe(2);
     expect(result.current.targetStep).toBe(1);
+    expect(result.current.quickEntryMode).toBe("limitCheck");
   });
 
   it("saves an optional finite habit plan with derived start/end dates", () => {
@@ -159,5 +237,75 @@ describe("useHabitForm", () => {
     );
 
     vi.useRealTimers();
+  });
+
+  it("saves 3x weekly as flexible weekly schedule by default", () => {
+    const { result } = renderHook(() =>
+      useHabitForm({ onAddHabit, onUpdateHabit }),
+    );
+
+    act(() => {
+      result.current.setIsAdding(true);
+      result.current.setShowCustomForm(true);
+      result.current.setNewHabitName("Strength");
+      result.current.setFrequency({ numerator: 3, denominator: 7 });
+    });
+
+    act(() => {
+      result.current.handleAddHabit();
+    });
+
+    expect(onAddHabit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        frequency: { numerator: 3, denominator: 7 },
+        schedule: {
+          mode: "flexiblePerPeriod",
+          period: "week",
+          targetCount: 3,
+        },
+      }),
+    );
+  });
+
+  it("saves selected weekly days and aligns reminder days with them", () => {
+    const { result } = renderHook(() =>
+      useHabitForm({ onAddHabit, onUpdateHabit }),
+    );
+
+    act(() => {
+      result.current.setIsAdding(true);
+      result.current.setShowCustomForm(true);
+      result.current.setNewHabitName("Mobility");
+      result.current.setFrequency({ numerator: 2, denominator: 7 });
+    });
+
+    act(() => {
+      result.current.setScheduleMode("specificDays");
+    });
+
+    act(() => {
+      result.current.setScheduleDueDays([1, 4]);
+    });
+
+    act(() => {
+      result.current.handleAddReminder();
+    });
+
+    act(() => {
+      result.current.handleAddHabit();
+    });
+
+    expect(onAddHabit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        frequency: { numerator: 2, denominator: 7 },
+        schedule: {
+          mode: "specificDays",
+          period: "week",
+          targetCount: 2,
+          dueDays: [1, 4],
+        },
+        reminders: [expect.objectContaining({ days: [1, 4] })],
+      }),
+    );
   });
 });

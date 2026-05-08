@@ -85,7 +85,7 @@ export function TimerControls({
               onClick={onToggle}
               aria-label={isRunning ? labels.pause : labels.start}
               className={cn(
-                isBreak && "zen-gradient-warm"
+                isBreak && "zen-gradient-growth"
               )}
             >
               {isRunning ? <Pause className="w-6 h-6" aria-hidden="true" /> : <Play className="w-6 h-6" aria-hidden="true" />}

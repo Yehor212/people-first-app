@@ -156,9 +156,9 @@ export function ThemeToggle() {
         )}
       >
         {effectiveTheme === 'light' ? (
-          <Sun className="w-3.5 h-3.5 text-white" />
+          <Sun className="w-3.5 h-3.5 text-white" aria-hidden="true" />
         ) : (
-          <Moon className="w-3.5 h-3.5 text-slate-600 dark:text-slate-300" />
+          <Moon className="w-3.5 h-3.5 text-slate-600 dark:text-slate-300" aria-hidden="true" />
         )}
       </div>
 

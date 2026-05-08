@@ -93,7 +93,7 @@ export function HabitNotesSection({ habit, onUpdate }: HabitNotesSectionProps) {
             }}
             className="flex items-center gap-1 text-[10px] text-violet-400 hover:text-violet-300 motion-safe:transition-colors min-h-[44px] min-w-[44px] justify-center"
           >
-            <MessageSquarePlus className="w-3 h-3" />
+            <MessageSquarePlus className="w-3 h-3" aria-hidden="true" />
             {todayHasNote ? ts.editNote || "Edit" : ts.addNote || "Add note"}
           </button>
         )}
@@ -157,8 +157,9 @@ export function HabitNotesSection({ habit, onUpdate }: HabitNotesSectionProps) {
             <button
               onClick={() => setShowAll(true)}
               className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-muted-foreground mx-auto min-h-[44px]"
+              aria-label={`${ts.showAll || "Show all"} ${sortedNotes.length} notes`}
             >
-              <ChevronDown className="w-3 h-3" />
+              <ChevronDown className="w-3 h-3" aria-hidden="true" />
               {`${ts.showAll || "Show all"} (${sortedNotes.length})`}
             </button>
           )}

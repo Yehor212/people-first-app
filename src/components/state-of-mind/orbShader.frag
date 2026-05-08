@@ -70,8 +70,8 @@ vec3 valenceColor_p(float v) {
   v = clamp(v, -1.0, 1.0);
   vec3 c0, c1;
   float f;
-  if      (v < -0.714) { f=(v+1.000)/0.286; c0=vec3(280,60,26); c1=vec3(252,58,38); }
-  else if (v < -0.429) { f=(v+0.714)/0.285; c0=vec3(252,58,38); c1=vec3(220,55,45); }
+  if      (v < -0.714) { f=(v+1.000)/0.286; c0=vec3(280,62,24); c1=vec3(258,58,39); }
+  else if (v < -0.429) { f=(v+0.714)/0.285; c0=vec3(258,58,39); c1=vec3(220,55,45); }
   else if (v < -0.143) { f=(v+0.429)/0.286; c0=vec3(220,55,45); c1=vec3(175,55,48); }
   else if (v <  0.143) { f=(v+0.143)/0.286; c0=vec3(175,55,48); c1=vec3(55,58,48);  }
   else if (v <  0.429) { f=(v-0.143)/0.286; c0=vec3(55,58,48);  c1=vec3(38,65,50);  }
@@ -87,8 +87,8 @@ vec4 valenceShape_p(float v) {
   // vec4(m, n1, n2, n3) per preset
   vec4 s0, s1;
   float f;
-  if      (v < -0.667) { f=(v+1.000)/0.333; s0=vec4(7,1.20,1.25,1.25); s1=vec4(7,1.40,1.35,1.35); }
-  else if (v < -0.333) { f=(v+0.667)/0.334; s0=vec4(7,1.40,1.35,1.35); s1=vec4(6,1.80,1.50,1.50); }
+  if      (v < -0.667) { f=(v+1.000)/0.333; s0=vec4(3,0.90,1.75,1.75); s1=vec4(7,1.65,1.42,1.42); }
+  else if (v < -0.333) { f=(v+0.667)/0.334; s0=vec4(7,1.65,1.42,1.42); s1=vec4(6,1.80,1.50,1.50); }
   else if (v <  0.000) { f=(v+0.333)/0.333; s0=vec4(6,1.80,1.50,1.50); s1=vec4(6,2.00,2.00,2.00); }
   else if (v <  0.333) { f=(v-0.000)/0.333; s0=vec4(6,2.00,2.00,2.00); s1=vec4(5,1.80,1.50,1.50); }
   else if (v <  0.667) { f=(v-0.333)/0.334; s0=vec4(5,1.80,1.50,1.50); s1=vec4(5,1.40,1.35,1.35); }
@@ -272,7 +272,8 @@ void main() {
   float sfLow = superformula(warpedAngle, max(mLow, 3.0), uShapeN1, uShapeN2, uShapeN3);
   float sfHigh = superformula(warpedAngle, max(mHigh, 3.0), uShapeN1, uShapeN2, uShapeN3);
   float sf = mix(sfLow, sfHigh, mBlend);
-  float baseR = 0.25; // smaller body — Apple: delicate flower floating in space, not filling canvas
+  float pressure = 1.0 - smoothstep(-1.0, -0.667, uValence);
+  float baseR = mix(0.25, 0.22, pressure); // lowest state contracts inward instead of adding harsh effects
   float cleanShapeR = baseR * sf * breath * max(uGenesis, 0.01); // pure superformula (for body contour)
   float shapeR = cleanShapeR * (1.0 + noiseDisp); // with noise (for body)
 

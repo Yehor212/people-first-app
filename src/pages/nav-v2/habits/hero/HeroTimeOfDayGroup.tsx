@@ -1,28 +1,16 @@
 /**
- * HeroTimeOfDayGroup — collapsible group of habit rows for a single bucket.
- *
- * Rationale (Habitify research, 2025): grouping by time-of-day ("morning",
- * "afternoon", "evening") cues the user's circadian context and improves
- * completion rates over a flat list.
- *
- * Each group:
- *   - Shows a sticky-feel section header with bucket label + completion count.
- *   - Contains one CompactHabitCard per habit (V1 primitive, untouched).
- *   - Uses Framer Motion `layout` for smooth reordering when habits move
- *     between groups (e.g. the user adjusts a reminder time).
- *
- * The group itself is non-collapsible by user input in this MVP (P1 will
- * add an expand/collapse affordance per group); we already render each
- * group with `<section>` + heading so future affordances can attach in
- * place without restructuring.
+ * HeroTimeOfDayGroup - grouped V2 habit rows for a single day bucket.
  */
 
-import { memo } from "react";
+import { memo, type CSSProperties } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Orbit, Route, Sprout, Waypoints, type LucideIcon } from "lucide-react";
 import { isHabitCompletedOnDate } from "@/lib/habits";
 import { getToday } from "@/lib/utils";
 import { useShouldAnimate } from "@/hooks/useShouldAnimate";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { getHabitRoleTone, getRoleHsl, getTimeOfDayVisualRole } from "@/lib/nonOrbVisualRoles";
+import type { NumericalEntryAction } from "@/lib/habitNumericalInteraction";
 import type { Habit } from "@/types";
 import type { TimeOfDay } from "./timeOfDay";
 import { HeroHabitRow } from "./HeroHabitRow";
@@ -31,17 +19,15 @@ interface HeroTimeOfDayGroupProps {
   bucket: TimeOfDay;
   habits: readonly Habit[];
   onToggleHabit: (habitId: string, date: string) => void;
-  /** +/- for numerical habits (drink water, meditate 10min). Optional. */
+  /** +/- for numerical habits. Optional. */
   onAdjustHabit?: (habitId: string, date: string, delta: number) => void;
+  onNumericalAction?: (habitId: string, date: string, action: NumericalEntryAction) => void;
   onDeleteHabit: (habitId: string) => void;
-  /** Pencil → edit form, distinct from long-press → detail sheet. */
   onEditHabit?: (habit: Habit) => void;
-  /** ⋯ menu actions (rest day / archive / unarchive). */
   onSkipHabit?: (habitId: string, date: string) => void;
   onUnskipHabit?: (habitId: string, date: string) => void;
   onArchiveHabit?: (habitId: string) => void;
   onUnarchiveHabit?: (habitId: string) => void;
-  /** Opens the V1 HabitDetailSheet (reuses mature stats/streak/actions panel). */
   onOpenDetail?: (habit: Habit) => void;
 }
 
@@ -52,11 +38,11 @@ const BUCKET_LABEL_KEY: Record<TimeOfDay, string> = {
   anytime: "navV2HabitsAnytime",
 };
 
-const BUCKET_ICON: Record<TimeOfDay, string> = {
-  morning: "🌅",
-  afternoon: "☀️",
-  evening: "🌙",
-  anytime: "✨",
+const BUCKET_ICON: Record<TimeOfDay, LucideIcon> = {
+  morning: Sprout,
+  afternoon: Route,
+  evening: Orbit,
+  anytime: Waypoints,
 };
 
 export const HeroTimeOfDayGroup = memo(function HeroTimeOfDayGroup({
@@ -64,6 +50,7 @@ export const HeroTimeOfDayGroup = memo(function HeroTimeOfDayGroup({
   habits,
   onToggleHabit,
   onAdjustHabit,
+  onNumericalAction,
   onDeleteHabit,
   onEditHabit,
   onSkipHabit,
@@ -82,23 +69,48 @@ export const HeroTimeOfDayGroup = memo(function HeroTimeOfDayGroup({
     0,
   );
   const label = tx[BUCKET_LABEL_KEY[bucket]] ?? bucket;
+  const visualRole = getTimeOfDayVisualRole(bucket);
+  const tone = getHabitRoleTone(visualRole);
+  const BucketIcon = BUCKET_ICON[bucket];
+  const growthStyle = {
+    "--habit-group-role": getRoleHsl(visualRole),
+    "--habit-group-role-soft": getRoleHsl(visualRole, 0.16),
+    "--habit-group-role-line": getRoleHsl(visualRole, 0.34),
+  } as CSSProperties;
 
   return (
     <section
       aria-label={label}
       data-testid={`hero-group-${bucket}`}
-      className="mt-6 first:mt-4"
+      data-visual-role={visualRole}
+      data-habit-group-count={habits.length}
+      className="habit-growth-group relative isolate -mx-2 mt-6 overflow-hidden rounded-[28px] px-2 py-3 first:mt-4 md:-mx-3 md:px-3"
+      style={growthStyle}
     >
+      <span className="habit-growth-group__aura" aria-hidden="true" />
+      <span className="habit-growth-group__thread" aria-hidden="true" />
       <header className="mb-3 flex items-end justify-between gap-3 px-1">
-        <h3 className="flex items-baseline gap-2 font-display text-2xl font-semibold italic tracking-tight text-foreground md:text-3xl">
-          <span aria-hidden="true" className="not-italic">
-            {BUCKET_ICON[bucket]}
+        <h3
+          className="flex items-center gap-2 font-display text-2xl font-semibold italic tracking-tight text-foreground md:text-3xl"
+          data-slot="habit-group-title"
+        >
+          <span
+            aria-hidden="true"
+            className="habit-bucket-glyph inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border not-italic"
+            data-bucket={bucket}
+            data-testid={`hero-group-${bucket}-icon`}
+          >
+            <BucketIcon className="relative z-10 h-[18px] w-[18px]" strokeWidth={1.9} />
           </span>
           {label}
         </h3>
         <span
-          className="text-xs font-medium uppercase tracking-wider tabular-nums text-muted-foreground"
+          className={
+            "rounded-full border px-2 py-1 text-xs font-medium uppercase tracking-wider tabular-nums " +
+            tone.iconClass
+          }
           data-testid={`hero-group-${bucket}-count`}
+          data-slot="habit-group-count"
         >
           {completed} / {habits.length}
         </span>
@@ -122,6 +134,7 @@ export const HeroTimeOfDayGroup = memo(function HeroTimeOfDayGroup({
                 habit={habit}
                 onToggle={onToggleHabit}
                 onAdjust={onAdjustHabit}
+                onNumericalAction={onNumericalAction}
                 onDelete={onDeleteHabit}
                 onEdit={onEditHabit}
                 onSkip={onSkipHabit}

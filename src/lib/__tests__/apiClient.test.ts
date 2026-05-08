@@ -225,7 +225,7 @@ describe('apiClient', () => {
       const operation = vi.fn()
         .mockRejectedValueOnce({ code: 'PGRST301' })
         .mockResolvedValueOnce({ data: 'refreshed data' });
-      mockRefreshSession.mockResolvedValue({ data: { session: { access_token: 'new' } }, error: null });
+      mockRefreshSession.mockResolvedValue({ data: { session: {} }, error: null });
 
       const result = await withAuthRetry(operation, 'test-op');
       expect(result).toEqual({ data: 'refreshed data' });
@@ -286,9 +286,9 @@ describe('apiClient', () => {
       const operation = vi.fn()
         .mockRejectedValueOnce({ status: 401 })
         .mockRejectedValueOnce({ status: 401 });
-      mockRefreshSession.mockResolvedValue({ data: { session: { access_token: 'valid' } }, error: null });
+      mockRefreshSession.mockResolvedValue({ data: { session: {} }, error: null });
       // notifySessionExpired will check getSession — if valid, it won't dispatch
-      mockGetSession.mockResolvedValue({ data: { session: { access_token: 'still-valid' } } });
+      mockGetSession.mockResolvedValue({ data: { session: {} } });
 
       await expect(withAuthRetry(operation, 'test-op')).rejects.toThrow('Session expired');
       // dispatchEvent should NOT have been called with session expired because getSession showed valid session
@@ -350,7 +350,7 @@ describe('apiClient', () => {
           error: null,
         });
         mockRefreshSession.mockResolvedValue({
-          data: { session: { access_token: 'new-token' } },
+          data: { session: {} },
           error: null,
         });
 
@@ -368,7 +368,7 @@ describe('apiClient', () => {
           error: null,
         });
         mockRefreshSession.mockResolvedValue({
-          data: { session: { access_token: 'refreshed' } },
+          data: { session: {} },
           error: null,
         });
 

@@ -9,16 +9,18 @@ import { getLocale } from '@/lib/timeUtils';
 import type { Language } from '@/i18n/translations';
 import type { Habit, HabitEntry, EntryValue } from '@/types';
 import { ENTRY } from '@/types';
+import { normalizeHabitSchedule } from '@/lib/habitScheduling';
 
 // ─── Normalize / defaults ───────────────────────────────────────────────────
 
 /** Ensure all required fields have safe defaults */
 export function normalizeHabit(habit: Habit): Habit {
   return {
-    ...habit,
-    habitType: habit.habitType || 'boolean',
-    frequency: habit.frequency || { numerator: 1, denominator: 1 },
-    entries: habit.entries || {},
+      ...habit,
+      habitType: habit.habitType || 'boolean',
+      frequency: habit.frequency || { numerator: 1, denominator: 1 },
+      schedule: habit.schedule || normalizeHabitSchedule(habit),
+      entries: habit.entries || {},
     reminders: habit.reminders || [],
     isArchived: habit.isArchived ?? false,
     question: habit.question ?? '',
@@ -50,6 +52,7 @@ export function setEntryValue(
   date: string,
   value: number,
   notes?: string,
+  metadata?: Pick<HabitEntry, 'loggedAt' | 'source'>,
 ): Record<string, HabitEntry> {
   const existing = entries[date];
   const newEntries = { ...entries };
@@ -61,6 +64,8 @@ export function setEntryValue(
     newEntries[date] = {
       value,
       ...(notes !== undefined ? { notes } : existing?.notes ? { notes: existing.notes } : {}),
+      ...(metadata?.loggedAt ? { loggedAt: metadata.loggedAt } : existing?.loggedAt ? { loggedAt: existing.loggedAt } : {}),
+      ...(metadata?.source ? { source: metadata.source } : existing?.source ? { source: existing.source } : {}),
     };
   }
 
@@ -70,22 +75,30 @@ export function setEntryValue(
 // ─── Completion checks ──────────────────────────────────────────────────────
 
 /** Check if a boolean habit is completed on a date (YES_MANUAL or YES_AUTO) */
+export function doesNumericalStoredValueMeetTarget(
+  habit: Habit,
+  storedValue: number | undefined,
+): boolean {
+  if (storedValue === undefined) return false;
+  if (storedValue === ENTRY.UNKNOWN || storedValue === ENTRY.SKIP) return false;
+  const realValue = storedValue / 1000;
+  if (habit.targetType === 'atMost') {
+    return storedValue >= 0 && realValue <= habit.targetValue;
+  }
+  if ((habit.targetValue ?? 0) <= 0) return false;
+  return storedValue > 0 && realValue >= habit.targetValue;
+}
+
 export function isHabitCompletedOnDate(habit: Habit, date: string): boolean {
-  const val = getEntryValue(habit, date);
+  const entry = getEntry(habit, date);
+  const val = entry?.value ?? ENTRY.UNKNOWN;
 
   if (habit.habitType === 'boolean') {
     return val === ENTRY.YES_MANUAL || val === ENTRY.YES_AUTO;
   }
 
   // Numerical: completed if meets target
-  if (val === ENTRY.UNKNOWN) return false;
-  if (habit.targetType === 'atMost') {
-    if (val <= 0) return false; // ENTRY.NO (0) and negatives = not completed
-    if (val === ENTRY.SKIP) return false;
-    return (val / 1000) <= habit.targetValue;
-  }
-  if (val <= 0) return false;
-  return (val / 1000) >= habit.targetValue;
+  return doesNumericalStoredValueMeetTarget(habit, entry?.value);
 }
 
 /** Get all dates where the habit was completed.
@@ -102,15 +115,8 @@ export function getHabitCompletedDates(
       }
     } else {
       // Numerical: completed if meets target
-      const realValue = entry.value / 1000;
-      if (habit.targetType === 'atMost') {
-        if (entry.value !== ENTRY.UNKNOWN && entry.value !== ENTRY.SKIP && realValue <= habit.targetValue) {
-          dates.push(date);
-        }
-      } else {
-        if (realValue >= habit.targetValue) {
-          dates.push(date);
-        }
+      if (doesNumericalStoredValueMeetTarget(habit, entry.value)) {
+        dates.push(date);
       }
     }
   }
@@ -155,6 +161,20 @@ export function formatHabitValue(value: number, language: Language): string {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   }).format(rounded);
+}
+
+export function formatHabitQuantity(value: number, unit: string, language: Language): string {
+  const trimmedUnit = unit.trim();
+  if (!trimmedUnit) return formatHabitValue(value, language);
+
+  const singularUnits: Record<string, string> = {
+    cigarettes: 'cigarette',
+    drinks: 'drink',
+    glasses: 'glass',
+    pages: 'page',
+  };
+  const displayUnit = value === 1 ? singularUnits[trimmedUnit] ?? trimmedUnit : trimmedUnit;
+  return `${formatHabitValue(value, language)} ${displayUnit}`;
 }
 
 /** Convert a real numerical value to the stored integer format (× 1000) */

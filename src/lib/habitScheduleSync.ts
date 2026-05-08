@@ -10,6 +10,7 @@ import { Habit, HabitReminder, ScheduleEvent } from '@/types';
 import { safeParseInt } from '@/lib/validation';
 import { parseLocalDate } from '@/lib/utils';
 import { resolveHabitColor } from '@/lib/habitColorUtils';
+import { isHabitDueOnDate } from '@/lib/habitScheduling';
 
 /**
  * Format a date to YYYY-MM-DD string
@@ -61,6 +62,8 @@ export function habitToScheduleEvents(
   const colorHex = resolveHabitColor(habit.color);
 
   for (const date of dates) {
+    if (!isHabitDueOnDate(habit, date)) continue;
+
     habit.reminders.forEach((reminder, reminderIndex) => {
       if (!shouldReminderShowOnDate(reminder, date)) return;
 

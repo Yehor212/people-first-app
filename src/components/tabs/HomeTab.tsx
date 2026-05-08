@@ -7,6 +7,7 @@ import { SessionExpiredBanner } from "@/components/SessionExpiredBanner";
 import { DayProgressIndicator } from "@/components/OnboardingOverlay";
 import { RestModeCard } from "@/components/RestModeCard";
 import { AllCompleteCelebration } from "@/components/AllCompleteCelebration";
+import { ReflectionInsightShelf } from "@/components/reflection/ReflectionInsightShelf";
 import { ReflectionPromptCard } from "@/components/ReflectionPromptCard";
 import { StateOfMindModal } from "@/components/state-of-mind/StateOfMindModal";
 import { V2PreviewPortal } from "@/components/tabs/PreviewPortal";
@@ -16,6 +17,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useShallow } from "zustand/react/shallow";
 import { useAppStore, useUserDataStore, getModalToggle } from "@/stores";
 import { useReflectionPrompts } from "@/hooks/useReflectionPrompts";
+import { useReflectionStudio } from "@/hooks/useReflectionStudio";
 import { motionPresets, zenTap } from "@/lib/animationUtils";
 import { plural } from "@/lib/plural";
 import { MiniValenceOrb } from "@/components/state-of-mind/MiniValenceOrb";
@@ -60,27 +62,32 @@ export const HomeTab = memo(function HomeTab({
 }: HomeTabProps) {
   const { isFeatureVisible } = useFeatureFlags();
   const { t, language } = useLanguage();
+  const tx = t as unknown as Record<string, string>;
   // User data — single subscription (was 6 individual)
-  const {
-    moods, habits, focusSessions, userName, googleAuthChecked, gratitudeEntries,
-  } = useUserDataStore(useShallow((s) => ({
-    moods: s.moods,
-    habits: s.habits,
-    focusSessions: s.focusSessions,
-    userName: s.userName,
-    googleAuthChecked: s.googleAuthChecked,
-    gratitudeEntries: s.gratitudeEntries,
-  })));
+  const { moods, habits, focusSessions, userName, googleAuthChecked, gratitudeEntries } =
+    useUserDataStore(
+      useShallow((s) => ({
+        moods: s.moods,
+        habits: s.habits,
+        focusSessions: s.focusSessions,
+        userName: s.userName,
+        googleAuthChecked: s.googleAuthChecked,
+        gratitudeEntries: s.gratitudeEntries,
+      }))
+    );
 
   // App store — single subscription (was 3 individual)
-  const {
-    hasValidSession, setActiveTab, setSettingsOpenSection,
-  } = useAppStore(useShallow((s) => ({
-    hasValidSession: s.hasValidSession,
-    setActiveTab: s.setActiveTab,
-    setSettingsOpenSection: s.setSettingsOpenSection,
-  })));
+  const { hasValidSession, setActiveTab, setSettingsOpenSection } = useAppStore(
+    useShallow((s) => ({
+      hasValidSession: s.hasValidSession,
+      setActiveTab: s.setActiveTab,
+      setSettingsOpenSection: s.setSettingsOpenSection,
+    }))
+  );
   const [showStateOfMind, setShowStateOfMind] = useState(false);
+  const { reflectionInsights, updateInsightStatus } = useReflectionStudio({
+    excludeSuggestionSources: ["mood"],
+  });
 
   // Contextual reflection prompts (IA Blueprint Phase 3)
   const reflectionPrompts = useReflectionPrompts(moods, habits, focusSessions, gratitudeEntries, t);
@@ -155,6 +162,17 @@ export const HomeTab = memo(function HomeTab({
               <ReflectionPromptCard prompt={reflectionPrompts[0]} />
             </BentoCard>
           )}
+
+          {reflectionInsights.length > 0 ? (
+            <BentoCard span="2">
+              <ReflectionInsightShelf
+                tx={tx}
+                insights={reflectionInsights}
+                onUpdateStatus={updateInsightStatus}
+                compact
+              />
+            </BentoCard>
+          ) : null}
 
           {isRestMode ? (
             <BentoCard span="2">

@@ -49,9 +49,9 @@ export function JournalPrompt({ onUsePrompt, category, compact = false }: Journa
         onClick={() => setIsExpanded(true)}
         className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground bg-secondary/50 hover:bg-secondary rounded-lg motion-safe:transition-colors"
       >
-        <Lightbulb className="w-4 h-4" />
+        <Lightbulb className="w-4 h-4" aria-hidden="true" />
         <span>{t.needInspiration || "Need inspiration?"}</span>
-        <ChevronDown className="w-4 h-4" />
+        <ChevronDown className="w-4 h-4" aria-hidden="true" />
       </button>
     );
   }

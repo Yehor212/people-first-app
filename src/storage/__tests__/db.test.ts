@@ -28,6 +28,10 @@ import {
   settingsRepo,
   journalEntriesRepo,
   journalPhotosRepo,
+  journalHubPreferencesRepo,
+  journalSpacesRepo,
+  journalPracticeSessionsRepo,
+  journalEntryLinksRepo,
 } from '@/storage/db';
 
 const EXPECTED_TABLES = [
@@ -40,6 +44,10 @@ const EXPECTED_TABLES = [
   'journalEntries',
   'journalPhotos',
   'journalAudio',
+  'journalHubPreferences',
+  'journalSpaces',
+  'journalPracticeSessions',
+  'journalEntryLinks',
 ];
 
 // ─── Database Instance ───────────────────────────────────────────
@@ -96,6 +104,22 @@ describe('repository exports', () => {
   it('journalPhotosRepo is db.journalPhotos', () => {
     expect(journalPhotosRepo).toBe(db.journalPhotos);
   });
+
+  it('journalHubPreferencesRepo is db.journalHubPreferences', () => {
+    expect(journalHubPreferencesRepo).toBe(db.journalHubPreferences);
+  });
+
+  it('journalSpacesRepo is db.journalSpaces', () => {
+    expect(journalSpacesRepo).toBe(db.journalSpaces);
+  });
+
+  it('journalPracticeSessionsRepo is db.journalPracticeSessions', () => {
+    expect(journalPracticeSessionsRepo).toBe(db.journalPracticeSessions);
+  });
+
+  it('journalEntryLinksRepo is db.journalEntryLinks', () => {
+    expect(journalEntryLinksRepo).toBe(db.journalEntryLinks);
+  });
 });
 
 // ─── clearLocalUserData ──────────────────────────────────────────
@@ -109,6 +133,10 @@ describe('clearLocalUserData', () => {
     await db.settings.put({ key: 'zenflow-moods', value: 'test' });
     await db.focusSessions.put({ id: 'test-focus-1', startTime: Date.now() } as any);
     await db.gratitudeEntries.put({ id: 'test-grat-1', timestamp: Date.now() } as any);
+    await db.journalHubPreferences.put({ id: 'default', homeView: 'entries', visibleViews: ['entries'], dockActions: ['write'], density: 'balanced', motion: 'system', background: 'clean', updatedAt: Date.now() } as any);
+    await db.journalSpaces.put({ id: 'space-1', iconKey: 'folder', accent: 'primary', private: false, sortOrder: 1, createdAt: Date.now(), updatedAt: Date.now() } as any);
+    await db.journalPracticeSessions.put({ id: 'practice-1', practiceId: 'focus-note', startedAt: Date.now() });
+    await db.journalEntryLinks.put({ id: 'link-1', entryId: 'entry-1', targetType: 'space', targetId: 'space-1', createdAt: Date.now() } as any);
 
     // Set some localStorage keys that should be cleared
     localStorage.setItem('zenflow-moods', 'data');
@@ -145,6 +173,15 @@ describe('clearLocalUserData', () => {
     await clearLocalUserData();
     const setting = await db.settings.get('zenflow-moods');
     expect(setting).toBeUndefined();
+  });
+
+  it('clears journal hub local tables', async () => {
+    await clearLocalUserData();
+
+    await expect(db.journalHubPreferences.count()).resolves.toBe(0);
+    await expect(db.journalSpaces.count()).resolves.toBe(0);
+    await expect(db.journalPracticeSessions.count()).resolves.toBe(0);
+    await expect(db.journalEntryLinks.count()).resolves.toBe(0);
   });
 
   it('removes expected localStorage keys', async () => {

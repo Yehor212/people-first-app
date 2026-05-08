@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { motion } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { zenMotion } from '@/lib/animationUtils';
 import { haptics } from '@/lib/haptics';
 import { VALENCE_GRADIENT, valenceToColor } from './colorUtils';
 import type { Translations } from '@/i18n/types';
+import './ValenceSlider.css';
 
 interface ValenceSliderProps {
   value: number;
@@ -137,17 +138,21 @@ export function ValenceSlider({ value, onChange }: ValenceSliderProps) {
   // Label: show nearest snap position's label
   const snapIdx = nearestSnapIndex(value);
   const valenceLabel = t[SNAP_LABELS[snapIdx]] as string;
+  const valenceColor = valenceToColor(value);
 
   return (
     <div className="w-full px-2">
       {/* Valence label — aria-live for screen readers, color synced with valence */}
       <div className="text-center mb-4" aria-live="polite" aria-atomic="true">
         <span
-          className="text-lg font-semibold som-label-enter"
+          className="som-valence-chip som-label-enter"
           key={valenceLabel}
-          style={{ color: valenceToColor(value), transition: 'color 200ms ease-out' }}
+          data-testid="valence-live-label"
+          style={{ "--valence-color": valenceColor } as CSSProperties}
         >
-          {valenceLabel}
+          <span className="som-valence-chip__orb som-valence-chip__orb--left" aria-hidden="true" />
+          <span className="som-valence-chip__text">{valenceLabel}</span>
+          <span className="som-valence-chip__orb som-valence-chip__orb--right" aria-hidden="true" />
         </span>
       </div>
 

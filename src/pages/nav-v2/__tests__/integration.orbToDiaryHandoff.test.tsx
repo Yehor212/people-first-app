@@ -1,16 +1,8 @@
-/**
- * Integration Test — Orb -> Diary handoff via `useDiaryDraftStore`.
- *
- * Covers:
- *  - Orb confirm writes the transient mood context and navigates to Diary.
- *  - DiaryPage forwards that handoff as a soft diary suggestion while keeping
- *    the history-first shell intact.
- */
-
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, act } from "@testing-library/react";
-import { OrbPage } from "../OrbPage";
+import { render, screen, fireEvent } from "@testing-library/react";
+
 import { DiaryPage } from "../DiaryPage";
+import { OrbPage } from "../OrbPage";
 import { useDiaryDraftStore } from "@/stores/diaryDraftStore";
 import { useMoodEntryDraftStore } from "@/stores/moodEntryDraftStore";
 
@@ -21,6 +13,12 @@ vi.mock("@/contexts/LanguageContext", () => ({
       goodAfternoon: "Good afternoon",
       goodEvening: "Good evening",
       somLogFeeling: "Log how you feel",
+      next: "Next",
+      back: "Back",
+      howAreYouFeeling: "How are you feeling?",
+      journalPrompt6: "How are you feeling right now?",
+      journalContinueWriting: "Continue writing",
+      journalStartToday: "Start today's entry",
       orbWhisper1: "whisper",
       orbWhisper2: "whisper",
       orbWhisper3: "whisper",
@@ -31,7 +29,6 @@ vi.mock("@/contexts/LanguageContext", () => ({
       orbScopeDay: "Day",
       orbScopeSpecific: "Specific",
       orbScopeSpecificTimeLabel: "Pick time",
-      orbConfirm: "Save",
       orbSkip: "Later",
       orbFirstRunTitle: "Three steps",
       orbFirstRunStep1: "A",
@@ -39,13 +36,14 @@ vi.mock("@/contexts/LanguageContext", () => ({
       orbFirstRunStep3: "C",
       orbFirstRunGotIt: "Got it",
       navV2Diary: "Diary",
-      howAreYouFeeling: "How are you feeling?",
-      journalPrompt4: "Describe a moment that stood out today.",
-      journalPrompt6: "How are you feeling right now?",
-      journalPrompt7: "What would you like to remember about today?",
-      reflectionEvening: "How was your day? Even one word helps.",
-      loading: "Loading...",
       diary: "Diary",
+      loading: "Loading...",
+      moodGreat: "Great",
+      moodGood: "Good",
+      moodOkay: "Okay",
+      moodBad: "Bad",
+      moodTerrible: "Terrible",
+      somTagHopeful: "Hopeful",
     },
     language: "en",
     isRTL: false,
@@ -53,7 +51,7 @@ vi.mock("@/contexts/LanguageContext", () => ({
 }));
 
 vi.mock("@/lib/haptics", () => ({
-  haptics: { tabChanged: vi.fn() },
+  haptics: { tabChanged: vi.fn(), light: vi.fn(), medium: vi.fn() },
   hapticSuccess: vi.fn(),
   hapticTap: vi.fn(),
   hapticSelection: vi.fn(),
@@ -77,12 +75,7 @@ vi.mock("@/components/state-of-mind/EmotionTagGrid", () => ({
 }));
 
 vi.mock("@/components/state-of-mind/ValenceSlider", () => ({
-  ValenceSlider: ({
-    onChange,
-  }: {
-    value: number;
-    onChange: (v: number) => void;
-  }) => (
+  ValenceSlider: ({ onChange }: { value: number; onChange: (v: number) => void }) => (
     <button
       type="button"
       data-testid="mood-orb-option-okay"
@@ -105,46 +98,13 @@ vi.mock("../useCosmicParallax", () => ({
   useCosmicParallax: () => ({ current: null }),
 }));
 
-vi.mock("../MoodConfirmCta", () => ({
-  MoodConfirmCta: ({
-    enabled,
-    onConfirm,
-    onSkip,
-  }: {
-    enabled: boolean;
-    onConfirm: () => void;
-    onSkip: () => void;
-  }) => (
-    <>
-      <button
-        type="button"
-        data-testid="orb-confirm-save"
-        disabled={!enabled}
-        onClick={() => enabled && onConfirm()}
-      >
-        Save
-      </button>
-      <button type="button" data-testid="orb-confirm-skip" onClick={onSkip}>
-        Later
-      </button>
-    </>
-  ),
-}));
-
-vi.mock("../MoodScopeSelector", () => ({
-  MoodScopeSelector: () => <div data-testid="mood-scope-selector-stub" />,
-}));
-
 vi.mock("../MoodFirstRunHint", () => ({
   MoodFirstRunHint: () => null,
 }));
 
 vi.mock("@/components/state-of-mind/emotionTags", () => ({
+  EMOTION_TAGS: [{ key: "hopeful", minValence: -1, maxValence: 1 }],
   isSensitiveTag: () => false,
-}));
-
-vi.mock("@/components/state-of-mind/StateOfMindModal", () => ({
-  StateOfMindModal: () => null,
 }));
 
 const setActivePageMock = vi.fn();
@@ -164,6 +124,7 @@ vi.mock("@/hooks/useNavigationV2", () => ({
 }));
 
 const setMoodsSpy = vi.fn();
+const onAddMoodMock = vi.fn();
 const moodsSnapshot = { moods: [], userName: "Yehor", setMoods: setMoodsSpy };
 vi.mock("@/stores", () => ({
   useUserDataStore: (selector: (s: unknown) => unknown) => selector(moodsSnapshot),
@@ -201,70 +162,52 @@ describe("Integration — Orb -> Diary handoff via pendingMoodContext", () => {
     capturedInitialSuggestion = null;
     setActivePageMock.mockClear();
     setMoodsSpy.mockClear();
+    onAddMoodMock.mockClear();
     useMoodEntryDraftStore.getState().reset();
     useDiaryDraftStore.getState().clearPendingMoodContext();
   });
 
-  it("writes pendingMoodContext when the orb confirm flow completes", () => {
-    render(<OrbPage />);
+  it("writes enriched pendingMoodContext only on final transfer", () => {
+    render(<OrbPage onAddMood={onAddMoodMock} />);
 
-    act(() => {
-      fireEvent.click(screen.getByTestId("mood-orb-option-okay"));
+    fireEvent.click(screen.getByTestId("mood-orb-option-okay"));
+    fireEvent.click(screen.getByTestId("orb-page-next"));
+    expect(screen.getByTestId("orb-page-refine")).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("emotion-tag-hopeful"));
+    fireEvent.change(screen.getByTestId("orb-page-note-input"), {
+      target: { value: "A steady moment worth keeping." },
     });
-    act(() => {
-      fireEvent.click(screen.getByTestId("emotion-tag-hopeful"));
-    });
-    act(() => {
-      fireEvent.click(screen.getByTestId("orb-confirm-save"));
-    });
+    fireEvent.click(screen.getByTestId("orb-page-open-diary"));
 
     const ctx = useDiaryDraftStore.getState().pendingMoodContext;
-    expect(ctx).not.toBeNull();
     expect(ctx).toMatchObject({
       valence: 0,
+      mood: "okay",
       scope: "now",
       specificTime: null,
       emotion: "hopeful",
+      note: "A steady moment worth keeping.",
     });
     expect(typeof ctx?.committedAt).toBe("number");
-    expect(ctx?.committedAt).toBeGreaterThan(0);
     expect(setActivePageMock).toHaveBeenCalledWith("diary");
-    expect(setMoodsSpy).toHaveBeenCalledTimes(1);
+    expect(onAddMoodMock).toHaveBeenCalledTimes(1);
+    expect(setMoodsSpy).not.toHaveBeenCalled();
   });
 
-  it("does NOT write pendingMoodContext on skip", () => {
-    render(<OrbPage />);
-    act(() => {
-      fireEvent.click(screen.getByTestId("mood-orb-option-okay"));
-    });
-    act(() => {
-      fireEvent.click(screen.getByTestId("orb-confirm-skip"));
-    });
+  it("keeps pendingMoodContext null before the user continues", () => {
+    render(<OrbPage onAddMood={onAddMoodMock} />);
+    expect(screen.queryByTestId("orb-page-skip")).toBeNull();
     expect(useDiaryDraftStore.getState().pendingMoodContext).toBeNull();
   });
 
-  it("does NOT write pendingMoodContext if emotion is missing (confirm disabled)", () => {
-    render(<OrbPage />);
-    act(() => {
-      fireEvent.click(screen.getByTestId("mood-orb-option-okay"));
-    });
-
-    const save = screen.getByTestId("orb-confirm-save");
-    expect(save.getAttribute("disabled")).not.toBeNull();
-    act(() => {
-      fireEvent.click(save);
-    });
-
-    expect(useDiaryDraftStore.getState().pendingMoodContext).toBeNull();
-    expect(setActivePageMock).not.toHaveBeenCalled();
-  });
-
-  it("DiaryPage keeps pendingMoodContext until the suggestion is consumed", async () => {
+  it("DiaryPage keeps history-first behavior and forwards a draft-card suggestion", async () => {
     useDiaryDraftStore.getState().setPendingMoodContext({
       valence: 0.5,
-      scope: "now",
-      specificTime: null,
+      mood: "good",
+      scope: "specific",
+      specificTime: "14:30",
       emotion: "hopeful",
+      note: "I want to keep this with me.",
       committedAt: 1_700_000_000_000,
     });
 
@@ -273,7 +216,7 @@ describe("Integration — Orb -> Diary handoff via pendingMoodContext", () => {
 
     expect(useDiaryDraftStore.getState().pendingMoodContext).toMatchObject({
       emotion: "hopeful",
-      scope: "now",
+      scope: "specific",
     });
     expect(capturedJournalModuleProps).toMatchObject({
       startOpen: true,
@@ -285,46 +228,13 @@ describe("Integration — Orb -> Diary handoff via pendingMoodContext", () => {
       source: "orb",
       emotion: "hopeful",
       mood: "good",
-      scope: "now",
-      prefill: {
-        title: "Hopeful",
-        mood: "good",
-        tags: ["hopeful"],
-      },
-    });
-
-    act(() => {
-      (capturedJournalModuleProps?.onInitialEntrySuggestionConsumed as (() => void) | undefined)?.();
-    });
-
-    expect(useDiaryDraftStore.getState().pendingMoodContext).toBeNull();
-  });
-
-  it("DiaryPage preserves specific-time context inside the handed-off prefill", async () => {
-    useDiaryDraftStore.getState().setPendingMoodContext({
-      valence: -0.1,
       scope: "specific",
       specificTime: "14:30",
-      emotion: "curious",
-      committedAt: 1_700_000_000_100,
+      note: "I want to keep this with me.",
     });
 
-    render(<DiaryPage />);
-    await screen.findByTestId("journal-module-stub");
-
-    expect(capturedInitialSuggestion).toMatchObject({
-      source: "orb",
-      emotion: "curious",
-      mood: "okay",
-      scope: "specific",
-      specificTime: "14:30",
-      prefill: {
-        title: "Curious",
-        mood: "okay",
-        tags: ["curious"],
-      },
-    });
-    const prefill = capturedInitialSuggestion?.prefill as Record<string, unknown> | undefined;
-    expect(String(prefill?.content)).toContain("Specific - 14:30");
+    const prefill = capturedInitialSuggestion?.prefill as Record<string, unknown>;
+    expect(prefill.title).toBe("Hopeful");
+    expect(String(prefill.content)).toContain("I want to keep this with me.");
   });
 });

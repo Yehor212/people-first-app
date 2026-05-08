@@ -177,6 +177,17 @@ export function storageRemove(key: string): void {
   } catch { /* graceful: storage removal is best-effort, failure has no user impact */ }
 }
 
+/** Returns whether localStorage accepts a write/remove roundtrip in this browser context. */
+export function storageCanWrite(testKey = "__zenflow_storage_test__"): boolean {
+  try {
+    localStorage.setItem(testKey, "test");
+    localStorage.removeItem(testKey);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // ─── Quota exceeded notification (picked up by OfflineBanner) ───
 
 let _quotaNotified = false;

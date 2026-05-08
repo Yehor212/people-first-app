@@ -87,9 +87,9 @@ export const JournalHabitSection = memo(function JournalHabitSection({ date, sna
           )}
         </div>
         {collapsed ? (
-          <ChevronDown className="w-4 h-4 text-muted-foreground/50" />
+          <ChevronDown className="w-4 h-4 text-muted-foreground/50" aria-hidden="true" />
         ) : (
-          <ChevronUp className="w-4 h-4 text-muted-foreground/50" />
+          <ChevronUp className="w-4 h-4 text-muted-foreground/50" aria-hidden="true" />
         )}
       </button>
 
@@ -113,9 +113,9 @@ export const JournalHabitSection = memo(function JournalHabitSection({ date, sna
                   )}
                 >
                   {item.completed ? (
-                    <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0" />
+                    <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0" aria-hidden="true" />
                   ) : (
-                    <Circle className="w-4 h-4 text-muted-foreground/60 flex-shrink-0" />
+                    <Circle className="w-4 h-4 text-muted-foreground/60 flex-shrink-0" aria-hidden="true" />
                   )}
                   <span className="text-sm flex-shrink-0">{item.habitIcon}</span>
                   <span className={cn(

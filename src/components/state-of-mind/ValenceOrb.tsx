@@ -39,6 +39,8 @@ interface ValenceOrbProps {
   valence: number;
   /** Size in px (width = height) */
   size?: number;
+  /** Multiplier for the orb's ambient rotation/noise time; valence interpolation stays unchanged. */
+  animationSpeed?: number;
 }
 
 const WEBGL_FRAME_INTERVAL = 1000 / 60; // 60fps for WebGL (shader is <1ms)
@@ -82,7 +84,11 @@ function createCanvas(size: number, dpr: number): HTMLCanvasElement {
   return c;
 }
 
-export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: ValenceOrbProps) {
+export const ValenceOrb = memo(function ValenceOrb({
+  valence,
+  size = 192,
+  animationSpeed = 1,
+}: ValenceOrbProps) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef(0);
   const mountedRef = useRef(true);
@@ -96,6 +102,8 @@ export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: Vale
   const prevStableValenceRef = useRef(0); // P3: last settled valence for delta detection
   const lastInteractionRef = useRef(performance.now()); // P4: idle awareness
   const smoothValenceRef = useRef(valence); // P5: smoothed valence for organic color/shape flow
+  const animationSpeedRef = useRef(animationSpeed);
+  animationSpeedRef.current = animationSpeed;
 
   // Mutable animation state — avoids React re-renders during animation
   const stateRef = useRef<{
@@ -124,6 +132,7 @@ export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: Vale
   useEffect(() => {
     const wrapper = wrapperRef.current;
     if (!wrapper) return;
+    if (typeof IntersectionObserver === "undefined") return;
 
     const observer = new IntersectionObserver(
       ([entry]) => { isVisibleRef.current = entry.isIntersecting; },
@@ -348,10 +357,10 @@ export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: Vale
       const idleElapsed = timestamp - lastInteractionRef.current;
       const idleFactor = Math.max(0, Math.min(1, (idleElapsed - 8000) / 4000));
 
-      state.time += dt * (1 - idleFactor * 0.4); // idle → 40% slower internal time
+      state.time += dt * animationSpeedRef.current * (1 - idleFactor * 0.4); // idle → 40% slower internal time
 
       // P5: Smoothed valence — organic flow between color/shape states
-      // Factor 0.05 per frame → ~900ms slow-breath settle. User feedback 2026-04-18:
+      // Lower factor → slow-breath settle. User feedback 2026-04-18:
       // "мягкость перехода от орба к орбу как раньше было" — restore very soft
       // transition between mood states, not snappy.
       const smoothLerp = 1 - Math.pow(1 - 0.05, dt * 60);
@@ -540,6 +549,8 @@ export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: Vale
       <div
         ref={wrapperRef}
         className="relative flex items-center justify-center flex-shrink-0"
+        data-orb-transition-profile="standard"
+        data-orb-animation-speed={animationSpeed}
         style={{ width: size, height: size }}
         aria-hidden="true"
       >
@@ -564,6 +575,8 @@ export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: Vale
     <div
       ref={wrapperRef}
       className="relative flex items-center justify-center"
+      data-orb-transition-profile="standard"
+      data-orb-animation-speed={animationSpeed}
       style={{ width: size, height: size, touchAction: 'manipulation' }}
       aria-hidden="true"
     />

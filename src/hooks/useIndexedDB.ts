@@ -4,6 +4,7 @@ import { z } from "zod";
 import { logger } from "@/lib/logger";
 import { validateArray, validateObject } from "@/lib/schemas";
 import { sanitizeObject } from "@/lib/validation";
+import { safeLocalStorageSet, storageGetRaw } from "@/lib/safeJson";
 
 // Event emitter for cross-hook data refresh
 type RefreshListener = () => void;
@@ -236,7 +237,7 @@ export function useIndexedDB<T>({
           } else if (isInitialLoad) {
             // Try localStorage fallback only on initial load
             try {
-              const stored = localStorage.getItem(localStorageKey);
+              const stored = storageGetRaw(localStorageKey, "");
               if (stored) {
                 try {
                   const parsed = sanitizeObject(JSON.parse(stored));
@@ -280,7 +281,7 @@ export function useIndexedDB<T>({
           } else if (isInitialLoad) {
             // Try localStorage fallback only on initial load
             try {
-              const stored = localStorage.getItem(localStorageKey);
+              const stored = storageGetRaw(localStorageKey, "");
               if (stored) {
                 try {
                   const parsed = sanitizeObject(JSON.parse(stored));
@@ -307,7 +308,7 @@ export function useIndexedDB<T>({
         logger.error("Error loading from IndexedDB:", error);
         // Fallback to localStorage
         try {
-          const stored = localStorage.getItem(localStorageKey);
+          const stored = storageGetRaw(localStorageKey, "");
           if (stored) {
             try {
               const parsed = sanitizeObject(JSON.parse(stored));
@@ -410,20 +411,15 @@ export function useIndexedDB<T>({
               });
             }
             // Also save to localStorage as backup
-            try {
-              localStorage.setItem(localStorageKey, JSON.stringify(newValue));
-            } catch (storageError) {
-              // localStorage not available (Safari Private Mode, quota exceeded)
-              logger.warn("localStorage backup failed:", storageError);
+            if (!safeLocalStorageSet(localStorageKey, newValue)) {
+              logger.warn("localStorage backup failed");
             }
           } catch (error) {
             logger.error("Error saving to IndexedDB:", error);
             // Try localStorage fallback
-            try {
-              localStorage.setItem(localStorageKey, JSON.stringify(newValue));
-            } catch (storageError) {
+            if (!safeLocalStorageSet(localStorageKey, newValue)) {
               // localStorage also not available - data only in React state
-              logger.warn("localStorage fallback also failed:", storageError);
+              logger.warn("localStorage fallback also failed");
               // Emit storage error event for user notification
               window.dispatchEvent(
                 new CustomEvent("zenflow:storage-error", {

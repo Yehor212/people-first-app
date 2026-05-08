@@ -330,7 +330,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
                     {/* Check mark */}
                     {isSelected && (
                       <div className="absolute top-2 end-2 w-5 h-5 rounded-full bg-foreground/30 flex items-center justify-center">
-                        <Check className="w-3 h-3 text-white" />
+                        <Check className="w-3 h-3 text-white" aria-hidden="true" />
                       </div>
                     )}
                   </button>
@@ -372,7 +372,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
               className="flex-1 py-3 sm:py-4 bg-gradient-to-r from-primary to-accent text-primary-foreground rounded-xl sm:rounded-2xl font-semibold hover:opacity-90 motion-safe:transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/30 text-sm sm:text-base active:scale-95"
             >
               {t.getStarted || "Start"}
-              <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 rtl:scale-x-[-1]" />
+              <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 rtl:scale-x-[-1]" aria-hidden="true" />
             </button>
           </div>
         </div>

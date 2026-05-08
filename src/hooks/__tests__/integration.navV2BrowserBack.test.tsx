@@ -75,7 +75,7 @@ describe("Integration #3 — useNavigationV2 browser back/forward sync", () => {
     expect(result.current.activePage).toBe("orb");
   });
 
-  it("popstate to an unknown path is a no-op (stays on current page)", () => {
+  it("popstate to an unknown path keeps current page and marks Not Found", () => {
     const { result } = renderHook(() => useNavigationV2());
     act(() => {
       result.current.setActivePage("settings");
@@ -87,6 +87,7 @@ describe("Integration #3 — useNavigationV2 browser back/forward sync", () => {
       window.dispatchEvent(new PopStateEvent("popstate"));
     });
     expect(result.current.activePage).toBe("settings");
+    expect(result.current.unknownPath).toBe("/this-path-is-not-nav-v2");
   });
 
   it("preserves ?nav=v2 query string across setActivePage", () => {

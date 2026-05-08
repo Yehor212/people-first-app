@@ -6,11 +6,12 @@
  */
 
 import { memo, useCallback, useMemo, useRef, useState } from "react";
-import { Clock } from "lucide-react";
 import { isHabitCompletedOnDate } from "@/lib/habits";
 import { getToday } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { hapticTap } from "@/lib/haptics";
+import { V2_HABIT_JOURNEY_ICONS } from "@/lib/v2IconSystem";
+import type { NumericalEntryAction } from "@/lib/habitNumericalInteraction";
 import { ENTRY } from "@/types";
 import type { Habit } from "@/types";
 import { HabitActionSheet } from "./HabitActionSheet";
@@ -20,6 +21,7 @@ interface HeroHabitRowProps {
   habit: Habit;
   onToggle: (habitId: string, date: string) => void;
   onAdjust?: (habitId: string, date: string, delta: number) => void;
+  onNumericalAction?: (habitId: string, date: string, action: NumericalEntryAction) => void;
   onDelete?: (habitId: string) => void;
   onEdit?: (habit: Habit) => void;
   onOpenDetail?: (habit: Habit) => void;
@@ -36,6 +38,7 @@ export const HeroHabitRow = memo(function HeroHabitRow({
   habit,
   onToggle,
   onAdjust,
+  onNumericalAction,
   onDelete,
   onEdit,
   onOpenDetail,
@@ -136,6 +139,7 @@ export const HeroHabitRow = memo(function HeroHabitRow({
   }, [completedToday, reminderTime]);
   const overdueHours = Math.floor(overdueMinutes / 60);
   const isOverdue = overdueMinutes >= 30;
+  const ReminderIcon = V2_HABIT_JOURNEY_ICONS.reminder;
 
   return (
     <div
@@ -156,6 +160,7 @@ export const HeroHabitRow = memo(function HeroHabitRow({
         habit={habit}
         onToggle={onToggle}
         onAdjust={onAdjust}
+        onNumericalAction={onNumericalAction}
         onOpenDetail={onOpenDetail}
       />
 
@@ -196,13 +201,13 @@ export const HeroHabitRow = memo(function HeroHabitRow({
               className={
                 "inline-flex items-center gap-1 rounded-full px-2 py-0.5 " +
                 (isOverdue
-                  ? "bg-amber-500/15 text-amber-700 dark:text-amber-300"
+                  ? "bg-[hsl(var(--zf-warning)/0.12)] text-[hsl(var(--zf-warning))]"
                   : "bg-muted/50")
               }
               data-testid={`hero-habit-row-${habit.id}-reminder`}
               data-overdue={isOverdue ? "true" : "false"}
             >
-              <Clock className="h-3 w-3" aria-hidden="true" />
+              <ReminderIcon className="h-3 w-3" aria-hidden="true" />
               {reminderTime}
               {isOverdue && (
                 <span className="ms-1 font-semibold" aria-hidden="true">

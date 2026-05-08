@@ -124,7 +124,7 @@ export const ReflectionPromptCard = memo(function ReflectionPromptCard({ prompt 
         onClick={handleExpandToJournal}
         className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground motion-safe:transition-colors"
       >
-        <BookOpen className="w-3.5 h-3.5" />
+        <BookOpen className="w-3.5 h-3.5" aria-hidden="true" />
         {t.reflectionExpandJournal || "Expand to journal"}
       </button>
     </motion.div>

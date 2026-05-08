@@ -22,13 +22,77 @@
     radial-gradient(circle at 70% 70%, var(--nebula-b) 0%, transparent 40%);
 }
 
+.cosmic-bg-adapter__starry {
+  background: hsl(var(--zf-night-0));
+}
+
+.cosmic-bg-adapter__starry-base {
+  background:
+    radial-gradient(circle at 50% 25%, hsl(var(--zf-trace) / 0.18) 0%, transparent 30%),
+    radial-gradient(circle at 18% 70%, hsl(var(--zf-memory) / 0.2) 0%, transparent 36%),
+    radial-gradient(ellipse at 50% 100%, hsl(var(--zf-primary) / 0.1) 0%, transparent 42%),
+    linear-gradient(180deg, hsl(var(--zf-night-1)) 0%, hsl(var(--zf-night-0)) 58%, hsl(var(--zf-night-1)) 100%);
+}
+
+.cosmic-bg-adapter__starry-aurora {
+  background:
+    radial-gradient(ellipse at 60% 64%, hsl(var(--zf-trace) / 0.14) 0%, transparent 42%),
+    radial-gradient(ellipse at 26% 44%, hsl(var(--zf-memory) / 0.16) 0%, transparent 38%),
+    linear-gradient(150deg, hsl(var(--zf-trace) / 0.08) 0%, transparent 42%, hsl(var(--zf-memory) / 0.1) 100%);
+  opacity: 0.82;
+}
+
+.cosmic-bg-adapter__starry-field {
+  position: absolute;
+  inset: 0;
+}
+
+.cosmic-bg-adapter__starry-star {
+  position: absolute;
+  left: var(--star-x);
+  top: var(--star-y);
+  width: var(--star-size);
+  height: var(--star-size);
+  border-radius: 9999px;
+  background: hsl(var(--zf-text-strong) / var(--star-opacity));
+  box-shadow:
+    0 0 7px hsl(var(--zf-text-strong) / 0.44),
+    0 0 16px hsl(var(--zf-trace) / 0.2);
+  opacity: var(--star-opacity);
+  transform: translate3d(-50%, -50%, 0);
+  animation: cosmic-starry-breathe var(--star-duration) ease-in-out var(--star-delay) infinite;
+}
+
+.cosmic-bg-adapter__starry-field[data-animated="false"] .cosmic-bg-adapter__starry-star {
+  animation: none;
+}
+
+.cosmic-bg-adapter__starry-vignette {
+  background:
+    radial-gradient(ellipse at center, transparent 0%, transparent 56%, hsl(var(--zf-night-0) / 0.78) 100%),
+    linear-gradient(180deg, hsl(var(--zf-night-0) / 0.1) 0%, transparent 42%, hsl(var(--zf-night-0) / 0.3) 100%);
+}
+
+@keyframes cosmic-starry-breathe {
+  0%,
+  100% {
+    opacity: calc(var(--star-opacity) * 0.68);
+    transform: translate3d(-50%, -50%, 0) scale(0.92);
+  }
+  50% {
+    opacity: var(--star-opacity);
+    transform: translate3d(-50%, -50%, 0) scale(1.12);
+  }
+}
+
 /* Phase 3-A.4a-fix — Force cosmic dark presentation on OrbPage regardless
  * of the app theme. The sidebar stays in app theme because it is rendered
  * OUTSIDE this scope (in NavV2Orchestrator at the page shell root). Only
  * OrbPage's <main> receives .orb-cosmic-scope, so Tailwind `dark:` variants
  * inside the subtree activate (hidden dark:block, etc.) and cosmic tokens
  * resolve to their night values. */
-.orb-cosmic-scope {
+.orb-cosmic-scope,
+.orb-cosmic-scope.dark {
   /* Mirror the `:root.dark` cosmic palette so --focus-cosmic-* and --nebula-*
    * resolve to the night values even when the app theme is light. */
   --focus-cosmic-dark: 240 30% 3%;
@@ -36,15 +100,22 @@
   --focus-cosmic-deep: 240 50% 2%;
   --focus-cosmic-light: 240 40% 18%;
   --particle-color: hsl(0 0% 100%);
-  --nebula-a: hsl(270 60% 50% / 0.15);
+  --nebula-a: hsl(260 80% 50% / 0.15);
   --nebula-b: hsl(330 60% 50% / 0.1);
   color-scheme: dark;
 }
 
 /* Starlight boost — CosmicStar renders `.zen-particle.absolute.rounded-full`.
- * Inside the cosmic scope we reinforce visibility with warm starlight tone
+ * Inside the cosmic scope we reinforce visibility with a cool starlight tone
  * and a soft halo so stars read clearly against the deep nebula. */
-.orb-cosmic-scope .zen-particle {
+.orb-cosmic-scope .zen-particle,
+.orb-cosmic-scope.dark .zen-particle {
   background-color: hsl(45 100% 94% / 0.95);
   box-shadow: 0 0 6px 1px hsl(45 100% 92% / 0.55);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cosmic-bg-adapter__starry-star {
+    animation: none;
+  }
 }

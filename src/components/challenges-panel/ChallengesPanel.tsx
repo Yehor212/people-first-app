@@ -122,7 +122,7 @@ export function ChallengesPanel({
             }`}
           >
             <div className="flex items-center justify-center gap-1.5">
-              <Target className="w-4 h-4" />
+              <Target className="w-4 h-4" aria-hidden="true" />
               {t.activeChallenges || "Active"}
               {activeChallenges.length > 0 && (
                 <span className="bg-primary-foreground/20 px-1.5 py-0.5 rounded-full text-xs">
@@ -140,7 +140,7 @@ export function ChallengesPanel({
             }`}
           >
             <div className="flex items-center justify-center gap-1.5">
-              <Plus className="w-4 h-4" />
+              <Plus className="w-4 h-4" aria-hidden="true" />
               {t.availableChallenges || "Available"}
             </div>
           </button>
@@ -153,7 +153,7 @@ export function ChallengesPanel({
             }`}
           >
             <div className="flex items-center justify-center gap-1.5">
-              <Trophy className="w-4 h-4" />
+              <Trophy className="w-4 h-4" aria-hidden="true" />
               {t.badges || "Badges"}
               {badges.filter((b) => b.unlocked).length > 0 && (
                 <span className="bg-primary-foreground/20 px-1.5 py-0.5 rounded-full text-xs">
@@ -341,12 +341,12 @@ export function ChallengesPanel({
                         >
                           {isActive ? (
                             <span className="flex items-center justify-center gap-2">
-                              <CheckCircle2 className="w-4 h-4" />
+                              <CheckCircle2 className="w-4 h-4" aria-hidden="true" />
                               {t.challengeActive || "Active"}
                             </span>
                           ) : (
                             <span className="flex items-center justify-center gap-2">
-                              <Plus className="w-4 h-4" />
+                              <Plus className="w-4 h-4" aria-hidden="true" />
                               {t.startChallenge || "Start Challenge"}
                             </span>
                           )}

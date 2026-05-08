@@ -66,7 +66,7 @@ export const STARTER_TEMPLATES: readonly StarterTemplate[] = [
   {
     key: "gratitude",
     icon: "🙏",
-    name: "Name one gratitude",
+    name: "Write one gratitude line",
     reminderTime: "22:00",
     identityVerb: "someone grateful",
     identityIcon: "✨",
@@ -102,6 +102,7 @@ export function templateToHabit(
     targetValue: template.habitType === "numerical" ? resolved.targetValue : 1,
     targetType: resolved.targetType,
     unit: template.habitType === "numerical" ? resolved.unit : "",
+    ...(template.habitType === "numerical" ? { quickEntryMode: resolved.quickEntryMode } : {}),
     entries: {},
     reminders: template.defaultTime
       ? [{ enabled: true, time: template.defaultTime, days: [0, 1, 2, 3, 4, 5, 6] }]

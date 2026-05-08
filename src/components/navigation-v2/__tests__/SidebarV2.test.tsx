@@ -16,6 +16,11 @@ vi.mock("@/contexts/LanguageContext", () => ({
       diary: "Diary",
       settings: "Settings",
       skipToContent: "Skip to main content",
+      classicPortalAria: "Return to classic ZenFlow",
+      classicPortalEyebrow: "Stable home",
+      classicPortalTitle: "Back to classic ZenFlow",
+      classicPortalBody: "Return to the current stable home while V2 stays in preview.",
+      classicPortalCta: "Classic ZenFlow",
     },
     isRTL: false,
   }),
@@ -23,6 +28,14 @@ vi.mock("@/contexts/LanguageContext", () => ({
 
 vi.mock("@/lib/haptics", () => ({
   haptics: { tabChanged: vi.fn(), selection: vi.fn() },
+}));
+
+vi.mock("@/hooks/useShouldAnimate", () => ({
+  useShouldAnimate: () => false,
+}));
+
+vi.mock("@/components/state-of-mind/MiniValenceOrb", () => ({
+  MiniValenceOrb: () => <div data-testid="sidebar-v2-mini-orb" />,
 }));
 
 describe("SidebarV2", () => {
@@ -35,10 +48,17 @@ describe("SidebarV2", () => {
 
   it("renders the 4 primary navigation items", () => {
     render(<SidebarV2 {...defaultProps} />);
+    expect(screen.getByTestId("sidebar-v2-brand-orb")).toContainElement(
+      screen.getByTestId("sidebar-v2-mini-orb"),
+    );
     expect(screen.getByRole("button", { name: "Orb" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Habits" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Diary" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Settings" })).toBeInTheDocument();
+    expect(screen.getByTestId("sidebar-v2-classic-portal")).toHaveAttribute(
+      "aria-label",
+      "Return to classic ZenFlow",
+    );
   });
 
   it("marks the active page with aria-current=page", () => {

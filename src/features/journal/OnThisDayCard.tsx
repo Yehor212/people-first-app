@@ -7,15 +7,8 @@ import { springs } from "@/config/animations";
 import { storageGetRaw, storageSetRaw } from "@/lib/safeJson";
 import { hapticTap } from "@/lib/haptics";
 import type { JournalEntry } from "./types";
-
-/* ── Mood → emoji map ── */
-const MOOD_STICKER: Record<string, string> = {
-  great: "😄",
-  good: "🙂",
-  okay: "😐",
-  bad: "😔",
-  terrible: "😢",
-};
+import { DiaryMiniOrb } from "./DiaryMiniOrb";
+import { formatLocalizedCount } from "./journalWordCount";
 
 const DISMISS_KEY = "journal-otd-dismissed";
 
@@ -60,13 +53,11 @@ export const OnThisDayCard = memo(function OnThisDayCard({
   onOpenEntry,
   onDismiss,
 }: OnThisDayCardProps) {
-  const { t: rawT, isRTL } = useLanguage();
+  const { t: rawT, isRTL, language } = useLanguage();
   const t = rawT as unknown as Record<string, string>;
   const reducedMotion = useReducedMotion();
 
-  const [dismissed, setDismissed] = useState(
-    () => storageGetRaw(DISMISS_KEY) === todayStr(),
-  );
+  const [dismissed, setDismissed] = useState(() => storageGetRaw(DISMISS_KEY) === todayStr());
 
   const matches = matchingEntries(entries);
   const entry = matches[0];
@@ -75,11 +66,8 @@ export const OnThisDayCard = memo(function OnThisDayCard({
 
   const years = yearsAgo(entry.date);
   const titleLabel = t.diaryOnThisDay ?? "On This Day";
-  const agoLabel = years === 1
-    ? (t.diaryYearAgo ?? "year ago")
-    : (t.diaryYearsAgo ?? "years ago");
+  const agoLabel = years === 1 ? (t.diaryYearAgo ?? "year ago") : (t.diaryYearsAgo ?? "years ago");
   const moreCount = matches.length - 1;
-  const moodEmoji = entry.mood ? MOOD_STICKER[entry.mood] : undefined;
   const snippet = truncate(entry.content.replace(/<[^>]*>/g, " ").trim(), 60);
 
   const handleDismiss = () => {
@@ -105,11 +93,17 @@ export const OnThisDayCard = memo(function OnThisDayCard({
           className={cn(
             "relative bg-card/60 backdrop-blur-sm [-webkit-backdrop-filter:blur(4px)]",
             "border border-border/20 rounded-2xl p-4 mb-3 cursor-pointer",
-            "min-h-[44px]",
+            "min-h-[44px]"
           )}
-          onClick={() => { void hapticTap(); onOpenEntry(entry.id); }}
+          onClick={() => {
+            void hapticTap();
+            onOpenEntry(entry.id);
+          }}
           onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") { void hapticTap(); onOpenEntry(entry.id); }
+            if (e.key === "Enter" || e.key === " ") {
+              void hapticTap();
+              onOpenEntry(entry.id);
+            }
           }}
         >
           {/* Header row */}
@@ -131,7 +125,7 @@ export const OnThisDayCard = memo(function OnThisDayCard({
               className={cn(
                 "flex items-center justify-center rounded-full",
                 "h-[44px] w-[44px] -m-2 text-muted-foreground",
-                "hover:text-foreground motion-safe:transition-colors",
+                "hover:text-foreground motion-safe:transition-colors"
               )}
             >
               <X className="h-4 w-4" />
@@ -140,19 +134,27 @@ export const OnThisDayCard = memo(function OnThisDayCard({
 
           {/* Entry preview */}
           <div className={cn("flex items-start gap-2 mt-2", isRTL && "flex-row-reverse")}>
-            {moodEmoji && (
-              <span className="text-lg leading-none shrink-0" aria-hidden="true">
-                {moodEmoji}
-              </span>
+            {entry.mood && (
+              <DiaryMiniOrb mood={entry.mood} size="micro" className="mt-0.5 scale-[0.58]" />
             )}
             <div className="min-w-0">
               {entry.title && (
-                <p className={cn("text-sm font-medium text-foreground truncate", isRTL && "text-right")}>
+                <p
+                  className={cn(
+                    "text-sm font-medium text-foreground truncate",
+                    isRTL && "text-right"
+                  )}
+                >
                   {truncate(entry.title, 60)}
                 </p>
               )}
               {snippet && (
-                <p className={cn("text-xs text-muted-foreground mt-0.5 line-clamp-2", isRTL && "text-right")}>
+                <p
+                  className={cn(
+                    "text-xs text-muted-foreground mt-0.5 line-clamp-2",
+                    isRTL && "text-right"
+                  )}
+                >
                   {snippet}
                 </p>
               )}
@@ -160,7 +162,13 @@ export const OnThisDayCard = memo(function OnThisDayCard({
           </div>
           {moreCount > 0 && (
             <p className="text-[10px] text-muted-foreground/50 mt-2">
-              +{moreCount} {t.diaryMoreMemories ?? "more from this day"}
+              {formatLocalizedCount(
+                moreCount,
+                language,
+                t,
+                "diaryMoreMemoryCount",
+                t.diaryMoreMemories ?? "more from this day"
+              )}
             </p>
           )}
         </motion.div>

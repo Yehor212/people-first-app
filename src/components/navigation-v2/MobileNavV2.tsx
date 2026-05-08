@@ -1,8 +1,9 @@
 import { memo, useMemo } from "react";
-import { Sparkles, Repeat, BookOpen, Settings } from "lucide-react";
+import { type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { haptics } from "@/lib/haptics";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { V2_NAV_ICONS } from "@/lib/v2IconSystem";
 import type { NavV2Page } from "@/hooks/useNavigationV2";
 
 interface MobileNavV2Props {
@@ -17,7 +18,7 @@ interface MobileNavV2Props {
  *
  * Four tabs: Orb / Habits / Diary / Settings.
  * 44×44 minimum touch targets, safe-area padding, haptic tap on change.
- * Paper-surface active state + ink accent.
+ * Theme-semantic active state + accent color.
  */
 export const MobileNavV2 = memo(function MobileNavV2({
   activePage,
@@ -28,17 +29,17 @@ export const MobileNavV2 = memo(function MobileNavV2({
   const tx = t as unknown as Record<string, string>;
 
   const tabs = useMemo(
-    (): Array<{ id: NavV2Page; icon: typeof Sparkles; label: string }> => [
-      { id: "orb", icon: Sparkles, label: tx.navV2Orb || "Orb" },
-      { id: "habits", icon: Repeat, label: tx.navV2Habits || t.habits || "Habits" },
-      { id: "diary", icon: BookOpen, label: tx.navV2Diary || t.diary || "Diary" },
+    (): Array<{ id: NavV2Page; icon: LucideIcon; label: string }> => [
+      { id: "orb", icon: V2_NAV_ICONS.orb, label: tx.navV2Orb || "Mood" },
+      { id: "habits", icon: V2_NAV_ICONS.habits, label: tx.navV2Habits || t.habits || "Habits" },
+      { id: "diary", icon: V2_NAV_ICONS.diary, label: tx.navV2Diary || t.diary || "Diary" },
       {
         id: "settings",
-        icon: Settings,
-        label: tx.navV2Settings || t.settings || "Settings",
+        icon: V2_NAV_ICONS.settings,
+        label: tx.navV2Settings,
       },
     ],
-    [tx, t.habits, t.diary, t.settings],
+    [tx, t.habits, t.diary],
   );
 
   if (hidden) return null;
@@ -77,7 +78,7 @@ export const MobileNavV2 = memo(function MobileNavV2({
                 "motion-safe:transition-all motion-safe:duration-200",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1",
                 isActive
-                  ? "bg-paper-surface text-ink-primary"
+                  ? "bg-[hsl(var(--nav-v2-item-surface))] text-[hsl(var(--primary))]"
                   : "text-muted-foreground active:text-foreground",
               )}
               data-testid={`mobile-nav-v2-tab-${tab.id}`}

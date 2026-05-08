@@ -108,6 +108,7 @@ export const JournalPhotoGallery = memo(function JournalPhotoGallery({
             <button
               onClick={() => openLightbox(photo, index)}
               className="block rounded-xl overflow-hidden shadow-sm"
+              aria-label={ts.openPhoto || "Open photo"}
             >
               <img
                 src={photo.thumbnail}
@@ -121,7 +122,7 @@ export const JournalPhotoGallery = memo(function JournalPhotoGallery({
                 loading="lazy"
               />
               <div className="absolute inset-0 bg-black/0 dark:bg-black/0 group-hover:bg-black/20 dark:group-hover:bg-black/20 motion-safe:transition-colors rounded-xl flex items-center justify-center">
-                <ZoomIn className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 motion-safe:transition-opacity" />
+                <ZoomIn className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 motion-safe:transition-opacity" aria-hidden="true" />
               </div>
             </button>
             {editable && onRemovePhoto && (

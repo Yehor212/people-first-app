@@ -29,6 +29,7 @@ Local working copies currently exist at:
 These tracked files now mirror the ignored local content:
 - [RUFLOW_PLUS_ROLE_PROMPTS.md](</C:/project/people-first-app/docs/ai/RUFLOW_PLUS_ROLE_PROMPTS.md>)
 - [RUFLOW_PLUS_SKILL_MIRROR.md](</C:/project/people-first-app/docs/ai/RUFLOW_PLUS_SKILL_MIRROR.md>)
+- [AGENT_CONTEXT_PERSISTENCE.md](</C:/project/people-first-app/docs/ai/AGENT_CONTEXT_PERSISTENCE.md>)
 
 Tracked operator contract:
 - [PREFLIGHT_OPERATOR_TEMPLATE.md](</C:/project/people-first-app/docs/ai/PREFLIGHT_OPERATOR_TEMPLATE.md>)
@@ -67,6 +68,29 @@ Important:
 - these defaults are useful shared conventions for prompts, scripts, and shell tasks
 - they do not, by themselves, make Codex automatically adopt Ruflow+ behavior
 - the actual orchestration still depends on using the skill, docs, role prompts, and pre-flight template deliberately
+
+## Persistent Agent Context
+
+Local MCP memory is configured through the ignored `.mcp.json` file and should store graph memory at:
+
+```text
+C:\project\people-first-app\.Codex\memory\mcp-memory.jsonl
+```
+
+Tracked protocol:
+- [AGENT_CONTEXT_PERSISTENCE.md](</C:/project/people-first-app/docs/ai/AGENT_CONTEXT_PERSISTENCE.md>)
+- [ZenFlow Context MCP](</C:/project/people-first-app/tools/zenflow-context/README.md>)
+
+Startup rule:
+- resolve a task with ZenFlow Context MCP before planning substantial work
+- in Claude Code, this is automatic through `SessionStart`, `UserPromptSubmit`, and `SubagentStart` hooks
+- search MCP memory for `ZenFlow`, `RuflowPlus`, `Verification_Discipline`, and task keywords when historical lessons matter
+- treat memory as routing context, not fresh proof
+- verify drift-prone claims from current repo files, commands, or official sources
+
+Writeback rule:
+- after non-trivial runs, store only durable decisions, reusable failures, successful patterns, and dated environment facts
+- never store secrets, raw transcripts, tokens, or speculative conclusions
 
 ## Role Prompt Summary
 

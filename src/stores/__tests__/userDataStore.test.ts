@@ -16,7 +16,15 @@ vi.mock('@/lib/reminders', () => ({
 
 import { useUserDataStore } from '@/stores/userDataStore';
 import type { RegisteredSetters } from '@/stores/userDataStore';
-import type { MoodEntry, Habit, FocusSession, GratitudeEntry, ScheduleEvent } from '@/types';
+import type {
+  MoodEntry,
+  Habit,
+  FocusSession,
+  GratitudeEntry,
+  ScheduleEvent,
+  DayRitual,
+  ReflectionInsightCard,
+} from '@/types';
 import { makeTestHabit } from '@/test/habitFixtures';
 
 const initialState = useUserDataStore.getState();
@@ -39,6 +47,8 @@ function createMockSetters(): RegisteredSetters {
     setGoogleAuthChecked: vi.fn(),
     setMicroReflections: vi.fn(),
     setCanvasGoals: vi.fn(),
+    setDayRituals: vi.fn(),
+    setReflectionInsights: vi.fn(),
   };
 }
 
@@ -77,6 +87,39 @@ function makeScheduleEvent(overrides: Partial<ScheduleEvent> = {}): ScheduleEven
   } as ScheduleEvent;
 }
 
+function makeDayRitual(overrides: Partial<DayRitual> = {}): DayRitual {
+  return {
+    id: 'opening-2025-01-01',
+    type: 'opening',
+    date: '2025-01-01',
+    timestamp: 1000,
+    updatedAt: 1000,
+    priorities: ['Protect focus'],
+    wins: [],
+    drains: [],
+    ...overrides,
+  };
+}
+
+function makeReflectionInsight(
+  overrides: Partial<ReflectionInsightCard> = {},
+): ReflectionInsightCard {
+  return {
+    id: 'insight-1',
+    source: 'ritual-pattern',
+    title: 'Morning check-ins anchor your focus',
+    summary: 'You focus longer on days that start with intention.',
+    experiment: 'Repeat your opening ritual before the first session.',
+    confidence: 0.82,
+    impact: 'high',
+    evidence: [{ label: 'Ritual days', detail: '42 minutes avg' }],
+    status: 'new',
+    createdAt: 1000,
+    updatedAt: 1000,
+    ...overrides,
+  };
+}
+
 beforeEach(() => {
   useUserDataStore.setState(initialState, true);
 });
@@ -103,6 +146,14 @@ describe('userDataStore initial state', () => {
 
   it('scheduleEvents defaults to empty array', () => {
     expect(useUserDataStore.getState().scheduleEvents).toEqual([]);
+  });
+
+  it('dayRituals defaults to empty array', () => {
+    expect(useUserDataStore.getState().dayRituals).toEqual([]);
+  });
+
+  it('reflectionInsights defaults to empty array', () => {
+    expect(useUserDataStore.getState().reflectionInsights).toEqual([]);
   });
 
   it('reminders defaults to defaultReminderSettings', () => {
@@ -196,6 +247,18 @@ describe('direct value setters', () => {
     const events = [makeScheduleEvent()];
     useUserDataStore.getState().setScheduleEvents(events);
     expect(useUserDataStore.getState().scheduleEvents).toEqual(events);
+  });
+
+  it('setDayRituals sets dayRituals array', () => {
+    const rituals = [makeDayRitual()];
+    useUserDataStore.getState().setDayRituals(rituals);
+    expect(useUserDataStore.getState().dayRituals).toEqual(rituals);
+  });
+
+  it('setReflectionInsights sets reflectionInsights array', () => {
+    const insights = [makeReflectionInsight()];
+    useUserDataStore.getState().setReflectionInsights(insights);
+    expect(useUserDataStore.getState().reflectionInsights).toEqual(insights);
   });
 
   it('setReminders sets reminders object', () => {

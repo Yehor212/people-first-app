@@ -15,7 +15,7 @@ Usage:
 
 import csv
 import json
-import os
+import re
 from datetime import datetime
 from pathlib import Path
 from core import search, DATA_DIR
@@ -488,6 +488,24 @@ def generate_design_system(query: str, project_name: str = None, output_format: 
 
 
 # ============ PERSISTENCE FUNCTIONS ============
+def _safe_slug(value: str, fallback: str) -> str:
+    slug = re.sub(r"[^a-z0-9_-]+", "-", (value or fallback).lower()).strip("-")
+    return slug or fallback
+
+
+def _safe_output_dir(output_dir: str = None) -> Path:
+    cwd = Path.cwd().resolve()
+    if not output_dir:
+        return cwd
+
+    candidate = Path(output_dir).expanduser().resolve()
+    try:
+        candidate.relative_to(cwd)
+    except ValueError as exc:
+        raise ValueError("--output-dir must stay inside the current working directory") from exc
+    return candidate
+
+
 def persist_design_system(design_system: dict, page: str = None, output_dir: str = None, page_query: str = None) -> dict:
     """
     Persist design system to design-system/<project>/ folder using Master + Overrides pattern.
@@ -501,11 +519,11 @@ def persist_design_system(design_system: dict, page: str = None, output_dir: str
     Returns:
         dict with created file paths and status
     """
-    base_dir = Path(output_dir) if output_dir else Path.cwd()
+    base_dir = _safe_output_dir(output_dir)
     
     # Use project name for project-specific folder
     project_name = design_system.get("project_name", "default")
-    project_slug = project_name.lower().replace(' ', '-')
+    project_slug = _safe_slug(project_name, "default")
     
     design_system_dir = base_dir / "design-system" / project_slug
     pages_dir = design_system_dir / "pages"
@@ -526,7 +544,7 @@ def persist_design_system(design_system: dict, page: str = None, output_dir: str
     
     # If page is specified, create page override file with intelligent content
     if page:
-        page_file = pages_dir / f"{page.lower().replace(' ', '-')}.md"
+        page_file = pages_dir / f"{_safe_slug(page, 'page')}.md"
         page_content = format_page_override_md(design_system, page, page_query)
         with open(page_file, 'w', encoding='utf-8') as f:
             f.write(page_content)

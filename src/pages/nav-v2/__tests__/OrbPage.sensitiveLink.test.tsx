@@ -25,8 +25,13 @@ vi.mock("@/contexts/LanguageContext", () => ({
       orbScopeDay: "For the whole day",
       orbScopeSpecific: "At a specific time",
       orbScopeSpecificTimeLabel: "Pick a time",
-      orbConfirm: "Save",
       orbSkip: "Later",
+      next: "Next",
+      back: "Back",
+      journalContinueWriting: "Continue writing",
+      journalStartToday: "Start today's entry",
+      howAreYouFeeling: "How are you feeling?",
+      journalPrompt6: "How are you feeling right now?",
       orbUndo: "Undo",
       orbMoodSaved: "Mood saved",
       orbFirstRunTitle: "Three steps",
@@ -43,7 +48,7 @@ vi.mock("@/contexts/LanguageContext", () => ({
 }));
 
 vi.mock("@/lib/haptics", () => ({
-  haptics: { tabChanged: vi.fn() },
+  haptics: { tabChanged: vi.fn(), light: vi.fn(), medium: vi.fn() },
   hapticSuccess: vi.fn(),
   hapticTap: vi.fn(),
   hapticSelection: vi.fn(),
@@ -199,6 +204,7 @@ describe("OrbPage — Phase 3-A.4c-ii-c sensitive emotion support link", () => {
   it("passes expandable=true to EmotionTagGrid on OrbPage", () => {
     render(<OrbPage />);
     fireEvent.click(screen.getByTestId("mood-slider"));
+    fireEvent.click(screen.getByTestId("orb-page-next"));
     const grid = screen.getByTestId("emotion-tag-grid");
     expect(grid.getAttribute("data-expandable")).toBe("true");
   });
@@ -207,12 +213,14 @@ describe("OrbPage — Phase 3-A.4c-ii-c sensitive emotion support link", () => {
   it("hides support link before any emotion is chosen", () => {
     render(<OrbPage />);
     fireEvent.click(screen.getByTestId("mood-slider"));
+    fireEvent.click(screen.getByTestId("orb-page-next"));
     expect(screen.queryByTestId("mood-support-link")).not.toBeInTheDocument();
   });
 
   it("hides support link when a non-sensitive emotion is chosen", () => {
     render(<OrbPage />);
     fireEvent.click(screen.getByTestId("mood-slider"));
+    fireEvent.click(screen.getByTestId("orb-page-next"));
     fireEvent.click(screen.getByTestId("emotion-tag-mock-happy"));
     expect(screen.queryByTestId("mood-support-link")).not.toBeInTheDocument();
   });
@@ -220,6 +228,7 @@ describe("OrbPage — Phase 3-A.4c-ii-c sensitive emotion support link", () => {
   it("reveals support link when a sensitive emotion (hopeless) is chosen", () => {
     render(<OrbPage />);
     fireEvent.click(screen.getByTestId("mood-slider"));
+    fireEvent.click(screen.getByTestId("orb-page-next"));
     fireEvent.click(screen.getByTestId("emotion-tag-mock-hopeless"));
     expect(screen.getByTestId("mood-support-link")).toBeInTheDocument();
   });
@@ -227,6 +236,7 @@ describe("OrbPage — Phase 3-A.4c-ii-c sensitive emotion support link", () => {
   it("support link uses the i18n moodSupportLink copy", () => {
     render(<OrbPage />);
     fireEvent.click(screen.getByTestId("mood-slider"));
+    fireEvent.click(screen.getByTestId("orb-page-next"));
     fireEvent.click(screen.getByTestId("emotion-tag-mock-hopeless"));
     expect(screen.getByTestId("mood-support-link")).toHaveTextContent(
       "Need support?",
@@ -234,22 +244,24 @@ describe("OrbPage — Phase 3-A.4c-ii-c sensitive emotion support link", () => {
   });
 
   // --- scope-aware styling ---
-  it("support link styling uses cosmic (white/50) palette on dark theme", () => {
+  it("support link styling uses semantic muted palette on dark theme", () => {
     render(<OrbPage />);
     fireEvent.click(screen.getByTestId("mood-slider"));
+    fireEvent.click(screen.getByTestId("orb-page-next"));
     fireEvent.click(screen.getByTestId("emotion-tag-mock-hopeless"));
     const link = screen.getByTestId("mood-support-link");
-    expect(link.className).toContain("text-white/50");
-    expect(link.className).not.toContain("text-warm-brown-ink/50");
+    expect(link.className).toContain("text-foreground/55");
+    expect(link.className).not.toContain("text-white/50");
   });
 
-  it("support link styling switches to warm-brown on day (paper) theme", () => {
+  it("support link styling keeps the semantic muted palette on day theme", () => {
     mockAppliedTheme = "paper";
     render(<OrbPage />);
     fireEvent.click(screen.getByTestId("mood-slider"));
+    fireEvent.click(screen.getByTestId("orb-page-next"));
     fireEvent.click(screen.getByTestId("emotion-tag-mock-hopeless"));
     const link = screen.getByTestId("mood-support-link");
-    expect(link.className).toContain("text-warm-brown-ink/50");
+    expect(link.className).toContain("text-foreground/55");
     expect(link.className).not.toContain("text-white/50");
   });
 
@@ -257,6 +269,7 @@ describe("OrbPage — Phase 3-A.4c-ii-c sensitive emotion support link", () => {
   it("support link calls preventDefault (stub route for future /support)", () => {
     render(<OrbPage />);
     fireEvent.click(screen.getByTestId("mood-slider"));
+    fireEvent.click(screen.getByTestId("orb-page-next"));
     fireEvent.click(screen.getByTestId("emotion-tag-mock-hopeless"));
     const link = screen.getByTestId("mood-support-link");
     const event = new MouseEvent("click", {
@@ -272,6 +285,7 @@ describe("OrbPage — Phase 3-A.4c-ii-c sensitive emotion support link", () => {
   it("support link disappears when the sensitive choice is toggled off", () => {
     render(<OrbPage />);
     fireEvent.click(screen.getByTestId("mood-slider"));
+    fireEvent.click(screen.getByTestId("orb-page-next"));
     fireEvent.click(screen.getByTestId("emotion-tag-mock-hopeless"));
     expect(screen.getByTestId("mood-support-link")).toBeInTheDocument();
     fireEvent.click(screen.getByTestId("emotion-tag-mock-hopeless"));

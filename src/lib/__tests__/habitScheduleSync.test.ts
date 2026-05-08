@@ -196,6 +196,24 @@ describe('habitToScheduleEvents', () => {
     expect(events[0].title).toBe('Stretch');
   });
 
+  it('does not create schedule events on non-due days for selected weekly habits', () => {
+    const habit = makeHabit({
+      id: 'h-specific',
+      name: 'Strength',
+      frequency: { numerator: 2, denominator: 7 },
+      schedule: {
+        mode: 'specificDays',
+        period: 'week',
+        targetCount: 2,
+        dueDays: [1, 4],
+      },
+      reminders: [{ enabled: true, time: '09:00', days: [0, 1, 2, 3, 4, 5, 6] }],
+    });
+    const events = habitToScheduleEvents(habit, ['2025-06-16', '2025-06-17', '2025-06-19']);
+
+    expect(events.map((event) => event.date)).toEqual(['2025-06-16', '2025-06-19']);
+  });
+
   it('uses habit icon as event emoji', () => {
     const habit = makeHabit({
       id: 'h1',

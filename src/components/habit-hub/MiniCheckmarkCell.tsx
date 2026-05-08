@@ -25,8 +25,16 @@ interface MiniCheckmarkCellProps {
   date: string;
   value: number; // EntryValue
   habitColor: string; // resolved hex
+  roleAccent?: {
+    color: string;
+    softBg: string;
+    strongBg: string;
+    border: string;
+    mutedBg: string;
+  };
   isToday: boolean;
   isFuture?: boolean; // Future dates in ISO week — tap disabled (Law 19)
+  isLocked?: boolean; // V2 hero can expose history while allowing only today's action.
   isNumerical: boolean;
   numericDisplay?: string; // "2.5" for numerical habits
   onTap: () => void;
@@ -49,8 +57,10 @@ export const MiniCheckmarkCell = memo(function MiniCheckmarkCell({
   date,
   value,
   habitColor,
+  roleAccent,
   isToday,
   isFuture,
+  isLocked,
   isNumerical,
   numericDisplay,
   onTap,
@@ -73,21 +83,34 @@ export const MiniCheckmarkCell = memo(function MiniCheckmarkCell({
   const isSkipped = value === ENTRY.SKIP;
   const isNo = value === ENTRY.NO;
   const isAuto = value === ENTRY.YES_AUTO;
+  const isUnknown = value === ENTRY.UNKNOWN;
+  const hasRoleAccent = Boolean(roleAccent);
+  const accentColor = roleAccent?.color ?? habitColor;
+  const accentSoftBg = roleAccent?.softBg ?? `${habitColor}18`;
+  const accentStrongBg = roleAccent?.strongBg ?? `${habitColor}30`;
+  const accentMutedBg = roleAccent?.mutedBg ?? `${habitColor}25`;
+  const accentBorder = roleAccent?.border ?? "hsl(var(--foreground) / 0.3)";
+  const isDisabled = Boolean(isFuture || isLocked);
+  const disabledClass = isDisabled
+    ? hasRoleAccent
+      ? "opacity-[0.65] cursor-default"
+      : "opacity-30 cursor-default"
+    : "cursor-pointer";
 
   // For numerical: show the value text
   if (isNumerical) {
     const hasValue = numericDisplay && numericDisplay !== "0";
     return (
       <div
-        onClick={isFuture ? undefined : onTap}
-        onKeyDown={isFuture ? undefined : handleKeyDown}
-        tabIndex={isFuture ? -1 : 0}
+        onClick={isDisabled ? undefined : onTap}
+        onKeyDown={isDisabled ? undefined : handleKeyDown}
+        tabIndex={isDisabled ? -1 : 0}
         role="button"
-        aria-disabled={isFuture}
+        aria-disabled={isDisabled}
         aria-label={`${date}: ${numericDisplay || "0"}`}
         className={cn(
           "min-w-[44px] min-h-[44px] flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-lg",
-          isFuture ? "opacity-30 cursor-default" : "cursor-pointer",
+          disabledClass,
         )}
       >
         <motion.div
@@ -101,9 +124,12 @@ export const MiniCheckmarkCell = memo(function MiniCheckmarkCell({
           )}
           style={{
             backgroundColor: hasValue
-              ? `${habitColor}25`
+              ? accentMutedBg
               : "hsl(var(--foreground) / 0.03)",
-            color: hasValue ? habitColor : "hsl(var(--foreground) / 0.25)",
+            color: hasValue ? accentColor : "hsl(var(--foreground) / 0.25)",
+            boxShadow: hasValue
+              ? `inset 0 0 0 1px ${accentBorder}`
+              : `inset 0 0 0 1px ${hasRoleAccent ? accentBorder : "hsl(var(--foreground) / 0.14)"}`,
           }}
         >
           {numericDisplay || "·"}
@@ -115,36 +141,44 @@ export const MiniCheckmarkCell = memo(function MiniCheckmarkCell({
   // Boolean cell
   return (
     <div
-      onClick={isFuture ? undefined : onTap}
-      onKeyDown={isFuture ? undefined : handleKeyDown}
-      tabIndex={isFuture ? -1 : 0}
+      onClick={isDisabled ? undefined : onTap}
+      onKeyDown={isDisabled ? undefined : handleKeyDown}
+      tabIndex={isDisabled ? -1 : 0}
       role="checkbox"
       aria-checked={isCompleted}
-      aria-disabled={isFuture}
+      aria-disabled={isDisabled}
       aria-label={`${date}: ${isCompleted ? ts.done || "done" : isSkipped ? ts.skipped || "skipped" : isNo ? ts.notDone || "not done" : ts.noData || "no data"}`}
       className={cn(
         "min-w-[44px] min-h-[44px] flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-lg",
-        isFuture ? "opacity-30 cursor-default" : "cursor-pointer",
+        disabledClass,
       )}
     >
       <motion.div
         whileTap={{ scale: 0.85 }}
         transition={zenMotion.snappy}
         className={cn(
-          "w-8 h-8 rounded-lg flex items-center justify-center",
+          "w-9 h-9 rounded-full flex items-center justify-center",
           "hover:brightness-125",
-          isToday && "ring-1 ring-foreground/30",
+          isToday && "ring-1",
+          isToday && "ring-foreground/30",
         )}
         style={{
           backgroundColor: isCompleted
             ? isAuto
-              ? `${habitColor}18`
-              : `${habitColor}30`
+              ? accentSoftBg
+              : accentStrongBg
             : isSkipped
               ? "hsl(var(--chart-focus) / 0.12)"
               : isNo
                 ? "hsl(var(--foreground) / 0.04)"
-                : "hsl(var(--foreground) / 0.02)",
+                : hasRoleAccent
+                  ? "hsl(var(--card) / 0.82)"
+                  : "hsl(var(--foreground) / 0.02)",
+          boxShadow: isCompleted
+            ? `inset 0 0 0 1px ${accentBorder}`
+            : isUnknown
+              ? `inset 0 0 0 1px ${hasRoleAccent ? accentBorder : "hsl(var(--foreground) / 0.16)"}, 0 0 0 4px ${hasRoleAccent ? accentSoftBg : "hsl(var(--foreground) / 0.035)"}, 0 10px 20px -18px ${accentColor}`
+              : undefined,
         }}
       >
         <AnimatePresence mode="wait">
@@ -162,7 +196,7 @@ export const MiniCheckmarkCell = memo(function MiniCheckmarkCell({
               <motion.path
                 d="M3 7.5 L5.5 10 L11 4"
                 fill="none"
-                stroke={habitColor}
+                stroke={accentColor}
                 strokeWidth={2.5}
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -186,7 +220,7 @@ export const MiniCheckmarkCell = memo(function MiniCheckmarkCell({
               <path
                 d="M3 7.5 L5.5 10 L11 4"
                 fill="none"
-                stroke={habitColor}
+                stroke={accentColor}
                 strokeWidth={2}
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -249,12 +283,22 @@ export const MiniCheckmarkCell = memo(function MiniCheckmarkCell({
               />
             </motion.svg>
           )}
-          {value === ENTRY.UNKNOWN && (
+          {isUnknown && (
             <motion.div
               key="unknown"
-              className="w-1.5 h-1.5 rounded-full bg-foreground/[0.12]"
+              className={cn(
+                "rounded-full",
+                hasRoleAccent ? "h-2 w-2" : "h-1.5 w-1.5 bg-foreground/[0.12]",
+              )}
+              style={
+                hasRoleAccent
+                  ? {
+                      backgroundColor: accentColor,
+                    }
+                  : undefined
+              }
               initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
+              animate={{ opacity: hasRoleAccent ? (isToday ? 0.48 : 0.32) : 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.1 }}
             />

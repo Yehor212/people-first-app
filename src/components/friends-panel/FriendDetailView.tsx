@@ -42,7 +42,7 @@ export function FriendDetailView({
         aria-label={t.back || "Back"}
         className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground motion-safe:transition-colors mb-4"
       >
-        <ChevronLeft className="w-4 h-4 rtl:scale-x-[-1]" />
+        <ChevronLeft className="w-4 h-4 rtl:scale-x-[-1]" aria-hidden="true" />
         {t.yourFriends || "Your Friends"}
       </button>
 

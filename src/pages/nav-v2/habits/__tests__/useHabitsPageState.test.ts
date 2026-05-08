@@ -51,6 +51,43 @@ describe("deriveHabitsPageState", () => {
     expect(state.dailyProgress.ratio).toBeCloseTo(0.5, 5);
   });
 
+  it("counts only habits that are scheduled for today", () => {
+    const today = "2026-04-20"; // Monday
+    const mondayHabit: Habit = {
+      ...baseHabit,
+      id: "mon",
+      schedule: { mode: "specificDays", period: "week", targetCount: 1, dueDays: [1] },
+      entries: { [today]: { value: 2 } },
+    };
+    const wednesdayHabit: Habit = {
+      ...baseHabit,
+      id: "wed",
+      schedule: { mode: "specificDays", period: "week", targetCount: 1, dueDays: [3] },
+      entries: { [today]: { value: 2 } },
+    };
+
+    const state = deriveHabitsPageState([mondayHabit, wednesdayHabit], [], today);
+
+    expect(state.isEmpty).toBe(false);
+    expect(state.todaysHabits.map((h) => h.id)).toEqual(["mon"]);
+    expect(state.dailyProgress).toEqual({ completed: 1, total: 1, ratio: 1 });
+  });
+
+  it("keeps active-habit state when no habits are due today", () => {
+    const today = "2026-04-20"; // Monday
+    const wednesdayHabit: Habit = {
+      ...baseHabit,
+      id: "wed",
+      schedule: { mode: "specificDays", period: "week", targetCount: 1, dueDays: [3] },
+    };
+
+    const state = deriveHabitsPageState([wednesdayHabit], [], today);
+
+    expect(state.isEmpty).toBe(false);
+    expect(state.todaysHabits).toEqual([]);
+    expect(state.dailyProgress).toEqual({ completed: 0, total: 0, ratio: 0 });
+  });
+
   it("treats a non-array habits prop as an empty list (Law 14)", () => {
     const state = deriveHabitsPageState(
       undefined as unknown as readonly Habit[],

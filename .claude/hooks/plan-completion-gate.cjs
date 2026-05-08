@@ -1,6 +1,7 @@
 /**
  * PLAN COMPLETION GATE v2 (Anti-Skip Hook)
  * Event: Stop
+ * Hook input: not required; validates .postflight-done against git diff and audit trail.
  * Purpose: Blocks agent from stopping if planned items != completed items.
  *
  * v2 fixes (adversarial audit 2026-04-07):

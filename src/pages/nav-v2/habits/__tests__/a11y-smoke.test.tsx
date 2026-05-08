@@ -60,8 +60,9 @@ vi.mock("@/contexts/LanguageContext", () => ({
       navV2HabitsOnboardingStep1: "Pick identity",
       navV2HabitsOnboardingStep2: "Set cue",
       navV2HabitsOnboardingStep3: "Plant first",
-      navV2HabitsIdentityToday: "Today you are building:",
-      navV2HabitsIdentityIntention: "Someone who keeps their word",
+      navV2HabitsIdentityToday: "Today you choose to be:",
+      navV2HabitsIdentitySentence: "Today you choose to be {identity}",
+      navV2HabitsIdentityIntention: "someone who keeps their word",
       navV2HabitsRecovery: "One missed day doesn't reset progress",
       navV2HabitsAllDone: "Day complete",
       navV2HabitsKeepGoing: "Momentum is yours",
@@ -153,6 +154,27 @@ describe("Habits a11y smoke (converts §11 🟡 rows to ✅)", () => {
       tabs.forEach((t) => {
         expect(t.getAttribute("aria-pressed")).toMatch(/^(true|false)$/);
       });
+    });
+
+    it("keeps inactive tabs and template cards on light surface tokens", () => {
+      render(
+        <HeroTemplateLibrarySheet
+          open={true}
+          onClose={vi.fn()}
+          seededIds={new Set()}
+          onPickTemplate={vi.fn()}
+        />,
+      );
+
+      const inactiveTab = screen.getByTestId("habits-library-tab-mind");
+      const templateCard = screen.getByTestId("habits-library-template-drink-water");
+      expect(inactiveTab.className).not.toContain("--zf-night");
+      expect(templateCard.className).not.toContain("--zf-night");
+      expect(templateCard.querySelector("[data-template-icon='true']")).toBeTruthy();
+      expect(templateCard.querySelector('[data-slot="ritual-library-symbol"]')).toHaveTextContent(
+        "💧",
+      );
+      expect(templateCard.querySelector("[data-slot='ritual-library-icon'] svg")).toBeNull();
     });
   });
 

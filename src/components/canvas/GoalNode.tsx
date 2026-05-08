@@ -196,7 +196,7 @@ export const GoalNode = memo(
             className="flex items-center gap-1.5 truncate"
           >
             {isComplete ? (
-              <Check className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+              <Check className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" aria-hidden="true" />
             ) : goal.emoji ? (
               <span
                 className="text-sm flex-shrink-0 leading-none"

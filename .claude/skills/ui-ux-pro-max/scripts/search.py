@@ -70,6 +70,8 @@ if __name__ == "__main__":
     parser.add_argument("--output-dir", "-o", type=str, default=None, help="Output directory for persisted files (default: current directory)")
 
     args = parser.parse_args()
+    if args.output_dir:
+        raise SystemExit("--output-dir is disabled; run this command from the target workspace directory")
 
     # Design system takes priority
     if args.design_system:
@@ -79,7 +81,7 @@ if __name__ == "__main__":
             args.format,
             persist=args.persist,
             page=args.page,
-            output_dir=args.output_dir
+            output_dir=None
         )
         print(result)
         

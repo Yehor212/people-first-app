@@ -37,7 +37,19 @@ function supportsViewTransition(): boolean {
   );
 }
 
-export function ThemeToggleV2({ collapsed = false }: { collapsed?: boolean }) {
+interface ThemeToggleV2Props {
+  collapsed?: boolean;
+  className?: string;
+  labelClassName?: string;
+  testId?: string;
+}
+
+export function ThemeToggleV2({
+  collapsed = false,
+  className,
+  labelClassName,
+  testId = "sidebar-v2-theme-toggle",
+}: ThemeToggleV2Props) {
   const { t } = useLanguage();
   const appliedTheme = useThemeStore((s) => s.appliedTheme);
   const setTheme = useThemeStore((s) => s.setTheme);
@@ -120,10 +132,11 @@ export function ThemeToggleV2({ collapsed = false }: { collapsed?: boolean }) {
         className={cn(
           "flex items-center rounded-lg px-3 py-2 min-h-[44px]",
           collapsed && "justify-center px-2",
+          className,
         )}
         aria-hidden="true"
       >
-        <div className="relative flex-shrink-0 w-[52px] h-[28px] rounded-full bg-muted" />
+        <div className="relative flex-shrink-0 w-[52px] h-[36px] rounded-full bg-muted" />
       </div>
     );
   }
@@ -134,48 +147,53 @@ export function ThemeToggleV2({ collapsed = false }: { collapsed?: boolean }) {
       onClick={handleToggle}
       aria-label={ariaLabel}
       aria-pressed={isDark}
-      data-testid="sidebar-v2-theme-toggle"
+      data-testid={testId}
       className={cn(
         "flex items-center gap-3 rounded-lg px-3 py-2 min-h-[44px]",
-        "text-muted-foreground hover:text-foreground hover:bg-paper-surface/40",
+        "text-muted-foreground hover:text-foreground hover:bg-[hsl(var(--nav-v2-item-hover)/0.72)]",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
         "motion-safe:transition-colors motion-safe:duration-200",
         collapsed && "justify-center px-2",
+        className,
       )}
     >
       <span
+        data-testid={`${testId}-track`}
         className={cn(
-          "relative flex-shrink-0 rounded-full motion-safe:transition-all motion-safe:duration-300 shadow-inner",
-          "w-[52px] h-[28px]",
-          isDark ? "bg-slate-700" : "bg-sky-300",
+          "relative flex-shrink-0 rounded-full motion-safe:transition-all motion-safe:duration-300",
+          "w-[52px] h-[36px]",
+          isDark
+            ? "bg-[hsl(var(--theme-toggle-v1-dark-track))]"
+            : "bg-[hsl(var(--theme-toggle-v1-light-track))]",
         )}
         aria-hidden="true"
       >
         <span
+          data-testid={`${testId}-thumb`}
           className={cn(
-            "absolute top-[3px] w-[22px] h-[22px] rounded-full motion-safe:transition-all motion-safe:duration-300 flex items-center justify-center shadow-sm",
+            "absolute top-[7px] w-[22px] h-[22px] rounded-full motion-safe:transition-all motion-safe:duration-300 flex items-center justify-center shadow-sm",
             isDark
-              ? "left-[27px] bg-indigo-950 ring-1 ring-slate-500/30"
-              : "left-[3px] bg-yellow-400",
+              ? "left-[27px] bg-[hsl(var(--theme-toggle-v1-dark-thumb))] ring-1 ring-[hsl(var(--theme-toggle-v1-dark-ring)/0.30)]"
+              : "left-[3px] bg-[hsl(var(--theme-toggle-v1-light-thumb))]",
           )}
         >
           {isDark ? (
-            <Moon className="w-3.5 h-3.5 text-slate-300" aria-hidden="true" />
+            <Moon className="w-3.5 h-3.5 text-[hsl(var(--theme-toggle-v1-dark-ring))] dark:text-[hsl(var(--zf-text-soft))]" aria-hidden="true" />
           ) : (
-            <Sun className="w-3.5 h-3.5 text-white" aria-hidden="true" />
+            <Sun className="w-3.5 h-3.5 text-[hsl(var(--theme-toggle-v1-light-icon))]" aria-hidden="true" />
           )}
         </span>
 
         {isDark && (
           <>
-            <span className="absolute top-[5px] left-[5px] w-1 h-1 bg-foreground/60 rounded-full" />
-            <span className="absolute top-[12px] left-[11px] w-0.5 h-0.5 bg-foreground/40 rounded-full" />
+            <span className="absolute top-[6px] left-[6px] w-1 h-1 bg-foreground/60 rounded-full" />
+            <span className="absolute top-[14px] left-[12px] w-0.5 h-0.5 bg-foreground/40 rounded-full" />
           </>
         )}
       </span>
 
       {!collapsed && (
-        <span className="text-xs">
+        <span className={cn("text-xs", labelClassName)}>
           {isDark ? t.themeLight || "Light" : t.themeDark || "Dark"}
         </span>
       )}

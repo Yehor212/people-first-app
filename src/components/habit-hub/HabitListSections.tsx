@@ -83,7 +83,7 @@ export function HabitListSections({
           >
             <span>{ts.otherHabits || 'Other Habits'}</span>
             <span className="text-muted-foreground/60">({otherHabits.length})</span>
-            <ChevronDown className={cn('w-3.5 h-3.5 motion-safe:transition-transform ms-auto', showOther && 'rotate-180')} />
+            <ChevronDown className={cn('w-3.5 h-3.5 motion-safe:transition-transform ms-auto', showOther && 'rotate-180')} aria-hidden="true" />
           </button>
           <AnimatePresence>
             {showOther && (
@@ -120,10 +120,10 @@ export function HabitListSections({
             onClick={() => setShowArchived(prev => !prev)}
             className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground/60 px-1 mb-3 w-full min-h-[44px]"
           >
-            <Archive className="w-3.5 h-3.5" />
+            <Archive className="w-3.5 h-3.5" aria-hidden="true" />
             <span>{ts.archivedHabits || 'Archived'}</span>
             <span className="text-muted-foreground/60">({archivedHabits.length})</span>
-            <ChevronDown className={cn('w-3.5 h-3.5 motion-safe:transition-transform ms-auto', showArchived && 'rotate-180')} />
+            <ChevronDown className={cn('w-3.5 h-3.5 motion-safe:transition-transform ms-auto', showArchived && 'rotate-180')} aria-hidden="true" />
           </button>
           <AnimatePresence>
             {showArchived && (
@@ -210,7 +210,7 @@ export function HabitListSections({
                   'flex items-center gap-2 mx-auto',
                 )}
               >
-                <Plus className="w-5 h-5" />
+                <Plus className="w-5 h-5" aria-hidden="true" />
                 {ts.addHabit || 'Add Habit'}
               </button>
             )}

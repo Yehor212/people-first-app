@@ -18,7 +18,7 @@ import "./MoodScopeSelector.css";
  *
  * Styling rationale: `backdrop-blur-xl bg-card/30 border border-white/10`
  * floats over cosmic backdrop without breaking the aesthetic. In paper
- * (day) theme the same tokens resolve to warm glass.
+ * (day) theme the same tokens resolve to calm aurora glass.
  *
  * Law 9 (a11y): role=radiogroup, aria-pressed on buttons, label for time.
  * Law 10 (cross-platform): time input is native, works on iOS/Android/Desktop.
@@ -37,6 +37,7 @@ function ScopeChip({
   label,
   onSelect,
   variant = "secondary",
+  compact = false,
 }: {
   scope: MoodDraftScope;
   active: boolean;
@@ -44,6 +45,7 @@ function ScopeChip({
   onSelect: (scope: MoodDraftScope) => void;
   /** Primary = prominent default ("Now"); secondary = softer opt-in. */
   variant?: "primary" | "secondary";
+  compact?: boolean;
 }) {
   return (
     <button
@@ -57,9 +59,13 @@ function ScopeChip({
       className={[
         "mood-scope-chip",
         "relative flex items-center justify-center",
-        variant === "primary"
-          ? "px-5 py-2.5 md:px-6 md:py-3 text-sm md:text-base font-semibold"
-          : "px-4 py-2 md:px-5 md:py-2.5 text-sm md:text-base font-medium",
+        compact
+          ? variant === "primary"
+            ? "px-4 py-2 md:px-5 md:py-2.5 text-sm font-semibold"
+            : "px-3.5 py-2 md:px-4 md:py-2.25 text-sm font-medium"
+          : variant === "primary"
+            ? "px-5 py-2.5 md:px-6 md:py-3 text-sm md:text-base font-semibold"
+            : "px-4 py-2 md:px-5 md:py-2.5 text-sm md:text-base font-medium",
         "rounded-full",
         "motion-safe:transition-all motion-safe:duration-200 ease-out",
         "min-h-[44px]",
@@ -76,10 +82,15 @@ function ScopeChip({
   );
 }
 
-export const MoodScopeSelector = memo(function MoodScopeSelector() {
+export const MoodScopeSelector = memo(function MoodScopeSelector({
+  density = "default",
+}: {
+  density?: "default" | "compact";
+}) {
   const { t } = useLanguage();
   const tx = t as unknown as Record<string, string>;
   const timeInputId = useId();
+  const compact = density === "compact";
 
   const { scope, specificTime, setScope, setSpecificTime } =
     useMoodEntryDraftStore(
@@ -109,6 +120,7 @@ export const MoodScopeSelector = memo(function MoodScopeSelector() {
     <div
       className="mood-scope-wrapper"
       data-testid="mood-scope-selector"
+      data-density={density}
       role="radiogroup"
       aria-label={tx.orbScopeGroupLabel || "When did this apply?"}
     >
@@ -124,6 +136,7 @@ export const MoodScopeSelector = memo(function MoodScopeSelector() {
           label={tx[SCOPE_KEYS.now] || "In this moment"}
           onSelect={onSelect}
           variant="primary"
+          compact={compact}
         />
         <ScopeChip
           scope="specific"
@@ -131,6 +144,7 @@ export const MoodScopeSelector = memo(function MoodScopeSelector() {
           label={tx[SCOPE_KEYS.specific] || "At a specific time"}
           onSelect={onSelect}
           variant="secondary"
+          compact={compact}
         />
         <ScopeChip
           scope="day"
@@ -138,6 +152,7 @@ export const MoodScopeSelector = memo(function MoodScopeSelector() {
           label={tx[SCOPE_KEYS.day] || "For the whole day"}
           onSelect={onSelect}
           variant="secondary"
+          compact={compact}
         />
       </div>
 

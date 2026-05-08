@@ -8,6 +8,8 @@ import { SkeletonCard, SkeletonList } from "@/components/ui/skeleton";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
 import { useFeatureFlags } from "@/contexts/FeatureFlagsContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { ReflectionStudioHeader } from "@/components/reflection/ReflectionStudioHeader";
+import { useReflectionStudio } from "@/hooks/useReflectionStudio";
 import { useUIStore, useUserDataStore, useGamificationStore, getModalToggle } from "@/stores";
 import { haptics } from "@/lib/haptics";
 import type { FocusSession, GratitudeEntry, ScheduleEvent } from "@/types";
@@ -60,6 +62,7 @@ export function GardenTab({
   handlePullToRefresh,
 }: GardenTabProps) {
   const { t } = useLanguage();
+  const tx = t as unknown as Record<string, string>;
   const { isFeatureVisible } = useFeatureFlags();
   // User data — single subscription (was 5 individual)
   const {
@@ -73,6 +76,15 @@ export function GardenTab({
   })));
   const setCurrentFocusMinutes = useUIStore((s) => s.setCurrentFocusMinutes);
   const rewardUser = useGamificationStore((s) => s.rewardUser);
+  const {
+    openingRitual,
+    closingRitual,
+    recommendedRitualType,
+    journalSuggestions,
+    reflectionInsights,
+    saveRitual,
+    updateInsightStatus,
+  } = useReflectionStudio();
 
   // Focus → Journal expansion: scroll journal into view
   const handleExpandToJournal = useCallback(() => {
@@ -118,7 +130,22 @@ export function GardenTab({
             >
               <LazyErrorBoundary componentName="Journal">
                 <Suspense fallback={<SkeletonCard />}>
-                  <JournalModule onToggleHabit={onToggleHabit} onAddGratitude={onAddGratitude} />
+                  <JournalModule
+                    onToggleHabit={onToggleHabit}
+                    onAddGratitude={onAddGratitude}
+                    extraSuggestions={journalSuggestions}
+                    listHeaderContent={
+                      <ReflectionStudioHeader
+                        tx={tx}
+                        recommendedType={recommendedRitualType}
+                        openingRitual={openingRitual}
+                        closingRitual={closingRitual}
+                        onSaveRitual={saveRitual}
+                        insights={reflectionInsights}
+                        onUpdateInsightStatus={updateInsightStatus}
+                      />
+                    }
+                  />
                 </Suspense>
               </LazyErrorBoundary>
             </section>

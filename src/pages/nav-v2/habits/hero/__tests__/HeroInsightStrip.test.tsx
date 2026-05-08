@@ -161,7 +161,7 @@ describe("HeroInsightStrip", () => {
     render(<HeroInsightStrip />);
     const strip = screen.getByTestId("habits-hero-insight-strip");
     expect(strip).toHaveAttribute("data-severity", "warning");
-    expect(strip.className).toContain("amber");
+    expect(strip.className).toContain("--zf-warning");
   });
 
 });

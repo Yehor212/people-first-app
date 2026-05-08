@@ -4,6 +4,8 @@
 
 [ruflow_plus]
 mode = "hierarchical"
+auto_activate = "always"
+head_role = "coordinator"
 max_workers_medium = 3
 max_workers_large = 5
 require_written_plan = true
@@ -18,9 +20,9 @@ verify_time_sensitive_externals = true
 prefer_official_sources = true
 
 [ruflow_plus.routing]
-small_change = "solo"
-medium_change = "guided"
-large_change = "ruflow_plus"
+simple_request = "solo_lightweight"
+repo_touching_request = "guided"
+cross_domain_request = "ruflow_plus"
 release_hardening = "ruflow_plus"
 
 [ruflow_plus.anti_drift]
@@ -36,6 +38,15 @@ write_on_bugfix = true
 write_on_arch_decision = true
 write_on_new_pattern = true
 write_on_failed_attempt = true
+
+[zenflow_context]
+auto = true
+mcp_server = "zenflow-context"
+current_pack = ".Codex/auto-context/current.md"
+max_chars = 8500
+session_start = true
+user_prompt_submit = true
+subagent_start = true
 
 [ruflow_plus.roles]
 coordinator = "scope, planning, sequencing, integration"

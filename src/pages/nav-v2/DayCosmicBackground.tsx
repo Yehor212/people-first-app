@@ -1,21 +1,44 @@
-import { memo, useEffect, useMemo } from "react";
+import { memo, useEffect, useMemo, type CSSProperties } from "react";
 import { useShouldAnimate } from "@/hooks/useShouldAnimate";
 import "./DayCosmicBackground.css";
+
+type PhotonTone = "aqua" | "gold" | "mint" | "iris" | "rose";
+
+type PhotonStyle = CSSProperties & {
+  "--photon-x": string;
+  "--photon-y": string;
+  "--photon-size": string;
+  "--photon-opacity": number;
+  "--photon-delay": string;
+  "--photon-duration": string;
+  "--photon-drift": string;
+};
+
+type SunThreadStyle = CSSProperties & {
+  "--thread-x": string;
+  "--thread-y": string;
+  "--thread-length": string;
+  "--thread-opacity": number;
+  "--thread-delay": string;
+  "--thread-duration": string;
+  "--thread-tilt": string;
+  "--thread-width": string;
+};
 
 /**
  * DayCosmicBackground — Phase 3-A.4a-day light-mode cinematic backdrop.
  *
  * Research brief (premium apps like Calm / Headspace / Day One / iA Writer):
- * daylight mindfulness UX uses warm LAYERED SCENES, not pastel gradients.
+ * daylight mindfulness UX uses aurora LAYERED SCENES, not pastel gradients.
  * Metaphor shift from night cosmic: "floating in stars" → "sitting by
  * sunlit paper window". Dust motes replace stars as depth markers.
  *
  * 7-layer stack (back → front):
- *   1. Base OKLCH warm radial-mesh (cream center → peach radii)
- *   2. Warm bokeh pools — 2 blurred radials (amber TL, coral BR)
- *   3. Soft-light atmosphere sheet — peach + mix-blend-mode: soft-light
+ *   1. Base aurora radial-mesh (quiet center → green-ink radii)
+ *   2. Aurora bokeh pools — 2 blurred radials (violet TL, seafoam BR)
+ *   3. Soft-light atmosphere sheet — trace tint + mix-blend-mode: soft-light
  *   4. God-ray masque — diagonal repeating-gradient + radial mask (window)
- *   5. 35 dust motes — 2-4px OKLCH cream, drift 12-20s linear
+ *   5. 35 dust motes — 2-4px aurora light, drift 12-20s linear
  *   6. Paper grain SVG (feTurbulence, STATIC, 4% opacity, multiply)
  *   7. Edge foxing vignette — closest-corner radial darkening
  *
@@ -29,7 +52,7 @@ import "./DayCosmicBackground.css";
  * useShouldAnimate() so reduced-motion keeps a beautiful static scene.
  *
  * a11y: aria-hidden, pointer-events: none. All contrast verified in the
- * orb-day-scope token (oklch(0.28 0.04 50) ≥ 4.5:1 on every base palette).
+ * orb-day-scope token (green-ink) ≥ 4.5:1 on every base palette.
  *
  * Cross-platform (Law 10): -webkit-backdrop-filter paired everywhere blur
  * is used (iOS Safari). No backdrop-filter in this bg actually — layers
@@ -80,6 +103,44 @@ export const DayCosmicBackground = memo(function DayCosmicBackground() {
     });
   }, []);
 
+  const photons = useMemo(() => {
+    const tones: PhotonTone[] = ["aqua", "gold", "mint", "iris", "rose"];
+    return Array.from({ length: 78 }, (_, i) => {
+      const x = (Math.sin(i * 2.17 + 0.4) * 0.5 + 0.5) * 104 - 2;
+      const y = (Math.cos(i * 2.71 + 1.2) * 0.5 + 0.5) * 104 - 2;
+      const size = 2.6 + (i % 6) * 0.92;
+      const duration = 5.4 + (i % 9) * 0.72;
+      const delay = -(i * 0.19);
+      const opacity = 0.66 + ((i % 7) * 0.045);
+      const drift = 10 + (i % 5) * 4;
+      return {
+        id: i,
+        x,
+        y,
+        size,
+        duration,
+        delay,
+        opacity,
+        drift,
+        tone: tones[i % tones.length],
+      };
+    });
+  }, []);
+
+  const sunThreads = useMemo(() => {
+    return Array.from({ length: 18 }, (_, i) => {
+      const x = 3 + ((Math.sin(i * 1.57 + 0.8) * 0.5 + 0.5) * 94);
+      const y = -18 + ((Math.cos(i * 1.83 + 0.5) * 0.5 + 0.5) * 38);
+      const length = 42 + (i % 5) * 10;
+      const width = 1.4 + (i % 4) * 0.42;
+      const opacity = 0.22 + (i % 6) * 0.045;
+      const duration = 10.5 + (i % 7) * 1.2;
+      const delay = -(i * 0.47);
+      const tilt = -18 + (i % 6) * 4.4;
+      return { id: i, x, y, length, width, opacity, duration, delay, tilt };
+    });
+  }, []);
+
   return (
     <div
       aria-hidden="true"
@@ -87,17 +148,80 @@ export const DayCosmicBackground = memo(function DayCosmicBackground() {
       data-daymode={daymode}
       className="pointer-events-none absolute inset-0 z-0 overflow-hidden"
     >
-      {/* Layer 1 — base warm OKLCH radial mesh */}
+      {/* Layer 1 — base aurora radial mesh */}
       <div className="day-cosmic__base" data-testid="day-cosmic-base" />
 
-      {/* Layer 2 — warm bokeh pools (amber top-left, coral bottom-right) */}
+      <div className="day-cosmic__solar-portal" data-testid="day-cosmic-solar-portal">
+        <span className="day-cosmic__solar-portal-core" />
+        <span className="day-cosmic__solar-portal-orbit day-cosmic__solar-portal-orbit--one" />
+        <span className="day-cosmic__solar-portal-orbit day-cosmic__solar-portal-orbit--two" />
+      </div>
+
+      {/* Layer 2 — aurora bokeh pools (violet top-left, seafoam bottom-right) */}
       <div className="day-cosmic__bokeh" data-testid="day-cosmic-bokeh" />
 
-      {/* Layer 3 — soft-light atmosphere sheet (peach, mix-blend soft-light) */}
+      {/* Layer 3 — soft-light atmosphere sheet (trace tint, mix-blend soft-light) */}
       <div className="day-cosmic__atmosphere" data-testid="day-cosmic-atmosphere" />
+
+      <div className="day-cosmic__horizon-glow" data-testid="day-cosmic-horizon-glow" />
+      <div className="day-cosmic__light-curtain" data-testid="day-cosmic-light-curtain" />
+
+      <div
+        className="day-cosmic__sun-threads"
+        data-testid="day-cosmic-sun-threads"
+        data-animated={shouldAnimate ? "true" : "false"}
+      >
+        {sunThreads.map((thread) => (
+          <span
+            key={thread.id}
+            className="day-cosmic__sun-thread"
+            style={
+              {
+                "--thread-x": `${thread.x}%`,
+                "--thread-y": `${thread.y}%`,
+                "--thread-length": `${thread.length}svh`,
+                "--thread-opacity": thread.opacity,
+                "--thread-delay": `${thread.delay}s`,
+                "--thread-duration": `${thread.duration}s`,
+                "--thread-tilt": `${thread.tilt}deg`,
+                "--thread-width": `${thread.width}px`,
+              } as SunThreadStyle
+            }
+          />
+        ))}
+      </div>
 
       {/* Layer 4 — god-ray masque (diagonal rays from window corner) */}
       <div className="day-cosmic__god-rays" data-testid="day-cosmic-god-rays" />
+
+      <div className="day-cosmic__sun-shower" data-testid="day-cosmic-sun-shower" />
+      <div className="day-cosmic__prism-ribbon" data-testid="day-cosmic-prism-ribbon" />
+      <div className="day-cosmic__caustics" data-testid="day-cosmic-caustics" />
+      <div className="day-cosmic__glass-depth" data-testid="day-cosmic-glass-depth" />
+
+      <div
+        className="day-cosmic__photon-field"
+        data-testid="day-cosmic-photon-field"
+        data-animated={shouldAnimate ? "true" : "false"}
+      >
+        {photons.map((photon) => (
+          <span
+            key={photon.id}
+            className={`day-cosmic__photon day-cosmic__photon--${photon.tone}`}
+            style={
+              {
+                "--photon-x": `${photon.x}%`,
+                "--photon-y": `${photon.y}%`,
+                "--photon-size": `${photon.size}px`,
+                "--photon-opacity": photon.opacity,
+                "--photon-delay": `${photon.delay}s`,
+                "--photon-duration": `${photon.duration}s`,
+                "--photon-drift": `${photon.drift}px`,
+              } as PhotonStyle
+            }
+          />
+        ))}
+      </div>
 
       {/* Layer 5 — 35 dust motes (animated drift, gated by reduced-motion) */}
       <div
@@ -143,7 +267,7 @@ export const DayCosmicBackground = memo(function DayCosmicBackground() {
         <rect width="100%" height="100%" filter="url(#day-cosmic-turbulence)" />
       </svg>
 
-      {/* Layer 7 — edge foxing vignette (warm corner darkening) */}
+      {/* Layer 7 — edge vignette (quiet corner darkening) */}
       <div className="day-cosmic__vignette" data-testid="day-cosmic-vignette" />
     </div>
   );

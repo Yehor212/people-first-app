@@ -16,7 +16,16 @@
  *     of truth (Law 14).
  */
 
-import { memo, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  memo,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
 import { Bloom } from "@/lib/motion";
 import { staggerDelay } from "@/lib/motion/choreography";
@@ -24,27 +33,93 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useUserDataStore } from "@/stores";
 import { hapticTap } from "@/lib/haptics";
 import { analytics } from "@/lib/analytics";
-import { setEntryValue, toStoredValue } from "@/lib/habits";
+import { doesNumericalStoredValueMeetTarget, setEntryValue, toStoredValue } from "@/lib/habits";
+import { getToday } from "@/lib/utils";
+import { useShouldAnimate } from "@/hooks/useShouldAnimate";
+import { ENTRY } from "@/types";
 import { HabitsHeroZone } from "./HabitsHeroZone";
 import { HabitCreateSheet } from "./HabitCreateSheet";
 import { HeroTemplateLibrarySheet } from "./hero/HeroTemplateLibrarySheet";
 import { useHabitsPageState } from "./useHabitsPageState";
 import type { HabitTemplate } from "@/lib/habitTemplates";
 import type { Habit } from "@/types";
+import type { HabitEntrySource } from "@/types";
+import type { NumericalEntryAction } from "@/lib/habitNumericalInteraction";
 // Lazy-load V1 HabitDetailSheet — keeps its ~20KB chunk off the initial
 // Habits page bundle; user only pays the cost when they actually open stats.
-const HabitDetailSheetLazy = lazyWithRetry(() =>
-  import("@/components/habit-hub/HabitDetailSheet").then((m) => ({
-    default: m.HabitDetailSheet,
-  })),
+const HabitDetailSheetLazy = lazyWithRetry(
+  () =>
+    import("@/components/habit-hub/HabitDetailSheet").then((m) => ({
+      default: m.HabitDetailSheet,
+    })),
   "HabitDetailSheet"
 );
+
+const HABIT_FIELD_SEEDS = [
+  { left: "10%", top: "19%", size: "0.34rem", delay: "0ms", role: "body" },
+  { left: "83%", top: "13%", size: "0.28rem", delay: "420ms", role: "focus" },
+  { left: "24%", top: "41%", size: "0.42rem", delay: "780ms", role: "energy" },
+  { left: "72%", top: "36%", size: "0.3rem", delay: "1140ms", role: "rest" },
+  { left: "14%", top: "67%", size: "0.24rem", delay: "1520ms", role: "gratitude" },
+  { left: "91%", top: "62%", size: "0.36rem", delay: "1960ms", role: "space" },
+] as const;
+
+const HABIT_FIELD_SPECTRUM = ["energy", "body", "focus", "gratitude", "rest"] as const;
+
+function HabitFieldBackdrop({
+  isEmpty,
+  animate,
+}: {
+  isEmpty: boolean;
+  animate: boolean;
+}) {
+  return (
+    <div
+      aria-hidden="true"
+      className="habit-field-backdrop"
+      data-testid="habit-field-backdrop"
+      data-habit-state={isEmpty ? "empty" : "active"}
+      data-animate={animate ? "true" : "false"}
+    >
+      <span className="habit-field-backdrop__source-beam" />
+      <span className="habit-field-backdrop__prism" />
+      {HABIT_FIELD_SPECTRUM.map((role) => (
+        <span
+          key={role}
+          className="habit-field-backdrop__spectrum"
+          data-spectrum-role={role}
+        />
+      ))}
+      <span className="habit-field-backdrop__canopy" />
+      <span className="habit-field-backdrop__cue-ring habit-field-backdrop__cue-ring--first" />
+      <span className="habit-field-backdrop__cue-ring habit-field-backdrop__cue-ring--second" />
+      <span className="habit-field-backdrop__progress-lane" />
+      <span className="habit-field-backdrop__root-map" />
+      {HABIT_FIELD_SEEDS.map((seed) => (
+        <span
+          key={`${seed.role}-${seed.left}-${seed.top}`}
+          className="habit-field-backdrop__seed"
+          data-seed-role={seed.role}
+          style={
+            {
+              "--seed-left": seed.left,
+              "--seed-top": seed.top,
+              "--seed-size": seed.size,
+              "--seed-delay": seed.delay,
+            } as CSSProperties
+          }
+        />
+      ))}
+    </div>
+  );
+}
 
 export const HabitsPage = memo(function HabitsPage() {
   const { t } = useLanguage();
   const tx = t;
   const mainRef = useRef<HTMLElement>(null);
-  const { habits, todaysHabits, dailyProgress } = useHabitsPageState();
+  const { habits, todaysHabits, dailyProgress, isEmpty: hasNoActiveHabits } = useHabitsPageState();
+  const animateBackdrop = useShouldAnimate();
   const setHabits = useUserDataStore((s) => s.setHabits);
   const [createOpen, setCreateOpen] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
@@ -92,20 +167,64 @@ export const HabitsPage = memo(function HabitsPage() {
       setHabits((prev) => [...prev, habit]);
       analytics.habitCreated(habit.templateId ? "template" : "custom", habits.length + 1);
     },
-    [setHabits, habits],
+    [setHabits, habits]
   );
 
   const handleUpdateHabit = useCallback(
     (habit: Habit) => {
       setHabits((prev) => prev.map((h) => (h.id === habit.id ? habit : h)));
     },
-    [setHabits],
+    [setHabits]
   );
   const handleDeleteHabit = useCallback(
     (habitId: string) => {
       setHabits((prev) => prev.filter((h) => h.id !== habitId));
     },
-    [setHabits],
+    [setHabits]
+  );
+
+  const entryMetadata = useCallback(
+    (date: string, source: HabitEntrySource) => ({
+      loggedAt: new Date().toISOString(),
+      source: date === getToday() ? source : "calendar",
+    }),
+    []
+  );
+
+  const recordNumericalValue = useCallback(
+    (
+      habit: Habit,
+      date: string,
+      realValue: number | null,
+      source: HabitEntrySource = "quickTap"
+    ) => {
+      const previousStored = habit.entries?.[date]?.value;
+      const nextStored = realValue === null ? undefined : toStoredValue(Math.max(0, realValue));
+      const prevMet = doesNumericalStoredValueMeetTarget(habit, previousStored);
+      const nowMet = doesNumericalStoredValueMeetTarget(habit, nextStored);
+
+      setHabits((prev) =>
+        prev.map((h) => {
+          if (h.id !== habit.id) return h;
+          const entries =
+            nextStored === undefined
+              ? setEntryValue(h.entries || {}, date, ENTRY.UNKNOWN)
+              : setEntryValue(
+                  h.entries || {},
+                  date,
+                  nextStored,
+                  undefined,
+                  entryMetadata(date, source)
+                );
+          return { ...h, entries, updatedAt: new Date().toISOString() };
+        })
+      );
+
+      if (!prevMet && nowMet) {
+        analytics.habitCompleted(habit.name, habits.filter((h) => !h.isArchived).length);
+      }
+    },
+    [habits, setHabits, entryMetadata]
   );
 
   /**
@@ -123,35 +242,34 @@ export const HabitsPage = memo(function HabitsPage() {
       const habit = habits.find((h) => h.id === habitId);
       if (!habit) return;
       void hapticTap();
-      const currentStored = habit.entries?.[date]?.value ?? 0;
-      const currentReal = currentStored > 0 ? currentStored / 1000 : 0;
+      const currentStored = habit.entries?.[date]?.value;
+      const currentEntryValue = currentStored ?? 0;
+      const currentReal = currentEntryValue > 0 ? currentEntryValue / 1000 : 0;
       const newReal = Math.max(0, currentReal + delta);
-      const newStored = toStoredValue(newReal);
-      const target = habit.targetValue ?? 0;
-      const isAtMost = habit.targetType === "atMost";
-      const prevMet =
-        target > 0 &&
-        (isAtMost ? currentReal > 0 && currentReal <= target : currentReal >= target);
-      const nowMet =
-        target > 0 && (isAtMost ? newReal > 0 && newReal <= target : newReal >= target);
-      const justCompleted = !prevMet && nowMet;
-
-      setHabits((prev) =>
-        prev.map((h) =>
-          h.id !== habitId
-            ? h
-            : { ...h, entries: setEntryValue(h.entries || {}, date, newStored) },
-        ),
-      );
-
-      if (justCompleted) {
-        analytics.habitCompleted(
-          habit.name,
-          habits.filter((h) => !h.isArchived).length,
-        );
-      }
+      recordNumericalValue(habit, date, newReal, "quickTap");
     },
-    [habits, setHabits],
+    [habits, recordNumericalValue]
+  );
+
+  const handleNumericalAction = useCallback(
+    (habitId: string, date: string, action: NumericalEntryAction) => {
+      const habit = habits.find((h) => h.id === habitId);
+      if (!habit) return;
+      if (action.type === "openExactInput") {
+        setDetailHabit(habit);
+        return;
+      }
+      if (action.type === "adjust") {
+        handleAdjustHabit(habitId, date, action.delta);
+        return;
+      }
+      if (action.type === "clear") {
+        recordNumericalValue(habit, date, null);
+        return;
+      }
+      recordNumericalValue(habit, date, action.value, "quickTap");
+    },
+    [habits, handleAdjustHabit, recordNumericalValue]
   );
   const handleToggleHabit = useCallback(
     (habitId: string, date: string) => {
@@ -172,21 +290,21 @@ export const HabitsPage = memo(function HabitsPage() {
             void _drop;
             return { ...h, entries: rest };
           }
-          entries[date] = { value: 1 };
-          return { ...h, entries };
-        }),
+          entries[date] = {
+            value: ENTRY.YES_MANUAL,
+            ...entryMetadata(date, "quickTap"),
+          };
+          return { ...h, entries, updatedAt: new Date().toISOString() };
+        })
       );
       if (isCompletingNow && habit) {
         // §15 retention metric — habit.name carries length-only PII gate at
         // the Analytics layer (see analytics.ts). total_habits is the active
         // (non-archived) count so the aggregator can filter ≥3-habit users.
-        analytics.habitCompleted(
-          habit.name,
-          habits.filter((h) => !h.isArchived).length,
-        );
+        analytics.habitCompleted(habit.name, habits.filter((h) => !h.isArchived).length);
       }
     },
-    [habits, setHabits],
+    [habits, setHabits, entryMetadata]
   );
   const openCreate = useCallback(() => {
     captureReturnFocus();
@@ -213,7 +331,7 @@ export const HabitsPage = memo(function HabitsPage() {
       setSelectedTemplate(null);
       setCreateOpen(true);
     },
-    [captureReturnFocus],
+    [captureReturnFocus]
   );
   const openTemplateSetup = useCallback(
     (template: HabitTemplate) => {
@@ -223,7 +341,7 @@ export const HabitsPage = memo(function HabitsPage() {
       setLibraryOpen(false);
       setCreateOpen(true);
     },
-    [captureReturnFocus],
+    [captureReturnFocus]
   );
   const openLibrary = useCallback(() => {
     captureReturnFocus();
@@ -239,7 +357,7 @@ export const HabitsPage = memo(function HabitsPage() {
       setDetailHabit(habit);
       analytics.habitDetailOpened(habits.length);
     },
-    [captureReturnFocus, habits.length],
+    [captureReturnFocus, habits.length]
   );
   const closeDetail = useCallback(() => {
     setDetailHabit(null);
@@ -251,20 +369,16 @@ export const HabitsPage = memo(function HabitsPage() {
   }, []);
   const handleArchiveHabit = useCallback(
     (habitId: string) => {
-      setHabits((prev) =>
-        prev.map((h) => (h.id === habitId ? { ...h, isArchived: true } : h)),
-      );
+      setHabits((prev) => prev.map((h) => (h.id === habitId ? { ...h, isArchived: true } : h)));
     },
-    [setHabits],
+    [setHabits]
   );
 
   const handleUnarchiveHabit = useCallback(
     (habitId: string) => {
-      setHabits((prev) =>
-        prev.map((h) => (h.id === habitId ? { ...h, isArchived: false } : h)),
-      );
+      setHabits((prev) => prev.map((h) => (h.id === habitId ? { ...h, isArchived: false } : h)));
     },
-    [setHabits],
+    [setHabits]
   );
 
   const handleSkipHabit = useCallback(
@@ -273,12 +387,15 @@ export const HabitsPage = memo(function HabitsPage() {
         prev.map((h) => {
           if (h.id !== habitId) return h;
           const entries = { ...(h.entries ?? {}) };
-          entries[date] = { value: -1 };
-          return { ...h, entries };
-        }),
+          entries[date] = {
+            value: ENTRY.SKIP,
+            ...entryMetadata(date, "skip"),
+          };
+          return { ...h, entries, updatedAt: new Date().toISOString() };
+        })
       );
     },
-    [setHabits],
+    [setHabits, entryMetadata]
   );
 
   const handleUnskipHabit = useCallback(
@@ -290,10 +407,10 @@ export const HabitsPage = memo(function HabitsPage() {
           const { [date]: _skip, ...rest } = entries;
           void _skip;
           return { ...h, entries: rest };
-        }),
+        })
       );
     },
-    [setHabits],
+    [setHabits]
   );
 
   /** Set of V1 template ids the user has already adopted — used both by the
@@ -311,8 +428,14 @@ export const HabitsPage = memo(function HabitsPage() {
       if (habits.some((h) => h.templateId === template.id)) return;
       openTemplateSetup(template);
     },
-    [habits, openTemplateSetup],
+    [habits, openTemplateSetup]
   );
+
+  const isEmpty = hasNoActiveHabits;
+  const habitFieldStyle = {
+    "--habit-field-progress": dailyProgress.total > 0 ? dailyProgress.ratio : 0,
+    "--habit-field-density": Math.min(todaysHabits.length, 8),
+  } as CSSProperties;
 
   return (
     <Bloom key="habits-page" transition={staggerDelay("primary")}>
@@ -321,45 +444,43 @@ export const HabitsPage = memo(function HabitsPage() {
         id="main-content-v2"
         role="main"
         tabIndex={-1}
-        className="relative mx-auto max-w-3xl pb-16 outline-none motion-safe:transition-[background] motion-safe:duration-700"
-        style={
-          // Subliminal progress tint — warm cream → soft emerald wash as completion grows.
-          // Caps at 4% alpha so it stays as subtext, not a chrome take-over.
-          // Design rationale: docs/design-animation-audit.md §4.1 item 3.
-          dailyProgress.total > 0
-            ? {
-                backgroundImage: `linear-gradient(180deg, transparent 0%, hsl(var(--primary) / ${dailyProgress.ratio * 0.04}) 100%)`,
-              }
-            : undefined
-        }
+        className="relative isolate min-h-screen w-full overflow-hidden pb-16 outline-none motion-safe:transition-[background] motion-safe:duration-700"
+        style={habitFieldStyle}
         aria-labelledby="habits-page-heading"
         data-testid="habits-page"
+        data-habit-state={isEmpty ? "empty" : "active"}
+        data-habit-count={todaysHabits.length}
       >
-        <header className="px-4 pt-16 md:px-6 md:pt-12">
-          <h1
-            id="habits-page-heading"
-            className="font-display text-3xl font-semibold tracking-tight text-foreground md:text-4xl"
-          >
-            {tx.navV2Habits}
-          </h1>
-        </header>
+        <HabitFieldBackdrop isEmpty={isEmpty} animate={animateBackdrop} />
+        <div className="relative z-[1] mx-auto min-h-screen w-full max-w-3xl">
+          <header className="min-h-[5.75rem] px-4 ps-20 pt-[calc(env(safe-area-inset-top)+1.75rem)] md:min-h-0 md:px-6 md:ps-6 md:pt-12">
+            <h1
+              id="habits-page-heading"
+              className="font-display text-3xl font-semibold leading-[1.08] tracking-tight text-foreground md:text-4xl"
+            >
+              {tx.navV2Habits}
+            </h1>
+          </header>
 
-        <HabitsHeroZone
-          todaysHabits={todaysHabits}
-          dailyProgress={dailyProgress}
-          onToggleHabit={handleToggleHabit}
-          onAdjustHabit={handleAdjustHabit}
-          onDeleteHabit={handleDeleteHabit}
-          onSkipHabit={handleSkipHabit}
-          onUnskipHabit={handleUnskipHabit}
-          onArchiveHabit={handleArchiveHabit}
-          onUnarchiveHabit={handleUnarchiveHabit}
-          onCreateHabit={openCreate}
-          onEditHabit={openEditForm}
-          onPickTemplate={handlePickTemplate}
-          onOpenLibrary={openLibrary}
-          onOpenDetail={openDetail}
-        />
+          <HabitsHeroZone
+            todaysHabits={todaysHabits}
+            hasActiveHabits={!hasNoActiveHabits}
+            dailyProgress={dailyProgress}
+            onToggleHabit={handleToggleHabit}
+            onAdjustHabit={handleAdjustHabit}
+            onNumericalAction={handleNumericalAction}
+            onDeleteHabit={handleDeleteHabit}
+            onSkipHabit={handleSkipHabit}
+            onUnskipHabit={handleUnskipHabit}
+            onArchiveHabit={handleArchiveHabit}
+            onUnarchiveHabit={handleUnarchiveHabit}
+            onCreateHabit={openCreate}
+            onEditHabit={openEditForm}
+            onPickTemplate={handlePickTemplate}
+            onOpenLibrary={openLibrary}
+            onOpenDetail={openDetail}
+          />
+        </div>
 
         <HabitCreateSheet
           open={createOpen}
@@ -385,8 +506,6 @@ export const HabitsPage = memo(function HabitsPage() {
               onClose={closeDetail}
               onEdit={openEditFromDetail}
               onUpdate={handleUpdateHabit}
-              onArchive={handleArchiveHabit}
-              onUnarchive={handleUnarchiveHabit}
               onSkip={handleSkipHabit}
               onUnskip={handleUnskipHabit}
               onDelete={handleDeleteHabit}

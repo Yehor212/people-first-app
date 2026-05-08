@@ -12,6 +12,9 @@
  *  - Keeps the view file focused on rendering + event wiring.
  */
 
+import { storageGetRaw, storageSetRaw } from "@/lib/safeJson";
+import { SK } from "@/lib/storageKeys";
+
 /** Canonical valence stops (5 snaps: very-unpleasant → very-pleasant). */
 export const SNAP_STOPS = [-1, -0.5, 0, 0.5, 1] as const;
 
@@ -24,12 +27,12 @@ export const LABEL_KEYS = [
   "moodVeryPleasant",
 ] as const;
 
-/** 5 tint hues matching MoodOrbPicker — gradient stays visually identical. */
-export const TINT_HUES = [250, 220, 40, 80, 120] as const;
+/** 5 Aurora tint hues: memory violet -> trace cyan -> seafoam -> growth. */
+export const TINT_HUES = [300, 235, 175, 145, 155] as const;
 
 /** Lightness + chroma tables for OKLCH handle-hue interpolation. */
-export const TINT_L = [0.58, 0.64, 0.8, 0.82, 0.84] as const;
-export const TINT_C = [0.09, 0.08, 0.05, 0.09, 0.1] as const;
+export const TINT_L = [0.62, 0.68, 0.74, 0.72, 0.76] as const;
+export const TINT_C = [0.1, 0.09, 0.08, 0.08, 0.09] as const;
 
 /** English fallbacks — used when an i18n key resolves empty. */
 export const LABEL_FALLBACK = [
@@ -41,7 +44,7 @@ export const LABEL_FALLBACK = [
 ] as const;
 
 /** localStorage key for the "last committed valence" ghost marker. */
-export const STORAGE_KEY = "zen.moodSliderV2.lastCommit";
+export const STORAGE_KEY = SK.MOOD_SLIDER_V2_LAST_COMMIT;
 
 /** Clamp a raw number to the valence domain [-1, 1]. */
 export const clamp = (v: number): number => Math.max(-1, Math.min(1, v));
@@ -69,8 +72,8 @@ export function nearestStopIndex(v: number): number {
  * CSS color string. Safe to write to a custom prop; browsers without oklch()
  * support still render the fallback gradient on the track.
  *
- * Hue interpolation is a straight lerp — all 5 canonical hues (250 / 220 /
- * 40 / 80 / 120) share a single compact arc, so no wrap-around needed.
+ * Hue interpolation is a straight lerp across the Aurora rail; no warm stop is
+ * used for ordinary mood input.
  */
 export function handleOklch(valence: number): string {
   const pos = ((valence + 1) / 2) * (SNAP_STOPS.length - 1);
@@ -85,24 +88,14 @@ export function handleOklch(valence: number): string {
 
 /** Read the last committed valence from localStorage (safe failure). */
 export function readLastCommit(): number | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = Number.parseFloat(raw);
-    if (Number.isNaN(parsed)) return null;
-    return clamp(parsed);
-  } catch {
-    return null;
-  }
+  const raw = storageGetRaw(STORAGE_KEY, "");
+  if (!raw) return null;
+  const parsed = Number.parseFloat(raw);
+  if (Number.isNaN(parsed)) return null;
+  return clamp(parsed);
 }
 
 /** Persist the committed valence to localStorage (safe failure). */
 export function writeLastCommit(v: number): void {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(STORAGE_KEY, v.toString());
-  } catch {
-    // storage unavailable — silently drop the ghost persistence
-  }
+  storageSetRaw(STORAGE_KEY, v.toString());
 }

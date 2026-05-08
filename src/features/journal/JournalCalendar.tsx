@@ -1,15 +1,14 @@
 import { useState, useMemo, useRef, useEffect } from "react";
-import { ChevronLeft, ChevronRight, Info, CalendarRange } from "lucide-react";
-import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { ChevronLeft, ChevronRight, CalendarRange } from "lucide-react";
+import { motion, useReducedMotion } from "framer-motion";
 import { cn, getToday } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getLocale } from "@/lib/timeUtils";
-import { SK } from "@/lib/storageKeys";
-import { storageGetRaw, storageSetRaw } from "@/lib/safeJson";
 import { shouldAnimate } from "@/lib/animationUtils";
 import { hapticTap } from "@/lib/haptics";
 import type { MoodType } from "@/types";
 import { computeStreaks } from "./computeStreaks";
+import { DiaryMiniOrb } from "./DiaryMiniOrb";
 
 /** Theme-token-based mood background colors with opacity modulation */
 const MOOD_BG_STYLE: Record<MoodType, string> = {
@@ -29,30 +28,6 @@ const MOOD_BG_STYLE_DARK: Record<MoodType, string> = {
   terrible: "hsl(var(--mood-terrible) / 0.18)",
 };
 
-const MOOD_COLORS: Record<string, string> = {
-  great: "bg-green-400",
-  good: "bg-emerald-400",
-  okay: "bg-amber-400",
-  bad: "bg-orange-400",
-  terrible: "bg-red-400",
-};
-
-const MOOD_RING: Record<string, string> = {
-  great: "ring-green-400/20",
-  good: "ring-emerald-400/20",
-  okay: "ring-amber-400/20",
-  bad: "ring-orange-400/20",
-  terrible: "ring-red-400/20",
-};
-
-const MOOD_LEGEND: { mood: MoodType; color: string; key: string }[] = [
-  { mood: "great", color: "bg-green-400", key: "moodGreat" },
-  { mood: "good", color: "bg-emerald-400", key: "moodGood" },
-  { mood: "okay", color: "bg-amber-400", key: "moodOkay" },
-  { mood: "bad", color: "bg-orange-400", key: "moodBad" },
-  { mood: "terrible", color: "bg-red-400", key: "moodTerrible" },
-];
-
 /** Get localized single-letter day names (Sun–Sat) using Intl API */
 function getLocalizedDayNames(locale: string): string[] {
   const formatter = new Intl.DateTimeFormat(locale, { weekday: "narrow" });
@@ -62,6 +37,7 @@ function getLocalizedDayNames(locale: string): string[] {
 
 interface JournalCalendarProps {
   entryDates: Map<string, MoodType | undefined>;
+  releaseTraceDates?: Map<string, number>;
   selectedDate: string | null;
   onSelectDate: (date: string | null) => void;
   onToggleMode?: () => void;
@@ -69,6 +45,7 @@ interface JournalCalendarProps {
 
 export function JournalCalendar({
   entryDates,
+  releaseTraceDates,
   selectedDate,
   onSelectDate,
   onToggleMode,
@@ -80,9 +57,6 @@ export function JournalCalendar({
   const reducedMotion = useReducedMotion();
   const animate = shouldAnimate() && !reducedMotion;
   const [startOffset, setStartOffset] = useState(0);
-  const [showLegend, setShowLegend] = useState(() => {
-    return !storageGetRaw(SK.JOURNAL_LEGEND_SEEN);
-  });
 
   // Detect dark mode via class on document
   const isDark =
@@ -167,16 +141,6 @@ export function JournalCalendar({
               <CalendarRange className="w-3.5 h-3.5 text-muted-foreground/60" />
             </button>
           )}
-          <button
-            onClick={() => {
-              setShowLegend((v) => !v);
-              storageSetRaw(SK.JOURNAL_LEGEND_SEEN, "1");
-            }}
-            className="p-1 rounded-md hover:bg-muted/50 min-w-[44px] min-h-[44px] flex items-center justify-center"
-            aria-label={ts.journalCalendarMoodLegend || "Mood legend"}
-          >
-            <Info className="w-3 h-3 text-muted-foreground/50" />
-          </button>
         </div>
 
         <button
@@ -199,6 +163,7 @@ export function JournalCalendar({
           const isSelected = d.date === selectedDate;
           const mood = entryDates.get(d.date);
           const hasEntry = entryDates.has(d.date);
+          const hasReleaseTrace = (releaseTraceDates?.get(d.date) ?? 0) > 0;
           const streak = streaks.get(d.date);
 
           // T1: Mood intensity background color via theme tokens
@@ -273,43 +238,29 @@ export function JournalCalendar({
                   animate={{ scale: 1 }}
                   transition={animate ? { type: "spring", stiffness: 500, damping: 20 } : { duration: 0 }}
                   className={cn(
-                    "w-2 h-2 rounded-full ring-2 relative z-[1]",
-                    mood ? MOOD_COLORS[mood] : "bg-primary/60",
-                    mood ? MOOD_RING[mood] : "ring-primary/20",
+                    "relative z-[1] flex h-4 w-4 items-center justify-center",
                     isToday && "motion-safe:animate-pulse-subtle"
                   )}
-                />
+                  data-testid="journal-calendar-mood-orb"
+                  data-mood={mood || "entry"}
+                >
+                  <DiaryMiniOrb mood={mood} size="micro" className="scale-[0.64]" />
+                </motion.div>
               ) : (
-                <div className="w-2 h-2" />
+                <div className="h-4 w-4" />
+              )}
+              {hasReleaseTrace && (
+                <span
+                  data-testid="journal-release-trace-dot"
+                  className="absolute bottom-1 end-1 z-[2] h-1.5 w-1.5 rounded-full bg-[hsl(var(--cosmic-nebula-cyan)/0.86)] shadow-[0_0_8px_hsl(var(--cosmic-nebula-purple)/0.34)]"
+                  aria-hidden="true"
+                />
               )}
             </motion.button>
           );
         })}
       </div>
 
-      {/* Mood legend */}
-      <AnimatePresence>
-        {showLegend && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="overflow-hidden"
-          >
-            <div className="flex items-center justify-center gap-3 pt-1.5 pb-0.5 flex-wrap">
-              {MOOD_LEGEND.map(({ mood, color, key }) => (
-                <span
-                  key={mood}
-                  className="flex items-center gap-1 text-[10px] text-muted-foreground/70"
-                >
-                  <span className={cn("w-1.5 h-1.5 rounded-full", color)} />
-                  {ts[key] || mood}
-                </span>
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

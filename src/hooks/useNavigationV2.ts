@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { morph } from "@/lib/motion/morph";
+import { storageGetRaw, storageSetRaw } from "@/lib/safeJson";
+import { SK } from "@/lib/storageKeys";
 
 /**
  * Navigation V2 — 4-page IA (Orb / Habits / Diary / Settings).
@@ -20,7 +22,7 @@ export type NavV2Page = "orb" | "habits" | "diary" | "settings";
 
 export const NAV_V2_PAGES: readonly NavV2Page[] = ["orb", "habits", "diary", "settings"] as const;
 
-const STORAGE_KEY = "zen-nav-v2-last-page";
+const STORAGE_KEY = SK.NAV_V2_LAST_PAGE;
 const PATH_TO_PAGE: Record<string, NavV2Page> = {
   "/orb": "orb",
   "/habits": "habits",
@@ -34,6 +36,11 @@ const PAGE_TO_PATH: Record<NavV2Page, string> = {
   settings: "/settings",
 };
 
+interface RouteSnapshot {
+  page: NavV2Page;
+  unknownPath: string | null;
+}
+
 function isValidPage(value: unknown): value is NavV2Page {
   return typeof value === "string" && (NAV_V2_PAGES as readonly string[]).includes(value);
 }
@@ -42,30 +49,41 @@ function isValidPage(value: unknown): value is NavV2Page {
 function normalizePath(pathname: string): string {
   // import.meta.env.BASE_URL is set by Vite at build time (e.g. "/people-first-app/")
   const base = (import.meta.env?.BASE_URL || "/").replace(/\/$/, "");
-  if (base && pathname.startsWith(base)) {
-    const stripped = pathname.slice(base.length);
-    return stripped || "/";
-  }
-  return pathname;
+  const stripped = base && pathname.startsWith(base)
+    ? pathname.slice(base.length)
+    : pathname;
+  const normalized = stripped || "/";
+  return normalized.length > 1 && normalized.endsWith("/")
+    ? normalized.slice(0, -1)
+    : normalized;
 }
 
-function readInitialPage(): NavV2Page {
-  if (typeof window === "undefined") return "orb";
-  // URL takes priority over localStorage (deep-link friendly)
-  const pathPage = PATH_TO_PAGE[normalizePath(window.location.pathname)];
-  if (pathPage) return pathPage;
-  try {
-    const stored = window.localStorage.getItem(STORAGE_KEY);
-    if (isValidPage(stored)) return stored;
-  } catch {
-    // localStorage unavailable (private mode / SSR). Fall through to default.
+function getRouteSnapshot(): RouteSnapshot {
+  if (typeof window === "undefined") {
+    return { page: "orb", unknownPath: null };
   }
-  return "orb";
+
+  const normalizedPath = normalizePath(window.location.pathname);
+  // URL takes priority over localStorage (deep-link friendly)
+  const pathPage = PATH_TO_PAGE[normalizedPath];
+  if (pathPage) {
+    return { page: pathPage, unknownPath: null };
+  }
+
+  const stored = storageGetRaw(STORAGE_KEY, "");
+  const fallbackPage = isValidPage(stored) ? stored : "orb";
+  const isBareAppRoot = normalizedPath === "/" || normalizedPath === "";
+  return {
+    page: fallbackPage,
+    unknownPath: isBareAppRoot ? null : normalizedPath,
+  };
 }
 
 export interface UseNavigationV2Return {
   /** Currently active page (one of Orb/Habits/Diary/Settings). */
   activePage: NavV2Page;
+  /** Unknown app path that should render the user-facing Not Found state. */
+  unknownPath: string | null;
   /** Wrapped page change: writes URL, persists to localStorage, runs via morph(). */
   setActivePage: (page: NavV2Page) => void;
   /** Desktop sidebar rail mode (collapsed = 64-80px, expanded = 240-280px). */
@@ -90,7 +108,9 @@ export interface UseNavigationV2Return {
  *   // setActivePage('habits') -> URL becomes /habits, localStorage persists, morph transition runs.
  */
 export function useNavigationV2(): UseNavigationV2Return {
-  const [activePage, setActivePageState] = useState<NavV2Page>(readInitialPage);
+  const [initialRoute] = useState<RouteSnapshot>(getRouteSnapshot);
+  const [activePage, setActivePageState] = useState<NavV2Page>(initialRoute.page);
+  const [unknownPath, setUnknownPath] = useState<string | null>(initialRoute.unknownPath);
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
   const [drawerOpen, setDrawerOpen] = useState<boolean>(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState<boolean>(false);
@@ -102,20 +122,20 @@ export function useNavigationV2(): UseNavigationV2Return {
   // Persist last page (for next cold boot when URL is bare "/")
   useEffect(() => {
     if (typeof window === "undefined") return;
-    try {
-      window.localStorage.setItem(STORAGE_KEY, activePage);
-    } catch {
-      // Quota / disabled — non-fatal.
-    }
+    storageSetRaw(STORAGE_KEY, activePage);
   }, [activePage]);
 
   // Browser back/forward -> derive page from URL
   useEffect(() => {
     if (typeof window === "undefined") return;
     const onPopState = () => {
-      const next = PATH_TO_PAGE[normalizePath(window.location.pathname)];
-      if (next && next !== activePageRef.current) {
-        setActivePageState(next);
+      const next = getRouteSnapshot();
+      setUnknownPath(next.unknownPath);
+      if (next.unknownPath) {
+        return;
+      }
+      if (next.page !== activePageRef.current) {
+        setActivePageState(next.page);
       }
     };
     window.addEventListener("popstate", onPopState);
@@ -128,6 +148,7 @@ export function useNavigationV2(): UseNavigationV2Return {
 
     const run = () => {
       setActivePageState(page);
+      setUnknownPath(null);
       if (typeof window !== "undefined") {
         const base = (import.meta.env?.BASE_URL || "/").replace(/\/$/, "");
         const path = PAGE_TO_PATH[page];
@@ -165,6 +186,7 @@ export function useNavigationV2(): UseNavigationV2Return {
 
   return {
     activePage,
+    unknownPath,
     setActivePage,
     sidebarCollapsed,
     toggleSidebar,

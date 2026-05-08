@@ -16,13 +16,16 @@ vi.mock("@/contexts/LanguageContext", () => ({
       navV2HabitsEmpty: "Plant your first seed",
       navV2HabitsStartSmall: "Start with 3 habits — small steps win",
       navV2HabitsRecovery: "One missed day doesn't reset progress",
+      noHabitsToday: "No habits today",
+      habitRestDay: "Rest day",
       navV2HabitsCreate: "Create habit",
       navV2HabitsMorning: "Morning",
       navV2HabitsAfternoon: "Afternoon",
       navV2HabitsEvening: "Evening",
       navV2HabitsAnytime: "Anytime",
-      navV2HabitsIdentityToday: "Today you are building:",
-      navV2HabitsIdentityIntention: "Someone who keeps their word",
+      navV2HabitsIdentityToday: "Today you choose to be:",
+      navV2HabitsIdentitySentence: "Today you choose to be {identity}",
+      navV2HabitsIdentityIntention: "someone who keeps their word",
       navV2HabitsTwoMinuteRule: "Start with the 2-minute version",
       navV2HabitsAllDone: "Day complete",
       navV2HabitsKeepGoing: "Momentum is yours",
@@ -113,6 +116,7 @@ describe("HabitsPage (Phase 3-C single-zone)", () => {
 
   afterEach(() => {
     cleanup();
+    vi.useRealTimers();
   });
 
   it("renders the orchestrator main landmark with the page testid", () => {
@@ -136,6 +140,11 @@ describe("HabitsPage (Phase 3-C single-zone)", () => {
   it("renders the empty state when no habits exist", () => {
     mockHabits = [];
     render(<HabitsPage />);
+    expect(screen.getByTestId("habits-page")).toHaveAttribute("data-habit-state", "empty");
+    expect(screen.getByTestId("habit-field-backdrop")).toHaveAttribute(
+      "data-habit-state",
+      "empty",
+    );
     expect(screen.getByTestId("habits-hero-empty")).toBeInTheDocument();
   });
 
@@ -152,8 +161,40 @@ describe("HabitsPage (Phase 3-C single-zone)", () => {
       },
     ];
     render(<HabitsPage />);
+    expect(screen.getByTestId("habits-page")).toHaveAttribute("data-habit-state", "active");
+    expect(screen.getByTestId("habit-field-backdrop")).toHaveAttribute(
+      "data-habit-state",
+      "active",
+    );
     expect(screen.getByTestId("hero-group-anytime")).toBeInTheDocument();
     expect(screen.getByTestId("hero-weekly-card-h1")).toBeInTheDocument();
+  });
+
+  it("keeps the page active but shows a no-habits-today state when scheduled habits are off today", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 3, 20, 12, 0, 0)); // Monday
+    mockHabits = [
+      {
+        id: "wed",
+        name: "Wednesday ritual",
+        isArchived: false,
+        entries: {},
+        habitType: "boolean",
+        reminders: [],
+        frequency: { numerator: 1, denominator: 7 },
+        schedule: { mode: "specificDays", period: "week", targetCount: 1, dueDays: [3] },
+      },
+    ];
+
+    render(<HabitsPage />);
+
+    expect(screen.getByTestId("habits-page")).toHaveAttribute("data-habit-state", "active");
+    expect(screen.getByTestId("habit-field-backdrop")).toHaveAttribute(
+      "data-habit-state",
+      "active",
+    );
+    expect(screen.getByText("No habits today")).toBeInTheDocument();
+    expect(screen.queryByTestId("hero-group-anytime")).not.toBeInTheDocument();
   });
 
   it("does not render the create sheet when closed", () => {

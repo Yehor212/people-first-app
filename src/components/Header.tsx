@@ -74,7 +74,7 @@ export const Header = memo(function Header({
               className="flex-1 min-w-0 flex items-center justify-center gap-1.5 py-2.5 px-3 bg-secondary hover:bg-secondary/80 active:scale-[0.97] text-foreground rounded-xl motion-safe:transition-all min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
               aria-label={t.scheduleAddEvent}
             >
-              <CalendarPlus className="w-4 h-4 flex-shrink-0 text-muted-foreground" />
+              <CalendarPlus className="w-4 h-4 flex-shrink-0 text-muted-foreground" aria-hidden="true" />
               <span className="text-sm font-medium truncate">{t.scheduleAddEvent}</span>
             </button>
           )}
@@ -84,7 +84,7 @@ export const Header = memo(function Header({
               className="flex-1 min-w-0 flex items-center justify-center gap-1.5 py-2.5 px-3 bg-secondary hover:bg-secondary/80 active:scale-[0.97] text-foreground rounded-xl motion-safe:transition-all min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
               aria-label={t.openQuests}
             >
-              <Sparkles className="w-4 h-4 flex-shrink-0 text-muted-foreground" />
+              <Sparkles className="w-4 h-4 flex-shrink-0 text-muted-foreground" aria-hidden="true" />
               <span className="text-sm font-medium truncate">{t.quests}</span>
             </button>
           )}
@@ -94,7 +94,7 @@ export const Header = memo(function Header({
               className="flex-1 min-w-0 flex items-center justify-center gap-1.5 py-2.5 px-3 bg-secondary hover:bg-secondary/80 active:scale-[0.97] text-foreground rounded-xl motion-safe:transition-all min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
               aria-label={t.openChallenges}
             >
-              <Trophy className="w-4 h-4 flex-shrink-0 text-muted-foreground" />
+              <Trophy className="w-4 h-4 flex-shrink-0 text-muted-foreground" aria-hidden="true" />
               <span className="text-sm font-medium truncate">{t.challenges}</span>
             </button>
           )}
@@ -104,7 +104,7 @@ export const Header = memo(function Header({
               className="flex-1 min-w-0 flex items-center justify-center gap-1.5 py-2.5 px-3 bg-secondary hover:bg-secondary/80 active:scale-[0.97] text-foreground rounded-xl motion-safe:transition-all min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
               aria-label={t.friends || "Friends"}
             >
-              <Users className="w-4 h-4 flex-shrink-0 text-muted-foreground" />
+              <Users className="w-4 h-4 flex-shrink-0 text-muted-foreground" aria-hidden="true" />
               <span className="text-sm font-medium truncate">{t.friends || "Friends"}</span>
             </button>
           )}

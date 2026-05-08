@@ -27,6 +27,8 @@ export interface MoodEntryDraft {
   specificTime: string | null;
   /** Chosen emotion tag key (see emotionTags.ts). null = not yet chosen. */
   emotion: string | null;
+  /** Optional short note captured on the refine step before Diary handoff. */
+  note: string;
 }
 
 export interface MoodEntryDraftStore extends MoodEntryDraft {
@@ -34,8 +36,9 @@ export interface MoodEntryDraftStore extends MoodEntryDraft {
   setScope: (scope: MoodDraftScope) => void;
   setSpecificTime: (iso: string | null) => void;
   setEmotion: (emotion: string | null) => void;
+  setNote: (note: string) => void;
   reset: () => void;
-  /** True when valence AND emotion AND scope are all resolved (ready to confirm). */
+  /** True when the orb handoff can proceed without missing required timing info. */
   isComplete: () => boolean;
 }
 
@@ -44,6 +47,7 @@ const INITIAL: MoodEntryDraft = {
   scope: "now",
   specificTime: null,
   emotion: null,
+  note: "",
 };
 
 export const useMoodEntryDraftStore = create<MoodEntryDraftStore>((set, get) => ({
@@ -57,6 +61,7 @@ export const useMoodEntryDraftStore = create<MoodEntryDraftStore>((set, get) => 
     })),
   setSpecificTime: (specificTime) => set({ specificTime }),
   setEmotion: (emotion) => set({ emotion }),
+  setNote: (note) => set({ note }),
   // Test/e2e hook: expose setters on window for deterministic baseline capture
   // without relying on framer-motion drag simulation.
   ...(typeof window !== "undefined"
@@ -66,6 +71,7 @@ export const useMoodEntryDraftStore = create<MoodEntryDraftStore>((set, get) => 
             setValence: (v: number) => void;
             setScope: (s: MoodDraftScope) => void;
             setEmotion: (e: string | null) => void;
+            setNote: (note: string) => void;
           };
         }
         const w = window as unknown as WindowWithDraft;
@@ -74,6 +80,7 @@ export const useMoodEntryDraftStore = create<MoodEntryDraftStore>((set, get) => 
             setValence: (v) => useMoodEntryDraftStore.getState().setValence(v),
             setScope: (s) => useMoodEntryDraftStore.getState().setScope(s),
             setEmotion: (e) => useMoodEntryDraftStore.getState().setEmotion(e),
+            setNote: (note) => useMoodEntryDraftStore.getState().setNote(note),
           };
         }, 0);
         return {};
@@ -82,9 +89,7 @@ export const useMoodEntryDraftStore = create<MoodEntryDraftStore>((set, get) => 
   reset: () => set({ ...INITIAL }),
   isComplete: () => {
     const s = get();
-    if (s.valence === null) return false;
-    if (s.emotion === null) return false;
     if (s.scope === "specific" && !s.specificTime) return false;
-    return true;
+    return s.valence !== null;
   },
 }));

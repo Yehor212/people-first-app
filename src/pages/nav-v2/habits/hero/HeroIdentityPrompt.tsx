@@ -1,15 +1,13 @@
 /**
- * HeroIdentityPrompt — daily-rotating identity statement.
+ * HeroIdentityPrompt - daily rotating identity statement.
  *
- * "You're not aiming to read a book. You're aiming to become a reader."
- *   — James Clear, Atomic Habits (Identity-Based Habits chapter)
- *
- * Picks one identityVerb / identityIcon pair from the user's habits
- * deterministically by date-of-month, falling back to a generic
- * "someone who keeps their word" prompt when no identity is configured.
+ * The sentence is localized as one template with an `{identity}` placeholder so
+ * languages with case, gender, or different word order do not inherit English
+ * grammar.
  */
 
 import { memo, useMemo } from "react";
+import { IdentityVisual } from "@/components/IdentityIconPicker";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { Habit } from "@/types";
 
@@ -24,6 +22,22 @@ interface IdentityChoice {
   icon: string;
 }
 
+const DEFAULT_IDENTITY_ICON = "Sparkles";
+const DAILY_IDENTITY_SEPARATOR = "|";
+
+function pickByDay<T>(items: readonly T[], dayOfMonth: number, oneBased = false): T | null {
+  if (items.length === 0) return null;
+  const seed = oneBased ? Math.max(0, dayOfMonth - 1) : Math.abs(dayOfMonth);
+  return items[seed % items.length] ?? null;
+}
+
+export function parseDailyIdentityIntentions(raw: string | undefined): string[] {
+  return (raw ?? "")
+    .split(DAILY_IDENTITY_SEPARATOR)
+    .map((phrase) => phrase.trim())
+    .filter(Boolean);
+}
+
 /** Pure: returns the identity choice for a given seed, or null if none configured. */
 export function pickIdentityForDay(
   habits: readonly Habit[],
@@ -33,13 +47,21 @@ export function pickIdentityForDay(
     .map((h): IdentityChoice | null => {
       const verb = (h.identityVerb ?? "").trim();
       if (!verb) return null;
-      const rawIcon = (h.identityIcon ?? "").trim() || (h.icon ?? "").trim() || "✨";
+      const rawIcon =
+        (h.identityIcon ?? "").trim() || (h.icon ?? "").trim() || DEFAULT_IDENTITY_ICON;
       return { verb, icon: rawIcon };
     })
     .filter((c): c is IdentityChoice => c !== null);
   if (choices.length === 0) return null;
-  const idx = Math.abs(dayOfMonth) % choices.length;
-  return choices[idx];
+  return pickByDay(choices, dayOfMonth);
+}
+
+export function pickDailyIdentityForDay(
+  rawIntentions: string | undefined,
+  dayOfMonth: number,
+): IdentityChoice | null {
+  const verb = pickByDay(parseDailyIdentityIntentions(rawIntentions), dayOfMonth, true);
+  return verb ? { verb, icon: DEFAULT_IDENTITY_ICON } : null;
 }
 
 export const HeroIdentityPrompt = memo(function HeroIdentityPrompt({
@@ -49,10 +71,18 @@ export const HeroIdentityPrompt = memo(function HeroIdentityPrompt({
   const { t } = useLanguage();
   const tx = t;
 
-  const choice = useMemo(() => pickIdentityForDay(habits, dayOfMonth), [habits, dayOfMonth]);
+  const choice = useMemo(
+    () =>
+      pickIdentityForDay(habits, dayOfMonth) ??
+      pickDailyIdentityForDay(tx.navV2HabitsIdentityIntentions, dayOfMonth),
+    [habits, dayOfMonth, tx.navV2HabitsIdentityIntentions],
+  );
 
   const verb = choice?.verb ?? tx.navV2HabitsIdentityIntention ?? "";
-  const icon = choice?.icon ?? "✨";
+  const sentenceTemplate =
+    tx.navV2HabitsIdentitySentence ?? `${tx.navV2HabitsIdentityToday} {identity}`;
+  const [sentenceBefore, sentenceAfter = ""] = sentenceTemplate.split("{identity}");
+  const icon = choice?.icon ?? DEFAULT_IDENTITY_ICON;
 
   return (
     <p
@@ -60,17 +90,27 @@ export const HeroIdentityPrompt = memo(function HeroIdentityPrompt({
       data-testid="hero-identity-prompt"
     >
       <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground/80">
-        {tx.navV2HabitsIdentityToday}
+        {sentenceBefore.trim()}
       </span>
       <span
-        className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-base font-semibold text-primary"
+        className="habit-identity-verb inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-base font-semibold"
         data-testid="hero-identity-verb"
       >
-        <span aria-hidden="true">{icon}</span>
-        <span className="font-hand text-lg italic leading-none tracking-tight md:text-xl">
+        <IdentityVisual
+          name={icon}
+          fallback={DEFAULT_IDENTITY_ICON}
+          iconClassName="h-3.5 w-3.5 text-[hsl(var(--zf-role-body))]"
+          textClassName="text-sm leading-none text-[hsl(var(--zf-role-body))]"
+        />
+        <span className="font-hand text-lg italic leading-none tracking-normal text-foreground md:text-xl">
           {verb}
         </span>
       </span>
+      {sentenceAfter.trim() ? (
+        <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground/80">
+          {sentenceAfter.trim()}
+        </span>
+      ) : null}
     </p>
   );
 });

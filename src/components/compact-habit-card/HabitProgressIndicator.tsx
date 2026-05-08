@@ -20,6 +20,7 @@ export interface HabitProgressIndicatorProps {
   habitId: string;
   today: string;
   onAdjust?: (habitId: string, date: string, delta: number) => void;
+  adjustStep?: number;
   t: Record<string, string>;
 }
 
@@ -32,15 +33,19 @@ export function HabitProgressIndicator({
   habitId,
   today,
   onAdjust,
+  adjustStep = 1,
   t,
 }: HabitProgressIndicatorProps) {
+  const safeAdjustStep =
+    Number.isFinite(adjustStep) && adjustStep > 0 ? adjustStep : 1;
+
   return (
     <div className="flex items-center gap-2 shrink-0">
       {habitType === 'numerical' ? (
         // Numerical type: progress ring with +/- buttons
         <div className="flex items-center gap-1.5">
           <motion.button
-            onClick={() => onAdjust?.(habitId, today, -1)}
+            onClick={() => onAdjust?.(habitId, today, -safeAdjustStep)}
             aria-label={t.decrease || 'Decrease'}
             className="w-12 h-12 min-w-[48px] min-h-[48px] rounded-lg bg-muted/50 flex items-center justify-center text-muted-foreground hover:bg-muted/80 motion-safe:transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:outline-none"
             whileHover={{ scale: 1.05 }}
@@ -59,7 +64,7 @@ export function HabitProgressIndicator({
             </span>
           </div>
           <motion.button
-            onClick={() => onAdjust?.(habitId, today, 1)}
+            onClick={() => onAdjust?.(habitId, today, safeAdjustStep)}
             aria-label={t.increase || 'Increase'}
             className={cn(
               "w-12 h-12 min-w-[48px] min-h-[48px] rounded-lg flex items-center justify-center motion-safe:transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:outline-none",

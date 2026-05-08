@@ -142,7 +142,7 @@ export function WelcomeOverlay({ onClose }: { onClose: () => void }) {
               {step < steps.length - 1
                 ? t.onboardingNext || "Next"
                 : t.onboardingGetStarted || "Let's start!"}
-              <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 rtl:scale-x-[-1]" />
+              <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 rtl:scale-x-[-1]" aria-hidden="true" />
             </button>
           </div>
         </div>

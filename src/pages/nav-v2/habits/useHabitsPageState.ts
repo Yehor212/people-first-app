@@ -15,6 +15,7 @@ import { useMemo } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useUserDataStore } from "@/stores";
 import { isHabitCompletedOnDate } from "@/lib/habits";
+import { isHabitDueOnDate } from "@/lib/habitScheduling";
 import { getToday } from "@/lib/utils";
 import type { Habit, FocusSession } from "@/types";
 
@@ -48,7 +49,7 @@ export function deriveHabitsPageState(
 ): HabitsPageStateValue {
   // Defensive: array might be undefined mid-hydration (Law 14 — array validation)
   const habits = Array.isArray(rawHabits) ? rawHabits.filter((h) => !h.isArchived) : [];
-  const todaysHabits = habits; // Future: filter by frequency / day-of-week
+  const todaysHabits = habits.filter((h) => isHabitDueOnDate(h, today));
   const completed = todaysHabits.reduce(
     (acc, h) => (isHabitCompletedOnDate(h, today) ? acc + 1 : acc),
     0,

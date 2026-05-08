@@ -8,11 +8,12 @@
  */
 
 import { memo, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Plus } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useShouldAnimate } from "@/hooks/useShouldAnimate";
 import { hapticTap } from "@/lib/haptics";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
+import { getRoleTone } from "@/lib/nonOrbVisualRoles";
+import { V2_HABIT_JOURNEY_ICONS } from "@/lib/v2IconSystem";
 import { AllHabitsDoneAnimation } from "@/components/animations/AllHabitsDoneAnimation";
 import { useStreakMilestones } from "./hero/useStreakMilestones";
 
@@ -24,6 +25,7 @@ const HabitCompletionCelebrationLazy = lazyWithRetry(() =>
 );
 
 import type { Habit } from "@/types";
+import type { NumericalEntryAction } from "@/lib/habitNumericalInteraction";
 import type { HabitsPageDailyProgress } from "./useHabitsPageState";
 import { HeroIdentityPrompt } from "./hero/HeroIdentityPrompt";
 import { HeroTimeOfDayGroup } from "./hero/HeroTimeOfDayGroup";
@@ -34,9 +36,11 @@ import type { HabitTemplate } from "@/lib/habitTemplates";
 
 interface HabitsHeroZoneProps {
   todaysHabits: Habit[];
+  hasActiveHabits?: boolean;
   dailyProgress: HabitsPageDailyProgress;
   onToggleHabit: (habitId: string, date: string) => void;
   onAdjustHabit?: (habitId: string, date: string, delta: number) => void;
+  onNumericalAction?: (habitId: string, date: string, action: NumericalEntryAction) => void;
   onDeleteHabit: (habitId: string) => void;
   onCreateHabit: () => void;
   onEditHabit?: (habit: Habit) => void;
@@ -51,9 +55,11 @@ interface HabitsHeroZoneProps {
 
 export const HabitsHeroZone = memo(function HabitsHeroZone({
   todaysHabits,
+  hasActiveHabits = todaysHabits.length > 0,
   dailyProgress,
   onToggleHabit,
   onAdjustHabit,
+  onNumericalAction,
   onDeleteHabit,
   onCreateHabit,
   onEditHabit,
@@ -98,6 +104,8 @@ export const HabitsHeroZone = memo(function HabitsHeroZone({
   );
 
   const isEmpty = todaysHabits.length === 0;
+  const bodyTone = getRoleTone("body");
+  const CreateHabitIcon = V2_HABIT_JOURNEY_ICONS.create;
 
   return (
     <section
@@ -110,7 +118,11 @@ export const HabitsHeroZone = memo(function HabitsHeroZone({
       </h2>
 
       {!isEmpty && (
-        <div className="sticky top-2 z-10 -mx-1 rounded-2xl border border-border/60 bg-background/85 px-3 py-3 shadow-sm backdrop-blur-md [-webkit-backdrop-filter:blur(12px)] md:top-4">
+        <div
+          className="habit-identity-cue sticky top-2 z-10 -mx-1 rounded-2xl border px-3 py-3 md:top-4"
+          data-visual-role="body"
+          data-testid="habits-identity-cue"
+        >
           <HeroIdentityPrompt habits={todaysHabits} dayOfMonth={dayOfMonth} />
           <HeroInsightStrip onOpenHabitInsight={handleOpenInsightHabit} />
         </div>
@@ -121,6 +133,7 @@ export const HabitsHeroZone = memo(function HabitsHeroZone({
           onCreateHabit={handleCreate}
           onPickTemplate={onPickTemplate}
           onOpenLibrary={onOpenLibrary}
+          variant={hasActiveHabits ? "rest" : "start"}
         />
       ) : (
         <>
@@ -131,6 +144,7 @@ export const HabitsHeroZone = memo(function HabitsHeroZone({
               habits={g.habits}
               onToggleHabit={onToggleHabit}
               onAdjustHabit={onAdjustHabit}
+              onNumericalAction={onNumericalAction}
               onDeleteHabit={onDeleteHabit}
               onEditHabit={onEditHabit}
               onSkipHabit={onSkipHabit}
@@ -153,13 +167,16 @@ export const HabitsHeroZone = memo(function HabitsHeroZone({
               type="button"
               onClick={handleCreate}
               className={
-                "inline-flex min-h-[48px] items-center gap-2 rounded-2xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 " +
+                "inline-flex min-h-[48px] items-center gap-2 rounded-2xl px-6 py-3 text-sm font-semibold text-[hsl(var(--zf-night-0))] shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 " +
+                "bg-[hsl(var(--zf-role-body))] " +
+                bodyTone.focusRingClass +
+                " " +
                 (animate ? "motion-safe:transition-transform active:scale-[0.97]" : "")
               }
               aria-label={tx.navV2HabitsCreate}
               data-testid="habits-hero-create"
             >
-              <Plus className="h-4 w-4" aria-hidden="true" />
+              <CreateHabitIcon className="h-4 w-4" aria-hidden="true" />
               {tx.navV2HabitsCreate}
             </button>
           </div>

@@ -26,12 +26,13 @@ import { hapticTap, hapticMedium, hapticSuccess } from '@/lib/haptics';
 import { announceSuccess } from '@/lib/a11y';
 import { gratitudeTextSchema } from '@/lib/validation';
 import { sanitizeString } from '@/lib/sanitize';
-import { generateId, getToday } from '@/lib/utils';
+import { cn, generateId, getToday } from '@/lib/utils';
 import type { GratitudeEntry } from '@/types';
 
 interface GratitudeBloomWidgetProps {
   onClose: () => void;
   onPlant: (entry: GratitudeEntry) => void;
+  surfaceClassName?: string;
 }
 
 // ── Botanical palette (theme-token CSS variables) ────────────────
@@ -79,7 +80,7 @@ const PARTICLES = Array.from({ length: 12 }, (_, i) => ({
 
 // ── Component ────────────────────────────────────────────────────
 
-export const GratitudeBloomWidget = memo(function GratitudeBloomWidget({ onClose, onPlant }: GratitudeBloomWidgetProps) {
+export const GratitudeBloomWidget = memo(function GratitudeBloomWidget({ onClose, onPlant, surfaceClassName }: GratitudeBloomWidgetProps) {
   const { t } = useLanguage();
   const ts = (t as unknown as Record<string, string>) ?? {};
   const [text, setText] = useState('');
@@ -184,7 +185,10 @@ export const GratitudeBloomWidget = memo(function GratitudeBloomWidget({ onClose
 
   return (
     <motion.div
-      className="my-8 p-6 rounded-2xl relative overflow-hidden bg-surface-glass backdrop-blur-[var(--surface-glass-blur)] border border-[var(--surface-glass-border)] zen-shadow-soft shadow-[inset_0_0_60px_rgba(52,211,153,0.04),var(--zen-shadow-soft)]"
+      className={cn(
+        "my-8 p-6 rounded-2xl relative overflow-hidden bg-surface-glass backdrop-blur-[var(--surface-glass-blur)] border border-[var(--surface-glass-border)] zen-shadow-soft shadow-[inset_0_0_60px_rgba(52,211,153,0.04),var(--zen-shadow-soft)]",
+        surfaceClassName,
+      )}
       initial={{ opacity: 0, y: -16, scale: 0.97 }}
       animate={getAnimateProps()}
       exit={{ opacity: 0, height: 0, scaleY: 0.92, y: -8, marginTop: 0, marginBottom: 0, paddingTop: 0, paddingBottom: 0 }}

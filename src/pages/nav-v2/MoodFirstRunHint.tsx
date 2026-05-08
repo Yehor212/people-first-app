@@ -2,13 +2,15 @@ import { memo, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { haptics } from "@/lib/haptics";
+import { storageGetRaw, storageSetRaw } from "@/lib/safeJson";
+import { SK } from "@/lib/storageKeys";
 import "./MoodFirstRunHint.css";
 
 /**
  * MoodFirstRunHint — Phase 3-A.4b one-time onboarding nudge.
  *
  * Shows three beats:
- *   1. Slide the orb
+ *   1. Move the mood slider
  *   2. Choose a scope
  *   3. Confirm
  *
@@ -20,24 +22,16 @@ import "./MoodFirstRunHint.css";
  * dismiss button. Law 10: safe-area-aware.
  */
 
-const STORAGE_KEY = "zenflow-orb-first-run-dismissed";
+const STORAGE_KEY = SK.ORB_FIRST_RUN_DISMISSED;
 
 function readDismissed(): boolean {
   if (typeof window === "undefined") return true;
-  try {
-    return window.localStorage.getItem(STORAGE_KEY) === "1";
-  } catch {
-    return false;
-  }
+  return storageGetRaw(STORAGE_KEY, "0") === "1";
 }
 
 function writeDismissed(): void {
   if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(STORAGE_KEY, "1");
-  } catch {
-    // storage unavailable — non-fatal. Hint will re-appear next session.
-  }
+  storageSetRaw(STORAGE_KEY, "1");
 }
 
 export interface MoodFirstRunHintProps {
@@ -106,7 +100,7 @@ export const MoodFirstRunHint = memo(function MoodFirstRunHint({
           <li className="mood-first-run-step">
             <span className="mood-first-run-step-index">1</span>
             <span className="mood-first-run-step-text">
-              {tx.orbFirstRunStep1 || "Slide the orb to match how you feel"}
+              {tx.orbFirstRunStep1 || "Move the slider to match how you feel"}
             </span>
           </li>
           <li className="mood-first-run-step">

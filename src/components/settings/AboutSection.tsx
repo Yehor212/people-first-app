@@ -123,7 +123,7 @@ export function AboutSection() {
               onClick={() => setShowChangelog(true)}
               className="w-full py-3 bg-secondary text-secondary-foreground rounded-xl font-medium hover:bg-muted motion-safe:transition-colors flex items-center justify-center gap-2"
             >
-              <History className="w-4 h-4" />
+              <History className="w-4 h-4" aria-hidden="true" />
               {t.changelogTitle || "Version History"}
             </button>
 
@@ -136,8 +136,7 @@ export function AboutSection() {
                   className="w-full py-3 bg-secondary text-secondary-foreground rounded-xl font-medium hover:bg-muted motion-safe:transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   <RefreshCw
-                    className={`w-4 h-4 ${updateCheckStatus === "checking" ? "motion-safe:animate-spin" : ""}`}
-                  />
+                    className={`w-4 h-4 ${updateCheckStatus === "checking" ? "motion-safe:animate-spin" : ""}`} aria-hidden="true" />
                   {updateCheckStatus === "checking"
                     ? t.checkingForUpdates || "Checking..."
                     : t.checkForUpdates || "Check for Updates"}
@@ -173,7 +172,7 @@ export function AboutSection() {
                       onClick={handleOpenGooglePlay}
                       className="w-full py-2 min-h-[44px] zen-gradient text-primary-foreground rounded-lg font-medium flex items-center justify-center gap-2"
                     >
-                      <ExternalLink className="w-4 h-4" />
+                      <ExternalLink className="w-4 h-4" aria-hidden="true" />
                       {t.openGooglePlay || "Open Google Play"}
                     </button>
                   </div>
@@ -193,10 +192,10 @@ export function AboutSection() {
               className="w-full flex items-center justify-between py-3 px-4 bg-secondary rounded-xl hover:bg-muted motion-safe:transition-colors min-h-[48px]"
             >
               <div className="flex items-center gap-3">
-                <MessageSquare className="w-5 h-5 text-primary" />
+                <MessageSquare className="w-5 h-5 text-primary" aria-hidden="true" />
                 <span className="font-medium">{t.sendFeedback}</span>
               </div>
-              <ChevronRight className="w-5 h-5 text-muted-foreground rtl:scale-x-[-1]" />
+              <ChevronRight className="w-5 h-5 text-muted-foreground rtl:scale-x-[-1]" aria-hidden="true" />
             </button>
 
             {/* Legal Buttons */}
@@ -208,10 +207,10 @@ export function AboutSection() {
               className="w-full flex items-center justify-between py-3 px-4 bg-secondary rounded-xl hover:bg-muted motion-safe:transition-colors min-h-[48px]"
             >
               <div className="flex items-center gap-3">
-                <Shield className="w-5 h-5 text-primary" />
+                <Shield className="w-5 h-5 text-primary" aria-hidden="true" />
                 <span className="font-medium">{t.privacyPolicy}</span>
               </div>
-              <ChevronRight className="w-5 h-5 text-muted-foreground rtl:scale-x-[-1]" />
+              <ChevronRight className="w-5 h-5 text-muted-foreground rtl:scale-x-[-1]" aria-hidden="true" />
             </button>
 
             <button
@@ -222,10 +221,10 @@ export function AboutSection() {
               className="w-full flex items-center justify-between py-3 px-4 bg-secondary rounded-xl hover:bg-muted motion-safe:transition-colors min-h-[48px]"
             >
               <div className="flex items-center gap-3">
-                <FileText className="w-5 h-5 text-primary" />
+                <FileText className="w-5 h-5 text-primary" aria-hidden="true" />
                 <span className="font-medium">{t.termsOfService}</span>
               </div>
-              <ChevronRight className="w-5 h-5 text-muted-foreground rtl:scale-x-[-1]" />
+              <ChevronRight className="w-5 h-5 text-muted-foreground rtl:scale-x-[-1]" aria-hidden="true" />
             </button>
 
             <button
@@ -236,10 +235,10 @@ export function AboutSection() {
               className="w-full flex items-center justify-between py-3 px-4 bg-secondary rounded-xl hover:bg-muted motion-safe:transition-colors min-h-[48px]"
             >
               <div className="flex items-center gap-3">
-                <Scale className="w-5 h-5 text-primary" />
+                <Scale className="w-5 h-5 text-primary" aria-hidden="true" />
                 <span className="font-medium">{t.openSourceLicenses}</span>
               </div>
-              <ChevronRight className="w-5 h-5 text-muted-foreground rtl:scale-x-[-1]" />
+              <ChevronRight className="w-5 h-5 text-muted-foreground rtl:scale-x-[-1]" aria-hidden="true" />
             </button>
           </div>
         </AccordionContent>

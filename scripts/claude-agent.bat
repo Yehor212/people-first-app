@@ -13,6 +13,9 @@ set logdate=%dt:~0,8%
 
 echo [%date% %time%] Starting Claude Agent... >> logs\agent-%logdate%.log
 
+REM Generate ZenFlow auto-context before launching the scheduled agent.
+node tools\zenflow-context\auto-context.mjs --topic "scheduled ci preflight verification" >> logs\agent-%logdate%.log 2>&1
+
 REM Run Claude Code with preflight check
 "C:\Users\egors\AppData\Roaming\npm\claude.cmd" -p --dangerously-skip-permissions "Run npm run ci:preflight in C:\project\people-first-app. Report results concisely. If anything fails, explain what and why." >> logs\agent-%logdate%.log 2>&1
 

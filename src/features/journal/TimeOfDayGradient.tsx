@@ -56,7 +56,7 @@ export const TimeOfDayGradient = memo(function TimeOfDayGradient() {
       {/* Primary gradient */}
       <div
         className={cn(
-          "absolute inset-0 bg-gradient-to-br pointer-events-none motion-safe:transition-opacity motion-safe:duration-[30000ms] ease-linear",
+          "absolute inset-0 bg-gradient-to-br pointer-events-none motion-safe:transition-opacity motion-safe:[transition-duration:30000ms] ease-linear",
           GRADIENTS[blend ? blend.from : currentPeriod]
         )}
         style={{ opacity: blend ? 1 - blend.factor : 1 }}

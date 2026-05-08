@@ -18,12 +18,12 @@
  */
 
 import { memo, useEffect, useMemo } from "react";
-import { AlertCircle, Sparkles, TrendingUp } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { Translations } from "@/i18n/types";
 import { analytics } from "@/lib/analytics";
 import { generateInsights, type InsightTranslations } from "@/lib/insightsEngine";
+import { V2_SHELL_ICONS } from "@/lib/v2IconSystem";
 import { useUserDataStore } from "@/stores";
 import type { Habit, Insight } from "@/types";
 
@@ -47,9 +47,9 @@ function buildInsightTranslations(tx: Translations): InsightTranslations {
 }
 
 function iconFor(insight: Insight) {
-  if (insight.severity === "warning") return AlertCircle;
-  if (insight.type === "focus-pattern" || insight.type === "habit-timing") return TrendingUp;
-  return Sparkles;
+  if (insight.severity === "warning") return V2_SHELL_ICONS.warning;
+  if (insight.type === "focus-pattern" || insight.type === "habit-timing") return V2_SHELL_ICONS.trend;
+  return V2_SHELL_ICONS.insight;
 }
 
 function getLinkedHabit(insight: Insight | null, habits: Habit[]): Habit | null {
@@ -112,10 +112,10 @@ export const HeroInsightStrip = memo(function HeroInsightStrip({
   const linkedHabit = getLinkedHabit(topInsight, habits);
   const severityClass =
     topInsight.severity === "warning"
-      ? "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20"
+      ? "border-[hsl(var(--zf-warning)/0.28)] bg-[hsl(var(--zf-warning)/0.12)] text-[hsl(var(--zf-warning))]"
       : topInsight.severity === "celebration"
-        ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20"
-        : "bg-primary/10 text-primary border-primary/20";
+        ? "border-[hsl(var(--zf-growth)/0.28)] bg-[hsl(var(--zf-growth)/0.12)] text-[hsl(var(--zf-growth))]"
+        : "border-[hsl(var(--zf-role-focus)/0.36)] bg-[hsl(var(--zf-role-focus)/0.18)] text-[hsl(var(--zf-role-focus))]";
 
   return (
     <aside

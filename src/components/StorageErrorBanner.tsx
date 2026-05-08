@@ -8,6 +8,7 @@ import { useState, useEffect, useRef } from "react";
 import { AlertTriangle, X } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { logger } from "@/lib/logger";
+import { storageCanWrite } from "@/lib/safeJson";
 
 interface StorageErrorEvent {
   type:
@@ -43,14 +44,7 @@ interface QueueFullEvent {
  * In Private Mode, localStorage quota is 0 and writes throw
  */
 function detectPrivateMode(): boolean {
-  try {
-    const testKey = "__zenflow_storage_test__";
-    localStorage.setItem(testKey, "test");
-    localStorage.removeItem(testKey);
-    return false;
-  } catch {
-    return true;
-  }
+  return !storageCanWrite();
 }
 
 export function StorageErrorBanner() {

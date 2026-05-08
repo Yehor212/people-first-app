@@ -183,7 +183,7 @@ export function FeedbackButton({ position = "bottom-right", className }: Feedbac
                     : "bg-muted text-muted-foreground cursor-not-allowed"
                 )}
               >
-                <Send className="w-4 h-4" />
+                <Send className="w-4 h-4" aria-hidden="true" />
                 {isSubmitting ? t.sending || "Sending..." : t.send || "Send"}
               </button>
             </div>

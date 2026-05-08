@@ -14,6 +14,7 @@
 import type { Habit, HabitEntry } from '@/types';
 import { ENTRY } from '@/types';
 import { computeEntriesWithAuto } from '@/lib/habitComputedEntries';
+import { doesNumericalStoredValueMeetTarget } from '@/lib/habits';
 
 // ─── Date helpers ───────────────────────────────────────────────────────────
 
@@ -402,10 +403,11 @@ export function getCurrentStreak(habit: Habit): number {
 export function getFrequencyByWeekday(habit: Habit): number[] {
   const counts = [0, 0, 0, 0, 0, 0, 0];
   for (const [dateStr, entry] of Object.entries(habit.entries)) {
-    if (
-      entry.value === ENTRY.YES_MANUAL ||
-      (habit.habitType === 'numerical' && entry.value > 0 && entry.value !== ENTRY.SKIP)
-    ) {
+    const isCompleted =
+      habit.habitType === 'boolean'
+        ? entry.value === ENTRY.YES_MANUAL
+        : doesNumericalStoredValueMeetTarget(habit, entry.value);
+    if (isCompleted) {
       const dow = parseDate(dateStr).getDay();
       counts[dow]++;
     }

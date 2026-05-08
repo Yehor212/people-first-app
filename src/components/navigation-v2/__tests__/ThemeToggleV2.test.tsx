@@ -34,6 +34,27 @@ describe("ThemeToggleV2", () => {
     expect(btn.className).toContain("min-h-[44px]");
   });
 
+  it("matches the V1 pill-switch geometry inside V2 surfaces", () => {
+    render(<ThemeToggleV2 />);
+    const track = screen.getByTestId("sidebar-v2-theme-toggle-track");
+    const thumb = screen.getByTestId("sidebar-v2-theme-toggle-thumb");
+    expect(track.className).toContain("w-[52px] h-[36px]");
+    expect(track.className).toContain("bg-[hsl(var(--theme-toggle-v1-light-track))]");
+    expect(thumb.className).toContain("top-[7px] w-[22px] h-[22px]");
+    expect(thumb.className).toContain("left-[3px]");
+    expect(thumb.className).toContain("bg-[hsl(var(--theme-toggle-v1-light-thumb))]");
+  });
+
+  it("matches the V1 dark switch colors and thumb position when in ink", () => {
+    useThemeStore.setState({ theme: "ink", appliedTheme: "ink" });
+    render(<ThemeToggleV2 />);
+    const track = screen.getByTestId("sidebar-v2-theme-toggle-track");
+    const thumb = screen.getByTestId("sidebar-v2-theme-toggle-thumb");
+    expect(track.className).toContain("bg-[hsl(var(--theme-toggle-v1-dark-track))]");
+    expect(thumb.className).toContain("left-[27px]");
+    expect(thumb.className).toContain("bg-[hsl(var(--theme-toggle-v1-dark-thumb))]");
+  });
+
   it("exposes aria-label 'Switch to dark mode' when theme is paper", () => {
     useThemeStore.setState({ theme: "paper", appliedTheme: "paper" });
     render(<ThemeToggleV2 />);

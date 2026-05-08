@@ -2,13 +2,13 @@ import { useEffect } from 'react';
 import type { SidebarState } from '@/hooks/useSidebarState';
 
 /**
- * Keyboard shortcuts for sidebar state toggling.
- * - Ctrl+\ or Cmd+\: cycles through expanded → compact → hidden
- * - Ctrl+Shift+\ or Cmd+Shift+\: toggles between compact and hidden
+ * Keyboard shortcuts for diary sidebar toggling.
+ * - Ctrl+\ or Cmd+\: toggles expanded ↔ collapsed
+ * - Ctrl+Shift+\ or Cmd+Shift+\: same explicit disclosure toggle
  */
 export function useSidebarKeyboard(
   sidebarState: SidebarState,
-  toggleSidebar: () => void,
+  toggleSidebar: () => SidebarState,
   setSidebarState: (s: SidebarState) => void,
 ) {
   useEffect(() => {
@@ -19,10 +19,8 @@ export function useSidebarKeyboard(
       e.preventDefault();
 
       if (e.shiftKey) {
-        // Ctrl+Shift+\ or Cmd+Shift+\: toggle between compact and hidden
-        setSidebarState(sidebarState === 'hidden' ? 'compact' : 'hidden');
+        setSidebarState(sidebarState === 'expanded' ? 'collapsed' : 'expanded');
       } else {
-        // Ctrl+\ or Cmd+\: cycle through states
         toggleSidebar();
       }
     };

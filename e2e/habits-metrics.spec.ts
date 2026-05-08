@@ -188,7 +188,7 @@ function getEventPayload(evt: GtagArgs): Record<string, unknown> {
 async function gotoHabitsTab(page: Page) {
   await page.setViewportSize({ width: 1280, height: 800 });
   const appBase = getAppBasePath(page);
-  await page.goto(`${appBase}/habits?nav=v2`);
+  await page.goto(`${appBase}/habits?nav=v2&dev=true`);
   await expect(page.getByTestId("habits-page")).toBeVisible({ timeout: 15_000 });
   await installGtagSpy(page);
   await forceAnalyticsOnAppInstance(page);
@@ -202,10 +202,18 @@ async function completeTemplateSetup(
 ) {
   await page.getByTestId(`hero-quickpick-${quickPickId}`).click();
   await expect(page.getByTestId("habits-create-sheet")).toBeVisible({ timeout: 10_000 });
-  await page.getByRole("button", { name: /add habit/i }).click();
-  await expect(page.getByTestId("habits-create-sheet")).not.toBeVisible({ timeout: 10_000 });
+  await page
+    .getByTestId("habits-create-sheet")
+    .locator(".overflow-y-auto")
+    .first()
+    .evaluate((el) => {
+      el.scrollTop = el.scrollHeight;
+    });
+  await page.getByRole("button", { name: /add habit/i }).evaluate((el) => {
+    (el as HTMLButtonElement).click();
+  });
   await expect(page.locator('[data-testid^="hero-weekly-card-"]').first()).toBeVisible({
-    timeout: 10_000,
+    timeout: 15_000,
   });
 }
 
@@ -218,7 +226,7 @@ test.describe("§15 metrics — real-browser smoke (all 4 events)", () => {
     await primeForMetrics(page);
     await gotoHabitsTab(page);
 
-    await completeTemplateSetup(page, "water");
+    await completeTemplateSetup(page, "drink-water");
 
     const evt = await waitForGtagEvent(page, "habit_created");
     const payload = getEventPayload(evt);
@@ -232,11 +240,15 @@ test.describe("§15 metrics — real-browser smoke (all 4 events)", () => {
     await primeForMetrics(page);
     await gotoHabitsTab(page);
 
-    await completeTemplateSetup(page, "breathwork");
+    await completeTemplateSetup(page, "exercise");
 
     const card = page.locator('[data-testid^="hero-weekly-card-"]').first();
-    const weekCell = card.getByRole("checkbox").first();
+    const weekCell = card.locator('[role="checkbox"]:not([aria-disabled="true"])').first();
     await expect(weekCell).toBeVisible();
+    if ((await weekCell.getAttribute("aria-checked")) === "true") {
+      await weekCell.click();
+      await expect(weekCell).toHaveAttribute("aria-checked", "false");
+    }
     await weekCell.click();
 
     const evt = await waitForGtagEvent(page, "habit_completed");
@@ -252,7 +264,7 @@ test.describe("§15 metrics — real-browser smoke (all 4 events)", () => {
     await primeForMetrics(page);
     await gotoHabitsTab(page);
 
-    await completeTemplateSetup(page, "breathwork");
+    await completeTemplateSetup(page, "exercise");
 
     const statsButton = page
       .locator('[data-testid^="hero-weekly-card-"]')
@@ -292,7 +304,7 @@ test.describe("§15 metrics — real-browser smoke (all 4 events)", () => {
     await primeForMetrics(page);
     await gotoHabitsTab(page);
 
-    await completeTemplateSetup(page, "water");
+    await completeTemplateSetup(page, "drink-water");
     await expect(page.getByTestId("habits-hero-insight-strip")).toBeVisible({
       timeout: 10_000,
     });

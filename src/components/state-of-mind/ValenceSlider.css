@@ -1,0 +1,150 @@
+.som-valence-chip {
+  --valence-color: hsl(var(--zf-role-body));
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  border-radius: 9999px;
+  border: 1px solid hsl(var(--foreground) / 0.16);
+  background:
+    radial-gradient(circle at 18% 20%, var(--valence-color), transparent 34%),
+    linear-gradient(135deg, hsl(var(--card) / 0.78), hsl(var(--background) / 0.58));
+  box-shadow:
+    0 0 0 1px hsl(var(--background) / 0.22) inset,
+    0 12px 34px hsl(var(--foreground) / 0.11),
+    0 0 28px color-mix(in srgb, var(--valence-color) 32%, transparent);
+  color: hsl(var(--foreground));
+  overflow: hidden;
+  padding: 0.45rem 1.05rem;
+  -webkit-backdrop-filter: blur(18px) saturate(1.18);
+  backdrop-filter: blur(18px) saturate(1.18);
+  transition:
+    border-color 180ms ease-out,
+    box-shadow 220ms ease-out,
+    background 220ms ease-out;
+}
+
+.som-valence-chip::before,
+.som-valence-chip::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  border-radius: 9999px;
+}
+
+.som-valence-chip::before {
+  inset: 0.18rem;
+  z-index: -1;
+  border: 1px solid color-mix(in srgb, var(--valence-color) 38%, transparent);
+  opacity: 0.74;
+}
+
+.som-valence-chip::after {
+  left: 50%;
+  top: 50%;
+  z-index: -2;
+  width: 9rem;
+  height: 9rem;
+  background:
+    radial-gradient(circle, color-mix(in srgb, var(--valence-color) 34%, transparent), transparent 58%),
+    conic-gradient(
+      from 210deg,
+      transparent,
+      color-mix(in srgb, var(--valence-color) 34%, transparent),
+      transparent 58%
+    );
+  filter: blur(8px);
+  opacity: 0.78;
+  transform: translate(-50%, -50%);
+  animation: som-valence-chip-aurora 8s ease-in-out infinite;
+}
+
+.som-valence-chip__text {
+  position: relative;
+  z-index: 1;
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 1.08rem;
+  font-weight: 720;
+  letter-spacing: 0.01em;
+  line-height: 1;
+  text-shadow:
+    0 1px 0 hsl(var(--background) / 0.34),
+    0 0 18px hsl(var(--background) / 0.30);
+}
+
+.som-valence-chip__orb {
+  position: relative;
+  z-index: 1;
+  width: 0.58rem;
+  height: 0.58rem;
+  flex: 0 0 auto;
+  border-radius: 9999px;
+  background:
+    radial-gradient(circle at 34% 28%, hsl(var(--background) / 0.92), transparent 24%),
+    radial-gradient(circle, var(--valence-color), transparent 72%);
+  box-shadow:
+    0 0 0 5px color-mix(in srgb, var(--valence-color) 14%, transparent),
+    0 0 18px color-mix(in srgb, var(--valence-color) 58%, transparent);
+  opacity: 0.92;
+  animation: som-valence-chip-orb-drift 7.5s ease-in-out infinite;
+}
+
+.som-valence-chip__orb--right {
+  width: 0.46rem;
+  height: 0.46rem;
+  animation-delay: -3.6s;
+  opacity: 0.76;
+}
+
+[data-theme="paper"] .som-valence-chip {
+  border-color: hsl(var(--foreground) / 0.19);
+  background:
+    radial-gradient(circle at 18% 18%, color-mix(in srgb, var(--valence-color) 32%, transparent), transparent 36%),
+    linear-gradient(135deg, hsl(var(--background) / 0.78), hsl(var(--card) / 0.72));
+  box-shadow:
+    0 0 0 1px hsl(var(--background) / 0.36) inset,
+    0 13px 36px hsl(var(--foreground) / 0.14),
+    0 0 34px color-mix(in srgb, var(--valence-color) 38%, transparent);
+}
+
+@keyframes som-valence-chip-aurora {
+  0%,
+  100% {
+    opacity: 0.42;
+    transform: translate(-54%, -50%) rotate(-8deg) scale(0.92);
+  }
+  48% {
+    opacity: 0.84;
+    transform: translate(-46%, -52%) rotate(10deg) scale(1.06);
+  }
+}
+
+@keyframes som-valence-chip-orb-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(0.86);
+  }
+  45% {
+    transform: translate3d(0.18rem, -0.1rem, 0) scale(1.08);
+  }
+}
+
+@media (max-width: 480px) {
+  .som-valence-chip {
+    padding-inline: 0.9rem;
+  }
+
+  .som-valence-chip__text {
+    font-size: 1rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .som-valence-chip::after,
+  .som-valence-chip__orb {
+    animation: none;
+  }
+}

@@ -12,12 +12,15 @@
 
 import { create } from "zustand";
 import type { MoodDraftScope } from "./moodEntryDraftStore";
+import type { MoodType } from "@/types";
 
 export interface PendingMoodContext {
   valence: number;
+  mood: MoodType;
   scope: MoodDraftScope;
   specificTime: string | null;
   emotion: string | null;
+  note?: string | null;
   /** ms epoch when the orb flow committed. */
   committedAt: number;
 }

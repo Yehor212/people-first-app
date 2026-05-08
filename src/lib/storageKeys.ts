@@ -21,6 +21,7 @@ export const SK = {
   INNER_WORLD: "zenflow-inner-world",
   CHALLENGES: "zenflow_challenges",
   LAST_STATE: "zenflow_last_state",
+  USER_BIRTH_DATE: "zenflow-user-birth-date",
   SIDEBAR_COLLAPSED: "zenflow_sidebar_collapsed",
   QUESTS: "zenflow_quests",
   OFFLINE_QUEUE: "zenflow_offline_queue",
@@ -33,6 +34,10 @@ export const SK = {
   LANGUAGE_SELECTED: "zenflow-language-selected",
   INSIGHTS_COLLAPSED: "zenflow-insights-collapsed",
   FEATURE_FLAGS: "zenflow-feature-flags",
+  ANON_ID: "zen-anon-id",
+  NAV_V2_LAST_PAGE: "zen-nav-v2-last-page",
+  ORB_FIRST_RUN_DISMISSED: "zenflow-orb-first-run-dismissed",
+  MOOD_SLIDER_V2_LAST_COMMIT: "zen.moodSliderV2.lastCommit",
 
   // ─── ADHD Gamification ───
   COMBO_STATE: "zenflow_combo_state",

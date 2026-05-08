@@ -7,36 +7,21 @@ import { getLocale } from "@/lib/timeUtils";
 import type { JournalEntry, JournalAudio } from "./types";
 import { countWords, DIARY_THEMES, DIARY_FONTS } from "./types";
 import { getBgPatternStyle, getPaperTextureStyle } from "./diaryBgPatterns";
-import type { MoodType, PrimaryEmotion } from "@/types";
 import { JournalPhotoGallery } from "./JournalPhotoGallery";
 import { JournalAudioPlayer } from "./JournalAudioPlayer";
-import { AnimatedEmotionEmoji } from "@/components/AnimatedEmotionEmoji";
 import { StickerRenderer } from "./StickerRenderer";
 import { logger } from "@/lib/logger";
+import { DiaryMiniOrb } from "./DiaryMiniOrb";
+import { getLocalizedEmotionLabel } from "@/components/state-of-mind/emotionI18n";
+import { getJournalDisplayText } from "./journalDisplay";
+import { getDiaryAura } from "./journalAura";
+import { formatJournalRelativeTime, formatJournalWordCount } from "./journalWordCount";
 
-const _MOOD_DISPLAY: Record<MoodType, string> = {
-  great: "\u{1F604}",
-  good: "\u{1F642}",
-  okay: "\u{1F610}",
-  bad: "\u{1F614}",
-  terrible: "\u{1F622}",
-};
-
-const MOOD_HERO_GRADIENT: Record<string, string> = {
-  great: "from-green-500/20 via-emerald-500/10 to-transparent",
-  good: "from-emerald-500/20 via-teal-500/10 to-transparent",
-  okay: "from-amber-500/20 via-yellow-500/10 to-transparent",
-  bad: "from-orange-500/20 via-red-400/10 to-transparent",
-  terrible: "from-red-500/20 via-rose-500/10 to-transparent",
-};
-
-const MOOD_TO_EMOTION: Record<MoodType, PrimaryEmotion> = {
-  great: "joy",
-  good: "trust",
-  okay: "surprise",
-  bad: "sadness",
-  terrible: "anger",
-};
+function getLocalizedMoodLabel(mood: string | null | undefined, ts: Record<string, string>): string {
+  if (!mood) return "";
+  const key = `mood${mood.charAt(0).toUpperCase()}${mood.slice(1)}`;
+  return ts[key] || ts[mood] || getLocalizedEmotionLabel(mood, ts);
+}
 
 /** Lightweight markdown renderer: **bold**, *italic*, ## headings, - lists, > quotes, --- hr */
 function renderContent(content: string): React.ReactNode[] {
@@ -131,21 +116,6 @@ function renderContent(content: string): React.ReactNode[] {
   return elements;
 }
 
-function getRelativeTime(timestamp: number, t: Record<string, string>): string {
-  const now = Date.now();
-  const diffMs = now - timestamp;
-  const diffMin = Math.floor(diffMs / 60000);
-  const diffHr = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
-
-  if (diffMin < 1) return t.justNow || "Just now";
-  if (diffMin < 60) return `${diffMin} ${t.minutesAgo || "min ago"}`;
-  if (diffHr < 24) return `${diffHr} ${t.hoursAgo || "hours ago"}`;
-  if (diffDays === 1) return t.yesterday || "Yesterday";
-  if (diffDays < 7) return `${diffDays} ${t.daysAgo || "days ago"}`;
-  return "";
-}
-
 interface JournalEntryViewerProps {
   entry: JournalEntry;
   onEdit: () => void;
@@ -153,7 +123,12 @@ interface JournalEntryViewerProps {
   onBack: () => void;
 }
 
-export const JournalEntryViewer = memo(function JournalEntryViewer({ entry, onEdit, onDelete, onBack }: JournalEntryViewerProps) {
+export const JournalEntryViewer = memo(function JournalEntryViewer({
+  entry,
+  onEdit,
+  onDelete,
+  onBack,
+}: JournalEntryViewerProps) {
   const { t, language } = useLanguage();
   const ts = t as unknown as Record<string, string>;
 
@@ -193,9 +168,50 @@ export const JournalEntryViewer = memo(function JournalEntryViewer({ entry, onEd
     hour: "2-digit",
     minute: "2-digit",
   });
-  const relativeTime = useMemo(() => getRelativeTime(entry.createdAt, ts), [entry.createdAt, ts]);
+  const relativeTime = useMemo(
+    () => formatJournalRelativeTime(entry.createdAt, language, ts),
+    [entry.createdAt, language, ts]
+  );
 
-  const wordCount = useMemo(() => countWords(entry.content), [entry.content]);
+  const displayContent = useMemo(
+    () => getJournalDisplayText(entry.content, ts),
+    [entry.content, ts]
+  );
+  const displayTitle = entry.title ? getLocalizedEmotionLabel(entry.title, ts) : "";
+  const displayTags = entry.tags.map((tag) => getLocalizedEmotionLabel(tag, ts));
+  const displayMood = getLocalizedMoodLabel(entry.mood, ts);
+  const moodAura = getDiaryAura(entry.mood);
+  const moodHeroStyle = moodAura
+    ? {
+        backgroundImage: [
+          `radial-gradient(circle at 18% 56%, ${moodAura.color(0.36)}, transparent 31%)`,
+          `radial-gradient(circle at 72% 18%, ${moodAura.color(0.18)}, transparent 30%)`,
+          `linear-gradient(135deg, color-mix(in srgb, var(--diary-bg, hsl(var(--card))) 78%, ${moodAura.color(0.22)}), color-mix(in srgb, var(--diary-bg, hsl(var(--background))) 92%, transparent))`,
+        ].join(", "),
+        borderColor: moodAura.color(0.3),
+        boxShadow: [
+          `inset 0 1px 0 ${moodAura.color(0.2)}`,
+          `0 24px 70px ${moodAura.color(0.18)}`,
+          "0 20px 54px hsl(var(--foreground) / 0.10)",
+        ].join(", "),
+      }
+    : undefined;
+  const moodActionStyle = moodAura
+    ? {
+        backgroundColor: moodAura.color(0.88),
+        borderColor: moodAura.color(0.32),
+        boxShadow: `0 12px 34px ${moodAura.color(0.24)}, inset 0 1px 0 ${moodAura.color(0.18)}`,
+      }
+    : undefined;
+  const moodTagStyle = moodAura
+    ? {
+        backgroundColor: moodAura.color(0.12),
+        borderColor: moodAura.color(0.24),
+        color: moodAura.color(0.96),
+      }
+    : undefined;
+
+  const wordCount = useMemo(() => countWords(displayContent), [displayContent]);
 
   // Diary theme/font for themed entries
   const themeStyle = useMemo(() => {
@@ -281,12 +297,13 @@ export const JournalEntryViewer = memo(function JournalEntryViewer({ entry, onEd
           <button
             onClick={onEdit}
             className={cn(
-              "flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium min-h-[44px]",
-              "bg-primary text-primary-foreground",
+              "flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium min-h-[44px]",
+              "bg-primary text-primary-foreground border-primary/20",
               "active:scale-[0.98] motion-safe:transition-transform"
             )}
+            style={moodActionStyle}
           >
-            <Pencil className="w-3.5 h-3.5" />
+            <Pencil className="w-3.5 h-3.5" aria-hidden="true" />
             {ts.journalEdit || "Edit"}
           </button>
         </div>
@@ -307,56 +324,129 @@ export const JournalEntryViewer = memo(function JournalEntryViewer({ entry, onEd
         {entry.mood && (
           <div
             className={cn(
-              "relative px-5 pt-8 pb-5 bg-gradient-to-b overflow-hidden",
-              MOOD_HERO_GRADIENT[entry.mood] || "from-primary/10 to-transparent"
+              "relative mx-4 mt-4 overflow-hidden rounded-[1.75rem] border px-4 py-4",
+              "bg-card/60 backdrop-blur-2xl [-webkit-backdrop-filter:blur(24px)]",
+              "motion-safe:transition-[border-color,box-shadow,background]"
             )}
+            data-testid="journal-entry-mood-hero"
+            style={moodHeroStyle}
           >
-            {/* Floating particles */}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 opacity-70"
+              style={{
+                backgroundImage:
+                  "linear-gradient(115deg, hsl(var(--foreground) / 0.08), transparent 38%, hsl(var(--background) / 0.18))",
+              }}
+            />
+            {moodAura && (
+              <>
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute -start-14 top-1/2 h-40 w-40 -translate-y-1/2 rounded-full blur-3xl"
+                  style={{ backgroundColor: moodAura.color(0.28) }}
+                />
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute end-5 top-5 h-24 w-24 rounded-full border opacity-60"
+                  style={{ borderColor: moodAura.color(0.24) }}
+                />
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-x-12 bottom-3 h-px"
+                  style={{
+                    backgroundImage: `linear-gradient(90deg, transparent, ${moodAura.color(0.42)}, transparent)`,
+                  }}
+                />
+              </>
+            )}
             {[
-              { x: "15%", y: "20%", size: 6, delay: 1 },
-              { x: "75%", y: "30%", size: 8, delay: 2 },
-              { x: "85%", y: "65%", size: 5, delay: 3 },
-              { x: "25%", y: "70%", size: 7, delay: 4 },
+              { x: "18%", y: "22%", size: 5 },
+              { x: "78%", y: "28%", size: 7 },
+              { x: "86%", y: "68%", size: 4 },
+              { x: "30%", y: "76%", size: 6 },
             ].map((p, i) => (
               <div
                 key={i}
+                aria-hidden="true"
                 className={cn(
-                  "absolute rounded-full bg-primary/15 blur-[1px]",
+                  "absolute rounded-full blur-[1px]",
                   `animate-particle-float-${(i % 5) + 1}`
                 )}
-                style={{ left: p.x, top: p.y, width: p.size, height: p.size }}
+                style={{
+                  left: p.x,
+                  top: p.y,
+                  width: p.size,
+                  height: p.size,
+                  backgroundColor: moodAura ? moodAura.color(0.34) : undefined,
+                }}
               />
             ))}
-            <div className="relative flex items-center gap-3.5">
-              <AnimatedEmotionEmoji emotion={MOOD_TO_EMOTION[entry.mood]} size="xl" />
-              <div>
-                <span className="text-base font-semibold text-foreground capitalize">
-                  {entry.mood}
+            <div className="relative flex items-center gap-4">
+              <div
+                className="relative flex h-[4.5rem] w-[4.5rem] shrink-0 items-center justify-center rounded-[1.45rem] border bg-background/55 shadow-[inset_0_1px_0_hsl(var(--foreground)/0.08)]"
+                style={{
+                  borderColor: moodAura ? moodAura.color(0.22) : undefined,
+                  boxShadow: moodAura
+                    ? `0 0 42px ${moodAura.color(0.18)}, inset 0 1px 0 ${moodAura.color(0.16)}`
+                    : undefined,
+                }}
+              >
+                <span
+                  aria-hidden="true"
+                  className="absolute inset-2 rounded-[1.05rem] border"
+                  style={{ borderColor: moodAura ? moodAura.color(0.18) : undefined }}
+                />
+                <DiaryMiniOrb mood={entry.mood} size="hero" className="relative scale-[1.02]" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60">
+                  {ts.mood || "Mood"}
+                </p>
+                <span className="mt-1 block truncate text-2xl font-black leading-tight text-foreground">
+                  {displayMood || entry.mood}
                 </span>
-                <p className="text-[10px] text-muted-foreground/60">{formattedTime}</p>
+                <p
+                  data-testid="journal-entry-mood-hero-meta"
+                  className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs font-medium text-muted-foreground/70"
+                >
+                  <span>{formattedTime}</span>
+                  <span aria-hidden="true">&middot;</span>
+                  <span>{formattedDate}</span>
+                </p>
               </div>
             </div>
           </div>
         )}
 
-        <div className={cn("px-5 space-y-4", entry.mood ? "pt-2 pb-5" : "py-5")}>
+        <div className={cn("px-5 space-y-4", entry.mood ? "pt-4 pb-5" : "py-5")}>
           {/* Title */}
           {entry.title && (
             <h1 className="text-xl font-bold text-foreground leading-snug tracking-tight">
-              {entry.title}
+              {displayTitle}
             </h1>
           )}
 
           {/* Date/time */}
-          <div className="flex items-center gap-2 text-xs text-muted-foreground/70">
-            <span>{formattedDate}</span>
-            {!entry.mood && <span>&middot; {formattedTime}</span>}
-            {wordCount > 0 && (
-              <span>
-                &middot; {wordCount} {ts.journalWords || "words"}
-              </span>
-            )}
-          </div>
+          {(!entry.mood || wordCount > 0) && (
+            <div
+              data-testid="journal-entry-body-meta"
+              className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground/70"
+            >
+              {!entry.mood && (
+                <>
+                  <span>{formattedDate}</span>
+                  <span>&middot; {formattedTime}</span>
+                </>
+              )}
+              {wordCount > 0 && (
+                <span>
+                  {entry.mood ? "" : "\u00b7 "}
+                  {formatJournalWordCount(wordCount, language, ts)}
+                </span>
+              )}
+            </div>
+          )}
 
           {/* Stickers */}
           {entry.stickers.length > 0 && (
@@ -382,23 +472,24 @@ export const JournalEntryViewer = memo(function JournalEntryViewer({ entry, onEd
           )}
 
           {/* Content */}
-          {entry.content && (
+          {displayContent && (
             <div className="text-[15px] leading-7 text-foreground/90" style={{ fontFamily }}>
-              {renderContent(entry.content)}
+              {renderContent(displayContent)}
             </div>
           )}
 
           {/* Tags */}
           {entry.tags.length > 0 && (
             <div className="flex gap-1.5 flex-wrap pt-2">
-              {entry.tags.map((tag) => (
+              {displayTags.map((tag, index) => (
                 <span
-                  key={tag}
+                  key={`${entry.tags[index]}-${tag}`}
                   className={cn(
-                    "text-xs px-3 py-1.5 rounded-full",
-                    "bg-gradient-to-r from-primary/10 to-primary/5",
-                    "text-primary/80 border border-primary/10"
+                    "text-xs px-3 py-1.5 rounded-full border",
+                    "bg-primary/10 text-primary/80 border-primary/10"
                   )}
+                  data-testid="journal-entry-tag"
+                  style={moodTagStyle}
                 >
                   #{tag}
                 </span>

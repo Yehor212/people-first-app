@@ -471,8 +471,13 @@ export type Database = {
           created_at: string | null
           date: string
           duration: number | null
+          entry_status: string
+          entry_value: number | null
           habit_id: string
+          habit_type: string
           id: string
+          is_complete: boolean
+          target_type: string | null
           user_id: string
         }
         Insert: {
@@ -480,8 +485,13 @@ export type Database = {
           created_at?: string | null
           date: string
           duration?: number | null
+          entry_status?: string
+          entry_value?: number | null
           habit_id: string
+          habit_type?: string
           id?: string
+          is_complete?: boolean
+          target_type?: string | null
           user_id: string
         }
         Update: {
@@ -489,8 +499,13 @@ export type Database = {
           created_at?: string | null
           date?: string
           duration?: number | null
+          entry_status?: string
+          entry_value?: number | null
           habit_id?: string
+          habit_type?: string
           id?: string
+          is_complete?: boolean
+          target_type?: string | null
           user_id?: string
         }
         Relationships: [

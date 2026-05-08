@@ -1,14 +1,15 @@
 import { memo, useState, useCallback } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { PenLine, Target } from "lucide-react";
 
 import { useLanguage } from "@/contexts/LanguageContext";
 import { MiniValenceOrb } from "@/components/state-of-mind/MiniValenceOrb";
 import { ParticleBackground } from "@/components/stats/ParticleBackground";
 import { springs as springPresets } from "@/config/animations";
+import { V2_JOURNAL_ICONS, V2_SHELL_ICONS } from "@/lib/v2IconSystem";
 
 import { TimeOfDayGradient } from "./TimeOfDayGradient";
 import { TypewriterText } from "./TypewriterText";
+import { formatLocalizedCount } from "./journalWordCount";
 
 /** Detect low-end device: skip orb if < 4GB RAM or no WebGL */
 function isLowEndDevice(): boolean {
@@ -101,6 +102,9 @@ export const DiaryEmptyCanvas = memo(function DiaryEmptyCanvas({
   const [currentPrompt, setCurrentPrompt] = useState("");
   const period = getCurrentTimePeriod();
   const greeting = TIME_GREETINGS[period]?.[language] || TIME_GREETINGS[period]?.en || "Hello";
+  const NewEntryIcon = V2_JOURNAL_ICONS.newEntry;
+  const PromptIcon = V2_JOURNAL_ICONS.prompt;
+  const StreakIcon = V2_SHELL_ICONS.confirm;
 
   const handlePromptChange = useCallback((text: string) => {
     setCurrentPrompt(text);
@@ -127,16 +131,10 @@ export const DiaryEmptyCanvas = memo(function DiaryEmptyCanvas({
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ type: "spring", stiffness: 200, damping: 20, delay: 0.2 }}
-          className="relative z-[1] flex h-16 w-16 items-center justify-center rounded-full border border-border/40 bg-card/80 backdrop-blur-sm"
+          className="relative z-[1]"
           aria-hidden="true"
         >
-          <div className="pointer-events-none absolute inset-[3px] rounded-full border border-border/20" />
-          <MiniValenceOrb
-            valence={0}
-            hasEntry={false}
-            containerClassName="absolute inset-[6px] rounded-full overflow-hidden"
-            orbClassName="scale-[0.52] opacity-90"
-          />
+          <MiniValenceOrb valence={0} hasEntry={false} size="md" chrome="badge" />
         </motion.div>
       )}
 
@@ -182,7 +180,7 @@ export const DiaryEmptyCanvas = memo(function DiaryEmptyCanvas({
           className="flex min-h-[44px] items-center gap-2 rounded-full bg-primary/10 px-4 py-2.5 text-sm font-medium text-primary hover:bg-primary/15 motion-safe:transition-colors"
           aria-label={ts.journalNewEntry || "Write"}
         >
-          <PenLine className="h-4 w-4" />
+          <NewEntryIcon className="h-4 w-4" />
           {ts.journalNewEntry || "Write"}
         </motion.button>
 
@@ -198,7 +196,7 @@ export const DiaryEmptyCanvas = memo(function DiaryEmptyCanvas({
           className="flex min-h-[44px] items-center gap-2 rounded-full bg-muted/50 px-4 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted/70 motion-safe:transition-colors"
           aria-label={ts.journalPrompt || "Prompt"}
         >
-          <Target className="h-4 w-4" />
+          <PromptIcon className="h-4 w-4" />
           {ts.journalPrompt || "Prompt"}
         </motion.button>
       </motion.div>
@@ -212,16 +210,30 @@ export const DiaryEmptyCanvas = memo(function DiaryEmptyCanvas({
       >
         {entriesThisWeek > 0 && (
           <span className="flex items-center gap-1">
-            {"\u{1F4DD}"} {entriesThisWeek} {ts.diaryEntriesThisWeek || "this week"}
+            <NewEntryIcon className="h-3.5 w-3.5" aria-hidden="true" />
+            {formatLocalizedCount(
+              entriesThisWeek,
+              language,
+              ts,
+              "journalThisWeekCount",
+              ts.diaryEntriesThisWeek || "this week"
+            )}
           </span>
         )}
         {streak > 0 && (
           <motion.span
             animate={reducedMotion ? undefined : { scale: [1, 1.1, 1] }}
             transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
-            className="flex items-center gap-1 font-semibold text-orange-500"
+            className="flex items-center gap-1 font-semibold text-[hsl(var(--zf-warm))]"
           >
-            {"\u{1F525}"} {streak} {ts.diaryStreak || "streak"}
+            <StreakIcon className="h-3.5 w-3.5" aria-hidden="true" />
+            {formatLocalizedCount(
+              streak,
+              language,
+              ts,
+              "journalStreakCount",
+              ts.diaryStreak || "streak"
+            )}
           </motion.span>
         )}
         {entriesThisWeek === 0 && streak === 0 && (

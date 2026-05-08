@@ -11,13 +11,37 @@ vi.mock('@/lib/logger', () => ({
   },
 }));
 
-// Mock safeJsonParse
+// Mock safe JSON helpers used by the hook.
 vi.mock('@/lib/safeJson', () => ({
   safeJsonParse: <T>(json: string, fallback: T): T => {
     try {
       return JSON.parse(json);
     } catch {
       return fallback;
+    }
+  },
+  safeJsonStringify: (value: unknown): string | null => {
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return null;
+    }
+  },
+  safeLocalStorageGet: <T>(key: string, fallback: T): T => {
+    try {
+      const stored = localStorage.getItem(key);
+      if (stored === null || stored === '') return fallback;
+      return JSON.parse(stored) as T;
+    } catch {
+      return fallback;
+    }
+  },
+  safeLocalStorageSet: (key: string, value: unknown): boolean => {
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+      return true;
+    } catch {
+      return false;
     }
   },
 }));

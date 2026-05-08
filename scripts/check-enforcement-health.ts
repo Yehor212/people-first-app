@@ -113,7 +113,9 @@ function checkHookSystem() {
 
   // 1e. Hook count consistency (CLAUDE.md vs actual)
   const claudeMd = fs.readFileSync(CLAUDE_MD, "utf8");
-  const hookCountMatch = claudeMd.match(/(\d+)\s+hooks?,\s*(\d+)\s+blocking/);
+  const hookCountMatch = claudeMd.match(
+    /(\d+)\s+hooks?(?:,\s*(\d+)\s+blocking|\s+across\s+\d+\s+event\s+types?)/,
+  );
   if (hookCountMatch) {
     const declaredTotal = parseInt(hookCountMatch[1]);
     const actualTotal = diskHooks.length;
@@ -148,18 +150,46 @@ function checkHookSystem() {
     }
   }
 
-  // 1g. All hooks have stdin JSON parsing pattern
+  function hasStdinJsonInput(content: string): boolean {
+    return (
+      content.includes("process.stdin.on('data'") ||
+      content.includes('process.stdin.on("data"') ||
+      /\breadStdin\s*\(/.test(content) ||
+      /readFileSync\s*\(\s*0\s*,/.test(content) ||
+      /readFileSync\s*\(\s*["']\/dev\/stdin["']/.test(content)
+    );
+  }
+
+  function isSharedValidationModule(content: string): boolean {
+    return (
+      content.includes("NOT a standalone hook") ||
+      content.includes("Evidence Veracity Module")
+    );
+  }
+
+  function hasExplicitNoInputContract(content: string): boolean {
+    return /Hook input:\s*not required/i.test(content);
+  }
+
+  // 1g. Hooks either parse stdin JSON or explicitly document why no tool input is required.
   for (const dh of diskHooks) {
     const content = fs.readFileSync(path.join(HOOKS_DIR, dh), "utf8");
-    if (
-      content.includes("process.stdin.on('data'") ||
-      content.includes('process.stdin.on("data"')
-    ) {
+    if (hasStdinJsonInput(content)) {
       pass(`stdin-parse:${dh}`, "Has stdin JSON parsing");
+    } else if (isSharedValidationModule(content)) {
+      pass(
+        `stdin-parse:${dh}`,
+        "Shared validation module; stdin handled by caller",
+      );
+    } else if (hasExplicitNoInputContract(content)) {
+      pass(
+        `stdin-parse:${dh}`,
+        "Explicitly documents no stdin/tool input requirement",
+      );
     } else {
       fail(
         `stdin-parse:${dh}`,
-        "Missing stdin JSON parsing — hook cannot read tool input",
+        "Missing stdin JSON parsing or explicit no-input contract",
       );
     }
   }
@@ -592,14 +622,22 @@ checkCrossSystem();
 console.log("\n==================================================");
 console.log("  RESULTS\n");
 
-const statusIcon = { PASS: "✓", FAIL: "✗", WARN: "~" };
-const statusColor = { PASS: "\x1b[32m", FAIL: "\x1b[31m", WARN: "\x1b[33m" };
+const statusIcon = (status: CheckResult["status"]) => {
+  if (status === "FAIL") return "✗";
+  if (status === "WARN") return "~";
+  return "✓";
+};
+const statusColor = (status: CheckResult["status"]) => {
+  if (status === "FAIL") return "\x1b[31m";
+  if (status === "WARN") return "\x1b[33m";
+  return "\x1b[32m";
+};
 const reset = "\x1b[0m";
 
 for (const r of results) {
   if (r.status !== "PASS") {
     console.log(
-      `  ${statusColor[r.status]}${statusIcon[r.status]}${reset}  ${r.name}: ${r.detail}`,
+      `  ${statusColor(r.status)}${statusIcon(r.status)}${reset}  ${r.name}: ${r.detail}`,
     );
   }
 }
@@ -611,18 +649,18 @@ console.log(
 
 if (failCount > 0) {
   console.log(
-    `\n  ${statusColor.FAIL}RESULT: FAIL (${failCount} failures)${reset}`,
+    `\n  ${statusColor("FAIL")}RESULT: FAIL (${failCount} failures)${reset}`,
   );
   console.log("==================================================\n");
   process.exit(1);
 } else if (warnCount > 0) {
   console.log(
-    `\n  ${statusColor.WARN}RESULT: PASS with ${warnCount} warning(s)${reset}`,
+    `\n  ${statusColor("WARN")}RESULT: PASS with ${warnCount} warning(s)${reset}`,
   );
   console.log("==================================================\n");
   process.exit(0);
 } else {
-  console.log(`\n  ${statusColor.PASS}RESULT: PASS (all checks green)${reset}`);
+  console.log(`\n  ${statusColor("PASS")}RESULT: PASS (all checks green)${reset}`);
   console.log("==================================================\n");
   process.exit(0);
 }

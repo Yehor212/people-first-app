@@ -36,6 +36,8 @@ import {
 } from "@/lib/safeJson";
 import { useDiaryTheme } from "./useDiaryTheme";
 import { sanitizeRichContent } from "@/lib/sanitize";
+import { getJournalEditorContent } from "./journalDisplay";
+import { useThemeStore, type AppliedTheme } from "@/stores/themeStore";
 
 // ── Draft helpers (IndexedDB primary, localStorage fallback) ──
 
@@ -162,27 +164,52 @@ interface EditorSnapshot {
   photoLayout: string;
 }
 
+function getDefaultEditorTheme(appliedTheme: AppliedTheme): Pick<
+  EditorSnapshot,
+  "theme" | "inkColor" | "paperColor" | "bgIntensity" | "particleSpeed"
+> {
+  if (appliedTheme === "paper") {
+    return {
+      theme: "light",
+      inkColor: "#243936",
+      paperColor: "milky",
+      bgIntensity: "dim",
+      particleSpeed: "slow",
+    };
+  }
+
+  return {
+    theme: "dark",
+    inkColor: "#ffffff",
+    paperColor: "dark",
+    bgIntensity: "full",
+    particleSpeed: "slow",
+  };
+}
+
 function createEditorSnapshot(
   entry: JournalEntry | null,
   prefill: JournalEntryPrefill | null,
+  appliedTheme: AppliedTheme = "ink",
 ): EditorSnapshot {
+  const defaults = getDefaultEditorTheme(appliedTheme);
   return {
     title: entry?.title || prefill?.title || "",
     date: entry?.date || prefill?.date || getToday(),
-    content: entry?.content || prefill?.content || "",
+    content: getJournalEditorContent(entry?.content || prefill?.content || ""),
     stickers: JSON.stringify(entry?.stickers || []),
     photoIds: JSON.stringify(entry?.photoIds || []),
     audioIds: JSON.stringify(entry?.audioIds || []),
     mood: entry?.mood || prefill?.mood,
     tags: JSON.stringify(entry?.tags || prefill?.tags || []),
     habitSnapshot: JSON.stringify(entry?.habitSnapshot || []),
-    theme: entry?.theme || "dark",
+    theme: entry?.theme || defaults.theme,
     font: entry?.font || "caveat",
-    inkColor: entry?.inkColor || "#ffffff",
+    inkColor: entry?.inkColor || defaults.inkColor,
     paperTexture: entry?.paperTexture || "clean",
-    paperColor: entry?.paperColor || "dark",
-    bgIntensity: entry?.bgIntensity || "full",
-    particleSpeed: entry?.particleSpeed || "slow",
+    paperColor: entry?.paperColor || defaults.paperColor,
+    bgIntensity: entry?.bgIntensity || defaults.bgIntensity,
+    particleSpeed: entry?.particleSpeed || defaults.particleSpeed,
     bgPattern: entry?.bgPattern || "none",
     fontSize: entry?.fontSize || "medium",
     photoLayout: JSON.stringify(entry?.photoLayout || {}),
@@ -222,6 +249,7 @@ const PROMPT_KEYS = [
 export interface JournalEditorStateProps {
   entry: JournalEntry | null;
   entryPrefill?: JournalEntryPrefill | null;
+  desktop?: boolean;
   onSave: (data: {
     title: string;
     content: string;
@@ -269,6 +297,7 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
   const {
     entry,
     entryPrefill,
+    desktop = false,
     onSave,
     onAddPhoto,
     onRemovePhoto,
@@ -278,11 +307,12 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
   } = props;
 
   const { t, language } = useLanguage();
-  useScrollLock(true);
+  const appliedTheme = useThemeStore((s) => s.appliedTheme);
+  useScrollLock(!desktop);
   const ts = t as unknown as Record<string, string>;
 
   const prefill = !entry ? entryPrefill ?? null : null;
-  const initialSnapshotRef = useRef(createEditorSnapshot(entry, prefill));
+  const initialSnapshotRef = useRef(createEditorSnapshot(entry, prefill, appliedTheme));
 
   // === Refs ===
   const editorRef = useRef<HTMLDivElement>(null);
@@ -342,6 +372,7 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
   const [showTags, setShowTags] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
+  const [showSettingsConfirm, setShowSettingsConfirm] = useState(false);
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
   const [showRecordingOverlay, setShowRecordingOverlay] = useState(false);
   const [showPromptsDropdown, setShowPromptsDropdown] = useState(false);
@@ -351,7 +382,10 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
   const [draftSavedAt, setDraftSavedAt] = useState(0);
 
   // === Diary Premium Features ===
-  const diaryTheme = useDiaryTheme(entry?.theme || "dark", entry?.font || "caveat");
+  const diaryTheme = useDiaryTheme(
+    initialSnapshotRef.current.theme,
+    initialSnapshotRef.current.font,
+  );
   const [showStyleBar, setShowStyleBar] = useState(false);
   const [showBurnWidget, setShowBurnWidget] = useState(false);
   const [showGratitudeWidget, setShowGratitudeWidget] = useState(false);
@@ -360,11 +394,19 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
   const [, setToolbarHidden] = useState(false);
 
   // === Canvas/Atmosphere State ===
-  const [bgIntensity, setBgIntensity] = useState<BackgroundIntensity>(entry?.bgIntensity || "full");
-  const [particleSpeed, setParticleSpeed] = useState<ParticleSpeed>(entry?.particleSpeed || "slow");
-  const [inkColor, setInkColor] = useState(entry?.inkColor || "#ffffff");
-  const [paperTexture, setPaperTexture] = useState<PaperTexture>(entry?.paperTexture || "clean");
-  const [paperColor, setPaperColor] = useState<PaperColor>(entry?.paperColor || "dark");
+  const [bgIntensity, setBgIntensity] = useState<BackgroundIntensity>(
+    initialSnapshotRef.current.bgIntensity,
+  );
+  const [particleSpeed, setParticleSpeed] = useState<ParticleSpeed>(
+    initialSnapshotRef.current.particleSpeed,
+  );
+  const [inkColor, setInkColor] = useState(initialSnapshotRef.current.inkColor);
+  const [paperTexture, setPaperTexture] = useState<PaperTexture>(
+    initialSnapshotRef.current.paperTexture,
+  );
+  const [paperColor, setPaperColor] = useState<PaperColor>(
+    initialSnapshotRef.current.paperColor,
+  );
   const [bgPattern, setBgPattern] = useState<DiaryBgPattern>(entry?.bgPattern || "none");
   const [fontSize, setFontSize] = useState<FontSizeName>(entry?.fontSize || "medium");
   const [photoLayout, setPhotoLayout] = useState<
@@ -609,9 +651,9 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
 
   // Focus trap for editor overlay
   useEffect(() => {
-    if (!editorOverlayRef.current) return;
+    if (desktop || !editorOverlayRef.current) return;
     return createFocusTrap(editorOverlayRef.current);
-  }, []);
+  }, [desktop]);
 
   // Load existing audio recordings for editing
   useEffect(() => {
@@ -797,6 +839,58 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
     await handleSave();
   }, [handleSave]);
 
+  const persistDraftNow = useCallback(async () => {
+    if (!(isDirty || hasContent)) return false;
+
+    const savedAt = Date.now();
+    await saveDraft(draftKey, {
+      title,
+      date,
+      content: contentRef.current,
+      stickers,
+      photoIds,
+      audioIds,
+      mood,
+      tags,
+      habitSnapshot,
+      theme: diaryTheme.theme,
+      font: diaryTheme.font,
+      inkColor,
+      paperTexture,
+      paperColor,
+      bgIntensity,
+      particleSpeed,
+      bgPattern,
+      fontSize,
+      photoLayout,
+      savedAt,
+    });
+    setDraftSavedAt(savedAt);
+    return true;
+  }, [
+    isDirty,
+    hasContent,
+    draftKey,
+    title,
+    date,
+    stickers,
+    photoIds,
+    audioIds,
+    mood,
+    tags,
+    habitSnapshot,
+    diaryTheme.theme,
+    diaryTheme.font,
+    inkColor,
+    paperTexture,
+    paperColor,
+    bgIntensity,
+    particleSpeed,
+    bgPattern,
+    fontSize,
+    photoLayout,
+  ]);
+
   const handleDiscard = useCallback(() => {
     void clearDraft(draftKey);
     setShowUnsavedDialog(false);
@@ -840,6 +934,10 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
           setShowUnsavedDialog(false);
           return;
         }
+        if (showSettingsConfirm) {
+          setShowSettingsConfirm(false);
+          return;
+        }
         handleBack();
       }
       if ((e.ctrlKey || e.metaKey) && e.key === "Enter" && hasContent && saveState !== "saving") {
@@ -858,6 +956,7 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
     showTemplatePicker,
     showDeleteConfirm,
     showUnsavedDialog,
+    showSettingsConfirm,
     handleBack,
     handleSave,
     hasContent,
@@ -870,6 +969,11 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
     if (showUnsavedDialog)
       return registerModalCloseCallback(() => {
         setShowUnsavedDialog(false);
+        return true;
+      });
+    if (showSettingsConfirm)
+      return registerModalCloseCallback(() => {
+        setShowSettingsConfirm(false);
         return true;
       });
     if (showDeleteConfirm)
@@ -922,6 +1026,7 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
     showPhotos,
     showMood,
     showTags,
+    showSettingsConfirm,
     recorder,
     handleBack,
   ]);
@@ -1091,6 +1196,50 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
     setShowPromptsDropdown(false);
   }, []);
 
+  const hasImmediateChanges = useCallback(() => {
+    const init = initialSnapshotRef.current;
+    return (
+      title !== init.title ||
+      date !== init.date ||
+      contentRef.current !== init.content ||
+      JSON.stringify(stickers) !== init.stickers ||
+      JSON.stringify(photoIds) !== init.photoIds ||
+      JSON.stringify(audioIds) !== init.audioIds ||
+      mood !== init.mood ||
+      JSON.stringify(tags) !== init.tags ||
+      JSON.stringify(habitSnapshot) !== init.habitSnapshot ||
+      diaryTheme.theme !== init.theme ||
+      diaryTheme.font !== init.font ||
+      inkColor !== init.inkColor ||
+      paperTexture !== init.paperTexture ||
+      paperColor !== init.paperColor ||
+      bgIntensity !== init.bgIntensity ||
+      particleSpeed !== init.particleSpeed ||
+      bgPattern !== init.bgPattern ||
+      fontSize !== init.fontSize ||
+      JSON.stringify(photoLayout) !== init.photoLayout
+    );
+  }, [
+    title,
+    date,
+    stickers,
+    photoIds,
+    audioIds,
+    mood,
+    tags,
+    habitSnapshot,
+    diaryTheme.theme,
+    diaryTheme.font,
+    inkColor,
+    paperTexture,
+    paperColor,
+    bgIntensity,
+    particleSpeed,
+    bgPattern,
+    fontSize,
+    photoLayout,
+  ]);
+
   const handleEditorInput = useCallback(() => {
     const el = editorRef.current;
     if (!el) return;
@@ -1206,6 +1355,8 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
     setShowDeleteConfirm,
     showUnsavedDialog,
     setShowUnsavedDialog,
+    showSettingsConfirm,
+    setShowSettingsConfirm,
     showTemplatePicker,
     showRecordingOverlay,
     showPromptsDropdown,
@@ -1268,6 +1419,7 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
 
     // derived
     isDirty,
+    hasImmediateChanges,
     wordCount,
     completedHabitCount,
     hasContent,
@@ -1282,6 +1434,7 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
     handleBack,
     handleSave,
     handleSaveAndClose,
+    persistDraftNow,
     handleDiscard,
     handleRestoreDraft,
     handleDismissDraft,

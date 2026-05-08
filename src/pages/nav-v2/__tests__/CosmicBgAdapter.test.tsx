@@ -50,6 +50,22 @@ describe("CosmicBgAdapter theme variant switching", () => {
     expect(screen.queryByTestId("cosmic-orb-nebula")).toBeNull();
   });
 
+  it("can force the day sky scene even when the app theme is ink", () => {
+    themeState.appliedTheme = "ink";
+    render(<CosmicBgAdapter variant="day" />);
+    expect(screen.getByTestId("day-cosmic-background")).toBeInTheDocument();
+    expect(screen.queryByTestId("cosmic-orb-background")).toBeNull();
+  });
+
+  it("can force the deterministic V2 Orb starry sky in any theme", () => {
+    themeState.appliedTheme = "paper";
+    render(<CosmicBgAdapter variant="starry" />);
+
+    expect(screen.getByTestId("cosmic-orb-starry-background")).toBeInTheDocument();
+    expect(screen.queryByTestId("day-cosmic-background")).toBeNull();
+    expect(screen.getAllByTestId("cosmic-orb-starry-star")).toHaveLength(24);
+  });
+
   it("renders night cosmic when appliedTheme === 'ink'", () => {
     themeState.appliedTheme = "ink";
     render(<CosmicBgAdapter />);

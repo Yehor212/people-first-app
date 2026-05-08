@@ -166,10 +166,21 @@ docs/visual-aesthetic.md
 .research-done
 .prettier-circuit-breaker
 # Browser screenshot debug artifacts (Playwright MCP, ad-hoc verification)
+.playwright-cli/
+.codex-artifacts/
+artifacts/
+test-artifacts/
+.codex-v2-*.png
+.tmp-v2-*.png
 orb-after-fix.png
 *-after-deploy.png
 v2-*.png
 habits-v2-*.png
+.codex-*.html
+.codex-*.png
+output/playwright/habits-*.png
+output/playwright/portal-*.png
+output/playwright/v1-*.png
 
 # Ruflo / AgentDB local databases
 vectors.db

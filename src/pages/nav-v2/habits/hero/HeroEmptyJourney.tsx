@@ -1,27 +1,29 @@
 /**
- * HeroEmptyJourney — A+++ onboarding for the empty habits state.
+ * HeroEmptyJourney - V2 Ritual Deck empty state.
  *
- * 4-tier entry funnel (descending effort):
- *   1. Inspiration  — seed → sprout → tree SVG + literary tagline.
- *   2. Story        — 3-step Atoms/Fogg/2-Minute journey with connecting line.
- *   3. Quick pick   — 4 top V1 templates as one-tap chips (localized × 8 langs).
- *   4. Browse all   — opens {@link HeroTemplateLibrarySheet} (5 categories).
- *   5. Custom       — primary "Create habit" CTA for bespoke entries.
- *
- * Research anchors: James Clear (identity before action), BJ Fogg (shrink to
- * 2-min version), Huberman 2026 protocol (cold / sunlight / delayed caffeine
- * are in the library), Habitify onboarding analytics.
- *
- * All motion gated by {@link useShouldAnimate} (Law 8 / Law 9). All text via
- * i18n keys (Law 17). Touch targets ≥40px (Law 9).
+ * This pass is intentionally scoped to the first ritual empty state, routine
+ * starter cards, and the library entry. Filled-state habit rows stay untouched.
  */
 
-import { memo, useCallback } from "react";
-import { Plus, Sparkles, MapPin, Library } from "lucide-react";
+import { memo, useCallback, type CSSProperties } from "react";
 import { useShouldAnimate } from "@/hooks/useShouldAnimate";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { hapticTap } from "@/lib/haptics";
-import { habitTemplates, type HabitTemplate } from "@/lib/habitTemplates";
+import {
+  habitTemplates,
+  ROUTINE_STARTER_TEMPLATE_IDS,
+  type HabitTemplate,
+} from "@/lib/habitTemplates";
+import {
+  V2_HABIT_JOURNEY_ICONS,
+  getV2HabitTemplateSymbol,
+} from "@/lib/v2IconSystem";
+import {
+  getHabitStarterPlayTone,
+  getHabitRoleTone,
+  getRoleTone,
+  type NonOrbVisualRole,
+} from "@/lib/nonOrbVisualRoles";
 
 interface HeroEmptyJourneyProps {
   onCreateHabit: () => void;
@@ -29,57 +31,144 @@ interface HeroEmptyJourneyProps {
   onPickTemplate?: (template: HabitTemplate) => void;
   /** Called when the user wants to open the full library drawer. */
   onOpenLibrary?: () => void;
+  /** Start = no habits yet; rest = active habits exist, but none are due today. */
+  variant?: "start" | "rest";
 }
 
-/** The 4 highest-signal starter templates per 2026 research. */
-const QUICK_PICK_IDS = ["water", "sunlight", "breathwork", "gratitude"] as const;
+/** Gentle, mainstream starters: low-friction rituals before specialist protocols. */
+const QUICK_PICKS: readonly HabitTemplate[] = ROUTINE_STARTER_TEMPLATE_IDS.map((id) =>
+  habitTemplates.find((t) => t.id === id),
+).filter((t): t is HabitTemplate => Boolean(t));
 
-const QUICK_PICKS: readonly HabitTemplate[] = QUICK_PICK_IDS
-  .map((id) => habitTemplates.find((t) => t.id === id))
-  .filter((t): t is HabitTemplate => Boolean(t));
+const QUICK_PICK_META: Record<string, string> = {
+  "drink-water": "1x",
+  "walk-distance": "3km",
+  exercise: "1x",
+  read: "+1p",
+  meditate: "5m",
+  sleep: "22:00",
+};
 
-function GrowthIllustration({ animate }: { animate: boolean }) {
+const HERO_RITUAL_DECK_CLASS =
+  "relative mt-3 overflow-hidden rounded-[28px] border border-[hsl(var(--zf-role-energy)/0.24)] bg-[radial-gradient(circle_at_14%_0%,hsl(var(--zf-role-energy)/0.18),transparent_31%),radial-gradient(circle_at_92%_12%,hsl(var(--zf-role-gratitude)/0.13),transparent_30%),radial-gradient(circle_at_52%_118%,hsl(var(--zf-role-body)/0.16),transparent_38%),linear-gradient(155deg,hsl(var(--card)/0.96)_0%,hsl(var(--surface-elevated)/0.90)_56%,hsl(var(--surface-overlay)/0.95)_100%)] px-4 py-4 text-start text-[hsl(var(--foreground))] shadow-[0_28px_96px_-72px_hsl(var(--foreground)/0.38),0_18px_62px_-54px_hsl(var(--zf-role-energy)/0.44)] before:pointer-events-none before:absolute before:inset-x-10 before:top-0 before:h-[2px] before:rounded-b-full before:bg-[linear-gradient(90deg,hsl(var(--zf-role-energy)/0.88),hsl(var(--zf-role-body)/0.82)_28%,hsl(var(--zf-role-gratitude)/0.70)_72%,hsl(var(--zf-role-rest)/0.72))] after:pointer-events-none after:absolute after:inset-[1px] after:rounded-[27px] after:border after:border-[hsl(var(--foreground)/0.07)] md:mt-6 md:px-7 md:py-7";
+
+const QUICK_PICK_CARD_CLASS =
+  "group relative isolate flex min-h-[108px] w-full min-w-[44px] flex-col items-start justify-between overflow-hidden rounded-[22px] border bg-[linear-gradient(155deg,hsl(var(--card)/0.98)_0%,hsl(var(--secondary)/0.92)_52%,hsl(var(--background)/0.74)_100%)] p-3 text-start text-sm font-semibold leading-tight text-[hsl(var(--foreground))] shadow-[inset_0_1px_0_hsl(var(--foreground)/0.12),inset_0_-34px_58px_-48px_hsl(var(--foreground)/0.34),0_18px_42px_-34px_hsl(var(--foreground)/0.42)] backdrop-blur-xl after:pointer-events-none after:absolute after:inset-[1px] after:rounded-[21px] after:border after:border-[hsl(var(--foreground)/0.08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2";
+
+const QUICK_PICK_ICON_CLASS =
+  "flex h-12 w-12 shrink-0 items-center justify-center rounded-[18px] border bg-[linear-gradient(145deg,hsl(var(--foreground)/0.12),hsl(var(--card)/0.82))] text-[hsl(var(--foreground))] shadow-[inset_0_1px_0_hsl(var(--foreground)/0.14),0_10px_24px_-18px_hsl(var(--foreground)/0.45)]";
+
+const QUICK_PICK_META_CLASS =
+  "rounded-full border bg-[hsl(var(--card)/0.86)] px-2.5 py-1 text-[11px] font-bold leading-none text-[hsl(var(--foreground))] shadow-[inset_0_1px_0_hsl(var(--foreground)/0.12),0_8px_18px_-15px_hsl(var(--foreground)/0.42)] tabular-nums";
+
+const QUICK_PICK_LABEL_CLASS =
+  "relative z-[1] line-clamp-2 max-w-full pr-1 text-[15px] font-bold leading-tight text-[hsl(var(--foreground))]";
+
+const HERO_DECK_CARDS = [
+  {
+    id: "drink-water",
+    role: "focus",
+    stillClass: "translate-x-[-2.45rem] translate-y-[1.35rem] rotate-[-15deg] scale-[0.86]",
+    motionClass: "ritual-card-focus",
+  },
+  {
+    id: "walk-distance",
+    role: "body",
+    stillClass: "translate-y-[-0.9rem] rotate-[1deg] scale-[1.12]",
+    motionClass: "ritual-card-body",
+  },
+  {
+    id: "read",
+    role: "rest",
+    stillClass: "translate-x-[2.45rem] translate-y-[1.25rem] rotate-[13deg] scale-[0.9]",
+    motionClass: "ritual-card-rest",
+  },
+] satisfies Array<{
+  id: string;
+  role: NonOrbVisualRole;
+  stillClass: string;
+  motionClass: string;
+}>;
+
+function RitualDeckScene({ animate }: { animate: boolean }) {
   return (
-    <svg
-      viewBox="0 0 240 120"
+    <div
+      className="relative h-24 w-28 overflow-visible"
       role="presentation"
       aria-hidden="true"
-      className="h-24 w-auto text-primary/70 md:h-28"
+      data-motion="ritual-card-carousel"
     >
-      <defs>
-        <linearGradient id="growth-soil" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%" stopColor="currentColor" stopOpacity="0.08" />
-          <stop offset="100%" stopColor="currentColor" stopOpacity="0.22" />
-        </linearGradient>
-      </defs>
-      <rect x="0" y="104" width="240" height="16" fill="url(#growth-soil)" />
-      <g transform="translate(30,96)">
-        <ellipse cx="0" cy="0" rx="8" ry="6" fill="currentColor" opacity="0.55" />
-        <path d="M-4,-2 Q0,-8 4,-2" stroke="currentColor" strokeWidth="1" fill="none" opacity="0.6" />
-      </g>
-      <g transform="translate(118,100)">
-        <path d="M0,4 Q0,-16 -8,-22 Q-2,-20 0,-10 Q2,-20 8,-22 Q0,-16 0,4" fill="currentColor" opacity="0.65" />
-        <line x1="0" y1="4" x2="0" y2="-12" stroke="currentColor" strokeWidth="1.2" opacity="0.8" />
-      </g>
-      <g transform="translate(200,100)">
-        <line x1="0" y1="4" x2="0" y2="-32" stroke="currentColor" strokeWidth="2.2" opacity="0.75" />
-        <circle cx="0" cy="-42" r="16" fill="currentColor" opacity="0.45" />
-        <circle cx="-10" cy="-36" r="10" fill="currentColor" opacity="0.4" />
-        <circle cx="10" cy="-36" r="10" fill="currentColor" opacity="0.4" />
-        <circle cx="0" cy="-52" r="9" fill="currentColor" opacity="0.5" />
-      </g>
-      <line
-        x1="42"
-        y1="96"
-        x2="182"
-        y2="58"
-        stroke="currentColor"
-        strokeWidth="1"
-        strokeDasharray="3 5"
-        opacity="0.4"
-        className={animate ? "motion-safe:animate-[habit-shimmer_3s_linear_infinite]" : ""}
+      <span
+        className="absolute left-1/2 top-1/2 h-[5.95rem] w-[5.95rem] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[hsl(var(--zf-role-energy)/0.20)] bg-[radial-gradient(circle,hsl(var(--zf-role-energy)/0.14),transparent_63%)]"
+        data-scene-layer="halo"
       />
-    </svg>
+      <span
+        className={
+          "absolute left-1/2 top-1/2 h-[5.95rem] w-[5.95rem] -translate-x-1/2 -translate-y-1/2 rounded-full border border-dashed border-[hsl(var(--zf-role-body)/0.34)] " +
+          (animate ? "motion-safe:animate-[orbit-spin_14s_linear_infinite]" : "")
+        }
+        data-scene-layer="orbit"
+      />
+      <span
+        className="absolute left-1/2 top-1/2 h-[4.15rem] w-[4.15rem] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[hsl(var(--foreground)/0.08)] bg-[linear-gradient(155deg,hsl(var(--card)/0.86),hsl(var(--surface-elevated)/0.56))]"
+        data-scene-layer="core"
+      />
+      <span
+        className="absolute inset-x-3 bottom-2 h-5 rounded-full bg-[hsl(var(--zf-role-energy)/0.16)] blur-xl"
+        data-scene-layer="shadow"
+      />
+      <span
+        className={
+          "absolute inset-x-5 bottom-4 h-[2px] rounded-full bg-[linear-gradient(90deg,hsl(var(--zf-role-energy)/0),hsl(var(--zf-role-energy)/0.72),hsl(var(--zf-role-body)/0.64),hsl(var(--zf-role-release)/0))] " +
+          (animate ? "ritual-rail-pulse" : "")
+        }
+        data-scene-layer="rail"
+      />
+      <span
+        className={
+          "absolute left-1/2 top-1/2 -ml-1 -mt-1 flex h-2 w-2 items-center justify-center rounded-full bg-[hsl(var(--zf-role-energy)/0.95)] shadow-[0_0_18px_hsl(var(--zf-role-energy)/0.85)] " +
+          (animate ? "ritual-loop-comet" : "translate-x-[3.05rem]")
+        }
+        data-ritual-comet="true"
+      >
+        <span className="h-1 w-1 rounded-full bg-[hsl(var(--card)/0.92)]" />
+      </span>
+      <span
+        className={
+          "absolute bottom-5 left-9 h-1.5 w-1.5 rounded-full bg-[hsl(var(--zf-role-body)/0.78)] " +
+          (animate ? "ritual-spark-rise" : "opacity-50")
+        }
+        style={{ "--spark-x": "-0.6rem" } as CSSProperties}
+        data-ritual-spark="body"
+      />
+      <span
+        className={
+          "absolute bottom-4 right-8 h-1.5 w-1.5 rounded-full bg-[hsl(var(--zf-role-rest)/0.76)] " +
+          (animate ? "ritual-spark-rise [animation-delay:1.35s]" : "opacity-50")
+        }
+        style={{ "--spark-x": "0.7rem" } as CSSProperties}
+        data-ritual-spark="rest"
+      />
+      {HERO_DECK_CARDS.map((card, index) => {
+        const tone = getRoleTone(card.role);
+        return (
+          <span
+            key={card.id}
+            className={
+              "ritual-loop-card absolute left-1/2 top-1/2 -ml-[1.65rem] -mt-[2.05rem] flex h-[4.15rem] w-[3.3rem] items-center justify-center rounded-[1.05rem] border bg-[linear-gradient(155deg,hsl(var(--card)/0.94),hsl(var(--surface-elevated)/0.82))] text-[1.65rem] shadow-[inset_0_1px_0_hsl(var(--foreground)/0.10),0_18px_34px_-28px_hsl(var(--foreground)/0.30)] " +
+              tone.borderClass +
+              " " +
+              (animate ? card.motionClass : card.stillClass)
+            }
+            data-ritual-card={index + 1}
+            data-card-motion={card.motionClass}
+          >
+            <span className={"absolute inset-x-3 top-2 h-1 rounded-full " + tone.railClass} />
+            <span>{getV2HabitTemplateSymbol(card.id)}</span>
+          </span>
+        );
+      })}
+    </div>
   );
 }
 
@@ -87,6 +176,7 @@ export const HeroEmptyJourney = memo(function HeroEmptyJourney({
   onCreateHabit,
   onPickTemplate,
   onOpenLibrary,
+  variant = "start",
 }: HeroEmptyJourneyProps) {
   const { t, language } = useLanguage();
   const tx = t;
@@ -110,91 +200,116 @@ export const HeroEmptyJourney = memo(function HeroEmptyJourney({
     onOpenLibrary?.();
   }, [onOpenLibrary]);
 
-  const steps = [
-    { icon: Sparkles, label: tx.navV2HabitsOnboardingStep1 },
-    { icon: MapPin, label: tx.navV2HabitsOnboardingStep2 },
-    { icon: Plus, label: tx.navV2HabitsOnboardingStep3 },
-  ];
+  const bodyTone = getHabitRoleTone("body");
+  const focusTone = getHabitRoleTone("focus");
+  const LibraryIcon = V2_HABIT_JOURNEY_ICONS.library;
+  const CreateHabitIcon = V2_HABIT_JOURNEY_ICONS.create;
+  const isRestDay = variant === "rest";
+  const title = isRestDay ? tx.noHabitsToday : tx.navV2HabitsEmpty;
+  const subtitle = isRestDay ? tx.navV2HabitsRecovery : tx.navV2HabitsStartSmall;
 
   return (
     <div
-      className="mt-6 overflow-hidden rounded-3xl border border-dashed border-border bg-card/40 px-5 py-8 text-center md:px-8 md:py-10"
+      className={HERO_RITUAL_DECK_CLASS}
       data-testid="habits-hero-empty"
+      data-visual-role="body"
+      data-tone="ritual-deck"
+      data-surface="ink-paper"
     >
-      <div className="flex justify-center">
-        <GrowthIllustration animate={animate} />
-      </div>
-      <p className="mt-4 font-display text-2xl font-semibold tracking-tight text-foreground md:text-[28px]">
-        {tx.navV2HabitsEmpty}
-      </p>
-      <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground font-body">
-        {tx.navV2HabitsStartSmall}
-      </p>
-
-      <ol
-        className="relative mx-auto mt-8 grid max-w-lg grid-cols-3 gap-2 px-2"
-        aria-label={tx.navV2HabitsEmpty}
-        data-testid="hero-empty-journey-steps"
-      >
+      <div className="relative z-[1] grid grid-cols-[auto_1fr] items-center gap-3">
         <div
-          className="pointer-events-none absolute left-[16.66%] right-[16.66%] top-6 hidden h-[2px] bg-gradient-to-r from-primary/30 via-primary/50 to-primary/30 md:block"
-          aria-hidden="true"
-        />
-        {steps.map((step, idx) => {
-          const Icon = step.icon;
-          return (
-            <li key={idx} className="relative flex flex-col items-center gap-2">
-              <span
-                className="relative z-[1] flex h-12 w-12 items-center justify-center rounded-full border-2 border-primary/30 bg-background text-primary shadow-sm"
-                aria-hidden="true"
-              >
-                <Icon className="h-5 w-5" />
-              </span>
-              <span className="text-[11px] font-medium leading-tight text-muted-foreground md:text-xs">
-                <span
-                  className="font-hand text-lg italic text-primary md:text-xl"
-                  aria-hidden="true"
-                >
-                  {idx + 1}.
-                </span>{" "}
-                {step.label}
-              </span>
-            </li>
-          );
-        })}
-      </ol>
+          className="flex h-24 w-28 items-center justify-center overflow-visible rounded-[24px] border border-[hsl(var(--zf-role-energy)/0.28)] bg-[linear-gradient(145deg,hsl(var(--zf-role-energy)/0.14),hsl(var(--card)/0.84)_46%,hsl(var(--zf-role-gratitude)/0.12)),hsl(var(--surface-elevated)/0.76)] shadow-[inset_0_1px_0_hsl(var(--foreground)/0.10),0_20px_54px_-40px_hsl(var(--foreground)/0.34)]"
+          data-testid="hero-ritual-board-scene"
+          data-scene="ritual-carousel"
+        >
+          <RitualDeckScene animate={animate} />
+        </div>
+        <div className="min-w-0">
+          <p className="font-display text-[21px] font-semibold leading-tight tracking-tight text-[hsl(var(--foreground))] md:text-[28px]">
+            {title}
+          </p>
+          <p className="mt-1 max-w-md text-sm leading-snug text-[hsl(var(--muted-foreground))] font-body">
+            {subtitle}
+          </p>
+        </div>
+      </div>
 
-      <p className="mt-6 text-xs italic text-muted-foreground/80 font-body">
-        {tx.navV2HabitsTwoMinuteRule}
-      </p>
-
-      {onPickTemplate && (
-        <div className="mt-5">
-          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+      {onPickTemplate && !isRestDay && (
+        <div className="relative z-[1] mt-4">
+          <p className="mb-2 text-center text-[11px] font-semibold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
             {tx.navV2HabitsQuickPick}
           </p>
-          <ul
-            className="mx-auto flex max-w-xl flex-wrap items-center justify-center gap-2"
-            data-testid="hero-empty-quickpick"
-          >
+          <ul className="grid grid-cols-2 gap-2 md:grid-cols-3" data-testid="hero-empty-quickpick">
             {QUICK_PICKS.map((tpl) => {
               const name = tpl.names[language] || tpl.names.en;
+              const playTone = getHabitStarterPlayTone(tpl.id);
+              const tone = getRoleTone(playTone.role);
+              const symbol = getV2HabitTemplateSymbol(tpl.id);
+              const meta = QUICK_PICK_META[tpl.id] ?? "1x";
               return (
                 <li key={tpl.id}>
                   <button
                     type="button"
                     onClick={() => handlePick(tpl)}
                     className={
-                      "inline-flex h-12 min-w-[44px] items-center gap-1.5 rounded-full border border-border bg-card/80 px-4 text-xs font-medium leading-none text-foreground shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 " +
+                      QUICK_PICK_CARD_CLASS +
+                      " " +
+                      tone.borderClass +
+                      " " +
+                      tone.focusRingClass +
+                      " " +
                       (animate
-                        ? "motion-safe:transition-transform hover:-translate-y-0.5 hover:bg-primary/10 active:scale-[0.97]"
+                        ? "motion-safe:transition-transform hover:-translate-y-0.5 active:scale-[0.97]"
                         : "")
                     }
                     data-testid={`hero-quickpick-${tpl.id}`}
+                    data-visual-role={playTone.role}
+                    data-tile="ritual-deck-card"
                     aria-label={name}
+                    style={{ "--habit-role": `var(${tone.cssVar})` } as CSSProperties}
                   >
-                    <span aria-hidden="true">{tpl.icon}</span>
-                    {name}
+                    <span
+                      className={"pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full opacity-70 blur-2xl " + playTone.haloClass}
+                      aria-hidden="true"
+                    />
+                    <span
+                      className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-[linear-gradient(180deg,transparent,hsl(var(--background)/0.18))]"
+                      aria-hidden="true"
+                    />
+                    <span
+                      className={"absolute inset-x-4 top-0 h-[2px] rounded-b-full " + tone.railClass}
+                      aria-hidden="true"
+                    />
+                    <span className="relative z-[1] flex w-full items-start justify-between gap-2">
+                      <span
+                        className={
+                          QUICK_PICK_ICON_CLASS +
+                          " " +
+                          tone.borderClass
+                        }
+                        aria-hidden="true"
+                        data-icon-medallion="true"
+                      >
+                        <span className="text-[1.7rem] leading-none" data-slot="quickpick-symbol">
+                          {symbol}
+                        </span>
+                      </span>
+                      <span
+                        className={
+                          QUICK_PICK_META_CLASS +
+                          " " +
+                          tone.borderClass +
+                          " ring-1 ring-[hsl(var(--foreground)/0.05)]"
+                        }
+                        aria-hidden="true"
+                        data-slot="quickpick-meta"
+                      >
+                        {meta}
+                      </span>
+                    </span>
+                    <span className={QUICK_PICK_LABEL_CLASS} data-slot="quickpick-label">
+                      {name}
+                    </span>
                   </button>
                 </li>
               );
@@ -203,40 +318,43 @@ export const HeroEmptyJourney = memo(function HeroEmptyJourney({
         </div>
       )}
 
-      {onOpenLibrary && (
-        <button
-          type="button"
-          onClick={handleOpenLibrary}
-          className={
-            "mt-4 inline-flex min-h-[44px] items-center gap-2 rounded-full border border-border bg-card/80 px-4 py-2 text-xs font-medium text-foreground shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 " +
-            (animate ? "motion-safe:transition-colors hover:bg-primary/10" : "")
-          }
-          data-testid="hero-empty-open-library"
-        >
-          <Library className="h-3.5 w-3.5" aria-hidden="true" />
-          {tx.navV2HabitsBrowseLibrary}
-        </button>
-      )}
-
-      <div>
+      <div className="relative z-[1] mt-4 grid grid-cols-[minmax(0,1.25fr)_minmax(112px,0.75fr)] gap-2">
         <button
           type="button"
           onClick={handleCreate}
           className={
-            "mt-6 inline-flex min-h-[48px] min-w-[44px] items-center justify-center gap-2 rounded-2xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 " +
+            "inline-flex min-h-[48px] min-w-[44px] items-center justify-center gap-2 rounded-[22px] bg-[linear-gradient(135deg,hsl(var(--zf-role-energy)/0.94),hsl(var(--zf-role-body)/0.86))] px-4 py-3 text-sm font-semibold text-[hsl(var(--zf-night-0))] shadow-[0_20px_48px_-30px_hsl(var(--zf-role-energy)/0.90)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 " +
+            bodyTone.focusRingClass +
+            " " +
             (animate ? "motion-safe:transition-transform active:scale-[0.97]" : "")
           }
           aria-label={tx.navV2HabitsCreate}
           data-testid="habits-hero-create-empty"
         >
-          <Plus className="h-4 w-4" aria-hidden="true" />
-          {tx.navV2HabitsCreate}
+          <CreateHabitIcon className="h-4 w-4" aria-hidden="true" />
+          <span className="truncate">{tx.navV2HabitsCreate}</span>
         </button>
+        {onOpenLibrary && (
+          <button
+            type="button"
+            onClick={handleOpenLibrary}
+            className={
+              "inline-flex min-h-[48px] min-w-[112px] items-center justify-center gap-2 rounded-[22px] border bg-[hsl(var(--card)/0.72)] px-3 py-3 text-xs font-semibold text-[hsl(var(--foreground))] shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 " +
+              focusTone.borderClass +
+              " " +
+              focusTone.focusRingClass +
+              " " +
+              (animate ? "motion-safe:transition-colors hover:bg-[hsl(var(--zf-role-energy)/0.14)]" : "")
+            }
+            data-testid="hero-empty-open-library"
+            data-visual-role="focus"
+          >
+            <LibraryIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
+            <span className="truncate">{tx.navV2HabitsBrowseLibrary}</span>
+          </button>
+        )}
       </div>
 
-      <p className="mt-4 text-[11px] text-muted-foreground/70 font-body">
-        {tx.navV2HabitsAddCue}
-      </p>
     </div>
   );
 });

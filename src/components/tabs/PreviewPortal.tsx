@@ -33,14 +33,6 @@ const V2_PORTAL_TARGETS: readonly {
   { page: "diary", labelKey: "v2PortalDiary", icon: NotebookPen },
 ];
 
-function getDefaultV2PortalBaseUrl(): string {
-  const appBase = import.meta.env?.BASE_URL || "/";
-  if (import.meta.env.DEV) {
-    return appBase;
-  }
-  return `${appBase.replace(/\/$/, "")}/v2/`;
-}
-
 const PORTAL_SPARKS = [
   "start-[17%] top-[25%]",
   "end-[19%] top-[30%]",
@@ -53,7 +45,7 @@ export function buildV2PortalHref(
   options: V2PortalHrefOptions = {},
 ): string {
   const {
-    baseUrl = getDefaultV2PortalBaseUrl(),
+    baseUrl = import.meta.env?.BASE_URL || "/",
     devPreview = import.meta.env.DEV,
     phoneLayout = true,
   } = options;
@@ -229,10 +221,7 @@ export const V2PreviewPortal = memo(function V2PreviewPortal({
             <motion.span
               className="absolute h-32 w-32 rounded-full border border-[hsl(var(--zf-role-focus)/0.22)] shadow-[0_0_38px_hsl(var(--zf-role-focus)/0.12)]"
               animate={animate ? { rotate: 360, scale: [0.96, 1.04, 0.96] } : undefined}
-              transition={{
-                rotate: { duration: 22, repeat: Infinity, ease: "linear" },
-                scale: { duration: 5.6, repeat: Infinity, ease: "easeInOut" },
-              }}
+              transition={{ rotate: { duration: 22, repeat: Infinity, ease: "linear" }, scale: { duration: 5.6, repeat: Infinity, ease: "easeInOut" } }}
             />
             <motion.span
               className="absolute h-24 w-24 rounded-full border border-[hsl(var(--zf-role-body)/0.34)] bg-[hsl(var(--zf-role-body)/0.05)]"

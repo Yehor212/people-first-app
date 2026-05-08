@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /**
  * GOAL RE-INJECTION HOOK (PostToolUse)
+ * Hook input: not required; counts calls and replays .user-goal-contract.
  *
  * Prevents instruction decay by reminding Claude of the original user goal
  * every N tool calls. Research shows original instructions get buried under

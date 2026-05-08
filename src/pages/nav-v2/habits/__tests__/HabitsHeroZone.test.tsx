@@ -19,13 +19,18 @@ vi.mock("@/contexts/LanguageContext", () => ({
       navV2HabitsStartSmall: "Start with 3 habits",
       navV2HabitsAddCue: "When • Where • Cue",
       navV2HabitsCreate: "Create habit",
+      navV2HabitsQuickPick: "Smart start",
+      navV2HabitsBrowseLibrary: "Library",
       navV2HabitsRecovery: "One missed day",
+      noHabitsToday: "No habits today",
+      habitRestDay: "Rest day",
       navV2HabitsMorning: "Morning",
       navV2HabitsAfternoon: "Afternoon",
       navV2HabitsEvening: "Evening",
       navV2HabitsAnytime: "Anytime",
-      navV2HabitsIdentityToday: "Today you are building:",
-      navV2HabitsIdentityIntention: "Someone who keeps their word",
+      navV2HabitsIdentityToday: "Today you choose to be:",
+      navV2HabitsIdentitySentence: "Today you choose to be {identity}",
+      navV2HabitsIdentityIntention: "someone who keeps their word",
       navV2HabitsTwoMinuteRule: "Start with the 2-minute version",
       navV2HabitsAllDone: "Day complete",
       navV2HabitsKeepGoing: "Momentum is yours",
@@ -98,7 +103,7 @@ describe("HabitsHeroZone", () => {
       />,
     );
     expect(screen.getByTestId("habits-hero-empty")).toBeInTheDocument();
-    expect(screen.getByTestId("hero-empty-journey-steps")).toBeInTheDocument();
+    expect(screen.getByTestId("hero-ritual-board-scene")).toBeInTheDocument();
     fireEvent.click(screen.getByTestId("habits-hero-create-empty"));
     expect(onCreate).toHaveBeenCalledTimes(1);
   });
@@ -115,7 +120,7 @@ describe("HabitsHeroZone", () => {
     );
     expect(screen.queryByTestId("habits-hero-progress-ring")).not.toBeInTheDocument();
     expect(screen.getByTestId("hero-insight-strip-stub")).toBeInTheDocument();
-    expect(screen.getByText("Today you are building:")).toBeInTheDocument();
+    expect(screen.getByText("Today you choose to be")).toBeInTheDocument();
   });
 
   it("renders one weekly row per habit and groups by time-of-day", () => {
@@ -142,8 +147,24 @@ describe("HabitsHeroZone", () => {
     );
     expect(screen.getByTestId("hero-row-morn")).toBeInTheDocument();
     expect(screen.getByTestId("hero-row-eve")).toBeInTheDocument();
-    expect(screen.getByTestId("hero-group-morning")).toBeInTheDocument();
+    expect(screen.getByTestId("hero-group-morning")).toHaveClass("habit-growth-group");
     expect(screen.getByTestId("hero-group-evening")).toBeInTheDocument();
+  });
+
+  it("renders the anytime group with the cue-network glyph treatment", () => {
+    render(
+      <HabitsHeroZone
+        todaysHabits={[baseHabit]}
+        dailyProgress={{ completed: 0, total: 1, ratio: 0 }}
+        onToggleHabit={vi.fn()}
+        onDeleteHabit={vi.fn()}
+        onCreateHabit={vi.fn()}
+      />,
+    );
+    const glyph = screen.getByTestId("hero-group-anytime-icon");
+    expect(glyph).toHaveClass("habit-bucket-glyph");
+    expect(glyph).toHaveAttribute("data-bucket", "anytime");
+    expect(glyph.querySelector("svg")).toBeTruthy();
   });
 
   it("uses i18n keys for empty-state copy (no hardcoded strings)", () => {
@@ -154,11 +175,46 @@ describe("HabitsHeroZone", () => {
         onToggleHabit={vi.fn()}
         onDeleteHabit={vi.fn()}
         onCreateHabit={vi.fn()}
+        onPickTemplate={vi.fn()}
       />,
     );
     expect(screen.getByText("Plant your first seed")).toBeInTheDocument();
     expect(screen.getByText("Start with 3 habits")).toBeInTheDocument();
-    expect(screen.getByText("Start with the 2-minute version")).toBeInTheDocument();
+    expect(screen.getByText("Smart start")).toBeInTheDocument();
+    expect(screen.getByTestId("hero-empty-quickpick")).toBeInTheDocument();
+  });
+
+  it("keeps empty-state quick-pick cards on emoji symbols like the ritual animation", () => {
+    render(
+      <HabitsHeroZone
+        todaysHabits={[]}
+        dailyProgress={{ completed: 0, total: 0, ratio: 0 }}
+        onToggleHabit={vi.fn()}
+        onDeleteHabit={vi.fn()}
+        onCreateHabit={vi.fn()}
+        onPickTemplate={vi.fn()}
+      />,
+    );
+
+    const water = screen.getByTestId("hero-quickpick-drink-water");
+    expect(water.querySelector('[data-slot="quickpick-symbol"]')).toHaveTextContent("💧");
+    expect(water.querySelector('[data-slot="quickpick-svg"]')).toBeNull();
+  });
+
+  it("renders a scheduled rest-day state when active habits exist but none are due", () => {
+    render(
+      <HabitsHeroZone
+        todaysHabits={[]}
+        hasActiveHabits
+        dailyProgress={{ completed: 0, total: 0, ratio: 0 }}
+        onToggleHabit={vi.fn()}
+        onDeleteHabit={vi.fn()}
+        onCreateHabit={vi.fn()}
+        onPickTemplate={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("No habits today")).toBeInTheDocument();
+    expect(screen.queryByTestId("hero-empty-quickpick")).not.toBeInTheDocument();
   });
 
   it("invokes onCreate when the primary CTA is tapped", () => {
@@ -187,6 +243,8 @@ describe("HabitsHeroZone", () => {
       />,
     );
     expect(screen.getByTestId("hero-identity-prompt")).toBeInTheDocument();
+    expect(screen.getByTestId("habits-identity-cue")).toHaveClass("habit-identity-cue");
+    expect(screen.getByTestId("habits-identity-cue").className).not.toContain("zf-role-mind");
   });
 
   it("renders recovery copy when habits exist", () => {

@@ -59,13 +59,43 @@ export const IDENTITY_ICONS: { name: string; Icon: LucideIcon }[] = [
 
 const iconMap = new Map(IDENTITY_ICONS.map((i) => [i.name, i.Icon]));
 
+export function isIdentityIconName(name: string) {
+  return iconMap.has(name);
+}
+
 /**
  * Renders a stored identity icon name as a lucide component.
  * Falls back to Target if name not found.
  */
 export function IdentityIcon({ name, className }: { name: string; className?: string }) {
   const Icon = iconMap.get(name) || Target;
-  return <Icon className={className} />;
+  return <Icon className={className} aria-hidden="true" />;
+}
+
+export function IdentityVisual({
+  name,
+  iconClassName,
+  textClassName,
+  fallback = "Target",
+}: {
+  name?: string;
+  iconClassName?: string;
+  textClassName?: string;
+  fallback?: string;
+}) {
+  const value = (name ?? "").trim();
+  if (value && isIdentityIconName(value)) {
+    return <IdentityIcon name={value} className={iconClassName} />;
+  }
+  const hasNonAsciiGlyph = Array.from(value).some((char) => char.charCodeAt(0) > 127);
+  if (value && hasNonAsciiGlyph) {
+    return (
+      <span className={textClassName} aria-hidden="true">
+        {value}
+      </span>
+    );
+  }
+  return <IdentityIcon name={fallback} className={iconClassName} />;
 }
 
 interface IdentityIconPickerProps {
@@ -122,6 +152,7 @@ export function IdentityIconPicker({
                   ? "text-foreground/50"
                   : "text-muted-foreground"
             )}
+            aria-hidden="true"
           />
         </motion.button>
       ))}

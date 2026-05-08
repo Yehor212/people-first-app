@@ -10,6 +10,7 @@ import {
   isNativePlatform,
   notifyAuthComplete,
   getPendingAuthUrl,
+  getCleanAuthCallbackUrl,
 } from "@/lib/authRedirect";
 import { AUTH_SESSION_EXPIRED_EVENT } from "@/lib/apiClient";
 import { syncWithCloud, startAutoSync, stopAutoSync } from "@/storage/cloudSync";
@@ -110,7 +111,7 @@ export function useAuthSession(isLoading: boolean): void {
     if (hasError) {
       logger.error("[Index] OAuth error in URL:", url.searchParams.get("error"), errorDescription);
       setWebOAuthError(errorDescription || "Authentication failed. Please try again.");
-      window.history.replaceState({}, "", window.location.pathname);
+      window.history.replaceState({}, "", getCleanAuthCallbackUrl(window.location.href));
       return;
     }
 
@@ -128,7 +129,7 @@ export function useAuthSession(isLoading: boolean): void {
       if ((event === "SIGNED_IN" || event === "INITIAL_SESSION") && session) {
         settled = true;
         logger.log("[Index] Web OAuth code exchange succeeded (event:", event, ")");
-        window.history.replaceState({}, "", window.location.pathname);
+        window.history.replaceState({}, "", getCleanAuthCallbackUrl(window.location.href));
         setIsProcessingWebOAuth(false);
       }
     });
@@ -142,7 +143,7 @@ export function useAuthSession(isLoading: boolean): void {
         if (data.session) {
           settled = true;
           logger.log("[Index] Web OAuth: fallback session check found valid session");
-          window.history.replaceState({}, "", window.location.pathname);
+          window.history.replaceState({}, "", getCleanAuthCallbackUrl(window.location.href));
           setIsProcessingWebOAuth(false);
         }
       } catch (e) {
@@ -157,7 +158,7 @@ export function useAuthSession(isLoading: boolean): void {
       logger.error("[Index] Web OAuth code exchange timed out after 30s");
       setIsProcessingWebOAuth(false);
       setWebOAuthError("Sign-in took too long. Please try again.");
-      window.history.replaceState({}, "", window.location.pathname);
+      window.history.replaceState({}, "", getCleanAuthCallbackUrl(window.location.href));
     }, 30000);
 
     return () => {

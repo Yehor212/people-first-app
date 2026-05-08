@@ -1,16 +1,22 @@
 import { memo, useMemo } from "react";
-import { Sparkles, Repeat, BookOpen, Settings, ChevronsLeft, ChevronsRight } from "lucide-react";
+import { ChevronsLeft, ChevronsRight, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { haptics } from "@/lib/haptics";
+import { getNavVisualRole, getRoleTone } from "@/lib/nonOrbVisualRoles";
+import { V2_NAV_ICONS } from "@/lib/v2IconSystem";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { MiniValenceOrb } from "@/components/state-of-mind/MiniValenceOrb";
 import type { NavV2Page } from "@/hooks/useNavigationV2";
 import { ThemeToggleV2 } from "./ThemeToggleV2";
+import { ClassicPortalLink } from "./ClassicPortalLink";
 
 interface SidebarV2Props {
   activePage: NavV2Page;
   onPageChange: (page: NavV2Page) => void;
   collapsed: boolean;
   onToggleCollapsed: () => void;
+  forceVisible?: boolean;
+  collapseLocked?: boolean;
 }
 
 /**
@@ -28,30 +34,34 @@ export const SidebarV2 = memo(function SidebarV2({
   onPageChange,
   collapsed,
   onToggleCollapsed,
+  forceVisible = false,
+  collapseLocked = false,
 }: SidebarV2Props) {
   const { t } = useLanguage();
   const tx = t as unknown as Record<string, string>;
 
   const items = useMemo(
-    (): Array<{ id: NavV2Page; icon: typeof Sparkles; label: string }> => [
-      { id: "orb", icon: Sparkles, label: tx.navV2Orb || "Orb" },
-      { id: "habits", icon: Repeat, label: tx.navV2Habits || t.habits || "Habits" },
-      { id: "diary", icon: BookOpen, label: tx.navV2Diary || t.diary || "Diary" },
+    (): Array<{ id: NavV2Page; icon: LucideIcon; label: string }> => [
+      { id: "orb", icon: V2_NAV_ICONS.orb, label: tx.navV2Orb || "Mood" },
+      { id: "habits", icon: V2_NAV_ICONS.habits, label: tx.navV2Habits || t.habits || "Habits" },
+      { id: "diary", icon: V2_NAV_ICONS.diary, label: tx.navV2Diary || t.diary || "Diary" },
     ],
     [tx, t.habits, t.diary],
   );
 
   const settingsItem = {
     id: "settings" as NavV2Page,
-    icon: Settings,
-    label: tx.navV2Settings || t.settings || "Settings",
+    icon: V2_NAV_ICONS.settings,
+    label: tx.navV2Settings,
   };
 
   const renderItem = (
-    item: { id: NavV2Page; icon: typeof Sparkles; label: string },
+    item: { id: NavV2Page; icon: LucideIcon; label: string },
     isFooter = false,
   ) => {
     const isActive = activePage === item.id;
+    const visualRole = getNavVisualRole(item.id);
+    const tone = getRoleTone(visualRole);
     return (
       <button
         key={item.id}
@@ -63,13 +73,14 @@ export const SidebarV2 = memo(function SidebarV2({
         aria-current={isActive ? "page" : undefined}
         aria-label={item.label}
         title={collapsed ? item.label : undefined}
+        data-visual-role={visualRole}
         className={cn(
           "group relative flex items-center gap-3 rounded-xl px-3 py-2.5 min-h-[44px]",
           "font-display text-sm motion-safe:transition-all motion-safe:duration-200",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
           isActive
-            ? "bg-paper-surface text-ink-primary shadow-sm"
-            : "text-muted-foreground hover:bg-paper-surface/60 hover:text-foreground",
+            ? tone.activeSurfaceClass + " text-foreground shadow-sm"
+            : "text-muted-foreground hover:bg-[hsl(var(--nav-v2-item-hover)/0.72)] hover:text-foreground " + tone.borderClass,
           collapsed && "justify-center px-2",
           isFooter && "mt-auto",
         )}
@@ -77,10 +88,18 @@ export const SidebarV2 = memo(function SidebarV2({
         {isActive && !collapsed && (
           <span
             aria-hidden="true"
-            className="absolute inset-y-2 left-0 w-0.5 rounded-full bg-primary"
+            className={"absolute inset-y-2 left-0 w-0.5 rounded-full " + tone.railClass}
           />
         )}
-        <item.icon className="h-5 w-5 shrink-0" aria-hidden="true" />
+        <span
+          className={cn(
+            "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ring-1",
+            isActive ? tone.iconClass + " " + tone.ringClass : "bg-muted/45 ring-border/40",
+          )}
+          aria-hidden="true"
+        >
+          <item.icon className="h-5 w-5" />
+        </span>
         {!collapsed && <span className="truncate">{item.label}</span>}
       </button>
     );
@@ -89,7 +108,8 @@ export const SidebarV2 = memo(function SidebarV2({
   return (
     <aside
       className={cn(
-        "hidden md:flex fixed inset-y-0 start-0 z-40 flex-col",
+        forceVisible ? "flex" : "hidden md:flex",
+        "fixed inset-y-0 start-0 z-40 flex-col",
         "border-e border-border/60 bg-card/80 backdrop-blur-lg",
         "[-webkit-backdrop-filter:blur(12px)]",
         "motion-safe:transition-[width] motion-safe:duration-300 ease-out",
@@ -116,8 +136,17 @@ export const SidebarV2 = memo(function SidebarV2({
       >
         <span
           aria-hidden="true"
-          className="inline-block h-7 w-7 rounded-full bg-gradient-to-br from-primary to-primary/50 shadow-inner"
-        />
+          data-testid="sidebar-v2-brand-orb"
+          className="inline-flex h-10 w-10 shrink-0 items-center justify-center"
+        >
+          <MiniValenceOrb
+            valence={0}
+            hasEntry={false}
+            size="sm"
+            chrome="badge"
+            containerClassName="shadow-[0_0_24px_hsl(var(--primary)/0.14)]"
+          />
+        </span>
         {!collapsed && (
           <span className="font-display text-base font-semibold tracking-tight">ZenFlow</span>
         )}
@@ -130,39 +159,47 @@ export const SidebarV2 = memo(function SidebarV2({
 
       {/* Footer: theme toggle + settings + collapse toggle */}
       <div className="mt-auto flex flex-col gap-1 p-3 border-t border-border/40">
+        <ClassicPortalLink
+          collapsed={collapsed}
+          className={collapsed ? "mb-1" : "mb-2"}
+          testId="sidebar-v2-classic-portal"
+          variant="sidebar"
+        />
         <ThemeToggleV2 collapsed={collapsed} />
         {renderItem(settingsItem, true)}
-        <button
-          type="button"
-          onClick={() => {
-            void haptics.tabChanged();
-            onToggleCollapsed();
-          }}
-          aria-label={
-            collapsed
-              ? tx.navV2ExpandSidebar || "Expand sidebar"
-              : tx.navV2CollapseSidebar || "Collapse sidebar"
-          }
-          className={cn(
-            "flex items-center gap-2 rounded-lg px-3 py-2 min-h-[44px]",
-            "text-muted-foreground hover:text-foreground hover:bg-paper-surface/40",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
-            "motion-safe:transition-colors motion-safe:duration-200",
-            collapsed && "justify-center px-2",
-          )}
-          data-testid="sidebar-v2-collapse-toggle"
-        >
-          {collapsed ? (
-            <ChevronsRight className="h-5 w-5" aria-hidden="true" />
-          ) : (
-            <ChevronsLeft className="h-5 w-5" aria-hidden="true" />
-          )}
-          {!collapsed && (
-            <span className="text-xs">
-              {tx.navV2CollapseSidebar || "Collapse"}
-            </span>
-          )}
-        </button>
+        {!collapseLocked && (
+          <button
+            type="button"
+            onClick={() => {
+              void haptics.tabChanged();
+              onToggleCollapsed();
+            }}
+            aria-label={
+              collapsed
+                ? tx.navV2ExpandSidebar || "Expand sidebar"
+                : tx.navV2CollapseSidebar || "Collapse sidebar"
+            }
+            className={cn(
+              "flex items-center gap-2 rounded-lg px-3 py-2 min-h-[44px]",
+              "text-muted-foreground hover:text-foreground hover:bg-[hsl(var(--nav-v2-item-hover)/0.72)]",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+              "motion-safe:transition-colors motion-safe:duration-200",
+              collapsed && "justify-center px-2",
+            )}
+            data-testid="sidebar-v2-collapse-toggle"
+          >
+            {collapsed ? (
+              <ChevronsRight className="h-5 w-5" aria-hidden="true" />
+            ) : (
+              <ChevronsLeft className="h-5 w-5" aria-hidden="true" />
+            )}
+            {!collapsed && (
+              <span className="text-xs">
+                {tx.navV2CollapseSidebar || "Collapse"}
+              </span>
+            )}
+          </button>
+        )}
       </div>
     </aside>
   );

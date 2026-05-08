@@ -199,7 +199,7 @@ export function FocusReflectionModal({
               }}
               className="w-full mt-3 py-2.5 rounded-xl text-sm font-medium text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950/30 motion-safe:transition-colors flex items-center justify-center gap-2"
             >
-              <PenLine className="w-4 h-4" />
+              <PenLine className="w-4 h-4" aria-hidden="true" />
               {t.focusExpandToJournal || "Write about it in your journal"}
             </button>
           )}

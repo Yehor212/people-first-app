@@ -107,9 +107,9 @@ export const InsightCard = memo(function InsightCard({
 
         <div className="flex-shrink-0">
           {isExpanded ? (
-            <ChevronUp className="w-5 h-5 text-muted-foreground" />
+            <ChevronUp className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
           ) : (
-            <ChevronDown className="w-5 h-5 text-muted-foreground" />
+            <ChevronDown className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
           )}
         </div>
       </button>

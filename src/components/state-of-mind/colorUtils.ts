@@ -1,7 +1,7 @@
 /**
  * Valence → color mapping for State of Mind.
  * 9-stop HSL gradient: OKLAB-interpolated between stops for perceptual uniformity.
- * Violet → Indigo → Blue → Teal → Amber → Gold → Orange → Coral → Red.
+ * Deep violet → Indigo-purple → Blue → Teal → Amber → Gold → Orange → Coral → Red.
  * 7 slider snaps map into these 9 stops via interpolation.
  */
 
@@ -13,8 +13,8 @@ interface HSL {
 
 /** Color stops mapped to valence values (9-stop, orange added for warm zone richness) */
 const COLOR_STOPS: { valence: number; color: HSL }[] = [
-  { valence: -1.000, color: { h: 280, s: 60, l: 26 } },  // Deep violet — dark, brooding
-  { valence: -0.714, color: { h: 252, s: 58, l: 38 } },  // Indigo-purple — bridge violet→blue
+  { valence: -1.000, color: { h: 280, s: 62, l: 24 } },  // Deep violet — compact pressure
+  { valence: -0.714, color: { h: 258, s: 58, l: 39 } },  // Indigo-purple — uneasy but softer
   { valence: -0.429, color: { h: 220, s: 55, l: 45 } },  // Cool blue — tension, unease
   { valence: -0.143, color: { h: 175, s: 55, l: 48 } },  // Teal-cyan — calm center (anchor)
   { valence:  0.143, color: { h: 55,  s: 58, l: 48 } },  // Warm amber — bridge teal→gold

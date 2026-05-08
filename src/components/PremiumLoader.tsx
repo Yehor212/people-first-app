@@ -1,7 +1,7 @@
 /**
  * PremiumLoader — Infinity Draw SVG loader.
  *
- * Continuous self-drawing lemniscate (figure-eight) with pink→purple→blue
+ * Continuous self-drawing lemniscate (figure-eight) with red→amber→green
  * neon gradient. 3-layer depth: static glow foundation, animated mid-glow,
  * crisp main line, specular highlight.
  *
@@ -61,13 +61,13 @@ export function PremiumLoader({
         aria-hidden="true"
       >
         <defs>
-          {/* Rich 5-stop pink → rose → purple → indigo → blue gradient */}
+          {/* Rich 5-stop ZenFlow gradient, controlled by splash/theme tokens */}
           <linearGradient id={gradId} x1="0%" y1="50%" x2="100%" y2="50%">
-            <stop offset="0%" stopColor="#f472b6" />
-            <stop offset="25%" stopColor="#e879f9" />
-            <stop offset="50%" stopColor="#a855f7" />
-            <stop offset="75%" stopColor="#818cf8" />
-            <stop offset="100%" stopColor="#3b82f6" />
+            <stop offset="0%" stopColor="var(--premium-loader-stop-1, var(--color-mood-terrible))" />
+            <stop offset="25%" stopColor="var(--premium-loader-stop-2, var(--color-mood-bad))" />
+            <stop offset="50%" stopColor="var(--premium-loader-stop-3, var(--color-mood-okay))" />
+            <stop offset="75%" stopColor="var(--premium-loader-stop-4, var(--color-mood-good))" />
+            <stop offset="100%" stopColor="var(--premium-loader-stop-5, var(--color-mood-great))" />
           </linearGradient>
 
           {/* Gaussian blurs for glow layers */}
@@ -87,7 +87,7 @@ export function PremiumLoader({
           strokeWidth="16"
           strokeLinecap="round"
           strokeLinejoin="round"
-          opacity="0.14"
+          opacity="var(--premium-loader-foundation-opacity, 0.14)"
           filter={`url(#${blurId})`}
         />
 
@@ -99,8 +99,19 @@ export function PremiumLoader({
           strokeWidth="8"
           strokeLinecap="round"
           strokeLinejoin="round"
-          opacity="0.22"
+          opacity="var(--premium-loader-mid-opacity, 0.22)"
           filter={`url(#${blurSmId})`}
+        />
+
+        {/* Layer 3: Theme identity line — keeps the full infinity readable between draw phases */}
+        <path
+          d={INFINITY_PATH}
+          fill="none"
+          stroke={`url(#${gradId})`}
+          strokeWidth="4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          opacity="var(--premium-loader-base-line-opacity, 0)"
         />
 
         {/* Animated draw group — neon glow pulse (3s polyrhythm) */}
@@ -113,7 +124,7 @@ export function PremiumLoader({
             strokeWidth="8"
             strokeLinecap="round"
             strokeLinejoin="round"
-            opacity="0.35"
+            opacity="var(--premium-loader-trail-opacity, 0.35)"
             filter={`url(#${blurSmId})`}
             className={animate ? 'infinity-draw-line' : undefined}
             style={!animate ? { strokeDasharray: '105 60' } : undefined}
@@ -127,6 +138,7 @@ export function PremiumLoader({
             strokeWidth="4"
             strokeLinecap="round"
             strokeLinejoin="round"
+            opacity="var(--premium-loader-core-opacity, 1)"
             className={animate ? 'infinity-draw-line' : undefined}
             style={!animate ? { strokeDasharray: '105 60' } : undefined}
           />

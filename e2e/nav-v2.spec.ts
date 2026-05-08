@@ -60,6 +60,7 @@ async function primeApp(
         JSON.stringify({ noTracking: false, analytics: false, consentShown: true }),
       );
       localStorage.setItem("zenflow-privacy-acknowledged", JSON.stringify(true));
+      localStorage.setItem("zenflow-orb-first-run-dismissed", "1");
     },
     { appVersion: packageJson.version, paperTheme },
   );
@@ -88,7 +89,70 @@ async function freezeTimeToDay(page: import("@playwright/test").Page) {
   });
 }
 
+async function expectVisibleAboveFold(
+  page: import("@playwright/test").Page,
+  testId: string,
+) {
+  const target = page.getByTestId(testId);
+  await expect(target).toBeVisible({ timeout: 20_000 });
+  const box = await target.boundingBox();
+  const viewport = page.viewportSize();
+
+  expect(box).not.toBeNull();
+  expect(viewport).not.toBeNull();
+  if (box && viewport) {
+    expect(box.y + box.height).toBeLessThanOrEqual(viewport.height - 8);
+  }
+}
+
+async function expectOrbPageReady(page: import("@playwright/test").Page) {
+  await expect(page.getByTestId("orb-page")).toBeVisible({ timeout: 20_000 });
+}
+
 test.describe("Nav V2 Infrastructure Baselines", () => {
+  test("V2 boot forces the dark main loading screen before the app shell", async ({
+    page,
+  }) => {
+    await primeApp(page, { paperTheme: "paper" });
+    await freezeTimeToDay(page);
+    await page.goto("/?nav=v2", { waitUntil: "domcontentloaded" });
+
+    const splash = page.getByTestId("splash-theme-shell");
+    await expect(splash).toBeVisible();
+    await expect(splash).toHaveAttribute("data-splash-theme", "ink");
+    await expect(page.getByTestId("splash-brand-logo")).toBeVisible();
+    await expect(page.getByTestId("splash-infinity-loader")).toBeVisible();
+    await expect(page.getByText("ZenFlow")).toBeVisible();
+    await expect(page.getByText("Preparing your zen space...")).toBeVisible();
+    await expect(page.getByRole("status", { name: /loading/i })).toBeVisible();
+    await expectOrbPageReady(page);
+  });
+
+  for (const viewport of [
+    { width: 1366, height: 768 },
+    { width: 1440, height: 900 },
+    { width: 390, height: 844 },
+  ]) {
+    test(`orb select CTA stays above the fold at ${viewport.width}x${viewport.height}`, async ({
+      page,
+    }, testInfo) => {
+      testInfo.setTimeout(60_000);
+      await primeApp(page, { paperTheme: "paper" });
+      await freezeTimeToDay(page);
+      await page.addInitScript(() => {
+        localStorage.setItem("zenflow-orb-first-run-dismissed", "1");
+      });
+      await page.setViewportSize(viewport);
+      await page.goto("/?nav=v2");
+      await page.evaluate(() => document.fonts.ready);
+
+      await expectVisibleAboveFold(page, "orb-page-next");
+      await page.getByTestId("mood-scope-chip-specific").click();
+      await page.getByTestId("mood-scope-time-input").fill("14:30");
+      await expectVisibleAboveFold(page, "orb-page-next");
+    });
+  }
+
   test("desktop: SidebarV2 + Orb page shell (day variant — paper theme)", async ({ page }, testInfo) => {
     testInfo.setTimeout(60_000);
     await primeApp(page, { paperTheme: "paper" });
@@ -98,8 +162,9 @@ test.describe("Nav V2 Infrastructure Baselines", () => {
     await page.evaluate(() => document.fonts.ready);
 
     // SidebarV2 must be present + orb page shell rendered
-    await expect(page.getByTestId("sidebar-v2")).toBeVisible();
-    await expect(page.getByTestId("orb-page")).toBeVisible();
+    await expect(page.getByTestId("sidebar-v2")).toBeVisible({ timeout: 20_000 });
+    await expectOrbPageReady(page);
+    await expectVisibleAboveFold(page, "orb-page-next");
 
     // Day variant must render (paper theme → warm 7-layer scene)
     await expect(page.getByTestId("day-cosmic-background")).toBeVisible();
@@ -127,7 +192,7 @@ test.describe("Nav V2 Infrastructure Baselines", () => {
     await page.goto("/?nav=v2");
     await page.evaluate(() => document.fonts.ready);
 
-    await expect(page.getByTestId("orb-page")).toBeVisible();
+    await expectOrbPageReady(page);
     // Night variant must render (ink theme → stars + violet nebula, UNCHANGED)
     await expect(page.getByTestId("cosmic-orb-background")).toBeVisible();
     await expect(page.getByTestId("cosmic-orb-nebula")).toBeVisible();
@@ -149,9 +214,10 @@ test.describe("Nav V2 Infrastructure Baselines", () => {
     await page.goto("/?nav=v2");
     await page.evaluate(() => document.fonts.ready);
 
-    await expect(page.getByTestId("orb-page")).toBeVisible();
+    await expectOrbPageReady(page);
     await expect(page.getByTestId("nav-v2-open-drawer")).toBeVisible();
     await expect(page.getByTestId("day-cosmic-background")).toBeVisible();
+    await expectVisibleAboveFold(page, "orb-page-next");
 
     expect(await page.getByTestId("mobile-nav-v2").count()).toBe(0);
     for (const id of ["orb", "habits", "diary", "settings"]) {
@@ -179,7 +245,7 @@ test.describe("Nav V2 Infrastructure Baselines", () => {
     await page.goto("/?nav=v2");
     await page.evaluate(() => document.fonts.ready);
 
-    await expect(page.getByTestId("orb-page")).toBeVisible();
+    await expectOrbPageReady(page);
     await expect(page.getByTestId("cosmic-orb-background")).toBeVisible();
 
     await expect(page).toHaveScreenshot("nav-v2-mobile-orb-night.png", {
@@ -200,8 +266,9 @@ test.describe("Nav V2 Infrastructure Baselines", () => {
     await expect(page.getByTestId("nav-v2-orchestrator")).toHaveCount(0);
   });
 
-  // Phase 3-A.4b mid-flow baselines — scope selector + emotion spectrum + confirm CTA visible
-  test("desktop: mid-flow state (day variant — scope + emotion + confirm visible)", async ({
+  // Progressive-flow refine baselines — after the coarse orb choice, the user
+  // advances into the precise-feeling step instead of seeing everything at once.
+  test("desktop: refine step (day variant — precise feelings + diary handoff)", async ({
     page,
   }, testInfo) => {
     testInfo.setTimeout(60_000);
@@ -215,7 +282,7 @@ test.describe("Nav V2 Infrastructure Baselines", () => {
     await page.goto("/?nav=v2");
     await page.evaluate(() => document.fonts.ready);
 
-    await expect(page.getByTestId("orb-page")).toBeVisible();
+    await expectOrbPageReady(page);
     await expect(page.getByTestId("mood-scope-selector")).toBeVisible();
     await expect(page.getByTestId("orb-page-slider")).toBeVisible();
 
@@ -228,19 +295,20 @@ test.describe("Nav V2 Infrastructure Baselines", () => {
     await page.evaluate(() => {
       interface DraftHandle {
         setValence: (v: number) => void;
-        setEmotion: (e: string | null) => void;
       }
       interface W { __zenMoodDraft?: DraftHandle }
       const h = (window as unknown as W).__zenMoodDraft;
       if (h) {
         h.setValence(0.5);
-        h.setEmotion("hopeful");
       }
     });
     await page.waitForTimeout(300);
+    await page.getByTestId("orb-page-next").click();
+    await page.waitForTimeout(300);
 
+    await expect(page.getByTestId("orb-page-refine")).toBeVisible();
     await expect(page.getByTestId("orb-page-emotion-spectrum")).toBeVisible();
-    await expect(page.getByTestId("mood-confirm-button")).toBeVisible();
+    await expect(page.getByTestId("orb-page-open-diary")).toBeVisible();
 
     await expect(page).toHaveScreenshot("nav-v2-desktop-orb-midflow-day.png", {
       fullPage: true,
@@ -250,7 +318,7 @@ test.describe("Nav V2 Infrastructure Baselines", () => {
     });
   });
 
-  test("desktop: mid-flow state (night variant — cosmic glass chips)", async ({
+  test("desktop: refine step (night variant — cosmic precise-feeling scene)", async ({
     page,
   }, testInfo) => {
     testInfo.setTimeout(60_000);
@@ -263,7 +331,7 @@ test.describe("Nav V2 Infrastructure Baselines", () => {
     await page.goto("/?nav=v2");
     await page.evaluate(() => document.fonts.ready);
 
-    await expect(page.getByTestId("orb-page")).toBeVisible();
+    await expectOrbPageReady(page);
     await expect(page.getByTestId("mood-scope-selector")).toBeVisible();
 
     await page.waitForFunction(() => {
@@ -273,17 +341,18 @@ test.describe("Nav V2 Infrastructure Baselines", () => {
     await page.evaluate(() => {
       interface DraftHandle {
         setValence: (v: number) => void;
-        setEmotion: (e: string | null) => void;
       }
       interface W { __zenMoodDraft?: DraftHandle }
       const h = (window as unknown as W).__zenMoodDraft;
       if (h) {
         h.setValence(0.5);
-        h.setEmotion("hopeful");
       }
     });
     await page.waitForTimeout(300);
+    await page.getByTestId("orb-page-next").click();
+    await page.waitForTimeout(300);
 
+    await expect(page.getByTestId("orb-page-refine")).toBeVisible();
     await expect(page.getByTestId("orb-page-emotion-spectrum")).toBeVisible();
 
     await expect(page).toHaveScreenshot("nav-v2-desktop-orb-midflow-night.png", {
@@ -311,7 +380,7 @@ test.describe("Nav V2 Infrastructure Baselines", () => {
     await page.goto("/?nav=v2");
     await page.evaluate(() => document.fonts.ready);
 
-    await expect(page.getByTestId("orb-page")).toBeVisible();
+    await expectOrbPageReady(page);
 
     await page.waitForFunction(() => {
       interface W { __zenMoodDraft?: unknown }
@@ -320,17 +389,17 @@ test.describe("Nav V2 Infrastructure Baselines", () => {
     await page.evaluate(() => {
       interface DraftHandle {
         setValence: (v: number) => void;
-        setEmotion: (e: string | null) => void;
       }
       interface W { __zenMoodDraft?: DraftHandle }
       const h = (window as unknown as W).__zenMoodDraft;
       if (h) {
         h.setValence(0.5);
-        h.setEmotion(null);
       }
     });
     // Wait for Bloom CTA stagger (cta delay) + initial chip stagger settle.
     await page.waitForTimeout(500);
+    await page.getByTestId("orb-page-next").click();
+    await page.waitForTimeout(300);
     await expect(page.getByTestId("orb-page-emotion-spectrum")).toBeVisible();
     await expect(page.getByTestId("emotion-more-precise")).toBeVisible();
   }
@@ -452,6 +521,130 @@ test.describe("Nav V2 Infrastructure Baselines", () => {
       );
     });
   }
+
+  test("desktop: Diary draft-card arrival after Orb transfer", async ({
+    page,
+  }, testInfo) => {
+    testInfo.setTimeout(60_000);
+    await primeApp(page, { paperTheme: "paper" });
+    await freezeTimeToDay(page);
+    await page.addInitScript(() => {
+      localStorage.setItem("zenflow-orb-first-run-dismissed", "1");
+    });
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto("/?nav=v2");
+    await page.evaluate(() => document.fonts.ready);
+
+    await page.waitForFunction(() => {
+      interface W { __zenMoodDraft?: unknown }
+      return (window as unknown as W).__zenMoodDraft !== undefined;
+    }, { timeout: 5000 });
+
+    await page.evaluate(() => {
+      interface DraftHandle {
+        setValence: (v: number) => void;
+        setEmotion: (e: string | null) => void;
+        setNote: (note: string) => void;
+      }
+      interface W { __zenMoodDraft?: DraftHandle }
+      const h = (window as unknown as W).__zenMoodDraft;
+      if (h) {
+        h.setValence(0.5);
+      }
+    });
+    await page.waitForTimeout(300);
+    await page.getByTestId("orb-page-next").click();
+    await page.waitForTimeout(200);
+    await page.evaluate(() => {
+      interface DraftHandle {
+        setEmotion: (e: string | null) => void;
+        setNote: (note: string) => void;
+      }
+      interface W { __zenMoodDraft?: DraftHandle }
+      const h = (window as unknown as W).__zenMoodDraft;
+      if (h) {
+        h.setEmotion("hopeful");
+        h.setNote("A small clear moment worth keeping.");
+      }
+    });
+    await page.waitForTimeout(250);
+    await page.getByTestId("orb-page-open-diary").click();
+    await expect(page.getByText("Loading...")).toHaveCount(0, { timeout: 30_000 });
+
+    await expect(page.getByTestId("diary-page")).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: /Continue writing/i }).first(),
+    ).toBeVisible({ timeout: 30_000 });
+
+    await expect(page).toHaveScreenshot("nav-v2-diary-draft-card-day.png", {
+      fullPage: true,
+      maxDiffPixelRatio: 0.04,
+      animations: "disabled",
+      timeout: 30_000,
+    });
+  });
+
+  test("mobile: Diary draft-card arrival after Orb transfer", async ({
+    page,
+  }, testInfo) => {
+    testInfo.setTimeout(60_000);
+    await primeApp(page, { paperTheme: "paper" });
+    await freezeTimeToDay(page);
+    await page.addInitScript(() => {
+      localStorage.setItem("zenflow-orb-first-run-dismissed", "1");
+    });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/?nav=v2");
+    await page.evaluate(() => document.fonts.ready);
+
+    await page.waitForFunction(() => {
+      interface W { __zenMoodDraft?: unknown }
+      return (window as unknown as W).__zenMoodDraft !== undefined;
+    }, { timeout: 5000 });
+
+    await page.evaluate(() => {
+      interface DraftHandle {
+        setValence: (v: number) => void;
+        setEmotion: (e: string | null) => void;
+        setNote: (note: string) => void;
+      }
+      interface W { __zenMoodDraft?: DraftHandle }
+      const h = (window as unknown as W).__zenMoodDraft;
+      if (h) {
+        h.setValence(0.5);
+      }
+    });
+    await page.waitForTimeout(300);
+    await page.getByTestId("orb-page-next").click();
+    await page.waitForTimeout(200);
+    await page.evaluate(() => {
+      interface DraftHandle {
+        setEmotion: (e: string | null) => void;
+        setNote: (note: string) => void;
+      }
+      interface W { __zenMoodDraft?: DraftHandle }
+      const h = (window as unknown as W).__zenMoodDraft;
+      if (h) {
+        h.setEmotion("hopeful");
+        h.setNote("A small clear moment worth keeping.");
+      }
+    });
+    await page.waitForTimeout(250);
+    await page.getByTestId("orb-page-open-diary").click();
+    await expect(page.getByText("Loading...")).toHaveCount(0, { timeout: 30_000 });
+
+    await expect(page.getByTestId("diary-page")).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: /Continue writing/i }).first(),
+    ).toBeVisible({ timeout: 30_000 });
+
+    await expect(page).toHaveScreenshot("nav-v2-diary-draft-card-mobile-day.png", {
+      fullPage: true,
+      maxDiffPixelRatio: 0.04,
+      animations: "disabled",
+      timeout: 30_000,
+    });
+  });
 });
 
 // Phase 3-A.4c-ii-d-d — MoodSliderV2 (bespoke continuous slider) visual baselines.

@@ -486,18 +486,38 @@ describe('getFrequencyByWeekday', () => {
     expect(counts[0]).toBe(0); // Sunday
   });
 
-  it('counts numerical entries with value > 0 (not SKIP)', () => {
+  it('counts numerical entries only when they meet the target', () => {
     const entries = numericalEntries({
       '2026-03-09': 5, // Monday
       '2026-03-10': 3, // Tuesday
+      '2026-03-11': 1, // Wednesday, partial
     });
     const habit = makeTestHabit({
       habitType: 'numerical',
+      targetType: 'atLeast',
+      targetValue: 3,
       entries,
     });
     const counts = getFrequencyByWeekday(habit);
     expect(counts[1]).toBe(1); // Monday
     expect(counts[2]).toBe(1); // Tuesday
+    expect(counts[3]).toBe(0); // Wednesday partial does not count
+  });
+
+  it('counts explicit zero as a completed atMost weekday', () => {
+    const entries = numericalEntries({
+      '2026-03-09': 0, // Monday
+      '2026-03-10': 3, // Tuesday, over limit
+    });
+    const habit = makeTestHabit({
+      habitType: 'numerical',
+      targetType: 'atMost',
+      targetValue: 2,
+      entries,
+    });
+    const counts = getFrequencyByWeekday(habit);
+    expect(counts[1]).toBe(1); // Monday zero meets atMost
+    expect(counts[2]).toBe(0); // Tuesday over limit does not count
   });
 
   it('ignores SKIP entries for boolean habits', () => {

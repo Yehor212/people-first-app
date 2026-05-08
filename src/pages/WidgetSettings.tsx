@@ -43,7 +43,7 @@ export function WidgetSettings({ onBack }: WidgetSettingsProps) {
                 : "bg-muted text-muted-foreground hover:bg-muted/80"
             }`}
           >
-            <Monitor className="w-4 h-4 inline-block me-2" />
+            <Monitor className="w-4 h-4 inline-block me-2" aria-hidden="true" />
             {t.widgetPreview}
           </button>
           <button
@@ -54,7 +54,7 @@ export function WidgetSettings({ onBack }: WidgetSettingsProps) {
                 : "bg-muted text-muted-foreground hover:bg-muted/80"
             }`}
           >
-            <Smartphone className="w-4 h-4 inline-block me-2" />
+            <Smartphone className="w-4 h-4 inline-block me-2" aria-hidden="true" />
             {t.widgetSetup}
           </button>
         </div>

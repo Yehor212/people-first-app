@@ -72,9 +72,9 @@ export const JournalAudioPlayer = memo(function JournalAudioPlayer({ src, durati
         )}
       >
         {playing ? (
-          <Pause className="w-4 h-4" />
+          <Pause className="w-4 h-4" aria-hidden="true" />
         ) : (
-          <Play className="w-4 h-4 ms-0.5" />
+          <Play className="w-4 h-4 ms-0.5" aria-hidden="true" />
         )}
       </button>
 

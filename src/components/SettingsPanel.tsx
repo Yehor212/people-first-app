@@ -143,7 +143,7 @@ export function SettingsPanel({
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Smartphone className="w-5 h-5 text-primary" />
+              <Smartphone className="w-5 h-5 text-primary" aria-hidden="true" />
               <div>
                 <h3 className="text-base font-semibold text-foreground">
                   {t.widgetSettings || "Widget Settings"}
@@ -153,7 +153,7 @@ export function SettingsPanel({
                 </p>
               </div>
             </div>
-            <ChevronRight className="w-5 h-5 text-muted-foreground rtl:scale-x-[-1]" />
+            <ChevronRight className="w-5 h-5 text-muted-foreground rtl:scale-x-[-1]" aria-hidden="true" />
           </div>
         </button>
       )}
@@ -193,7 +193,7 @@ export function SettingsPanel({
           onClick={() => setShowDopamineSettings(true)}
           className="w-full py-3 zen-gradient text-primary-foreground rounded-xl font-medium hover:opacity-90 motion-safe:transition-opacity flex items-center justify-center gap-2"
         >
-          <Sparkles className="w-4 h-4" />
+          <Sparkles className="w-4 h-4" aria-hidden="true" />
           <span>{t.dopamineCustomize}</span>
         </button>
       </div>

@@ -158,7 +158,7 @@ export function LegalModal({ open, onOpenChange, initialTab = "privacy" }: Legal
                 onClick={() => handleOpenExternal(PRIVACY_URL)}
                 className="w-full py-3 bg-primary/10 text-primary rounded-xl font-medium hover:bg-primary/20 motion-safe:transition-colors flex items-center justify-center gap-2 min-h-[48px]"
               >
-                <ExternalLink className="w-4 h-4" />
+                <ExternalLink className="w-4 h-4" aria-hidden="true" />
                 {t.legalOpenInBrowser}
               </button>
             </div>
@@ -171,7 +171,7 @@ export function LegalModal({ open, onOpenChange, initialTab = "privacy" }: Legal
                 onClick={() => handleOpenExternal(TERMS_URL)}
                 className="w-full py-3 bg-primary/10 text-primary rounded-xl font-medium hover:bg-primary/20 motion-safe:transition-colors flex items-center justify-center gap-2 min-h-[48px]"
               >
-                <ExternalLink className="w-4 h-4" />
+                <ExternalLink className="w-4 h-4" aria-hidden="true" />
                 {t.legalOpenInBrowser}
               </button>
             </div>

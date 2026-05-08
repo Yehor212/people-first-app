@@ -77,12 +77,12 @@ export function computeIdentityClusters(habits: Habit[]): IdentityCluster[] {
     }
     const weeklyAlignmentPercent = Math.round((weeklyTotal / 7) * 100);
 
-    // Use the first habit's identity metadata or defaults
+    // Use the first habit's identity metadata or fall back to the habit emoji.
     const firstWithMeta = clusterHabits.find(h => h.identityVerb);
 
     clusters.push({
       name: displayName,
-      icon: firstWithMeta?.identityIcon || (clusterName ? 'Target' : 'Sparkles'),
+      icon: firstWithMeta?.identityIcon || firstWithMeta?.icon || (clusterName ? 'Target' : 'Sparkles'),
       verb: firstWithMeta?.identityVerb || (clusterName ? `I am ${clusterName}` : UNCATEGORIZED_CLUSTER_ID),
       habits: clusterHabits,
       completedToday,

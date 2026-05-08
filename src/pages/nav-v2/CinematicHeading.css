@@ -11,6 +11,15 @@
   white-space: pre;
 }
 
+.cinematic-heading__word {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.cinematic-heading__space {
+  white-space: pre;
+}
+
 .cinematic-heading__soft-static {
   font-variation-settings: "SOFT" 50;
 }

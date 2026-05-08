@@ -7,14 +7,22 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 vi.mock("@/contexts/LanguageContext", () => ({
   useLanguage: () => ({
     t: {
-      navV2HabitsIdentityToday: "Today you are building:",
-      navV2HabitsIdentityIntention: "Someone who keeps their word",
+      navV2HabitsIdentityToday: "Today you choose to be:",
+      navV2HabitsIdentitySentence: "Today you choose to be {identity}",
+      navV2HabitsIdentityIntention: "someone who keeps their word",
+      navV2HabitsIdentityIntentions:
+        "someone who keeps their word|someone who starts small|someone who returns to rhythm",
     },
     language: "en",
   }),
 }));
 
-import { HeroIdentityPrompt, pickIdentityForDay } from "../HeroIdentityPrompt";
+import {
+  HeroIdentityPrompt,
+  parseDailyIdentityIntentions,
+  pickDailyIdentityForDay,
+  pickIdentityForDay,
+} from "../HeroIdentityPrompt";
 import type { Habit } from "@/types";
 
 const habit = (overrides: Partial<Habit>): Habit => ({
@@ -56,12 +64,38 @@ describe("pickIdentityForDay", () => {
   });
 });
 
+describe("daily default identity prompts", () => {
+  it("parses the localized monthly phrase bank", () => {
+    expect(parseDailyIdentityIntentions(" first | second || third ")).toEqual([
+      "first",
+      "second",
+      "third",
+    ]);
+  });
+
+  it("rotates fallback phrases by one-based calendar day", () => {
+    const phrases = "someone who keeps their word|someone who starts small|someone who returns";
+    expect(pickDailyIdentityForDay(phrases, 1)?.verb).toBe("someone who keeps their word");
+    expect(pickDailyIdentityForDay(phrases, 2)?.verb).toBe("someone who starts small");
+    expect(pickDailyIdentityForDay(phrases, 4)?.verb).toBe("someone who keeps their word");
+  });
+});
+
 describe("HeroIdentityPrompt", () => {
   afterEach(() => cleanup());
-  it("falls back to generic intention when no identityVerb on any habit", () => {
+  it("falls back to the daily identity phrase when no habit has identityVerb", () => {
     render(<HeroIdentityPrompt habits={[habit({})]} dayOfMonth={1} />);
     expect(screen.getByTestId("hero-identity-verb")).toHaveTextContent(
-      "Someone who keeps their word",
+      "someone who keeps their word",
+    );
+    expect(screen.getByTestId("hero-identity-prompt")).toHaveTextContent(
+      "Today you choose to be",
+    );
+  });
+  it("changes the generic identity phrase across calendar days", () => {
+    render(<HeroIdentityPrompt habits={[habit({})]} dayOfMonth={2} />);
+    expect(screen.getByTestId("hero-identity-verb")).toHaveTextContent(
+      "someone who starts small",
     );
   });
   it("shows the picked identity when configured", () => {

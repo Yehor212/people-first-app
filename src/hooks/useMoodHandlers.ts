@@ -13,6 +13,30 @@ interface UseMoodHandlersParams {
   updateChallengeProgress: () => void;
 }
 
+interface CommitMoodEntryDeps {
+  setMoods: ReturnType<typeof useUserDataStore.getState>["setMoods"];
+  rewardUser: ReturnType<typeof useGamificationStore.getState>["rewardUser"];
+  updateChallengeProgress: () => void;
+}
+
+export function commitMoodEntry(
+  entry: MoodEntry,
+  { setMoods, rewardUser, updateChallengeProgress }: CommitMoodEntryDeps,
+) {
+  const stamped = { ...entry, updatedAt: entry.updatedAt || Date.now() };
+  setMoods((prev) => [...prev, stamped]);
+  rewardUser("mood", {
+    treats: 5,
+    treatReason: "Logged mood",
+    haptic: haptics.moodSaved,
+    seedExtra: entry.mood,
+  });
+  analytics.moodTracked(entry.mood);
+  updateChallengeProgress();
+  triggerSync();
+  void syncMood(stamped).catch((err) => logger.warn("[Mood] Granular sync failed:", err));
+}
+
 /**
  * Mood entry handlers: add mood, quick mood (notification), update mood.
  */
@@ -21,18 +45,11 @@ export function useMoodHandlers({ updateChallengeProgress }: UseMoodHandlersPara
   const rewardUser = useGamificationStore((s) => s.rewardUser);
 
   const handleAddMood = useThrottledCallback((entry: MoodEntry) => {
-    const stamped = { ...entry, updatedAt: entry.updatedAt || Date.now() };
-    setMoods((prev) => [...prev, stamped]);
-    rewardUser("mood", {
-      treats: 5,
-      treatReason: "Logged mood",
-      haptic: haptics.moodSaved,
-      seedExtra: entry.mood,
+    commitMoodEntry(entry, {
+      setMoods,
+      rewardUser,
+      updateChallengeProgress,
     });
-    analytics.moodTracked(entry.mood);
-    updateChallengeProgress();
-    triggerSync();
-    void syncMood(stamped).catch((err) => logger.warn("[Mood] Granular sync failed:", err));
   }, 800);
 
   const handleQuickMood = useCallback(

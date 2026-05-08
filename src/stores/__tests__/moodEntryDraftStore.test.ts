@@ -12,6 +12,7 @@ describe("moodEntryDraftStore", () => {
     expect(s.scope).toBe("now");
     expect(s.specificTime).toBeNull();
     expect(s.emotion).toBeNull();
+    expect(s.note).toBe("");
   });
 
   it("setValence updates state", () => {
@@ -40,6 +41,13 @@ describe("moodEntryDraftStore", () => {
     expect(useMoodEntryDraftStore.getState().emotion).toBe("hopeful");
   });
 
+  it("setNote updates state", () => {
+    useMoodEntryDraftStore.getState().setNote("A calmer current is underneath.");
+    expect(useMoodEntryDraftStore.getState().note).toBe(
+      "A calmer current is underneath.",
+    );
+  });
+
   it("reset restores INITIAL values", () => {
     useMoodEntryDraftStore.getState().setValence(0.9);
     useMoodEntryDraftStore.getState().setScope("day");
@@ -51,6 +59,7 @@ describe("moodEntryDraftStore", () => {
     expect(s.scope).toBe("now");
     expect(s.specificTime).toBeNull();
     expect(s.emotion).toBeNull();
+    expect(s.note).toBe("");
   });
 
   it("isComplete returns false when valence is null", () => {
@@ -58,28 +67,25 @@ describe("moodEntryDraftStore", () => {
     expect(useMoodEntryDraftStore.getState().isComplete()).toBe(false);
   });
 
-  it("isComplete returns false when emotion is null", () => {
+  it("isComplete returns true when only valence is set for a now-scope handoff", () => {
     useMoodEntryDraftStore.getState().setValence(0.3);
-    expect(useMoodEntryDraftStore.getState().isComplete()).toBe(false);
+    expect(useMoodEntryDraftStore.getState().isComplete()).toBe(true);
   });
 
   it("isComplete returns false when scope=specific but time null", () => {
     useMoodEntryDraftStore.getState().setValence(0.3);
-    useMoodEntryDraftStore.getState().setEmotion("calm");
     useMoodEntryDraftStore.getState().setScope("specific");
     expect(useMoodEntryDraftStore.getState().isComplete()).toBe(false);
   });
 
-  it("isComplete returns true when all three (now scope)", () => {
+  it("isComplete returns true when valence exists for day scope", () => {
     useMoodEntryDraftStore.getState().setValence(0.3);
-    useMoodEntryDraftStore.getState().setEmotion("calm");
-    useMoodEntryDraftStore.getState().setScope("now");
+    useMoodEntryDraftStore.getState().setScope("day");
     expect(useMoodEntryDraftStore.getState().isComplete()).toBe(true);
   });
 
-  it("isComplete returns true when specific scope + time + all filled", () => {
+  it("isComplete returns true when specific scope + time are resolved", () => {
     useMoodEntryDraftStore.getState().setValence(-0.2);
-    useMoodEntryDraftStore.getState().setEmotion("anxious");
     useMoodEntryDraftStore.getState().setScope("specific");
     useMoodEntryDraftStore.getState().setSpecificTime("2026-04-16T14:30");
     expect(useMoodEntryDraftStore.getState().isComplete()).toBe(true);

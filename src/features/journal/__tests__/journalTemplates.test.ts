@@ -14,15 +14,23 @@ describe('BUILTIN_TEMPLATES', () => {
     expect(BUILTIN_TEMPLATES).toHaveLength(5);
   });
 
-  it('each template has id, nameKey, icon, and sections', () => {
+  it('each template has id, nameKey, iconKey, and sections', () => {
     for (const template of BUILTIN_TEMPLATES) {
       expect(typeof template.id).toBe('string');
       expect(template.id.length).toBeGreaterThan(0);
       expect(typeof template.nameKey).toBe('string');
       expect(typeof template.descriptionKey).toBe('string');
-      expect(typeof template.icon).toBe('string');
+      expect(typeof template.iconKey).toBe('string');
       expect(Array.isArray(template.sections)).toBe(true);
       expect(template.sections.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('does not use emoji as template icons', () => {
+    const emojiPattern = /\p{Extended_Pictographic}/u;
+
+    for (const template of BUILTIN_TEMPLATES) {
+      expect(template.iconKey).not.toMatch(emojiPattern);
     }
   });
 
@@ -52,7 +60,7 @@ describe('generateTemplateContent', () => {
       id: 'test',
       nameKey: 'test',
       descriptionKey: 'testDesc',
-      icon: 'X',
+      iconKey: 'penLine',
       sections: [{ labelKey: 'myLabel', placeholder: 'fallback text' }],
     };
     const translations: Record<string, string> = { myLabel: 'Translated Label' };
@@ -66,7 +74,7 @@ describe('generateTemplateContent', () => {
       id: 'test',
       nameKey: 'test',
       descriptionKey: 'testDesc',
-      icon: 'X',
+      iconKey: 'penLine',
       sections: [{ labelKey: 'missingKey', placeholder: 'Use this instead' }],
     };
     const content = generateTemplateContent(template, {});
@@ -78,7 +86,7 @@ describe('generateTemplateContent', () => {
       id: 'test',
       nameKey: 'test',
       descriptionKey: 'testDesc',
-      icon: 'X',
+      iconKey: 'penLine',
       sections: [
         { labelKey: 'a', placeholder: 'Section A' },
         { labelKey: 'b', placeholder: 'Section B' },

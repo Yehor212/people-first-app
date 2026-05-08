@@ -62,7 +62,7 @@ export function LanguageSelector({ onComplete }: LanguageSelectorProps) {
                 <span className="font-medium text-foreground flex-1 text-start">
                   {languageNames[lang]}
                 </span>
-                {language === lang && <Check className="w-5 h-5 text-primary" />}
+                {language === lang && <Check className="w-5 h-5 text-primary" aria-hidden="true" />}
               </button>
             ))}
           </div>

@@ -21,6 +21,41 @@ import { logger } from "@/lib/logger";
 
 declare const self: ServiceWorkerGlobalScope;
 
+const CLIENT_MESSAGE_TYPES = ["SKIP_WAITING", "CLEAR_CACHES", "REGISTER_SYNC"] as const;
+type ClientMessageType = (typeof CLIENT_MESSAGE_TYPES)[number];
+interface ClientMessage {
+  type: ClientMessageType;
+}
+
+function isClientMessageData(data: unknown): data is ClientMessage {
+  if (!data || typeof data !== "object") return false;
+  const type = (data as { type?: unknown }).type;
+  return typeof type === "string" && CLIENT_MESSAGE_TYPES.includes(type as ClientMessageType);
+}
+
+function isWindowClient(source: ExtendableMessageEvent["source"]): source is WindowClient {
+  return Boolean(
+    source &&
+      typeof source === "object" &&
+      "url" in source &&
+      typeof (source as { url?: unknown }).url === "string"
+  );
+}
+
+function isTrustedClientMessage(event: ExtendableMessageEvent): event is ExtendableMessageEvent & {
+  data: ClientMessage;
+  source: WindowClient;
+} {
+  if (event.origin !== self.location.origin) return false;
+  if (!isWindowClient(event.source)) return false;
+  try {
+    if (new URL(event.source.url).origin !== self.location.origin) return false;
+  } catch {
+    return false;
+  }
+  return isClientMessageData(event.data);
+}
+
 // Set cache name prefix
 setCacheNameDetails({
   prefix: "zenflow",
@@ -140,17 +175,16 @@ self.addEventListener("sync", (evt) => {
   }
 });
 
-// Listen for messages from the main app (origin-validated)
-self.addEventListener("message", (event) => {
-  // Security: reject messages from missing or foreign origins (CWE-20, CWE-345)
-  if (!event.origin || event.origin !== self.location.origin) return;
+// Listen for messages from the main app (origin/source/type validated).
+self.onmessage = (event) => {
+  if (!isTrustedClientMessage(event)) return;
 
-  if (event.data?.type === "SKIP_WAITING") {
+  if (event.data.type === "SKIP_WAITING") {
     logger.log("[SW] Skip waiting requested");
     void self.skipWaiting();
   }
 
-  if (event.data?.type === "CLEAR_CACHES") {
+  if (event.data.type === "CLEAR_CACHES") {
     // Clear all caches when app detects version mismatch
     logger.log("[SW] Clear caches requested");
     event.waitUntil(
@@ -165,13 +199,13 @@ self.addEventListener("message", (event) => {
     );
   }
 
-  if (event.data?.type === "REGISTER_SYNC") {
+  if (event.data.type === "REGISTER_SYNC") {
     // Register a sync event (will fire when online)
     self.registration.sync?.register("zenflow-sync").catch((err) => {
       logger.warn("[SW] Background sync registration failed:", err);
     });
   }
-});
+};
 
 // Log service worker lifecycle
 self.addEventListener("install", () => {

@@ -1,10 +1,12 @@
 /** Built-in journal writing templates */
 
+import type { JournalIconKey } from './types';
+
 export interface JournalTemplate {
   id: string;
   nameKey: string;
   descriptionKey: string;
-  icon: string;
+  iconKey: JournalIconKey;
   sections: { labelKey: string; placeholder: string }[];
 }
 
@@ -13,7 +15,7 @@ export const BUILTIN_TEMPLATES: JournalTemplate[] = [
     id: 'daily-reflection',
     nameKey: 'journalTemplateDailyReflection',
     descriptionKey: 'journalTemplateDailyReflectionDesc',
-    icon: '\u{1F31F}',
+    iconKey: 'bookOpen',
     sections: [
       { labelKey: 'journalTemplateHighlight', placeholder: 'What was the highlight of your day?' },
       { labelKey: 'journalTemplateChallenge', placeholder: 'What was challenging?' },
@@ -24,7 +26,7 @@ export const BUILTIN_TEMPLATES: JournalTemplate[] = [
     id: 'gratitude',
     nameKey: 'journalTemplateGratitude',
     descriptionKey: 'journalTemplateGratitudeDesc',
-    icon: '\u{1F49C}',
+    iconKey: 'sprout',
     sections: [
       { labelKey: 'journalTemplateGrateful1', placeholder: 'Something that made me happy...' },
       { labelKey: 'journalTemplateGrateful2', placeholder: 'Someone I appreciate...' },
@@ -35,7 +37,7 @@ export const BUILTIN_TEMPLATES: JournalTemplate[] = [
     id: 'goal-setting',
     nameKey: 'journalTemplateGoalSetting',
     descriptionKey: 'journalTemplateGoalSettingDesc',
-    icon: '\u{1F3AF}',
+    iconKey: 'target',
     sections: [
       { labelKey: 'journalTemplateCurrentGoal', placeholder: 'What am I working towards?' },
       { labelKey: 'journalTemplateProgress', placeholder: 'What progress have I made?' },
@@ -46,7 +48,7 @@ export const BUILTIN_TEMPLATES: JournalTemplate[] = [
     id: 'free-write',
     nameKey: 'journalTemplateFreeWrite',
     descriptionKey: 'journalTemplateFreeWriteDesc',
-    icon: '\u{270D}\uFE0F',
+    iconKey: 'penLine',
     sections: [
       { labelKey: 'journalTemplateFreeWritePrompt', placeholder: 'Just start writing... let your thoughts flow freely.' },
     ],
@@ -55,7 +57,7 @@ export const BUILTIN_TEMPLATES: JournalTemplate[] = [
     id: 'weekly-review',
     nameKey: 'journalTemplateWeeklyReview',
     descriptionKey: 'journalTemplateWeeklyReviewDesc',
-    icon: '\u{1F4C5}',
+    iconKey: 'compass',
     sections: [
       { labelKey: 'journalTemplateWeekWins', placeholder: "What went well this week?" },
       { labelKey: 'journalTemplateWeekLessons', placeholder: "What did I learn?" },

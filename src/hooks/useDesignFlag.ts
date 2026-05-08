@@ -20,8 +20,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDesignFlagStore } from "@/stores/designFlagStore";
 import { supabase } from "@/lib/supabaseClient";
-
-const ANON_ID_KEY = "zen-anon-id";
+import { storageGetRaw, storageSetRaw } from "@/lib/safeJson";
+import { SK } from "@/lib/storageKeys";
 
 /**
  * Lightweight deterministic hash (djb2 variant).
@@ -45,17 +45,12 @@ function getBucketId(userId: string | null | undefined): string {
   if (userId) return userId;
   if (typeof window === "undefined") return "anon";
 
-  try {
-    const cached = window.localStorage.getItem(ANON_ID_KEY);
-    if (cached && cached.length > 0) return cached;
-    const fresh =
-      Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
-    window.localStorage.setItem(ANON_ID_KEY, fresh);
-    return fresh;
-  } catch {
-    // localStorage unavailable (private mode, quota) — fall back to per-session
-    return "anon";
-  }
+  const cached = storageGetRaw(SK.ANON_ID, "");
+  if (cached.length > 0) return cached;
+  const fresh =
+    Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+  storageSetRaw(SK.ANON_ID, fresh);
+  return fresh;
 }
 
 /**

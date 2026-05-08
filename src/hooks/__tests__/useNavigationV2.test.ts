@@ -32,12 +32,20 @@ describe("useNavigationV2", () => {
     it("defaults to 'orb' when no URL and no storage", () => {
       const { result } = renderHook(() => useNavigationV2());
       expect(result.current.activePage).toBe<NavV2Page>("orb");
+      expect(result.current.unknownPath).toBeNull();
     });
 
     it("derives initial page from URL path when one of the 4 matches", () => {
       setPath("/diary");
       const { result } = renderHook(() => useNavigationV2());
       expect(result.current.activePage).toBe<NavV2Page>("diary");
+    });
+
+    it("derives initial page from GitHub Pages directory URLs with trailing slash", () => {
+      setPath("/habits/");
+      const { result } = renderHook(() => useNavigationV2());
+      expect(result.current.activePage).toBe<NavV2Page>("habits");
+      expect(result.current.unknownPath).toBeNull();
     });
 
     it("URL takes priority over localStorage", () => {
@@ -58,6 +66,13 @@ describe("useNavigationV2", () => {
       const { result } = renderHook(() => useNavigationV2());
       expect(result.current.activePage).toBe<NavV2Page>("orb");
     });
+
+    it("flags unknown deep links instead of silently treating them as Orb", () => {
+      setPath("/missing-route?nav=v2");
+      const { result } = renderHook(() => useNavigationV2());
+      expect(result.current.activePage).toBe<NavV2Page>("orb");
+      expect(result.current.unknownPath).toBe("/missing-route");
+    });
   });
 
   describe("setActivePage", () => {
@@ -67,6 +82,7 @@ describe("useNavigationV2", () => {
         result.current.setActivePage("habits");
       });
       expect(result.current.activePage).toBe<NavV2Page>("habits");
+      expect(result.current.unknownPath).toBeNull();
       expect(window.location.pathname).toBe("/habits");
       expect(window.localStorage.getItem(STORAGE_KEY)).toBe("habits");
       expect(morph).toHaveBeenCalledWith("page-habits", expect.any(Function));
@@ -182,7 +198,7 @@ describe("useNavigationV2", () => {
       expect(result.current.activePage).toBe<NavV2Page>("diary");
     });
 
-    it("ignores popstate events when URL is not a V2 page", async () => {
+    it("keeps active page but exposes Not Found state when URL is not a V2 page", async () => {
       const { result } = renderHook(() => useNavigationV2());
       const before = result.current.activePage;
       window.history.replaceState({}, "", "/some-unrelated-path");
@@ -190,6 +206,7 @@ describe("useNavigationV2", () => {
         window.dispatchEvent(new PopStateEvent("popstate"));
       });
       expect(result.current.activePage).toBe(before);
+      expect(result.current.unknownPath).toBe("/some-unrelated-path");
     });
   });
 });

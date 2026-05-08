@@ -6,6 +6,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { shouldAnimate } from "@/lib/animationUtils";
 import { hapticTap } from "@/lib/haptics";
 import type { MoodType } from "@/types";
+import { DiaryMiniOrb } from "./DiaryMiniOrb";
 
 /** Theme-token-based mood background colors with opacity modulation */
 const MOOD_BG_STYLE: Record<MoodType, string> = {
@@ -23,22 +24,6 @@ const MOOD_BG_STYLE_DARK: Record<MoodType, string> = {
   okay: "hsl(var(--mood-okay) / 0.22)",
   bad: "hsl(var(--mood-bad) / 0.20)",
   terrible: "hsl(var(--mood-terrible) / 0.18)",
-};
-
-const MOOD_COLORS: Record<string, string> = {
-  great: "bg-green-400",
-  good: "bg-emerald-400",
-  okay: "bg-amber-400",
-  bad: "bg-orange-400",
-  terrible: "bg-red-400",
-};
-
-const MOOD_RING: Record<string, string> = {
-  great: "ring-green-400/20",
-  good: "ring-emerald-400/20",
-  okay: "ring-amber-400/20",
-  bad: "ring-orange-400/20",
-  terrible: "ring-red-400/20",
 };
 
 /** Detect consecutive diary day streaks from a set of date strings */
@@ -87,6 +72,7 @@ function getLocalizedDayNames(locale: string, startSaturday: boolean): string[] 
 
 interface JournalCalendarFullProps {
   entryDates: Map<string, MoodType | undefined>;
+  releaseTraceDates?: Map<string, number>;
   selectedDate: string | null;
   onSelectDate: (date: string | null) => void;
   onToggleMode: () => void;
@@ -94,6 +80,7 @@ interface JournalCalendarFullProps {
 
 export function JournalCalendarFull({
   entryDates,
+  releaseTraceDates,
   selectedDate,
   onSelectDate,
   onToggleMode,
@@ -270,6 +257,7 @@ export function JournalCalendarFull({
 
             const mood = entryDates.get(cell.date);
             const hasEntry = entryDates.has(cell.date);
+            const hasReleaseTrace = (releaseTraceDates?.get(cell.date) ?? 0) > 0;
             const count = entryCounts.get(cell.date) || 0;
             const isSelected = cell.date === selectedDate;
             const isFuture = cell.date > today;
@@ -334,18 +322,27 @@ export function JournalCalendarFull({
                   <div className="flex items-center gap-px relative z-[1]">
                     <div
                       className={cn(
-                        "w-2 h-2 rounded-full ring-1",
-                        mood ? MOOD_COLORS[mood] : "bg-primary/60",
-                        mood ? MOOD_RING[mood] : "ring-primary/20",
+                        "flex h-4 w-4 items-center justify-center",
                         cell.isToday && "motion-safe:animate-pulse-subtle"
                       )}
-                    />
+                      data-testid="journal-calendar-full-mood-orb"
+                      data-mood={mood || "entry"}
+                    >
+                      <DiaryMiniOrb mood={mood} size="micro" className="scale-[0.58]" />
+                    </div>
                     {count > 1 && (
                       <span className="text-[7px] text-muted-foreground/60 font-medium leading-none">
                         {count}
                       </span>
                     )}
                   </div>
+                )}
+                {hasReleaseTrace && (
+                  <span
+                    data-testid="journal-release-trace-dot"
+                    className="absolute bottom-1 end-1 z-[2] h-1.5 w-1.5 rounded-full bg-[hsl(var(--cosmic-nebula-cyan)/0.86)] shadow-[0_0_8px_hsl(var(--cosmic-nebula-purple)/0.34)]"
+                    aria-hidden="true"
+                  />
                 )}
               </button>
             );

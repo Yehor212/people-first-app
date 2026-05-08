@@ -170,7 +170,7 @@ export function AddHabitCustomForm({
               }}
             >
               {selectedColorIndex === idx && (
-                <Check className="w-3.5 h-3.5 text-white drop-shadow-md" />
+                <Check className="w-3.5 h-3.5 text-white drop-shadow-md" aria-hidden="true" />
               )}
             </button>
           ))}

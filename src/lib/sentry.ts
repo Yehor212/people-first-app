@@ -12,6 +12,11 @@ import type { Integration } from "@sentry/core";
 import { isNative, platform } from "@/lib/platform";
 import { logger } from "@/lib/logger";
 import { SENTRY_DSN, MODE, IS_DEV } from "@/lib/env";
+import {
+  SENTRY_ALLOW_URLS,
+  SENTRY_IGNORE_ERRORS,
+  shouldDropSentryEvent,
+} from "@/lib/sentryEventFilters";
 
 // Declare global app version
 declare const __APP_VERSION__: string;
@@ -101,55 +106,18 @@ export function initSentry(): void {
     // so it's cheaper than a beforeSend return null. ResizeObserver loops are
     // Chrome/WebKit quirks with no user impact. Non-Error promise rejection
     // means a caller threw a non-Error value — cannot get meaningful stack.
-    ignoreErrors: [
-      "ResizeObserver loop limit exceeded",
-      "ResizeObserver loop completed with undelivered notifications",
-      "Non-Error promise rejection captured",
-    ],
+    ignoreErrors: [...SENTRY_IGNORE_ERRORS],
+    allowUrls: [...SENTRY_ALLOW_URLS],
 
     integrations,
 
     // Privacy: Strip PII and tokens before sending
     // Also filter out expected/handled errors
     beforeSend(event, hint) {
-      const error = hint?.originalException;
-
-      // Filter out AbortErrors - these are expected and handled
-      // AbortError occurs during normal operation (user navigation, request cancellation)
-      if (error instanceof Error) {
-        const isAbortError =
-          error.name === "AbortError" ||
-          (error as { code?: number }).code === 20 || // iOS DOMException code
-          error.message?.includes("aborted") ||
-          error.message?.includes("AbortError");
-
-        if (isAbortError) {
-          // Don't send to Sentry - these are handled gracefully in the app
-          return null;
-        }
-
-        // Filter out handled chunk load errors
-        // These are shown to user via UpdateRequiredDialog
-        const isChunkError =
-          error.message?.includes("Failed to fetch dynamically imported module") ||
-          error.message?.includes("Loading chunk") ||
-          error.message?.includes("Loading CSS chunk");
-
-        if (isChunkError) {
-          // Handled gracefully by UpdateRequiredDialog — don't report to Sentry.
-          // These are expected after every deploy (stale cached HTML references
-          // old chunk hashes). Reporting them creates false regression alerts.
-          return null;
-        }
-
-        // Filter out Supabase auth lock contention errors
-        // Known SDK issue: multiple concurrent getUser()/getSession() calls
-        // compete for navigator.locks, causing "lock was stolen" errors.
-        // See: supabase/supabase-js#1594, #2013, #2111
-        const isLockStolen = error.message?.includes("lock") && error.message?.includes("stolen");
-        if (isLockStolen) {
-          return null;
-        }
+      // Drop expected browser cancellations, stale-deploy chunk failures, and
+      // known Supabase auth lock contention before scrubbing/sending.
+      if (shouldDropSentryEvent(event, hint)) {
+        return null;
       }
 
       // Remove user email and IP

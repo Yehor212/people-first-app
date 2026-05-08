@@ -204,7 +204,7 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit, ac
                     'hover:bg-violet-500/[0.10] hover:border-violet-500/30',
                   )}
                 >
-                  <Plus className="w-3.5 h-3.5" />
+                  <Plus className="w-3.5 h-3.5" aria-hidden="true" />
                   {ts.createCustom || 'or create custom'}
                 </button>
                 <div className="flex-1 h-px bg-gradient-to-l from-transparent via-white/[0.06] to-transparent" />

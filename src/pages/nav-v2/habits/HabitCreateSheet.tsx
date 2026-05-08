@@ -103,31 +103,35 @@ export function HabitCreateSheet({
     >
       <Drawer.Portal>
         <Drawer.Overlay
-          className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm [-webkit-backdrop-filter:blur(4px)]"
+          className="fixed inset-0 z-[80] bg-[hsl(var(--zf-night-0)/0.58)] backdrop-blur-md [-webkit-backdrop-filter:blur(8px)]"
           data-testid="habits-create-sheet-overlay"
         />
         <Drawer.Content
-          className="fixed inset-x-0 bottom-0 z-[61] mt-24 flex max-h-[92vh] flex-col rounded-t-2xl border border-border bg-background outline-none md:mx-auto md:max-w-lg md:rounded-2xl md:shadow-2xl"
+          className="fixed inset-x-0 bottom-0 z-[81] mt-24 flex max-h-[92vh] flex-col rounded-t-[1.75rem] border border-[hsl(var(--zf-role-energy)/0.30)] bg-[radial-gradient(circle_at_16%_0%,hsl(var(--zf-role-energy)/0.12),transparent_32%),radial-gradient(circle_at_86%_6%,hsl(var(--zf-role-release)/0.09),transparent_30%),linear-gradient(160deg,hsl(var(--zf-night-0)/0.99)_0%,hsl(var(--zf-night-1)/0.98)_58%,hsl(var(--zf-night-0)/0.99)_100%)] text-[hsl(var(--zf-text-strong))] shadow-[0_-28px_90px_-52px_hsl(var(--zf-role-energy)/0.70)] outline-none md:mx-auto md:max-w-lg md:rounded-3xl"
           data-testid="habits-create-sheet"
+          data-surface="habit-create-sheet"
           aria-describedby={undefined}
         >
-          <div className="mx-auto mt-3 h-1.5 w-12 shrink-0 rounded-full bg-muted" aria-hidden="true" />
+          <div
+            className="mx-auto mt-3 h-1.5 w-12 shrink-0 rounded-full bg-[hsl(var(--zf-role-energy)/0.34)]"
+            aria-hidden="true"
+          />
           <div className="flex items-center justify-between gap-2 px-4 pt-3 pb-1">
-            <Drawer.Title className="font-display text-base font-semibold text-foreground">
-              {editHabit ? tx.edit || "Edit" : tx.navV2HabitsCreate}
+            <Drawer.Title className="font-display text-base font-semibold text-[hsl(var(--zf-text-strong))]">
+              {editHabit ? tx.edit : tx.navV2HabitsCreate}
             </Drawer.Title>
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground motion-safe:transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-              aria-label={tx.cancel || "Close"}
+              className="inline-flex h-11 w-11 items-center justify-center rounded-full text-[hsl(var(--zf-text-soft))] motion-safe:transition-colors hover:bg-[hsl(var(--zf-role-energy)/0.12)] hover:text-[hsl(var(--zf-text-strong))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--zf-role-energy)/0.62)] focus-visible:ring-offset-2"
+              aria-label={tx.close}
               data-testid="habits-create-sheet-close"
             >
               <X className="h-5 w-5" aria-hidden="true" />
             </button>
           </div>
           <div className="flex-1 overflow-y-auto px-4 pb-6">
-            <HabitCreationForm form={form} habits={habits} />
+            <HabitCreationForm form={form} habits={habits} presentation="v2" />
           </div>
         </Drawer.Content>
       </Drawer.Portal>

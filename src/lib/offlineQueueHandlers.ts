@@ -107,12 +107,19 @@ export function initializeOfflineQueueHandlers(): void {
       completed?: boolean;
       count?: number;
       duration?: number;
+      habitType?: "boolean" | "numerical";
+      targetType?: "atLeast" | "atMost";
+      entryValue?: number;
     } | null;
     if (!p || typeof p.habitId !== "string" || typeof p.date !== "string") {
       logger.warn("[OfflineQueue] Invalid habit completion payload, skipping:", action.entityId);
       return;
     }
-    await syncHabitCompletion(p.habitId, p.date, p.completed ?? false, p.count, p.duration);
+    await syncHabitCompletion(p.habitId, p.date, p.completed ?? false, p.count, p.duration, {
+      habitType: p.habitType,
+      targetType: p.targetType,
+      entryValue: p.entryValue,
+    });
   });
 
   // Focus session handler

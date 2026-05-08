@@ -238,8 +238,7 @@ export function MoodInsights({
               className={cn(
                 "w-4 h-4 motion-safe:transition-transform rtl:scale-x-[-1]",
                 showAll && "rotate-90",
-              )}
-            />
+              )} aria-hidden="true" />
           </button>
         )}
       </motion.div>

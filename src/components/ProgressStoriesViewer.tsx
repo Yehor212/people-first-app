@@ -326,7 +326,7 @@ export function ProgressStoriesViewer({
               className="p-2 rounded-full bg-black/20 dark:bg-black/20 text-white"
               aria-label={isPaused ? t.play || "Play" : t.pause || "Pause"}
             >
-              {isPaused ? <Play className="w-5 h-5" /> : <Pause className="w-5 h-5" />}
+              {isPaused ? <Play className="w-5 h-5" aria-hidden="true" /> : <Pause className="w-5 h-5" aria-hidden="true" />}
             </button>
 
             <button

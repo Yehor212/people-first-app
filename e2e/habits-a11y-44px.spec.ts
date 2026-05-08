@@ -86,7 +86,7 @@ async function primeOnboarding(page: Page) {
 async function gotoHabitsTab(page: Page) {
   await page.setViewportSize({ width: 1280, height: 800 });
   const appBase = getAppBasePath(page);
-  await page.goto(`${appBase}/habits?nav=v2`);
+  await page.goto(`${appBase}/habits?nav=v2&dev=true`);
   await expect(page.getByTestId("habits-page")).toBeVisible({
     timeout: 15_000,
   });
@@ -99,11 +99,36 @@ async function gotoHabitsTab(page: Page) {
 async function completeTemplateSetup(page: Page, quickPickId: string) {
   await page.getByTestId(`hero-quickpick-${quickPickId}`).click();
   await expect(page.getByTestId("habits-create-sheet")).toBeVisible({ timeout: 10_000 });
-  await page.getByRole("button", { name: /add habit/i }).click();
-  await expect(page.getByTestId("habits-create-sheet")).not.toBeVisible({ timeout: 10_000 });
-  await expect(page.locator('[data-testid^="hero-weekly-card-"]').first()).toBeVisible({
-    timeout: 10_000,
+  await page
+    .getByTestId("habits-create-sheet")
+    .locator(".overflow-y-auto")
+    .first()
+    .evaluate((el) => {
+      el.scrollTop = el.scrollHeight;
+    });
+  await page.getByRole("button", { name: /add habit/i }).evaluate((el) => {
+    (el as HTMLButtonElement).click();
   });
+  await expect(page.locator('[data-testid^="hero-weekly-card-"]').first()).toBeVisible({
+    timeout: 15_000,
+  });
+}
+
+async function openAdvancedMeasuredForm(page: Page) {
+  await page.getByTestId("habits-hero-create-empty").click();
+  await expect(page.getByTestId("habits-create-sheet")).toBeVisible({ timeout: 10_000 });
+  await page.getByRole("button", { name: /create custom habit/i }).click();
+  await page.getByRole("tab", { name: /advanced/i }).click();
+  await page.getByRole("button", { name: /measurable/i }).click();
+  await expect(page.locator('[data-settings-panel="tracking"]')).toBeVisible();
+}
+
+async function openAdvancedCustomForm(page: Page) {
+  await page.getByTestId("habits-hero-create-empty").click();
+  await expect(page.getByTestId("habits-create-sheet")).toBeVisible({ timeout: 10_000 });
+  await page.getByRole("button", { name: /create custom habit/i }).click();
+  await page.getByRole("tab", { name: /advanced/i }).click();
+  await expect(page.locator('[data-settings-panel="tracking"]')).toBeVisible();
 }
 
 /** Pure: assert rendered width AND height are ≥ 44 px each. */
@@ -131,7 +156,9 @@ test.describe("§11 #1 — Habits touch targets ≥ 44×44 px", () => {
     await primeOnboarding(page);
     await gotoHabitsTab(page);
 
-    await expect(page.getByTestId("hero-quickpick-water")).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByTestId("hero-quickpick-drink-water")).toBeVisible({
+      timeout: 10_000,
+    });
     const quickPicks = page.locator('[data-testid^="hero-quickpick-"]');
     const count = await quickPicks.count();
     expect(count, "at least one quick-pick rendered").toBeGreaterThan(0);
@@ -147,7 +174,7 @@ test.describe("§11 #1 — Habits touch targets ≥ 44×44 px", () => {
     await primeOnboarding(page);
     await gotoHabitsTab(page);
 
-    await completeTemplateSetup(page, "breathwork");
+    await completeTemplateSetup(page, "exercise");
 
     const card = page.locator('[data-testid^="hero-weekly-card-"]').first();
     const weekCell = card.getByRole("checkbox").first();
@@ -155,5 +182,106 @@ test.describe("§11 #1 — Habits touch targets ≥ 44×44 px", () => {
 
     const statsButton = card.getByRole("button", { name: /statistics/i }).first();
     await expectTouchTarget(statsButton, "weekly card statistics button");
+  });
+
+  test("advanced setup navigation chips move focus to the matching section", async ({
+    page,
+  }) => {
+    await primeOnboarding(page);
+    await gotoHabitsTab(page);
+    await page.setViewportSize({ width: 415, height: 697 });
+    await openAdvancedMeasuredForm(page);
+
+    const railButtons = page.locator("[data-advanced-rail-item]");
+    await expect(railButtons).toHaveCount(4);
+    for (let i = 0; i < 4; i++) {
+      await expectTouchTarget(railButtons.nth(i), `advanced rail chip #${i}`);
+    }
+    await expect(page.locator("[data-settings-panel-content]")).toHaveCount(1);
+    await expect(page.locator('[data-settings-panel-content="tracking"]')).toBeVisible();
+    await expect(
+      page.locator('[data-advanced-rail-item][data-advanced-jump="tracking"]'),
+    ).toHaveAttribute("aria-expanded", "true");
+
+    const scroller = page
+      .getByTestId("habits-create-sheet")
+      .locator(".overflow-y-auto")
+      .first();
+    const before = await scroller.evaluate((el) => el.scrollTop);
+
+    await page
+      .locator('[data-advanced-rail-item][data-advanced-jump="appearance"]')
+      .click({ force: true });
+    await expect(page.locator('[data-settings-panel="appearance"]')).toBeFocused();
+    await page.waitForTimeout(600);
+    await expect(page.locator("[data-settings-panel-content]")).toHaveCount(1);
+    await expect(page.locator('[data-settings-panel-content="appearance"]')).toBeVisible();
+    await expect(
+      page.locator('[data-advanced-rail-item][data-advanced-jump="appearance"]'),
+    ).toHaveAttribute("aria-expanded", "true");
+    await expect(
+      page.locator('[data-advanced-rail-item][data-advanced-jump="tracking"]'),
+    ).toHaveAttribute("aria-expanded", "false");
+    const afterAppearance = await scroller.evaluate((el) => el.scrollTop);
+    expect(afterAppearance).toBeGreaterThan(before);
+
+    await page
+      .locator('[data-advanced-rail-item][data-advanced-jump="identity"]')
+      .click({ force: true });
+    await expect(page.locator('[data-settings-panel-content="identity"]')).toBeVisible();
+
+    await page
+      .locator('[data-advanced-spec][data-advanced-jump="tracking"]')
+      .first()
+      .click({ force: true });
+    await expect(page.locator('[data-settings-panel-content="tracking"]')).toBeVisible();
+  });
+
+  test("habit purpose survives creation and becomes proof on emoji check-in", async ({
+    page,
+  }) => {
+    await primeOnboarding(page);
+    await gotoHabitsTab(page);
+    await page.setViewportSize({ width: 415, height: 697 });
+    await openAdvancedCustomForm(page);
+
+    await page.getByLabel(/habit name/i).fill("Morning walk");
+    await page
+      .locator('[data-advanced-rail-item][data-advanced-jump="identity"]')
+      .click({ force: true });
+    await expect(page.getByTestId("identity-vote-preview")).toBeVisible();
+    await page.getByTestId("identity-cluster-input").fill("Healthy body");
+    await page.getByTestId("identity-verb-input").fill("someone who moves daily");
+    await expect(page.getByTestId("identity-vote-preview")).toContainText(
+      "someone who moves daily",
+    );
+
+    const sheetScroller = page
+      .getByTestId("habits-create-sheet")
+      .locator(".overflow-y-auto")
+      .first();
+    await sheetScroller.evaluate((el) => {
+      el.scrollTop = el.scrollHeight;
+    });
+    await page.getByRole("button", { name: /add habit/i }).evaluate((el) => {
+      (el as HTMLButtonElement).click();
+    });
+
+    const card = page
+      .locator('[data-testid^="hero-weekly-card-"]')
+      .filter({ hasText: "Morning walk" })
+      .first();
+    await expect(card).toBeVisible({ timeout: 15_000 });
+    await expect(card.locator('[data-testid$="-identity"]')).toContainText(
+      "Proof: someone who moves daily",
+    );
+    await expect(card.locator('[data-testid$="-identity-vote"]')).toContainText(
+      "proof ready",
+    );
+
+    await card.locator('[data-testid$="-emoji-check"]').click();
+    await expect(card.locator('[data-testid$="-identity-vote"]')).toContainText(
+      "proof logged",
+    );
   });
 });

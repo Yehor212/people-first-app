@@ -192,7 +192,7 @@ export function UnifiedShareModal(props: UnifiedShareModalProps) {
                     onClick={() => void generate()}
                     className="flex items-center gap-2 px-4 py-2 min-h-[44px] rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 motion-safe:transition-colors"
                   >
-                    <RefreshCw className="w-4 h-4" />
+                    <RefreshCw className="w-4 h-4" aria-hidden="true" />
                     {t.shareRetry || "Retry"}
                   </button>
                 </div>

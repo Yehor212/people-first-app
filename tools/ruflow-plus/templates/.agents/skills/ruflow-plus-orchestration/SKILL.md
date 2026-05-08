@@ -12,6 +12,8 @@ Use this skill when the user wants:
 - repeatable multi-step delivery with memory writeback
 - deep repo analysis plus implementation, not just brainstorming
 
+This workflow may also be auto-routed by hooks for the head agent. Auto-routing must keep trivial prompts in `solo_lightweight` mode and only escalate when prompt complexity or repo risk justifies it.
+
 Do not use this skill for trivial single-file edits.
 
 ## Goals
@@ -24,12 +26,14 @@ Do not use this skill for trivial single-file edits.
 ## Mandatory Pre-Flight
 
 Before substantial work:
+- produce a visible evidence-backed `PRE-FLIGHT ARTIFACT`; do not expose or require raw hidden chain-of-thought
 - produce a written pre-flight using [docs/ai/PREFLIGHT_OPERATOR_TEMPLATE.md](../../docs/ai/PREFLIGHT_OPERATOR_TEMPLATE.md) or an equivalent structure
 - use `L2` as the minimum depth for repo-touching work
 - escalate to `L3` for cross-platform, stateful, prompt/config, CI/build, sync/auth, or 4+ file work
 - escalate to `L4` for orchestration, law, architecture, or enforcement-rule changes
 - identify missing constraints, hidden dependencies, and systemic impact
 - include a platform/domain impact scan when product or state is involved
+- if UI, motion, layout, or styling is involved, include the visual-audit matrix and proof plan from the pre-flight template
 - name likely failure modes and how the implementation will preempt them
 - decide whether solo, guided, or Ruflow+ mode is justified
 - define evidence, verification, scope boundaries, anti-pattern scan, and rollback expectations
@@ -38,6 +42,8 @@ Before substantial work:
 If the task is external or time-sensitive, verify with authoritative sources first.
 If the task depends on factual correctness, self-reflection alone is not enough — require evidence, tools, or both.
 Only grounding reads/searches may happen before the written pre-flight, and they must be cited as evidence inside it.
+
+The visible pre-flight artifact must cover implicit requirements, systemic impact, top two failure modes, a strict step plan, evidence, and `GO / STOP / ASK`.
 
 ## Operating Modes
 
@@ -77,6 +83,7 @@ Default Ruflow+ shape:
 - ordering
 - integration
 - final verdict
+- translation of vague requests into goal, success criteria, hidden requirements, affected platforms/domains, and scope boundaries
 
 2. Specialists own disjoint responsibilities:
 - research
@@ -90,6 +97,17 @@ Default Ruflow+ shape:
 - checkpoint often
 - tighten the write set before editing
 - require every specialist to inherit the same pre-flight bar, even when their scope is narrower than the coordinator's
+- keep simple 1-3 file tasks solo unless evidence shows hidden risk
+- reject specialist output that lacks evidence, verification, platform/domain impact, unresolved-risk accounting, or final `GO / STOP / ASK`
+
+## Modern Practice Matrix
+
+- Code: follow existing React 18, TypeScript, Vite, Tailwind, and shadcn/ui patterns; avoid broad rewrites; use structured APIs over string hacks.
+- Design/UI: no visual changes without proof; verify hierarchy, spacing, focus, touch targets, responsive reflow, dark/light, reduced motion, blur fallback, and loading/empty/error/offline states.
+- Animation: motion must communicate state, respect reduced-motion, and stay performant on mobile.
+- Security: run Snyk Code for new first-party JS/TS code when supported; fix introduced findings and rescan.
+- Performance: measure before adding complexity; memoization is optimization, not correctness.
+- Tooling: recommend installs only after checking current availability, concrete benefit, risk, and whether the tool is required or optional.
 
 ## Required Skill Composition
 

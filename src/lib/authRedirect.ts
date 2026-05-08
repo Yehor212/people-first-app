@@ -4,6 +4,61 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { BASE_URL } from "@/lib/env";
 
 const NATIVE_REDIRECT_URL = "com.zenflow.app://login-callback";
+const V2_ROUTE_PATHS = new Set(["/orb", "/habits", "/diary", "/settings"]);
+
+function normalizeBasePath(basePath: string): string {
+  const cleanBase = basePath.startsWith("/") ? basePath : `/${basePath}`;
+  return cleanBase.endsWith("/") ? cleanBase : `${cleanBase}/`;
+}
+
+function stripBasePath(pathname: string, basePath: string): string {
+  const baseWithoutTrailingSlash = normalizeBasePath(basePath).replace(/\/$/, "");
+  if (baseWithoutTrailingSlash && pathname.startsWith(baseWithoutTrailingSlash)) {
+    const stripped = pathname.slice(baseWithoutTrailingSlash.length);
+    return stripped || "/";
+  }
+  return pathname || "/";
+}
+
+function getV2RedirectPath(basePath: string): string | null {
+  if (typeof window === "undefined") return null;
+
+  const currentUrl = new URL(window.location.href);
+  const currentAppPath = stripBasePath(currentUrl.pathname, basePath);
+  const shouldReturnToV2 =
+    currentUrl.searchParams.get("nav") === "v2" || V2_ROUTE_PATHS.has(currentAppPath);
+
+  if (!shouldReturnToV2) return null;
+
+  const routePath = V2_ROUTE_PATHS.has(currentAppPath) ? currentAppPath : "/orb";
+  const redirectParams = new URLSearchParams();
+  redirectParams.set("nav", "v2");
+
+  const requestedLayout = currentUrl.searchParams.get("navLayout");
+  if (requestedLayout === "phone" || requestedLayout === "web") {
+    redirectParams.set("navLayout", requestedLayout);
+  }
+
+  const baseWithoutTrailingSlash = normalizeBasePath(basePath).replace(/\/$/, "");
+  return `${baseWithoutTrailingSlash}${routePath}?${redirectParams.toString()}`;
+}
+
+export function getCleanAuthCallbackUrl(rawUrl: string): string {
+  const url = new URL(rawUrl);
+  const oauthParams = [
+    "code",
+    "error",
+    "error_code",
+    "error_description",
+    "state",
+  ];
+
+  for (const param of oauthParams) {
+    url.searchParams.delete(param);
+  }
+
+  return `${url.pathname}${url.search}${url.hash}`;
+}
 
 // Known OAuth error codes for safe display
 const KNOWN_ERROR_CODES = [
@@ -40,7 +95,16 @@ export const getAuthRedirectUrl = () => {
     "https://yehor212.github.io",
     "capacitor://localhost",
     "https://zenflow.app",
-    ...(import.meta.env.DEV ? ["http://localhost:3000", "http://localhost:5173"] : []),
+    ...(import.meta.env.DEV
+      ? [
+          "http://localhost:3000",
+          "http://localhost:5173",
+          "http://localhost:8080",
+          "http://127.0.0.1:3000",
+          "http://127.0.0.1:5173",
+          "http://127.0.0.1:8080",
+        ]
+      : []),
   ] as const;
   const rawOrigin = window.location.origin;
   const origin = (ALLOWED_ORIGINS as readonly string[]).includes(rawOrigin)
@@ -49,8 +113,7 @@ export const getAuthRedirectUrl = () => {
   const basePath = BASE_URL;
 
   // Ensure proper path format (no double slashes)
-  const cleanBase = basePath.startsWith("/") ? basePath : `/${basePath}`;
-  const finalPath = cleanBase.endsWith("/") ? cleanBase : `${cleanBase}/`;
+  const finalPath = getV2RedirectPath(basePath) || normalizeBasePath(basePath);
 
   const redirectUrl = `${origin}${finalPath}`;
   logger.log("[Auth] Generated redirect URL:", redirectUrl);

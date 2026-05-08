@@ -1,0 +1,108 @@
+name: Deploy V2 Preview to GitHub Pages
+
+on:
+  push:
+    branches: ["codex/journal-v2-hub"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  build-preview:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout V2 preview branch
+        uses: actions/checkout@v4
+        with:
+          path: v2-src
+
+      - name: Checkout V1 main branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: v1-src
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: v2-src/package-lock.json
+
+      - name: Install V2 dependencies
+        working-directory: v2-src
+        run: npm install
+
+      - name: Verify V2 preview shell
+        working-directory: v2-src
+        run: |
+          npm run typecheck
+          npm run lint
+          npm run i18n:check
+          npx vitest run src/components/navigation-v2/__tests__/ClassicPortalLink.test.tsx src/components/navigation-v2/__tests__/DrawerV2.test.tsx src/components/navigation-v2/__tests__/SidebarV2.test.tsx
+
+      - name: Build V2 preview under /v2
+        working-directory: v2-src
+        env:
+          VITE_APP_BASE: /people-first-app/v2/
+          VITE_FORCE_NAV_V2: "true"
+          VITE_CLASSIC_BASE_URL: /people-first-app/
+          VITE_DISABLE_PWA: "true"
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
+        run: npm run build
+
+      - name: Install V1 dependencies
+        working-directory: v1-src
+        run: npm install
+
+      - name: Build V1 public root from main
+        working-directory: v1-src
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
+        run: npm run build
+
+      - name: Compose GitHub Pages artifact
+        run: |
+          mkdir -p pages
+          cp -a v1-src/dist/. pages/
+          rm -rf pages/v2
+          mkdir -p pages/v2
+          cp -a v2-src/dist/. pages/v2/
+          for route in orb habits diary settings; do
+            mkdir -p "pages/v2/${route}"
+            cp pages/v2/index.html "pages/v2/${route}/index.html"
+          done
+          cp v2-src/dist/404.html pages/404.html
+          touch pages/.nojekyll
+
+      - name: Upload combined Pages artifact
+        uses: actions/upload-pages-artifact@v3.0.1
+        with:
+          path: pages
+
+  deploy:
+    needs: build-preview
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy combined V1 + V2 preview
+        id: deployment
+        uses: actions/deploy-pages@v5.0.0
+        with:
+          timeout: 600000

@@ -17,7 +17,7 @@ import { WeeklyInsightsCard } from "@/components/WeeklyInsightsCard";
 import { InsightsPanel } from "@/components/InsightsPanel";
 import { hapticTap } from "@/lib/haptics";
 import { computeIdentityClusters } from "@/lib/identityClusters";
-import { IdentityIcon } from "@/components/IdentityIconPicker";
+import { IdentityVisual } from "@/components/IdentityIconPicker";
 import type { RingType } from "@/components/stats";
 import type { UseStatsPageDataReturn } from "./useStatsPageData";
 
@@ -100,7 +100,7 @@ export function OverviewTab({
               }}
               className="flex flex-col items-center gap-1.5 p-3 bg-secondary/80 hover:bg-secondary rounded-xl motion-safe:transition-colors"
             >
-              <Heart className="w-5 h-5 text-pink-500" />
+              <Heart className="w-5 h-5 text-pink-500" aria-hidden="true" />
               <span className="text-xs font-medium text-foreground truncate w-full text-center">
                 {t.quickActionLogMood}
               </span>
@@ -112,7 +112,7 @@ export function OverviewTab({
               }}
               className="flex flex-col items-center gap-1.5 p-3 bg-secondary/80 hover:bg-secondary rounded-xl motion-safe:transition-colors"
             >
-              <Target className="w-5 h-5 text-blue-500" />
+              <Target className="w-5 h-5 text-blue-500" aria-hidden="true" />
               <span className="text-xs font-medium text-foreground truncate w-full text-center">
                 {t.quickActionStartFocus}
               </span>
@@ -125,7 +125,7 @@ export function OverviewTab({
                 }}
                 className="flex flex-col items-center gap-1.5 p-3 bg-secondary/80 hover:bg-secondary rounded-xl motion-safe:transition-colors"
               >
-                <PlayCircle className="w-5 h-5 text-primary" />
+                <PlayCircle className="w-5 h-5 text-primary" aria-hidden="true" />
                 <span className="text-xs font-medium text-foreground truncate w-full text-center">
                   {t.weeklyStory || "Weekly Story"}
                 </span>
@@ -142,7 +142,12 @@ export function OverviewTab({
               <div className="space-y-2">
                 {identityClusters.map((cluster) => (
                   <div key={cluster.name} className="flex items-center gap-3">
-                    <IdentityIcon name={cluster.icon} className="w-5 h-5 text-primary shrink-0" />
+                    <IdentityVisual
+                      name={cluster.icon}
+                      fallback="Target"
+                      iconClassName="w-5 h-5 text-primary shrink-0"
+                      textClassName="text-base leading-none"
+                    />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium text-foreground truncate">

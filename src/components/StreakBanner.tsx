@@ -288,7 +288,7 @@ export const StreakBanner = memo(function StreakBanner({ moods, habits, focusSes
               onClick={onRestMode}
               className="w-full py-2.5 flex items-center justify-center gap-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 rounded-xl motion-safe:transition-colors text-sm font-medium"
             >
-              <Moon className="w-4 h-4" />
+              <Moon className="w-4 h-4" aria-hidden="true" />
               {t.restDayButton}
             </button>
           ) : (

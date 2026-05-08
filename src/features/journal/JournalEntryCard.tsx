@@ -1,5 +1,5 @@
 import React, { memo, useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { Trash2, Clock, Image as ImageIcon, Mic, Bookmark } from "lucide-react";
+import { Trash2, Clock, Image as ImageIcon, Mic, Bookmark, MoreHorizontal } from "lucide-react";
 import { motion, useMotionValue, useTransform, type PanInfo } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -12,47 +12,11 @@ import { countWords } from "./types";
 import { StickerRenderer } from "./StickerRenderer";
 import { getPhotoById } from "./journalStorage";
 import { logger } from "@/lib/logger";
-
-const MOOD_STICKER: Record<string, string> = {
-  great: "\u{1F604}",
-  good: "\u{1F642}",
-  okay: "\u{1F610}",
-  bad: "\u{1F614}",
-  terrible: "\u{1F622}",
-};
-
-const MOOD_GRADIENT: Record<string, string> = {
-  great: "from-green-400/80 to-emerald-500/80",
-  good: "from-emerald-400/80 to-teal-500/80",
-  okay: "from-amber-400/80 to-yellow-500/80",
-  bad: "from-orange-400/80 to-red-400/80",
-  terrible: "from-red-400/80 to-rose-500/80",
-};
-
-const MOOD_BG: Record<string, string> = {
-  great: "from-green-500/8 via-green-500/3 to-transparent",
-  good: "from-emerald-500/8 via-emerald-500/3 to-transparent",
-  okay: "from-amber-500/8 via-amber-500/3 to-transparent",
-  bad: "from-orange-500/8 via-orange-500/3 to-transparent",
-  terrible: "from-red-500/8 via-red-500/3 to-transparent",
-};
-
-const MOOD_GLOW: Record<string, string> = {
-  great: "0 0 24px rgba(74,222,128,0.10)",
-  good: "0 0 24px rgba(52,211,153,0.10)",
-  okay: "0 0 24px rgba(251,191,36,0.10)",
-  bad: "0 0 24px rgba(251,146,60,0.10)",
-  terrible: "0 0 24px rgba(248,113,113,0.10)",
-};
-
-/** Mood-specific ring for the emoji circle */
-const MOOD_RING: Record<string, string> = {
-  great: "ring-green-400/40 bg-green-400/10",
-  good: "ring-emerald-400/40 bg-emerald-400/10",
-  okay: "ring-amber-400/40 bg-amber-400/10",
-  bad: "ring-orange-400/40 bg-orange-400/10",
-  terrible: "ring-red-400/40 bg-red-400/10",
-};
+import { DiaryMiniOrb } from "./DiaryMiniOrb";
+import { getLocalizedEmotionLabel } from "@/components/state-of-mind/emotionI18n";
+import { getJournalPreviewText } from "./journalDisplay";
+import { getDiaryAura } from "./journalAura";
+import { formatJournalRelativeTime, formatJournalWordCount } from "./journalWordCount";
 
 const DEFAULT_BG = "from-primary/3 to-transparent";
 const DEFAULT_ACCENT = "from-primary/20 to-primary/10";
@@ -66,16 +30,9 @@ function getRelativeTime(
   ts: Record<string, string>,
   language: Language = "en"
 ): string {
-  const diff = Date.now() - timestamp;
-  const minutes = Math.floor(diff / 60_000);
-  if (minutes < 1) return ts.justNow || "Just now";
-  if (minutes < 60) return `${minutes} ${ts.minutesAgo || "min ago"}`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24)
-    return `${hours} ${hours === 1 ? ts.hourAgo || "hour ago" : ts.hoursAgo || "hours ago"}`;
-  const days = Math.floor(hours / 24);
-  if (days === 1) return ts.yesterday || "Yesterday";
-  if (days < 7) return `${days} ${ts.daysAgo || "days ago"}`;
+  const relativeTime = formatJournalRelativeTime(timestamp, language, ts);
+  if (relativeTime) return relativeTime;
+
   return new Date(timestamp).toLocaleDateString(getLocale(language), {
     month: "short",
     day: "numeric",
@@ -87,6 +44,8 @@ interface JournalEntryCardProps {
   onTap: (id: string) => void;
   onDelete: (id: string) => void;
   onEdit?: (entry: JournalEntry) => void;
+  onActions?: (entry: JournalEntry) => void;
+  onLongPress?: (entry: JournalEntry) => void;
   onSwipeDelete?: (id: string) => void;
   privateMode?: boolean;
   searchQuery?: string;
@@ -99,8 +58,9 @@ interface JournalEntryCardProps {
 export const JournalEntryCard = memo(function JournalEntryCard({
   entry,
   onTap,
-  onDelete,
   onEdit,
+  onActions,
+  onLongPress,
   onSwipeDelete,
   privateMode = false,
   searchQuery,
@@ -186,7 +146,7 @@ export const JournalEntryCard = memo(function JournalEntryCard({
     [searchQuery]
   );
 
-  // ── Long-press to edit ──
+  // ── Long-press contextual action ──
   const touchStartTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const touchStartPos = useRef<{ x: number; y: number } | null>(null);
   const longPressTriggered = useRef(false);
@@ -205,6 +165,9 @@ export const JournalEntryCard = memo(function JournalEntryCard({
 
   const handleTouchStart = useCallback(
     (e: React.TouchEvent) => {
+      const action = onLongPress ?? onEdit ?? onActions;
+      if (!action) return;
+
       longPressTriggered.current = false;
       const touch = e.touches[0];
       touchStartPos.current = { x: touch.clientX, y: touch.clientY };
@@ -213,10 +176,10 @@ export const JournalEntryCard = memo(function JournalEntryCard({
       touchStartTimer.current = setTimeout(() => {
         longPressTriggered.current = true;
         void hapticMedium();
-        onEdit?.(entry);
+        action(entry);
       }, 500);
     },
-    [entry, onEdit]
+    [entry, onActions, onEdit, onLongPress]
   );
 
   const handleTouchMove = useCallback(
@@ -242,9 +205,12 @@ export const JournalEntryCard = memo(function JournalEntryCard({
 
   const handleContextMenu = useCallback(
     (e: React.MouseEvent) => {
-      if (onEdit) e.preventDefault();
+      const finePointer =
+        typeof window !== "undefined" &&
+        window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+      if (!finePointer && (onEdit || onActions || onLongPress)) e.preventDefault();
     },
-    [onEdit]
+    [onActions, onEdit, onLongPress]
   );
 
   const handleCardClick = useCallback(() => {
@@ -257,9 +223,9 @@ export const JournalEntryCard = memo(function JournalEntryCard({
     onTap(entry.id);
   }, [onTap, entry.id]);
 
-  // Strip markdown ** for cleaner preview
-  const rawPreview = entry.content.replace(/\*\*/g, "").slice(0, 140);
-  const preview = rawPreview + (entry.content.length > 140 ? "..." : "");
+  const plainContent = getJournalPreviewText(entry.content, ts);
+  const rawPreview = plainContent.slice(0, 140);
+  const preview = rawPreview + (plainContent.length > 140 ? "..." : "");
   const time = new Date(entry.createdAt).toLocaleTimeString(getLocale(language), {
     hour: "2-digit",
     minute: "2-digit",
@@ -270,6 +236,29 @@ export const JournalEntryCard = memo(function JournalEntryCard({
   );
   const wordCount = countWords(entry.content);
   const hasPhoto = entry.photoIds.length > 0;
+  const displayTitle = entry.title
+    ? getLocalizedEmotionLabel(entry.title, ts)
+    : "";
+  const displayTags = entry.tags.map((tag) => getLocalizedEmotionLabel(tag, ts));
+  const moodAura = getDiaryAura(entry.mood);
+  const moodGlow = moodAura ? `0 0 30px ${moodAura.color(0.13)}` : "";
+  const moodOverlayStyle = moodAura
+    ? {
+        backgroundImage: `linear-gradient(135deg, ${moodAura.color(0.11)}, ${moodAura.color(0.04)} 38%, transparent 72%)`,
+      }
+    : undefined;
+  const moodAccentStyle = moodAura
+    ? {
+        backgroundImage: `linear-gradient(180deg, ${moodAura.color(0.92)}, ${moodAura.color(0.34)})`,
+        boxShadow: `0 0 18px ${moodAura.color(0.18)}`,
+      }
+    : undefined;
+  const moodTagStyle = moodAura
+    ? {
+        backgroundColor: moodAura.color(0.12),
+        color: moodAura.color(0.92),
+      }
+    : undefined;
 
   // Load first photo thumbnail
   const [thumbnail, setThumbnail] = useState<string | null>(null);
@@ -288,8 +277,8 @@ export const JournalEntryCard = memo(function JournalEntryCard({
 
   // Combine base shadow with mood glow
   const cardShadow =
-    entry.mood && MOOD_GLOW[entry.mood]
-      ? `0 2px 20px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.06), ${MOOD_GLOW[entry.mood]}`
+    moodGlow
+      ? `0 2px 20px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.06), ${moodGlow}`
       : "0 2px 20px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.06)";
 
   return (
@@ -348,14 +337,20 @@ export const JournalEntryCard = memo(function JournalEntryCard({
           dimmed && "opacity-60"
         )}
         // VISUAL-VERIFIED: x motion value for FM drag transform, boxShadow preserved from existing code unchanged
-        style={{ x, boxShadow: isActive ? `${cardShadow}, 0 0 0 1px rgba(var(--primary-rgb), 0.1)` : cardShadow }}
+        style={{
+          x,
+          boxShadow: isActive
+            ? `${cardShadow}, 0 0 0 1px rgba(var(--primary-rgb), 0.1)`
+            : cardShadow,
+        }}
       >
         {/* Gradient overlay (always shown — mood or default) */}
         <div
           className={cn(
             "absolute inset-0 bg-gradient-to-br opacity-100 lg:opacity-40 pointer-events-none",
-            entry.mood ? MOOD_BG[entry.mood] : DEFAULT_BG
+            !moodAura && DEFAULT_BG
           )}
+          style={moodOverlayStyle}
         />
 
         {/* Hero photo banner (when photo exists) */}
@@ -372,8 +367,9 @@ export const JournalEntryCard = memo(function JournalEntryCard({
             <div className="absolute inset-0 bg-gradient-to-t from-card/90 via-card/30 to-transparent" />
             {/* Photo count badge */}
             {entry.photoIds.length > 1 && (
-              <span className="absolute top-2 end-2 text-[10px] text-white/90 bg-black/40 dark:bg-black/40 backdrop-blur-sm px-1.5 py-0.5 rounded-md">
-                {"\u{1F4F7}"} {entry.photoIds.length}
+              <span className="absolute top-2 end-2 inline-flex items-center gap-1 text-[10px] text-white/90 bg-black/40 dark:bg-black/40 backdrop-blur-sm px-1.5 py-0.5 rounded-md">
+                <ImageIcon className="h-3 w-3" aria-hidden="true" />
+                {entry.photoIds.length}
               </span>
             )}
             {/* Time badge on photo */}
@@ -390,33 +386,35 @@ export const JournalEntryCard = memo(function JournalEntryCard({
             <div
               className={cn(
                 "w-1.5 flex-shrink-0 bg-gradient-to-b rounded-s-2xl lg:w-1 lg:rounded-none",
-                entry.mood
-                  ? MOOD_GRADIENT[entry.mood] || "from-primary/60 to-primary/30"
-                  : DEFAULT_ACCENT
+                !moodAura && DEFAULT_ACCENT
               )}
+              style={moodAccentStyle}
             />
           )}
 
           <div className="flex-1 p-3.5 relative z-[1]">
             <div className="flex items-start gap-3">
-              {/* Mood emoji circle — prominent Daylio-style, layoutId for sidebar morph */}
+              {/* Mood signal orb — shared diary language, layoutId for sidebar morph */}
               {entry.mood ? (
                 <motion.div
                   layoutId={`mood-${entry.id}`}
-                  className={cn(
-                    "w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ring-2",
-                    MOOD_RING[entry.mood]
-                  )}
+                  className="flex h-10 w-10 flex-shrink-0 items-center justify-center"
                 >
-                  <StickerRenderer emoji={MOOD_STICKER[entry.mood]} size="sm" />
+                  <DiaryMiniOrb mood={entry.mood} size="compact" className="scale-[0.84]" />
                 </motion.div>
               ) : /* Photo placeholder (no hero) or bookmark icon */
               !privateMode && !thumbnail && hasPhoto ? (
-                <motion.div layoutId={`mood-${entry.id}`} className="w-10 h-10 rounded-full flex-shrink-0 bg-muted/30 ring-1 ring-border/10 flex items-center justify-center">
+                <motion.div
+                  layoutId={`mood-${entry.id}`}
+                  className="w-10 h-10 rounded-full flex-shrink-0 bg-muted/30 ring-1 ring-border/10 flex items-center justify-center"
+                >
                   <ImageIcon className="w-4 h-4 text-muted-foreground/60" />
                 </motion.div>
               ) : (
-                <motion.div layoutId={`mood-${entry.id}`} className="w-10 h-10 rounded-full flex-shrink-0 bg-primary/5 ring-1 ring-primary/10 flex items-center justify-center">
+                <motion.div
+                  layoutId={`mood-${entry.id}`}
+                  className="w-10 h-10 rounded-full flex-shrink-0 bg-primary/5 ring-1 ring-primary/10 flex items-center justify-center"
+                >
                   <Bookmark className="w-4 h-4 text-primary/40" />
                 </motion.div>
               )}
@@ -426,7 +424,7 @@ export const JournalEntryCard = memo(function JournalEntryCard({
                 {/* Title + relative time */}
                 <div className="flex items-center gap-2 mb-0.5">
                   <h4 className="text-sm font-semibold text-foreground truncate flex-1">
-                    {entry.title ? highlightText(entry.title) : time}
+                    {displayTitle ? highlightText(displayTitle) : time}
                   </h4>
                   <span className="text-[10px] text-muted-foreground/50 flex-shrink-0">
                     {relativeTime}
@@ -460,10 +458,11 @@ export const JournalEntryCard = memo(function JournalEntryCard({
                         <Mic className="w-2.5 h-2.5" /> {entry.audioIds.length}
                       </span>
                     )}
-                    {entry.tags.slice(0, 2).map((tag) => (
+                    {displayTags.slice(0, 2).map((tag, index) => (
                       <span
-                        key={tag}
+                        key={`${entry.tags[index]}-${tag}`}
                         className="text-[10px] text-primary/70 bg-primary/8 px-1.5 py-0.5 rounded-md"
+                        style={moodTagStyle}
                       >
                         #{tag}
                       </span>
@@ -475,14 +474,14 @@ export const JournalEntryCard = memo(function JournalEntryCard({
                     )}
                     {wordCount > 0 && (
                       <span className="text-[10px] text-muted-foreground/60 ms-auto tabular-nums">
-                        {wordCount}w
+                        {formatJournalWordCount(wordCount, language, ts)}
                       </span>
                     )}
                   </div>
                 )}
               </div>
 
-              {/* Time (only when no hero photo) + delete */}
+              {/* Time (only when no hero photo) + contextual actions */}
               <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
                 {!(hasPhoto && thumbnail && !privateMode) && (
                   <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground/60">
@@ -490,17 +489,20 @@ export const JournalEntryCard = memo(function JournalEntryCard({
                     {time}
                   </span>
                 )}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    void hapticTap();
-                    onDelete(entry.id);
-                  }}
-                  className="p-2.5 -m-1 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-destructive/10 text-muted-foreground/60 hover:text-destructive motion-safe:transition-all min-w-[44px] min-h-[44px] flex items-center justify-center"
-                  aria-label={ts.delete || "Delete"}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                {onActions ? (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      void hapticTap();
+                      onActions(entry);
+                    }}
+                    className="flex min-h-[44px] min-w-[44px] -m-1 items-center justify-center rounded-lg text-muted-foreground/55 opacity-70 motion-safe:transition-[background-color,color,opacity,transform] hover:bg-muted/45 hover:text-foreground hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 active:scale-[0.98]"
+                    aria-label={ts.more || "More"}
+                  >
+                    <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
+                  </button>
+                ) : null}
               </div>
             </div>
           </div>

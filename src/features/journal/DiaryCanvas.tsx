@@ -16,16 +16,28 @@ interface DiaryCanvasProps {
   intensity?: BackgroundIntensity;
   particleSpeed?: ParticleSpeed;
   scrollContainerRef?: React.RefObject<HTMLElement | null>;
+  scope?: "viewport" | "container";
 }
 
-export const DiaryCanvas = memo(function DiaryCanvas({ accentColor, isActive, theme = 'dark', intensity = 'full', particleSpeed = 'slow', scrollContainerRef }: DiaryCanvasProps) {
+export const DiaryCanvas = memo(function DiaryCanvas({
+  accentColor,
+  isActive,
+  theme = 'dark',
+  intensity = 'full',
+  particleSpeed = 'slow',
+  scrollContainerRef,
+  scope = 'viewport',
+}: DiaryCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   useDiaryCanvas(canvasRef, accentColor, isActive, theme, intensity, particleSpeed, scrollContainerRef);
 
   return (
     <canvas
       ref={canvasRef}
-      className="fixed inset-0 pointer-events-none"
+      className={[
+        "pointer-events-none",
+        scope === "container" ? "absolute inset-0 h-full w-full" : "fixed inset-0",
+      ].join(" ")}
       style={{ zIndex: 0 }}
       aria-hidden="true"
     />

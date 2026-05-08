@@ -3,6 +3,9 @@
  * OPT-IN theme layer activated via data-theme attribute on <html>.
  * Three themes: paper (default future default), ink (warm dark), oled (true black).
  *
+ * 2026-05: paper now also bridges the shadcn HSL family (--background,
+ * --foreground, --card, etc.) so V2 shell surfaces avoid bright white fallback.
+ *
  * Option A — NON-DISRUPTIVE: we DO NOT override existing shadcn HSL vars
  * (--background, --foreground, --card etc. in src/index.css :root). Those stay
  * bound to `hsl(var(--background))` consumers. Instead we expose a parallel
@@ -23,6 +26,15 @@
  * aliases can reference --color-theme-* vars via var().
  */
 
+:root {
+  --theme-toggle-v1-light-track: 199 89% 74%;
+  --theme-toggle-v1-light-thumb: 48 96% 53%;
+  --theme-toggle-v1-light-icon: 0 0% 100%;
+  --theme-toggle-v1-dark-track: 215 25% 27%;
+  --theme-toggle-v1-dark-thumb: 242 47% 20%;
+  --theme-toggle-v1-dark-ring: 215 20% 65%;
+}
+
 @layer theme {
   :root[data-theme="paper"] {
     --zen-surface: var(--color-theme-paper-surface);
@@ -33,7 +45,490 @@
     --zen-border: var(--color-theme-paper-border);
     --zen-primary: var(--color-theme-paper-primary);
     --zen-primary-fg: var(--color-theme-paper-primary-fg);
+    --surface-glass: hsl(158 42% 88% / 0.74);
+    --surface-glass-border: hsl(174 30% 52% / 0.34);
+    --surface-glass-blur: 20px;
   }
+}
+
+/* Solar Prism Paper bridge.
+ *
+ * Paper is a daylight atmosphere, not a white fallback and not an inversion of
+ * the night theme. The palette keeps colored air in the page itself, with
+ * teal ink, sunlit green panels, amber secondary surfaces, and iris accents.
+ */
+:root[data-theme="paper"] {
+  color-scheme: light;
+
+  --background: 174 41% 86%;
+  --foreground: 176 48% 9%;
+  --card: 158 42% 90%;
+  --card-foreground: 176 48% 9%;
+  --popover: 158 42% 90%;
+  --popover-foreground: 176 48% 9%;
+  --primary: 166 56% 31%;
+  --primary-foreground: 160 42% 96%;
+  --secondary: 43 58% 82%;
+  --secondary-foreground: 176 42% 13%;
+  --muted: 171 27% 78%;
+  --muted-foreground: 176 20% 30%;
+  --accent: 264 42% 85%;
+  --accent-foreground: 262 36% 23%;
+  --border: 171 27% 58%;
+  --input: 171 27% 58%;
+  --ring: 166 56% 31%;
+
+  --surface-base: 174 41% 86%;
+  --surface-raised: 158 42% 90%;
+  --surface-elevated: 43 52% 87%;
+  --surface-overlay: 191 32% 82%;
+  --surface-glass: hsl(158 42% 90% / 0.76);
+  --surface-glass-border: hsl(174 30% 52% / 0.36);
+  --surface-glass-blur: 20px;
+  --zen-shadow-soft: 0 18px 46px -32px hsl(176 42% 10% / 0.34);
+  --zen-shadow-card: 0 12px 34px -28px hsl(176 42% 10% / 0.28);
+  --zen-shadow-glow: 0 0 34px hsl(var(--primary) / 0.16);
+  --zen-shadow-hover: 0 18px 46px -30px hsl(176 42% 10% / 0.38);
+  --zf-text-muted: 176 13% 42%;
+
+  --sidebar-background: 158 42% 90%;
+  --sidebar-foreground: 176 48% 9%;
+  --sidebar-primary: 166 56% 31%;
+  --sidebar-primary-foreground: 160 42% 96%;
+  --sidebar-accent: 43 58% 82%;
+  --sidebar-accent-foreground: 176 42% 13%;
+  --sidebar-border: 171 27% 58%;
+  --sidebar-ring: 166 56% 31%;
+
+  --nav-v2-drawer-start: 190 41% 85%;
+  --nav-v2-drawer-mid: 158 38% 84%;
+  --nav-v2-drawer-end: 263 35% 88%;
+  --nav-v2-drawer-text: var(--foreground);
+  --nav-v2-drawer-muted: var(--muted-foreground);
+  --nav-v2-drawer-border: 174 30% 48%;
+  --nav-v2-drawer-divider: 174 24% 62%;
+  --nav-v2-item-surface: 158 42% 90%;
+  --nav-v2-item-hover: 168 36% 82%;
+  --nav-v2-icon-surface: 166 34% 80%;
+  --nav-v2-icon-muted: 176 18% 31%;
+  --nav-v2-backdrop: 176 30% 8%;
+  --nav-v2-shadow: 176 33% 12%;
+  --zf-surface-3: 43 52% 78%;
+}
+
+/* V2 Mist Paper guardrail.
+ *
+ * These selectors are intentionally scoped to V2 surfaces that previously
+ * reused the dark ritual deck. Recovery/splash/burn modes are not included, so
+ * they keep the branded dark treatment.
+ */
+:root[data-theme="paper"] [data-surface="ink-paper"] {
+  background:
+    linear-gradient(155deg, hsl(var(--card)) 0%, hsl(var(--surface-elevated)) 48%, hsl(var(--card)) 100%);
+  border-color: hsl(var(--border));
+  box-shadow:
+    inset 0 1px 0 hsl(var(--foreground) / 0.08),
+    0 20px 56px -42px hsl(var(--foreground) / 0.28);
+  color: hsl(var(--foreground));
+  --zf-text-strong: var(--foreground);
+  --zf-text-soft: var(--muted-foreground);
+}
+
+:root[data-theme="paper"] [data-surface="ink-paper"] p,
+:root[data-theme="paper"] [data-surface="ink-paper"] [data-tile="ritual-deck-card"],
+:root[data-theme="paper"] [data-surface="ink-paper"] [data-ritual-card] {
+  color: hsl(var(--foreground));
+}
+
+:root[data-theme="paper"] [data-surface="ink-paper"] [data-scene="ritual-carousel"] > span,
+:root[data-theme="paper"] [data-surface="ink-paper"] [data-tile="ritual-deck-card"],
+:root[data-theme="paper"] [data-surface="ink-paper"] [data-ritual-card],
+:root[data-theme="paper"] [data-surface="ink-paper"] [data-icon-medallion="true"] {
+  background:
+    linear-gradient(150deg, hsl(var(--card)) 0%, hsl(var(--surface-elevated)) 100%);
+  box-shadow:
+    inset 0 1px 0 hsl(var(--foreground) / 0.08),
+    0 10px 26px -22px hsl(var(--foreground) / 0.22);
+}
+
+:root[data-theme="paper"] [data-surface="ink-paper"] [data-testid="hero-ritual-board-scene"],
+:root[data-theme="paper"] [data-surface="ink-paper"] [data-scene-layer="core"] {
+  background:
+    linear-gradient(150deg, hsl(var(--card)) 0%, hsl(var(--surface-elevated)) 100%);
+  border-color: hsl(var(--border));
+  box-shadow:
+    inset 0 1px 0 hsl(var(--foreground) / 0.08),
+    0 16px 38px -30px hsl(var(--foreground) / 0.30);
+}
+
+:root[data-theme="paper"] [data-surface="ink-paper"] [data-scene-layer="halo"] {
+  background: hsl(var(--surface-elevated));
+  border-color: hsl(var(--zf-role-energy) / 0.28);
+}
+
+:root[data-theme="paper"] [data-surface="ink-paper"] [data-scene-layer="orbit"] {
+  background: transparent;
+  border-color: hsl(var(--zf-role-body) / 0.38);
+}
+
+:root[data-theme="paper"] [data-surface="ink-paper"] [data-scene-layer="shadow"] {
+  background: hsl(var(--zf-role-energy) / 0.10);
+}
+
+:root[data-theme="paper"] [data-surface="ink-paper"] [data-scene-layer="rail"] {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--zf-role-energy) / 0),
+    hsl(var(--zf-role-energy) / 0.64),
+    hsl(var(--zf-role-body) / 0.58),
+    hsl(var(--zf-role-release) / 0)
+  );
+}
+
+:root[data-theme="paper"] [data-surface="ink-paper"] [data-tile="ritual-deck-card"] {
+  background:
+    linear-gradient(155deg, hsl(var(--card)) 0%, hsl(var(--surface-elevated)) 100%);
+  box-shadow:
+    inset 0 1px 0 hsl(var(--foreground) / 0.08),
+    0 14px 34px -28px hsl(var(--foreground) / 0.28);
+}
+
+:root[data-theme="paper"] [data-surface="ink-paper"] [data-ritual-comet="true"] > span {
+  background: hsl(var(--foreground) / 0.82);
+}
+
+:root[data-theme="paper"] [data-surface="ink-paper"] [data-testid="hero-empty-open-library"] {
+  background: hsl(var(--card));
+  color: hsl(var(--foreground));
+}
+
+:root[data-theme="paper"] [data-surface="ink-paper"] [data-testid="habits-hero-create-empty"] {
+  color: hsl(var(--foreground));
+}
+
+:root[data-theme="paper"] .habit-growth-group {
+  background:
+    linear-gradient(180deg, hsl(var(--card)) 0%, hsl(var(--surface-elevated)) 100%);
+  border-color: hsl(var(--border));
+  box-shadow:
+    inset 0 1px 0 hsl(var(--foreground) / 0.08),
+    0 20px 50px -42px hsl(var(--foreground) / 0.24);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+:root[data-theme="paper"] .habit-growth-group__aura {
+  opacity: 0.28;
+}
+
+:root[data-theme="paper"] .habit-bucket-glyph {
+  background:
+    radial-gradient(circle at 50% 50%, hsl(var(--card) / 0.92) 0 38%, transparent 39%),
+    conic-gradient(
+      from 148deg at 50% 50%,
+      transparent 0 19%,
+      var(--habit-group-role-line) 19% 22%,
+      transparent 22% 55%,
+      var(--habit-group-role-soft) 55% 62%,
+      transparent 62% 100%
+    ),
+    linear-gradient(145deg, hsl(var(--card) / 0.96), hsl(var(--surface-elevated) / 0.78));
+  box-shadow:
+    inset 0 1px 0 hsl(var(--foreground) / 0.08),
+    inset 0 -8px 16px var(--habit-group-role-soft),
+    0 10px 24px -22px hsl(var(--foreground) / 0.3);
+}
+
+:root[data-theme="paper"] .habit-field-backdrop {
+  background:
+    linear-gradient(118deg, hsl(var(--zf-role-energy) / 0.20) 0 7%, transparent 7% 100%),
+    linear-gradient(112deg, transparent 0 5%, hsl(var(--zf-role-energy) / 0.18) 5% 12%, transparent 12% 100%),
+    linear-gradient(112deg, transparent 0 31%, hsl(var(--zf-role-body) / 0.18) 31% 39%, transparent 39% 100%),
+    linear-gradient(112deg, transparent 0 68%, hsl(var(--zf-role-focus) / 0.16) 68% 78%, transparent 78% 100%),
+    linear-gradient(112deg, transparent 0 28%, hsl(var(--zf-role-body) / 0.18) 28% 28.8%, transparent 28.8% 100%),
+    radial-gradient(ellipse at 18% 8%, hsl(var(--zf-role-energy) / 0.42), transparent 30%),
+    radial-gradient(ellipse at 86% 10%, hsl(var(--zf-role-focus) / 0.38), transparent 30%),
+    radial-gradient(ellipse at 18% 58%, hsl(var(--zf-role-gratitude) / 0.36), transparent 36%),
+    radial-gradient(ellipse at 82% 56%, hsl(var(--zf-role-space) / 0.24), transparent 34%),
+    linear-gradient(180deg, hsl(var(--background) / 0.92), hsl(var(--surface-overlay) / 0.62) 52%, hsl(var(--card) / 0.50));
+}
+
+:root[data-theme="paper"] .habit-field-backdrop::before {
+  background:
+    linear-gradient(116deg, transparent 0 8%, hsl(var(--zf-role-energy) / 0.20) 8% 13%, transparent 13% 100%),
+    linear-gradient(116deg, transparent 0 12%, hsl(var(--zf-role-energy) / 0.30) 12% 12.78%, transparent 12.78% 100%),
+    linear-gradient(116deg, transparent 0 24%, hsl(var(--zf-role-body) / 0.26) 24% 24.72%, transparent 24.72% 100%),
+    linear-gradient(116deg, transparent 0 34%, hsl(var(--zf-role-body) / 0.16) 34% 41%, transparent 41% 100%),
+    linear-gradient(116deg, transparent 0 38%, hsl(var(--zf-role-focus) / 0.22) 38% 38.58%, transparent 38.58% 100%),
+    linear-gradient(116deg, transparent 0 71%, hsl(var(--zf-role-focus) / 0.17) 71% 80%, transparent 80% 100%),
+    linear-gradient(116deg, transparent 0 64%, hsl(var(--zf-role-space) / 0.12) 64% 64.42%, transparent 64.42% 100%),
+    repeating-linear-gradient(
+      116deg,
+      transparent 0 2.15rem,
+      hsl(var(--foreground) / 0.055) 2.15rem 2.24rem,
+      transparent 2.24rem 4.35rem
+    );
+  opacity: 0.96;
+}
+
+:root[data-theme="paper"] .habit-field-backdrop::after {
+  opacity: 0.74;
+  background:
+    linear-gradient(102deg, transparent 0 18%, hsl(var(--zf-role-body) / 0.16) 18% 18.48%, transparent 18.48% 100%),
+    linear-gradient(102deg, transparent 0 52%, hsl(var(--zf-role-gratitude) / 0.15) 52% 52.42%, transparent 52.42% 100%),
+    repeating-linear-gradient(
+      102deg,
+      transparent 0 2rem,
+      hsl(var(--zf-role-focus) / 0.060) 2rem 2.09rem,
+      transparent 2.09rem 4rem
+    );
+}
+
+:root[data-theme="paper"] .habit-field-backdrop__source-beam {
+  background:
+    linear-gradient(
+      90deg,
+      transparent 0%,
+      hsl(var(--card) / 0.16) 16%,
+      hsl(var(--card) / 0.78) 43%,
+      hsl(var(--foreground) / 0.10) 54%,
+      transparent 84%
+    );
+  opacity: 1;
+}
+
+:root[data-theme="paper"] .habit-field-backdrop__prism {
+  background:
+    linear-gradient(132deg, hsl(var(--card) / 0.96), hsl(var(--zf-role-body) / 0.34) 36%, hsl(var(--zf-role-focus) / 0.58)),
+    linear-gradient(38deg, transparent 0 45%, hsl(var(--foreground) / 0.22) 45% 52%, transparent 52% 100%),
+    linear-gradient(126deg, hsl(var(--zf-role-energy) / 0.52), transparent 34%, hsl(var(--zf-role-body) / 0.44));
+  opacity: 1;
+}
+
+:root[data-theme="paper"] .habit-field-backdrop__spectrum {
+  opacity: 0.92;
+  filter: blur(0.12rem);
+}
+
+:root[data-theme="paper"] .habit-field-backdrop__spectrum[data-spectrum-role="energy"] {
+  --habit-spectrum-color: hsl(var(--zf-role-energy) / 0.52);
+}
+
+:root[data-theme="paper"] .habit-field-backdrop__spectrum[data-spectrum-role="body"] {
+  --habit-spectrum-color: hsl(var(--zf-role-body) / 0.50);
+}
+
+:root[data-theme="paper"] .habit-field-backdrop__spectrum[data-spectrum-role="focus"] {
+  --habit-spectrum-color: hsl(var(--zf-role-focus) / 0.48);
+}
+
+:root[data-theme="paper"] .habit-field-backdrop__spectrum[data-spectrum-role="gratitude"] {
+  --habit-spectrum-color: hsl(var(--zf-role-gratitude) / 0.46);
+}
+
+:root[data-theme="paper"] .habit-field-backdrop__spectrum[data-spectrum-role="rest"] {
+  --habit-spectrum-color: hsl(var(--zf-role-rest) / 0.38);
+}
+
+:root[data-theme="paper"] .habit-field-backdrop__canopy {
+  background:
+    linear-gradient(112deg, transparent 0 18%, hsl(var(--zf-role-energy) / 0.26) 18% 31%, transparent 31% 100%),
+    linear-gradient(112deg, transparent 0 26%, hsl(var(--zf-role-energy) / 0.42) 26% 27.2%, transparent 27.2% 100%),
+    linear-gradient(112deg, transparent 0 54%, hsl(var(--zf-role-focus) / 0.28) 54% 65%, transparent 65% 100%),
+    radial-gradient(ellipse at 18% 34%, hsl(var(--zf-role-energy) / 0.60), transparent 31%),
+    radial-gradient(ellipse at 48% 36%, hsl(var(--zf-role-body) / 0.50), transparent 36%),
+    radial-gradient(ellipse at 78% 44%, hsl(var(--zf-role-focus) / 0.44), transparent 36%);
+  opacity: 0.98;
+}
+
+:root[data-theme="paper"] .habit-field-backdrop__root-map {
+  opacity: 0.48;
+  background:
+    linear-gradient(90deg, transparent 0 12%, hsl(var(--zf-role-body) / 0.16) 12% 12.46%, transparent 12.46% 100%),
+    linear-gradient(90deg, transparent 0 46%, hsl(var(--zf-role-energy) / 0.14) 46% 46.38%, transparent 46.38% 100%),
+    linear-gradient(90deg, transparent 0 80%, hsl(var(--zf-role-focus) / 0.16) 80% 80.46%, transparent 80.46% 100%),
+    repeating-linear-gradient(
+      96deg,
+      transparent 0 1.1rem,
+      hsl(var(--zf-role-gratitude) / 0.13) 1.1rem 1.18rem,
+      transparent 1.18rem 2.42rem
+    );
+}
+
+:root[data-theme="paper"] .habit-field-backdrop__cue-ring {
+  border-color: hsl(var(--zf-role-focus) / 0.40);
+  background:
+    radial-gradient(circle, hsl(var(--card) / 0.38), transparent 64%),
+    linear-gradient(135deg, hsl(var(--zf-role-energy) / 0.12), transparent 58%);
+  opacity: 0.9;
+}
+
+:root[data-theme="paper"] .habit-field-backdrop__progress-lane {
+  background: hsl(var(--foreground) / 0.12);
+  box-shadow:
+    0 0 18px hsl(var(--zf-role-focus) / 0.20),
+    0 8px 28px -20px hsl(var(--foreground) / 0.34);
+}
+
+:root[data-theme="paper"] .habit-identity-cue {
+  border-color: hsl(var(--zf-role-gratitude) / 0.34);
+  background:
+    linear-gradient(104deg, transparent 0 14%, hsl(var(--zf-role-energy) / 0.13) 14% 14.72%, transparent 14.72% 100%),
+    radial-gradient(circle at 92% 50%, hsl(var(--zf-role-body) / 0.14), transparent 30%),
+    linear-gradient(138deg, hsl(var(--card) / 0.92), hsl(var(--surface-elevated) / 0.82) 62%, hsl(var(--zf-role-gratitude) / 0.13));
+  box-shadow:
+    inset 0 1px 0 hsl(var(--foreground) / 0.07),
+    0 16px 40px -38px hsl(var(--foreground) / 0.32);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+
+:root[data-theme="paper"] .habit-identity-verb {
+  border-color: hsl(var(--zf-role-gratitude) / 0.38);
+  background:
+    linear-gradient(135deg, hsl(var(--zf-role-energy) / 0.16), hsl(var(--zf-role-gratitude) / 0.18)),
+    hsl(var(--card) / 0.66);
+  color: hsl(var(--foreground));
+}
+
+:root[data-theme="paper"] [data-testid="habits-create-sheet-overlay"] {
+  background: hsl(var(--foreground) / 0.32);
+}
+
+:root[data-theme="paper"] [data-surface="ritual-library-deck"],
+:root[data-theme="paper"] [data-surface="habit-create-sheet"] {
+  background:
+    radial-gradient(circle at 16% -2%, hsl(var(--zf-role-energy) / 0.24), transparent 34%),
+    radial-gradient(circle at 88% 6%, hsl(var(--zf-role-gratitude) / 0.16), transparent 34%),
+    radial-gradient(circle at 48% 108%, hsl(var(--zf-role-focus) / 0.16), transparent 42%),
+    linear-gradient(160deg, hsl(var(--card) / 0.94), hsl(var(--surface-elevated) / 0.90) 56%, hsl(var(--surface-overlay) / 0.94));
+  border-color: hsl(var(--border) / 0.72);
+  color: hsl(var(--foreground));
+  box-shadow: 0 -26px 88px -58px hsl(var(--foreground) / 0.40);
+  --zf-text-strong: var(--foreground);
+  --zf-text-soft: var(--muted-foreground);
+}
+
+:root[data-theme="paper"] [data-surface="ritual-library-deck"] [data-card="ritual-library-card"] {
+  background:
+    radial-gradient(circle at 20% 0%, hsl(var(--zf-role-body) / 0.16), transparent 34%),
+    linear-gradient(155deg, hsl(var(--card) / 0.90), hsl(var(--muted) / 0.72));
+  color: hsl(var(--foreground));
+  box-shadow: inset 0 1px 0 hsl(var(--foreground) / 0.08), 0 14px 34px -30px hsl(var(--foreground) / 0.30);
+}
+
+:root[data-theme="paper"] [data-surface="ritual-library-deck"] [data-chip="ritual-library-tab"][aria-pressed="false"] {
+  background:
+    linear-gradient(145deg, hsl(var(--card) / 0.72), hsl(var(--surface-elevated) / 0.56));
+  border-color: hsl(var(--border) / 0.70);
+  color: hsl(var(--muted-foreground));
+  box-shadow: inset 0 1px 0 hsl(var(--foreground) / 0.06);
+}
+
+:root[data-theme="paper"] [data-surface="ritual-library-deck"] [data-card="ritual-library-card"] > span:first-child,
+:root[data-theme="paper"] [data-surface="ritual-library-deck"] [data-card="ritual-library-card"] [data-template-icon="true"] {
+  background-color: hsl(var(--card) / 0.70);
+}
+
+:root[data-theme="paper"] [data-surface="habit-create-sheet"] input,
+:root[data-theme="paper"] [data-surface="habit-create-sheet"] textarea,
+:root[data-theme="paper"] [data-surface="habit-create-sheet"] select {
+  color: hsl(var(--foreground));
+}
+
+:root[data-theme="paper"] [data-surface="habit-create-sheet"] [data-surface="habit-template-picker"],
+:root[data-theme="paper"] [data-surface="habit-create-sheet"] [data-surface="habit-form"] {
+  background:
+    radial-gradient(circle at 12% -2%, hsl(var(--zf-role-energy) / 0.20), transparent 32%),
+    radial-gradient(circle at 88% 4%, hsl(var(--zf-role-focus) / 0.15), transparent 34%),
+    linear-gradient(155deg, hsl(var(--card) / 0.82), hsl(var(--surface-elevated) / 0.72));
+  border: 1px solid hsl(var(--border) / 0.72);
+  color: hsl(var(--foreground));
+  box-shadow:
+    inset 0 1px 0 hsl(var(--foreground) / 0.08),
+    0 22px 58px -46px hsl(var(--foreground) / 0.34);
+}
+
+:root[data-theme="paper"] [data-surface="habit-create-sheet"] [data-template-picker-card="true"],
+:root[data-theme="paper"] [data-surface="habit-create-sheet"] [data-elevated-surface] {
+  background:
+    radial-gradient(circle at 14% 0%, hsl(var(--zf-role-body) / 0.13), transparent 34%),
+    linear-gradient(150deg, hsl(var(--card) / 0.84), hsl(var(--muted) / 0.62));
+  color: hsl(var(--foreground));
+  border-color: hsl(var(--border) / 0.62);
+  box-shadow:
+    inset 0 1px 0 hsl(var(--foreground) / 0.08),
+    0 14px 34px -30px hsl(var(--foreground) / 0.28);
+}
+
+:root[data-theme="paper"] [data-surface="habit-create-sheet"] [data-template-picker-icon="true"],
+:root[data-theme="paper"] [data-surface="habit-create-sheet"] [data-card="ritual-template-preview"] [aria-hidden="true"],
+:root[data-theme="paper"] [data-surface="habit-create-sheet"] [data-elevated-surface] [aria-hidden="true"] {
+  background-color: hsl(var(--card) / 0.62);
+  color: hsl(var(--foreground));
+}
+
+:root[data-theme="paper"] [data-surface="habit-create-sheet"] [data-elevated-surface="mode-tabs"] {
+  background: hsl(var(--muted) / 0.42);
+  border-color: hsl(var(--border) / 0.58);
+}
+
+:root[data-theme="paper"] [data-surface="habit-create-sheet"] [data-elevated-surface="advanced-rail"],
+:root[data-theme="paper"] [data-surface="habit-create-sheet"] [data-elevated-surface="advanced-rail-item"] {
+  background: hsl(var(--card) / 0.58);
+  color: hsl(var(--foreground));
+}
+
+:root[data-theme="paper"] [data-surface="habit-create-sheet"] [data-settings-section] {
+  border-color: hsl(var(--zf-role-energy) / 0.34);
+}
+
+:root[data-theme="paper"] [data-surface="habit-create-sheet"] button {
+  color: hsl(var(--foreground));
+}
+
+:root[data-theme="paper"] [data-surface="habit-create-sheet"] button[disabled] {
+  color: hsl(var(--muted-foreground) / 0.72);
+}
+
+:root[data-theme="paper"] [data-surface="habit-create-sheet"] input,
+:root[data-theme="paper"] [data-surface="habit-create-sheet"] textarea {
+  background: hsl(var(--card) / 0.62);
+  border-color: hsl(var(--border) / 0.66);
+  color: hsl(var(--foreground));
+}
+
+:root[data-theme="paper"] [data-surface="habit-create-sheet"] input::placeholder,
+:root[data-theme="paper"] [data-surface="habit-create-sheet"] textarea::placeholder {
+  color: hsl(var(--muted-foreground) / 0.78);
+}
+
+:root[data-theme="paper"] [data-surface="v2-not-found"] {
+  background:
+    radial-gradient(circle at 18% 16%, hsl(var(--zf-role-focus) / 0.20), transparent 34%),
+    radial-gradient(circle at 82% 8%, hsl(var(--zf-role-mind) / 0.18), transparent 30%),
+    radial-gradient(circle at 50% 104%, hsl(var(--zf-role-energy) / 0.18), transparent 42%),
+    linear-gradient(150deg, hsl(var(--background)), hsl(var(--surface-overlay)));
+  color: hsl(var(--foreground));
+  --zf-text-strong: var(--foreground);
+  --zf-text-soft: var(--muted-foreground);
+  --zf-text-muted: var(--muted-foreground);
+}
+
+:root[data-theme="paper"] [data-surface="v2-not-found"] section {
+  background:
+    radial-gradient(circle at 50% 0%, hsl(var(--zf-role-focus) / 0.14), transparent 34%),
+    linear-gradient(145deg, hsl(var(--card) / 0.93), hsl(var(--surface-elevated) / 0.88));
+  border-color: hsl(var(--border) / 0.70);
+  box-shadow: 0 30px 88px -60px hsl(var(--foreground) / 0.42);
+}
+
+:root[data-theme="paper"] .mood-first-run-backdrop {
+  background: hsl(var(--foreground) / 0.24);
+}
+
+:root[data-theme="paper"] .mood-first-run-step {
+  background: hsl(var(--muted) / 0.72);
 }
 
 /* Phase 3-A.4c-ii-d-c Task #39 TAKE 2 — Un-layered ink/oled shadcn-bridge.
@@ -57,6 +552,7 @@
  * pseudo-elements remain inside @layer theme (visual atmosphere only).
  */
 :root[data-theme="ink"] {
+    color-scheme: dark;
     --zen-surface: var(--color-theme-ink-surface);
     --zen-surface-muted: var(--color-theme-ink-surface-muted);
     --zen-surface-card: var(--color-theme-ink-surface-card);
@@ -65,6 +561,21 @@
     --zen-border: var(--color-theme-ink-border);
     --zen-primary: var(--color-theme-ink-primary);
     --zen-primary-fg: var(--color-theme-ink-primary-fg);
+    --surface-glass: hsl(var(--zf-surface-1) / 0.82);
+    --surface-glass-border: hsl(var(--zf-primary) / 0.18);
+    --surface-glass-blur: 20px;
+    --zen-shadow-soft: 0 4px 20px -4px hsl(var(--zf-primary) / 0.22);
+    --zf-text-muted: 165 8% 52%;
+  --zf-role-body: 158 72% 64%;
+  --zf-role-mind: 268 76% 76%;
+  --zf-role-focus: 194 92% 64%;
+  --zf-role-rest: 232 78% 78%;
+  --zf-role-energy: 35 84% 68%;
+  --zf-role-release: 334 80% 70%;
+  --zf-role-diary: 266 76% 74%;
+  --zf-role-space: 188 86% 62%;
+  --zf-role-gratitude: 146 62% 62%;
+  --zf-role-settings: 215 58% 72%;
 
     /* Phase 3-A.4c-ii-d-c — Shadcn-family bridge for V2 shell (SidebarV2,
      * DrawerV2, MobileNavV2, NavV2Orchestrator). Tailwind maps `bg-card`,
@@ -93,9 +604,51 @@
     --border: 30 4% 28%;           /* tuned softer than raw ink-border for hairline feel */
     --input: 30 4% 28%;
     --ring: 22 45% 55%;
+
+    --background: var(--zf-night-0);
+    --foreground: var(--zf-text-strong);
+    --card: var(--zf-surface-1);
+    --card-foreground: var(--zf-text-strong);
+    --popover: var(--zf-surface-2);
+    --popover-foreground: var(--zf-text-strong);
+    --primary: var(--zf-primary);
+    --primary-foreground: var(--zf-night-0);
+    --secondary: 178 16% 16%;
+    --secondary-foreground: var(--zf-text-strong);
+    --muted: 178 14% 18%;
+    --muted-foreground: var(--zf-text-soft);
+    --accent: var(--zf-memory);
+    --accent-foreground: var(--zf-night-0);
+    --border: 174 16% 22%;
+    --input: 174 16% 22%;
+    --ring: var(--zf-primary);
+
+    --sidebar-background: var(--zf-surface-1);
+    --sidebar-foreground: var(--zf-text-strong);
+    --sidebar-primary: var(--zf-primary);
+    --sidebar-primary-foreground: var(--zf-night-0);
+    --sidebar-accent: 178 16% 16%;
+    --sidebar-accent-foreground: var(--zf-text-strong);
+    --sidebar-border: 174 16% 22%;
+    --sidebar-ring: var(--zf-primary);
+
+    --nav-v2-drawer-start: var(--zf-surface-1);
+    --nav-v2-drawer-mid: var(--zf-night-1);
+    --nav-v2-drawer-end: var(--zf-night-0);
+    --nav-v2-drawer-text: var(--zf-text-strong);
+    --nav-v2-drawer-muted: var(--zf-text-soft);
+    --nav-v2-drawer-border: 174 16% 28%;
+    --nav-v2-drawer-divider: 174 16% 22%;
+    --nav-v2-item-surface: var(--zf-surface-1);
+    --nav-v2-item-hover: var(--zf-surface-2);
+    --nav-v2-icon-surface: var(--zf-night-1);
+    --nav-v2-icon-muted: var(--zf-text-soft);
+    --nav-v2-backdrop: 0 0% 0%;
+    --nav-v2-shadow: 0 0% 0%;
 }
 
 :root[data-theme="oled"] {
+    color-scheme: dark;
     --zen-surface: var(--color-theme-oled-surface);
     --zen-surface-muted: var(--color-theme-oled-surface-muted);
     --zen-surface-card: var(--color-theme-oled-surface-card);
@@ -104,6 +657,21 @@
     --zen-border: var(--color-theme-oled-border);
     --zen-primary: var(--color-theme-oled-primary);
     --zen-primary-fg: var(--color-theme-oled-primary-fg);
+    --surface-glass: hsl(var(--zf-surface-1) / 0.84);
+    --surface-glass-border: hsl(var(--zf-primary) / 0.16);
+    --surface-glass-blur: 16px;
+    --zen-shadow-soft: 0 0 16px hsl(var(--zf-primary) / 0.16);
+    --zf-text-muted: 165 8% 50%;
+  --zf-role-body: 158 72% 64%;
+  --zf-role-mind: 268 76% 76%;
+  --zf-role-focus: 194 92% 64%;
+  --zf-role-rest: 232 78% 78%;
+  --zf-role-energy: 35 84% 68%;
+  --zf-role-release: 334 80% 70%;
+  --zf-role-diary: 266 76% 74%;
+  --zf-role-space: 188 86% 62%;
+  --zf-role-gratitude: 146 62% 62%;
+  --zf-role-settings: 215 58% 72%;
 
     /* Phase 3-A.4c-ii-d-c — OLED shadcn bridge. Pure-black base (AMOLED
      * power saving) with ink-equivalent surfaces on raised elements so
@@ -127,6 +695,413 @@
     --border: 30 4% 22%;
     --input: 30 4% 22%;
     --ring: 22 45% 55%;
+
+    --background: 0 0% 0%;
+    --foreground: var(--zf-text-strong);
+    --card: var(--zf-surface-1);
+    --card-foreground: var(--zf-text-strong);
+    --popover: var(--zf-surface-2);
+    --popover-foreground: var(--zf-text-strong);
+    --primary: var(--zf-primary);
+    --primary-foreground: 0 0% 0%;
+    --secondary: 178 16% 8%;
+    --secondary-foreground: var(--zf-text-strong);
+    --muted: 178 14% 10%;
+    --muted-foreground: var(--zf-text-soft);
+    --accent: var(--zf-memory);
+    --accent-foreground: 0 0% 0%;
+    --border: 174 16% 18%;
+    --input: 174 16% 18%;
+    --ring: var(--zf-primary);
+
+    --sidebar-background: var(--zf-surface-1);
+    --sidebar-foreground: var(--zf-text-strong);
+    --sidebar-primary: var(--zf-primary);
+    --sidebar-primary-foreground: 0 0% 0%;
+    --sidebar-accent: 178 16% 8%;
+    --sidebar-accent-foreground: var(--zf-text-strong);
+    --sidebar-border: 174 16% 18%;
+    --sidebar-ring: var(--zf-primary);
+
+    --nav-v2-drawer-start: var(--zf-surface-1);
+    --nav-v2-drawer-mid: 178 16% 8%;
+    --nav-v2-drawer-end: 0 0% 0%;
+    --nav-v2-drawer-text: var(--zf-text-strong);
+    --nav-v2-drawer-muted: var(--zf-text-soft);
+    --nav-v2-drawer-border: 174 16% 24%;
+    --nav-v2-drawer-divider: 174 16% 18%;
+    --nav-v2-item-surface: var(--zf-surface-1);
+    --nav-v2-item-hover: var(--zf-surface-2);
+    --nav-v2-icon-surface: 178 16% 8%;
+    --nav-v2-icon-muted: var(--zf-text-soft);
+    --nav-v2-backdrop: 0 0% 0%;
+    --nav-v2-shadow: 0 0% 0%;
+}
+
+/* V2 habits night polish: scoped to habits quick-pick and library surfaces only.
+ * Paper keeps its separate daylight treatment above. */
+:root[data-theme="ink"] [data-surface="ink-paper"] [data-tile="ritual-deck-card"],
+:root[data-theme="oled"] [data-surface="ink-paper"] [data-tile="ritual-deck-card"] {
+  background:
+    radial-gradient(circle at 18% 16%, hsl(var(--habit-role) / 0.34), transparent 34%),
+    radial-gradient(circle at 104% -10%, hsl(var(--zf-role-space) / 0.18), transparent 32%),
+    linear-gradient(155deg, hsl(var(--card) / 0.96) 0%, hsl(var(--secondary) / 0.94) 54%, hsl(var(--background) / 0.74) 100%);
+  border-color: hsl(var(--habit-role) / 0.42);
+  color: hsl(var(--foreground));
+  box-shadow:
+    inset 0 1px 0 hsl(var(--foreground) / 0.12),
+    inset 0 -38px 58px -50px hsl(var(--habit-role) / 0.58),
+    0 18px 42px -34px hsl(var(--habit-role) / 0.72);
+}
+
+:root[data-theme="ink"] [data-surface="ink-paper"] [data-tile="ritual-deck-card"]::before,
+:root[data-theme="oled"] [data-surface="ink-paper"] [data-tile="ritual-deck-card"]::before,
+:root[data-theme="ink"] [data-surface="ritual-library-deck"] [data-card="ritual-library-card"]::before,
+:root[data-theme="oled"] [data-surface="ritual-library-deck"] [data-card="ritual-library-card"]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(132deg, hsl(var(--foreground) / 0.09), transparent 30% 66%, hsl(var(--habit-role) / 0.10)),
+    repeating-linear-gradient(112deg, transparent 0 1.35rem, hsl(var(--foreground) / 0.035) 1.35rem 1.42rem, transparent 1.42rem 2.8rem);
+  opacity: 0.62;
+}
+
+:root[data-theme="ink"] [data-surface="ink-paper"] [data-icon-medallion="true"],
+:root[data-theme="oled"] [data-surface="ink-paper"] [data-icon-medallion="true"],
+:root[data-theme="ink"] [data-surface="ritual-library-deck"] [data-slot="ritual-library-icon"],
+:root[data-theme="oled"] [data-surface="ritual-library-deck"] [data-slot="ritual-library-icon"] {
+  background:
+    radial-gradient(circle at 36% 24%, hsl(var(--habit-role) / 0.32), transparent 54%),
+    linear-gradient(145deg, hsl(var(--card) / 0.82), hsl(var(--background) / 0.54));
+  border-color: hsl(var(--habit-role) / 0.46);
+  color: hsl(var(--habit-role));
+  box-shadow:
+    inset 0 1px 0 hsl(var(--foreground) / 0.14),
+    0 12px 24px -18px hsl(var(--habit-role) / 0.74);
+}
+
+:root[data-theme="ink"] [data-surface="ink-paper"] [data-icon-medallion="true"] svg,
+:root[data-theme="oled"] [data-surface="ink-paper"] [data-icon-medallion="true"] svg,
+:root[data-theme="ink"] [data-surface="ritual-library-deck"] [data-slot="ritual-library-symbol"],
+:root[data-theme="oled"] [data-surface="ritual-library-deck"] [data-slot="ritual-library-symbol"] {
+  filter: drop-shadow(0 0 0.9rem hsl(var(--habit-role) / 0.42));
+}
+
+:root[data-theme="ink"] [data-surface="ink-paper"] [data-slot="quickpick-meta"],
+:root[data-theme="oled"] [data-surface="ink-paper"] [data-slot="quickpick-meta"],
+:root[data-theme="ink"] [data-surface="ritual-library-deck"] [data-slot="ritual-library-meta"],
+:root[data-theme="oled"] [data-surface="ritual-library-deck"] [data-slot="ritual-library-meta"] {
+  background:
+    linear-gradient(135deg, hsl(var(--habit-role) / 0.22), hsl(var(--background) / 0.72));
+  border-color: hsl(var(--habit-role) / 0.48);
+  color: hsl(var(--habit-role));
+  box-shadow:
+    inset 0 1px 0 hsl(var(--foreground) / 0.13),
+    0 0 18px -10px hsl(var(--habit-role) / 0.75);
+}
+
+:root[data-theme="ink"] [data-surface="ink-paper"] [data-slot="quickpick-label"],
+:root[data-theme="oled"] [data-surface="ink-paper"] [data-slot="quickpick-label"],
+:root[data-theme="ink"] [data-surface="ritual-library-deck"] [data-slot="ritual-library-label"],
+:root[data-theme="oled"] [data-surface="ritual-library-deck"] [data-slot="ritual-library-label"] {
+  text-shadow: 0 1px 12px hsl(var(--background) / 0.58);
+}
+
+:root[data-theme="ink"] [data-surface="ink-paper"] [data-testid="hero-empty-open-library"],
+:root[data-theme="oled"] [data-surface="ink-paper"] [data-testid="hero-empty-open-library"] {
+  background:
+    radial-gradient(circle at 24% 0%, hsl(var(--zf-role-focus) / 0.34), transparent 38%),
+    linear-gradient(135deg, hsl(var(--background) / 0.88), hsl(var(--card) / 0.94) 54%, hsl(var(--zf-role-focus) / 0.18));
+  border-color: hsl(var(--zf-role-focus) / 0.42);
+  color: hsl(var(--foreground));
+  box-shadow:
+    inset 0 1px 0 hsl(var(--foreground) / 0.12),
+    0 18px 38px -30px hsl(var(--zf-role-focus) / 0.72);
+}
+
+:root[data-theme="ink"] [data-surface="ritual-library-deck"],
+:root[data-theme="oled"] [data-surface="ritual-library-deck"] {
+  background:
+    radial-gradient(circle at 14% -4%, hsl(var(--zf-role-body) / 0.28), transparent 34%),
+    radial-gradient(circle at 90% 0%, hsl(var(--zf-role-focus) / 0.20), transparent 36%),
+    radial-gradient(circle at 46% 110%, hsl(var(--zf-role-rest) / 0.18), transparent 42%),
+    linear-gradient(160deg, hsl(var(--card) / 0.98), hsl(var(--secondary) / 0.96) 58%, hsl(var(--background) / 0.96));
+  border-color: hsl(var(--zf-role-body) / 0.28);
+  box-shadow: 0 -28px 96px -58px hsl(var(--background) / 0.88);
+}
+
+:root[data-theme="ink"] [data-surface="ritual-library-deck"] [data-chip="ritual-library-tab"],
+:root[data-theme="oled"] [data-surface="ritual-library-deck"] [data-chip="ritual-library-tab"] {
+  background:
+    linear-gradient(145deg, hsl(var(--card) / 0.76), hsl(var(--habit-role) / 0.13));
+  border-color: hsl(var(--habit-role) / 0.34);
+  color: hsl(var(--muted-foreground));
+  box-shadow: inset 0 1px 0 hsl(var(--foreground) / 0.09);
+}
+
+:root[data-theme="ink"] [data-surface="ritual-library-deck"] [data-chip="ritual-library-tab"][aria-pressed="true"],
+:root[data-theme="oled"] [data-surface="ritual-library-deck"] [data-chip="ritual-library-tab"][aria-pressed="true"] {
+  background:
+    radial-gradient(circle at 20% 0%, hsl(var(--habit-role) / 0.40), transparent 46%),
+    linear-gradient(145deg, hsl(var(--card) / 0.90), hsl(var(--habit-role) / 0.24));
+  border-color: hsl(var(--habit-role) / 0.58);
+  color: hsl(var(--foreground));
+  box-shadow:
+    inset 0 1px 0 hsl(var(--foreground) / 0.13),
+    0 14px 30px -24px hsl(var(--habit-role) / 0.70);
+}
+
+:root[data-theme="ink"] [data-surface="ritual-library-deck"] [data-card="ritual-library-card"],
+:root[data-theme="oled"] [data-surface="ritual-library-deck"] [data-card="ritual-library-card"] {
+  background:
+    radial-gradient(circle at 20% 0%, hsl(var(--habit-role) / 0.30), transparent 34%),
+    radial-gradient(circle at 100% 100%, hsl(var(--zf-role-space) / 0.12), transparent 36%),
+    linear-gradient(155deg, hsl(var(--card) / 0.94), hsl(var(--secondary) / 0.88));
+  border-color: hsl(var(--habit-role) / 0.38);
+  color: hsl(var(--foreground));
+  box-shadow:
+    inset 0 1px 0 hsl(var(--foreground) / 0.11),
+    0 16px 36px -32px hsl(var(--habit-role) / 0.72);
+}
+
+:root[data-theme="ink"] [data-surface="ritual-library-deck"] [data-card="ritual-library-card"]:disabled,
+:root[data-theme="oled"] [data-surface="ritual-library-deck"] [data-card="ritual-library-card"]:disabled {
+  opacity: 0.72;
+  filter: saturate(0.82);
+}
+
+/* V2 habits night flow polish: the first choice, created habit row, and
+ * create-sheet shortcuts now share one role-colored ritual-card language. */
+:root[data-theme="ink"] .habit-identity-cue,
+:root[data-theme="oled"] .habit-identity-cue {
+  background:
+    linear-gradient(108deg, transparent 0 14%, hsl(var(--zf-role-energy) / 0.13) 14% 14.7%, transparent 14.7% 100%),
+    radial-gradient(circle at 92% 14%, hsl(var(--zf-role-focus) / 0.16), transparent 32%),
+    radial-gradient(circle at 8% 92%, hsl(var(--zf-role-body) / 0.14), transparent 34%),
+    linear-gradient(142deg, hsl(var(--card) / 0.80), hsl(var(--secondary) / 0.72) 58%, hsl(var(--background) / 0.62));
+  border-color: hsl(var(--zf-role-gratitude) / 0.36);
+  box-shadow:
+    inset 0 1px 0 hsl(var(--foreground) / 0.10),
+    0 18px 48px -40px hsl(var(--zf-role-body) / 0.64);
+}
+
+:root[data-theme="ink"] .habit-identity-verb,
+:root[data-theme="oled"] .habit-identity-verb {
+  background:
+    radial-gradient(circle at 12% 0%, hsl(var(--zf-role-gratitude) / 0.22), transparent 42%),
+    linear-gradient(135deg, hsl(var(--card) / 0.72), hsl(var(--zf-role-body) / 0.16));
+  border-color: hsl(var(--zf-role-gratitude) / 0.46);
+  box-shadow:
+    inset 0 1px 0 hsl(var(--foreground) / 0.12),
+    0 12px 26px -22px hsl(var(--zf-role-gratitude) / 0.68);
+}
+
+:root[data-theme="ink"] .habit-growth-group,
+:root[data-theme="oled"] .habit-growth-group {
+  background:
+    radial-gradient(circle at 18% 0%, var(--habit-group-role-soft), transparent 34%),
+    radial-gradient(circle at 96% 88%, hsl(var(--zf-role-space) / 0.10), transparent 36%),
+    linear-gradient(160deg, hsl(var(--card) / 0.78), hsl(var(--secondary) / 0.58) 56%, hsl(var(--background) / 0.48));
+  border-color: var(--habit-group-role-line);
+  box-shadow:
+    inset 0 1px 0 hsl(var(--foreground) / 0.09),
+    0 22px 64px -50px var(--habit-group-role);
+}
+
+:root[data-theme="ink"] .habit-growth-group [data-slot="habit-group-count"],
+:root[data-theme="oled"] .habit-growth-group [data-slot="habit-group-count"] {
+  background:
+    linear-gradient(135deg, var(--habit-group-role-soft), hsl(var(--card) / 0.72));
+  border-color: var(--habit-group-role-line);
+  color: hsl(var(--foreground));
+  box-shadow:
+    inset 0 1px 0 hsl(var(--foreground) / 0.12),
+    0 12px 28px -22px var(--habit-group-role);
+}
+
+[data-card="ritual-weekly-card"] {
+  background: var(--habit-card-background);
+  border-color: var(--habit-card-border);
+  box-shadow: var(--habit-card-shadow);
+}
+
+[data-card="ritual-weekly-card"] [data-slot="weekly-rail"] {
+  background: hsl(var(--habit-role));
+}
+
+[data-card="ritual-weekly-card"] [data-slot="weekly-check"] {
+  background-color: hsl(var(--habit-role) / 0.24);
+  border-color: hsl(var(--habit-role) / 0.46);
+  color: hsl(var(--habit-role));
+  box-shadow: 0 12px 30px -22px hsl(var(--habit-role));
+}
+
+[data-card="ritual-weekly-card"] [data-slot="weekly-collapse"] {
+  border-color: hsl(var(--habit-role) / 0.26);
+}
+
+[data-card="ritual-weekly-card"][data-collapsed="true"] [data-slot="weekly-collapse"] {
+  background-color: hsl(var(--habit-role) / 0.18);
+  border-color: hsl(var(--habit-role) / 0.50);
+  color: hsl(var(--habit-role));
+}
+
+[data-card="ritual-weekly-card"] [data-slot="weekly-pill"] {
+  border-color: hsl(var(--habit-role) / 0.24);
+}
+
+[data-card="ritual-weekly-card"][data-collapsed="true"] [data-slot="weekly-pill"] {
+  border-color: hsl(var(--habit-role) / 0.34);
+  box-shadow: 0 8px 18px -18px hsl(var(--habit-role));
+}
+
+[data-card="ritual-weekly-card"] [data-slot="weekly-pill-dot"] {
+  background: hsl(var(--habit-role));
+}
+
+:root[data-theme="ink"] [data-card="ritual-weekly-card"],
+:root[data-theme="oled"] [data-card="ritual-weekly-card"] {
+  background:
+    radial-gradient(circle at 14% 0%, hsl(var(--habit-role) / 0.27), transparent 34%),
+    radial-gradient(circle at 100% 96%, hsl(var(--zf-role-space) / 0.12), transparent 38%),
+    linear-gradient(155deg, hsl(var(--card) / 0.92) 0%, hsl(var(--secondary) / 0.78) 54%, hsl(var(--background) / 0.70) 100%);
+  border-color: hsl(var(--habit-role) / 0.44);
+  color: hsl(var(--foreground));
+  box-shadow:
+    inset 0 1px 0 hsl(var(--foreground) / 0.12),
+    inset 0 -38px 58px -54px hsl(var(--habit-role) / 0.44),
+    0 18px 48px -38px hsl(var(--habit-role) / 0.76);
+}
+
+:root[data-theme="ink"] [data-card="ritual-weekly-card"] [data-slot="weekly-check"],
+:root[data-theme="oled"] [data-card="ritual-weekly-card"] [data-slot="weekly-check"],
+:root[data-theme="ink"] [data-card="ritual-weekly-card"] [data-slot="weekly-collapse"],
+:root[data-theme="oled"] [data-card="ritual-weekly-card"] [data-slot="weekly-collapse"] {
+  background:
+    radial-gradient(circle at 34% 18%, hsl(var(--habit-role) / 0.34), transparent 54%),
+    linear-gradient(145deg, hsl(var(--card) / 0.86), hsl(var(--background) / 0.62));
+  border-color: hsl(var(--habit-role) / 0.48);
+  color: hsl(var(--habit-role));
+  box-shadow:
+    inset 0 1px 0 hsl(var(--foreground) / 0.13),
+    0 14px 30px -23px hsl(var(--habit-role) / 0.78);
+}
+
+:root[data-theme="ink"] [data-card="ritual-weekly-card"] [data-slot="weekly-pill"],
+:root[data-theme="oled"] [data-card="ritual-weekly-card"] [data-slot="weekly-pill"] {
+  background:
+    linear-gradient(135deg, hsl(var(--habit-role) / 0.18), hsl(var(--background) / 0.58));
+  border-color: hsl(var(--habit-role) / 0.34);
+  color: hsl(var(--foreground) / 0.86);
+  box-shadow: inset 0 1px 0 hsl(var(--foreground) / 0.10);
+}
+
+:root[data-theme="ink"] [data-card="ritual-weekly-card"] [data-slot="weekly-footer"],
+:root[data-theme="oled"] [data-card="ritual-weekly-card"] [data-slot="weekly-footer"] {
+  color: hsl(var(--muted-foreground));
+}
+
+:root[data-theme="ink"] [data-card="ritual-weekly-card"] [data-slot="weekly-meta"],
+:root[data-theme="oled"] [data-card="ritual-weekly-card"] [data-slot="weekly-meta"] {
+  color: hsl(var(--foreground) / 0.72);
+}
+
+:root[data-theme="ink"] [data-card="ritual-weekly-card"] [data-slot="weekly-stats"],
+:root[data-theme="oled"] [data-card="ritual-weekly-card"] [data-slot="weekly-stats"] {
+  background:
+    radial-gradient(circle at 24% 0%, hsl(var(--habit-role) / 0.28), transparent 40%),
+    linear-gradient(135deg, hsl(var(--card) / 0.88), hsl(var(--background) / 0.68));
+  border-color: hsl(var(--habit-role) / 0.38);
+  color: hsl(var(--foreground));
+  box-shadow:
+    inset 0 1px 0 hsl(var(--foreground) / 0.12),
+    0 14px 32px -26px hsl(var(--habit-role) / 0.70);
+}
+
+:root[data-theme="ink"] [data-surface="habit-create-sheet"] [data-surface="habit-template-picker"],
+:root[data-theme="oled"] [data-surface="habit-create-sheet"] [data-surface="habit-template-picker"],
+:root[data-theme="ink"] [data-surface="habit-create-sheet"] [data-surface="habit-form"],
+:root[data-theme="oled"] [data-surface="habit-create-sheet"] [data-surface="habit-form"] {
+  background:
+    radial-gradient(circle at 14% -2%, hsl(var(--zf-role-body) / 0.22), transparent 34%),
+    radial-gradient(circle at 90% 4%, hsl(var(--zf-role-focus) / 0.16), transparent 34%),
+    linear-gradient(155deg, hsl(var(--card) / 0.88), hsl(var(--secondary) / 0.76) 58%, hsl(var(--background) / 0.70));
+  border-color: hsl(var(--zf-role-body) / 0.30);
+  color: hsl(var(--foreground));
+}
+
+:root[data-theme="ink"] [data-surface="habit-create-sheet"] [data-slot="template-picker-heading"],
+:root[data-theme="oled"] [data-surface="habit-create-sheet"] [data-slot="template-picker-heading"] {
+  color: hsl(var(--muted-foreground));
+}
+
+:root[data-theme="ink"] [data-surface="habit-create-sheet"] [data-card="ritual-template-picker-card"],
+:root[data-theme="oled"] [data-surface="habit-create-sheet"] [data-card="ritual-template-picker-card"] {
+  background:
+    radial-gradient(circle at 14% 0%, hsl(var(--habit-role) / 0.28), transparent 36%),
+    linear-gradient(150deg, hsl(var(--card) / 0.86), hsl(var(--background) / 0.62));
+  border-color: hsl(var(--habit-role) / 0.40);
+  color: hsl(var(--foreground));
+  box-shadow:
+    inset 0 1px 0 hsl(var(--foreground) / 0.11),
+    0 14px 34px -29px hsl(var(--habit-role) / 0.72);
+}
+
+:root[data-theme="ink"] [data-surface="habit-create-sheet"] [data-card="ritual-template-picker-card"]::before,
+:root[data-theme="oled"] [data-surface="habit-create-sheet"] [data-card="ritual-template-picker-card"]::before,
+:root[data-theme="ink"] [data-surface="habit-create-sheet"] [data-card="ritual-custom-habit-action"]::before,
+:root[data-theme="oled"] [data-surface="habit-create-sheet"] [data-card="ritual-custom-habit-action"]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(132deg, hsl(var(--foreground) / 0.075), transparent 32% 68%, hsl(var(--habit-role, var(--zf-role-space)) / 0.10)),
+    repeating-linear-gradient(112deg, transparent 0 1.25rem, hsl(var(--foreground) / 0.030) 1.25rem 1.31rem, transparent 1.31rem 2.62rem);
+  opacity: 0.62;
+}
+
+:root[data-theme="ink"] [data-surface="habit-create-sheet"] [data-slot="template-picker-icon"],
+:root[data-theme="oled"] [data-surface="habit-create-sheet"] [data-slot="template-picker-icon"] {
+  position: relative;
+  z-index: 1;
+  background:
+    radial-gradient(circle at 36% 24%, hsl(var(--habit-role) / 0.30), transparent 54%),
+    linear-gradient(145deg, hsl(var(--card) / 0.86), hsl(var(--background) / 0.58));
+  border-color: hsl(var(--habit-role) / 0.46);
+  color: hsl(var(--habit-role));
+  box-shadow:
+    inset 0 1px 0 hsl(var(--foreground) / 0.13),
+    0 10px 24px -18px hsl(var(--habit-role) / 0.74);
+}
+
+:root[data-theme="ink"] [data-surface="habit-create-sheet"] [data-slot="template-picker-label"],
+:root[data-theme="oled"] [data-surface="habit-create-sheet"] [data-slot="template-picker-label"] {
+  position: relative;
+  z-index: 1;
+  text-shadow: 0 1px 12px hsl(var(--background) / 0.54);
+}
+
+:root[data-theme="ink"] [data-surface="habit-create-sheet"] [data-card="ritual-custom-habit-action"],
+:root[data-theme="oled"] [data-surface="habit-create-sheet"] [data-card="ritual-custom-habit-action"] {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 12% 0%, hsl(var(--zf-role-space) / 0.26), transparent 34%),
+    linear-gradient(135deg, hsl(var(--card) / 0.84), hsl(var(--background) / 0.64));
+  border-color: hsl(var(--zf-role-space) / 0.42);
+  box-shadow:
+    inset 0 1px 0 hsl(var(--foreground) / 0.11),
+    0 14px 34px -28px hsl(var(--zf-role-space) / 0.70);
+  --habit-role: var(--zf-role-space);
+}
+
+:root[data-theme="ink"] [data-surface="habit-create-sheet"] [data-card="ritual-custom-habit-action"] > *,
+:root[data-theme="oled"] [data-surface="habit-create-sheet"] [data-card="ritual-custom-habit-action"] > * {
+  position: relative;
+  z-index: 1;
 }
 
 @layer theme {
@@ -157,7 +1132,7 @@
     background: radial-gradient(
       ellipse at center,
       transparent 45%,
-      oklch(0.88 0.05 65 / 0.12) 100%
+      hsl(var(--zf-trace) / 0.10) 100%
     );
   }
 

@@ -204,7 +204,7 @@ export function WeeklyReview({
           aria-expanded={isExpanded}
         >
           <span>{isExpanded ? t.showLess || "Show less" : t.viewDetails || "View details"}</span>
-          {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          {isExpanded ? <ChevronUp className="w-4 h-4" aria-hidden="true" /> : <ChevronDown className="w-4 h-4" aria-hidden="true" />}
         </button>
       </div>
 

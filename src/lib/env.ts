@@ -6,7 +6,22 @@
 // Vite built-ins
 export const IS_DEV = import.meta.env.DEV;
 export const MODE = import.meta.env.MODE;
-export const BASE_URL = import.meta.env.BASE_URL || "/";
+
+function normalizeBaseUrl(value: string): string {
+  if (!value || value === "/") return "/";
+  return value.endsWith("/") ? value : `${value}/`;
+}
+
+function inferClassicBaseUrl(baseUrl: string): string {
+  const normalized = normalizeBaseUrl(baseUrl);
+  return normalized.endsWith("/v2/") ? normalized.slice(0, -3) : normalized;
+}
+
+export const BASE_URL = normalizeBaseUrl(import.meta.env.BASE_URL || "/");
+export const FORCE_NAV_V2 = import.meta.env.VITE_FORCE_NAV_V2 === "true";
+export const CLASSIC_BASE_URL = normalizeBaseUrl(
+  (import.meta.env.VITE_CLASSIC_BASE_URL as string | undefined) || inferClassicBaseUrl(BASE_URL),
+);
 
 // Supabase
 export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;

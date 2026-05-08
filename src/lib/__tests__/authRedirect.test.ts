@@ -21,6 +21,7 @@ vi.mock('@/lib/env', () => ({
 
 import {
   getAuthRedirectUrl,
+  getCleanAuthCallbackUrl,
   isNativePlatform,
   handleAuthCallback,
   AUTH_COMPLETE_EVENT,
@@ -51,6 +52,7 @@ const createMockSupabase = (overrides?: any) => ({
 beforeEach(() => {
   mockIsNative = false;
   vi.clearAllMocks();
+  window.history.pushState({}, '', '/');
   // Clear any pending auth URL from previous tests
   getPendingAuthUrl();
 });
@@ -82,6 +84,25 @@ describe('getAuthRedirectUrl', () => {
     mockIsNative = false;
     const url = getAuthRedirectUrl();
     expect(url.endsWith('/')).toBe(true);
+  });
+
+  it('preserves V2 phone route for web OAuth redirect', () => {
+    mockIsNative = false;
+    window.history.pushState({}, '', '/orb?nav=v2&navLayout=phone');
+
+    const url = getAuthRedirectUrl();
+
+    expect(url).toBe(`${window.location.origin}/orb?nav=v2&navLayout=phone`);
+  });
+});
+
+describe('getCleanAuthCallbackUrl', () => {
+  it('removes OAuth params while preserving V2 routing params', () => {
+    const cleanUrl = getCleanAuthCallbackUrl(
+      'https://example.com/people-first-app/orb?nav=v2&navLayout=phone&code=abc&state=xyz'
+    );
+
+    expect(cleanUrl).toBe('/people-first-app/orb?nav=v2&navLayout=phone');
   });
 });
 

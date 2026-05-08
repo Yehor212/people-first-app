@@ -9,10 +9,17 @@ import { writeEvent, getPersistentDeviceId } from "@/storage/eventSync";
 import { trackDeletedHabitId } from "@/storage/deletionTracker";
 import { isAbortError, isValidUUID } from "@/lib/validation";
 import { supabase, getCurrentUserId } from "@/lib/supabaseClient";
-import { Habit } from "@/types";
+import { ENTRY, type Habit, type LoopHabitType, type TargetType } from "@/types";
 import { offlineQueue } from "@/lib/offlineQueue";
 import { getHabitPlanState } from "@/lib/habitPlan";
-import { encodeHabitCompletionForCloud } from "./habitCompletionCodec";
+import { normalizeHabitSchedule } from "@/lib/habitScheduling";
+import { doesNumericalStoredValueMeetTarget } from "@/lib/habits";
+import {
+  encodeHabitCompletionForCloud,
+  getCloudHabitCompletionSemanticFieldsForSync,
+  getCloudHabitTypeForSync,
+  isHabitEntrySyncableToCloud,
+} from "./habitCompletionCodec";
 
 // ============================================
 // HABIT SYNC
@@ -44,8 +51,12 @@ export const syncHabit = async (habit: Habit): Promise<void> => {
     // Sync habit metadata (map new local model → old cloud schema)
     const freq = habit.frequency || { numerator: 1, denominator: 1 };
     const cloudFrequency = freq.denominator === 1 ? "daily" : "weekly";
-    const cloudType = habit.habitType === "numerical" ? "multiple" : "daily";
+    const cloudType = getCloudHabitTypeForSync({
+      habitType: habit.habitType,
+      targetType: habit.targetType,
+    });
     const planState = getHabitPlanState(habit);
+    const schedule = normalizeHabitSchedule(habit);
 
     const { error: habitError } = await supabase.from("habits").upsert(
       {
@@ -56,12 +67,12 @@ export const syncHabit = async (habit: Habit): Promise<void> => {
         color: typeof habit.color === "number" ? String(habit.color) : habit.color,
         type: cloudType,
         frequency: cloudFrequency,
-        custom_days: [],
+        custom_days: schedule.mode === "specificDays" ? schedule.dueDays || [] : [],
         requires_duration: Boolean(planState),
         target_duration: planState?.durationDays ?? null,
         start_date: planState?.startDate ?? null,
-        daily_target: habit.targetValue || 1,
-        target_count: habit.targetValue || null,
+        daily_target: habit.targetValue ?? 1,
+        target_count: habit.targetValue ?? null,
         template_id: habit.templateId || null,
       },
       { onConflict: "id" }
@@ -71,15 +82,26 @@ export const syncHabit = async (habit: Habit): Promise<void> => {
 
     // Sync entries as completions (map entries → habit_completions rows)
     const entries = habit.entries || {};
-    const completedDates = Object.entries(entries)
-      .filter(([, e]) => e.value === 2 || (habit.habitType === "numerical" && e.value > 0))
+    const syncableDates = Object.entries(entries)
+      .filter(([, e]) =>
+        isHabitEntrySyncableToCloud({
+          habitType: habit.habitType,
+          targetType: habit.targetType,
+          entryValue: e.value,
+        })
+      )
       .map(([date]) => date);
 
-    if (completedDates.length > 0) {
-      const completions = completedDates.map((date) => {
+    if (syncableDates.length > 0) {
+      const completions = syncableDates.map((date) => {
+        const entryValue = entries[date]?.value ?? 0;
+        const isComplete =
+          habit.habitType === "numerical"
+            ? doesNumericalStoredValueMeetTarget(habit, entryValue)
+            : entryValue === ENTRY.YES_MANUAL;
         const { count, duration } = encodeHabitCompletionForCloud({
           habitType: habit.habitType,
-          entryValue: entries[date]?.value || 0,
+          entryValue,
         });
         return {
           user_id: userId,
@@ -87,6 +109,12 @@ export const syncHabit = async (habit: Habit): Promise<void> => {
           date,
           count,
           duration,
+          ...getCloudHabitCompletionSemanticFieldsForSync({
+            habitType: habit.habitType,
+            targetType: habit.targetType,
+            entryValue,
+            isComplete,
+          }),
         };
       });
 
@@ -217,7 +245,12 @@ export const syncHabitCompletion = async (
   date: string,
   completed: boolean,
   count?: number,
-  duration?: number
+  duration?: number,
+  options?: {
+    habitType?: LoopHabitType;
+    targetType?: TargetType;
+    entryValue?: number;
+  }
 ): Promise<void> => {
   const userId = await getCurrentUserId();
   if (!supabase || !userId) return;
@@ -236,20 +269,52 @@ export const syncHabitCompletion = async (
       completed,
       count,
       duration,
+      habitType: options?.habitType,
+      targetType: options?.targetType,
+      entryValue: options?.entryValue,
     });
     logger.log("[Sync] Habit completion queued for offline:", habitId, date);
     return;
   }
 
   try {
-    if (completed) {
+    const habitType: LoopHabitType =
+      options?.habitType ?? (typeof duration === "number" ? "numerical" : "boolean");
+    const entryValue =
+      options?.entryValue ??
+      (typeof duration === "number"
+        ? duration
+        : habitType === "boolean" && completed
+          ? ENTRY.YES_MANUAL
+          : typeof count === "number"
+            ? count * 1000
+            : null);
+    const shouldPersist =
+      completed ||
+      isHabitEntrySyncableToCloud({
+        habitType,
+        targetType: options?.targetType,
+        entryValue,
+      });
+
+    if (shouldPersist) {
+      const { count: encodedCount, duration: encodedDuration } = encodeHabitCompletionForCloud({
+        habitType,
+        entryValue: entryValue ?? 0,
+      });
       const { error } = await supabase.from("habit_completions").upsert(
         {
           user_id: userId,
           habit_id: habitId,
           date,
-          count: count ?? 1,
-          duration: duration ?? null,
+          count: habitType === "numerical" ? encodedCount : (count ?? encodedCount),
+          duration: habitType === "numerical" ? encodedDuration : (duration ?? encodedDuration),
+          ...getCloudHabitCompletionSemanticFieldsForSync({
+            habitType,
+            targetType: options?.targetType,
+            entryValue,
+            isComplete: completed,
+          }),
         },
         { onConflict: "habit_id,date" }
       );
@@ -271,10 +336,8 @@ export const syncHabitCompletion = async (
         writeEvent(
           "habit_completion",
           `${habitId}_${date}`,
-          completed ? "upsert" : "delete",
-          completed
-            ? ({ habitId, date, count, duration })
-            : null,
+          shouldPersist ? "upsert" : "delete",
+          shouldPersist ? { habitId, date, count, duration, entryValue, habitType } : null,
           did
         )
       )

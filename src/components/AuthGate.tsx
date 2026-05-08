@@ -4,7 +4,7 @@ import { useAppStore, useUserDataStore } from "@/stores";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { logger } from "@/lib/logger";
 import { safeLocalStorageSet } from "@/lib/safeJson";
-import { SplashScreen } from "@/components/SplashScreen";
+import { SplashScreen, type SplashThemePreference } from "@/components/SplashScreen";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { AuthScreen } from "@/components/AuthScreen";
 import { WelcomeTutorial } from "@/components/WelcomeTutorial";
@@ -14,7 +14,14 @@ import { NotificationPermission } from "@/components/NotificationPermission";
 
 interface AuthGateProps {
   isLoading: boolean;
+  splashTheme?: SplashThemePreference;
   children: ReactNode;
+}
+
+const LOCAL_DEV_BYPASS_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
+
+export function isLocalDevBypassHost(hostname: string): boolean {
+  return LOCAL_DEV_BYPASS_HOSTS.has(hostname);
 }
 
 /**
@@ -24,7 +31,7 @@ interface AuthGateProps {
  *
  * Reads all gate state from Zustand stores directly.
  */
-export function AuthGate({ isLoading, children }: AuthGateProps) {
+export function AuthGate({ isLoading, splashTheme, children }: AuthGateProps) {
   const { t } = useLanguage();
   const searchParams =
     typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
@@ -109,8 +116,11 @@ export function AuthGate({ isLoading, children }: AuthGateProps) {
     setNotificationPermissionChecked(true);
   };
 
-  // ── DEV BYPASS: ?dev=true skips all gates (development only) ──
-  const isDevBypass = import.meta.env.DEV && searchParams?.get("dev") === "true";
+  // ── LOCAL DEV BYPASS: ?dev=true skips all gates on Vite dev and localhost preview only ──
+  const isLocalPreviewBypass =
+    typeof window !== "undefined" && isLocalDevBypassHost(window.location.hostname);
+  const isDevBypass =
+    searchParams?.get("dev") === "true" && (import.meta.env.DEV || isLocalPreviewBypass);
   if (isDevBypass) {
     return <>{children}</>;
   }
@@ -122,6 +132,7 @@ export function AuthGate({ isLoading, children }: AuthGateProps) {
       <SplashScreen
         loadingFadeOut={loadingFadeOut}
         subtitle={t.initializingApp || "Preparing your zen space..."}
+        theme={splashTheme}
       />
     );
   }
@@ -144,6 +155,17 @@ export function AuthGate({ isLoading, children }: AuthGateProps) {
   }
 
   if (isLoading) {
+    if (splashTheme) {
+      return (
+        <SplashScreen
+          loadingFadeOut={false}
+          subtitle={t.initializingApp || "Preparing your zen space..."}
+          theme={splashTheme}
+          instant
+        />
+      );
+    }
+
     return (
       <div className="flex items-center justify-center min-h-screen">
         <PremiumLoader size="lg" />

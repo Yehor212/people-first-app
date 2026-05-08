@@ -5,8 +5,8 @@
  *   r(θ) = (|cos(mθ/4)|^n2 + |sin(mθ/4)|^n3)^(-1/n1)
  *
  * Shape morphing driven by valence (-1 → +1):
- *   -1.0 → 8-pointed chaotic urchin  (asymmetric spikes — anguish, chaos)
- *   -0.5 → 6-pointed tense crystal   (slight asymmetry — anxiety, unease)
+ *   -1.0 → compact pressure lens      (heavy but soft distress)
+ *   -0.5 → 7-fold soft wave           (uneasy pressure)
  *    0.0 → smooth centered sphere     (perfect symmetry — neutral, calm)
  *   +0.5 → gentle 5-fold bloom        (soft undulation — contentment, warmth)
  *   +1.0 → radiant 5-petal blossom    (rounded petals — joy, bliss)
@@ -214,8 +214,8 @@ interface ShapeParams {
  *   Descending m from -1→+1: many chaotic spikes → few broad petals
  */
 const SHAPE_PRESETS: { valence: number; p: ShapeParams }[] = [
-  { valence: -1.0, p: { m: 7, n1: 1.2, n2: 1.25, n3: 1.25 } }, // 7 tight scallops ~22% depth (was m=8 → smooth m=7 transition)
-  { valence: -0.667, p: { m: 7, n1: 1.4, n2: 1.35, n3: 1.35 } }, // 7 soft waves ~14% depth
+  { valence: -1.0, p: { m: 3, n1: 0.9, n2: 1.75, n3: 1.75 } }, // compact pressure lens, visibly distinct but still soft
+  { valence: -0.667, p: { m: 7, n1: 1.65, n2: 1.42, n3: 1.42 } }, // 7 soft uneasy waves, calmer than the low endpoint
   { valence: -0.333, p: { m: 6, n1: 1.8, n2: 1.5, n3: 1.5 } }, // 6 gentle undulation ~8% depth
   { valence: 0.0, p: { m: 6, n1: 2.0, n2: 2.0, n3: 2.0 } }, // perfect circle (neutral calm)
   { valence: 0.333, p: { m: 5, n1: 1.8, n2: 1.5, n3: 1.5 } }, // 5 gentle undulation ~8% depth
@@ -269,6 +269,14 @@ function hsla(h: number, s: number, l: number, a: number): string {
 function smoothstep(edge0: number, edge1: number, x: number): number {
   const t = Math.max(0, Math.min(1, (x - edge0) / (edge1 - edge0)));
   return t * t * (3 - 2 * t);
+}
+
+function negativePressure(valence: number): number {
+  return 1 - smoothstep(-1, -0.667, Math.max(-1, Math.min(1, valence)));
+}
+
+function presenceScaleForValence(valence: number): number {
+  return 1 - negativePressure(valence) * 0.12;
 }
 
 /**
@@ -1430,8 +1438,8 @@ export function drawOrbScene(
   const noiseSpeed = mapRange(valence, -1, 1, 0.85, 0.2);
   const rotSpeed = mapRange(valence, -1, 1, 0.055, 0.015);
 
-  // Fixed size — Apple: all shapes same radius regardless of valence
-  const baseRadius = size * 0.25 * dpr;
+  // Subtle presence scale: lowest state contracts inward instead of adding harsh effects.
+  const baseRadius = size * 0.25 * dpr * presenceScaleForValence(valence);
 
   // Living hue shimmer — Apple Quality: ±3° organic but stable color
   const hueShimmer = noise2d(time * 0.12, 300) * 3; // ±3° hue drift

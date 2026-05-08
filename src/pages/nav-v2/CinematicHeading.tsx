@@ -39,6 +39,31 @@ interface CinematicHeadingProps {
    *  ref here because parent OrbPage needs focus mgmt via its own ref. */
 }
 
+interface AnimatedToken {
+  kind: "space" | "word";
+  text: string;
+  startIndex: number;
+}
+
+function tokenizeForAnimation(
+  text: string,
+  initialIndex = 0,
+): AnimatedToken[] {
+  const parts = text.match(/\S+|\s+/g) ?? [];
+  let nextIndex = initialIndex;
+
+  return parts.map((part) => {
+    const token: AnimatedToken = {
+      kind: /\s+/.test(part) ? "space" : "word",
+      text: part,
+      startIndex: nextIndex,
+    };
+
+    nextIndex += Array.from(part).length;
+    return token;
+  });
+}
+
 const charVariants = {
   hidden: { opacity: 0, y: 6 },
   visible: (i: number) => ({
@@ -76,10 +101,14 @@ export const CinematicHeading = memo(function CinematicHeading({
   const prefersReduced = useReducedMotion();
   const animated = shouldAnimate && !prefersReduced;
 
-  // Split into character arrays once — stable across re-renders.
-  const leadChars = useMemo(() => Array.from(leadText), [leadText]);
-  const emphasisChars = useMemo(() => Array.from(emphasis), [emphasis]);
-  const leadCharsCount = leadChars.length;
+  // Split once so word-level wrappers can preserve natural line breaks while
+  // each character still animates independently.
+  const leadCharCount = useMemo(() => Array.from(leadText).length, [leadText]);
+  const leadTokens = useMemo(() => tokenizeForAnimation(leadText), [leadText]);
+  const emphasisTokens = useMemo(
+    () => tokenizeForAnimation(emphasis, leadCharCount),
+    [emphasis, leadCharCount],
+  );
 
   // Full aria text — screen readers get clean sentence, not char-by-char.
   const ariaLabel = `${leadText}${emphasis}`;
@@ -113,32 +142,64 @@ export const CinematicHeading = memo(function CinematicHeading({
       data-animated="true"
     >
       <span aria-hidden="true">
-        {leadChars.map((ch, i) => (
-          <motion.span
-            key={`lead-${i}`}
-            custom={i}
-            variants={charVariants}
-            initial="hidden"
-            animate="visible"
-            className="cinematic-heading__char"
-          >
-            {ch}
-          </motion.span>
-        ))}
+        {leadTokens.map((token, tokenIndex) =>
+          token.kind === "space" ? (
+            <span
+              key={`lead-space-${tokenIndex}`}
+              className="cinematic-heading__space"
+            >
+              {token.text}
+            </span>
+          ) : (
+            <span
+              key={`lead-word-${tokenIndex}`}
+              className="cinematic-heading__word"
+            >
+              {Array.from(token.text).map((ch, i) => (
+                <motion.span
+                  key={`lead-${tokenIndex}-${i}`}
+                  custom={token.startIndex + i}
+                  variants={charVariants}
+                  initial="hidden"
+                  animate="visible"
+                  className="cinematic-heading__char"
+                >
+                  {ch}
+                </motion.span>
+              ))}
+            </span>
+          ),
+        )}
       </span>
       <span aria-hidden="true" className="italic font-light">
-        {emphasisChars.map((ch, i) => (
-          <motion.span
-            key={`emph-${i}`}
-            custom={leadCharsCount + i}
-            variants={emphasisVariants}
-            initial="hidden"
-            animate="visible"
-            className="cinematic-heading__char"
-          >
-            {ch}
-          </motion.span>
-        ))}
+        {emphasisTokens.map((token, tokenIndex) =>
+          token.kind === "space" ? (
+            <span
+              key={`emph-space-${tokenIndex}`}
+              className="cinematic-heading__space"
+            >
+              {token.text}
+            </span>
+          ) : (
+            <span
+              key={`emph-word-${tokenIndex}`}
+              className="cinematic-heading__word"
+            >
+              {Array.from(token.text).map((ch, i) => (
+                <motion.span
+                  key={`emph-${tokenIndex}-${i}`}
+                  custom={token.startIndex + i}
+                  variants={emphasisVariants}
+                  initial="hidden"
+                  animate="visible"
+                  className="cinematic-heading__char"
+                >
+                  {ch}
+                </motion.span>
+              ))}
+            </span>
+          ),
+        )}
       </span>
     </h1>
   );

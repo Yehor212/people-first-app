@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, beforeEach, vi } from "vitest";
 import { buildV2PortalHref, V2PreviewPortal } from "../PreviewPortal";
 
 vi.mock("@/contexts/LanguageContext", () => ({
@@ -37,11 +37,11 @@ describe("V2PreviewPortal", () => {
   it("builds V2 preview links from an internal allowlist only", () => {
     expect(
       buildV2PortalHref("habits", {
-        baseUrl: "/people-first-app/v2/",
+        baseUrl: "/people-first-app/",
         devPreview: true,
         phoneLayout: true,
       }),
-    ).toBe("/people-first-app/v2/habits?nav=v2&navLayout=phone&dev=true");
+    ).toBe("/people-first-app/habits?nav=v2&navLayout=phone&dev=true");
   });
 
   it("renders one primary portal and three direct V2 entry cards", () => {

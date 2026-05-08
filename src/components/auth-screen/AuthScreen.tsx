@@ -140,7 +140,7 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
               disabled={session.isLoading || !supabase}
               className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-2xl motion-safe:transition-all zen-shadow-soft text-lg flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Phone className="w-5 h-5" />
+              <Phone className="w-5 h-5" aria-hidden="true" />
               {t.continueWithPhone || "Continue with Phone"}
             </button>
           )}
@@ -183,7 +183,7 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
                 className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-2xl motion-safe:transition-all zen-shadow-soft text-lg flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {session.loadingProvider === "phone" ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
                 ) : (
                   t.authSendCode || "Send code"
                 )}
@@ -233,7 +233,7 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
                 className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-2xl motion-safe:transition-all zen-shadow-soft text-lg flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {session.loadingProvider === "phone" ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
                 ) : (
                   t.authVerify || "Verify"
                 )}
@@ -291,7 +291,7 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
             href="https://yehor212.github.io/people-first-app/privacy.html"
             target="_blank"
             rel="noopener noreferrer"
-            className="underline hover:text-foreground motion-safe:transition-colors"
+            className="inline-flex min-h-[44px] items-center underline hover:text-foreground motion-safe:transition-colors"
           >
             {t.privacyPolicy}
           </a>{" "}
@@ -300,7 +300,7 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
             href="https://yehor212.github.io/people-first-app/terms.html"
             target="_blank"
             rel="noopener noreferrer"
-            className="underline hover:text-foreground motion-safe:transition-colors"
+            className="inline-flex min-h-[44px] items-center underline hover:text-foreground motion-safe:transition-colors"
           >
             {t.termsOfService}
           </a>

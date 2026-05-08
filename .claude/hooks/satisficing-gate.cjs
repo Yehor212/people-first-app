@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /**
  * SATISFICING DETECTOR (Stop hook)
+ * Hook input: not required; validates .audit-checklist.json during audit sessions.
  *
  * During audit sessions, blocks the agent from stopping if the
  * checklist completion is below 80%. Prevents the "good enough"

@@ -278,7 +278,12 @@ describe("offlineQueueHandlers", () => {
         "2026-04-05",
         true,
         1,
-        undefined
+        undefined,
+        {
+          entryValue: undefined,
+          habitType: undefined,
+          targetType: undefined,
+        },
       );
     });
 

@@ -335,9 +335,7 @@ export function useAuthHandlers(session: Session, t: Record<string, string>) {
     const link = document.createElement("a");
     link.href = url;
     link.download = `zenflow-auth-debug-${Date.now()}.json`;
-    document.body.appendChild(link);
     link.click();
-    link.remove();
     URL.revokeObjectURL(url);
   };
 

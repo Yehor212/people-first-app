@@ -1,3 +1,7 @@
+---
+description: Modal and overlay standard for desktop centering, z-layers, backdrops, and fixed-position safety
+---
+
 # Modal Desktop Standard (MANDATORY)
 
 ALL modals, dialogs, panels, overlays MUST follow this pattern:

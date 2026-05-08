@@ -1,6 +1,8 @@
 # Ruflow+ Blueprint For ZenFlow
 
-Purpose: give this repo a Ruflow-like orchestration layer using Codex-native primitives, project-local skills, explicit memory loops, and verification gates, without adding risky runtime dependencies to the product app.
+Purpose: give this repo a Ruflow-like orchestration layer and head-agent teamlead protocol using Codex-native primitives, project-local skills, explicit memory loops, and verification gates, without adding risky runtime dependencies to the product app.
+
+This is the tracked source of truth for the main agent's teamlead behavior. Local `.Codex/agents/` prompts and `.agents/skills/` files are generated working copies; keep them aligned through `tools/ruflow-plus/templates/**` and `npm run ai:ruflow-plus:check`.
 
 ## What This Tries To Emulate
 
@@ -64,6 +66,10 @@ What was missing at the repo level:
 - "Self-learning" is implemented as capture -> judge -> distill -> reuse.
 - No fake claim that Codex silently self-trains.
 
+5. Visible reasoning artifact, private chain-of-thought
+- Substantial work must produce a visible, evidence-backed pre-flight artifact.
+- Do not require or expose raw hidden chain-of-thought. The artifact must summarize decisions, evidence, risks, and verification in reviewable form.
+
 ## Ruflo Feature Mapping
 
 | Ruflo idea | Codex / repo-native equivalent | Decision |
@@ -85,6 +91,7 @@ Default operating mode:
 - max concurrent workers: 3 for medium work, 5 for large work
 - verification: mandatory before completion
 - memory writeback: mandatory for any bug, architectural decision, or reusable pattern
+- install recommendations: allowed only after checking current availability, concrete benefit, risk, and whether the tool is required or optional
 
 Recommended role set:
 - `coordinator`: owns scope, sequencing, integration, and stop/go decisions
@@ -93,8 +100,28 @@ Recommended role set:
 - `reviewer`: checks regressions, missing tests, and rule violations
 - `memory-keeper`: distills reusable patterns and updates the learning log
 
+Coordinator responsibilities:
+- translate vague user requests into actual goal, success criteria, hidden requirements, affected platforms, affected domains, and out-of-scope boundaries
+- think beyond the literal request for ZenFlow-specific risks: Web/iOS/Android/Desktop parity, safe areas, Android back handling, i18n/RTL, offline-first behavior, Dexie/Zustand/Supabase sync, Firebase/Sentry, accessibility, motion comfort, performance, security, CI, and rollback
+- prevent over-orchestration: simple 1-3 file tasks stay solo unless evidence shows hidden risk
+- reject specialist output that lacks evidence, verification, platform/domain impact, unresolved-risk accounting, or a final `GO / STOP / ASK`
+
 Inheritance rule:
 - every specialist inherits the same pre-flight contract: evidence, failure modes, platform/domain impact scan, verification plan, and explicit `GO / STOP / ASK`
+- if UI, motion, layout, or styling is touched, every specialist also inherits the visual-audit matrix: hierarchy, contrast/focus, target size, reflow, motion/transparency, state coverage, and proof expectations
+
+## Visible Pre-Flight Artifact
+
+Every substantial pass must create a visible `PRE-FLIGHT ARTIFACT` before implementation. It must contain:
+
+- implicit requirements: missing constraints, inferred needs, platform/design/security/test implications
+- systemic impact: files, stores, hooks, schemas, CI, global state, user flows, and rollback surface
+- failure modes: top two task-specific risks, root-cause hypothesis, prevention, and proof to collect
+- step plan: strict sequence with source evidence, verification method, and rollback path
+- evidence: repo file paths, command outputs, checklists, screenshots/traces for UI, or official links for external/current facts
+- verdict: `GO`, `STOP`, or `ASK`; no substantial implementation starts without `GO`
+
+Raw hidden chain-of-thought is not a deliverable. The artifact is the reviewable contract.
 
 ## Anti-Drift Contract
 
@@ -116,15 +143,28 @@ Use these defaults unless there is a strong reason not to:
 - If the task can touch product behavior, explicitly check Web, iOS, Android, Desktop, and CI relevance.
 - For large or stateful work, explicitly consider UI, state, storage, sync, auth, i18n, analytics, performance, accessibility, and security.
 
-5. Verify before claiming success
+5. Treat visual audit as a real layer, not taste
+- If UI is involved, read [docs/visual-aesthetic.md](</C:/project/people-first-app/docs/visual-aesthetic.md>) and inspect [scripts/check-visual-guards.ts](</C:/project/people-first-app/scripts/check-visual-guards.ts>).
+- Require explicit coverage for hierarchy, focus, contrast, touch targets, responsive reflow, reduced motion, blur/transparency fallbacks, and user-visible states.
+- Prefer screenshot, trace, or inspector evidence over opinion-only claims.
+
+6. Apply the modern practice matrix
+- Code: follow existing React 18, TypeScript, Vite, Tailwind, and shadcn/ui patterns; avoid broad rewrites; use structured APIs over string hacks.
+- Design/UI: no visual changes without proof; verify hierarchy, spacing, focus, touch targets, responsive reflow, dark/light, reduced motion, blur fallback, and loading/empty/error/offline states.
+- Animation: motion must communicate state, respect reduced-motion, and stay performant on mobile.
+- Security: run Snyk Code for new first-party JS/TS code when supported; fix introduced findings and rescan.
+- Performance: measure before adding complexity; memoization is optimization, not correctness.
+- Tooling: recommend installs only after checking current availability, concrete benefit, risk, and whether the tool is required or optional.
+
+7. Verify before claiming success
 - Prefer fresh command output or a precise checklist of what could not be run.
 - Missing evidence is a blocker, not a footnote.
 
-6. Gate every pass with a verdict
+8. Gate every pass with a verdict
 - No substantial implementation starts until the pass reaches `GO`.
 - `STOP` and `ASK` are valid outcomes and should be used early when evidence is weak.
 
-7. Distill after success or failure
+9. Distill after success or failure
 - Every meaningful run should update memory with what worked, what failed, and what should route differently next time.
 
 ## Learning Loop

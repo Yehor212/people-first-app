@@ -27,7 +27,11 @@ describe("DayCosmicBackground", () => {
     expect(screen.getByTestId("day-cosmic-base")).toBeInTheDocument();
     expect(screen.getByTestId("day-cosmic-bokeh")).toBeInTheDocument();
     expect(screen.getByTestId("day-cosmic-atmosphere")).toBeInTheDocument();
+    expect(screen.getByTestId("day-cosmic-horizon-glow")).toBeInTheDocument();
+    expect(screen.getByTestId("day-cosmic-light-curtain")).toBeInTheDocument();
+    expect(screen.getByTestId("day-cosmic-sun-threads")).toBeInTheDocument();
     expect(screen.getByTestId("day-cosmic-god-rays")).toBeInTheDocument();
+    expect(screen.getByTestId("day-cosmic-glass-depth")).toBeInTheDocument();
     expect(screen.getByTestId("day-cosmic-motes")).toBeInTheDocument();
     expect(screen.getByTestId("day-cosmic-paper-grain")).toBeInTheDocument();
     expect(screen.getByTestId("day-cosmic-vignette")).toBeInTheDocument();
@@ -37,6 +41,12 @@ describe("DayCosmicBackground", () => {
     const { container } = render(<DayCosmicBackground />);
     const motes = container.querySelectorAll(".day-cosmic__mote");
     expect(motes.length).toBe(35);
+  });
+
+  it("renders exactly 18 sun threads for the daylight stage", () => {
+    const { container } = render(<DayCosmicBackground />);
+    const threads = container.querySelectorAll(".day-cosmic__sun-thread");
+    expect(threads.length).toBe(18);
   });
 
   it("sets data-daymode on <html> based on current hour", () => {
@@ -63,14 +73,18 @@ describe("DayCosmicBackground", () => {
     mockShouldAnimate.mockReturnValue(true);
     render(<DayCosmicBackground />);
     const motes = screen.getByTestId("day-cosmic-motes");
+    const threads = screen.getByTestId("day-cosmic-sun-threads");
     expect(motes.getAttribute("data-animated")).toBe("true");
+    expect(threads.getAttribute("data-animated")).toBe("true");
   });
 
   it("mote animation gates on useShouldAnimate (false)", () => {
     mockShouldAnimate.mockReturnValue(false);
     render(<DayCosmicBackground />);
     const motes = screen.getByTestId("day-cosmic-motes");
+    const threads = screen.getByTestId("day-cosmic-sun-threads");
     expect(motes.getAttribute("data-animated")).toBe("false");
+    expect(threads.getAttribute("data-animated")).toBe("false");
   });
 
   it("root container is aria-hidden and pointer-events-none", () => {

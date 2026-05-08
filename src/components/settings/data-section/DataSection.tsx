@@ -111,7 +111,7 @@ export function DataSection({
       >
         <AccordionTrigger className="px-5 py-4 hover:no-underline hover:bg-muted/30 data-[state=open]:bg-primary/5">
           <div className="flex items-center gap-3">
-            <div className="p-2 zen-gradient-sunset rounded-xl shadow-[0_4px_20px_-4px_hsl(var(--accent)/0.25)]">
+            <div className="p-2 zen-gradient-memory rounded-xl shadow-[0_4px_20px_-4px_hsl(var(--accent)/0.25)]">
               <Download className="w-5 h-5 text-primary-foreground" />
             </div>
             <span className="text-lg font-semibold text-foreground">
@@ -140,10 +140,9 @@ export function DataSection({
                 {exp.isExporting ? (
                   <Loader2
                     className="w-5 h-5 motion-safe:animate-spin"
-                    aria-label={t.exporting || "Exporting..."}
-                  />
+                    aria-label={t.exporting || "Exporting..."} aria-hidden="true" />
                 ) : (
-                  <Download className="w-5 h-5" />
+                  <Download className="w-5 h-5" aria-hidden="true" />
                 )}
                 <span>
                   {exp.isExporting
@@ -163,10 +162,9 @@ export function DataSection({
                   {exp.isExportingCSV ? (
                     <Loader2
                       className="w-4 h-4 motion-safe:animate-spin"
-                      aria-label={t.exporting || "Exporting..."}
-                    />
+                      aria-label={t.exporting || "Exporting..."} aria-hidden="true" />
                   ) : (
-                    <FileSpreadsheet className="w-4 h-4" />
+                    <FileSpreadsheet className="w-4 h-4" aria-hidden="true" />
                   )}
                   <span>{t.exportCSV || "CSV"}</span>
                 </button>
@@ -179,10 +177,9 @@ export function DataSection({
                   {exp.isExportingPDF ? (
                     <Loader2
                       className="w-4 h-4 motion-safe:animate-spin"
-                      aria-label={t.exporting || "Exporting..."}
-                    />
+                      aria-label={t.exporting || "Exporting..."} aria-hidden="true" />
                   ) : (
-                    <FileText className="w-4 h-4" />
+                    <FileText className="w-4 h-4" aria-hidden="true" />
                   )}
                   <span>{t.exportPDF || "PDF Report"}</span>
                 </button>
@@ -253,10 +250,9 @@ export function DataSection({
                   {imp.isImporting ? (
                     <Loader2
                       className="w-5 h-5 motion-safe:animate-spin"
-                      aria-label={t.importing || "Importing..."}
-                    />
+                      aria-label={t.importing || "Importing..."} aria-hidden="true" />
                   ) : (
-                    <Upload className="w-5 h-5" />
+                    <Upload className="w-5 h-5" aria-hidden="true" />
                   )}
                   <span>
                     {imp.isImporting
@@ -286,7 +282,7 @@ export function DataSection({
                   aria-label={t.resetAllData}
                   className="w-full py-3 bg-destructive/10 text-destructive rounded-xl font-medium hover:bg-destructive/20 motion-safe:transition-colors flex items-center justify-center gap-2"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 className="w-4 h-4" aria-hidden="true" />
                   <span>{t.resetAllData}</span>
                 </button>
               ) : (

@@ -181,8 +181,7 @@ export function AccountSection({
               {sync.isSyncing && (
                 <Loader2
                   className="w-4 h-4 motion-safe:animate-spin"
-                  aria-label={t.syncing || "Syncing..."}
-                />
+                  aria-label={t.syncing || "Syncing..."} aria-hidden="true" />
               )}
               {sync.isSyncing
                 ? t.syncing || "Syncing..."
@@ -198,8 +197,7 @@ export function AccountSection({
               {auth.isSigningOut && (
                 <Loader2
                   className="w-4 h-4 motion-safe:animate-spin"
-                  aria-label={t.signingOut || "Signing out..."}
-                />
+                  aria-label={t.signingOut || "Signing out..."} aria-hidden="true" />
               )}
               {auth.isSigningOut
                 ? t.signingOut || "Signing out..."
@@ -271,8 +269,7 @@ export function AccountSection({
                     {del.isDeletingAccount && (
                       <Loader2
                         className="w-4 h-4 motion-safe:animate-spin"
-                        aria-label={t.deleting || "Deleting..."}
-                      />
+                        aria-label={t.deleting || "Deleting..."} aria-hidden="true" />
                     )}
                     {del.isDeletingAccount
                       ? t.deleting || "Deleting..."
@@ -313,8 +310,7 @@ export function AccountSection({
               {auth.isSigningIn && (
                 <Loader2
                   className="w-4 h-4 motion-safe:animate-spin"
-                  aria-label={t.signingIn || "Signing in..."}
-                />
+                  aria-label={t.signingIn || "Signing in..."} aria-hidden="true" />
               )}
               {t.continueWithGoogle || "Continue with Google"}
             </button>

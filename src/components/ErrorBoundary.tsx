@@ -14,6 +14,74 @@ const lazyCaptureError = (error: Error, context?: Record<string, unknown>) => {
 import { createFocusTrap, announceError } from "@/lib/a11y";
 import { logger } from "@/lib/logger";
 import { isChunkLoadError } from "@/lib/chunkErrorDetection";
+import type { Language } from "@/i18n/types";
+import { RecoveryOrbit } from "@/components/RecoveryOrbit";
+
+const ROOT_ERROR_LANGUAGES: Language[] = ["en", "uk", "es", "de", "fr", "ja", "ar", "he"];
+
+const ROOT_ERROR_COPY: Record<Language, {
+  title: string;
+  body: string;
+  safeTitle?: string;
+  safeBody?: string;
+  actionHint?: string;
+  reloadLabel: string;
+}> = {
+  en: {
+    title: "Something went wrong",
+    body: "The app failed to start. Please reload.",
+    safeTitle: "Your data is safe",
+    safeBody: "Recovery mode paused only this screen. Your recent error was saved locally.",
+    actionHint: "Reload usually reconnects the app in a few seconds.",
+    reloadLabel: "Reload App",
+  },
+  uk: {
+    title: "Щось пішло не так",
+    body: "Не вдалося запустити застосунок. Перезавантажте сторінку.",
+    reloadLabel: "Перезавантажити",
+  },
+  es: {
+    title: "Algo salió mal",
+    body: "La app no pudo iniciar. Recarga la página.",
+    reloadLabel: "Recargar app",
+  },
+  de: {
+    title: "Etwas ist schiefgelaufen",
+    body: "Die App konnte nicht gestartet werden. Bitte neu laden.",
+    reloadLabel: "App neu laden",
+  },
+  fr: {
+    title: "Une erreur est survenue",
+    body: "L'application n'a pas pu démarrer. Veuillez recharger.",
+    reloadLabel: "Recharger l'app",
+  },
+  ja: {
+    title: "問題が発生しました",
+    body: "アプリを起動できませんでした。再読み込みしてください。",
+    reloadLabel: "アプリを再読み込み",
+  },
+  ar: {
+    title: "حدث خطأ ما",
+    body: "تعذر بدء التطبيق. يرجى إعادة التحميل.",
+    reloadLabel: "إعادة تحميل التطبيق",
+  },
+  he: {
+    title: "משהו השתבש",
+    body: "האפליקציה לא הצליחה להתחיל. נא לטעון מחדש.",
+    reloadLabel: "טעינת האפליקציה מחדש",
+  },
+};
+
+function getRootErrorLanguage(): Language {
+  const stored = safeLocalStorageGet<Language>(SK.LANGUAGE, "en");
+  if (ROOT_ERROR_LANGUAGES.includes(stored)) return stored;
+
+  const browserLanguage =
+    typeof navigator !== "undefined" ? navigator.language.split("-")[0] : "en";
+  return ROOT_ERROR_LANGUAGES.includes(browserLanguage as Language)
+    ? (browserLanguage as Language)
+    : "en";
+}
 
 const logError = (payload: Record<string, unknown>) => {
   try {
@@ -33,52 +101,14 @@ const logError = (payload: Record<string, unknown>) => {
   }
 };
 
-const exportDebugReport = (error?: Error | null) => {
-  const metadata = getAppMetadata();
-
-  const report = {
-    version: APP_VERSION,
-    dataSchemaVersion: metadata?.dataSchemaVersion || "unknown",
-    updateCount: metadata?.updateCount || 0,
-    lastUpdateDate: metadata?.lastUpdateDate || "unknown",
-    timestamp: new Date().toISOString(),
-    location: (window.location.origin + window.location.pathname).replace(/[<>"'&]/g, ""),
-    userAgent: navigator.userAgent.slice(0, 200),
-    error: error
-      ? {
-          message: error.message,
-          stack: error.stack,
-          name: error.name,
-        }
-      : null,
-    // Add browser storage info
-    storageInfo: {
-      localStorageAvailable: typeof localStorage !== "undefined",
-      indexedDBAvailable: typeof indexedDB !== "undefined",
-    },
-    // Add last 10 errors from log
-    recentErrors: safeLocalStorageGet<Record<string, unknown>[]>(SK.ERROR_LOG, []),
-  };
-
-  const blob = new Blob([JSON.stringify(report, null, 2)], {
-    type: "application/json",
-  });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `zenflow-debug-report-${Date.now()}.json`;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
-};
-
 interface ErrorBoundaryBaseProps {
-  onExport: (error: Error | null) => void;
   onReload: () => void;
   title: string;
   body: string;
-  exportLabel: string;
+  kicker?: string;
+  safeTitle: string;
+  safeBody: string;
+  actionHint: string;
   reloadLabel: string;
   children: React.ReactNode;
 }
@@ -86,6 +116,26 @@ interface ErrorBoundaryBaseProps {
 interface ErrorBoundaryBaseState {
   hasError: boolean;
   error: Error | null;
+}
+
+function RecoveryGlyph() {
+  return <RecoveryOrbit />;
+}
+
+function RecoveryTrustNote({ title, body }: { title: string; body: string }) {
+  return (
+    <div className="mx-auto flex w-full max-w-sm items-start gap-3 rounded-3xl border border-[hsl(var(--foreground)/0.10)] bg-[linear-gradient(135deg,hsl(var(--zf-surface-2)/0.76),hsl(var(--zf-night-1)/0.56))] p-3 text-left shadow-[inset_0_1px_0_hsl(var(--foreground)/0.08)]">
+      <span className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-[hsl(var(--zf-role-body)/0.32)] bg-[hsl(var(--zf-role-body)/0.13)]">
+        <span className="h-3 w-3 rounded-full bg-[hsl(var(--zf-role-body))] shadow-[0_0_22px_hsl(var(--zf-role-body)/0.72)]" />
+      </span>
+      <span className="min-w-0">
+        <span className="block text-sm font-semibold text-[hsl(var(--zf-text-strong))]">{title}</span>
+        <span className="mt-0.5 block text-xs leading-relaxed text-[hsl(var(--zf-text-soft))]">
+          {body}
+        </span>
+      </span>
+    </div>
+  );
 }
 
 class ErrorBoundaryBase extends React.Component<ErrorBoundaryBaseProps, ErrorBoundaryBaseState> {
@@ -128,39 +178,39 @@ class ErrorBoundaryBase extends React.Component<ErrorBoundaryBaseProps, ErrorBou
     // Desktop: inline error panel instead of full-screen takeover
     const tier = document.documentElement.dataset.deviceTier;
     const isDesktop = tier === "laptop" || tier === "desktop";
+    const kicker = this.props.kicker ?? "ZenFlow recovery mode";
+    const safeTitle = this.props.safeTitle || "Your data is safe";
+    const safeBody =
+      this.props.safeBody ||
+      "Recovery mode paused only this screen. Your recent error was saved locally.";
+    const actionHint =
+      this.props.actionHint || "Reload usually reconnects the app in a few seconds.";
 
     if (isDesktop) {
       return (
-        <div className="p-6 m-4 border border-destructive/20 rounded-2xl bg-card">
-          <div className="flex flex-col items-center gap-3 text-center max-w-sm mx-auto">
-            <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center">
-              <svg
-                className="w-6 h-6 text-destructive"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                />
-              </svg>
-            </div>
-            <h2 className="text-base font-semibold text-foreground">{this.props.title}</h2>
-            <p className="text-sm text-muted-foreground">{this.props.body}</p>
-            <div className="flex gap-2">
-              <button
-                onClick={() => this.props.onExport(this.state.error)}
-                className="px-4 py-2 bg-secondary text-secondary-foreground rounded-xl text-sm font-medium hover:bg-muted motion-safe:transition-colors"
-              >
-                {this.props.exportLabel}
-              </button>
+        <div className="zf-recovery-shell m-4 rounded-[34px] border border-[hsl(var(--foreground)/0.12)] bg-[radial-gradient(circle_at_20%_0%,hsl(var(--zf-role-focus)/0.18),transparent_32%),linear-gradient(145deg,hsl(var(--zf-night-0)/0.98),hsl(var(--zf-surface-1)/0.92))] p-6 shadow-[0_30px_110px_-70px_hsl(var(--zf-role-focus)/0.86)]">
+          <div
+            className="mx-auto flex max-w-md flex-col items-center gap-4 text-center"
+            data-testid="error-boundary-card"
+          >
+            <RecoveryGlyph />
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[hsl(var(--zf-role-focus))]">
+              {kicker}
+            </p>
+            <h2 className="font-display text-2xl font-semibold text-[hsl(var(--zf-text-strong))]">
+              {this.props.title}
+            </h2>
+            <p className="max-w-sm text-sm leading-relaxed text-[hsl(var(--zf-text-soft))]">
+              {this.props.body}
+            </p>
+            <RecoveryTrustNote title={safeTitle} body={safeBody} />
+            <p className="max-w-sm text-xs font-medium leading-relaxed text-[hsl(var(--zf-text-muted))]">
+              {actionHint}
+            </p>
+            <div className="w-full max-w-sm">
               <button
                 onClick={this.props.onReload}
-                className="px-4 py-2 zen-gradient text-primary-foreground rounded-xl text-sm font-medium hover:opacity-90 motion-safe:transition-opacity"
+                className="zf-recovery-primary min-h-[48px] w-full rounded-2xl bg-[linear-gradient(135deg,hsl(var(--zf-role-body)),hsl(var(--zf-role-focus)))] px-4 py-2 text-sm font-semibold text-[hsl(var(--zf-night-0))] shadow-[0_18px_42px_-28px_hsl(var(--zf-role-focus)/0.90)] hover:opacity-90 motion-safe:transition-opacity"
               >
                 {this.props.reloadLabel}
               </button>
@@ -171,23 +221,36 @@ class ErrorBoundaryBase extends React.Component<ErrorBoundaryBaseProps, ErrorBou
     }
 
     return (
-      <div className="min-h-screen zen-gradient-hero flex items-center justify-center px-4 py-10">
-        <div className="w-full max-w-md bg-card rounded-3xl p-6 zen-shadow-card space-y-4 text-center">
-          <h2 className="text-2xl font-bold text-foreground">{this.props.title}</h2>
-          <p className="text-sm text-muted-foreground">{this.props.body}</p>
-          <div className="flex flex-col gap-3">
-            <button
-              onClick={() => this.props.onExport(this.state.error)}
-              className="w-full py-3 bg-secondary text-secondary-foreground rounded-xl font-semibold hover:bg-muted motion-safe:transition-colors"
-            >
-              {this.props.exportLabel}
-            </button>
-            <button
-              onClick={this.props.onReload}
-              className="w-full py-3 zen-gradient text-primary-foreground rounded-xl font-semibold hover:opacity-90 motion-safe:transition-opacity"
-            >
-              {this.props.reloadLabel}
-            </button>
+      <div className="zf-recovery-stage flex min-h-screen items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_18%_16%,hsl(var(--zf-role-focus)/0.18),transparent_34%),radial-gradient(circle_at_82%_8%,hsl(var(--zf-role-mind)/0.16),transparent_30%),linear-gradient(150deg,hsl(var(--zf-night-0)),hsl(var(--zf-night-1)))] px-4 py-10">
+        <div
+          className="zf-recovery-card relative w-full max-w-md overflow-hidden rounded-[34px] border border-[hsl(var(--foreground)/0.12)] bg-[linear-gradient(145deg,hsl(var(--zf-surface-1)/0.94),hsl(var(--zf-night-0)/0.96))] p-6 text-center shadow-[0_34px_100px_-70px_hsl(var(--zf-role-focus)/0.82)] before:pointer-events-none before:absolute before:inset-x-10 before:top-0 before:h-[3px] before:rounded-b-full before:bg-[linear-gradient(90deg,hsl(var(--zf-role-body)),hsl(var(--zf-role-focus)),hsl(var(--zf-role-mind)))]"
+          data-testid="error-boundary-card"
+        >
+          <div className="relative z-[1] space-y-4">
+            <div className="flex justify-center">
+              <RecoveryGlyph />
+            </div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[hsl(var(--zf-role-focus))]">
+              {kicker}
+            </p>
+            <h2 className="font-display text-2xl font-semibold text-[hsl(var(--zf-text-strong))]">
+              {this.props.title}
+            </h2>
+            <p className="text-sm leading-relaxed text-[hsl(var(--zf-text-soft))]">
+              {this.props.body}
+            </p>
+            <RecoveryTrustNote title={safeTitle} body={safeBody} />
+            <p className="mx-auto max-w-xs text-xs font-medium leading-relaxed text-[hsl(var(--zf-text-muted))]">
+              {actionHint}
+            </p>
+            <div>
+              <button
+                onClick={this.props.onReload}
+                className="zf-recovery-primary min-h-[48px] w-full rounded-2xl bg-[linear-gradient(135deg,hsl(var(--zf-role-body)),hsl(var(--zf-role-focus)))] py-3 font-semibold text-[hsl(var(--zf-night-0))] shadow-[0_18px_42px_-28px_hsl(var(--zf-role-focus)/0.90)] hover:opacity-90 motion-safe:transition-opacity"
+              >
+                {this.props.reloadLabel}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -201,9 +264,16 @@ export const ErrorBoundary: React.FC<{ children: React.ReactNode }> = ({ childre
     <ErrorBoundaryBase
       title={t?.errorBoundaryTitle ?? "Something went wrong"}
       body={t?.errorBoundaryBody ?? "An unexpected error occurred. Please reload the app."}
-      exportLabel={t?.errorBoundaryExport ?? "Export Debug Report"}
+      kicker={t?.errorBoundaryKicker ?? "ZenFlow recovery mode"}
+      safeTitle={t?.errorBoundarySafeTitle ?? "Your data is safe"}
+      safeBody={
+        t?.errorBoundarySafeBody ??
+        "Recovery mode paused only this screen. Your recent error was saved locally."
+      }
+      actionHint={
+        t?.errorBoundaryActionHint ?? "Reload usually reconnects the app in a few seconds."
+      }
       reloadLabel={t?.errorBoundaryReload ?? "Reload App"}
-      onExport={(error) => exportDebugReport(error)}
       onReload={() => window.location.reload()}
     >
       {children}
@@ -219,24 +289,32 @@ export const ErrorBoundary: React.FC<{ children: React.ReactNode }> = ({ childre
  * INSIDE those providers and uses `useLanguage()`. When a provider throws during
  * render, the inner boundary never mounts.
  *
- * Uses hardcoded English strings (no hook calls). Error telemetry still flows
- * to Sentry/Crashlytics via `componentDidCatch` in the shared base class.
+ * Uses a tiny synchronous translation map (no hook calls). Error telemetry still
+ * flows to Sentry/Crashlytics via `componentDidCatch` in the shared base class.
  * Inner `ErrorBoundary` remains in place for localized app-level errors.
  * Source: react.dev/reference/react/Component#componentdidcatch "error-boundaries
  * should be positioned above the providers they protect".
  */
-export const RootErrorBoundary: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <ErrorBoundaryBase
-    title="Something went wrong"
-    body="The app failed to start. Please reload."
-    exportLabel="Export Debug Report"
-    reloadLabel="Reload App"
-    onExport={(error) => exportDebugReport(error)}
-    onReload={() => window.location.reload()}
-  >
-    {children}
-  </ErrorBoundaryBase>
-);
+export const RootErrorBoundary: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const copy = ROOT_ERROR_COPY[getRootErrorLanguage()];
+
+  return (
+    <ErrorBoundaryBase
+      title={copy.title}
+      body={copy.body}
+      safeTitle={copy.safeTitle ?? "Your data is safe"}
+      safeBody={
+        copy.safeBody ??
+        "Recovery mode paused only this screen. Your recent error was saved locally."
+      }
+      actionHint={copy.actionHint ?? "Reload usually reconnects the app in a few seconds."}
+      reloadLabel={copy.reloadLabel}
+      onReload={() => window.location.reload()}
+    >
+      {children}
+    </ErrorBoundaryBase>
+  );
+};
 
 /**
  * ModalErrorBoundary - Error boundary for modals and lazy-loaded components.

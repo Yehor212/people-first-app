@@ -91,10 +91,14 @@ export const ENTRY = {
 
 export type EntryValue = -1 | 0 | 1 | 2 | 3;
 
+export type HabitEntrySource = 'quickTap' | 'exactInput' | 'calendar' | 'skip';
+
 /** Single day's entry for a habit */
 export interface HabitEntry {
   value: number;    // EntryValue for boolean; value×1000 for numerical
   notes?: string;   // Per-day note
+  loggedAt?: string; // ISO timestamp for user-entered records; absent on legacy data
+  source?: HabitEntrySource;
 }
 
 // ============================================
@@ -107,10 +111,23 @@ export type LoopHabitType = 'boolean' | 'numerical';
 /** Numerical habit target direction */
 export type TargetType = 'atLeast' | 'atMost';
 
+/** How a numerical habit reacts to the primary one-tap check-in affordance. */
+export type HabitNumericalEntryMode = 'completeTarget' | 'incrementStep' | 'limitCheck';
+
 /** Frequency as ratio: "3 times per 7 days" = { numerator: 3, denominator: 7 } */
 export interface HabitFrequencyRatio {
   numerator: number;
   denominator: number;
+}
+
+export type HabitScheduleMode = 'daily' | 'flexiblePerPeriod' | 'specificDays';
+export type HabitSchedulePeriod = 'week';
+
+export interface HabitSchedule {
+  mode: HabitScheduleMode;
+  period: HabitSchedulePeriod;
+  targetCount: number;
+  dueDays?: number[]; // 0=Sun, 1=Mon, ... 6=Sat
 }
 
 export interface HabitReminder {
@@ -135,6 +152,7 @@ export interface Habit {
   // === Loop Core ===
   habitType: LoopHabitType;   // 'boolean' | 'numerical'
   frequency: HabitFrequencyRatio; // { numerator, denominator }
+  schedule?: HabitSchedule; // user-facing repeat model; legacy habits fall back to frequency
   question: string;           // "Did you exercise today?"
   description: string;        // Extended description
   isArchived: boolean;
@@ -143,6 +161,8 @@ export interface Habit {
   targetValue: number;        // e.g. 2.0 (liters)
   targetType: TargetType;     // 'atLeast' | 'atMost'
   unit: string;               // "L", "km", "min"
+  targetStep?: number;        // Natural quick-entry step; absent on legacy data
+  quickEntryMode?: HabitNumericalEntryMode;
 
   // === Optional program window ===
   durationDays?: number;      // e.g. 30-day habit plan
@@ -596,6 +616,65 @@ export interface MicroReflection {
   linkedHabitIds?: string[];           // If prompted by habit completion
   linkedFocusSessionId?: string;       // If prompted by focus reflection
   expandedToJournalId?: string;        // If user expanded to full entry
+}
+
+export type DayRitualType = 'opening' | 'closing';
+
+export type RitualEnergy = 1 | 2 | 3 | 4 | 5;
+
+/** Guided start/end-of-day reflection checkpoint. */
+export interface DayRitual {
+  id: string;                          // `${type}-${date}` for one ritual of each type per day
+  type: DayRitualType;
+  date: string;                        // YYYY-MM-DD
+  timestamp: number;                   // First creation time
+  updatedAt: number;                   // Last save time
+  mood?: MoodType;
+  energy?: RitualEnergy;
+  priorities: string[];                // Morning: 1-3 priorities
+  focusIntent?: string;                // Morning: how focus should feel
+  habitIntent?: string;                // Morning: realistic habit anchor
+  wins: string[];                      // Evening: what moved
+  drains: string[];                    // Evening: what drained
+  carryForward?: string;               // Evening: what to carry into tomorrow
+  gratitude?: string;                  // Evening: what to appreciate
+  note?: string;                       // Optional freeform note
+}
+
+export type ReflectionInsightStatus =
+  | 'new'
+  | 'saved'
+  | 'testing'
+  | 'learned'
+  | 'dismissed';
+
+export type ReflectionInsightImpact = 'high' | 'medium' | 'low';
+
+export type ReflectionInsightSource =
+  | 'behavior-pattern'
+  | 'ritual-pattern'
+  | 'focus-pattern'
+  | 'mood-pattern';
+
+export interface ReflectionInsightEvidence {
+  label: string;
+  detail: string;
+  metric?: string;
+}
+
+/** Durable, inspectable reflection insight derived from user behavior. */
+export interface ReflectionInsightCard {
+  id: string;
+  source: ReflectionInsightSource;
+  title: string;
+  summary: string;
+  experiment: string;
+  confidence: number;                  // 0..1
+  impact: ReflectionInsightImpact;
+  evidence: ReflectionInsightEvidence[];
+  status: ReflectionInsightStatus;
+  createdAt: number;
+  updatedAt: number;
 }
 
 // ====== Onboarding System Types ======

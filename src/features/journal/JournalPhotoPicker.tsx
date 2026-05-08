@@ -6,6 +6,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useModalA11y } from "@/hooks/useModalA11y";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { logger } from "@/lib/logger";
+import { formatLocalizedCount } from "./journalWordCount";
 
 interface JournalPhotoPickerProps {
   onSelectFile: (file: File) => Promise<void>;
@@ -20,7 +21,7 @@ export function JournalPhotoPicker({
   currentCount,
   maxCount,
 }: JournalPhotoPickerProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const ts = t as unknown as Record<string, string>;
   const { modalRef, handleKeyDown } = useModalA11y(true, onClose);
   useScrollLock(true);
@@ -74,6 +75,13 @@ export function JournalPhotoPicker({
   };
 
   const remaining = maxCount - currentCount;
+  const remainingLabel = formatLocalizedCount(
+    remaining,
+    language,
+    ts,
+    "journalPhotoRemainingCount",
+    ts.journalRemaining || "remaining"
+  );
 
   return (
     <>
@@ -106,7 +114,7 @@ export function JournalPhotoPicker({
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
             <span className="text-sm font-semibold text-foreground">
-              {ts.journalPhotoAdd || "Add Photo"} ({remaining} {ts.journalRemaining || "remaining"})
+              {ts.journalPhotoAdd || "Add Photo"} ({remainingLabel})
             </span>
             <button
               onClick={onClose}
@@ -140,7 +148,7 @@ export function JournalPhotoPicker({
                     "min-h-[80px]"
                   )}
                 >
-                  <Camera className="w-6 h-6 text-foreground" />
+                  <Camera className="w-6 h-6 text-foreground" aria-hidden="true" />
                   <span className="text-xs font-medium text-foreground">
                     {ts.journalPhotoTake || "Take Photo"}
                   </span>
@@ -158,7 +166,7 @@ export function JournalPhotoPicker({
                   "min-h-[80px]"
                 )}
               >
-                <ImageIcon className="w-6 h-6 text-foreground" />
+                <ImageIcon className="w-6 h-6 text-foreground" aria-hidden="true" />
                 <span className="text-xs font-medium text-foreground">
                   {ts.journalPhotoChoose || "From Gallery"}
                 </span>

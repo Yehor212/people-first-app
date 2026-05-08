@@ -1,3 +1,7 @@
+---
+description: Ruflo pipeline enforcement rules, required areas, and shared hook logic
+---
+
 # Ruflo Pipeline Rules (Auto-loaded) — v3 ALL 16 Areas
 
 ## Mandatory Pipeline — Every Session

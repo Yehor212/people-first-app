@@ -64,8 +64,6 @@ export function HabitHubList({
   onAddHabit,
   onDeleteHabit,
   onUpdateHabit,
-  onArchiveHabit,
-  onUnarchiveHabit,
   onSkipHabit,
   onUnskipHabit,
 }: HabitHubListProps) {
@@ -182,7 +180,7 @@ export function HabitHubList({
           aria-haspopup="listbox"
           className="flex items-center gap-1.5 text-[10px] text-muted-foreground hover:text-muted-foreground motion-safe:transition-colors min-h-[44px] min-w-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50"
         >
-          <ArrowUpDown className="w-3 h-3" />
+          <ArrowUpDown className="w-3 h-3" aria-hidden="true" />
           <span>{sortLabels[sortOption]}</span>
         </button>
         <AnimatePresence>
@@ -317,8 +315,6 @@ export function HabitHubList({
         onClose={handleCloseSheet}
         onEdit={handleEdit}
         onUpdate={onUpdateHabit}
-        onArchive={onArchiveHabit}
-        onUnarchive={onUnarchiveHabit}
         onSkip={onSkipHabit}
         onUnskip={onUnskipHabit}
         onDelete={onDeleteHabit}

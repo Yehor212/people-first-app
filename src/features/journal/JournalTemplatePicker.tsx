@@ -9,7 +9,7 @@ import {
   generateTemplateContent,
   type JournalTemplate,
 } from "./journalTemplates";
-import { StickerRenderer } from "./StickerRenderer";
+import { getJournalIcon } from "./journalHubIcons";
 
 interface JournalTemplatePickerProps {
   onSelect: (content: string, templateId: string | null) => void;
@@ -90,32 +90,38 @@ export function JournalTemplatePicker({ onSelect, onClose }: JournalTemplatePick
             </motion.button>
 
             {/* Built-in templates */}
-            {BUILTIN_TEMPLATES.map((template, i) => (
-              <motion.button
-                key={template.id}
-                whileTap={{ scale: 0.97 }}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05 }}
-                onClick={() => handleSelectTemplate(template)}
-                className={cn(
-                  "flex flex-col items-center gap-2 p-4 rounded-xl min-h-[100px]",
-                  "bg-card/60 border border-border/15",
-                  "hover:bg-card/80 hover:border-primary/20",
-                  "motion-safe:transition-all motion-safe:duration-200"
-                )}
-              >
-                <StickerRenderer emoji={template.icon} size="sm" />
-                <div className="text-center">
-                  <p className="text-xs font-medium text-foreground">
-                    {ts[template.nameKey] || template.id.replace(/-/g, " ")}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground/60 mt-0.5 line-clamp-2">
-                    {ts[template.descriptionKey] || `${template.sections.length} sections`}
-                  </p>
-                </div>
-              </motion.button>
-            ))}
+            {BUILTIN_TEMPLATES.map((template, i) => {
+              const TemplateIcon = getJournalIcon(template.iconKey);
+
+              return (
+                <motion.button
+                  key={template.id}
+                  whileTap={{ scale: 0.97 }}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                  onClick={() => handleSelectTemplate(template)}
+                  className={cn(
+                    "flex flex-col items-center gap-2 p-4 rounded-xl min-h-[100px]",
+                    "bg-card/60 border border-border/15",
+                    "hover:bg-card/80 hover:border-primary/20",
+                    "motion-safe:transition-all motion-safe:duration-200"
+                  )}
+                >
+                  <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-primary/15 bg-primary/10 text-primary">
+                    <TemplateIcon className="h-5 w-5" aria-hidden="true" />
+                  </span>
+                  <div className="text-center">
+                    <p className="text-xs font-medium text-foreground">
+                      {ts[template.nameKey] || template.id.replace(/-/g, " ")}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground/60 mt-0.5 line-clamp-2">
+                      {ts[template.descriptionKey] || `${template.sections.length} sections`}
+                    </p>
+                  </div>
+                </motion.button>
+              );
+            })}
           </div>
         </div>
       </div>
