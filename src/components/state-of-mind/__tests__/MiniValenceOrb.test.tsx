@@ -1,39 +1,18 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { render } from "@testing-library/react";
 
 import { MiniValenceOrb } from "../MiniValenceOrb";
-
-vi.mock("../ValenceOrb", () => ({
-  ValenceOrb: ({
-    valence,
-    size,
-    transitionProfile,
-  }: {
-    valence: number;
-    size?: number;
-    transitionProfile?: string;
-  }) => (
-    <div
-      data-testid="valence-orb"
-      data-valence={valence}
-      data-size={size}
-      data-transition-profile={transitionProfile}
-    />
-  ),
-}));
 
 describe("MiniValenceOrb", () => {
   it("keeps the legacy bare md preset as the default compact orb", () => {
     const { container } = render(<MiniValenceOrb valence={0.2} hasEntry />);
     expect(container.firstChild).toHaveClass("h-12", "w-12");
-    expect(container.querySelector('[data-testid="valence-orb"]')).toHaveAttribute(
-      "data-size",
-      "120",
-    );
-    expect(container.querySelector('[data-testid="valence-orb"]')).toHaveAttribute(
-      "data-transition-profile",
+    expect(container.firstElementChild).toHaveAttribute("data-orb-renderer", "css");
+    expect(container.firstElementChild).toHaveAttribute(
+      "data-orb-transition-profile",
       "v1-soft",
     );
+    expect(container.querySelector("canvas")).toBeNull();
   });
 
   it("renders the canonical badge chrome for Diary-style mini-orbs", () => {

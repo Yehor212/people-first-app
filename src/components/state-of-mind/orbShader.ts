@@ -110,6 +110,24 @@ function hslToRgb(h: number, s: number, l: number): [number, number, number] {
 // ── Shader Compilation ──
 
 type GLContext = WebGLRenderingContext | WebGL2RenderingContext;
+type OrbGLTier = 'webgl2' | 'webgl';
+
+interface KHRParallelShaderCompile {
+  COMPLETION_STATUS_KHR: number;
+}
+
+export interface OrbGLBuildOptions {
+  signal?: AbortSignal;
+  timeoutMs?: number;
+}
+
+export interface OrbGLBuildResult {
+  renderer: OrbGLRenderer;
+  durationMs: number;
+  tier: OrbGLTier;
+}
+
+const DEFAULT_ASYNC_BUILD_TIMEOUT_MS = 500;
 
 function compileShader(
   gl: GLContext,
@@ -132,6 +150,63 @@ function compileShader(
     return null;
   }
   return shader;
+}
+
+function createShaderUnchecked(
+  gl: GLContext,
+  type: number,
+  source: string,
+): WebGLShader | null {
+  const shader = gl.createShader(type);
+  if (!shader) return null;
+
+  gl.shaderSource(shader, source);
+  gl.compileShader(shader);
+  return shader;
+}
+
+function cleanupProgram(
+  gl: GLContext,
+  program: WebGLProgram | null,
+  vs: WebGLShader | null,
+  fs: WebGLShader | null,
+) {
+  if (program) gl.deleteProgram(program);
+  if (vs) gl.deleteShader(vs);
+  if (fs) gl.deleteShader(fs);
+}
+
+function waitForParallelCompile(
+  gl: GLContext,
+  program: WebGLProgram,
+  extension: KHRParallelShaderCompile,
+  options: OrbGLBuildOptions,
+): Promise<boolean> {
+  const started = performance.now();
+  const timeoutMs = options.timeoutMs ?? DEFAULT_ASYNC_BUILD_TIMEOUT_MS;
+
+  return new Promise((resolve) => {
+    const poll = () => {
+      if (options.signal?.aborted || gl.isContextLost()) {
+        resolve(false);
+        return;
+      }
+
+      if (gl.getProgramParameter(program, extension.COMPLETION_STATUS_KHR)) {
+        resolve(true);
+        return;
+      }
+
+      if (performance.now() - started >= timeoutMs) {
+        resolve(false);
+        return;
+      }
+
+      requestAnimationFrame(poll);
+    };
+
+    requestAnimationFrame(poll);
+  });
 }
 
 // ── Shared Renderer Builder (WebGL 1.0 & 2.0) ──
@@ -172,6 +247,15 @@ function buildRenderer(
     return null;
   }
 
+  return createRendererFromLinkedProgram(gl, program, vs, fs);
+}
+
+function createRendererFromLinkedProgram(
+  gl: GLContext,
+  program: WebGLProgram,
+  vs: WebGLShader,
+  fs: WebGLShader,
+): OrbGLRenderer | null {
   // Fullscreen triangle (3 vertices, covers entire [-1,1] viewport)
   const vertices = new Float32Array([-1, -1, 3, -1, -1, 3]);
   const vbo = gl.createBuffer();
@@ -272,6 +356,82 @@ function buildRenderer(
  * Create a WebGL 2.0 renderer (GLSL 300 es).
  * Returns null if WebGL 2.0 is unavailable → caller tries WebGL 1.0 fallback.
  */
+async function buildRendererAsync(
+  gl: GLContext,
+  vertSrc: string,
+  fragSrc: string,
+  tier: OrbGLTier,
+  options: OrbGLBuildOptions,
+): Promise<OrbGLBuildResult | null> {
+  const started = performance.now();
+  const parallelCompile = gl.getExtension(
+    'KHR_parallel_shader_compile',
+  ) as KHRParallelShaderCompile | null;
+
+  if (!parallelCompile) {
+    return null;
+  }
+
+  const vs = createShaderUnchecked(gl, gl.VERTEX_SHADER, vertSrc);
+  const fs = createShaderUnchecked(gl, gl.FRAGMENT_SHADER, fragSrc);
+  const program = gl.createProgram();
+
+  if (!vs || !fs || !program) {
+    cleanupProgram(gl, program, vs, fs);
+    return null;
+  }
+
+  gl.attachShader(program, vs);
+  gl.attachShader(program, fs);
+  gl.linkProgram(program);
+
+  const completed = await waitForParallelCompile(gl, program, parallelCompile, options);
+  const durationMs = performance.now() - started;
+
+  if (!completed) {
+    recordError(
+      new Error(`WebGL shader compile deferred or timed out after ${Math.round(durationMs)}ms`),
+      { component: 'ValenceOrb', action: 'parallel-shader-compile', tier },
+    );
+    cleanupProgram(gl, program, vs, fs);
+    return null;
+  }
+
+  if (!gl.getShaderParameter(vs, gl.COMPILE_STATUS)) {
+    const infoLog = gl.getShaderInfoLog(vs);
+    recordError(
+      new Error(`WebGL vertex shader compile failed: ${infoLog?.slice(0, 300) ?? 'unknown'}`),
+      { component: 'ValenceOrb', shaderType: 'vertex', tier },
+    );
+    cleanupProgram(gl, program, vs, fs);
+    return null;
+  }
+
+  if (!gl.getShaderParameter(fs, gl.COMPILE_STATUS)) {
+    const infoLog = gl.getShaderInfoLog(fs);
+    recordError(
+      new Error(`WebGL fragment shader compile failed: ${infoLog?.slice(0, 300) ?? 'unknown'}`),
+      { component: 'ValenceOrb', shaderType: 'fragment', tier },
+    );
+    cleanupProgram(gl, program, vs, fs);
+    return null;
+  }
+
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    const linkLog = gl.getProgramInfoLog(program);
+    recordError(
+      new Error(`WebGL program link failed: ${linkLog?.slice(0, 300) ?? 'unknown'}`),
+      { component: 'ValenceOrb', tier },
+    );
+    cleanupProgram(gl, program, vs, fs);
+    return null;
+  }
+
+  const renderer = createRendererFromLinkedProgram(gl, program, vs, fs);
+  if (!renderer) return null;
+  return { renderer, durationMs, tier };
+}
+
 export function createOrbGL2(canvas: HTMLCanvasElement): OrbGLRenderer | null {
   try {
     const gl = canvas.getContext('webgl2', GL_OPTIONS);
@@ -279,6 +439,20 @@ export function createOrbGL2(canvas: HTMLCanvasElement): OrbGLRenderer | null {
     return buildRenderer(gl, VERT_SRC_300, FRAG_SRC_300);
   } catch (err) {
     recordError(err, { component: 'ValenceOrb', action: 'createOrbGL2' });
+    return null;
+  }
+}
+
+export async function createOrbGL2Async(
+  canvas: HTMLCanvasElement,
+  options: OrbGLBuildOptions = {},
+): Promise<OrbGLBuildResult | null> {
+  try {
+    const gl = canvas.getContext('webgl2', GL_OPTIONS);
+    if (!gl) return null;
+    return await buildRendererAsync(gl, VERT_SRC_300, FRAG_SRC_300, 'webgl2', options);
+  } catch (err) {
+    recordError(err, { component: 'ValenceOrb', action: 'createOrbGL2Async' });
     return null;
   }
 }
@@ -295,6 +469,21 @@ export function createOrbGL(canvas: HTMLCanvasElement): OrbGLRenderer | null {
     return buildRenderer(gl, VERT_SRC, FRAG_SRC);
   } catch (err) {
     recordError(err, { component: 'ValenceOrb', action: 'createOrbGL' });
+    return null;
+  }
+}
+
+export async function createOrbGLAsync(
+  canvas: HTMLCanvasElement,
+  options: OrbGLBuildOptions = {},
+): Promise<OrbGLBuildResult | null> {
+  try {
+    const gl = canvas.getContext('webgl', GL_OPTIONS);
+    if (!gl) return null;
+    gl.getExtension('OES_standard_derivatives'); // Required for fwidth() in GLSL ES 1.0
+    return await buildRendererAsync(gl, VERT_SRC, FRAG_SRC, 'webgl', options);
+  } catch (err) {
+    recordError(err, { component: 'ValenceOrb', action: 'createOrbGLAsync' });
     return null;
   }
 }

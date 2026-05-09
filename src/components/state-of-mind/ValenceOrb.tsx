@@ -24,12 +24,14 @@ import { shouldAnimate } from '@/lib/animationUtils';
 import { recordError } from '@/lib/crashReporting';
 import { hapticTap } from '@/lib/haptics';
 import { hapticMedium } from '@/lib/haptics';
+import { safeSessionStorageGet, safeSessionStorageSet } from '@/lib/safeJson';
+import { SSK } from '@/lib/storageKeys';
 import { createParticlePool, updateParticles, burstParticles } from './particleSystem';
 import { drawOrbScene, getShapeParams } from './orbRenderer';
 import { valenceToHSL } from './colorUtils';
-import { createOrbGL2, createOrbGL } from './orbShader';
+import { createOrbGL2Async, createOrbGLAsync } from './orbShader';
 import type { Particle } from './particleSystem';
-import type { OrbGLRenderer } from './orbShader';
+import type { OrbGLBuildResult, OrbGLRenderer } from './orbShader';
 
 // Module-level: genesis plays only once per browser session
 let genesisPlayed = false;
@@ -43,13 +45,18 @@ interface ValenceOrbProps {
   animationSpeed?: number;
   /** Controls how the orb settles into a new mood state. */
   transitionProfile?: OrbTransitionProfile;
+  /** Renderer policy. Auto paints Canvas first, then upgrades to WebGL without blocking first paint. */
+  renderer?: OrbRendererMode;
 }
 
 const WEBGL_FRAME_INTERVAL = 1000 / 60; // 60fps for WebGL (shader is <1ms)
 const CANVAS_FRAME_INTERVAL = 1000 / 30; // 30fps for Canvas 2D fallback
 const PARTICLE_COUNT = 22;
+const WEBGL_BUILD_BUDGET_MS = 500;
+const WEBGL_UPGRADE_DELAY_MS = 180;
 
 export type OrbTransitionProfile = "standard" | "v1-soft" | "input-soft";
+export type OrbRendererMode = "auto" | "canvas" | "webgl";
 
 interface OrbTransitionSettings {
   targetBaseLerp: number;
@@ -141,11 +148,74 @@ function createCanvas(size: number, dpr: number): HTMLCanvasElement {
   return c;
 }
 
+function getRendererOverride(): OrbRendererMode | null {
+  try {
+    const requested = new URLSearchParams(window.location.search).get('orbRenderer');
+    if (requested === 'canvas' || requested === 'webgl') return requested;
+  } catch {
+    // graceful: malformed location should never block the orb
+  }
+
+  return safeSessionStorageGet<OrbRendererMode | null>(SSK.ORB_RENDERER_SESSION, null);
+}
+
+function shouldTryWebGL(mode: OrbRendererMode): boolean {
+  const override = getRendererOverride();
+  if (override === 'canvas') return false;
+  if (override === 'webgl') return true;
+  if (mode === 'canvas') return false;
+  if (isChromiumLikeBrowser()) return false;
+  return true;
+}
+
+function isChromiumLikeBrowser(): boolean {
+  try {
+    return /\b(Chrome|Chromium|HeadlessChrome|Edg|OPR)\//.test(navigator.userAgent);
+  } catch {
+    return false;
+  }
+}
+
+function rememberSlowWebGL(durationMs: number) {
+  safeSessionStorageSet(SSK.ORB_RENDERER_SESSION, 'canvas');
+  safeSessionStorageSet(SSK.ORB_WEBGL_SLOW_MS, Math.round(durationMs));
+}
+
+function scheduleAfterFirstPaint(task: () => void): () => void {
+  let cancelled = false;
+  let timeoutId = 0;
+
+  const run = () => {
+    if (cancelled) return;
+    task();
+  };
+
+  const requestIdle = window.requestIdleCallback;
+  if (requestIdle) {
+    const idleId = requestIdle(run, { timeout: WEBGL_UPGRADE_DELAY_MS + 600 });
+    return () => {
+      cancelled = true;
+      window.cancelIdleCallback?.(idleId);
+    };
+  }
+
+  const rafId = requestAnimationFrame(() => {
+    timeoutId = window.setTimeout(run, WEBGL_UPGRADE_DELAY_MS);
+  });
+
+  return () => {
+    cancelled = true;
+    cancelAnimationFrame(rafId);
+    window.clearTimeout(timeoutId);
+  };
+}
+
 export const ValenceOrb = memo(function ValenceOrb({
   valence,
   size = 192,
   animationSpeed = 1,
   transitionProfile = "v1-soft",
+  renderer = "auto",
 }: ValenceOrbProps) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef(0);
@@ -238,34 +308,10 @@ export const ValenceOrb = memo(function ValenceOrb({
     // Per HTML spec, once getContext('webgl2') succeeds, getContext('2d')
     // on the same canvas returns null — a new <canvas> element is required.
 
-    let activeCanvas: HTMLCanvasElement | null = null;
+    let activeCanvas = createCanvas(size, dpr);
     let glRenderer: OrbGLRenderer | null = null;
     let ctx2d: CanvasRenderingContext2D | null = null;
-
-    // Functional probe: verify WebGL actually renders pixels
-    // (WKWebView/in-app browsers may return a context that produces no output)
-    const webglWorks = probeWebGLWorks();
-
-    if (webglWorks) {
-      // Attempt 1: WebGL 2.0
-      const gl2Canvas = createCanvas(size, dpr);
-      const gl2Renderer = createOrbGL2(gl2Canvas);
-
-      if (gl2Renderer) {
-        glRenderer = gl2Renderer;
-        activeCanvas = gl2Canvas;
-      } else {
-        // Attempt 2: WebGL 1.0 on a FRESH canvas
-        // (gl2Canvas may be locked to webgl2 if getContext succeeded but shader failed)
-        const gl1Canvas = createCanvas(size, dpr);
-        const gl1Renderer = createOrbGL(gl1Canvas);
-
-        if (gl1Renderer) {
-          glRenderer = gl1Renderer;
-          activeCanvas = gl1Canvas;
-        }
-      }
-    }
+    let webglEventCanvas: HTMLCanvasElement | null = null;
 
     // Canvas 2D fallback (always tried if WebGL skipped or failed)
     if (!glRenderer) {
@@ -500,31 +546,65 @@ export const ValenceOrb = memo(function ValenceOrb({
     };
 
     const handleContextRestored = () => {
-      // Re-probe WebGL on the original canvas (it gets its context back)
-      const restored = createOrbGL2(activeCanvas) ?? createOrbGL(activeCanvas);
-      if (restored) {
-        glRendererRef.current = restored;
-        ctx2d = null;
-        render = renderGL;
-
-        // Remove fallback canvas, show original
-        activeCanvas.style.display = '';
-        if (fallbackCanvas && wrapper.contains(fallbackCanvas)) {
-          wrapper.removeChild(fallbackCanvas);
-          fallbackCanvas = null;
-        }
-      }
-      // Restart RAF loop
+      // Keep Canvas 2D after a context loss. Recompiling immediately can repeat
+      // the same Chrome/GPU stall that caused the fallback in the first place.
       if (shouldAnimate() && mountedRef.current) {
         rafRef.current = requestAnimationFrame(loop);
       }
     };
 
-    // Only attach WebGL event listeners if we're using WebGL
-    if (glRenderer) {
-      activeCanvas.addEventListener('webglcontextlost', handleContextLost);
-      activeCanvas.addEventListener('webglcontextrestored', handleContextRestored);
-    }
+    const attachWebGLListeners = (canvas: HTMLCanvasElement) => {
+      webglEventCanvas = canvas;
+      canvas.addEventListener('webglcontextlost', handleContextLost);
+      canvas.addEventListener('webglcontextrestored', handleContextRestored);
+    };
+
+    const upgradeToWebGL = async (signal: AbortSignal) => {
+      if (!shouldTryWebGL(renderer) || !probeWebGLWorks() || signal.aborted) return;
+
+      const gl2Canvas = createCanvas(size, dpr);
+      let result: OrbGLBuildResult | null = await createOrbGL2Async(gl2Canvas, {
+        signal,
+        timeoutMs: WEBGL_BUILD_BUDGET_MS,
+      });
+
+      let upgradeCanvas = gl2Canvas;
+      if (!result && !signal.aborted) {
+        const gl1Canvas = createCanvas(size, dpr);
+        result = await createOrbGLAsync(gl1Canvas, {
+          signal,
+          timeoutMs: WEBGL_BUILD_BUDGET_MS,
+        });
+        upgradeCanvas = gl1Canvas;
+      }
+
+      if (signal.aborted || !mountedRef.current) return;
+      if (!result) {
+        rememberSlowWebGL(WEBGL_BUILD_BUDGET_MS);
+        return;
+      }
+
+      if (result.durationMs > WEBGL_BUILD_BUDGET_MS) {
+        result.renderer.dispose();
+        rememberSlowWebGL(result.durationMs);
+        return;
+      }
+
+      const previousCanvas = activeCanvas;
+      glRenderer = result.renderer;
+      glRendererRef.current = result.renderer;
+      canvasElRef.current = upgradeCanvas;
+      ctx2d = null;
+      activeCanvas = upgradeCanvas;
+      render = renderGL;
+      attachWebGLListeners(upgradeCanvas);
+
+      if (wrapper.contains(previousCanvas)) {
+        wrapper.replaceChild(upgradeCanvas, previousCanvas);
+      } else {
+        wrapper.appendChild(upgradeCanvas);
+      }
+    };
 
     // ── Touch ripple handler (P2) ──
     const handlePointerDown = (e: PointerEvent) => {
@@ -541,13 +621,18 @@ export const ValenceOrb = memo(function ValenceOrb({
     // passive: true — never blocks scroll/swipe gestures
     wrapper.addEventListener('pointerdown', handlePointerDown, { passive: true });
 
+    const webglUpgradeAbort = new AbortController();
+    let cancelWebGLUpgrade = () => {};
+
     // ── Cleanup ──
     const cleanup = () => {
+      webglUpgradeAbort.abort();
+      cancelWebGLUpgrade();
       cancelAnimationFrame(rafRef.current);
       wrapper.removeEventListener('pointerdown', handlePointerDown);
-      if (glRenderer) {
-        activeCanvas.removeEventListener('webglcontextlost', handleContextLost);
-        activeCanvas.removeEventListener('webglcontextrestored', handleContextRestored);
+      if (webglEventCanvas) {
+        webglEventCanvas.removeEventListener('webglcontextlost', handleContextLost);
+        webglEventCanvas.removeEventListener('webglcontextrestored', handleContextRestored);
       }
       glRendererRef.current?.dispose();
       glRendererRef.current = null;
@@ -568,10 +653,14 @@ export const ValenceOrb = memo(function ValenceOrb({
       return cleanup;
     }
 
+    cancelWebGLUpgrade = scheduleAfterFirstPaint(() => {
+      void upgradeToWebGL(webglUpgradeAbort.signal);
+    });
+
     rafRef.current = requestAnimationFrame(loop);
 
     return cleanup;
-  }, [size]);
+  }, [renderer, size]);
 
   // Update static frame when valence changes and animations are off
   useEffect(() => {
