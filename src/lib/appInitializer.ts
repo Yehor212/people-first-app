@@ -1,7 +1,6 @@
 import { initializeAppMetadata, getAppMetadata, wasAppUpdated, DATA_SCHEMA_VERSION } from '@/lib/appVersion';
-import { runMigrations, validateDataIntegrity } from '@/storage/migrations';
-import { checkDatabaseHealth } from '@/storage/db';
 import { logger } from '@/lib/logger';
+import { scheduleIdle } from '@/lib/scheduleIdle';
 
 export interface InitializationResult {
   success: boolean;
@@ -15,7 +14,40 @@ export const initializeApp = async (): Promise<InitializationResult> => {
   try {
     logger.log('[AppInit] Starting app initialization...');
 
-    // Step 1: Check database health
+    // Fast path: normal launches must not wait on IndexedDB health checks.
+    // Storage hooks already have local fallbacks; deep DB checks run after paint.
+    const oldMetadata = getAppMetadata();
+    const wasUpdated = wasAppUpdated();
+    const newMetadata = initializeAppMetadata();
+
+    if (!wasUpdated) {
+      scheduleIdle(() => {
+        void import('@/storage/db')
+          .then(({ checkDatabaseHealth }) => checkDatabaseHealth())
+          .then((dbHealthy) => {
+            if (!dbHealthy) {
+              logger.warn('[AppInit] Background database health check failed');
+            }
+          })
+          .catch((error) => {
+            logger.warn('[AppInit] Background database health check error:', error);
+          });
+      }, 5000, 3000);
+
+      logger.log('[AppInit] App initialization completed on fast path');
+      return {
+        success: true,
+        wasUpdated: false,
+        needsReload: false,
+      };
+    }
+
+    const [{ checkDatabaseHealth }, { runMigrations, validateDataIntegrity }] = await Promise.all([
+      import('@/storage/db'),
+      import('@/storage/migrations'),
+    ]);
+
+    // Updated installs still need DB validation before migrations.
     const dbHealthy = await checkDatabaseHealth();
     if (!dbHealthy) {
       logger.error('[AppInit] Database is not healthy');
@@ -26,12 +58,6 @@ export const initializeApp = async (): Promise<InitializationResult> => {
         error: 'Database initialization failed. Please reinstall the app.'
       };
     }
-
-    // Step 2: Get or initialize app metadata
-    const oldMetadata = getAppMetadata();
-    const newMetadata = initializeAppMetadata();
-
-    const wasUpdated = wasAppUpdated();
 
     if (wasUpdated && oldMetadata) {
       logger.log(`[AppInit] App updated from ${oldMetadata.appVersion} to ${newMetadata.appVersion}`);

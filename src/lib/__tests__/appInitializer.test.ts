@@ -67,6 +67,7 @@ describe('initializeApp', () => {
     const result = await initializeApp();
     expect(result.success).toBe(true);
     expect(result.wasUpdated).toBe(false);
+    expect(mockCheckDatabaseHealth).not.toHaveBeenCalled();
   });
 
   it('returns success when updated but no migration needed (same data schema)', async () => {
@@ -89,6 +90,8 @@ describe('initializeApp', () => {
   });
 
   it('returns error when db is not healthy', async () => {
+    mockWasAppUpdated.mockReturnValue(true);
+    mockGetAppMetadata.mockReturnValue({ ...oldMetadata, dataSchemaVersion: 2 });
     mockCheckDatabaseHealth.mockResolvedValue(false);
 
     const result = await initializeApp();
@@ -128,6 +131,8 @@ describe('initializeApp', () => {
   });
 
   it('handles unexpected errors', async () => {
+    mockWasAppUpdated.mockReturnValue(true);
+    mockGetAppMetadata.mockReturnValue({ ...oldMetadata, dataSchemaVersion: 2 });
     mockCheckDatabaseHealth.mockRejectedValue(new Error('unexpected'));
 
     const result = await initializeApp();
