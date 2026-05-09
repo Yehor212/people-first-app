@@ -17,6 +17,9 @@ export default {
     "./components/**/*.{ts,tsx}",
     "./app/**/*.{ts,tsx}",
     "./src/**/*.{ts,tsx}",
+    "!./src/**/*.test.{ts,tsx}",
+    "!./src/**/*.spec.{ts,tsx}",
+    "!./src/pages/__dev/**/*.{ts,tsx}",
   ],
   prefix: "",
   theme: {

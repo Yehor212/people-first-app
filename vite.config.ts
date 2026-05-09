@@ -2,11 +2,14 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
 import { readFileSync } from "fs";
+import { fileURLToPath } from "url";
 import { componentTagger } from "lovable-tagger";
 import { VitePWA } from "vite-plugin-pwa";
 import { compression } from "vite-plugin-compression2";
-import { changelogPlugin } from "./vite-plugin-changelog";
-import { versionPlugin } from "./vite-plugin-version";
+import { changelogPlugin } from "./vite-plugin-changelog.ts";
+import { versionPlugin } from "./vite-plugin-version.ts";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 function normalizeBasePath(value: string): string {
   if (!value || value === "/") return "/";
@@ -175,7 +178,6 @@ export default defineConfig(({ mode }) => {
                 "**/ar-*.js",
                 "**/he-*.js",
                 // Heavy feature chunks — lazy-loaded, not needed for offline shell
-                "**/jspdf*.js",
                 "**/chartTokens*.js",
               ],
               maximumFileSizeToCacheInBytes: 3 * 1024 * 1024, // 3 MB limit
@@ -197,10 +199,6 @@ export default defineConfig(({ mode }) => {
           __dirname,
           "node_modules/lottie-web/build/player/lottie_light.js"
         ),
-        // Exclude unused jspdf optional dep from bundle (-202 kB).
-        // jspdf loads html2canvas dynamically only for .html() method,
-        // which ZenFlow never calls (verified: 0 .html() calls in codebase).
-        html2canvas: path.resolve(__dirname, "src/lib/noop.ts"),
       },
     },
 

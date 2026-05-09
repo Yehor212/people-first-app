@@ -4,7 +4,7 @@ import "./lib/spaRedirect";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
-import { setupAudioUnlock, preloadAmbientSounds } from "./lib/ambientSounds";
+import { setupAudioUnlock } from "./lib/ambientSounds";
 import { initAudioManager } from "./lib/audioManager";
 import { initAndroidBackHandler } from "./lib/androidBackHandler";
 import { logger } from "./lib/logger";
@@ -350,9 +350,7 @@ setupAudioUnlock();
 // Initialize audio manager - loads mute/volume settings from localStorage
 initAudioManager();
 
-// Preload ambient sounds for faster initial playback (MP3 files only)
-// Uses link prefetch for non-blocking background loading
-preloadAmbientSounds();
+// Ambient sounds load on demand so the web/PWA/Capacitor startup path stays light.
 
 // Initialize Android back button handler (double-tap to exit + modal handling)
 void initAndroidBackHandler();

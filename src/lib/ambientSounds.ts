@@ -333,7 +333,7 @@ export interface SoundInfo {
   type: AmbientSoundType;
   nameEn: string;
   file: string;
-  fallbackFile?: string; // MP3 fallback for WAV files
+  fallbackFile?: string;
   description: string;
 }
 
@@ -344,8 +344,7 @@ const BASE_PATH = BASE_URL;
  * All available sounds - LOCAL ONLY
  * Names honestly describe what's in each file
  *
- * WAV primary (files exist on disk), no MP3 fallback (MP3 files not yet created).
- * TODO: Convert WAV→MP3 with ffmpeg for smaller file sizes on mobile.
+ * MP3 primary files keep the app shell compact on web/PWA and reduce native APK asset weight.
  */
 export const SOUNDS: SoundInfo[] = [
   {
@@ -353,7 +352,7 @@ export const SOUNDS: SoundInfo[] = [
     type: "underwater",
 
     nameEn: "Underwater Hum",
-    file: `${BASE_PATH}sounds/mixkit-underwater-transmitter-hum-2135.wav`,
+    file: `${BASE_PATH}sounds/mixkit-underwater-transmitter-hum-2135.mp3`,
     description: "Deep underwater ambient sound",
   },
   {
@@ -361,7 +360,7 @@ export const SOUNDS: SoundInfo[] = [
     type: "thunderstorm",
 
     nameEn: "Jungle Thunderstorm",
-    file: `${BASE_PATH}sounds/mixkit-calm-thunderstorm-in-the-jungle-2415.wav`,
+    file: `${BASE_PATH}sounds/mixkit-calm-thunderstorm-in-the-jungle-2415.mp3`,
     description: "Thunder and rain in tropical jungle",
   },
   {
@@ -369,7 +368,7 @@ export const SOUNDS: SoundInfo[] = [
     type: "ocean",
 
     nameEn: "Waves on Rocks",
-    file: `${BASE_PATH}sounds/mixkit-small-waves-harbor-rocks-1208.wav`,
+    file: `${BASE_PATH}sounds/mixkit-small-waves-harbor-rocks-1208.mp3`,
     description: "Small waves hitting harbor rocks",
   },
   {
@@ -377,7 +376,7 @@ export const SOUNDS: SoundInfo[] = [
     type: "river",
 
     nameEn: "River Wildlife",
-    file: `${BASE_PATH}sounds/mixkit-wildlife-environment-in-a-river-2456.wav`,
+    file: `${BASE_PATH}sounds/mixkit-wildlife-environment-in-a-river-2456.mp3`,
     description: "River sounds with wildlife",
   },
   {
@@ -1194,22 +1193,23 @@ export function getAmbientSoundGenerator(): AmbientSoundGenerator {
 }
 
 /**
- * Preload sound files to improve initial playback latency.
+ * Preload selected sound files to improve playback latency.
  * Uses browser's link prefetch for non-blocking background loading.
- * Call this at app startup after initial render.
- *
- * P2: Only preloads MP3 files (smaller) - WAV files are too large for prefetch.
+ * Do not call this at app startup; use it only after explicit sound-related user intent.
  */
-export function preloadAmbientSounds(): void {
-  // Only preload MP3 files (cafe, fireplace) - WAV files are too large
-  const mp3Sounds = SOUNDS.filter((s) => s.file.endsWith(".mp3"));
+export function preloadAmbientSounds(soundIds: AmbientSoundType[] = []): void {
+  const soundsToPreload =
+    soundIds.length === 0
+      ? []
+      : SOUNDS.filter((sound) => soundIds.includes(sound.type) && sound.file.endsWith(".mp3"));
 
-  mp3Sounds.forEach((sound) => {
+  soundsToPreload.forEach((sound) => {
     try {
       // Use link prefetch for non-blocking background loading
       const link = document.createElement("link");
       link.rel = "prefetch";
       link.as = "audio";
+      link.setAttribute("as", "audio");
       link.href = sound.file;
       document.head.appendChild(link);
       logger.log("[AmbientSounds] Prefetch queued:", sound.id);

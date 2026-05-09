@@ -26,6 +26,7 @@ import {
   getSoundByType,
   isAudioUnlocked,
   getAmbientSoundGenerator,
+  preloadAmbientSounds,
   AmbientSoundGenerator,
   type AudioState,
   type AmbientSoundType,
@@ -79,9 +80,9 @@ describe('SOUNDS constant', () => {
     });
   });
 
-  it('all files end with .wav or .mp3', () => {
+  it('ships compact MP3 files for every ambient sound', () => {
     SOUNDS.forEach(sound => {
-      expect(sound.file).toMatch(/\.(wav|mp3)$/);
+      expect(sound.file).toMatch(/\.mp3$/);
     });
   });
 });
@@ -116,6 +117,27 @@ describe('getSoundByType', () => {
 
   it('returns undefined for an unknown type', () => {
     expect(getSoundByType('wind' as AmbientSoundType)).toBeUndefined();
+  });
+});
+
+describe('preloadAmbientSounds', () => {
+  beforeEach(() => {
+    document.head.innerHTML = '';
+  });
+
+  it('does not prefetch audio on startup without an explicit sound list', () => {
+    preloadAmbientSounds();
+
+    expect(document.head.querySelectorAll('link[rel="prefetch"][as="audio"]')).toHaveLength(0);
+  });
+
+  it('prefetches only explicitly requested ambient sounds', () => {
+    preloadAmbientSounds(['river']);
+
+    const links = document.head.querySelectorAll<HTMLLinkElement>('link[rel="prefetch"][as="audio"]');
+    expect(links).toHaveLength(1);
+    expect(links[0].href).toContain('river');
+    expect(links[0].href).toMatch(/\.mp3$/);
   });
 });
 

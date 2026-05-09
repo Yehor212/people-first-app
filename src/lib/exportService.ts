@@ -12,6 +12,7 @@ import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
 import { formatDate } from './utils';
 import { getHabitCompletedDates, getHabitCompletionTotal } from '@/lib/habits';
 import { logger } from './logger';
+import { createSimplePdf } from './simplePdf';
 
 // ============================================
 // CSV EXPORT
@@ -228,8 +229,7 @@ export const exportProgressReportPDF = async (data: {
   userName?: string;
   dateRange?: { start: string; end: string };
 }): Promise<void> => {
-  const { jsPDF } = await import('jspdf');
-  const doc = new jsPDF();
+  const doc = createSimplePdf();
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 20;
   let y = 20;
@@ -373,8 +373,7 @@ export const exportWeeklySummaryPDF = async (data: {
   weekStart: string;
   weekEnd: string;
 }): Promise<void> => {
-  const { jsPDF } = await import('jspdf');
-  const doc = new jsPDF();
+  const doc = createSimplePdf();
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 20;
   let y = 20;

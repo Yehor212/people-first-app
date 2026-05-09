@@ -8,6 +8,7 @@ import type { JournalEntry, JournalPhoto, JournalAudio } from "./types";
 import * as storage from "./journalStorage";
 import { getToday } from "@/lib/utils";
 import { getLocale } from "@/lib/timeUtils";
+import { createSimplePdf } from "@/lib/simplePdf";
 import type { Language } from "@/i18n/translations";
 
 // ── Helpers ──
@@ -201,9 +202,7 @@ export async function exportPDF(
   onProgress?.("Loading entries...");
   const entries = await storage.getAllEntries();
 
-  // Lazy import jsPDF to avoid CJS TDZ
-  const { jsPDF } = await import("jspdf");
-  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const doc = createSimplePdf();
 
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();

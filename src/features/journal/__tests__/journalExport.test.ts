@@ -216,28 +216,7 @@ describe('exportMarkdown', () => {
 // exportPDF
 // ============================================================
 describe('exportPDF', () => {
-  it('lazy-imports jsPDF and creates a document', async () => {
-    const mockSave = vi.fn();
-    const mockText = vi.fn();
-    const mockAddPage = vi.fn();
-    const mockSetFontSize = vi.fn();
-    const mockSetTextColor = vi.fn();
-    const mockSplitTextToSize = vi.fn(() => ['line1']);
-    const mockAddImage = vi.fn();
-
-    vi.doMock('jspdf', () => ({
-      jsPDF: vi.fn(() => ({
-        internal: { pageSize: { getWidth: () => 210, getHeight: () => 297 } },
-        text: mockText,
-        addPage: mockAddPage,
-        setFontSize: mockSetFontSize,
-        setTextColor: mockSetTextColor,
-        splitTextToSize: mockSplitTextToSize,
-        addImage: mockAddImage,
-        save: mockSave,
-      })),
-    }));
-
+  it('creates a lightweight PDF document', async () => {
     const entries = [makeEntry({ title: 'PDF Entry', content: 'PDF content' })];
     vi.mocked(storage.getAllEntries).mockResolvedValue(entries);
     vi.mocked(storage.getPhotosForEntry).mockResolvedValue([]);
@@ -245,5 +224,8 @@ describe('exportPDF', () => {
     await exportPDF();
 
     expect(storage.getAllEntries).toHaveBeenCalled();
+    expect(URL.createObjectURL).toHaveBeenCalled();
+    expect(mockClick).toHaveBeenCalled();
+    expect(mockLink.download).toMatch(/^journal-.*\.pdf$/);
   });
 });

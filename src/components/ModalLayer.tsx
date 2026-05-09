@@ -17,10 +17,6 @@ const ChallengeModal = lazyWithRetry(
   () => import("@/components/ChallengeModal").then((m) => ({ default: m.ChallengeModal })),
   "ChallengeModal"
 );
-const WhatsNewModal = lazyWithRetry(
-  () => import("@/components/WhatsNewModal").then((m) => ({ default: m.default })),
-  "WhatsNewModal"
-);
 const MindfulMoment = lazyWithRetry(
   () => import("@/components/MindfulMoment").then((m) => ({ default: m.MindfulMoment })),
   "MindfulMoment"
@@ -270,13 +266,6 @@ export function ModalLayer({
           </Suspense>
         </LazyErrorBoundary>
       )}
-
-      {/* What's New Modal - shows after app update */}
-      <LazyErrorBoundary componentName="What's New">
-        <Suspense fallback={null}>
-          <WhatsNewModal />
-        </Suspense>
-      </LazyErrorBoundary>
 
       {/* MindfulMoment - shows after focus session completion */}
       {isFeatureVisible("focusTimer") && (
