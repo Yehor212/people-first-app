@@ -20,11 +20,16 @@ function stripBasePath(pathname: string, basePath: string): string {
   return pathname || "/";
 }
 
+function normalizeAppRoutePath(pathname: string): string {
+  if (!pathname || pathname === "/") return "/";
+  return pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
+}
+
 function getV2RedirectPath(basePath: string): string | null {
   if (typeof window === "undefined") return null;
 
   const currentUrl = new URL(window.location.href);
-  const currentAppPath = stripBasePath(currentUrl.pathname, basePath);
+  const currentAppPath = normalizeAppRoutePath(stripBasePath(currentUrl.pathname, basePath));
   const shouldReturnToV2 =
     currentUrl.searchParams.get("nav") === "v2" || V2_ROUTE_PATHS.has(currentAppPath);
 

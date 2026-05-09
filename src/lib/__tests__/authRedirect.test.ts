@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // ─── Mocks (must be before imports) ────────────────────────────────────────
 
 let mockIsNative = false;
+let mockBaseUrl = '/';
 
 vi.mock('@/lib/platform', () => ({
   get isNative() { return mockIsNative; },
@@ -13,7 +14,7 @@ vi.mock('../logger', () => ({
 }));
 
 vi.mock('@/lib/env', () => ({
-  BASE_URL: '/',
+  get BASE_URL() { return mockBaseUrl; },
   IS_DEV: false,
 }));
 
@@ -51,6 +52,7 @@ const createMockSupabase = (overrides?: any) => ({
 
 beforeEach(() => {
   mockIsNative = false;
+  mockBaseUrl = '/';
   vi.clearAllMocks();
   window.history.pushState({}, '', '/');
   // Clear any pending auth URL from previous tests
@@ -93,6 +95,26 @@ describe('getAuthRedirectUrl', () => {
     const url = getAuthRedirectUrl();
 
     expect(url).toBe(`${window.location.origin}/orb?nav=v2&navLayout=phone`);
+  });
+
+  it('preserves V2 route when GitHub Pages adds a trailing slash', () => {
+    mockIsNative = false;
+    mockBaseUrl = '/people-first-app/';
+    window.history.pushState({}, '', '/people-first-app/habits/?nav=v2&navLayout=phone');
+
+    const url = getAuthRedirectUrl();
+
+    expect(url).toBe(`${window.location.origin}/people-first-app/habits?nav=v2&navLayout=phone`);
+  });
+
+  it('returns to V2 from a direct GitHub Pages route even without query params', () => {
+    mockIsNative = false;
+    mockBaseUrl = '/people-first-app/';
+    window.history.pushState({}, '', '/people-first-app/orb/');
+
+    const url = getAuthRedirectUrl();
+
+    expect(url).toBe(`${window.location.origin}/people-first-app/orb?nav=v2`);
   });
 });
 
