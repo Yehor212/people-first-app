@@ -57,11 +57,11 @@ jobs:
           VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
         run: npm run build
 
-      # Vite excludes dotfiles from public/ → must create .nojekyll in dist
-      # post-build to disable GH Pages Jekyll processing (otherwise 404.html
-      # SPA fallback + static assets like app-ads.txt are stripped).
-      - name: Disable Jekyll on GH Pages
-        run: touch dist/.nojekyll
+      # GitHub Pages serves direct URLs only when the path exists in the
+      # artifact. Keep SPA fallback plus physical V2 route entrypoints so
+      # /orb, /habits, /diary, and /settings return 200 instead of 404.
+      - name: Prepare GitHub Pages SPA artifact
+        run: node scripts/prepare-pages-artifact.cjs
 
       # Phase 0-A: size-limit enforces JS+CSS budget ceilings (ratchet complements this with floor).
       # PR-only: size-limit-action needs a PR to compare against main; on direct push to main it fails with
