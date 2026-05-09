@@ -13,10 +13,9 @@
     "gzip": false
   },
   {
-    "name": "CSS bundle (raw)",
+    "name": "CSS bundle (brotli)",
     "path": "dist/assets/*.css",
-    "limit": "400 kB",
-    "brotli": false,
-    "gzip": false
+    "limit": "65 kB",
+    "brotli": true
   }
 ]
