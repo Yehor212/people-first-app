@@ -15,10 +15,13 @@ interface VersionPluginOptions {
  * Vite plugin that generates a version.json file during build
  * AND loads an external version check script via index.html.
  *
- * The script runs BEFORE any bundled JS (head-prepend) and detects
- * version mismatches using SYNCHRONOUS XHR to block the HTML parser.
- * This prevents stale module scripts from downloading before the
- * version check completes.
+ * The script is injected before bundled JS and checks version mismatches with
+ * a deferred no-store fetch.
+ *
+ * Older builds used synchronous XHR here to block the HTML parser before module
+ * scripts. That protected stale chunks, but it also froze the browser on slow
+ * networks. The app now handles stale deploys through the runtime version check
+ * and `vite:preloadError`, so the HTML guard must stay off the critical path.
  *
  * Uses both `version` (semver) and `buildTime` (epoch ms) to detect
  * mismatches — catches same-version rebuilds where only chunk hashes change.
@@ -55,13 +58,12 @@ export function versionPlugin(options: VersionPluginOptions = {}): Plugin {
         return undefined;
       }
 
-      // Inject <script src> at head-prepend so it runs BEFORE Vite's
-      // module scripts and modulepreload hints. This is critical —
-      // 'head' (default) injects AFTER modules, causing stale chunk downloads.
+      // Inject the guard early, but defer execution so it never blocks the HTML
+      // parser or first paint. Runtime stale-chunk handling covers late deploys.
       return [
         {
           tag: 'script',
-          attrs: { src: `${base}version-check.js?bt=${buildTime}` },
+          attrs: { src: `${base}version-check.js?bt=${buildTime}`, defer: true },
           injectTo: 'head-prepend' as const,
         },
       ];
@@ -70,12 +72,10 @@ export function versionPlugin(options: VersionPluginOptions = {}): Plugin {
     writeBundle() {
       // Generate version-check.js — external script for CSP compliance
       //
-      // Strategy: SYNCHRONOUS XHR blocks the HTML parser. Since this script
-      // is injected at head-prepend (before module scripts), no stale chunk
-      // downloads start until the version check passes.
-      //
-      // On mismatch: immediate location.replace() — modules never load.
-      // On sync XHR failure: async fetch fallback with window.stop().
+      // Strategy: async fetch keeps the browser responsive on slow networks.
+      // On mismatch: clear caches/service workers, then hard-reload with a
+      // cache-busting query. Runtime preload-error handling covers the narrow
+      // window where a module starts before this check finishes.
       // On bfcache restore: pageshow handler re-checks.
       const script = `(function(){
 try{
@@ -86,28 +86,20 @@ var BT=Number(S?new URL(S,location.href).searchParams.get('bt'):0)||${buildTime}
 var t=sessionStorage.getItem(RL);
 if(t&&Date.now()-Number(t)<30000)return;
 function mismatch(d){return d.version!==V||d.buildTime!==BT;}
-function fastReload(){
+function reload(){
 sessionStorage.setItem(RL,String(Date.now()));
 sessionStorage.setItem(VCF,'true');
 var u=new URL(location.href);u.searchParams.set('_v',String(Date.now()));
 location.replace(u.toString());
 }
-function hardReload(){
-sessionStorage.setItem(RL,String(Date.now()));
-sessionStorage.setItem(VCF,'true');
-var p=Promise.resolve();
-if('caches'in window){p=p.then(function(){return caches.keys().then(function(n){return Promise.all(n.map(function(k){return caches.delete(k)}))})});}
-if(navigator.serviceWorker){p=p.then(function(){return navigator.serviceWorker.getRegistrations().then(function(r){return Promise.all(r.map(function(s){return s.unregister()}))})});}
-p.then(function(){var u=new URL(location.href);u.searchParams.set('_v',String(Date.now()));location.replace(u.toString());}).catch(function(){location.reload()});
+function clearCaches(){
+var jobs=[];
+if('caches'in window){jobs.push(caches.keys().then(function(n){return Promise.all(n.map(function(k){return caches.delete(k)}))}));}
+if(navigator.serviceWorker){jobs.push(navigator.serviceWorker.getRegistrations().then(function(r){return Promise.all(r.map(function(s){return s.unregister()}))}));}
+return Promise.all(jobs.map(function(p){return p.catch(function(){})}));
 }
-try{
-var x=new XMLHttpRequest();
-x.open('GET',B+'version.json?_t='+Date.now(),false);
-x.send();
-if(x.status===200){var d=JSON.parse(x.responseText);if(mismatch(d)){fastReload();return;}}
-}catch(e){
-fetch(B+'version.json?_t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){if(mismatch(d)){try{window.stop();}catch(e){}hardReload();}}).catch(function(){});
-}
+function check(){return fetch(B+'version.json?_t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){if(mismatch(d)){return clearCaches().then(reload)}}).catch(function(){});}
+check();
 window.addEventListener('pageshow',function(e){if(e.persisted){fetch(B+'version.json?_t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){if(mismatch(d))location.reload()}).catch(function(){});}});
 }catch(e){}
 })();`;

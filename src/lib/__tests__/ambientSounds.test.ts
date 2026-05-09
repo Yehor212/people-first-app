@@ -12,10 +12,6 @@ vi.mock('../validation', () => ({
   }),
 }));
 
-vi.mock('@sentry/react', () => ({
-  addBreadcrumb: vi.fn(),
-}));
-
 vi.mock('@/lib/env', () => ({
   BASE_URL: '/',
 }));

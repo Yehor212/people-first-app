@@ -16,6 +16,10 @@ function normalizeBasePath(value: string): string {
   return value.endsWith("/") ? value : `${value}/`;
 }
 
+function isDeferredObservabilityPreload(dep: string): boolean {
+  return dep.startsWith("assets/sentry-");
+}
+
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   // Use relative paths for Capacitor/Android builds
@@ -229,7 +233,16 @@ export default defineConfig(({ mode }) => {
       cssMinify: "lightningcss",
       // Capacitor WebView + modern browsers all support native modulepreload.
       // Polyfill is 1.2 KB injected per HTML entry — not needed for our targets.
-      modulePreload: { polyfill: false },
+      modulePreload: {
+        polyfill: false,
+        resolveDependencies: (_filename, deps, context) => {
+          if (context.hostType !== "html") {
+            return deps;
+          }
+
+          return deps.filter((dep) => !isDeferredObservabilityPreload(dep));
+        },
+      },
       // Speeds up CI build ~15s by skipping gzip-size probe (cosmetic log only).
       reportCompressedSize: false,
 
@@ -275,26 +288,6 @@ export default defineConfig(({ mode }) => {
             // Capacitor native bridge (no React dependency)
             if (id.includes("@capacitor")) {
               return "capacitor";
-            }
-
-            // Sentry Replay (rrweb-based session recording) — web only, big chunk,
-            // changes independently from core → separate chunk for better cache.
-            // TDZ-safe (no React dep — verified via @sentry-internal/replay pkg.json).
-            if (
-              id.includes("@sentry-internal/replay") ||
-              id.includes("@sentry-internal/replay-canvas")
-            ) {
-              return "sentry-replay";
-            }
-
-            // Sentry Feedback widget — optional integration, split for cache.
-            if (id.includes("@sentry-internal/feedback")) {
-              return "sentry-feedback";
-            }
-
-            // Sentry core (error tracking + tracing + browser-utils). No React dep.
-            if (id.includes("@sentry") && !id.includes("react")) {
-              return "sentry";
             }
 
             // Lucide icons (212 imports across 209 files). Tree-shakeable with

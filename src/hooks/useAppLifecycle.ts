@@ -2,13 +2,17 @@ import { useEffect, useRef } from 'react';
 import { useAppStore } from '@/stores';
 import { initializeApp } from '@/lib/appInitializer';
 import { initializeOfflineQueueHandlers } from '@/lib/offlineQueueHandlers';
-import { preloadShareCardAssets } from '@/lib/shareCards';
 import { getToday } from '@/lib/utils';
 import { logger } from '@/lib/logger';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { isNative } from '@/lib/platform';
 import { SK } from '@/lib/storageKeys';
 import { storageGetRaw } from '@/lib/safeJson';
+
+const WEB_MIN_DISPLAY_MS = 350;
+const NATIVE_MIN_DISPLAY_MS = 800;
+const LOADING_FADE_MS = 180;
+const UPDATE_STATE_DELAY_MS = 700;
 
 /**
  * Handles app initialization, splash screen, and currentDate init.
@@ -43,9 +47,9 @@ export function useAppLifecycle(): void {
 
       const result = await initializeApp();
 
-      // Ensure animation plays for minimum 2 seconds
+      // Keep the branded handoff visible, but never hold users on a fake wait.
       const elapsed = Date.now() - startTime;
-      const MIN_DISPLAY_MS = 2000;
+      const MIN_DISPLAY_MS = isNative ? NATIVE_MIN_DISPLAY_MS : WEB_MIN_DISPLAY_MS;
       if (elapsed < MIN_DISPLAY_MS) {
         await new Promise(r => window.setTimeout(r, MIN_DISPLAY_MS - elapsed));
       }
@@ -56,7 +60,7 @@ export function useAppLifecycle(): void {
       setLoadingFadeOut(true);
 
       // After fade completes, remove loading screen and set final state
-      await new Promise(r => window.setTimeout(r, 400));
+      await new Promise(r => window.setTimeout(r, LOADING_FADE_MS));
 
       if (!active) return;
 
@@ -69,9 +73,6 @@ export function useAppLifecycle(): void {
         return;
       }
 
-      // Preload share card assets in background for faster sharing
-      void preloadShareCardAssets();
-
       if (result.wasUpdated) {
         logger.log('[Index] App was updated, showing update message');
         initTimeoutRef.current = setTimeout(() => {
@@ -81,7 +82,7 @@ export function useAppLifecycle(): void {
             error: null,
             wasUpdated: true
           });
-        }, 1000);
+        }, UPDATE_STATE_DELAY_MS);
       } else {
         setInitializationState({
           isInitializing: false,

@@ -7,11 +7,8 @@
  * Free tier: 5,000 errors/month, 10,000 transactions/month
  */
 
-import * as Sentry from "@sentry/react";
-import type { Integration } from "@sentry/core";
-import { isNative, platform } from "@/lib/platform";
-import { logger } from "@/lib/logger";
-import { SENTRY_DSN, MODE, IS_DEV } from "@/lib/env";
+import * as Sentry from "@sentry/browser";
+import type { Breadcrumb, BreadcrumbHint, Integration, SeverityLevel } from "@sentry/core";
 import {
   SENTRY_ALLOW_URLS,
   SENTRY_IGNORE_ERRORS,
@@ -21,20 +18,39 @@ import {
 // Declare global app version
 declare const __APP_VERSION__: string;
 
+const IS_DEV = import.meta.env.DEV;
+const MODE = import.meta.env.MODE;
+const SENTRY_DSN = import.meta.env.VITE_SENTRY_DSN as string | undefined;
+
+function getSentryPlatform(): "android" | "ios" | "web" {
+  const capacitor = (globalThis as {
+    Capacitor?: {
+      getPlatform?: () => string;
+      isNativePlatform?: () => boolean;
+    };
+  }).Capacitor;
+
+  if (!capacitor?.isNativePlatform?.()) {
+    return "web";
+  }
+
+  const value = capacitor.getPlatform?.();
+  return value === "android" || value === "ios" ? value : "web";
+}
+
 /**
  * Initialize Sentry error monitoring
  * Call this as early as possible in the app lifecycle
  */
 export function initSentry(): void {
   const dsn = SENTRY_DSN;
+  const detectedPlatform = getSentryPlatform();
+  const isNativeRuntime = detectedPlatform !== "web";
 
   // Skip if no DSN configured (development without Sentry)
   if (!dsn) {
-    logger.log("[Sentry] No DSN configured, skipping initialization");
     return;
   }
-
-  // isNative imported from @/lib/platform
 
   // Build integrations list — replay only on web (rrweb crashes Android WebView)
   const integrations: Integration[] = [
@@ -60,7 +76,7 @@ export function initSentry(): void {
 
   // Session replay only on web — rrweb uses Shadow DOM / MutationObserver
   // features that can crash in Android WebView
-  if (!isNative) {
+  if (!isNativeRuntime) {
     integrations.push(
       Sentry.replayIntegration({
         maskAllText: true,
@@ -76,7 +92,7 @@ export function initSentry(): void {
     release: `zenflow@${__APP_VERSION__}`,
 
     // Performance monitoring - sample 10% of transactions
-    tracesSampleRate: isNative ? 0.05 : 0.1,
+    tracesSampleRate: isNativeRuntime ? 0.05 : 0.1,
 
     // Distributed tracing targets - MUST be at root level for SDK v8+
     tracePropagationTargets: ["localhost", /^https:\/\/.*\.supabase\.co/],
@@ -176,7 +192,6 @@ export function initSentry(): void {
 
       // Don't send events in development
       if (IS_DEV) {
-        logger.log("[Sentry] Would send event:", event);
         return null;
       }
 
@@ -186,16 +201,11 @@ export function initSentry(): void {
     // Add platform context
     initialScope: {
       tags: {
-        platform,
-        isNative: isNative ? "yes" : "no",
+        platform: detectedPlatform,
+        isNative: isNativeRuntime ? "yes" : "no",
       },
     },
   });
-
-  // Only log in development
-  if (IS_DEV) {
-    logger.log("[Sentry] Initialized successfully");
-  }
 }
 
 /**
@@ -258,7 +268,7 @@ export function addCategorizedBreadcrumb(
   category: ErrorCategory,
   message: string,
   data?: Record<string, unknown>,
-  level: Sentry.SeverityLevel = "info"
+  level: SeverityLevel = "info"
 ): void {
   Sentry.addBreadcrumb({
     category,
@@ -271,7 +281,7 @@ export function addCategorizedBreadcrumb(
 /**
  * Capture a custom message
  */
-export function captureMessage(message: string, level: Sentry.SeverityLevel = "info"): void {
+export function captureMessage(message: string, level: SeverityLevel = "info"): void {
   Sentry.captureMessage(message, level);
 }
 
@@ -296,11 +306,10 @@ export function clearUserContext(): void {
   Sentry.setUser(null);
 }
 
-// Re-export Sentry's ErrorBoundary for use in App.tsx
-export { ErrorBoundary } from "@sentry/react";
-
 /**
  * Re-export addBreadcrumb so all consumers import from @/lib/sentry
- * instead of @sentry/react directly (enables tree-shaking).
+ * instead of Sentry packages directly.
  */
-export { addBreadcrumb } from "@sentry/react";
+export function addBreadcrumb(breadcrumb: Breadcrumb, hint?: BreadcrumbHint): void {
+  Sentry.addBreadcrumb(breadcrumb, hint);
+}

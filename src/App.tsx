@@ -37,13 +37,13 @@ const queryClient = new QueryClient({
 
 // Defer DOMPurify preload to idle time — keeps it off the critical rendering path.
 // preloadShareCardAssets runs DOMPurify init which blocks main thread 10-50ms during module eval.
-scheduleIdle(() => void preloadShareCardAssets());
+scheduleIdle(() => void preloadShareCardAssets(), 5000, 3500);
 
 // Phase 2-B: bootstrap design-system rollout flags from Supabase at idle time.
 // The store's persist middleware rehydrates cached flags synchronously so the
 // first render is not blocked; this fetch only refreshes the cache. Failure is
 // silent — offline-first (Law 25) degradation keeps the last cached values.
-scheduleIdle(() => void useDesignFlagStore.getState().fetchFlags(), 2500);
+scheduleIdle(() => void useDesignFlagStore.getState().fetchFlags(), 5000, 3500);
 
 /**
  * AnimationGate — single point of control for ALL animation layers.

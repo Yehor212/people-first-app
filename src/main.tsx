@@ -28,7 +28,6 @@ import { pauseAllAudio, resumeAllAudio } from "./lib/audioLifecycle";
 import { setupChunkErrorHandler } from "./components/UpdateRequiredDialog";
 import { isChunkLoadMessage } from "./lib/chunkErrorDetection";
 import { isTrustedServiceWorkerMessage } from "./lib/serviceWorkerMessages";
-import { checkDatabaseHealth } from "./storage/db";
 import { SK } from "./lib/storageKeys";
 import { safeLocalStorageGet, safeLocalStorageSet } from "./lib/safeJson";
 import { scheduleIdle } from "./lib/scheduleIdle";
@@ -402,55 +401,50 @@ if (isCapacitor) {
 }
 
 /**
- * Check app version and database health before rendering.
+ * Check app version before rendering only for recovery-critical paths.
  *
  * This prevents chunk load errors after deployment by detecting
- * version mismatch BEFORE lazy loading tries to load non-existent chunks.
- *
- * Now checks on EVERY visit (with 5-minute throttle) to prevent stale cache issues.
- * Priority checks (no throttle): OAuth returns, chunk error reloads.
+ * version mismatch before OAuth/chunk-retry flows load additional chunks.
+ * Regular freshness checks run after first paint so startup stays responsive.
  */
-async function initializeApp(): Promise<boolean> {
-  // Check database health early to detect IndexedDB issues
-  // This runs on every app start to catch database corruption/deletion
-  try {
-    logger.log("[Main] Checking database health...");
-    const dbHealthy = await checkDatabaseHealth();
-    if (!dbHealthy) {
-      logger.warn("[Main] Database health check failed - app will use localStorage fallback");
-      // Don't block app startup, just log the warning
-      // The useIndexedDB hook has its own fallback logic
-    } else {
-      logger.log("[Main] Database is healthy");
-    }
-  } catch (dbError) {
-    logger.warn("[Main] Database health check error:", dbError);
-    // Continue anyway - app has fallbacks
-  }
+let didBlockingVersionCheck = false;
 
-  // Priority check: After OAuth or after chunk error reload (always check)
+async function ensureFreshVersionBeforeRender(): Promise<boolean> {
   const priorityCheck = isOAuthReturn() || shouldCheckVersion();
-  // Auto check: Every 5 minutes for regular visits
-  const autoCheck = shouldAutoCheckVersion();
+  if (!priorityCheck) return true;
 
-  if (priorityCheck || autoCheck) {
-    logger.log(`[Main] Checking app version... (priority=${priorityCheck}, auto=${autoCheck})`);
+  didBlockingVersionCheck = true;
+  logger.log("[Main] Checking app version before recovery render...");
 
-    const isUpToDate = await checkAppVersion();
+  const isUpToDate = await checkAppVersion();
+  markVersionChecked();
 
-    // Mark that we checked (for throttling)
-    markVersionChecked();
-
-    if (!isUpToDate) {
-      logger.log("[Main] Outdated version detected, performing hard reload...");
-      await forceHardReload();
-      return false; // Don't render, page will reload
-    }
-
-    logger.log("[Main] Version is up to date");
+  if (!isUpToDate) {
+    logger.log("[Main] Outdated version detected, performing hard reload...");
+    await forceHardReload();
+    return false;
   }
 
+  logger.log("[Main] Version is up to date");
   return true;
+}
+
+function scheduleVersionCheckAfterStartup(): void {
+  if (didBlockingVersionCheck || isNative || !navigator.onLine || !shouldAutoCheckVersion()) {
+    return;
+  }
+
+  scheduleIdle(() => {
+    checkAppVersion()
+      .then((isUpToDate) => {
+        markVersionChecked();
+        if (!isUpToDate) {
+          logger.log("[Main] Outdated version detected after startup, reloading...");
+          void forceHardReload();
+        }
+      })
+      .catch((err) => logger.warn("[Main] Startup version check failed:", err));
+  }, 5000, 3000);
 }
 
 // React 18 `onRecoverableError` forwards recoverable hydration/concurrent errors
@@ -465,16 +459,18 @@ const rootOptions = {
   },
 };
 
-// Initialize app with version check, then render
-initializeApp()
+// Render first; only recovery-critical version checks may delay the root.
+ensureFreshVersionBeforeRender()
   .then((shouldRender) => {
     if (shouldRender) {
       createRoot(document.getElementById("root")!, rootOptions).render(<App />);
+      scheduleVersionCheckAfterStartup();
     }
   })
   .catch((err) => {
     logger.error("[Init] Fatal:", err);
     createRoot(document.getElementById("root")!, rootOptions).render(<App />);
+    scheduleVersionCheckAfterStartup();
   });
 
 // Defer Sentry initialization to after render — keeps @sentry/* off the critical path
@@ -493,4 +489,4 @@ const idleInit = () => {
     })
     .catch((err) => logger.warn("[Main] Sentry lazy load failed:", err));
 };
-scheduleIdle(idleInit);
+scheduleIdle(idleInit, 5000, 4000);

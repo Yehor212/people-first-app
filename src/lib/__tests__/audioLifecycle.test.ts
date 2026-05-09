@@ -20,10 +20,6 @@ vi.mock('../logger', () => ({
   logger: { log: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }));
 
-vi.mock('@sentry/react', () => ({
-  addBreadcrumb: vi.fn(),
-}));
-
 import { pauseAllAudio, resumeAllAudio, getLifecycleState, wasAudioPlaying } from '../audioLifecycle';
 import { forceUnlockAudio } from '../ambientSounds';
 import { resumeOnInteraction } from '../audioManager';

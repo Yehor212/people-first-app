@@ -19,11 +19,26 @@ export interface IdleHandle {
 
 type IdleFn = () => void;
 
-export function scheduleIdle(fn: IdleFn, fallbackMs = 2000): IdleHandle {
+export function scheduleIdle(fn: IdleFn, fallbackMs = 2000, minDelayMs = 0): IdleHandle {
   const win = typeof window === "undefined" ? null : window;
   if (!win) {
     return { cancel: () => {} };
   }
+
+  if (minDelayMs > 0) {
+    let innerHandle: IdleHandle | null = null;
+    const delayId = globalThis.setTimeout(() => {
+      innerHandle = scheduleIdle(fn, fallbackMs, 0);
+    }, minDelayMs);
+
+    return {
+      cancel: () => {
+        globalThis.clearTimeout(delayId);
+        innerHandle?.cancel();
+      },
+    };
+  }
+
   if ("requestIdleCallback" in win) {
     const id = win.requestIdleCallback(fn);
     return { cancel: () => win.cancelIdleCallback(id) };
