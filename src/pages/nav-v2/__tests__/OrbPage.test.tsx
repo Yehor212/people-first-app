@@ -285,7 +285,7 @@ describe("OrbPage progressive flow", () => {
     );
     expect(screen.getByTestId("valence-orb")).toHaveAttribute(
       "data-animation-speed",
-      "0.82",
+      "0.72",
     );
     expect(screen.queryByTestId("orb-aura")).not.toBeInTheDocument();
   });

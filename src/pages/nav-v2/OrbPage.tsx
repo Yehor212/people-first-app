@@ -15,7 +15,7 @@ import type { NavV2Page } from "@/hooks/useNavigationV2";
 import type { MoodEntry } from "@/types";
 
 const V1_VALENCE_ORB_SIZE = 280;
-const PHONE_ORB_ANIMATION_SPEED = 0.82;
+const PHONE_ORB_ANIMATION_SPEED = 0.72;
 
 /**
  * OrbPage — Phase 3-A.2 cosmic cinematic mindfulness surface with

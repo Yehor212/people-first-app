@@ -75,11 +75,11 @@ export const ORB_TRANSITION_SETTINGS: Record<OrbTransitionProfile, OrbTransition
     tailMultiplier: 0.46,
   },
   "input-soft": {
-    targetBaseLerp: 0.18,
-    shimmerBaseLerp: 0.12,
-    visualBaseLerp: 0.14,
-    tailDistance: 0.08,
-    tailMultiplier: 0.72,
+    targetBaseLerp: 0.072,
+    shimmerBaseLerp: 0.038,
+    visualBaseLerp: 0.036,
+    tailDistance: 0.18,
+    tailMultiplier: 0.58,
   },
 };
 

@@ -27,10 +27,11 @@ describe("ValenceOrb motion profile", () => {
     expect(finalTail).toEqual(broadMove);
   });
 
-  it("keeps direct slider input responsive without removing a soft settle", () => {
+  it("keeps direct slider input responsive without turning the orb into a fast spin", () => {
     const broadMove = resolveOrbTransitionSettings("input-soft", 0.7);
     const finalTail = resolveOrbTransitionSettings("input-soft", 0.04);
     const slowTail = resolveOrbTransitionSettings("v1-soft", 0.04);
+    const shimmerMove = resolveOrbTransitionSettings("input-soft", 0.7, true);
 
     expect(broadMove.targetBaseLerp).toBeGreaterThan(
       ORB_TRANSITION_SETTINGS["v1-soft"].targetBaseLerp,
@@ -38,7 +39,15 @@ describe("ValenceOrb motion profile", () => {
     expect(broadMove.visualBaseLerp).toBeGreaterThan(
       ORB_TRANSITION_SETTINGS["v1-soft"].visualBaseLerp,
     );
+    expect(broadMove.targetBaseLerp).toBeLessThanOrEqual(
+      ORB_TRANSITION_SETTINGS.standard.targetBaseLerp * 1.25,
+    );
+    expect(broadMove.visualBaseLerp).toBeLessThan(
+      ORB_TRANSITION_SETTINGS.standard.visualBaseLerp,
+    );
+    expect(shimmerMove.targetBaseLerp).toBeLessThan(broadMove.targetBaseLerp);
     expect(finalTail.targetBaseLerp).toBeLessThan(broadMove.targetBaseLerp);
     expect(finalTail.targetBaseLerp).toBeGreaterThan(slowTail.targetBaseLerp);
+    expect(finalTail.visualBaseLerp).toBeLessThan(broadMove.visualBaseLerp);
   });
 });
