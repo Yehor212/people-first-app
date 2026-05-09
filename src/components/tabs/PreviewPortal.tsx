@@ -184,6 +184,9 @@ export const V2PreviewPortal = memo(function V2PreviewPortal({
         >
           <span className="v2-preview-portal__chamber-grid pointer-events-none absolute inset-0" aria-hidden="true" />
           <span className="v2-preview-portal__chamber-vignette pointer-events-none absolute inset-0" aria-hidden="true" />
+          <span className="v2-preview-portal__lab-wall v2-preview-portal__lab-wall--left pointer-events-none absolute" aria-hidden="true" />
+          <span className="v2-preview-portal__lab-wall v2-preview-portal__lab-wall--right pointer-events-none absolute" aria-hidden="true" />
+          <span className="v2-preview-portal__ceiling-rig pointer-events-none absolute" aria-hidden="true" />
           <span
             className="v2-preview-portal__portal v2-preview-portal__portal--v1 pointer-events-none absolute"
             data-testid="v1-v2-portal-ring-v1"
@@ -191,6 +194,7 @@ export const V2PreviewPortal = memo(function V2PreviewPortal({
           >
             <span className="v2-preview-portal__portal-core" />
             <span className="v2-preview-portal__portal-slit" />
+            <span className="v2-preview-portal__portal-fog" />
           </span>
           <span
             className="v2-preview-portal__portal v2-preview-portal__portal--v2 pointer-events-none absolute"
@@ -199,11 +203,14 @@ export const V2PreviewPortal = memo(function V2PreviewPortal({
           >
             <span className="v2-preview-portal__portal-core" />
             <span className="v2-preview-portal__portal-slit" />
+            <span className="v2-preview-portal__portal-fog" />
           </span>
           <span className="v2-preview-portal__bridge-beam pointer-events-none absolute" aria-hidden="true">
             <span className="v2-preview-portal__bridge-pulse" />
           </span>
+          <span className="v2-preview-portal__bridge-shadow pointer-events-none absolute" aria-hidden="true" />
           <span className="v2-preview-portal__floor-plate pointer-events-none absolute" aria-hidden="true" />
+          <span className="v2-preview-portal__floor-track pointer-events-none absolute" aria-hidden="true" />
           <span
             className="v2-preview-portal__rift-frame pointer-events-none absolute inset-4 rounded-[24px] border border-dashed"
             aria-hidden="true"
@@ -234,7 +241,9 @@ export const V2PreviewPortal = memo(function V2PreviewPortal({
               transition={{ duration: 2.8 + index * 0.35, repeat: Infinity, ease: "easeInOut" }}
             />
           ))}
-          <div className="pointer-events-none absolute inset-x-0 top-8 flex justify-center" aria-hidden="true">
+          <div className="v2-preview-portal__reactor pointer-events-none absolute inset-x-0 flex justify-center" aria-hidden="true">
+            <span className="v2-preview-portal__reactor-disc absolute rounded-full" />
+            <span className="v2-preview-portal__reactor-glass absolute rounded-full" />
             <motion.span
               className="v2-preview-portal__orbit-outer absolute h-32 w-32 rounded-full border"
               animate={animate ? { rotate: 360, scale: [0.96, 1.04, 0.96] } : undefined}
@@ -255,7 +264,7 @@ export const V2PreviewPortal = memo(function V2PreviewPortal({
             </motion.span>
           </div>
 
-          <div className="relative z-[1] grid h-full grid-cols-3 items-end gap-2 pt-32">
+          <div className="v2-preview-portal__target-deck relative z-[4] grid grid-cols-3 items-end gap-2">
             {V2_PORTAL_TARGETS.map((target, index) => {
               const Icon = target.icon;
               const href = getCurrentV2Href(target.page);
