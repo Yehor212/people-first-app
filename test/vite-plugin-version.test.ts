@@ -44,7 +44,7 @@ describe("versionPlugin HTML injection", () => {
     expect(transformIndexHtml?.("", indexHtmlContext)).toBeUndefined();
   });
 
-  it("injects version-check.js for build output", async () => {
+  it("injects a deferred version-check.js for build output", async () => {
     const plugin = versionPlugin({ buildTime: 1234567890 });
     const configResolved = getConfigResolved(plugin);
     const transformIndexHtml = getTransformIndexHtml(plugin);
@@ -54,7 +54,7 @@ describe("versionPlugin HTML injection", () => {
     expect(transformIndexHtml?.("", indexHtmlContext)).toEqual([
       {
         tag: "script",
-        attrs: { src: "/people-first-app/version-check.js?bt=1234567890" },
+        attrs: { src: "/people-first-app/version-check.js?bt=1234567890", defer: true },
         injectTo: "head-prepend",
       },
     ]);
