@@ -2,141 +2,14 @@
  * DayCosmicBackground.css — Phase 3-A.4a-day
  *
  * 7-layer aurora daylight scene. Semantic palette with time-of-day switcher
- * through [data-daymode] selectors on <html>. All animations gated via
+ * applied as local --day-* variables by the React component. All animations gated via
  * prefers-reduced-motion so reduced-motion users see the static scene
  * (still beautiful — motes freeze in place, bokeh holds its tint).
  *
- * Custom properties set on <html>[data-daymode] drive all layers. Defaults
- * match 'afternoon' so when the attr is absent (SSR, tests) we still paint
- * a calm bioluminescent scene.
+ * The React component sets --day-* custom properties on the backdrop root.
+ * Keeping the palette local avoids global style recalculation and raw CSS
+ * growth while preserving the same time-of-day visuals.
  */
-
-/* Default palette — afternoon (kicks in when data-daymode absent) */
-html {
-  --day-base: hsl(185 58% 70%);
-  --day-base-edge: hsl(157 46% 58%);
-  --day-zenith: hsl(194 82% 74%);
-  --day-horizon: hsl(43 72% 70%);
-  --day-horizon-glow: hsl(48 100% 78% / 0.34);
-  --day-thread: hsl(54 100% 92% / 0.62);
-  --day-solar-core: hsl(38 92% 72% / 0.66);
-  --day-solar-halo: hsl(154 70% 68% / 0.22);
-  --day-portal-core: hsl(44 98% 78% / 0.78);
-  --day-portal-ring: hsl(var(--zf-role-focus) / 0.56);
-  --day-portal-ruby: hsl(var(--zf-role-release) / 0.58);
-  --day-accent-1: hsl(var(--zf-role-focus) / 0.24);
-  --day-accent-2: hsl(var(--zf-role-mind) / 0.20);
-  --day-prism: hsl(var(--zf-role-release) / 0.18);
-  --day-atmosphere: hsl(var(--zf-role-body) / 0.14);
-  --day-vignette: hsl(176 44% 8% / 0.24);
-  --day-mote: hsl(var(--zf-role-focus) / 0.38);
-  --day-ray: var(--zf-trace);
-}
-
-html[data-daymode="dawn"] {
-  --day-base: hsl(184 58% 72%);
-  --day-base-edge: hsl(42 62% 64%);
-  --day-zenith: hsl(190 78% 76%);
-  --day-horizon: hsl(24 82% 68%);
-  --day-horizon-glow: hsl(30 100% 76% / 0.36);
-  --day-thread: hsl(34 100% 88% / 0.64);
-  --day-solar-core: hsl(24 94% 70% / 0.68);
-  --day-solar-halo: hsl(42 88% 70% / 0.24);
-  --day-portal-core: hsl(28 98% 76% / 0.82);
-  --day-portal-ring: hsl(var(--zf-role-energy) / 0.58);
-  --day-portal-ruby: hsl(var(--zf-role-release) / 0.60);
-  --day-accent-1: hsl(var(--zf-role-release) / 0.20);
-  --day-accent-2: hsl(var(--zf-role-focus) / 0.18);
-  --day-prism: hsl(var(--zf-role-mind) / 0.18);
-  --day-atmosphere: hsl(var(--zf-role-energy) / 0.12);
-  --day-vignette: hsl(176 44% 8% / 0.20);
-  --day-mote: hsl(var(--zf-role-release) / 0.34);
-  --day-ray: var(--zf-memory);
-}
-
-html[data-daymode="morning"] {
-  --day-base: hsl(178 58% 70%);
-  --day-base-edge: hsl(154 48% 60%);
-  --day-zenith: hsl(188 82% 75%);
-  --day-horizon: hsl(44 70% 70%);
-  --day-horizon-glow: hsl(48 100% 80% / 0.34);
-  --day-thread: hsl(58 100% 92% / 0.64);
-  --day-solar-core: hsl(42 92% 72% / 0.62);
-  --day-solar-halo: hsl(162 72% 70% / 0.24);
-  --day-portal-core: hsl(48 96% 78% / 0.80);
-  --day-portal-ring: hsl(var(--zf-role-body) / 0.58);
-  --day-portal-ruby: hsl(var(--zf-role-focus) / 0.56);
-  --day-accent-1: hsl(var(--zf-role-focus) / 0.24);
-  --day-accent-2: hsl(var(--zf-role-body) / 0.18);
-  --day-prism: hsl(var(--zf-role-mind) / 0.16);
-  --day-atmosphere: hsl(var(--zf-role-body) / 0.12);
-  --day-vignette: hsl(176 44% 8% / 0.22);
-  --day-mote: hsl(var(--zf-role-focus) / 0.36);
-  --day-ray: var(--zf-trace);
-}
-
-html[data-daymode="afternoon"] {
-  --day-base: hsl(185 58% 70%);
-  --day-base-edge: hsl(157 46% 58%);
-  --day-zenith: hsl(197 78% 74%);
-  --day-horizon: hsl(43 72% 70%);
-  --day-horizon-glow: hsl(48 100% 78% / 0.34);
-  --day-thread: hsl(54 100% 92% / 0.62);
-  --day-solar-core: hsl(38 92% 72% / 0.66);
-  --day-solar-halo: hsl(154 70% 68% / 0.22);
-  --day-portal-core: hsl(44 98% 78% / 0.78);
-  --day-portal-ring: hsl(var(--zf-role-focus) / 0.56);
-  --day-portal-ruby: hsl(var(--zf-role-release) / 0.58);
-  --day-accent-1: hsl(var(--zf-role-focus) / 0.24);
-  --day-accent-2: hsl(var(--zf-role-mind) / 0.20);
-  --day-prism: hsl(var(--zf-role-release) / 0.18);
-  --day-atmosphere: hsl(var(--zf-role-body) / 0.14);
-  --day-vignette: hsl(176 44% 8% / 0.24);
-  --day-mote: hsl(var(--zf-role-focus) / 0.38);
-  --day-ray: var(--zf-trace);
-}
-
-html[data-daymode="golden"] {
-  --day-base: hsl(168 54% 66%);
-  --day-base-edge: hsl(42 58% 60%);
-  --day-zenith: hsl(186 66% 68%);
-  --day-horizon: hsl(34 82% 64%);
-  --day-horizon-glow: hsl(35 100% 72% / 0.42);
-  --day-thread: hsl(42 100% 86% / 0.68);
-  --day-solar-core: hsl(32 94% 67% / 0.70);
-  --day-solar-halo: hsl(42 90% 66% / 0.28);
-  --day-portal-core: hsl(35 98% 72% / 0.84);
-  --day-portal-ring: hsl(var(--zf-role-energy) / 0.62);
-  --day-portal-ruby: hsl(var(--zf-role-release) / 0.56);
-  --day-accent-1: hsl(var(--zf-role-energy) / 0.26);
-  --day-accent-2: hsl(var(--zf-role-focus) / 0.18);
-  --day-prism: hsl(var(--zf-role-release) / 0.18);
-  --day-atmosphere: hsl(var(--zf-role-energy) / 0.14);
-  --day-vignette: hsl(176 44% 8% / 0.28);
-  --day-mote: hsl(var(--zf-role-energy) / 0.36);
-  --day-ray: var(--zf-growth);
-}
-
-html[data-daymode="dusk"] {
-  --day-base: hsl(188 46% 62%);
-  --day-base-edge: hsl(258 34% 58%);
-  --day-zenith: hsl(210 58% 64%);
-  --day-horizon: hsl(28 66% 60%);
-  --day-horizon-glow: hsl(30 88% 66% / 0.28);
-  --day-thread: hsl(44 92% 82% / 0.46);
-  --day-solar-core: hsl(30 86% 66% / 0.48);
-  --day-solar-halo: hsl(264 62% 72% / 0.26);
-  --day-portal-core: hsl(34 86% 70% / 0.64);
-  --day-portal-ring: hsl(var(--zf-role-mind) / 0.60);
-  --day-portal-ruby: hsl(var(--zf-role-release) / 0.50);
-  --day-accent-1: hsl(var(--zf-role-mind) / 0.28);
-  --day-accent-2: hsl(var(--zf-role-focus) / 0.18);
-  --day-prism: hsl(var(--zf-role-release) / 0.20);
-  --day-atmosphere: hsl(var(--zf-role-mind) / 0.12);
-  --day-vignette: hsl(176 44% 8% / 0.32);
-  --day-mote: hsl(var(--zf-role-mind) / 0.34);
-  --day-ray: var(--zf-memory);
-}
 
 /* ==================== Layer 1 — Base aurora mesh ==================== */
 .day-cosmic__base {

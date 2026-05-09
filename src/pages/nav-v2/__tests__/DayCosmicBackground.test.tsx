@@ -11,7 +11,6 @@ vi.mock("@/hooks/useShouldAnimate", () => ({
 describe("DayCosmicBackground", () => {
   beforeEach(() => {
     mockShouldAnimate.mockReturnValue(true);
-    // Reset HTML data-daymode between tests
     delete document.documentElement.dataset.daymode;
   });
 
@@ -49,11 +48,15 @@ describe("DayCosmicBackground", () => {
     expect(threads.length).toBe(18);
   });
 
-  it("sets data-daymode on <html> based on current hour", () => {
+  it("sets local data-daymode based on current hour without mutating <html>", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-06-15T14:30:00")); // afternoon (14h)
     render(<DayCosmicBackground />);
-    expect(document.documentElement.dataset.daymode).toBe("afternoon");
+    expect(screen.getByTestId("day-cosmic-background")).toHaveAttribute(
+      "data-daymode",
+      "afternoon",
+    );
+    expect(document.documentElement.dataset.daymode).toBeUndefined();
   });
 
   it.each([
@@ -66,7 +69,10 @@ describe("DayCosmicBackground", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(iso));
     render(<DayCosmicBackground />);
-    expect(document.documentElement.dataset.daymode).toBe(expected);
+    expect(screen.getByTestId("day-cosmic-background")).toHaveAttribute(
+      "data-daymode",
+      expected,
+    );
   });
 
   it("mote animation gates on useShouldAnimate (true)", () => {

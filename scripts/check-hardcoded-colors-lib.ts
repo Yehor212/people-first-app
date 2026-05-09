@@ -41,6 +41,7 @@ export const ALLOWED_FILES = [
   "lib/progressStories.ts",
   "lib/seasonalEvents.ts",
   "components/state-of-mind/colorUtils.ts",
+  "pages/nav-v2/DayCosmicBackground.tsx",
   // Cinematic/immersive schedule and challenge views where fixed gradients are the feature
   "components/schedule/ScheduleVisuals.tsx",
   "components/schedule/ScheduleTimeline.tsx",

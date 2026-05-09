@@ -1,8 +1,9 @@
-import { memo, useEffect, useMemo, type CSSProperties } from "react";
+import { memo, useMemo, type CSSProperties } from "react";
 import { useShouldAnimate } from "@/hooks/useShouldAnimate";
 import "./DayCosmicBackground.css";
 
 type PhotonTone = "aqua" | "gold" | "mint" | "iris" | "rose";
+type DayMode = "dawn" | "morning" | "afternoon" | "golden" | "dusk";
 
 type PhotonStyle = CSSProperties & {
   "--photon-x": string;
@@ -25,6 +26,113 @@ type SunThreadStyle = CSSProperties & {
   "--thread-width": string;
 };
 
+type DayPaletteStyle = CSSProperties & {
+  [key: `--day-${string}`]: string;
+};
+
+const DAY_PALETTES: Record<DayMode, DayPaletteStyle> = {
+  dawn: {
+    "--day-base": "hsl(184 58% 72%)",
+    "--day-base-edge": "hsl(42 62% 64%)",
+    "--day-zenith": "hsl(190 78% 76%)",
+    "--day-horizon": "hsl(24 82% 68%)",
+    "--day-horizon-glow": "hsl(30 100% 76% / 0.36)",
+    "--day-thread": "hsl(34 100% 88% / 0.64)",
+    "--day-solar-core": "hsl(24 94% 70% / 0.68)",
+    "--day-solar-halo": "hsl(42 88% 70% / 0.24)",
+    "--day-portal-core": "hsl(28 98% 76% / 0.82)",
+    "--day-portal-ring": "hsl(var(--zf-role-energy) / 0.58)",
+    "--day-portal-ruby": "hsl(var(--zf-role-release) / 0.60)",
+    "--day-accent-1": "hsl(var(--zf-role-release) / 0.20)",
+    "--day-accent-2": "hsl(var(--zf-role-focus) / 0.18)",
+    "--day-prism": "hsl(var(--zf-role-mind) / 0.18)",
+    "--day-atmosphere": "hsl(var(--zf-role-energy) / 0.12)",
+    "--day-vignette": "hsl(176 44% 8% / 0.20)",
+    "--day-mote": "hsl(var(--zf-role-release) / 0.34)",
+    "--day-ray": "var(--zf-memory)",
+  },
+  morning: {
+    "--day-base": "hsl(178 58% 70%)",
+    "--day-base-edge": "hsl(154 48% 60%)",
+    "--day-zenith": "hsl(188 82% 75%)",
+    "--day-horizon": "hsl(44 70% 70%)",
+    "--day-horizon-glow": "hsl(48 100% 80% / 0.34)",
+    "--day-thread": "hsl(58 100% 92% / 0.64)",
+    "--day-solar-core": "hsl(42 92% 72% / 0.62)",
+    "--day-solar-halo": "hsl(162 72% 70% / 0.24)",
+    "--day-portal-core": "hsl(48 96% 78% / 0.80)",
+    "--day-portal-ring": "hsl(var(--zf-role-body) / 0.58)",
+    "--day-portal-ruby": "hsl(var(--zf-role-focus) / 0.56)",
+    "--day-accent-1": "hsl(var(--zf-role-focus) / 0.24)",
+    "--day-accent-2": "hsl(var(--zf-role-body) / 0.18)",
+    "--day-prism": "hsl(var(--zf-role-mind) / 0.16)",
+    "--day-atmosphere": "hsl(var(--zf-role-body) / 0.12)",
+    "--day-vignette": "hsl(176 44% 8% / 0.22)",
+    "--day-mote": "hsl(var(--zf-role-focus) / 0.36)",
+    "--day-ray": "var(--zf-trace)",
+  },
+  afternoon: {
+    "--day-base": "hsl(185 58% 70%)",
+    "--day-base-edge": "hsl(157 46% 58%)",
+    "--day-zenith": "hsl(197 78% 74%)",
+    "--day-horizon": "hsl(43 72% 70%)",
+    "--day-horizon-glow": "hsl(48 100% 78% / 0.34)",
+    "--day-thread": "hsl(54 100% 92% / 0.62)",
+    "--day-solar-core": "hsl(38 92% 72% / 0.66)",
+    "--day-solar-halo": "hsl(154 70% 68% / 0.22)",
+    "--day-portal-core": "hsl(44 98% 78% / 0.78)",
+    "--day-portal-ring": "hsl(var(--zf-role-focus) / 0.56)",
+    "--day-portal-ruby": "hsl(var(--zf-role-release) / 0.58)",
+    "--day-accent-1": "hsl(var(--zf-role-focus) / 0.24)",
+    "--day-accent-2": "hsl(var(--zf-role-mind) / 0.20)",
+    "--day-prism": "hsl(var(--zf-role-release) / 0.18)",
+    "--day-atmosphere": "hsl(var(--zf-role-body) / 0.14)",
+    "--day-vignette": "hsl(176 44% 8% / 0.24)",
+    "--day-mote": "hsl(var(--zf-role-focus) / 0.38)",
+    "--day-ray": "var(--zf-trace)",
+  },
+  golden: {
+    "--day-base": "hsl(168 54% 66%)",
+    "--day-base-edge": "hsl(42 58% 60%)",
+    "--day-zenith": "hsl(186 66% 68%)",
+    "--day-horizon": "hsl(34 82% 64%)",
+    "--day-horizon-glow": "hsl(35 100% 72% / 0.42)",
+    "--day-thread": "hsl(42 100% 86% / 0.68)",
+    "--day-solar-core": "hsl(32 94% 67% / 0.70)",
+    "--day-solar-halo": "hsl(42 90% 66% / 0.28)",
+    "--day-portal-core": "hsl(35 98% 72% / 0.84)",
+    "--day-portal-ring": "hsl(var(--zf-role-energy) / 0.62)",
+    "--day-portal-ruby": "hsl(var(--zf-role-release) / 0.56)",
+    "--day-accent-1": "hsl(var(--zf-role-energy) / 0.26)",
+    "--day-accent-2": "hsl(var(--zf-role-focus) / 0.18)",
+    "--day-prism": "hsl(var(--zf-role-release) / 0.18)",
+    "--day-atmosphere": "hsl(var(--zf-role-energy) / 0.14)",
+    "--day-vignette": "hsl(176 44% 8% / 0.28)",
+    "--day-mote": "hsl(var(--zf-role-energy) / 0.36)",
+    "--day-ray": "var(--zf-growth)",
+  },
+  dusk: {
+    "--day-base": "hsl(188 46% 62%)",
+    "--day-base-edge": "hsl(258 34% 58%)",
+    "--day-zenith": "hsl(210 58% 64%)",
+    "--day-horizon": "hsl(28 66% 60%)",
+    "--day-horizon-glow": "hsl(30 88% 66% / 0.28)",
+    "--day-thread": "hsl(44 92% 82% / 0.46)",
+    "--day-solar-core": "hsl(30 86% 66% / 0.48)",
+    "--day-solar-halo": "hsl(264 62% 72% / 0.26)",
+    "--day-portal-core": "hsl(34 86% 70% / 0.64)",
+    "--day-portal-ring": "hsl(var(--zf-role-mind) / 0.60)",
+    "--day-portal-ruby": "hsl(var(--zf-role-release) / 0.50)",
+    "--day-accent-1": "hsl(var(--zf-role-mind) / 0.28)",
+    "--day-accent-2": "hsl(var(--zf-role-focus) / 0.18)",
+    "--day-prism": "hsl(var(--zf-role-release) / 0.20)",
+    "--day-atmosphere": "hsl(var(--zf-role-mind) / 0.12)",
+    "--day-vignette": "hsl(176 44% 8% / 0.32)",
+    "--day-mote": "hsl(var(--zf-role-mind) / 0.34)",
+    "--day-ray": "var(--zf-memory)",
+  },
+};
+
 /**
  * DayCosmicBackground — Phase 3-A.4a-day light-mode cinematic backdrop.
  *
@@ -42,10 +150,10 @@ type SunThreadStyle = CSSProperties & {
  *   6. Paper grain SVG (feTurbulence, STATIC, 4% opacity, multiply)
  *   7. Edge foxing vignette — closest-corner radial darkening
  *
- * Time-of-day palette switcher (5 modes) via `data-daymode` on <html>:
+ * Time-of-day palette switcher (5 modes) via local `data-daymode`:
  *   dawn 5-9 / morning 9-12 / afternoon 12-17 / golden 17-19 / dusk 19-21
  * CSS custom properties --day-base / --day-accent-1 / --day-accent-2 per
- * mode — see DayCosmicBackground.css.
+ * mode are scoped on the backdrop root.
  *
  * Perf (Law 8): transforms/opacity only. Paper grain is STATIC (never
  * animated — kills mobile FPS). Motes + bokeh pulse gated by
@@ -64,10 +172,9 @@ type SunThreadStyle = CSSProperties & {
 export const DayCosmicBackground = memo(function DayCosmicBackground() {
   const shouldAnimate = useShouldAnimate();
 
-  // Time-of-day — set data attribute once on mount (memoised so tests can
-  // freeze time). Writes to <html>, same target as data-theme so CSS selectors
-  // can combine them if ever needed.
-  const daymode = useMemo(() => {
+  // Time-of-day is memoised so tests can freeze time. Palette variables stay
+  // local to this backdrop instead of invalidating the whole document.
+  const daymode = useMemo<DayMode>(() => {
     const hour = new Date().getHours();
     if (hour < 9) return "dawn";
     if (hour < 12) return "morning";
@@ -75,19 +182,6 @@ export const DayCosmicBackground = memo(function DayCosmicBackground() {
     if (hour < 19) return "golden";
     return "dusk";
   }, []);
-
-  useEffect(() => {
-    if (typeof document === "undefined") return;
-    const prev = document.documentElement.dataset.daymode;
-    document.documentElement.dataset.daymode = daymode;
-    return () => {
-      if (prev === undefined) {
-        delete document.documentElement.dataset.daymode;
-      } else {
-        document.documentElement.dataset.daymode = prev;
-      }
-    };
-  }, [daymode]);
 
   // 35 dust motes — deterministic positions + delays so baselines are stable.
   // Seed: index-derived sin/cos so tests match screenshots frame-for-frame.
@@ -147,6 +241,7 @@ export const DayCosmicBackground = memo(function DayCosmicBackground() {
       data-testid="day-cosmic-background"
       data-daymode={daymode}
       className="pointer-events-none absolute inset-0 z-0 overflow-hidden"
+      style={DAY_PALETTES[daymode]}
     >
       {/* Layer 1 — base aurora radial mesh */}
       <div className="day-cosmic__base" data-testid="day-cosmic-base" />
