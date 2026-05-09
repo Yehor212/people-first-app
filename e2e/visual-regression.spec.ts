@@ -3,8 +3,13 @@ import { createRequire } from 'module';
 
 const require = createRequire(import.meta.url);
 const packageJson = require('../package.json') as { version: string };
+const FROZEN_HOME_TIME = new Date('2026-04-16T20:00:00-05:00');
+
+test.use({ timezoneId: 'America/Chicago' });
+test.setTimeout(120000);
 
 test.beforeEach(async ({ page }) => {
+  await page.clock.setFixedTime(FROZEN_HOME_TIME);
   await page.addInitScript((appVersion: string) => {
     localStorage.setItem('zenflow-language-selected', JSON.stringify(true));
     localStorage.setItem('zenflow-google-auth-checked', JSON.stringify(true));

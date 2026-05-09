@@ -34,8 +34,10 @@ const require = createRequire(import.meta.url);
 const packageJson = require("../package.json") as { version: string };
 // ESM-safe __dirname (Playwright compiles spec as ESM in Phase 2-B project).
 const __specDir = path.dirname(fileURLToPath(import.meta.url));
+const FROZEN_HOME_TIME = new Date("2026-04-16T20:00:00-05:00");
 
 async function primeApp(page: import("@playwright/test").Page, oklchEnabled: boolean) {
+  await page.clock.setFixedTime(FROZEN_HOME_TIME);
   await page.addInitScript(
     ({ appVersion, oklch }: { appVersion: string; oklch: boolean }) => {
       localStorage.setItem("zenflow-language-selected", JSON.stringify(true));
@@ -120,6 +122,7 @@ test.describe("Design System Phase 2-B.2 — OKLCH flag bridge", () => {
   // Dev server cold start + font loading + Zustand rehydrate + animations
   // disable exceed default 30s. Empirically 45–55s on Windows, extend to 120s.
   test.setTimeout(120000);
+  test.use({ timezoneId: "America/Chicago" });
 
   test("home with flag off (HSL baseline)", async ({ page }) => {
     await primeApp(page, false);
