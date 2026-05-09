@@ -4,8 +4,21 @@ import { render } from "@testing-library/react";
 import { MiniValenceOrb } from "../MiniValenceOrb";
 
 vi.mock("../ValenceOrb", () => ({
-  ValenceOrb: ({ valence, size }: { valence: number; size?: number }) => (
-    <div data-testid="valence-orb" data-valence={valence} data-size={size} />
+  ValenceOrb: ({
+    valence,
+    size,
+    transitionProfile,
+  }: {
+    valence: number;
+    size?: number;
+    transitionProfile?: string;
+  }) => (
+    <div
+      data-testid="valence-orb"
+      data-valence={valence}
+      data-size={size}
+      data-transition-profile={transitionProfile}
+    />
   ),
 }));
 
@@ -16,6 +29,10 @@ describe("MiniValenceOrb", () => {
     expect(container.querySelector('[data-testid="valence-orb"]')).toHaveAttribute(
       "data-size",
       "120",
+    );
+    expect(container.querySelector('[data-testid="valence-orb"]')).toHaveAttribute(
+      "data-transition-profile",
+      "v1-soft",
     );
   });
 

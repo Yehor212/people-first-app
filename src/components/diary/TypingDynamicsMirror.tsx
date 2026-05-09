@@ -29,6 +29,9 @@ const MAX_DPR = 2.0;
 const FRAME_INTERVAL_MS = 1000 / 30;
 /** Fixed neutral valence for color derivation */
 const NEUTRAL_VALENCE = 0.0;
+const MINI_TARGET_LERP = 0.034;
+const MINI_TAIL_DISTANCE = 0.08;
+const MINI_TAIL_MULTIPLIER = 0.5;
 
 // ── Shader Sources ──
 
@@ -232,6 +235,11 @@ function mapDynamicsToUniforms(dynamics: TypingDynamics): TargetUniforms {
   return { brightness, shapeN1, shapeM, breathPeriod };
 }
 
+function miniOrbLerpRate(delta: number, dt: number): number {
+  const tailScale = Math.abs(delta) < MINI_TAIL_DISTANCE ? MINI_TAIL_MULTIPLIER : 1;
+  return 1 - Math.pow(1 - MINI_TARGET_LERP * tailScale, dt * 30);
+}
+
 // ── Reduced Motion Check (reactive) ──
 
 function useReducedMotion(): boolean {
@@ -349,15 +357,19 @@ export const TypingDynamicsMirror = memo(function TypingDynamicsMirror({
       lastFrameRef.current = timestamp;
       timeRef.current += dt;
 
-      // Exponential interpolation (0.5s settle — same pattern as ValenceOrb)
-      const lerpRate = 1 - Math.pow(1 - 0.06, dt * 30);
+      // Frame-rate independent interpolation with a softer final tail, matching the shared orb feel.
       const cur = currentRef.current;
       const tgt = targetRef.current;
 
-      cur.brightness += (tgt.brightness - cur.brightness) * lerpRate;
-      cur.shapeN1 += (tgt.shapeN1 - cur.shapeN1) * lerpRate;
-      cur.shapeM += (tgt.shapeM - cur.shapeM) * lerpRate;
-      cur.breathPeriod += (tgt.breathPeriod - cur.breathPeriod) * lerpRate;
+      const brightnessDelta = tgt.brightness - cur.brightness;
+      const shapeN1Delta = tgt.shapeN1 - cur.shapeN1;
+      const shapeMDelta = tgt.shapeM - cur.shapeM;
+      const breathPeriodDelta = tgt.breathPeriod - cur.breathPeriod;
+
+      cur.brightness += brightnessDelta * miniOrbLerpRate(brightnessDelta, dt);
+      cur.shapeN1 += shapeN1Delta * miniOrbLerpRate(shapeN1Delta, dt);
+      cur.shapeM += shapeMDelta * miniOrbLerpRate(shapeMDelta, dt);
+      cur.breathPeriod += breathPeriodDelta * miniOrbLerpRate(breathPeriodDelta, dt);
 
       // Proactive context loss detection
       if (glRef.current?.isContextLost()) {

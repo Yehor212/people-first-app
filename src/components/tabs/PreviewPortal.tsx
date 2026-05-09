@@ -182,6 +182,28 @@ export const V2PreviewPortal = memo(function V2PreviewPortal({
           className="v2-preview-portal__rift relative overflow-hidden p-3"
           data-testid="v1-v2-portal-rift"
         >
+          <span className="v2-preview-portal__chamber-grid pointer-events-none absolute inset-0" aria-hidden="true" />
+          <span className="v2-preview-portal__chamber-vignette pointer-events-none absolute inset-0" aria-hidden="true" />
+          <span
+            className="v2-preview-portal__portal v2-preview-portal__portal--v1 pointer-events-none absolute"
+            data-testid="v1-v2-portal-ring-v1"
+            aria-hidden="true"
+          >
+            <span className="v2-preview-portal__portal-core" />
+            <span className="v2-preview-portal__portal-slit" />
+          </span>
+          <span
+            className="v2-preview-portal__portal v2-preview-portal__portal--v2 pointer-events-none absolute"
+            data-testid="v1-v2-portal-ring-v2"
+            aria-hidden="true"
+          >
+            <span className="v2-preview-portal__portal-core" />
+            <span className="v2-preview-portal__portal-slit" />
+          </span>
+          <span className="v2-preview-portal__bridge-beam pointer-events-none absolute" aria-hidden="true">
+            <span className="v2-preview-portal__bridge-pulse" />
+          </span>
+          <span className="v2-preview-portal__floor-plate pointer-events-none absolute" aria-hidden="true" />
           <span
             className="v2-preview-portal__rift-frame pointer-events-none absolute inset-4 rounded-[24px] border border-dashed"
             aria-hidden="true"

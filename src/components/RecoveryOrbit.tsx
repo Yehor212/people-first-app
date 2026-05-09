@@ -13,6 +13,7 @@ export function RecoveryOrbit({ className, label = "ZenFlow recovery" }: Recover
       role="presentation"
       aria-hidden="true"
       data-testid="recovery-orbit"
+      data-orb-transition-profile="v1-soft"
     >
       <span className="zf-recovery-orbit__halo" />
       <span className="zf-recovery-orbit__scan" />

@@ -2,7 +2,7 @@ import { memo, useEffect, useState } from "react";
 
 import { cn } from "@/lib/utils";
 
-import { ValenceOrb } from "./ValenceOrb";
+import { ValenceOrb, type OrbTransitionProfile } from "./ValenceOrb";
 
 export type MiniValenceOrbSize = "xs" | "sm" | "md" | "lg";
 export type MiniValenceOrbChrome = "none" | "badge" | "refine";
@@ -14,6 +14,7 @@ interface MiniValenceOrbProps {
   chrome?: MiniValenceOrbChrome;
   containerClassName?: string;
   orbClassName?: string;
+  transitionProfile?: OrbTransitionProfile;
 }
 
 const BARE_SIZE_PRESETS: Record<
@@ -120,11 +121,13 @@ function OrbCore({
   hasEntry,
   containerClassName,
   orbClassName,
+  transitionProfile,
 }: {
   valence: number;
   hasEntry: boolean;
   containerClassName: string;
   orbClassName: string;
+  transitionProfile: OrbTransitionProfile;
 }) {
   const [oscillatedValence, setOscillatedValence] = useState(0);
 
@@ -137,8 +140,8 @@ function OrbCore({
     let frame = 0;
     const id = setInterval(() => {
       frame += 1;
-      setOscillatedValence(Math.sin(frame * 0.1) * 0.4);
-    }, 200);
+      setOscillatedValence(Math.sin(frame * 0.07) * 0.34);
+    }, 320);
 
     return () => clearInterval(id);
   }, [hasEntry]);
@@ -156,7 +159,7 @@ function OrbCore({
           orbClassName,
         )}
       >
-        <ValenceOrb valence={displayValence} size={120} />
+        <ValenceOrb valence={displayValence} size={120} transitionProfile={transitionProfile} />
       </div>
     </div>
   );
@@ -176,6 +179,7 @@ export const MiniValenceOrb = memo(function MiniValenceOrb({
   chrome = "none",
   containerClassName,
   orbClassName,
+  transitionProfile = "v1-soft",
 }: MiniValenceOrbProps) {
   if (chrome === "none") {
     const preset = BARE_SIZE_PRESETS[size];
@@ -185,6 +189,7 @@ export const MiniValenceOrb = memo(function MiniValenceOrb({
         hasEntry={hasEntry}
         containerClassName={cn(preset.container, containerClassName)}
         orbClassName={cn(preset.orb, orbClassName)}
+        transitionProfile={transitionProfile}
       />
     );
   }
@@ -204,6 +209,7 @@ export const MiniValenceOrb = memo(function MiniValenceOrb({
         hasEntry={hasEntry}
         containerClassName={preset.orbInset}
         orbClassName={cn(preset.orb, orbClassName)}
+        transitionProfile={transitionProfile}
       />
     </div>
   );

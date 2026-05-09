@@ -41,11 +41,61 @@ interface ValenceOrbProps {
   size?: number;
   /** Multiplier for the orb's ambient rotation/noise time; valence interpolation stays unchanged. */
   animationSpeed?: number;
+  /** Controls how the orb settles into a new mood state. */
+  transitionProfile?: OrbTransitionProfile;
 }
 
 const WEBGL_FRAME_INTERVAL = 1000 / 60; // 60fps for WebGL (shader is <1ms)
 const CANVAS_FRAME_INTERVAL = 1000 / 30; // 30fps for Canvas 2D fallback
 const PARTICLE_COUNT = 22;
+
+export type OrbTransitionProfile = "standard" | "v1-soft";
+
+interface OrbTransitionSettings {
+  targetBaseLerp: number;
+  shimmerBaseLerp: number;
+  visualBaseLerp: number;
+  tailDistance: number;
+  tailMultiplier: number;
+}
+
+export const ORB_TRANSITION_SETTINGS: Record<OrbTransitionProfile, OrbTransitionSettings> = {
+  standard: {
+    targetBaseLerp: 0.06,
+    shimmerBaseLerp: 0.02,
+    visualBaseLerp: 0.05,
+    tailDistance: 0,
+    tailMultiplier: 1,
+  },
+  "v1-soft": {
+    targetBaseLerp: 0.036,
+    shimmerBaseLerp: 0.016,
+    visualBaseLerp: 0.028,
+    tailDistance: 0.22,
+    tailMultiplier: 0.46,
+  },
+};
+
+export function resolveOrbTransitionSettings(
+  profile: OrbTransitionProfile,
+  distanceToTarget: number,
+  shimmerActive = false,
+): { targetBaseLerp: number; visualBaseLerp: number } {
+  const settings = ORB_TRANSITION_SETTINGS[profile];
+  const tailScale =
+    settings.tailDistance > 0 && distanceToTarget < settings.tailDistance
+      ? settings.tailMultiplier
+      : 1;
+
+  return {
+    targetBaseLerp: (shimmerActive ? settings.shimmerBaseLerp : settings.targetBaseLerp) * tailScale,
+    visualBaseLerp: settings.visualBaseLerp * tailScale,
+  };
+}
+
+function frameRateIndependentLerp(baseLerp: number, dt: number, referenceFps: number): number {
+  return 1 - Math.pow(1 - baseLerp, dt * referenceFps);
+}
 
 /** Probe whether WebGL actually renders (catches WKWebView/in-app browser broken contexts) */
 function probeWebGLWorks(): boolean {
@@ -88,6 +138,7 @@ export const ValenceOrb = memo(function ValenceOrb({
   valence,
   size = 192,
   animationSpeed = 1,
+  transitionProfile = "v1-soft",
 }: ValenceOrbProps) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef(0);
@@ -104,6 +155,8 @@ export const ValenceOrb = memo(function ValenceOrb({
   const smoothValenceRef = useRef(valence); // P5: smoothed valence for organic color/shape flow
   const animationSpeedRef = useRef(animationSpeed);
   animationSpeedRef.current = animationSpeed;
+  const transitionProfileRef = useRef<OrbTransitionProfile>(transitionProfile);
+  transitionProfileRef.current = transitionProfile;
 
   // Mutable animation state — avoids React re-renders during animation
   const stateRef = useRef<{
@@ -345,13 +398,18 @@ export const ValenceOrb = memo(function ValenceOrb({
       shimmerRef.current *= Math.pow(0.08, dt); // 0.08^(1/30) ≈ 0.92 per frame at 30fps
       if (shimmerRef.current < 0.005) shimmerRef.current = 0;
 
-      // P3: Slow interpolation during shimmer (dramatic metamorphosis)
-      // dt-based: 1 - (1 - rate)^(dt*30) ensures same visual speed at any fps
-      const baseLerp = shimmerRef.current > 0.1 ? 0.02 : 0.06;
-      const lerpRate = 1 - Math.pow(1 - baseLerp, dt * 30);
+      // Soft-tail interpolation: the last part of a mood transition must not
+      // snap. V1/V2 and mini-orbs share this profile by default.
+      const targetDelta = state.targetValence - state.currentValence;
+      const { targetBaseLerp } = resolveOrbTransitionSettings(
+        transitionProfileRef.current,
+        Math.abs(targetDelta),
+        shimmerRef.current > 0.1,
+      );
+      const lerpRate = frameRateIndependentLerp(targetBaseLerp, dt, 30);
 
       // Interpolate valence (exponential ease)
-      state.currentValence += (state.targetValence - state.currentValence) * lerpRate;
+      state.currentValence += targetDelta * lerpRate;
 
       // ── P4: Idle awareness (meditative slowdown after 8s inactivity) ──
       const idleElapsed = timestamp - lastInteractionRef.current;
@@ -363,7 +421,12 @@ export const ValenceOrb = memo(function ValenceOrb({
       // Lower factor → slow-breath settle. User feedback 2026-04-18:
       // "мягкость перехода от орба к орбу как раньше было" — restore very soft
       // transition between mood states, not snappy.
-      const smoothLerp = 1 - Math.pow(1 - 0.05, dt * 60);
+      const visualDelta = state.currentValence - smoothValenceRef.current;
+      const { visualBaseLerp } = resolveOrbTransitionSettings(
+        transitionProfileRef.current,
+        Math.abs(visualDelta),
+      );
+      const smoothLerp = frameRateIndependentLerp(visualBaseLerp, dt, 60);
       smoothValenceRef.current += (state.currentValence - smoothValenceRef.current) * smoothLerp;
 
       // Update particles (skip when off-screen to save CPU)
@@ -549,7 +612,7 @@ export const ValenceOrb = memo(function ValenceOrb({
       <div
         ref={wrapperRef}
         className="relative flex items-center justify-center flex-shrink-0"
-        data-orb-transition-profile="standard"
+        data-orb-transition-profile={transitionProfile}
         data-orb-animation-speed={animationSpeed}
         style={{ width: size, height: size }}
         aria-hidden="true"
@@ -575,7 +638,7 @@ export const ValenceOrb = memo(function ValenceOrb({
     <div
       ref={wrapperRef}
       className="relative flex items-center justify-center"
-      data-orb-transition-profile="standard"
+      data-orb-transition-profile={transitionProfile}
       data-orb-animation-speed={animationSpeed}
       style={{ width: size, height: size, touchAction: 'manipulation' }}
       aria-hidden="true"

@@ -49,6 +49,8 @@ describe("V2PreviewPortal", () => {
 
     expect(screen.getByTestId("v1-v2-portal")).toBeInTheDocument();
     expect(screen.getByTestId("v1-v2-portal-rift")).toBeInTheDocument();
+    expect(screen.getByTestId("v1-v2-portal-ring-v1")).toBeInTheDocument();
+    expect(screen.getByTestId("v1-v2-portal-ring-v2")).toBeInTheDocument();
     expect(screen.getByTestId("v1-v2-portal-orb-core")).toBeInTheDocument();
     expect(screen.getByText("Step into the new ritual space")).toBeInTheDocument();
     expect(screen.getByTestId("v1-v2-portal-primary")).toHaveAttribute(

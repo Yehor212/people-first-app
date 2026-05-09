@@ -61,7 +61,7 @@ vi.mock("@/components/state-of-mind/ValenceOrb", () => ({
   ValenceOrb: ({
     valence,
     size,
-    transitionProfile = "standard",
+    transitionProfile = "v1-soft",
     animationSpeed = 1,
   }: {
     valence: number;
@@ -281,7 +281,7 @@ describe("OrbPage progressive flow", () => {
     );
     expect(screen.getByTestId("valence-orb")).toHaveAttribute(
       "data-transition-profile",
-      "standard",
+      "v1-soft",
     );
     expect(screen.getByTestId("valence-orb")).toHaveAttribute(
       "data-animation-speed",
