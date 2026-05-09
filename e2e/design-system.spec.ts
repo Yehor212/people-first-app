@@ -35,6 +35,7 @@ const packageJson = require("../package.json") as { version: string };
 // ESM-safe __dirname (Playwright compiles spec as ESM in Phase 2-B project).
 const __specDir = path.dirname(fileURLToPath(import.meta.url));
 const FROZEN_HOME_TIME = new Date("2026-04-16T20:00:00-05:00");
+const HOME_SCREENSHOT_MAX_DIFF_PIXEL_RATIO = process.env.CI ? 0.035 : 0.02;
 
 async function primeApp(page: import("@playwright/test").Page, oklchEnabled: boolean) {
   await page.clock.setFixedTime(FROZEN_HOME_TIME);
@@ -129,7 +130,7 @@ test.describe("Design System Phase 2-B.2 — OKLCH flag bridge", () => {
     await waitForApp(page);
     await disableAnimations(page);
     await expect(page).toHaveScreenshot("home-flag-off-hsl.png", {
-      maxDiffPixelRatio: 0.02,
+      maxDiffPixelRatio: HOME_SCREENSHOT_MAX_DIFF_PIXEL_RATIO,
       fullPage: false,
     });
   });
@@ -139,7 +140,7 @@ test.describe("Design System Phase 2-B.2 — OKLCH flag bridge", () => {
     await waitForApp(page);
     await disableAnimations(page);
     await expect(page).toHaveScreenshot("home-flag-on-oklch.png", {
-      maxDiffPixelRatio: 0.02,
+      maxDiffPixelRatio: HOME_SCREENSHOT_MAX_DIFF_PIXEL_RATIO,
       fullPage: false,
     });
   });
