@@ -49,7 +49,7 @@ const WEBGL_FRAME_INTERVAL = 1000 / 60; // 60fps for WebGL (shader is <1ms)
 const CANVAS_FRAME_INTERVAL = 1000 / 30; // 30fps for Canvas 2D fallback
 const PARTICLE_COUNT = 22;
 
-export type OrbTransitionProfile = "standard" | "v1-soft";
+export type OrbTransitionProfile = "standard" | "v1-soft" | "input-soft";
 
 interface OrbTransitionSettings {
   targetBaseLerp: number;
@@ -73,6 +73,13 @@ export const ORB_TRANSITION_SETTINGS: Record<OrbTransitionProfile, OrbTransition
     visualBaseLerp: 0.028,
     tailDistance: 0.22,
     tailMultiplier: 0.46,
+  },
+  "input-soft": {
+    targetBaseLerp: 0.18,
+    shimmerBaseLerp: 0.12,
+    visualBaseLerp: 0.14,
+    tailDistance: 0.08,
+    tailMultiplier: 0.72,
   },
 };
 

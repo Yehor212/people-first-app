@@ -281,7 +281,7 @@ describe("OrbPage progressive flow", () => {
     );
     expect(screen.getByTestId("valence-orb")).toHaveAttribute(
       "data-transition-profile",
-      "v1-soft",
+      "input-soft",
     );
     expect(screen.getByTestId("valence-orb")).toHaveAttribute(
       "data-animation-speed",

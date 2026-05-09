@@ -106,6 +106,7 @@ export function OrbSelectStep({
                   valence={orbValence}
                   size={heroOrbSize}
                   animationSpeed={orbAnimationSpeed}
+                  transitionProfile="input-soft"
                 />
               </button>
             </div>

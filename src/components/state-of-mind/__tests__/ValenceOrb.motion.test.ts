@@ -26,4 +26,19 @@ describe("ValenceOrb motion profile", () => {
 
     expect(finalTail).toEqual(broadMove);
   });
+
+  it("keeps direct slider input responsive without removing a soft settle", () => {
+    const broadMove = resolveOrbTransitionSettings("input-soft", 0.7);
+    const finalTail = resolveOrbTransitionSettings("input-soft", 0.04);
+    const slowTail = resolveOrbTransitionSettings("v1-soft", 0.04);
+
+    expect(broadMove.targetBaseLerp).toBeGreaterThan(
+      ORB_TRANSITION_SETTINGS["v1-soft"].targetBaseLerp,
+    );
+    expect(broadMove.visualBaseLerp).toBeGreaterThan(
+      ORB_TRANSITION_SETTINGS["v1-soft"].visualBaseLerp,
+    );
+    expect(finalTail.targetBaseLerp).toBeLessThan(broadMove.targetBaseLerp);
+    expect(finalTail.targetBaseLerp).toBeGreaterThan(slowTail.targetBaseLerp);
+  });
 });

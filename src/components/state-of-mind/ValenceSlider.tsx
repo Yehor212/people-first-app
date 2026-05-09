@@ -57,6 +57,10 @@ export function ValenceSlider({ value, onChange }: ValenceSliderProps) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [isPressed, setIsPressed] = useState(false);
   const prevSnapRef = useRef(nearestSnapIndex(value));
+  const onChangeRef = useRef(onChange);
+  const pendingChangeRef = useRef<number | null>(null);
+  const changeRafRef = useRef<number | null>(null);
+  onChangeRef.current = onChange;
 
   // Haptic feedback when crossing snap position thresholds during drag
   useEffect(() => {
@@ -73,11 +77,15 @@ export function ValenceSlider({ value, onChange }: ValenceSliderProps) {
   }, [value]);
 
   const getValenceFromEvent = useCallback((clientX: number) => {
+    if (!Number.isFinite(clientX)) return 0;
     const track = trackRef.current;
     if (!track) return 0;
     const rect = track.getBoundingClientRect();
+    if (!rect || rect.width <= 0) return 0;
     const x = clientX - rect.left;
-    const ratio = Math.max(0, Math.min(1, x / rect.width));
+    const rawRatio = x / rect.width;
+    if (!Number.isFinite(rawRatio)) return 0;
+    const ratio = Math.max(0, Math.min(1, rawRatio));
     // Map 0-1 → -1.0 to 1.0, snap to 0.001 precision
     return Math.round((ratio * 2 - 1) * 1000) / 1000;
   }, []);
@@ -88,16 +96,48 @@ export function ValenceSlider({ value, onChange }: ValenceSliderProps) {
     return SNAP_POSITIONS[idx];
   }, []);
 
+  const queueChange = useCallback((next: number) => {
+    pendingChangeRef.current = next;
+    if (changeRafRef.current !== null) return;
+
+    changeRafRef.current = window.requestAnimationFrame(() => {
+      changeRafRef.current = null;
+      const pending = pendingChangeRef.current;
+      pendingChangeRef.current = null;
+      if (pending !== null) {
+        onChangeRef.current(pending);
+      }
+    });
+  }, []);
+
+  const commitChange = useCallback((next: number) => {
+    if (changeRafRef.current !== null) {
+      window.cancelAnimationFrame(changeRafRef.current);
+      changeRafRef.current = null;
+    }
+    pendingChangeRef.current = null;
+    onChangeRef.current(next);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (changeRafRef.current !== null) {
+        window.cancelAnimationFrame(changeRafRef.current);
+        changeRafRef.current = null;
+      }
+    };
+  }, []);
+
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     e.currentTarget.setPointerCapture(e.pointerId);
     setIsPressed(true);
-    onChange(getValenceFromEvent(e.clientX));
-  }, [getValenceFromEvent, onChange]);
+    commitChange(getValenceFromEvent(e.clientX));
+  }, [getValenceFromEvent, commitChange]);
 
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
     if (!e.currentTarget.hasPointerCapture(e.pointerId)) return;
-    onChange(getValenceFromEvent(e.clientX));
-  }, [getValenceFromEvent, onChange]);
+    queueChange(getValenceFromEvent(e.clientX));
+  }, [getValenceFromEvent, queueChange]);
 
   const handlePointerUp = useCallback((e: React.PointerEvent) => {
     e.currentTarget.releasePointerCapture(e.pointerId);
@@ -109,9 +149,9 @@ export function ValenceSlider({ value, onChange }: ValenceSliderProps) {
       const x = e.clientX - rect.left;
       const ratio = Math.max(0, Math.min(1, x / rect.width));
       const freeValue = Math.round((ratio * 2 - 1) * 1000) / 1000;
-      onChange(snapToNearest(freeValue));
+      commitChange(snapToNearest(freeValue));
     }
-  }, [onChange, snapToNearest]);
+  }, [commitChange, snapToNearest]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     const currentIdx = nearestSnapIndex(value);
@@ -129,8 +169,8 @@ export function ValenceSlider({ value, onChange }: ValenceSliderProps) {
       return;
     }
     e.preventDefault();
-    onChange(SNAP_POSITIONS[newIdx]);
-  }, [value, onChange]);
+    commitChange(SNAP_POSITIONS[newIdx]);
+  }, [value, commitChange]);
 
   // Thumb position as percentage (0-100)
   const thumbPercent = ((value + 1) / 2) * 100;
