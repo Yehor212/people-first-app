@@ -1,6 +1,11 @@
 import type { Config } from "tailwindcss";
 import plugin from "tailwindcss/plugin";
 
+const stripTailwindScanNoise = (content: string): string =>
+  content
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/^\s*\/\/.*$/gm, "");
+
 // Platform-adaptive variants: touch/mouse for input type, ios/android/desktop for platform
 const platformVariants = plugin(({ addVariant }) => {
   addVariant("touch", "@media (pointer: coarse)");
@@ -12,15 +17,26 @@ const platformVariants = plugin(({ addVariant }) => {
 
 export default {
   darkMode: ["class"],
-  content: [
-    "./pages/**/*.{ts,tsx}",
-    "./components/**/*.{ts,tsx}",
-    "./app/**/*.{ts,tsx}",
-    "./src/**/*.{ts,tsx}",
-    "!./src/**/*.test.{ts,tsx}",
-    "!./src/**/*.spec.{ts,tsx}",
-    "!./src/pages/__dev/**/*.{ts,tsx}",
-  ],
+  content: {
+    files: [
+      "./pages/**/*.{ts,tsx}",
+      "./components/**/*.{ts,tsx}",
+      "./app/**/*.{ts,tsx}",
+      "./src/**/*.{ts,tsx}",
+      "!./src/**/*.test.{ts,tsx}",
+      "!./src/**/*.spec.{ts,tsx}",
+      "!./src/design-tokens/**/*.{ts,tsx}",
+      "!./src/generated/**/*.{ts,tsx}",
+      "!./src/i18n/**/*.{ts,tsx}",
+      "!./src/pages/__dev/**/*.{ts,tsx}",
+      "!./src/storage/**/*.{ts,tsx}",
+      "!./src/types/**/*.{ts,tsx}",
+    ],
+    transform: {
+      ts: stripTailwindScanNoise,
+      tsx: stripTailwindScanNoise,
+    },
+  },
   prefix: "",
   theme: {
     container: {

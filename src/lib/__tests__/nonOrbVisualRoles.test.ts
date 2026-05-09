@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import {
   getHabitCategoryVisualRole,
   getHabitRoleTone,
@@ -10,10 +12,7 @@ import {
   getTimeOfDayVisualRole,
 } from "../nonOrbVisualRoles";
 
-function extractBgAlpha(className: string): number {
-  const match = /bg-\[hsl\(var\(--zf-role-[^)]+\)\/(0\.\d+)\)\]/.exec(className);
-  return match ? Number(match[1]) : 0;
-}
+const roleToneCss = readFileSync(resolve(process.cwd(), "src/index.css"), "utf8");
 
 describe("nonOrbVisualRoles", () => {
   it("maps habit categories to distinct wellness roles", () => {
@@ -44,12 +43,17 @@ describe("nonOrbVisualRoles", () => {
     const standardTone = getRoleTone("body");
     const habitTone = getHabitRoleTone("body");
 
-    expect(extractBgAlpha(standardTone.surfaceClass)).toBeLessThan(0.16);
-    expect(extractBgAlpha(habitTone.surfaceClass)).toBeGreaterThanOrEqual(0.3);
-    expect(extractBgAlpha(habitTone.activeSurfaceClass)).toBeGreaterThanOrEqual(0.46);
-    expect(extractBgAlpha(habitTone.iconClass)).toBeGreaterThanOrEqual(0.4);
-    expect(habitTone.gradientClass).toContain("/0.62");
-    expect(habitTone.gradientClass).not.toContain("/0.07");
+    expect(standardTone.cssVar).toBe("--zf-role-body");
+    expect(habitTone.cssVar).toBe("--zf-role-body");
+    expect(standardTone.surfaceClass).toBe("zf-role-surface");
+    expect(habitTone.surfaceClass).toBe("zf-habit-role-surface");
+    expect(habitTone.activeSurfaceClass).toBe("zf-habit-role-surface-active");
+    expect(habitTone.iconClass).toBe("zf-habit-role-icon");
+    expect(habitTone.gradientClass).toBe("zf-habit-role-gradient");
+    expect(roleToneCss).toContain(".zf-role-surface");
+    expect(roleToneCss).toContain("background-color: hsl(var(--habit-role, var(--zf-role-space)) / 0.08)");
+    expect(roleToneCss).toContain(".zf-habit-role-surface");
+    expect(roleToneCss).toContain("background-color: hsl(var(--habit-role, var(--zf-role-space)) / 0.30)");
   });
 
   it("gives routine starters distinct playful companion stamp tones", () => {
@@ -66,11 +70,13 @@ describe("nonOrbVisualRoles", () => {
 
     expect(new Set(tones.map((tone) => tone.role)).size).toBeGreaterThanOrEqual(5);
     for (const tone of tones) {
-      expect(tone.tileClass).toContain("linear-gradient");
-      expect(tone.tileClass).toContain("border-[hsl");
-      expect(tone.iconClass).toContain("hsl(var(");
-      expect(tone.proofClass).toContain("hsl(var(");
+      expect(tone.tileClass).toBe("zf-habit-starter-tile");
+      expect(tone.iconClass).toBe("zf-habit-starter-icon");
+      expect(tone.proofClass).toBe("zf-habit-starter-proof");
+      expect(tone.haloClass).toBe("zf-habit-starter-halo");
     }
+    expect(roleToneCss).toContain(".zf-habit-starter-tile");
+    expect(roleToneCss).toContain("linear-gradient(");
     expect(getHabitStarterPlayTone("unknown-template").role).toBe("space");
   });
 

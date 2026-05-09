@@ -976,6 +976,141 @@
 }
 
 @layer utilities {
+  /* Role tone utilities: one CSS-variable driven system instead of hundreds of generated arbitrary Tailwind rules. */
+  [data-visual-role="body"] {
+    --habit-role: var(--zf-role-body);
+  }
+  [data-visual-role="mind"] {
+    --habit-role: var(--zf-role-mind);
+  }
+  [data-visual-role="focus"] {
+    --habit-role: var(--zf-role-focus);
+  }
+  [data-visual-role="rest"] {
+    --habit-role: var(--zf-role-rest);
+  }
+  [data-visual-role="energy"] {
+    --habit-role: var(--zf-role-energy);
+  }
+  [data-visual-role="release"] {
+    --habit-role: var(--zf-role-release);
+  }
+  [data-visual-role="diary"] {
+    --habit-role: var(--zf-role-diary);
+  }
+  [data-visual-role="space"] {
+    --habit-role: var(--zf-role-space);
+  }
+  [data-visual-role="gratitude"] {
+    --habit-role: var(--zf-role-gratitude);
+  }
+  [data-visual-role="settings"] {
+    --habit-role: var(--zf-role-settings);
+  }
+
+  .zf-role-text {
+    color: hsl(var(--habit-role, var(--zf-role-space)));
+  }
+  .zf-role-border {
+    border-color: hsl(var(--habit-role, var(--zf-role-space)) / 0.28);
+  }
+  .zf-role-bg {
+    background-color: hsl(var(--habit-role, var(--zf-role-space)) / 0.12);
+  }
+  .zf-role-bg-soft {
+    background-color: hsl(var(--habit-role, var(--zf-role-space)) / 0.07);
+  }
+  .zf-role-surface {
+    border-color: hsl(var(--habit-role, var(--zf-role-space)) / 0.20);
+    background-color: hsl(var(--habit-role, var(--zf-role-space)) / 0.08);
+  }
+  .zf-role-surface-active {
+    border-color: hsl(var(--habit-role, var(--zf-role-space)) / 0.38);
+    background-color: hsl(var(--habit-role, var(--zf-role-space)) / 0.15);
+    box-shadow: 0 18px 46px -30px hsl(var(--habit-role, var(--zf-role-space)) / 0.62);
+  }
+  .zf-role-icon {
+    border-color: hsl(var(--habit-role, var(--zf-role-space)) / 0.24);
+    background-color: hsl(var(--habit-role, var(--zf-role-space)) / 0.12);
+    color: hsl(var(--habit-role, var(--zf-role-space)));
+  }
+  .zf-role-ring {
+    --tw-ring-color: hsl(var(--habit-role, var(--zf-role-space)) / 0.30);
+  }
+  .zf-role-rail {
+    background-color: hsl(var(--habit-role, var(--zf-role-space)) / 0.82);
+  }
+  .zf-role-gradient {
+    --tw-gradient-from: hsl(var(--habit-role, var(--zf-role-space)) / 0.22) var(--tw-gradient-from-position);
+    --tw-gradient-to: hsl(var(--habit-role, var(--zf-role-space)) / 0) var(--tw-gradient-to-position);
+    --tw-gradient-stops: var(--tw-gradient-from), hsl(var(--habit-role, var(--zf-role-space)) / 0.08) var(--tw-gradient-via-position), var(--tw-gradient-to);
+  }
+  .zf-role-focus-ring:focus-visible {
+    --tw-ring-color: hsl(var(--habit-role, var(--zf-role-space)) / 0.62);
+  }
+
+  .zf-habit-role-border {
+    border-color: hsl(var(--habit-role, var(--zf-role-space)) / 0.66);
+  }
+  .zf-habit-role-bg {
+    background-color: hsl(var(--habit-role, var(--zf-role-space)) / 0.34);
+  }
+  .zf-habit-role-bg-soft {
+    background-color: hsl(var(--habit-role, var(--zf-role-space)) / 0.28);
+  }
+  .zf-habit-role-surface {
+    border-color: hsl(var(--habit-role, var(--zf-role-space)) / 0.58);
+    background-color: hsl(var(--habit-role, var(--zf-role-space)) / 0.30);
+  }
+  .zf-habit-role-surface-active {
+    border-color: hsl(var(--habit-role, var(--zf-role-space)) / 0.72);
+    background-color: hsl(var(--habit-role, var(--zf-role-space)) / 0.48);
+    box-shadow: 0 22px 52px -28px hsl(var(--habit-role, var(--zf-role-space)) / 0.86);
+  }
+  .zf-habit-role-icon {
+    border-color: hsl(var(--habit-role, var(--zf-role-space)) / 0.66);
+    background-color: hsl(var(--habit-role, var(--zf-role-space)) / 0.42);
+    color: hsl(var(--habit-role, var(--zf-role-space)));
+  }
+  .zf-habit-role-ring {
+    --tw-ring-color: hsl(var(--habit-role, var(--zf-role-space)) / 0.64);
+  }
+  .zf-habit-role-rail {
+    background-color: hsl(var(--habit-role, var(--zf-role-space)) / 0.92);
+  }
+  .zf-habit-role-gradient {
+    --tw-gradient-from: hsl(var(--habit-role, var(--zf-role-space)) / 0.62) var(--tw-gradient-from-position);
+    --tw-gradient-to: hsl(var(--habit-role, var(--zf-role-space)) / 0) var(--tw-gradient-to-position);
+    --tw-gradient-stops: var(--tw-gradient-from), hsl(var(--habit-role, var(--zf-role-space)) / 0.34) var(--tw-gradient-via-position), var(--tw-gradient-to);
+  }
+  .zf-habit-role-focus-ring:focus-visible {
+    --tw-ring-color: hsl(var(--habit-role, var(--zf-role-space)) / 0.72);
+  }
+
+  .zf-habit-starter-tile {
+    border-color: hsl(var(--habit-role, var(--zf-role-space)) / 0.90);
+    background: linear-gradient(
+      145deg,
+      hsl(var(--habit-role, var(--zf-role-space)) / 0.88),
+      hsl(var(--zf-night-0) / 0.42)
+    );
+    box-shadow:
+      inset 0 1px 0 hsl(var(--foreground) / 0.16),
+      0 20px 52px -28px hsl(var(--habit-role, var(--zf-role-space)) / 0.94);
+  }
+  .zf-habit-starter-icon {
+    border-color: hsl(var(--habit-role, var(--zf-role-space)) / 0.90);
+    background-color: hsl(var(--habit-role, var(--zf-role-space)) / 0.30);
+    color: hsl(var(--zf-text-strong));
+  }
+  .zf-habit-starter-proof {
+    background-color: hsl(var(--habit-role, var(--zf-role-space)));
+    box-shadow: 0 0 16px hsl(var(--habit-role, var(--zf-role-space)) / 0.72);
+  }
+  .zf-habit-starter-halo {
+    background-color: hsl(var(--habit-role, var(--zf-role-space)) / 0.22);
+  }
+
   /* ===== SCROLL UTILITIES ===== */
 
   /* Hide scrollbar (horizontal carousels, tag lists) */
