@@ -1004,6 +1004,33 @@
     backdrop-filter: blur(22px);
   }
 
+  .v2-preview-portal:focus-within .v2-preview-portal__rift,
+  .v2-preview-portal[data-launching] .v2-preview-portal__rift {
+    border-color: hsl(var(--zf-role-body) / 0.48);
+  }
+
+  .v2-preview-portal:focus-within .v2-preview-portal__bridge-beam,
+  .v2-preview-portal[data-launching] .v2-preview-portal__bridge-beam {
+    opacity: 1;
+    transform: translateZ(0) scaleX(1.03);
+  }
+
+  .v2-preview-portal[data-launching] .v2-preview-portal__rift-aperture,
+  .v2-preview-portal[data-launching] .v2-preview-portal__depth-ring {
+    opacity: 1;
+  }
+
+  @media (hover: hover) {
+    .v2-preview-portal:hover .v2-preview-portal__rift {
+      border-color: hsl(var(--zf-role-body) / 0.42);
+    }
+
+    .v2-preview-portal:hover .v2-preview-portal__bridge-beam {
+      opacity: 1;
+      transform: translateZ(0) scaleX(1.02);
+    }
+  }
+
   .v2-preview-portal__scan {
     z-index: -1;
     background: linear-gradient(
@@ -1094,6 +1121,7 @@
     min-height: clamp(322px, 74vw, 360px);
     border: 1px solid hsl(var(--v2-portal-blue) / 0.46);
     border-radius: 34px;
+    contain: paint;
     isolation: isolate;
     background:
       radial-gradient(ellipse at 18% 40%, hsl(var(--v2-portal-blue) / 0.32), transparent 32%),
@@ -1106,6 +1134,7 @@
       0 0 0 1px hsl(var(--v2-portal-orange) / 0.12),
       inset 0 0 0 1px hsl(var(--foreground) / 0.08),
       inset 0 1px 0 hsl(var(--foreground) / 0.18);
+    transition: border-color 220ms ease;
   }
 
   .v2-preview-portal__chamber-grid {
@@ -1186,6 +1215,7 @@
       0 0 90px hsl(var(--v2-portal-blue) / 0.18),
       inset 0 0 28px hsl(var(--background) / 0.88),
       inset 0 0 0 0.5rem hsl(var(--foreground) / 0.04);
+    transform-origin: center;
     animation: v2-portal-ring-breathe 7.2s ease-in-out infinite;
   }
 
@@ -1252,9 +1282,90 @@
     opacity: 0.76;
   }
 
+  .v2-preview-portal__rift-aperture {
+    left: 50%;
+    top: clamp(3.85rem, 13vw, 4.7rem);
+    z-index: 2;
+    width: clamp(10.4rem, 43vw, 12.8rem);
+    height: clamp(10.4rem, 43vw, 12.8rem);
+    border-radius: 9999px;
+    opacity: 0.82;
+    transform: translateX(-50%);
+    background:
+      radial-gradient(circle at 50% 50%, hsl(var(--zf-role-body) / 0.20), transparent 48%),
+      conic-gradient(
+        from 210deg,
+        hsl(var(--v2-portal-blue) / 0.00),
+        hsl(var(--v2-portal-blue) / 0.20),
+        hsl(var(--v2-portal-green) / 0.22),
+        hsl(var(--v2-portal-orange) / 0.18),
+        hsl(var(--v2-portal-blue) / 0.00)
+      );
+    box-shadow: inset 0 0 34px hsl(var(--background) / 0.46);
+    transition: opacity 220ms ease;
+  }
+
+  .v2-preview-portal__depth-ring {
+    left: 50%;
+    top: clamp(4rem, 13.5vw, 4.9rem);
+    z-index: 2;
+    border-radius: 9999px;
+    opacity: 0.78;
+    transform: translateX(-50%);
+    transition: opacity 220ms ease;
+  }
+
+  .v2-preview-portal__depth-ring--outer {
+    width: clamp(11.9rem, 50vw, 14.2rem);
+    height: clamp(11.9rem, 50vw, 14.2rem);
+    border: 1px solid hsl(var(--zf-role-focus) / 0.18);
+    box-shadow:
+      0 0 40px hsl(var(--zf-role-focus) / 0.12),
+      inset 0 0 34px hsl(var(--zf-role-energy) / 0.08);
+  }
+
+  .v2-preview-portal__depth-ring--inner {
+    top: clamp(5.15rem, 17vw, 6rem);
+    width: clamp(8.5rem, 35vw, 10.6rem);
+    height: clamp(8.5rem, 35vw, 10.6rem);
+    border: 1px solid hsl(var(--zf-role-body) / 0.26);
+    background: hsl(var(--zf-role-body) / 0.04);
+  }
+
+  .v2-preview-portal__stabilizer {
+    left: 50%;
+    z-index: 6;
+    width: clamp(5.4rem, 26vw, 7.4rem);
+    height: 0.48rem;
+    border: 1px solid hsl(var(--foreground) / 0.12);
+    border-radius: 9999px;
+    background:
+      linear-gradient(90deg, hsl(var(--v2-portal-blue) / 0.18), hsl(var(--v2-portal-green) / 0.36), hsl(var(--v2-portal-orange) / 0.18)),
+      hsl(var(--card) / 0.32);
+    box-shadow: 0 0 22px hsl(var(--zf-role-body) / 0.18);
+    transform: translateX(-50%);
+  }
+
+  .v2-preview-portal__stabilizer--top {
+    top: 3.35rem;
+  }
+
+  .v2-preview-portal__stabilizer--bottom {
+    bottom: 5.65rem;
+    opacity: 0.74;
+  }
+
   .v2-preview-portal__reactor {
     top: clamp(4rem, 14vw, 4.8rem);
     z-index: 4;
+  }
+
+  .v2-preview-portal__reactor-aura {
+    top: -1.4rem;
+    width: clamp(9.8rem, 42vw, 12.6rem);
+    height: clamp(9.8rem, 42vw, 12.6rem);
+    background: radial-gradient(circle at 50% 50%, hsl(var(--zf-role-body) / 0.17), transparent 65%);
+    opacity: 0.82;
   }
 
   .v2-preview-portal__reactor-disc {
@@ -1285,6 +1396,7 @@
     z-index: 3;
     height: 4px;
     border-radius: 9999px;
+    opacity: 0.86;
     background: linear-gradient(
       90deg,
       hsl(var(--v2-portal-blue) / 0),
@@ -1296,6 +1408,11 @@
     box-shadow:
       0 0 22px hsl(var(--v2-portal-blue) / 0.36),
       0 0 24px hsl(var(--v2-portal-orange) / 0.28);
+    transform: translateZ(0);
+    transform-origin: center;
+    transition:
+      opacity 220ms ease,
+      transform 220ms ease;
   }
 
   .v2-preview-portal__bridge-pulse {
@@ -1370,6 +1487,16 @@
     box-shadow: 0 0 18px hsl(var(--zf-role-body) / 0.70);
   }
 
+  .v2-preview-portal__stream-node {
+    z-index: 5;
+    background: hsl(var(--foreground) / 0.86);
+    box-shadow:
+      0 0 12px hsl(var(--zf-role-body) / 0.62),
+      0 0 24px hsl(var(--zf-role-focus) / 0.26);
+    opacity: 0.34;
+    animation: v2-portal-stream-node 4.4s ease-in-out infinite;
+  }
+
   .v2-preview-portal__orbit-outer {
     border-color: hsl(var(--v2-portal-blue) / 0.24);
     box-shadow:
@@ -1440,11 +1567,9 @@
     0%,
     100% {
       opacity: 0.72;
-      filter: saturate(1.04);
     }
     50% {
       opacity: 1;
-      filter: saturate(1.22);
     }
   }
 
@@ -1475,10 +1600,23 @@
     }
   }
 
+  @keyframes v2-portal-stream-node {
+    0%,
+    100% {
+      opacity: 0.24;
+      transform: translate3d(-0.35rem, 0, 0) scale(0.72);
+    }
+    50% {
+      opacity: 0.92;
+      transform: translate3d(0.35rem, 0, 0) scale(1.08);
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .v2-preview-portal__portal,
     .v2-preview-portal__portal-slit,
     .v2-preview-portal__bridge-pulse,
+    .v2-preview-portal__stream-node,
     .v2-preview-portal__orb-core {
       animation: none;
     }

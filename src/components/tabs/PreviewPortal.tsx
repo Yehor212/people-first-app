@@ -40,6 +40,13 @@ const PORTAL_SPARKS = [
   { insetInlineEnd: "31%", top: "58%" },
 ] satisfies readonly CSSProperties[];
 
+const PORTAL_STREAM_NODES = [
+  { insetInlineStart: "28%", top: "43%", animationDelay: "-0.7s" },
+  { insetInlineStart: "40%", top: "44%", animationDelay: "-1.9s" },
+  { insetInlineEnd: "39%", top: "44%", animationDelay: "-1.1s" },
+  { insetInlineEnd: "27%", top: "43%", animationDelay: "-2.5s" },
+] satisfies readonly CSSProperties[];
+
 export function buildV2PortalHref(
   target: V2PortalTarget,
   options: V2PortalHrefOptions = {},
@@ -216,6 +223,15 @@ export const V2PreviewPortal = memo(function V2PreviewPortal({
             aria-hidden="true"
           />
           <span
+            className="v2-preview-portal__rift-aperture pointer-events-none absolute"
+            data-testid="v1-v2-portal-aperture"
+            aria-hidden="true"
+          />
+          <span className="v2-preview-portal__depth-ring v2-preview-portal__depth-ring--outer pointer-events-none absolute" aria-hidden="true" />
+          <span className="v2-preview-portal__depth-ring v2-preview-portal__depth-ring--inner pointer-events-none absolute" aria-hidden="true" />
+          <span className="v2-preview-portal__stabilizer v2-preview-portal__stabilizer--top pointer-events-none absolute" aria-hidden="true" />
+          <span className="v2-preview-portal__stabilizer v2-preview-portal__stabilizer--bottom pointer-events-none absolute" aria-hidden="true" />
+          <span
             className="v2-preview-portal__rift-line pointer-events-none absolute inset-x-5 top-[44%] h-[2px] rounded-full"
             aria-hidden="true"
           />
@@ -241,7 +257,17 @@ export const V2PreviewPortal = memo(function V2PreviewPortal({
               transition={{ duration: 2.8 + index * 0.35, repeat: Infinity, ease: "easeInOut" }}
             />
           ))}
+          {PORTAL_STREAM_NODES.map((nodeStyle, index) => (
+            <span
+              key={`${nodeStyle.top}-${index}`}
+              className="v2-preview-portal__stream-node pointer-events-none absolute h-2 w-2 rounded-full"
+              style={nodeStyle}
+              data-testid="v1-v2-portal-stream-node"
+              aria-hidden="true"
+            />
+          ))}
           <div className="v2-preview-portal__reactor pointer-events-none absolute inset-x-0 flex justify-center" aria-hidden="true">
+            <span className="v2-preview-portal__reactor-aura absolute rounded-full" />
             <span className="v2-preview-portal__reactor-disc absolute rounded-full" />
             <span className="v2-preview-portal__reactor-glass absolute rounded-full" />
             <motion.span
