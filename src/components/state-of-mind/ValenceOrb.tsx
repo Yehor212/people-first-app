@@ -24,7 +24,7 @@ import { shouldAnimate } from '@/lib/animationUtils';
 import { recordError } from '@/lib/crashReporting';
 import { hapticTap } from '@/lib/haptics';
 import { hapticMedium } from '@/lib/haptics';
-import { safeSessionStorageGet, safeSessionStorageSet } from '@/lib/safeJson';
+import { safeSessionStorageSet } from '@/lib/safeJson';
 import { SSK } from '@/lib/storageKeys';
 import { createParticlePool, updateParticles, burstParticles } from './particleSystem';
 import { drawOrbScene, getShapeParams } from './orbRenderer';
@@ -49,10 +49,30 @@ interface ValenceOrbProps {
   renderer?: OrbRendererMode;
 }
 
+type OrbWorkerPayload = {
+  valence: number;
+  time: number;
+  size: number;
+  dpr: number;
+  isDark: boolean;
+  color: { h: number; s: number; l: number };
+  shape: ReturnType<typeof getShapeParams>;
+  particles: Particle[];
+  genesis: number;
+  touch: { x: number; y: number; age: number };
+  shimmer: number;
+};
+
+type OrbWorkerController = {
+  render: (payload: OrbWorkerPayload) => void;
+  dispose: () => void;
+};
+
 const WEBGL_FRAME_INTERVAL = 1000 / 60; // 60fps for WebGL (shader is <1ms)
 const CANVAS_FRAME_INTERVAL = 1000 / 30; // 30fps for Canvas 2D fallback
 const PARTICLE_COUNT = 22;
 const WEBGL_BUILD_BUDGET_MS = 500;
+const WEBGL_READINESS_TIMEOUT_MS = 8000;
 const WEBGL_UPGRADE_DELAY_MS = 180;
 
 export type OrbTransitionProfile = "standard" | "v1-soft" | "input-soft";
@@ -156,7 +176,7 @@ function getRendererOverride(): OrbRendererMode | null {
     // graceful: malformed location should never block the orb
   }
 
-  return safeSessionStorageGet<OrbRendererMode | null>(SSK.ORB_RENDERER_SESSION, null);
+  return null;
 }
 
 function shouldTryWebGL(mode: OrbRendererMode): boolean {
@@ -164,21 +184,24 @@ function shouldTryWebGL(mode: OrbRendererMode): boolean {
   if (override === 'canvas') return false;
   if (override === 'webgl') return true;
   if (mode === 'canvas') return false;
-  if (isChromiumLikeBrowser()) return false;
   return true;
 }
 
-function isChromiumLikeBrowser(): boolean {
+function rememberSlowWebGL(durationMs: number) {
+  safeSessionStorageSet(SSK.ORB_WEBGL_SLOW_MS, Math.round(durationMs));
+}
+
+function canUseWorkerWebGL(): boolean {
   try {
-    return /\b(Chrome|Chromium|HeadlessChrome|Edg|OPR)\//.test(navigator.userAgent);
+    return (
+      typeof Worker !== 'undefined' &&
+      typeof HTMLCanvasElement !== 'undefined' &&
+      'transferControlToOffscreen' in HTMLCanvasElement.prototype &&
+      typeof OffscreenCanvas !== 'undefined'
+    );
   } catch {
     return false;
   }
-}
-
-function rememberSlowWebGL(durationMs: number) {
-  safeSessionStorageSet(SSK.ORB_RENDERER_SESSION, 'canvas');
-  safeSessionStorageSet(SSK.ORB_WEBGL_SLOW_MS, Math.round(durationMs));
 }
 
 function scheduleAfterFirstPaint(task: () => void): () => void {
@@ -222,6 +245,7 @@ export const ValenceOrb = memo(function ValenceOrb({
   const mountedRef = useRef(true);
   const isVisibleRef = useRef(true);
   const glRendererRef = useRef<OrbGLRenderer | null>(null);
+  const workerRendererRef = useRef<OrbWorkerController | null>(null);
   const canvasElRef = useRef<HTMLCanvasElement | null>(null);
   const [ctxFailed, setCtxFailed] = useState(false);
   const genesisStartRef = useRef(0);
@@ -278,6 +302,7 @@ export const ValenceOrb = memo(function ValenceOrb({
     if (!wrapper) return;
 
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const canvasDpr = 1;
 
     // Initialize animation state
     const cx = size / 2;
@@ -308,14 +333,16 @@ export const ValenceOrb = memo(function ValenceOrb({
     // Per HTML spec, once getContext('webgl2') succeeds, getContext('2d')
     // on the same canvas returns null — a new <canvas> element is required.
 
-    let activeCanvas = createCanvas(size, dpr);
+    let activeCanvas = createCanvas(size, canvasDpr);
     let glRenderer: OrbGLRenderer | null = null;
+    let workerRenderer: OrbWorkerController | null = null;
     let ctx2d: CanvasRenderingContext2D | null = null;
     let webglEventCanvas: HTMLCanvasElement | null = null;
+    let webglWorker: Worker | null = null;
 
     // Canvas 2D fallback (always tried if WebGL skipped or failed)
     if (!glRenderer) {
-      const c2dCanvas = createCanvas(size, dpr);
+      const c2dCanvas = createCanvas(size, canvasDpr);
       try {
         ctx2d = c2dCanvas.getContext('2d', { willReadFrequently: false });
       } catch (err) {
@@ -380,6 +407,39 @@ export const ValenceOrb = memo(function ValenceOrb({
       });
     };
 
+    const createWorkerPayload = (
+      v: number,
+      t: number,
+      particles: Particle[],
+      timestamp = performance.now(),
+    ): OrbWorkerPayload => {
+      const color = valenceToHSL(v);
+      color.h = (color.h + Math.sin(t * 0.5) * 2 + 360) % 360;
+
+      return {
+        valence: v,
+        time: t,
+        size,
+        dpr,
+        isDark: isDarkRead(),
+        color,
+        shape: getShapeParams(v),
+        particles,
+        genesis: computeGenesis(timestamp),
+        touch: computeTouch(t),
+        shimmer: shimmerRef.current,
+      };
+    };
+
+    const renderWorkerGL = (
+      v: number,
+      t: number,
+      particles: Particle[],
+      timestamp = performance.now(),
+    ) => {
+      workerRenderer?.render(createWorkerPayload(v, t, particles, timestamp));
+    };
+
     const renderCanvas2D = (v: number, t: number, particles: Particle[], _timestamp?: number) => {
       if (!ctx2d) return;
       drawOrbScene(ctx2d, {
@@ -387,7 +447,7 @@ export const ValenceOrb = memo(function ValenceOrb({
         time: t,
         particles,
         size,
-        dpr,
+        dpr: canvasDpr,
         isDark: isDarkRead(),
         shimmer: shimmerRef.current,
       });
@@ -400,7 +460,7 @@ export const ValenceOrb = memo(function ValenceOrb({
 
     /** Degrade to Canvas 2D on a fresh canvas (WebGL canvas is locked) */
     const degradeToCanvas2D = () => {
-      fallbackCanvas = createCanvas(size, dpr);
+      fallbackCanvas = createCanvas(size, canvasDpr);
       ctx2d = fallbackCanvas.getContext('2d', { willReadFrequently: false });
 
       if (ctx2d) {
@@ -424,7 +484,9 @@ export const ValenceOrb = memo(function ValenceOrb({
       }
 
       // Throttle: 60fps for WebGL, 30fps for Canvas 2D
-      const frameInterval = glRendererRef.current ? WEBGL_FRAME_INTERVAL : CANVAS_FRAME_INTERVAL;
+      const frameInterval = glRendererRef.current || workerRenderer
+        ? WEBGL_FRAME_INTERVAL
+        : CANVAS_FRAME_INTERVAL;
       const elapsed = timestamp - state.lastFrame;
       if (elapsed < frameInterval) {
         rafRef.current = requestAnimationFrame(loop);
@@ -560,12 +622,70 @@ export const ValenceOrb = memo(function ValenceOrb({
     };
 
     const upgradeToWebGL = async (signal: AbortSignal) => {
-      if (!shouldTryWebGL(renderer) || !probeWebGLWorks() || signal.aborted) return;
+      if (!shouldTryWebGL(renderer) || signal.aborted) return;
+
+      if (renderer === 'auto' && canUseWorkerWebGL()) {
+        const workerCanvas = createCanvas(size, dpr);
+        const offscreen = workerCanvas.transferControlToOffscreen();
+        const worker = new Worker(new URL('./orbWorker.ts', import.meta.url), {
+          type: 'module',
+          name: 'zenflow-orb-renderer',
+        });
+        webglWorker = worker;
+
+        worker.onmessage = (event: MessageEvent<{ type: 'ready' | 'failed'; reason?: string }>) => {
+          if (signal.aborted || !mountedRef.current) return;
+
+          if (event.data.type === 'failed') {
+            recordError(
+              new Error(event.data.reason || 'Worker WebGL renderer failed'),
+              { component: 'ValenceOrb', action: 'worker-webgl' },
+            );
+            worker.terminate();
+            if (webglWorker === worker) webglWorker = null;
+            return;
+          }
+
+          const controller: OrbWorkerController = {
+            render(payload) {
+              worker.postMessage({ type: 'render', payload });
+            },
+            dispose() {
+              worker.postMessage({ type: 'dispose' });
+              worker.terminate();
+            },
+          };
+
+          const previousCanvas = activeCanvas;
+          workerRenderer = controller;
+          workerRendererRef.current = controller;
+          canvasElRef.current = workerCanvas;
+          ctx2d = null;
+          activeCanvas = workerCanvas;
+          render = renderWorkerGL;
+
+          if (wrapper.contains(previousCanvas)) {
+            wrapper.replaceChild(workerCanvas, previousCanvas);
+          } else {
+            wrapper.appendChild(workerCanvas);
+          }
+
+          const state = stateRef.current;
+          if (state) {
+            renderWorkerGL(smoothValenceRef.current, state.time, state.particles);
+          }
+        };
+
+        worker.postMessage({ type: 'init', canvas: offscreen, size, dpr }, [offscreen]);
+        return;
+      }
+
+      if (!probeWebGLWorks()) return;
 
       const gl2Canvas = createCanvas(size, dpr);
       let result: OrbGLBuildResult | null = await createOrbGL2Async(gl2Canvas, {
         signal,
-        timeoutMs: WEBGL_BUILD_BUDGET_MS,
+        timeoutMs: WEBGL_READINESS_TIMEOUT_MS,
       });
 
       let upgradeCanvas = gl2Canvas;
@@ -573,21 +693,18 @@ export const ValenceOrb = memo(function ValenceOrb({
         const gl1Canvas = createCanvas(size, dpr);
         result = await createOrbGLAsync(gl1Canvas, {
           signal,
-          timeoutMs: WEBGL_BUILD_BUDGET_MS,
+          timeoutMs: WEBGL_READINESS_TIMEOUT_MS,
         });
         upgradeCanvas = gl1Canvas;
       }
 
       if (signal.aborted || !mountedRef.current) return;
       if (!result) {
-        rememberSlowWebGL(WEBGL_BUILD_BUDGET_MS);
         return;
       }
 
       if (result.durationMs > WEBGL_BUILD_BUDGET_MS) {
-        result.renderer.dispose();
         rememberSlowWebGL(result.durationMs);
-        return;
       }
 
       const previousCanvas = activeCanvas;
@@ -634,6 +751,12 @@ export const ValenceOrb = memo(function ValenceOrb({
         webglEventCanvas.removeEventListener('webglcontextlost', handleContextLost);
         webglEventCanvas.removeEventListener('webglcontextrestored', handleContextRestored);
       }
+      if (workerRendererRef.current === workerRenderer) {
+        workerRendererRef.current?.dispose();
+        workerRendererRef.current = null;
+      } else if (webglWorker) {
+        webglWorker.terminate();
+      }
       glRendererRef.current?.dispose();
       glRendererRef.current = null;
       canvasElRef.current = null;
@@ -671,8 +794,25 @@ export const ValenceOrb = memo(function ValenceOrb({
     const state = stateRef.current;
     if (!state) return;
 
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const dpr = Math.max(1, canvas.width / size);
     state.currentValence = valence;
+
+    if (workerRendererRef.current) {
+      workerRendererRef.current.render({
+        valence,
+        time: 0,
+        size,
+        dpr,
+        isDark: document.documentElement.classList.contains('dark'),
+        color: valenceToHSL(valence),
+        shape: getShapeParams(valence),
+        particles: state.particles,
+        genesis: 1.0,
+        touch: { x: 0, y: 0, age: 0 },
+        shimmer: 0,
+      });
+      return;
+    }
 
     if (glRendererRef.current) {
       glRendererRef.current.render({
