@@ -82,15 +82,16 @@ vec3 valenceColor_p(float v) {
 }
 
 // ── Preview: 7-preset shape interpolation (mirrors orbRenderer.ts SHAPE_PRESETS) ──
+// Negative states intentionally stay in one pressure-lens harmonic family.
 vec4 valenceShape_p(float v) {
   v = clamp(v, -1.0, 1.0);
   // vec4(m, n1, n2, n3) per preset
   vec4 s0, s1;
   float f;
-  if      (v < -0.667) { f=(v+1.000)/0.333; s0=vec4(3,0.90,1.75,1.75); s1=vec4(7,1.65,1.42,1.42); }
-  else if (v < -0.333) { f=(v+0.667)/0.334; s0=vec4(7,1.65,1.42,1.42); s1=vec4(6,1.80,1.50,1.50); }
-  else if (v <  0.000) { f=(v+0.333)/0.333; s0=vec4(6,1.80,1.50,1.50); s1=vec4(6,2.00,2.00,2.00); }
-  else if (v <  0.333) { f=(v-0.000)/0.333; s0=vec4(6,2.00,2.00,2.00); s1=vec4(5,1.80,1.50,1.50); }
+  if      (v < -0.667) { f=(v+1.000)/0.333; s0=vec4(3,0.90,1.75,1.75); s1=vec4(3,1.65,1.42,1.42); }
+  else if (v < -0.333) { f=(v+0.667)/0.334; s0=vec4(3,1.65,1.42,1.42); s1=vec4(3,1.85,1.72,1.72); }
+  else if (v <  0.000) { f=(v+0.333)/0.333; s0=vec4(3,1.85,1.72,1.72); s1=vec4(5,2.00,2.00,2.00); }
+  else if (v <  0.333) { f=(v-0.000)/0.333; s0=vec4(5,2.00,2.00,2.00); s1=vec4(5,1.80,1.50,1.50); }
   else if (v <  0.667) { f=(v-0.333)/0.334; s0=vec4(5,1.80,1.50,1.50); s1=vec4(5,1.40,1.35,1.35); }
   else                 { f=(v-0.667)/0.333; s0=vec4(5,1.40,1.35,1.35); s1=vec4(5,1.25,1.30,1.30); }
   return mix(s0, s1, smoothstep(0.0, 1.0, clamp(f, 0.0, 1.0)));
@@ -266,9 +267,10 @@ void main() {
   // ── Superformula shape (smooth morph between petal counts) ──
   // Instead of floor(m+0.5) snap → blend two shapes with smoothstep for organic morphing.
   // At integer m: pure shape. Between integers: cross-dissolve (ghostly petal fade).
-  float mLow = floor(uShapeM);
+  float stableShapeM = uValence < 0.0 ? 3.0 : uShapeM;
+  float mLow = floor(stableShapeM);
   float mHigh = mLow + 1.0;
-  float mBlend = smoothstep(0.0, 1.0, fract(uShapeM));
+  float mBlend = smoothstep(0.0, 1.0, fract(stableShapeM));
   float sfLow = superformula(warpedAngle, max(mLow, 3.0), uShapeN1, uShapeN2, uShapeN3);
   float sfHigh = superformula(warpedAngle, max(mHigh, 3.0), uShapeN1, uShapeN2, uShapeN3);
   float sf = mix(sfLow, sfHigh, mBlend);
