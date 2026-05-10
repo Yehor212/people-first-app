@@ -639,95 +639,91 @@ function drawShapeFill(
   ctx.fillStyle = grad;
   ctx.fill();
 
-  // ── Glass Edge Refraction (wide bright band on body contour — Apple glass rim) ──
-  const dpr = window.devicePixelRatio || 1;
-  const ringL = isDark ? Math.min(95, hsl.l + 30) : Math.min(90, hsl.l + 15);
-  // Wider soft rim glow (behind sharp edge)
-  traceShapePath(ctx, points);
-  ctx.strokeStyle = hsla(h, hsl.s * 0.2, Math.min(97, hsl.l + 35), 0.2);
-  ctx.lineWidth = 3.5 * dpr;
-  ctx.stroke();
-  // Sharp glass edge highlight
-  traceShapePath(ctx, points);
-  ctx.strokeStyle = hsla(h, hsl.s * 0.2, Math.min(98, hsl.l + 42), 0.65);
-  ctx.lineWidth = 2.0 * dpr;
-  ctx.stroke();
-
-  // ── Inner concentric rings (2 inside body — crisp glass rim + soft glow) ──
-  const innerRingScales = [0.65, 0.35];
-  const innerRingAlphas = [0.4, 0.3];
-  const innerRingWidths = [2.0, 1.6];
-  for (let ri = 0; ri < 2; ri++) {
-    const innerPts = computeShapePoints(
-      cx,
-      cy,
-      baseRadius * innerRingScales[ri],
-      shape,
-      time,
-      rotation,
-      breathScale,
-      0,
-      noiseSpeed,
-      seed,
-      valence,
-    );
-    // Soft glow pass (behind sharp line)
-    traceShapePath(ctx, innerPts);
-    ctx.strokeStyle = hsla(
-      h,
-      hsl.s * 0.3,
-      ringL + 8,
-      innerRingAlphas[ri] * 0.25,
-    );
-    ctx.lineWidth = innerRingWidths[ri] * dpr * 3;
-    ctx.stroke();
-    // Sharp glass rim pass
-    traceShapePath(ctx, innerPts);
-    ctx.strokeStyle = hsla(h, hsl.s * 0.4, ringL + 5, innerRingAlphas[ri]);
-    ctx.lineWidth = innerRingWidths[ri] * dpr;
-    ctx.stroke();
-  }
-
-  // ── Outer concentric rings (4 outside body — crisp glass rim highlights) ──
-  const ringScales = [1.12, 1.28, 1.44, 1.55];
-  const ringAlphas = [0.55, 0.45, 0.35, 0.25];
-  const ringWidths = [2.5, 2.0, 1.6, 1.4];
-  const ringSats = [hsl.s * 0.55, hsl.s * 0.48, hsl.s * 0.4, hsl.s * 0.32];
-  const ringLs = [ringL, ringL + 3, ringL + 6, ringL + 9];
-
-  for (let ri = 0; ri < 4; ri++) {
-    const ringPoints = computeShapePoints(
-      cx,
-      cy,
-      baseRadius * ringScales[ri],
-      shape,
-      time,
-      rotation,
-      breathScale,
-      0,
-      noiseSpeed,
-      seed,
-      valence,
-    );
-    // Soft glow pass (behind sharp line)
-    traceShapePath(ctx, ringPoints);
-    ctx.strokeStyle = hsla(
-      h,
-      ringSats[ri] * 0.6,
-      ringLs[ri] + 5,
-      ringAlphas[ri] * 0.25,
-    );
-    ctx.lineWidth = ringWidths[ri] * dpr * 3;
-    ctx.stroke();
-    // Sharp glass rim pass
-    traceShapePath(ctx, ringPoints);
-    ctx.strokeStyle = hsla(h, ringSats[ri], ringLs[ri], ringAlphas[ri]);
-    ctx.lineWidth = ringWidths[ri] * dpr;
-    ctx.stroke();
-  }
-
-  // Optional soft glow stroke (atmospheric edge, no crisp rim)
   if (strokeMode === "glow") {
+    // ── Glass Edge Refraction (wide bright band on body contour — Apple glass rim) ──
+    // Only the primary body gets contour rings. Envelope/inner-light passes are
+    // soft fills; drawing rings there stacks into a striped square artifact.
+    const dpr = window.devicePixelRatio || 1;
+    const ringL = isDark ? Math.min(95, hsl.l + 30) : Math.min(90, hsl.l + 15);
+    traceShapePath(ctx, points);
+    ctx.strokeStyle = hsla(h, hsl.s * 0.2, Math.min(97, hsl.l + 35), 0.2);
+    ctx.lineWidth = 3.5 * dpr;
+    ctx.stroke();
+    traceShapePath(ctx, points);
+    ctx.strokeStyle = hsla(h, hsl.s * 0.2, Math.min(98, hsl.l + 42), 0.65);
+    ctx.lineWidth = 2.0 * dpr;
+    ctx.stroke();
+
+    // ── Inner concentric rings (2 inside body — crisp glass rim + soft glow) ──
+    const innerRingScales = [0.65, 0.35];
+    const innerRingAlphas = [0.34, 0.24];
+    const innerRingWidths = [1.7, 1.3];
+    for (let ri = 0; ri < 2; ri++) {
+      const innerPts = computeShapePoints(
+        cx,
+        cy,
+        baseRadius * innerRingScales[ri],
+        shape,
+        time,
+        rotation,
+        breathScale,
+        0,
+        noiseSpeed,
+        seed,
+        valence,
+      );
+      traceShapePath(ctx, innerPts);
+      ctx.strokeStyle = hsla(
+        h,
+        hsl.s * 0.3,
+        ringL + 8,
+        innerRingAlphas[ri] * 0.22,
+      );
+      ctx.lineWidth = innerRingWidths[ri] * dpr * 2.5;
+      ctx.stroke();
+      traceShapePath(ctx, innerPts);
+      ctx.strokeStyle = hsla(h, hsl.s * 0.4, ringL + 5, innerRingAlphas[ri]);
+      ctx.lineWidth = innerRingWidths[ri] * dpr;
+      ctx.stroke();
+    }
+
+    // ── Outer concentric rings (3 outside body — glass rim highlights) ──
+    const ringScales = [1.14, 1.32, 1.5];
+    const ringAlphas = [0.42, 0.3, 0.2];
+    const ringWidths = [1.9, 1.5, 1.2];
+    const ringSats = [hsl.s * 0.52, hsl.s * 0.42, hsl.s * 0.32];
+    const ringLs = [ringL, ringL + 4, ringL + 8];
+
+    for (let ri = 0; ri < 3; ri++) {
+      const ringPoints = computeShapePoints(
+        cx,
+        cy,
+        baseRadius * ringScales[ri],
+        shape,
+        time,
+        rotation,
+        breathScale,
+        0,
+        noiseSpeed,
+        seed,
+        valence,
+      );
+      traceShapePath(ctx, ringPoints);
+      ctx.strokeStyle = hsla(
+        h,
+        ringSats[ri] * 0.55,
+        ringLs[ri] + 5,
+        ringAlphas[ri] * 0.2,
+      );
+      ctx.lineWidth = ringWidths[ri] * dpr * 2.4;
+      ctx.stroke();
+      traceShapePath(ctx, ringPoints);
+      ctx.strokeStyle = hsla(h, ringSats[ri], ringLs[ri], ringAlphas[ri]);
+      ctx.lineWidth = ringWidths[ri] * dpr;
+      ctx.stroke();
+    }
+
+    // Optional soft glow stroke (atmospheric edge, no crisp rim)
     const glowL = isDark ? Math.min(98, hsl.l + 35) : Math.min(96, hsl.l + 28);
     ctx.strokeStyle = hsla(h, hsl.s * 0.3, glowL, isDark ? 0.22 : 0.15);
     ctx.lineWidth = baseRadius * 0.035;
