@@ -1,4 +1,4 @@
-import { memo, type CSSProperties } from "react";
+import { memo, useEffect, useState, type CSSProperties } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -27,19 +27,19 @@ const BARE_SIZE_PRESETS: Record<
 > = {
   xs: {
     container: "h-5 w-5",
-    orb: "scale-[0.19] brightness-[0.9]",
+    orb: "scale-[0.23] brightness-[1.04] saturate-[1.18]",
   },
   sm: {
     container: "h-10 w-10",
-    orb: "scale-[0.34] brightness-[0.88]",
+    orb: "scale-[0.41] brightness-[1.04] saturate-[1.16]",
   },
   md: {
     container: "h-12 w-12",
-    orb: "scale-[0.4] brightness-75",
+    orb: "scale-[0.48] brightness-[1.03] saturate-[1.18]",
   },
   lg: {
     container: "h-16 w-16",
-    orb: "scale-[0.52] brightness-[0.82]",
+    orb: "scale-[0.62] brightness-[1.04] saturate-[1.16]",
   },
 };
 
@@ -130,7 +130,24 @@ function OrbCore({
   orbClassName: string;
   transitionProfile: OrbTransitionProfile;
 }) {
-  const displayValence = hasEntry ? valence : 0;
+  const [oscillatedValence, setOscillatedValence] = useState(0);
+
+  useEffect(() => {
+    if (hasEntry) {
+      setOscillatedValence(0);
+      return;
+    }
+
+    let frame = 0;
+    const id = window.setInterval(() => {
+      frame += 1;
+      setOscillatedValence(Math.sin(frame * 0.07) * 0.34);
+    }, 320);
+
+    return () => window.clearInterval(id);
+  }, [hasEntry]);
+
+  const displayValence = hasEntry ? valence : oscillatedValence;
   const color = valenceToHSL(displayValence);
   const style = {
     "--mini-orb-h": `${Math.round(color.h)}`,
@@ -154,34 +171,55 @@ function OrbCore({
         style={style}
       >
         <span
-          className="absolute inset-[16px] rounded-full opacity-90"
+          className="absolute inset-[3px] rounded-full opacity-95"
           style={{
             background:
-              "radial-gradient(circle at 38% 32%, hsl(var(--mini-orb-h) var(--mini-orb-s) calc(var(--mini-orb-l) + 30%) / 0.96), hsl(var(--mini-orb-h) var(--mini-orb-s) calc(var(--mini-orb-l) + 9%) / 0.78) 34%, hsl(var(--mini-orb-h) var(--mini-orb-s) var(--mini-orb-l) / 0.42) 58%, transparent 78%)",
+              "radial-gradient(circle, hsl(var(--mini-orb-h) var(--mini-orb-s) calc(var(--mini-orb-l) + 20%) / 0.38), hsl(var(--mini-orb-h) var(--mini-orb-s) var(--mini-orb-l) / 0.24) 44%, transparent 74%)",
+            filter: "blur(8px)",
+          }}
+        />
+        <span
+          className="absolute inset-[14px] rounded-full opacity-100"
+          style={{
+            background:
+              "radial-gradient(circle at 38% 30%, hsl(var(--mini-orb-h) calc(var(--mini-orb-s) * 0.22) 99% / 0.98), hsl(var(--mini-orb-h) var(--mini-orb-s) calc(var(--mini-orb-l) + 18%) / 0.96) 19%, hsl(var(--mini-orb-h) var(--mini-orb-s) calc(var(--mini-orb-l) + 4%) / 0.86) 43%, hsl(var(--mini-orb-h) var(--mini-orb-s) calc(var(--mini-orb-l) - 12%) / 0.48) 67%, transparent 84%)",
             filter: "blur(0.2px)",
-          }}
-        />
-        <span
-          className="absolute inset-[8px] rounded-full"
-          style={{
-            background:
-              "radial-gradient(circle, hsl(var(--mini-orb-h) var(--mini-orb-s) calc(var(--mini-orb-l) + 18%) / 0.24), transparent 66%)",
-            filter: "blur(12px)",
-          }}
-        />
-        <span
-          className="absolute inset-[22px] rounded-full border"
-          style={{
-            borderColor: "hsl(var(--mini-orb-h) var(--mini-orb-s) calc(var(--mini-orb-l) + 18%) / 0.42)",
             boxShadow:
-              "inset 0 0 16px hsl(var(--mini-orb-h) var(--mini-orb-s) calc(var(--mini-orb-l) + 18%) / 0.34), 0 0 22px hsl(var(--mini-orb-h) var(--mini-orb-s) var(--mini-orb-l) / 0.24)",
+              "0 0 22px hsl(var(--mini-orb-h) var(--mini-orb-s) calc(var(--mini-orb-l) + 12%) / 0.28)",
           }}
         />
         <span
-          className="absolute left-[34px] top-[28px] h-[20px] w-[32px] rotate-[-18deg] rounded-full opacity-70 blur-[1px]"
+          className="absolute inset-[18px] rounded-full border opacity-90"
+          style={{
+            borderColor:
+              "hsl(var(--mini-orb-h) calc(var(--mini-orb-s) * 0.48) calc(var(--mini-orb-l) + 24%) / 0.72)",
+            boxShadow:
+              "inset 0 0 18px hsl(var(--mini-orb-h) var(--mini-orb-s) calc(var(--mini-orb-l) + 20%) / 0.46), 0 0 22px hsl(var(--mini-orb-h) var(--mini-orb-s) var(--mini-orb-l) / 0.34)",
+          }}
+        />
+        <span
+          className="absolute inset-[30px] rounded-full border opacity-75"
+          style={{
+            borderColor:
+              "hsl(var(--mini-orb-h) calc(var(--mini-orb-s) * 0.42) calc(var(--mini-orb-l) + 30%) / 0.58)",
+            boxShadow:
+              "0 0 14px hsl(var(--mini-orb-h) var(--mini-orb-s) calc(var(--mini-orb-l) + 24%) / 0.3)",
+          }}
+        />
+        <span
+          className="absolute left-[31px] top-[25px] h-[22px] w-[36px] rotate-[-20deg] rounded-full opacity-85 blur-[1px]"
           style={{
             background:
-              "linear-gradient(90deg, hsl(var(--mini-orb-h) var(--mini-orb-s) calc(var(--mini-orb-l) + 38%) / 0.72), transparent)",
+              "linear-gradient(90deg, hsl(var(--mini-orb-h) calc(var(--mini-orb-s) * 0.18) 99% / 0.82), transparent)",
+          }}
+        />
+        <span
+          className="absolute right-[28px] top-[42px] h-[7px] w-[7px] rounded-full opacity-75"
+          style={{
+            background:
+              "hsl(var(--mini-orb-h) calc(var(--mini-orb-s) * 0.28) calc(var(--mini-orb-l) + 34%) / 0.86)",
+            boxShadow:
+              "0 0 10px hsl(var(--mini-orb-h) var(--mini-orb-s) calc(var(--mini-orb-l) + 24%) / 0.52)",
           }}
         />
       </div>

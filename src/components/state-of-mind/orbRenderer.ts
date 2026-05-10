@@ -248,6 +248,18 @@ export function getShapeParams(valence: number): ShapeParams {
   };
 }
 
+function getCanvasShapeParams(valence: number): ShapeParams {
+  const shape = getShapeParams(valence);
+  const expressive = Math.min(1, Math.abs(valence));
+
+  return {
+    m: shape.m * expressive * 0.35,
+    n1: 2 - expressive * 0.22,
+    n2: 2 - expressive * 0.18,
+    n3: 2 - expressive * 0.18,
+  };
+}
+
 // ── Helpers ──
 
 function mapRange(
@@ -1427,7 +1439,7 @@ export function drawOrbScene(
   const cy = h / 2;
 
   const hsl = valenceToHSL(valence);
-  const shape = getShapeParams(valence);
+  const shape = getCanvasShapeParams(valence);
 
   ctx.clearRect(0, 0, w, h);
 
