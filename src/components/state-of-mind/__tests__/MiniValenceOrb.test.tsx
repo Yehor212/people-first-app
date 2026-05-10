@@ -1,18 +1,25 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { render } from "@testing-library/react";
 
 import { MiniValenceOrb } from "../MiniValenceOrb";
 
 describe("MiniValenceOrb", () => {
+  beforeEach(() => {
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it("keeps the legacy bare md preset as the default compact orb", () => {
     const { container } = render(<MiniValenceOrb valence={0.2} hasEntry />);
     expect(container.firstChild).toHaveClass("h-12", "w-12");
-    expect(container.firstElementChild).toHaveAttribute("data-orb-renderer", "css");
-    expect(container.firstElementChild).toHaveAttribute(
+    const canonicalOrb = container.querySelector("[data-orb-transition-profile]");
+    expect(canonicalOrb).toHaveAttribute(
       "data-orb-transition-profile",
       "v1-soft",
     );
-    expect(container.querySelector("canvas")).toBeNull();
   });
 
   it("renders the canonical badge chrome for Diary-style mini-orbs", () => {

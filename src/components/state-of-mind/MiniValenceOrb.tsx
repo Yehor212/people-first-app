@@ -1,9 +1,8 @@
-import { memo, useEffect, useState, type CSSProperties } from "react";
+import { memo, useEffect, useState } from "react";
 
 import { cn } from "@/lib/utils";
 
-import { valenceToHSL } from "./colorUtils";
-import type { OrbTransitionProfile } from "./ValenceOrb";
+import { ValenceOrb, type OrbTransitionProfile } from "./ValenceOrb";
 
 export type MiniValenceOrbSize = "xs" | "sm" | "md" | "lg";
 export type MiniValenceOrbChrome = "none" | "badge" | "refine";
@@ -148,80 +147,19 @@ function OrbCore({
   }, [hasEntry]);
 
   const displayValence = hasEntry ? valence : oscillatedValence;
-  const color = valenceToHSL(displayValence);
-  const style = {
-    "--mini-orb-h": `${Math.round(color.h)}`,
-    "--mini-orb-s": `${Math.round(color.s)}%`,
-    "--mini-orb-l": `${Math.round(color.l)}%`,
-  } as CSSProperties;
 
   return (
     <div
       aria-hidden="true"
-      data-orb-renderer="css"
-      data-orb-transition-profile={transitionProfile}
       className={cn("pointer-events-none relative flex-shrink-0", containerClassName)}
     >
       <div
         className={cn(
           "absolute left-1/2 top-1/2 h-[120px] w-[120px] -translate-x-1/2 -translate-y-1/2",
-          hasEntry ? "animate-orb-breathe" : "motion-safe:animate-pulse",
           orbClassName,
         )}
-        style={style}
       >
-        <span
-          className="absolute inset-[3px] rounded-full opacity-95"
-          style={{
-            background:
-              "radial-gradient(circle, hsl(var(--mini-orb-h) var(--mini-orb-s) calc(var(--mini-orb-l) + 20%) / 0.38), hsl(var(--mini-orb-h) var(--mini-orb-s) var(--mini-orb-l) / 0.24) 44%, transparent 74%)",
-            filter: "blur(8px)",
-          }}
-        />
-        <span
-          className="absolute inset-[14px] rounded-full opacity-100"
-          style={{
-            background:
-              "radial-gradient(circle at 38% 30%, hsl(var(--mini-orb-h) calc(var(--mini-orb-s) * 0.22) 99% / 0.98), hsl(var(--mini-orb-h) var(--mini-orb-s) calc(var(--mini-orb-l) + 18%) / 0.96) 19%, hsl(var(--mini-orb-h) var(--mini-orb-s) calc(var(--mini-orb-l) + 4%) / 0.86) 43%, hsl(var(--mini-orb-h) var(--mini-orb-s) calc(var(--mini-orb-l) - 12%) / 0.48) 67%, transparent 84%)",
-            filter: "blur(0.2px)",
-            boxShadow:
-              "0 0 22px hsl(var(--mini-orb-h) var(--mini-orb-s) calc(var(--mini-orb-l) + 12%) / 0.28)",
-          }}
-        />
-        <span
-          className="absolute inset-[18px] rounded-full border opacity-90"
-          style={{
-            borderColor:
-              "hsl(var(--mini-orb-h) calc(var(--mini-orb-s) * 0.48) calc(var(--mini-orb-l) + 24%) / 0.72)",
-            boxShadow:
-              "inset 0 0 18px hsl(var(--mini-orb-h) var(--mini-orb-s) calc(var(--mini-orb-l) + 20%) / 0.46), 0 0 22px hsl(var(--mini-orb-h) var(--mini-orb-s) var(--mini-orb-l) / 0.34)",
-          }}
-        />
-        <span
-          className="absolute inset-[30px] rounded-full border opacity-75"
-          style={{
-            borderColor:
-              "hsl(var(--mini-orb-h) calc(var(--mini-orb-s) * 0.42) calc(var(--mini-orb-l) + 30%) / 0.58)",
-            boxShadow:
-              "0 0 14px hsl(var(--mini-orb-h) var(--mini-orb-s) calc(var(--mini-orb-l) + 24%) / 0.3)",
-          }}
-        />
-        <span
-          className="absolute left-[31px] top-[25px] h-[22px] w-[36px] rotate-[-20deg] rounded-full opacity-85 blur-[1px]"
-          style={{
-            background:
-              "linear-gradient(90deg, hsl(var(--mini-orb-h) calc(var(--mini-orb-s) * 0.18) 99% / 0.82), transparent)",
-          }}
-        />
-        <span
-          className="absolute right-[28px] top-[42px] h-[7px] w-[7px] rounded-full opacity-75"
-          style={{
-            background:
-              "hsl(var(--mini-orb-h) calc(var(--mini-orb-s) * 0.28) calc(var(--mini-orb-l) + 34%) / 0.86)",
-            boxShadow:
-              "0 0 10px hsl(var(--mini-orb-h) var(--mini-orb-s) calc(var(--mini-orb-l) + 24%) / 0.52)",
-          }}
-        />
+        <ValenceOrb valence={displayValence} size={120} transitionProfile={transitionProfile} />
       </div>
     </div>
   );
