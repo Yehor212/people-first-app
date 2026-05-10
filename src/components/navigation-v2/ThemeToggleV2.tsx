@@ -23,6 +23,9 @@ import { logger } from "@/lib/logger";
  */
 
 const TRANSITION_DURATION_MS = 500;
+const DRAWER_THEME_SWAP_ATTR = "data-theme-swap-mode";
+const DRAWER_THEME_SWAP_VALUE = "drawer-instant";
+const DRAWER_THEME_SWAP_RESET_MS = 140;
 
 function prefersReducedMotion(): boolean {
   if (typeof window === "undefined" || typeof window.matchMedia !== "function")
@@ -35,6 +38,26 @@ function supportsViewTransition(): boolean {
     typeof document !== "undefined" &&
     typeof document.startViewTransition === "function"
   );
+}
+
+function isInsideModalDialog(target: HTMLElement): boolean {
+  return Boolean(target.closest('[role="dialog"][aria-modal="true"]'));
+}
+
+function swapDrawerThemeInstantly(nextTheme: "paper" | "ink", setTheme: (theme: "paper" | "ink") => void) {
+  if (typeof document === "undefined" || typeof window === "undefined") {
+    setTheme(nextTheme);
+    return;
+  }
+
+  const root = document.documentElement;
+  root.setAttribute(DRAWER_THEME_SWAP_ATTR, DRAWER_THEME_SWAP_VALUE);
+  setTheme(nextTheme);
+  window.setTimeout(() => {
+    if (root.getAttribute(DRAWER_THEME_SWAP_ATTR) === DRAWER_THEME_SWAP_VALUE) {
+      root.removeAttribute(DRAWER_THEME_SWAP_ATTR);
+    }
+  }, DRAWER_THEME_SWAP_RESET_MS);
 }
 
 interface ThemeToggleV2Props {
@@ -71,6 +94,11 @@ export function ThemeToggleV2({
       const rect = e.currentTarget.getBoundingClientRect();
       const x = e.clientX || rect.left + rect.width / 2;
       const y = e.clientY || rect.top + rect.height / 2;
+
+      if (isInsideModalDialog(e.currentTarget)) {
+        swapDrawerThemeInstantly(nextTheme, setTheme);
+        return;
+      }
 
       if (!supportsViewTransition() || prefersReducedMotion()) {
         setTheme(nextTheme);

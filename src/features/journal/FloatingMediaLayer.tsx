@@ -114,13 +114,12 @@ const FloatingPhoto = memo(function FloatingPhoto({
       dragConstraints={containerRef}
       dragElastic={0}
       onDragEnd={handleDragEnd}
-      className="absolute pointer-events-auto cursor-grab active:cursor-grabbing group gpu-layer"
+      className="absolute pointer-events-auto cursor-grab touch-none active:cursor-grabbing group gpu-layer"
       style={{
         left: `${position.x}%`,
         top: `${position.y}%`,
         width: liveWidth,
         height: displayHeight,
-        touchAction: "none",
         marginLeft: -(liveWidth / 2),
         marginTop: -(displayHeight / 2),
       }}
@@ -202,8 +201,7 @@ const FloatingPhoto = memo(function FloatingPhoto({
         aria-valuenow={liveWidth}
         tabIndex={0}
         onPointerDown={handleResizeStart}
-        className="absolute -bottom-2 -end-2 w-11 h-11 rounded-full bg-emerald-500/60 border-2 border-emerald-400/80 cursor-se-resize opacity-60 group-hover:opacity-100 motion-safe:transition-opacity shadow-lg"
-        style={{ touchAction: "none" }}
+        className="absolute -bottom-2 -end-2 w-11 h-11 touch-none rounded-full bg-emerald-500/60 border-2 border-emerald-400/80 cursor-se-resize opacity-60 group-hover:opacity-100 motion-safe:transition-opacity shadow-lg"
       />
     </motion.div>
   );
@@ -239,7 +237,7 @@ export const FloatingMediaLayer = memo(function FloatingMediaLayer({
   if (photos.length === 0) return null;
 
   return (
-    <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 20 }}>
+    <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden">
       {photos.map((photo) => {
         const pos = layout[photo.id];
         if (!pos) return null;

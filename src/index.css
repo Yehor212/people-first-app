@@ -7333,3 +7333,11 @@ html[data-theme-swap="active"]::view-transition-old(root) {
 html[data-theme-swap="active"]::view-transition-new(root) {
   z-index: 2;
 }
+
+/* Drawer theme switches must not interpolate text and surface colors across
+ * incompatible palettes. The panel still changes immediately; this only
+ * prevents a short low-contrast cross-fade while a modal drawer is open. */
+html[data-theme-swap-mode="drawer-instant"] [data-theme-region="drawer-v2"],
+html[data-theme-swap-mode="drawer-instant"] [data-theme-region="drawer-v2"] * {
+  transition: none !important;
+}

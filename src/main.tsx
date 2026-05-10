@@ -34,6 +34,7 @@ import { scheduleIdle } from "./lib/scheduleIdle";
 import { captureOrBuffer, setCaptureSink } from "./lib/errorBuffer";
 import { initWebVitalsDev } from "./observability/reportWebVitals";
 import { initLongTaskObserverDev } from "./observability/initLongTaskObserverDev";
+import { bindPrefersColorSchemeListener } from "./stores/themeStore";
 
 // Sentry is deferred to post-mount via requestIdleCallback (see below initializeApp)
 // to keep it off the critical rendering path. Errors thrown before idle-init
@@ -55,6 +56,7 @@ void initWebVitalsDev();
 // by capturing EVERY slow frame (not just the one behind INP). No-op in
 // prod; Sentry captures longtask spans server-side.
 initLongTaskObserverDev();
+bindPrefersColorSchemeListener();
 
 // Set html lang attribute early (before React hydrates) for non-EN users (WCAG 3.1.1)
 // CSP blocks inline scripts in index.html, so we do it here in the module entry point.

@@ -1528,7 +1528,6 @@ export const JournalModule = memo(function JournalModule({
                             }
                         : {})}
                       className="contents"
-                      style={{ display: "contents" }}
                     >
                       <JournalEntryEditor
                         entry={journal.activeEntry}

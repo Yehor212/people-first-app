@@ -135,6 +135,7 @@ export const DrawerV2 = memo(function DrawerV2({
         role="dialog"
         aria-modal="true"
         aria-label={tx.navV2Menu || "Menu"}
+        data-theme-region="drawer-v2"
         data-testid="drawer-v2"
         className={cn(
           "fixed inset-y-0 start-0 z-[60] flex w-[min(88vw,24rem)] flex-col",

@@ -52,6 +52,7 @@ describe("DrawerV2", () => {
     vi.clearAllMocks();
     useThemeStore.setState({ theme: "paper", appliedTheme: "paper" });
     document.documentElement.removeAttribute("data-theme-swap");
+    document.documentElement.removeAttribute("data-theme-swap-mode");
   });
 
   it("renders nothing when open=false", () => {
@@ -66,6 +67,10 @@ describe("DrawerV2", () => {
     expect(screen.getByTestId("drawer-v2")).toHaveAttribute("role", "dialog");
     expect(screen.getByTestId("drawer-v2")).toHaveAttribute("aria-modal", "true");
     expect(screen.getByTestId("drawer-v2")).toHaveAttribute("id", "nav-v2-drawer");
+    expect(screen.getByTestId("drawer-v2")).toHaveAttribute(
+      "data-theme-region",
+      "drawer-v2",
+    );
     expect(screen.getByTestId("drawer-v2-mini-orb")).toBeInTheDocument();
   });
 

@@ -41,12 +41,26 @@ describe('themeStore', () => {
     const state = mod.useThemeStore.getState();
     expect(state.theme).toBe('auto');
     expect(state.appliedTheme).toBe('paper');
+    expect(document.documentElement.dataset.theme).toBe('paper');
   });
 
   it('auto preference resolves to ink on dark-preferring OS', async () => {
     const { mod } = await loadStore(true);
     const state = mod.useThemeStore.getState();
     expect(state.appliedTheme).toBe('ink');
+    expect(document.documentElement.dataset.theme).toBe('ink');
+  });
+
+  it('applies the persisted preference before the first explicit toggle', async () => {
+    localStorage.setItem(
+      'zenflow:theme-v0c',
+      JSON.stringify({ state: { theme: 'ink' }, version: 0 }),
+    );
+    const { mod } = await loadStore(false);
+    const state = mod.useThemeStore.getState();
+    expect(state.theme).toBe('ink');
+    expect(state.appliedTheme).toBe('ink');
+    expect(document.documentElement.dataset.theme).toBe('ink');
   });
 
   it('setTheme writes data-theme attribute on <html>', async () => {

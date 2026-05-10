@@ -37,8 +37,8 @@ export const DiaryCanvas = memo(function DiaryCanvas({
       className={[
         "pointer-events-none",
         scope === "container" ? "absolute inset-0 h-full w-full" : "fixed inset-0",
+        "z-0",
       ].join(" ")}
-      style={{ zIndex: 0 }}
       aria-hidden="true"
     />
   );

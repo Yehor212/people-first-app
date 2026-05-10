@@ -34,7 +34,12 @@
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { storageGetRaw, storageSetRaw, storageRemove } from '@/lib/safeJson';
+import {
+  safeJsonParse,
+  storageGetRaw,
+  storageSetRaw,
+  storageRemove,
+} from '@/lib/safeJson';
 
 export type ThemePreference = 'paper' | 'ink' | 'oled' | 'auto';
 export type AppliedTheme = 'paper' | 'ink' | 'oled';
@@ -51,6 +56,27 @@ export interface ThemeStore {
 }
 
 const STORAGE_KEY = 'zenflow:theme-v0c';
+
+interface PersistedThemePayload {
+  state?: {
+    theme?: ThemePreference;
+  };
+}
+
+function isThemePreference(value: unknown): value is ThemePreference {
+  return value === 'paper' || value === 'ink' || value === 'oled' || value === 'auto';
+}
+
+function readInitialThemePreference(): ThemePreference {
+  if (typeof window === 'undefined') return 'auto';
+
+  const persisted = safeJsonParse<PersistedThemePayload | null>(
+    storageGetRaw(STORAGE_KEY, ''),
+    null,
+  );
+  const theme = persisted?.state?.theme;
+  return isThemePreference(theme) ? theme : 'auto';
+}
 
 /** Pure: resolve user preference to an applied theme, consulting the OS
  *  prefers-color-scheme media query for 'auto'. Guarded for environments
@@ -73,11 +99,15 @@ function applyToDOM(applied: AppliedTheme): void {
   document.documentElement.dataset.theme = applied;
 }
 
+const initialTheme = readInitialThemePreference();
+const initialAppliedTheme = resolvePreference(initialTheme);
+applyToDOM(initialAppliedTheme);
+
 export const useThemeStore = create<ThemeStore>()(
   persist(
     (set, get) => ({
-      theme: 'auto',
-      appliedTheme: resolvePreference('auto'),
+      theme: initialTheme,
+      appliedTheme: initialAppliedTheme,
       setTheme: (theme) => {
         const applied = resolvePreference(theme);
         applyToDOM(applied);
@@ -116,13 +146,20 @@ export const useThemeStore = create<ThemeStore>()(
  *  — call once from app bootstrap (e.g. main.tsx) to pick up live OS changes
  *  when theme === 'auto'. */
 export function bindPrefersColorSchemeListener(): () => void {
-  if (typeof window === 'undefined') return () => {};
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return () => {};
   const mql = window.matchMedia('(prefers-color-scheme: dark)');
   const handler = () => {
     if (useThemeStore.getState().theme === 'auto') {
       useThemeStore.getState()._resolve();
     }
   };
-  mql.addEventListener('change', handler);
-  return () => mql.removeEventListener('change', handler);
+  if (typeof mql.addEventListener === 'function') {
+    mql.addEventListener('change', handler);
+    return () => mql.removeEventListener('change', handler);
+  }
+  if (typeof mql.addListener === 'function') {
+    mql.addListener(handler);
+    return () => mql.removeListener(handler);
+  }
+  return () => {};
 }

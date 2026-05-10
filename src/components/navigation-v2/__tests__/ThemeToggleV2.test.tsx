@@ -26,6 +26,11 @@ describe("ThemeToggleV2", () => {
   beforeEach(() => {
     useThemeStore.setState({ theme: "paper", appliedTheme: "paper" });
     document.documentElement.removeAttribute("data-theme-swap");
+    document.documentElement.removeAttribute("data-theme-swap-mode");
+    Object.defineProperty(document, "startViewTransition", {
+      value: undefined,
+      configurable: true,
+    });
   });
 
   it("renders with 44px min touch target (Law 9 a11y)", () => {
@@ -106,5 +111,32 @@ describe("ThemeToggleV2", () => {
     useThemeStore.setState({ theme: "ink", appliedTheme: "ink" });
     render(<ThemeToggleV2 />);
     expect(screen.getByText("Light")).toBeInTheDocument();
+  });
+
+  it("skips the root view transition inside modal drawers", () => {
+    const startViewTransition = vi.fn(() => ({
+      ready: Promise.resolve(),
+      finished: Promise.resolve(),
+    }));
+    Object.defineProperty(document, "startViewTransition", {
+      value: startViewTransition,
+      configurable: true,
+    });
+
+    render(
+      <div role="dialog" aria-modal="true">
+        <ThemeToggleV2 testId="drawer-v2-theme-toggle" />
+      </div>,
+    );
+
+    fireEvent.click(screen.getByTestId("drawer-v2-theme-toggle"));
+
+    expect(startViewTransition).not.toHaveBeenCalled();
+    expect(useThemeStore.getState().appliedTheme).toBe("ink");
+    expect(document.documentElement).not.toHaveAttribute("data-theme-swap");
+    expect(document.documentElement).toHaveAttribute(
+      "data-theme-swap-mode",
+      "drawer-instant",
+    );
   });
 });
