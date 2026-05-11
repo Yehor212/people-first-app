@@ -203,8 +203,9 @@ interface ShapeParams {
 }
 
 /**
- * 7-stop preset system for superformula parameters.
- * Aligned to the 7 ValenceSlider snap positions (-1, -0.667, -0.333, 0, +0.333, +0.667, +1).
+ * Expressive preset system for superformula parameters.
+ * Orb-page V2 slider snaps are seven stops (-1, -0.667, -0.333, 0, ...),
+ * with a legacy -0.5 support stop for saved mood-type interop.
  * Interpolated the same way as colorUtils (lerp between adjacent stops).
  *
  * Psychology (Bouba/Kiki effect, Bar & Neta 2006):
@@ -214,9 +215,10 @@ interface ShapeParams {
  *   of sweeping through accidental petal counts.
  */
 const SHAPE_PRESETS: { valence: number; p: ShapeParams }[] = [
-  { valence: -1.0, p: { m: 3, n1: 0.9, n2: 1.75, n3: 1.75 } }, // compact pressure lens, visibly distinct but still soft
-  { valence: -0.667, p: { m: 3, n1: 1.65, n2: 1.42, n3: 1.42 } }, // same family, softer uneasy pressure
-  { valence: -0.333, p: { m: 3, n1: 1.85, n2: 1.72, n3: 1.72 } }, // near-neutral pressure, still phase-stable
+  { valence: -1.0, p: { m: 3, n1: 0.62, n2: 1.5, n3: 1.5 } }, // compact triangular pressure lens
+  { valence: -0.667, p: { m: 3, n1: 1.15, n2: 1.52, n3: 1.52 } }, // bridge: same phase, release pressure
+  { valence: -0.5, p: { m: 3, n1: 1.55, n2: 1.6, n3: 1.6 } }, // actual "unpleasant" stop: softer 3-lobed lens
+  { valence: -0.333, p: { m: 3, n1: 1.9, n2: 1.88, n3: 1.88 } }, // near-neutral pressure, still phase-stable
   { valence: 0.0, p: { m: 5, n1: 2.0, n2: 2.0, n3: 2.0 } }, // perfect circle (m is visually irrelevant at neutral)
   { valence: 0.333, p: { m: 5, n1: 1.8, n2: 1.5, n3: 1.5 } }, // 5 gentle undulation ~8% depth
   { valence: 0.667, p: { m: 5, n1: 1.4, n2: 1.35, n3: 1.35 } }, // 5 soft petals ~14% depth
@@ -266,13 +268,15 @@ export function getShapeParams(valence: number): ShapeParams {
 
 function getCanvasShapeParams(valence: number): ShapeParams {
   const shape = getShapeParams(valence);
-  const expressive = Math.min(1, Math.abs(valence));
+  const negativeSoftening = 0.78;
+  const positiveSoftening = 0.72;
+  const softening = valence < 0 ? negativeSoftening : positiveSoftening;
 
   return {
-    m: shape.m * expressive * 0.35,
-    n1: 2 - expressive * 0.22,
-    n2: 2 - expressive * 0.18,
-    n3: 2 - expressive * 0.18,
+    m: shape.m,
+    n1: 2 + (shape.n1 - 2) * softening,
+    n2: 2 + (shape.n2 - 2) * softening,
+    n3: 2 + (shape.n3 - 2) * softening,
   };
 }
 
