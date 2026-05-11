@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 
 import { useGamificationStore, useUserDataStore } from "@/stores";
@@ -91,13 +91,6 @@ export function useOrbMoodFlow(
 
   const setPendingMoodContext = useDiaryDraftStore(
     (s) => s.setPendingMoodContext,
-  );
-
-  useEffect(
-    () => () => {
-      useMoodEntryDraftStore.getState().reset();
-    },
-    [],
   );
 
   const resolvedValence = draftValence ?? 0;

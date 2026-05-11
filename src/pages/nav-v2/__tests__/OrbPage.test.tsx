@@ -344,6 +344,28 @@ describe("OrbPage progressive flow", () => {
     );
   });
 
+  it("preserves the in-progress orb mood when the Orb tab unmounts during V2 navigation", () => {
+    const { unmount } = render(<OrbPage onAddMood={onAddMoodMock} />);
+
+    fireEvent.click(screen.getByTestId("mood-orb-option-good"));
+    expect(screen.getByTestId("valence-orb")).toHaveAttribute(
+      "data-valence",
+      "0.5",
+    );
+
+    unmount();
+    render(<OrbPage onAddMood={onAddMoodMock} />);
+
+    expect(screen.getByTestId("valence-orb")).toHaveAttribute(
+      "data-valence",
+      "0.5",
+    );
+    expect(screen.getByTestId("mood-orb-picker")).toHaveAttribute(
+      "data-value",
+      "0.5",
+    );
+  });
+
   it("opens Diary with a valid handoff even when no exact feeling is chosen", () => {
     render(<OrbPage onAddMood={onAddMoodMock} />);
 
