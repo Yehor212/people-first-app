@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
+import { SSK } from "@/lib/storageKeys";
 import { useMoodEntryDraftStore } from "@/stores/moodEntryDraftStore";
 
 describe("moodEntryDraftStore", () => {
@@ -18,6 +19,28 @@ describe("moodEntryDraftStore", () => {
   it("setValence updates state", () => {
     useMoodEntryDraftStore.getState().setValence(0.6);
     expect(useMoodEntryDraftStore.getState().valence).toBe(0.6);
+  });
+
+  it("keeps an in-progress valence draft through a browser-tab reload", async () => {
+    useMoodEntryDraftStore.getState().setValence(-0.667);
+    useMoodEntryDraftStore.getState().setScope("day");
+
+    expect(window.sessionStorage.getItem(SSK.MOOD_ENTRY_DRAFT)).toContain("-0.667");
+
+    const modulePath = "@/stores/moodEntryDraftStore";
+    const freshModule = await import(`${modulePath}?reload=${Date.now()}`);
+
+    expect(freshModule.useMoodEntryDraftStore.getState().valence).toBe(-0.667);
+    expect(freshModule.useMoodEntryDraftStore.getState().scope).toBe("day");
+  });
+
+  it("clears the reload draft when reset runs after save or skip", () => {
+    useMoodEntryDraftStore.getState().setValence(0.333);
+    expect(window.sessionStorage.getItem(SSK.MOOD_ENTRY_DRAFT)).not.toBeNull();
+
+    useMoodEntryDraftStore.getState().reset();
+
+    expect(window.sessionStorage.getItem(SSK.MOOD_ENTRY_DRAFT)).toBeNull();
   });
 
   it("setScope clears specificTime when leaving 'specific'", () => {

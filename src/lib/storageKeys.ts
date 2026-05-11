@@ -157,6 +157,7 @@ export const SSK = {
   UPDATE_DISMISSED: "zenflow-update-dismissed",
   ORB_RENDERER_SESSION: "zenflow-orb-renderer-session",
   ORB_WEBGL_SLOW_MS: "zenflow-orb-webgl-slow-ms",
+  MOOD_ENTRY_DRAFT: "zenflow-mood-entry-draft",
   SPOTIFY_TOKENS: "zenflow_spotify_tokens",
   SPOTIFY_PKCE_VERIFIER: "spotify_pkce_verifier",
   DISMISSED_EVENTS: "zenflow_dismissed_events",

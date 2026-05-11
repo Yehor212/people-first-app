@@ -19,6 +19,8 @@ function valenceToMood(v: number): MoodType {
   return "great";
 }
 
+export const ORB_LISTENING_VALENCE = -0.143;
+
 export type OrbFlowStep = "orb-select" | "refine-for-diary";
 
 export interface UseOrbMoodFlowReturn {
@@ -96,7 +98,7 @@ export function useOrbMoodFlow(
   const resolvedValence = draftValence ?? 0;
   const draftMood = useMemo(() => valenceToMood(resolvedValence), [resolvedValence]);
 
-  const orbValence = resolvedValence;
+  const orbValence = draftValence ?? ORB_LISTENING_VALENCE;
 
   const auraHue = useMemo(() => {
     if (orbValence < 0) return 40 + (250 - 40) * Math.min(1, -orbValence);

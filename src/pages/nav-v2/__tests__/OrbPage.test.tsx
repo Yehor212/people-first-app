@@ -269,7 +269,7 @@ describe("OrbPage progressive flow", () => {
 
     expect(screen.getByTestId("valence-orb")).toHaveAttribute(
       "data-valence",
-      "0",
+      "-0.143",
     );
     expect(screen.getByTestId("mood-orb-picker")).toHaveAttribute(
       "data-value",
@@ -288,6 +288,19 @@ describe("OrbPage progressive flow", () => {
       "0.72",
     );
     expect(screen.queryByTestId("orb-aura")).not.toBeInTheDocument();
+  });
+
+  it("keeps neutral semantics but avoids the committed neutral orb before first choice", () => {
+    render(<OrbPage onAddMood={onAddMoodMock} />);
+
+    expect(screen.getByTestId("valence-orb")).toHaveAttribute(
+      "data-valence",
+      "-0.143",
+    );
+    expect(screen.getByTestId("mood-orb-picker")).toHaveAttribute(
+      "data-value",
+      "0",
+    );
   });
 
   it("keeps the soft orb aura on tablet and desktop layouts", () => {

@@ -15,6 +15,8 @@
  */
 
 import { create } from "zustand";
+import { safeSessionStorageGet, safeSessionStorageSet } from "@/lib/safeJson";
+import { SSK } from "@/lib/storageKeys";
 
 export type MoodDraftScope = "now" | "day" | "specific";
 
@@ -50,18 +52,101 @@ const INITIAL: MoodEntryDraft = {
   note: "",
 };
 
+function clampValence(value: unknown): number | null {
+  if (value === null) return null;
+  if (typeof value !== "number" || !Number.isFinite(value)) return null;
+  return Math.max(-1, Math.min(1, value));
+}
+
+function normalizeDraft(value: Partial<MoodEntryDraft> | null | undefined): MoodEntryDraft {
+  const scope =
+    value?.scope === "day" || value?.scope === "specific" || value?.scope === "now"
+      ? value.scope
+      : INITIAL.scope;
+
+  return {
+    valence: clampValence(value?.valence),
+    scope,
+    specificTime:
+      scope === "specific" && typeof value?.specificTime === "string"
+        ? value.specificTime
+        : null,
+    emotion: typeof value?.emotion === "string" ? value.emotion : null,
+    note: typeof value?.note === "string" ? value.note : "",
+  };
+}
+
+function readInitialDraft(): MoodEntryDraft {
+  if (typeof window === "undefined") return INITIAL;
+  return normalizeDraft(
+    safeSessionStorageGet<Partial<MoodEntryDraft> | null>(SSK.MOOD_ENTRY_DRAFT, null),
+  );
+}
+
+function pickDraft(state: MoodEntryDraft): MoodEntryDraft {
+  return {
+    valence: state.valence,
+    scope: state.scope,
+    specificTime: state.specificTime,
+    emotion: state.emotion,
+    note: state.note,
+  };
+}
+
+function persistDraft(draft: MoodEntryDraft) {
+  if (typeof window === "undefined") return;
+  safeSessionStorageSet(SSK.MOOD_ENTRY_DRAFT, draft);
+}
+
+function clearDraftPersistence() {
+  if (typeof window === "undefined") return;
+  try {
+    window.sessionStorage.removeItem(SSK.MOOD_ENTRY_DRAFT);
+  } catch {
+    // best-effort only: storage can be disabled/private, but mood flow must continue
+  }
+}
+
 export const useMoodEntryDraftStore = create<MoodEntryDraftStore>((set, get) => ({
-  ...INITIAL,
-  setValence: (valence) => set({ valence }),
+  ...readInitialDraft(),
+  setValence: (valence) =>
+    set((state) => {
+      const next = { ...pickDraft(state), valence: clampValence(valence) };
+      persistDraft(next);
+      return { valence: next.valence };
+    }),
   setScope: (scope) =>
-    set((state) => ({
-      scope,
-      // Reset specificTime when leaving "specific"
-      specificTime: scope === "specific" ? state.specificTime : null,
-    })),
-  setSpecificTime: (specificTime) => set({ specificTime }),
-  setEmotion: (emotion) => set({ emotion }),
-  setNote: (note) => set({ note }),
+    set((state) => {
+      const next = {
+        ...pickDraft(state),
+        scope,
+        // Reset specificTime when leaving "specific"
+        specificTime: scope === "specific" ? state.specificTime : null,
+      };
+      persistDraft(next);
+      return {
+        scope: next.scope,
+        specificTime: next.specificTime,
+      };
+    }),
+  setSpecificTime: (specificTime) =>
+    set((state) => {
+      const next = { ...pickDraft(state), specificTime };
+      persistDraft(next);
+      return { specificTime };
+    }),
+  setEmotion: (emotion) =>
+    set((state) => {
+      const next = { ...pickDraft(state), emotion };
+      persistDraft(next);
+      return { emotion };
+    }),
+  setNote: (note) =>
+    set((state) => {
+      const next = { ...pickDraft(state), note };
+      persistDraft(next);
+      return { note };
+    }),
   // Test/e2e hook: expose setters on window for deterministic baseline capture
   // without relying on framer-motion drag simulation.
   ...(typeof window !== "undefined"
@@ -86,7 +171,10 @@ export const useMoodEntryDraftStore = create<MoodEntryDraftStore>((set, get) => 
         return {};
       })()
     : {}),
-  reset: () => set({ ...INITIAL }),
+  reset: () => {
+    clearDraftPersistence();
+    set({ ...INITIAL });
+  },
   isComplete: () => {
     const s = get();
     if (s.scope === "specific" && !s.specificTime) return false;
