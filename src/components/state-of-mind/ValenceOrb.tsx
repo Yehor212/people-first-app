@@ -24,7 +24,7 @@ import { shouldAnimate } from '@/lib/animationUtils';
 import { recordError } from '@/lib/crashReporting';
 import { hapticTap } from '@/lib/haptics';
 import { hapticMedium } from '@/lib/haptics';
-import { safeSessionStorageSet } from '@/lib/safeJson';
+import { safeSessionStorageGet, safeSessionStorageSet } from '@/lib/safeJson';
 import { SSK } from '@/lib/storageKeys';
 import { createParticlePool, updateParticles, burstParticles } from './particleSystem';
 import { drawOrbScene, getShapeParams } from './orbRenderer';
@@ -72,6 +72,7 @@ const WEBGL_FRAME_INTERVAL = 1000 / 60; // 60fps for WebGL (shader is <1ms)
 const CANVAS_FRAME_INTERVAL = 1000 / 30; // 30fps for Canvas 2D fallback
 const PARTICLE_COUNT = 22;
 const WEBGL_BUILD_BUDGET_MS = 500;
+export const WEBGL_WORKER_READY_BUDGET_MS = 700;
 const WEBGL_READINESS_TIMEOUT_MS = 8000;
 const WEBGL_UPGRADE_DELAY_MS = 180;
 const IDLE_WAKE_SOFT_THRESHOLD_MS = 8000;
@@ -205,11 +206,29 @@ function shouldTryWebGL(mode: OrbRendererMode): boolean {
   if (override === 'canvas') return false;
   if (override === 'webgl') return true;
   if (mode === 'canvas') return false;
+  if (hasSlowWebGLSession()) return false;
   return true;
 }
 
 function rememberSlowWebGL(durationMs: number) {
   safeSessionStorageSet(SSK.ORB_WEBGL_SLOW_MS, Math.round(durationMs));
+}
+
+function hasSlowWebGLSession(): boolean {
+  const slowMs = safeSessionStorageGet<number | null>(SSK.ORB_WEBGL_SLOW_MS, null);
+  return typeof slowMs === 'number' && slowMs >= WEBGL_BUILD_BUDGET_MS;
+}
+
+export function shouldApplyWorkerWebGLUpgrade(
+  readyDurationMs: number,
+  forcedWebGL = false,
+): boolean {
+  return forcedWebGL || readyDurationMs <= WEBGL_WORKER_READY_BUDGET_MS;
+}
+
+function isVisibleCanvasHost(node: HTMLElement): boolean {
+  const rect = node.getBoundingClientRect();
+  return rect.width > 0 && rect.height > 0;
 }
 
 function canUseWorkerWebGL(): boolean {
@@ -409,6 +428,7 @@ export const ValenceOrb = memo(function ValenceOrb({
     glRendererRef.current = glRenderer;
     canvasElRef.current = activeCanvas;
     wrapper.appendChild(activeCanvas);
+    const visibleCanvasMountedAt = performance.now();
 
     // ── Genesis easing (ease-out-back with slight overshoot) ──
     const computeGenesis = (timestamp: number): number => {
@@ -681,6 +701,9 @@ export const ValenceOrb = memo(function ValenceOrb({
       if (!shouldTryWebGL(renderer) || signal.aborted) return;
 
       if (renderer === 'auto' && canUseWorkerWebGL()) {
+        if (!isVisibleCanvasHost(wrapper)) return;
+
+        const workerStartedAt = performance.now();
         const workerCanvas = createCanvas(size, dpr);
         const offscreen = workerCanvas.transferControlToOffscreen();
         const worker = new Worker(new URL('./orbWorker.ts', import.meta.url), {
@@ -697,6 +720,16 @@ export const ValenceOrb = memo(function ValenceOrb({
               new Error(event.data.reason || 'Worker WebGL renderer failed'),
               { component: 'ValenceOrb', action: 'worker-webgl' },
             );
+            worker.terminate();
+            if (webglWorker === worker) webglWorker = null;
+            return;
+          }
+
+          const readyDurationMs = performance.now() - workerStartedAt;
+          const visibleCanvasAgeMs = performance.now() - visibleCanvasMountedAt;
+          const visibleUpgradeAgeMs = Math.max(readyDurationMs, visibleCanvasAgeMs);
+          if (!shouldApplyWorkerWebGLUpgrade(visibleUpgradeAgeMs, getRendererOverride() === 'webgl')) {
+            rememberSlowWebGL(visibleUpgradeAgeMs);
             worker.terminate();
             if (webglWorker === worker) webglWorker = null;
             return;

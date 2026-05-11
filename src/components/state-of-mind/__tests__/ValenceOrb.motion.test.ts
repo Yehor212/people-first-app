@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import {
   ORB_TRANSITION_SETTINGS,
+  WEBGL_WORKER_READY_BUDGET_MS,
   resolveFrameTransitionProfile,
   resolveOrbTransitionSettings,
+  shouldApplyWorkerWebGLUpgrade,
   shouldStartIdleWakeSoftening,
 } from "../ValenceOrb";
 
@@ -64,5 +66,11 @@ describe("ValenceOrb motion profile", () => {
     expect(resolveFrameTransitionProfile("input-soft", true)).toBe("v1-soft");
     expect(resolveFrameTransitionProfile("input-soft", false)).toBe("input-soft");
     expect(resolveFrameTransitionProfile("standard", true)).toBe("standard");
+  });
+
+  it("rejects late worker WebGL upgrades so the visible orb does not swap renderers", () => {
+    expect(shouldApplyWorkerWebGLUpgrade(WEBGL_WORKER_READY_BUDGET_MS - 1)).toBe(true);
+    expect(shouldApplyWorkerWebGLUpgrade(WEBGL_WORKER_READY_BUDGET_MS + 1)).toBe(false);
+    expect(shouldApplyWorkerWebGLUpgrade(WEBGL_WORKER_READY_BUDGET_MS + 5000, true)).toBe(true);
   });
 });
