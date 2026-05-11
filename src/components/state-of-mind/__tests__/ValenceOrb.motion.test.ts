@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { ORB_TRANSITION_SETTINGS, resolveOrbTransitionSettings } from "../ValenceOrb";
+import {
+  ORB_TRANSITION_SETTINGS,
+  resolveFrameTransitionProfile,
+  resolveOrbTransitionSettings,
+  shouldStartIdleWakeSoftening,
+} from "../ValenceOrb";
 
 describe("ValenceOrb motion profile", () => {
   it("keeps the shared default profile slower than the legacy standard profile", () => {
@@ -49,5 +54,15 @@ describe("ValenceOrb motion profile", () => {
     expect(finalTail.targetBaseLerp).toBeLessThan(broadMove.targetBaseLerp);
     expect(finalTail.targetBaseLerp).toBeGreaterThan(slowTail.targetBaseLerp);
     expect(finalTail.visualBaseLerp).toBeLessThan(broadMove.visualBaseLerp);
+  });
+
+  it("softens the first input transition after the orb has been idle", () => {
+    expect(shouldStartIdleWakeSoftening("input-soft", 9000, -0.667)).toBe(true);
+    expect(shouldStartIdleWakeSoftening("input-soft", 1000, -0.667)).toBe(false);
+    expect(shouldStartIdleWakeSoftening("v1-soft", 9000, -0.667)).toBe(false);
+
+    expect(resolveFrameTransitionProfile("input-soft", true)).toBe("v1-soft");
+    expect(resolveFrameTransitionProfile("input-soft", false)).toBe("input-soft");
+    expect(resolveFrameTransitionProfile("standard", true)).toBe("standard");
   });
 });

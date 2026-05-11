@@ -74,6 +74,8 @@ const PARTICLE_COUNT = 22;
 const WEBGL_BUILD_BUDGET_MS = 500;
 const WEBGL_READINESS_TIMEOUT_MS = 8000;
 const WEBGL_UPGRADE_DELAY_MS = 180;
+const IDLE_WAKE_SOFT_THRESHOLD_MS = 8000;
+const ORB_IDLE_WAKE_SOFT_EPSILON = 0.01;
 
 export type OrbTransitionProfile = "standard" | "v1-soft" | "input-soft";
 export type OrbRendererMode = "auto" | "canvas" | "webgl";
@@ -125,6 +127,25 @@ export function resolveOrbTransitionSettings(
     targetBaseLerp: (shimmerActive ? settings.shimmerBaseLerp : settings.targetBaseLerp) * tailScale,
     visualBaseLerp: settings.visualBaseLerp * tailScale,
   };
+}
+
+export function shouldStartIdleWakeSoftening(
+  profile: OrbTransitionProfile,
+  idleElapsedMs: number,
+  targetDelta: number,
+): boolean {
+  return (
+    profile === "input-soft" &&
+    idleElapsedMs >= IDLE_WAKE_SOFT_THRESHOLD_MS &&
+    Math.abs(targetDelta) > ORB_IDLE_WAKE_SOFT_EPSILON
+  );
+}
+
+export function resolveFrameTransitionProfile(
+  profile: OrbTransitionProfile,
+  idleWakeSoftActive: boolean,
+): OrbTransitionProfile {
+  return idleWakeSoftActive && profile === "input-soft" ? "v1-soft" : profile;
 }
 
 function frameRateIndependentLerp(baseLerp: number, dt: number, referenceFps: number): number {
@@ -254,6 +275,8 @@ export const ValenceOrb = memo(function ValenceOrb({
   const prevStableValenceRef = useRef(0); // P3: last settled valence for delta detection
   const lastInteractionRef = useRef(performance.now()); // P4: idle awareness
   const smoothValenceRef = useRef(valence); // P5: smoothed valence for organic color/shape flow
+  const targetValenceRef = useRef(valence);
+  const idleWakeSoftActiveRef = useRef(false);
   const animationSpeedRef = useRef(animationSpeed);
   animationSpeedRef.current = animationSpeed;
   const transitionProfileRef = useRef<OrbTransitionProfile>(transitionProfile);
@@ -271,10 +294,31 @@ export const ValenceOrb = memo(function ValenceOrb({
   // Keep target valence in sync with prop
   const valenceRef = useRef(valence);
   valenceRef.current = valence;
-  if (stateRef.current) {
-    stateRef.current.targetValence = valence;
-    lastInteractionRef.current = performance.now(); // P4: slider change = interaction
-  }
+
+  useEffect(() => {
+    const state = stateRef.current;
+    if (!state) {
+      targetValenceRef.current = valence;
+      return;
+    }
+
+    const targetDelta = valence - targetValenceRef.current;
+    state.targetValence = valence;
+
+    if (Math.abs(targetDelta) <= ORB_IDLE_WAKE_SOFT_EPSILON) {
+      return;
+    }
+
+    const now = performance.now();
+    const idleElapsedMs = now - lastInteractionRef.current;
+    idleWakeSoftActiveRef.current = shouldStartIdleWakeSoftening(
+      transitionProfileRef.current,
+      idleElapsedMs,
+      valence - state.currentValence,
+    );
+    targetValenceRef.current = valence;
+    lastInteractionRef.current = now;
+  }, [valence]);
 
   // Law 18: track mounted state
   useEffect(() => {
@@ -516,8 +560,20 @@ export const ValenceOrb = memo(function ValenceOrb({
       // Soft-tail interpolation: the last part of a mood transition must not
       // snap. V1/V2 and mini-orbs share this profile by default.
       const targetDelta = state.targetValence - state.currentValence;
-      const { targetBaseLerp } = resolveOrbTransitionSettings(
+      const preVisualDelta = state.currentValence - smoothValenceRef.current;
+      const transitionDistance = Math.max(Math.abs(targetDelta), Math.abs(preVisualDelta));
+      const idleWakeSoftActive =
+        idleWakeSoftActiveRef.current &&
+        transitionDistance > ORB_IDLE_WAKE_SOFT_EPSILON;
+      if (!idleWakeSoftActive && idleWakeSoftActiveRef.current) {
+        idleWakeSoftActiveRef.current = false;
+      }
+      const frameTransitionProfile = resolveFrameTransitionProfile(
         transitionProfileRef.current,
+        idleWakeSoftActive,
+      );
+      const { targetBaseLerp } = resolveOrbTransitionSettings(
+        frameTransitionProfile,
         Math.abs(targetDelta),
         shimmerRef.current > 0.1,
       );
@@ -538,7 +594,7 @@ export const ValenceOrb = memo(function ValenceOrb({
       // transition between mood states, not snappy.
       const visualDelta = state.currentValence - smoothValenceRef.current;
       const { visualBaseLerp } = resolveOrbTransitionSettings(
-        transitionProfileRef.current,
+        frameTransitionProfile,
         Math.abs(visualDelta),
       );
       const smoothLerp = frameRateIndependentLerp(visualBaseLerp, dt, 60);
