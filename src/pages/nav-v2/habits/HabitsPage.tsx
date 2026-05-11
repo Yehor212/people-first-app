@@ -33,9 +33,14 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useUserDataStore } from "@/stores";
 import { hapticTap } from "@/lib/haptics";
 import { analytics } from "@/lib/analytics";
+import { logger } from "@/lib/logger";
 import { doesNumericalStoredValueMeetTarget, setEntryValue, toStoredValue } from "@/lib/habits";
+import { getChallenges, saveChallenges } from "@/lib/challengeStorage";
 import { getToday } from "@/lib/utils";
 import { useShouldAnimate } from "@/hooks/useShouldAnimate";
+import { triggerSync } from "@/storage/cloudSync";
+import { trackDeletedHabitId } from "@/storage/deletionTracker";
+import { deleteHabitFromCloud, syncHabit, syncHabitCompletion } from "@/storage/realtimeSync";
 import { ENTRY } from "@/types";
 import { HabitsHeroZone } from "./HabitsHeroZone";
 import { HabitCreateSheet } from "./HabitCreateSheet";
@@ -66,13 +71,7 @@ const HABIT_FIELD_SEEDS = [
 
 const HABIT_FIELD_SPECTRUM = ["energy", "body", "focus", "gratitude", "rest"] as const;
 
-function HabitFieldBackdrop({
-  isEmpty,
-  animate,
-}: {
-  isEmpty: boolean;
-  animate: boolean;
-}) {
+function HabitFieldBackdrop({ isEmpty, animate }: { isEmpty: boolean; animate: boolean }) {
   return (
     <div
       aria-hidden="true"
@@ -84,11 +83,7 @@ function HabitFieldBackdrop({
       <span className="habit-field-backdrop__source-beam" />
       <span className="habit-field-backdrop__prism" />
       {HABIT_FIELD_SPECTRUM.map((role) => (
-        <span
-          key={role}
-          className="habit-field-backdrop__spectrum"
-          data-spectrum-role={role}
-        />
+        <span key={role} className="habit-field-backdrop__spectrum" data-spectrum-role={role} />
       ))}
       <span className="habit-field-backdrop__canopy" />
       <span className="habit-field-backdrop__cue-ring habit-field-backdrop__cue-ring--first" />
@@ -121,6 +116,8 @@ export const HabitsPage = memo(function HabitsPage() {
   const { habits, todaysHabits, dailyProgress, isEmpty: hasNoActiveHabits } = useHabitsPageState();
   const animateBackdrop = useShouldAnimate();
   const setHabits = useUserDataStore((s) => s.setHabits);
+  const setScheduleEvents = useUserDataStore((s) => s.setScheduleEvents);
+  const setReminders = useUserDataStore((s) => s.setReminders);
   const [createOpen, setCreateOpen] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [detailHabit, setDetailHabit] = useState<Habit | null>(null);
@@ -166,21 +163,47 @@ export const HabitsPage = memo(function HabitsPage() {
       }
       setHabits((prev) => [...prev, habit]);
       analytics.habitCreated(habit.templateId ? "template" : "custom", habits.length + 1);
+      triggerSync();
+      void syncHabit(habit).catch((err) => logger.warn("[V2 Habits] Add sync failed:", err));
     },
     [setHabits, habits]
   );
 
   const handleUpdateHabit = useCallback(
     (habit: Habit) => {
-      setHabits((prev) => prev.map((h) => (h.id === habit.id ? habit : h)));
+      const updatedHabit = { ...habit, updatedAt: new Date().toISOString() };
+      setHabits((prev) => prev.map((h) => (h.id === updatedHabit.id ? updatedHabit : h)));
+      triggerSync();
+      void syncHabit(updatedHabit).catch((err) =>
+        logger.warn("[V2 Habits] Update sync failed:", err)
+      );
     },
     [setHabits]
   );
   const handleDeleteHabit = useCallback(
     (habitId: string) => {
       setHabits((prev) => prev.filter((h) => h.id !== habitId));
+      setScheduleEvents((prev) => prev.filter((e) => e.habitId !== habitId));
+      setReminders((prev) => ({
+        ...prev,
+        habitIds: Array.isArray(prev.habitIds) ? prev.habitIds.filter((id) => id !== habitId) : [],
+      }));
+
+      const challenges = getChallenges();
+      const filtered = challenges.filter((c) => c.habitId !== habitId);
+      if (filtered.length !== challenges.length) {
+        saveChallenges(filtered);
+      }
+
+      void trackDeletedHabitId(habitId);
+      void deleteHabitFromCloud(habitId).catch((err) => {
+        // graceful: local delete already succeeded; deletion tracker + backup
+        // sync keep the delete authoritative until granular cloud delete retries.
+        logger.error("[V2 Habits] Cloud delete failed:", err);
+      });
+      triggerSync();
     },
-    [setHabits]
+    [setHabits, setScheduleEvents, setReminders]
   );
 
   const entryMetadata = useCallback(
@@ -219,6 +242,20 @@ export const HabitsPage = memo(function HabitsPage() {
           return { ...h, entries, updatedAt: new Date().toISOString() };
         })
       );
+
+      triggerSync();
+      void syncHabitCompletion(
+        habit.id,
+        date,
+        nowMet,
+        realValue == null ? undefined : Math.max(1, Math.round(realValue)),
+        nextStored,
+        {
+          habitType: habit.habitType ?? "numerical",
+          targetType: habit.targetType,
+          entryValue: nextStored ?? ENTRY.UNKNOWN,
+        }
+      ).catch((err) => logger.warn("[V2 Habits] Numerical sync failed:", err));
 
       if (!prevMet && nowMet) {
         analytics.habitCompleted(habit.name, habits.filter((h) => !h.isArchived).length);
@@ -279,6 +316,8 @@ export const HabitsPage = memo(function HabitsPage() {
       // without this, V2 toggles would silently bypass `habit_completed`.
       const habit = habits.find((h) => h.id === habitId);
       const isCompletingNow = habit != null && habit.entries?.[date] == null;
+      const nextValue =
+        habit != null && habit.entries?.[date] == null ? ENTRY.YES_MANUAL : ENTRY.UNKNOWN;
       void hapticTap();
       setHabits((prev) =>
         prev.map((h) => {
@@ -297,6 +336,12 @@ export const HabitsPage = memo(function HabitsPage() {
           return { ...h, entries, updatedAt: new Date().toISOString() };
         })
       );
+      triggerSync();
+      void syncHabitCompletion(habitId, date, nextValue === ENTRY.YES_MANUAL, 1, undefined, {
+        habitType: habit?.habitType ?? "boolean",
+        targetType: habit?.targetType,
+        entryValue: nextValue,
+      }).catch((err) => logger.warn("[V2 Habits] Toggle sync failed:", err));
       if (isCompletingNow && habit) {
         // §15 retention metric — habit.name carries length-only PII gate at
         // the Analytics layer (see analytics.ts). total_habits is the active
@@ -369,20 +414,41 @@ export const HabitsPage = memo(function HabitsPage() {
   }, []);
   const handleArchiveHabit = useCallback(
     (habitId: string) => {
-      setHabits((prev) => prev.map((h) => (h.id === habitId ? { ...h, isArchived: true } : h)));
+      const updatedAt = new Date().toISOString();
+      const habit = habits.find((h) => h.id === habitId);
+      setHabits((prev) =>
+        prev.map((h) => (h.id === habitId ? { ...h, isArchived: true, updatedAt } : h))
+      );
+      triggerSync();
+      if (habit) {
+        void syncHabit({ ...habit, isArchived: true, updatedAt }).catch((err) =>
+          logger.warn("[V2 Habits] Archive sync failed:", err)
+        );
+      }
     },
-    [setHabits]
+    [habits, setHabits]
   );
 
   const handleUnarchiveHabit = useCallback(
     (habitId: string) => {
-      setHabits((prev) => prev.map((h) => (h.id === habitId ? { ...h, isArchived: false } : h)));
+      const updatedAt = new Date().toISOString();
+      const habit = habits.find((h) => h.id === habitId);
+      setHabits((prev) =>
+        prev.map((h) => (h.id === habitId ? { ...h, isArchived: false, updatedAt } : h))
+      );
+      triggerSync();
+      if (habit) {
+        void syncHabit({ ...habit, isArchived: false, updatedAt }).catch((err) =>
+          logger.warn("[V2 Habits] Unarchive sync failed:", err)
+        );
+      }
     },
-    [setHabits]
+    [habits, setHabits]
   );
 
   const handleSkipHabit = useCallback(
     (habitId: string, date: string) => {
+      const habit = habits.find((h) => h.id === habitId);
       setHabits((prev) =>
         prev.map((h) => {
           if (h.id !== habitId) return h;
@@ -394,8 +460,14 @@ export const HabitsPage = memo(function HabitsPage() {
           return { ...h, entries, updatedAt: new Date().toISOString() };
         })
       );
+      triggerSync();
+      void syncHabitCompletion(habitId, date, false, undefined, undefined, {
+        habitType: habit?.habitType ?? "boolean",
+        targetType: habit?.targetType,
+        entryValue: ENTRY.SKIP,
+      }).catch((err) => logger.warn("[V2 Habits] Skip sync failed:", err));
     },
-    [setHabits, entryMetadata]
+    [habits, setHabits, entryMetadata]
   );
 
   const handleUnskipHabit = useCallback(
@@ -408,6 +480,10 @@ export const HabitsPage = memo(function HabitsPage() {
           void _skip;
           return { ...h, entries: rest };
         })
+      );
+      triggerSync();
+      void syncHabitCompletion(habitId, date, false).catch((err) =>
+        logger.warn("[V2 Habits] Unskip sync failed:", err)
       );
     },
     [setHabits]

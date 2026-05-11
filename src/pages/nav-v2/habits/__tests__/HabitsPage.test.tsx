@@ -2,10 +2,56 @@
  * HabitsPage — orchestrator tests for the Phase 3-C single-zone layout.
  * Garden + MindMap zones removed 2026-04-19; only the Hero zone is rendered.
  */
-import { render, cleanup, screen } from "@testing-library/react";
+import { render, cleanup, fireEvent, screen } from "@testing-library/react";
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
+import type { Challenge } from "@/types";
 
 vi.mock("@/hooks/useShouldAnimate", () => ({ useShouldAnimate: () => true }));
+
+const syncMocks = vi.hoisted(() => {
+  const logger = {
+    debug: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    log: vi.fn(),
+    sync: vi.fn(),
+    warn: vi.fn(),
+  };
+  return {
+    deleteHabitFromCloud: vi.fn(() => Promise.resolve()),
+    getChallenges: vi.fn<() => Challenge[]>(() => []),
+    logger,
+    saveChallenges: vi.fn<(challenges: Challenge[]) => void>(),
+    syncHabit: vi.fn(() => Promise.resolve()),
+    syncHabitCompletion: vi.fn(() => Promise.resolve()),
+    trackDeletedHabitId: vi.fn(() => Promise.resolve()),
+    triggerSync: vi.fn(),
+  };
+});
+
+vi.mock("@/storage/deletionTracker", () => ({
+  trackDeletedHabitId: syncMocks.trackDeletedHabitId,
+}));
+
+vi.mock("@/storage/realtimeSync", () => ({
+  deleteHabitFromCloud: syncMocks.deleteHabitFromCloud,
+  syncHabit: syncMocks.syncHabit,
+  syncHabitCompletion: syncMocks.syncHabitCompletion,
+}));
+
+vi.mock("@/storage/cloudSync", () => ({
+  triggerSync: syncMocks.triggerSync,
+}));
+
+vi.mock("@/lib/challengeStorage", () => ({
+  getChallenges: syncMocks.getChallenges,
+  saveChallenges: syncMocks.saveChallenges,
+}));
+
+vi.mock("@/lib/logger", () => ({
+  logger: syncMocks.logger,
+  default: syncMocks.logger,
+}));
 
 vi.mock("@/contexts/LanguageContext", () => ({
   useLanguage: () => ({
@@ -34,6 +80,14 @@ vi.mock("@/contexts/LanguageContext", () => ({
       navV2HabitsOnboardingStep1: "Pick your identity",
       navV2HabitsOnboardingStep2: "Set your cue",
       navV2HabitsOnboardingStep3: "Plant your first habit",
+      navV2HabitsActions: "Habit actions",
+      skipToday: "Skip today",
+      unskip: "Unskip",
+      archiveHabit: "Archive habit",
+      unarchiveHabit: "Unarchive habit",
+      edit: "Edit",
+      statistics: "Statistics",
+      delete: "Delete",
       cancel: "Cancel",
     },
     language: "en",
@@ -42,6 +96,21 @@ vi.mock("@/contexts/LanguageContext", () => ({
 
 let mockHabits: unknown[] = [];
 const setHabitsSpy = vi.fn();
+const setScheduleEventsSpy = vi.fn();
+const setRemindersSpy = vi.fn();
+
+const makeChallenge = (id: string, habitId: string): Challenge => ({
+  id,
+  habitId,
+  type: "streak",
+  target: 1,
+  progress: 0,
+  startDate: "2026-05-11",
+  completed: false,
+  icon: "seed",
+  title: { en: id },
+  description: { en: id },
+});
 
 vi.mock("@/stores", async () => {
   const actual = await vi.importActual<Record<string, unknown>>("@/stores");
@@ -54,6 +123,8 @@ vi.mock("@/stores", async () => {
         moods: [],
         canvasGoals: [],
         setHabits: setHabitsSpy,
+        setScheduleEvents: setScheduleEventsSpy,
+        setReminders: setRemindersSpy,
       };
       return selector ? selector(state) : state;
     },
@@ -112,6 +183,16 @@ describe("HabitsPage (Phase 3-C single-zone)", () => {
   beforeEach(() => {
     mockHabits = [];
     setHabitsSpy.mockClear();
+    setScheduleEventsSpy.mockClear();
+    setRemindersSpy.mockClear();
+    syncMocks.deleteHabitFromCloud.mockClear();
+    syncMocks.getChallenges.mockReset();
+    syncMocks.getChallenges.mockReturnValue([]);
+    syncMocks.saveChallenges.mockClear();
+    syncMocks.syncHabit.mockClear();
+    syncMocks.syncHabitCompletion.mockClear();
+    syncMocks.trackDeletedHabitId.mockClear();
+    syncMocks.triggerSync.mockClear();
   });
 
   afterEach(() => {
@@ -141,10 +222,7 @@ describe("HabitsPage (Phase 3-C single-zone)", () => {
     mockHabits = [];
     render(<HabitsPage />);
     expect(screen.getByTestId("habits-page")).toHaveAttribute("data-habit-state", "empty");
-    expect(screen.getByTestId("habit-field-backdrop")).toHaveAttribute(
-      "data-habit-state",
-      "empty",
-    );
+    expect(screen.getByTestId("habit-field-backdrop")).toHaveAttribute("data-habit-state", "empty");
     expect(screen.getByTestId("habits-hero-empty")).toBeInTheDocument();
   });
 
@@ -164,10 +242,40 @@ describe("HabitsPage (Phase 3-C single-zone)", () => {
     expect(screen.getByTestId("habits-page")).toHaveAttribute("data-habit-state", "active");
     expect(screen.getByTestId("habit-field-backdrop")).toHaveAttribute(
       "data-habit-state",
-      "active",
+      "active"
     );
     expect(screen.getByTestId("hero-group-anytime")).toBeInTheDocument();
     expect(screen.getByTestId("hero-weekly-card-h1")).toBeInTheDocument();
+  });
+
+  it("tracks V2 destructive habit deletes before cloud/backups can resurrect them", () => {
+    mockHabits = [
+      {
+        id: "h1",
+        name: "Hydrate",
+        isArchived: false,
+        entries: {},
+        habitType: "boolean",
+        reminders: [],
+        frequency: { numerator: 1, denominator: 1 },
+      },
+    ];
+    syncMocks.getChallenges.mockReturnValue([
+      makeChallenge("challenge-1", "h1"),
+      makeChallenge("challenge-2", "other"),
+    ]);
+
+    render(<HabitsPage />);
+
+    fireEvent.keyDown(screen.getByTestId("hero-habit-row-h1"), { key: "Enter" });
+    fireEvent.click(screen.getByTestId("habit-action-sheet-h1-delete"));
+
+    expect(syncMocks.trackDeletedHabitId).toHaveBeenCalledWith("h1");
+    expect(syncMocks.deleteHabitFromCloud).toHaveBeenCalledWith("h1");
+    expect(syncMocks.triggerSync).toHaveBeenCalled();
+    expect(syncMocks.saveChallenges).toHaveBeenCalledWith([makeChallenge("challenge-2", "other")]);
+    expect(setScheduleEventsSpy).toHaveBeenCalled();
+    expect(setRemindersSpy).toHaveBeenCalled();
   });
 
   it("keeps the page active but shows a no-habits-today state when scheduled habits are off today", () => {
@@ -191,7 +299,7 @@ describe("HabitsPage (Phase 3-C single-zone)", () => {
     expect(screen.getByTestId("habits-page")).toHaveAttribute("data-habit-state", "active");
     expect(screen.getByTestId("habit-field-backdrop")).toHaveAttribute(
       "data-habit-state",
-      "active",
+      "active"
     );
     expect(screen.getByText("No habits today")).toBeInTheDocument();
     expect(screen.queryByTestId("hero-group-anytime")).not.toBeInTheDocument();

@@ -386,8 +386,11 @@ export const pullFromCloud = async (): Promise<boolean> => {
           if (moods.length) await db.moods.bulkPut(moods);
 
           // Filter out locally deleted habits before saving — prevents resurrection
+          const deletedIds = await getDeletedHabitIds();
+          if (deletedIds.size > 0) {
+            await db.habits.bulkDelete([...deletedIds]);
+          }
           if (habits.length) {
-            const deletedIds = await getDeletedHabitIds();
             const filteredHabits =
               deletedIds.size > 0 ? habits.filter((h) => !deletedIds.has(h.id)) : habits;
             if (filteredHabits.length) await db.habits.bulkPut(filteredHabits);

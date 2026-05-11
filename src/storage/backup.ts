@@ -348,7 +348,48 @@ export const importBackup = async (
     (a) => !!a && typeof a === "object" && typeof a.id === "string" && typeof a.entryId === "string"
   );
 
+  // Extract remote deletion IDs before either replace or merge. A stale backup
+  // can still contain an item and its tombstone; the tombstone must win.
+  const v3 = payload as BackupPayloadV3;
+  const isValidIdArray = (v: unknown): v is string[] =>
+    Array.isArray(v) &&
+    v.length <= 10000 &&
+    v.every((s) => typeof s === "string" && s.length > 0 && s.length <= 100);
+  const remoteDeletedHabitIds = isValidIdArray(v3.deletedHabitIds) ? v3.deletedHabitIds : undefined;
+  const remoteDeletedJournalIds = isValidIdArray(v3.deletedJournalEntryIds)
+    ? v3.deletedJournalEntryIds
+    : undefined;
+  const remoteDeletedMoodIds = isValidIdArray(v3.deletedMoodIds) ? v3.deletedMoodIds : undefined;
+  const remoteDeletedFocusIds = isValidIdArray(v3.deletedFocusSessionIds)
+    ? v3.deletedFocusSessionIds
+    : undefined;
+  const remoteDeletedGratitudeIds = isValidIdArray(v3.deletedGratitudeIds)
+    ? v3.deletedGratitudeIds
+    : undefined;
+
   if (mode === "replace") {
+    const deletedHabitSet = new Set(remoteDeletedHabitIds ?? []);
+    const deletedJournalSet = new Set(remoteDeletedJournalIds ?? []);
+    const deletedMoodSet = new Set(remoteDeletedMoodIds ?? []);
+    const deletedFocusSet = new Set(remoteDeletedFocusIds ?? []);
+    const deletedGratitudeSet = new Set(remoteDeletedGratitudeIds ?? []);
+
+    const replaceMoods = validMoods.valid.filter((item) => !deletedMoodSet.has(item.id));
+    const replaceHabits = validHabits.valid.filter((item) => !deletedHabitSet.has(item.id));
+    const replaceFocus = validFocus.valid.filter((item) => !deletedFocusSet.has(item.id));
+    const replaceGratitude = validGratitude.valid.filter(
+      (item) => !deletedGratitudeSet.has(item.id)
+    );
+    const replaceJournalEntries = validJournalEntries.filter(
+      (item) => !deletedJournalSet.has(item.id)
+    );
+    const replaceJournalPhotos = validJournalPhotos.filter(
+      (item) => !deletedJournalSet.has(item.entryId)
+    );
+    const replaceJournalAudio = validJournalAudio.filter(
+      (item) => !deletedJournalSet.has(item.entryId)
+    );
+
     await db.transaction(
       "rw",
       [
@@ -371,42 +412,61 @@ export const importBackup = async (
         await db.journalPhotos.clear();
         await db.journalAudio.clear();
 
-        if (validMoods.valid.length) await db.moods.bulkAdd(validMoods.valid);
-        if (validHabits.valid.length) await db.habits.bulkAdd(validHabits.valid);
-        if (validFocus.valid.length) await db.focusSessions.bulkAdd(validFocus.valid);
-        if (validGratitude.valid.length) await db.gratitudeEntries.bulkAdd(validGratitude.valid);
+        if (replaceMoods.length) await db.moods.bulkAdd(replaceMoods);
+        if (replaceHabits.length) await db.habits.bulkAdd(replaceHabits);
+        if (replaceFocus.length) await db.focusSessions.bulkAdd(replaceFocus);
+        if (replaceGratitude.length) await db.gratitudeEntries.bulkAdd(replaceGratitude);
         if (validSettings.valid.length) await db.settings.bulkAdd(validSettings.valid);
-        if (validJournalEntries.length) await db.journalEntries.bulkAdd(validJournalEntries);
-        if (validJournalPhotos.length) await db.journalPhotos.bulkAdd(validJournalPhotos);
-        if (validJournalAudio.length) await db.journalAudio.bulkAdd(validJournalAudio);
+        if (replaceJournalEntries.length) await db.journalEntries.bulkAdd(replaceJournalEntries);
+        if (replaceJournalPhotos.length) await db.journalPhotos.bulkAdd(replaceJournalPhotos);
+        if (replaceJournalAudio.length) await db.journalAudio.bulkAdd(replaceJournalAudio);
       }
     );
 
+    if (remoteDeletedMoodIds?.length) await mergeDeletedMoodIds(remoteDeletedMoodIds);
+    if (remoteDeletedHabitIds?.length) await mergeDeletedHabitIds(remoteDeletedHabitIds);
+    if (remoteDeletedFocusIds?.length) await mergeDeletedFocusSessionIds(remoteDeletedFocusIds);
+    if (remoteDeletedGratitudeIds?.length)
+      await mergeDeletedGratitudeIds(remoteDeletedGratitudeIds);
+    if (remoteDeletedJournalIds?.length) await mergeDeletedJournalEntryIds(remoteDeletedJournalIds);
+
     return {
       mode,
-      moods: { added: validMoods.valid.length, updated: 0, skipped: validMoods.skipped },
-      habits: { added: validHabits.valid.length, updated: 0, skipped: validHabits.skipped },
-      focusSessions: { added: validFocus.valid.length, updated: 0, skipped: validFocus.skipped },
-      gratitudeEntries: {
-        added: validGratitude.valid.length,
+      moods: {
+        added: replaceMoods.length,
         updated: 0,
-        skipped: validGratitude.skipped,
+        skipped: validMoods.skipped + (validMoods.valid.length - replaceMoods.length),
+      },
+      habits: {
+        added: replaceHabits.length,
+        updated: 0,
+        skipped: validHabits.skipped + (validHabits.valid.length - replaceHabits.length),
+      },
+      focusSessions: {
+        added: replaceFocus.length,
+        updated: 0,
+        skipped: validFocus.skipped + (validFocus.valid.length - replaceFocus.length),
+      },
+      gratitudeEntries: {
+        added: replaceGratitude.length,
+        updated: 0,
+        skipped: validGratitude.skipped + (validGratitude.valid.length - replaceGratitude.length),
       },
       settings: { added: validSettings.valid.length, updated: 0, skipped: validSettings.skipped },
       journalEntries: {
-        added: validJournalEntries.length,
+        added: replaceJournalEntries.length,
         updated: 0,
-        skipped: (journalEntries || []).length - validJournalEntries.length,
+        skipped: (journalEntries || []).length - replaceJournalEntries.length,
       },
       journalPhotos: {
-        added: validJournalPhotos.length,
+        added: replaceJournalPhotos.length,
         updated: 0,
-        skipped: (journalPhotos || []).length - validJournalPhotos.length,
+        skipped: (journalPhotos || []).length - replaceJournalPhotos.length,
       },
       journalAudio: {
-        added: validJournalAudio.length,
+        added: replaceJournalAudio.length,
         updated: 0,
-        skipped: (journalAudio || []).length - validJournalAudio.length,
+        skipped: (journalAudio || []).length - replaceJournalAudio.length,
       },
     };
   }
@@ -449,25 +509,6 @@ export const importBackup = async (
   const journalEntryAdds = validJournalEntries.filter((e) => !journalEntryKeySet.has(e.id)).length;
   const journalPhotoAdds = validJournalPhotos.filter((p) => !journalPhotoKeySet.has(p.id)).length;
   const journalAudioAdds = validJournalAudio.filter((a) => !journalAudioKeySet.has(a.id)).length;
-
-  // Extract remote deletion IDs BEFORE the merge transaction
-  // so they can be merged into the local tracker before filtering
-  const v3 = payload as BackupPayloadV3;
-  const isValidIdArray = (v: unknown): v is string[] =>
-    Array.isArray(v) &&
-    v.length <= 10000 &&
-    v.every((s) => typeof s === "string" && s.length > 0 && s.length <= 100);
-  const remoteDeletedHabitIds = isValidIdArray(v3.deletedHabitIds) ? v3.deletedHabitIds : undefined;
-  const remoteDeletedJournalIds = isValidIdArray(v3.deletedJournalEntryIds)
-    ? v3.deletedJournalEntryIds
-    : undefined;
-  const remoteDeletedMoodIds = isValidIdArray(v3.deletedMoodIds) ? v3.deletedMoodIds : undefined;
-  const remoteDeletedFocusIds = isValidIdArray(v3.deletedFocusSessionIds)
-    ? v3.deletedFocusSessionIds
-    : undefined;
-  const remoteDeletedGratitudeIds = isValidIdArray(v3.deletedGratitudeIds)
-    ? v3.deletedGratitudeIds
-    : undefined;
 
   await db.transaction(
     "rw",

@@ -6,16 +6,42 @@ import { logger } from "@/lib/logger";
 // 5000 IDs ≈ 200KB — safe for IndexedDB on all platforms.
 const MAX_TRACKER_IDS = 5000;
 
+// Synchronous in-flight guard: a caller may start tracking a deletion and then
+// immediately trigger a cloud merge before the IndexedDB write commits. Keep the
+// id visible to readers during that window so stale backups cannot resurrect it.
+const inFlightDeletedIds = new Map<string, Set<string>>();
+
+function rememberInFlightDeletedId(key: string, id: string): void {
+  let ids = inFlightDeletedIds.get(key);
+  if (!ids) {
+    ids = new Set<string>();
+    inFlightDeletedIds.set(key, ids);
+  }
+  ids.add(id);
+}
+
+function forgetInFlightDeletedIds(key: string, idsToForget: string[]): void {
+  const ids = inFlightDeletedIds.get(key);
+  if (!ids) return;
+  for (const id of idsToForget) {
+    ids.delete(id);
+  }
+  if (ids.size === 0) {
+    inFlightDeletedIds.delete(key);
+  }
+}
+
 // ── Generic deletion tracking helpers ──────────────────────────────────────────
 
 async function getDeletedIds(key: string): Promise<Set<string>> {
+  const inFlight = inFlightDeletedIds.get(key);
   try {
     const entry = await db.settings.get(key);
-    if (!entry?.value || !Array.isArray(entry.value)) return new Set();
-    return new Set(entry.value as string[]);
+    const persisted = entry?.value && Array.isArray(entry.value) ? (entry.value as string[]) : [];
+    return new Set([...(inFlight ?? []), ...persisted]);
   } catch (error) {
     logger.error(`[DeletionTracker] Failed to read ${key}:`, error);
-    return new Set();
+    return new Set(inFlight ?? []);
   }
 }
 
@@ -28,12 +54,14 @@ function pruneIfNeeded(ids: string[]): string[] {
 }
 
 async function trackDeletedId(key: string, id: string): Promise<void> {
+  rememberInFlightDeletedId(key, id);
   try {
     await db.transaction("rw", db.settings, async () => {
       const existing = await getDeletedIds(key);
       existing.add(id);
       await db.settings.put({ key, value: pruneIfNeeded([...existing]) });
     });
+    forgetInFlightDeletedIds(key, [id]);
   } catch (error) {
     logger.error(`[DeletionTracker] Failed to track ${key}:`, error);
   }
@@ -41,6 +69,9 @@ async function trackDeletedId(key: string, id: string): Promise<void> {
 
 async function mergeDeletedIds(key: string, remoteIds: string[]): Promise<void> {
   if (!remoteIds.length) return;
+  for (const id of remoteIds) {
+    rememberInFlightDeletedId(key, id);
+  }
   try {
     await db.transaction("rw", db.settings, async () => {
       const existing = await getDeletedIds(key);
@@ -49,6 +80,7 @@ async function mergeDeletedIds(key: string, remoteIds: string[]): Promise<void> 
       }
       await db.settings.put({ key, value: pruneIfNeeded([...existing]) });
     });
+    forgetInFlightDeletedIds(key, remoteIds);
   } catch (error) {
     logger.error(`[DeletionTracker] Failed to merge ${key}:`, error);
   }
