@@ -71,6 +71,7 @@ type OrbWorkerController = {
 const WEBGL_FRAME_INTERVAL = 1000 / 60; // 60fps for WebGL (shader is <1ms)
 const CANVAS_FRAME_INTERVAL = 1000 / 30; // 30fps for Canvas 2D fallback
 const PARTICLE_COUNT = 22;
+export const CANONICAL_ORB_ANIMATION_SPEED = 0.72;
 const WEBGL_BUILD_BUDGET_MS = 500;
 export const WEBGL_WORKER_READY_BUDGET_MS = 700;
 const WEBGL_READINESS_TIMEOUT_MS = 8000;
@@ -276,7 +277,7 @@ function scheduleAfterFirstPaint(task: () => void): () => void {
 export const ValenceOrb = memo(function ValenceOrb({
   valence,
   size = 192,
-  animationSpeed = 1,
+  animationSpeed = CANONICAL_ORB_ANIMATION_SPEED,
   transitionProfile = "v1-soft",
   renderer = "auto",
 }: ValenceOrbProps) {

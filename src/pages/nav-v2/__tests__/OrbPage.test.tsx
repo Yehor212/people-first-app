@@ -58,11 +58,12 @@ vi.mock("@/lib/haptics", () => ({
 }));
 
 vi.mock("@/components/state-of-mind/ValenceOrb", () => ({
+  CANONICAL_ORB_ANIMATION_SPEED: 0.72,
   ValenceOrb: ({
     valence,
     size,
     transitionProfile = "v1-soft",
-    animationSpeed = 1,
+    animationSpeed = 0.72,
   }: {
     valence: number;
     size?: number;
@@ -303,17 +304,15 @@ describe("OrbPage progressive flow", () => {
     );
   });
 
-  it("keeps the soft orb aura on tablet and desktop layouts", () => {
+  it("keeps desktop on the same canonical orb motion as phone layouts", () => {
     setViewport(1024, 900);
 
     render(<OrbPage onAddMood={onAddMoodMock} />);
 
-    expect(screen.getByTestId("orb-aura").style.background).toContain(
-      "radial-gradient",
-    );
+    expect(screen.queryByTestId("orb-aura")).not.toBeInTheDocument();
     expect(screen.getByTestId("valence-orb")).toHaveAttribute(
       "data-animation-speed",
-      "1",
+      "0.72",
     );
   });
 

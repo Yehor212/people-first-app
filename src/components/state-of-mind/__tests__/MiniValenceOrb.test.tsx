@@ -20,6 +20,7 @@ describe("MiniValenceOrb", () => {
       "data-orb-transition-profile",
       "v1-soft",
     );
+    expect(canonicalOrb).toHaveAttribute("data-orb-animation-speed", "0.72");
   });
 
   it("renders the canonical badge chrome for Diary-style mini-orbs", () => {

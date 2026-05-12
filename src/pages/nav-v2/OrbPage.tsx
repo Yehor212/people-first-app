@@ -5,6 +5,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useThemeStore } from "@/stores/themeStore";
 import { cn } from "@/lib/utils";
 import { haptics } from "@/lib/haptics";
+import { CANONICAL_ORB_ANIMATION_SPEED } from "@/components/state-of-mind/ValenceOrb";
 import { CosmicBgAdapter } from "./CosmicBgAdapter";
 import { useCosmicParallax } from "./useCosmicParallax";
 import { ShootingStar } from "./ShootingStar";
@@ -15,7 +16,6 @@ import type { NavV2Page } from "@/hooks/useNavigationV2";
 import type { MoodEntry } from "@/types";
 
 const V1_VALENCE_ORB_SIZE = 280;
-const PHONE_ORB_ANIMATION_SPEED = 0.72;
 
 /**
  * OrbPage — Phase 3-A.2 cosmic cinematic mindfulness surface with
@@ -250,11 +250,11 @@ export const OrbPage = memo(function OrbPage({
               shouldAnimate={shouldAnimate}
               auraHue={auraHue}
               auraRef={auraRef}
-              showOrbAura={isDesktopViewport}
+              showOrbAura={false}
               handleOrbTap={handleOrbTap}
               orbValence={orbValence}
               heroOrbSize={heroOrbSize}
-              orbAnimationSpeed={isDesktopViewport ? 1 : PHONE_ORB_ANIMATION_SPEED}
+              orbAnimationSpeed={CANONICAL_ORB_ANIMATION_SPEED}
               draftScope={draftScope}
               draftValence={draftValence}
               isDenseSelectStep={isDenseSelectStep}

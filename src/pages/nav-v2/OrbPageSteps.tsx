@@ -3,7 +3,10 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Bloom } from "@/lib/motion";
 import { staggerDelay } from "@/lib/motion/choreography";
 import { cn } from "@/lib/utils";
-import { ValenceOrb } from "@/components/state-of-mind/ValenceOrb";
+import {
+  CANONICAL_ORB_ANIMATION_SPEED,
+  ValenceOrb,
+} from "@/components/state-of-mind/ValenceOrb";
 import { MiniValenceOrb } from "@/components/state-of-mind/MiniValenceOrb";
 import { valenceToColor } from "@/components/state-of-mind/colorUtils";
 import { EmotionTagGrid } from "@/components/state-of-mind/EmotionTagGrid";
@@ -49,7 +52,7 @@ export function OrbSelectStep({
   handleOrbTap,
   orbValence,
   heroOrbSize,
-  orbAnimationSpeed = 1,
+  orbAnimationSpeed = CANONICAL_ORB_ANIMATION_SPEED,
   draftScope,
   draftValence,
   isDenseSelectStep,
