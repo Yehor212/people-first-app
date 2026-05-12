@@ -64,11 +64,13 @@ vi.mock("@/components/state-of-mind/ValenceOrb", () => ({
     size,
     transitionProfile = "v1-soft",
     animationSpeed = 0.72,
+    renderer = "auto",
   }: {
     valence: number;
     size?: number;
     transitionProfile?: string;
     animationSpeed?: number;
+    renderer?: string;
   }) => (
     <div
       data-testid="valence-orb"
@@ -76,6 +78,7 @@ vi.mock("@/components/state-of-mind/ValenceOrb", () => ({
       data-size={size}
       data-transition-profile={transitionProfile}
       data-animation-speed={animationSpeed}
+      data-renderer={renderer}
     >
       orb
     </div>
@@ -288,6 +291,10 @@ describe("OrbPage progressive flow", () => {
       "data-animation-speed",
       "0.72",
     );
+    expect(screen.getByTestId("valence-orb")).toHaveAttribute(
+      "data-renderer",
+      "webgl",
+    );
     expect(screen.queryByTestId("orb-aura")).not.toBeInTheDocument();
   });
 
@@ -313,6 +320,10 @@ describe("OrbPage progressive flow", () => {
     expect(screen.getByTestId("valence-orb")).toHaveAttribute(
       "data-animation-speed",
       "0.72",
+    );
+    expect(screen.getByTestId("valence-orb")).toHaveAttribute(
+      "data-renderer",
+      "webgl",
     );
   });
 

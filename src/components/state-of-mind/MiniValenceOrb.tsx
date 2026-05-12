@@ -2,7 +2,7 @@ import { memo, useEffect, useState } from "react";
 
 import { cn } from "@/lib/utils";
 
-import { ValenceOrb, type OrbTransitionProfile } from "./ValenceOrb";
+import { ValenceOrb, type OrbRendererMode, type OrbTransitionProfile } from "./ValenceOrb";
 
 export type MiniValenceOrbSize = "xs" | "sm" | "md" | "lg";
 export type MiniValenceOrbChrome = "none" | "badge" | "refine";
@@ -15,6 +15,7 @@ interface MiniValenceOrbProps {
   containerClassName?: string;
   orbClassName?: string;
   transitionProfile?: OrbTransitionProfile;
+  renderer?: OrbRendererMode;
 }
 
 const BARE_SIZE_PRESETS: Record<
@@ -122,12 +123,14 @@ function OrbCore({
   containerClassName,
   orbClassName,
   transitionProfile,
+  renderer,
 }: {
   valence: number;
   hasEntry: boolean;
   containerClassName: string;
   orbClassName: string;
   transitionProfile: OrbTransitionProfile;
+  renderer: OrbRendererMode;
 }) {
   const [oscillatedValence, setOscillatedValence] = useState(0);
 
@@ -159,7 +162,12 @@ function OrbCore({
           orbClassName,
         )}
       >
-        <ValenceOrb valence={displayValence} size={120} transitionProfile={transitionProfile} />
+        <ValenceOrb
+          valence={displayValence}
+          size={120}
+          transitionProfile={transitionProfile}
+          renderer={renderer}
+        />
       </div>
     </div>
   );
@@ -180,6 +188,7 @@ export const MiniValenceOrb = memo(function MiniValenceOrb({
   containerClassName,
   orbClassName,
   transitionProfile = "v1-soft",
+  renderer = "webgl",
 }: MiniValenceOrbProps) {
   if (chrome === "none") {
     const preset = BARE_SIZE_PRESETS[size];
@@ -190,6 +199,7 @@ export const MiniValenceOrb = memo(function MiniValenceOrb({
         containerClassName={cn(preset.container, containerClassName)}
         orbClassName={cn(preset.orb, orbClassName)}
         transitionProfile={transitionProfile}
+        renderer={renderer}
       />
     );
   }
@@ -210,6 +220,7 @@ export const MiniValenceOrb = memo(function MiniValenceOrb({
         containerClassName={preset.orbInset}
         orbClassName={cn(preset.orb, orbClassName)}
         transitionProfile={transitionProfile}
+        renderer={renderer}
       />
     </div>
   );

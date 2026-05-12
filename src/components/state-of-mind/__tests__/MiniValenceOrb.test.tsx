@@ -21,6 +21,7 @@ describe("MiniValenceOrb", () => {
       "v1-soft",
     );
     expect(canonicalOrb).toHaveAttribute("data-orb-animation-speed", "0.72");
+    expect(canonicalOrb).toHaveAttribute("data-orb-renderer-policy", "webgl");
   });
 
   it("renders the canonical badge chrome for Diary-style mini-orbs", () => {

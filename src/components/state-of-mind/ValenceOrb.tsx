@@ -191,6 +191,10 @@ function createCanvas(size: number, dpr: number): HTMLCanvasElement {
   return c;
 }
 
+function markRendererTier(canvas: HTMLCanvasElement, tier: 'canvas2d' | 'webgl-main' | 'webgl-worker') {
+  canvas.dataset.orbRendererTier = tier;
+}
+
 function getRendererOverride(): OrbRendererMode | null {
   try {
     const requested = new URLSearchParams(window.location.search).get('orbRenderer');
@@ -207,6 +211,7 @@ function shouldTryWebGL(mode: OrbRendererMode): boolean {
   if (override === 'canvas') return false;
   if (override === 'webgl') return true;
   if (mode === 'canvas') return false;
+  if (mode === 'webgl') return true;
   if (hasSlowWebGLSession()) return false;
   return true;
 }
@@ -407,6 +412,7 @@ export const ValenceOrb = memo(function ValenceOrb({
     // Canvas 2D fallback (always tried if WebGL skipped or failed)
     if (!glRenderer) {
       const c2dCanvas = createCanvas(size, canvasDpr);
+      markRendererTier(c2dCanvas, 'canvas2d');
       try {
         ctx2d = c2dCanvas.getContext('2d', { willReadFrequently: false });
       } catch (err) {
@@ -701,11 +707,14 @@ export const ValenceOrb = memo(function ValenceOrb({
     const upgradeToWebGL = async (signal: AbortSignal) => {
       if (!shouldTryWebGL(renderer) || signal.aborted) return;
 
-      if (renderer === 'auto' && canUseWorkerWebGL()) {
+      const forcedWorkerWebGL = renderer === 'webgl' || getRendererOverride() === 'webgl';
+
+      if ((renderer === 'auto' || renderer === 'webgl') && canUseWorkerWebGL()) {
         if (!isVisibleCanvasHost(wrapper)) return;
 
         const workerStartedAt = performance.now();
         const workerCanvas = createCanvas(size, dpr);
+        markRendererTier(workerCanvas, 'webgl-worker');
         const offscreen = workerCanvas.transferControlToOffscreen();
         const worker = new Worker(new URL('./orbWorker.ts', import.meta.url), {
           type: 'module',
@@ -729,7 +738,7 @@ export const ValenceOrb = memo(function ValenceOrb({
           const readyDurationMs = performance.now() - workerStartedAt;
           const visibleCanvasAgeMs = performance.now() - visibleCanvasMountedAt;
           const visibleUpgradeAgeMs = Math.max(readyDurationMs, visibleCanvasAgeMs);
-          if (!shouldApplyWorkerWebGLUpgrade(visibleUpgradeAgeMs, getRendererOverride() === 'webgl')) {
+          if (!shouldApplyWorkerWebGLUpgrade(visibleUpgradeAgeMs, forcedWorkerWebGL)) {
             rememberSlowWebGL(visibleUpgradeAgeMs);
             worker.terminate();
             if (webglWorker === worker) webglWorker = null;
@@ -798,6 +807,7 @@ export const ValenceOrb = memo(function ValenceOrb({
       }
 
       const previousCanvas = activeCanvas;
+      markRendererTier(upgradeCanvas, 'webgl-main');
       glRenderer = result.renderer;
       glRendererRef.current = result.renderer;
       canvasElRef.current = upgradeCanvas;
@@ -940,6 +950,7 @@ export const ValenceOrb = memo(function ValenceOrb({
         className="relative flex items-center justify-center flex-shrink-0"
         data-orb-transition-profile={transitionProfile}
         data-orb-animation-speed={animationSpeed}
+        data-orb-renderer-policy={renderer}
         style={{ width: size, height: size }}
         aria-hidden="true"
       >
@@ -966,6 +977,7 @@ export const ValenceOrb = memo(function ValenceOrb({
       className="relative flex items-center justify-center"
       data-orb-transition-profile={transitionProfile}
       data-orb-animation-speed={animationSpeed}
+      data-orb-renderer-policy={renderer}
       style={{ width: size, height: size, touchAction: 'manipulation' }}
       aria-hidden="true"
     />

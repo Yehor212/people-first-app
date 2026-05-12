@@ -214,7 +214,7 @@ export function StateOfMindModal({ isOpen, onClose, onSave }: StateOfMindModalPr
                           }}
                           aria-hidden="true"
                         />
-                        <ValenceOrb valence={som.valence} size={280} />
+                        <ValenceOrb valence={som.valence} size={280} renderer="webgl" />
                       </motion.div>
                       <motion.div variants={stepChild} className="w-full max-w-sm">
                         <ValenceSlider value={som.valence} onChange={som.setValence} />
