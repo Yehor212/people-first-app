@@ -29,6 +29,7 @@ Rules:
 - repo-touching tasks default to `L2` minimum
 - cross-platform, stateful, prompt/config, CI/build, sync/auth, or 4+ file work defaults to `L3`
 - sync/state/Supabase data work must read `docs/ai/SYNC_CONTRACT.md` and preserve its last-action-wins/event-log ownership invariants
+- repeated UI/runtime regressions must add incident-derived gates from `docs/ai/PREFLIGHT_OPERATOR_TEMPLATE.md`: public deploy artifact proof, cache/service-worker bypass when possible, phone + desktop parity, and adjacent V1/V2 state coverage
 - orchestration, law, or architecture changes default to `L4`
 - keep worker write scopes disjoint
 - stop speculative work when evidence is missing

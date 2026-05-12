@@ -5,9 +5,10 @@
  *   r(θ) = (|cos(mθ/4)|^n2 + |sin(mθ/4)|^n3)^(-1/n1)
  *
  * Shape morphing driven by valence (-1 → +1):
- *   -1.0 → compact pressure lens      (heavy but soft distress)
- *   -0.5 → softer pressure lens       (uneasy pressure)
- *    0.0 → smooth centered sphere     (perfect symmetry — neutral, calm)
+ *   -1.0 → spiky octagram glass       (distress)
+ *   -0.667 → thorny heptagon glass    (anxiety)
+ *   -0.333 → angled hexagon glass     (unease)
+ *    0.0 → smooth hexagon/sphere      (neutral, calm)
  *   +0.5 → gentle 5-fold bloom        (soft undulation — contentment, warmth)
  *   +1.0 → radiant 5-petal blossom    (rounded petals — joy, bliss)
  *
@@ -211,35 +212,19 @@ interface ShapeParams {
  * Psychology (Bouba/Kiki effect, Bar & Neta 2006):
  *   n1 < n2/n3 → pinched/spiky (threat, negative valence)
  *   n1 > n2/n3 → rounded/bloated (safety, positive valence)
- *   Negative moods keep one harmonic family so adjacent states flow instead
- *   of sweeping through accidental petal counts.
+ * These stops intentionally mirror docs/orb-design-philosophy.md. The shape
+ * itself is canonical emotional feedback, so do not collapse negative states
+ * into one "stable" lobe family.
  */
 const SHAPE_PRESETS: { valence: number; p: ShapeParams }[] = [
-  { valence: -1.0, p: { m: 3, n1: 0.62, n2: 1.5, n3: 1.5 } }, // compact triangular pressure lens
-  { valence: -0.667, p: { m: 3, n1: 1.15, n2: 1.52, n3: 1.52 } }, // bridge: same phase, release pressure
-  { valence: -0.5, p: { m: 3, n1: 1.55, n2: 1.6, n3: 1.6 } }, // actual "unpleasant" stop: softer 3-lobed lens
-  { valence: -0.333, p: { m: 3, n1: 1.9, n2: 1.88, n3: 1.88 } }, // near-neutral pressure, still phase-stable
-  { valence: 0.0, p: { m: 5, n1: 2.0, n2: 2.0, n3: 2.0 } }, // perfect circle (m is visually irrelevant at neutral)
+  { valence: -1.0, p: { m: 8, n1: 1.25, n2: 1.3, n3: 1.3 } }, // spiky octagram — distress
+  { valence: -0.667, p: { m: 7, n1: 1.4, n2: 1.35, n3: 1.35 } }, // thorny heptagon — anxiety
+  { valence: -0.333, p: { m: 6, n1: 1.8, n2: 1.5, n3: 1.5 } }, // angled hexagon — unease
+  { valence: 0.0, p: { m: 6, n1: 2.0, n2: 2.0, n3: 2.0 } }, // smooth hexagon/sphere — neutral
   { valence: 0.333, p: { m: 5, n1: 1.8, n2: 1.5, n3: 1.5 } }, // 5 gentle undulation ~8% depth
   { valence: 0.667, p: { m: 5, n1: 1.4, n2: 1.35, n3: 1.35 } }, // 5 soft petals ~14% depth
   { valence: 1.0, p: { m: 5, n1: 1.25, n2: 1.3, n3: 1.3 } }, // 5 rounded petals ~19% depth
 ];
-
-function interpolateShapeM(
-  valence: number,
-  lower: { valence: number; p: ShapeParams },
-  upper: { valence: number; p: ShapeParams },
-  t: number,
-): number {
-  // Negative states are pressure lenses. Let n1/n2/n3 carry the emotional
-  // change, but keep m phase-stable so the -1 -> -0.667 transition never
-  // traverses throwaway 4/5/6-lobed forms.
-  if (valence < 0 && lower.valence < 0 && upper.valence <= 0) {
-    return lower.p.m;
-  }
-
-  return lower.p.m + (upper.p.m - lower.p.m) * t;
-}
 
 export function getShapeParams(valence: number): ShapeParams {
   const v = Math.max(-1, Math.min(1, valence));
@@ -259,7 +244,7 @@ export function getShapeParams(valence: number): ShapeParams {
   const t = range === 0 ? 0 : (v - lower.valence) / range;
 
   return {
-    m: interpolateShapeM(v, lower, upper, t),
+    m: lower.p.m + (upper.p.m - lower.p.m) * t,
     n1: lower.p.n1 + (upper.p.n1 - lower.p.n1) * t,
     n2: lower.p.n2 + (upper.p.n2 - lower.p.n2) * t,
     n3: lower.p.n3 + (upper.p.n3 - lower.p.n3) * t,

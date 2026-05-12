@@ -14,6 +14,24 @@ platform after sync settles. Local UI may update optimistically, but remote and
 cross-tab convergence must be driven by ordered sync events, not by whichever
 snapshot happens to finish last.
 
+## Telegram-Style Evidence Model
+
+ZenFlow does not copy Telegram internals, but the operator model is the same:
+ordered state beats arrival order. Telegram clients use sequence state such as
+`seq` and `pts` to apply updates once, ignore duplicates, and recover gaps before
+claiming convergence. In ZenFlow, the equivalent proof is:
+
+- every synced user action writes or maps to an ordered event;
+- every remote consumer applies events through `applyDelta()` or a tested wrapper;
+- every client stores cursor state only after apply succeeds;
+- gaps trigger recovery instead of falling back to stale snapshots;
+- broadcast is a wake-up signal, not the durable source of truth.
+
+Supabase Realtime Broadcast is useful for low-latency wakeups, but it is not a
+replacement for the durable event log. If Broadcast arrives before a DB write is
+visible, or is missed by an offline client, the next delta pull must still converge
+to the latest event-log state.
+
 ## Non-Negotiable Invariants
 
 1. **Event log owns cross-device ordering.**
@@ -101,6 +119,18 @@ cmd /c npm run test -- src/storage/__tests__/eventSync.test.ts src/lib/__tests__
 cmd /c npm run check:supabase-migration-prefixes
 ```
 
+Behavioral gates for user-visible sync work:
+
+- Perform a V1 -> V2 -> V1 round trip for the changed entity when both shells can
+  touch it.
+- Perform an offline/queued path check when the action can be made while offline.
+- Perform a multi-tab or broadcast-trigger check when the action can be observed
+  from another active browser context.
+- For deletes, prove anti-resurrection: stale local state, backup recovery, or a
+  delayed remote pull must not bring the deleted entity back.
+- For settings and preferences, prove the active UI reads the same setting after
+  hydration, reload, and route/shell switch.
+
 When UI or route behavior is involved, also run a production-browser smoke for
 the affected route. When the change is intended for public users, verify remote
 deployment with:
@@ -108,6 +138,10 @@ deployment with:
 ```bash
 cmd /c npm run ci:remote:wait
 ```
+
+After remote deployment, open the public URL with a cache-buster and, where the
+tooling allows it, service workers disabled. Confirm the public asset hash or
+rendered behavior belongs to the commit being verified.
 
 ## Stop Conditions
 

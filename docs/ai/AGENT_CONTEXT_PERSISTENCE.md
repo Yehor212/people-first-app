@@ -116,13 +116,15 @@ At the start of non-trivial work:
 1. Read `AGENTS.md` and `ARCHITECTURE.md`.
 2. Read this file when the task involves agents, memory, orchestration, audits, or multi-session continuity.
 3. Read `docs/ai/SYNC_CONTRACT.md` before any sync, state hydration, backup, offline queue, lifecycle, or Supabase data-sync change.
-4. Search MCP memory before planning:
+4. Read `docs/ai/PREFLIGHT_OPERATOR_TEMPLATE.md` before cross-platform UI, public deploy, sync, CI, or repeated-regression work.
+5. Search MCP memory before planning:
    - `ZenFlow`
    - `RuflowPlus`
    - `Verification_Discipline`
    - task-specific keywords
-5. Treat memory as routing context, not fresh proof. Re-verify drift-prone facts with repo files, current commands, or official web docs.
-6. Include memory-derived assumptions in the visible pre-flight artifact when Ruflow+ mode applies.
+6. Treat memory as routing context, not fresh proof. Re-verify drift-prone facts with repo files, current commands, browser evidence, CI logs, or official web docs.
+7. Include memory-derived assumptions in the visible pre-flight artifact when Ruflow+ mode applies.
+8. If the task follows a repeated regression, explicitly add an incident-derived gate to the plan: original failure reproduction, adjacent state/platform coverage, and a public artifact check when the bug was seen on GitHub Pages.
 
 If MCP memory tools are unavailable, fall back to:
 
@@ -139,6 +141,8 @@ After any non-trivial run, write back only distilled knowledge:
 - Reusable failures: command blockers, environment quirks, false starts, risky assumptions.
 - Successful patterns: commands, file clusters, review heuristics, low-regression repair paths.
 - Time-sensitive facts only when dated and labeled as potentially stale.
+- Repeated regression lessons must become either a `docs/ai/` rule, a focused test,
+  or a dated memory observation. Do not leave them only in chat history.
 
 Use atomic observations. One observation should contain one reusable fact.
 

@@ -70,6 +70,35 @@ Visual audit in this repo should be layered and evidence-backed, not taste-based
 - Browser preference signals are part of visual quality, not an optional extra: reduced motion, contrast, forced colors, and transparency preferences can change whether a UI is actually usable. Sources: [prefers-reduced-motion](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/At-rules/@media/prefers-reduced-motion), [Using media queries for accessibility](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_media_queries/Using_media_queries_for_accessibility), [forced-colors](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/At-rules/@media/forced-colors), [prefers-reduced-transparency](https://developer.mozilla.org/en-US/docs/Web/CSS/%40media/prefers-reduced-transparency), [backdrop-filter](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Properties/backdrop-filter).
 - Functional UI tests are not enough to prove visual correctness. Visual changes need screenshot or trace evidence because hidden, obscured, clipped, or layered bugs can pass logic-only tests. Sources: [Playwright visual comparisons](https://playwright.dev/docs/next/test-snapshots), [Playwright trace viewer](https://playwright.dev/docs/trace-viewer), [Chromatic visual testing](https://www.chromatic.com/docs/visual/).
 
+## Incident-Derived Runtime Truth Gates
+
+These gates exist because repeated regressions in this repo were not caused by
+one bad line of code. They came from stale public deploys, cache/service-worker
+state, phone/desktop drift, late renderer swaps, and V1/V2 state ownership gaps.
+
+- Public-user claims require public-user proof. A local dev server, local preview,
+  or green unit test is not enough when the user reports a production URL. Verify
+  the deployed asset/hash or GitHub Pages run, then open the public URL with a
+  cache-buster and service workers disabled when possible.
+- CI success must include the deploy job, not only test or visual jobs. A previous
+  deploy failure can leave GitHub Pages serving an older artifact while the branch
+  head looks fixed locally. Inspect the newest deploy workflow and the first
+  failing step before assuming the site is current.
+- Cross-platform UI means at minimum phone viewport and desktop viewport for the
+  touched route. If V1 and V2 share a visual primitive, verify both shells or state
+  explicitly why one is out of scope.
+- Motion/canvas/WebGL work needs lifecycle evidence. For orbit, shader, canvas, or
+  animation fixes, include a stability check that the visible renderer is not
+  silently replaced after the first stable frame unless that replacement is the
+  intentional behavior being tested.
+- Stateful V1/V2 work needs a round-trip check. If a user action changes durable
+  data, verify the action from the source surface, navigate to the adjacent surface,
+  and confirm the latest action wins after hydration, broadcast, and any remote
+  delta application settles.
+- Memory and self-reflection are not proof. Treat memory as routing context, then
+  re-check drift-prone facts with repo files, current command output, browser
+  evidence, CI logs, or official documentation.
+
 ## Agent-Wide Inheritance
 
 This template is not just for the main coordinator.

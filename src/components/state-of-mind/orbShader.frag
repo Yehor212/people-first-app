@@ -268,10 +268,9 @@ void main() {
   // ── Superformula shape (smooth morph between petal counts) ──
   // Instead of floor(m+0.5) snap → blend two shapes with smoothstep for organic morphing.
   // At integer m: pure shape. Between integers: cross-dissolve (ghostly petal fade).
-  float stableShapeM = uValence < 0.0 ? 3.0 : uShapeM;
-  float mLow = floor(stableShapeM);
+  float mLow = floor(uShapeM);
   float mHigh = mLow + 1.0;
-  float mBlend = smoothstep(0.0, 1.0, fract(stableShapeM));
+  float mBlend = smoothstep(0.0, 1.0, fract(uShapeM));
   float sfLow = superformula(warpedAngle, max(mLow, 3.0), uShapeN1, uShapeN2, uShapeN3);
   float sfHigh = superformula(warpedAngle, max(mHigh, 3.0), uShapeN1, uShapeN2, uShapeN3);
   float sf = mix(sfLow, sfHigh, mBlend);
