@@ -59,6 +59,7 @@ vi.mock("@/lib/haptics", () => ({
 }));
 
 vi.mock("@/components/state-of-mind/ValenceOrb", () => ({
+  CANONICAL_ORB_ANIMATION_SPEED: 0.72,
   ValenceOrb: () => <div data-testid="valence-orb" />,
 }));
 
