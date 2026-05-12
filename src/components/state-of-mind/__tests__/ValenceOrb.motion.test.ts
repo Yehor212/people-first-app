@@ -68,7 +68,7 @@ describe("ValenceOrb motion profile", () => {
     expect(resolveFrameTransitionProfile("standard", true)).toBe("standard");
   });
 
-  it("rejects late worker WebGL upgrades so the visible orb does not swap renderers", () => {
+  it("rejects late WebGL upgrades unless an explicit debug override is active", () => {
     expect(shouldApplyWorkerWebGLUpgrade(WEBGL_WORKER_READY_BUDGET_MS - 1)).toBe(true);
     expect(shouldApplyWorkerWebGLUpgrade(WEBGL_WORKER_READY_BUDGET_MS + 1)).toBe(false);
     expect(shouldApplyWorkerWebGLUpgrade(WEBGL_WORKER_READY_BUDGET_MS + 5000, true)).toBe(true);

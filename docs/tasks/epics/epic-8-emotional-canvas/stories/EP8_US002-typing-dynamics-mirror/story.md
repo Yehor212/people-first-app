@@ -30,7 +30,7 @@ Place a 24px mini-orb in the editor corner that mirrors the user's typing energy
 ### AC3: Smooth Updates
 
 - [ ] Mini-orb updates at 30 FPS using a 30-second rolling window of keystroke data
-- [ ] Transitions between states (bright↔dim, smooth↔spiky) interpolate smoothly over 0.5 seconds
+- [ ] Transitions between states (bright/dim and calm/pressure-lens valence) interpolate smoothly over 0.5 seconds through the canonical `MiniValenceOrb` pipeline.
 - [ ] No visual jumps or flicker during normal typing patterns
 
 ### AC4: Reduced Motion & Accessibility

@@ -36,33 +36,35 @@ function radialContrast(params: ReturnType<typeof getShapeParams>) {
 }
 
 describe("orb shape presets", () => {
-  it("keeps negative moods on the canonical octagram-to-hexagon family", () => {
-    expect(getShapeParams(-1).m).toBeCloseTo(8, 5);
-    expect(getShapeParams(-0.667).m).toBeCloseTo(7, 5);
-    expect(getShapeParams(-0.333).m).toBeCloseTo(6, 5);
-    expect(getShapeParams(0).m).toBeCloseTo(6, 5);
+  it("keeps the low-valence pressure lens phase-stable between adjacent negative moods", () => {
+    const samples = [-1, -0.9, -0.8, -0.667, -0.5, -0.333, -0.05];
+
+    for (const valence of samples) {
+      expect(getShapeParams(valence).m).toBeCloseTo(3, 5);
+    }
   });
 
   it("makes very unpleasant and unpleasant visually distinct at the orb-page V2 snap stops", () => {
     const veryUnpleasant = radialContrast(getShapeParams(-1));
     const unpleasant = radialContrast(getShapeParams(-0.667));
 
-    expect(veryUnpleasant).toBeGreaterThan(1.12);
-    expect(unpleasant).toBeGreaterThan(1.08);
-    expect(Math.abs(veryUnpleasant - unpleasant)).toBeGreaterThan(0.02);
+    expect(veryUnpleasant).toBeGreaterThan(1.25);
+    expect(unpleasant).toBeLessThan(1.18);
+    expect(veryUnpleasant - unpleasant).toBeGreaterThan(0.14);
   });
 
   it("keeps the positive bloom family stable after neutral", () => {
-    const samples = [0.333, 0.5, 0.667, 1];
+    const samples = [0, 0.12, 0.333, 0.5, 0.667, 1];
 
     for (const valence of samples) {
       expect(getShapeParams(valence).m).toBeCloseTo(5, 5);
     }
   });
 
-  it("keeps WebGL on the canonical shape uniform instead of forcing old pressure lenses", () => {
-    expect(shaderSource).not.toContain("uValence < 0.0 ? 3.0 : uShapeM");
-    expect(shaderSource).toContain("float mLow = floor(uShapeM);");
-    expect(shaderSource).toContain("float mBlend = smoothstep(0.0, 1.0, fract(uShapeM));");
+  it("keeps WebGL negative moods in the same stable harmonic family", () => {
+    expect(shaderSource).toContain(
+      "float stableShapeM = uValence < 0.0 ? 3.0 : uShapeM;",
+    );
+    expect(shaderSource).toContain("else if (v < -0.500)");
   });
 });

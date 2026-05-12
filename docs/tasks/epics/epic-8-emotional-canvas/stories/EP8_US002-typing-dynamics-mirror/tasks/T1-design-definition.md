@@ -37,10 +37,10 @@
 |---------------|----------------|-------|---------|
 | **WPM** (words per minute) | Brightness / luminance | 0.3 (idle) → 1.0 (60+ WPM) | Linear clamp: `brightness = clamp(wpm / 60, 0.3, 1.0)`. Below 10 WPM = dim ember; 30+ WPM = warm glow; 60+ WPM = full radiance. |
 | **Rhythm regularity** | Shape smoothness (n1 param) | n1: 1.4 (erratic) → 2.5 (steady) | Coefficient of variation of inter-keystroke intervals over trailing 10-key window. CV < 0.2 = smooth circle; CV > 0.6 = angular facets. |
-| **Backspace ratio** | Spikiness (m param) | m: 5 (clean) → 8 (heavy editing) | `backspaceRatio = backspaces / totalKeys` over trailing 20-key window. Ratio > 0.3 = spiky star (m=8, lower n2/n3); ratio < 0.05 = soft rounded (m=5, higher n2/n3). |
+| **Backspace ratio** | Pressure intensity (canonical valence input) | calm -> low-valence pressure lens | `backspaceRatio = backspaces / totalKeys` over trailing 20-key window. Ratio > 0.3 lowers the canonical valence fed into `MiniValenceOrb`; ratio < 0.05 keeps the orb near neutral. Do not drive `m` directly; `ValenceOrb` owns the canonical `m=3` low-valence lens family. |
 | **Pause duration** | Breathing rate | 2s period (active) → 6s period (paused) | Time since last keystroke. 0-1s = fast breath (2s cycle); 3s+ pause = slow contemplative breath (6s cycle); 5s+ = fade-out begins. |
 
-**Color strategy:** Inherit from current theme's orb palette via `valenceToHSL()` from `src/components/state-of-mind/colorUtils.ts`. The mini-orb uses the same HSL base as ValenceOrb but at a fixed neutral valence (0.0 = smooth hexagon teal). No separate color mapping for typing metrics — color is theme-derived, typing metrics drive only brightness/shape/breathing. This keeps the mini-orb visually cohesive with the full-size orb while serving a distinct purpose.
+**Color strategy:** Inherit from current theme's orb palette via `ValenceOrb`/`MiniValenceOrb`. The mini-orb uses the same canonical HSL and shape pipeline as the full-size orb. No separate color, SVG, or shader mapping for typing metrics; typing pressure only adjusts the valence sent into `MiniValenceOrb`. This keeps every mini-orb visually identical to the canonical full-size orb.
 
 **Simplification for 24px:** At 24px, the superformula SDF remains legible but the following effects from the full orb are removed:
 - No caustics (invisible at this scale)

@@ -35,7 +35,7 @@ export const CHANGELOG: Record<string, ChangelogItem[]> = {
       descriptionKey: "whatsNew.valenceOrb.description",
       title: "State of Mind Redesign",
       description:
-        "Beautiful new organic shapes that morph with your mood — from spiky stars to soft flowers.",
+        "Beautiful canonical glass orbs that morph with your mood — from pressure lenses to soft blooms.",
     },
     {
       icon: <Zap className="w-5 h-5 text-yellow-500" aria-hidden="true" />,

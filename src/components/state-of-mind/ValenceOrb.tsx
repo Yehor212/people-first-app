@@ -73,7 +73,7 @@ const CANVAS_FRAME_INTERVAL = 1000 / 30; // 30fps for Canvas 2D fallback
 const PARTICLE_COUNT = 22;
 export const CANONICAL_ORB_ANIMATION_SPEED = 0.72;
 const WEBGL_BUILD_BUDGET_MS = 500;
-export const WEBGL_WORKER_READY_BUDGET_MS = 700;
+export const WEBGL_WORKER_READY_BUDGET_MS = 1800;
 const WEBGL_READINESS_TIMEOUT_MS = 8000;
 const WEBGL_UPGRADE_DELAY_MS = 180;
 const IDLE_WAKE_SOFT_THRESHOLD_MS = 8000;
@@ -707,7 +707,7 @@ export const ValenceOrb = memo(function ValenceOrb({
     const upgradeToWebGL = async (signal: AbortSignal) => {
       if (!shouldTryWebGL(renderer) || signal.aborted) return;
 
-      const forcedWorkerWebGL = renderer === 'webgl' || getRendererOverride() === 'webgl';
+      const explicitWebGLOverride = getRendererOverride() === 'webgl';
 
       if ((renderer === 'auto' || renderer === 'webgl') && canUseWorkerWebGL()) {
         if (!isVisibleCanvasHost(wrapper)) return;
@@ -738,7 +738,7 @@ export const ValenceOrb = memo(function ValenceOrb({
           const readyDurationMs = performance.now() - workerStartedAt;
           const visibleCanvasAgeMs = performance.now() - visibleCanvasMountedAt;
           const visibleUpgradeAgeMs = Math.max(readyDurationMs, visibleCanvasAgeMs);
-          if (!shouldApplyWorkerWebGLUpgrade(visibleUpgradeAgeMs, forcedWorkerWebGL)) {
+          if (!shouldApplyWorkerWebGLUpgrade(visibleUpgradeAgeMs, explicitWebGLOverride)) {
             rememberSlowWebGL(visibleUpgradeAgeMs);
             worker.terminate();
             if (webglWorker === worker) webglWorker = null;
@@ -802,8 +802,16 @@ export const ValenceOrb = memo(function ValenceOrb({
         return;
       }
 
-      if (result.durationMs > WEBGL_BUILD_BUDGET_MS) {
-        rememberSlowWebGL(result.durationMs);
+      const visibleCanvasAgeMs = performance.now() - visibleCanvasMountedAt;
+      const visibleUpgradeAgeMs = Math.max(result.durationMs, visibleCanvasAgeMs);
+      if (!shouldApplyWorkerWebGLUpgrade(visibleUpgradeAgeMs, explicitWebGLOverride)) {
+        rememberSlowWebGL(visibleUpgradeAgeMs);
+        result.renderer.dispose();
+        return;
+      }
+
+      if (visibleUpgradeAgeMs > WEBGL_BUILD_BUDGET_MS) {
+        rememberSlowWebGL(visibleUpgradeAgeMs);
       }
 
       const previousCanvas = activeCanvas;

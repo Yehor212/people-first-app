@@ -44,14 +44,14 @@
 - [ ] Review ValenceOrb shader (`orbShader.frag`) — identify which uniforms/features to keep vs drop
 - [ ] Create simplified shader variant: keep superformula SDF shape + color + breathing animation
 - [ ] Remove: caustics, particle system, complex rim lighting (overkill at 24px)
-- [ ] Add uniforms for typing dynamics: `u_brightness`, `u_smoothness`, `u_spikiness`, `u_breathingRate`
+- [ ] Route typing pressure into the canonical `MiniValenceOrb` valence input; do not add separate shape uniforms or a separate mini-orb shader.
 
 ### Phase 2: Component Implementation
 - [ ] Create `TypingDynamicsMirror.tsx` — accepts `dynamics: TypingDynamics` prop
 - [ ] Map typing metrics to shader uniforms:
   - WPM → `u_brightness` (dim at <20, bright at >60, lerp between)
-  - rhythmRegularity → `u_smoothness` (0=spiky superformula, 1=circle)
-  - backspaceRate → `u_spikiness` (>0.2 threshold for spiky shape)
+  - rhythmRegularity -> subtle valence stabilization through `MiniValenceOrb`
+  - backspaceRate -> lower canonical valence, preserving the `m=3` pressure-lens family
   - isPaused → `u_breathingRate` (slow down during pauses)
 - [ ] Render at 24px using canvas/WebGL (or SVG fallback if WebGL unavailable)
 - [ ] Use theme tokens for orb colors (no hardcoded values)
@@ -123,7 +123,7 @@ TypingDynamicsMirror({ dynamics }):
 
 - [ ] **Given** typing dynamics with WPM >60 **When** TypingDynamicsMirror renders **Then** orb brightness is visually high (uniform >0.8) `verify: test (TypingDynamicsMirror.test.tsx — pass high WPM dynamics, assert u_brightness > 0.8)`
 - [ ] **Given** typing dynamics with regular rhythm (>0.7) **When** rendered **Then** orb shape is smooth (near-circle) `verify: inspect (visual inspection — smooth shape at high rhythmRegularity)`
-- [ ] **Given** typing dynamics with high backspace rate (>0.2) **When** rendered **Then** orb shape is spiky `verify: inspect (visual inspection — spiky shape at high backspaceRate)`
+- [ ] **Given** typing dynamics with high backspace rate (>0.2) **When** rendered **Then** the mini-orb uses the canonical low-valence pressure lens through `MiniValenceOrb` `verify: inspect (visual inspection — canonical pressure lens at high backspaceRate)`
 - [ ] **Given** a state change from dim to bright **When** WPM increases rapidly **Then** transition interpolates over 0.5s with no flicker `verify: command (record 2s video, verify no frame drops or jumps)`
 - [ ] **Given** WebGL is unavailable **When** component mounts **Then** a static colored div fallback renders without crash `verify: test (TypingDynamicsMirror.test.tsx — mock no WebGL, assert fallback renders)`
 

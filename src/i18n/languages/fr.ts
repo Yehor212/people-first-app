@@ -601,7 +601,7 @@ export const fr: Translations = {
     valenceOrb: {
       title: "Refonte de l'État d'Esprit",
       description:
-        "De belles formes organiques qui se transforment avec votre humeur — d'étoiles pointues à des fleurs douces.",
+        "Des orbes de verre canoniques qui se transforment avec votre humeur — des lentilles de pression aux fleurs douces.",
     },
     visualPolish172: {
       title: "Finition Visuelle",

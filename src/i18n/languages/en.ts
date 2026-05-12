@@ -594,7 +594,7 @@ export const en: Translations = {
     valenceOrb: {
       title: "State of Mind Redesign",
       description:
-        "Beautiful new organic shapes that morph with your mood — from spiky stars to soft flowers.",
+        "Beautiful canonical glass orbs that morph with your mood — from pressure lenses to soft blooms.",
     },
     visualPolish172: {
       title: "Visual Polish",

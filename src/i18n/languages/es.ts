@@ -599,7 +599,7 @@ export const es: Translations = {
     valenceOrb: {
       title: "Rediseño de Estado de Ánimo",
       description:
-        "Hermosas formas orgánicas que se transforman con tu estado de ánimo — de estrellas puntiagudas a flores suaves.",
+        "Orbes de cristal canónicos que se transforman con tu estado de ánimo — de lentes de presión a flores suaves.",
     },
     visualPolish172: {
       title: "Pulido Visual",
