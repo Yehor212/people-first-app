@@ -14,6 +14,8 @@ import { isAbortError } from "@/lib/validation";
 import { triggerDataRefresh } from "@/hooks/useIndexedDB";
 import type { Json } from "@/types/supabase";
 import type { IndexableType, Table } from "dexie";
+import type { LoopHabitType } from "@/types";
+import { decodeHabitCompletionFromCloud } from "@/storage/sync/habitCompletionCodec";
 
 // ── Types ─────────────────────────────────────────────────────────────
 
@@ -47,11 +49,12 @@ export interface DeltaResult {
 // ── Entity type to Dexie table mapping ────────────────────────────────
 
 // Maps entity types to Dexie table names for applyDelta.
-// habit_completion: no dedicated table — completions embedded in habit.entries map, synced via backup.
+// habit_completion: no dedicated table — completions are embedded in habit.entries.
 // setting: no dedicated table — settings in db.settings, synced via backup pullFromCloud.
 const ENTITY_TABLE_MAP: Record<string, string> = {
   mood: "moods",
   habit: "habits",
+  habit_completion: "habits",
   focus: "focusSessions",
   gratitude: "gratitudeEntries",
   journal: "journalEntries",
@@ -227,6 +230,80 @@ export async function pullAndApplyDeltasFromLastSeq(
   return { fetched: events.length, applied, lastSeq: maxSeq };
 }
 
+function readHabitCompletionIdentity(
+  event: SyncEvent
+): { habitId: string; date: string } | null {
+  const payload = event.payload;
+  const payloadHabitId = typeof payload?.habitId === "string" ? payload.habitId : null;
+  const payloadDate = typeof payload?.date === "string" ? payload.date : null;
+  if (payloadHabitId && payloadDate) {
+    return { habitId: payloadHabitId, date: payloadDate };
+  }
+
+  const match = event.entity_id.match(/^(.*)_(\d{4}-\d{2}-\d{2})$/);
+  if (!match) return null;
+  return { habitId: match[1], date: match[2] };
+}
+
+function readNumber(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function readLoopHabitType(value: unknown, fallback: LoopHabitType): LoopHabitType {
+  return value === "numerical" || value === "boolean" ? value : fallback;
+}
+
+function shouldKeepLocalHabitEntry(localEntry: unknown, event: SyncEvent): boolean {
+  const loggedAt =
+    localEntry && typeof localEntry === "object"
+      ? (localEntry as Record<string, unknown>).loggedAt
+      : null;
+  if (typeof loggedAt !== "string") return false;
+
+  const localTime = Date.parse(loggedAt);
+  const remoteTime = Date.parse(event.created_at);
+  return Number.isFinite(localTime) && Number.isFinite(remoteTime) && localTime > remoteTime;
+}
+
+async function applyHabitCompletionEvent(event: SyncEvent): Promise<boolean> {
+  const identity = readHabitCompletionIdentity(event);
+  if (!identity) return false;
+
+  const habit = await db.habits.get(identity.habitId);
+  if (!habit) return false;
+
+  const entries = { ...(habit.entries || {}) };
+  const existingEntry = entries[identity.date];
+  if (shouldKeepLocalHabitEntry(existingEntry, event)) return false;
+
+  if (event.op === "delete") {
+    if (existingEntry) {
+      delete entries[identity.date];
+      await db.habits.put({ ...habit, entries, updatedAt: event.created_at });
+      return true;
+    }
+    return false;
+  }
+
+  const payload = event.payload || {};
+  const habitType = readLoopHabitType(payload.habitType, habit.habitType || "boolean");
+  const entryValue =
+    readNumber(payload.entryValue) ??
+    decodeHabitCompletionFromCloud({
+      habitType,
+      count: readNumber(payload.count),
+      duration: readNumber(payload.duration),
+    });
+
+  entries[identity.date] = {
+    ...(existingEntry || {}),
+    value: entryValue,
+    loggedAt: event.created_at,
+  };
+  await db.habits.put({ ...habit, entries, updatedAt: event.created_at });
+  return true;
+}
+
 // ── Apply delta to IndexedDB ──────────────────────────────────────────
 
 /**
@@ -267,6 +344,11 @@ export async function applyDelta(events: SyncEvent[], currentDeviceId: string): 
       for (const event of remoteEvents) {
         const tableName = ENTITY_TABLE_MAP[event.entity_type];
         if (!tableName) continue;
+
+        if (event.entity_type === "habit_completion") {
+          if (await applyHabitCompletionEvent(event)) txApplied++;
+          continue;
+        }
 
         const table = db.table(tableName);
 

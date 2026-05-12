@@ -40,12 +40,23 @@ vi.mock("@/storage/db", () => ({
       get: mocks.settingsGet,
       put: mocks.settingsPut,
     },
+    habits: {
+      get: mocks.habitTableGet,
+      put: mocks.habitTablePut,
+      delete: mocks.habitTableDelete,
+    },
     table: mocks.table,
     transaction: mocks.transaction,
   },
 }));
 
-import { fetchDelta, getServerMaxSeq, pullAndApplyDeltasFromLastSeq } from "@/storage/eventSync";
+import { ENTRY } from "@/types";
+import {
+  applyDelta,
+  fetchDelta,
+  getServerMaxSeq,
+  pullAndApplyDeltasFromLastSeq,
+} from "@/storage/eventSync";
 
 function createSyncEventsQuery() {
   return {
@@ -147,5 +158,88 @@ describe("eventSync auth guards", () => {
     expect(mocks.habitTablePut).toHaveBeenCalledWith(remoteHabit);
     expect(mocks.settingsPut).toHaveBeenCalledWith({ key: "sync-last-seq", value: 11 });
     expect(result).toEqual({ fetched: 1, applied: 1, lastSeq: 11 });
+  });
+
+  it("applies habit completion events into embedded habit entries", async () => {
+    mocks.habitTableGet.mockResolvedValue({
+      id: "habit-1",
+      name: "Water",
+      habitType: "boolean",
+      entries: {},
+      updatedAt: "2026-05-10T07:00:00.000Z",
+    });
+
+    const applied = await applyDelta(
+      [
+        {
+          id: "event-12",
+          seq: 12,
+          entity_type: "habit_completion",
+          entity_id: "habit-1_2026-05-11",
+          op: "upsert",
+          payload: {
+            habitId: "habit-1",
+            date: "2026-05-11",
+            habitType: "boolean",
+            count: 1,
+          },
+          device_id: "remote-device",
+          created_at: "2026-05-11T09:00:00.000Z",
+        },
+      ],
+      "current-device"
+    );
+
+    expect(applied).toBe(1);
+    expect(mocks.habitTablePut).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: "habit-1",
+        updatedAt: "2026-05-11T09:00:00.000Z",
+        entries: {
+          "2026-05-11": expect.objectContaining({
+            value: ENTRY.YES_MANUAL,
+            loggedAt: "2026-05-11T09:00:00.000Z",
+          }),
+        },
+      })
+    );
+    expect(mocks.settingsPut).toHaveBeenCalledWith({ key: "sync-last-seq", value: 12 });
+  });
+
+  it("applies habit completion delete events without refetching the whole backup", async () => {
+    mocks.habitTableGet.mockResolvedValue({
+      id: "habit-1",
+      name: "Water",
+      habitType: "boolean",
+      entries: {
+        "2026-05-11": { value: ENTRY.YES_MANUAL, loggedAt: "2026-05-11T08:00:00.000Z" },
+      },
+      updatedAt: "2026-05-11T08:00:00.000Z",
+    });
+
+    const applied = await applyDelta(
+      [
+        {
+          id: "event-13",
+          seq: 13,
+          entity_type: "habit_completion",
+          entity_id: "habit-1_2026-05-11",
+          op: "delete",
+          payload: null,
+          device_id: "remote-device",
+          created_at: "2026-05-11T09:30:00.000Z",
+        },
+      ],
+      "current-device"
+    );
+
+    expect(applied).toBe(1);
+    expect(mocks.habitTablePut).toHaveBeenCalledWith(
+      expect.objectContaining({
+        entries: {},
+        updatedAt: "2026-05-11T09:30:00.000Z",
+      })
+    );
+    expect(mocks.settingsPut).toHaveBeenCalledWith({ key: "sync-last-seq", value: 13 });
   });
 });

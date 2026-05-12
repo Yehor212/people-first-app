@@ -337,7 +337,17 @@ export const syncHabitCompletion = async (
           "habit_completion",
           `${habitId}_${date}`,
           shouldPersist ? "upsert" : "delete",
-          shouldPersist ? { habitId, date, count, duration, entryValue, habitType } : null,
+          shouldPersist
+            ? {
+                habitId,
+                date,
+                count,
+                duration,
+                entryValue,
+                habitType,
+                targetType: options?.targetType,
+              }
+            : null,
           did
         )
       )

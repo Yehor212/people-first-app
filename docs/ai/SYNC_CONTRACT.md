@@ -124,8 +124,8 @@ Stop and report before editing if:
 
 ## Current Known Gaps
 
-- `habit_completion` and `setting` are accepted by the server event schema, but
-  the current client apply path still needs complete first-class coverage.
+- `setting` is accepted by the server event schema, but the current client
+  apply path still needs complete first-class coverage.
 - `deletionTracker` is capped at 5000 ids and should be replaced or backed by
   durable ordered delete events for long-term permanence.
 - Multi-tab sync coordination exists for auth refresh, but data sync ownership
