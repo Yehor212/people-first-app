@@ -199,6 +199,34 @@ export async function fetchAllDeltas(lastSeq: number, signal?: AbortSignal): Pro
   return allEvents;
 }
 
+export interface PullAndApplyDeltaResult {
+  fetched: number;
+  applied: number;
+  lastSeq: number;
+}
+
+/**
+ * Pull and apply events from the same cursor used by eventSync.
+ * Keep lifecycle callers away from syncCursor-v2; eventSync persists its cursor
+ * in SYNC_SEQ_KEY after a successful IndexedDB transaction.
+ */
+export async function pullAndApplyDeltasFromLastSeq(
+  signal?: AbortSignal
+): Promise<PullAndApplyDeltaResult> {
+  const lastSeq = await getLastSeq();
+  const events = await fetchAllDeltas(lastSeq, signal);
+
+  if (events.length === 0) {
+    return { fetched: 0, applied: 0, lastSeq };
+  }
+
+  const deviceId = await getPersistentDeviceId();
+  const applied = await applyDelta(events, deviceId);
+  const maxSeq = events[events.length - 1].seq;
+
+  return { fetched: events.length, applied, lastSeq: maxSeq };
+}
+
 // ── Apply delta to IndexedDB ──────────────────────────────────────────
 
 /**

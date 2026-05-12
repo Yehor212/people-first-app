@@ -33,6 +33,7 @@ import { silentSync } from "@/storage/cloudSync";
 import { verifySyncIntegrity } from "@/lib/syncIntegrity";
 import { isNative } from "@/lib/platform";
 import { App } from "@capacitor/app";
+import { useFeatureFlags } from "@/contexts/FeatureFlagsContext";
 
 interface UseCloudSyncEffectsParams {
   setChallenges: Dispatch<
@@ -61,6 +62,8 @@ export function useCloudSyncEffects({
   const reminders = useUserDataStore((s) => s.reminders);
   const setActiveTab = useAppStore((s) => s.setActiveTab);
   const { onAction: onQuickAction } = useQuickActions();
+  const { isFeatureEnabled } = useFeatureFlags();
+  const isDeltaSyncEnabled = isFeatureEnabled("deltaSync");
 
   // Guard against concurrent reminder syncs (prevents infinite loop on 400 error)
   const reminderSyncPendingRef = useRef(false);
@@ -234,6 +237,11 @@ export function useCloudSyncEffects({
 
         initSyncBroadcast(session.user.id);
 
+        if (isDeltaSyncEnabled) {
+          logger.sync("[Broadcast] Delta sync owns remote changes; legacy pull disabled");
+          return;
+        }
+
         unsubRemote = onRemoteChange((signal) => {
           logger.sync("[Broadcast] Pulling " + signal.entity + " from remote change");
           switch (signal.entity) {
@@ -264,7 +272,7 @@ export function useCloudSyncEffects({
       unsubRemote?.();
       destroySyncBroadcast(true);
     };
-  }, []);
+  }, [isDeltaSyncEnabled]);
 
   // Capacitor: sync immediately when app resumes from background
   useEffect(() => {

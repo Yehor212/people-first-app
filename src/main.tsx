@@ -286,18 +286,16 @@ async function handleAppResume(): Promise<void> {
         void hapticSuccess(); // Subtle feedback: queued changes synced
       });
     }
-    // Delta pull on resume — fetch new events from server (Telegram pattern)
+    // Delta pull on resume — fetch and apply new events from the eventSync cursor.
     void import("@/storage/eventSync")
-      .then(({ fetchAllDeltas }) =>
-        import("@/lib/syncCursor").then(({ loadSyncCursor }) =>
-          loadSyncCursor().then((cursor) => {
-            if (cursor.globalSeq > 0) {
-              logger.log("[Main] Delta pull on resume, seq:", cursor.globalSeq);
-              void fetchAllDeltas(cursor.globalSeq);
-            }
-          })
-        )
-      )
+      .then(async ({ pullAndApplyDeltasFromLastSeq }) => {
+        const result = await pullAndApplyDeltasFromLastSeq();
+        if (result.fetched > 0) {
+          logger.log(
+            `[Main] Delta applied on resume: fetched=${result.fetched}, applied=${result.applied}, seq=${result.lastSeq}`
+          );
+        }
+      })
       .catch((err) => logger.warn("[Main] Delta pull on resume failed:", err));
   }
   // Clean up stale share cache files (24+ hours old)
