@@ -50,7 +50,7 @@ export interface DeltaResult {
 
 // Maps entity types to Dexie table names for applyDelta.
 // habit_completion: no dedicated table — completions are embedded in habit.entries.
-// setting: no dedicated table — settings in db.settings, synced via backup pullFromCloud.
+// setting: no dedicated table — settings are keyed records in db.settings.
 const ENTITY_TABLE_MAP: Record<string, string> = {
   mood: "moods",
   habit: "habits",
@@ -58,6 +58,7 @@ const ENTITY_TABLE_MAP: Record<string, string> = {
   focus: "focusSessions",
   gratitude: "gratitudeEntries",
   journal: "journalEntries",
+  setting: "settings",
 };
 
 // ── Cursor management ─────────────────────────────────────────────────
@@ -304,6 +305,21 @@ async function applyHabitCompletionEvent(event: SyncEvent): Promise<boolean> {
   return true;
 }
 
+async function applySettingEvent(event: SyncEvent): Promise<boolean> {
+  const payload = event.payload || {};
+  const key = typeof payload.key === "string" ? payload.key : event.entity_id;
+  if (!key) return false;
+
+  if (event.op === "delete") {
+    await db.settings.delete(key);
+    return true;
+  }
+
+  if (!Object.prototype.hasOwnProperty.call(payload, "value")) return false;
+  await db.settings.put({ key, value: payload.value });
+  return true;
+}
+
 // ── Apply delta to IndexedDB ──────────────────────────────────────────
 
 /**
@@ -332,7 +348,9 @@ export async function applyDelta(events: SyncEvent[], currentDeviceId: string): 
   const tables: TransactionTable[] = [...tableNames].map(
     (name) => db.table(name) as unknown as TransactionTable
   );
-  tables.push(db.settings as unknown as TransactionTable);
+  if (!tableNames.has("settings")) {
+    tables.push(db.settings as unknown as TransactionTable);
+  }
 
   const maxSeq = events[events.length - 1].seq;
   let applied = 0;
@@ -347,6 +365,10 @@ export async function applyDelta(events: SyncEvent[], currentDeviceId: string): 
 
         if (event.entity_type === "habit_completion") {
           if (await applyHabitCompletionEvent(event)) txApplied++;
+          continue;
+        }
+        if (event.entity_type === "setting") {
+          if (await applySettingEvent(event)) txApplied++;
           continue;
         }
 

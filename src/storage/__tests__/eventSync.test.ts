@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   single: vi.fn(),
   settingsGet: vi.fn(),
   settingsPut: vi.fn(),
+  settingsDelete: vi.fn(),
   table: vi.fn(),
   transaction: vi.fn(),
   habitTableGet: vi.fn(),
@@ -39,6 +40,7 @@ vi.mock("@/storage/db", () => ({
     settings: {
       get: mocks.settingsGet,
       put: mocks.settingsPut,
+      delete: mocks.settingsDelete,
     },
     habits: {
       get: mocks.habitTableGet,
@@ -90,6 +92,7 @@ describe("eventSync auth guards", () => {
       return undefined;
     });
     mocks.settingsPut.mockResolvedValue(undefined);
+    mocks.settingsDelete.mockResolvedValue(undefined);
     mocks.habitTableGet.mockResolvedValue(undefined);
     mocks.habitTablePut.mockResolvedValue(undefined);
     mocks.habitTableDelete.mockResolvedValue(undefined);
@@ -99,6 +102,13 @@ describe("eventSync auth guards", () => {
           get: mocks.habitTableGet,
           put: mocks.habitTablePut,
           delete: mocks.habitTableDelete,
+        };
+      }
+      if (tableName === "settings") {
+        return {
+          get: mocks.settingsGet,
+          put: mocks.settingsPut,
+          delete: mocks.settingsDelete,
         };
       }
       throw new Error(`Unexpected Dexie table: ${tableName}`);
@@ -241,5 +251,34 @@ describe("eventSync auth guards", () => {
       })
     );
     expect(mocks.settingsPut).toHaveBeenCalledWith({ key: "sync-last-seq", value: 13 });
+  });
+
+  it("applies setting events directly through the ordered event log", async () => {
+    const applied = await applyDelta(
+      [
+        {
+          id: "event-14",
+          seq: 14,
+          entity_type: "setting",
+          entity_id: "mood-reminder-enabled",
+          op: "upsert",
+          payload: {
+            key: "mood-reminder-enabled",
+            value: true,
+            updatedAt: "2026-05-11T10:00:00.000Z",
+          },
+          device_id: "remote-device",
+          created_at: "2026-05-11T10:00:00.000Z",
+        },
+      ],
+      "current-device"
+    );
+
+    expect(applied).toBe(1);
+    expect(mocks.settingsPut).toHaveBeenCalledWith({
+      key: "mood-reminder-enabled",
+      value: true,
+    });
+    expect(mocks.settingsPut).toHaveBeenCalledWith({ key: "sync-last-seq", value: 14 });
   });
 });

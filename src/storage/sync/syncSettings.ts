@@ -9,6 +9,8 @@ import { detectNetworkError } from "./syncUtils";
 import { supabase, getCurrentUserId } from "@/lib/supabaseClient";
 import { offlineQueue } from "@/lib/offlineQueue";
 import type { Json } from "@/types/supabase";
+import { getPersistentDeviceId, writeEvent } from "@/storage/eventSync";
+import { broadcastChange } from "@/lib/syncBroadcast";
 
 // ============================================
 // SETTINGS SYNC
@@ -30,17 +32,23 @@ export const syncSetting = async (key: string, value: unknown): Promise<void> =>
   }
 
   try {
+    const updatedAt = new Date().toISOString();
+    const payload = { key, value, updatedAt };
     const { error } = await supabase.from("user_settings").upsert(
       {
         user_id: userId,
         key,
         value: value as Json,
-        updated_at: new Date().toISOString(),
+        updated_at: updatedAt,
       },
       { onConflict: "user_id,key" }
     );
 
     if (error) throw error;
+    broadcastChange("settings");
+    void getPersistentDeviceId()
+      .then((deviceId) => writeEvent("setting", key, "upsert", payload, deviceId))
+      .catch((err) => logger.warn("[Sync] setting writeEvent failed:", err));
     logger.log("[Sync] Setting synced:", key);
   } catch (error) {
     // Handle AbortError separately
