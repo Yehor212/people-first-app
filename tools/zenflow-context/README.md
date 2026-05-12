@@ -19,7 +19,7 @@ ZenFlow Context MCP answers: "Which ZenFlow repo context pack should I retrieve,
 
 - `startup`: rules, architecture anchors, memory protocol, verification discipline.
 - `memory`: cross-session memory, writeback, MCP context retrieval.
-- `architecture`: app structure, state, storage, sync, Supabase boundaries.
+- `architecture`: app structure, state, storage, sync, Supabase boundaries, and `docs/ai/SYNC_CONTRACT.md`.
 - `ui`: visual, motion, accessibility, i18n/RTL, mobile parity.
 - `verification`: CI, quality gates, evidence rules.
 - `external_docs`: route framework/library questions to Context7 plus repo package versions.

@@ -42,7 +42,7 @@ Available local context profiles:
 | --- | --- |
 | `startup` | session start, default repo rules, architecture anchors |
 | `memory` | memory/writeback/orchestration continuity |
-| `architecture` | Zustand/Dexie/Supabase/state/sync boundaries |
+| `architecture` | Zustand/Dexie/Supabase/state/sync boundaries and the `docs/ai/SYNC_CONTRACT.md` invariants |
 | `ui` | visual, motion, i18n/RTL, accessibility, platform parity |
 | `verification` | CI gates, test routing, evidence discipline |
 | `external_docs` | routing to Context7 plus installed package awareness |
@@ -115,13 +115,14 @@ At the start of non-trivial work:
 
 1. Read `AGENTS.md` and `ARCHITECTURE.md`.
 2. Read this file when the task involves agents, memory, orchestration, audits, or multi-session continuity.
-3. Search MCP memory before planning:
+3. Read `docs/ai/SYNC_CONTRACT.md` before any sync, state hydration, backup, offline queue, lifecycle, or Supabase data-sync change.
+4. Search MCP memory before planning:
    - `ZenFlow`
    - `RuflowPlus`
    - `Verification_Discipline`
    - task-specific keywords
-4. Treat memory as routing context, not fresh proof. Re-verify drift-prone facts with repo files, current commands, or official web docs.
-5. Include memory-derived assumptions in the visible pre-flight artifact when Ruflow+ mode applies.
+5. Treat memory as routing context, not fresh proof. Re-verify drift-prone facts with repo files, current commands, or official web docs.
+6. Include memory-derived assumptions in the visible pre-flight artifact when Ruflow+ mode applies.
 
 If MCP memory tools are unavailable, fall back to:
 

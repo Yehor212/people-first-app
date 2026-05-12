@@ -36,6 +36,7 @@ const contextProfiles = {
     sections: [
       { file: "AGENTS.md", headings: ["Architecture", "Conventions", "Safety", "CI", "Work Mode"] },
       { file: "ARCHITECTURE.md", headings: ["Codebase Metrics", "Tech Stack", "State Management", "Data Flow"] },
+      { file: "docs/ai/SYNC_CONTRACT.md", headings: ["North Star", "Non-Negotiable Invariants", "Required Verification For Sync Changes"] },
       { file: "docs/ai/AGENT_CONTEXT_PERSISTENCE.md", headings: ["Session Start Protocol", "Context7-Style Retrieval", "Writeback Protocol", "Verification"] },
       { file: "docs/ai/RUFLOW_PLUS_REPO_INTEGRATION.md", headings: ["Persistent Agent Context", "Shell Environment Defaults"] },
     ],
@@ -60,6 +61,7 @@ const contextProfiles = {
     sections: [
       { file: "AGENTS.md", headings: ["Architecture", "Safety"] },
       { file: "ARCHITECTURE.md", headings: ["Codebase Metrics", "Folder Structure", "State Management", "Data Flow", "Storage Rules"] },
+      { file: "docs/ai/SYNC_CONTRACT.md", headings: ["North Star", "Non-Negotiable Invariants", "Files To Inspect Before Sync Work", "Required Verification For Sync Changes", "Current Known Gaps"] },
       { file: "docs/ai/RUFLOW_PLUS_BLUEPRINT.md", headings: ["Anti-Drift Contract"] },
     ],
     scripts: ["doc-counts", "check:types-fresh", "check:supabase-migration-prefixes", "ai:ruflow-plus:check"],
