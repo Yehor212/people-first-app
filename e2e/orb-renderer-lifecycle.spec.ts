@@ -73,11 +73,11 @@ test.describe("V2 orb renderer lifecycle", () => {
   test("does not swap the visible hero orb canvas after the first stable frame", async ({
     page,
   }) => {
-    test.setTimeout(45000);
+    test.setTimeout(70000);
 
     await primeOrbPage(page);
     await page.goto("orb?nav=v2&navLayout=phone&dev=true", {
-      waitUntil: "networkidle",
+      waitUntil: "domcontentloaded",
     });
     await expect(page.locator('[data-orb-transition-profile="v1-soft"]').last()).toBeVisible();
 

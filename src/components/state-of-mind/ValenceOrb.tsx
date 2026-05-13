@@ -29,7 +29,7 @@ import { SSK } from '@/lib/storageKeys';
 import { createParticlePool, updateParticles, burstParticles } from './particleSystem';
 import { drawOrbScene, getShapeParams } from './orbRenderer';
 import { valenceToHSL } from './colorUtils';
-import { createOrbGL2Async, createOrbGLAsync } from './orbShader';
+import { createOrbGL2, createOrbGL, createOrbGL2Async, createOrbGLAsync } from './orbShader';
 import type { Particle } from './particleSystem';
 import type { OrbGLBuildResult, OrbGLRenderer } from './orbShader';
 
@@ -211,6 +211,7 @@ function shouldTryWebGL(mode: OrbRendererMode): boolean {
   if (override === 'canvas') return false;
   if (override === 'webgl') return true;
   if (mode === 'canvas') return false;
+  if (mode === 'webgl') return true;
   if (hasSlowWebGLSession()) return false;
   return true;
 }
@@ -407,6 +408,26 @@ export const ValenceOrb = memo(function ValenceOrb({
     let ctx2d: CanvasRenderingContext2D | null = null;
     let webglEventCanvas: HTMLCanvasElement | null = null;
     let webglWorker: Worker | null = null;
+    const forceCanonicalWebGL = renderer === 'webgl' || getRendererOverride() === 'webgl';
+
+    if (forceCanonicalWebGL && shouldTryWebGL('webgl') && probeWebGLWorks()) {
+      const gl2Canvas = createCanvas(size, dpr);
+      const gl2Renderer = createOrbGL2(gl2Canvas);
+
+      if (gl2Renderer) {
+        markRendererTier(gl2Canvas, 'webgl-main');
+        activeCanvas = gl2Canvas;
+        glRenderer = gl2Renderer;
+      } else {
+        const gl1Canvas = createCanvas(size, dpr);
+        const gl1Renderer = createOrbGL(gl1Canvas);
+        if (gl1Renderer) {
+          markRendererTier(gl1Canvas, 'webgl-main');
+          activeCanvas = gl1Canvas;
+          glRenderer = gl1Renderer;
+        }
+      }
+    }
 
     // Canvas 2D fallback (always tried if WebGL skipped or failed)
     if (!glRenderer) {
@@ -703,6 +724,10 @@ export const ValenceOrb = memo(function ValenceOrb({
       canvas.addEventListener('webglcontextrestored', handleContextRestored);
     };
 
+    if (glRenderer) {
+      attachWebGLListeners(activeCanvas);
+    }
+
     const upgradeToWebGL = async (signal: AbortSignal) => {
       if (!shouldTryWebGL(renderer) || signal.aborted) return;
 
@@ -883,9 +908,11 @@ export const ValenceOrb = memo(function ValenceOrb({
       return cleanup;
     }
 
-    cancelWebGLUpgrade = scheduleAfterFirstPaint(() => {
-      void upgradeToWebGL(webglUpgradeAbort.signal);
-    });
+    if (!glRenderer) {
+      cancelWebGLUpgrade = scheduleAfterFirstPaint(() => {
+        void upgradeToWebGL(webglUpgradeAbort.signal);
+      });
+    }
 
     rafRef.current = requestAnimationFrame(loop);
 

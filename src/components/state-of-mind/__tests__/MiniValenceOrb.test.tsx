@@ -33,12 +33,12 @@ describe("MiniValenceOrb", () => {
     expect(container.firstChild).toHaveClass("bg-card/80");
   });
 
-  it("keeps no-entry mini-orbs on the caller-provided canonical valence", () => {
+  it("uses the canonical ambient valence motion for no-entry mini-orbs", () => {
     const setIntervalSpy = vi.spyOn(window, "setInterval");
 
     render(<MiniValenceOrb valence={0} hasEntry={false} size="sm" chrome="badge" />);
 
-    expect(setIntervalSpy).not.toHaveBeenCalled();
+    expect(setIntervalSpy).toHaveBeenCalledWith(expect.any(Function), 320);
   });
 
   it("renders the refine chrome with its larger lg preset", () => {

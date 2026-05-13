@@ -85,11 +85,22 @@ describe("canonical orb invariant", () => {
     expect(sliderCss).not.toContain("som-valence-chip-orb-drift");
   });
 
-  it("keeps MiniValenceOrb as a canonical wrapper instead of an ambient valence generator", () => {
+  it("keeps MiniValenceOrb as the canonical ambient wrapper over ValenceOrb", () => {
     const source = readSource("src/components/state-of-mind/MiniValenceOrb.tsx");
 
     expect(source).toContain("<ValenceOrb");
-    expect(source).not.toContain("oscillatedValence");
-    expect(source).not.toContain("setInterval");
+    expect(source).toContain("ambientValence");
+    expect(source).toContain("setInterval");
+    expect(source).not.toContain("<svg");
+  });
+
+  it("forces explicit webgl orb surfaces through a real WebGL first canvas", () => {
+    const source = readSource("src/components/state-of-mind/ValenceOrb.tsx");
+
+    expect(source).toContain("forceCanonicalWebGL");
+    expect(source).toContain("createOrbGL2");
+    expect(source).toContain("createOrbGL");
+    expect(source).toContain("if (mode === 'webgl') return true");
+    expect(source).toContain("if (!glRenderer) {");
   });
 });
