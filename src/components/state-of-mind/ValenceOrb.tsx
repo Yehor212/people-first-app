@@ -73,7 +73,7 @@ const CANVAS_FRAME_INTERVAL = 1000 / 30; // 30fps for Canvas 2D fallback
 const PARTICLE_COUNT = 22;
 export const CANONICAL_ORB_ANIMATION_SPEED = 0.72;
 const WEBGL_BUILD_BUDGET_MS = 500;
-export const WEBGL_WORKER_READY_BUDGET_MS = 1800;
+export const WEBGL_WORKER_READY_BUDGET_MS = 700;
 const WEBGL_READINESS_TIMEOUT_MS = 8000;
 const WEBGL_UPGRADE_DELAY_MS = 180;
 const IDLE_WAKE_SOFT_THRESHOLD_MS = 8000;
@@ -211,7 +211,6 @@ function shouldTryWebGL(mode: OrbRendererMode): boolean {
   if (override === 'canvas') return false;
   if (override === 'webgl') return true;
   if (mode === 'canvas') return false;
-  if (mode === 'webgl') return true;
   if (hasSlowWebGLSession()) return false;
   return true;
 }

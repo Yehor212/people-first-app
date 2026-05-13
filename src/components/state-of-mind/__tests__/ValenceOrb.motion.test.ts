@@ -69,6 +69,7 @@ describe("ValenceOrb motion profile", () => {
   });
 
   it("rejects late WebGL upgrades unless an explicit debug override is active", () => {
+    expect(WEBGL_WORKER_READY_BUDGET_MS).toBeLessThanOrEqual(700);
     expect(shouldApplyWorkerWebGLUpgrade(WEBGL_WORKER_READY_BUDGET_MS - 1)).toBe(true);
     expect(shouldApplyWorkerWebGLUpgrade(WEBGL_WORKER_READY_BUDGET_MS + 1)).toBe(false);
     expect(shouldApplyWorkerWebGLUpgrade(WEBGL_WORKER_READY_BUDGET_MS + 5000, true)).toBe(true);
