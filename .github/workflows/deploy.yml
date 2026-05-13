@@ -47,6 +47,9 @@ jobs:
       - name: Check i18n translations
         run: npm run i18n:check
 
+      - name: Check canonical orb visuals
+        run: npm run check:canonical-orbs
+
       - name: Run tests with coverage
         run: npx vitest run --coverage
 

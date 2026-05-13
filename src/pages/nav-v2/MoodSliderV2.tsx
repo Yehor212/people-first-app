@@ -27,7 +27,7 @@ import "./MoodSliderV2.css";
 
 /**
  * MoodSliderV2 — Phase 3-A.4c-ii-d-d bespoke continuous mood slider.
- * Replaces the discrete 5-orb MoodOrbPicker. OKLCH gradient track, 36px
+ * Replaces the retired discrete mood picker. OKLCH gradient track, 36px
  * circular handle with ambient glow, 5 snap-point ghost ticks, live Fraunces
  * italic mood label, and a reset-to-center chip.
  *

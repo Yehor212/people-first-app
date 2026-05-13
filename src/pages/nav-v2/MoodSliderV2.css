@@ -1,7 +1,7 @@
 /**
  * MoodSliderV2 styling — Phase 3-A.4c-ii-d-d.
  *
- * Bespoke continuous mood slider. Replaces discrete 5-orb MoodOrbPicker.
+ * Bespoke continuous mood slider. Replaces the retired discrete mood picker.
  * OKLCH gradient track (interpolated in oklch to avoid gray midpoints),
  * 36px circular handle with ambient glow, 5 snap-point ghost ticks, live
  * Fraunces italic mood label, reset-to-center chip. Drives hero ValenceOrb

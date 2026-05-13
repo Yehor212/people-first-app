@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 function readSource(path: string): string {
@@ -34,6 +34,10 @@ describe("canonical orb invariant", () => {
         required: ["MiniValenceOrb"],
       },
       {
+        file: "src/features/journal/DiaryEmptyCanvas.tsx",
+        required: ["MiniValenceOrb"],
+      },
+      {
         file: "src/components/diary/TypingDynamicsMirror.tsx",
         required: ["MiniValenceOrb"],
       },
@@ -56,6 +60,10 @@ describe("canonical orb invariant", () => {
       {
         file: "src/components/tabs/PreviewPortal.tsx",
         required: ["MiniValenceOrb", 'data-testid="v1-v2-portal-orb-core"'],
+      },
+      {
+        file: "src/components/state-of-mind/CompactValenceOrb.tsx",
+        required: ["MiniValenceOrb", "@deprecated"],
       },
     ];
 
@@ -102,5 +110,20 @@ describe("canonical orb invariant", () => {
     expect(source).toContain("createOrbGL");
     expect(source).toContain("if (mode === 'webgl') return true");
     expect(source).toContain("if (!glRenderer) {");
+  });
+
+  it("keeps the canonical orb guard wired into local and CI checks", () => {
+    expect(existsSync(resolve(process.cwd(), "scripts/check-canonical-orbs.mjs"))).toBe(true);
+
+    const packageJson = readSource("package.json");
+    const preCommit = readSource(".husky/pre-commit");
+    const deployWorkflow = readSource(".github/workflows/deploy.yml");
+    const v2DeployWorkflow = readSource(".github/workflows/deploy-v2-preview.yml");
+
+    expect(packageJson).toContain('"check:canonical-orbs": "node scripts/check-canonical-orbs.mjs"');
+    expect(packageJson).toContain("npm run check:canonical-orbs && npx tsx scripts/check-visual-guards.ts");
+    expect(preCommit).toContain("node scripts/check-canonical-orbs.mjs");
+    expect(deployWorkflow).toContain("npm run check:canonical-orbs");
+    expect(v2DeployWorkflow).toContain("npm run check:canonical-orbs");
   });
 });

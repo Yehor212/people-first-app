@@ -6,4 +6,4 @@
 #                    (prevents Law 6 Reality Anchor regression — tech-debt audit 2026-04-18)
 #
 # Bypass: `git commit --no-verify` for work-in-progress. CI will re-run these gates.
-npx tsc --noEmit && npx lint-staged && node scripts/doc-counts.cjs --check
+npx tsc --noEmit && npx lint-staged && node scripts/check-canonical-orbs.mjs && node scripts/doc-counts.cjs --check
