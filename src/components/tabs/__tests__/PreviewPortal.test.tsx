@@ -29,6 +29,10 @@ vi.mock("@/lib/haptics", () => ({
   hapticTap: vi.fn(() => Promise.resolve()),
 }));
 
+vi.mock("@/components/state-of-mind/MiniValenceOrb", () => ({
+  MiniValenceOrb: () => <div data-testid="v2-preview-canonical-mini-orb" />,
+}));
+
 describe("V2PreviewPortal", () => {
   beforeEach(() => {
     window.history.replaceState({}, "", "/people-first-app/?navLayout=phone&dev=true#today");
@@ -51,7 +55,9 @@ describe("V2PreviewPortal", () => {
     expect(screen.getByTestId("v1-v2-portal-rift")).toBeInTheDocument();
     expect(screen.getByTestId("v1-v2-portal-ring-v1")).toBeInTheDocument();
     expect(screen.getByTestId("v1-v2-portal-ring-v2")).toBeInTheDocument();
-    expect(screen.getByTestId("v1-v2-portal-orb-core")).toBeInTheDocument();
+    expect(screen.getByTestId("v1-v2-portal-orb-core")).toContainElement(
+      screen.getByTestId("v2-preview-canonical-mini-orb"),
+    );
     expect(screen.getByTestId("v1-v2-portal-aperture")).toBeInTheDocument();
     expect(screen.getAllByTestId("v1-v2-portal-stream-node")).toHaveLength(4);
     expect(screen.getByText("Step into the new ritual space")).toBeInTheDocument();

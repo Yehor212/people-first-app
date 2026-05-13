@@ -14,6 +14,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useShouldAnimate } from "@/hooks/useShouldAnimate";
 import { hapticTap } from "@/lib/haptics";
 import { cn } from "@/lib/utils";
+import { MiniValenceOrb } from "@/components/state-of-mind/MiniValenceOrb";
 
 export type V2PortalTarget = "orb" | "habits" | "diary";
 
@@ -286,7 +287,7 @@ export const V2PreviewPortal = memo(function V2PreviewPortal({
               animate={animate ? { scale: launchingTarget ? 1.12 : [1, 1.05, 1] } : undefined}
               transition={{ duration: 2.8, repeat: launchingTarget ? 0 : Infinity, ease: "easeInOut" }}
             >
-              <Sparkles className="h-6 w-6" />
+              <MiniValenceOrb valence={0.12} hasEntry={false} size="lg" chrome="none" />
             </motion.span>
           </div>
 
