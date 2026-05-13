@@ -75,4 +75,21 @@ describe("canonical orb invariant", () => {
     expect(portalCore).not.toContain("<Sparkles");
     expect(portalCore).not.toContain("<svg");
   });
+
+  it("blocks non-canonical CSS mini-orbs in the valence label chip", () => {
+    const sliderSource = readSource("src/components/state-of-mind/ValenceSlider.tsx");
+    const sliderCss = readSource("src/components/state-of-mind/ValenceSlider.css");
+
+    expect(sliderSource).not.toContain("som-valence-chip__orb");
+    expect(sliderCss).not.toContain("som-valence-chip__orb");
+    expect(sliderCss).not.toContain("som-valence-chip-orb-drift");
+  });
+
+  it("keeps MiniValenceOrb as a canonical wrapper instead of an ambient valence generator", () => {
+    const source = readSource("src/components/state-of-mind/MiniValenceOrb.tsx");
+
+    expect(source).toContain("<ValenceOrb");
+    expect(source).not.toContain("oscillatedValence");
+    expect(source).not.toContain("setInterval");
+  });
 });

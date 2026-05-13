@@ -64,7 +64,7 @@ describe("CompactValenceOrb", () => {
     expect(screen.getByTestId("mini-valence-orb")).toHaveAttribute("data-size", "lg");
   });
 
-  it("preserves ambient animation mode when hasEntry is false", () => {
+  it("passes empty-entry state through the canonical mini-orb wrapper", () => {
     render(<CompactValenceOrb valence={0} hasEntry={false} size="md" />);
 
     expect(screen.getByTestId("mini-valence-orb")).toHaveAttribute(

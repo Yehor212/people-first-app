@@ -25,7 +25,7 @@ vi.mock("@/lib/haptics", () => ({
 }));
 
 describe("ValenceSlider", () => {
-  it("renders the live mood label as a readable orb-accent chip", () => {
+  it("renders the live mood label without non-canonical mini-orb dots", () => {
     render(<ValenceSlider value={0} onChange={vi.fn()} />);
 
     const label = screen.getByTestId("valence-live-label");
@@ -35,7 +35,7 @@ describe("ValenceSlider", () => {
     expect(label.getAttribute("style")).toContain(
       `--valence-color: ${valenceToColor(0)}`,
     );
-    expect(label.querySelectorAll(".som-valence-chip__orb")).toHaveLength(2);
+    expect(label.querySelectorAll(".som-valence-chip__orb")).toHaveLength(0);
   });
 
   it("coalesces drag updates while keeping press and release immediate", () => {

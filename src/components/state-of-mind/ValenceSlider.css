@@ -75,30 +75,6 @@
     0 0 18px hsl(var(--background) / 0.30);
 }
 
-.som-valence-chip__orb {
-  position: relative;
-  z-index: 1;
-  width: 0.58rem;
-  height: 0.58rem;
-  flex: 0 0 auto;
-  border-radius: 9999px;
-  background:
-    radial-gradient(circle at 34% 28%, hsl(var(--background) / 0.92), transparent 24%),
-    radial-gradient(circle, var(--valence-color), transparent 72%);
-  box-shadow:
-    0 0 0 5px color-mix(in srgb, var(--valence-color) 14%, transparent),
-    0 0 18px color-mix(in srgb, var(--valence-color) 58%, transparent);
-  opacity: 0.92;
-  animation: som-valence-chip-orb-drift 7.5s ease-in-out infinite;
-}
-
-.som-valence-chip__orb--right {
-  width: 0.46rem;
-  height: 0.46rem;
-  animation-delay: -3.6s;
-  opacity: 0.76;
-}
-
 [data-theme="paper"] .som-valence-chip {
   border-color: hsl(var(--foreground) / 0.19);
   background:
@@ -122,16 +98,6 @@
   }
 }
 
-@keyframes som-valence-chip-orb-drift {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0) scale(0.86);
-  }
-  45% {
-    transform: translate3d(0.18rem, -0.1rem, 0) scale(1.08);
-  }
-}
-
 @media (max-width: 480px) {
   .som-valence-chip {
     padding-inline: 0.9rem;
@@ -143,8 +109,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .som-valence-chip::after,
-  .som-valence-chip__orb {
+  .som-valence-chip::after {
     animation: none;
   }
 }

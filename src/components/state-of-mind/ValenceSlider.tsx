@@ -190,9 +190,7 @@ export function ValenceSlider({ value, onChange }: ValenceSliderProps) {
           data-testid="valence-live-label"
           style={{ "--valence-color": valenceColor } as CSSProperties}
         >
-          <span className="som-valence-chip__orb som-valence-chip__orb--left" aria-hidden="true" />
           <span className="som-valence-chip__text">{valenceLabel}</span>
-          <span className="som-valence-chip__orb som-valence-chip__orb--right" aria-hidden="true" />
         </span>
       </div>
 

@@ -1,4 +1,4 @@
-import { memo, useEffect, useState } from "react";
+import { memo } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -119,38 +119,17 @@ const CHROME_PRESETS: Record<
 
 function OrbCore({
   valence,
-  hasEntry,
   containerClassName,
   orbClassName,
   transitionProfile,
   renderer,
 }: {
   valence: number;
-  hasEntry: boolean;
   containerClassName: string;
   orbClassName: string;
   transitionProfile: OrbTransitionProfile;
   renderer: OrbRendererMode;
 }) {
-  const [oscillatedValence, setOscillatedValence] = useState(0);
-
-  useEffect(() => {
-    if (hasEntry) {
-      setOscillatedValence(0);
-      return;
-    }
-
-    let frame = 0;
-    const id = window.setInterval(() => {
-      frame += 1;
-      setOscillatedValence(Math.sin(frame * 0.07) * 0.34);
-    }, 320);
-
-    return () => window.clearInterval(id);
-  }, [hasEntry]);
-
-  const displayValence = hasEntry ? valence : oscillatedValence;
-
   return (
     <div
       aria-hidden="true"
@@ -163,7 +142,7 @@ function OrbCore({
         )}
       >
         <ValenceOrb
-          valence={displayValence}
+          valence={valence}
           size={120}
           transitionProfile={transitionProfile}
           renderer={renderer}
@@ -182,7 +161,6 @@ function OrbCore({
  */
 export const MiniValenceOrb = memo(function MiniValenceOrb({
   valence,
-  hasEntry,
   size = "md",
   chrome = "none",
   containerClassName,
@@ -195,7 +173,6 @@ export const MiniValenceOrb = memo(function MiniValenceOrb({
     return (
       <OrbCore
         valence={valence}
-        hasEntry={hasEntry}
         containerClassName={cn(preset.container, containerClassName)}
         orbClassName={cn(preset.orb, orbClassName)}
         transitionProfile={transitionProfile}
@@ -216,7 +193,6 @@ export const MiniValenceOrb = memo(function MiniValenceOrb({
       />
       <OrbCore
         valence={valence}
-        hasEntry={hasEntry}
         containerClassName={preset.orbInset}
         orbClassName={cn(preset.orb, orbClassName)}
         transitionProfile={transitionProfile}
