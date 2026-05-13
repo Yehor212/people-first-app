@@ -1,5 +1,6 @@
 import { memo, useState, type MouseEvent } from "react";
-import { ArrowLeftToLine, Home, Sparkles } from "lucide-react";
+import { ArrowLeftToLine, Sparkles } from "lucide-react";
+import { MiniValenceOrb } from "@/components/state-of-mind/MiniValenceOrb";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useShouldAnimate } from "@/hooks/useShouldAnimate";
 import { haptics } from "@/lib/haptics";
@@ -119,18 +120,19 @@ export const ClassicPortalLink = memo(function ClassicPortalLink({
       )}
       <span
         className={cn(
-          "relative flex shrink-0 items-center justify-center overflow-hidden rounded-[18px] border border-[hsl(var(--zf-role-focus)/0.40)]",
-          "bg-[radial-gradient(circle_at_35%_28%,hsl(var(--zf-role-body)/0.56),hsl(var(--zf-role-focus)/0.24)_48%,hsl(var(--nav-v2-item-surface)/0.78))] text-[hsl(var(--zf-role-focus))]",
-          "shadow-[0_0_34px_hsl(var(--zf-role-focus)/0.24),0_0_18px_hsl(var(--zf-role-body)/0.14),inset_0_1px_0_hsl(var(--foreground)/0.12)]",
-          collapsed ? "h-10 w-10" : "h-12 w-12",
+          "relative flex shrink-0 items-center justify-center",
+          "h-12 w-12",
         )}
         data-testid={`${testId}-orb`}
         aria-hidden="true"
       >
-        <span className="absolute inset-[5px] rounded-full border border-[hsl(var(--zf-role-focus)/0.30)] motion-safe:animate-pulse" />
-        <span className="absolute inset-[10px] rounded-full border border-[hsl(var(--zf-role-body)/0.32)]" />
-        <span className="absolute inset-x-1 top-1/2 h-px -translate-y-1/2 bg-[linear-gradient(90deg,hsl(var(--zf-role-focus)/0),hsl(var(--zf-role-body)/0.70),hsl(var(--zf-role-focus)/0))]" />
-        <Home className={cn("relative z-[1]", collapsed ? "h-[18px] w-[18px]" : "h-5 w-5")} />
+        <MiniValenceOrb
+          valence={0}
+          hasEntry={false}
+          size="sm"
+          chrome="badge"
+          containerClassName="shadow-[0_0_24px_hsl(var(--primary)/0.14)]"
+        />
       </span>
       {!collapsed && (
         <>

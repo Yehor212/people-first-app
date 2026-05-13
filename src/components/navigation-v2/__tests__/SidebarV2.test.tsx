@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, within } from "@testing-library/react";
 import { SidebarV2 } from "../SidebarV2";
 
 vi.mock("@/contexts/LanguageContext", () => ({
@@ -49,7 +49,14 @@ describe("SidebarV2", () => {
   it("renders the 4 primary navigation items", () => {
     render(<SidebarV2 {...defaultProps} />);
     expect(screen.getByTestId("sidebar-v2-brand-orb")).toContainElement(
-      screen.getByTestId("sidebar-v2-mini-orb"),
+      within(screen.getByTestId("sidebar-v2-brand-orb")).getByTestId(
+        "sidebar-v2-mini-orb",
+      ),
+    );
+    expect(screen.getByTestId("sidebar-v2-classic-portal-orb")).toContainElement(
+      within(screen.getByTestId("sidebar-v2-classic-portal-orb")).getByTestId(
+        "sidebar-v2-mini-orb",
+      ),
     );
     expect(screen.getByRole("button", { name: "Orb" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Habits" })).toBeInTheDocument();

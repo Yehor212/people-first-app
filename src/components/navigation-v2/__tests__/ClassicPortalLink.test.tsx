@@ -23,6 +23,10 @@ vi.mock("@/lib/haptics", () => ({
   haptics: { tabChanged: vi.fn(), selection: vi.fn() },
 }));
 
+vi.mock("@/components/state-of-mind/MiniValenceOrb", () => ({
+  MiniValenceOrb: () => <div data-testid="classic-portal-mini-valence-orb" />,
+}));
+
 describe("ClassicPortalLink", () => {
   it("builds a safe V1 root href without carrying arbitrary current URL params", () => {
     expect(
@@ -48,7 +52,9 @@ describe("ClassicPortalLink", () => {
     const portal = screen.getByTestId("classic-portal-test");
     expect(portal).toHaveAttribute("aria-label", "Return to classic ZenFlow");
     expect(portal).toHaveAttribute("href", "/?navLayout=phone&dev=true");
-    expect(screen.getByTestId("classic-portal-test-orb")).toBeInTheDocument();
+    expect(screen.getByTestId("classic-portal-test-orb")).toContainElement(
+      screen.getByTestId("classic-portal-mini-valence-orb"),
+    );
     expect(screen.getByText("Back to classic ZenFlow")).toBeInTheDocument();
   });
 });

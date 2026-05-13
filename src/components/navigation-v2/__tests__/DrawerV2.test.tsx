@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, within } from "@testing-library/react";
 import { DrawerV2 } from "../DrawerV2";
 import { useThemeStore } from "@/stores/themeStore";
 
@@ -71,7 +71,12 @@ describe("DrawerV2", () => {
       "data-theme-region",
       "drawer-v2",
     );
-    expect(screen.getByTestId("drawer-v2-mini-orb")).toBeInTheDocument();
+    expect(screen.getAllByTestId("drawer-v2-mini-orb")).toHaveLength(2);
+    expect(screen.getByTestId("drawer-v2-classic-portal-orb")).toContainElement(
+      within(screen.getByTestId("drawer-v2-classic-portal-orb")).getByTestId(
+        "drawer-v2-mini-orb",
+      ),
+    );
   });
 
   it("calls onClose when backdrop is clicked", () => {
