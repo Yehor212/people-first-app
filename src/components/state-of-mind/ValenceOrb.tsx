@@ -29,7 +29,7 @@ import { SSK } from '@/lib/storageKeys';
 import { createParticlePool, updateParticles, burstParticles } from './particleSystem';
 import { drawOrbScene, getShapeParams } from './orbRenderer';
 import { valenceToHSL } from './colorUtils';
-import { createOrbGL2, createOrbGL, createOrbGL2Async, createOrbGLAsync } from './orbShader';
+import { createOrbGL2Async, createOrbGLAsync } from './orbShader';
 import type { Particle } from './particleSystem';
 import type { OrbGLBuildResult, OrbGLRenderer } from './orbShader';
 
@@ -402,35 +402,18 @@ export const ValenceOrb = memo(function ValenceOrb({
     // Per HTML spec, once getContext('webgl2') succeeds, getContext('2d')
     // on the same canvas returns null — a new <canvas> element is required.
 
-    let activeCanvas = createCanvas(size, canvasDpr);
+    const forceCanonicalWebGL = renderer === 'webgl' || getRendererOverride() === 'webgl';
+    let activeCanvas = createCanvas(size, forceCanonicalWebGL ? dpr : canvasDpr);
     let glRenderer: OrbGLRenderer | null = null;
     let workerRenderer: OrbWorkerController | null = null;
     let ctx2d: CanvasRenderingContext2D | null = null;
     let webglEventCanvas: HTMLCanvasElement | null = null;
     let webglWorker: Worker | null = null;
-    const forceCanonicalWebGL = renderer === 'webgl' || getRendererOverride() === 'webgl';
 
-    if (forceCanonicalWebGL && shouldTryWebGL('webgl') && probeWebGLWorks()) {
-      const gl2Canvas = createCanvas(size, dpr);
-      const gl2Renderer = createOrbGL2(gl2Canvas);
-
-      if (gl2Renderer) {
-        markRendererTier(gl2Canvas, 'webgl-main');
-        activeCanvas = gl2Canvas;
-        glRenderer = gl2Renderer;
-      } else {
-        const gl1Canvas = createCanvas(size, dpr);
-        const gl1Renderer = createOrbGL(gl1Canvas);
-        if (gl1Renderer) {
-          markRendererTier(gl1Canvas, 'webgl-main');
-          activeCanvas = gl1Canvas;
-          glRenderer = gl1Renderer;
-        }
-      }
-    }
-
-    // Canvas 2D fallback (always tried if WebGL skipped or failed)
-    if (!glRenderer) {
+    // Canvas 2D fallback is the first paint for "auto" only. Canonical WebGL
+    // surfaces keep the same blank canvas until worker/async WebGL is ready so
+    // Chrome never blocks the main thread compiling the heavy shader at mount.
+    if (!glRenderer && !forceCanonicalWebGL) {
       const c2dCanvas = createCanvas(size, canvasDpr);
       markRendererTier(c2dCanvas, 'canvas2d');
       try {
@@ -544,7 +527,8 @@ export const ValenceOrb = memo(function ValenceOrb({
       });
     };
 
-    let render = glRenderer ? renderGL : renderCanvas2D;
+    const renderPendingWebGL = () => {};
+    let render = glRenderer ? renderGL : (forceCanonicalWebGL ? renderPendingWebGL : renderCanvas2D);
 
     // ── Fallback canvas for context loss recovery ──
     let fallbackCanvas: HTMLCanvasElement | null = null;
@@ -731,13 +715,13 @@ export const ValenceOrb = memo(function ValenceOrb({
     const upgradeToWebGL = async (signal: AbortSignal) => {
       if (!shouldTryWebGL(renderer) || signal.aborted) return;
 
-      const explicitWebGLOverride = getRendererOverride() === 'webgl';
+      const explicitWebGLOverride = forceCanonicalWebGL;
 
       if ((renderer === 'auto' || renderer === 'webgl') && canUseWorkerWebGL()) {
         if (!isVisibleCanvasHost(wrapper)) return;
 
         const workerStartedAt = performance.now();
-        const workerCanvas = createCanvas(size, dpr);
+        const workerCanvas = forceCanonicalWebGL ? activeCanvas : createCanvas(size, dpr);
         markRendererTier(workerCanvas, 'webgl-worker');
         const offscreen = workerCanvas.transferControlToOffscreen();
         const worker = new Worker(new URL('./orbWorker.ts', import.meta.url), {
@@ -779,18 +763,20 @@ export const ValenceOrb = memo(function ValenceOrb({
             },
           };
 
-          const previousCanvas = activeCanvas;
           workerRenderer = controller;
           workerRendererRef.current = controller;
           canvasElRef.current = workerCanvas;
           ctx2d = null;
-          activeCanvas = workerCanvas;
           render = renderWorkerGL;
 
-          if (wrapper.contains(previousCanvas)) {
-            wrapper.replaceChild(workerCanvas, previousCanvas);
-          } else {
-            wrapper.appendChild(workerCanvas);
+          if (activeCanvas !== workerCanvas) {
+            const previousCanvas = activeCanvas;
+            activeCanvas = workerCanvas;
+            if (wrapper.contains(previousCanvas)) {
+              wrapper.replaceChild(workerCanvas, previousCanvas);
+            } else {
+              wrapper.appendChild(workerCanvas);
+            }
           }
 
           const state = stateRef.current;
@@ -803,7 +789,7 @@ export const ValenceOrb = memo(function ValenceOrb({
         return;
       }
 
-      if (!probeWebGLWorks()) return;
+      if (!forceCanonicalWebGL && !probeWebGLWorks()) return;
 
       const gl2Canvas = createCanvas(size, dpr);
       let result: OrbGLBuildResult | null = await createOrbGL2Async(gl2Canvas, {
@@ -823,6 +809,9 @@ export const ValenceOrb = memo(function ValenceOrb({
 
       if (signal.aborted || !mountedRef.current) return;
       if (!result) {
+        if (forceCanonicalWebGL) {
+          degradeToCanvas2D();
+        }
         return;
       }
 

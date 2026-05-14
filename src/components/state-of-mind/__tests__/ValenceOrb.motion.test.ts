@@ -1,13 +1,31 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { render } from "@testing-library/react";
+import { createElement } from "react";
 
 import {
   ORB_TRANSITION_SETTINGS,
+  ValenceOrb,
   WEBGL_WORKER_READY_BUDGET_MS,
   resolveFrameTransitionProfile,
   resolveOrbTransitionSettings,
   shouldApplyWorkerWebGLUpgrade,
   shouldStartIdleWakeSoftening,
 } from "../ValenceOrb";
+
+import { createOrbGL2 } from "../orbShader";
+
+vi.mock("../orbShader", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../orbShader")>();
+  return {
+    ...actual,
+    createOrbGL2: vi.fn(() => null),
+    createOrbGL: vi.fn(() => null),
+  };
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 describe("ValenceOrb motion profile", () => {
   it("keeps the shared default profile slower than the legacy standard profile", () => {
@@ -73,5 +91,39 @@ describe("ValenceOrb motion profile", () => {
     expect(shouldApplyWorkerWebGLUpgrade(WEBGL_WORKER_READY_BUDGET_MS - 1)).toBe(true);
     expect(shouldApplyWorkerWebGLUpgrade(WEBGL_WORKER_READY_BUDGET_MS + 1)).toBe(false);
     expect(shouldApplyWorkerWebGLUpgrade(WEBGL_WORKER_READY_BUDGET_MS + 5000, true)).toBe(true);
+  });
+
+  it("does not compile canonical WebGL synchronously on mount", () => {
+    const fakeGl = {
+      COLOR_BUFFER_BIT: 0x4000,
+      RGBA: 0x1908,
+      UNSIGNED_BYTE: 0x1401,
+      clearColor: vi.fn(),
+      clear: vi.fn(),
+      getExtension: vi.fn(() => ({ loseContext: vi.fn() })),
+      readPixels: vi.fn((
+        _x: number,
+        _y: number,
+        _width: number,
+        _height: number,
+        _format: number,
+        _type: number,
+        pixels: Uint8Array,
+      ) => {
+        pixels[0] = 255;
+        pixels[3] = 255;
+      }),
+    };
+
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation((contextId) => {
+      if (contextId === "webgl2" || contextId === "webgl") {
+        return fakeGl as unknown as RenderingContext;
+      }
+      return {} as CanvasRenderingContext2D;
+    });
+
+    render(createElement(ValenceOrb, { valence: 0, renderer: "webgl" }));
+
+    expect(createOrbGL2).not.toHaveBeenCalled();
   });
 });
