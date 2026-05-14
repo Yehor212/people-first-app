@@ -415,7 +415,7 @@ export type Database = {
           entity_id: string
           entity_type: string
           id: string
-          idempotency_key: string | null
+          idempotency_key: string
           op: string
           payload: Json | null
           seq: number
@@ -428,7 +428,7 @@ export type Database = {
           entity_id: string
           entity_type: string
           id?: string
-          idempotency_key?: string | null
+          idempotency_key?: string
           op: string
           payload?: Json | null
           seq?: number
@@ -441,7 +441,7 @@ export type Database = {
           entity_id?: string
           entity_type?: string
           id?: string
-          idempotency_key?: string | null
+          idempotency_key?: string
           op?: string
           payload?: Json | null
           seq?: number
@@ -449,6 +449,47 @@ export type Database = {
           version?: number
         }
         Relationships: []
+      }
+      sync_tombstones: {
+        Row: {
+          created_at: string
+          deleted_at: string
+          deleted_event_id: string | null
+          deleted_seq: number
+          device_id: string
+          entity_id: string
+          entity_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          deleted_at: string
+          deleted_event_id?: string | null
+          deleted_seq: number
+          device_id: string
+          entity_id: string
+          entity_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          deleted_at?: string
+          deleted_event_id?: string | null
+          deleted_seq?: number
+          device_id?: string
+          entity_id?: string
+          entity_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sync_tombstones_deleted_event_id_fkey"
+            columns: ["deleted_event_id"]
+            isOneToOne: false
+            referencedRelation: "sync_events"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sync_seq_counters: {
         Row: {

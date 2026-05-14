@@ -59,10 +59,10 @@ to the latest event-log state.
 
 5. **Deletes are first-class actions.**
    - A delete must be durable before any merge can resurrect the entity.
-   - New delete flows should prefer ordered delete events and stable operation
-     ids over capped local-only tombstone arrays.
-   - Existing `deletionTracker` protects legacy paths, but its 5000-id cap is a
-     known limitation, not the target model.
+   - New delete flows must write ordered delete events with stable operation ids.
+   - Durable server tombstones in `sync_tombstones` are derived from delete events
+     and back long-term anti-resurrection. The local `deletionTracker` remains an
+     offline/immediate guard, not the only durable source.
 
 6. **Every synced entity needs an apply path.**
    - If `sync_events.entity_type` accepts an entity, the client must either map
@@ -158,7 +158,8 @@ Stop and report before editing if:
 
 ## Current Known Gaps
 
-- `deletionTracker` is capped at 5000 ids and should be replaced or backed by
-  durable ordered delete events for long-term permanence.
+- `deletionTracker` is capped at 5000 ids, but long-term permanence is now
+  backed by the `sync_tombstones` SQL path once migration
+  `20260513224401_telegram_grade_sync_tombstones.sql` is applied.
 - Multi-tab sync coordination exists for auth refresh, but data sync ownership
   needs stronger leader/queue semantics for Telegram-grade behavior.

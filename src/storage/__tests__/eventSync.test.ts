@@ -281,4 +281,63 @@ describe("eventSync auth guards", () => {
     });
     expect(mocks.settingsPut).toHaveBeenCalledWith({ key: "sync-last-seq", value: 14 });
   });
+
+  it("records tombstones when applying remote delete events", async () => {
+    const applied = await applyDelta(
+      [
+        {
+          id: "event-15",
+          seq: 15,
+          entity_type: "habit",
+          entity_id: "habit-deleted",
+          op: "delete",
+          payload: null,
+          device_id: "remote-device",
+          created_at: "2026-05-11T11:00:00.000Z",
+        },
+      ],
+      "current-device"
+    );
+
+    expect(applied).toBe(1);
+    expect(mocks.habitTableDelete).toHaveBeenCalledWith("habit-deleted");
+    expect(mocks.settingsPut).toHaveBeenCalledWith({
+      key: "zenflow-deleted-habit-ids",
+      value: ["habit-deleted"],
+    });
+    expect(mocks.settingsPut).toHaveBeenCalledWith({ key: "sync-last-seq", value: 15 });
+  });
+
+  it("keeps newer local entities when remote event timestamps are ISO strings", async () => {
+    const remoteHabit = {
+      id: "habit-iso",
+      name: "Remote stale",
+      updatedAt: "2026-05-11T09:00:00.000Z",
+    };
+    mocks.habitTableGet.mockResolvedValue({
+      id: "habit-iso",
+      name: "Local newer",
+      updatedAt: "2026-05-11T10:00:00.000Z",
+    });
+
+    const applied = await applyDelta(
+      [
+        {
+          id: "event-16",
+          seq: 16,
+          entity_type: "habit",
+          entity_id: "habit-iso",
+          op: "upsert",
+          payload: remoteHabit,
+          device_id: "remote-device",
+          created_at: "2026-05-11T09:01:00.000Z",
+        },
+      ],
+      "current-device"
+    );
+
+    expect(applied).toBe(0);
+    expect(mocks.habitTablePut).not.toHaveBeenCalled();
+    expect(mocks.settingsPut).toHaveBeenCalledWith({ key: "sync-last-seq", value: 16 });
+  });
 });

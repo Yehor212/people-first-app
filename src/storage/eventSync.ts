@@ -16,6 +16,10 @@ import type { Json } from "@/types/supabase";
 import type { IndexableType, Table } from "dexie";
 import type { LoopHabitType } from "@/types";
 import { decodeHabitCompletionFromCloud } from "@/storage/sync/habitCompletionCodec";
+import {
+  getDeletionTrackerKeyForSyncEntity,
+  pruneDeletedIdsForStorage,
+} from "@/storage/deletionTracker";
 
 // ── Types ─────────────────────────────────────────────────────────────
 
@@ -250,6 +254,27 @@ function readNumber(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
+function readTimestampMs(value: unknown): number {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string") {
+    const parsed = Date.parse(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+  return 0;
+}
+
+function readEntityTimestampMs(entity: unknown): number {
+  if (!entity || typeof entity !== "object") return 0;
+  const record = entity as Record<string, unknown>;
+  return (
+    readTimestampMs(record.updatedAt) ||
+    readTimestampMs(record.updated_at) ||
+    readTimestampMs(record.timestamp) ||
+    readTimestampMs(record.createdAt) ||
+    readTimestampMs(record.created_at)
+  );
+}
+
 function readLoopHabitType(value: unknown, fallback: LoopHabitType): LoopHabitType {
   return value === "numerical" || value === "boolean" ? value : fallback;
 }
@@ -320,6 +345,27 @@ async function applySettingEvent(event: SyncEvent): Promise<boolean> {
   return true;
 }
 
+function readDeletedIdsSettingValue(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((id): id is string => typeof id === "string" && id.length > 0);
+}
+
+async function rememberAppliedDelete(event: SyncEvent): Promise<void> {
+  const key = getDeletionTrackerKeyForSyncEntity(event.entity_type);
+  if (!key) return;
+
+  const existing = await db.settings.get(key);
+  const ids = readDeletedIdsSettingValue(existing?.value);
+  if (!ids.includes(event.entity_id)) {
+    ids.push(event.entity_id);
+  }
+
+  await db.settings.put({
+    key,
+    value: pruneDeletedIdsForStorage(ids),
+  });
+}
+
 // ── Apply delta to IndexedDB ──────────────────────────────────────────
 
 /**
@@ -382,8 +428,9 @@ export async function applyDelta(events: SyncEvent[], currentDeviceId: string): 
               if (entityId) {
                 const local = await table.get(entityId);
                 if (local) {
-                  const localTime = ((local as Record<string, unknown>).updatedAt as number) ?? 0;
-                  const remoteTime = (event.payload.updatedAt as number) ?? 0;
+                  const localTime = readEntityTimestampMs(local);
+                  const remoteTime =
+                    readEntityTimestampMs(event.payload) || readTimestampMs(event.created_at);
                   if (localTime > remoteTime) break; // local is newer, skip
                 }
               }
@@ -393,6 +440,7 @@ export async function applyDelta(events: SyncEvent[], currentDeviceId: string): 
             break;
           case "delete":
             await table.delete(event.entity_id);
+            await rememberAppliedDelete(event);
             txApplied++;
             break;
         }

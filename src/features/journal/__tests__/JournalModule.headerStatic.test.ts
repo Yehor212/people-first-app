@@ -19,4 +19,23 @@ describe("JournalModule V2 header", () => {
     expect(menuButtonBlock).toContain("<JournalMenuIcon");
     expect(menuButtonBlock).toContain('aria-controls="nav-v2-drawer"');
   });
+
+  it("keeps drawer access on locked diary and mobile diary settings surfaces", () => {
+    const lockedButtonBlock = /<button[\s\S]*?data-testid="journal-lock-nav-menu"[\s\S]*?<\/button>/.exec(source)?.[0] ?? "";
+    expect(lockedButtonBlock).toContain("<JournalMenuIcon");
+    expect(lockedButtonBlock).toContain('aria-controls="nav-v2-drawer"');
+    expect(lockedButtonBlock).toContain("aria-expanded={navMenuOpen}");
+
+    const settingsButtonBlock = /<button[\s\S]*?data-testid="journal-settings-nav-menu"[\s\S]*?<\/button>/.exec(source)?.[0] ?? "";
+    expect(settingsButtonBlock).toContain("<JournalMenuIcon");
+    expect(settingsButtonBlock).toContain("closeSettings(false)");
+    expect(settingsButtonBlock).toContain("onOpenNavMenu()");
+    expect(settingsButtonBlock).toContain('aria-controls="nav-v2-drawer"');
+  });
+
+  it("makes the mobile diary settings sheet bounded and internally scrollable", () => {
+    expect(source).toContain("max-h-[calc(100dvh-env(safe-area-inset-top)-0.75rem)]");
+    expect(source).toContain("flex-col overflow-hidden");
+    expect(source).toContain("min-h-0 flex-1 overflow-y-auto overscroll-contain bg-card");
+  });
 });

@@ -1008,8 +1008,24 @@ export const JournalModule = memo(function JournalModule({
       {security.isLocked && !security.loading && (
         <>
           {/* Header with close */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-border/30">
-            <h2 className="text-base font-bold text-foreground">{ts.journalTitle || "Diary"}</h2>
+          <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-border/30">
+            <div className="flex min-w-0 flex-1 items-center gap-3">
+              {onOpenNavMenu ? (
+                <button
+                  type="button"
+                  onClick={onOpenNavMenu}
+                  className={mobileHeaderMenuClass}
+                  title={ts.navV2OpenMenu || "Open menu"}
+                  aria-label={ts.navV2OpenMenu || "Open menu"}
+                  aria-expanded={navMenuOpen}
+                  aria-controls="nav-v2-drawer"
+                  data-testid="journal-lock-nav-menu"
+                >
+                  <JournalMenuIcon className="pointer-events-none h-5 w-5" aria-hidden="true" />
+                </button>
+              ) : null}
+              <h2 className="truncate text-base font-bold text-foreground">{ts.journalTitle || "Diary"}</h2>
+            </div>
             {!hideCloseButton && (
               <button
                 onClick={handleClose}
@@ -1809,18 +1825,37 @@ export const JournalModule = memo(function JournalModule({
                             role="dialog"
                             aria-modal="true"
                             aria-label={ts.journalSettings || "Diary Settings"}
-                            className="fixed bottom-0 inset-x-0 z-[65] motion-safe:animate-slide-up pb-safe lg:max-w-4xl lg:mx-auto"
+                            className="fixed bottom-0 inset-x-0 z-[65] flex max-h-[calc(100dvh-env(safe-area-inset-top)-0.75rem)] flex-col overflow-hidden motion-safe:animate-slide-up pb-safe lg:max-w-4xl lg:mx-auto"
                             onClick={(e) => e.stopPropagation()}
                           >
                             {/* Handle bar */}
-                            <div className="flex justify-center pt-2 pb-1 bg-card rounded-t-2xl">
+                            <div className="flex shrink-0 justify-center pt-2 pb-1 bg-card rounded-t-2xl">
                               <div className="w-10 h-1 rounded-full bg-muted-foreground/20" />
                             </div>
-                            <div className="bg-card p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+                            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-card p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
                               <div className="mb-4 flex items-center justify-between gap-3">
-                                <h3 className="text-base font-semibold text-foreground">
-                                  {ts.journalSettings || "Diary Settings"}
-                                </h3>
+                                <div className="flex min-w-0 flex-1 items-center gap-3">
+                                  {onOpenNavMenu ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        closeSettings(false);
+                                        onOpenNavMenu();
+                                      }}
+                                      className={mobileHeaderMenuClass}
+                                      title={ts.navV2OpenMenu || "Open menu"}
+                                      aria-label={ts.navV2OpenMenu || "Open menu"}
+                                      aria-expanded={navMenuOpen}
+                                      aria-controls="nav-v2-drawer"
+                                      data-testid="journal-settings-nav-menu"
+                                    >
+                                      <JournalMenuIcon className="pointer-events-none h-5 w-5" aria-hidden="true" />
+                                    </button>
+                                  ) : null}
+                                  <h3 className="truncate text-base font-semibold text-foreground">
+                                    {ts.journalSettings || "Diary Settings"}
+                                  </h3>
+                                </div>
                                 <button
                                   type="button"
                                   onClick={() => closeSettings()}
