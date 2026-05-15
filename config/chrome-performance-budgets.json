@@ -1,0 +1,43 @@
+{
+  "defaultBudgets": {
+    "maxLongTaskMs": 500,
+    "longAnimationFrameWarnMs": 250
+  },
+  "settleMs": 4500,
+  "routeGroups": [
+    {
+      "profile": "phone",
+      "viewport": { "width": 449, "height": 698 },
+      "contextOptions": {
+        "viewport": { "width": 449, "height": 698 },
+        "deviceScaleFactor": 2,
+        "isMobile": true,
+        "hasTouch": true
+      },
+      "routes": [
+        { "name": "home-v1-phone", "path": "?navLayout=phone" },
+        { "name": "orb-v2-phone", "path": "orb/?nav=v2&navLayout=phone&dev=true" },
+        { "name": "habits-v2-phone", "path": "habits/?nav=v2&navLayout=phone&dev=true" },
+        { "name": "diary-v2-phone", "path": "diary/?nav=v2&navLayout=phone&dev=true" },
+        { "name": "settings-v2-phone", "path": "settings/?nav=v2&navLayout=phone&dev=true" }
+      ]
+    },
+    {
+      "profile": "desktop",
+      "viewport": { "width": 1440, "height": 900 },
+      "contextOptions": {
+        "viewport": { "width": 1440, "height": 900 },
+        "deviceScaleFactor": 1,
+        "isMobile": false,
+        "hasTouch": false
+      },
+      "routes": [
+        { "name": "home-v1-desktop", "path": "" },
+        { "name": "orb-v2-desktop", "path": "orb/?nav=v2&dev=true" },
+        { "name": "habits-v2-desktop", "path": "habits/?nav=v2&dev=true" },
+        { "name": "diary-v2-desktop", "path": "diary/?nav=v2&dev=true" },
+        { "name": "settings-v2-desktop", "path": "settings/?nav=v2&dev=true" }
+      ]
+    }
+  ]
+}

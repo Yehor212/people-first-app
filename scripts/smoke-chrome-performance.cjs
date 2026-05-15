@@ -1,49 +1,29 @@
 const { chromium } = require("@playwright/test");
+const fs = require("node:fs");
+const path = require("node:path");
 const packageJson = require("../package.json");
+const perfBudgetManifest = require("../config/chrome-performance-budgets.json");
 
 const BASE_URL = process.env.ZENFLOW_PERF_URL || "http://localhost:8080/people-first-app/";
-const MAX_LONG_TASK_MS = readNumber("ZENFLOW_PERF_MAX_LONG_TASK_MS", 500);
-const LONG_ANIMATION_FRAME_WARN_MS = readNumber("ZENFLOW_PERF_LOAF_WARN_MS", 250);
-const SETTLE_MS = readNumber("ZENFLOW_PERF_SETTLE_MS", 4500);
+const MAX_LONG_TASK_MS = readNumber(
+  "ZENFLOW_PERF_MAX_LONG_TASK_MS",
+  perfBudgetManifest.defaultBudgets?.maxLongTaskMs || 500,
+);
+const LONG_ANIMATION_FRAME_WARN_MS = readNumber(
+  "ZENFLOW_PERF_LOAF_WARN_MS",
+  perfBudgetManifest.defaultBudgets?.longAnimationFrameWarnMs || 250,
+);
+const SETTLE_MS = readNumber("ZENFLOW_PERF_SETTLE_MS", perfBudgetManifest.settleMs || 4500);
 const FAIL_ON_CONSOLE_ERROR = process.env.ZENFLOW_PERF_FAIL_ON_CONSOLE_ERROR === "true";
 const FAIL_ON_REQUEST_FAILURE = process.env.ZENFLOW_PERF_FAIL_ON_REQUEST_FAILURE === "true";
+const OUTPUT_PATH = process.env.ZENFLOW_PERF_OUTPUT || "";
 
-const routeGroups = [
-  {
-    profile: "phone",
-    viewport: { width: 449, height: 698 },
-    contextOptions: {
-      viewport: { width: 449, height: 698 },
-      deviceScaleFactor: 2,
-      isMobile: true,
-      hasTouch: true,
-    },
-    routes: [
-      { name: "home-v1-phone", path: "?navLayout=phone" },
-      { name: "orb-v2-phone", path: "orb/?nav=v2&navLayout=phone&dev=true" },
-      { name: "habits-v2-phone", path: "habits/?nav=v2&navLayout=phone&dev=true" },
-      { name: "diary-v2-phone", path: "diary/?nav=v2&navLayout=phone&dev=true" },
-      { name: "settings-v2-phone", path: "settings/?nav=v2&navLayout=phone&dev=true" },
-    ],
-  },
-  {
-    profile: "desktop",
-    viewport: { width: 1440, height: 900 },
-    contextOptions: {
-      viewport: { width: 1440, height: 900 },
-      deviceScaleFactor: 1,
-      isMobile: false,
-      hasTouch: false,
-    },
-    routes: [
-      { name: "home-v1-desktop", path: "" },
-      { name: "orb-v2-desktop", path: "orb/?nav=v2&dev=true" },
-      { name: "habits-v2-desktop", path: "habits/?nav=v2&dev=true" },
-      { name: "diary-v2-desktop", path: "diary/?nav=v2&dev=true" },
-      { name: "settings-v2-desktop", path: "settings/?nav=v2&dev=true" },
-    ],
-  },
-];
+const routeGroups = perfBudgetManifest.routeGroups || [];
+
+if (routeGroups.length === 0) {
+  console.error("[chrome-performance] No route groups configured");
+  process.exit(2);
+}
 
 function readNumber(name, fallback) {
   const rawValue = process.env[name];
@@ -227,6 +207,13 @@ async function measure(context, routeGroup, route) {
   });
 
   const url = resolveUrl(route.path);
+  const budgets = {
+    maxLongTaskMs: route.maxLongTaskMs || routeGroup.maxLongTaskMs || MAX_LONG_TASK_MS,
+    longAnimationFrameWarnMs:
+      route.longAnimationFrameWarnMs ||
+      routeGroup.longAnimationFrameWarnMs ||
+      LONG_ANIMATION_FRAME_WARN_MS,
+  };
   await page.goto(url, { waitUntil: "load", timeout: 45000 });
   await page.evaluate(() => document.fonts?.ready).catch(() => undefined);
   await page.evaluate(
@@ -260,6 +247,7 @@ async function measure(context, routeGroup, route) {
     profile: routeGroup.profile,
     viewport: routeGroup.viewport,
     route: route.name,
+    budgets,
     path: route.path || "/",
     url,
     bootLongTaskCount: bootMetrics.longTaskCount,
@@ -281,11 +269,12 @@ function collectWarnings(results) {
   const warnings = [];
 
   for (const result of results) {
-    if (result.maxLongAnimationFrameMs > LONG_ANIMATION_FRAME_WARN_MS) {
+    const loafWarnMs = result.budgets?.longAnimationFrameWarnMs || LONG_ANIMATION_FRAME_WARN_MS;
+    if (result.maxLongAnimationFrameMs > loafWarnMs) {
       warnings.push(
         `${result.route} long-animation-frame ${Math.round(
           result.maxLongAnimationFrameMs,
-        )}ms > ${LONG_ANIMATION_FRAME_WARN_MS}ms`,
+        )}ms > ${loafWarnMs}ms`,
       );
     }
 
@@ -307,11 +296,21 @@ function collectWarnings(results) {
 
 function collectFailures(results) {
   const steadyFailures = results
-    .filter((result) => result.maxLongTaskMs > MAX_LONG_TASK_MS)
-    .map((result) => `${result.route}=${Math.round(result.maxLongTaskMs)}ms`);
+    .filter(
+      (result) => result.maxLongTaskMs > (result.budgets?.maxLongTaskMs || MAX_LONG_TASK_MS),
+    )
+    .map(
+      (result) =>
+        `${result.route}=${Math.round(result.maxLongTaskMs)}ms>${result.budgets?.maxLongTaskMs || MAX_LONG_TASK_MS}ms`,
+    );
   const bootFailures = results
-    .filter((result) => result.bootMaxLongTaskMs > MAX_LONG_TASK_MS)
-    .map((result) => `${result.route}:boot=${Math.round(result.bootMaxLongTaskMs)}ms`);
+    .filter(
+      (result) => result.bootMaxLongTaskMs > (result.budgets?.maxLongTaskMs || MAX_LONG_TASK_MS),
+    )
+    .map(
+      (result) =>
+        `${result.route}:boot=${Math.round(result.bootMaxLongTaskMs)}ms>${result.budgets?.maxLongTaskMs || MAX_LONG_TASK_MS}ms`,
+    );
   const failures = [...steadyFailures, ...bootFailures];
 
   if (FAIL_ON_CONSOLE_ERROR) {
@@ -366,22 +365,27 @@ function collectFailures(results) {
   const warnings = collectWarnings(results);
   const failures = collectFailures(results);
 
-  console.log(
-    JSON.stringify(
-      {
-        baseUrl: BASE_URL,
-        maxAllowedLongTaskMs: MAX_LONG_TASK_MS,
-        longAnimationFrameWarnMs: LONG_ANIMATION_FRAME_WARN_MS,
-        settleMs: SETTLE_MS,
-        failOnConsoleError: FAIL_ON_CONSOLE_ERROR,
-        failOnRequestFailure: FAIL_ON_REQUEST_FAILURE,
-        results,
-        warnings,
-      },
-      null,
-      2,
-    ),
-  );
+  const report = {
+    generatedAt: new Date().toISOString(),
+    baseUrl: BASE_URL,
+    budgetManifest: "config/chrome-performance-budgets.json",
+    maxAllowedLongTaskMs: MAX_LONG_TASK_MS,
+    longAnimationFrameWarnMs: LONG_ANIMATION_FRAME_WARN_MS,
+    settleMs: SETTLE_MS,
+    failOnConsoleError: FAIL_ON_CONSOLE_ERROR,
+    failOnRequestFailure: FAIL_ON_REQUEST_FAILURE,
+    results,
+    warnings,
+  };
+
+  const output = JSON.stringify(report, null, 2);
+  console.log(output);
+
+  if (OUTPUT_PATH) {
+    const resolvedOutputPath = path.resolve(process.cwd(), OUTPUT_PATH);
+    fs.mkdirSync(path.dirname(resolvedOutputPath), { recursive: true });
+    fs.writeFileSync(resolvedOutputPath, `${output}\n`);
+  }
 
   if (failures.length > 0) {
     console.error(`[chrome-performance] Budget exceeded: ${failures.join(", ")}`);

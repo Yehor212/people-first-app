@@ -86,6 +86,8 @@ Use the current route budgets unless a task explicitly sets stricter ones:
 - `longtask` over `300ms`: warn and investigate.
 - `long-animation-frame` over `250ms`: warn and inspect attribution when Chrome
   supports it.
+- Route budgets live in `config/chrome-performance-budgets.json`; do not bury
+  new performance thresholds inside test code.
 - Chrome route smoke must report cold-boot and steady-state separately. Cold boot
   keeps the long-task fail budget; steady-state owns the animation-frame warning
   budget after the first route paint has settled.
@@ -197,6 +199,10 @@ Performance work needs:
 - Max long task and max long animation frame when available.
 - Console errors and failed requests.
 - Before/after comparison when changing runtime behavior.
+- Public Chrome diagnostics can be enabled with `?perf=1`, `?runtimePerf=true`,
+  `?dev=true`, or localStorage key `zenflow-runtime-perf-recorder`. Inspect
+  `window.__zenflowRuntimePerf.snapshot()` in DevTools. This recorder is for
+  measurement only and must not drive UI state.
 
 Sync work needs:
 
