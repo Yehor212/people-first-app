@@ -265,9 +265,14 @@ function canUseWorkerWebGL(): boolean {
   }
 }
 
-function scheduleAfterFirstPaint(task: () => void): () => void {
+function scheduleAfterFirstPaint(
+  task: () => void,
+  options: { preferIdle?: boolean; delayMs?: number } = {},
+): () => void {
   let cancelled = false;
   let timeoutId = 0;
+  const preferIdle = options.preferIdle ?? true;
+  const delayMs = options.delayMs ?? WEBGL_UPGRADE_DELAY_MS;
 
   const run = () => {
     if (cancelled) return;
@@ -275,8 +280,8 @@ function scheduleAfterFirstPaint(task: () => void): () => void {
   };
 
   const requestIdle = window.requestIdleCallback;
-  if (requestIdle) {
-    const idleId = requestIdle(run, { timeout: WEBGL_UPGRADE_DELAY_MS + 600 });
+  if (preferIdle && requestIdle) {
+    const idleId = requestIdle(run, { timeout: delayMs + 600 });
     return () => {
       cancelled = true;
       window.cancelIdleCallback?.(idleId);
@@ -284,7 +289,7 @@ function scheduleAfterFirstPaint(task: () => void): () => void {
   }
 
   const rafId = requestAnimationFrame(() => {
-    timeoutId = window.setTimeout(run, WEBGL_UPGRADE_DELAY_MS);
+    timeoutId = window.setTimeout(run, delayMs);
   });
 
   return () => {
@@ -945,6 +950,9 @@ export const ValenceOrb = memo(function ValenceOrb({
     if (!glRenderer) {
       cancelWebGLUpgrade = scheduleAfterFirstPaint(() => {
         startWebGLUpgradeWhenVisible();
+      }, {
+        delayMs: forceCanonicalWebGL ? 0 : WEBGL_UPGRADE_DELAY_MS,
+        preferIdle: !forceCanonicalWebGL,
       });
     }
 

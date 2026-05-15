@@ -164,6 +164,27 @@ function resetPerfSnapshot() {
   perf.phaseStartedAt = performance.now();
 }
 
+async function evaluateAfterStableContext(page, callback, routeName, phase) {
+  try {
+    return await page.evaluate(callback);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!message.includes("Execution context was destroyed")) {
+      throw error;
+    }
+
+    console.warn(
+      `[chrome-performance] ${routeName} ${phase} context changed during load; retrying once`,
+    );
+    await page.waitForLoadState("load", { timeout: 5000 }).catch(() => undefined);
+    return page.evaluate(callback);
+  }
+}
+
+async function waitForRouteNetworkIdle(page) {
+  await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => undefined);
+}
+
 function isReportableResponse(response) {
   const request = response.request();
   if (request.resourceType() === "xhr" || request.resourceType() === "fetch") {
@@ -180,6 +201,7 @@ async function measure(context, routeGroup, route) {
   const consoleErrors = [];
   const failedRequests = [];
   const failedResponses = [];
+  let pageClosing = false;
 
   page.on("console", (message) => {
     if (message.type() === "error") {
@@ -188,6 +210,8 @@ async function measure(context, routeGroup, route) {
   });
 
   page.on("requestfailed", (request) => {
+    if (pageClosing) return;
+
     failedRequests.push({
       method: request.method(),
       resourceType: request.resourceType(),
@@ -197,6 +221,7 @@ async function measure(context, routeGroup, route) {
   });
 
   page.on("response", (response) => {
+    if (pageClosing) return;
     if (isReportableResponse(response)) {
       failedResponses.push({
         status: response.status(),
@@ -224,23 +249,38 @@ async function measure(context, routeGroup, route) {
   ).catch(async () => {
     await page.waitForLoadState("load", { timeout: 5000 }).catch(() => undefined);
   });
+  await waitForRouteNetworkIdle(page);
 
-  const bootMetrics = await page.evaluate(summarizePerfSnapshot);
-  await page.evaluate(resetPerfSnapshot);
+  const bootMetrics = await evaluateAfterStableContext(
+    page,
+    summarizePerfSnapshot,
+    route.name,
+    "boot",
+  );
+  await evaluateAfterStableContext(page, resetPerfSnapshot, route.name, "reset");
   await page.waitForTimeout(SETTLE_MS);
 
-  const steadyPerfMetrics = await page.evaluate(summarizePerfSnapshot);
-  const pageInfo = await page.evaluate(() => {
-    return {
+  const steadyPerfMetrics = await evaluateAfterStableContext(
+    page,
+    summarizePerfSnapshot,
+    route.name,
+    "steady",
+  );
+  const pageInfo = await evaluateAfterStableContext(
+    page,
+    () => ({
       nodeCount: document.querySelectorAll("*").length,
       title: document.title,
-    };
-  });
+    }),
+    route.name,
+    "page-info",
+  );
   const metrics = {
     ...steadyPerfMetrics,
     ...pageInfo,
   };
 
+  pageClosing = true;
   await page.close();
 
   return {
@@ -352,7 +392,10 @@ function collectFailures(results) {
 
   try {
     for (const routeGroup of routeGroups) {
-      const context = await browser.newContext(routeGroup.contextOptions);
+      const context = await browser.newContext({
+        serviceWorkers: "block",
+        ...routeGroup.contextOptions,
+      });
       for (const route of routeGroup.routes) {
         results.push(await measure(context, routeGroup, route));
       }

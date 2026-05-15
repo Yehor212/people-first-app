@@ -10,13 +10,19 @@ import { V2_SHELL_ICONS } from "@/lib/v2IconSystem";
 import { NotFoundPage } from "@/components/NotFoundPage";
 import { SidebarV2 } from "./SidebarV2";
 import { DrawerV2 } from "./DrawerV2";
-import { OrbPage } from "@/pages/nav-v2/OrbPage";
-import { HabitsPage } from "@/pages/nav-v2/HabitsPage";
-import { DiaryPage } from "@/pages/nav-v2/DiaryPage";
-import { SettingsPage } from "@/pages/nav-v2/SettingsPage";
 import type { GratitudeEntry, MoodEntry } from "@/types";
 
 const CommandPalette = lazy(() => import("@/components/desktop/CommandPalette"));
+const OrbPage = lazy(() => import("@/pages/nav-v2/OrbPage").then((m) => ({ default: m.OrbPage })));
+const HabitsPage = lazy(() =>
+  import("@/pages/nav-v2/HabitsPage").then((m) => ({ default: m.HabitsPage })),
+);
+const DiaryPage = lazy(() =>
+  import("@/pages/nav-v2/DiaryPage").then((m) => ({ default: m.DiaryPage })),
+);
+const SettingsPage = lazy(() =>
+  import("@/pages/nav-v2/SettingsPage").then((m) => ({ default: m.SettingsPage })),
+);
 
 /**
  * NavV2Orchestrator — wraps the V2 navigation shell around flag-gated page shells.
@@ -219,7 +225,7 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
         </Suspense>
       )}
 
-      {pageNode}
+      <Suspense fallback={null}>{pageNode}</Suspense>
     </div>
   );
 });
