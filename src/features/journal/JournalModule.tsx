@@ -39,15 +39,12 @@ import { useJournal } from "./useJournal";
 import { useJournalSecurity } from "./useJournalSecurity";
 import { JournalLockScreen } from "./JournalLockScreen";
 import { JournalEntryList } from "./JournalEntryList";
-import { MemoryPortalCanvas } from "./MemoryPortalCanvas";
 import { SidebarCompact } from "./SidebarCompact";
 import { DiaryEmptyCanvas } from "./DiaryEmptyCanvas";
 import { DiaryEntrySuggestionCard } from "./DiaryEntrySuggestionCard";
 import { OnThisDayCard } from "./OnThisDayCard";
 import { JournalOnboardingHints, useJournalOnboarding } from "./JournalOnboardingHints";
 import { KeyboardShortcutsOverlay } from "./KeyboardShortcutsOverlay";
-import { JournalEntryEditor } from "./JournalEntryEditor";
-import { JournalEntryViewer } from "./JournalEntryViewer";
 import { ExportPickerDialog } from "./ExportPickerDialog";
 import { RemovePasswordConfirmDialog } from "./RemovePasswordConfirmDialog";
 import { JournalCalendar } from "./JournalCalendar";
@@ -92,6 +89,33 @@ const LazyJournalStats = lazyWithRetry(
   () => import("./JournalStats").then((m) => ({ default: m.JournalStats })),
   "JournalStats"
 );
+
+const LazyJournalEntryEditor = lazyWithRetry(
+  () => import("./JournalEntryEditor").then((m) => ({ default: m.JournalEntryEditor })),
+  "JournalEntryEditor",
+);
+
+const LazyJournalEntryViewer = lazyWithRetry(
+  () => import("./JournalEntryViewer").then((m) => ({ default: m.JournalEntryViewer })),
+  "JournalEntryViewer",
+);
+
+const LazyMemoryPortalCanvas = lazyWithRetry(
+  () => import("./MemoryPortalCanvas").then((m) => ({ default: m.MemoryPortalCanvas })),
+  "MemoryPortalCanvas",
+);
+
+function JournalDeferredPanelFallback({
+  label = "Loading...",
+}: {
+  label?: string;
+}) {
+  return (
+    <div className="flex min-h-[320px] flex-1 items-center justify-center">
+      <Loader2 className="h-6 w-6 animate-spin text-primary" aria-label={label} />
+    </div>
+  );
+}
 
 type ModuleState = "card" | "open";
 
@@ -1428,35 +1452,39 @@ export const JournalModule = memo(function JournalModule({
                       </div>
                     </div>
                   ) : journal.view === "editing" ? (
-                    <JournalEntryEditor
-                      entry={journal.activeEntry}
-                      entryPrefill={activeEntryPrefill}
-                      onSave={handleSaveEntry}
-                      onAddPhoto={journal.addPhoto}
-                      onRemovePhoto={journal.removePhoto}
-                      onAddAudio={journal.addAudio}
-                      onRemoveAudio={journal.removeAudio}
-                      onDelete={
-                        journal.activeEntryId
-                          ? () => handleDeleteEntry(journal.activeEntryId!)
-                          : undefined
-                      }
-                      onBack={handleGoBack}
-                      onToggleHabit={onToggleHabit}
-                      onAddGratitude={handleAddGratitudeWithSpace}
-                      onRequestSettings={openSettings}
-                      onBindSettingsRequestHandler={(handler) => {
-                        editorSettingsRequestRef.current = handler;
-                      }}
-                      desktop
-                    />
+                    <Suspense fallback={<JournalDeferredPanelFallback label={t.loading || "Loading..."} />}>
+                      <LazyJournalEntryEditor
+                        entry={journal.activeEntry}
+                        entryPrefill={activeEntryPrefill}
+                        onSave={handleSaveEntry}
+                        onAddPhoto={journal.addPhoto}
+                        onRemovePhoto={journal.removePhoto}
+                        onAddAudio={journal.addAudio}
+                        onRemoveAudio={journal.removeAudio}
+                        onDelete={
+                          journal.activeEntryId
+                            ? () => handleDeleteEntry(journal.activeEntryId!)
+                            : undefined
+                        }
+                        onBack={handleGoBack}
+                        onToggleHabit={onToggleHabit}
+                        onAddGratitude={handleAddGratitudeWithSpace}
+                        onRequestSettings={openSettings}
+                        onBindSettingsRequestHandler={(handler) => {
+                          editorSettingsRequestRef.current = handler;
+                        }}
+                        desktop
+                      />
+                    </Suspense>
                   ) : journal.view === "viewing" && journal.activeEntry ? (
-                    <JournalEntryViewer
-                      entry={journal.activeEntry}
-                      onEdit={() => journal.editEntry(journal.activeEntryId)}
-                      onDelete={() => handleDeleteEntry(journal.activeEntry?.id || "")}
-                      onBack={handleGoBack}
-                    />
+                    <Suspense fallback={<JournalDeferredPanelFallback label={t.loading || "Loading..."} />}>
+                      <LazyJournalEntryViewer
+                        entry={journal.activeEntry}
+                        onEdit={() => journal.editEntry(journal.activeEntryId)}
+                        onDelete={() => handleDeleteEntry(journal.activeEntry?.id || "")}
+                        onBack={handleGoBack}
+                      />
+                    </Suspense>
                   ) : journal.view === "stats" ? (
                     <Suspense
                       fallback={
@@ -1545,23 +1573,25 @@ export const JournalModule = memo(function JournalModule({
                         : {})}
                       className="contents"
                     >
-                      <JournalEntryEditor
-                        entry={journal.activeEntry}
-                        entryPrefill={activeEntryPrefill}
-                        onSave={handleSaveEntry}
-                        onAddPhoto={journal.addPhoto}
-                        onRemovePhoto={journal.removePhoto}
-                        onAddAudio={journal.addAudio}
-                        onRemoveAudio={journal.removeAudio}
-                        onDelete={
-                          journal.activeEntryId
-                            ? () => handleDeleteEntry(journal.activeEntryId!)
-                            : undefined
-                        }
-                        onBack={handleGoBack}
-                        onToggleHabit={onToggleHabit}
-                      onAddGratitude={handleAddGratitudeWithSpace}
-                      />
+                      <Suspense fallback={<JournalDeferredPanelFallback label={t.loading || "Loading..."} />}>
+                        <LazyJournalEntryEditor
+                          entry={journal.activeEntry}
+                          entryPrefill={activeEntryPrefill}
+                          onSave={handleSaveEntry}
+                          onAddPhoto={journal.addPhoto}
+                          onRemovePhoto={journal.removePhoto}
+                          onAddAudio={journal.addAudio}
+                          onRemoveAudio={journal.removeAudio}
+                          onDelete={
+                            journal.activeEntryId
+                              ? () => handleDeleteEntry(journal.activeEntryId!)
+                              : undefined
+                          }
+                          onBack={handleGoBack}
+                          onToggleHabit={onToggleHabit}
+                          onAddGratitude={handleAddGratitudeWithSpace}
+                        />
+                      </Suspense>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -1601,28 +1631,30 @@ export const JournalModule = memo(function JournalModule({
                       </div>
 
                       <div className="relative flex-1 min-h-0">
-                        <MemoryPortalCanvas
-                          ts={ts}
-                          entries={journal.allEntries}
-                          moods={moodEntries}
-                          groupedEntries={journal.groupedEntries}
-                          listTotalCount={journal.entries.length}
-                          loading={journal.loading}
-                          loadingTheme={loadingTheme}
-                          selectedDate={journal.selectedDate}
-                          onSelectDate={journal.setSelectedDate}
-                          onOpenEntry={handleOpenEntry}
-                          onDeleteEntry={handleDeleteEntry}
-                          onSwipeDelete={handleDeleteEntry}
-                          onNewEntry={handleNewEntry}
-                          onNewEntryWithPrefill={handleNewEntryWithPrefill}
-                          daysSinceLastEntry={daysSinceLastEntry}
-                          privateMode={privateMode}
-                          onAddGratitude={handleAddGratitudeWithSpace}
-                          releaseTraceSummaries={releaseTraceSummaries}
-                          onReleaseThought={handleReleaseThought}
-                          showList={false}
-                        />
+                        <Suspense fallback={<JournalDeferredPanelFallback label={t.loading || "Loading..."} />}>
+                          <LazyMemoryPortalCanvas
+                            ts={ts}
+                            entries={journal.allEntries}
+                            moods={moodEntries}
+                            groupedEntries={journal.groupedEntries}
+                            listTotalCount={journal.entries.length}
+                            loading={journal.loading}
+                            loadingTheme={loadingTheme}
+                            selectedDate={journal.selectedDate}
+                            onSelectDate={journal.setSelectedDate}
+                            onOpenEntry={handleOpenEntry}
+                            onDeleteEntry={handleDeleteEntry}
+                            onSwipeDelete={handleDeleteEntry}
+                            onNewEntry={handleNewEntry}
+                            onNewEntryWithPrefill={handleNewEntryWithPrefill}
+                            daysSinceLastEntry={daysSinceLastEntry}
+                            privateMode={privateMode}
+                            onAddGratitude={handleAddGratitudeWithSpace}
+                            releaseTraceSummaries={releaseTraceSummaries}
+                            onReleaseThought={handleReleaseThought}
+                            showList={false}
+                          />
+                        </Suspense>
                       </div>
                     </motion.div>
                   )}
@@ -1636,12 +1668,14 @@ export const JournalModule = memo(function JournalModule({
                       transition={{ duration: 0.2 }}
                       className="flex flex-col flex-1 min-h-0"
                     >
-                      <JournalEntryViewer
-                        entry={journal.activeEntry}
-                        onEdit={() => journal.editEntry(journal.activeEntryId)}
-                        onDelete={() => handleDeleteEntry(journal.activeEntry?.id || "")}
-                        onBack={handleGoBack}
-                      />
+                      <Suspense fallback={<JournalDeferredPanelFallback label={t.loading || "Loading..."} />}>
+                        <LazyJournalEntryViewer
+                          entry={journal.activeEntry}
+                          onEdit={() => journal.editEntry(journal.activeEntryId)}
+                          onDelete={() => handleDeleteEntry(journal.activeEntry?.id || "")}
+                          onBack={handleGoBack}
+                        />
+                      </Suspense>
                     </motion.div>
                   )}
 

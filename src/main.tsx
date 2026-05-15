@@ -489,4 +489,6 @@ const idleInit = () => {
     })
     .catch((err) => logger.warn("[Main] Sentry lazy load failed:", err));
 };
-scheduleIdle(idleInit, 5000, 4000);
+// Keep observability off the first interaction window. Errors are buffered above,
+// so Sentry can start after route paint, diary imports, and orb WebGL settle.
+scheduleIdle(idleInit, 15000, 12000);
