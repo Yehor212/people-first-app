@@ -201,8 +201,9 @@ Performance work needs:
 - Before/after comparison when changing runtime behavior.
 - Public Chrome diagnostics can be enabled with `?perf=1`, `?runtimePerf=true`,
   `?dev=true`, or localStorage key `zenflow-runtime-perf-recorder`. Inspect
-  `window.__zenflowRuntimePerf.snapshot()` in DevTools. This recorder is for
-  measurement only and must not drive UI state.
+  `window.__zenflowRuntimePerf.snapshot()` in DevTools after the first
+  idle period. This recorder is lazy-loaded after first paint, is for
+  measurement only, and must not drive UI state.
 
 Sync work needs:
 

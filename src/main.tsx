@@ -34,7 +34,6 @@ import { scheduleIdle } from "./lib/scheduleIdle";
 import { captureOrBuffer, setCaptureSink } from "./lib/errorBuffer";
 import { initWebVitalsDev } from "./observability/reportWebVitals";
 import { initLongTaskObserverDev } from "./observability/initLongTaskObserverDev";
-import { installRuntimeFlightRecorder } from "./observability/runtimeFlightRecorder";
 import { bindPrefersColorSchemeListener } from "./stores/themeStore";
 
 // Sentry is deferred to post-mount via requestIdleCallback (see below initializeApp)
@@ -57,7 +56,11 @@ void initWebVitalsDev();
 // by capturing EVERY slow frame (not just the one behind INP). No-op in
 // prod; Sentry captures longtask spans server-side.
 initLongTaskObserverDev();
-installRuntimeFlightRecorder();
+scheduleIdle(() => {
+  void import("./observability/runtimeFlightRecorder")
+    .then(({ installRuntimeFlightRecorder }) => installRuntimeFlightRecorder())
+    .catch(() => undefined);
+}, 2000, 250);
 bindPrefersColorSchemeListener();
 
 // Set html lang attribute early (before React hydrates) for non-EN users (WCAG 3.1.1)
