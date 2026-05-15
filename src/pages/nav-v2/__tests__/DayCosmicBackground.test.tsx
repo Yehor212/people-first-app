@@ -1,6 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { DayCosmicBackground } from "../DayCosmicBackground";
+
+const dayCosmicCss = readFileSync(
+  resolve(process.cwd(), "src/pages/nav-v2/DayCosmicBackground.css"),
+  "utf8",
+);
 
 // useShouldAnimate controls the motes animation gate — mock per-test.
 const mockShouldAnimate = vi.fn();
@@ -98,6 +105,15 @@ describe("DayCosmicBackground", () => {
     const root = screen.getByTestId("day-cosmic-background");
     expect(root.getAttribute("aria-hidden")).toBe("true");
     expect(root.className).toMatch(/pointer-events-none/);
+    expect(root.className).toMatch(/day-cosmic/);
+  });
+
+  it("keeps expensive daylight layers paint-isolated for phone Chrome", () => {
+    expect(dayCosmicCss).toContain(".day-cosmic {");
+    expect(dayCosmicCss).toContain("contain: layout paint style");
+    expect(dayCosmicCss).toContain(".day-cosmic__bokeh");
+    expect(dayCosmicCss).toContain("contain: paint");
+    expect(dayCosmicCss).toContain("will-change: transform, opacity");
   });
 
   it("paper grain is a static SVG with feTurbulence filter", () => {

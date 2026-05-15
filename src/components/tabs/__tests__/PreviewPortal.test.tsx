@@ -1,6 +1,10 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, beforeEach, vi } from "vitest";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { buildV2PortalHref, V2PreviewPortal } from "../PreviewPortal";
+
+const appCss = readFileSync(resolve(process.cwd(), "src/index.css"), "utf8");
 
 vi.mock("@/contexts/LanguageContext", () => ({
   useLanguage: () => ({
@@ -78,5 +82,12 @@ describe("V2PreviewPortal", () => {
       "aria-label",
       "Open V2: Diary",
     );
+  });
+
+  it("keeps the animated V1 to V2 portal isolated from route-level paint stalls", () => {
+    expect(appCss).toContain(".v2-preview-portal {");
+    expect(appCss).toContain("contain: layout paint style");
+    expect(appCss).toContain(".v2-preview-portal [data-orb-renderer-policy]");
+    expect(appCss).toContain("will-change: transform, opacity");
   });
 });

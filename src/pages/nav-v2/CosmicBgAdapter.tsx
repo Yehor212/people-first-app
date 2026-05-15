@@ -1,6 +1,6 @@
 import { memo, type CSSProperties } from "react";
 import { motion } from "framer-motion";
-import { CosmicStar, cosmicStars } from "@/components/FocusReflectionModal";
+import { CosmicStar, cosmicStars } from "@/components/cosmic/CosmicStarField";
 import { useShouldAnimate } from "@/hooks/useShouldAnimate";
 import { useThemeStore } from "@/stores/themeStore";
 import { DayCosmicBackground } from "./DayCosmicBackground";
@@ -68,7 +68,7 @@ const starrySkyStars = [
  *
  * Night layers (painter order):
  *   1. Dark-mode cosmic radial — hsl(--focus-cosmic-*) via ellipse gradient.
- *   2. Star particles — CosmicStar instances from FocusReflectionModal seed.
+ *   2. Star particles — CosmicStar instances from the shared lightweight seed.
  *   3. Dual-pool nebula glow — --nebula-a (30/30) + --nebula-b (70/70), pulsed.
  *
  * Perf (Law 8): every layer is transform/opacity only. Nebula pulse guarded by
@@ -135,7 +135,7 @@ export const CosmicBgAdapter = memo(function CosmicBgAdapter({
       {/* Dark-mode cosmic radial — paper variant routed to DayCosmicBackground above */}
       <div className="absolute inset-0 cosmic-bg-adapter__dark-radial" />
 
-      {/* Star particles — reuse the proven FocusReflectionModal seed */}
+      {/* Star particles — reuse the proven lightweight seed */}
       {cosmicStars.map((star) => (
         <CosmicStar key={star.id} {...star} />
       ))}

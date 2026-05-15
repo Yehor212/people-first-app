@@ -4,7 +4,7 @@
 
 import { motion } from 'framer-motion';
 import { Sparkles } from 'lucide-react';
-import { CosmicStar, cosmicStars } from '../FocusReflectionModal';
+import { CosmicStar, cosmicStars } from '@/components/cosmic/CosmicStarField';
 
 interface CosmicBackgroundProps {
   startHereLabel: string;

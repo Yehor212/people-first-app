@@ -8,7 +8,7 @@ vi.mock("@/hooks/useShouldAnimate", () => ({
 }));
 
 // FocusReflectionModal stars — render as simple divs for test determinism.
-vi.mock("@/components/FocusReflectionModal", () => ({
+vi.mock("@/components/cosmic/CosmicStarField", () => ({
   CosmicStar: ({ id }: { id: string }) => (
     <div data-testid={`cosmic-star-${id}`} className="zen-particle" />
   ),

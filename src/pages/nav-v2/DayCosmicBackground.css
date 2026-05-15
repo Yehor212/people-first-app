@@ -11,6 +11,29 @@
  * growth while preserving the same time-of-day visuals.
  */
 
+.day-cosmic {
+  contain: layout paint style;
+  isolation: isolate;
+}
+
+.day-cosmic__bokeh,
+.day-cosmic__horizon-glow,
+.day-cosmic__light-curtain,
+.day-cosmic__sun-shower,
+.day-cosmic__prism-ribbon,
+.day-cosmic__caustics {
+  contain: paint;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+}
+
+.day-cosmic__sun-thread,
+.day-cosmic__photon,
+.day-cosmic__mote {
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+}
+
 /* ==================== Layer 1 — Base aurora mesh ==================== */
 .day-cosmic__base {
   position: absolute;

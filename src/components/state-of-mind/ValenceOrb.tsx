@@ -187,6 +187,11 @@ function createCanvas(size: number, dpr: number): HTMLCanvasElement {
   c.height = size * dpr;
   c.style.width = `${size}px`;
   c.style.height = `${size}px`;
+  c.style.display = 'block';
+  c.style.contain = 'strict';
+  c.style.willChange = 'transform';
+  c.style.transform = 'translateZ(0)';
+  c.style.backfaceVisibility = 'hidden';
   c.setAttribute('aria-hidden', 'true');
   return c;
 }
@@ -232,9 +237,19 @@ export function shouldApplyWorkerWebGLUpgrade(
   return forcedWebGL || readyDurationMs <= WEBGL_WORKER_READY_BUDGET_MS;
 }
 
-function isVisibleCanvasHost(node: HTMLElement): boolean {
+function hasViewportIntersection(node: HTMLElement): boolean {
   const rect = node.getBoundingClientRect();
-  return rect.width > 0 && rect.height > 0;
+  const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+  const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+
+  return (
+    rect.width > 0 &&
+    rect.height > 0 &&
+    rect.bottom > 0 &&
+    rect.right > 0 &&
+    rect.top < viewportHeight &&
+    rect.left < viewportWidth
+  );
 }
 
 function canUseWorkerWebGL(): boolean {
@@ -357,6 +372,8 @@ export const ValenceOrb = memo(function ValenceOrb({
     if (!wrapper) return;
     if (typeof IntersectionObserver === "undefined") return;
 
+    isVisibleRef.current = hasViewportIntersection(wrapper);
+
     const observer = new IntersectionObserver(
       ([entry]) => { isVisibleRef.current = entry.isIntersecting; },
       { threshold: 0 },
@@ -372,6 +389,7 @@ export const ValenceOrb = memo(function ValenceOrb({
 
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const canvasDpr = 1;
+    isVisibleRef.current = hasViewportIntersection(wrapper);
 
     // Initialize animation state
     const cx = size / 2;
@@ -718,8 +736,6 @@ export const ValenceOrb = memo(function ValenceOrb({
       const explicitWebGLOverride = forceCanonicalWebGL;
 
       if ((renderer === 'auto' || renderer === 'webgl') && canUseWorkerWebGL()) {
-        if (!isVisibleCanvasHost(wrapper)) return;
-
         const workerStartedAt = performance.now();
         const workerCanvas = forceCanonicalWebGL ? activeCanvas : createCanvas(size, dpr);
         markRendererTier(workerCanvas, 'webgl-worker');
@@ -861,12 +877,41 @@ export const ValenceOrb = memo(function ValenceOrb({
 
     const webglUpgradeAbort = new AbortController();
     let cancelWebGLUpgrade = () => {};
+    let webglUpgradeStarted = false;
+    let webglUpgradePendingUntilVisible = false;
+    const startWebGLUpgradeWhenVisible = () => {
+      if (webglUpgradeAbort.signal.aborted || webglUpgradeStarted) return;
+
+      if (!hasViewportIntersection(wrapper)) {
+        webglUpgradePendingUntilVisible = true;
+        return;
+      }
+
+      webglUpgradePendingUntilVisible = false;
+      webglUpgradeStarted = true;
+      void upgradeToWebGL(webglUpgradeAbort.signal);
+    };
+
+    let upgradeVisibilityObserver: IntersectionObserver | null = null;
+    if (typeof IntersectionObserver !== "undefined") {
+      upgradeVisibilityObserver = new IntersectionObserver(
+        ([entry]) => {
+          isVisibleRef.current = entry.isIntersecting;
+          if (entry.isIntersecting && webglUpgradePendingUntilVisible) {
+            startWebGLUpgradeWhenVisible();
+          }
+        },
+        { threshold: 0 },
+      );
+      upgradeVisibilityObserver.observe(wrapper);
+    }
 
     // ── Cleanup ──
     const cleanup = () => {
       webglUpgradeAbort.abort();
       cancelWebGLUpgrade();
       cancelAnimationFrame(rafRef.current);
+      upgradeVisibilityObserver?.disconnect();
       wrapper.removeEventListener('pointerdown', handlePointerDown);
       if (webglEventCanvas) {
         webglEventCanvas.removeEventListener('webglcontextlost', handleContextLost);
@@ -899,7 +944,7 @@ export const ValenceOrb = memo(function ValenceOrb({
 
     if (!glRenderer) {
       cancelWebGLUpgrade = scheduleAfterFirstPaint(() => {
-        void upgradeToWebGL(webglUpgradeAbort.signal);
+        startWebGLUpgradeWhenVisible();
       });
     }
 
@@ -974,7 +1019,15 @@ export const ValenceOrb = memo(function ValenceOrb({
         data-orb-transition-profile={transitionProfile}
         data-orb-animation-speed={animationSpeed}
         data-orb-renderer-policy={renderer}
-        style={{ width: size, height: size }}
+        style={{
+          width: size,
+          height: size,
+          contain: 'layout paint style',
+          isolation: 'isolate',
+          willChange: 'transform',
+          transform: 'translateZ(0)',
+          backfaceVisibility: 'hidden',
+        }}
         aria-hidden="true"
       >
         <div
@@ -1001,7 +1054,16 @@ export const ValenceOrb = memo(function ValenceOrb({
       data-orb-transition-profile={transitionProfile}
       data-orb-animation-speed={animationSpeed}
       data-orb-renderer-policy={renderer}
-      style={{ width: size, height: size, touchAction: 'manipulation' }}
+      style={{
+        width: size,
+        height: size,
+        touchAction: 'manipulation',
+        contain: 'layout paint style',
+        isolation: 'isolate',
+        willChange: 'transform',
+        transform: 'translateZ(0)',
+        backfaceVisibility: 'hidden',
+      }}
       aria-hidden="true"
     />
   );

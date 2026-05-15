@@ -32,7 +32,7 @@ vi.mock("@/hooks/useShouldAnimate", () => ({
 }));
 
 // Stars — simple divs
-vi.mock("@/components/FocusReflectionModal", () => ({
+vi.mock("@/components/cosmic/CosmicStarField", () => ({
   CosmicStar: ({ id }: { id: string }) => <div data-testid={`star-${id}`} />,
   cosmicStars: [{ id: "s1", x: 10, y: 10 }],
 }));

@@ -1002,6 +1002,19 @@
       inset 0 1px 0 hsl(var(--foreground) / 0.14);
     -webkit-backdrop-filter: blur(22px);
     backdrop-filter: blur(22px);
+    contain: layout paint style;
+    isolation: isolate;
+  }
+
+  .v2-preview-portal__rift,
+  .v2-preview-portal__portal,
+  .v2-preview-portal__portal-slit,
+  .v2-preview-portal__bridge-pulse,
+  .v2-preview-portal__stream-node,
+  .v2-preview-portal__orb-core,
+  .v2-preview-portal [data-orb-renderer-policy] {
+    will-change: transform, opacity;
+    backface-visibility: hidden;
   }
 
   .v2-preview-portal:focus-within .v2-preview-portal__rift,

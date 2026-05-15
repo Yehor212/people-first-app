@@ -42,6 +42,28 @@ This repo is large, stateful, and cross-platform. Because of that, "always think
 - `L4` is the default for laws, architecture, orchestration, agent prompts, enforcement gates, or any change that alters how future work is performed.
 - User-facing work must be planned several steps ahead across Web, iOS, Android, desktop, phone, light/dark/OLED, RTL/i18n, accessibility, motion comfort, and adjacent empty/filled/error states. A fix that only satisfies the selected browser node but breaks a neighboring platform/state is not a valid pass.
 
+## Mandatory Runtime Contract For L3/L4 Work
+
+For any performance, startup, sync, navigation, service worker, WebGL/canvas,
+canonical orb, IndexedDB/Dexie, Supabase, offline queue, app lifecycle, or
+cross-platform user-flow work, read
+[TELEGRAM_GRADE_RUNTIME_CONTRACT.md](TELEGRAM_GRADE_RUNTIME_CONTRACT.md)
+before planning.
+
+This contract does not replace this pre-flight template. It adds the runtime
+invariants that future agents must preserve:
+
+- first paint before non-critical work
+- no main-thread freezes hidden by static-only review
+- canonical `ValenceOrb` / `MiniValenceOrb` visuals only
+- ordered sync through `sync_events.seq`
+- tombstones over stale snapshots
+- public URL proof for public-user claims
+- phone, desktop, PWA, Android, iOS, sidebar, and drawer parity where applicable
+
+If a task touches runtime behavior and the artifact does not cite the runtime
+contract, the pre-flight is incomplete.
+
 ## Research-Backed Defaults
 
 These defaults are not arbitrary. They are shaped by primary-source research:
@@ -146,6 +168,10 @@ EVIDENCE SNAPSHOT:
 - [CHECK: command -> output] Fresh command or test evidence
 - [MCP: tool -> result] External or system verification, if applicable
 - [WEB: url] Primary or official external source, if applicable
+- [PERF: route -> max long task / max long animation frame] Runtime budget evidence, if applicable
+- [SYNC: action -> event/apply/convergence proof] Ordered-sync evidence, if applicable
+- [VISUAL: viewport/state -> screenshot or trace] Visual proof, if applicable
+- [PUBLIC: URL/build/deploy -> cache-busted proof] Public-user proof, if applicable
 - [ASSUMED] Anything not yet verified
 
 1. IMPLICIT REQUIREMENTS
@@ -168,6 +194,10 @@ EVIDENCE SNAPSHOT:
 - Platforms checked: Web / iOS / Android / Desktop / CI
 - Domains checked: UI / state / storage / sync / auth / i18n / analytics / performance / accessibility / security
 - Why each touched platform/domain is safe, risky, or N/A:
+- Runtime contract read: yes/no/N/A
+- Route budget evidence:
+- Sync convergence evidence:
+- Public deploy evidence:
 
 5. VISUAL AUDIT MATRIX (required for UI / motion / layout / style / accessibility work)
 - Repo baselines read:

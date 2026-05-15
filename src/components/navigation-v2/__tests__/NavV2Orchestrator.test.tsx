@@ -102,17 +102,18 @@ vi.mock("../MobileNavV2", () => ({
   },
 }));
 
-describe("NavV2Orchestrator (Phase 3-A.1 sidebar-only)", () => {
+describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
   beforeEach(() => {
     // Reset URL between tests so useNavigationV2 starts on /orb
     window.history.replaceState({}, "", "/");
   });
 
-  it("renders the sidebar on desktop and the drawer trigger on mobile", () => {
+  it("does not mount the desktop sidebar on phone layout", () => {
     render(<NavV2Orchestrator />);
 
-    // Sidebar always rendered (CSS hides it on mobile)
-    expect(screen.getByTestId("sidebar-v2")).toBeInTheDocument();
+    // Phone layout must not pay the desktop/sidebar runtime cost. The drawer
+    // still opens on demand, but hidden sidebar mini-orbs must not mount.
+    expect(screen.queryByTestId("sidebar-v2")).not.toBeInTheDocument();
 
     // Drawer trigger visible on mobile — has `md:hidden` class but present in DOM
     const trigger = screen.getByTestId("nav-v2-open-drawer");

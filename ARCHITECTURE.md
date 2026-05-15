@@ -17,13 +17,13 @@ The table below is **auto-generated** by `scripts/doc-counts.cjs`. CI (`npm run 
 | Zustand stores (runtime) | **8** | `ls src/stores/*.ts` excl. hydrate + index |
 | Hydrate bridges | 2 | `useHydrate*.ts` |
 | Index.tsx LOC | **684** | `wc -l src/pages/Index.tsx` |
-| Components top-level dirs | **39** | `ls src/components/ -d` |
+| Components top-level dirs | **40** | `ls src/components/ -d` |
 | Features modules | 1 | `ls src/features/ -d` |
 | V2 coexistence files | 18 | `find src -name '*V2*' -o -name '*-v2*'` |
 | `it.todo(` occurrences | 73 | regex walk |
 | `as any` total | 116 (116 in tests, ~0 prod) | regex walk |
 | Console.\* in prod (excl. logger/crashReporting) | **3** | regex walk |
-| ADR files (`docs/adr/NNNN-*.md`) | 7 | ls |
+| ADR files (`docs/adr/NNNN-*.md`) | 8 | ls |
 | SECURITY.md | yes | fs |
 | CONTRIBUTING.md | yes | fs |
 | LICENSE | **MISSING** | fs |

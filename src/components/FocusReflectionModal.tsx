@@ -6,6 +6,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { zenMotion, zenTap } from "@/lib/animationUtils";
 import { useModalClose } from "@/hooks/useModalState";
 import { RewardedAdPrompt } from "@/components/ads/RewardedAdPrompt";
+import { CosmicStar, cosmicStars } from "@/components/cosmic/CosmicStarField";
 
 /**
  * Theme-aware particle — CSS switches animation via .dark ancestor:
@@ -13,44 +14,7 @@ import { RewardedAdPrompt } from "@/components/ads/RewardedAdPrompt";
  *   Night: zen-star-twinkle — pulse in place (distant stars)
  * Only transform + opacity → GPU compositor, 60fps.
  */
-export function CosmicStar({
-  x,
-  y,
-  size,
-  delay,
-}: {
-  x: number;
-  y: number;
-  size: number;
-  delay: number;
-}) {
-  return (
-    <div
-      className="zen-particle absolute rounded-full"
-      style={
-        {
-          left: `${x}%`,
-          top: `${y}%`,
-          width: size,
-          height: size,
-          backgroundColor: "var(--particle-color)",
-          "--particle-duration": `${2 + delay}s`,
-          "--particle-delay": `${delay}s`,
-        } as React.CSSProperties
-      }
-    />
-  );
-}
-
 // Generate stars for background (shared with FocusTimer)
-export const cosmicStars = Array.from({ length: 15 }, (_, i) => ({
-  id: i,
-  x: Math.random() * 100,
-  y: Math.random() * 100,
-  size: 1 + Math.random() * 2,
-  delay: Math.random() * 3,
-}));
-
 interface FocusReflectionModalProps {
   reflectionValue: number | null;
   onSelectValue: (value: number) => void;

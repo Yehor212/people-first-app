@@ -112,6 +112,26 @@ describe("canonical orb invariant", () => {
     expect(source).toContain("if (!glRenderer) {");
   });
 
+  it("keeps canonical orb canvases paint-contained to avoid route-level render stalls", () => {
+    const source = readSource("src/components/state-of-mind/ValenceOrb.tsx");
+
+    expect(source).toContain("c.style.contain = 'strict'");
+    expect(source).toContain("c.style.transform = 'translateZ(0)'");
+    expect(source).toContain("contain: 'layout paint style'");
+    expect(source).toContain("isolation: 'isolate'");
+    expect(source).toContain("willChange: 'transform'");
+  });
+
+  it("defers canonical WebGL upgrades until mini-orbs are actually visible", () => {
+    const source = readSource("src/components/state-of-mind/ValenceOrb.tsx");
+
+    expect(source).toContain("function hasViewportIntersection");
+    expect(source).toContain("rect.bottom > 0");
+    expect(source).toContain("rect.top < viewportHeight");
+    expect(source).toContain("webglUpgradePendingUntilVisible");
+    expect(source).toContain("startWebGLUpgradeWhenVisible");
+  });
+
   it("keeps the canonical orb guard wired into local and CI checks", () => {
     expect(existsSync(resolve(process.cwd(), "scripts/check-canonical-orbs.mjs"))).toBe(true);
 

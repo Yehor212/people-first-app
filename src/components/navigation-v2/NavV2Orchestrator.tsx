@@ -166,14 +166,16 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
       data-nav-layout={isWebNavigation ? "web" : "phone"}
       data-nav-rail={effectiveSidebarCollapsed ? "compact" : "expanded"}
     >
-      <SidebarV2
-        activePage={activePage}
-        onPageChange={setActivePage}
-        collapsed={effectiveSidebarCollapsed}
-        onToggleCollapsed={toggleSidebar}
-        forceVisible={forceWebNavigation}
-        collapseLocked={forceCompactWebRail}
-      />
+      {isWebNavigation && (
+        <SidebarV2
+          activePage={activePage}
+          onPageChange={setActivePage}
+          collapsed={effectiveSidebarCollapsed}
+          onToggleCollapsed={toggleSidebar}
+          forceVisible={forceWebNavigation}
+          collapseLocked={forceCompactWebRail}
+        />
+      )}
 
       {/*
         Mobile menu trigger — top-left floating control keeps the Orb surface calm on phones.
