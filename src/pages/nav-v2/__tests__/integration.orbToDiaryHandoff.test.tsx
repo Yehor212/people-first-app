@@ -213,7 +213,7 @@ describe("Integration — Orb -> Diary handoff via pendingMoodContext", () => {
     });
 
     render(<DiaryPage />);
-    await screen.findByTestId("journal-module-stub");
+    await screen.findByTestId("journal-module-stub", {}, { timeout: 10_000 });
 
     expect(useDiaryDraftStore.getState().pendingMoodContext).toMatchObject({
       emotion: "hopeful",

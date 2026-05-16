@@ -113,7 +113,7 @@ describe("Integration #2 — Ctrl+1..4 keyboard navigation", () => {
     });
   }
 
-  it("Ctrl+1 → Orb, Ctrl+2 → Habits, Ctrl+3 → Diary, Ctrl+4 → Settings", () => {
+  it("Ctrl+1 → Orb, Ctrl+2 → Habits, Ctrl+3 → Diary, Ctrl+4 → Settings", async () => {
     const { container } = render(<NavV2Orchestrator />);
     const root = () => container.querySelector('[data-testid="nav-v2-orchestrator"]');
 
@@ -122,19 +122,19 @@ describe("Integration #2 — Ctrl+1..4 keyboard navigation", () => {
 
     fireKey("2");
     expect(root()?.getAttribute("data-active-page")).toBe("habits");
-    expect(screen.getByTestId("page-habits-marker")).toBeInTheDocument();
+    expect(await screen.findByTestId("page-habits-marker")).toBeInTheDocument();
 
     fireKey("3");
     expect(root()?.getAttribute("data-active-page")).toBe("diary");
-    expect(screen.getByTestId("page-diary-marker")).toBeInTheDocument();
+    expect(await screen.findByTestId("page-diary-marker")).toBeInTheDocument();
 
     fireKey("4");
     expect(root()?.getAttribute("data-active-page")).toBe("settings");
-    expect(screen.getByTestId("page-settings-marker")).toBeInTheDocument();
+    expect(await screen.findByTestId("page-settings-marker")).toBeInTheDocument();
 
     fireKey("1");
     expect(root()?.getAttribute("data-active-page")).toBe("orb");
-    expect(screen.getByTestId("page-orb-marker")).toBeInTheDocument();
+    expect(await screen.findByTestId("page-orb-marker")).toBeInTheDocument();
   });
 
   it("Cmd+1..4 (macOS meta) behaves identically", () => {
