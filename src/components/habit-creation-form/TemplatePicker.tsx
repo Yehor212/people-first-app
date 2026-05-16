@@ -160,10 +160,10 @@ export function TemplatePicker({
           style={getRoleStyleVars("space") as CSSProperties}
         >
           <span className="flex min-w-0 items-center gap-2">
-            <Settings2 className="h-5 w-5 shrink-0 text-[hsl(var(--zf-role-space))]" />
+            <Settings2 className="h-5 w-5 shrink-0 text-[hsl(var(--zf-role-space))]" aria-hidden="true" />
             <span className="truncate">{t.createCustomHabit}</span>
           </span>
-          <ChevronRight className="h-5 w-5 shrink-0 text-[hsl(var(--zf-text-soft))] rtl:scale-x-[-1]" />
+          <ChevronRight className="h-5 w-5 shrink-0 text-[hsl(var(--zf-text-soft))] rtl:scale-x-[-1]" aria-hidden="true" />
         </button>
       ) : (
         <Button
@@ -172,10 +172,10 @@ export function TemplatePicker({
           className="w-full justify-between min-h-[48px]"
         >
           <div className="flex items-center gap-2">
-            <Settings2 className="w-5 h-5 text-primary" />
+            <Settings2 className="w-5 h-5 text-primary" aria-hidden="true" />
             <span>{t.createCustomHabit}</span>
           </div>
-          <ChevronRight className="w-5 h-5 text-muted-foreground rtl:scale-x-[-1]" />
+          <ChevronRight className="w-5 h-5 text-muted-foreground rtl:scale-x-[-1]" aria-hidden="true" />
         </Button>
       )}
     </motion.div>

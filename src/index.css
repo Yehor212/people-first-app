@@ -5332,6 +5332,10 @@ input::-moz-focus-inner {
   animation-name: zen-star-twinkle;
 }
 
+:root[data-runtime-perf] .zen-particle {
+  animation: none;
+}
+
 /* Glow breathing — replaces FM opacity pulse loops on backgrounds */
 @keyframes zen-glow-breathe {
   0%,

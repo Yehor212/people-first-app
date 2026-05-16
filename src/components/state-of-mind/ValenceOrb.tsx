@@ -11,7 +11,8 @@
  *
  * Law 12 (Performance): 30fps RAF, IntersectionObserver pause, DPR cap at 2x.
  * Law 18 (Cleanup): mounted guard, RAF cancel, observer disconnect, GL dispose, listener removal.
- * Dopamine gate: shouldAnimate() → static frame if disabled.
+ * Dopamine gate: user/accessibility disables animation; runtime perf guard
+ * keeps the canonical renderer and reduces cadence instead of changing visuals.
  *
  * Canvas management: canvases are created programmatically (not via JSX ref) to allow
  * replacing a WebGL-locked canvas with a fresh one for Canvas 2D fallback.
@@ -26,6 +27,7 @@ import { hapticTap } from '@/lib/haptics';
 import { hapticMedium } from '@/lib/haptics';
 import { safeSessionStorageGet, safeSessionStorageSet } from '@/lib/safeJson';
 import { SSK } from '@/lib/storageKeys';
+import { isRuntimePerformanceLimited } from '@/observability/runtimePerformanceMode';
 import { createParticlePool, updateParticles, burstParticles } from './particleSystem';
 import { drawOrbScene, getShapeParams } from './orbRenderer';
 import { valenceToHSL } from './colorUtils';
@@ -68,8 +70,13 @@ type OrbWorkerController = {
   dispose: () => void;
 };
 
-const WEBGL_FRAME_INTERVAL = 1000 / 60; // 60fps for WebGL (shader is <1ms)
+const WEBGL_FRAME_INTERVAL = 1000 / 60; // 60fps for healthy WebGL sessions.
+const WEBGL_PERFORMANCE_LIMITED_FRAME_INTERVAL = 1000 / 30; // Same canonical renderer, lower compositor pressure.
 const CANVAS_FRAME_INTERVAL = 1000 / 30; // 30fps for Canvas 2D fallback
+
+function shouldAnimateCanonicalOrb(): boolean {
+  return shouldAnimate({ respectRuntimePerformance: false });
+}
 const PARTICLE_COUNT = 22;
 export const CANONICAL_ORB_ANIMATION_SPEED = 0.72;
 const WEBGL_BUILD_BUDGET_MS = 500;
@@ -113,6 +120,16 @@ export const ORB_TRANSITION_SETTINGS: Record<OrbTransitionProfile, OrbTransition
     tailMultiplier: 0.58,
   },
 };
+
+export function resolveOrbFrameInterval(
+  hasWebGLRenderer: boolean,
+  runtimePerformanceLimited = isRuntimePerformanceLimited(),
+): number {
+  if (!hasWebGLRenderer) return CANVAS_FRAME_INTERVAL;
+  return runtimePerformanceLimited
+    ? WEBGL_PERFORMANCE_LIMITED_FRAME_INTERVAL
+    : WEBGL_FRAME_INTERVAL;
+}
 
 export function resolveOrbTransitionSettings(
   profile: OrbTransitionProfile,
@@ -576,15 +593,14 @@ export const ValenceOrb = memo(function ValenceOrb({
       if (!state) return;
 
       // Runtime dopamine gate
-      if (!shouldAnimate()) {
+      if (!shouldAnimateCanonicalOrb()) {
         try { render(state.currentValence, state.time, state.particles); } catch { /* graceful: static frame render failure invisible — orb just stays as-is */ }
         return;
       }
 
-      // Throttle: 60fps for WebGL, 30fps for Canvas 2D
-      const frameInterval = glRendererRef.current || workerRenderer
-        ? WEBGL_FRAME_INTERVAL
-        : CANVAS_FRAME_INTERVAL;
+      // Throttle: healthy WebGL stays 60fps; strained Chrome/WebView sessions keep
+      // the canonical renderer but reduce compositor pressure to the fallback cadence.
+      const frameInterval = resolveOrbFrameInterval(Boolean(glRendererRef.current || workerRenderer));
       const elapsed = timestamp - state.lastFrame;
       if (elapsed < frameInterval) {
         rafRef.current = requestAnimationFrame(loop);
@@ -707,7 +723,7 @@ export const ValenceOrb = memo(function ValenceOrb({
       degradeToCanvas2D();
 
       // Restart RAF loop with Canvas 2D rendering
-      if (ctx2d && shouldAnimate() && mountedRef.current) {
+      if (ctx2d && shouldAnimateCanonicalOrb() && mountedRef.current) {
         rafRef.current = requestAnimationFrame(loop);
       }
 
@@ -720,7 +736,7 @@ export const ValenceOrb = memo(function ValenceOrb({
     const handleContextRestored = () => {
       // Keep Canvas 2D after a context loss. Recompiling immediately can repeat
       // the same Chrome/GPU stall that caused the fallback in the first place.
-      if (shouldAnimate() && mountedRef.current) {
+      if (shouldAnimateCanonicalOrb() && mountedRef.current) {
         rafRef.current = requestAnimationFrame(loop);
       }
     };
@@ -751,8 +767,45 @@ export const ValenceOrb = memo(function ValenceOrb({
         });
         webglWorker = worker;
 
-        worker.onmessage = (event: MessageEvent<{ type: 'ready' | 'failed'; reason?: string }>) => {
+        let nextWorkerRenderId = 0;
+        let workerRenderInFlight = false;
+        let latestWorkerPayload: OrbWorkerPayload | null = null;
+
+        const postWorkerRender = (payload: OrbWorkerPayload) => {
           if (signal.aborted || !mountedRef.current) return;
+          workerRenderInFlight = true;
+          worker.postMessage({
+            type: 'render',
+            requestId: ++nextWorkerRenderId,
+            payload,
+          });
+        };
+
+        const flushWorkerRender = () => {
+          if (signal.aborted || !mountedRef.current) {
+            workerRenderInFlight = false;
+            latestWorkerPayload = null;
+            return;
+          }
+
+          const nextPayload = latestWorkerPayload;
+          latestWorkerPayload = null;
+          if (nextPayload) {
+            postWorkerRender(nextPayload);
+            return;
+          }
+          workerRenderInFlight = false;
+        };
+
+        worker.onmessage = (
+          event: MessageEvent<{ type: 'ready' | 'failed' | 'rendered'; reason?: string; requestId?: number }>,
+        ) => {
+          if (signal.aborted || !mountedRef.current) return;
+
+          if (event.data.type === 'rendered') {
+            flushWorkerRender();
+            return;
+          }
 
           if (event.data.type === 'failed') {
             recordError(
@@ -776,7 +829,11 @@ export const ValenceOrb = memo(function ValenceOrb({
 
           const controller: OrbWorkerController = {
             render(payload) {
-              worker.postMessage({ type: 'render', payload });
+              if (workerRenderInFlight) {
+                latestWorkerPayload = payload;
+                return;
+              }
+              postWorkerRender(payload);
             },
             dispose() {
               worker.postMessage({ type: 'dispose' });
@@ -942,7 +999,7 @@ export const ValenceOrb = memo(function ValenceOrb({
     };
 
     // ── Animation gate ──
-    if (!shouldAnimate()) {
+    if (!shouldAnimateCanonicalOrb()) {
       try { render(valenceRef.current, 0, stateRef.current.particles); } catch { /* graceful: initial frame render failure invisible — orb shows fallback CSS */ }
       return cleanup;
     }
@@ -963,7 +1020,7 @@ export const ValenceOrb = memo(function ValenceOrb({
 
   // Update static frame when valence changes and animations are off
   useEffect(() => {
-    if (shouldAnimate()) return;
+    if (shouldAnimateCanonicalOrb()) return;
 
     const canvas = canvasElRef.current;
     if (!canvas) return;

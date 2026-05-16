@@ -34,6 +34,33 @@
   backface-visibility: hidden;
 }
 
+:root[data-runtime-perf] .day-cosmic__bokeh,
+:root[data-runtime-perf] .day-cosmic__horizon-glow,
+:root[data-runtime-perf] .day-cosmic__light-curtain,
+:root[data-runtime-perf] .day-cosmic__sun-shower,
+:root[data-runtime-perf] .day-cosmic__prism-ribbon,
+:root[data-runtime-perf] .day-cosmic__caustics,
+:root[data-runtime-perf] .day-cosmic__sun-thread,
+:root[data-runtime-perf] .day-cosmic__photon,
+:root[data-runtime-perf] .day-cosmic__mote {
+  will-change: auto;
+}
+
+:root[data-runtime-perf] .day-cosmic__solar-portal::before,
+:root[data-runtime-perf] .day-cosmic__solar-portal::after,
+:root[data-runtime-perf] .day-cosmic__solar-portal-core,
+:root[data-runtime-perf] .day-cosmic__solar-portal-orbit,
+:root[data-runtime-perf] .day-cosmic__light-curtain,
+:root[data-runtime-perf] .day-cosmic__sun-thread,
+:root[data-runtime-perf] .day-cosmic__sun-shower,
+:root[data-runtime-perf] .day-cosmic__sun-shower::after,
+:root[data-runtime-perf] .day-cosmic__prism-ribbon,
+:root[data-runtime-perf] .day-cosmic__caustics,
+:root[data-runtime-perf] .day-cosmic__photon,
+:root[data-runtime-perf] .day-cosmic__mote {
+  animation: none;
+}
+
 /* ==================== Layer 1 — Base aurora mesh ==================== */
 .day-cosmic__base {
   position: absolute;

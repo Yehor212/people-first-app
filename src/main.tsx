@@ -34,6 +34,10 @@ import { scheduleIdle } from "./lib/scheduleIdle";
 import { captureOrBuffer, setCaptureSink } from "./lib/errorBuffer";
 import { initWebVitalsDev } from "./observability/reportWebVitals";
 import { initLongTaskObserverDev } from "./observability/initLongTaskObserverDev";
+import {
+  installRuntimeFlightRecorder,
+  installRuntimePerformanceGuard,
+} from "./observability/runtimeFlightRecorder";
 import { bindPrefersColorSchemeListener } from "./stores/themeStore";
 
 // Sentry is deferred to post-mount via requestIdleCallback (see below initializeApp)
@@ -56,12 +60,36 @@ void initWebVitalsDev();
 // by capturing EVERY slow frame (not just the one behind INP). No-op in
 // prod; Sentry captures longtask spans server-side.
 initLongTaskObserverDev();
+installRuntimePerformanceGuard();
 scheduleIdle(() => {
-  void import("./observability/runtimeFlightRecorder")
-    .then(({ installRuntimeFlightRecorder }) => installRuntimeFlightRecorder())
-    .catch(() => undefined);
+  installRuntimeFlightRecorder();
 }, 2000, 250);
 bindPrefersColorSchemeListener();
+
+function isStateOfMindRoute(): boolean {
+  try {
+    return /\/orb\/?$/.test(window.location.pathname);
+  } catch {
+    return false;
+  }
+}
+
+function scheduleCanonicalOrbPrewarmAfterStartup(): void {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("orbPrewarm") === "off" || isStateOfMindRoute()) return;
+  } catch {
+    // Keep startup resilient; prewarm is an optimization, not a dependency.
+  }
+
+  scheduleIdle(() => {
+    void import("./components/state-of-mind/canonicalOrbPrewarm")
+      .then(({ prewarmCanonicalOrbWebGL }) => prewarmCanonicalOrbWebGL("post-startup-idle"))
+      .catch((err) => logger.warn("[Main] Canonical orb prewarm failed:", err));
+  }, 8000, 2500);
+}
+
+scheduleCanonicalOrbPrewarmAfterStartup();
 
 // Set html lang attribute early (before React hydrates) for non-EN users (WCAG 3.1.1)
 // CSP blocks inline scripts in index.html, so we do it here in the module entry point.

@@ -118,8 +118,8 @@ interface ErrorBoundaryBaseState {
   error: Error | null;
 }
 
-function RecoveryGlyph() {
-  return <RecoveryOrbit />;
+function RecoveryGlyph({ label }: { label?: string }) {
+  return <RecoveryOrbit label={label} />;
 }
 
 function RecoveryTrustNote({ title, body }: { title: string; body: string }) {
@@ -193,7 +193,7 @@ class ErrorBoundaryBase extends React.Component<ErrorBoundaryBaseProps, ErrorBou
             className="mx-auto flex max-w-md flex-col items-center gap-4 text-center"
             data-testid="error-boundary-card"
           >
-            <RecoveryGlyph />
+            <RecoveryGlyph label={kicker} />
             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[hsl(var(--zf-role-focus))]">
               {kicker}
             </p>
@@ -228,7 +228,7 @@ class ErrorBoundaryBase extends React.Component<ErrorBoundaryBaseProps, ErrorBou
         >
           <div className="relative z-[1] space-y-4">
             <div className="flex justify-center">
-              <RecoveryGlyph />
+              <RecoveryGlyph label={kicker} />
             </div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[hsl(var(--zf-role-focus))]">
               {kicker}

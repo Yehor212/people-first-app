@@ -132,6 +132,58 @@ describe("canonical orb invariant", () => {
     expect(source).toContain("startWebGLUpgradeWhenVisible");
   });
 
+  it("keeps worker WebGL shader readiness asynchronous before status checks", () => {
+    const source = readSource("src/components/state-of-mind/orbWorker.ts");
+
+    expect(source).toContain("KHR_parallel_shader_compile");
+    expect(source).toContain("COMPLETION_STATUS_KHR");
+    expect(source).toContain("waitForParallelCompile");
+    expect(source).toContain("requestId?: string");
+    expect(source).toContain("type: 'rendered'");
+    const asyncStart = source.indexOf("async function buildRendererAsync");
+    expect(source.indexOf("waitForParallelCompile", asyncStart)).toBeLessThan(
+      source.indexOf("gl.getProgramParameter(program, gl.LINK_STATUS)", asyncStart),
+    );
+  });
+
+  it("prewarms only the canonical WebGL worker pipeline after startup", () => {
+    const prewarmSource = readSource("src/components/state-of-mind/canonicalOrbPrewarm.ts");
+    const mainSource = readSource("src/main.tsx");
+
+    expect(prewarmSource).toContain("new Worker(new URL(\"./orbWorker.ts\"");
+    expect(prewarmSource).toContain("new OffscreenCanvas");
+    expect(prewarmSource).toContain("getShapeParams");
+    expect(prewarmSource).toContain("valenceToHSL");
+    expect(prewarmSource).not.toContain("document.createElement(\"canvas\")");
+    expect(mainSource).toContain("scheduleCanonicalOrbPrewarmAfterStartup");
+    expect(mainSource).toContain("prewarmCanonicalOrbWebGL");
+    expect(mainSource).toContain("orbPrewarm");
+  });
+
+  it("keeps canonical WebGL contexts desynchronized to reduce Chrome compositor stalls", () => {
+    const workerSource = readSource("src/components/state-of-mind/orbWorker.ts");
+    const mainSource = readSource("src/components/state-of-mind/orbShader.ts");
+
+    expect(workerSource).toContain("desynchronized: true");
+    expect(mainSource).toContain("desynchronized: true");
+    expect(workerSource).toContain("antialias: false");
+    expect(mainSource).toContain("antialias: false");
+    expect(workerSource).toContain("powerPreference: 'default'");
+    expect(mainSource).toContain("powerPreference: 'default'");
+  });
+
+  it("keeps worker WebGL rendering backpressured instead of queuing unlimited frames", () => {
+    const source = readSource("src/components/state-of-mind/ValenceOrb.tsx");
+    const workerSource = readSource("src/components/state-of-mind/orbWorker.ts");
+
+    expect(source).toContain("workerRenderInFlight");
+    expect(source).toContain("latestWorkerPayload");
+    expect(source).toContain("flushWorkerRender");
+    expect(source).toContain("requestId: ++nextWorkerRenderId");
+    expect(workerSource).toContain("type: 'rendered'");
+    expect(workerSource).toContain("requestId: message.requestId");
+  });
+
   it("keeps the canonical orb guard wired into local and CI checks", () => {
     expect(existsSync(resolve(process.cwd(), "scripts/check-canonical-orbs.mjs"))).toBe(true);
 

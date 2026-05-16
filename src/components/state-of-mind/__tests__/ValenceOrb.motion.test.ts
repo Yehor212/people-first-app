@@ -7,6 +7,7 @@ import {
   ValenceOrb,
   WEBGL_WORKER_READY_BUDGET_MS,
   resolveFrameTransitionProfile,
+  resolveOrbFrameInterval,
   resolveOrbTransitionSettings,
   shouldApplyWorkerWebGLUpgrade,
   shouldStartIdleWakeSoftening,
@@ -91,6 +92,12 @@ describe("ValenceOrb motion profile", () => {
     expect(shouldApplyWorkerWebGLUpgrade(WEBGL_WORKER_READY_BUDGET_MS - 1)).toBe(true);
     expect(shouldApplyWorkerWebGLUpgrade(WEBGL_WORKER_READY_BUDGET_MS + 1)).toBe(false);
     expect(shouldApplyWorkerWebGLUpgrade(WEBGL_WORKER_READY_BUDGET_MS + 5000, true)).toBe(true);
+  });
+
+  it("keeps canonical WebGL smooth on healthy devices and calms it only after runtime strain", () => {
+    expect(resolveOrbFrameInterval(true, false)).toBeCloseTo(1000 / 60);
+    expect(resolveOrbFrameInterval(true, true)).toBeCloseTo(1000 / 30);
+    expect(resolveOrbFrameInterval(false, false)).toBeCloseTo(1000 / 30);
   });
 
   it("does not compile canonical WebGL synchronously on mount", () => {

@@ -1,6 +1,11 @@
+import { useEffect, useState } from "react";
 import { useDopamineSettings } from "@/components/DopamineSettings";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useBatteryState } from "@/hooks/useBatteryState";
+import {
+  RUNTIME_PERFORMANCE_MODE_EVENT,
+  isRuntimePerformanceLimited,
+} from "@/observability/runtimePerformanceMode";
 
 const LOW_BATTERY_THRESHOLD = 0.15;
 
@@ -24,10 +29,24 @@ export function useShouldAnimate(): boolean {
   const dopamine = useDopamineSettings();
   const osPrefersReduce = useMediaQuery("(prefers-reduced-motion: reduce)");
   const battery = useBatteryState();
+  const [runtimePerfLimited, setRuntimePerfLimited] = useState(isRuntimePerformanceLimited);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const syncRuntimePerfMode = () => {
+      setRuntimePerfLimited(isRuntimePerformanceLimited());
+    };
+
+    window.addEventListener(RUNTIME_PERFORMANCE_MODE_EVENT, syncRuntimePerfMode);
+    return () => window.removeEventListener(RUNTIME_PERFORMANCE_MODE_EVENT, syncRuntimePerfMode);
+  }, []);
 
   const dopamineEnabled = dopamine.animations;
   const lowBattery =
     battery !== null && !battery.charging && battery.level < LOW_BATTERY_THRESHOLD;
 
-  return dopamineEnabled && !osPrefersReduce && !lowBattery;
+  return dopamineEnabled && !osPrefersReduce && !lowBattery && !runtimePerfLimited;
 }

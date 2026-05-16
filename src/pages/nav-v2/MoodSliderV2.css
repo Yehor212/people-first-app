@@ -259,6 +259,11 @@
   animation: mood-slider-v2-glow 1.6s ease-in-out infinite;
 }
 
+:root[data-runtime-perf] .mood-slider-v2-handle,
+:root[data-runtime-perf] .mood-slider-v2-handle[data-animate="true"] {
+  animation: none;
+}
+
 @keyframes mood-slider-v2-glow {
   0%, 100% {
     box-shadow:

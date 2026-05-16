@@ -2,15 +2,20 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // ─── In-memory storage mock ────────────────────────────────────
 let mockStorage: Record<string, unknown> = {};
+let mockSessionStorage: Record<string, unknown> = {};
 
 vi.mock("../safeJson", () => ({
   safeLocalStorageGet: vi.fn(<T>(key: string, defaultValue: T): T => {
     return key in mockStorage ? (mockStorage[key] as T) : defaultValue;
   }),
+  safeSessionStorageGet: vi.fn(<T>(key: string, defaultValue: T): T => {
+    return key in mockSessionStorage ? (mockSessionStorage[key] as T) : defaultValue;
+  }),
 }));
 
 vi.mock("../storageKeys", () => ({
   SK: { DOPAMINE_SETTINGS: "zenflow_dopamine_settings" },
+  SSK: { RUNTIME_PERF_GUARD: "zenflow-runtime-perf-guard" },
 }));
 
 // ─── matchMedia mock ───────────────────────────────────────────
@@ -37,7 +42,9 @@ import {
 
 beforeEach(() => {
   mockStorage = {};
+  mockSessionStorage = {};
   mockMatchMedia.mockReturnValue({ matches: false });
+  delete document.documentElement.dataset.runtimePerf;
   document.body.classList.remove("reduce-motion", "mood-disabled");
   vi.clearAllMocks();
 });
@@ -126,6 +133,16 @@ describe("shouldAnimate", () => {
   it("respects OS prefers-reduced-motion as secondary check (WCAG 2.3.3)", () => {
     mockMatchMedia.mockReturnValue({ matches: true });
     expect(shouldAnimate()).toBe(false);
+  });
+
+  it("respects runtime performance guard in non-React animation paths", () => {
+    document.documentElement.dataset.runtimePerf = "strained";
+    expect(shouldAnimate()).toBe(false);
+  });
+
+  it("allows canonical renderers to opt out of runtime guard visual swaps", () => {
+    document.documentElement.dataset.runtimePerf = "strained";
+    expect(shouldAnimate({ respectRuntimePerformance: false })).toBe(true);
   });
 });
 

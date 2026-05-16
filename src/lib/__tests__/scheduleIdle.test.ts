@@ -23,7 +23,7 @@ describe("scheduleIdle", () => {
 
     const handle = scheduleIdle(fn);
     expect(fn).toHaveBeenCalledTimes(1);
-    expect(ric).toHaveBeenCalledTimes(1);
+    expect(ric).toHaveBeenCalledWith(expect.any(Function), { timeout: 2000 });
 
     handle.cancel();
     expect(cic).toHaveBeenCalledWith(42);

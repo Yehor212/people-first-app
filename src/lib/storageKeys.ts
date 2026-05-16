@@ -142,6 +142,7 @@ export const SK = {
   QUICK_ACTIONS_ENABLED: "zenflow_quick_actions_enabled",
   WIDGET_DATA: "zenflow-widget-data",
   DISMISSED_URGENCY: "zenflow-dismissed-urgency",
+  RUNTIME_PERF_DEVICE_GUARD: "zenflow-runtime-perf-device-guard",
 
   // ─── Dynamic key builders ───
   journalDraft: (id: string) => `journal_draft_${id}`,
@@ -158,6 +159,8 @@ export const SSK = {
   UPDATE_DISMISSED: "zenflow-update-dismissed",
   ORB_RENDERER_SESSION: "zenflow-orb-renderer-session",
   ORB_WEBGL_SLOW_MS: "zenflow-orb-webgl-slow-ms",
+  ORB_WEBGL_PREWARMED: "zenflow-orb-webgl-prewarmed",
+  RUNTIME_PERF_GUARD: "zenflow-runtime-perf-guard",
   MOOD_ENTRY_DRAFT: "zenflow-mood-entry-draft",
   SPOTIFY_TOKENS: "zenflow_spotify_tokens",
   SPOTIFY_PKCE_VERIFIER: "spotify_pkce_verifier",

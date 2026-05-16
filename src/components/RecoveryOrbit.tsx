@@ -6,7 +6,7 @@ interface RecoveryOrbitProps {
   label?: string;
 }
 
-export function RecoveryOrbit({ className, label = "ZenFlow recovery" }: RecoveryOrbitProps) {
+export function RecoveryOrbit({ className, label = "Loading" }: RecoveryOrbitProps) {
   return (
     <div
       className={cn("zf-recovery-orbit relative flex h-32 w-32 items-center justify-center", className)}

@@ -4,6 +4,7 @@
 
 import { safeLocalStorageGet } from "./safeJson";
 import { SK } from "./storageKeys";
+import { isRuntimePerformanceLimited } from "@/observability/runtimePerformanceMode";
 
 /**
  * Standard Framer Motion animation presets
@@ -160,11 +161,22 @@ export function _getLowBatteryMirror(): boolean {
  *   - Dopamine.animations must be ON.
  *   - OS `prefers-reduced-motion` must NOT be "reduce".
  *   - `lowBatteryMirror` must be false.
+ *   - Runtime performance guard must NOT be in startup/strained mode.
  *
  * Safe to call outside React — reads localStorage + matchMedia synchronously.
  */
-export function shouldAnimate(): boolean {
+export interface ShouldAnimateOptions {
+  /**
+   * Runtime perf guard is for decorative motion pressure. Canonical renderers
+   * may opt out and reduce cadence instead of swapping visual systems.
+   */
+  respectRuntimePerformance?: boolean;
+}
+
+export function shouldAnimate(options: ShouldAnimateOptions = {}): boolean {
+  const { respectRuntimePerformance = true } = options;
   if (!getDopamineSettings().animations) return false;
+  if (respectRuntimePerformance && isRuntimePerformanceLimited()) return false;
   if (
     typeof window !== "undefined" &&
     typeof window.matchMedia === "function" &&

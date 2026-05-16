@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { renderHook } from "@testing-library/react";
+import { act, renderHook } from "@testing-library/react";
 import { useShouldAnimate } from "../useShouldAnimate";
+import { SSK } from "@/lib/storageKeys";
 
 // We mock the composition pieces so we can drive the 8 combinations directly.
 vi.mock("@/components/DopamineSettings", () => ({
@@ -42,6 +43,8 @@ function setInputs(opts: {
 describe("useShouldAnimate — 8-combination truth table", () => {
   afterEach(() => {
     vi.clearAllMocks();
+    delete document.documentElement.dataset.runtimePerf;
+    sessionStorage.removeItem(SSK.RUNTIME_PERF_GUARD);
   });
 
   it("T1: Dopamine=on, OS=no, battery=normal → animate", () => {
@@ -89,6 +92,37 @@ describe("useShouldAnimate — 8-combination truth table", () => {
   it("T8: Dopamine=on, OS=reduce, battery=low → NO animate (two signals)", () => {
     setInputs({ dopamineAnimations: true, osReduce: true, battery: { level: 0.05, charging: false } });
     const { result } = renderHook(() => useShouldAnimate());
+    expect(result.current).toBe(false);
+  });
+
+  it("T9: runtime performance strained → NO animate even when user/system allow motion", () => {
+    document.documentElement.dataset.runtimePerf = "strained";
+    setInputs({ dopamineAnimations: true, osReduce: false, battery: { level: 0.9, charging: false } });
+
+    const { result } = renderHook(() => useShouldAnimate());
+
+    expect(result.current).toBe(false);
+  });
+
+  it("T10: runtime performance event disables already-mounted animation hooks", () => {
+    setInputs({ dopamineAnimations: true, osReduce: false, battery: { level: 0.9, charging: false } });
+    const { result } = renderHook(() => useShouldAnimate());
+    expect(result.current).toBe(true);
+
+    act(() => {
+      document.documentElement.dataset.runtimePerf = "strained";
+      window.dispatchEvent(new CustomEvent("zenflow:runtime-perf-mode"));
+    });
+
+    expect(result.current).toBe(false);
+  });
+
+  it("T11: runtime performance startup warmup -> NO animate before a proven slow device repeats lag", () => {
+    document.documentElement.dataset.runtimePerf = "startup";
+    setInputs({ dopamineAnimations: true, osReduce: false, battery: { level: 0.9, charging: false } });
+
+    const { result } = renderHook(() => useShouldAnimate());
+
     expect(result.current).toBe(false);
   });
 });

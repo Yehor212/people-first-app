@@ -34,7 +34,7 @@ export function NotFoundPage({
 
       <section className="relative w-full max-w-md overflow-hidden rounded-[34px] border border-[hsl(var(--foreground)/0.12)] bg-[linear-gradient(145deg,hsl(var(--zf-surface-1)/0.94),hsl(var(--zf-night-0)/0.96))] px-6 py-7 text-center shadow-[0_34px_100px_-70px_hsl(var(--zf-role-focus)/0.82)] before:pointer-events-none before:absolute before:inset-x-10 before:top-0 before:h-[3px] before:rounded-b-full before:bg-[linear-gradient(90deg,hsl(var(--zf-role-body)),hsl(var(--zf-role-focus)),hsl(var(--zf-role-mind)))]">
         <div className="mx-auto flex justify-center">
-          <RecoveryOrbit label="ZenFlow not found" />
+          <RecoveryOrbit label={tx.pageNotFound ?? tx.notFoundKicker ?? "Page not found"} />
         </div>
 
         <p className="mt-1 text-[0.68rem] font-bold uppercase tracking-[0.22em] text-[hsl(var(--zf-role-focus))]">

@@ -67,6 +67,14 @@
   animation: none;
 }
 
+:root[data-runtime-perf] .cosmic-bg-adapter__starry-star {
+  animation: none;
+}
+
+:root[data-runtime-perf] .cosmic-bg-adapter__nebula {
+  opacity: 0.35 !important;
+}
+
 .cosmic-bg-adapter__starry-vignette {
   background:
     radial-gradient(ellipse at center, transparent 0%, transparent 56%, hsl(var(--zf-night-0) / 0.78) 100%),

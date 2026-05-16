@@ -32,11 +32,14 @@ import FRAG_SRC from './orbShader.frag?raw';
 const GL_OPTIONS: WebGLContextAttributes = {
   alpha: true,
   premultipliedAlpha: true,
-  antialias: true,
+  // Fullscreen triangle edges are shader-smoothed; MSAA adds context cost
+  // without improving the canonical orb surface.
+  antialias: false,
   preserveDrawingBuffer: false,
   depth: false,                // No depth buffer needed — saves ~2MB VRAM on iOS
   stencil: false,              // No stencil needed — reduces memory pressure
-  powerPreference: 'low-power', // Prefer integrated GPU for stability + battery
+  desynchronized: true,
+  powerPreference: 'default', // Let Chrome/WebView choose the least-stalling adapter for canonical orbs.
 };
 
 // ── Vertex Shader (fullscreen triangle) ──

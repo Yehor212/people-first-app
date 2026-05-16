@@ -36,4 +36,29 @@ describe("TemplatePicker V2 ritual presentation", () => {
       "ritual-custom-habit-action",
     );
   });
+
+  it("marks decorative lucide icons as aria-hidden in the custom action", () => {
+    render(
+      <TemplatePicker
+        isPrimaryCTA
+        presentation="v2"
+        habits={[]}
+        language="en"
+        t={{
+          quickAdd: "Quick add",
+          createCustomHabit: "Create custom habit",
+        }}
+        handleQuickAdd={vi.fn()}
+        setShowCustomForm={vi.fn()}
+      />,
+    );
+
+    const customButton = screen.getByRole("button", { name: /create custom habit/i });
+    const decorativeIcons = customButton.querySelectorAll("svg");
+
+    expect(decorativeIcons).toHaveLength(2);
+    decorativeIcons.forEach((icon) => {
+      expect(icon).toHaveAttribute("aria-hidden", "true");
+    });
+  });
 });

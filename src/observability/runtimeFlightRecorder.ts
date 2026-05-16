@@ -1,8 +1,22 @@
 import { storageGetRaw } from "@/lib/safeJson";
 import { SK } from "@/lib/storageKeys";
+import {
+  applyRuntimePerformanceMode,
+  applyRuntimePerformanceStartup,
+  clearRuntimePerformanceMode,
+  readStoredRuntimePerformanceDeviceGuard,
+  readStoredRuntimePerformanceMode,
+  type RuntimePerformanceModeSnapshot,
+} from "./runtimePerformanceMode";
 
 const MAX_ENTRIES = 80;
 const ENABLED_VALUES = new Set(["1", "true", "yes", "on"]);
+const DISABLED_VALUES = new Set(["0", "false", "no", "off"]);
+const STRAINED_LOAF_MS = 700;
+const REPEATED_LOAF_MS = 450;
+const LONG_TASK_STRAINED_MS = 500;
+const REPEATED_LOAF_COUNT = 2;
+const STARTUP_WARMUP_MS = 6500;
 
 type RuntimePerfKind = "route" | "longtask" | "long-animation-frame";
 
@@ -39,6 +53,24 @@ interface RuntimeFlightRecorder {
   markRoute: (route?: string) => void;
 }
 
+interface RuntimePerformanceGuard {
+  enabled: true;
+  startedAt: number;
+  activated: boolean;
+  route: string;
+  repeatedLoAFCount: number;
+  maxLongTaskMs: number;
+  maxLongAnimationFrameMs: number;
+  snapshot: () => {
+    startedAt: number;
+    route: string;
+    activated: boolean;
+    repeatedLoAFCount: number;
+    maxLongTaskMs: number;
+    maxLongAnimationFrameMs: number;
+  };
+}
+
 interface LoAFEntry extends PerformanceEntry {
   blockingDuration?: number;
   renderStart?: number;
@@ -56,6 +88,7 @@ interface LoAFEntry extends PerformanceEntry {
 declare global {
   interface Window {
     __zenflowRuntimePerf?: RuntimeFlightRecorder;
+    __zenflowRuntimePerfGuard?: RuntimePerformanceGuard;
   }
 }
 
@@ -80,6 +113,25 @@ export function shouldEnableRuntimeFlightRecorder(
   }
 
   return devMode || normalizeFlag(storedFlag);
+}
+
+export function shouldEnableRuntimePerformanceGuard(search: string): boolean {
+  const params = new URLSearchParams(search);
+  const explicit = params.get("runtimePerfGuard") ?? params.get("perfGuard");
+
+  if (explicit === null) {
+    return true;
+  }
+
+  const normalized = explicit.trim().toLowerCase();
+  if (DISABLED_VALUES.has(normalized)) {
+    return false;
+  }
+  if (ENABLED_VALUES.has(normalized)) {
+    return true;
+  }
+
+  return true;
 }
 
 function currentRoute(): string {
@@ -208,6 +260,134 @@ export function installRuntimeFlightRecorder(): boolean {
     }
   } catch {
     // Observability must never block app startup.
+  }
+
+  return true;
+}
+
+function makeGuardSnapshot(reason: string, duration: number): RuntimePerformanceModeSnapshot {
+  return {
+    version: 1,
+    mode: "strained",
+    reason,
+    duration: Math.round(duration),
+    route: currentRoute(),
+    activatedAt: Date.now(),
+  };
+}
+
+function activateRuntimePerformanceGuard(
+  state: RuntimePerformanceGuard,
+  reason: string,
+  duration: number,
+): void {
+  if (state.activated) {
+    return;
+  }
+
+  state.activated = true;
+  applyRuntimePerformanceMode(makeGuardSnapshot(reason, duration));
+}
+
+export function installRuntimePerformanceGuard(): boolean {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  if (!shouldEnableRuntimePerformanceGuard(window.location.search)) {
+    clearRuntimePerformanceMode({ clearDevice: true });
+    return false;
+  }
+
+  if (window.__zenflowRuntimePerfGuard) {
+    return true;
+  }
+
+  const state: RuntimePerformanceGuard = {
+    enabled: true,
+    startedAt: performance.now(),
+    activated: false,
+    route: currentRoute(),
+    repeatedLoAFCount: 0,
+    maxLongTaskMs: 0,
+    maxLongAnimationFrameMs: 0,
+    snapshot: () => ({
+      startedAt: state.startedAt,
+      route: state.route,
+      activated: state.activated,
+      repeatedLoAFCount: state.repeatedLoAFCount,
+      maxLongTaskMs: state.maxLongTaskMs,
+      maxLongAnimationFrameMs: state.maxLongAnimationFrameMs,
+    }),
+  };
+
+  window.__zenflowRuntimePerfGuard = state;
+
+  const stored = readStoredRuntimePerformanceMode();
+  if (stored?.mode === "strained") {
+    state.activated = true;
+    applyRuntimePerformanceMode(stored);
+  } else if (readStoredRuntimePerformanceDeviceGuard()) {
+    applyRuntimePerformanceStartup();
+    window.setTimeout(() => {
+      if (!state.activated && document.documentElement.dataset.runtimePerf === "startup") {
+        clearRuntimePerformanceMode();
+      }
+    }, STARTUP_WARMUP_MS);
+  }
+
+  if (typeof PerformanceObserver === "undefined") {
+    return true;
+  }
+
+  const supportedEntryTypes = PerformanceObserver.supportedEntryTypes || [];
+
+  try {
+    if (supportedEntryTypes.includes("long-animation-frame")) {
+      new PerformanceObserver((list) => {
+        for (const entry of list.getEntries()) {
+          const duration = entry.duration || 0;
+          if ((entry.startTime || 0) < state.startedAt) {
+            continue;
+          }
+
+          state.maxLongAnimationFrameMs = Math.max(state.maxLongAnimationFrameMs, duration);
+
+          if (duration >= REPEATED_LOAF_MS) {
+            state.repeatedLoAFCount += 1;
+          }
+
+          if (duration >= STRAINED_LOAF_MS) {
+            activateRuntimePerformanceGuard(state, "long-animation-frame", duration);
+          } else if (state.repeatedLoAFCount >= REPEATED_LOAF_COUNT) {
+            activateRuntimePerformanceGuard(state, "repeated-long-animation-frame", duration);
+          }
+        }
+      }).observe({ type: "long-animation-frame", buffered: true });
+    }
+  } catch {
+    // Runtime perf guard must never block app startup.
+  }
+
+  try {
+    if (supportedEntryTypes.includes("longtask")) {
+      new PerformanceObserver((list) => {
+        for (const entry of list.getEntries()) {
+          const duration = entry.duration || 0;
+          if ((entry.startTime || 0) < state.startedAt) {
+            continue;
+          }
+
+          state.maxLongTaskMs = Math.max(state.maxLongTaskMs, duration);
+
+          if (duration >= LONG_TASK_STRAINED_MS) {
+            activateRuntimePerformanceGuard(state, "longtask", duration);
+          }
+        }
+      }).observe({ type: "longtask", buffered: true });
+    }
+  } catch {
+    // Runtime perf guard must never block app startup.
   }
 
   return true;

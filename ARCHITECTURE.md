@@ -2,7 +2,7 @@
 
 > This document is the "constitution" of the ZenFlow codebase.
 > Every PR, every feature, every refactor MUST follow these rules.
-> Last updated: 2026-05-10 (constitution freshness + inline-style debt trim — Law 6 Reality Anchor).
+> Last updated: 2026-05-15 (constitution script Windows-safe + freshness metrics refreshed — Law 6 Reality Anchor).
 
 ---
 
@@ -40,14 +40,14 @@ Checked by `npm run constitution:check`. Update these values from fresh command 
 
 | Metric | Value | Source |
 | --- | ---: | --- |
-| Source files | **822** | `find src -name '*.ts' -o -name '*.tsx' ...` |
-| Test files | **281** | `find src test -name '*.test.*' -o -name '*.spec.*'` |
+| Source files | **825** | `find src -name '*.ts' -o -name '*.tsx' ...` |
+| Test files | **289** | `find src test -name '*.test.*' -o -name '*.spec.*'` |
 | Silent `.catch(() => {})` | **0** | `grep -rn '.catch.*=> {}' src/` |
 | React.memo | **118** | `grep -rl 'memo(' src/ --include='*.tsx'` |
-| index.css LOC | **7,343** | `wc -l < src/index.css` |
-| Inline style={{}} | **322** | `grep -rn 'style={{' src/ --include='*.tsx'` |
+| index.css LOC | **7,357** | `wc -l < src/index.css` |
+| Inline style={{}} | **313** | `grep -rn 'style={{' src/ --include='*.tsx'` |
 | exhaustive-deps suppressions | **21** | `grep -rn 'eslint-disable.*exhaustive-deps' src/` |
-| Hook coverage | **60** | `46/77 hook tests` |
+| Hook coverage | **64** | `46/72 hook tests` |
 
 > Historical snapshot (2026-04-04): 687 source files, 147 test files, 3202 tests, 0 lint/TS errors, React.memo 56/80+, lazyWithRetry 31, exhaustive-deps suppressions 21, index.css 4,480 LOC, inline style 304 in 136 files, i18n 2,429 keys × 8 langs, ratchet 9.9/10. Held here for delta comparisons — do not edit in place.
 
@@ -1034,7 +1034,7 @@ On PR to main:
 
 > Last audit: 2026-03-11 (Senior Dev Audit) via `wc -l`. Limit: 400 lines, 5 useState, 3 useEffect.
 > Every PASS must include evidence: command output, file path, or test checklist. No evidence = FAIL.
-> **TD-20 PARTIALLY RESOLVED**: 33 original violations resolved. **16 current violations** remain (components grew or were added after Phase 6).
+> **TD-20 PARTIALLY RESOLVED**: 33 original violations resolved. **15 current violations** remain (components grew or were added after Phase 6).
 
 #### Resolved (33 components)
 
@@ -1096,26 +1096,25 @@ On PR to main:
 | ---------------- | ----- | -------- | --------- | ------------------------------------------------------------------- |
 | Celebrations.tsx | 311   | 4        | 4         | 4 components × 1 useEffect each — no single component exceeds limit |
 
-#### New Violations (16 files >400L — verified 2026-05-10)
+#### New Violations (15 files >400L — verified 2026-05-15)
 
 | File                                      | Lines   | Severity | Notes                                                    |
 | ----------------------------------------- | ------- | -------- | -------------------------------------------------------- |
-| components/habit-creation-form/HabitCreationForm.tsx | **1,141** | P2 | Regressed above 400L after feature growth                |
-| components/state-of-mind/ValenceOrb.tsx   | **743** | P2       | Shader/orb shell remains over 400L                       |
-| components/habit-hub/HabitDetailSheet.tsx | **709** | P2       | Detail sheet remains over 400L                           |
-| components/SplashScreen.tsx               | **593** | P2       | Startup shell remains over 400L                          |
-| components/ErrorBoundary.tsx              | **542** | P2       | Error boundary module remains over 400L                  |
-| components/habit-tracker/HabitTracker.tsx | **526** | P2       | Habit tracker shell remains over 400L                    |
+| components/habit-creation-form/HabitCreationForm.tsx | **1,142** | P2 | Regressed above 400L after feature growth                |
+| components/state-of-mind/ValenceOrb.tsx   | **1,079** | P2     | Shader/orb shell remains over 400L                       |
+| components/habit-hub/HabitDetailSheet.tsx | **710** | P2       | Detail sheet remains over 400L                           |
+| pages/nav-v2/habits/HabitsPage.tsx        | **595** | P2       | V2 habits page shell remains over 400L                   |
+| components/SplashScreen.tsx               | **594** | P2       | Startup shell remains over 400L                          |
+| pages/IndexV1Impl.tsx                     | **583** | P2       | V1 shell extracted from root index still remains large   |
+| components/ErrorBoundary.tsx              | **543** | P2       | Error boundary module remains over 400L                  |
+| components/habit-tracker/HabitTracker.tsx | **527** | P2       | Habit tracker shell remains over 400L                    |
 | components/habit-creation-form/FormSelectors.tsx | **525** | P2 | Form selector shell remains over 400L                    |
-| pages/nav-v2/habits/HabitsPage.tsx        | **518** | P2       | V2 habits page shell remains over 400L                   |
-| main.tsx                                  | **494** | P2       | Bootstrap/root wiring remains over 400L                  |
-| components/diary/TypingDynamicsMirror.tsx | **479** | P3       | Diary visualization shell remains over 400L              |
-| components/reflection/DailyRitualCard.tsx | **471** | P3       | Reflection ritual card remains over 400L                 |
-| components/stats/ring-detail-sheet/RingDetailSheet.tsx | **413** | P3 | Stats sheet shell remains over 400L                      |
-| components/challenges-panel/ChallengesPanel.tsx | **412** | P3 | Challenges panel shell remains over 400L                 |
-| components/hyperfocus/HyperfocusMode.tsx  | **411** | P3       | Hyperfocus shell re-crossed 400L                         |
-| pages/nav-v2/habits/hero/HeroWeeklyHabitCard.tsx | **404** | P3 | V2 habit hero card remains over 400L                     |
-| pages/nav-v2/__tests__/OrbPage.test.tsx   | **401** | P3       | Test fixture remains over 400L                           |
+| main.tsx                                  | **500** | P2       | Bootstrap/root wiring remains over 400L                  |
+| components/reflection/DailyRitualCard.tsx | **472** | P3       | Reflection ritual card remains over 400L                 |
+| components/stats/ring-detail-sheet/RingDetailSheet.tsx | **414** | P3 | Stats sheet shell remains over 400L                      |
+| components/challenges-panel/ChallengesPanel.tsx | **413** | P3 | Challenges panel shell remains over 400L                 |
+| components/hyperfocus/HyperfocusMode.tsx  | **412** | P3       | Hyperfocus shell re-crossed 400L                         |
+| pages/nav-v2/habits/hero/HeroWeeklyHabitCard.tsx | **405** | P3 | V2 habit hero card remains over 400L                     |
 
 #### Remaining — SKIP (1 file >400L)
 
