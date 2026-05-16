@@ -234,6 +234,7 @@ Minimum local gates for this contract:
 
 ```bash
 npm run check:canonical-orbs
+npm run check:sync-contract
 npm run check:all
 npm run smoke:chrome-performance
 ```
@@ -250,6 +251,11 @@ npm run ci:remote:wait
 
 Sync-specific tests should include the relevant event, gap, offline queue,
 deletion tracker, and V1/V2 round-trip tests.
+
+`npm run check:sync-contract` is the mechanical guard for future sync tasks. It
+does not replace runtime proof, but it must stay green before claiming that
+ordered deltas, snapshot bootstrap, server tombstones, docs, and CI wiring are
+still intact.
 
 ## Stop Conditions
 

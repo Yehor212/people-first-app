@@ -115,9 +115,14 @@ Minimum local gates:
 ```bash
 cmd /c npm run typecheck
 cmd /c npm run lint
+cmd /c npm run check:sync-contract
 cmd /c npm run test -- src/storage/__tests__/eventSync.test.ts src/lib/__tests__/syncStateMachine.test.ts src/lib/__tests__/syncGapDetector.test.ts src/storage/__tests__/deletionTracker.test.ts src/lib/__tests__/offlineQueueHandlers.test.ts
 cmd /c npm run check:supabase-migration-prefixes
 ```
+
+`check:sync-contract` is the future-task hook for this contract. It verifies the
+repo still has ordered event-log wiring, snapshot-then-delta bootstrap,
+server-backed tombstones, anti-resurrection tests, and CI/doc references.
 
 Behavioral gates for user-visible sync work:
 

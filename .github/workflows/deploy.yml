@@ -50,6 +50,9 @@ jobs:
       - name: Check canonical orb visuals
         run: npm run check:canonical-orbs
 
+      - name: Check Telegram-grade sync contract
+        run: npm run check:sync-contract
+
       - name: Run tests with coverage
         run: npx vitest run --coverage
 

@@ -31,8 +31,9 @@ cross-platform user-flow changes.
 | 2 | Canonical orb invariant | `npm run check:canonical-orbs` | Yes for orb or visual primitive work |
 | 3 | Chrome route smoke | `npm run smoke:chrome-performance` or route-specific Playwright perf proof with cold-boot and steady-state metrics | Yes for performance claims |
 | 4 | V1/V2 sync round trip | Perform source shell -> adjacent shell -> source shell check for changed data | Yes for shared data changes |
-| 5 | Delete anti-resurrection | Prove stale local state, backup, or delayed pull cannot restore deleted data | Yes for delete changes |
-| 6 | Public deploy proof | `npm run ci:remote:wait` plus cache-busted public URL when the issue is public | Yes for public-user claims |
+| 5 | Sync contract invariant | `npm run check:sync-contract` | Yes for sync, storage, Supabase, backup, offline queue, or hydration work |
+| 6 | Delete anti-resurrection | Prove stale local state, backup, or delayed pull cannot restore deleted data | Yes for delete changes |
+| 7 | Public deploy proof | `npm run ci:remote:wait` plus cache-busted public URL when the issue is public | Yes for public-user claims |
 
 ## Manual Checks (before major releases)
 

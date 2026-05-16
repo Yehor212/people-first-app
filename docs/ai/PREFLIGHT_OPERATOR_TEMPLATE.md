@@ -58,6 +58,7 @@ invariants that future agents must preserve:
 - canonical `ValenceOrb` / `MiniValenceOrb` visuals only
 - ordered sync through `sync_events.seq`
 - tombstones over stale snapshots
+- mechanical sync guard through `npm run check:sync-contract`
 - public URL proof for public-user claims
 - phone, desktop, PWA, Android, iOS, sidebar, and drawer parity where applicable
 

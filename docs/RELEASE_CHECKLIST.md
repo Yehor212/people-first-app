@@ -45,6 +45,7 @@ Use this list before publishing on stores or web.
 - Confirm scrollability, safe areas, focus, and reduced-motion behavior for touched screens.
 
 ## Sync and Data Convergence
+- Run `npm run check:sync-contract`.
 - Verify latest user action wins after V1 -> V2 -> V1 navigation for changed entities.
 - Verify two active tabs converge after a remote or local change.
 - Verify offline action queues and applies after reconnect.

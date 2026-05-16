@@ -1,0 +1,212 @@
+#!/usr/bin/env node
+"use strict";
+
+/**
+ * Telegram-grade sync contract guard.
+ *
+ * This is a repo invariant check, not a runtime sync test. It protects the
+ * durable building blocks future agents must preserve:
+ * - ordered sync_events.seq deltas;
+ * - first-run snapshot before advancing an empty cursor;
+ * - server tombstones beating stale snapshots;
+ * - docs and CI gates that make the contract visible before future edits.
+ */
+
+const fs = require("node:fs");
+const path = require("node:path");
+
+const ROOT = path.join(__dirname, "..");
+
+const failures = [];
+let passCount = 0;
+
+function relPath(file) {
+  return file.replaceAll("\\", "/");
+}
+
+function abs(file) {
+  return path.join(ROOT, file);
+}
+
+function read(file) {
+  const target = abs(file);
+  if (!fs.existsSync(target)) {
+    failures.push(`${relPath(file)} is missing`);
+    return "";
+  }
+  return fs.readFileSync(target, "utf8");
+}
+
+function pass() {
+  passCount += 1;
+}
+
+function requireIncludes(file, snippets) {
+  const source = read(file);
+  if (!source) return;
+
+  for (const snippet of snippets) {
+    if (!source.includes(snippet)) {
+      failures.push(`${relPath(file)} is missing required sync token: ${snippet}`);
+    } else {
+      pass();
+    }
+  }
+}
+
+function requireRegex(file, regex, label) {
+  const source = read(file);
+  if (!source) return;
+
+  if (!regex.test(source)) {
+    failures.push(`${relPath(file)} is missing required sync pattern: ${label}`);
+  } else {
+    pass();
+  }
+}
+
+function readMigrations() {
+  const dir = abs("supabase/migrations");
+  if (!fs.existsSync(dir)) {
+    failures.push("supabase/migrations is missing");
+    return "";
+  }
+
+  return fs
+    .readdirSync(dir)
+    .filter((file) => file.endsWith(".sql"))
+    .sort((a, b) => a.localeCompare(b))
+    .map((file) => fs.readFileSync(path.join(dir, file), "utf8"))
+    .join("\n\n");
+}
+
+function requireMigrationToken(source, token) {
+  if (!source.includes(token)) {
+    failures.push(`supabase/migrations is missing required sync SQL token: ${token}`);
+  } else {
+    pass();
+  }
+}
+
+function main() {
+  requireIncludes("src/storage/eventSync.ts", [
+    "sync_events",
+    "seq",
+    "fetchAllDeltas",
+    "applyDelta",
+    "await saveLastSeq(maxSeq)",
+    "getDeletionTrackerKeyForSyncEntity",
+  ]);
+
+  requireIncludes("src/hooks/useDeltaSyncEffects.ts", [
+    "bootstrapSnapshotThenDelta",
+    "getLastSeq()",
+    "fetchAllDeltas",
+    "applyDelta",
+    "SyncGapDetector",
+    "onRemoteChange",
+  ]);
+
+  requireIncludes("src/storage/initialDeltaSync.ts", [
+    "getServerMaxSeq()",
+    "pullFromCloud()",
+    "fetchAllDeltas(baselineSeq",
+    "saveLastSeq(baselineSeq)",
+    "applyDelta(tailEvents",
+  ]);
+
+  requireIncludes("src/storage/realtimeSync.ts", [
+    'from("sync_tombstones")',
+    "select(\"entity_type, entity_id, deleted_seq\")",
+    "mergeSyncTombstones",
+    "deletedIds.mood",
+    "deletedIds.habit",
+    "deletedIds.focus",
+    "deletedIds.gratitude",
+    "deletedIds.journal",
+  ]);
+
+  requireIncludes("src/storage/sync/serverTombstones.ts", [
+    "TombstonedSyncEntity",
+    "collectSyncTombstoneIds",
+    "mergeSyncTombstones",
+    "mergeDeletedMoodIds",
+    "mergeDeletedHabitIds",
+    "mergeDeletedFocusSessionIds",
+    "mergeDeletedGratitudeIds",
+    "mergeDeletedJournalEntryIds",
+  ]);
+
+  requireIncludes("src/storage/__tests__/initialDeltaSync.test.ts", [
+    "takes a snapshot baseline before fetching the delta tail",
+    "saves the snapshot baseline when no tail events arrive",
+    "does not advance the cursor when the snapshot bootstrap fails",
+  ]);
+
+  requireIncludes("src/storage/sync/__tests__/serverTombstones.test.ts", [
+    "collects only supported sync tombstone entity families",
+    "merges server tombstones into every local anti-resurrection tracker",
+  ]);
+
+  requireIncludes("src/types/supabase.ts", ["sync_events", "sync_tombstones", "deleted_seq"]);
+
+  const migrations = readMigrations();
+  requireMigrationToken(migrations, "CREATE TABLE IF NOT EXISTS public.sync_events");
+  requireMigrationToken(migrations, "sync_events_user_seq_idx");
+  requireMigrationToken(migrations, "CREATE TABLE IF NOT EXISTS public.sync_tombstones");
+  requireMigrationToken(migrations, "PRIMARY KEY (user_id, entity_type, entity_id)");
+  requireMigrationToken(migrations, "trg_apply_sync_event_tombstone");
+
+  requireIncludes("docs/ai/SYNC_CONTRACT.md", [
+    "sync_events.seq",
+    "sync_tombstones",
+    "broadcast is a wake-up signal",
+    "V1 and V2 are one product state",
+    "anti-resurrection",
+  ]);
+
+  requireIncludes("docs/ai/TELEGRAM_GRADE_RUNTIME_CONTRACT.md", [
+    "docs/ai/SYNC_CONTRACT.md",
+    "sync_events.seq",
+    "Tombstones beat stale snapshots",
+    "Multi-tab browser",
+  ]);
+
+  requireIncludes("docs/DEFINITION_OF_DONE.md", [
+    "Sync contract invariant",
+    "npm run check:sync-contract",
+  ]);
+
+  requireIncludes("docs/RELEASE_CHECKLIST.md", ["Verify two active tabs converge"]);
+
+  requireIncludes("package.json", [
+    '"check:sync-contract": "node scripts/check-sync-contract.cjs"',
+    "npm run check:sync-contract",
+  ]);
+
+  requireIncludes(".github/workflows/deploy.yml", [
+    "Check Telegram-grade sync contract",
+    "npm run check:sync-contract",
+  ]);
+
+  requireRegex(
+    "src/storage/eventSync.ts",
+    /await db\.transaction\("rw", tables, async \(\) =>[\s\S]*await db\.settings\.put\(\{ key: SYNC_SEQ_KEY, value: maxSeq \}\);[\s\S]*\}\);/,
+    "applyDelta saves the cursor inside the IndexedDB transaction"
+  );
+
+  if (failures.length > 0) {
+    console.error("[sync-contract] FAIL");
+    console.error("");
+    for (const failure of failures) {
+      console.error(`- ${failure}`);
+    }
+    console.error("");
+    console.error("Fix: preserve Telegram-grade sync ordering, snapshot bootstrap, tombstones, docs, and CI gates.");
+    process.exit(1);
+  }
+
+  console.log(`[sync-contract] OK - ${passCount} sync invariants verified.`);
+}
+
+main();
