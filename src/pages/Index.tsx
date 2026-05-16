@@ -5,6 +5,7 @@ import { useUserDataStore, useHydrateUserData } from "@/stores";
 import { useAppLifecycle } from "@/hooks/useAppLifecycle";
 import { useDateTracking } from "@/hooks/useDateTracking";
 import { useAuthSession } from "@/hooks/useAuthSession";
+import { useTelegramGradeSyncRuntime } from "@/hooks/useTelegramGradeSyncRuntime";
 import { useChallengeHandlers } from "@/hooks/useChallengeHandlers";
 import { useMoodHandlers } from "@/hooks/useMoodHandlers";
 import { useGratitudeHandlers } from "@/hooks/useGratitudeHandlers";
@@ -86,6 +87,7 @@ function IndexV2Impl() {
   const isLoading = isLoadingUserData || isLoadingInnerWorld;
 
   useAuthSession(isLoading);
+  useTelegramGradeSyncRuntime();
 
   const { updateChallengeProgress } = useChallengeHandlers({
     safeMoods: moods,

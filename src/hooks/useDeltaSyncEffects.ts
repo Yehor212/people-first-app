@@ -9,6 +9,7 @@ import { useEffect, useReducer, useRef } from "react";
 import { useFeatureFlags } from "@/contexts/FeatureFlagsContext";
 import { logger } from "@/lib/logger";
 import { onRemoteChange } from "@/lib/syncBroadcast";
+import { runWithSyncLeaderLock } from "@/lib/syncLeader";
 import {
   fetchAllDeltas,
   applyDelta,
@@ -54,44 +55,51 @@ export function useDeltaSyncEffects(): void {
     }
 
     isRunningRef.current = true;
-    dispatchAndSync({ type: "TRIGGER_DELTA" });
     abortRef.current = new AbortController();
 
     try {
-      const localSeq = await getLastSeq();
-      if (localSeq === 0) {
-        const result = await bootstrapSnapshotThenDelta(abortRef.current.signal);
-        logger.sync(
-          "[DeltaSync] Snapshot bootstrap complete, fetched=" +
-            result.fetched +
-            ", applied=" +
-            result.applied +
-            ", seq=" +
-            result.lastSeq
-        );
-        gapDetectorRef.current?.resetTo(result.lastSeq);
-        dispatchAndSync({ type: "RESET", lastSeq: result.lastSeq });
-        return;
-      }
+      const locked = await runWithSyncLeaderLock("delta-sync", async () => {
+        dispatchAndSync({ type: "TRIGGER_DELTA" });
 
-      const lastSeq = localSeq;
-      const events = await fetchAllDeltas(lastSeq, abortRef.current.signal);
+        const localSeq = await getLastSeq();
+        if (localSeq === 0) {
+          const result = await bootstrapSnapshotThenDelta(abortRef.current?.signal);
+          logger.sync(
+            "[DeltaSync] Snapshot bootstrap complete, fetched=" +
+              result.fetched +
+              ", applied=" +
+              result.applied +
+              ", seq=" +
+              result.lastSeq
+          );
+          gapDetectorRef.current?.resetTo(result.lastSeq);
+          dispatchAndSync({ type: "RESET", lastSeq: result.lastSeq });
+          return;
+        }
 
-      if (events.length === 0) {
-        gapDetectorRef.current?.resetTo(lastSeq);
-        dispatchAndSync({ type: "RESET", lastSeq });
-        return;
-      }
+        const lastSeq = localSeq;
+        const events = await fetchAllDeltas(lastSeq, abortRef.current?.signal);
 
-      const deviceId = await getPersistentDeviceId();
-      const applied = await applyDelta(events, deviceId);
-      const maxSeq = events[events.length - 1].seq;
+        if (events.length === 0) {
+          gapDetectorRef.current?.resetTo(lastSeq);
+          dispatchAndSync({ type: "RESET", lastSeq });
+          return;
+        }
 
-      logger.sync("[DeltaSync] Applied " + applied + " events, seq=" + maxSeq);
-      dispatchAndSync({ type: "DELTA_SUCCESS", lastSeq: maxSeq });
+        const deviceId = await getPersistentDeviceId();
+        const applied = await applyDelta(events, deviceId);
+        const maxSeq = events[events.length - 1].seq;
 
-      if (gapDetectorRef.current) {
-        gapDetectorRef.current.resetTo(maxSeq);
+        logger.sync("[DeltaSync] Applied " + applied + " events, seq=" + maxSeq);
+        dispatchAndSync({ type: "DELTA_SUCCESS", lastSeq: maxSeq });
+
+        if (gapDetectorRef.current) {
+          gapDetectorRef.current.resetTo(maxSeq);
+        }
+      });
+
+      if (!locked.acquired) {
+        logger.sync("[DeltaSync] Delta pull skipped; another tab is applying the cursor");
       }
     } catch (err) {
       if (isAbortError(err)) return;

@@ -50,6 +50,9 @@ UI handoff.
    - `sync_events.seq` owns cross-device ordering.
    - BroadcastChannel, Supabase Realtime, service worker messages, and native
      resume events are wake-up signals, not durable ordering sources.
+   - V1 and V2 shells must both mount `useTelegramGradeSyncRuntime()` so direct
+     `/orb`, `/habits`, `/diary`, and `/settings` entry points receive the same
+     ordered-delta runtime as classic V1.
    - `docs/ai/SYNC_CONTRACT.md` is the sync source of truth.
 
 6. **Deletes are durable and anti-resurrection by default.**
@@ -59,8 +62,11 @@ UI handoff.
 
 7. **One sync owner per browser profile when possible.**
    - Multiple tabs are a supported platform.
-   - Use Web Locks where available, with BroadcastChannel fallback, before
-     introducing concurrent pull/apply loops.
+   - Use `runWithSyncLeaderLock()` for delta pull/apply loops. It uses Web Locks
+     where available and a short localStorage lease fallback for WebView/WKWebView
+     contexts that do not expose Web Locks.
+   - BroadcastChannel, Supabase Broadcast, visibility, and native resume events
+     may wake sync, but they must not advance the cursor outside the owner lock.
 
 8. **Cross-platform means behavior, not only layout.**
    - Web, PWA, Android WebView, iOS/WKWebView, desktop, phone layout, sidebar,
@@ -147,9 +153,11 @@ Before sync edits, inspect:
 
 - `docs/ai/SYNC_CONTRACT.md`
 - `src/storage/eventSync.ts`
+- `src/hooks/useTelegramGradeSyncRuntime.ts`
 - `src/hooks/useDeltaSyncEffects.ts`
 - `src/hooks/useCloudSyncEffects.ts`
 - `src/lib/syncBroadcast.ts`
+- `src/lib/syncLeader.ts`
 - `src/lib/syncGapDetector.ts`
 - `src/lib/syncStateMachine.ts`
 - `src/lib/syncOrchestrator.ts`

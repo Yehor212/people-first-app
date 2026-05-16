@@ -320,9 +320,18 @@ async function handleAppResume(): Promise<void> {
       });
     }
     // Delta pull on resume — fetch and apply new events from the eventSync cursor.
-    void import("@/storage/eventSync")
-      .then(async ({ pullAndApplyDeltasFromLastSeq }) => {
-        const result = await pullAndApplyDeltasFromLastSeq();
+    void Promise.all([import("@/lib/syncLeader"), import("@/storage/eventSync")])
+      .then(async ([{ runWithSyncLeaderLock }, { pullAndApplyDeltasFromLastSeq }]) => {
+        const locked = await runWithSyncLeaderLock("resume-delta-sync", () =>
+          pullAndApplyDeltasFromLastSeq()
+        );
+        if (!locked.acquired) {
+          logger.log("[Main] Delta pull on resume skipped; another tab owns sync");
+          return;
+        }
+
+        const result = locked.value;
+        if (!result) return;
         if (result.fetched > 0) {
           logger.log(
             `[Main] Delta applied on resume: fetched=${result.fetched}, applied=${result.applied}, seq=${result.lastSeq}`

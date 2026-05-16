@@ -13,10 +13,10 @@ The table below is **auto-generated** by `scripts/doc-counts.cjs`. CI (`npm run 
 <!-- BEGIN:counts -->
 | Metric | Value | Source |
 | --- | ---: | --- |
-| Hooks (src/hooks, non-test) | **72** | `ls src/hooks/*.ts` |
+| Hooks (src/hooks, non-test) | **73** | `ls src/hooks/*.ts` |
 | Zustand stores (runtime) | **8** | `ls src/stores/*.ts` excl. hydrate + index |
 | Hydrate bridges | 2 | `useHydrate*.ts` |
-| Index.tsx LOC | **121** | `wc -l src/pages/Index.tsx` |
+| Index.tsx LOC | **123** | `wc -l src/pages/Index.tsx` |
 | Components top-level dirs | **40** | `ls src/components/ -d` |
 | Features modules | 1 | `ls src/features/ -d` |
 | V2 coexistence files | 18 | `find src -name '*V2*' -o -name '*-v2*'` |

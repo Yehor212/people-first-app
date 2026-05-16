@@ -62,6 +62,12 @@ describe("V2 diary loading surface", () => {
     expect(v2SplashSmokeSource).not.toContain("/people-first-app/orb?nav=v2&dev=true");
   });
 
+  it("mounts the shared ordered sync runtime for direct V2 routes", () => {
+    expect(indexSource).toContain("useTelegramGradeSyncRuntime");
+    expect(indexSource).toContain("useTelegramGradeSyncRuntime();");
+    expect(indexSource).not.toContain('from "@/hooks/useDeltaSyncEffects"');
+  });
+
   it("keeps local performance diagnostics explicit and excludes heavy generated folders from Vite watches", () => {
     expect(packageSource).toContain(
       '"diagnose:dev-performance": "node scripts/diagnose-dev-performance.cjs"',

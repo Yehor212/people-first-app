@@ -65,6 +65,19 @@ function requireRegex(file, regex, label) {
   }
 }
 
+function requireNotIncludes(file, snippets) {
+  const source = read(file);
+  if (!source) return;
+
+  for (const snippet of snippets) {
+    if (source.includes(snippet)) {
+      failures.push(`${relPath(file)} must not contain sync token: ${snippet}`);
+    } else {
+      pass();
+    }
+  }
+}
+
 function readMigrations() {
   const dir = abs("supabase/migrations");
   if (!fs.existsSync(dir)) {
@@ -105,7 +118,42 @@ function main() {
     "applyDelta",
     "SyncGapDetector",
     "onRemoteChange",
+    "runWithSyncLeaderLock",
   ]);
+
+  requireIncludes("src/lib/syncLeader.ts", [
+    "navigator as NavigatorWithLocks",
+    "locks.request",
+    "ifAvailable: true",
+    "SK.SYNC_LEADER_LOCK",
+    "expiresAt",
+    "another tab owns delta sync",
+  ]);
+
+  requireIncludes("src/hooks/useTelegramGradeSyncRuntime.ts", [
+    "useDeltaSyncEffects",
+    "V1 and V2 are one product state",
+    "sync_events.seq",
+  ]);
+
+  requireIncludes("src/pages/Index.tsx", [
+    "useTelegramGradeSyncRuntime",
+    "useTelegramGradeSyncRuntime();",
+  ]);
+
+  requireIncludes("src/pages/IndexV1Impl.tsx", [
+    "useTelegramGradeSyncRuntime",
+    "useTelegramGradeSyncRuntime();",
+  ]);
+
+  requireIncludes("src/main.tsx", [
+    "runWithSyncLeaderLock",
+    "resume-delta-sync",
+    "another tab owns sync",
+  ]);
+
+  requireNotIncludes("src/pages/Index.tsx", ['from "@/hooks/useDeltaSyncEffects"']);
+  requireNotIncludes("src/pages/IndexV1Impl.tsx", ['from "@/hooks/useDeltaSyncEffects"']);
 
   requireIncludes("src/storage/initialDeltaSync.ts", [
     "getServerMaxSeq()",
@@ -143,6 +191,12 @@ function main() {
     "does not advance the cursor when the snapshot bootstrap fails",
   ]);
 
+  requireIncludes("src/lib/__tests__/syncLeader.test.ts", [
+    "runs the task through Web Locks when this tab gets ownership",
+    "skips the task when Web Locks reports another owner",
+    "takes over an expired localStorage lease",
+  ]);
+
   requireIncludes("src/storage/sync/__tests__/serverTombstones.test.ts", [
     "collects only supported sync tombstone entity families",
     "merges server tombstones into every local anti-resurrection tracker",
@@ -163,6 +217,7 @@ function main() {
     "broadcast is a wake-up signal",
     "V1 and V2 are one product state",
     "anti-resurrection",
+    "runWithSyncLeaderLock",
   ]);
 
   requireIncludes("docs/ai/TELEGRAM_GRADE_RUNTIME_CONTRACT.md", [

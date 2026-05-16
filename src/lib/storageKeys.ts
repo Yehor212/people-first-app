@@ -119,6 +119,7 @@ export const SK = {
   DEVICE_ID: "zenflow_device_id",
   LAST_SYNC_SEQ: "zenflow_last_sync_seq",
   DELTA_SYNC_ENABLED: "zenflow_delta_sync_enabled",
+  SYNC_LEADER_LOCK: "zenflow_sync_leader_lock",
 
   // ─── Coach ───
   COACH_HISTORY: "zenflow_coach_history",

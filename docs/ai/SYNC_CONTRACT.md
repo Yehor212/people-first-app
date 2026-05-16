@@ -48,7 +48,8 @@ to the latest event-log state.
 
 3. **One remote-change owner per feature flag state.**
    - When `deltaSync` is enabled, remote broadcast signals are owned by
-     `useDeltaSyncEffects()`.
+     `useDeltaSyncEffects()` through the shared shell hook
+     `useTelegramGradeSyncRuntime()`.
    - Legacy backup or granular pull code may still initialize broadcast, but it
      must not also consume the same remote signal and race delta application.
 
@@ -77,13 +78,18 @@ to the latest event-log state.
 8. **V1 and V2 are one product state.**
    - V1 and V2 may have different UI, but they must read/write the same durable
      entities and converge through the same sync semantics.
+   - Every app shell entry point must mount
+     `src/hooks/useTelegramGradeSyncRuntime.ts`; never leave a V2 direct route
+     with only local hydration or snapshot sync.
    - If a V2 action deletes, archives, edits, or completes a habit, V1 must not
      be able to rehydrate the old value from backup or stale local state.
 
 9. **Multi-tab is part of cross-platform.**
    - A browser with two tabs is a sync platform.
-   - Add BroadcastChannel, Web Locks, or a single queue owner when a change can
-     create concurrent writers or duplicate remote pulls.
+   - Delta pull/apply work must pass through `runWithSyncLeaderLock()` so only
+     one tab advances the local event cursor at a time.
+   - Broadcast, online, visibility, interval, and native resume events may wake
+     the runtime, but they must not bypass the leader lock.
 
 10. **Evidence beats intent.**
     - Sync fixes need tests or browser proof for the original failure mode.
@@ -93,9 +99,11 @@ to the latest event-log state.
 ## Files To Inspect Before Sync Work
 
 - `src/storage/eventSync.ts`
+- `src/hooks/useTelegramGradeSyncRuntime.ts`
 - `src/hooks/useDeltaSyncEffects.ts`
 - `src/hooks/useCloudSyncEffects.ts`
 - `src/lib/syncBroadcast.ts`
+- `src/lib/syncLeader.ts`
 - `src/lib/syncGapDetector.ts`
 - `src/lib/syncStateMachine.ts`
 - `src/lib/syncOrchestrator.ts`
@@ -130,7 +138,8 @@ Behavioral gates for user-visible sync work:
   touch it.
 - Perform an offline/queued path check when the action can be made while offline.
 - Perform a multi-tab or broadcast-trigger check when the action can be observed
-  from another active browser context.
+  from another active browser context. The expected owner path is
+  `runWithSyncLeaderLock()`; Broadcast is only the wake-up.
 - For deletes, prove anti-resurrection: stale local state, backup recovery, or a
   delayed remote pull must not bring the deleted entity back.
 - For settings and preferences, prove the active UI reads the same setting after
@@ -167,5 +176,7 @@ Stop and report before editing if:
   anti-resurrection. Long-term server permanence is backed by the
   `sync_tombstones` SQL path once migration
   `20260513224401_telegram_grade_sync_tombstones.sql` is applied.
-- Multi-tab sync coordination exists for auth refresh, but data sync ownership
-  needs stronger leader/queue semantics for Telegram-grade behavior.
+- Live cross-device Supabase convergence still needs public account evidence for
+  release claims. Local invariant coverage now includes the V1/V2 shared runtime,
+  ordered deltas, server tombstones, and multi-tab delta ownership through
+  `runWithSyncLeaderLock()`.

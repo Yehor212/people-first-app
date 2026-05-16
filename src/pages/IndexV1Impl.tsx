@@ -19,7 +19,7 @@ import { useAuthSession } from "@/hooks/useAuthSession";
 import { useNotificationSetup } from "@/hooks/useNotificationSetup";
 import { useOnboardingEffects } from "@/hooks/useOnboardingEffects";
 import { useCloudSyncEffects } from "@/hooks/useCloudSyncEffects";
-import { useDeltaSyncEffects } from "@/hooks/useDeltaSyncEffects";
+import { useTelegramGradeSyncRuntime } from "@/hooks/useTelegramGradeSyncRuntime";
 import { useAppUpdateCheck } from "@/hooks/useAppUpdateCheck";
 import { useWeeklyReportTrigger } from "@/hooks/useWeeklyReportTrigger";
 import { useChallengeHandlers } from "@/hooks/useChallengeHandlers";
@@ -359,8 +359,8 @@ export default function IndexV1Impl() {
     quickActionTimeoutRef,
   });
 
-  // Delta sync (Phase 3) - gated behind deltaSync feature flag
-  useDeltaSyncEffects();
+  // Telegram-grade ordered sync runtime - shared with V2 shell.
+  useTelegramGradeSyncRuntime();
 
   // Deep link listener (auth + challenge URLs, extracted to hook)
   useDeepLinkHandler();
