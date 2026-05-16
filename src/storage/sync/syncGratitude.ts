@@ -5,8 +5,7 @@
 
 import { logger } from "@/lib/logger";
 import { triggerDataRefresh } from "@/hooks/useIndexedDB";
-import { broadcastChange } from "@/lib/syncBroadcast";
-import { writeEvent, getPersistentDeviceId } from "@/storage/eventSync";
+import { writeEventAndBroadcast, getPersistentDeviceId } from "@/storage/eventSync";
 import { getDeletedGratitudeIds, trackDeletedGratitudeId } from "@/storage/deletionTracker";
 import { isAbortError, isValidUUID } from "@/lib/validation";
 import { supabase, getCurrentUserId } from "@/lib/supabaseClient";
@@ -57,10 +56,9 @@ export const syncGratitude = async (entry: GratitudeEntry): Promise<void> => {
 
     if (error) throw error;
     logger.log("[Sync] Gratitude synced:", entry.id);
-    broadcastChange("gratitude");
     void getPersistentDeviceId()
       .then((did) =>
-        writeEvent(
+        writeEventAndBroadcast(
           "gratitude",
           entry.id,
           "upsert",
@@ -107,10 +105,9 @@ export const deleteGratitudeFromCloud = async (entryId: string): Promise<void> =
 
     if (error) throw error;
     await trackDeletedGratitudeId(entryId);
-    broadcastChange("gratitude");
     logger.log("[Sync] Gratitude deleted + tracked:", entryId);
     void getPersistentDeviceId()
-      .then((did) => writeEvent("gratitude", entryId, "delete", null, did))
+      .then((did) => writeEventAndBroadcast("gratitude", entryId, "delete", null, did))
       .catch((err) => logger.warn("[Sync] writeEvent failed:", err));
   } catch (error) {
     // Handle AbortError separately

@@ -9,8 +9,7 @@ import { detectNetworkError } from "./syncUtils";
 import { supabase, getCurrentUserId } from "@/lib/supabaseClient";
 import { offlineQueue } from "@/lib/offlineQueue";
 import type { Json } from "@/types/supabase";
-import { getPersistentDeviceId, writeEvent } from "@/storage/eventSync";
-import { broadcastChange } from "@/lib/syncBroadcast";
+import { getPersistentDeviceId, writeEventAndBroadcast } from "@/storage/eventSync";
 
 // ============================================
 // SETTINGS SYNC
@@ -45,9 +44,8 @@ export const syncSetting = async (key: string, value: unknown): Promise<void> =>
     );
 
     if (error) throw error;
-    broadcastChange("settings");
     void getPersistentDeviceId()
-      .then((deviceId) => writeEvent("setting", key, "upsert", payload, deviceId))
+      .then((deviceId) => writeEventAndBroadcast("setting", key, "upsert", payload, deviceId))
       .catch((err) => logger.warn("[Sync] setting writeEvent failed:", err));
     logger.log("[Sync] Setting synced:", key);
   } catch (error) {

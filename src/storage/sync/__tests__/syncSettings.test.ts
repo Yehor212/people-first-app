@@ -6,8 +6,7 @@ const mocks = vi.hoisted(() => ({
   upsert: vi.fn(),
   enqueue: vi.fn(),
   getPersistentDeviceId: vi.fn(),
-  writeEvent: vi.fn(),
-  broadcastChange: vi.fn(),
+  writeEventAndBroadcast: vi.fn(),
 }));
 
 vi.mock("@/lib/supabaseClient", () => ({
@@ -21,11 +20,7 @@ vi.mock("@/lib/offlineQueue", () => ({
 
 vi.mock("@/storage/eventSync", () => ({
   getPersistentDeviceId: mocks.getPersistentDeviceId,
-  writeEvent: mocks.writeEvent,
-}));
-
-vi.mock("@/lib/syncBroadcast", () => ({
-  broadcastChange: mocks.broadcastChange,
+  writeEventAndBroadcast: mocks.writeEventAndBroadcast,
 }));
 
 vi.mock("@/lib/logger", () => ({
@@ -68,8 +63,7 @@ describe("syncSetting", () => {
       }),
       { onConflict: "user_id,key" }
     );
-    expect(mocks.broadcastChange).toHaveBeenCalledWith("settings");
-    expect(mocks.writeEvent).toHaveBeenCalledWith(
+    expect(mocks.writeEventAndBroadcast).toHaveBeenCalledWith(
       "setting",
       "mood-reminder-enabled",
       "upsert",
@@ -95,6 +89,6 @@ describe("syncSetting", () => {
       value: false,
     });
     expect(mocks.upsert).not.toHaveBeenCalled();
-    expect(mocks.writeEvent).not.toHaveBeenCalled();
+    expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
   });
 });

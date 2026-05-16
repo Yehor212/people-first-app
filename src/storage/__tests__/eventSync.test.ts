@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   getCurrentUserId: vi.fn(),
   from: vi.fn(),
+  insert: vi.fn(),
+  insertSingle: vi.fn(),
   limit: vi.fn(),
   single: vi.fn(),
   settingsGet: vi.fn(),
@@ -13,6 +15,7 @@ const mocks = vi.hoisted(() => ({
   habitTableGet: vi.fn(),
   habitTablePut: vi.fn(),
   habitTableDelete: vi.fn(),
+  broadcastChange: vi.fn(),
   supabase: null as { from: ReturnType<typeof vi.fn> } | null,
 }));
 
@@ -33,6 +36,10 @@ vi.mock("@/lib/logger", () => ({
 
 vi.mock("@/hooks/useIndexedDB", () => ({
   triggerDataRefresh: vi.fn(),
+}));
+
+vi.mock("@/lib/syncBroadcast", () => ({
+  broadcastChange: mocks.broadcastChange,
 }));
 
 vi.mock("@/storage/db", () => ({
@@ -58,10 +65,12 @@ import {
   fetchDelta,
   getServerMaxSeq,
   pullAndApplyDeltasFromLastSeq,
+  writeEventAndBroadcast,
 } from "@/storage/eventSync";
 
 function createSyncEventsQuery() {
   return {
+    insert: mocks.insert,
     select: () => ({
       gt: () => ({
         order: () => ({
@@ -86,6 +95,24 @@ describe("eventSync auth guards", () => {
     mocks.getCurrentUserId.mockResolvedValue(null);
     mocks.limit.mockResolvedValue({ data: [], error: null });
     mocks.single.mockResolvedValue({ data: { last_seq: 42 }, error: null });
+    mocks.insert.mockReturnValue({
+      select: () => ({
+        single: mocks.insertSingle,
+      }),
+    });
+    mocks.insertSingle.mockResolvedValue({
+      data: {
+        id: "event-written",
+        seq: 21,
+        entity_type: "habit",
+        entity_id: "habit-written",
+        op: "upsert",
+        payload: { id: "habit-written" },
+        device_id: "device-1",
+        created_at: "2026-05-11T12:00:00.000Z",
+      },
+      error: null,
+    });
     mocks.settingsGet.mockImplementation(async (key: string) => {
       if (key === "sync-last-seq") return { key, value: 10 };
       if (key === "zenflow-device-id") return { key, value: "current-device" };
@@ -339,5 +366,42 @@ describe("eventSync auth guards", () => {
     expect(applied).toBe(0);
     expect(mocks.habitTablePut).not.toHaveBeenCalled();
     expect(mocks.settingsPut).toHaveBeenCalledWith({ key: "sync-last-seq", value: 16 });
+  });
+
+  it("writes the durable event before broadcasting the remote wake-up signal", async () => {
+    mocks.getCurrentUserId.mockResolvedValue("user-1");
+
+    const event = await writeEventAndBroadcast(
+      "habit",
+      "habit-written",
+      "upsert",
+      { id: "habit-written" },
+      "device-1"
+    );
+
+    expect(mocks.insert).toHaveBeenCalledWith({
+      user_id: "user-1",
+      entity_type: "habit",
+      entity_id: "habit-written",
+      op: "upsert",
+      payload: { id: "habit-written" },
+      device_id: "device-1",
+    });
+    expect(mocks.insertSingle).toHaveBeenCalled();
+    expect(mocks.broadcastChange).toHaveBeenCalledWith("habits", 21);
+    expect(event?.seq).toBe(21);
+  });
+
+  it("still sends a wake-up signal without durable seq when the event write is unavailable", async () => {
+    mocks.getCurrentUserId.mockResolvedValue("user-1");
+    mocks.insertSingle.mockResolvedValueOnce({
+      data: null,
+      error: { message: "temporary insert failure" },
+    });
+
+    const event = await writeEventAndBroadcast("mood", "mood-1", "delete", null, "device-1");
+
+    expect(event).toBeNull();
+    expect(mocks.broadcastChange).toHaveBeenCalledWith("moods", undefined);
   });
 });

@@ -158,8 +158,9 @@ Stop and report before editing if:
 
 ## Current Known Gaps
 
-- `deletionTracker` is capped at 5000 ids, but long-term permanence is now
-  backed by the `sync_tombstones` SQL path once migration
+- `deletionTracker` keeps local tombstones permanently for immediate/offline
+  anti-resurrection. Long-term server permanence is backed by the
+  `sync_tombstones` SQL path once migration
   `20260513224401_telegram_grade_sync_tombstones.sql` is applied.
 - Multi-tab sync coordination exists for auth refresh, but data sync ownership
   needs stronger leader/queue semantics for Telegram-grade behavior.

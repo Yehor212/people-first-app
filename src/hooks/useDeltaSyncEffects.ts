@@ -61,7 +61,8 @@ export function useDeltaSyncEffects(): void {
       const events = await fetchAllDeltas(lastSeq, abortRef.current.signal);
 
       if (events.length === 0) {
-        dispatchAndSync({ type: "DELTA_EMPTY" });
+        gapDetectorRef.current?.resetTo(lastSeq);
+        dispatchAndSync({ type: "RESET", lastSeq });
         return;
       }
 
@@ -133,11 +134,22 @@ export function useDeltaSyncEffects(): void {
         if (events.length > 0) {
           const deviceId = await getPersistentDeviceId();
           await applyDelta(events, deviceId);
+          const maxSeq = events[events.length - 1].seq;
+          gapDetectorRef.current?.resetTo(maxSeq);
+          dispatchAndSync({ type: "RESET", lastSeq: maxSeq });
         }
       },
     });
 
-    const unsubBroadcast = onRemoteChange(() => {
+    const unsubBroadcast = onRemoteChange((signal) => {
+      if (typeof signal.eventSeq === "number" && gapDetectorRef.current) {
+        const currentSeq = stateRef.current.lastSeq;
+        if (signal.eventSeq <= currentSeq) return;
+        if (signal.eventSeq > currentSeq + 1) {
+          gapDetectorRef.current.onEventSignal(signal.eventSeq);
+          return;
+        }
+      }
       void runDeltaSyncRef.current();
     });
 

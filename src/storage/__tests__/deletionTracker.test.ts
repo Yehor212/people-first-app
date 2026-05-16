@@ -3,6 +3,7 @@ import { db } from "@/storage/db";
 import {
   getDeletedHabitIds,
   getDeletionTrackerKeyForSyncEntity,
+  mergeDeletedHabitIds,
   trackDeletedHabitId,
 } from "@/storage/deletionTracker";
 
@@ -37,5 +38,16 @@ describe("deletionTracker", () => {
     expect(getDeletionTrackerKeyForSyncEntity("gratitude")).toBe("zenflow-deleted-gratitude-ids");
     expect(getDeletionTrackerKeyForSyncEntity("habit_completion")).toBeNull();
     expect(getDeletionTrackerKeyForSyncEntity("setting")).toBeNull();
+  });
+
+  it("keeps tombstones beyond the old local cap so stale backups cannot resurrect data", async () => {
+    const ids = Array.from({ length: 5001 }, (_, index) => `habit-deleted-${index}`);
+
+    await mergeDeletedHabitIds(ids);
+
+    const deletedIds = await getDeletedHabitIds();
+    expect(deletedIds.size).toBe(ids.length);
+    expect(deletedIds.has(ids[0])).toBe(true);
+    expect(deletedIds.has(ids[ids.length - 1])).toBe(true);
   });
 });

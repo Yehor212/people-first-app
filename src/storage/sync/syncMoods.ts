@@ -5,8 +5,7 @@
 
 import { logger } from "@/lib/logger";
 import { triggerDataRefresh } from "@/hooks/useIndexedDB";
-import { broadcastChange } from "@/lib/syncBroadcast";
-import { writeEvent, getPersistentDeviceId } from "@/storage/eventSync";
+import { writeEventAndBroadcast, getPersistentDeviceId } from "@/storage/eventSync";
 import { getDeletedMoodIds, trackDeletedMoodId } from "@/storage/deletionTracker";
 import type { SeverityLevel } from "@sentry/core";
 import type { ErrorCategory } from "@/lib/sentry";
@@ -93,10 +92,15 @@ export const syncMood = async (mood: MoodEntry): Promise<void> => {
       moodId: mood.id,
     });
     logger.log("[Sync] Mood synced:", mood.id);
-    broadcastChange("moods");
     void getPersistentDeviceId()
       .then((did) =>
-        writeEvent("mood", mood.id, "upsert", mood as unknown as Record<string, unknown>, did)
+        writeEventAndBroadcast(
+          "mood",
+          mood.id,
+          "upsert",
+          mood as unknown as Record<string, unknown>,
+          did
+        )
       )
       .catch((err) => logger.warn("[Sync] writeEvent failed:", err));
   } catch (error) {
@@ -158,10 +162,9 @@ export const deleteMoodFromCloud = async (moodId: string): Promise<void> => {
 
     if (error) throw error;
     await trackDeletedMoodId(moodId);
-    broadcastChange("moods");
     logger.log("[Sync] Mood deleted + tracked:", moodId);
     void getPersistentDeviceId()
-      .then((did) => writeEvent("mood", moodId, "delete", null, did))
+      .then((did) => writeEventAndBroadcast("mood", moodId, "delete", null, did))
       .catch((err) => logger.warn("[Sync] writeEvent failed:", err));
   } catch (error) {
     // Handle AbortError separately

@@ -4,8 +4,7 @@
  */
 
 import { logger } from "@/lib/logger";
-import { broadcastChange } from "@/lib/syncBroadcast";
-import { writeEvent, getPersistentDeviceId } from "@/storage/eventSync";
+import { writeEventAndBroadcast, getPersistentDeviceId } from "@/storage/eventSync";
 import { trackDeletedHabitId } from "@/storage/deletionTracker";
 import { isAbortError, isValidUUID } from "@/lib/validation";
 import { supabase, getCurrentUserId } from "@/lib/supabaseClient";
@@ -174,10 +173,15 @@ export const syncHabit = async (habit: Habit): Promise<void> => {
     }
 
     logger.log("[Sync] Habit synced:", habit.id);
-    broadcastChange("habits");
     void getPersistentDeviceId()
       .then((did) =>
-        writeEvent("habit", habit.id, "upsert", habit as unknown as Record<string, unknown>, did)
+        writeEventAndBroadcast(
+          "habit",
+          habit.id,
+          "upsert",
+          habit as unknown as Record<string, unknown>,
+          did
+        )
       )
       .catch((err) => logger.warn("[Sync] writeEvent failed:", err));
   } catch (error) {
@@ -219,10 +223,9 @@ export const deleteHabitFromCloud = async (habitId: string): Promise<void> => {
     if (error) throw error;
 
     await trackDeletedHabitId(habitId);
-    broadcastChange("habits");
     logger.log("[Sync] Habit deleted + tracked:", habitId);
     void getPersistentDeviceId()
-      .then((did) => writeEvent("habit", habitId, "delete", null, did))
+      .then((did) => writeEventAndBroadcast("habit", habitId, "delete", null, did))
       .catch((err) => logger.warn("[Sync] writeEvent failed:", err));
   } catch (error) {
     // Handle AbortError separately
@@ -333,7 +336,7 @@ export const syncHabitCompletion = async (
     logger.log("[Sync] Habit completion synced:", habitId, date, completed);
     void getPersistentDeviceId()
       .then((did) =>
-        writeEvent(
+        writeEventAndBroadcast(
           "habit_completion",
           `${habitId}_${date}`,
           shouldPersist ? "upsert" : "delete",

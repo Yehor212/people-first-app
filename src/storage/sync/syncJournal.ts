@@ -4,8 +4,7 @@
  */
 
 import { logger } from "@/lib/logger";
-import { broadcastChange } from "@/lib/syncBroadcast";
-import { writeEvent, getPersistentDeviceId } from "@/storage/eventSync";
+import { writeEventAndBroadcast, getPersistentDeviceId } from "@/storage/eventSync";
 import { isAbortError } from "@/lib/validation";
 import { supabase, getCurrentUserId } from "@/lib/supabaseClient";
 import type { Json } from "@/types/supabase";
@@ -59,10 +58,15 @@ export const syncJournalEntry = async (entry: JournalEntry): Promise<void> => {
 
     if (error) throw error;
     logger.log("[Sync] Journal entry synced:", entry.id);
-    broadcastChange("journal");
     void getPersistentDeviceId()
       .then((did) =>
-        writeEvent("journal", entry.id, "upsert", entry as unknown as Record<string, unknown>, did)
+        writeEventAndBroadcast(
+          "journal",
+          entry.id,
+          "upsert",
+          entry as unknown as Record<string, unknown>,
+          did
+        )
       )
       .catch((err) => logger.warn("[Sync] writeEvent failed:", err));
 
@@ -113,9 +117,8 @@ export const deleteJournalEntryFromCloud = async (entryId: string): Promise<void
     if (audioRes.error) logger.warn("[Sync] Journal audio delete failed:", audioRes.error);
 
     logger.log("[Sync] Journal entry deleted from cloud:", entryId);
-    broadcastChange("journal");
     void getPersistentDeviceId()
-      .then((did) => writeEvent("journal", entryId, "delete", null, did))
+      .then((did) => writeEventAndBroadcast("journal", entryId, "delete", null, did))
       .catch((err) => logger.warn("[Sync] writeEvent failed:", err));
   } catch (error) {
     if (isAbortError(error)) {

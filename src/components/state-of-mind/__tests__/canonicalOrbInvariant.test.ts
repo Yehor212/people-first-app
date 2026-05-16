@@ -112,6 +112,17 @@ describe("canonical orb invariant", () => {
     expect(source).toContain("if (!glRenderer) {");
   });
 
+  it("keeps forced WebGL surfaces visible before the async renderer is ready", () => {
+    const source = readSource("src/components/state-of-mind/ValenceOrb.tsx");
+
+    expect(source).toContain("valence-orb-first-paint-fallback");
+    expect(source).toContain("createFirstPaintFallbackStyle");
+    expect(source).toContain("visualReadyRef");
+    expect(source).toContain("markVisualReadyRef");
+    expect(source).toContain("worker.onerror");
+    expect(source).toContain("forceCanonicalWebGL && !signal.aborted && mountedRef.current");
+  });
+
   it("keeps canonical orb canvases paint-contained to avoid route-level render stalls", () => {
     const source = readSource("src/components/state-of-mind/ValenceOrb.tsx");
 

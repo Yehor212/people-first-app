@@ -129,8 +129,9 @@ describe("ValenceOrb motion profile", () => {
       return {} as CanvasRenderingContext2D;
     });
 
-    render(createElement(ValenceOrb, { valence: 0, renderer: "webgl" }));
+    const { getByTestId } = render(createElement(ValenceOrb, { valence: 0, renderer: "webgl" }));
 
     expect(createOrbGL2).not.toHaveBeenCalled();
+    expect(getByTestId("valence-orb-first-paint-fallback").style.opacity).toBe("1");
   });
 });

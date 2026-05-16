@@ -5,8 +5,7 @@
 
 import { logger } from "@/lib/logger";
 import { triggerDataRefresh } from "@/hooks/useIndexedDB";
-import { broadcastChange } from "@/lib/syncBroadcast";
-import { writeEvent, getPersistentDeviceId } from "@/storage/eventSync";
+import { writeEventAndBroadcast, getPersistentDeviceId } from "@/storage/eventSync";
 import { getDeletedFocusSessionIds } from "@/storage/deletionTracker";
 import { isAbortError, isValidUUID } from "@/lib/validation";
 import { supabase, getCurrentUserId } from "@/lib/supabaseClient";
@@ -60,10 +59,9 @@ export const syncFocusSession = async (session: FocusSession): Promise<void> => 
 
     if (error) throw error;
     logger.log("[Sync] Focus session synced:", session.id);
-    broadcastChange("focus");
     void getPersistentDeviceId()
       .then((did) =>
-        writeEvent(
+        writeEventAndBroadcast(
           "focus",
           session.id,
           "upsert",

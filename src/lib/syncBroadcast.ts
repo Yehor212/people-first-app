@@ -26,6 +26,9 @@ interface SyncSignal {
   entity: SyncEntity;
   deviceId: string;
   ts: number;
+  /** Durable sync_events.seq, when the signal was emitted after an event-log write. */
+  eventSeq?: number;
+  /** Per-device broadcast sequence for replay protection only. */
   seq: number;
 }
 
@@ -119,7 +122,7 @@ export function initSyncBroadcast(userId: string): void {
 /**
  * Broadcast a change signal to other devices. Fire-and-forget.
  */
-export function broadcastChange(entity: SyncEntity): void {
+export function broadcastChange(entity: SyncEntity, eventSeq?: number): void {
   if (!channel) return;
 
   broadcastSeq++;
@@ -128,6 +131,7 @@ export function broadcastChange(entity: SyncEntity): void {
     deviceId: currentDeviceId,
     ts: Date.now(),
     seq: broadcastSeq,
+    ...(typeof eventSeq === "number" ? { eventSeq } : {}),
   };
 
   channel

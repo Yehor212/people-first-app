@@ -12,13 +12,14 @@ import { db } from "@/storage/db";
 import { logger } from "@/lib/logger";
 import { isAbortError } from "@/lib/validation";
 import { triggerDataRefresh } from "@/hooks/useIndexedDB";
+import { broadcastChange, type SyncEntity } from "@/lib/syncBroadcast";
 import type { Json } from "@/types/supabase";
 import type { IndexableType, Table } from "dexie";
 import type { LoopHabitType } from "@/types";
 import { decodeHabitCompletionFromCloud } from "@/storage/sync/habitCompletionCodec";
 import {
   getDeletionTrackerKeyForSyncEntity,
-  pruneDeletedIdsForStorage,
+  normalizeDeletedIdsForStorage,
 } from "@/storage/deletionTracker";
 
 // ── Types ─────────────────────────────────────────────────────────────
@@ -69,6 +70,15 @@ const ENTITY_TABLE_MAP: Record<string, string> = {
 
 const SYNC_SEQ_KEY = "sync-last-seq";
 const DEVICE_ID_KEY = "zenflow-device-id";
+const SYNC_ENTITY_BROADCAST_MAP: Record<SyncEntityType, SyncEntity> = {
+  mood: "moods",
+  habit: "habits",
+  focus: "focus",
+  gratitude: "gratitude",
+  journal: "journal",
+  habit_completion: "habits",
+  setting: "settings",
+};
 
 /** Cached device ID — avoids IndexedDB read on every writeEvent call.
  * Call clearDeviceIdCache() on logout to prevent stale ID across account switch. */
@@ -130,28 +140,52 @@ export async function writeEvent(
   op: SyncOp,
   payload: Record<string, unknown> | null,
   deviceId: string
-): Promise<void> {
-  if (!supabase) return;
+): Promise<SyncEvent | null> {
+  if (!supabase) return null;
   const userId = await getCurrentUserId();
-  if (!userId) return;
+  if (!userId) return null;
 
   try {
-    const { error } = await supabase.from("sync_events").insert({
-      user_id: userId,
-      entity_type: entityType,
-      entity_id: entityId,
-      op,
-      payload: payload as Json,
-      device_id: deviceId,
-    });
+    const { data, error } = await supabase
+      .from("sync_events")
+      .insert({
+        user_id: userId,
+        entity_type: entityType,
+        entity_id: entityId,
+        op,
+        payload: payload as Json,
+        device_id: deviceId,
+      })
+      .select("id, seq, entity_type, entity_id, op, payload, device_id, created_at")
+      .single();
 
     if (error) {
       logger.warn("[EventSync] writeEvent failed:", error.message);
+      return null;
     }
+
+    return data as SyncEvent;
   } catch (err) {
-    if (isAbortError(err)) return;
+    if (isAbortError(err)) return null;
     logger.warn("[EventSync] writeEvent error:", err);
+    return null;
   }
+}
+
+/**
+ * Record the durable event first, then wake other clients.
+ * Broadcast is only a hint; the ordered sync_events row is the source of truth.
+ */
+export async function writeEventAndBroadcast(
+  entityType: SyncEntityType,
+  entityId: string,
+  op: SyncOp,
+  payload: Record<string, unknown> | null,
+  deviceId: string
+): Promise<SyncEvent | null> {
+  const event = await writeEvent(entityType, entityId, op, payload, deviceId);
+  broadcastChange(SYNC_ENTITY_BROADCAST_MAP[entityType], event?.seq);
+  return event;
 }
 
 // ── Fetch delta (keyset pagination) ───────────────────────────────────
@@ -362,7 +396,7 @@ async function rememberAppliedDelete(event: SyncEvent): Promise<void> {
 
   await db.settings.put({
     key,
-    value: pruneDeletedIdsForStorage(ids),
+    value: normalizeDeletedIdsForStorage(ids),
   });
 }
 

@@ -106,6 +106,7 @@ export interface ImportReport {
 }
 
 export const BACKUP_SCHEMA_VERSION = 3;
+const MAX_DELETION_TOMBSTONES_PER_COLLECTION = 100000;
 
 const getOrCreateDeviceId = async () => {
   const existing = await db.settings.get("zenflow-device-id");
@@ -353,7 +354,7 @@ export const importBackup = async (
   const v3 = payload as BackupPayloadV3;
   const isValidIdArray = (v: unknown): v is string[] =>
     Array.isArray(v) &&
-    v.length <= 10000 &&
+    v.length <= MAX_DELETION_TOMBSTONES_PER_COLLECTION &&
     v.every((s) => typeof s === "string" && s.length > 0 && s.length <= 100);
   const remoteDeletedHabitIds = isValidIdArray(v3.deletedHabitIds) ? v3.deletedHabitIds : undefined;
   const remoteDeletedJournalIds = isValidIdArray(v3.deletedJournalEntryIds)

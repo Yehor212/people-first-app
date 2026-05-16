@@ -20,7 +20,7 @@
  * a '2d' context — a new <canvas> element is the only solution.
  */
 
-import { useRef, useEffect, useState, memo } from 'react';
+import { useRef, useEffect, useState, memo, type CSSProperties } from 'react';
 import { shouldAnimate } from '@/lib/animationUtils';
 import { recordError } from '@/lib/crashReporting';
 import { hapticTap } from '@/lib/haptics';
@@ -217,6 +217,45 @@ function markRendererTier(canvas: HTMLCanvasElement, tier: 'canvas2d' | 'webgl-m
   canvas.dataset.orbRendererTier = tier;
 }
 
+function createFirstPaintFallbackStyle(
+  valence: number,
+  size: number,
+  isReady: boolean,
+): CSSProperties {
+  const color = valenceToHSL(valence);
+  const highlightLightness = Math.min(92, color.l + 18);
+  const glowLightness = Math.min(86, color.l + 8);
+  const blurPx = Math.max(3, Math.round(size * 0.018));
+  const glowPx = Math.round(size * 0.24);
+
+  const style: CSSProperties & Record<`--${string}`, string | number> = {
+    '--orb-first-paint-highlight': `${color.h} ${Math.min(100, color.s + 10)}% ${highlightLightness}%`,
+    '--orb-first-paint-glow': `${color.h} ${color.s}% ${glowLightness}%`,
+    '--orb-first-paint-core': `${color.h} ${color.s}% ${Math.max(18, color.l - 8)}%`,
+    position: 'absolute',
+    left: '50%',
+    top: '50%',
+    width: size * 0.78,
+    height: size * 0.78,
+    borderRadius: '9999px',
+    pointerEvents: 'none',
+    zIndex: 1,
+    opacity: isReady ? 0 : 1,
+    transform: 'translate3d(-50%, -50%, 0)',
+    transition: 'opacity 180ms ease-out',
+    willChange: 'opacity',
+    background: `radial-gradient(circle at 35% 32%,
+      hsl(var(--orb-first-paint-highlight) / 0.82),
+      hsl(var(--orb-first-paint-glow) / 0.38) 46%,
+      hsl(var(--orb-first-paint-core) / 0.14) 70%,
+      transparent 82%)`,
+    boxShadow: `0 0 ${glowPx}px hsl(var(--orb-first-paint-glow) / 0.22)`,
+    filter: `blur(${blurPx}px)`,
+  };
+
+  return style;
+}
+
 function getRendererOverride(): OrbRendererMode | null {
   try {
     const requested = new URLSearchParams(window.location.search).get('orbRenderer');
@@ -330,7 +369,9 @@ export const ValenceOrb = memo(function ValenceOrb({
   const glRendererRef = useRef<OrbGLRenderer | null>(null);
   const workerRendererRef = useRef<OrbWorkerController | null>(null);
   const canvasElRef = useRef<HTMLCanvasElement | null>(null);
+  const visualReadyRef = useRef(false);
   const [ctxFailed, setCtxFailed] = useState(false);
+  const [visualReady, setVisualReady] = useState(false);
   const genesisStartRef = useRef(0);
   const touchRef = useRef<{ x: number; y: number; startTime: number } | null>(null);
   const shimmerRef = useRef(0); // P3: 1.0→0 decaying flash on large valence change
@@ -356,6 +397,12 @@ export const ValenceOrb = memo(function ValenceOrb({
   // Keep target valence in sync with prop
   const valenceRef = useRef(valence);
   valenceRef.current = valence;
+  const markVisualReadyRef = useRef<() => void>(() => {});
+  markVisualReadyRef.current = () => {
+    if (visualReadyRef.current) return;
+    visualReadyRef.current = true;
+    setVisualReady(true);
+  };
 
   useEffect(() => {
     const state = stateRef.current;
@@ -408,6 +455,9 @@ export const ValenceOrb = memo(function ValenceOrb({
   useEffect(() => {
     const wrapper = wrapperRef.current;
     if (!wrapper) return;
+
+    visualReadyRef.current = false;
+    setVisualReady(false);
 
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const canvasDpr = 1;
@@ -519,6 +569,7 @@ export const ValenceOrb = memo(function ValenceOrb({
         touch: computeTouch(t),
         shimmer: shimmerRef.current,
       });
+      markVisualReadyRef.current();
     };
 
     const createWorkerPayload = (
@@ -565,6 +616,7 @@ export const ValenceOrb = memo(function ValenceOrb({
         isDark: isDarkRead(),
         shimmer: shimmerRef.current,
       });
+      markVisualReadyRef.current();
     };
 
     const renderPendingWebGL = () => {};
@@ -582,6 +634,11 @@ export const ValenceOrb = memo(function ValenceOrb({
         activeCanvas.style.display = 'none';
         wrapper.appendChild(fallbackCanvas);
         render = renderCanvas2D;
+
+        const state = stateRef.current;
+        if (state) {
+          renderCanvas2D(smoothValenceRef.current, state.time, state.particles);
+        }
       }
     };
 
@@ -803,6 +860,7 @@ export const ValenceOrb = memo(function ValenceOrb({
           if (signal.aborted || !mountedRef.current) return;
 
           if (event.data.type === 'rendered') {
+            markVisualReadyRef.current();
             flushWorkerRender();
             return;
           }
@@ -814,6 +872,9 @@ export const ValenceOrb = memo(function ValenceOrb({
             );
             worker.terminate();
             if (webglWorker === worker) webglWorker = null;
+            if (forceCanonicalWebGL && !signal.aborted && mountedRef.current) {
+              degradeToCanvas2D();
+            }
             return;
           }
 
@@ -860,6 +921,18 @@ export const ValenceOrb = memo(function ValenceOrb({
           const state = stateRef.current;
           if (state) {
             renderWorkerGL(smoothValenceRef.current, state.time, state.particles);
+          }
+        };
+
+        worker.onerror = () => {
+          recordError(
+            new Error('Worker WebGL renderer errored before first paint'),
+            { component: 'ValenceOrb', action: 'worker-webgl-error' },
+          );
+          worker.terminate();
+          if (webglWorker === worker) webglWorker = null;
+          if (forceCanonicalWebGL && !signal.aborted && mountedRef.current) {
+            degradeToCanvas2D();
           }
         };
 
@@ -1044,6 +1117,7 @@ export const ValenceOrb = memo(function ValenceOrb({
         touch: { x: 0, y: 0, age: 0 },
         shimmer: 0,
       });
+      markVisualReadyRef.current();
       return;
     }
 
@@ -1061,6 +1135,7 @@ export const ValenceOrb = memo(function ValenceOrb({
         touch: { x: 0, y: 0, age: 0 },
         shimmer: 0,
       });
+      markVisualReadyRef.current();
     } else {
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
@@ -1072,10 +1147,19 @@ export const ValenceOrb = memo(function ValenceOrb({
         dpr,
         isDark: document.documentElement.classList.contains('dark'),
       });
+      markVisualReadyRef.current();
     }
   }, [valence, size]);
 
   // Context failure fallback — soft radial gradient instead of boring pulse
+  const firstPaintFallback = (
+    <span
+      aria-hidden="true"
+      data-testid="valence-orb-first-paint-fallback"
+      style={createFirstPaintFallbackStyle(valence, size, visualReady)}
+    />
+  );
+
   if (ctxFailed) {
     return (
       <div
@@ -1095,6 +1179,7 @@ export const ValenceOrb = memo(function ValenceOrb({
         }}
         aria-hidden="true"
       >
+        {firstPaintFallback}
         <div
           className="rounded-full motion-safe:animate-pulse"
           style={{
@@ -1130,6 +1215,8 @@ export const ValenceOrb = memo(function ValenceOrb({
         backfaceVisibility: 'hidden',
       }}
       aria-hidden="true"
-    />
+    >
+      {firstPaintFallback}
+    </div>
   );
 });

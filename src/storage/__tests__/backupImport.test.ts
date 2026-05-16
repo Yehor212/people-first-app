@@ -52,4 +52,39 @@ describe("importBackup deletion precedence", () => {
     expect(report.habits).toEqual({ added: 1, updated: 0, skipped: 1 });
     expect((await getDeletedHabitIds()).has(deletedHabit.id)).toBe(true);
   });
+
+  it("accepts large permanent tombstone lists so old deletions stay authoritative", async () => {
+    const deletedHabit = makeTestHabit({
+      id: "habit-deleted-after-legacy-limit",
+      name: "Deleted after legacy limit",
+      updatedAt: "2026-05-11T10:00:00.000Z",
+    });
+    const tombstones = Array.from({ length: 10001 }, (_, index) => `habit-tombstone-${index}`);
+    tombstones[0] = deletedHabit.id;
+    const payload: BackupPayloadV3 = {
+      schemaVersion: 3,
+      createdAt: "2026-05-11T10:01:00.000Z",
+      deviceId: "device-test",
+      data: {
+        moods: [],
+        habits: [deletedHabit],
+        focusSessions: [],
+        gratitudeEntries: [],
+        settings: [],
+        journalEntries: [],
+        journalPhotos: [],
+        journalAudio: [],
+      },
+      deletedHabitIds: tombstones,
+    };
+
+    const report = await importBackup(payload, "replace");
+
+    expect(await db.habits.toArray()).toEqual([]);
+    expect(report.habits).toEqual({ added: 0, updated: 0, skipped: 1 });
+    const deletedIds = await getDeletedHabitIds();
+    expect(deletedIds.size).toBe(tombstones.length);
+    expect(deletedIds.has(deletedHabit.id)).toBe(true);
+    expect(deletedIds.has(tombstones[tombstones.length - 1])).toBe(true);
+  });
 });
