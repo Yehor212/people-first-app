@@ -181,6 +181,10 @@ habits-v2-*.png
 output/playwright/habits-*.png
 output/playwright/portal-*.png
 output/playwright/v1-*.png
+output/playwright/*.png
+output/playwright/public-v2/
+output/snyk-code*.err
+output/snyk-code*.json
 
 # Ruflo / AgentDB local databases
 vectors.db

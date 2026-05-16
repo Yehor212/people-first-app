@@ -31,7 +31,7 @@ import { db } from "@/storage/db";
 import { MoodEntry, Habit, FocusSession, GratitudeEntry } from "@/types";
 import type { JournalEntry, JournalPhoto, JournalAudio } from "@/features/journal/types";
 import { RealtimeChannel } from "@supabase/supabase-js";
-import { getDeletedHabitIds, getDeletedJournalEntryIds } from "@/storage/deletionTracker";
+import { mergeSyncTombstones } from "@/storage/sync/serverTombstones";
 import {
   runtimeMoodEntrySchema,
   runtimeHabitSchema,
@@ -120,6 +120,7 @@ export const pullFromCloud = async (): Promise<boolean> => {
       journalEntriesRes,
       journalPhotosRes,
       journalAudioRes,
+      tombstonesRes,
     ] = await Promise.all([
       supabase
         .from("moods")
@@ -156,6 +157,12 @@ export const pullFromCloud = async (): Promise<boolean> => {
         .limit(1000),
       supabase.from("journal_photos").select("*").eq("user_id", userId).limit(5000),
       supabase.from("journal_audio").select("*").eq("user_id", userId).limit(3000),
+      supabase
+        .from("sync_tombstones")
+        .select("entity_type, entity_id, deleted_seq")
+        .eq("user_id", userId)
+        .order("deleted_seq", { ascending: true })
+        .limit(100000),
     ]);
 
     // Check for errors
@@ -169,6 +176,7 @@ export const pullFromCloud = async (): Promise<boolean> => {
     if (journalEntriesRes.error) throw journalEntriesRes.error;
     if (journalPhotosRes.error) throw journalPhotosRes.error;
     if (journalAudioRes.error) throw journalAudioRes.error;
+    if (tombstonesRes.error) throw tombstonesRes.error;
 
     // Supabase data — types flow from Database interface via .from()
     const moodsData = moodsRes.data || [];
@@ -181,6 +189,7 @@ export const pullFromCloud = async (): Promise<boolean> => {
     const journalEntriesData = journalEntriesRes.data || [];
     const journalPhotosData = journalPhotosRes.data || [];
     const journalAudioData = journalAudioRes.data || [];
+    const deletedIds = await mergeSyncTombstones(tombstonesRes.data || []);
 
     // Transform cloud data to local format
     const moods: MoodEntry[] = validateArray(
@@ -383,29 +392,53 @@ export const pullFromCloud = async (): Promise<boolean> => {
         ],
         async () => {
           // Upsert all data
-          if (moods.length) await db.moods.bulkPut(moods);
+          if (deletedIds.mood.size > 0) {
+            await db.moods.bulkDelete([...deletedIds.mood]);
+          }
+          if (moods.length) {
+            const filteredMoods =
+              deletedIds.mood.size > 0 ? moods.filter((m) => !deletedIds.mood.has(m.id)) : moods;
+            if (filteredMoods.length) await db.moods.bulkPut(filteredMoods);
+          }
 
-          // Filter out locally deleted habits before saving — prevents resurrection
-          const deletedIds = await getDeletedHabitIds();
-          if (deletedIds.size > 0) {
-            await db.habits.bulkDelete([...deletedIds]);
+          // Filter out tombstoned habits before saving; deletes beat stale snapshots.
+          if (deletedIds.habit.size > 0) {
+            await db.habits.bulkDelete([...deletedIds.habit]);
           }
           if (habits.length) {
             const filteredHabits =
-              deletedIds.size > 0 ? habits.filter((h) => !deletedIds.has(h.id)) : habits;
+              deletedIds.habit.size > 0
+                ? habits.filter((h) => !deletedIds.habit.has(h.id))
+                : habits;
             if (filteredHabits.length) await db.habits.bulkPut(filteredHabits);
           }
-          if (focusSessions.length) await db.focusSessions.bulkPut(focusSessions);
-          if (gratitudeEntries.length) await db.gratitudeEntries.bulkPut(gratitudeEntries);
+          if (deletedIds.focus.size > 0) {
+            await db.focusSessions.bulkDelete([...deletedIds.focus]);
+          }
+          if (focusSessions.length) {
+            const filteredFocus =
+              deletedIds.focus.size > 0
+                ? focusSessions.filter((f) => !deletedIds.focus.has(f.id))
+                : focusSessions;
+            if (filteredFocus.length) await db.focusSessions.bulkPut(filteredFocus);
+          }
+          if (deletedIds.gratitude.size > 0) {
+            await db.gratitudeEntries.bulkDelete([...deletedIds.gratitude]);
+          }
+          if (gratitudeEntries.length) {
+            const filteredGratitude =
+              deletedIds.gratitude.size > 0
+                ? gratitudeEntries.filter((g) => !deletedIds.gratitude.has(g.id))
+                : gratitudeEntries;
+            if (filteredGratitude.length) await db.gratitudeEntries.bulkPut(filteredGratitude);
+          }
 
           // Journal entries: use updatedAt-based conflict resolution + deletion tracking
           if (journalEntries.length) {
-            const deletedEntryIds = await getDeletedJournalEntryIds();
-
             const localEntries = await db.journalEntries.toArray();
             const localMap = new Map(localEntries.map((e) => [e.id, e]));
             const merged = journalEntries
-              .filter((remote) => !deletedEntryIds.has(remote.id))
+              .filter((remote) => !deletedIds.journal.has(remote.id))
               .map((remote) => {
                 const local = localMap.get(remote.id);
                 if (!local) return remote;
@@ -417,8 +450,8 @@ export const pullFromCloud = async (): Promise<boolean> => {
             // Journal photos: merge — filter out deleted entries + preserve local binary data
             if (journalPhotos.length) {
               const filteredPhotos =
-                deletedEntryIds.size > 0
-                  ? journalPhotos.filter((p) => !deletedEntryIds.has(p.entryId))
+                deletedIds.journal.size > 0
+                  ? journalPhotos.filter((p) => !deletedIds.journal.has(p.entryId))
                   : journalPhotos;
               if (filteredPhotos.length) {
                 const localPhotos = await db.journalPhotos.toArray();
@@ -440,8 +473,8 @@ export const pullFromCloud = async (): Promise<boolean> => {
             // Journal audio: same logic as photos
             if (journalAudioItems.length) {
               const filteredAudio =
-                deletedEntryIds.size > 0
-                  ? journalAudioItems.filter((a) => !deletedEntryIds.has(a.entryId))
+                deletedIds.journal.size > 0
+                  ? journalAudioItems.filter((a) => !deletedIds.journal.has(a.entryId))
                   : journalAudioItems;
               if (filteredAudio.length) {
                 const localAudio = await db.journalAudio.toArray();
@@ -459,27 +492,31 @@ export const pullFromCloud = async (): Promise<boolean> => {
             if (journalPhotos.length) {
               const localPhotos = await db.journalPhotos.toArray();
               const localPhotoMap = new Map(localPhotos.map((p) => [p.id, p]));
-              const mergedPhotos = journalPhotos.map((remote) => {
-                const local = localPhotoMap.get(remote.id);
-                if (local && local.data)
-                  return {
-                    ...remote,
-                    data: local.data,
-                    thumbnail: local.thumbnail,
-                  };
-                return remote;
-              });
+              const mergedPhotos = journalPhotos
+                .filter((remote) => !deletedIds.journal.has(remote.entryId))
+                .map((remote) => {
+                  const local = localPhotoMap.get(remote.id);
+                  if (local && local.data)
+                    return {
+                      ...remote,
+                      data: local.data,
+                      thumbnail: local.thumbnail,
+                    };
+                  return remote;
+                });
               await db.journalPhotos.bulkPut(mergedPhotos);
             }
 
             if (journalAudioItems.length) {
               const localAudio = await db.journalAudio.toArray();
               const localAudioMap = new Map(localAudio.map((a) => [a.id, a]));
-              const mergedAudio = journalAudioItems.map((remote) => {
-                const local = localAudioMap.get(remote.id);
-                if (local && local.data) return { ...remote, data: local.data };
-                return remote;
-              });
+              const mergedAudio = journalAudioItems
+                .filter((remote) => !deletedIds.journal.has(remote.entryId))
+                .map((remote) => {
+                  const local = localAudioMap.get(remote.id);
+                  if (local && local.data) return { ...remote, data: local.data };
+                  return remote;
+                });
               await db.journalAudio.bulkPut(mergedAudio);
             }
           }

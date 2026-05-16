@@ -14,8 +14,9 @@ import {
   applyDelta,
   getServerMaxSeq,
   getPersistentDeviceId,
-  bootstrapLastSeq,
+  getLastSeq,
 } from "@/storage/eventSync";
+import { bootstrapSnapshotThenDelta } from "@/storage/initialDeltaSync";
 import { syncReducer, INITIAL_STATE, getRetryDelay } from "@/lib/syncStateMachine";
 import { SyncGapDetector } from "@/lib/syncGapDetector";
 import { pullFromCloud } from "@/storage/realtimeSync";
@@ -57,7 +58,23 @@ export function useDeltaSyncEffects(): void {
     abortRef.current = new AbortController();
 
     try {
-      const lastSeq = await bootstrapLastSeq();
+      const localSeq = await getLastSeq();
+      if (localSeq === 0) {
+        const result = await bootstrapSnapshotThenDelta(abortRef.current.signal);
+        logger.sync(
+          "[DeltaSync] Snapshot bootstrap complete, fetched=" +
+            result.fetched +
+            ", applied=" +
+            result.applied +
+            ", seq=" +
+            result.lastSeq
+        );
+        gapDetectorRef.current?.resetTo(result.lastSeq);
+        dispatchAndSync({ type: "RESET", lastSeq: result.lastSeq });
+        return;
+      }
+
+      const lastSeq = localSeq;
       const events = await fetchAllDeltas(lastSeq, abortRef.current.signal);
 
       if (events.length === 0) {
