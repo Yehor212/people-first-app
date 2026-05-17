@@ -82,6 +82,16 @@ describe("ShootingStar", () => {
     expect(css).not.toContain("cubic-bezier(0.16, 1, 0.3, 1)");
   });
 
+  it("keeps the night meteor visible when runtime performance mode is active", () => {
+    const css = readFileSync(
+      resolve(process.cwd(), "src/pages/nav-v2/ShootingStar.css"),
+      "utf8",
+    );
+
+    expect(css).not.toContain(":root[data-runtime-perf] .shooting-star");
+    expect(css).not.toContain(":root[data-runtime-perf] .shooting-star__dust");
+  });
+
   it("cleans up from animation end without waiting for the fallback timeout", () => {
     vi.spyOn(Math, "random").mockReturnValue(0);
     const { getByTestId, queryByTestId } = render(<ShootingStar />);

@@ -151,13 +151,6 @@
   }
 }
 
-:root[data-runtime-perf] .shooting-star,
-:root[data-runtime-perf] .shooting-star__dust {
-  animation: none;
-  opacity: 0;
-  will-change: auto;
-}
-
 /* Reduced motion: component already gates at render level; keep this as an
    extra safety net so preferred-reduced-motion browsers never animate. */
 @media (prefers-reduced-motion: reduce) {
