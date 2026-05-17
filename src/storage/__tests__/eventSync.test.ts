@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => ({
   habitTablePut: vi.fn(),
   habitTableDelete: vi.fn(),
   broadcastChange: vi.fn(),
+  enqueue: vi.fn(),
   supabase: null as { from: ReturnType<typeof vi.fn> } | null,
 }));
 
@@ -40,6 +41,12 @@ vi.mock("@/hooks/useIndexedDB", () => ({
 
 vi.mock("@/lib/syncBroadcast", () => ({
   broadcastChange: mocks.broadcastChange,
+}));
+
+vi.mock("@/lib/offlineQueue", () => ({
+  offlineQueue: {
+    enqueue: mocks.enqueue,
+  },
 }));
 
 vi.mock("@/storage/db", () => ({
@@ -123,6 +130,7 @@ describe("eventSync auth guards", () => {
     mocks.habitTableGet.mockResolvedValue(undefined);
     mocks.habitTablePut.mockResolvedValue(undefined);
     mocks.habitTableDelete.mockResolvedValue(undefined);
+    mocks.enqueue.mockResolvedValue(undefined);
     mocks.table.mockImplementation((tableName: string) => {
       if (tableName === "habits") {
         return {
@@ -386,13 +394,14 @@ describe("eventSync auth guards", () => {
       op: "upsert",
       payload: { id: "habit-written" },
       device_id: "device-1",
+      idempotency_key: expect.stringContaining("device-1:habit:habit-written:upsert:"),
     });
     expect(mocks.insertSingle).toHaveBeenCalled();
     expect(mocks.broadcastChange).toHaveBeenCalledWith("habits", 21);
     expect(event?.seq).toBe(21);
   });
 
-  it("still sends a wake-up signal without durable seq when the event write is unavailable", async () => {
+  it("queues a durable event retry and avoids stale wake-up when the event write is unavailable", async () => {
     mocks.getCurrentUserId.mockResolvedValue("user-1");
     mocks.insertSingle.mockResolvedValueOnce({
       data: null,
@@ -402,6 +411,23 @@ describe("eventSync auth guards", () => {
     const event = await writeEventAndBroadcast("mood", "mood-1", "delete", null, "device-1");
 
     expect(event).toBeNull();
-    expect(mocks.broadcastChange).toHaveBeenCalledWith("moods", undefined);
+    expect(mocks.broadcastChange).not.toHaveBeenCalled();
+    expect(mocks.enqueue).toHaveBeenCalledWith(
+      "WRITE_SYNC_EVENT",
+      expect.stringContaining("sync-event:mood:mood-1:delete:"),
+      {
+        entityType: "mood",
+        entityId: "mood-1",
+        op: "delete",
+        payload: null,
+        deviceId: "device-1",
+        idempotencyKey: expect.stringContaining("device-1:mood:mood-1:delete:"),
+      },
+      {
+        deduplicate: false,
+        maxRetries: 20,
+        priority: "critical",
+      }
+    );
   });
 });

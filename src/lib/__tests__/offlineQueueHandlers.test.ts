@@ -43,6 +43,19 @@ vi.mock("@/storage/realtimeSync", () => ({
   deleteJournalEntryFromCloud: vi.fn(() => Promise.resolve()),
 }));
 
+vi.mock("@/storage/eventSync", () => ({
+  isSyncEventWriteIntent: vi.fn(
+    (value: unknown) =>
+      typeof value === "object" &&
+      value !== null &&
+      "entityType" in value &&
+      "entityId" in value &&
+      "op" in value &&
+      "deviceId" in value
+  ),
+  writeQueuedEventAndBroadcast: vi.fn(() => Promise.resolve()),
+}));
+
 // Mock validation — safeValidate returns the value if valid, null if invalid
 vi.mock("@/lib/validation", () => ({
   moodEntrySchema: { _tag: "moodEntrySchema" },
@@ -74,6 +87,7 @@ import {
   syncJournalEntry,
   deleteJournalEntryFromCloud,
 } from "@/storage/realtimeSync";
+import { writeQueuedEventAndBroadcast } from "@/storage/eventSync";
 import { safeValidate } from "@/lib/validation";
 import type { MoodEntry, Habit, FocusSession, GratitudeEntry } from "@/types";
 
@@ -154,11 +168,12 @@ describe("offlineQueueHandlers", () => {
       expect(registeredTypes).toContain("UPDATE_SETTINGS");
       expect(registeredTypes).toContain("SYNC_JOURNAL_ENTRY");
       expect(registeredTypes).toContain("DELETE_JOURNAL_ENTRY");
+      expect(registeredTypes).toContain("WRITE_SYNC_EVENT");
     });
 
-    it("registers exactly 13 handlers", () => {
+    it("registers exactly 14 handlers", () => {
       initializeOfflineQueueHandlers();
-      expect(offlineQueue.registerHandler).toHaveBeenCalledTimes(13);
+      expect(offlineQueue.registerHandler).toHaveBeenCalledTimes(14);
     });
 
     it("calls processQueue when online", () => {
@@ -348,6 +363,21 @@ describe("offlineQueueHandlers", () => {
       await handler(makeAction("DELETE_JOURNAL_ENTRY", null, "journal-del"));
 
       expect(deleteJournalEntryFromCloud).toHaveBeenCalledWith("journal-del");
+    });
+
+    it("WRITE_SYNC_EVENT handler retries the durable event-log write", async () => {
+      const handler = getHandler("WRITE_SYNC_EVENT");
+      const intent = {
+        entityType: "habit",
+        entityId: "habit-1",
+        op: "delete",
+        payload: null,
+        deviceId: "device-1",
+      };
+
+      await handler(makeAction("WRITE_SYNC_EVENT", intent, "sync-event:habit:habit-1:delete"));
+
+      expect(writeQueuedEventAndBroadcast).toHaveBeenCalledWith(intent);
     });
 
     it("UPDATE_SETTINGS handler is a no-op placeholder", async () => {

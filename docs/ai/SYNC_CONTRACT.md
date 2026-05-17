@@ -72,8 +72,12 @@ to the latest event-log state.
 
 7. **Retries need idempotency.**
    - New critical user actions should use a stable operation/idempotency key.
-   - Fire-and-forget event writes are acceptable only for legacy compatibility
-     or low-risk telemetry-like updates; core data must have a retry story.
+   - Core data event writes must not be fire-and-forget. If the domain table
+     mutation succeeds but `sync_events` cannot be written, the action must enter
+     the critical `WRITE_SYNC_EVENT` outbox and broadcast only after a durable
+     `sync_events.seq` exists.
+   - Fire-and-forget writes are acceptable only for legacy compatibility or
+     low-risk telemetry-like updates that do not affect user state.
 
 8. **V1 and V2 are one product state.**
    - V1 and V2 may have different UI, but they must read/write the same durable
@@ -126,11 +130,13 @@ cmd /c npm run lint
 cmd /c npm run check:sync-contract
 cmd /c npm run test -- src/storage/__tests__/eventSync.test.ts src/lib/__tests__/syncStateMachine.test.ts src/lib/__tests__/syncGapDetector.test.ts src/storage/__tests__/deletionTracker.test.ts src/lib/__tests__/offlineQueueHandlers.test.ts
 cmd /c npm run check:supabase-migration-prefixes
+cmd /c npm run smoke:sync-account
 ```
 
 `check:sync-contract` is the future-task hook for this contract. It verifies the
-repo still has ordered event-log wiring, snapshot-then-delta bootstrap,
-server-backed tombstones, anti-resurrection tests, and CI/doc references.
+repo still has ordered event-log wiring, the critical event-write outbox,
+snapshot-then-delta bootstrap, server-backed tombstones, anti-resurrection tests,
+and CI/doc references.
 
 Behavioral gates for user-visible sync work:
 
@@ -144,6 +150,9 @@ Behavioral gates for user-visible sync work:
   delayed remote pull must not bring the deleted entity back.
 - For settings and preferences, prove the active UI reads the same setting after
   hydration, reload, and route/shell switch.
+- For same-account release claims, run `npm run smoke:sync-account` with
+  `ZENFLOW_SYNC_TEST_EMAIL` and `ZENFLOW_SYNC_TEST_PASSWORD`; without those
+  credentials the live account layer is `UNVERIFIED`, not passed.
 
 When UI or route behavior is involved, also run a production-browser smoke for
 the affected route. When the change is intended for public users, verify remote

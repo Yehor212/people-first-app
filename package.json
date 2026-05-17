@@ -46,6 +46,7 @@
     "check:all": "npm run typecheck && npm run lint && npm run i18n:check && npm run i18n:deep && npm run check:colors && npm run check:visual",
     "smoke:v2-splash": "node scripts/smoke-v2-splash.cjs",
     "smoke:chrome-performance": "node scripts/smoke-chrome-performance.cjs",
+    "smoke:sync-account": "node scripts/smoke-sync-account.cjs",
     "diagnose:dev-performance": "node scripts/diagnose-dev-performance.cjs",
     "cleanup:dev-processes": "node scripts/cleanup-dev-processes.cjs",
     "ci:preflight": "npx eslint . --max-warnings=0 && npm run typecheck && npm run i18n:check && npm run i18n:deep && npm run oxlint && npm run check:circular && vitest run --coverage && npm run tokens:build && vite build && npm run verify:tailwind && npm run check:size && npm run check:canonical-orbs && npm run check:sync-contract && npm run ratchet:check",

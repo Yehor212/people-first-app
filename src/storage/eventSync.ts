@@ -10,6 +10,7 @@
 import { supabase, getCurrentUserId } from "@/lib/supabaseClient";
 import { db } from "@/storage/db";
 import { logger } from "@/lib/logger";
+import { offlineQueue } from "@/lib/offlineQueue";
 import { isAbortError } from "@/lib/validation";
 import { triggerDataRefresh } from "@/hooks/useIndexedDB";
 import { broadcastChange, type SyncEntity } from "@/lib/syncBroadcast";
@@ -51,6 +52,15 @@ export interface DeltaResult {
   hasMore: boolean;
 }
 
+export interface SyncEventWriteIntent {
+  entityType: SyncEntityType;
+  entityId: string;
+  op: SyncOp;
+  payload: Record<string, unknown> | null;
+  deviceId: string;
+  idempotencyKey?: string;
+}
+
 // ── Entity type to Dexie table mapping ────────────────────────────────
 
 // Maps entity types to Dexie table names for applyDelta.
@@ -79,6 +89,69 @@ const SYNC_ENTITY_BROADCAST_MAP: Record<SyncEntityType, SyncEntity> = {
   habit_completion: "habits",
   setting: "settings",
 };
+
+const SYNC_ENTITY_TYPES: SyncEntityType[] = [
+  "mood",
+  "habit",
+  "focus",
+  "gratitude",
+  "journal",
+  "habit_completion",
+  "setting",
+];
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+export function isSyncEventWriteIntent(value: unknown): value is SyncEventWriteIntent {
+  if (!isRecord(value)) return false;
+
+  const { entityType, entityId, op, payload, deviceId, idempotencyKey } = value;
+  return (
+    typeof entityType === "string" &&
+    SYNC_ENTITY_TYPES.includes(entityType as SyncEntityType) &&
+    typeof entityId === "string" &&
+    entityId.length > 0 &&
+    (op === "upsert" || op === "delete") &&
+    (payload === null || isRecord(payload)) &&
+    typeof deviceId === "string" &&
+    deviceId.length > 0 &&
+    (idempotencyKey === undefined ||
+      (typeof idempotencyKey === "string" && idempotencyKey.length > 0))
+  );
+}
+
+function createEventIdempotencyKey(intent: Omit<SyncEventWriteIntent, "idempotencyKey">): string {
+  const random =
+    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+  return `${intent.deviceId}:${intent.entityType}:${intent.entityId}:${intent.op}:${random}`;
+}
+
+function withIdempotencyKey(intent: SyncEventWriteIntent): SyncEventWriteIntent {
+  return {
+    ...intent,
+    idempotencyKey:
+      intent.idempotencyKey ??
+      createEventIdempotencyKey({
+        entityType: intent.entityType,
+        entityId: intent.entityId,
+        op: intent.op,
+        payload: intent.payload,
+        deviceId: intent.deviceId,
+      }),
+  };
+}
+
+function isDuplicateIdempotencyError(error: unknown): boolean {
+  if (!isRecord(error)) return false;
+  return (
+    error.code === "23505" ||
+    (typeof error.message === "string" && error.message.includes("sync_events_idempotency_idx"))
+  );
+}
 
 /** Cached device ID — avoids IndexedDB read on every writeEvent call.
  * Call clearDeviceIdCache() on logout to prevent stale ID across account switch. */
@@ -131,9 +204,72 @@ export async function saveLastSeq(seq: number): Promise<void> {
 
 /**
  * Record a sync event in the cloud event log.
- * Fire-and-forget: failure is logged but never thrown.
  * The server assigns seq via BEFORE INSERT trigger.
+ * Callers that need cross-device convergence should use writeEventAndBroadcast()
+ * so transient failures enter the durable WRITE_SYNC_EVENT outbox.
  */
+async function writeEventStrict(intent: SyncEventWriteIntent): Promise<SyncEvent> {
+  if (!supabase) throw new Error("[EventSync] Supabase not configured");
+  const userId = await getCurrentUserId();
+  if (!userId) throw new Error("[EventSync] User not authenticated");
+  const stableIntent = withIdempotencyKey(intent);
+
+  const { data, error } = await supabase
+    .from("sync_events")
+    .insert({
+      user_id: userId,
+      entity_type: stableIntent.entityType,
+      entity_id: stableIntent.entityId,
+      op: stableIntent.op,
+      payload: stableIntent.payload as Json,
+      device_id: stableIntent.deviceId,
+      idempotency_key: stableIntent.idempotencyKey,
+    })
+    .select("id, seq, entity_type, entity_id, op, payload, device_id, created_at")
+    .single();
+
+  if (error) {
+    if (stableIntent.idempotencyKey && isDuplicateIdempotencyError(error)) {
+      const existing = await fetchEventByIdempotencyKey(userId, stableIntent.idempotencyKey);
+      if (existing) return existing;
+    }
+    throw new Error(`[EventSync] writeEvent failed: ${error.message}`);
+  }
+  if (!data) throw new Error("[EventSync] writeEvent failed: empty response");
+
+  return data as SyncEvent;
+}
+
+async function fetchEventByIdempotencyKey(
+  userId: string,
+  idempotencyKey: string
+): Promise<SyncEvent | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase
+    .from("sync_events")
+    .select("id, seq, entity_type, entity_id, op, payload, device_id, created_at")
+    .eq("user_id", userId)
+    .eq("idempotency_key", idempotencyKey)
+    .single();
+
+  if (error || !data) return null;
+  return data as SyncEvent;
+}
+
+async function queueSyncEventWrite(intent: SyncEventWriteIntent): Promise<void> {
+  const stableIntent = withIdempotencyKey(intent);
+  await offlineQueue.enqueue(
+    "WRITE_SYNC_EVENT",
+    `sync-event:${stableIntent.entityType}:${stableIntent.entityId}:${stableIntent.op}:${Date.now()}`,
+    stableIntent,
+    {
+      deduplicate: false,
+      maxRetries: 20,
+      priority: "critical",
+    }
+  );
+}
+
 export async function writeEvent(
   entityType: SyncEntityType,
   entityId: string,
@@ -141,30 +277,8 @@ export async function writeEvent(
   payload: Record<string, unknown> | null,
   deviceId: string
 ): Promise<SyncEvent | null> {
-  if (!supabase) return null;
-  const userId = await getCurrentUserId();
-  if (!userId) return null;
-
   try {
-    const { data, error } = await supabase
-      .from("sync_events")
-      .insert({
-        user_id: userId,
-        entity_type: entityType,
-        entity_id: entityId,
-        op,
-        payload: payload as Json,
-        device_id: deviceId,
-      })
-      .select("id, seq, entity_type, entity_id, op, payload, device_id, created_at")
-      .single();
-
-    if (error) {
-      logger.warn("[EventSync] writeEvent failed:", error.message);
-      return null;
-    }
-
-    return data as SyncEvent;
+    return await writeEventStrict({ entityType, entityId, op, payload, deviceId });
   } catch (err) {
     if (isAbortError(err)) return null;
     logger.warn("[EventSync] writeEvent error:", err);
@@ -181,10 +295,30 @@ export async function writeEventAndBroadcast(
   entityId: string,
   op: SyncOp,
   payload: Record<string, unknown> | null,
-  deviceId: string
+  deviceId: string,
+  options: { queueOnFailure?: boolean } = {}
 ): Promise<SyncEvent | null> {
-  const event = await writeEvent(entityType, entityId, op, payload, deviceId);
-  broadcastChange(SYNC_ENTITY_BROADCAST_MAP[entityType], event?.seq);
+  const intent = withIdempotencyKey({ entityType, entityId, op, payload, deviceId });
+  try {
+    const event = await writeEventStrict(intent);
+    broadcastChange(SYNC_ENTITY_BROADCAST_MAP[entityType], event.seq);
+    return event;
+  } catch (err) {
+    if (!isAbortError(err)) {
+      logger.warn("[EventSync] Durable event write failed; queued for retry:", err);
+    }
+    if (options.queueOnFailure !== false) {
+      await queueSyncEventWrite(intent);
+    }
+    return null;
+  }
+}
+
+export async function writeQueuedEventAndBroadcast(
+  intent: SyncEventWriteIntent
+): Promise<SyncEvent> {
+  const event = await writeEventStrict(intent);
+  broadcastChange(SYNC_ENTITY_BROADCAST_MAP[intent.entityType], event.seq);
   return event;
 }
 

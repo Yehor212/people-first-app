@@ -109,6 +109,11 @@ function main() {
     "applyDelta",
     "await saveLastSeq(maxSeq)",
     "getDeletionTrackerKeyForSyncEntity",
+    "WRITE_SYNC_EVENT",
+    "writeQueuedEventAndBroadcast",
+    "queueOnFailure",
+    "idempotencyKey",
+    "sync_events_idempotency_idx",
   ]);
 
   requireIncludes("src/hooks/useDeltaSyncEffects.ts", [
@@ -197,6 +202,18 @@ function main() {
     "takes over an expired localStorage lease",
   ]);
 
+  requireIncludes("src/lib/offlineQueueHandlers.ts", [
+    "WRITE_SYNC_EVENT",
+    "isSyncEventWriteIntent",
+    "writeQueuedEventAndBroadcast",
+  ]);
+
+  requireIncludes("src/lib/offlineQueue.ts", [
+    "WRITE_SYNC_EVENT",
+    "syncEventActions",
+    "deduplicate?: boolean; priority?: OfflineActionPriority",
+  ]);
+
   requireIncludes("src/storage/sync/__tests__/serverTombstones.test.ts", [
     "collects only supported sync tombstone entity families",
     "merges server tombstones into every local anti-resurrection tracker",
@@ -214,6 +231,8 @@ function main() {
   requireIncludes("docs/ai/SYNC_CONTRACT.md", [
     "sync_events.seq",
     "sync_tombstones",
+    "WRITE_SYNC_EVENT",
+    "smoke:sync-account",
     "broadcast is a wake-up signal",
     "V1 and V2 are one product state",
     "anti-resurrection",
@@ -223,6 +242,7 @@ function main() {
   requireIncludes("docs/ai/TELEGRAM_GRADE_RUNTIME_CONTRACT.md", [
     "docs/ai/SYNC_CONTRACT.md",
     "sync_events.seq",
+    "WRITE_SYNC_EVENT",
     "Tombstones beat stale snapshots",
     "Multi-tab browser",
   ]);
@@ -236,7 +256,16 @@ function main() {
 
   requireIncludes("package.json", [
     '"check:sync-contract": "node scripts/check-sync-contract.cjs"',
+    '"smoke:sync-account": "node scripts/smoke-sync-account.cjs"',
     "npm run check:sync-contract",
+  ]);
+
+  requireIncludes("scripts/smoke-sync-account.cjs", [
+    "ZENFLOW_SYNC_TEST_EMAIL",
+    "sync_events",
+    "sync_tombstones",
+    "idempotency_key",
+    "upsert,delete",
   ]);
 
   requireIncludes(".github/workflows/deploy.yml", [

@@ -12,6 +12,10 @@ import { syncFocusSession } from "@/storage/realtimeSync";
 import { syncGratitude, deleteGratitudeFromCloud } from "@/storage/realtimeSync";
 import { syncJournalEntry, deleteJournalEntryFromCloud, syncSetting } from "@/storage/realtimeSync";
 import { logger } from "./logger";
+import {
+  isSyncEventWriteIntent,
+  writeQueuedEventAndBroadcast,
+} from "@/storage/eventSync";
 import { MoodEntry, Habit, FocusSession, GratitudeEntry } from "@/types";
 import type { JournalEntry } from "@/features/journal/types";
 import {
@@ -168,6 +172,17 @@ export function initializeOfflineQueueHandlers(): void {
 
   offlineQueue.registerHandler("DELETE_JOURNAL_ENTRY", async (action: OfflineAction) => {
     await deleteJournalEntryFromCloud(action.entityId);
+  });
+
+  // Durable event-log outbox.
+  // If the domain row was already saved but sync_events failed transiently,
+  // retry the ordered event before waking other clients.
+  offlineQueue.registerHandler("WRITE_SYNC_EVENT", async (action: OfflineAction) => {
+    if (!isSyncEventWriteIntent(action.payload)) {
+      logger.warn("[OfflineQueue] Invalid sync event payload, skipping:", action.entityId);
+      return;
+    }
+    await writeQueuedEventAndBroadcast(action.payload);
   });
 
   logger.log("[OfflineQueue] Handlers initialized");

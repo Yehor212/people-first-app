@@ -50,6 +50,9 @@ UI handoff.
    - `sync_events.seq` owns cross-device ordering.
    - BroadcastChannel, Supabase Realtime, service worker messages, and native
      resume events are wake-up signals, not durable ordering sources.
+   - A successful domain write with a failed `sync_events` insert must enter the
+     critical `WRITE_SYNC_EVENT` outbox and broadcast only after the durable
+     event row exists.
    - V1 and V2 shells must both mount `useTelegramGradeSyncRuntime()` so direct
      `/orb`, `/habits`, `/diary`, and `/settings` entry points receive the same
      ordered-delta runtime as classic V1.

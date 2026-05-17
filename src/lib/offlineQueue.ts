@@ -52,7 +52,8 @@ export type OfflineActionType =
   | "DELETE_GRATITUDE"
   | "UPDATE_SETTINGS"
   | "SYNC_JOURNAL_ENTRY"
-  | "DELETE_JOURNAL_ENTRY";
+  | "DELETE_JOURNAL_ENTRY"
+  | "WRITE_SYNC_EVENT";
 
 export type OfflineActionPriority = "critical" | "high" | "normal" | "low";
 
@@ -82,9 +83,11 @@ const PRIORITY_ORDER: Record<OfflineActionPriority, number> = {
  * - CREATE + UPDATE same entity → keep CREATE with latest payload
  */
 export function compactQueue(actions: OfflineAction[]): OfflineAction[] {
+  const syncEventActions = actions.filter((action) => action.type === "WRITE_SYNC_EVENT");
+  const compactableActions = actions.filter((action) => action.type !== "WRITE_SYNC_EVENT");
   const byEntity = new Map<string, OfflineAction[]>();
 
-  for (const action of actions) {
+  for (const action of compactableActions) {
     const key = `${action.entityId}`;
     const existing = byEntity.get(key) || [];
     existing.push(action);
@@ -122,7 +125,7 @@ export function compactQueue(actions: OfflineAction[]): OfflineAction[] {
   }
 
   // Sort by priority then timestamp
-  return compacted.sort((a, b) => {
+  return [...compacted, ...syncEventActions].sort((a, b) => {
     const pa = PRIORITY_ORDER[a.priority || "normal"];
     const pb = PRIORITY_ORDER[b.priority || "normal"];
     if (pa !== pb) return pa - pb;
@@ -231,7 +234,7 @@ class OfflineQueue {
     type: OfflineActionType,
     entityId: string,
     payload: unknown,
-    options: { maxRetries?: number; deduplicate?: boolean } = {}
+    options: { maxRetries?: number; deduplicate?: boolean; priority?: OfflineActionPriority } = {}
   ): Promise<void> {
     // Wait for initialization to complete before modifying queue
     if (this.initPromise) {
@@ -271,9 +274,9 @@ class OfflineQueue {
     type: OfflineActionType,
     entityId: string,
     payload: unknown,
-    options: { maxRetries?: number; deduplicate?: boolean } = {}
+    options: { maxRetries?: number; deduplicate?: boolean; priority?: OfflineActionPriority } = {}
   ): Promise<void> {
-    const { maxRetries = DEFAULT_MAX_RETRIES, deduplicate = true } = options;
+    const { maxRetries = DEFAULT_MAX_RETRIES, deduplicate = true, priority = "normal" } = options;
 
     // Check queue size limit - BLOCK instead of silently dropping
     // This prevents critical data loss without user awareness
@@ -354,6 +357,7 @@ class OfflineQueue {
       timestamp: Date.now(),
       retries: 0,
       maxRetries,
+      priority,
     };
 
     this.state.actions.push(action);
