@@ -1,0 +1,35 @@
+(() => {
+  const key = "zenflow-runtime-perf-device-guard";
+  const startup = "startup";
+  const offValues = new Set(["0", "false", "no", "off"]);
+
+  const disabledByQuery = () => {
+    const params = new URLSearchParams(window.location.search);
+    const explicit = params.get("runtimePerfGuard") ?? params.get("perfGuard");
+    return explicit !== null && offValues.has(explicit.trim().toLowerCase());
+  };
+
+  const shouldApply = (rawGuard) => {
+    if (!rawGuard) return false;
+    try {
+      const guard = JSON.parse(rawGuard);
+      return (
+        guard?.version === 1 &&
+        guard?.mode === startup &&
+        typeof guard?.expiresAt === "number" &&
+        guard.expiresAt > Date.now()
+      );
+    } catch {
+      return false;
+    }
+  };
+
+  try {
+    if (typeof window === "undefined" || typeof document === "undefined") return;
+    if (disabledByQuery()) return;
+    if (!shouldApply(window.localStorage.getItem(key))) return;
+    document.documentElement.dataset.runtimePerf = startup;
+  } catch {
+    // Best-effort startup guard: never block app boot if storage is unavailable.
+  }
+})();

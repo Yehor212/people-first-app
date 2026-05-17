@@ -61,6 +61,14 @@
   animation: none;
 }
 
+/* Runtime pressure trims decorative daylight layers; canonical orbs stay intact. */
+:root[data-runtime-perf] .day-cosmic__photon-field,
+:root[data-runtime-perf] .day-cosmic__motes,
+:root[data-runtime-perf] .day-cosmic__sun-threads,
+:root[data-runtime-perf] .orb-day-flourish {
+  display: none;
+}
+
 /* ==================== Layer 1 — Base aurora mesh ==================== */
 .day-cosmic__base {
   position: absolute;
