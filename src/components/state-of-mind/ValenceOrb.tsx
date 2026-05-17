@@ -27,7 +27,6 @@ import { hapticTap } from '@/lib/haptics';
 import { hapticMedium } from '@/lib/haptics';
 import { safeSessionStorageGet, safeSessionStorageSet } from '@/lib/safeJson';
 import { SSK } from '@/lib/storageKeys';
-import { isRuntimePerformanceLimited } from '@/observability/runtimePerformanceMode';
 import { createParticlePool, updateParticles, burstParticles } from './particleSystem';
 import { drawOrbScene, getShapeParams } from './orbRenderer';
 import { valenceToHSL } from './colorUtils';
@@ -71,7 +70,6 @@ type OrbWorkerController = {
 };
 
 const WEBGL_FRAME_INTERVAL = 1000 / 60; // 60fps for healthy WebGL sessions.
-const WEBGL_PERFORMANCE_LIMITED_FRAME_INTERVAL = 1000 / 30; // Same canonical renderer, lower compositor pressure.
 const CANVAS_FRAME_INTERVAL = 1000 / 30; // 30fps for Canvas 2D fallback
 
 function shouldAnimateCanonicalOrb(): boolean {
@@ -123,12 +121,9 @@ export const ORB_TRANSITION_SETTINGS: Record<OrbTransitionProfile, OrbTransition
 
 export function resolveOrbFrameInterval(
   hasWebGLRenderer: boolean,
-  runtimePerformanceLimited = isRuntimePerformanceLimited(),
 ): number {
   if (!hasWebGLRenderer) return CANVAS_FRAME_INTERVAL;
-  return runtimePerformanceLimited
-    ? WEBGL_PERFORMANCE_LIMITED_FRAME_INTERVAL
-    : WEBGL_FRAME_INTERVAL;
+  return WEBGL_FRAME_INTERVAL;
 }
 
 export function resolveOrbTransitionSettings(

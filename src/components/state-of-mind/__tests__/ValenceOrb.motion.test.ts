@@ -26,6 +26,7 @@ vi.mock("../orbShader", async (importOriginal) => {
 
 afterEach(() => {
   vi.restoreAllMocks();
+  delete document.documentElement.dataset.runtimePerf;
 });
 
 describe("ValenceOrb motion profile", () => {
@@ -94,10 +95,11 @@ describe("ValenceOrb motion profile", () => {
     expect(shouldApplyWorkerWebGLUpgrade(WEBGL_WORKER_READY_BUDGET_MS + 5000, true)).toBe(true);
   });
 
-  it("keeps canonical WebGL smooth on healthy devices and calms it only after runtime strain", () => {
-    expect(resolveOrbFrameInterval(true, false)).toBeCloseTo(1000 / 60);
-    expect(resolveOrbFrameInterval(true, true)).toBeCloseTo(1000 / 30);
-    expect(resolveOrbFrameInterval(false, false)).toBeCloseTo(1000 / 30);
+  it("keeps canonical WebGL smooth even when runtime performance mode is active", () => {
+    document.documentElement.dataset.runtimePerf = "strained";
+
+    expect(resolveOrbFrameInterval(true)).toBeCloseTo(1000 / 60);
+    expect(resolveOrbFrameInterval(false)).toBeCloseTo(1000 / 30);
   });
 
   it("does not compile canonical WebGL synchronously on mount", () => {

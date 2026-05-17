@@ -195,6 +195,14 @@ describe("canonical orb invariant", () => {
     expect(workerSource).toContain("requestId: message.requestId");
   });
 
+  it("prevents runtime performance mode from changing canonical orb cadence or visuals", () => {
+    const source = readSource("src/components/state-of-mind/ValenceOrb.tsx");
+
+    expect(source).not.toContain("isRuntimePerformanceLimited");
+    expect(source).not.toContain("WEBGL_PERFORMANCE_LIMITED_FRAME_INTERVAL");
+    expect(source).toContain("return WEBGL_FRAME_INTERVAL");
+  });
+
   it("keeps the canonical orb guard wired into local and CI checks", () => {
     expect(existsSync(resolve(process.cwd(), "scripts/check-canonical-orbs.mjs"))).toBe(true);
 
