@@ -81,8 +81,13 @@ const WEBGL_BUILD_BUDGET_MS = 500;
 export const WEBGL_WORKER_READY_BUDGET_MS = 700;
 const WEBGL_READINESS_TIMEOUT_MS = 8000;
 const WEBGL_UPGRADE_DELAY_MS = 180;
+const MINI_WEBGL_UPGRADE_DELAY_MS = 220;
+const MINI_WEBGL_UPGRADE_QUEUE_GAP_MS = 260;
 const IDLE_WAKE_SOFT_THRESHOLD_MS = 8000;
 const ORB_IDLE_WAKE_SOFT_EPSILON = 0.01;
+const MINI_ORB_CANONICAL_SIZE = 120;
+
+let nextMiniWebGLUpgradeStartAt = 0;
 
 export type OrbTransitionProfile = "standard" | "v1-soft" | "input-soft";
 export type OrbRendererMode = "auto" | "canvas" | "webgl";
@@ -251,6 +256,22 @@ function createFirstPaintFallbackStyle(
   return style;
 }
 
+export function allowsFirstPaintFallback(
+  renderer: OrbRendererMode,
+  rendererOverride: OrbRendererMode | null,
+): boolean {
+  const resolvedRenderer = rendererOverride ?? renderer;
+  return resolvedRenderer !== "webgl";
+}
+
+export function shouldShowFirstPaintFallback(
+  renderer: OrbRendererMode,
+  rendererOverride: OrbRendererMode | null,
+  visualReady: boolean,
+): boolean {
+  return allowsFirstPaintFallback(renderer, rendererOverride) && !visualReady;
+}
+
 function getRendererOverride(): OrbRendererMode | null {
   try {
     const requested = new URLSearchParams(window.location.search).get('orbRenderer');
@@ -286,6 +307,60 @@ export function shouldApplyWorkerWebGLUpgrade(
   forcedWebGL = false,
 ): boolean {
   return forcedWebGL || readyDurationMs <= WEBGL_WORKER_READY_BUDGET_MS;
+}
+
+export function resolveCanonicalWebGLUpgradeScheduling(
+  forceCanonicalWebGL: boolean,
+  size: number,
+  now: number,
+  nextMiniUpgradeStartAt: number,
+): {
+  delayMs: number;
+  preferIdle: boolean;
+  nextMiniUpgradeStartAt: number;
+} {
+  if (!forceCanonicalWebGL) {
+    return {
+      delayMs: WEBGL_UPGRADE_DELAY_MS,
+      preferIdle: true,
+      nextMiniUpgradeStartAt,
+    };
+  }
+
+  if (size > MINI_ORB_CANONICAL_SIZE) {
+    return {
+      delayMs: 0,
+      preferIdle: false,
+      nextMiniUpgradeStartAt,
+    };
+  }
+
+  const earliestStartAt = Math.max(now + MINI_WEBGL_UPGRADE_DELAY_MS, nextMiniUpgradeStartAt);
+
+  return {
+    delayMs: Math.max(0, Math.round(earliestStartAt - now)),
+    preferIdle: true,
+    nextMiniUpgradeStartAt: earliestStartAt + MINI_WEBGL_UPGRADE_QUEUE_GAP_MS,
+  };
+}
+
+function reserveCanonicalWebGLUpgradeScheduling(
+  forceCanonicalWebGL: boolean,
+  size: number,
+): { delayMs: number; preferIdle: boolean } {
+  const scheduling = resolveCanonicalWebGLUpgradeScheduling(
+    forceCanonicalWebGL,
+    size,
+    performance.now(),
+    nextMiniWebGLUpgradeStartAt,
+  );
+
+  nextMiniWebGLUpgradeStartAt = scheduling.nextMiniUpgradeStartAt;
+
+  return {
+    delayMs: scheduling.delayMs,
+    preferIdle: scheduling.preferIdle,
+  };
 }
 
 function hasViewportIntersection(node: HTMLElement): boolean {
@@ -367,6 +442,13 @@ export const ValenceOrb = memo(function ValenceOrb({
   const visualReadyRef = useRef(false);
   const [ctxFailed, setCtxFailed] = useState(false);
   const [visualReady, setVisualReady] = useState(false);
+  const rendererOverride = getRendererOverride();
+  const showFirstPaintFallback = shouldShowFirstPaintFallback(
+    renderer,
+    rendererOverride,
+    visualReady,
+  );
+  const canShowContextFailureFallback = allowsFirstPaintFallback(renderer, rendererOverride);
   const genesisStartRef = useRef(0);
   const touchRef = useRef<{ x: number; y: number; startTime: number } | null>(null);
   const shimmerRef = useRef(0); // P3: 1.0→0 decaying flash on large valence change
@@ -867,7 +949,7 @@ export const ValenceOrb = memo(function ValenceOrb({
             );
             worker.terminate();
             if (webglWorker === worker) webglWorker = null;
-            if (forceCanonicalWebGL && !signal.aborted && mountedRef.current) {
+            if (!forceCanonicalWebGL && !signal.aborted && mountedRef.current) {
               degradeToCanvas2D();
             }
             return;
@@ -926,7 +1008,7 @@ export const ValenceOrb = memo(function ValenceOrb({
           );
           worker.terminate();
           if (webglWorker === worker) webglWorker = null;
-          if (forceCanonicalWebGL && !signal.aborted && mountedRef.current) {
+          if (!forceCanonicalWebGL && !signal.aborted && mountedRef.current) {
             degradeToCanvas2D();
           }
         };
@@ -955,7 +1037,7 @@ export const ValenceOrb = memo(function ValenceOrb({
 
       if (signal.aborted || !mountedRef.current) return;
       if (!result) {
-        if (forceCanonicalWebGL) {
+        if (!forceCanonicalWebGL) {
           degradeToCanvas2D();
         }
         return;
@@ -1073,11 +1155,15 @@ export const ValenceOrb = memo(function ValenceOrb({
     }
 
     if (!glRenderer) {
+      const webglUpgradeScheduling = reserveCanonicalWebGLUpgradeScheduling(
+        forceCanonicalWebGL,
+        size,
+      );
       cancelWebGLUpgrade = scheduleAfterFirstPaint(() => {
         startWebGLUpgradeWhenVisible();
       }, {
-        delayMs: forceCanonicalWebGL ? 0 : WEBGL_UPGRADE_DELAY_MS,
-        preferIdle: !forceCanonicalWebGL,
+        delayMs: webglUpgradeScheduling.delayMs,
+        preferIdle: webglUpgradeScheduling.preferIdle,
       });
     }
 
@@ -1146,14 +1232,15 @@ export const ValenceOrb = memo(function ValenceOrb({
     }
   }, [valence, size]);
 
-  // Context failure fallback — soft radial gradient instead of boring pulse
-  const firstPaintFallback = (
+  // Only auto/canvas renderer policies may show this non-canonical emergency fallback.
+  // Explicit canonical WebGL surfaces stay blank until the real WebGL canvas paints.
+  const firstPaintFallback = showFirstPaintFallback ? (
     <span
       aria-hidden="true"
       data-testid="valence-orb-first-paint-fallback"
       style={createFirstPaintFallbackStyle(valence, size, visualReady)}
     />
-  );
+  ) : null;
 
   if (ctxFailed) {
     return (
@@ -1174,20 +1261,24 @@ export const ValenceOrb = memo(function ValenceOrb({
         }}
         aria-hidden="true"
       >
-        {firstPaintFallback}
-        <div
-          className="rounded-full motion-safe:animate-pulse"
-          style={{
-            width: size * 0.7,
-            height: size * 0.7,
-            background: `radial-gradient(circle at 35% 35%,
-              hsl(var(--primary) / 0.3),
-              hsl(var(--primary) / 0.15) 50%,
-              hsl(var(--primary) / 0.05) 80%,
-              transparent)`,
-            filter: 'blur(4px)',
-          }}
-        />
+        {canShowContextFailureFallback ? (
+          <>
+            {firstPaintFallback}
+            <div
+              className="rounded-full motion-safe:animate-pulse"
+              style={{
+                width: size * 0.7,
+                height: size * 0.7,
+                background: `radial-gradient(circle at 35% 35%,
+                  hsl(var(--primary) / 0.3),
+                  hsl(var(--primary) / 0.15) 50%,
+                  hsl(var(--primary) / 0.05) 80%,
+                  transparent)`,
+                filter: 'blur(4px)',
+              }}
+            />
+          </>
+        ) : null}
       </div>
     );
   }

@@ -18,8 +18,6 @@ import { isHabitCompletedOnDate, getHabitCompletedDates } from '@/lib/habits';
 import { useDopamineSettings } from './DopamineSettings';
 import { UnifiedShareModal } from '@/components/share';
 
-// Lazy-load FireAnimation to isolate lottie-react (CJS) into its own chunk.
-// Eager import causes TDZ errors in production due to Rollup CJS interop.
 const FireAnimation = lazyWithRetry(() => import('./FireAnimation'), 'FireAnimation');
 
 interface StreakBannerProps {

@@ -71,11 +71,6 @@ const OSS_LICENSES = [
     url: "https://github.com/date-fns/date-fns",
   },
   {
-    name: "Lottie React",
-    license: "MIT",
-    url: "https://github.com/Gamote/lottie-react",
-  },
-  {
     name: "Sentry",
     license: "MIT",
     url: "https://github.com/getsentry/sentry-javascript",

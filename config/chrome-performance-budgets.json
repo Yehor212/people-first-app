@@ -1,7 +1,8 @@
 {
   "defaultBudgets": {
     "maxLongTaskMs": 500,
-    "longAnimationFrameWarnMs": 250
+    "longAnimationFrameWarnMs": 250,
+    "longAnimationFrameBlockingWarnMs": 120
   },
   "settleMs": 4500,
   "routeGroups": [
@@ -15,7 +16,7 @@
         "hasTouch": true
       },
       "routes": [
-        { "name": "home-v1-phone", "path": "?navLayout=phone" },
+        { "name": "home-v1-phone", "path": "?navLayout=phone&dev=true" },
         { "name": "orb-v2-phone", "path": "orb/?nav=v2&navLayout=phone&dev=true" },
         { "name": "habits-v2-phone", "path": "habits/?nav=v2&navLayout=phone&dev=true" },
         { "name": "diary-v2-phone", "path": "diary/?nav=v2&navLayout=phone&dev=true" },
@@ -32,7 +33,7 @@
         "hasTouch": false
       },
       "routes": [
-        { "name": "home-v1-desktop", "path": "" },
+        { "name": "home-v1-desktop", "path": "?dev=true" },
         { "name": "orb-v2-desktop", "path": "orb/?nav=v2&dev=true" },
         { "name": "habits-v2-desktop", "path": "habits/?nav=v2&dev=true" },
         { "name": "diary-v2-desktop", "path": "diary/?nav=v2&dev=true" },

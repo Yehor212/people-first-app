@@ -1,11 +1,9 @@
 import { Play, Pause, RotateCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { zenTap } from '@/lib/animationUtils';
-import Lottie from 'lottie-react';
 import { cn } from '@/lib/utils';
 import { getPhaseInstruction, type BreathingPattern, type BreathingPhase } from '@/lib/breathingPatterns';
 import { phaseColors, phaseGradients } from './types';
-import meditationAnimation from '@/assets/animations/meditation-relax.json';
 
 interface ActiveBreathingViewProps {
   isActive: boolean;
@@ -28,14 +26,19 @@ export function ActiveBreathingView({
 }: ActiveBreathingViewProps) {
   return (
     <div className="text-center relative">
-      {/* Meditation animation background */}
       <div className="absolute inset-0 flex items-center justify-center opacity-15 pointer-events-none overflow-hidden">
-        <Lottie
-          animationData={meditationAnimation}
-          loop
-          autoplay={!isPaused}
-          className="w-full max-w-[280px] h-auto"
-        />
+        <div
+          className={cn(
+            "relative aspect-square w-full max-w-[280px] rounded-full",
+            "bg-[radial-gradient(circle_at_50%_45%,hsl(var(--primary)/0.22),hsl(var(--accent)/0.1)_42%,transparent_70%)]",
+            !isPaused && "motion-safe:animate-zen-glow-breathe"
+          )}
+          aria-hidden="true"
+        >
+          <span className="zen-particle absolute left-[28%] top-[24%] h-3 w-3 rounded-full bg-primary/60" />
+          <span className="zen-particle absolute right-[24%] top-[42%] h-2 w-2 rounded-full bg-accent/70 [--particle-delay:180ms] [--particle-duration:3.4s]" />
+          <span className="zen-particle absolute bottom-[24%] left-[48%] h-2.5 w-2.5 rounded-full bg-secondary/80 [--particle-delay:320ms] [--particle-duration:3.1s]" />
+        </div>
       </div>
 
       {/* Multi-layer Breathing Circle */}

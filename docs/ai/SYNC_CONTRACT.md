@@ -7,6 +7,10 @@ This is an operator contract for future agents. Read it before changing habits,
 journal, mood, focus, gratitude, settings, backup, Dexie, Zustand hydration,
 Supabase sync, offline queue, broadcast, or app lifecycle code.
 
+For the exact "nothing remains" completion definition, read
+`docs/ai/TELEGRAM_GRADE_SYNC_100_PERCENT_CLOSURE.md` after this file. This
+contract owns invariants; the closure document owns the required proof matrix.
+
 ## North Star
 
 The latest user action must become the authoritative state on every surface and
@@ -199,3 +203,6 @@ Stop and report before editing if:
   release claims. Local invariant coverage now includes the V1/V2 shared runtime,
   ordered deltas, server tombstones, and multi-tab delta ownership through
   `runWithSyncLeaderLock()`.
+
+Do not describe the sync system as 100 percent complete unless every applicable
+row in `docs/ai/TELEGRAM_GRADE_SYNC_100_PERCENT_CLOSURE.md` has current evidence.

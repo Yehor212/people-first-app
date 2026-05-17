@@ -3,6 +3,13 @@ const fs = require("node:fs");
 const path = require("node:path");
 const packageJson = require("../package.json");
 const perfBudgetManifest = require("../config/chrome-performance-budgets.json");
+const appVersionSource = fs.readFileSync(
+  path.join(__dirname, "..", "src", "lib", "appVersion.ts"),
+  "utf8",
+);
+const DATA_SCHEMA_VERSION = Number(
+  appVersionSource.match(/export const DATA_SCHEMA_VERSION = (\d+)/)?.[1] || 1,
+);
 
 const BASE_URL = process.env.ZENFLOW_PERF_URL || "http://localhost:8080/people-first-app/";
 const MAX_LONG_TASK_MS = readNumber(
@@ -12,6 +19,10 @@ const MAX_LONG_TASK_MS = readNumber(
 const LONG_ANIMATION_FRAME_WARN_MS = readNumber(
   "ZENFLOW_PERF_LOAF_WARN_MS",
   perfBudgetManifest.defaultBudgets?.longAnimationFrameWarnMs || 250,
+);
+const LONG_ANIMATION_FRAME_BLOCKING_WARN_MS = readNumber(
+  "ZENFLOW_PERF_LOAF_BLOCKING_WARN_MS",
+  perfBudgetManifest.defaultBudgets?.longAnimationFrameBlockingWarnMs || 120,
 );
 const SETTLE_MS = readNumber("ZENFLOW_PERF_SETTLE_MS", perfBudgetManifest.settleMs || 4500);
 const FAIL_ON_CONSOLE_ERROR = process.env.ZENFLOW_PERF_FAIL_ON_CONSOLE_ERROR === "true";
@@ -54,13 +65,24 @@ function compactUrl(url) {
 }
 
 async function seedApp(page) {
-  await page.addInitScript((appVersion) => {
+  await page.addInitScript(({ appVersion, dataSchemaVersion }) => {
+    const now = new Date().toISOString();
     localStorage.setItem("zenflow-language-selected", JSON.stringify(true));
     localStorage.setItem("zenflow-google-auth-checked", JSON.stringify(true));
     localStorage.setItem("zenflow-tutorial-complete", JSON.stringify(true));
     localStorage.setItem("zenflow-onboarding-complete", JSON.stringify(true));
     localStorage.setItem("zenflow-notification-permission-checked", JSON.stringify(true));
     localStorage.setItem("zenflow_last_seen_version", appVersion);
+    localStorage.setItem(
+      "zenflow-app-metadata",
+      JSON.stringify({
+        appVersion,
+        dataSchemaVersion,
+        installDate: now,
+        lastUpdateDate: now,
+        updateCount: 0,
+      }),
+    );
     localStorage.setItem("zenflow-theme", "dark");
     localStorage.setItem("zenflow-orb-first-run-dismissed", "1");
     localStorage.setItem(
@@ -130,7 +152,7 @@ async function seedApp(page) {
     } catch {
       window.__zenflowPerf.longAnimationFrameObserverUnavailable = true;
     }
-  }, packageJson.version);
+  }, { appVersion: packageJson.version, dataSchemaVersion: DATA_SCHEMA_VERSION });
 }
 
 function summarizePerfSnapshot() {
@@ -138,6 +160,32 @@ function summarizePerfSnapshot() {
   const longTasks = perf.longTasks || [];
   const longAnimationFrames = perf.longAnimationFrames || [];
   const topLongAnimationFrames = longAnimationFrames
+    .slice()
+    .sort((a, b) => (b.duration || 0) - (a.duration || 0))
+    .slice(0, 3);
+  const hasBlockingAttribution = (entry) => {
+    if ((entry.blockingDuration || 0) > 0) return true;
+
+    return (entry.scripts || []).some(
+      (script) =>
+        (script.duration || 0) >= 50 ||
+        (script.forcedStyleAndLayoutDuration || 0) >= 50 ||
+        (script.pauseDuration || 0) >= 50,
+    );
+  };
+  const blockingLongAnimationFrames = longAnimationFrames.filter(hasBlockingAttribution);
+  const topBlockingLongAnimationFrames = blockingLongAnimationFrames
+    .slice()
+    .sort(
+      (a, b) =>
+        (b.blockingDuration || 0) - (a.blockingDuration || 0) ||
+        (b.duration || 0) - (a.duration || 0),
+    )
+    .slice(0, 3);
+  const nonBlockingLongAnimationFrames = longAnimationFrames.filter(
+    (entry) => !hasBlockingAttribution(entry),
+  );
+  const topNonBlockingLongAnimationFrames = nonBlockingLongAnimationFrames
     .slice()
     .sort((a, b) => (b.duration || 0) - (a.duration || 0))
     .slice(0, 3);
@@ -150,7 +198,23 @@ function summarizePerfSnapshot() {
       0,
       ...longAnimationFrames.map((entry) => entry.duration || 0),
     ),
+    maxLongAnimationFrameBlockingMs: Math.max(
+      0,
+      ...longAnimationFrames.map((entry) => entry.blockingDuration || 0),
+    ),
     topLongAnimationFrames,
+    blockingLongAnimationFrameCount: blockingLongAnimationFrames.length,
+    maxBlockingLongAnimationFrameMs: Math.max(
+      0,
+      ...blockingLongAnimationFrames.map((entry) => entry.duration || 0),
+    ),
+    topBlockingLongAnimationFrames,
+    nonBlockingLongAnimationFrameCount: nonBlockingLongAnimationFrames.length,
+    maxNonBlockingLongAnimationFrameMs: Math.max(
+      0,
+      ...nonBlockingLongAnimationFrames.map((entry) => entry.duration || 0),
+    ),
+    topNonBlockingLongAnimationFrames,
     longTaskObserverUnavailable: Boolean(perf.longTaskObserverUnavailable),
     longAnimationFrameObserverUnavailable: Boolean(perf.longAnimationFrameObserverUnavailable),
   };
@@ -183,6 +247,21 @@ async function evaluateAfterStableContext(page, callback, routeName, phase) {
 
 async function waitForRouteNetworkIdle(page) {
   await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => undefined);
+}
+
+async function waitForAppReady(page, routeName) {
+  try {
+    await page.waitForFunction(
+      () => !document.querySelector('[data-testid="splash-theme-shell"]'),
+      { timeout: 8000 },
+    );
+    return true;
+  } catch {
+    console.warn(
+      `[chrome-performance] ${routeName} splash/loading shell still visible; steady phase may include boot handoff`,
+    );
+    return false;
+  }
 }
 
 function isReportableResponse(response) {
@@ -238,6 +317,10 @@ async function measure(context, routeGroup, route) {
       route.longAnimationFrameWarnMs ||
       routeGroup.longAnimationFrameWarnMs ||
       LONG_ANIMATION_FRAME_WARN_MS,
+    longAnimationFrameBlockingWarnMs:
+      route.longAnimationFrameBlockingWarnMs ||
+      routeGroup.longAnimationFrameBlockingWarnMs ||
+      LONG_ANIMATION_FRAME_BLOCKING_WARN_MS,
   };
   await page.goto(url, { waitUntil: "load", timeout: 45000 });
   await page.evaluate(() => document.fonts?.ready).catch(() => undefined);
@@ -250,6 +333,7 @@ async function measure(context, routeGroup, route) {
     await page.waitForLoadState("load", { timeout: 5000 }).catch(() => undefined);
   });
   await waitForRouteNetworkIdle(page);
+  const appReadyBeforeSteady = await waitForAppReady(page, route.name);
 
   const bootMetrics = await evaluateAfterStableContext(
     page,
@@ -287,6 +371,7 @@ async function measure(context, routeGroup, route) {
     profile: routeGroup.profile,
     viewport: routeGroup.viewport,
     route: route.name,
+    appReadyBeforeSteady,
     budgets,
     path: route.path || "/",
     url,
@@ -294,7 +379,9 @@ async function measure(context, routeGroup, route) {
     bootMaxLongTaskMs: bootMetrics.maxLongTaskMs,
     bootLongAnimationFrameCount: bootMetrics.longAnimationFrameCount,
     bootMaxLongAnimationFrameMs: bootMetrics.maxLongAnimationFrameMs,
+    bootMaxLongAnimationFrameBlockingMs: bootMetrics.maxLongAnimationFrameBlockingMs,
     topBootLongAnimationFrames: bootMetrics.topLongAnimationFrames,
+    topBootBlockingLongAnimationFrames: bootMetrics.topBlockingLongAnimationFrames,
     ...metrics,
     consoleErrorCount: consoleErrors.length,
     consoleErrors: consoleErrors.slice(0, 10),
@@ -310,10 +397,21 @@ function collectWarnings(results) {
 
   for (const result of results) {
     const loafWarnMs = result.budgets?.longAnimationFrameWarnMs || LONG_ANIMATION_FRAME_WARN_MS;
-    if (result.maxLongAnimationFrameMs > loafWarnMs) {
+    const loafBlockingWarnMs =
+      result.budgets?.longAnimationFrameBlockingWarnMs || LONG_ANIMATION_FRAME_BLOCKING_WARN_MS;
+    if (result.maxLongAnimationFrameBlockingMs > loafBlockingWarnMs) {
       warnings.push(
-        `${result.route} long-animation-frame ${Math.round(
-          result.maxLongAnimationFrameMs,
+        `${result.route} blocking long-animation-frame ${Math.round(
+          result.maxLongAnimationFrameBlockingMs,
+        )}ms > ${loafBlockingWarnMs}ms`,
+      );
+    } else if (
+      result.blockingLongAnimationFrameCount > 0 &&
+      result.maxBlockingLongAnimationFrameMs > loafWarnMs
+    ) {
+      warnings.push(
+        `${result.route} attributed long-animation-frame ${Math.round(
+          result.maxBlockingLongAnimationFrameMs,
         )}ms > ${loafWarnMs}ms`,
       );
     }
@@ -332,6 +430,26 @@ function collectWarnings(results) {
   }
 
   return warnings;
+}
+
+function collectDiagnostics(results) {
+  const diagnostics = [];
+
+  for (const result of results) {
+    const loafWarnMs = result.budgets?.longAnimationFrameWarnMs || LONG_ANIMATION_FRAME_WARN_MS;
+    if (
+      result.maxNonBlockingLongAnimationFrameMs > loafWarnMs &&
+      result.maxLongAnimationFrameBlockingMs === 0
+    ) {
+      diagnostics.push(
+        `${result.route} non-blocking long-animation-frame ${Math.round(
+          result.maxNonBlockingLongAnimationFrameMs,
+        )}ms > ${loafWarnMs}ms (blocking=0ms; tracked separately from input jank)`,
+      );
+    }
+  }
+
+  return diagnostics;
 }
 
 function collectFailures(results) {
@@ -380,12 +498,21 @@ function collectFailures(results) {
   try {
     browser = await chromium.launch({ channel: "chrome", headless: true });
   } catch (error) {
-    console.error(
-      `[chrome-performance] Installed Chrome is unavailable: ${
+    console.warn(
+      `[chrome-performance] Installed Chrome is unavailable, falling back to Playwright Chromium: ${
         error instanceof Error ? error.message : String(error)
       }`,
     );
-    process.exit(2);
+    try {
+      browser = await chromium.launch({ headless: true });
+    } catch (fallbackError) {
+      console.error(
+        `[chrome-performance] Playwright Chromium is unavailable: ${
+          fallbackError instanceof Error ? fallbackError.message : String(fallbackError)
+        }`,
+      );
+      process.exit(2);
+    }
   }
 
   const results = [];
@@ -406,6 +533,7 @@ function collectFailures(results) {
   }
 
   const warnings = collectWarnings(results);
+  const diagnostics = collectDiagnostics(results);
   const failures = collectFailures(results);
 
   const report = {
@@ -414,11 +542,13 @@ function collectFailures(results) {
     budgetManifest: "config/chrome-performance-budgets.json",
     maxAllowedLongTaskMs: MAX_LONG_TASK_MS,
     longAnimationFrameWarnMs: LONG_ANIMATION_FRAME_WARN_MS,
+    longAnimationFrameBlockingWarnMs: LONG_ANIMATION_FRAME_BLOCKING_WARN_MS,
     settleMs: SETTLE_MS,
     failOnConsoleError: FAIL_ON_CONSOLE_ERROR,
     failOnRequestFailure: FAIL_ON_REQUEST_FAILURE,
     results,
     warnings,
+    diagnostics,
   };
 
   const output = JSON.stringify(report, null, 2);

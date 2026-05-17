@@ -32,9 +32,9 @@ describe("runtime performance early bootstrap", () => {
     localStorage.setItem(
       RUNTIME_PERF_DEVICE_GUARD_KEY,
       JSON.stringify({
-        version: 1,
+        version: 2,
         mode: "startup",
-        reason: "long-animation-frame",
+        reason: "blocking-long-animation-frame",
         duration: 900,
         activatedAt: Date.now(),
         expiresAt: Date.now() + 60_000,
@@ -50,7 +50,7 @@ describe("runtime performance early bootstrap", () => {
     localStorage.setItem(
       RUNTIME_PERF_DEVICE_GUARD_KEY,
       JSON.stringify({
-        version: 1,
+        version: 2,
         mode: "startup",
         expiresAt: Date.now() + 60_000,
       }),
@@ -64,7 +64,7 @@ describe("runtime performance early bootstrap", () => {
     localStorage.setItem(
       RUNTIME_PERF_DEVICE_GUARD_KEY,
       JSON.stringify({
-        version: 1,
+        version: 2,
         mode: "startup",
         expiresAt: Date.now() - 1,
       }),
@@ -74,6 +74,23 @@ describe("runtime performance early bootstrap", () => {
     expect(document.documentElement.dataset.runtimePerf).toBeUndefined();
 
     localStorage.setItem(RUNTIME_PERF_DEVICE_GUARD_KEY, "{bad-json");
+    runBootstrap();
+    expect(document.documentElement.dataset.runtimePerf).toBeUndefined();
+  });
+
+  it("ignores legacy device guards created before blocking LoAF attribution", () => {
+    localStorage.setItem(
+      RUNTIME_PERF_DEVICE_GUARD_KEY,
+      JSON.stringify({
+        version: 1,
+        mode: "startup",
+        reason: "long-animation-frame",
+        duration: 1400,
+        activatedAt: Date.now(),
+        expiresAt: Date.now() + 60_000,
+      }),
+    );
+
     runBootstrap();
     expect(document.documentElement.dataset.runtimePerf).toBeUndefined();
   });

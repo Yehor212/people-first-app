@@ -46,11 +46,13 @@ Use this list before publishing on stores or web.
 
 ## Sync and Data Convergence
 - Run `npm run check:sync-contract`.
+- Review `docs/ai/TELEGRAM_GRADE_SYNC_100_PERCENT_CLOSURE.md` and mark every applicable entity/platform row with evidence.
 - Verify latest user action wins after V1 -> V2 -> V1 navigation for changed entities.
 - Verify two active tabs converge after a remote or local change.
 - Verify offline action queues and applies after reconnect.
 - Verify delete tombstones prevent stale backup, stale IndexedDB, or delayed pull resurrection.
 - Verify public-user sync claims against the deployed URL, not only local preview.
+- Verify logout/account switch cannot replay previous-account queued actions into the next account.
 
 ## Store listing
 - App name, subtitle, description.

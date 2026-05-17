@@ -80,7 +80,6 @@ Major dependencies (MIT/ISC/Apache-2.0/BSD unless noted):
 - **vaul** — MIT — Copyright Emil Kowalski
 - **@tanstack/react-query** — MIT
 - **cmdk** — MIT — Copyright Paco Coursey
-- **lottie-react** — MIT — Copyright Airbnb (Lottie) / G. Ivashkevich (React binding)
 - **@capgo/capacitor-social-login** — MIT — Copyright Capgo
 
 Full machine-readable list: run `npx license-checker --production --json` in CI and commit as `docs/third-party-licenses.json` during release.

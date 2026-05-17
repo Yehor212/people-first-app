@@ -1,14 +1,5 @@
-/**
- * FireAnimation - Animated fire effect for streaks
- *
- * Shows a Lottie fire animation when:
- * - User has an active streak
- * - User extends their streak
- * - Celebration moments
- */
+import { useEffect } from 'react';
 
-import Lottie from 'lottie-react';
-import fireAnimation from '@/assets/animations/fire-streak.json';
 import { cn } from '@/lib/utils';
 
 interface FireAnimationProps {
@@ -32,15 +23,24 @@ export function FireAnimation({
   autoplay = true,
   onComplete,
 }: FireAnimationProps) {
+  useEffect(() => {
+    if (loop || !autoplay || !onComplete) return;
+
+    const timer = window.setTimeout(onComplete, 900);
+    return () => window.clearTimeout(timer);
+  }, [autoplay, loop, onComplete]);
+
   return (
-    <div className={cn(sizes[size], className)}>
-      <Lottie
-        animationData={fireAnimation}
-        loop={loop}
-        autoplay={autoplay}
-        onComplete={onComplete}
-        className="w-full h-full"
-      />
+    <div
+      className={cn(
+        sizes[size],
+        "relative flex items-end justify-center overflow-visible",
+        className,
+      )}
+      aria-hidden="true"
+    >
+      <span className="absolute bottom-0 h-[82%] w-[58%] rounded-[60%_40%_55%_45%] bg-[radial-gradient(circle_at_50%_72%,hsl(var(--background)/0.95)_0_10%,hsl(var(--accent))_18%,hsl(var(--primary))_58%,transparent_72%)] blur-[0.2px] motion-safe:animate-[flame-flicker_900ms_ease-in-out_infinite]" />
+      <span className="absolute bottom-[10%] h-[58%] w-[36%] rounded-[55%_45%_60%_40%] bg-[radial-gradient(circle_at_50%_70%,hsl(var(--background))_0_10%,hsl(var(--accent))_24%,transparent_68%)] opacity-80 motion-safe:animate-[flame-flicker_760ms_ease-in-out_120ms_infinite]" />
     </div>
   );
 }

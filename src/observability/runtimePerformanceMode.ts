@@ -11,6 +11,7 @@ export const RUNTIME_PERFORMANCE_MODE_EVENT = "zenflow:runtime-perf-mode";
 export const RUNTIME_PERFORMANCE_STARTUP = "startup";
 export const RUNTIME_PERFORMANCE_STRAINED = "strained";
 const RUNTIME_PERFORMANCE_DEVICE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+export const RUNTIME_PERFORMANCE_DEVICE_GUARD_VERSION = 2;
 
 export type RuntimePerformanceMode =
   | "normal"
@@ -27,7 +28,7 @@ export interface RuntimePerformanceModeSnapshot {
 }
 
 export interface RuntimePerformanceDeviceSnapshot {
-  version: 1;
+  version: typeof RUNTIME_PERFORMANCE_DEVICE_GUARD_VERSION;
   mode: typeof RUNTIME_PERFORMANCE_STARTUP;
   reason: string;
   duration: number;
@@ -58,7 +59,12 @@ export function readStoredRuntimePerformanceDeviceGuard(): RuntimePerformanceDev
     null,
   );
 
-  if (!stored || stored.version !== 1 || stored.mode !== RUNTIME_PERFORMANCE_STARTUP) {
+  if (
+    !stored ||
+    stored.version !== RUNTIME_PERFORMANCE_DEVICE_GUARD_VERSION ||
+    stored.mode !== RUNTIME_PERFORMANCE_STARTUP
+  ) {
+    storageRemove(SK.RUNTIME_PERF_DEVICE_GUARD);
     return null;
   }
 
@@ -95,7 +101,7 @@ export function applyRuntimePerformanceMode(snapshot: RuntimePerformanceModeSnap
 
   safeSessionStorageSet(SSK.RUNTIME_PERF_GUARD, snapshot);
   safeLocalStorageSet(SK.RUNTIME_PERF_DEVICE_GUARD, {
-    version: 1,
+    version: RUNTIME_PERFORMANCE_DEVICE_GUARD_VERSION,
     mode: RUNTIME_PERFORMANCE_STARTUP,
     reason: snapshot.reason,
     duration: snapshot.duration,

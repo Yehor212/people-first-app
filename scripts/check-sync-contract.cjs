@@ -262,6 +262,7 @@ function main() {
     "sync_tombstones",
     "WRITE_SYNC_EVENT",
     "smoke:sync-account",
+    "TELEGRAM_GRADE_SYNC_100_PERCENT_CLOSURE.md",
     "broadcast is a wake-up signal",
     "V1 and V2 are one product state",
     "anti-resurrection",
@@ -270,18 +271,36 @@ function main() {
 
   requireIncludes("docs/ai/TELEGRAM_GRADE_RUNTIME_CONTRACT.md", [
     "docs/ai/SYNC_CONTRACT.md",
+    "TELEGRAM_GRADE_SYNC_100_PERCENT_CLOSURE.md",
     "sync_events.seq",
     "WRITE_SYNC_EVENT",
     "Tombstones beat stale snapshots",
     "Multi-tab browser",
   ]);
 
+  requireIncludes("docs/ai/TELEGRAM_GRADE_SYNC_100_PERCENT_CLOSURE.md", [
+    "100 percent is a proof state",
+    "sync_events.seq",
+    "Supabase Broadcast wake clients only",
+    "Deletes Cannot Resurrect",
+    "One Sync Owner Applies Deltas",
+    "Account Boundary Is Never Mixed",
+    "Entity Coverage Matrix",
+    "Platform Closure Matrix",
+    "smoke:sync-account",
+    "check:canonical-orbs",
+  ]);
+
   requireIncludes("docs/DEFINITION_OF_DONE.md", [
     "Sync contract invariant",
     "npm run check:sync-contract",
+    "Sync 100 percent closure matrix",
   ]);
 
-  requireIncludes("docs/RELEASE_CHECKLIST.md", ["Verify two active tabs converge"]);
+  requireIncludes("docs/RELEASE_CHECKLIST.md", [
+    "Verify two active tabs converge",
+    "TELEGRAM_GRADE_SYNC_100_PERCENT_CLOSURE.md",
+  ]);
 
   requireIncludes("package.json", [
     '"check:sync-contract": "node scripts/check-sync-contract.cjs"',

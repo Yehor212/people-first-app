@@ -50,6 +50,14 @@ cross-platform user-flow work, read
 [TELEGRAM_GRADE_RUNTIME_CONTRACT.md](TELEGRAM_GRADE_RUNTIME_CONTRACT.md)
 before planning.
 
+For any sync, account, V1/V2 convergence, offline queue, tombstone,
+BroadcastChannel, Supabase Realtime, or cross-platform latest-action work, also
+read
+[TELEGRAM_GRADE_SYNC_100_PERCENT_CLOSURE.md](TELEGRAM_GRADE_SYNC_100_PERCENT_CLOSURE.md).
+This is the "no remaining tails" checklist. A sync task cannot be called
+complete unless its applicable matrix rows are proved or explicitly marked
+`UNVERIFIED`.
+
 This contract does not replace this pre-flight template. It adds the runtime
 invariants that future agents must preserve:
 
@@ -58,6 +66,7 @@ invariants that future agents must preserve:
 - canonical `ValenceOrb` / `MiniValenceOrb` visuals only
 - ordered sync through `sync_events.seq`
 - tombstones over stale snapshots
+- sync closure through `TELEGRAM_GRADE_SYNC_100_PERCENT_CLOSURE.md`
 - mechanical sync guard through `npm run check:sync-contract`
 - public URL proof for public-user claims
 - phone, desktop, PWA, Android, iOS, sidebar, and drawer parity where applicable

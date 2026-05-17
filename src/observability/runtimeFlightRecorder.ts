@@ -13,7 +13,9 @@ const MAX_ENTRIES = 80;
 const ENABLED_VALUES = new Set(["1", "true", "yes", "on"]);
 const DISABLED_VALUES = new Set(["0", "false", "no", "off"]);
 const STRAINED_LOAF_MS = 700;
+const STRAINED_LOAF_BLOCKING_MS = 250;
 const REPEATED_LOAF_MS = 450;
+const REPEATED_LOAF_BLOCKING_MS = 120;
 const LONG_TASK_STRAINED_MS = 500;
 const REPEATED_LOAF_COUNT = 2;
 const STARTUP_WARMUP_MS = 6500;
@@ -61,6 +63,7 @@ interface RuntimePerformanceGuard {
   repeatedLoAFCount: number;
   maxLongTaskMs: number;
   maxLongAnimationFrameMs: number;
+  maxLongAnimationFrameBlockingMs: number;
   snapshot: () => {
     startedAt: number;
     route: string;
@@ -68,6 +71,7 @@ interface RuntimePerformanceGuard {
     repeatedLoAFCount: number;
     maxLongTaskMs: number;
     maxLongAnimationFrameMs: number;
+    maxLongAnimationFrameBlockingMs: number;
   };
 }
 
@@ -311,6 +315,7 @@ export function installRuntimePerformanceGuard(): boolean {
     repeatedLoAFCount: 0,
     maxLongTaskMs: 0,
     maxLongAnimationFrameMs: 0,
+    maxLongAnimationFrameBlockingMs: 0,
     snapshot: () => ({
       startedAt: state.startedAt,
       route: state.route,
@@ -318,6 +323,7 @@ export function installRuntimePerformanceGuard(): boolean {
       repeatedLoAFCount: state.repeatedLoAFCount,
       maxLongTaskMs: state.maxLongTaskMs,
       maxLongAnimationFrameMs: state.maxLongAnimationFrameMs,
+      maxLongAnimationFrameBlockingMs: state.maxLongAnimationFrameBlockingMs,
     }),
   };
 
@@ -347,20 +353,29 @@ export function installRuntimePerformanceGuard(): boolean {
       new PerformanceObserver((list) => {
         for (const entry of list.getEntries()) {
           const duration = entry.duration || 0;
+          const blockingDuration = (entry as LoAFEntry).blockingDuration || 0;
           if ((entry.startTime || 0) < state.startedAt) {
             continue;
           }
 
           state.maxLongAnimationFrameMs = Math.max(state.maxLongAnimationFrameMs, duration);
+          state.maxLongAnimationFrameBlockingMs = Math.max(
+            state.maxLongAnimationFrameBlockingMs,
+            blockingDuration,
+          );
 
-          if (duration >= REPEATED_LOAF_MS) {
+          if (duration >= REPEATED_LOAF_MS && blockingDuration >= REPEATED_LOAF_BLOCKING_MS) {
             state.repeatedLoAFCount += 1;
           }
 
-          if (duration >= STRAINED_LOAF_MS) {
-            activateRuntimePerformanceGuard(state, "long-animation-frame", duration);
+          if (duration >= STRAINED_LOAF_MS && blockingDuration >= STRAINED_LOAF_BLOCKING_MS) {
+            activateRuntimePerformanceGuard(state, "blocking-long-animation-frame", duration);
           } else if (state.repeatedLoAFCount >= REPEATED_LOAF_COUNT) {
-            activateRuntimePerformanceGuard(state, "repeated-long-animation-frame", duration);
+            activateRuntimePerformanceGuard(
+              state,
+              "repeated-blocking-long-animation-frame",
+              duration,
+            );
           }
         }
       }).observe({ type: "long-animation-frame", buffered: true });

@@ -112,15 +112,19 @@ describe("canonical orb invariant", () => {
     expect(source).toContain("if (!glRenderer) {");
   });
 
-  it("keeps forced WebGL surfaces visible before the async renderer is ready", () => {
+  it("blocks non-canonical CSS fallback visuals on forced WebGL surfaces", () => {
     const source = readSource("src/components/state-of-mind/ValenceOrb.tsx");
 
     expect(source).toContain("valence-orb-first-paint-fallback");
     expect(source).toContain("createFirstPaintFallbackStyle");
+    expect(source).toContain("allowsFirstPaintFallback");
+    expect(source).toContain("return resolvedRenderer !== \"webgl\"");
+    expect(source).toContain("const canShowContextFailureFallback");
+    expect(source).toContain("canShowContextFailureFallback ? (");
     expect(source).toContain("visualReadyRef");
     expect(source).toContain("markVisualReadyRef");
     expect(source).toContain("worker.onerror");
-    expect(source).toContain("forceCanonicalWebGL && !signal.aborted && mountedRef.current");
+    expect(source).toContain("if (!forceCanonicalWebGL && !signal.aborted && mountedRef.current)");
   });
 
   it("keeps canonical orb canvases paint-contained to avoid route-level render stalls", () => {
@@ -141,6 +145,8 @@ describe("canonical orb invariant", () => {
     expect(source).toContain("rect.top < viewportHeight");
     expect(source).toContain("webglUpgradePendingUntilVisible");
     expect(source).toContain("startWebGLUpgradeWhenVisible");
+    expect(source).toContain("resolveCanonicalWebGLUpgradeScheduling");
+    expect(source).toContain("MINI_WEBGL_UPGRADE_QUEUE_GAP_MS");
   });
 
   it("keeps worker WebGL shader readiness asynchronous before status checks", () => {

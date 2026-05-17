@@ -2,7 +2,8 @@
 
 **Scope:** zero visual regression. Functional/network/loading changes are allowed; pixels, colors, layouts, animations, translation strings must remain identical.
 **Baseline:** `dist/` 6.3 MB across 108 assets. Main chunk `index-DBaiusHk.js` = 1.1 MB. CSS bundle = 372 KB. 8 language chunks already split. No Brotli/gzip plugin. No legacy polyfills (good). Sourcemaps off in prod (good). ESNext + esbuild minify.
-**TDZ constraint (see `memory/feedback_vite_tdz_manualchunks.md`, commit 0368e0b):** never put React-dependent libs in `manualChunks` — browser parallel init order is non-deterministic, causes `Cannot access 'V' before initialization`. Applies to: react, react-dom, @radix-ui, framer-motion, @tanstack, sonner, vaul, cmdk, lottie-react, recharts, react-hook-form.
+**TDZ constraint (see `memory/feedback_vite_tdz_manualchunks.md`, commit 0368e0b):** never put React-dependent libs in `manualChunks` — browser parallel init order is non-deterministic, causes `Cannot access 'V' before initialization`. Applies to: react, react-dom, @radix-ui, framer-motion, @tanstack, sonner, vaul, cmdk, recharts, react-hook-form.
+**2026-05-17 update:** runtime Lottie dependencies were removed in favor of CSS/token effects; W6 below is now closed for this codebase.
 
 ---
 
@@ -15,7 +16,7 @@
 | 3 | Dynamic import of jsPDF (used only in Export) | −290 KB off initial | L | S | No |
 | 4 | Dynamic import of recharts (Stats page only) — already in StatsPage chunk, verify lazy | verify −100–370 KB off initial | L | S | No |
 | 5 | `build.target: 'es2022'` + `modulePreload.polyfill: false` | ~3–8% JS (~60–150 KB) | L | S | No |
-| 6 | lottie-web → `@lottiefiles/dotlottie-react` (WASM lazy) | −190 KB | L | M | No (animation parity required) |
+| 6 | Replace runtime Lottie with CSS/token effects | closed | L | done | Verified by bundle report |
 | 7 | `lucide-react/dynamicIconImports` per-icon lazy | −30–80 KB | L | S | No |
 | 8 | `framer-motion` → `LazyMotion + domAnimation` (keep same pkg) | −20–40 KB | L | S | No |
 | 9 | LightningCSS minifier (`css.transformer: 'lightningcss'`) | ~3–5% CSS (~12–18 KB) + faster build | L | S | No |
@@ -37,7 +38,7 @@
 
 ## 1. What's already good (do NOT touch)
 
-- `lottie-web` aliased to `lottie_light.js` ✓
+- Runtime Lottie dependency removed; no alias required ✓
 - `html2canvas` aliased to `noop.ts` (−202 KB) ✓
 - Sentry initialized via `requestIdleCallback` defer ✓
 - CloudSync lazy on app pause ✓
@@ -124,10 +125,9 @@ build: {
 }
 ```
 
-### 2.6 Lottie (W6)
+### 2.6 Runtime Animation Payload (W6)
 
-Even with `lottie_light.js` alias, full path is ~250 KB. `@lottiefiles/dotlottie-react` uses WASM (~60 KB lazy). **Only worth it if animation parity verified** — some advanced features differ (expressions, audio layers). For our onboarding / celebration loops, simple feature set → should work.
-**Visual regression?** HIGH risk of per-frame pixel differences. **Requires Playwright screenshot comparison before/after on every Lottie usage site.** Defer to Phase 2.
+Closed on 2026-05-17 by replacing decorative runtime animation playback with CSS/token effects and removing the runtime dependency. Future rich animation work must re-enter through screenshot and bundle-budget gates instead of reintroducing an eager player.
 
 ### 2.7 Lucide dynamic (W7)
 
@@ -241,7 +241,7 @@ Saves 20 KB on Android only. Medium effort — defer.
 4. **Service worker cache invalidation on schema bump** — Dexie upgrades can collide with stale SW cached HTML. Verify `skipWaiting` + `clientsClaim` + version bump strategy.
 5. **PWA precache size cap** — current PWA precaches main + fonts; if it balloons past 4 MB, Safari PWA install fails silently. Add cap.
 6. **`Cache-Control: immutable` for hashed assets** — Capacitor assets should have long cache. Check WebView asset loader.
-7. **`prefers-reduced-data`** (new media query) — conditionally skip Lottie on data-saver users.
+7. **`prefers-reduced-data`** (new media query) — conditionally reduce decorative animation on data-saver users.
 8. **Eliminate `dompurify` on trusted content paths** — not every sanitization site needs full DOMPurify; some could use DOM textContent.
 9. **Remove `pako` if no direct users** — see W10.
 10. **Check for duplicate Sentry copies** — `@sentry/browser` + `@sentry/react` + `@sentry/core` often duplicate internals.
@@ -269,8 +269,8 @@ W2 (Sentry lazy), W3 (jsPDF dynamic), W4 (recharts verify), W7 (Lucide dynamic f
 Gate: per-route Playwright screenshot diff = 0; Suspense fallbacks measured for CLS < 0.01.
 
 **Phase 4 — Dependency swaps (multi-day, HIGH verification):**
-W6 (dotlottie), W10 (CompressionStream), W15 (font subset), W20 (TT on Android). Expected: −200 KB further.
-Gate: full Playwright suite + manual review of every Lottie/font site on all 8 languages.
+W10 (CompressionStream), W15 (font subset), W20 (TT on Android). Expected: additional savings after runtime-animation cleanup.
+Gate: full Playwright suite + manual review of every animation/font site on all 8 languages.
 
 **Phase 5 — CI enforcement (permanent):**
 `size-limit` + `bundlesize2` + Lighthouse CI. Ratchet Law 27 integration.

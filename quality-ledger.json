@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-05-10",
+  "lastUpdated": "2026-05-17",
   "phase": "3-a.4c-ii-c-a-emotion-progressive-disclosure",
   "floors": {
     "moodScopeSelectorActive": {
@@ -178,15 +178,15 @@
       "description": "Phase 2-A — staggered choreography helper active (0=absent, 1=active, 2=adopted across >=5 surfaces). src/lib/motion/choreography.ts exports stages (background 0ms, chrome 80ms, primary 140ms, secondary 220ms, cta 360ms), staggerDelay(stage), childrenStagger(count, base). Currently consumed by Index.tsx tab Bloom (primary) and MotionPreview rollout demos. Phase 2-B will expand adoption across every composite surface."
     },
     "tests.total": {
-      "value": 4399,
+      "value": 4492,
       "direction": "up",
-      "recorded": "2026-05-10",
+      "recorded": "2026-05-17",
       "description": "Total unit test count (vitest, src/ scope). Phase 3-C.2 (2026-04-19) deletion: Garden + MindMap zones removed per user request, HabitsHeroZone rewritten A+++ with 4 sub-components + pure timeOfDay bucketing. Net -76 tests (dropped HabitGardenZone.test + HabitMindMapZone.test, added timeOfDay + HeroDailyRing + HeroIdentityPrompt + HeroEmptyJourney). Prior baseline 3786 reflected legacy 3-zone layout."
     },
     "tests.files": {
-      "value": 281,
+      "value": 294,
       "direction": "up",
-      "recorded": "2026-05-10",
+      "recorded": "2026-05-17",
       "description": "Test file count. Current: 281 after 2026-05-10 ratchet close pass."
     },
     "designTokenCoverage": {
@@ -328,16 +328,16 @@
       "description": "Components >400 LOC (excluding exemptions)"
     },
     "exhaustiveDeps": {
-      "value": 21,
+      "value": 20,
       "direction": "down",
-      "recorded": "2026-04-04",
+      "recorded": "2026-05-17",
       "description": "eslint-disable exhaustive-deps suppressions"
     },
     "inlineStyles": {
-      "value": 315,
+      "value": 313,
       "direction": "down",
       "tolerance": 0.03,
-      "recorded": "2026-04-16",
+      "recorded": "2026-05-17",
       "description": "Inline style={{}} in .tsx files. Tolerance 3% (~10) for prettier reformat. Phase 3-A.4a: baseline 304→315 records the Phase 3-A.3 WOW-factor additions that went unratched (custom CosmicOrbBackground added ~13 styles, Phase 3-A.4a swap + CSS extraction reclaimed 2 back). OrbPage still has 1 legitimate inline style for the --orb-aura-hue CSS var (computed per-render from mood valence)."
     },
     "hardcodedColors": {
@@ -402,16 +402,16 @@
       "description": "console.log/warn/debug in production source (use logger.ts)"
     },
     "todoFixme": {
-      "value": 18,
+      "value": 13,
       "direction": "down",
-      "recorded": "2026-05-10",
+      "recorded": "2026-05-17",
       "description": "TODO/FIXME/HACK/XXX comments in source"
     },
     "bundleSizeKB": {
-      "value": 4968,
+      "value": 4806,
       "direction": "down",
       "tolerance": 0.008,
-      "recorded": "2026-05-10",
+      "recorded": "2026-05-17",
       "description": "Total JS bundle size in KB (dist/assets/*.js). Phase 3-C A+++ HabitsPage adds +51KB: HeroTemplateLibrarySheet + HeroInsightStrip + HeroHabitRow (long-press/chain/cue/overdue) + HeroEmptyJourney + useStreakMilestones + lazy HabitCompletionCelebration + starterHabits + timeOfDay helpers + 40 i18n keys × 8 langs. All 11 V1 primitives imported, none duplicated. Tolerance 0.8% (~40KB)."
     },
     "enforcement.blockingHooks": {
@@ -421,9 +421,9 @@
       "description": "BLOCKING hooks (exit 2 fail-closed): preflight-gate, protected-files, commit-gate, quality-stop-gate, search-gate, bandaid-gate"
     },
     "enforcement.totalHooks": {
-      "value": 41,
+      "value": 55,
       "direction": "up",
-      "recorded": "2026-04-04",
+      "recorded": "2026-05-17",
       "description": "Total enforcement hooks"
     },
     "enforcement.uncoveredAntiPatterns": {
@@ -433,9 +433,9 @@
       "description": "Anti-patterns without BLOCK or WARN enforcement"
     },
     "npmOutdated": {
-      "value": 28,
+      "value": 0,
       "direction": "down",
-      "recorded": "2026-05-10",
+      "recorded": "2026-05-17",
       "description": "Outdated npm packages — CANARY ONLY (external dependency, not code-controlled). 2026-05-10 npm update brought semver-compatible packages to wanted versions; remaining count reflects major/latest migrations intentionally left for separate compatibility work."
     },
     "navV2InfraReady": {
@@ -526,11 +526,15 @@
       {
         "date": "2026-05-10",
         "value": 9.9
+      },
+      {
+        "date": "2026-05-17",
+        "value": 9.9
       }
     ]
   },
   "staleness": {
-    "lastFullAudit": "2026-03-14",
+    "lastFullAudit": "2026-05-17",
     "maxLedgerAgeDays": 30,
     "maxAuditAgeDays": 60
   },

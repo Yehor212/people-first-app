@@ -5,7 +5,7 @@
  * - Glassmorphic pill (--surface-glass) with border
  * - SVG progress ring that fills based on progressPercent
  * - Completed state: checkmark overlay, muted opacity
- * - One-shot Lottie burst on the <1 → ≥1 transition
+ * - One-shot completion burst on the <1 → ≥1 transition
  * - Tap → opens GoalActionMenu (via onTap callback)
  * - Pop-in animation via framer-motion
  */
@@ -21,7 +21,6 @@ import { GOAL_ICON_MAP } from "./GoalInput";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
 import type { CanvasGoal } from "@/types";
 
-// Lazy-load Lottie burst to isolate lottie-react chunk
 const CompletionBurstLottie = lazyWithRetry(
   () =>
     import("./CompletionBurstLottie").then((m) => ({
@@ -159,7 +158,7 @@ export const GoalNode = memo(
           )}
         </svg>
 
-        {/* One-shot Lottie completion burst */}
+        {/* One-shot completion burst */}
         {showBurst && (
           <Suspense fallback={null}>
             <CompletionBurstLottie onComplete={() => setShowBurst(false)} />

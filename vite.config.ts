@@ -198,11 +198,6 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "./src"),
-        // Use lottie-web light build (no eval/expressions) to comply with CSP
-        "lottie-web": path.resolve(
-          __dirname,
-          "node_modules/lottie-web/build/player/lottie_light.js"
-        ),
       },
     },
 
@@ -264,7 +259,7 @@ export default defineConfig(({ mode }) => {
 
             // TDZ FIX (Sentry: "Cannot access 'V' before initialization"):
             // Libraries that import React (radix-ui, framer-motion, sonner, tanstack,
-            // lottie-react, react-hook-form, react-day-picker, cmdk, vaul, input-otp)
+            // react-hook-form, react-day-picker, cmdk, vaul, input-otp)
             // MUST NOT be in manual chunks. When React internals get split across
             // chunks, browser module init order is non-deterministic and causes TDZ.
             // Only chunk libraries with ZERO React dependency.

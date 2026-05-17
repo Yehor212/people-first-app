@@ -3,7 +3,7 @@
  *
  * 80×80 core with conic-gradient SVG progress ring showing goal
  * completion %. Uses CSS motion-safe:animate-orb-breathe for glow pulse.
- * OrbLottie ambient animation renders behind the core.
+ * Ambient orb glow renders behind the core.
  *
  * Tap → triggers onTap callback (split mode). Pulses faster in split mode.
  */
@@ -66,7 +66,7 @@ export const RootNode = memo(function RootNode({ latestMood, canvasCenter, compl
         height: ROOT_SIZE.height,
       }}
     >
-      {/* Lottie ambient glow (behind everything) */}
+      {/* Ambient glow (behind everything) */}
       <OrbLottie />
 
       {/* SVG progress ring */}

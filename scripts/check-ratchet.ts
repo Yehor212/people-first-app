@@ -18,7 +18,7 @@
 
 import * as fs from "fs";
 import * as path from "path";
-import { execSync } from "child_process";
+import { execFileSync, execSync } from "child_process";
 import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -100,6 +100,113 @@ function runCount(cmd: string): number {
   return parseInt(out, 10) || 0;
 }
 
+function runBashCount(script: string): number | null {
+  try {
+    const out = execFileSync("bash", ["-lc", script], {
+      cwd: ROOT,
+      encoding: "utf8",
+      stdio: ["pipe", "pipe", "pipe"],
+    });
+    return parseInt(out.trim(), 10) || 0;
+  } catch {
+    return null;
+  }
+}
+
+const SOURCE_EXTENSIONS = new Set([".ts", ".tsx"]);
+const SKIP_DIRS = new Set(["node_modules", ".git", "dist", "coverage"]);
+
+function toPosix(filePath: string): string {
+  return filePath.replace(/\\/g, "/");
+}
+
+function isTestLikeFile(filePath: string): boolean {
+  const normalized = toPosix(filePath);
+  return normalized.includes("/__tests__/") || /\.(test|spec)\.[jt]sx?$/.test(normalized);
+}
+
+function walkFiles(
+  relativeDir: string,
+  extensions: Set<string>,
+  options: { excludeTests?: boolean } = {}
+): string[] {
+  const absDir = path.join(ROOT, relativeDir);
+  if (!fs.existsSync(absDir)) return [];
+
+  const out: string[] = [];
+  const walk = (dirPath: string) => {
+    for (const entry of fs.readdirSync(dirPath, { withFileTypes: true })) {
+      const fullPath = path.join(dirPath, entry.name);
+      if (entry.isDirectory()) {
+        if (SKIP_DIRS.has(entry.name)) continue;
+        if (options.excludeTests && entry.name === "__tests__") continue;
+        walk(fullPath);
+        continue;
+      }
+
+      if (!extensions.has(path.extname(entry.name))) continue;
+      if (options.excludeTests && isTestLikeFile(fullPath)) continue;
+      out.push(fullPath);
+    }
+  };
+
+  walk(absDir);
+  return out;
+}
+
+function readText(filePath: string): string {
+  return fs.readFileSync(filePath, "utf8");
+}
+
+function lineCount(filePath: string): number {
+  return readText(filePath).split("\n").length;
+}
+
+function countRegexMatches(files: string[], regex: RegExp): number {
+  let total = 0;
+  for (const filePath of files) {
+    const matches = readText(filePath).match(regex);
+    if (matches) total += matches.length;
+  }
+  return total;
+}
+
+function countLines(files: string[], predicate: (line: string, filePath: string) => boolean): number {
+  let total = 0;
+  for (const filePath of files) {
+    for (const line of readText(filePath).split(/\r?\n/)) {
+      if (predicate(line, filePath)) total++;
+    }
+  }
+  return total;
+}
+
+function getSourceFileCount(): number {
+  return walkFiles("src", SOURCE_EXTENSIONS, { excludeTests: true }).length;
+}
+
+function getTestFileCount(): number {
+  return [...walkFiles("src", SOURCE_EXTENSIONS), ...walkFiles("test", SOURCE_EXTENSIONS)].filter(
+    (filePath) => isTestLikeFile(filePath)
+  ).length;
+}
+
+function parseDocumentedMetric(content: string, metricLabel: string): number | null {
+  const escapedLabel = metricLabel.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const regex = new RegExp(`\\|[^|]*${escapedLabel}[^|]*\\|\\s*([^|]+)\\|`, "i");
+  const match = content.match(regex);
+  if (!match) return null;
+
+  const numMatch = match[1].replace(/,/g, "").match(/(\d+)/);
+  return numMatch ? parseInt(numMatch[1], 10) : null;
+}
+
+function getDocumentedSourceFileCount(): number {
+  const archPath = path.join(ROOT, "ARCHITECTURE.md");
+  if (!fs.existsSync(archPath)) return 822;
+  return parseDocumentedMetric(readText(archPath), "Source files") ?? 822;
+}
+
 function daysSince(dateStr: string): number {
   const then = new Date(dateStr);
   const now = new Date();
@@ -117,6 +224,7 @@ const GOD_COMPONENT_EXEMPT = [
   "canvas/MindMapCanvas.tsx",
   "state-of-mind/ValenceOrb.tsx",
   "pages/Index.tsx",
+  "pages/IndexV1Impl.tsx", // legacy V1 orchestrator shell; tracked by constitution god-component report
   "contexts/",
   "UrgencyAlert.tsx",
   "OnboardingFlow.tsx",
@@ -142,27 +250,13 @@ const GOD_COMPONENT_EXEMPT = [
 const GOD_COMPONENT_OUT_OF_SCOPE = ["features/journal/"];
 
 function findGodComponents(threshold: number): number {
-  const output = run(`bash -c "find src -name '*.tsx' -exec wc -l {} + | sort -rn | head -40"`);
   let count = 0;
 
-  for (const line of output.split("\n")) {
-    const match = line.trim().match(/^(\d+)\s+(.+)$/);
-    if (!match) continue;
+  for (const filePath of walkFiles("src", new Set([".tsx"]), { excludeTests: true })) {
+    const lines = lineCount(filePath);
+    if (lines <= threshold) continue;
 
-    const lines = parseInt(match[1], 10);
-    const filePath = match[2].trim();
-
-    if (
-      filePath === "total" ||
-      lines <= threshold ||
-      filePath.includes("__tests__") ||
-      filePath.includes(".test.") ||
-      filePath.includes(".spec.")
-    ) {
-      continue;
-    }
-
-    const relPath = filePath.replace(/^src\//, "");
+    const relPath = toPosix(path.relative(path.join(ROOT, "src"), filePath));
     const isExempt = GOD_COMPONENT_EXEMPT.some((e) => relPath.includes(e));
     const isOutOfScope = GOD_COMPONENT_OUT_OF_SCOPE.some((e) => relPath.includes(e));
 
@@ -179,18 +273,23 @@ function findGodComponents(threshold: number): number {
 function measureMetrics(): Record<string, number> {
   return {
     "tests.total": getTestTotal(),
-    "tests.files": runCount(
-      `bash -c "find src test -name '*.test.*' -o -name '*.spec.*' 2>/dev/null | wc -l"`
-    ),
+    "tests.files": getTestFileCount(),
     "eslint.maxWarnings": 0, // enforced by eslint --max-warnings=0 before this script runs
     "tsc.errors": 0, // enforced by tsc --noEmit before this script runs
     "i18n.languages": 8, // enforced by i18n:check before this script runs
-    silentCatches: runCount(
-      `bash -c "grep -rn '.catch.*=> {}' src/ --include='*.ts' --include='*.tsx' | wc -l"`
+    silentCatches: countRegexMatches(
+      walkFiles("src", SOURCE_EXTENSIONS, { excludeTests: true }),
+      /\.catch.*=> \{\}/g
     ),
     godComponents: findGodComponents(400),
-    exhaustiveDeps: runCount(`bash -c "grep -rn 'eslint-disable.*exhaustive-deps' src/ | wc -l"`),
-    inlineStyles: runCount(`bash -c "grep -rn 'style={{' src/ --include='*.tsx' | wc -l"`),
+    exhaustiveDeps: countRegexMatches(
+      walkFiles("src", SOURCE_EXTENSIONS, { excludeTests: true }),
+      /eslint-disable.*exhaustive-deps/g
+    ),
+    inlineStyles: countRegexMatches(
+      walkFiles("src", new Set([".tsx"]), { excludeTests: true }),
+      /style=\{\{/g
+    ),
     hardcodedColors: countHardcodedColors(),
     tailwindNumericColors: countTailwindNumericColors(),
     consoleLogs: countConsoleLogs(),
@@ -209,23 +308,32 @@ function measureMetrics(): Record<string, number> {
  *  Returns -1 if .claude/hooks/ doesn't exist (remote CI: hooks are gitignored). */
 function countBlockingHooks(): number {
   if (!fs.existsSync(path.join(ROOT, ".claude/hooks"))) return -1;
-  return runCount(`bash -c "grep -rl 'process.exit(2)' .claude/hooks/*.cjs | wc -l"`);
+  return fs
+    .readdirSync(path.join(ROOT, ".claude/hooks"))
+    .filter((f) => f.endsWith(".cjs") && !f.startsWith("test-"))
+    .filter((f) => readText(path.join(ROOT, ".claude/hooks", f)).includes("process.exit(2)"))
+    .length;
 }
 
 /** Count total hook .cjs files in .claude/hooks/.
  *  Returns -1 if .claude/hooks/ doesn't exist (remote CI: hooks are gitignored). */
 function countHookFiles(): number {
   if (!fs.existsSync(path.join(ROOT, ".claude/hooks"))) return -1;
-  return runCount(
-    `bash -c "grep -rl 'process.stdin' .claude/hooks/*.cjs 2>/dev/null | grep -v 'test-' | grep -v 'validate.cjs' | wc -l"`
-  );
+  return fs
+    .readdirSync(path.join(ROOT, ".claude/hooks"))
+    .filter((f) => f.endsWith(".cjs") && !f.startsWith("test-")).length;
 }
 
 /** Count outdated npm packages */
 function countNpmOutdated(): number {
   try {
-    const out = run(`bash -c "npm outdated 2>/dev/null | tail -n +2 | wc -l"`);
-    return parseInt(out, 10) || 0;
+    const out = execSync("npm outdated --json", {
+      cwd: ROOT,
+      encoding: "utf8",
+      stdio: ["pipe", "pipe", "pipe"],
+      timeout: 60000,
+    });
+    return Object.keys(JSON.parse(out || "{}")).length;
   } catch {
     return 0;
   }
@@ -240,23 +348,33 @@ function countNpmOutdated(): number {
  *                          `import.meta.env.DEV`, carries eslint-disable lines)
  */
 function countConsoleLogs(): number {
-  return runCount(
-    `bash -c "grep -rn 'console\\.\\(log\\|warn\\|debug\\)' src/ --include='*.ts' --include='*.tsx' | grep -v '__tests__' | grep -v '.test.' | grep -v 'logger\\.ts' | grep -v 'crashReporting' | grep -v 'reportWebVitals' | grep -v 'initLongTaskObserverDev' | wc -l"`
+  return countLines(
+    walkFiles("src", SOURCE_EXTENSIONS, { excludeTests: true }),
+    (line, filePath) =>
+      /console\.(log|warn|debug)/.test(line) &&
+      !toPosix(filePath).includes("logger.ts") &&
+      !toPosix(filePath).includes("crashReporting") &&
+      !toPosix(filePath).includes("reportWebVitals") &&
+      !toPosix(filePath).includes("initLongTaskObserverDev")
   );
 }
 
 /** Count TODO/FIXME/HACK/XXX comments in production source */
 function countTodoFixme(): number {
-  return runCount(
-    `bash -c "grep -rn 'TODO\\|FIXME\\|HACK\\|XXX' src/ --include='*.ts' --include='*.tsx' | grep -v '__tests__' | grep -v '.test.' | wc -l"`
+  return countLines(
+    walkFiles("src", SOURCE_EXTENSIONS, { excludeTests: true }),
+    (line) => /TODO|FIXME|HACK|XXX/.test(line)
   );
 }
 
 /** Measure total JS bundle size in KB (requires build to have run first) */
 function measureBundleSizeKB(): number {
   try {
-    const bytes = runCount(
-      `bash -c "find dist/assets -name '*.js' -exec cat {} + 2>/dev/null | wc -c"`
+    const assetsDir = path.join(ROOT, "dist/assets");
+    if (!fs.existsSync(assetsDir)) return 0;
+    const bytes = walkFiles("dist/assets", new Set([".js"])).reduce(
+      (sum, filePath) => sum + fs.statSync(filePath).size,
+      0
     );
     return Math.ceil(bytes / 1024);
   } catch {
@@ -288,17 +406,32 @@ function measureBundleSizeKB(): number {
  *   - 1877F2/166FE5  — Facebook brand blue
  */
 function countHardcodedColors(): number {
-  // Shared exclude pipeline suffix
-  const shared = "grep -v 'dark:' | grep -v '__tests__' | grep -v 'state-of-mind/'";
-
-  // 1. Tailwind slate/gray utility classes (text-*, bg-*, border-*, ring-*, divide-*, placeholder-*)
-  const slateGray = runCount(
-    `bash -c "grep -rn 'text-slate-[1-9]\\|bg-slate-[1-9]\\|bg-gray-\\|text-gray-\\|border-slate-\\|border-gray-\\|ring-slate-\\|ring-gray-\\|divide-slate-\\|divide-gray-\\|placeholder-slate-\\|placeholder-gray-' src/ --include='*.tsx' | ${shared} | grep -v 'ThemeToggle' | grep -v 'AuthScreen' | wc -l"`
+  const files = walkFiles("src", new Set([".tsx"]), { excludeTests: true }).filter(
+    (filePath) => !toPosix(filePath).includes("state-of-mind/")
   );
 
-  // 2. Arbitrary hex values: bg-[#hex], text-[#hex], from-[#hex], to-[#hex], via-[#hex]
-  const hexArbitrary = runCount(
-    `bash -c "grep -rn 'bg-\\[#[0-9a-fA-F]\\|text-\\[#[0-9a-fA-F]\\|from-\\[#[0-9a-fA-F]\\|to-\\[#[0-9a-fA-F]\\|via-\\[#[0-9a-fA-F]' src/ --include='*.tsx' | ${shared} | grep -v '1877F2\\|166FE5' | grep -v 'coolEmojis' | grep -v 'AchievementsPanel\\|AchievementToast' | grep -v 'OutroSlide' | grep -v 'ChallengeDetailsView' | grep -v 'HabitCompletionCelebration' | wc -l"`
+  const slateGray = countLines(
+    files,
+    (line, filePath) =>
+      !line.includes("dark:") &&
+      !toPosix(filePath).includes("ThemeToggle") &&
+      !toPosix(filePath).includes("AuthScreen") &&
+      /text-slate-[1-9]|bg-slate-[1-9]|bg-gray-|text-gray-|border-slate-|border-gray-|ring-slate-|ring-gray-|divide-slate-|divide-gray-|placeholder-slate-|placeholder-gray-/.test(
+        line
+      )
+  );
+
+  const hexArbitrary = countLines(
+    files,
+    (line, filePath) =>
+      !line.includes("dark:") &&
+      !/1877F2|166FE5/.test(line) &&
+      !/coolEmojis|AchievementsPanel|AchievementToast|OutroSlide|ChallengeDetailsView|HabitCompletionCelebration/.test(
+        toPosix(filePath)
+      ) &&
+      /bg-\[#[0-9a-fA-F]|text-\[#[0-9a-fA-F]|from-\[#[0-9a-fA-F]|to-\[#[0-9a-fA-F]|via-\[#[0-9a-fA-F]/.test(
+        line
+      )
   );
 
   return slateGray + hexArbitrary;
@@ -324,25 +457,41 @@ function countHardcodedColors(): number {
  * tailwind.config.ts, translations, .d.ts, dark: variants, ThemeToggle.
  */
 function countTailwindNumericColors(): number {
+  const legacyMetric = runBashCount(
+    "grep -rE '(bg|text|border|from|to|via|ring|shadow|fill|stroke|outline)-(red|blue|green|purple|pink|amber|emerald|cyan|violet|rose|orange|yellow|indigo|lime|teal|sky|slate|zinc|neutral|stone|gray)-[0-9]+' src/ --include='*.tsx' --include='*.ts' | grep -v '__tests__' | grep -v '.test.' | grep -v '.d.ts' | grep -v 'state-of-mind/' | grep -v 'tailwind.config' | grep -v 'translations' | grep -v 'dark:' | wc -l"
+  );
+  if (legacyMetric !== null) return legacyMetric;
+
   const prefixes = "bg|text|border|from|to|via|ring|shadow|fill|stroke|outline";
   const colors =
     "red|blue|green|purple|pink|amber|emerald|cyan|violet|rose|" +
     "orange|yellow|indigo|lime|teal|sky|slate|zinc|neutral|stone|gray";
   const pattern = `(${prefixes})-(${colors})-[0-9]+`;
-  const shared =
-    "grep -v '__tests__' | grep -v '.test.' | grep -v '.d.ts' | grep -v 'state-of-mind/' | " +
-    "grep -v 'tailwind.config' | grep -v 'translations' | grep -v 'dark:'";
-  return runCount(
-    `bash -c "grep -rE '${pattern}' src/ --include='*.tsx' --include='*.ts' | ${shared} | wc -l"`,
+  const regex = new RegExp(pattern);
+  return countLines(
+    walkFiles("src", SOURCE_EXTENSIONS, { excludeTests: true }),
+    (line, filePath) => {
+      const normalized = toPosix(filePath);
+      return (
+        regex.test(line) &&
+        !line.includes("dark:") &&
+        !normalized.endsWith(".d.ts") &&
+        !normalized.includes("state-of-mind/") &&
+        !normalized.includes("tailwind.config") &&
+        !normalized.includes("translations")
+      );
+    }
   );
 }
 
 function getTestTotal(): number {
-  // Parse from the last vitest run output (test count is in the summary line)
-  // Since vitest runs before us in ci:preflight, we can count test files * avg tests
-  // But more reliable: count test('...') and it('...') calls
-  const testCalls = runCount(
-    `bash -c "grep -rn '\\(test\\|it\\)(' src/ test/ --include='*.test.*' --include='*.spec.*' | grep -v 'import\\|require\\|describe\\|//' | wc -l"`
+  // Preserve the historical ratchet heuristic: count lines containing test( or it(
+  // in test/spec files, excluding import/require/describe/comment lines.
+  const testCalls = countLines(
+    [...walkFiles("src", SOURCE_EXTENSIONS), ...walkFiles("test", SOURCE_EXTENSIONS)].filter(
+      (filePath) => /\.(test|spec)\.[jt]sx?$/.test(filePath)
+    ),
+    (line) => /(test|it)\(/.test(line) && !/import|require|describe|\/\//.test(line)
   );
   // If grep-based count fails or is wildly off, fall back to known floor
   return testCalls > 0 ? testCalls : 0;
@@ -629,9 +778,7 @@ function checkRatchet(): void {
   console.log("=".repeat(50));
 
   const actual = measureMetrics();
-  const sourceFiles = runCount(
-    `bash -c "find src -name '*.ts' -o -name '*.tsx' | grep -v test | grep -v __tests__ | grep -v '.spec.' | wc -l"`
-  );
+  const sourceFiles = getSourceFileCount();
 
   // ═══════════════════════════════════════════
   // PHASE B: COMPARE against floors
@@ -744,7 +891,7 @@ function checkRatchet(): void {
   }
 
   // Source file drift
-  const docSourceFiles = 822; // updated 2026-05-10 from constitution freshness check; keeps drift guard aligned with ARCHITECTURE.md reality anchor
+  const docSourceFiles = getDocumentedSourceFileCount();
   const drift = Math.abs(sourceFiles - docSourceFiles);
   if (drift > 20) {
     console.log(

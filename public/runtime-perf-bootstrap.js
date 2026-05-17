@@ -1,5 +1,6 @@
 (() => {
   const key = "zenflow-runtime-perf-device-guard";
+  const version = 2;
   const startup = "startup";
   const offValues = new Set(["0", "false", "no", "off"]);
 
@@ -14,7 +15,7 @@
     try {
       const guard = JSON.parse(rawGuard);
       return (
-        guard?.version === 1 &&
+        guard?.version === version &&
         guard?.mode === startup &&
         typeof guard?.expiresAt === "number" &&
         guard.expiresAt > Date.now()

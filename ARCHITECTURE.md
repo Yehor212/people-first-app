@@ -40,14 +40,14 @@ Checked by `npm run constitution:check`. Update these values from fresh command 
 
 | Metric | Value | Source |
 | --- | ---: | --- |
-| Source files | **825** | `find src -name '*.ts' -o -name '*.tsx' ...` |
-| Test files | **289** | `find src test -name '*.test.*' -o -name '*.spec.*'` |
+| Source files | **831** | `find src -name '*.ts' -o -name '*.tsx' ...` |
+| Test files | **294** | `find src test -name '*.test.*' -o -name '*.spec.*'` |
 | Silent `.catch(() => {})` | **0** | `grep -rn '.catch.*=> {}' src/` |
 | React.memo | **118** | `grep -rl 'memo(' src/ --include='*.tsx'` |
-| index.css LOC | **7,357** | `wc -l < src/index.css` |
+| index.css LOC | **7,361** | `wc -l < src/index.css` |
 | Inline style={{}} | **313** | `grep -rn 'style={{' src/ --include='*.tsx'` |
 | exhaustive-deps suppressions | **21** | `grep -rn 'eslint-disable.*exhaustive-deps' src/` |
-| Hook coverage | **64** | `46/72 hook tests` |
+| Hook coverage | **64** | `47/73 hook tests` |
 
 > Historical snapshot (2026-04-04): 687 source files, 147 test files, 3202 tests, 0 lint/TS errors, React.memo 56/80+, lazyWithRetry 31, exhaustive-deps suppressions 21, index.css 4,480 LOC, inline style 304 in 136 files, i18n 2,429 keys × 8 langs, ratchet 9.9/10. Held here for delta comparisons — do not edit in place.
 
@@ -362,13 +362,13 @@ The Mind Map Canvas lives in a **dedicated "Map" tab** (`MindMapTab.tsx`) — se
 
 **Swipe conflict resolution**: Double protection — (1) `SWIPE_TABS` array excludes `'mindmap'`, (2) `useSwipeNavigation({ enabled: activeTab !== 'mindmap' })`. Canvas handles its own pan/zoom gestures via framer-motion.
 
-**Performance**: Tabs use `{activeTab === 'x' && <Tab />}` pattern — inactive tabs are UNMOUNTED from the DOM. When user navigates away from mindmap, the entire MindMapCanvas (including OrbLottie) is destroyed. No wasted resources.
+**Performance**: Tabs use `{activeTab === 'x' && <Tab />}` pattern — inactive tabs are UNMOUNTED from the DOM. When user navigates away from mindmap, the entire MindMapCanvas (including the ambient orb effect) is destroyed. No wasted resources.
 
 **Canvas Architecture:**
 
 - Dark infinite canvas (`#0D1117` background) with `<motion.div drag>` for pan + wheel/pinch for zoom
 - Layout: `computeGoalTreeLayout()` in `goalTreeLayout.ts` — goal tree with ring-based radial placement
-- Two node levels: RootNode ("Я", 80×80 circle, Lottie orb) → GoalNode (goal cards with emoji/color/icon customization)
+- Two node levels: RootNode ("Я", 80×80 circle, CSS/token ambient orb) → GoalNode (goal cards with emoji/color/icon customization)
 - SVG growing edges with spring animation in `GrowingEdge.tsx`
 - Goal nodes support: emoji picker (12 curated emojis), color picker (8 presets from `GOAL_COLORS`), icon display, completion toggle
 - `GoalActionSheet.tsx` — bottom sheet for goal actions (complete/delete/emoji/color), rendered outside transform container
@@ -398,7 +398,7 @@ Supporting: `src/lib/habitScore.ts` (Loop exponential smoothing score + streak +
 |------|---------|
 | `MindMapCanvas.tsx` | Main wrapper (framer-motion drag, zoom, renders all layers) |
 | `RootNode.tsx` | Central "Я" node with radial gradient + mood glow |
-| `OrbLottie.tsx` | Lottie animation for root node orb |
+| `OrbLottie.tsx` | CSS/token ambient animation for root node orb |
 | `GoalNode.tsx` | Goal card node (React.memo, emoji/color/icon rendering, `GOAL_COLORS` export) |
 | `GoalActionSheet.tsx` | Bottom sheet — complete/delete/emoji picker/color swatches |
 | `GoalInput.tsx` | Inline input for creating new goals |
@@ -406,7 +406,7 @@ Supporting: `src/lib/habitScore.ts` (Loop exponential smoothing score + streak +
 | `GrowingEdge.tsx` | Animated SVG edge with spring physics |
 | `EmotionPanel.tsx` | Emotion selection overlay for canvas mood logging |
 | `AuxPills.tsx` | Auxiliary info pills on canvas |
-| `CompletionBurstLottie.tsx` | Completion celebration animation (TODO: premium Lottie replacement) |
+| `CompletionBurstLottie.tsx` | Lightweight completion celebration effect |
 | `mindMapLayout.ts` | Legacy layout algorithm (identity clusters, radial trigonometric) |
 | `goalTreeLayout.ts` | Goal tree layout algorithm |
 
@@ -870,26 +870,23 @@ All animations are controlled **solely** by the in-app Dopamine Settings toggle:
 - `body.reduce-motion .zen-loader-ring { animation: none }` override
 - **NOT for button states** — buttons keep `Loader2 animate-spin` (correct inline UX)
 
-### LazyLottiePlayer (reusable Lottie wrapper)
+### LazyLottiePlayer (legacy animation compatibility wrapper)
 
-`src/components/LazyLottiePlayer.tsx` — eliminates repeated dynamic-import boilerplate.
+`src/components/LazyLottiePlayer.tsx` — keeps the old animation-slot API surface while rendering lightweight CSS/token effects. Runtime Lottie dependencies were removed from the app bundle.
 
 ```typescript
 <LazyLottiePlayer
-  animationImport={() => import('@/assets/animations/file.json')}
   loop width={160} height={160}
   fallback={null}
 />
 ```
 
-- `lottie-react` imported statically (already in separate Vite `lottie` chunk)
-- JSON data dynamic-imported (zero main-bundle cost)
 - `shouldAnimate()` check — renders `fallback` when disabled
-- `mountedRef` cleanup prevents state updates after unmount
+- One-shot `onComplete` callbacks use a cleared timeout to avoid updates after unmount
 - Wrapper div uses `pointer-events-none` (standard for overlay animations)
 
 **Consumers**: `CompletionBurstLottie`, animation slot components in `src/components/animations/`.
-**NOT migrated** (custom logic): `OrbLottie`, `FireAnimation`, `ActiveBreathingView`.
+**Custom CSS/token effects**: `OrbLottie`, `FireAnimation`, `ActiveBreathingView`.
 
 ### Animation Slots (EmptyState)
 
@@ -897,15 +894,14 @@ All animations are controlled **solely** by the in-app Dopamine Settings toggle:
 
 Thin wrapper components in `src/components/animations/`:
 
-| Component                | Asset                  | Type                        |
-| ------------------------ | ---------------------- | --------------------------- |
-| `EmptyDiaryAnimation`    | `empty-diary.json`     | Loop (empty diary state)    |
-| `EmptyStatsAnimation`    | `empty-stats.json`     | Loop (empty stats state)    |
-| `AllHabitsDoneAnimation` | `all-habits-done.json` | Loop (celebration)          |
-| `GoalReachedAnimation`   | `goal-complete.json`   | Single-shot (success burst) |
+| Component                | Effect                        | Type                        |
+| ------------------------ | ----------------------------- | --------------------------- |
+| `EmptyDiaryAnimation`    | CSS/token ambient placeholder | Loop (empty diary state)    |
+| `EmptyStatsAnimation`    | CSS/token ambient placeholder | Loop (empty stats state)    |
+| `AllHabitsDoneAnimation` | CSS/token ambient placeholder | Loop (celebration)          |
+| `GoalReachedAnimation`   | CSS/token ambient placeholder | Single-shot (success burst) |
 
-**Lottie JSON requirements**: <40KB, 60fps, 2-3s loop, no expressions (CSP: no unsafe-eval).
-Stub JSONs ship as minimal breathing circles — replace with premium assets from LottieFiles.com.
+Runtime Lottie JSON assets are intentionally not part of the current bundle contract.
 
 ---
 

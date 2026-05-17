@@ -6,6 +6,8 @@ import {
   ORB_TRANSITION_SETTINGS,
   ValenceOrb,
   WEBGL_WORKER_READY_BUDGET_MS,
+  allowsFirstPaintFallback,
+  resolveCanonicalWebGLUpgradeScheduling,
   resolveFrameTransitionProfile,
   resolveOrbFrameInterval,
   resolveOrbTransitionSettings,
@@ -95,11 +97,47 @@ describe("ValenceOrb motion profile", () => {
     expect(shouldApplyWorkerWebGLUpgrade(WEBGL_WORKER_READY_BUDGET_MS + 5000, true)).toBe(true);
   });
 
+  it("keeps full canonical orbs immediate while staggering mini WebGL upgrades", () => {
+    const fullOrb = resolveCanonicalWebGLUpgradeScheduling(true, 240, 1000, 1000);
+    const firstMini = resolveCanonicalWebGLUpgradeScheduling(true, 120, 1000, 1000);
+    const secondMini = resolveCanonicalWebGLUpgradeScheduling(
+      true,
+      120,
+      1000,
+      firstMini.nextMiniUpgradeStartAt,
+    );
+    const autoOrb = resolveCanonicalWebGLUpgradeScheduling(false, 120, 1000, 1000);
+
+    expect(fullOrb).toMatchObject({
+      delayMs: 0,
+      preferIdle: false,
+      nextMiniUpgradeStartAt: 1000,
+    });
+    expect(firstMini).toMatchObject({
+      delayMs: 220,
+      preferIdle: true,
+    });
+    expect(secondMini.delayMs - firstMini.delayMs).toBeGreaterThanOrEqual(250);
+    expect(autoOrb).toMatchObject({
+      delayMs: 180,
+      preferIdle: true,
+      nextMiniUpgradeStartAt: 1000,
+    });
+  });
+
   it("keeps canonical WebGL smooth even when runtime performance mode is active", () => {
     document.documentElement.dataset.runtimePerf = "strained";
 
     expect(resolveOrbFrameInterval(true)).toBeCloseTo(1000 / 60);
     expect(resolveOrbFrameInterval(false)).toBeCloseTo(1000 / 30);
+  });
+
+  it("blocks non-canonical first-paint fallbacks for forced WebGL orb surfaces", () => {
+    expect(allowsFirstPaintFallback("webgl", null)).toBe(false);
+    expect(allowsFirstPaintFallback("auto", "webgl")).toBe(false);
+    expect(allowsFirstPaintFallback("canvas", "webgl")).toBe(false);
+    expect(allowsFirstPaintFallback("auto", null)).toBe(true);
+    expect(allowsFirstPaintFallback("canvas", null)).toBe(true);
   });
 
   it("does not compile canonical WebGL synchronously on mount", () => {
@@ -131,9 +169,9 @@ describe("ValenceOrb motion profile", () => {
       return {} as CanvasRenderingContext2D;
     });
 
-    const { getByTestId } = render(createElement(ValenceOrb, { valence: 0, renderer: "webgl" }));
+    const { queryByTestId } = render(createElement(ValenceOrb, { valence: 0, renderer: "webgl" }));
 
     expect(createOrbGL2).not.toHaveBeenCalled();
-    expect(getByTestId("valence-orb-first-paint-fallback").style.opacity).toBe("1");
+    expect(queryByTestId("valence-orb-first-paint-fallback")).toBeNull();
   });
 });

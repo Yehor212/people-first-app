@@ -103,6 +103,15 @@ Use the current route budgets unless a task explicitly sets stricter ones:
 - `longtask` over `300ms`: warn and investigate.
 - `long-animation-frame` over `250ms`: warn and inspect attribution when Chrome
   supports it.
+- `long-animation-frame.blockingDuration` over `120ms`: warn as likely
+  interaction jank.
+- Non-blocking long animation frames with no costly script attribution are
+  diagnostics, not a PASS by themselves and not a reason to hide real lag. Keep
+  them in the report so render/compositor pressure can still be tracked without
+  confusing it with main-thread input blocking.
+- Runtime performance guard may downgrade optional motion only from long tasks,
+  severe blocking LoAF, or repeated blocking LoAF. It must not downgrade
+  canonical visuals or motion because of render-only LoAF with zero blocking.
 - Route budgets live in `config/chrome-performance-budgets.json`; do not bury
   new performance thresholds inside test code.
 - Chrome route smoke must report cold-boot and steady-state separately. Cold boot
@@ -201,13 +210,15 @@ Use this sequence for performance, sync, navigation, orb, or cross-platform work
 1. Read this contract.
 2. Read `docs/ai/PREFLIGHT_OPERATOR_TEMPLATE.md`.
 3. Read `docs/ai/SYNC_CONTRACT.md` for data/sync work.
-4. Read `docs/ai/CANONICAL_ORB_INVARIANT.md` for orb or visual primitive work.
-5. Gather current repo evidence with search and file reads.
-6. Reproduce or measure the issue before proposing fixes.
-7. Identify the root cause and the affected platforms.
-8. Implement the smallest change that fixes the root cause.
-9. Run the required gates.
-10. Verify public deployment when the user-reported issue is public.
+4. Read `docs/ai/TELEGRAM_GRADE_SYNC_100_PERCENT_CLOSURE.md` for any sync,
+   account, cross-shell, offline, resume, or Supabase convergence work.
+5. Read `docs/ai/CANONICAL_ORB_INVARIANT.md` for orb or visual primitive work.
+6. Gather current repo evidence with search and file reads.
+7. Reproduce or measure the issue before proposing fixes.
+8. Identify the root cause and the affected platforms.
+9. Implement the smallest change that fixes the root cause.
+10. Run the required gates.
+11. Verify public deployment when the user-reported issue is public.
 
 ## Evidence Requirements
 
@@ -216,6 +227,8 @@ Performance work needs:
 - Route name and URL.
 - Viewport/device profile.
 - Max long task and max long animation frame when available.
+- Max LoAF `blockingDuration` and whether long frames are attributed to scripts
+  or non-blocking render work.
 - Console errors and failed requests.
 - Before/after comparison when changing runtime behavior.
 - Public Chrome diagnostics can be enabled with `?perf=1`, `?runtimePerf=true`,
@@ -252,8 +265,8 @@ Deployment work needs:
 Minimum local gates for this contract:
 
 ```bash
-npm run check:canonical-orbs
 npm run check:sync-contract
+npm run check:canonical-orbs
 npm run check:all
 npm run smoke:chrome-performance
 ```
