@@ -14,6 +14,7 @@ import { syncJournalEntry, deleteJournalEntryFromCloud, syncSetting } from "@/st
 import { logger } from "./logger";
 import {
   isSyncEventWriteIntent,
+  normalizeSyncEventWriteIntent,
   writeQueuedEventAndBroadcast,
 } from "@/storage/eventSync";
 import { MoodEntry, Habit, FocusSession, GratitudeEntry } from "@/types";
@@ -182,7 +183,9 @@ export function initializeOfflineQueueHandlers(): void {
       logger.warn("[OfflineQueue] Invalid sync event payload, skipping:", action.entityId);
       return;
     }
-    await writeQueuedEventAndBroadcast(action.payload);
+    const intent = normalizeSyncEventWriteIntent(action.payload);
+    action.payload = intent;
+    await writeQueuedEventAndBroadcast(intent);
   });
 
   logger.log("[OfflineQueue] Handlers initialized");

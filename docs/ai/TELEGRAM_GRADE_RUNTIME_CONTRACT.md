@@ -53,6 +53,14 @@ UI handoff.
    - A successful domain write with a failed `sync_events` insert must enter the
      critical `WRITE_SYNC_EVENT` outbox and broadcast only after the durable
      event row exists.
+   - `sync_events.idempotency_key` must be a UUID compatible with the live
+     Supabase schema. Keep device/entity/op identity in their own columns and
+     normalize legacy queued string keys before retrying.
+   - User-state sync functions must await the durable event/outbox write before
+     resolving. A background `.then(writeEventAndBroadcast)` can be dropped by
+     tab close, app pause, WebView suspension, or native process eviction.
+   - Offline/outbox queue mutations must wait for IndexedDB or fallback storage
+     persistence before reporting success.
    - V1 and V2 shells must both mount `useTelegramGradeSyncRuntime()` so direct
      `/orb`, `/habits`, `/diary`, and `/settings` entry points receive the same
      ordered-delta runtime as classic V1.

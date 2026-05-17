@@ -3,6 +3,7 @@
 
 const fs = require("node:fs");
 const path = require("node:path");
+const crypto = require("node:crypto");
 const { createClient } = require("@supabase/supabase-js");
 
 const ROOT = path.join(__dirname, "..");
@@ -89,6 +90,8 @@ async function main() {
   const entityId = `sync-smoke-${stamp}`;
   const deviceA = `sync-smoke-a-${stamp}`;
   const deviceB = `sync-smoke-b-${stamp}`;
+  const upsertIdempotencyKey = crypto.randomUUID();
+  const deleteIdempotencyKey = crypto.randomUUID();
 
   const upsert = await insertEvent(client, {
     user_id: userId,
@@ -104,7 +107,7 @@ async function main() {
       updatedAt: stamp,
     },
     device_id: deviceA,
-    idempotency_key: `${deviceA}:journal:${entityId}:upsert`,
+    idempotency_key: upsertIdempotencyKey,
   });
 
   const deletion = await insertEvent(client, {
@@ -114,7 +117,7 @@ async function main() {
     op: "delete",
     payload: null,
     device_id: deviceB,
-    idempotency_key: `${deviceB}:journal:${entityId}:delete`,
+    idempotency_key: deleteIdempotencyKey,
   });
 
   if (deletion.seq <= upsert.seq) {
@@ -152,7 +155,7 @@ async function main() {
     op: "delete",
     payload: null,
     device_id: deviceB,
-    idempotency_key: `${deviceB}:journal:${entityId}:delete`,
+    idempotency_key: deleteIdempotencyKey,
   });
   if (!duplicateError) {
     fail("duplicate idempotency key was accepted");

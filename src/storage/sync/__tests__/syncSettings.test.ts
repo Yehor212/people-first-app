@@ -52,7 +52,6 @@ describe("syncSetting", () => {
 
   it("writes a setting sync event after a successful cloud upsert", async () => {
     await syncSetting("mood-reminder-enabled", true);
-    await Promise.resolve();
 
     expect(mocks.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -74,6 +73,29 @@ describe("syncSetting", () => {
       }),
       "device-1"
     );
+  });
+
+  it("does not resolve before the durable sync event/outbox write finishes", async () => {
+    let releaseEventWrite: () => void = () => {};
+    mocks.writeEventAndBroadcast.mockReturnValueOnce(
+      new Promise<void>((resolve) => {
+        releaseEventWrite = resolve;
+      })
+    );
+
+    let resolved = false;
+    const syncPromise = syncSetting("mood-reminder-enabled", true).then(() => {
+      resolved = true;
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(mocks.writeEventAndBroadcast).toHaveBeenCalled();
+    await Promise.resolve();
+    expect(resolved).toBe(false);
+
+    releaseEventWrite();
+    await syncPromise;
+    expect(resolved).toBe(true);
   });
 
   it("queues setting changes while offline instead of writing partial cloud state", async () => {

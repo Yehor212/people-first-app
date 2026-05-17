@@ -58,17 +58,14 @@ export const syncJournalEntry = async (entry: JournalEntry): Promise<void> => {
 
     if (error) throw error;
     logger.log("[Sync] Journal entry synced:", entry.id);
-    void getPersistentDeviceId()
-      .then((did) =>
-        writeEventAndBroadcast(
-          "journal",
-          entry.id,
-          "upsert",
-          entry as unknown as Record<string, unknown>,
-          did
-        )
-      )
-      .catch((err) => logger.warn("[Sync] writeEvent failed:", err));
+    const deviceId = await getPersistentDeviceId();
+    await writeEventAndBroadcast(
+      "journal",
+      entry.id,
+      "upsert",
+      entry as unknown as Record<string, unknown>,
+      deviceId
+    );
 
     // Fire-and-forget: generate vector embedding for semantic search
     generateEmbeddings([entry.id]).catch((err) =>
@@ -84,9 +81,9 @@ export const syncJournalEntry = async (entry: JournalEntry): Promise<void> => {
       await offlineQueue.enqueue("SYNC_JOURNAL_ENTRY", entry.id, entry);
       logger.log("[Sync] Journal entry queued after network error:", entry.id);
     } else {
-      // Graceful: log but don't throw — IndexedDB has the data,
-      // cloud sync will retry. Common cause: migration not applied (404).
+      // Keep failed journal writes visible to queue handlers; IndexedDB still has the data.
       logger.warn("[Sync] Journal entry sync failed (non-network):", error);
+      throw error;
     }
   }
 };
@@ -112,20 +109,20 @@ export const deleteJournalEntryFromCloud = async (entryId: string): Promise<void
       supabase.from("journal_audio").delete().eq("entry_id", entryId).eq("user_id", userId),
     ]);
 
-    if (entryRes.error) logger.warn("[Sync] Journal entry delete failed:", entryRes.error);
+    if (entryRes.error) throw entryRes.error;
     if (photosRes.error) logger.warn("[Sync] Journal photos delete failed:", photosRes.error);
     if (audioRes.error) logger.warn("[Sync] Journal audio delete failed:", audioRes.error);
 
     logger.log("[Sync] Journal entry deleted from cloud:", entryId);
-    void getPersistentDeviceId()
-      .then((did) => writeEventAndBroadcast("journal", entryId, "delete", null, did))
-      .catch((err) => logger.warn("[Sync] writeEvent failed:", err));
+    const deviceId = await getPersistentDeviceId();
+    await writeEventAndBroadcast("journal", entryId, "delete", null, deviceId);
   } catch (error) {
     if (isAbortError(error)) {
       logger.warn("[Sync] Journal entry delete aborted:", entryId);
       return;
     }
     logger.warn("[Sync] Failed to delete journal entry from cloud:", error);
+    throw error;
   }
 };
 

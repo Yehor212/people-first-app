@@ -53,6 +53,7 @@ vi.mock("@/storage/eventSync", () => ({
       "op" in value &&
       "deviceId" in value
   ),
+  normalizeSyncEventWriteIntent: vi.fn((value: unknown) => value),
   writeQueuedEventAndBroadcast: vi.fn(() => Promise.resolve()),
 }));
 

@@ -44,9 +44,8 @@ export const syncSetting = async (key: string, value: unknown): Promise<void> =>
     );
 
     if (error) throw error;
-    void getPersistentDeviceId()
-      .then((deviceId) => writeEventAndBroadcast("setting", key, "upsert", payload, deviceId))
-      .catch((err) => logger.warn("[Sync] setting writeEvent failed:", err));
+    const deviceId = await getPersistentDeviceId();
+    await writeEventAndBroadcast("setting", key, "upsert", payload, deviceId);
     logger.log("[Sync] Setting synced:", key);
   } catch (error) {
     // Handle AbortError separately

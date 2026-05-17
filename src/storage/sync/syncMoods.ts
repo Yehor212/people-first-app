@@ -92,17 +92,14 @@ export const syncMood = async (mood: MoodEntry): Promise<void> => {
       moodId: mood.id,
     });
     logger.log("[Sync] Mood synced:", mood.id);
-    void getPersistentDeviceId()
-      .then((did) =>
-        writeEventAndBroadcast(
-          "mood",
-          mood.id,
-          "upsert",
-          mood as unknown as Record<string, unknown>,
-          did
-        )
-      )
-      .catch((err) => logger.warn("[Sync] writeEvent failed:", err));
+    const deviceId = await getPersistentDeviceId();
+    await writeEventAndBroadcast(
+      "mood",
+      mood.id,
+      "upsert",
+      mood as unknown as Record<string, unknown>,
+      deviceId
+    );
   } catch (error) {
     // Handle AbortError separately - it's intentional, don't retry/queue
     if (isAbortError(error)) {
@@ -163,9 +160,8 @@ export const deleteMoodFromCloud = async (moodId: string): Promise<void> => {
     if (error) throw error;
     await trackDeletedMoodId(moodId);
     logger.log("[Sync] Mood deleted + tracked:", moodId);
-    void getPersistentDeviceId()
-      .then((did) => writeEventAndBroadcast("mood", moodId, "delete", null, did))
-      .catch((err) => logger.warn("[Sync] writeEvent failed:", err));
+    const deviceId = await getPersistentDeviceId();
+    await writeEventAndBroadcast("mood", moodId, "delete", null, deviceId);
   } catch (error) {
     // Handle AbortError separately
     if (isAbortError(error)) {

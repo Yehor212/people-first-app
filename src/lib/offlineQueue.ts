@@ -336,7 +336,7 @@ class OfflineQueue {
         existing.retries = 0; // Reset retries for updated action
         existing.lastError = undefined;
         logger.log("[OfflineQueue] Action deduplicated in-place:", type, entityId);
-        this.persistToStorage();
+        await this.persistToStorage();
         this.notifyListeners();
 
         // If online, try to process immediately
@@ -361,7 +361,7 @@ class OfflineQueue {
     };
 
     this.state.actions.push(action);
-    this.persistToStorage();
+    await this.persistToStorage();
     this.notifyListeners();
 
     logger.log("[OfflineQueue] Action queued:", type, entityId);
@@ -420,9 +420,9 @@ class OfflineQueue {
   /**
    * Remove an action from the queue (e.g., after successful sync)
    */
-  private removeAction(actionId: string): void {
+  private async removeAction(actionId: string): Promise<void> {
     this.state.actions = this.state.actions.filter((a) => a.id !== actionId);
-    this.persistToStorage();
+    await this.persistToStorage();
     this.notifyListeners();
   }
 
@@ -457,7 +457,7 @@ class OfflineQueue {
       this.state.actions = compactQueue(this.state.actions);
       if (this.state.actions.length < before) {
         logger.log(`[OfflineQueue] Compacted: ${before} → ${this.state.actions.length}`);
-        void this.persistToStorage();
+        await this.persistToStorage();
       }
     }
 
@@ -494,13 +494,13 @@ class OfflineQueue {
       const handler = this.syncHandlers.get(action.type);
       if (!handler) {
         logger.warn("[OfflineQueue] No handler for action type:", action.type);
-        this.removeAction(action.id);
+        await this.removeAction(action.id);
         continue;
       }
 
       try {
         await handler(action);
-        this.removeAction(action.id);
+        await this.removeAction(action.id);
         logger.log("[OfflineQueue] Action processed:", action.type, action.entityId);
       } catch (error) {
         logger.error("[OfflineQueue] Action failed:", action.type, error);
@@ -510,7 +510,7 @@ class OfflineQueue {
 
         if (action.retries >= action.maxRetries) {
           logger.error("[OfflineQueue] Max retries reached, discarding action:", action.id);
-          this.removeAction(action.id);
+          await this.removeAction(action.id);
         } else {
           // Exponential backoff before retry
           const delay = Math.min(RETRY_BASE_DELAY * Math.pow(2, action.retries), RETRY_MAX_DELAY);
@@ -518,13 +518,13 @@ class OfflineQueue {
           await this.sleep(delay);
         }
 
-        this.persistToStorage();
+        await this.persistToStorage();
       }
     }
 
     this.state.isProcessing = false;
     this.state.lastProcessedAt = Date.now();
-    this.persistToStorage();
+    await this.persistToStorage();
     this.notifyListeners();
 
     logger.log("[OfflineQueue] Queue processing complete, remaining:", this.state.actions.length);
@@ -570,7 +570,7 @@ class OfflineQueue {
       await this.initPromise;
     }
     this.state.actions = [];
-    this.persistToStorage();
+    await this.persistToStorage();
     this.notifyListeners();
     logger.log("[OfflineQueue] Queue cleared");
   }
@@ -604,6 +604,7 @@ class OfflineQueue {
           retries: item.retries,
           maxRetries: item.maxRetries,
           lastError: item.lastError,
+          priority: item.priority as OfflineActionPriority | undefined,
         }));
         logger.log("[OfflineQueue] Loaded from IndexedDB:", this.state.actions.length, "actions");
 
@@ -680,9 +681,8 @@ class OfflineQueue {
    * Persist queue to IndexedDB with localStorage fallback
    * Uses IndexedDB for better quota handling
    */
-  private persistToStorage(): void {
-    // Persist asynchronously to IndexedDB
-    void this.persistToIndexedDB();
+  private async persistToStorage(): Promise<void> {
+    await this.persistToIndexedDB();
   }
 
   private async persistToIndexedDB(): Promise<void> {
@@ -700,6 +700,7 @@ class OfflineQueue {
             retries: action.retries,
             maxRetries: action.maxRetries,
             lastError: action.lastError,
+            priority: action.priority,
           }));
           await db.offlineQueue.bulkAdd(items);
         }
@@ -710,11 +711,13 @@ class OfflineQueue {
         idbError
       );
       // Fallback to localStorage
-      this.persistToLocalStorage();
+      if (!this.persistToLocalStorage()) {
+        throw new Error("[OfflineQueue] Failed to persist queue to IndexedDB and localStorage");
+      }
     }
   }
 
-  private persistToLocalStorage(): void {
+  private persistToLocalStorage(): boolean {
     const success = safeLocalStorageSet(SK.OFFLINE_QUEUE, {
       actions: this.state.actions,
       lastProcessedAt: this.state.lastProcessedAt,
@@ -738,6 +741,8 @@ class OfflineQueue {
         );
       }
     }
+
+    return success;
   }
 
   private notifyListeners(): void {

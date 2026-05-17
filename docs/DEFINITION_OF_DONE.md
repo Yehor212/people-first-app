@@ -31,7 +31,7 @@ cross-platform user-flow changes.
 | 2 | Canonical orb invariant | `npm run check:canonical-orbs` | Yes for orb or visual primitive work |
 | 3 | Chrome route smoke | `npm run smoke:chrome-performance` or route-specific Playwright perf proof with cold-boot and steady-state metrics | Yes for performance claims |
 | 4 | V1/V2 sync round trip | Perform source shell -> adjacent shell -> source shell check for changed data | Yes for shared data changes |
-| 5 | Sync contract invariant | `npm run check:sync-contract`, including `runWithSyncLeaderLock()` for multi-tab delta ownership and `WRITE_SYNC_EVENT` outbox protection | Yes for sync, storage, Supabase, backup, offline queue, or hydration work |
+| 5 | Sync contract invariant | `npm run check:sync-contract`, including `runWithSyncLeaderLock()` for multi-tab delta ownership, `WRITE_SYNC_EVENT` outbox protection, and no fire-and-forget core event writes | Yes for sync, storage, Supabase, backup, offline queue, or hydration work |
 | 6 | Delete anti-resurrection | Prove stale local state, backup, or delayed pull cannot restore deleted data | Yes for delete changes |
 | 7 | Live account sync proof | `npm run smoke:sync-account` with a dedicated test account; missing credentials means UNVERIFIED, not PASS | Yes for account-level sync claims |
 | 8 | Public deploy proof | `npm run ci:remote:wait` plus cache-busted public URL when the issue is public | Yes for public-user claims |

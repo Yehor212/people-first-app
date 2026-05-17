@@ -72,10 +72,20 @@ to the latest event-log state.
 
 7. **Retries need idempotency.**
    - New critical user actions should use a stable operation/idempotency key.
+   - `sync_events.idempotency_key` is a database UUID. Do not encode
+     `device/entity/op` into that column; those semantics already live in
+     separate columns and non-UUID keys fail against live Supabase.
    - Core data event writes must not be fire-and-forget. If the domain table
      mutation succeeds but `sync_events` cannot be written, the action must enter
      the critical `WRITE_SYNC_EVENT` outbox and broadcast only after a durable
      `sync_events.seq` exists.
+   - Core sync functions must `await getPersistentDeviceId()` and
+     `await writeEventAndBroadcast(...)` before returning. Returning while the
+     event write is still in a `.then(...)` chain reopens the app-close data-loss
+     window and is a sync regression.
+   - Critical offline/outbox enqueue must wait for persistent storage. Updating
+     queue state in memory is not enough for Android/iOS pause, browser tab close,
+     or desktop process exit.
    - Fire-and-forget writes are acceptable only for legacy compatibility or
      low-risk telemetry-like updates that do not affect user state.
 

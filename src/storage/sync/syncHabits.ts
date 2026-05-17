@@ -173,17 +173,14 @@ export const syncHabit = async (habit: Habit): Promise<void> => {
     }
 
     logger.log("[Sync] Habit synced:", habit.id);
-    void getPersistentDeviceId()
-      .then((did) =>
-        writeEventAndBroadcast(
-          "habit",
-          habit.id,
-          "upsert",
-          habit as unknown as Record<string, unknown>,
-          did
-        )
-      )
-      .catch((err) => logger.warn("[Sync] writeEvent failed:", err));
+    const deviceId = await getPersistentDeviceId();
+    await writeEventAndBroadcast(
+      "habit",
+      habit.id,
+      "upsert",
+      habit as unknown as Record<string, unknown>,
+      deviceId
+    );
   } catch (error) {
     // Handle AbortError separately
     if (isAbortError(error)) {
@@ -224,9 +221,8 @@ export const deleteHabitFromCloud = async (habitId: string): Promise<void> => {
 
     await trackDeletedHabitId(habitId);
     logger.log("[Sync] Habit deleted + tracked:", habitId);
-    void getPersistentDeviceId()
-      .then((did) => writeEventAndBroadcast("habit", habitId, "delete", null, did))
-      .catch((err) => logger.warn("[Sync] writeEvent failed:", err));
+    const deviceId = await getPersistentDeviceId();
+    await writeEventAndBroadcast("habit", habitId, "delete", null, deviceId);
   } catch (error) {
     // Handle AbortError separately
     if (isAbortError(error)) {
@@ -334,27 +330,24 @@ export const syncHabitCompletion = async (
       if (error) throw error;
     }
     logger.log("[Sync] Habit completion synced:", habitId, date, completed);
-    void getPersistentDeviceId()
-      .then((did) =>
-        writeEventAndBroadcast(
-          "habit_completion",
-          `${habitId}_${date}`,
-          shouldPersist ? "upsert" : "delete",
-          shouldPersist
-            ? {
-                habitId,
-                date,
-                count,
-                duration,
-                entryValue,
-                habitType,
-                targetType: options?.targetType,
-              }
-            : null,
-          did
-        )
-      )
-      .catch((err) => logger.warn("[Sync] writeEvent failed:", err));
+    const deviceId = await getPersistentDeviceId();
+    await writeEventAndBroadcast(
+      "habit_completion",
+      `${habitId}_${date}`,
+      shouldPersist ? "upsert" : "delete",
+      shouldPersist
+        ? {
+            habitId,
+            date,
+            count,
+            duration,
+            entryValue,
+            habitType,
+            targetType: options?.targetType,
+          }
+        : null,
+      deviceId
+    );
   } catch (error) {
     // Handle AbortError separately
     if (isAbortError(error)) {

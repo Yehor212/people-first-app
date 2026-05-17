@@ -71,9 +71,12 @@ import {
   applyDelta,
   fetchDelta,
   getServerMaxSeq,
+  normalizeSyncEventWriteIntent,
   pullAndApplyDeltasFromLastSeq,
   writeEventAndBroadcast,
 } from "@/storage/eventSync";
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function createSyncEventsQuery() {
   return {
@@ -394,7 +397,7 @@ describe("eventSync auth guards", () => {
       op: "upsert",
       payload: { id: "habit-written" },
       device_id: "device-1",
-      idempotency_key: expect.stringContaining("device-1:habit:habit-written:upsert:"),
+      idempotency_key: expect.stringMatching(UUID_RE),
     });
     expect(mocks.insertSingle).toHaveBeenCalled();
     expect(mocks.broadcastChange).toHaveBeenCalledWith("habits", 21);
@@ -421,7 +424,7 @@ describe("eventSync auth guards", () => {
         op: "delete",
         payload: null,
         deviceId: "device-1",
-        idempotencyKey: expect.stringContaining("device-1:mood:mood-1:delete:"),
+        idempotencyKey: expect.stringMatching(UUID_RE),
       },
       {
         deduplicate: false,
@@ -429,5 +432,18 @@ describe("eventSync auth guards", () => {
         priority: "critical",
       }
     );
+  });
+
+  it("normalizes legacy queued idempotency keys to live Supabase UUID format", () => {
+    const normalized = normalizeSyncEventWriteIntent({
+      entityType: "journal",
+      entityId: "journal-1",
+      op: "upsert",
+      payload: { id: "journal-1" },
+      deviceId: "device-1",
+      idempotencyKey: "device-1:journal:journal-1:upsert:legacy",
+    });
+
+    expect(normalized.idempotencyKey).toEqual(expect.stringMatching(UUID_RE));
   });
 });

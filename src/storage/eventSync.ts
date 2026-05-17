@@ -61,6 +61,8 @@ export interface SyncEventWriteIntent {
   idempotencyKey?: string;
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 // ── Entity type to Dexie table mapping ────────────────────────────────
 
 // Maps entity types to Dexie table names for applyDelta.
@@ -122,27 +124,33 @@ export function isSyncEventWriteIntent(value: unknown): value is SyncEventWriteI
   );
 }
 
-function createEventIdempotencyKey(intent: Omit<SyncEventWriteIntent, "idempotencyKey">): string {
-  const random =
-    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
-      ? crypto.randomUUID()
-      : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
-  return `${intent.deviceId}:${intent.entityType}:${intent.entityId}:${intent.op}:${random}`;
+function createEventIdempotencyKey(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (token) => {
+    const random = Math.floor(Math.random() * 16);
+    const value = token === "x" ? random : (random & 0x3) | 0x8;
+    return value.toString(16);
+  });
+}
+
+function isUuid(value: string | undefined): value is string {
+  return typeof value === "string" && UUID_RE.test(value);
+}
+
+export function normalizeSyncEventWriteIntent(intent: SyncEventWriteIntent): SyncEventWriteIntent {
+  return {
+    ...intent,
+    idempotencyKey: isUuid(intent.idempotencyKey)
+      ? intent.idempotencyKey
+      : createEventIdempotencyKey(),
+  };
 }
 
 function withIdempotencyKey(intent: SyncEventWriteIntent): SyncEventWriteIntent {
-  return {
-    ...intent,
-    idempotencyKey:
-      intent.idempotencyKey ??
-      createEventIdempotencyKey({
-        entityType: intent.entityType,
-        entityId: intent.entityId,
-        op: intent.op,
-        payload: intent.payload,
-        deviceId: intent.deviceId,
-      }),
-  };
+  return normalizeSyncEventWriteIntent(intent);
 }
 
 function isDuplicateIdempotencyError(error: unknown): boolean {

@@ -59,17 +59,14 @@ export const syncFocusSession = async (session: FocusSession): Promise<void> => 
 
     if (error) throw error;
     logger.log("[Sync] Focus session synced:", session.id);
-    void getPersistentDeviceId()
-      .then((did) =>
-        writeEventAndBroadcast(
-          "focus",
-          session.id,
-          "upsert",
-          session as unknown as Record<string, unknown>,
-          did
-        )
-      )
-      .catch((err) => logger.warn("[Sync] writeEvent failed:", err));
+    const deviceId = await getPersistentDeviceId();
+    await writeEventAndBroadcast(
+      "focus",
+      session.id,
+      "upsert",
+      session as unknown as Record<string, unknown>,
+      deviceId
+    );
   } catch (error) {
     // Handle AbortError separately
     if (isAbortError(error)) {

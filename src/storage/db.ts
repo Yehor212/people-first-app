@@ -27,6 +27,7 @@ export interface OfflineQueueItem {
   retries: number;
   maxRetries: number;
   lastError?: string;
+  priority?: string;
 }
 
 /** Dead-letter item for actions that exhausted retries */

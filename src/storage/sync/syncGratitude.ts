@@ -56,17 +56,14 @@ export const syncGratitude = async (entry: GratitudeEntry): Promise<void> => {
 
     if (error) throw error;
     logger.log("[Sync] Gratitude synced:", entry.id);
-    void getPersistentDeviceId()
-      .then((did) =>
-        writeEventAndBroadcast(
-          "gratitude",
-          entry.id,
-          "upsert",
-          entry as unknown as Record<string, unknown>,
-          did
-        )
-      )
-      .catch((err) => logger.warn("[Sync] writeEvent failed:", err));
+    const deviceId = await getPersistentDeviceId();
+    await writeEventAndBroadcast(
+      "gratitude",
+      entry.id,
+      "upsert",
+      entry as unknown as Record<string, unknown>,
+      deviceId
+    );
   } catch (error) {
     // Handle AbortError separately
     if (isAbortError(error)) {
@@ -106,9 +103,8 @@ export const deleteGratitudeFromCloud = async (entryId: string): Promise<void> =
     if (error) throw error;
     await trackDeletedGratitudeId(entryId);
     logger.log("[Sync] Gratitude deleted + tracked:", entryId);
-    void getPersistentDeviceId()
-      .then((did) => writeEventAndBroadcast("gratitude", entryId, "delete", null, did))
-      .catch((err) => logger.warn("[Sync] writeEvent failed:", err));
+    const deviceId = await getPersistentDeviceId();
+    await writeEventAndBroadcast("gratitude", entryId, "delete", null, deviceId);
   } catch (error) {
     // Handle AbortError separately
     if (isAbortError(error)) {

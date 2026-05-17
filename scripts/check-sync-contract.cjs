@@ -113,7 +113,12 @@ function main() {
     "writeQueuedEventAndBroadcast",
     "queueOnFailure",
     "idempotencyKey",
+    "crypto.randomUUID()",
+    "normalizeSyncEventWriteIntent",
     "sync_events_idempotency_idx",
+  ]);
+  requireNotIncludes("src/storage/eventSync.ts", [
+    "${intent.deviceId}:${intent.entityType}:${intent.entityId}:${intent.op}",
   ]);
 
   requireIncludes("src/hooks/useDeltaSyncEffects.ts", [
@@ -205,6 +210,8 @@ function main() {
   requireIncludes("src/lib/offlineQueueHandlers.ts", [
     "WRITE_SYNC_EVENT",
     "isSyncEventWriteIntent",
+    "normalizeSyncEventWriteIntent",
+    "action.payload = intent",
     "writeQueuedEventAndBroadcast",
   ]);
 
@@ -212,7 +219,29 @@ function main() {
     "WRITE_SYNC_EVENT",
     "syncEventActions",
     "deduplicate?: boolean; priority?: OfflineActionPriority",
+    "await this.persistToStorage()",
+    "priority: item.priority as OfflineActionPriority | undefined",
+    "priority: action.priority",
+    "Failed to persist queue to IndexedDB and localStorage",
   ]);
+
+  requireIncludes("src/storage/db.ts", ["priority?: string"]);
+
+  for (const file of [
+    "src/storage/sync/syncMoods.ts",
+    "src/storage/sync/syncHabits.ts",
+    "src/storage/sync/syncFocus.ts",
+    "src/storage/sync/syncGratitude.ts",
+    "src/storage/sync/syncJournal.ts",
+    "src/storage/sync/syncSettings.ts",
+  ]) {
+    requireNotIncludes(file, [
+      "void getPersistentDeviceId()",
+      ".then((did) => writeEventAndBroadcast",
+      ".then((deviceId) => writeEventAndBroadcast",
+    ]);
+    requireIncludes(file, ["await getPersistentDeviceId()", "await writeEventAndBroadcast"]);
+  }
 
   requireIncludes("src/storage/sync/__tests__/serverTombstones.test.ts", [
     "collects only supported sync tombstone entity families",
@@ -261,11 +290,16 @@ function main() {
   ]);
 
   requireIncludes("scripts/smoke-sync-account.cjs", [
+    "crypto.randomUUID()",
     "ZENFLOW_SYNC_TEST_EMAIL",
     "sync_events",
     "sync_tombstones",
     "idempotency_key",
     "upsert,delete",
+  ]);
+  requireNotIncludes("scripts/smoke-sync-account.cjs", [
+    "${deviceA}:journal:${entityId}:upsert",
+    "${deviceB}:journal:${entityId}:delete",
   ]);
 
   requireIncludes(".github/workflows/deploy.yml", [
