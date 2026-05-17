@@ -11,7 +11,10 @@ import { logger } from "./lib/logger";
 import { setupDeepLinks } from "./lib/deepLinks";
 import { offlineQueue } from "./lib/offlineQueue";
 import { hapticSuccess } from "./lib/haptics";
-// Sentry and cloudSync are dynamically imported below to keep them off the critical path
+import { flushSync as flushCloudSync } from "./storage/cloudSync";
+import { runWithSyncLeaderLock } from "@/lib/syncLeader";
+import { pullAndApplyDeltasFromLastSeq } from "@/storage/eventSync";
+// Sentry is dynamically imported below to keep it off the critical path
 import { cleanupShareCache } from "./lib/shareActions";
 import { initA11y } from "./lib/a11y";
 import { App as CapacitorApp } from "@capacitor/app";
@@ -266,10 +269,11 @@ function handleAppPause(): void {
 
   // Flush pending cloud sync immediately (bypasses 60s debounce)
   // Prevents data loss when user closes app right after recording mood/habit
-  // ROOT-CAUSE: dynamic import may fail during app backgrounding — sync retries on next resume via handleAppResume
-  import("./storage/cloudSync")
-    .then(({ flushSync }) => flushSync())
-    .catch((err) => logger.warn("[Main] cloudSync flush failed during pause:", err));
+  try {
+    flushCloudSync();
+  } catch (err) {
+    logger.warn("[Main] cloudSync flush failed during pause:", err);
+  }
 
   try {
     const queueState = offlineQueue.getState();
@@ -320,11 +324,8 @@ async function handleAppResume(): Promise<void> {
       });
     }
     // Delta pull on resume — fetch and apply new events from the eventSync cursor.
-    void Promise.all([import("@/lib/syncLeader"), import("@/storage/eventSync")])
-      .then(async ([{ runWithSyncLeaderLock }, { pullAndApplyDeltasFromLastSeq }]) => {
-        const locked = await runWithSyncLeaderLock("resume-delta-sync", () =>
-          pullAndApplyDeltasFromLastSeq()
-        );
+    void runWithSyncLeaderLock("resume-delta-sync", () => pullAndApplyDeltasFromLastSeq())
+      .then((locked) => {
         if (!locked.acquired) {
           logger.log("[Main] Delta pull on resume skipped; another tab owns sync");
           return;

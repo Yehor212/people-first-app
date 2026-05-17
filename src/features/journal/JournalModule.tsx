@@ -35,6 +35,8 @@ import { createFocusTrap, announceSuccess, announceError } from "@/lib/a11y";
 import { Switch } from "@/components/ui/switch";
 import { SplashScreen, type SplashThemePreference } from "@/components/SplashScreen";
 import { supabase } from "@/lib/supabaseClient";
+import { triggerSync } from "@/storage/cloudSync";
+import { settingsRepo } from "@/storage/db";
 import { useJournal } from "./useJournal";
 import { useJournalSecurity } from "./useJournalSecurity";
 import { JournalLockScreen } from "./JournalLockScreen";
@@ -501,7 +503,6 @@ export const JournalModule = memo(function JournalModule({
         }
         onInitialEntrySuggestionConsumed?.();
         try {
-          const { triggerSync } = await import("@/storage/cloudSync");
           triggerSync();
         } catch {
           /* graceful: cloud sync is secondary; data already saved to IndexedDB */
@@ -674,7 +675,6 @@ export const JournalModule = memo(function JournalModule({
       setPortalEntryPrefill(null);
       // Trigger cloud sync after save to reduce data loss risk
       try {
-        const { triggerSync } = await import("@/storage/cloudSync");
         triggerSync();
       } catch {
         /* graceful: cloud sync is secondary; data already saved to IndexedDB */
@@ -833,20 +833,13 @@ export const JournalModule = memo(function JournalModule({
   // Check for unsaved draft (for card badge)
   useEffect(() => {
     if (moduleState !== "card") return;
-    import("@/storage/db")
-      .then(({ settingsRepo }) => {
-        settingsRepo
-          .get("journal_draft_new")
-          .then((record) => {
-            setHasDraft(!!record?.value);
-          })
-          .catch((err) => {
-            logger.warn("[Journal]", "Draft check failed:", err);
-            setHasDraft(false);
-          });
+    settingsRepo
+      .get("journal_draft_new")
+      .then((record) => {
+        setHasDraft(!!record?.value);
       })
       .catch((err) => {
-        logger.warn("[Journal]", "DB module load failed:", err);
+        logger.warn("[Journal]", "Draft check failed:", err);
         setHasDraft(false);
       });
   }, [moduleState, journal.totalCount]);

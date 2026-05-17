@@ -10,6 +10,7 @@ import { useFeatureFlags } from "@/contexts/FeatureFlagsContext";
 import { logger } from "@/lib/logger";
 import { onRemoteChange } from "@/lib/syncBroadcast";
 import { runWithSyncLeaderLock } from "@/lib/syncLeader";
+import { getCurrentSessionUserId, supabase } from "@/lib/supabaseClient";
 import {
   fetchAllDeltas,
   applyDelta,
@@ -51,6 +52,10 @@ export function useDeltaSyncEffects(): void {
     if (current.phase === "delta" || current.phase === "snapshot") return;
     if (!navigator.onLine) {
       dispatchAndSync({ type: "WENT_OFFLINE" });
+      return;
+    }
+    if (!(await getCurrentSessionUserId())) {
+      logger.sync("[DeltaSync] Skipped; no authenticated session");
       return;
     }
 
@@ -125,6 +130,10 @@ export function useDeltaSyncEffects(): void {
 
   const runSnapshotSyncRef = useRef(async () => {
     if (isRunningRef.current) return;
+    if (!(await getCurrentSessionUserId())) {
+      logger.sync("[DeltaSync] Snapshot skipped; no authenticated session");
+      return;
+    }
     isRunningRef.current = true;
     dispatchAndSync({ type: "SNAPSHOT_START" });
 
@@ -193,6 +202,21 @@ export function useDeltaSyncEffects(): void {
     };
     document.addEventListener("visibilitychange", handleVisibility);
 
+    const authSubscription = supabase?.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        void runDeltaSyncRef.current();
+        return;
+      }
+
+      if (retryTimerRef.current) {
+        clearTimeout(retryTimerRef.current);
+        retryTimerRef.current = null;
+      }
+      if (abortRef.current) {
+        abortRef.current.abort();
+      }
+    }).data.subscription;
+
     // INTENTIONAL: noop cleanup — async Capacitor addListener replaces it when native platform detected
     let isMounted = true;
     let removeAppListener = () => {
@@ -228,6 +252,7 @@ export function useDeltaSyncEffects(): void {
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
       document.removeEventListener("visibilitychange", handleVisibility);
+      authSubscription?.unsubscribe();
       if (intervalRef.current) clearInterval(intervalRef.current);
       if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
       if (abortRef.current) abortRef.current.abort();

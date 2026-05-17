@@ -38,6 +38,7 @@ import { useDiaryTheme } from "./useDiaryTheme";
 import { sanitizeRichContent } from "@/lib/sanitize";
 import { getJournalEditorContent } from "./journalDisplay";
 import { useThemeStore, type AppliedTheme } from "@/stores/themeStore";
+import { settingsRepo } from "@/storage/db";
 
 // ── Draft helpers (IndexedDB primary, localStorage fallback) ──
 
@@ -76,7 +77,6 @@ function getDraftKey(entryId: string | null): string {
 
 async function saveDraft(key: string, data: DraftData) {
   try {
-    const { settingsRepo } = await import("@/storage/db");
     await settingsRepo.put({ key, value: data });
   } catch {
     // Fallback to localStorage
@@ -86,7 +86,6 @@ async function saveDraft(key: string, data: DraftData) {
 
 async function loadDraft(key: string): Promise<DraftData | null> {
   try {
-    const { settingsRepo } = await import("@/storage/db");
     const record = await settingsRepo.get(key);
     if (record?.value) {
       const data = record.value as DraftData;
@@ -134,7 +133,6 @@ async function loadDraft(key: string): Promise<DraftData | null> {
 
 async function clearDraft(key: string) {
   try {
-    const { settingsRepo } = await import("@/storage/db");
     await settingsRepo.delete(key);
   } catch {
     /* non-critical */

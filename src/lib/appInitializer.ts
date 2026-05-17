@@ -1,6 +1,7 @@
 import { initializeAppMetadata, getAppMetadata, wasAppUpdated, DATA_SCHEMA_VERSION } from '@/lib/appVersion';
 import { logger } from '@/lib/logger';
 import { scheduleIdle } from '@/lib/scheduleIdle';
+import { checkDatabaseHealth } from '@/storage/db';
 
 export interface InitializationResult {
   success: boolean;
@@ -22,8 +23,7 @@ export const initializeApp = async (): Promise<InitializationResult> => {
 
     if (!wasUpdated) {
       scheduleIdle(() => {
-        void import('@/storage/db')
-          .then(({ checkDatabaseHealth }) => checkDatabaseHealth())
+        void checkDatabaseHealth()
           .then((dbHealthy) => {
             if (!dbHealthy) {
               logger.warn('[AppInit] Background database health check failed');
@@ -42,10 +42,7 @@ export const initializeApp = async (): Promise<InitializationResult> => {
       };
     }
 
-    const [{ checkDatabaseHealth }, { runMigrations, validateDataIntegrity }] = await Promise.all([
-      import('@/storage/db'),
-      import('@/storage/migrations'),
-    ]);
+    const { runMigrations, validateDataIntegrity } = await import('@/storage/migrations');
 
     // Updated installs still need DB validation before migrations.
     const dbHealthy = await checkDatabaseHealth();

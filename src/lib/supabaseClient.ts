@@ -137,6 +137,31 @@ export const getCurrentUser = async () => {
   return validateSupabaseUser(user);
 };
 
+/**
+ * Lightweight local-session check for client-side sync scheduling.
+ *
+ * This only decides whether background sync should wake up. Actual cloud reads
+ * and writes still call getCurrentUserId(), which verifies the user with
+ * Supabase before touching RLS-protected data.
+ */
+export const getCurrentSessionUserId = async (): Promise<string | null> => {
+  if (!supabase) return null;
+
+  const {
+    data: { session },
+    error,
+  } = await supabase.auth.getSession();
+
+  if (error) {
+    if (IS_DEV) {
+      logger.warn("[Supabase] getSession error:", error.message);
+    }
+    return null;
+  }
+
+  return validateSupabaseUser(session?.user)?.id ?? null;
+};
+
 // Helper to get user ID
 export const getCurrentUserId = async (): Promise<string | null> => {
   const user = await getCurrentUser();
