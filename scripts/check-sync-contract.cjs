@@ -414,6 +414,7 @@ function main() {
     "Telegram Sync Drill Release Gate",
     "ZENFLOW_SYNC_TEST_EMAIL",
     "ZENFLOW_SYNC_TEST_PASSWORD",
+    "setup:sync-test-account",
     "ValenceOrb",
     "MiniValenceOrb",
   ]);
@@ -443,7 +444,20 @@ function main() {
     '"smoke:sync-account": "node scripts/smoke-sync-account.cjs"',
     '"smoke:telegram-sync-drill": "node scripts/smoke-telegram-sync-drill.cjs"',
     '"check:github-sync-secrets": "node scripts/check-github-sync-secrets.cjs"',
+    '"setup:sync-test-account": "node scripts/setup-sync-test-account.cjs"',
     "npm run check:sync-contract",
+  ]);
+
+  requireIncludes("scripts/setup-sync-test-account.cjs", [
+    "ZENFLOW_SYNC_TEST_ACCOUNT_APPLY",
+    "SUPABASE_SERVICE_ROLE_KEY",
+    "ZENFLOW_SYNC_TEST_SET_GITHUB_SECRETS",
+    "createUser",
+    "updateUserById",
+    "signInWithPassword",
+    "gh",
+    "secret",
+    "never prints passwords",
   ]);
 
   requireIncludes("scripts/check-github-sync-secrets.cjs", [

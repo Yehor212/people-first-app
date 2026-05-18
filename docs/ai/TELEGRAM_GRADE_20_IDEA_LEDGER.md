@@ -75,7 +75,10 @@ These are not failures by themselves, but they block 100 percent claims until
 fresh evidence exists:
 
 - Missing `ZENFLOW_SYNC_TEST_EMAIL` or `ZENFLOW_SYNC_TEST_PASSWORD` GitHub
-  secrets means same-account live sync remains `UNVERIFIED`.
+  secrets means same-account live sync remains `UNVERIFIED`. Use
+  `npm run setup:sync-test-account` from a trusted admin shell with a
+  server-only Supabase service-role key to provision the dedicated smoke account
+  and GitHub secret names.
 - Missing iOS project or WKWebView run evidence means iOS remains
   `UNVERIFIED`.
 - Browser-only proof does not prove Android WebView, iOS/WKWebView, or store

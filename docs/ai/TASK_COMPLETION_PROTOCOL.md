@@ -175,6 +175,9 @@ Commit/deploy:
 - Mention visual screenshots/traces for UI claims.
 - Mention public URL proof for GitHub Pages claims.
 - Mention the `telegram-sync-drill` artifact for release sync claims.
+- If same-account credentials are missing, use `npm run setup:sync-test-account`
+  only with a server-only Supabase service-role key; otherwise mark the row
+  `UNVERIFIED`.
 - Mention user waivers explicitly; do not invent waivers.
 
 ## Agent Workflow

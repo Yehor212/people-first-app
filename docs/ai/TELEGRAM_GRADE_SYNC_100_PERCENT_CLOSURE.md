@@ -40,6 +40,45 @@ binding: a feature can pass its local unit tests and still remain `PARTIAL` if a
 touched row has no browser, public deploy, account, native, or anti-resurrection
 evidence.
 
+## Closing Same-Account Proof Safely
+
+The last release-blocking same-account proof is intentionally credential-gated.
+Do not create a production test user through normal app signup, do not commit a
+password, and do not expose a Supabase service-role or secret key to browser
+code.
+
+Safe setup path:
+
+1. Choose a dedicated smoke-test email, not a real user's address. The email
+   should visibly include `sync`, `smoke`, `test`, `ci`, or `zenflow`.
+2. Export server-only credentials locally or in a trusted CI/admin shell:
+
+   ```bash
+   export SUPABASE_SERVICE_ROLE_KEY=...
+   export ZENFLOW_SYNC_TEST_EMAIL=...
+   export ZENFLOW_SYNC_TEST_PASSWORD=...
+   export ZENFLOW_SYNC_TEST_ACCOUNT_APPLY=true
+   export ZENFLOW_SYNC_TEST_SET_GITHUB_SECRETS=true
+   ```
+
+3. Run `npm run setup:sync-test-account`.
+4. Run `npm run check:github-sync-secrets`.
+5. Re-run the GitHub Pages deploy workflow and inspect the
+   `telegram-sync-drill` artifact.
+
+`setup:sync-test-account` uses Supabase Auth Admin with a server-only key, marks
+the account as a sync smoke user, verifies sign-in, runs `smoke:sync-account`,
+and writes only the GitHub secret names through `gh secret set` stdin. It never
+prints secret values.
+
+Source basis:
+
+- Supabase Auth Admin user creation is server-only and must not expose the
+  service-role key in browser code:
+  https://supabase.com/docs/reference/javascript/auth-admin-createuser
+- GitHub CLI supports setting repository secrets from stdin:
+  https://cli.github.com/manual/gh_secret_set
+
 ## Source-Backed Model
 
 ZenFlow does not copy Telegram code. It adopts the same reliability shape:

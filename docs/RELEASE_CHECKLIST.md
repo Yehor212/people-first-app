@@ -47,6 +47,9 @@ Use this list before publishing on stores or web.
 ## Sync and Data Convergence
 - Run `npm run check:sync-contract`.
 - Run `npm run check:github-sync-secrets`; missing `ZENFLOW_SYNC_TEST_EMAIL` or `ZENFLOW_SYNC_TEST_PASSWORD` means same-account sync remains `UNVERIFIED`.
+- If the dedicated sync test account or GitHub secrets are missing, provision
+  them from a trusted admin shell with `npm run setup:sync-test-account`; never
+  commit or print the password/service-role key.
 - Run `npm run smoke:telegram-sync-drill`; if it is `PARTIAL`, name every missing browser, account, native, or public proof before release.
 - Confirm the GitHub Actions `telegram-sync-drill` artifact exists for the release commit and was produced from the freshly built preview.
 - Review `docs/ai/TELEGRAM_GRADE_SYNC_100_PERCENT_CLOSURE.md` and mark every applicable entity/platform row with evidence.
