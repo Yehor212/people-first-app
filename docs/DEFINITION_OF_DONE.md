@@ -37,7 +37,7 @@ cross-platform user-flow changes.
 | 8 | Public deploy proof | `npm run ci:remote:wait` plus cache-busted public URL when the issue is public | Yes for public-user claims |
 | 9 | Sync 100 percent closure matrix | `docs/ai/TELEGRAM_GRADE_SYNC_100_PERCENT_CLOSURE.md` rows for the touched entity/platform are proved or marked `UNVERIFIED` | Yes for sync/account/cross-shell claims |
 | 10 | Privacy-safe sync diagnostics | `npm run smoke:sync-health` or `window.__zenflowSyncHealth.snapshot()` with `?syncHealth=1` when diagnosing deployed sync; no payloads, entity ids, journal text, or habit names | Yes for public sync debugging claims |
-| 11 | Telegram sync drill | `npm run smoke:telegram-sync-drill`; `PASS` requires every row to pass, `PARTIAL` or `UNVERIFIED` must be named in the Done Packet | Yes for sync/account/cross-shell claims |
+| 11 | Telegram sync drill | `npm run smoke:telegram-sync-drill`; `PASS` requires every row to pass, `PARTIAL` or `UNVERIFIED` must be named in the Done Packet. Release CI must attach the `telegram-sync-drill` artifact from a freshly built preview. | Yes for sync/account/cross-shell claims |
 | 12 | Task completion protocol | `docs/ai/TASK_COMPLETION_PROTOCOL.md` Done Packet lists scope, evidence, known gaps, rollback, and deploy state | Yes for claims that a task is complete |
 
 ## Manual Checks (before major releases)

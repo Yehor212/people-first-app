@@ -357,6 +357,7 @@ function main() {
     "UNVERIFIED",
     "FAIL",
     "WAIVED",
+    "telegram-sync-drill",
     "TELEGRAM_GRADE_RUNTIME_CONTRACT.md",
     "SYNC_CONTRACT.md",
     "TELEGRAM_GRADE_SYNC_100_PERCENT_CLOSURE.md",
@@ -383,6 +384,7 @@ function main() {
     "smoke:sync-account",
     "smoke:telegram-sync-drill",
     "check:canonical-orbs",
+    "telegram-sync-drill",
   ]);
 
   requireIncludes("docs/DEFINITION_OF_DONE.md", [
@@ -397,6 +399,7 @@ function main() {
   requireIncludes("docs/RELEASE_CHECKLIST.md", [
     "Verify two active tabs converge",
     "smoke:telegram-sync-drill",
+    "telegram-sync-drill",
     "TELEGRAM_GRADE_SYNC_100_PERCENT_CLOSURE.md",
     "TASK_COMPLETION_PROTOCOL.md",
   ]);
@@ -443,6 +446,7 @@ function main() {
     "smoke-sync-account.cjs",
     "UNVERIFIED",
     "PARTIAL",
+    "GITHUB_STEP_SUMMARY",
   ]);
 
   requireIncludes(".github/workflows/deploy.yml", [
@@ -450,6 +454,9 @@ function main() {
     "npm run check:sync-contract",
     "Run Telegram sync drill",
     "npm run smoke:telegram-sync-drill",
+    "ZENFLOW_SYNC_DRILL_URL",
+    "telegram-sync-drill",
+    "actions/upload-artifact",
   ]);
 
   requireRegex(

@@ -53,12 +53,6 @@ jobs:
       - name: Check Telegram-grade sync contract
         run: npm run check:sync-contract
 
-      - name: Run Telegram sync drill
-        env:
-          ZENFLOW_SYNC_TEST_EMAIL: ${{ secrets.ZENFLOW_SYNC_TEST_EMAIL }}
-          ZENFLOW_SYNC_TEST_PASSWORD: ${{ secrets.ZENFLOW_SYNC_TEST_PASSWORD }}
-        run: npm run smoke:telegram-sync-drill
-
       - name: Run tests with coverage
         run: npx vitest run --coverage
 
@@ -95,6 +89,42 @@ jobs:
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
+
+      - name: Run Telegram sync drill
+        env:
+          ZENFLOW_SYNC_TEST_EMAIL: ${{ secrets.ZENFLOW_SYNC_TEST_EMAIL }}
+          ZENFLOW_SYNC_TEST_PASSWORD: ${{ secrets.ZENFLOW_SYNC_TEST_PASSWORD }}
+          ZENFLOW_TELEGRAM_SYNC_DRILL_OUTPUT: artifacts/telegram-sync-drill.json
+        shell: bash
+        run: |
+          mkdir -p artifacts
+          npm run preview -- --host 127.0.0.1 --port 4173 > artifacts/telegram-sync-drill-preview.log 2>&1 &
+          preview_pid=$!
+          trap 'kill "$preview_pid" || true' EXIT
+
+          for _ in {1..60}; do
+            if curl -fsS http://127.0.0.1:4173/people-first-app/ > /dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:4173/people-first-app/ > /dev/null
+
+          if [ -n "$ZENFLOW_SYNC_TEST_EMAIL" ] && [ -n "$ZENFLOW_SYNC_TEST_PASSWORD" ]; then
+            export ZENFLOW_TELEGRAM_SYNC_DRILL_REQUIRED=true
+          fi
+          export ZENFLOW_SYNC_DRILL_URL="http://127.0.0.1:4173/people-first-app/settings?nav=v2&navLayout=phone&syncHealth=1"
+          npm run smoke:telegram-sync-drill
+
+      - name: Upload Telegram sync drill artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: telegram-sync-drill
+          path: |
+            artifacts/telegram-sync-drill.json
+            artifacts/telegram-sync-drill-preview.log
+          if-no-files-found: error
 
       - name: Run deploy smoke tests
         timeout-minutes: 8

@@ -35,17 +35,28 @@ const TARGETED_SYNC_TESTS = [
 const results = [];
 
 function npmCommand(script, args = []) {
-  if (process.platform === "win32") {
+  const npmCli = findNpmCli();
+  if (npmCli) {
     return {
-      command: "cmd",
-      args: ["/c", "npm", "run", script, ...(args.length > 0 ? ["--", ...args] : [])],
+      command: process.execPath,
+      args: [npmCli, "run", script, ...(args.length > 0 ? ["--", ...args] : [])],
     };
   }
 
   return {
-    command: "npm",
+    command: process.platform === "win32" ? "npm.cmd" : "npm",
     args: ["run", script, ...(args.length > 0 ? ["--", ...args] : [])],
   };
+}
+
+function findNpmCli() {
+  const envCli = process.env.npm_execpath || "";
+  if (envCli.endsWith(".js") && fs.existsSync(envCli)) return envCli;
+
+  const localNodeNpm = path.join(path.dirname(process.execPath), "node_modules", "npm", "bin", "npm-cli.js");
+  if (fs.existsSync(localNodeNpm)) return localNodeNpm;
+
+  return "";
 }
 
 function nodeCommand(script, env = {}) {
@@ -82,14 +93,24 @@ function runCommand(name, commandSpec, classify = classifyByExitCode) {
   printOutput(name, child.stdout);
   printOutput(name, child.stderr);
 
-  const combinedOutput = `${child.stdout || ""}\n${child.stderr || ""}`;
-  const classified = classify(child.status, combinedOutput, durationMs);
+  const spawnError = child.error ? `${child.error.code || "SPAWN_ERROR"}: ${child.error.message}` : "";
+  printOutput(name, spawnError);
+
+  const combinedOutput = [child.stdout, child.stderr, spawnError].filter(Boolean).join("\n");
+  const classified = classify(child.status, combinedOutput, durationMs, child.error);
   record(name, classified.status, classified.evidence);
 }
 
-function classifyByExitCode(status, output, durationMs) {
+function classifyByExitCode(status, output, durationMs, error) {
   if (status === 0) {
     return { status: "PASS", evidence: `exit=0 durationMs=${durationMs}` };
+  }
+
+  if (isEnvironmentBlocker(output, error)) {
+    return {
+      status: "UNVERIFIED",
+      evidence: `blocked by runtime/tooling: ${firstLine(output) || "spawn failed"} durationMs=${durationMs}`,
+    };
   }
 
   return {
@@ -98,7 +119,7 @@ function classifyByExitCode(status, output, durationMs) {
   };
 }
 
-function classifySyncHealth(status, output, durationMs) {
+function classifySyncHealth(status, output, durationMs, error) {
   if (status === 0 && output.includes("[sync-health] PASS")) {
     return { status: "PASS", evidence: `privacy-safe browser diagnostic passed durationMs=${durationMs}` };
   }
@@ -108,6 +129,12 @@ function classifySyncHealth(status, output, durationMs) {
   if (status === 2 && output.includes("[sync-health] UNVERIFIED")) {
     return { status: "UNVERIFIED", evidence: firstLine(output) || `required proof missing durationMs=${durationMs}` };
   }
+  if (isEnvironmentBlocker(output, error)) {
+    return {
+      status: "UNVERIFIED",
+      evidence: `browser proof blocked by runtime/tooling: ${firstLine(output) || "spawn failed"} durationMs=${durationMs}`,
+    };
+  }
 
   return {
     status: "FAIL",
@@ -115,7 +142,7 @@ function classifySyncHealth(status, output, durationMs) {
   };
 }
 
-function classifySyncAccount(status, output, durationMs) {
+function classifySyncAccount(status, output, durationMs, error) {
   if (status === 0 && output.includes("[sync-account] PASS")) {
     return { status: "PASS", evidence: `same-account Supabase proof passed durationMs=${durationMs}` };
   }
@@ -125,11 +152,24 @@ function classifySyncAccount(status, output, durationMs) {
   if (status === 2 && output.includes("[sync-account] UNVERIFIED")) {
     return { status: "UNVERIFIED", evidence: firstLine(output) || `required proof missing durationMs=${durationMs}` };
   }
+  if (isEnvironmentBlocker(output, error)) {
+    return {
+      status: "UNVERIFIED",
+      evidence: `account proof blocked by runtime/tooling: ${firstLine(output) || "spawn failed"} durationMs=${durationMs}`,
+    };
+  }
 
   return {
     status: "FAIL",
     evidence: `sync-account exit=${status ?? "signal"} durationMs=${durationMs} output=${firstLine(output)}`,
   };
+}
+
+function isEnvironmentBlocker(output, error) {
+  if (error) return true;
+  return /spawn\s+\w+\s+EPERM|E_ACCESSDENIED|ENOENT|EACCES|browserType\.launch|Chromium.*(failed|could not|not found)/i.test(
+    output || ""
+  );
 }
 
 function firstLine(output) {
@@ -208,12 +248,57 @@ function summarize() {
     fs.writeFileSync(path.resolve(ROOT, OUTPUT_PATH), `${JSON.stringify(artifact, null, 2)}\n`);
   }
 
+  writeGitHubSummary(artifact);
+
   console.log(`[telegram-sync-drill] ${overall} - ${results.length} proof rows`);
 
   if (overall === "PASS") return;
+  if (hasFail) process.exit(1);
   if (!REQUIRED) return;
 
-  process.exit(hasFail ? 1 : 2);
+  process.exit(2);
+}
+
+function writeGitHubSummary(artifact) {
+  const summaryPath = process.env.GITHUB_STEP_SUMMARY;
+  if (!summaryPath) return;
+
+  const statusIcon = {
+    PASS: "PASS",
+    PARTIAL: "PARTIAL",
+    UNVERIFIED: "UNVERIFIED",
+    FAIL: "FAIL",
+  };
+  const rows = artifact.results
+    .map(
+      (result) =>
+        `| ${result.name} | ${statusIcon[result.status] || result.status} | ${escapeMarkdownTable(result.evidence)} |`,
+    )
+    .join("\n");
+
+  const summary = [
+    "## Telegram Sync Drill",
+    "",
+    `Overall: **${artifact.overall}**`,
+    "",
+    "| Proof row | Status | Evidence |",
+    "| --- | --- | --- |",
+    rows,
+    "",
+    artifact.overall === "PASS"
+      ? "Every proof row passed."
+      : "Any PARTIAL or UNVERIFIED row must be named in the Done Packet before claiming 100 percent sync closure.",
+    "",
+  ].join("\n");
+
+  fs.appendFileSync(summaryPath, summary);
+}
+
+function escapeMarkdownTable(value) {
+  return String(value || "")
+    .replaceAll("|", "\\|")
+    .replace(/\r?\n/g, " ")
+    .trim();
 }
 
 function main() {

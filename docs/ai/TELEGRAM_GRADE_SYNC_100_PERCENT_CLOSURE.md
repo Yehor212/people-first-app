@@ -320,6 +320,12 @@ sync-health proof, and same-account Supabase proof all pass. Missing
 `UNVERIFIED`; set `ZENFLOW_TELEGRAM_SYNC_DRILL_REQUIRED=true` when a release
 environment must fail instead of shipping with missing proof.
 
+GitHub Actions must run the drill against a freshly built preview URL and upload
+`telegram-sync-drill` artifacts. When `ZENFLOW_SYNC_TEST_EMAIL` and
+`ZENFLOW_SYNC_TEST_PASSWORD` secrets are configured, the workflow upgrades the
+drill to required mode so live account proof must pass instead of silently
+remaining `UNVERIFIED`.
+
 For public/debug investigations, enable `?syncHealth=1`, `?syncDebug=true`,
 `?runtimeSync=on`, or local key `zenflow-sync-health-recorder`, then
 inspect `window.__zenflowSyncHealth.snapshot()`. The snapshot may contain route,

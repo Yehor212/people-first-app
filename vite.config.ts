@@ -240,6 +240,8 @@ export default defineConfig(({ mode }) => {
       },
       // Speeds up CI build ~15s by skipping gzip-size probe (cosmetic log only).
       reportCompressedSize: false,
+      // Keep ratchet/bundle evidence honest across repeated local and CI builds.
+      emptyOutDir: true,
 
       rollupOptions: {
         output: {
