@@ -108,7 +108,7 @@ A task can be closed only after these steps are true:
 | Docs-only | Relevant docs read, links valid enough for intent, docs consistency check, no protected law/visual docs touched by accident. |
 | UI/layout/navigation | Screenshot or browser trace for target route, phone and desktop where applicable, scrollability, safe areas, focus, touch targets, dark/light or theme-sensitive states. |
 | Canonical orb or adjacent visual runtime | `npm run check:canonical-orbs`, browser screenshot evidence, no non-canonical full or mini orb implementation, no late renderer swap that changes appearance. |
-| Sync/account/data | `npm run check:sync-contract`, entity round-trip proof, V1/V2 convergence when shared, anti-resurrection proof for deletes, account-boundary proof when auth is touched. |
+| Sync/account/data | `npm run check:sync-contract`, `npm run smoke:telegram-sync-drill`, entity round-trip proof, V1/V2 convergence when shared, anti-resurrection proof for deletes, account-boundary proof when auth is touched. |
 | Supabase/backend | Migration prefix check, generated types when schema changes, RLS/permission proof, no client secrets, rollback or repair path. |
 | Performance/startup | `npm run smoke:chrome-performance` or route-specific Chrome trace, cold boot and steady-state notes, max long task/LoAF evidence, no visual regression. |
 | Security/privacy | Snyk or repo security scan for changed first-party code, no PII in diagnostics, no broad logging of journal/habit content, no weakened RLS/auth boundaries. |

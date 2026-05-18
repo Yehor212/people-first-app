@@ -46,6 +46,7 @@ Use this list before publishing on stores or web.
 
 ## Sync and Data Convergence
 - Run `npm run check:sync-contract`.
+- Run `npm run smoke:telegram-sync-drill`; if it is `PARTIAL`, name every missing browser, account, native, or public proof before release.
 - Review `docs/ai/TELEGRAM_GRADE_SYNC_100_PERCENT_CLOSURE.md` and mark every applicable entity/platform row with evidence.
 - For deployed sync investigations, run `npm run smoke:sync-health` with `ZENFLOW_SYNC_HEALTH_URL` set to the public cache-busted route, or enable `?syncHealth=1` and inspect `window.__zenflowSyncHealth.snapshot()`; confirm it exposes only route/auth/online/queue/cursor/receipt metadata.
 - Verify latest user action wins after V1 -> V2 -> V1 navigation for changed entities.

@@ -175,6 +175,7 @@ cmd /c npm run check:sync-contract
 cmd /c npm run test -- src/storage/__tests__/eventSync.test.ts src/lib/__tests__/syncStateMachine.test.ts src/lib/__tests__/syncGapDetector.test.ts src/storage/__tests__/deletionTracker.test.ts src/lib/__tests__/offlineQueueHandlers.test.ts
 cmd /c npm run check:supabase-migration-prefixes
 cmd /c npm run smoke:sync-account
+cmd /c npm run smoke:telegram-sync-drill
 ```
 
 `check:sync-contract` is the future-task hook for this contract. It verifies the
@@ -182,6 +183,14 @@ repo still has ordered event-log wiring, the critical event-write outbox,
 snapshot-then-delta bootstrap, server-backed tombstones, anti-resurrection tests,
 privacy-safe `window.__zenflowSyncHealth` diagnostics, privacy-safe
 `device_sessions` presence, and CI/doc references.
+
+`smoke:telegram-sync-drill` is the release drill that combines the local sync
+contract, targeted ordered-sync tests, canonical orb guard, Supabase migration
+prefix guard, optional privacy-safe browser sync-health proof, and optional
+same-account Supabase proof. It returns `PASS` only when every proof row passes.
+Missing browser URL or account credentials remain `UNVERIFIED`; set
+`ZENFLOW_TELEGRAM_SYNC_DRILL_REQUIRED=true` for release environments that must
+fail on any missing proof.
 
 Behavioral gates for user-visible sync work:
 

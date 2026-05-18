@@ -325,6 +325,7 @@ function main() {
     "sync_tombstones",
     "WRITE_SYNC_EVENT",
     "smoke:sync-account",
+    "smoke:telegram-sync-drill",
     "__zenflowSyncHealth",
     "device_sessions",
     "TELEGRAM_GRADE_SYNC_100_PERCENT_CLOSURE.md",
@@ -344,6 +345,7 @@ function main() {
     "WRITE_SYNC_EVENT",
     "Tombstones beat stale snapshots",
     "Multi-tab browser",
+    "smoke:telegram-sync-drill",
   ]);
 
   requireIncludes("docs/ai/TASK_COMPLETION_PROTOCOL.md", [
@@ -363,6 +365,7 @@ function main() {
     "Snyk",
     "Supabase",
     "RLS",
+    "smoke:telegram-sync-drill",
   ]);
 
   requireIncludes("docs/ai/TELEGRAM_GRADE_SYNC_100_PERCENT_CLOSURE.md", [
@@ -378,6 +381,7 @@ function main() {
     "Entity Coverage Matrix",
     "Platform Closure Matrix",
     "smoke:sync-account",
+    "smoke:telegram-sync-drill",
     "check:canonical-orbs",
   ]);
 
@@ -385,12 +389,14 @@ function main() {
     "Sync contract invariant",
     "npm run check:sync-contract",
     "Sync 100 percent closure matrix",
+    "Telegram sync drill",
     "Task completion protocol",
     "TASK_COMPLETION_PROTOCOL.md",
   ]);
 
   requireIncludes("docs/RELEASE_CHECKLIST.md", [
     "Verify two active tabs converge",
+    "smoke:telegram-sync-drill",
     "TELEGRAM_GRADE_SYNC_100_PERCENT_CLOSURE.md",
     "TASK_COMPLETION_PROTOCOL.md",
   ]);
@@ -399,6 +405,7 @@ function main() {
     '"check:sync-contract": "node scripts/check-sync-contract.cjs"',
     '"smoke:sync-health": "node scripts/smoke-sync-health.cjs"',
     '"smoke:sync-account": "node scripts/smoke-sync-account.cjs"',
+    '"smoke:telegram-sync-drill": "node scripts/smoke-telegram-sync-drill.cjs"',
     "npm run check:sync-contract",
   ]);
 
@@ -425,9 +432,24 @@ function main() {
     "zenflow:sync-health-receipt",
   ]);
 
+  requireIncludes("scripts/smoke-telegram-sync-drill.cjs", [
+    "Telegram-grade sync drill",
+    "ZENFLOW_SYNC_DRILL_URL",
+    "ZENFLOW_TELEGRAM_SYNC_DRILL_REQUIRED",
+    "check:sync-contract",
+    "check:canonical-orbs",
+    "check:supabase-migration-prefixes",
+    "smoke-sync-health.cjs",
+    "smoke-sync-account.cjs",
+    "UNVERIFIED",
+    "PARTIAL",
+  ]);
+
   requireIncludes(".github/workflows/deploy.yml", [
     "Check Telegram-grade sync contract",
     "npm run check:sync-contract",
+    "Run Telegram sync drill",
+    "npm run smoke:telegram-sync-drill",
   ]);
 
   requireRegex(

@@ -287,6 +287,7 @@ npm run check:sync-contract
 npm run check:canonical-orbs
 npm run check:all
 npm run smoke:chrome-performance
+npm run smoke:telegram-sync-drill
 ```
 
 Add these based on scope:
@@ -306,6 +307,13 @@ deletion tracker, and V1/V2 round-trip tests.
 does not replace runtime proof, but it must stay green before claiming that
 ordered deltas, snapshot bootstrap, server tombstones, docs, and CI wiring are
 still intact.
+
+`npm run smoke:telegram-sync-drill` is the mechanical completion drill for sync
+claims. It combines the local invariant checks, targeted sync tests, canonical
+orb guard, migration-prefix guard, optional browser sync-health proof, and
+optional same-account Supabase proof into one `PASS` / `PARTIAL` / `FAIL`
+status. A `PARTIAL` drill must be reported as a remaining proof gap, not as
+completion.
 
 ## Stop Conditions
 

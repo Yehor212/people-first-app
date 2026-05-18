@@ -53,6 +53,12 @@ jobs:
       - name: Check Telegram-grade sync contract
         run: npm run check:sync-contract
 
+      - name: Run Telegram sync drill
+        env:
+          ZENFLOW_SYNC_TEST_EMAIL: ${{ secrets.ZENFLOW_SYNC_TEST_EMAIL }}
+          ZENFLOW_SYNC_TEST_PASSWORD: ${{ secrets.ZENFLOW_SYNC_TEST_PASSWORD }}
+        run: npm run smoke:telegram-sync-drill
+
       - name: Run tests with coverage
         run: npx vitest run --coverage
 

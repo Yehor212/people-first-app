@@ -281,6 +281,7 @@ Run:
 cmd /c npm run check:sync-contract
 cmd /c npm run check:canonical-orbs
 cmd /c npm run check:supabase-migration-prefixes
+cmd /c npm run smoke:telegram-sync-drill
 ```
 
 ### Code Health Evidence
@@ -310,6 +311,14 @@ cmd /c npm run smoke:sync-account
 `smoke:sync-account` requires `ZENFLOW_SYNC_TEST_EMAIL` and
 `ZENFLOW_SYNC_TEST_PASSWORD`. Without credentials, account-level live sync is
 `UNVERIFIED`.
+
+`smoke:telegram-sync-drill` is the consolidated closure drill. It must report
+`PASS` only when local sync invariants, targeted ordered-sync tests, canonical
+orb protection, Supabase migration-prefix protection, privacy-safe browser
+sync-health proof, and same-account Supabase proof all pass. Missing
+`ZENFLOW_SYNC_DRILL_URL` or live account credentials keep the drill `PARTIAL` /
+`UNVERIFIED`; set `ZENFLOW_TELEGRAM_SYNC_DRILL_REQUIRED=true` when a release
+environment must fail instead of shipping with missing proof.
 
 For public/debug investigations, enable `?syncHealth=1`, `?syncDebug=true`,
 `?runtimeSync=on`, or local key `zenflow-sync-health-recorder`, then
@@ -389,6 +398,7 @@ Use this checklist before claiming completion.
 - [ ] `check:canonical-orbs` evidence captured when visual primitives are adjacent.
 - [ ] Typecheck/lint evidence captured.
 - [ ] Targeted sync tests evidence captured.
+- [ ] `smoke:telegram-sync-drill` evidence captured; any `PARTIAL` row is named.
 - [ ] `window.__zenflowSyncHealth` public/debug snapshot captured when diagnosing
       deployed sync behavior.
 - [ ] Live account proof captured or marked `UNVERIFIED`.

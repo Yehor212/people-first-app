@@ -48,6 +48,7 @@
     "smoke:chrome-performance": "node scripts/smoke-chrome-performance.cjs",
     "smoke:sync-health": "node scripts/smoke-sync-health.cjs",
     "smoke:sync-account": "node scripts/smoke-sync-account.cjs",
+    "smoke:telegram-sync-drill": "node scripts/smoke-telegram-sync-drill.cjs",
     "diagnose:dev-performance": "node scripts/diagnose-dev-performance.cjs",
     "cleanup:dev-processes": "node scripts/cleanup-dev-processes.cjs",
     "ci:preflight": "npx eslint . --max-warnings=0 && npm run typecheck && npm run i18n:check && npm run i18n:deep && npm run oxlint && npm run check:circular && vitest run --configLoader runner --coverage && npm run tokens:build && vite build --configLoader runner && npm run verify:tailwind && npm run check:size && npm run check:canonical-orbs && npm run check:sync-contract && npm run ratchet:check",
