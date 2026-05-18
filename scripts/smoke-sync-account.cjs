@@ -36,7 +36,7 @@ const password = process.env.ZENFLOW_SYNC_TEST_PASSWORD;
 function stopUnverified(reason) {
   console.log(`[sync-account] UNVERIFIED - ${reason}`);
   console.log(
-    "[sync-account] Set ZENFLOW_SYNC_TEST_EMAIL and ZENFLOW_SYNC_TEST_PASSWORD for same-account Supabase proof."
+    "[sync-account] Set VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, ZENFLOW_SYNC_TEST_EMAIL, and ZENFLOW_SYNC_TEST_PASSWORD for same-account Supabase proof."
   );
   process.exit(required ? 2 : 0);
 }

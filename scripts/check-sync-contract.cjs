@@ -455,6 +455,8 @@ function main() {
     "Run Telegram sync drill",
     "npm run smoke:telegram-sync-drill",
     "ZENFLOW_SYNC_DRILL_URL",
+    "VITE_SUPABASE_URL",
+    "VITE_SUPABASE_ANON_KEY",
     "telegram-sync-drill",
     "actions/upload-artifact",
   ]);

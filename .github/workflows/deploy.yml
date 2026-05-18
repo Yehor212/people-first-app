@@ -92,6 +92,8 @@ jobs:
 
       - name: Run Telegram sync drill
         env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           ZENFLOW_SYNC_TEST_EMAIL: ${{ secrets.ZENFLOW_SYNC_TEST_EMAIL }}
           ZENFLOW_SYNC_TEST_PASSWORD: ${{ secrets.ZENFLOW_SYNC_TEST_PASSWORD }}
           ZENFLOW_TELEGRAM_SYNC_DRILL_OUTPUT: artifacts/telegram-sync-drill.json

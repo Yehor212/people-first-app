@@ -321,10 +321,11 @@ sync-health proof, and same-account Supabase proof all pass. Missing
 environment must fail instead of shipping with missing proof.
 
 GitHub Actions must run the drill against a freshly built preview URL and upload
-`telegram-sync-drill` artifacts. When `ZENFLOW_SYNC_TEST_EMAIL` and
-`ZENFLOW_SYNC_TEST_PASSWORD` secrets are configured, the workflow upgrades the
-drill to required mode so live account proof must pass instead of silently
-remaining `UNVERIFIED`.
+`telegram-sync-drill` artifacts. The drill step must receive
+`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `ZENFLOW_SYNC_TEST_EMAIL`, and
+`ZENFLOW_SYNC_TEST_PASSWORD` from GitHub secrets. When the test-account secrets
+are configured, the workflow upgrades the drill to required mode so live account
+proof must pass instead of silently remaining `UNVERIFIED`.
 
 For public/debug investigations, enable `?syncHealth=1`, `?syncDebug=true`,
 `?runtimeSync=on`, or local key `zenflow-sync-health-recorder`, then
