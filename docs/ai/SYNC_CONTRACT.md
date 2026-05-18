@@ -42,7 +42,10 @@ at `window.__zenflowSyncHealth` when `?syncHealth=1`, `?syncDebug=true`,
 enabled. It may show route, auth state, online state, queue counts, last cursor,
 and coarse sync receipts only. It must never expose payloads, entity ids, journal
 text, habit names, or other user content, and it does not replace same-account
-`smoke:sync-account` proof.
+`smoke:sync-account` proof. Use `cmd /c npm run smoke:sync-health` for browser
+proof that the diagnostic surface is enabled only by explicit debug opt-in,
+route-aware, receipt-aware, and privacy-safe. Set `ZENFLOW_SYNC_HEALTH_URL` to a
+cache-busted GitHub Pages URL when validating a deployed artifact.
 
 ## Non-Negotiable Invariants
 
@@ -181,6 +184,10 @@ Behavioral gates for user-visible sync work:
 - For public/debug investigations, open the affected URL with `?syncHealth=1`
   and inspect `window.__zenflowSyncHealth.snapshot()`. This is useful for queue,
   cursor, and receipt proof, but it is not account convergence proof by itself.
+  Run `npm run smoke:sync-health` when you need repeatable browser evidence that
+  the snapshot exists, updates on route changes, records coarse receipts, and
+  excludes payloads, entity ids, journal text, habit names, and seeded private
+  strings.
 
 When UI or route behavior is involved, also run a production-browser smoke for
 the affected route. When the change is intended for public users, verify remote

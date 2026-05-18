@@ -36,7 +36,7 @@ cross-platform user-flow changes.
 | 7 | Live account sync proof | `npm run smoke:sync-account` with a dedicated test account; missing credentials means UNVERIFIED, not PASS | Yes for account-level sync claims |
 | 8 | Public deploy proof | `npm run ci:remote:wait` plus cache-busted public URL when the issue is public | Yes for public-user claims |
 | 9 | Sync 100 percent closure matrix | `docs/ai/TELEGRAM_GRADE_SYNC_100_PERCENT_CLOSURE.md` rows for the touched entity/platform are proved or marked `UNVERIFIED` | Yes for sync/account/cross-shell claims |
-| 10 | Privacy-safe sync diagnostics | `window.__zenflowSyncHealth.snapshot()` with `?syncHealth=1` when diagnosing deployed sync; no payloads, entity ids, journal text, or habit names | Yes for public sync debugging claims |
+| 10 | Privacy-safe sync diagnostics | `npm run smoke:sync-health` or `window.__zenflowSyncHealth.snapshot()` with `?syncHealth=1` when diagnosing deployed sync; no payloads, entity ids, journal text, or habit names | Yes for public sync debugging claims |
 
 ## Manual Checks (before major releases)
 
@@ -49,7 +49,7 @@ cross-platform user-flow changes.
 | 5 | Runtime matrix reviewed | Web/PWA/Android/iOS/desktop/phone impact noted or marked `UNVERIFIED` |
 | 6 | Visual proof captured | Screenshot or trace for UI/motion changes, including phone and desktop when applicable |
 | 7 | Sync closure reviewed | `docs/ai/TELEGRAM_GRADE_SYNC_100_PERCENT_CLOSURE.md` checked for account, offline, delete, multi-tab, and V1/V2 impact |
-| 8 | Sync diagnostics privacy checked | Confirm public/debug sync evidence exposes only route/auth/online/queue/cursor/receipt metadata |
+| 8 | Sync diagnostics privacy checked | Run `npm run smoke:sync-health` or confirm public/debug sync evidence exposes only route/auth/online/queue/cursor/receipt metadata |
 
 ## Release-Only (before store/web publish)
 

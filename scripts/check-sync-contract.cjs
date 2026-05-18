@@ -325,6 +325,7 @@ function main() {
 
   requireIncludes("package.json", [
     '"check:sync-contract": "node scripts/check-sync-contract.cjs"',
+    '"smoke:sync-health": "node scripts/smoke-sync-health.cjs"',
     '"smoke:sync-account": "node scripts/smoke-sync-account.cjs"',
     "npm run check:sync-contract",
   ]);
@@ -340,6 +341,16 @@ function main() {
   requireNotIncludes("scripts/smoke-sync-account.cjs", [
     "${deviceA}:journal:${entityId}:upsert",
     "${deviceB}:journal:${entityId}:delete",
+  ]);
+
+  requireIncludes("scripts/smoke-sync-health.cjs", [
+    "ZENFLOW_SYNC_HEALTH_URL",
+    "syncHealth=1",
+    "window.__zenflowSyncHealth.snapshot",
+    "FORBIDDEN_STRINGS",
+    "private-journal-content",
+    "private-habit-name",
+    "zenflow:sync-health-receipt",
   ]);
 
   requireIncludes(".github/workflows/deploy.yml", [

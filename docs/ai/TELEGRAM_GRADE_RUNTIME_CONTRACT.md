@@ -253,6 +253,9 @@ Sync work needs:
   privacy-safe: no payloads, entity ids, journal text, habit names, or user
   content. It is evidence for runtime state, not a replacement for live
   same-account sync proof.
+- For repeatable browser proof of that diagnostic surface, run
+  `cmd /c npm run smoke:sync-health`. For deployed GitHub Pages checks, set
+  `ZENFLOW_SYNC_HEALTH_URL` to the public cache-busted route before running it.
 
 Visual work needs:
 

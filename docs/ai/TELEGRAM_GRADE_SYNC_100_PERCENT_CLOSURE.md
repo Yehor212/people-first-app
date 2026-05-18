@@ -278,6 +278,10 @@ online/auth state, queue counts, last applied cursor, and coarse receipts only.
 It must not contain payloads, entity ids, journal text, habit names, or other
 user content, and it cannot by itself upgrade live same-account sync from
 `UNVERIFIED` to `PASS`.
+Run `cmd /c npm run smoke:sync-health` for repeatable browser proof that the
+debug recorder exists, tracks route changes, captures coarse receipts, and
+stays privacy-safe. For deployed proof, set `ZENFLOW_SYNC_HEALTH_URL` to the
+GitHub Pages URL with a cache-buster.
 
 ### Runtime Evidence
 

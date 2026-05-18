@@ -47,7 +47,7 @@ Use this list before publishing on stores or web.
 ## Sync and Data Convergence
 - Run `npm run check:sync-contract`.
 - Review `docs/ai/TELEGRAM_GRADE_SYNC_100_PERCENT_CLOSURE.md` and mark every applicable entity/platform row with evidence.
-- For deployed sync investigations, enable `?syncHealth=1` and inspect `window.__zenflowSyncHealth.snapshot()`; confirm it exposes only route/auth/online/queue/cursor/receipt metadata.
+- For deployed sync investigations, run `npm run smoke:sync-health` with `ZENFLOW_SYNC_HEALTH_URL` set to the public cache-busted route, or enable `?syncHealth=1` and inspect `window.__zenflowSyncHealth.snapshot()`; confirm it exposes only route/auth/online/queue/cursor/receipt metadata.
 - Verify latest user action wins after V1 -> V2 -> V1 navigation for changed entities.
 - Verify two active tabs converge after a remote or local change.
 - Verify offline action queues and applies after reconnect.
