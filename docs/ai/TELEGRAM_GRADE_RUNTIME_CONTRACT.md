@@ -214,16 +214,18 @@ Use this sequence for performance, sync, navigation, orb, or cross-platform work
 
 1. Read this contract.
 2. Read `docs/ai/PREFLIGHT_OPERATOR_TEMPLATE.md`.
-3. Read `docs/ai/SYNC_CONTRACT.md` for data/sync work.
-4. Read `docs/ai/TELEGRAM_GRADE_SYNC_100_PERCENT_CLOSURE.md` for any sync,
+3. Read `docs/ai/TASK_COMPLETION_PROTOCOL.md` before claiming a task is done.
+4. Read `docs/ai/SYNC_CONTRACT.md` for data/sync work.
+5. Read `docs/ai/TELEGRAM_GRADE_SYNC_100_PERCENT_CLOSURE.md` for any sync,
    account, cross-shell, offline, resume, or Supabase convergence work.
-5. Read `docs/ai/CANONICAL_ORB_INVARIANT.md` for orb or visual primitive work.
-6. Gather current repo evidence with search and file reads.
-7. Reproduce or measure the issue before proposing fixes.
-8. Identify the root cause and the affected platforms.
-9. Implement the smallest change that fixes the root cause.
-10. Run the required gates.
-11. Verify public deployment when the user-reported issue is public.
+6. Read `docs/ai/CANONICAL_ORB_INVARIANT.md` for orb or visual primitive work.
+7. Gather current repo evidence with search and file reads.
+8. Reproduce or measure the issue before proposing fixes.
+9. Identify the root cause and the affected platforms.
+10. Implement the smallest change that fixes the root cause.
+11. Run the required gates.
+12. Verify public deployment when the user-reported issue is public.
+13. Write the Done Packet from `docs/ai/TASK_COMPLETION_PROTOCOL.md`.
 
 ## Evidence Requirements
 
@@ -324,6 +326,7 @@ Stop and report instead of claiming completion if:
 - Internal: `docs/ai/SYNC_CONTRACT.md`
 - Internal: `docs/ai/CANONICAL_ORB_INVARIANT.md`
 - Internal: `docs/ai/PREFLIGHT_OPERATOR_TEMPLATE.md`
+- Internal: `docs/ai/TASK_COMPLETION_PROTOCOL.md`
 - Internal: `scripts/smoke-chrome-performance.cjs`
 - Internal: `scripts/check-canonical-orbs.mjs`
 - External: Telegram TDLib, local-first ordered update architecture

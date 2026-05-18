@@ -37,6 +37,7 @@ cross-platform user-flow changes.
 | 8 | Public deploy proof | `npm run ci:remote:wait` plus cache-busted public URL when the issue is public | Yes for public-user claims |
 | 9 | Sync 100 percent closure matrix | `docs/ai/TELEGRAM_GRADE_SYNC_100_PERCENT_CLOSURE.md` rows for the touched entity/platform are proved or marked `UNVERIFIED` | Yes for sync/account/cross-shell claims |
 | 10 | Privacy-safe sync diagnostics | `npm run smoke:sync-health` or `window.__zenflowSyncHealth.snapshot()` with `?syncHealth=1` when diagnosing deployed sync; no payloads, entity ids, journal text, or habit names | Yes for public sync debugging claims |
+| 11 | Task completion protocol | `docs/ai/TASK_COMPLETION_PROTOCOL.md` Done Packet lists scope, evidence, known gaps, rollback, and deploy state | Yes for claims that a task is complete |
 
 ## Manual Checks (before major releases)
 
@@ -50,6 +51,7 @@ cross-platform user-flow changes.
 | 6 | Visual proof captured | Screenshot or trace for UI/motion changes, including phone and desktop when applicable |
 | 7 | Sync closure reviewed | `docs/ai/TELEGRAM_GRADE_SYNC_100_PERCENT_CLOSURE.md` checked for account, offline, delete, multi-tab, and V1/V2 impact |
 | 8 | Sync diagnostics privacy checked | Run `npm run smoke:sync-health` or confirm public/debug sync evidence exposes only route/auth/online/queue/cursor/receipt metadata |
+| 9 | Completion packet reviewed | `docs/ai/TASK_COMPLETION_PROTOCOL.md` status vocabulary used: `PASS`, `PARTIAL`, `UNVERIFIED`, `FAIL`, or `WAIVED` |
 
 ## Release-Only (before store/web publish)
 

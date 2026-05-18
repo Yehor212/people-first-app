@@ -65,3 +65,6 @@ Use this list before publishing on stores or web.
 - Run `docs/SMOKE_CHECKLIST.md`.
 - Fresh install test (no cached data).
 - Upgrade test from previous build.
+- Attach a Done Packet from `docs/ai/TASK_COMPLETION_PROTOCOL.md` with all
+  release-critical rows marked `PASS` or explicitly `WAIVED`; anything blocked
+  stays `UNVERIFIED` and must not be described as shipped confidence.

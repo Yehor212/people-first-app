@@ -318,6 +318,7 @@ function main() {
 
   requireIncludes("docs/ai/TELEGRAM_GRADE_RUNTIME_CONTRACT.md", [
     "docs/ai/SYNC_CONTRACT.md",
+    "docs/ai/TASK_COMPLETION_PROTOCOL.md",
     "TELEGRAM_GRADE_SYNC_100_PERCENT_CLOSURE.md",
     "__zenflowSyncHealth",
     "device_sessions",
@@ -325,6 +326,25 @@ function main() {
     "WRITE_SYNC_EVENT",
     "Tombstones beat stale snapshots",
     "Multi-tab browser",
+  ]);
+
+  requireIncludes("docs/ai/TASK_COMPLETION_PROTOCOL.md", [
+    "DONE is an evidence state",
+    "No evidence = FAIL",
+    "Done Packet",
+    "PASS",
+    "PARTIAL",
+    "UNVERIFIED",
+    "FAIL",
+    "WAIVED",
+    "TELEGRAM_GRADE_RUNTIME_CONTRACT.md",
+    "SYNC_CONTRACT.md",
+    "TELEGRAM_GRADE_SYNC_100_PERCENT_CLOSURE.md",
+    "CANONICAL_ORB_INVARIANT.md",
+    "GitHub Pages",
+    "Snyk",
+    "Supabase",
+    "RLS",
   ]);
 
   requireIncludes("docs/ai/TELEGRAM_GRADE_SYNC_100_PERCENT_CLOSURE.md", [
@@ -346,11 +366,14 @@ function main() {
     "Sync contract invariant",
     "npm run check:sync-contract",
     "Sync 100 percent closure matrix",
+    "Task completion protocol",
+    "TASK_COMPLETION_PROTOCOL.md",
   ]);
 
   requireIncludes("docs/RELEASE_CHECKLIST.md", [
     "Verify two active tabs converge",
     "TELEGRAM_GRADE_SYNC_100_PERCENT_CLOSURE.md",
+    "TASK_COMPLETION_PROTOCOL.md",
   ]);
 
   requireIncludes("package.json", [

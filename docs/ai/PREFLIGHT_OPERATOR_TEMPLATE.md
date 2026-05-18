@@ -50,6 +50,12 @@ cross-platform user-flow work, read
 [TELEGRAM_GRADE_RUNTIME_CONTRACT.md](TELEGRAM_GRADE_RUNTIME_CONTRACT.md)
 before planning.
 
+For any task where the user asks to "finish", "close", "complete", "verify",
+"commit", "push", "no tails", or "100 percent", also read
+[TASK_COMPLETION_PROTOCOL.md](TASK_COMPLETION_PROTOCOL.md). Completion is a
+Done Packet with `PASS`, `PARTIAL`, `UNVERIFIED`, `FAIL`, or `WAIVED` rows, not
+an intuitive statement that the work feels done.
+
 For any sync, account, V1/V2 convergence, offline queue, tombstone,
 BroadcastChannel, Supabase Realtime, or cross-platform latest-action work, also
 read
@@ -70,6 +76,7 @@ invariants that future agents must preserve:
 - mechanical sync guard through `npm run check:sync-contract`
 - public URL proof for public-user claims
 - phone, desktop, PWA, Android, iOS, sidebar, and drawer parity where applicable
+- completion proof through `docs/ai/TASK_COMPLETION_PROTOCOL.md`
 
 If a task touches runtime behavior and the artifact does not cite the runtime
 contract, the pre-flight is incomplete.
