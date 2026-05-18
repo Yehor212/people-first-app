@@ -24,10 +24,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: npm
@@ -81,7 +81,7 @@ jobs:
           build_script: build
 
       - name: Cache Playwright browsers
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ hashFiles('package-lock.json') }}
@@ -120,7 +120,7 @@ jobs:
 
       - name: Upload Telegram sync drill artifact
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: telegram-sync-drill
           path: |
@@ -148,10 +148,10 @@ jobs:
 
       - name: Upload artifact
         if: github.event_name == 'push'
-        uses: actions/upload-pages-artifact@v3.0.1
+        uses: actions/upload-pages-artifact@v5
         with:
           path: dist
-          # v3.0.1 preserves hidden files in tar; v4 may filter dotfiles like .nojekyll.
+          # Preserve hidden files such as .nojekyll so GitHub Pages serves the SPA fallback correctly.
           # We need .nojekyll to disable Jekyll on GH Pages so 404.html SPA fallback ships.
 
   android-gate:
@@ -159,16 +159,16 @@ jobs:
     continue-on-error: true
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: npm
 
       - name: Setup Java
-        uses: actions/setup-java@v4.8.0
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 21
@@ -199,7 +199,7 @@ jobs:
         run: cd android && ./gradlew lintDebug --console=plain
 
       - name: Upload Android lint report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: android-lint-report
           path: android/app/build/reports/lint-results-debug.html
@@ -208,10 +208,10 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: npm

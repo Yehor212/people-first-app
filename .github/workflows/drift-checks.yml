@@ -63,13 +63,13 @@ jobs:
             fix: add aria-label to icon-only buttons or aria-hidden="true" to decorative lucide icons
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           # Full history so `git log -1 --format=%ct` returns committer-time
           # for check-types-freshness.cjs (see comment in that script).
           fetch-depth: 0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version-file: '.nvmrc'
           cache: npm

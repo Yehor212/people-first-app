@@ -22,18 +22,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout V2 preview branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           path: v2-src
 
       - name: Checkout V1 main branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: main
           path: v1-src
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: npm
@@ -91,7 +91,7 @@ jobs:
           touch pages/.nojekyll
 
       - name: Upload combined Pages artifact
-        uses: actions/upload-pages-artifact@v3.0.1
+        uses: actions/upload-pages-artifact@v5
         with:
           path: pages
 
