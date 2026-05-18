@@ -68,6 +68,8 @@ UI handoff.
      shared runtime. It is for UX, sync health, and support; it must not store
      raw browser fingerprints, content, payloads, or IP addresses.
    - `docs/ai/SYNC_CONTRACT.md` is the sync source of truth.
+   - `docs/ai/TELEGRAM_GRADE_20_IDEA_LEDGER.md` maps the Telegram-inspired
+     product controls that sit on top of the sync/runtime invariants.
 
 6. **Deletes are durable and anti-resurrection by default.**
    - Tombstones beat stale snapshots, stale IndexedDB hydration, backup import,
@@ -218,14 +220,16 @@ Use this sequence for performance, sync, navigation, orb, or cross-platform work
 4. Read `docs/ai/SYNC_CONTRACT.md` for data/sync work.
 5. Read `docs/ai/TELEGRAM_GRADE_SYNC_100_PERCENT_CLOSURE.md` for any sync,
    account, cross-shell, offline, resume, or Supabase convergence work.
-6. Read `docs/ai/CANONICAL_ORB_INVARIANT.md` for orb or visual primitive work.
-7. Gather current repo evidence with search and file reads.
-8. Reproduce or measure the issue before proposing fixes.
-9. Identify the root cause and the affected platforms.
-10. Implement the smallest change that fixes the root cause.
-11. Run the required gates.
-12. Verify public deployment when the user-reported issue is public.
-13. Write the Done Packet from `docs/ai/TASK_COMPLETION_PROTOCOL.md`.
+6. Read `docs/ai/TELEGRAM_GRADE_20_IDEA_LEDGER.md` for sync/runtime/account
+   tasks and map every touched row to evidence.
+7. Read `docs/ai/CANONICAL_ORB_INVARIANT.md` for orb or visual primitive work.
+8. Gather current repo evidence with search and file reads.
+9. Reproduce or measure the issue before proposing fixes.
+10. Identify the root cause and the affected platforms.
+11. Implement the smallest change that fixes the root cause.
+12. Run the required gates.
+13. Verify public deployment when the user-reported issue is public.
+14. Write the Done Packet from `docs/ai/TASK_COMPLETION_PROTOCOL.md`.
 
 ## Evidence Requirements
 

@@ -326,6 +326,7 @@ function main() {
     "WRITE_SYNC_EVENT",
     "smoke:sync-account",
     "smoke:telegram-sync-drill",
+    "TELEGRAM_GRADE_20_IDEA_LEDGER.md",
     "__zenflowSyncHealth",
     "device_sessions",
     "TELEGRAM_GRADE_SYNC_100_PERCENT_CLOSURE.md",
@@ -339,6 +340,7 @@ function main() {
     "docs/ai/SYNC_CONTRACT.md",
     "docs/ai/TASK_COMPLETION_PROTOCOL.md",
     "TELEGRAM_GRADE_SYNC_100_PERCENT_CLOSURE.md",
+    "TELEGRAM_GRADE_20_IDEA_LEDGER.md",
     "__zenflowSyncHealth",
     "device_sessions",
     "sync_events.seq",
@@ -361,6 +363,7 @@ function main() {
     "TELEGRAM_GRADE_RUNTIME_CONTRACT.md",
     "SYNC_CONTRACT.md",
     "TELEGRAM_GRADE_SYNC_100_PERCENT_CLOSURE.md",
+    "TELEGRAM_GRADE_20_IDEA_LEDGER.md",
     "CANONICAL_ORB_INVARIANT.md",
     "GitHub Pages",
     "Snyk",
@@ -372,6 +375,7 @@ function main() {
   requireIncludes("docs/ai/TELEGRAM_GRADE_SYNC_100_PERCENT_CLOSURE.md", [
     "100 percent is a proof state",
     "sync_events.seq",
+    "TELEGRAM_GRADE_20_IDEA_LEDGER.md",
     "__zenflowSyncHealth",
     "Device Sessions",
     "Sync Inbox And Action Receipts Are Privacy-Safe",
@@ -387,6 +391,33 @@ function main() {
     "telegram-sync-drill",
   ]);
 
+  requireIncludes("docs/ai/TELEGRAM_GRADE_20_IDEA_LEDGER.md", [
+    "Sync Inbox",
+    "Gap Recovery Dashboard",
+    "Device Sessions",
+    "Action Receipts",
+    "Offline Outbox UX",
+    "Snapshot Plus Delta Recovery",
+    "Per-Domain Sync Ownership",
+    "Cross-Platform Resume Protocol",
+    "Performance Flight Recorder",
+    "Adaptive Runtime Without Visual Regression",
+    "Telegram-Style Local DB Discipline",
+    "Fast Shell, Deferred Heavy Modules",
+    "Conflict UX For Diary",
+    "Anti-Resurrection Matrix",
+    "Sync-Aware Notifications",
+    "Draft Everywhere",
+    "Command Queue For User Actions",
+    "Public Deploy Proof Mode",
+    "Service Worker Safety Layer",
+    "Telegram Sync Drill Release Gate",
+    "ZENFLOW_SYNC_TEST_EMAIL",
+    "ZENFLOW_SYNC_TEST_PASSWORD",
+    "ValenceOrb",
+    "MiniValenceOrb",
+  ]);
+
   requireIncludes("docs/DEFINITION_OF_DONE.md", [
     "Sync contract invariant",
     "npm run check:sync-contract",
@@ -394,6 +425,7 @@ function main() {
     "Telegram sync drill",
     "Task completion protocol",
     "TASK_COMPLETION_PROTOCOL.md",
+    "TELEGRAM_GRADE_20_IDEA_LEDGER.md",
   ]);
 
   requireIncludes("docs/RELEASE_CHECKLIST.md", [
@@ -402,6 +434,7 @@ function main() {
     "telegram-sync-drill",
     "TELEGRAM_GRADE_SYNC_100_PERCENT_CLOSURE.md",
     "TASK_COMPLETION_PROTOCOL.md",
+    "TELEGRAM_GRADE_20_IDEA_LEDGER.md",
   ]);
 
   requireIncludes("package.json", [

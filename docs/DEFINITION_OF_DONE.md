@@ -39,6 +39,7 @@ cross-platform user-flow changes.
 | 10 | Privacy-safe sync diagnostics | `npm run smoke:sync-health` or `window.__zenflowSyncHealth.snapshot()` with `?syncHealth=1` when diagnosing deployed sync; no payloads, entity ids, journal text, or habit names | Yes for public sync debugging claims |
 | 11 | Telegram sync drill | `npm run smoke:telegram-sync-drill`; `PASS` requires every row to pass, `PARTIAL` or `UNVERIFIED` must be named in the Done Packet. Release CI must attach the `telegram-sync-drill` artifact from a freshly built preview. | Yes for sync/account/cross-shell claims |
 | 12 | Task completion protocol | `docs/ai/TASK_COMPLETION_PROTOCOL.md` Done Packet lists scope, evidence, known gaps, rollback, and deploy state | Yes for claims that a task is complete |
+| 13 | Telegram 20-idea ledger | `docs/ai/TELEGRAM_GRADE_20_IDEA_LEDGER.md` rows touched by the change are marked `PASS`, `PARTIAL`, `UNVERIFIED`, `FAIL`, or `WAIVED` with evidence | Yes for sync/runtime/account/release claims |
 
 ## Manual Checks (before major releases)
 
@@ -53,6 +54,7 @@ cross-platform user-flow changes.
 | 7 | Sync closure reviewed | `docs/ai/TELEGRAM_GRADE_SYNC_100_PERCENT_CLOSURE.md` checked for account, offline, delete, multi-tab, and V1/V2 impact |
 | 8 | Sync diagnostics privacy checked | Run `npm run smoke:sync-health` or confirm public/debug sync evidence exposes only route/auth/online/queue/cursor/receipt metadata |
 | 9 | Completion packet reviewed | `docs/ai/TASK_COMPLETION_PROTOCOL.md` status vocabulary used: `PASS`, `PARTIAL`, `UNVERIFIED`, `FAIL`, or `WAIVED` |
+| 10 | 20-idea ledger reviewed | `docs/ai/TELEGRAM_GRADE_20_IDEA_LEDGER.md` touched rows are named in the Done Packet |
 
 ## Release-Only (before store/web publish)
 

@@ -10,6 +10,8 @@ Supabase sync, offline queue, broadcast, or app lifecycle code.
 For the exact "nothing remains" completion definition, read
 `docs/ai/TELEGRAM_GRADE_SYNC_100_PERCENT_CLOSURE.md` after this file. This
 contract owns invariants; the closure document owns the required proof matrix.
+For the 20 Telegram-inspired product controls that sit on top of these
+invariants, read `docs/ai/TELEGRAM_GRADE_20_IDEA_LEDGER.md`.
 
 ## North Star
 

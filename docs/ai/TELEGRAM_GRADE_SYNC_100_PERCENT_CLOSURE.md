@@ -18,6 +18,7 @@ Read this after:
 2. `docs/ai/TELEGRAM_GRADE_RUNTIME_CONTRACT.md`
 3. `docs/ai/SYNC_CONTRACT.md`
 4. `docs/ai/CANONICAL_ORB_INVARIANT.md` when visuals or orbs are adjacent
+5. `docs/ai/TELEGRAM_GRADE_20_IDEA_LEDGER.md` for the product-control ledger
 
 ## What 100 Percent Means
 
@@ -31,6 +32,13 @@ If a proof path is unavailable because credentials, native hardware, or public
 deploy access is missing, the result is `UNVERIFIED`, not `PASS`. The remaining
 work must be named here or in the final report. Do not turn `UNVERIFIED` into
 product confidence.
+
+The 20 Telegram-grade ideas are tracked in
+`docs/ai/TELEGRAM_GRADE_20_IDEA_LEDGER.md`. A same-account, runtime, or release
+claim must map its touched idea rows to proof in the Done Packet. The ledger is
+binding: a feature can pass its local unit tests and still remain `PARTIAL` if a
+touched row has no browser, public deploy, account, native, or anti-resurrection
+evidence.
 
 ## Source-Backed Model
 
