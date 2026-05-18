@@ -15,6 +15,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { getRoleTone, type NonOrbVisualRole } from "@/lib/nonOrbVisualRoles";
 import { V2_NAV_ICONS } from "@/lib/v2IconSystem";
 import { ThemeToggleV2 } from "@/components/navigation-v2/ThemeToggleV2";
+import { SyncHealthCard } from "@/components/sync/SyncHealthCard";
 import { useThemeStore } from "@/stores/themeStore";
 import { cn } from "@/lib/utils";
 import { APP_VERSION } from "@/lib/appVersion";
@@ -174,6 +175,11 @@ export const SettingsPage = memo(function SettingsPage() {
             </div>
           </div>
         </section>
+
+        <SyncHealthCard
+          dense
+          className="border-[hsl(var(--zf-role-space)/0.24)] bg-[hsl(var(--card)/0.76)] shadow-[var(--zen-shadow-card)]"
+        />
 
         <section
           className="grid gap-3 min-[520px]:grid-cols-2"
