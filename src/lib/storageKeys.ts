@@ -92,6 +92,7 @@ export const SK = {
   ERROR_LOG: "zenflow-error-log",
   CRASH_LOG: "zenflow-crash-log",
   RUNTIME_PERF_RECORDER: "zenflow-runtime-perf-recorder",
+  SYNC_HEALTH_RECORDER: "zenflow-sync-health-recorder",
 
   // ─── Insights ───
   INSIGHTS_LAST_GENERATED: "zenflow-insights-last-generated",

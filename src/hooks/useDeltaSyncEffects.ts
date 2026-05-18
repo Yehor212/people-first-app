@@ -23,6 +23,7 @@ import { syncReducer, INITIAL_STATE, getRetryDelay } from "@/lib/syncStateMachin
 import { SyncGapDetector } from "@/lib/syncGapDetector";
 import { pullFromCloud } from "@/storage/realtimeSync";
 import { isAbortError } from "@/lib/validation";
+import { recordSyncHealthReceipt } from "@/observability/syncHealthRecorder";
 
 const DELTA_SYNC_INTERVAL = 5 * 60 * 1000;
 const MAX_GAP_SIZE = 1000;
@@ -52,10 +53,12 @@ export function useDeltaSyncEffects(): void {
     if (current.phase === "delta" || current.phase === "snapshot") return;
     if (!navigator.onLine) {
       dispatchAndSync({ type: "WENT_OFFLINE" });
+      recordSyncHealthReceipt({ kind: "offline", source: "delta" });
       return;
     }
     if (!(await getCurrentSessionUserId())) {
       logger.sync("[DeltaSync] Skipped; no authenticated session");
+      recordSyncHealthReceipt({ kind: "session-missing", source: "delta" });
       return;
     }
 
@@ -77,6 +80,13 @@ export function useDeltaSyncEffects(): void {
               ", seq=" +
               result.lastSeq
           );
+          recordSyncHealthReceipt({
+            kind: "snapshot-applied",
+            source: "delta",
+            fetched: result.fetched,
+            applied: result.applied,
+            seq: result.lastSeq,
+          });
           gapDetectorRef.current?.resetTo(result.lastSeq);
           dispatchAndSync({ type: "RESET", lastSeq: result.lastSeq });
           return;
@@ -88,6 +98,7 @@ export function useDeltaSyncEffects(): void {
         if (events.length === 0) {
           gapDetectorRef.current?.resetTo(lastSeq);
           dispatchAndSync({ type: "RESET", lastSeq });
+          recordSyncHealthReceipt({ kind: "delta-empty", source: "delta", seq: lastSeq });
           return;
         }
 
@@ -97,6 +108,13 @@ export function useDeltaSyncEffects(): void {
 
         logger.sync("[DeltaSync] Applied " + applied + " events, seq=" + maxSeq);
         dispatchAndSync({ type: "DELTA_SUCCESS", lastSeq: maxSeq });
+        recordSyncHealthReceipt({
+          kind: "delta-applied",
+          source: "delta",
+          fetched: events.length,
+          applied,
+          seq: maxSeq,
+        });
 
         if (gapDetectorRef.current) {
           gapDetectorRef.current.resetTo(maxSeq);
@@ -105,6 +123,7 @@ export function useDeltaSyncEffects(): void {
 
       if (!locked.acquired) {
         logger.sync("[DeltaSync] Delta pull skipped; another tab is applying the cursor");
+        recordSyncHealthReceipt({ kind: "leader-skipped", source: "delta" });
       }
     } catch (err) {
       if (isAbortError(err)) return;
@@ -116,6 +135,11 @@ export function useDeltaSyncEffects(): void {
       }
 
       logger.error("[DeltaSync] Delta pull failed:", err);
+      recordSyncHealthReceipt({
+        kind: "error",
+        source: "delta",
+        errorName: err instanceof Error ? err.name : "UnknownError",
+      });
       const delay = getRetryDelay(stateRef.current.consecutiveErrors);
       dispatchAndSync({ type: "ERROR", retryDelayMs: delay });
 
@@ -141,6 +165,7 @@ export function useDeltaSyncEffects(): void {
       await pullFromCloud();
       const serverMax = await getServerMaxSeq();
       dispatchAndSync({ type: "SNAPSHOT_SUCCESS", lastSeq: serverMax });
+      recordSyncHealthReceipt({ kind: "snapshot-applied", source: "delta", seq: serverMax });
 
       if (gapDetectorRef.current) {
         gapDetectorRef.current.resetTo(serverMax);
@@ -171,6 +196,12 @@ export function useDeltaSyncEffects(): void {
           const maxSeq = events[events.length - 1].seq;
           gapDetectorRef.current?.resetTo(maxSeq);
           dispatchAndSync({ type: "RESET", lastSeq: maxSeq });
+          recordSyncHealthReceipt({
+            kind: "gap-recovered",
+            source: "delta",
+            fetched: events.length,
+            seq: maxSeq,
+          });
         }
       },
     });

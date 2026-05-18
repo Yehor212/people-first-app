@@ -23,6 +23,7 @@ import {
   Flame,
 } from "lucide-react";
 import { motion, AnimatePresence, LayoutGroup, useReducedMotion } from "framer-motion";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { cn, formatDate, getToday } from "@/lib/utils";
 import { V2_SHELL_ICONS } from "@/lib/v2IconSystem";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -34,13 +35,12 @@ import { useModalA11y } from "@/hooks/useModalA11y";
 import { createFocusTrap, announceSuccess, announceError } from "@/lib/a11y";
 import { Switch } from "@/components/ui/switch";
 import { SplashScreen, type SplashThemePreference } from "@/components/SplashScreen";
-import { supabase } from "@/lib/supabaseClient";
 import { triggerSync } from "@/storage/cloudSync";
 import { settingsRepo } from "@/storage/db";
+import type { Database } from "@/types/supabase";
 import { useJournal } from "./useJournal";
 import { useJournalSecurity } from "./useJournalSecurity";
 import { JournalLockScreen } from "./JournalLockScreen";
-import { JournalEntryList } from "./JournalEntryList";
 import { SidebarCompact } from "./SidebarCompact";
 import { DiaryEmptyCanvas } from "./DiaryEmptyCanvas";
 import { DiaryEntrySuggestionCard } from "./DiaryEntrySuggestionCard";
@@ -106,6 +106,16 @@ const LazyMemoryPortalCanvas = lazyWithRetry(
   () => import("./MemoryPortalCanvas").then((m) => ({ default: m.MemoryPortalCanvas })),
   "MemoryPortalCanvas",
 );
+
+const LazyJournalEntryList = lazyWithRetry(
+  () => import("./JournalEntryList").then((m) => ({ default: m.JournalEntryList })),
+  "JournalEntryList",
+);
+
+async function loadJournalSupabase(): Promise<SupabaseClient<Database> | null> {
+  const { supabase } = await import("@/lib/supabaseClient");
+  return supabase;
+}
 
 function JournalDeferredPanelFallback({
   label = "Loading...",
@@ -749,11 +759,13 @@ export const JournalModule = memo(function JournalModule({
   const handleForgotPassword = async () => {
     setResetStep("checking");
     setResetError("");
-    if (!supabase) {
-      setResetStep("no-account");
-      return;
-    }
     try {
+      const supabase = await loadJournalSupabase();
+      if (!supabase) {
+        setResetStep("no-account");
+        return;
+      }
+
       const {
         data: { session },
       } = await supabase.auth.getSession();
@@ -771,7 +783,7 @@ export const JournalModule = memo(function JournalModule({
   const lastResetOtpRef = useRef(0);
 
   const handleSendResetLink = async () => {
-    if (!supabase || !resetEmail) return;
+    if (!resetEmail) return;
 
     // M2: OTP cooldown — prevent abuse by enforcing 60s between sends
     const now = Date.now();
@@ -787,6 +799,12 @@ export const JournalModule = memo(function JournalModule({
     setResetStep("sending");
     setResetError("");
     try {
+      const supabase = await loadJournalSupabase();
+      if (!supabase) {
+        setResetStep("no-account");
+        return;
+      }
+
       const { error } = await supabase.auth.signInWithOtp({
         email: resetEmail,
         options: { shouldCreateUser: false },
@@ -894,20 +912,33 @@ export const JournalModule = memo(function JournalModule({
 
   // Magic link fallback: listen for auth state change when waiting for code
   useEffect(() => {
-    if (resetStep !== "sent" || !supabase) return;
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event) => {
-      if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
-        const pending = storageGetRaw(SK.JOURNAL_PASSWORD_RESET);
-        if (pending && Date.now() - Number(pending) < 600_000) {
-          await security.removePassword();
-          storageRemove(SK.JOURNAL_PASSWORD_RESET);
-          setResetStep("success");
-        }
-      }
-    });
-    return () => subscription.unsubscribe();
+    if (resetStep !== "sent") return;
+
+    let disposed = false;
+    let subscription: { unsubscribe: () => void } | undefined;
+
+    void loadJournalSupabase()
+      .then((supabase) => {
+        if (disposed || !supabase) return;
+
+        const { data } = supabase.auth.onAuthStateChange(async (event) => {
+          if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
+            const pending = storageGetRaw(SK.JOURNAL_PASSWORD_RESET);
+            if (pending && Date.now() - Number(pending) < 600_000) {
+              await security.removePassword();
+              storageRemove(SK.JOURNAL_PASSWORD_RESET);
+              setResetStep("success");
+            }
+          }
+        });
+        subscription = data.subscription;
+      })
+      .catch((err) => logger.warn("[Journal]", "Password reset listener failed:", err));
+
+    return () => {
+      disposed = true;
+      subscription?.unsubscribe();
+    };
   }, [resetStep, security]);
 
   // ── Card View (collapsed in garden tab) ──
@@ -1370,25 +1401,27 @@ export const JournalModule = memo(function JournalModule({
                             /* handled internally */
                           }}
                         />
-                        <JournalEntryList
-                          groupedEntries={journal.groupedEntries}
-                          allEntries={journal.allEntries}
-                          onOpenEntry={handleOpenEntryFromShell}
-                          onDeleteEntry={handleDeleteEntry}
-                          onSwipeDelete={handleDeleteEntry}
-                          onNewEntry={handleNewEntryFromShell}
-                          onNewEntryWithPrefill={handleNewEntryWithPrefill}
-                          totalCount={journal.totalCount}
-                          loading={journal.loading}
-                          selectedDate={journal.selectedDate}
-                          daysSinceLastEntry={daysSinceLastEntry}
-                          privateMode={privateMode}
-                          onAddGratitude={handleAddGratitudeWithSpace}
-                          releaseTraceSummaries={releaseTraceSummaries}
-                          onReleaseThought={handleReleaseThought}
-                          compact
-                          activeEntryId={journal.activeEntryId}
-                        />
+                        <Suspense fallback={<JournalDeferredPanelFallback label={t.loading || "Loading..."} />}>
+                          <LazyJournalEntryList
+                            groupedEntries={journal.groupedEntries}
+                            allEntries={journal.allEntries}
+                            onOpenEntry={handleOpenEntryFromShell}
+                            onDeleteEntry={handleDeleteEntry}
+                            onSwipeDelete={handleDeleteEntry}
+                            onNewEntry={handleNewEntryFromShell}
+                            onNewEntryWithPrefill={handleNewEntryWithPrefill}
+                            totalCount={journal.totalCount}
+                            loading={journal.loading}
+                            selectedDate={journal.selectedDate}
+                            daysSinceLastEntry={daysSinceLastEntry}
+                            privateMode={privateMode}
+                            onAddGratitude={handleAddGratitudeWithSpace}
+                            releaseTraceSummaries={releaseTraceSummaries}
+                            onReleaseThought={handleReleaseThought}
+                            compact
+                            activeEntryId={journal.activeEntryId}
+                          />
+                        </Suspense>
                       </div>
                     </motion.div>
                   </div>
@@ -1819,24 +1852,26 @@ export const JournalModule = memo(function JournalModule({
                               />
                             ) : null}
 
-                            <JournalEntryList
-                              groupedEntries={journal.groupedEntries}
-                              allEntries={journal.allEntries}
-                              onOpenEntry={handleOpenEntry}
-                              onDeleteEntry={handleDeleteEntry}
-                              onSwipeDelete={handleDeleteEntry}
-                              onNewEntry={handleNewEntry}
-                              onNewEntryWithPrefill={handleNewEntryWithPrefill}
-                              totalCount={journal.entries.length}
-                              loading={journal.loading}
-                              selectedDate={journal.selectedDate}
-                              daysSinceLastEntry={daysSinceLastEntry}
-                              privateMode={privateMode}
-                              onAddGratitude={handleAddGratitudeWithSpace}
-                              releaseTraceSummaries={releaseTraceSummaries}
-                              onReleaseThought={handleReleaseThought}
-                              selectedDateOnly
-                            />
+                            <Suspense fallback={<JournalDeferredPanelFallback label={t.loading || "Loading..."} />}>
+                              <LazyJournalEntryList
+                                groupedEntries={journal.groupedEntries}
+                                allEntries={journal.allEntries}
+                                onOpenEntry={handleOpenEntry}
+                                onDeleteEntry={handleDeleteEntry}
+                                onSwipeDelete={handleDeleteEntry}
+                                onNewEntry={handleNewEntry}
+                                onNewEntryWithPrefill={handleNewEntryWithPrefill}
+                                totalCount={journal.entries.length}
+                                loading={journal.loading}
+                                selectedDate={journal.selectedDate}
+                                daysSinceLastEntry={daysSinceLastEntry}
+                                privateMode={privateMode}
+                                onAddGratitude={handleAddGratitudeWithSpace}
+                                releaseTraceSummaries={releaseTraceSummaries}
+                                onReleaseThought={handleReleaseThought}
+                                selectedDateOnly
+                              />
+                            </Suspense>
                           </div>
                         )}
                       </div>

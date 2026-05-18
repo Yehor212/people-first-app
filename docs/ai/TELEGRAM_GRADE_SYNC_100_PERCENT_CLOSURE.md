@@ -122,6 +122,9 @@ Required:
 - local lease fallback covers WebView/WKWebView contexts;
 - Broadcast, visibility, online, native resume, auth changes, and intervals may
   wake sync but must not bypass the owner lock.
+- public/debug diagnostics may expose `window.__zenflowSyncHealth.snapshot()`
+  for queue, cursor, and receipt state, but diagnostics must never apply deltas
+  or become another owner.
 
 ### 5. Offline Queue Is Durable Before Success
 
@@ -268,6 +271,14 @@ cmd /c npm run smoke:sync-account
 `ZENFLOW_SYNC_TEST_PASSWORD`. Without credentials, account-level live sync is
 `UNVERIFIED`.
 
+For public/debug investigations, enable `?syncHealth=1`, `?syncDebug=true`,
+`?runtimeSync=on`, or local key `zenflow-sync-health-recorder`, then
+inspect `window.__zenflowSyncHealth.snapshot()`. The snapshot may contain route,
+online/auth state, queue counts, last applied cursor, and coarse receipts only.
+It must not contain payloads, entity ids, journal text, habit names, or other
+user content, and it cannot by itself upgrade live same-account sync from
+`UNVERIFIED` to `PASS`.
+
 ### Runtime Evidence
 
 Run:
@@ -333,6 +344,8 @@ Use this checklist before claiming completion.
 - [ ] `check:canonical-orbs` evidence captured when visual primitives are adjacent.
 - [ ] Typecheck/lint evidence captured.
 - [ ] Targeted sync tests evidence captured.
+- [ ] `window.__zenflowSyncHealth` public/debug snapshot captured when diagnosing
+      deployed sync behavior.
 - [ ] Live account proof captured or marked `UNVERIFIED`.
 - [ ] Public deploy proof captured when the user reported a public URL.
 - [ ] Platform matrix rows either proved or explicitly marked `UNVERIFIED`.

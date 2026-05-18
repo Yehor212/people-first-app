@@ -142,8 +142,26 @@ function main() {
 
   requireIncludes("src/hooks/useTelegramGradeSyncRuntime.ts", [
     "useDeltaSyncEffects",
+    "useSyncHealthRuntime",
     "V1 and V2 are one product state",
     "sync_events.seq",
+  ]);
+
+  requireIncludes("src/hooks/useSyncHealthRuntime.ts", [
+    "installSyncHealthRecorder",
+    "offlineQueue.waitForInit()",
+    "getCurrentSessionUserId",
+    "getLastSeq",
+    "SYNC_HEALTH_RECEIPT_EVENT",
+  ]);
+
+  requireIncludes("src/observability/syncHealthRecorder.ts", [
+    "window.__zenflowSyncHealth",
+    "shouldEnableSyncHealthRecorder",
+    "syncHealth",
+    "SYNC_HEALTH_RECEIPT_EVENT",
+    "payload",
+    "entity ids",
   ]);
 
   requireIncludes("src/pages/Index.tsx", [
@@ -262,6 +280,7 @@ function main() {
     "sync_tombstones",
     "WRITE_SYNC_EVENT",
     "smoke:sync-account",
+    "__zenflowSyncHealth",
     "TELEGRAM_GRADE_SYNC_100_PERCENT_CLOSURE.md",
     "broadcast is a wake-up signal",
     "V1 and V2 are one product state",
@@ -272,6 +291,7 @@ function main() {
   requireIncludes("docs/ai/TELEGRAM_GRADE_RUNTIME_CONTRACT.md", [
     "docs/ai/SYNC_CONTRACT.md",
     "TELEGRAM_GRADE_SYNC_100_PERCENT_CLOSURE.md",
+    "__zenflowSyncHealth",
     "sync_events.seq",
     "WRITE_SYNC_EVENT",
     "Tombstones beat stale snapshots",
@@ -281,6 +301,7 @@ function main() {
   requireIncludes("docs/ai/TELEGRAM_GRADE_SYNC_100_PERCENT_CLOSURE.md", [
     "100 percent is a proof state",
     "sync_events.seq",
+    "__zenflowSyncHealth",
     "Supabase Broadcast wake clients only",
     "Deletes Cannot Resurrect",
     "One Sync Owner Applies Deltas",

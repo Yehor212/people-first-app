@@ -37,6 +37,7 @@ import { generateSecureRandom } from "./validation";
 import { safeLocalStorageGet, safeLocalStorageSet, storageRemove } from "./safeJson";
 import { SK } from "./storageKeys";
 import { db, OfflineQueueItem } from "@/storage/db";
+import { recordSyncHealthReceipt } from "@/observability/syncHealthRecorder";
 
 // Action types that can be queued
 export type OfflineActionType =
@@ -365,6 +366,12 @@ class OfflineQueue {
     this.notifyListeners();
 
     logger.log("[OfflineQueue] Action queued:", type, entityId);
+    recordSyncHealthReceipt({
+      kind: "queued",
+      source: "queue",
+      actionType: type,
+      priority: action.priority || "normal",
+    });
 
     // If online, try to process immediately
     if (navigator.onLine) {
@@ -502,8 +509,21 @@ class OfflineQueue {
         await handler(action);
         await this.removeAction(action.id);
         logger.log("[OfflineQueue] Action processed:", action.type, action.entityId);
+        recordSyncHealthReceipt({
+          kind: "processed",
+          source: "queue",
+          actionType: action.type,
+          priority: action.priority || "normal",
+        });
       } catch (error) {
         logger.error("[OfflineQueue] Action failed:", action.type, error);
+        recordSyncHealthReceipt({
+          kind: "failed",
+          source: "queue",
+          actionType: action.type,
+          priority: action.priority || "normal",
+          errorName: error instanceof Error ? error.name : "UnknownError",
+        });
 
         action.retries++;
         action.lastError = error instanceof Error ? error.message : String(error);

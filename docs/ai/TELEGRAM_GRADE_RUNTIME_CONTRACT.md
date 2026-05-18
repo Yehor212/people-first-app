@@ -245,6 +245,14 @@ Sync work needs:
 - Delta apply path.
 - Delete/tombstone behavior when relevant.
 - V1 to V2 to V1 or two-tab proof when relevant.
+- Optional public/debug diagnostics: enable `?syncHealth=1`, `?syncDebug=true`,
+  `?runtimeSync=on`, or local key
+  `zenflow-sync-health-recorder`, then inspect
+  `window.__zenflowSyncHealth.snapshot()` for route, auth state, online state,
+  queue counts, last cursor, and sync receipts. This recorder must stay
+  privacy-safe: no payloads, entity ids, journal text, habit names, or user
+  content. It is evidence for runtime state, not a replacement for live
+  same-account sync proof.
 
 Visual work needs:
 

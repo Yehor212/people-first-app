@@ -46,17 +46,31 @@ import {
 } from "./journalHubStorage";
 import auroraMountainsUrl from "@/assets/journal/aurora-mountains.webp";
 import { logger } from "@/lib/logger";
-import {
-  searchJournalSemantic,
-  generateAllMissingEmbeddings,
-  type SemanticSearchResult,
-} from "@/lib/journalAI";
-import { supabase } from "@/lib/supabaseClient";
+import type { SemanticSearchResult } from "@/lib/journalAI";
+import { SUPABASE_ANON_KEY, SUPABASE_URL } from "@/lib/env";
 import { Quote } from "lucide-react";
 import { getJournalListDateFilter } from "./journalListFilters";
 import { formatLocalizedCount } from "./journalWordCount";
 import { getLocale } from "@/lib/timeUtils";
 import { useThemeStore } from "@/stores/themeStore";
+
+const JOURNAL_AI_AVAILABLE = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
+
+async function searchJournalSemanticLazy(query: string): Promise<SemanticSearchResult[]> {
+  const { searchJournalSemantic } = await import("@/lib/journalAI");
+  return searchJournalSemantic(query);
+}
+
+async function generateAllMissingEmbeddingsLazy(): Promise<void> {
+  const { generateAllMissingEmbeddings } = await import("@/lib/journalAI");
+  await generateAllMissingEmbeddings();
+}
+
+async function canUseJournalAi(): Promise<boolean> {
+  if (!JOURNAL_AI_AVAILABLE) return false;
+  const { supabase } = await import("@/lib/supabaseClient");
+  return Boolean(supabase);
+}
 
 /** Daily rotating quotes — keyed by i18n key for translation */
 const DAILY_QUOTES: { key: string; fallback: string; author: string }[] = [
@@ -643,7 +657,7 @@ export const JournalEntryList = memo(function JournalEntryList({
     let cancelled = false;
     setAiSearching(true);
 
-    searchJournalSemantic(debouncedSearch.trim())
+    searchJournalSemanticLazy(debouncedSearch.trim())
       .then((results) => {
         if (!cancelled) setAiResults(results);
       })
@@ -662,21 +676,29 @@ export const JournalEntryList = memo(function JournalEntryList({
 
   // Toggle AI mode — backfill embeddings on first activation
   const toggleAiMode = useCallback(() => {
-    if (!supabase) return;
+    if (!JOURNAL_AI_AVAILABLE) return;
 
-    setAiMode((prev) => {
-      const next = !prev;
-      if (next && !aiIndexedRef.current) {
-        aiIndexedRef.current = true;
-        setAiIndexing(true);
-        void generateAllMissingEmbeddings().finally(() => setAiIndexing(false));
-      }
-      if (!next) {
-        setAiResults([]);
-        setAiSearching(false);
-      }
-      return next;
-    });
+    void canUseJournalAi()
+      .then((available) => {
+        if (!available) return;
+
+        setAiMode((prev) => {
+          const next = !prev;
+          if (next && !aiIndexedRef.current) {
+            aiIndexedRef.current = true;
+            setAiIndexing(true);
+            void generateAllMissingEmbeddingsLazy().finally(() => setAiIndexing(false));
+          }
+          if (!next) {
+            setAiResults([]);
+            setAiSearching(false);
+          }
+          return next;
+        });
+      })
+      .catch((error) => {
+        logger.warn("[Journal] Failed to initialize AI search", error);
+      });
   }, []);
 
   const allEntriesForSpaces = useMemo(
@@ -757,7 +779,11 @@ export const JournalEntryList = memo(function JournalEntryList({
     if (!activeSpaceMode) return;
 
     const frame = window.requestAnimationFrame(() => {
-      document.querySelector('[data-testid="journal-space-mode"]')?.scrollIntoView({
+      const target = document.querySelector('[data-testid="journal-space-mode"]');
+      if (!(target instanceof HTMLElement) || typeof target.scrollIntoView !== "function") {
+        return;
+      }
+      target.scrollIntoView({
         block: "start",
         behavior: "auto",
       });
@@ -1156,7 +1182,7 @@ export const JournalEntryList = memo(function JournalEntryList({
   const hasActiveFilters = deferredSearch || selectedTag || selectedSpaceId;
   const activeFilterSpaceName = selectedSpace?.name ?? selectedTag;
   const showSpaceSwitcher = true;
-  const showAiToggle = !!supabase; // Only show AI toggle when cloud is available
+  const showAiToggle = JOURNAL_AI_AVAILABLE; // Only show AI toggle when cloud is configured
 
   const renderQuietReleaseTrace = () => {
     if (!releaseTrace || releaseTrace.count <= 0) return null;

@@ -36,6 +36,14 @@ replacement for the durable event log. If Broadcast arrives before a DB write is
 visible, or is missed by an offline client, the next delta pull must still converge
 to the latest event-log state.
 
+For public/debug proof, ZenFlow exposes an opt-in privacy-safe diagnostic recorder
+at `window.__zenflowSyncHealth` when `?syncHealth=1`, `?syncDebug=true`,
+`?runtimeSync=on`, or local key `zenflow-sync-health-recorder` is
+enabled. It may show route, auth state, online state, queue counts, last cursor,
+and coarse sync receipts only. It must never expose payloads, entity ids, journal
+text, habit names, or other user content, and it does not replace same-account
+`smoke:sync-account` proof.
+
 ## Non-Negotiable Invariants
 
 1. **Event log owns cross-device ordering.**
@@ -108,6 +116,8 @@ to the latest event-log state.
      one tab advances the local event cursor at a time.
    - Broadcast, online, visibility, interval, and native resume events may wake
      the runtime, but they must not bypass the leader lock.
+   - `window.__zenflowSyncHealth` is diagnostic-only evidence for current queue,
+     cursor, and receipt state. It must not become a second sync owner.
 
 10. **Evidence beats intent.**
     - Sync fixes need tests or browser proof for the original failure mode.
@@ -118,6 +128,7 @@ to the latest event-log state.
 
 - `src/storage/eventSync.ts`
 - `src/hooks/useTelegramGradeSyncRuntime.ts`
+- `src/hooks/useSyncHealthRuntime.ts`
 - `src/hooks/useDeltaSyncEffects.ts`
 - `src/hooks/useCloudSyncEffects.ts`
 - `src/lib/syncBroadcast.ts`
@@ -150,7 +161,7 @@ cmd /c npm run smoke:sync-account
 `check:sync-contract` is the future-task hook for this contract. It verifies the
 repo still has ordered event-log wiring, the critical event-write outbox,
 snapshot-then-delta bootstrap, server-backed tombstones, anti-resurrection tests,
-and CI/doc references.
+privacy-safe `window.__zenflowSyncHealth` diagnostics, and CI/doc references.
 
 Behavioral gates for user-visible sync work:
 
@@ -167,6 +178,9 @@ Behavioral gates for user-visible sync work:
 - For same-account release claims, run `npm run smoke:sync-account` with
   `ZENFLOW_SYNC_TEST_EMAIL` and `ZENFLOW_SYNC_TEST_PASSWORD`; without those
   credentials the live account layer is `UNVERIFIED`, not passed.
+- For public/debug investigations, open the affected URL with `?syncHealth=1`
+  and inspect `window.__zenflowSyncHealth.snapshot()`. This is useful for queue,
+  cursor, and receipt proof, but it is not account convergence proof by itself.
 
 When UI or route behavior is involved, also run a production-browser smoke for
 the affected route. When the change is intended for public users, verify remote

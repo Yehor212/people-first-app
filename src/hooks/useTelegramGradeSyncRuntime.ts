@@ -1,4 +1,5 @@
 import { useDeltaSyncEffects } from "@/hooks/useDeltaSyncEffects";
+import { useSyncHealthRuntime } from "@/hooks/useSyncHealthRuntime";
 
 /**
  * Shared Telegram-grade sync runtime.
@@ -8,5 +9,6 @@ import { useDeltaSyncEffects } from "@/hooks/useDeltaSyncEffects";
  * online/offline, and BroadcastChannel wake-ups behave the same everywhere.
  */
 export function useTelegramGradeSyncRuntime(): void {
+  useSyncHealthRuntime();
   useDeltaSyncEffects();
 }
