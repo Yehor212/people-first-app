@@ -40,6 +40,7 @@ cross-platform user-flow changes.
 | 11 | Telegram sync drill | `npm run smoke:telegram-sync-drill`; `PASS` requires every row to pass, `PARTIAL` or `UNVERIFIED` must be named in the Done Packet. Release CI must attach the `telegram-sync-drill` artifact from a freshly built preview. | Yes for sync/account/cross-shell claims |
 | 12 | Task completion protocol | `docs/ai/TASK_COMPLETION_PROTOCOL.md` Done Packet lists scope, evidence, known gaps, rollback, and deploy state | Yes for claims that a task is complete |
 | 13 | Telegram 20-idea ledger | `docs/ai/TELEGRAM_GRADE_20_IDEA_LEDGER.md` rows touched by the change are marked `PASS`, `PARTIAL`, `UNVERIFIED`, `FAIL`, or `WAIVED` with evidence | Yes for sync/runtime/account/release claims |
+| 14 | iOS native gate | `npm run cap:sync:ios` plus the GitHub Actions `ios-gate` macOS simulator build for `ios/App/App.xcodeproj`; missing macOS/Xcode proof means iOS remains `UNVERIFIED` | Yes for iOS/WKWebView claims |
 
 ## Manual Checks (before major releases)
 

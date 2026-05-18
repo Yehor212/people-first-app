@@ -12,6 +12,7 @@ Use this list before publishing on stores or web.
 - `npm install`
 - `npm run build`
 - `npx cap sync`
+- `npm run cap:sync:ios`
 
 ## Web/PWA
 - Verify service worker update flow.
@@ -22,7 +23,12 @@ Use this list before publishing on stores or web.
 - Run Lighthouse PWA audit.
 
 ## iOS
-- Build in Xcode.
+- Run the GitHub Actions `ios-gate` job or locally run `npm run cap:sync:ios`
+  and build `ios/App/App.xcodeproj` for an iOS simulator.
+- Confirm `ios/App/CapApp-SPM/Package.swift` uses POSIX `/` paths after sync.
+- Confirm iOS `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` match the
+  Android/package release version before store submission.
+- Build in Xcode when preparing an App Store release.
 - Verify first render in WKWebView with no visual downgrade.
 - Verify app background -> foreground sync does not duplicate or lose actions.
 - Verify notifications permission prompt.

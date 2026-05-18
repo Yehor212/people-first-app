@@ -311,7 +311,7 @@ If a new synced entity is added, update this table, `src/storage/eventSync.ts`,
 | Multi-tab browser | One delta owner, broadcast wake-up, latest action converges in both tabs |
 | Offline browser | Queue persists, replays, deduplicates, and does not resurrect deletes |
 | Android WebView | Build/sync proof or explicit `UNVERIFIED`, pause/resume sync, back behavior |
-| iOS/WKWebView | Simulator/device proof or explicit `UNVERIFIED`, foreground sync, no duplicate work |
+| iOS/WKWebView | `npm run cap:sync:ios` plus the GitHub Actions `ios-gate` macOS simulator build, or explicit `UNVERIFIED`, foreground sync, no duplicate work |
 | Account switch/logout | Previous account data cannot leak or replay into the next account |
 | Device Sessions | Current device visible, old device soft revoke visible, no raw IDs/content exposed |
 

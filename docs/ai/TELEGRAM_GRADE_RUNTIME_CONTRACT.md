@@ -204,7 +204,7 @@ Every runtime-sensitive change must account for this matrix.
 | Web local preview | Production build, preview route smoke, console/network check |
 | GitHub Pages/PWA | Public URL with cache-buster, stale service worker/update behavior |
 | Android WebView | `build:android` or explicit UNVERIFIED note, pause/resume/back behavior |
-| iOS/WKWebView | Explicit UNVERIFIED note if simulator/device proof is unavailable |
+| iOS/WKWebView | `npm run cap:sync:ios` plus the GitHub Actions `ios-gate` macOS simulator build, or explicit UNVERIFIED note if simulator/device proof is unavailable |
 | Desktop wide | Sidebar/drawer route parity, long task budget, canonical orb parity |
 | Phone layout | 449x698 or equivalent route smoke, safe area, bottom nav, scrollability |
 | Multi-tab browser | Broadcast/lock ownership and latest-action convergence |
@@ -301,6 +301,7 @@ npm run bundle:report:strict
 npm run check:size
 npm run check:supabase-migration-prefixes
 npm run build:android
+npm run cap:sync:ios
 npm run ci:remote:wait
 ```
 
