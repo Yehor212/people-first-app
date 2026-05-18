@@ -142,9 +142,28 @@ function main() {
 
   requireIncludes("src/hooks/useTelegramGradeSyncRuntime.ts", [
     "useDeltaSyncEffects",
+    "useDeviceSessionRuntime",
     "useSyncHealthRuntime",
     "V1 and V2 are one product state",
     "sync_events.seq",
+  ]);
+
+  requireIncludes("src/hooks/useDeviceSessionRuntime.ts", [
+    "useDeviceSessionRuntime",
+    "upsertCurrentDeviceSession",
+    "DEVICE_SESSION_HEARTBEAT_INTERVAL_MS",
+    "visibilitychange",
+    "onAuthStateChange",
+  ]);
+
+  requireIncludes("src/storage/deviceSessions.ts", [
+    "device_sessions",
+    "getPersistentDeviceId",
+    "getCurrentSessionUserId",
+    "upsertCurrentDeviceSession",
+    "listDeviceSessions",
+    "revokeDeviceSession",
+    "raw user-agent is not stored",
   ]);
 
   requireIncludes("src/hooks/useSyncHealthRuntime.ts", [
@@ -266,7 +285,12 @@ function main() {
     "merges server tombstones into every local anti-resurrection tracker",
   ]);
 
-  requireIncludes("src/types/supabase.ts", ["sync_events", "sync_tombstones", "deleted_seq"]);
+  requireIncludes("src/types/supabase.ts", [
+    "sync_events",
+    "sync_tombstones",
+    "device_sessions",
+    "deleted_seq",
+  ]);
 
   const migrations = readMigrations();
   requireMigrationToken(migrations, "CREATE TABLE IF NOT EXISTS public.sync_events");
@@ -274,6 +298,9 @@ function main() {
   requireMigrationToken(migrations, "CREATE TABLE IF NOT EXISTS public.sync_tombstones");
   requireMigrationToken(migrations, "PRIMARY KEY (user_id, entity_type, entity_id)");
   requireMigrationToken(migrations, "trg_apply_sync_event_tombstone");
+  requireMigrationToken(migrations, "CREATE TABLE IF NOT EXISTS public.device_sessions");
+  requireMigrationToken(migrations, "device_sessions_select_own");
+  requireMigrationToken(migrations, "GRANT SELECT, INSERT, UPDATE ON TABLE public.device_sessions TO authenticated");
 
   requireIncludes("docs/ai/SYNC_CONTRACT.md", [
     "sync_events.seq",
@@ -281,6 +308,7 @@ function main() {
     "WRITE_SYNC_EVENT",
     "smoke:sync-account",
     "__zenflowSyncHealth",
+    "device_sessions",
     "TELEGRAM_GRADE_SYNC_100_PERCENT_CLOSURE.md",
     "broadcast is a wake-up signal",
     "V1 and V2 are one product state",
@@ -292,6 +320,7 @@ function main() {
     "docs/ai/SYNC_CONTRACT.md",
     "TELEGRAM_GRADE_SYNC_100_PERCENT_CLOSURE.md",
     "__zenflowSyncHealth",
+    "device_sessions",
     "sync_events.seq",
     "WRITE_SYNC_EVENT",
     "Tombstones beat stale snapshots",
@@ -302,6 +331,7 @@ function main() {
     "100 percent is a proof state",
     "sync_events.seq",
     "__zenflowSyncHealth",
+    "Device Sessions",
     "Supabase Broadcast wake clients only",
     "Deletes Cannot Resurrect",
     "One Sync Owner Applies Deltas",

@@ -1,4 +1,5 @@
 import { useDeltaSyncEffects } from "@/hooks/useDeltaSyncEffects";
+import { useDeviceSessionRuntime } from "@/hooks/useDeviceSessionRuntime";
 import { useSyncHealthRuntime } from "@/hooks/useSyncHealthRuntime";
 
 /**
@@ -10,5 +11,6 @@ import { useSyncHealthRuntime } from "@/hooks/useSyncHealthRuntime";
  */
 export function useTelegramGradeSyncRuntime(): void {
   useSyncHealthRuntime();
+  useDeviceSessionRuntime();
   useDeltaSyncEffects();
 }

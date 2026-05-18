@@ -13,6 +13,7 @@ import {
 import { Accordion } from "@/components/ui/accordion";
 import { DopamineSettingsComponent } from "@/components/DopamineSettings";
 import { FontScaleSettings } from "@/components/FontScaleSettings";
+import { DeviceSessionsCard } from "@/components/sync/DeviceSessionsCard";
 import { SyncHealthCard } from "@/components/sync/SyncHealthCard";
 import {
   ProfileSection,
@@ -137,6 +138,9 @@ export function SettingsPanel({
 
       {/* Standalone: Sync health + offline outbox */}
       <SyncHealthCard />
+
+      {/* Standalone: Account devices */}
+      <DeviceSessionsCard />
 
       {/* Standalone: Font Scale */}
       <FontScaleSettings />

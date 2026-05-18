@@ -36,6 +36,12 @@ replacement for the durable event log. If Broadcast arrives before a DB write is
 visible, or is missed by an offline client, the next delta pull must still converge
 to the latest event-log state.
 
+`device_sessions` is the account-device presence layer for this model. It shows
+which coarse device surfaces are participating in sync, keeps `last_seen_at`
+fresh from `useTelegramGradeSyncRuntime()`, and supports soft revoke markers for
+old devices. It is not raw browser fingerprinting, and it is not Supabase Auth
+token revocation. Strict token invalidation requires a trusted backend path.
+
 For public/debug proof, ZenFlow exposes an opt-in privacy-safe diagnostic recorder
 at `window.__zenflowSyncHealth` when `?syncHealth=1`, `?syncDebug=true`,
 `?runtimeSync=on`, or local key `zenflow-sync-health-recorder` is
@@ -127,11 +133,20 @@ cache-busted GitHub Pages URL when validating a deployed artifact.
     - If live Supabase proof is unavailable, mark it as UNVERIFIED and provide
       local test evidence plus the exact remaining proof gap.
 
+11. **Device sessions are privacy-safe presence, not content.**
+    - `device_sessions` may store only coarse label, platform, app version,
+      current `device_id`, and timestamps.
+    - It must not store raw user-agent strings, IP addresses, journal text,
+      habit names, sync payloads, push tokens, or entity ids.
+    - UI must never render raw `device_id`; it may show "current device",
+      platform label, last seen, active count, and soft revoke status.
+
 ## Files To Inspect Before Sync Work
 
 - `src/storage/eventSync.ts`
 - `src/hooks/useTelegramGradeSyncRuntime.ts`
 - `src/hooks/useSyncHealthRuntime.ts`
+- `src/hooks/useDeviceSessionRuntime.ts`
 - `src/hooks/useDeltaSyncEffects.ts`
 - `src/hooks/useCloudSyncEffects.ts`
 - `src/lib/syncBroadcast.ts`
@@ -139,6 +154,7 @@ cache-busted GitHub Pages URL when validating a deployed artifact.
 - `src/lib/syncGapDetector.ts`
 - `src/lib/syncStateMachine.ts`
 - `src/lib/syncOrchestrator.ts`
+- `src/storage/deviceSessions.ts`
 - `src/storage/sync/*`
 - `src/storage/realtimeSync.ts`
 - `src/storage/cloudSync.ts`
@@ -164,7 +180,8 @@ cmd /c npm run smoke:sync-account
 `check:sync-contract` is the future-task hook for this contract. It verifies the
 repo still has ordered event-log wiring, the critical event-write outbox,
 snapshot-then-delta bootstrap, server-backed tombstones, anti-resurrection tests,
-privacy-safe `window.__zenflowSyncHealth` diagnostics, and CI/doc references.
+privacy-safe `window.__zenflowSyncHealth` diagnostics, privacy-safe
+`device_sessions` presence, and CI/doc references.
 
 Behavioral gates for user-visible sync work:
 
@@ -224,6 +241,9 @@ Stop and report before editing if:
   release claims. Local invariant coverage now includes the V1/V2 shared runtime,
   ordered deltas, server tombstones, and multi-tab delta ownership through
   `runWithSyncLeaderLock()`.
+- Device session soft revoke is product sync presence. It marks a device row
+  revoked for UX and audit continuity; it does not invalidate Supabase Auth
+  refresh/access tokens without trusted backend support.
 
 Do not describe the sync system as 100 percent complete unless every applicable
 row in `docs/ai/TELEGRAM_GRADE_SYNC_100_PERCENT_CLOSURE.md` has current evidence.

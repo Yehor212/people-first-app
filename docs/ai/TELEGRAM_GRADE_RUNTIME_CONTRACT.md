@@ -64,6 +64,9 @@ UI handoff.
    - V1 and V2 shells must both mount `useTelegramGradeSyncRuntime()` so direct
      `/orb`, `/habits`, `/diary`, and `/settings` entry points receive the same
      ordered-delta runtime as classic V1.
+   - `device_sessions` records coarse account-device sync presence from that
+     shared runtime. It is for UX, sync health, and support; it must not store
+     raw browser fingerprints, content, payloads, or IP addresses.
    - `docs/ai/SYNC_CONTRACT.md` is the sync source of truth.
 
 6. **Deletes are durable and anti-resurrection by default.**
@@ -173,7 +176,9 @@ Before sync edits, inspect:
 
 - `docs/ai/SYNC_CONTRACT.md`
 - `src/storage/eventSync.ts`
+- `src/storage/deviceSessions.ts`
 - `src/hooks/useTelegramGradeSyncRuntime.ts`
+- `src/hooks/useDeviceSessionRuntime.ts`
 - `src/hooks/useDeltaSyncEffects.ts`
 - `src/hooks/useCloudSyncEffects.ts`
 - `src/lib/syncBroadcast.ts`

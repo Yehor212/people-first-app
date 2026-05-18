@@ -15,6 +15,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { getRoleTone, type NonOrbVisualRole } from "@/lib/nonOrbVisualRoles";
 import { V2_NAV_ICONS } from "@/lib/v2IconSystem";
 import { ThemeToggleV2 } from "@/components/navigation-v2/ThemeToggleV2";
+import { DeviceSessionsCard } from "@/components/sync/DeviceSessionsCard";
 import { SyncHealthCard } from "@/components/sync/SyncHealthCard";
 import { useThemeStore } from "@/stores/themeStore";
 import { cn } from "@/lib/utils";
@@ -179,6 +180,11 @@ export const SettingsPage = memo(function SettingsPage() {
         <SyncHealthCard
           dense
           className="border-[hsl(var(--zf-role-space)/0.24)] bg-[hsl(var(--card)/0.76)] shadow-[var(--zen-shadow-card)]"
+        />
+
+        <DeviceSessionsCard
+          dense
+          className="border-[hsl(var(--zf-role-settings)/0.24)] bg-[hsl(var(--card)/0.76)] shadow-[var(--zen-shadow-card)]"
         />
 
         <section

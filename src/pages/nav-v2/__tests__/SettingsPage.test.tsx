@@ -47,6 +47,10 @@ vi.mock("@/components/sync/SyncHealthCard", () => ({
   SyncHealthCard: () => <section data-testid="sync-health-card">Sync health</section>,
 }));
 
+vi.mock("@/components/sync/DeviceSessionsCard", () => ({
+  DeviceSessionsCard: () => <section data-testid="device-sessions-card">Device sessions</section>,
+}));
+
 vi.mock("@/stores/themeStore", () => ({
   useThemeStore: (selector: (s: { appliedTheme: string }) => unknown) =>
     selector({ appliedTheme: "paper" }),
@@ -63,6 +67,7 @@ describe("SettingsPage", () => {
     expect(screen.getByTestId("settings-page-control-card")).toBeInTheDocument();
     expect(screen.getByTestId("settings-v2-theme-toggle")).toBeInTheDocument();
     expect(screen.getByTestId("sync-health-card")).toBeInTheDocument();
+    expect(screen.getByTestId("device-sessions-card")).toBeInTheDocument();
     expect(screen.getByText("Appearance").closest("[data-visual-role]")).toHaveAttribute(
       "data-visual-role",
       "mind",

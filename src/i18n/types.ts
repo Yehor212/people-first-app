@@ -674,6 +674,17 @@ export interface Translations {
   signOut: string;
   syncNow: string;
   cloudSyncDisabled: string;
+  syncDeviceSessionsTitle: string;
+  syncDeviceSessionsDescription: string;
+  syncDeviceSessionsActive: string;
+  syncDeviceSessionsError: string;
+  syncDeviceSessionsEmpty: string;
+  syncDeviceSessionsFootnote: string;
+  syncDeviceCurrent: string;
+  syncDeviceRevoked: string;
+  syncDeviceLastSeen: string;
+  syncRevokeDevice: string;
+  syncRevoking: string;
   sessionExpired: string;
   sessionExpiredMessage: string;
   sessionExpiredSettings: string;

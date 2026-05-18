@@ -155,6 +155,26 @@ Required:
 - local caches that contain user data are namespaced or cleared on account
   boundary changes.
 
+### 6a. Device Sessions Are Visible And Privacy-Safe
+
+Device Sessions are the user-facing account-device presence layer. They help
+users understand which web/PWA/native surfaces are participating in sync without
+turning support diagnostics into fingerprinting.
+
+Required:
+
+- `device_sessions` rows are protected by RLS and scoped to the authenticated
+  user;
+- the shared runtime updates current-device presence after first paint, online,
+  visibility, focus/resume, and auth wake-ups;
+- the Settings UI shows current device, active count, last seen, and soft revoke
+  status without rendering raw `device_id`;
+- raw user-agent strings, IP addresses, journal text, habit names, push tokens,
+  sync payloads, and entity ids are not stored in this table;
+- soft revoke is described honestly as sync presence. It must not be sold as
+  guaranteed Supabase Auth token invalidation unless a trusted backend path is
+  implemented and verified.
+
 ### 7. Media And Large Payloads Do Not Block Sync
 
 Journal media and future large payloads must not freeze the app or break
@@ -227,6 +247,7 @@ If a new synced entity is added, update this table, `src/storage/eventSync.ts`,
 | Android WebView | Build/sync proof or explicit `UNVERIFIED`, pause/resume sync, back behavior |
 | iOS/WKWebView | Simulator/device proof or explicit `UNVERIFIED`, foreground sync, no duplicate work |
 | Account switch/logout | Previous account data cannot leak or replay into the next account |
+| Device Sessions | Current device visible, old device soft revoke visible, no raw IDs/content exposed |
 
 ## Required PASS Evidence
 
@@ -337,6 +358,7 @@ Use this checklist before editing sync, storage, auth, queue, or shell code.
 - [ ] Affected entities listed.
 - [ ] V1/V2 surfaces listed.
 - [ ] Account boundary impact listed.
+- [ ] Device Sessions impact listed when auth, resume, settings, or account sync is touched.
 - [ ] Offline/resume/multi-tab impact listed.
 - [ ] Supabase migration/RLS impact listed.
 - [ ] Tests or browser smoke selected before implementation.
