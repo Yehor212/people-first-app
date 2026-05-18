@@ -312,6 +312,11 @@ cmd /c npm run smoke:sync-account
 `ZENFLOW_SYNC_TEST_PASSWORD`. Without credentials, account-level live sync is
 `UNVERIFIED`.
 
+`check:github-sync-secrets` verifies that GitHub has the secret names required
+for same-account release proof. It never prints secret values. A missing
+`ZENFLOW_SYNC_TEST_EMAIL` or `ZENFLOW_SYNC_TEST_PASSWORD` keeps account-level
+sync at `UNVERIFIED` until a dedicated test account is configured.
+
 `smoke:telegram-sync-drill` is the consolidated closure drill. It must report
 `PASS` only when local sync invariants, targeted ordered-sync tests, canonical
 orb protection, Supabase migration-prefix protection, privacy-safe browser

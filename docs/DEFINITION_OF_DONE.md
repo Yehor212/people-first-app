@@ -33,7 +33,7 @@ cross-platform user-flow changes.
 | 4 | V1/V2 sync round trip | Perform source shell -> adjacent shell -> source shell check for changed data | Yes for shared data changes |
 | 5 | Sync contract invariant | `npm run check:sync-contract`, including `runWithSyncLeaderLock()` for multi-tab delta ownership, `WRITE_SYNC_EVENT` outbox protection, and no fire-and-forget core event writes | Yes for sync, storage, Supabase, backup, offline queue, or hydration work |
 | 6 | Delete anti-resurrection | Prove stale local state, backup, or delayed pull cannot restore deleted data | Yes for delete changes |
-| 7 | Live account sync proof | `npm run smoke:sync-account` with a dedicated test account; missing credentials means UNVERIFIED, not PASS | Yes for account-level sync claims |
+| 7 | Live account sync proof | `npm run check:github-sync-secrets` and `npm run smoke:sync-account` with a dedicated test account; missing credentials means UNVERIFIED, not PASS | Yes for account-level sync claims |
 | 8 | Public deploy proof | `npm run ci:remote:wait` plus cache-busted public URL when the issue is public | Yes for public-user claims |
 | 9 | Sync 100 percent closure matrix | `docs/ai/TELEGRAM_GRADE_SYNC_100_PERCENT_CLOSURE.md` rows for the touched entity/platform are proved or marked `UNVERIFIED` | Yes for sync/account/cross-shell claims |
 | 10 | Privacy-safe sync diagnostics | `npm run smoke:sync-health` or `window.__zenflowSyncHealth.snapshot()` with `?syncHealth=1` when diagnosing deployed sync; no payloads, entity ids, journal text, or habit names | Yes for public sync debugging claims |

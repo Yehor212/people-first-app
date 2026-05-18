@@ -409,7 +409,19 @@ function main() {
     '"smoke:sync-health": "node scripts/smoke-sync-health.cjs"',
     '"smoke:sync-account": "node scripts/smoke-sync-account.cjs"',
     '"smoke:telegram-sync-drill": "node scripts/smoke-telegram-sync-drill.cjs"',
+    '"check:github-sync-secrets": "node scripts/check-github-sync-secrets.cjs"',
     "npm run check:sync-contract",
+  ]);
+
+  requireIncludes("scripts/check-github-sync-secrets.cjs", [
+    "ZENFLOW_GITHUB_SYNC_SECRETS_REQUIRED",
+    "VITE_SUPABASE_URL",
+    "VITE_SUPABASE_ANON_KEY",
+    "ZENFLOW_SYNC_TEST_EMAIL",
+    "ZENFLOW_SYNC_TEST_PASSWORD",
+    "gh",
+    "secret",
+    "never prints secret values",
   ]);
 
   requireIncludes("scripts/smoke-sync-account.cjs", [
