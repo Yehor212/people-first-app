@@ -45,6 +45,18 @@ vi.mock("@/contexts/LanguageContext", () => ({
       syncOffline: "Offline",
       syncError: "Sync failed.",
       sessionExpired: "Cloud sync paused",
+      syncInboxTitle: "Sync inbox",
+      syncOutboxEmpty: "No local actions are waiting.",
+      syncOutboxWaiting: "Waiting for sync",
+      syncOutboxMore: "{count} more waiting",
+      syncRecentActivity: "Recent sync activity",
+      syncRetryCount: "{count} retry",
+      syncActionSavedLocal: "{domain} saved locally",
+      syncActionSynced: "{domain} synced",
+      syncActionNeedsRetry: "{domain} needs retry",
+      syncDomainDefault: "Sync",
+      syncDomainHabits: "Habits",
+      syncDomainJournal: "Journal",
     },
   }),
 }));
@@ -113,6 +125,8 @@ describe("SyncHealthCard", () => {
     const cardText = screen.getByTestId("sync-health-card").textContent || "";
     expect(cardText).toContain("Cloud sync");
     expect(cardText).toContain("1");
+    expect(cardText).toContain("Habits saved locally");
+    expect(cardText).toContain("Important");
     expect(cardText).not.toContain("habit-private-id");
     expect(cardText).not.toContain("private habit name");
   });
@@ -153,5 +167,61 @@ describe("SyncHealthCard", () => {
     );
 
     expect(screen.getByTestId("sync-health-receipt")).toHaveTextContent("Journal synced");
+    expect(screen.getByTestId("sync-recent-activity")).toHaveTextContent("Journal synced");
+  });
+
+  it("shows a bounded sync inbox and never renders private queued payloads", () => {
+    mocks.offline.actions = [
+      {
+        id: "local-1",
+        type: "SYNC_JOURNAL_ENTRY",
+        entityId: "journal-secret-1",
+        payload: { text: "private journal body" },
+        timestamp: 1000,
+        retries: 0,
+        maxRetries: 5,
+      },
+      {
+        id: "local-2",
+        type: "SYNC_JOURNAL_ENTRY",
+        entityId: "journal-secret-2",
+        payload: { text: "another private body" },
+        timestamp: 1001,
+        retries: 1,
+        maxRetries: 5,
+        lastError: "network contains no content",
+      },
+      {
+        id: "local-3",
+        type: "DELETE_HABIT",
+        entityId: "habit-secret",
+        payload: { name: "private habit" },
+        timestamp: 1002,
+        retries: 0,
+        maxRetries: 5,
+      },
+      {
+        id: "local-4",
+        type: "DELETE_HABIT",
+        entityId: "habit-secret-2",
+        payload: { name: "private habit two" },
+        timestamp: 1003,
+        retries: 0,
+        maxRetries: 5,
+      },
+    ];
+    mocks.offline.pendingCount = 4;
+    mocks.offline.hasPendingActions = true;
+
+    render(<SyncHealthCard />);
+
+    const inboxText = screen.getByTestId("sync-inbox").textContent || "";
+    expect(inboxText).toContain("Sync inbox");
+    expect(inboxText).toContain("1 more waiting");
+    expect(inboxText).toContain("Journal saved locally");
+    expect(inboxText).toContain("Journal needs retry");
+    expect(inboxText).not.toContain("journal-secret");
+    expect(inboxText).not.toContain("private journal body");
+    expect(inboxText).not.toContain("private habit");
   });
 });

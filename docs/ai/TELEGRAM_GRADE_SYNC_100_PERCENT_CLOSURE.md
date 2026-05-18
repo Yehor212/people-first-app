@@ -175,6 +175,25 @@ Required:
   guaranteed Supabase Auth token invalidation unless a trusted backend path is
   implemented and verified.
 
+### 6b. Sync Inbox And Action Receipts Are Privacy-Safe
+
+Sync status must be visible enough that users can understand whether their last
+action is local, queued, synced, retrying, or blocked without exposing private
+content.
+
+Required:
+
+- V1 and V2 settings expose `SyncHealthCard` as the shared Sync Inbox surface;
+- pending outbox rows show only domain, priority, retry count, and status;
+- recent receipts show coarse states such as queued, processed, failed,
+  delta-applied, gap-recovered, or leader-skipped;
+- entity ids, habit names, journal text, payload bodies, raw device ids, and
+  browser fingerprints are not rendered in the Sync Inbox;
+- retry actions call the existing offline queue and do not become a second sync
+  owner or cursor writer;
+- receipt UX remains evidence, not authority. Durable order still belongs to
+  `sync_events.seq`.
+
 ### 7. Media And Large Payloads Do Not Block Sync
 
 Journal media and future large payloads must not freeze the app or break

@@ -183,6 +183,24 @@ function main() {
     "entity ids",
   ]);
 
+  requireIncludes("src/components/sync/SyncHealthCard.tsx", [
+    "data-testid=\"sync-inbox\"",
+    "recentReceipts",
+    "pendingActionText",
+    "SYNC_HEALTH_RECEIPT_EVENT",
+    "processQueue",
+  ]);
+  requireNotIncludes("src/components/sync/SyncHealthCard.tsx", [
+    "action.entityId",
+    "action.payload",
+  ]);
+  requireIncludes("src/components/sync/__tests__/SyncHealthCard.test.tsx", [
+    "shows a bounded sync inbox",
+    "not.toContain(\"journal-secret\")",
+    "not.toContain(\"private journal body\")",
+    "not.toContain(\"private habit\")",
+  ]);
+
   requireIncludes("src/pages/Index.tsx", [
     "useTelegramGradeSyncRuntime",
     "useTelegramGradeSyncRuntime();",
@@ -352,6 +370,7 @@ function main() {
     "sync_events.seq",
     "__zenflowSyncHealth",
     "Device Sessions",
+    "Sync Inbox And Action Receipts Are Privacy-Safe",
     "Supabase Broadcast wake clients only",
     "Deletes Cannot Resurrect",
     "One Sync Owner Applies Deltas",

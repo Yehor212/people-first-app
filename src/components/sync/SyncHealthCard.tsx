@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useOfflineQueue } from "@/hooks/useOfflineQueue";
+import type { OfflineAction } from "@/lib/offlineQueue";
 import { isCloudSyncEnabled } from "@/lib/cloudSyncSettings";
 import { useSyncOrchestrator } from "@/lib/syncOrchestrator";
 import { supabase } from "@/lib/supabaseClient";
@@ -22,6 +23,9 @@ import {
 } from "@/observability/syncHealthRecorder";
 
 type SyncHealthState = "synced" | "syncing" | "pending" | "offline" | "paused" | "error";
+
+const MAX_RECENT_RECEIPTS = 4;
+const MAX_PENDING_ROWS = 3;
 
 interface SyncHealthCardProps {
   className?: string;
@@ -80,43 +84,60 @@ function formatTime(value: number | null, locale: string): string {
   }
 }
 
-function actionDomainLabel(actionType: string | undefined): string {
-  if (!actionType) return "Sync";
-  if (actionType.includes("MOOD")) return "Mood";
-  if (actionType.includes("HABIT")) return "Habits";
-  if (actionType.includes("JOURNAL")) return "Journal";
-  if (actionType.includes("FOCUS")) return "Focus";
-  if (actionType.includes("GRATITUDE")) return "Gratitude";
-  if (actionType.includes("SETTINGS")) return "Settings";
-  if (actionType.includes("SYNC_EVENT")) return "Sync event";
-  return "Sync";
+function actionDomainLabel(actionType: string | undefined, tx: Record<string, string>): string {
+  if (!actionType) return tx.syncDomainDefault || "Sync";
+  if (actionType.includes("MOOD")) return tx.syncDomainMood || "Mood";
+  if (actionType.includes("HABIT")) return tx.syncDomainHabits || "Habits";
+  if (actionType.includes("JOURNAL")) return tx.syncDomainJournal || "Journal";
+  if (actionType.includes("FOCUS")) return tx.syncDomainFocus || "Focus";
+  if (actionType.includes("GRATITUDE")) return tx.syncDomainGratitude || "Gratitude";
+  if (actionType.includes("SETTINGS")) return tx.syncDomainSettings || "Settings";
+  if (actionType.includes("SYNC_EVENT")) return tx.syncDomainEvent || "Sync event";
+  return tx.syncDomainDefault || "Sync";
 }
 
-function receiptText(receipt: SyncHealthReceipt | null): string {
-  if (!receipt) return "Ready";
-  const domain = actionDomainLabel(receipt.actionType);
+function renderTemplate(template: string, values: Record<string, string | number>): string {
+  return Object.entries(values).reduce(
+    (next, [key, value]) => next.split(`{${key}}`).join(String(value)),
+    template,
+  );
+}
+
+function receiptText(receipt: SyncHealthReceipt | null, tx: Record<string, string>): string {
+  if (!receipt) return tx.syncReady || "Ready";
+  const domain = actionDomainLabel(receipt.actionType, tx);
   switch (receipt.kind) {
     case "queued":
-      return `${domain} saved locally`;
+      return renderTemplate(tx.syncActionSavedLocal || "{domain} saved locally", { domain });
     case "processed":
-      return `${domain} synced`;
+      return renderTemplate(tx.syncActionSynced || "{domain} synced", { domain });
     case "failed":
-      return `${domain} needs retry`;
+      return renderTemplate(tx.syncActionNeedsRetry || "{domain} needs retry", { domain });
     case "delta-applied":
-      return receipt.applied ? "Cloud changes applied" : "Already up to date";
+      return receipt.applied
+        ? tx.syncActionCloudApplied || "Cloud changes applied"
+        : tx.syncActionUpToDate || "Already up to date";
     case "gap-recovered":
-      return "Sync gap recovered";
+      return tx.syncActionGapRecovered || "Sync gap recovered";
     case "leader-skipped":
-      return "Another tab is syncing";
+      return tx.syncActionAnotherTab || "Another tab is syncing";
     case "session-missing":
-      return "Sign in to sync";
+      return tx.syncActionSignIn || "Sign in to sync";
     case "offline":
-      return "Waiting for connection";
+      return tx.syncActionWaitingConnection || "Waiting for connection";
     case "error":
-      return "Sync needs attention";
+      return tx.syncActionNeedsAttention || "Sync needs attention";
     default:
-      return "Sync updated";
+      return tx.syncActionUpdated || "Sync updated";
   }
+}
+
+function pendingActionText(action: OfflineAction, tx: Record<string, string>): string {
+  const domain = actionDomainLabel(action.type, tx);
+  if (action.lastError) {
+    return renderTemplate(tx.syncActionNeedsRetry || "{domain} needs retry", { domain });
+  }
+  return renderTemplate(tx.syncActionSavedLocal || "{domain} saved locally", { domain });
 }
 
 export function SyncHealthCard({ className, dense = false }: SyncHealthCardProps) {
@@ -136,18 +157,24 @@ export function SyncHealthCard({ className, dense = false }: SyncHealthCardProps
     if (typeof window === "undefined") return null;
     return window.__zenflowSyncHealth?.snapshot().lastReceipt ?? null;
   });
+  const [recentReceipts, setRecentReceipts] = useState<SyncHealthReceipt[]>(() => {
+    if (typeof window === "undefined") return [];
+    return window.__zenflowSyncHealth?.snapshot().receipts.slice(-MAX_RECENT_RECEIPTS) ?? [];
+  });
 
   useEffect(() => {
     const handleReceipt = (event: Event) => {
       const detail = (event as CustomEvent<Partial<SyncHealthReceipt>>).detail;
       if (!detail?.kind || !detail.source) return;
-      setLastReceipt({
+      const receipt = {
         ...detail,
         at: detail.at ?? Date.now(),
         route:
           detail.route ??
           `${window.location.pathname}${window.location.search}`,
-      } as SyncHealthReceipt);
+      } as SyncHealthReceipt;
+      setLastReceipt(receipt);
+      setRecentReceipts((prev) => [...prev, receipt].slice(-MAX_RECENT_RECEIPTS));
     };
 
     window.addEventListener(SYNC_HEALTH_RECEIPT_EVENT, handleReceipt);
@@ -204,6 +231,8 @@ export function SyncHealthCard({ className, dense = false }: SyncHealthCardProps
               : tx.sessionExpired || tx.cloudSyncDisabled || meta.fallback;
 
   const canRetry = cloudEnabled && isOnline && pendingCount > 0 && !isProcessing;
+  const pendingRows = actions.slice(0, MAX_PENDING_ROWS);
+  const pendingRemainder = Math.max(0, actions.length - pendingRows.length);
 
   return (
     <section
@@ -257,7 +286,7 @@ export function SyncHealthCard({ className, dense = false }: SyncHealthCardProps
           {tx.syncLatestAction || "Latest action"}
         </p>
         <p className="mt-1 text-sm font-medium text-foreground" data-testid="sync-health-receipt">
-          {receiptText(lastReceipt)}
+          {receiptText(lastReceipt, tx)}
         </p>
         {failedPending > 0 && (
           <p className="mt-1 text-xs text-destructive">
@@ -265,6 +294,82 @@ export function SyncHealthCard({ className, dense = false }: SyncHealthCardProps
           </p>
         )}
       </div>
+
+      <div
+        className="mt-4 rounded-xl border border-border bg-background/35 p-3"
+        data-testid="sync-inbox"
+      >
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
+            {tx.syncInboxTitle || "Sync inbox"}
+          </p>
+          <span className="rounded-full bg-muted px-2 py-1 text-[11px] font-semibold text-muted-foreground">
+            {pendingCount}
+          </span>
+        </div>
+
+        {pendingRows.length === 0 ? (
+          <p className="mt-2 text-sm text-muted-foreground">
+            {tx.syncOutboxEmpty || "No local actions are waiting."}
+          </p>
+        ) : (
+          <ul className="mt-3 space-y-2" aria-label={tx.syncInboxTitle || "Sync inbox"}>
+            {pendingRows.map((action) => (
+              <li
+                key={action.id}
+                className="flex items-center justify-between gap-3 rounded-lg border border-border bg-muted/20 px-3 py-2"
+              >
+                <span className="min-w-0">
+                  <span className="block truncate text-sm font-medium text-foreground">
+                    {pendingActionText(action, tx)}
+                  </span>
+                  <span className="block text-xs text-muted-foreground">
+                    {action.priority === "critical"
+                      ? tx.syncPriorityCritical || "Important"
+                      : tx.syncOutboxWaiting || "Waiting for sync"}
+                  </span>
+                </span>
+                {action.retries > 0 && (
+                  <span className="shrink-0 rounded-full bg-muted px-2 py-1 text-[11px] text-muted-foreground">
+                    {renderTemplate(tx.syncRetryCount || "{count} retry", {
+                      count: action.retries,
+                    })}
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {pendingRemainder > 0 && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            {renderTemplate(tx.syncOutboxMore || "{count} more waiting", {
+              count: pendingRemainder,
+            })}
+          </p>
+        )}
+      </div>
+
+      {recentReceipts.length > 0 && (
+        <div
+          className="mt-4 rounded-xl border border-border bg-background/35 p-3"
+          data-testid="sync-recent-activity"
+        >
+          <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
+            {tx.syncRecentActivity || "Recent sync activity"}
+          </p>
+          <ul className="mt-3 space-y-2" aria-label={tx.syncRecentActivity || "Recent sync activity"}>
+            {recentReceipts.map((receipt, index) => (
+              <li
+                key={`${receipt.kind}-${receipt.at}-${index}`}
+                className="rounded-lg border border-border bg-muted/20 px-3 py-2 text-sm text-foreground"
+              >
+                {receiptText(receipt, tx)}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <button
         type="button"
