@@ -113,5 +113,13 @@ describe("V2 diary loading surface", () => {
     expect(journalModuleSource).toContain("lazyDeferredJournalComponent");
     expect(journalModuleSource).toContain("./JournalCalendarFull.tsx");
     expect(journalModuleSource).toContain("./RemovePasswordConfirmDialog.tsx");
+    expect(journalModuleSource).toContain('import { scheduleIdle } from "@/lib/scheduleIdle"');
+    expect(journalModuleSource).toContain("scheduleIdle(");
+    expect(journalModuleSource).toContain("showSpaces={false}");
+    expect(journalModuleSource).toContain("showFab={false}");
+
+    expect(journalEntryListSource).toContain("showSpaces?: boolean");
+    expect(journalEntryListSource).toContain("if (!showSpaces) return");
+    expect(journalEntryListSource).toContain('data-testid="journal-compact-empty-list"');
   });
 });

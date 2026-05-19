@@ -232,4 +232,29 @@ describe("JournalEntryList spaces", () => {
     expect(screen.getByTestId("journal-entry-card-entry-older")).toHaveTextContent("Older gratitude note");
     expect(screen.queryByText("Цей простір порожній")).not.toBeInTheDocument();
   });
+
+  it("keeps compact chrome empty state off the spaces startup path", async () => {
+    render(
+      <JournalEntryList
+        groupedEntries={[]}
+        allEntries={[]}
+        onOpenEntry={vi.fn()}
+        onDeleteEntry={vi.fn()}
+        onNewEntry={vi.fn()}
+        totalCount={0}
+        compact
+        showFab={false}
+        showSpaces={false}
+      />,
+    );
+
+    expect(screen.getByTestId("journal-compact-empty-list")).toBeInTheDocument();
+    expect(screen.queryByTestId("journal-capture-launcher")).not.toBeInTheDocument();
+
+    await Promise.resolve();
+
+    expect(storageMocks.getJournalSpaces).not.toHaveBeenCalled();
+    expect(storageMocks.getJournalSpaceCaptures).not.toHaveBeenCalled();
+    expect(storageMocks.getSpaceEntryLinks).not.toHaveBeenCalled();
+  });
 });

@@ -59,6 +59,7 @@ import {
 import { logger } from "@/lib/logger";
 import { SK } from "@/lib/storageKeys";
 import { storageGetRaw, storageSetRaw, storageRemove } from "@/lib/safeJson";
+import { scheduleIdle } from "@/lib/scheduleIdle";
 import { useJournalReminder, getDaysSinceLastEntry } from "./useJournalReminder";
 import { useScreenSecurity } from "./useScreenSecurity";
 import { useGamificationStore, useUserDataStore } from "@/stores";
@@ -383,15 +384,22 @@ export const JournalModule = memo(function JournalModule({
 
   useEffect(() => {
     let cancelled = false;
-    void getQuietReleaseTraceSummaries()
-      .then((summaries) => {
-        if (!cancelled) setReleaseTraceSummaries(summaries);
-      })
-      .catch((error) => {
-        logger.warn("[Journal] Failed to load quiet release traces", error);
-      });
+    const handle = scheduleIdle(
+      () => {
+        void getQuietReleaseTraceSummaries()
+          .then((summaries) => {
+            if (!cancelled) setReleaseTraceSummaries(summaries);
+          })
+          .catch((error) => {
+            logger.warn("[Journal] Failed to load quiet release traces", error);
+          });
+      },
+      9000,
+      5200,
+    );
     return () => {
       cancelled = true;
+      handle.cancel();
     };
   }, []);
 
@@ -906,10 +914,11 @@ export const JournalModule = memo(function JournalModule({
 
   // Load entry count for card preview
   useEffect(() => {
+    if (isPagePresentation) return;
     getEntryCount()
       .then(setEntryCount)
       .catch((err) => logger.warn("[Journal]", "Entry count failed:", err));
-  }, [journal.totalCount]);
+  }, [isPagePresentation, journal.totalCount]);
 
   // Check for unsaved draft (for card badge)
   useEffect(() => {
@@ -1484,6 +1493,8 @@ export const JournalModule = memo(function JournalModule({
                             releaseTraceSummaries={releaseTraceSummaries}
                             onReleaseThought={handleReleaseThought}
                             compact
+                            showFab={false}
+                            showSpaces={false}
                             activeEntryId={journal.activeEntryId}
                           />
                         </Suspense>

@@ -432,6 +432,8 @@ interface JournalEntryListProps {
   activeEntryId?: string | null;
   /** Hide legacy speed dial when another mobile command surface owns capture actions. */
   showFab?: boolean;
+  /** Hide folder/space workspace on compact chrome where the route shell owns secondary actions. */
+  showSpaces?: boolean;
   /** Open a new entry with contextual defaults, for example a selected folder tag. */
   onNewEntryWithPrefill?: (prefill: JournalEntryPrefill) => void;
   /** Mobile V2 can focus the selected day instead of showing older groups below it. */
@@ -456,6 +458,7 @@ export const JournalEntryList = memo(function JournalEntryList({
   compact = false,
   activeEntryId = null,
   showFab = true,
+  showSpaces = true,
   onNewEntryWithPrefill,
   selectedDateOnly = false,
   releaseTraceSummaries,
@@ -516,6 +519,7 @@ export const JournalEntryList = memo(function JournalEntryList({
   }, [searchInput, aiMode]);
 
   useEffect(() => {
+    if (!showSpaces) return;
     let mounted = true;
     const spacesHandle = scheduleIdle(
       () => {
@@ -565,7 +569,7 @@ export const JournalEntryList = memo(function JournalEntryList({
       spacesHandle.cancel();
       memoryHandle.cancel();
     };
-  }, [journalSpaces, spaceCaptures, spaceEntryLinks]);
+  }, [journalSpaces, showSpaces, spaceCaptures, spaceEntryLinks]);
 
   const refreshSpaceMemory = useCallback(async () => {
     try {
@@ -729,6 +733,7 @@ export const JournalEntryList = memo(function JournalEntryList({
   }, [spaceCaptures]);
 
   const folderItems = useMemo<JournalSpaceOption[]>(() => {
+    if (!showSpaces) return [];
     return journalSpaces
       .filter((space) => space.id === GRATITUDE_SPACE_ID || space.autoSource === "gratitude" || space.kind !== "system")
       .map((space) => {
@@ -758,7 +763,7 @@ export const JournalEntryList = memo(function JournalEntryList({
         };
       })
       .filter((space) => space.name.trim().length > 0);
-  }, [journalSpaces, spaceCaptureCountBySpaceId, spaceLinkCountBySpaceId, ts]);
+  }, [journalSpaces, showSpaces, spaceCaptureCountBySpaceId, spaceLinkCountBySpaceId, ts]);
 
   const spaceOptions = useMemo(
     () => folderItems,
@@ -1186,7 +1191,7 @@ export const JournalEntryList = memo(function JournalEntryList({
 
   const hasActiveFilters = deferredSearch || selectedTag || selectedSpaceId;
   const activeFilterSpaceName = selectedSpace?.name ?? selectedTag;
-  const showSpaceSwitcher = true;
+  const showSpaceSwitcher = showSpaces;
   const showAiToggle = JOURNAL_AI_AVAILABLE; // Only show AI toggle when cloud is configured
 
   const renderQuietReleaseTrace = () => {
@@ -1901,6 +1906,33 @@ export const JournalEntryList = memo(function JournalEntryList({
   }
 
   // Empty state
+  if (compact && totalCount === 0 && !showSpaces && !spacesSheetOpen && !activeSpaceMode) {
+    return (
+      <div className="space-y-3 pb-4" data-testid="journal-compact-empty-list">
+        {renderQuietReleaseTrace()}
+        <div className="rounded-2xl border border-border/25 bg-card/45 p-4 text-center backdrop-blur-xl">
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border border-primary/20 bg-primary/[0.10] text-primary">
+            <PenLine className="h-5 w-5" aria-hidden="true" />
+          </div>
+          <h3 className="text-sm font-semibold text-foreground">
+            {ts.journalEmpty || "Your diary is empty"}
+          </h3>
+          <p className="mx-auto mt-1 max-w-[240px] text-xs leading-relaxed text-muted-foreground">
+            {ts.journalEmptyHint || "Start writing to capture your thoughts, feelings, and memories."}
+          </p>
+          <button
+            type="button"
+            onClick={onNewEntry}
+            className="mt-4 inline-flex min-h-[44px] items-center justify-center gap-2 rounded-2xl bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-[0_14px_34px_hsl(var(--primary)/0.20)] motion-safe:transition-transform active:scale-[0.98]"
+          >
+            <Plus className="h-4 w-4" aria-hidden="true" />
+            {ts.journalNewEntry || "New entry"}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (totalCount === 0 && !spacesSheetOpen && !activeSpaceMode) {
     return (
       <div className="relative isolate space-y-3 pb-24">
