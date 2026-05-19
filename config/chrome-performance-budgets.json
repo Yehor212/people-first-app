@@ -16,11 +16,15 @@
         "hasTouch": true
       },
       "routes": [
-        { "name": "home-v1-phone", "path": "?navLayout=phone&dev=true" },
-        { "name": "orb-v2-phone", "path": "orb/?nav=v2&navLayout=phone&dev=true" },
-        { "name": "habits-v2-phone", "path": "habits/?nav=v2&navLayout=phone&dev=true" },
-        { "name": "diary-v2-phone", "path": "diary/?nav=v2&navLayout=phone&dev=true" },
-        { "name": "settings-v2-phone", "path": "settings/?nav=v2&navLayout=phone&dev=true" }
+        { "name": "home-v1-phone", "path": "?navLayout=phone" },
+        { "name": "orb-v2-phone", "path": "orb/?nav=v2&navLayout=phone" },
+        { "name": "habits-v2-phone", "path": "habits/?nav=v2&navLayout=phone" },
+        {
+          "name": "diary-v2-phone",
+          "path": "diary/?nav=v2&navLayout=phone",
+          "readySelector": "[data-testid=\"journal-compact-empty-list\"], [data-testid=\"journal-empty-list\"]"
+        },
+        { "name": "settings-v2-phone", "path": "settings/?nav=v2&navLayout=phone" }
       ]
     },
     {
@@ -33,11 +37,15 @@
         "hasTouch": false
       },
       "routes": [
-        { "name": "home-v1-desktop", "path": "?dev=true" },
-        { "name": "orb-v2-desktop", "path": "orb/?nav=v2&dev=true" },
-        { "name": "habits-v2-desktop", "path": "habits/?nav=v2&dev=true" },
-        { "name": "diary-v2-desktop", "path": "diary/?nav=v2&dev=true" },
-        { "name": "settings-v2-desktop", "path": "settings/?nav=v2&dev=true" }
+        { "name": "home-v1-desktop", "path": "" },
+        { "name": "orb-v2-desktop", "path": "orb/?nav=v2" },
+        { "name": "habits-v2-desktop", "path": "habits/?nav=v2" },
+        {
+          "name": "diary-v2-desktop",
+          "path": "diary/?nav=v2",
+          "readySelector": "[data-testid=\"journal-compact-empty-list\"], [data-testid=\"journal-empty-list\"]"
+        },
+        { "name": "settings-v2-desktop", "path": "settings/?nav=v2" }
       ]
     }
   ]

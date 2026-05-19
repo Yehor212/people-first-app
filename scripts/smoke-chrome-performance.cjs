@@ -264,6 +264,23 @@ async function waitForAppReady(page, routeName) {
   }
 }
 
+async function waitForRouteReady(page, route) {
+  if (!route.readySelector) {
+    return false;
+  }
+
+  await page.waitForSelector(route.readySelector, { timeout: route.readyTimeoutMs || 8000 });
+  await page
+    .evaluate(
+      () =>
+        new Promise((resolve) => {
+          requestAnimationFrame(() => requestAnimationFrame(resolve));
+        }),
+    )
+    .catch(() => undefined);
+  return true;
+}
+
 function isReportableResponse(response) {
   const request = response.request();
   if (request.resourceType() === "xhr" || request.resourceType() === "fetch") {
@@ -334,6 +351,11 @@ async function measure(context, routeGroup, route) {
   });
   await waitForRouteNetworkIdle(page);
   const appReadyBeforeSteady = await waitForAppReady(page, route.name);
+  const routeReadyBeforeSteady = await waitForRouteReady(page, route).catch((error) => {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn(`[chrome-performance] ${route.name} route ready selector timed out: ${message}`);
+    return false;
+  });
 
   const bootMetrics = await evaluateAfterStableContext(
     page,
@@ -371,6 +393,7 @@ async function measure(context, routeGroup, route) {
     profile: routeGroup.profile,
     viewport: routeGroup.viewport,
     route: route.name,
+    routeReadyBeforeSteady,
     appReadyBeforeSteady,
     budgets,
     path: route.path || "/",
@@ -519,14 +542,17 @@ function collectFailures(results) {
 
   try {
     for (const routeGroup of routeGroups) {
-      const context = await browser.newContext({
-        serviceWorkers: "block",
-        ...routeGroup.contextOptions,
-      });
       for (const route of routeGroup.routes) {
-        results.push(await measure(context, routeGroup, route));
+        const context = await browser.newContext({
+          serviceWorkers: "block",
+          ...routeGroup.contextOptions,
+        });
+        try {
+          results.push(await measure(context, routeGroup, route));
+        } finally {
+          await context.close();
+        }
       }
-      await context.close();
     }
   } finally {
     await browser.close();

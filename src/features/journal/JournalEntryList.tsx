@@ -1935,7 +1935,7 @@ export const JournalEntryList = memo(function JournalEntryList({
 
   if (totalCount === 0 && !spacesSheetOpen && !activeSpaceMode) {
     return (
-      <div className="relative isolate space-y-3 pb-24">
+      <div className="relative isolate space-y-3 pb-24" data-testid="journal-empty-list">
         <JournalMemoryBackdrop />
         {renderDailyQuote()}
         {renderQuietReleaseTrace()}

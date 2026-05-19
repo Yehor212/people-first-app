@@ -42,10 +42,9 @@ const REQUIRED_SURFACES = [
       "<ValenceOrb",
       'transitionProfile = "v1-soft"',
       'renderer = "webgl"',
-      "ambientValence",
-      "setInterval",
+      "const displayValence = hasEntry ? valence : 0",
     ],
-    forbidden: ["<svg", "Sparkles", "OrbLottie"],
+    forbidden: ["<svg", "Sparkles", "OrbLottie", "setInterval", "setAmbientValence"],
   },
   {
     file: "src/components/state-of-mind/CompactValenceOrb.tsx",

@@ -10,6 +10,8 @@ const indexSource = readFileSync("src/pages/Index.tsx", "utf8");
 const authGateSource = readFileSync("src/components/AuthGate.tsx", "utf8");
 const packageSource = readFileSync("package.json", "utf8");
 const viteConfigSource = readFileSync("vite.config.ts", "utf8");
+const chromePerformanceBudgetSource = readFileSync("config/chrome-performance-budgets.json", "utf8");
+const chromePerformanceSmokeSource = readFileSync("scripts/smoke-chrome-performance.cjs", "utf8");
 const v2SplashSmokeSource = readFileSync("scripts/smoke-v2-splash.cjs", "utf8");
 const devPerformanceSource = readFileSync("scripts/diagnose-dev-performance.cjs", "utf8");
 
@@ -113,13 +115,31 @@ describe("V2 diary loading surface", () => {
     expect(journalModuleSource).toContain("lazyDeferredJournalComponent");
     expect(journalModuleSource).toContain("./JournalCalendarFull.tsx");
     expect(journalModuleSource).toContain("./RemovePasswordConfirmDialog.tsx");
+    expect(journalModuleSource).toContain('lazyWithRetry(\n  () => import("./DiaryEmptyCanvas")');
+    expect(journalModuleSource).not.toContain('import { DiaryEmptyCanvas } from "./DiaryEmptyCanvas"');
     expect(journalModuleSource).toContain('import { scheduleIdle } from "@/lib/scheduleIdle"');
     expect(journalModuleSource).toContain("scheduleIdle(");
     expect(journalModuleSource).toContain("showSpaces={false}");
     expect(journalModuleSource).toContain("showFab={false}");
+    expect(journalModuleSource).toContain("JournalCompactEmptyListShell");
+    expect(journalModuleSource).toContain("journal.totalCount === 0 && !journal.loading");
 
     expect(journalEntryListSource).toContain("showSpaces?: boolean");
     expect(journalEntryListSource).toContain("if (!showSpaces) return");
     expect(journalEntryListSource).toContain('data-testid="journal-compact-empty-list"');
+    expect(journalEntryListSource).toContain('data-testid="journal-empty-list"');
+  });
+
+  it("measures public-user routes instead of diagnostics-only dev routes", () => {
+    expect(chromePerformanceBudgetSource).toContain('"path": "orb/?nav=v2&navLayout=phone"');
+    expect(chromePerformanceBudgetSource).toContain('"path": "diary/?nav=v2"');
+    expect(chromePerformanceBudgetSource).toContain(
+      '"readySelector": "[data-testid=\\"journal-compact-empty-list\\"], [data-testid=\\"journal-empty-list\\"]"',
+    );
+    expect(chromePerformanceBudgetSource).not.toContain("dev=true");
+    expect(chromePerformanceSmokeSource).toContain("for (const route of routeGroup.routes)");
+    expect(chromePerformanceSmokeSource).toContain("results.push(await measure(context, routeGroup, route))");
+    expect(chromePerformanceSmokeSource).toContain("async function waitForRouteReady(page, route)");
+    expect(chromePerformanceSmokeSource).toContain("routeReadyBeforeSteady");
   });
 });

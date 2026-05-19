@@ -1,4 +1,4 @@
-import { memo, useEffect, useState } from "react";
+import { memo } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -132,24 +132,7 @@ function OrbCore({
   transitionProfile: OrbTransitionProfile;
   renderer: OrbRendererMode;
 }) {
-  const [ambientValence, setAmbientValence] = useState(0);
-
-  useEffect(() => {
-    if (hasEntry) {
-      setAmbientValence(0);
-      return;
-    }
-
-    let frame = 0;
-    const id = window.setInterval(() => {
-      frame += 1;
-      setAmbientValence(Math.sin(frame * 0.07) * 0.34);
-    }, 320);
-
-    return () => window.clearInterval(id);
-  }, [hasEntry]);
-
-  const displayValence = hasEntry ? valence : ambientValence;
+  const displayValence = hasEntry ? valence : 0;
 
   return (
     <div

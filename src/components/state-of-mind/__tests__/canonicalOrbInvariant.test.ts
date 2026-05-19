@@ -93,12 +93,13 @@ describe("canonical orb invariant", () => {
     expect(sliderCss).not.toContain("som-valence-chip-orb-drift");
   });
 
-  it("keeps MiniValenceOrb as the canonical ambient wrapper over ValenceOrb", () => {
+  it("keeps MiniValenceOrb as a stable canonical wrapper over ValenceOrb", () => {
     const source = readSource("src/components/state-of-mind/MiniValenceOrb.tsx");
 
     expect(source).toContain("<ValenceOrb");
-    expect(source).toContain("ambientValence");
-    expect(source).toContain("setInterval");
+    expect(source).toContain("const displayValence = hasEntry ? valence : 0");
+    expect(source).not.toContain("setInterval");
+    expect(source).not.toContain("setAmbientValence");
     expect(source).not.toContain("<svg");
   });
 
