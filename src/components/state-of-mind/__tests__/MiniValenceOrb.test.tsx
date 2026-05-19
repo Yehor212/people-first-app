@@ -33,12 +33,26 @@ describe("MiniValenceOrb", () => {
     expect(container.firstChild).toHaveClass("bg-card/80");
   });
 
-  it("uses the canonical ambient valence motion for no-entry mini-orbs", () => {
+  it("uses the canonical ambient valence without reintroducing local timers", () => {
     const setIntervalSpy = vi.spyOn(window, "setInterval");
 
-    render(<MiniValenceOrb valence={0} hasEntry={false} size="sm" chrome="badge" />);
+    const { container } = render(
+      <MiniValenceOrb valence={0} hasEntry={false} size="sm" chrome="badge" />,
+    );
 
-    expect(setIntervalSpy).toHaveBeenCalledWith(expect.any(Function), 320);
+    expect(container.querySelector("[data-orb-renderer-policy]")).toHaveAttribute(
+      "data-orb-renderer-policy",
+      "webgl",
+    );
+    expect(setIntervalSpy).not.toHaveBeenCalledWith(expect.any(Function), 320);
+  });
+
+  it("keeps mini chrome hidden until the canonical orb reports a real frame", () => {
+    const { container } = render(
+      <MiniValenceOrb valence={0} hasEntry={false} size="sm" chrome="badge" />,
+    );
+
+    expect(container.firstChild).toHaveClass("opacity-0");
   });
 
   it("renders the refine chrome with its larger lg preset", () => {

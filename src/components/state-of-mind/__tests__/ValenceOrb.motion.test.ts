@@ -114,10 +114,10 @@ describe("ValenceOrb motion profile", () => {
       nextMiniUpgradeStartAt: 1000,
     });
     expect(firstMini).toMatchObject({
-      delayMs: 220,
-      preferIdle: true,
+      delayMs: 0,
+      preferIdle: false,
     });
-    expect(secondMini.delayMs - firstMini.delayMs).toBeGreaterThanOrEqual(250);
+    expect(secondMini.delayMs - firstMini.delayMs).toBeGreaterThanOrEqual(80);
     expect(autoOrb).toMatchObject({
       delayMs: 180,
       preferIdle: true,

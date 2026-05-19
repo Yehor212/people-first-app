@@ -48,6 +48,8 @@ interface ValenceOrbProps {
   transitionProfile?: OrbTransitionProfile;
   /** Renderer policy. Auto paints Canvas first, then upgrades to WebGL without blocking first paint. */
   renderer?: OrbRendererMode;
+  /** Fires once the visible canonical renderer has produced its first real frame. */
+  onVisualReady?: () => void;
 }
 
 type OrbWorkerPayload = {
@@ -81,8 +83,8 @@ const WEBGL_BUILD_BUDGET_MS = 500;
 export const WEBGL_WORKER_READY_BUDGET_MS = 700;
 const WEBGL_READINESS_TIMEOUT_MS = 8000;
 const WEBGL_UPGRADE_DELAY_MS = 180;
-const MINI_WEBGL_UPGRADE_DELAY_MS = 220;
-const MINI_WEBGL_UPGRADE_QUEUE_GAP_MS = 260;
+const MINI_WEBGL_UPGRADE_DELAY_MS = 0;
+const MINI_WEBGL_UPGRADE_QUEUE_GAP_MS = 80;
 const IDLE_WAKE_SOFT_THRESHOLD_MS = 8000;
 const ORB_IDLE_WAKE_SOFT_EPSILON = 0.01;
 const MINI_ORB_CANONICAL_SIZE = 120;
@@ -431,6 +433,7 @@ export const ValenceOrb = memo(function ValenceOrb({
   animationSpeed = CANONICAL_ORB_ANIMATION_SPEED,
   transitionProfile = "v1-soft",
   renderer = "auto",
+  onVisualReady,
 }: ValenceOrbProps) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef(0);
@@ -474,10 +477,18 @@ export const ValenceOrb = memo(function ValenceOrb({
   // Keep target valence in sync with prop
   const valenceRef = useRef(valence);
   valenceRef.current = valence;
+  const onVisualReadyRef = useRef(onVisualReady);
+  onVisualReadyRef.current = onVisualReady;
   const markVisualReadyRef = useRef<() => void>(() => {});
   markVisualReadyRef.current = () => {
     if (visualReadyRef.current) return;
     visualReadyRef.current = true;
+    const canvas = canvasElRef.current;
+    if (canvas) {
+      canvas.style.opacity = '1';
+    }
+    wrapperRef.current?.setAttribute('data-orb-visual-ready', 'true');
+    onVisualReadyRef.current?.();
     setVisualReady(true);
   };
 
@@ -535,6 +546,7 @@ export const ValenceOrb = memo(function ValenceOrb({
 
     visualReadyRef.current = false;
     setVisualReady(false);
+    wrapper.removeAttribute('data-orb-visual-ready');
 
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const canvasDpr = 1;
@@ -571,6 +583,10 @@ export const ValenceOrb = memo(function ValenceOrb({
 
     const forceCanonicalWebGL = renderer === 'webgl' || getRendererOverride() === 'webgl';
     let activeCanvas = createCanvas(size, forceCanonicalWebGL ? dpr : canvasDpr);
+    if (forceCanonicalWebGL) {
+      activeCanvas.style.opacity = '0';
+      activeCanvas.style.transition = 'opacity 160ms ease-out';
+    }
     let glRenderer: OrbGLRenderer | null = null;
     let workerRenderer: OrbWorkerController | null = null;
     let ctx2d: CanvasRenderingContext2D | null = null;

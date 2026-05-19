@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useCallback, useState } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -126,6 +126,7 @@ function OrbCore({
   orbClassName,
   transitionProfile,
   renderer,
+  onVisualReady,
 }: {
   valence: number;
   hasEntry: boolean;
@@ -133,6 +134,7 @@ function OrbCore({
   orbClassName: string;
   transitionProfile: OrbTransitionProfile;
   renderer: OrbRendererMode;
+  onVisualReady: () => void;
 }) {
   const displayValence = hasEntry ? valence : MINI_VALENCE_IDLE_CANONICAL_VALENCE;
 
@@ -152,6 +154,7 @@ function OrbCore({
           size={120}
           transitionProfile={transitionProfile}
           renderer={renderer}
+          onVisualReady={onVisualReady}
         />
       </div>
     </div>
@@ -175,16 +178,28 @@ export const MiniValenceOrb = memo(function MiniValenceOrb({
   transitionProfile = "v1-soft",
   renderer = "webgl",
 }: MiniValenceOrbProps) {
+  const [visualReady, setVisualReady] = useState(renderer !== "webgl");
+  const handleVisualReady = useCallback(() => {
+    setVisualReady(true);
+  }, []);
+  const visibilityClass = visualReady ? "opacity-100" : "opacity-0";
+
   if (chrome === "none") {
     const preset = BARE_SIZE_PRESETS[size];
     return (
       <OrbCore
         valence={valence}
         hasEntry={hasEntry}
-        containerClassName={cn(preset.container, containerClassName)}
+        containerClassName={cn(
+          preset.container,
+          "transition-opacity duration-200 ease-out",
+          visibilityClass,
+          containerClassName,
+        )}
         orbClassName={cn(preset.orb, orbClassName)}
         transitionProfile={transitionProfile}
         renderer={renderer}
+        onVisualReady={handleVisualReady}
       />
     );
   }
@@ -194,7 +209,12 @@ export const MiniValenceOrb = memo(function MiniValenceOrb({
   return (
     <div
       aria-hidden="true"
-      className={cn("relative inline-flex shrink-0 items-center justify-center", preset.shell, containerClassName)}
+      className={cn(
+        "relative inline-flex shrink-0 items-center justify-center transition-opacity duration-200 ease-out",
+        preset.shell,
+        visibilityClass,
+        containerClassName,
+      )}
     >
       <div
         className={cn("pointer-events-none absolute rounded-full border", preset.ring)}
@@ -206,6 +226,7 @@ export const MiniValenceOrb = memo(function MiniValenceOrb({
         orbClassName={cn(preset.orb, orbClassName)}
         transitionProfile={transitionProfile}
         renderer={renderer}
+        onVisualReady={handleVisualReady}
       />
     </div>
   );

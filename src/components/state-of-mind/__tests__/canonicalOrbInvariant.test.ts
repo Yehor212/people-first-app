@@ -125,6 +125,8 @@ describe("canonical orb invariant", () => {
     expect(source).toContain("canShowContextFailureFallback ? (");
     expect(source).toContain("visualReadyRef");
     expect(source).toContain("markVisualReadyRef");
+    expect(source).toContain("onVisualReady");
+    expect(source).toContain("canvas.style.opacity = '1'");
     expect(source).toContain("worker.onerror");
     expect(source).toContain("if (!forceCanonicalWebGL && !signal.aborted && mountedRef.current)");
   });
