@@ -3,6 +3,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const isCi = process.env.CI === "true";
 
 export default defineConfig({
   test: {
@@ -13,7 +14,7 @@ export default defineConfig({
     exclude: ["node_modules", "e2e/**", ".claude/worktrees/**"],
     coverage: {
       provider: "v8",
-      reporter: ["text", "html", "json-summary"],
+      reporter: isCi ? ["text", "json-summary"] : ["text", "html", "json-summary"],
       thresholds: {
         lines: 18,
         functions: 41,
@@ -25,6 +26,10 @@ export default defineConfig({
         "test/",
         "e2e/",
         "**/*.d.ts",
+        "**/*.test.*",
+        "**/*.spec.*",
+        "src/**/__tests__/**",
+        "src/test/**",
         "**/*.config.*",
         "dist/",
         "android/",
