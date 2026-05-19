@@ -23,23 +23,34 @@ describe("ShootingStar", () => {
     cleanup();
   });
 
-  it("renders nothing initially (star is not yet scheduled)", () => {
+  it("keeps first paint clean, then shows the first night meteor quickly", () => {
     const { queryByTestId } = render(<ShootingStar />);
     expect(queryByTestId("shooting-star")).toBeNull();
+
+    act(() => {
+      vi.advanceTimersByTime(1_201);
+    });
+
+    expect(queryByTestId("shooting-star")).toBeInTheDocument();
   });
 
-  it("fires within the 8-15s window and cleans up after animation", () => {
+  it("keeps later flights on the calm 8-15s cadence and cleans up after animation", () => {
     vi.spyOn(Math, "random").mockReturnValue(0);
     const { queryByTestId } = render(<ShootingStar />);
     act(() => {
-      vi.advanceTimersByTime(8_001);
+      vi.advanceTimersByTime(1_201);
     });
     expect(queryByTestId("shooting-star")).toBeInTheDocument();
 
     act(() => {
-      vi.advanceTimersByTime(1_700);
+      vi.advanceTimersByTime(3_400);
     });
     expect(queryByTestId("shooting-star")).toBeNull();
+
+    act(() => {
+      vi.advanceTimersByTime(8_001);
+    });
+    expect(queryByTestId("shooting-star")).toBeInTheDocument();
   });
 
   it("renders a layered quiet meteor with flight CSS variables while active", () => {
@@ -47,7 +58,7 @@ describe("ShootingStar", () => {
     const { getByTestId, getAllByTestId } = render(<ShootingStar />);
 
     act(() => {
-      vi.advanceTimersByTime(8_001);
+      vi.advanceTimersByTime(1_201);
     });
 
     const meteor = getByTestId("shooting-star");
@@ -58,7 +69,7 @@ describe("ShootingStar", () => {
     expect(getAllByTestId("shooting-star-dust")).toHaveLength(3);
     expect(meteor.style.getPropertyValue("--meteor-top")).toBe("12%");
     expect(meteor.style.getPropertyValue("--meteor-angle")).toBe("7deg");
-    expect(meteor.style.getPropertyValue("--meteor-duration")).toBe("1220ms");
+    expect(meteor.style.getPropertyValue("--meteor-duration")).toBe("2600ms");
     expect(meteor.style.getPropertyValue("--meteor-tail")).toBe("96px");
     expect(meteor.style.getPropertyValue("--meteor-arc-a-x")).toBe("26vw");
     expect(meteor.style.getPropertyValue("--meteor-arc-a-y")).toBe("-1vh");
@@ -78,7 +89,7 @@ describe("ShootingStar", () => {
     expect(css).toContain(
       "animation: shooting-star-fly var(--meteor-duration) linear both;",
     );
-    expect(css).toContain("70% {\n    opacity: 0;");
+    expect(css).toContain("92% {\n    opacity: 0;");
     expect(css).not.toContain("cubic-bezier(0.16, 1, 0.3, 1)");
   });
 
@@ -97,7 +108,7 @@ describe("ShootingStar", () => {
     const { getByTestId, queryByTestId } = render(<ShootingStar />);
 
     act(() => {
-      vi.advanceTimersByTime(8_001);
+      vi.advanceTimersByTime(1_201);
     });
 
     act(() => {

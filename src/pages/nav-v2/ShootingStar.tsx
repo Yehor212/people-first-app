@@ -1,8 +1,9 @@
 /**
  * ShootingStar - sparse decorative "quiet meteor" for the V2 Orb surface.
  *
- * Every 8-15 seconds a single layered meteor crosses the upper sky with a
- * soft blue-white head, tapered tail, small halo, and a few dust points.
+ * After first paint, then every 8-15 seconds, a single layered meteor crosses
+ * the upper sky with a soft blue-white head, tapered tail, small halo, and a
+ * few dust points.
  *
  * Gating:
  *   - useShouldAnimate() false renders nothing.
@@ -10,6 +11,8 @@
  *   - pointer-events none keeps orb and slider input untouched.
  *
  * Performance: transform + opacity only; timers are cleaned up on unmount.
+ * Runtime performance mode is intentionally ignored here because this flourish
+ * is already transform-only and visually defines the night Orb surface.
  */
 
 import { useEffect, useRef, useState, memo, type CSSProperties } from "react";
@@ -18,6 +21,7 @@ import "./ShootingStar.css";
 
 const MIN_INTERVAL_MS = 8_000;
 const MAX_INTERVAL_MS = 15_000;
+const FIRST_FLIGHT_DELAY_MS = 1_200;
 const FALLBACK_CLEANUP_BUFFER_MS = 90;
 
 interface MeteorFlight {
@@ -62,7 +66,7 @@ function createMeteorFlight(): MeteorFlight {
   return {
     topPercent: Math.round(randomBetween(12, 26)),
     angleDeg: Math.round(randomBetween(7, 12)),
-    durationMs: Math.round(randomBetween(1_220, 1_420)),
+    durationMs: Math.round(randomBetween(2_600, 3_200)),
     tailPx: Math.round(randomBetween(96, 136)),
     arcAXvw: Math.round(randomBetween(26, 34)),
     arcAYvh: Math.round(randomBetween(-1, 1)),
@@ -93,7 +97,7 @@ function getMeteorStyle(flight: MeteorFlight): MeteorStyle {
 }
 
 export const ShootingStar = memo(function ShootingStar() {
-  const shouldAnimate = useShouldAnimate();
+  const shouldAnimate = useShouldAnimate({ respectRuntimePerformance: false });
   const [fireCount, setFireCount] = useState(0);
   const [flight, setFlight] = useState<MeteorFlight | null>(null);
   const finishFlightRef = useRef<(() => void) | null>(null);
@@ -111,7 +115,7 @@ export const ShootingStar = memo(function ShootingStar() {
       }
     }
 
-    function schedule() {
+    function schedule(delayMs = randomInterval()) {
       scheduleTimer = setTimeout(() => {
         if (!mounted) return;
         const nextFlight = createMeteorFlight();
@@ -121,7 +125,7 @@ export const ShootingStar = memo(function ShootingStar() {
           finishFlight,
           nextFlight.durationMs + FALLBACK_CLEANUP_BUFFER_MS,
         );
-      }, randomInterval());
+      }, delayMs);
     }
 
     function finishFlight() {
@@ -133,7 +137,7 @@ export const ShootingStar = memo(function ShootingStar() {
 
     finishFlightRef.current = finishFlight;
 
-    schedule();
+    schedule(FIRST_FLIGHT_DELAY_MS);
 
     return () => {
       mounted = false;

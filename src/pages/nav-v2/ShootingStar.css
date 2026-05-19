@@ -109,19 +109,23 @@
     opacity: 0;
     transform: translate3d(0, 0, 0) rotate(var(--meteor-angle)) scaleX(0.54);
   }
-  12% {
+  8% {
     opacity: 0.82;
     transform: translate3d(var(--meteor-arc-a-x), var(--meteor-arc-a-y), 0) rotate(var(--meteor-angle)) scaleX(0.92);
   }
-  38% {
+  28% {
     opacity: 1;
     transform: translate3d(var(--meteor-arc-b-x), var(--meteor-arc-b-y), 0) rotate(var(--meteor-angle)) scaleX(1);
   }
-  60% {
-    opacity: 0.36;
+  68% {
+    opacity: 0.72;
     transform: translate3d(var(--meteor-arc-c-x), var(--meteor-arc-c-y), 0) rotate(var(--meteor-angle)) scaleX(0.78);
   }
-  70% {
+  86% {
+    opacity: 0.18;
+    transform: translate3d(104vw, calc(var(--meteor-arc-c-y) + 0.5vh), 0) rotate(var(--meteor-angle)) scaleX(0.68);
+  }
+  92% {
     opacity: 0;
     transform: translate3d(108vw, calc(var(--meteor-arc-c-y) + 1vh), 0) rotate(var(--meteor-angle)) scaleX(0.6);
   }

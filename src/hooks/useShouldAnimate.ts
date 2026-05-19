@@ -6,6 +6,7 @@ import {
   RUNTIME_PERFORMANCE_MODE_EVENT,
   isRuntimePerformanceLimited,
 } from "@/observability/runtimePerformanceMode";
+import type { ShouldAnimateOptions } from "@/lib/animationUtils";
 
 const LOW_BATTERY_THRESHOLD = 0.15;
 
@@ -25,7 +26,8 @@ const LOW_BATTERY_THRESHOLD = 0.15;
  * (audioManager, haptics, lifecycle functions), use `shouldAnimate()` from
  * `@/lib/animationUtils` — that module reads a static mirror of the same signal.
  */
-export function useShouldAnimate(): boolean {
+export function useShouldAnimate(options: ShouldAnimateOptions = {}): boolean {
+  const { respectRuntimePerformance = true } = options;
   const dopamine = useDopamineSettings();
   const osPrefersReduce = useMediaQuery("(prefers-reduced-motion: reduce)");
   const battery = useBatteryState();
@@ -48,5 +50,10 @@ export function useShouldAnimate(): boolean {
   const lowBattery =
     battery !== null && !battery.charging && battery.level < LOW_BATTERY_THRESHOLD;
 
-  return dopamineEnabled && !osPrefersReduce && !lowBattery && !runtimePerfLimited;
+  return (
+    dopamineEnabled &&
+    !osPrefersReduce &&
+    !lowBattery &&
+    (!respectRuntimePerformance || !runtimePerfLimited)
+  );
 }

@@ -125,4 +125,15 @@ describe("useShouldAnimate — 8-combination truth table", () => {
 
     expect(result.current).toBe(false);
   });
+
+  it("T12: canonical visual flourishes can opt out of runtime perf guard", () => {
+    document.documentElement.dataset.runtimePerf = "startup";
+    setInputs({ dopamineAnimations: true, osReduce: false, battery: { level: 0.9, charging: false } });
+
+    const { result } = renderHook(() =>
+      useShouldAnimate({ respectRuntimePerformance: false }),
+    );
+
+    expect(result.current).toBe(true);
+  });
 });
