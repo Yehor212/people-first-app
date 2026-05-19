@@ -339,7 +339,7 @@ export function resolveCanonicalWebGLUpgradeScheduling(
 
   return {
     delayMs: Math.max(0, Math.round(earliestStartAt - now)),
-    preferIdle: true,
+    preferIdle: false,
     nextMiniUpgradeStartAt: earliestStartAt + MINI_WEBGL_UPGRADE_QUEUE_GAP_MS,
   };
 }

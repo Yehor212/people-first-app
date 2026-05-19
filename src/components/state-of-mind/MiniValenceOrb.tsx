@@ -7,6 +7,8 @@ import { ValenceOrb, type OrbRendererMode, type OrbTransitionProfile } from "./V
 export type MiniValenceOrbSize = "xs" | "sm" | "md" | "lg";
 export type MiniValenceOrbChrome = "none" | "badge" | "refine";
 
+const MINI_VALENCE_IDLE_CANONICAL_VALENCE = 0.18;
+
 interface MiniValenceOrbProps {
   valence: number;
   hasEntry: boolean;
@@ -132,7 +134,7 @@ function OrbCore({
   transitionProfile: OrbTransitionProfile;
   renderer: OrbRendererMode;
 }) {
-  const displayValence = hasEntry ? valence : 0;
+  const displayValence = hasEntry ? valence : MINI_VALENCE_IDLE_CANONICAL_VALENCE;
 
   return (
     <div

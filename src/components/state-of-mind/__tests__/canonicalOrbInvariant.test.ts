@@ -97,7 +97,8 @@ describe("canonical orb invariant", () => {
     const source = readSource("src/components/state-of-mind/MiniValenceOrb.tsx");
 
     expect(source).toContain("<ValenceOrb");
-    expect(source).toContain("const displayValence = hasEntry ? valence : 0");
+    expect(source).toContain("MINI_VALENCE_IDLE_CANONICAL_VALENCE");
+    expect(source).toContain("const displayValence = hasEntry ? valence : MINI_VALENCE_IDLE_CANONICAL_VALENCE");
     expect(source).not.toContain("setInterval");
     expect(source).not.toContain("setAmbientValence");
     expect(source).not.toContain("<svg");
@@ -148,6 +149,7 @@ describe("canonical orb invariant", () => {
     expect(source).toContain("startWebGLUpgradeWhenVisible");
     expect(source).toContain("resolveCanonicalWebGLUpgradeScheduling");
     expect(source).toContain("MINI_WEBGL_UPGRADE_QUEUE_GAP_MS");
+    expect(source).toContain("preferIdle: false");
   });
 
   it("keeps worker WebGL shader readiness asynchronous before status checks", () => {
