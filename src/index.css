@@ -7358,3 +7358,44 @@ html[data-theme-swap-mode="drawer-instant"] [data-theme-region="drawer-v2"],
 html[data-theme-swap-mode="drawer-instant"] [data-theme-region="drawer-v2"] * {
   transition: none !important;
 }
+
+@keyframes journal-memory-field-drift {
+  0% {
+    transform: translate3d(0, 0, 0);
+    background-position: 0 0, 0 0, 0 0;
+  }
+  100% {
+    transform: translate3d(0, -10px, 0);
+    background-position: 28px -18px, -18px 24px, 34px 34px;
+  }
+}
+
+.journal-memory-field {
+  animation: journal-memory-field-drift 18s ease-in-out infinite alternate;
+}
+
+.journal-memory-field--paper {
+  background-blend-mode: screen, screen, soft-light, normal, normal;
+  animation-name: journal-memory-field-paper-drift;
+}
+
+.journal-memory-field--night {
+  background-blend-mode: normal, normal, screen, screen, normal;
+}
+
+@keyframes journal-memory-field-paper-drift {
+  0% {
+    transform: translate3d(0, 0, 0);
+    background-position: 0 0, 0 0, 0 0, 0 0, 0 0;
+  }
+  100% {
+    transform: translate3d(0, -8px, 0);
+    background-position: 18px -12px, -14px 16px, 22px 10px, 0 0, 28px 24px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .journal-memory-field {
+    animation: none;
+  }
+}
