@@ -24,6 +24,7 @@ import { SyncGapDetector } from "@/lib/syncGapDetector";
 import { pullFromCloud } from "@/storage/realtimeSync";
 import { isAbortError } from "@/lib/validation";
 import { recordSyncHealthReceipt } from "@/observability/syncHealthRecorder";
+import { scheduleIdle } from "@/lib/scheduleIdle";
 
 const DELTA_SYNC_INTERVAL = 5 * 60 * 1000;
 const MAX_GAP_SIZE = 1000;
@@ -274,10 +275,17 @@ export function useDeltaSyncEffects(): void {
       void runDeltaSyncRef.current();
     }, DELTA_SYNC_INTERVAL);
 
-    void runDeltaSyncRef.current();
+    const startupSyncHandle = scheduleIdle(
+      () => {
+        void runDeltaSyncRef.current();
+      },
+      9000,
+      6500,
+    );
 
     return () => {
       isMounted = false;
+      startupSyncHandle.cancel();
       unsubBroadcast();
       removeAppListener();
       window.removeEventListener("online", handleOnline);

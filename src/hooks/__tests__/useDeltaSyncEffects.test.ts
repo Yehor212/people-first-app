@@ -12,6 +12,8 @@ const mocks = vi.hoisted(() => ({
   loggerSync: vi.fn(),
   pullFromCloud: vi.fn(),
   runWithSyncLeaderLock: vi.fn(),
+  scheduleIdleCallbacks: [] as Array<() => void>,
+  cancelIdle: vi.fn(),
 }));
 
 vi.mock("@/contexts/FeatureFlagsContext", () => ({
@@ -35,6 +37,13 @@ vi.mock("@/lib/syncBroadcast", () => ({
 
 vi.mock("@/lib/syncLeader", () => ({
   runWithSyncLeaderLock: mocks.runWithSyncLeaderLock,
+}));
+
+vi.mock("@/lib/scheduleIdle", () => ({
+  scheduleIdle: vi.fn((callback: () => void) => {
+    mocks.scheduleIdleCallbacks.push(callback);
+    return { cancel: mocks.cancelIdle };
+  }),
 }));
 
 vi.mock("@/lib/supabaseClient", () => ({
@@ -81,12 +90,18 @@ import { useDeltaSyncEffects } from "../useDeltaSyncEffects";
 describe("useDeltaSyncEffects", () => {
   afterEach(() => {
     vi.clearAllMocks();
+    mocks.scheduleIdleCallbacks.length = 0;
   });
 
-  it("does not start cloud delta or snapshot sync without an authenticated session", async () => {
+  it("defers startup delta sync and does not start cloud sync without an authenticated session", async () => {
     mocks.getCurrentSessionUserId.mockResolvedValue(null);
 
     const { unmount } = renderHook(() => useDeltaSyncEffects());
+
+    expect(mocks.getCurrentSessionUserId).not.toHaveBeenCalled();
+    expect(mocks.scheduleIdleCallbacks).toHaveLength(1);
+
+    mocks.scheduleIdleCallbacks[0]();
 
     await waitFor(() => {
       expect(mocks.getCurrentSessionUserId).toHaveBeenCalled();
@@ -99,5 +114,6 @@ describe("useDeltaSyncEffects", () => {
     expect(mocks.loggerSync).toHaveBeenCalledWith("[DeltaSync] Skipped; no authenticated session");
 
     unmount();
+    expect(mocks.cancelIdle).toHaveBeenCalled();
   });
 });

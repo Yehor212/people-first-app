@@ -5,6 +5,7 @@ import {
   upsertCurrentDeviceSession,
 } from "@/storage/deviceSessions";
 import { recordSyncHealthReceipt } from "@/observability/syncHealthRecorder";
+import { scheduleIdle } from "@/lib/scheduleIdle";
 
 /**
  * Account-device presence for Telegram-grade sync.
@@ -51,7 +52,11 @@ export function useDeviceSessionRuntime(): void {
         });
     };
 
-    const mountTimer = window.setTimeout(() => runHeartbeat("mount"), 1500);
+    const mountHeartbeatHandle = scheduleIdle(
+      () => runHeartbeat("mount"),
+      9000,
+      6500,
+    );
 
     const handleOnline = () => runHeartbeat("online");
     const handleVisibility = () => {
@@ -73,7 +78,7 @@ export function useDeviceSessionRuntime(): void {
 
     return () => {
       disposed = true;
-      window.clearTimeout(mountTimer);
+      mountHeartbeatHandle.cancel();
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("focus", handleFocus);
       document.removeEventListener("visibilitychange", handleVisibility);
