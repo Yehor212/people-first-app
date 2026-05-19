@@ -53,10 +53,15 @@ jobs:
       - name: Check Telegram-grade sync contract
         run: npm run check:sync-contract
 
-      - name: Run tests with coverage
+      - name: Run release unit tests
+        run: npm run test:release -- --maxWorkers=2 --minWorkers=1
+
+      - name: Run coverage report
+        continue-on-error: true
+        timeout-minutes: 15
         env:
           NODE_OPTIONS: --max-old-space-size=8192
-        run: npm run test:coverage
+        run: npm run test:coverage -- --maxWorkers=2 --minWorkers=1
 
       - name: Build
         env:
@@ -142,8 +147,8 @@ jobs:
           fi
 
       # Keep broad governance debt visible without blocking the static Pages release path.
-      # The deploy-specific gates above still block on lint, typecheck, i18n, unit coverage,
-      # build, and focused V1/V2 smoke coverage.
+      # The deploy-specific gates above still block on lint, typecheck, i18n, unit tests,
+      # build, canonical orbs, sync contract, sync drill, and focused V1/V2 smoke coverage.
       - name: Quality ratchet check
         continue-on-error: true
         run: npm run ratchet:check

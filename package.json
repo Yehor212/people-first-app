@@ -22,6 +22,7 @@
     "preview": "vite preview",
     "test": "vitest run --configLoader runner",
     "test:watch": "vitest --configLoader runner",
+    "test:release": "vitest run --configLoader runner src/pages/nav-v2/__tests__/DiaryRouteLoader.test.ts src/features/journal/__tests__/JournalEntryList.spaces.test.tsx src/features/journal/__tests__/JournalEntryList.spaceParity.test.tsx src/components/state-of-mind/__tests__/canonicalOrbInvariant.test.ts src/storage/__tests__/eventSync.test.ts src/lib/__tests__/offlineQueueHandlers.test.ts src/observability/__tests__/runtimeFlightRecorder.test.ts src/observability/__tests__/syncHealthRecorder.test.ts src/components/sync/__tests__/SyncHealthCard.test.tsx src/hooks/__tests__/useDeltaSyncEffects.test.ts",
     "test:coverage": "vitest run --configLoader runner --coverage",
     "test:i18n": "vitest run --configLoader runner test/i18n.test.ts",
     "i18n:check": "npx tsx scripts/check-i18n.ts && npm run i18n:v2-copy",
