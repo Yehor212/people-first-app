@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 
 const diaryPageSource = readFileSync("src/pages/nav-v2/DiaryPage.tsx", "utf8");
 const journalModuleSource = readFileSync("src/features/journal/JournalModule.tsx", "utf8");
+const journalEntryListSource = readFileSync("src/features/journal/JournalEntryList.tsx", "utf8");
+const useJournalSource = readFileSync("src/features/journal/useJournal.ts", "utf8");
 const memoryPortalSource = readFileSync("src/features/journal/MemoryPortalCanvas.tsx", "utf8");
 const indexSource = readFileSync("src/pages/Index.tsx", "utf8");
 const authGateSource = readFileSync("src/components/AuthGate.tsx", "utf8");
@@ -73,6 +75,9 @@ describe("V2 diary loading surface", () => {
       '"diagnose:dev-performance": "node scripts/diagnose-dev-performance.cjs"',
     );
     expect(devPerformanceSource).toContain("watcherSensitiveDirs");
+    expect(viteConfigSource).toContain("isDeferredJournalPreload");
+    expect(viteConfigSource).toContain('dep.startsWith("assets/JournalCalendarFull-")');
+    expect(viteConfigSource).toContain('dep.startsWith("assets/RemovePasswordConfirmDialog-")');
 
     for (const ignored of [
       "**/.claude/**",
@@ -89,5 +94,24 @@ describe("V2 diary loading surface", () => {
     ]) {
       expect(viteConfigSource).toContain(`"${ignored}"`);
     }
+  });
+
+  it("keeps diary startup work off the first interactive frame", () => {
+    expect(useJournalSource).toContain("startTransition");
+    expect(useJournalSource).toContain("setEntries(all)");
+
+    expect(journalEntryListSource).toContain('import { scheduleIdle } from "@/lib/scheduleIdle"');
+    expect(journalEntryListSource).toContain("Promise.all([");
+    expect(journalEntryListSource).toContain("getJournalSpaces()");
+    expect(journalEntryListSource).toContain("getJournalSpaceCaptures()");
+    expect(journalEntryListSource).toContain("getSpaceEntryLinks()");
+    expect(journalEntryListSource).toContain("setJournalSpaces(spaces)");
+    expect(journalEntryListSource).toContain("setSpaceCaptures(captures)");
+    expect(journalEntryListSource).toContain("setSpaceEntryLinks(links)");
+
+    expect(journalModuleSource).toContain("import.meta.glob");
+    expect(journalModuleSource).toContain("lazyDeferredJournalComponent");
+    expect(journalModuleSource).toContain("./JournalCalendarFull.tsx");
+    expect(journalModuleSource).toContain("./RemovePasswordConfirmDialog.tsx");
   });
 });

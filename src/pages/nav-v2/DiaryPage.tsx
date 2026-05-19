@@ -1,7 +1,6 @@
-import { memo, Suspense, useEffect, useMemo, useRef } from "react";
+import { lazy, memo, startTransition, Suspense, useEffect, useRef, useState } from "react";
 import { Bloom } from "@/lib/motion";
 import { staggerDelay } from "@/lib/motion/choreography";
-import { lazyWithRetry } from "@/lib/lazyWithRetry";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { SplashScreen } from "@/components/SplashScreen";
 import { useThemeStore } from "@/stores/themeStore";
@@ -9,11 +8,9 @@ import type { JournalEntryPrefill, JournalEntrySuggestion } from "@/features/jou
 import { useDiaryDraftStore } from "@/stores/diaryDraftStore";
 import { formatDate } from "@/lib/utils";
 import type { GratitudeEntry, MoodType } from "@/types";
-import { getLocalizedEmotionLabel } from "@/components/state-of-mind/emotionI18n";
 
-const JournalModule = lazyWithRetry(
+const JournalModule = lazy(
   () => import("@/features/journal/JournalModule").then((m) => ({ default: m.JournalModule })),
-  "V2DiaryJournalModule",
 );
 
 function valenceToMood(v: number): MoodType {
@@ -50,13 +47,12 @@ function escapeHtml(value: string): string {
 
 function buildInitialPrefill(
   pendingMoodContext: ReturnType<typeof useDiaryDraftStore.getState>["pendingMoodContext"],
-  tx: Record<string, string>,
+  emotionLabel: string,
 ): JournalEntryPrefill | null {
   if (!pendingMoodContext) return null;
 
   const committedDate = new Date(pendingMoodContext.committedAt);
   const emotion = pendingMoodContext.emotion?.trim() || "";
-  const emotionLabel = emotion ? getLocalizedEmotionLabel(emotion, tx) : "";
   const note = pendingMoodContext.note?.trim() || "";
 
   return {
@@ -70,9 +66,9 @@ function buildInitialPrefill(
 
 function buildInitialSuggestion(
   pendingMoodContext: ReturnType<typeof useDiaryDraftStore.getState>["pendingMoodContext"],
-  tx: Record<string, string>,
+  emotionLabel: string,
 ): JournalEntrySuggestion | null {
-  const prefill = buildInitialPrefill(pendingMoodContext, tx);
+  const prefill = buildInitialPrefill(pendingMoodContext, emotionLabel);
   if (!pendingMoodContext || !prefill) return null;
 
   return {
@@ -113,15 +109,59 @@ export const DiaryPage = memo(function DiaryPage({
   const consumePendingMoodContext = useDiaryDraftStore(
     (s) => s.consumePendingMoodContext,
   );
+  const [initialEntrySuggestion, setInitialEntrySuggestion] =
+    useState<JournalEntrySuggestion | null>(null);
 
   useEffect(() => {
     h1Ref.current?.focus();
   }, []);
 
-  const initialEntrySuggestion = useMemo(
-    () => buildInitialSuggestion(pendingMoodContext, tx),
-    [pendingMoodContext, tx],
-  );
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!pendingMoodContext) {
+      startTransition(() => setInitialEntrySuggestion(null));
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const emotion = pendingMoodContext.emotion?.trim() || "";
+    const fallbackLabel = emotion ? capitalizeFirst(emotion) : "";
+
+    startTransition(() => {
+      setInitialEntrySuggestion(
+        buildInitialSuggestion(pendingMoodContext, fallbackLabel),
+      );
+    });
+
+    if (!emotion) {
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    void import("@/components/state-of-mind/emotionI18n").then(
+      ({ getLocalizedEmotionLabel }) => {
+        if (cancelled) return;
+
+        const localizedLabel = getLocalizedEmotionLabel(emotion, tx);
+        startTransition(() => {
+          setInitialEntrySuggestion(
+            buildInitialSuggestion(
+              pendingMoodContext,
+              localizedLabel || fallbackLabel,
+            ),
+          );
+        });
+      },
+    );
+
+    return () => {
+      cancelled = true;
+    };
+  }, [pendingMoodContext, tx]);
+
   return (
     <Bloom key="diary-page" transition={staggerDelay("primary")}>
       <main

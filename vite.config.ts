@@ -20,6 +20,17 @@ function isDeferredObservabilityPreload(dep: string): boolean {
   return dep.startsWith("assets/sentry-");
 }
 
+function isDeferredJournalPreload(dep: string): boolean {
+  return (
+    dep.startsWith("assets/JournalCalendarFull-") ||
+    dep.startsWith("assets/JournalSettingsContent-") ||
+    dep.startsWith("assets/KeyboardShortcutsOverlay-") ||
+    dep.startsWith("assets/RemovePasswordConfirmDialog-") ||
+    dep.startsWith("assets/StreakCelebration-") ||
+    dep.startsWith("assets/journalExport-")
+  );
+}
+
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   // Use relative paths for Capacitor/Android builds
@@ -231,11 +242,11 @@ export default defineConfig(({ mode }) => {
       modulePreload: {
         polyfill: false,
         resolveDependencies: (_filename, deps, context) => {
-          if (context.hostType !== "html") {
-            return deps;
-          }
-
-          return deps.filter((dep) => !isDeferredObservabilityPreload(dep));
+          return deps.filter((dep) => {
+            if (isDeferredJournalPreload(dep)) return false;
+            if (context.hostType === "html" && isDeferredObservabilityPreload(dep)) return false;
+            return true;
+          });
         },
       },
       // Speeds up CI build ~15s by skipping gzip-size probe (cosmetic log only).

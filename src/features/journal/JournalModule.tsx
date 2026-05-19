@@ -6,6 +6,7 @@ import {
   useMemo,
   Suspense,
   memo,
+  type ComponentType,
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
@@ -46,11 +47,7 @@ import { DiaryEmptyCanvas } from "./DiaryEmptyCanvas";
 import { DiaryEntrySuggestionCard } from "./DiaryEntrySuggestionCard";
 import { OnThisDayCard } from "./OnThisDayCard";
 import { JournalOnboardingHints, useJournalOnboarding } from "./JournalOnboardingHints";
-import { KeyboardShortcutsOverlay } from "./KeyboardShortcutsOverlay";
-import { ExportPickerDialog } from "./ExportPickerDialog";
-import { RemovePasswordConfirmDialog } from "./RemovePasswordConfirmDialog";
 import { JournalCalendar } from "./JournalCalendar";
-import { JournalCalendarFull } from "./JournalCalendarFull";
 import { formatLocalizedCount } from "./journalWordCount";
 import { getEntryCount } from "./journalStorage";
 import {
@@ -73,9 +70,8 @@ import { useSidebarState } from "@/hooks/useSidebarState";
 import { useSidebarKeyboard } from "@/hooks/useSidebarKeyboard";
 import { useEntryTransition } from "@/hooks/useEntryTransition";
 import { springs } from "@/config/animations";
-import { StreakCelebration } from "./StreakCelebration";
 import { useStreakFreeze, StreakFreezeIndicator } from "./StreakFreeze";
-import { JournalSettingsContent, type JournalSettingsSection } from "./JournalSettingsContent";
+import type { JournalSettingsSection } from "./JournalSettingsContent";
 import type { JournalEntryPrefill, JournalEntrySuggestion, JournalReleaseTraceSummary } from "./types";
 import { DiaryMiniOrb } from "./DiaryMiniOrb";
 
@@ -90,6 +86,73 @@ function getPrefillSpaceIds(prefill: JournalEntryPrefill | null | undefined): st
 const LazyJournalStats = lazyWithRetry(
   () => import("./JournalStats").then((m) => ({ default: m.JournalStats })),
   "JournalStats"
+);
+
+type DeferredJournalModule = Record<string, ComponentType<any>>;
+type JournalSettingsContentComponent =
+  typeof import("./JournalSettingsContent").JournalSettingsContent;
+type ExportPickerDialogComponent = typeof import("./ExportPickerDialog").ExportPickerDialog;
+type RemovePasswordConfirmDialogComponent =
+  typeof import("./RemovePasswordConfirmDialog").RemovePasswordConfirmDialog;
+type KeyboardShortcutsOverlayComponent =
+  typeof import("./KeyboardShortcutsOverlay").KeyboardShortcutsOverlay;
+type StreakCelebrationComponent = typeof import("./StreakCelebration").StreakCelebration;
+type JournalCalendarFullComponent = typeof import("./JournalCalendarFull").JournalCalendarFull;
+
+const deferredJournalModules = import.meta.glob<DeferredJournalModule>(
+  "./{ExportPickerDialog,JournalCalendarFull,JournalSettingsContent,KeyboardShortcutsOverlay,RemovePasswordConfirmDialog,StreakCelebration}.tsx",
+);
+
+function lazyDeferredJournalComponent<T extends ComponentType<any>>(
+  modulePath: keyof typeof deferredJournalModules,
+  exportName: string,
+) {
+  return lazyWithRetry<T>(async () => {
+    const loadModule = deferredJournalModules[modulePath];
+    if (!loadModule) {
+      throw new Error(`Missing deferred journal module: ${String(modulePath)}`);
+    }
+
+    const module = await loadModule();
+    const component = module[exportName];
+    if (!component) {
+      throw new Error(`Missing deferred journal export: ${exportName}`);
+    }
+
+    return { default: component as T };
+  }, exportName);
+}
+
+const LazyJournalSettingsContent = lazyDeferredJournalComponent<JournalSettingsContentComponent>(
+  "./JournalSettingsContent.tsx",
+  "JournalSettingsContent",
+);
+
+const LazyExportPickerDialog = lazyDeferredJournalComponent<ExportPickerDialogComponent>(
+  "./ExportPickerDialog.tsx",
+  "ExportPickerDialog",
+);
+
+const LazyRemovePasswordConfirmDialog =
+  lazyDeferredJournalComponent<RemovePasswordConfirmDialogComponent>(
+    "./RemovePasswordConfirmDialog.tsx",
+    "RemovePasswordConfirmDialog",
+  );
+
+const LazyKeyboardShortcutsOverlay =
+  lazyDeferredJournalComponent<KeyboardShortcutsOverlayComponent>(
+    "./KeyboardShortcutsOverlay.tsx",
+    "KeyboardShortcutsOverlay",
+  );
+
+const LazyStreakCelebration = lazyDeferredJournalComponent<StreakCelebrationComponent>(
+  "./StreakCelebration.tsx",
+  "StreakCelebration",
+);
+
+const LazyJournalCalendarFull = lazyDeferredJournalComponent<JournalCalendarFullComponent>(
+  "./JournalCalendarFull.tsx",
+  "JournalCalendarFull",
 );
 
 const LazyJournalEntryEditor = lazyWithRetry(
@@ -1354,16 +1417,18 @@ export const JournalModule = memo(function JournalModule({
                       className="border-b border-border/20 px-4 py-2"
                     >
                       {calendarMode === "full" ? (
-                        <JournalCalendarFull
-                          entryDates={journal.entryDates}
-                          releaseTraceDates={releaseTraceDates}
-                          selectedDate={journal.selectedDate}
-                          onSelectDate={journal.setSelectedDate}
-                          onToggleMode={() => {
-                            setCalendarMode("strip");
-                            storageSetRaw(SK.JOURNAL_CALENDAR_MODE, "strip");
-                          }}
-                        />
+                        <Suspense fallback={null}>
+                          <LazyJournalCalendarFull
+                            entryDates={journal.entryDates}
+                            releaseTraceDates={releaseTraceDates}
+                            selectedDate={journal.selectedDate}
+                            onSelectDate={journal.setSelectedDate}
+                            onToggleMode={() => {
+                              setCalendarMode("strip");
+                              storageSetRaw(SK.JOURNAL_CALENDAR_MODE, "strip");
+                            }}
+                          />
+                        </Suspense>
                       ) : (
                         <JournalCalendar
                           entryDates={journal.entryDates}
@@ -1459,22 +1524,28 @@ export const JournalModule = memo(function JournalModule({
                       </div>
 
                       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 lg:px-6">
-                        <JournalSettingsContent
-                          ts={ts}
-                          security={security}
-                          section={settingsSection}
-                          onSectionChange={setSettingsSection}
-                          privateMode={privateMode}
-                          onPrivateModeChange={(checked) => {
-                            setPrivateMode(checked);
-                            storageSetRaw(SK.JOURNAL_PRIVATE_MODE, String(checked));
-                          }}
-                          onOpenExport={() => {
-                            closeSettings(false);
-                            setShowExportPicker(true);
-                          }}
-                          onRequestRemovePassword={() => setShowRemovePasswordConfirm(true)}
-                        />
+                        <Suspense
+                          fallback={
+                            <JournalDeferredPanelFallback label={t.loading || "Loading..."} />
+                          }
+                        >
+                          <LazyJournalSettingsContent
+                            ts={ts}
+                            security={security}
+                            section={settingsSection}
+                            onSectionChange={setSettingsSection}
+                            privateMode={privateMode}
+                            onPrivateModeChange={(checked) => {
+                              setPrivateMode(checked);
+                              storageSetRaw(SK.JOURNAL_PRIVATE_MODE, String(checked));
+                            }}
+                            onOpenExport={() => {
+                              closeSettings(false);
+                              setShowExportPicker(true);
+                            }}
+                            onRequestRemovePassword={() => setShowRemovePasswordConfirm(true)}
+                          />
+                        </Suspense>
                       </div>
                     </div>
                   ) : journal.view === "editing" ? (
@@ -1777,16 +1848,18 @@ export const JournalModule = memo(function JournalModule({
                       {/* Calendar */}
                       <div className="border-b border-border/10 bg-gradient-to-b from-transparent to-muted/5 px-4 py-2">
                         {calendarMode === "full" ? (
-                          <JournalCalendarFull
-                            entryDates={journal.entryDates}
-                            releaseTraceDates={releaseTraceDates}
-                            selectedDate={journal.selectedDate}
-                            onSelectDate={journal.setSelectedDate}
-                            onToggleMode={() => {
-                              setCalendarMode("strip");
-                              storageSetRaw(SK.JOURNAL_CALENDAR_MODE, "strip");
-                            }}
-                          />
+                          <Suspense fallback={null}>
+                            <LazyJournalCalendarFull
+                              entryDates={journal.entryDates}
+                              releaseTraceDates={releaseTraceDates}
+                              selectedDate={journal.selectedDate}
+                              onSelectDate={journal.setSelectedDate}
+                              onToggleMode={() => {
+                                setCalendarMode("strip");
+                                storageSetRaw(SK.JOURNAL_CALENDAR_MODE, "strip");
+                              }}
+                            />
+                          </Suspense>
                         ) : (
                           <JournalCalendar
                             entryDates={journal.entryDates}
@@ -1928,22 +2001,28 @@ export const JournalModule = memo(function JournalModule({
                                 </button>
                               </div>
 
-                              <JournalSettingsContent
-                                ts={ts}
-                                security={security}
-                                section={settingsSection}
-                                onSectionChange={setSettingsSection}
-                                privateMode={privateMode}
-                                onPrivateModeChange={(checked) => {
-                                  setPrivateMode(checked);
-                                  storageSetRaw(SK.JOURNAL_PRIVATE_MODE, String(checked));
-                                }}
-                                onOpenExport={() => {
-                                  closeSettings(false);
-                                  setShowExportPicker(true);
-                                }}
-                                onRequestRemovePassword={() => setShowRemovePasswordConfirm(true)}
-                              />
+                              <Suspense
+                                fallback={
+                                  <JournalDeferredPanelFallback label={t.loading || "Loading..."} />
+                                }
+                              >
+                                <LazyJournalSettingsContent
+                                  ts={ts}
+                                  security={security}
+                                  section={settingsSection}
+                                  onSectionChange={setSettingsSection}
+                                  privateMode={privateMode}
+                                  onPrivateModeChange={(checked) => {
+                                    setPrivateMode(checked);
+                                    storageSetRaw(SK.JOURNAL_PRIVATE_MODE, String(checked));
+                                  }}
+                                  onOpenExport={() => {
+                                    closeSettings(false);
+                                    setShowExportPicker(true);
+                                  }}
+                                  onRequestRemovePassword={() => setShowRemovePasswordConfirm(true)}
+                                />
+                              </Suspense>
 
                               {/* Screenshot blocking (native only) */}
                               {screenSecurity.isNative && (
@@ -2105,13 +2184,15 @@ export const JournalModule = memo(function JournalModule({
 
                       {/* Export format picker */}
                       {showExportPicker && (
-                        <ExportPickerDialog
-                          ts={ts}
-                          language={language}
-                          exporting={exporting}
-                          setExporting={setExporting}
-                          onClose={() => setShowExportPicker(false)}
-                        />
+                        <Suspense fallback={null}>
+                          <LazyExportPickerDialog
+                            ts={ts}
+                            language={language}
+                            exporting={exporting}
+                            setExporting={setExporting}
+                            onClose={() => setShowExportPicker(false)}
+                          />
+                        </Suspense>
                       )}
                     </motion.div>
                   )}
@@ -2146,24 +2227,32 @@ export const JournalModule = memo(function JournalModule({
 
       {/* Remove password confirmation dialog */}
       {showRemovePasswordConfirm && (
-        <RemovePasswordConfirmDialog
-          ts={ts}
-          onClose={() => setShowRemovePasswordConfirm(false)}
-          onConfirm={async () => {
-            await security.removePassword();
-            setShowRemovePasswordConfirm(false);
-            setSettingsSection("overview");
-          }}
-        />
+        <Suspense fallback={null}>
+          <LazyRemovePasswordConfirmDialog
+            ts={ts}
+            onClose={() => setShowRemovePasswordConfirm(false)}
+            onConfirm={async () => {
+              await security.removePassword();
+              setShowRemovePasswordConfirm(false);
+              setSettingsSection("overview");
+            }}
+          />
+        </Suspense>
       )}
 
       {/* Keyboard shortcuts overlay */}
-      <KeyboardShortcutsOverlay open={showShortcuts} onClose={() => setShowShortcuts(false)} />
+      {showShortcuts && (
+        <Suspense fallback={null}>
+          <LazyKeyboardShortcutsOverlay open={showShortcuts} onClose={() => setShowShortcuts(false)} />
+        </Suspense>
+      )}
 
       {/* Streak milestone celebration overlay */}
       <AnimatePresence>
         {celebratingStreak !== null && (
-          <StreakCelebration streak={celebratingStreak} onDone={() => setCelebratingStreak(null)} />
+          <Suspense fallback={null}>
+            <LazyStreakCelebration streak={celebratingStreak} onDone={() => setCelebratingStreak(null)} />
+          </Suspense>
         )}
       </AnimatePresence>
     </div>

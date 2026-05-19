@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { startTransition, useState, useEffect, useCallback, useMemo } from 'react';
 import type { JournalEntry, JournalPhoto, JournalAudio } from './types';
 import type { MoodType } from '@/types';
 import { getToday } from '@/lib/utils';
@@ -15,11 +15,20 @@ export function useJournal() {
 
   // Load all entries
   const refresh = useCallback(async () => {
+    let applied = false;
     try {
       const all = await storage.getAllEntries();
-      setEntries(all);
+      startTransition(() => {
+        setEntries(all);
+        setLoading(false);
+      });
+      applied = true;
     } finally {
-      setLoading(false);
+      if (!applied) {
+        startTransition(() => {
+          setLoading(false);
+        });
+      }
     }
   }, []);
 

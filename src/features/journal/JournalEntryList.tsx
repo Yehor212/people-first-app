@@ -1,4 +1,14 @@
-import { useState, useEffect, useMemo, useCallback, useRef, memo, useDeferredValue, type ReactNode } from "react";
+import {
+  startTransition,
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  useRef,
+  memo,
+  useDeferredValue,
+  type ReactNode,
+} from "react";
 import {
   Plus,
   Search,
@@ -53,8 +63,23 @@ import { getJournalListDateFilter } from "./journalListFilters";
 import { formatLocalizedCount } from "./journalWordCount";
 import { getLocale } from "@/lib/timeUtils";
 import { useThemeStore } from "@/stores/themeStore";
+import { scheduleIdle } from "@/lib/scheduleIdle";
 
 const JOURNAL_AI_AVAILABLE = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
+const JOURNAL_SPACE_MEMORY_FALLBACK_MS = import.meta.env.MODE === "test" ? 650 : 4500;
+const JOURNAL_SPACE_MEMORY_MIN_DELAY_MS = import.meta.env.MODE === "test" ? 120 : 2800;
+
+function idsFingerprint(items: Array<{ id: string; updatedAt?: number }>): string {
+  if (items.length === 0) return "";
+  return items.map((item) => `${item.id}:${item.updatedAt ?? ""}`).join("|");
+}
+
+function linksFingerprint(items: JournalEntryLink[]): string {
+  if (items.length === 0) return "";
+  return items
+    .map((item) => `${item.id}:${item.entryId}:${item.targetType}:${item.targetId}`)
+    .join("|");
+}
 
 async function searchJournalSemanticLazy(query: string): Promise<SemanticSearchResult[]> {
   const { searchJournalSemantic } = await import("@/lib/journalAI");
@@ -492,45 +517,55 @@ export const JournalEntryList = memo(function JournalEntryList({
 
   useEffect(() => {
     let mounted = true;
-    getJournalSpaces()
-      .then((spaces) => {
-        if (mounted) setJournalSpaces(spaces);
-      })
-      .catch((error) => {
-        logger.warn("[Journal] Failed to load folders", error);
-      });
+    const spacesHandle = scheduleIdle(
+      () => {
+        void getJournalSpaces()
+          .then((spaces) => {
+            if (!mounted) return;
+            if (idsFingerprint(spaces) === idsFingerprint(journalSpaces)) return;
+            startTransition(() => {
+              setJournalSpaces(spaces);
+            });
+          })
+          .catch((error) => {
+            logger.warn("[Journal] Failed to load folders", error);
+          });
+      },
+      650,
+      120,
+    );
+    const memoryHandle = scheduleIdle(
+      () => {
+        void Promise.all([
+          getJournalSpaceCaptures(),
+          getSpaceEntryLinks(),
+        ])
+          .then(([captures, links]) => {
+            if (!mounted) return;
+            if (
+              idsFingerprint(captures) === idsFingerprint(spaceCaptures) &&
+              linksFingerprint(links) === linksFingerprint(spaceEntryLinks)
+            ) {
+              return;
+            }
+            startTransition(() => {
+              setSpaceCaptures(captures);
+              setSpaceEntryLinks(links);
+            });
+          })
+          .catch((error) => {
+            logger.warn("[Journal] Failed to load space memory", error);
+          });
+      },
+      JOURNAL_SPACE_MEMORY_FALLBACK_MS,
+      JOURNAL_SPACE_MEMORY_MIN_DELAY_MS,
+    );
     return () => {
       mounted = false;
+      spacesHandle.cancel();
+      memoryHandle.cancel();
     };
-  }, []);
-
-  useEffect(() => {
-    let mounted = true;
-    getJournalSpaceCaptures()
-      .then((captures) => {
-        if (mounted) setSpaceCaptures(captures);
-      })
-      .catch((error) => {
-        logger.warn("[Journal] Failed to load space captures", error);
-      });
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    let mounted = true;
-    getSpaceEntryLinks()
-      .then((links) => {
-        if (mounted) setSpaceEntryLinks(links);
-      })
-      .catch((error) => {
-        logger.warn("[Journal] Failed to load space entry links", error);
-      });
-    return () => {
-      mounted = false;
-    };
-  }, []);
+  }, [journalSpaces, spaceCaptures, spaceEntryLinks]);
 
   const refreshSpaceMemory = useCallback(async () => {
     try {
