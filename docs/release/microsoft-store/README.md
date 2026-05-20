@@ -22,11 +22,13 @@ Open:
 Copy these into trusted environment variables or CI variables:
 
 - `ZENFLOW_STORE_PRODUCT_ID=9MZK46FHZV8K`
-- `ZENFLOW_STORE_PACKAGE_IDENTITY_NAME`
-- `ZENFLOW_STORE_PUBLISHER`
-- `ZENFLOW_STORE_PUBLISHER_DISPLAY_NAME`
+- `ZENFLOW_STORE_PACKAGE_IDENTITY_NAME=YehorSha.ZenFlow`
+- `ZENFLOW_STORE_PUBLISHER=CN=EEB3FAA5-30F3-4886-A288-B72F7ED6729B`
+- `ZENFLOW_STORE_PUBLISHER_DISPLAY_NAME=YehorSha`
 
-The values are case-sensitive. Do not invent or normalize them.
+The values are also recorded in `product-identity.public.json` as non-secret
+public package metadata. They are case-sensitive. Do not invent or normalize
+them.
 
 ## Readiness Command
 

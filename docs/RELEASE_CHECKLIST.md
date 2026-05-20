@@ -76,10 +76,12 @@ Use this list before publishing on stores or web.
 ## Microsoft Store / MSIX
 - Confirm Partner Center product id is `9MZK46FHZV8K`.
 - Open `Apps and games > ZenFlow > Product management > Product Identity` and
-  copy exact package identity values into trusted env/CI variables only.
+  confirm exact package identity values match
+  `docs/release/microsoft-store/product-identity.public.json`.
 - Do not purchase, submit, publish, or change pricing without explicit approval.
 - Keep `docs/release/microsoft-store/identity.template.json` as a placeholder
-  template; never commit a private certificate, PFX base64, password, Store
+  template; keep `product-identity.public.json` limited to public Store package
+  metadata; never commit a private certificate, PFX base64, password, Store
   credential, or service-role key.
 - Use either MSIX Packaging Tool conversion from the signed Tauri installer or
   manual MakeAppx/SignTool packaging; do not claim Store-ready from NSIS output

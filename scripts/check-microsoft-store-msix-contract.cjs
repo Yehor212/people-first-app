@@ -6,6 +6,13 @@ const path = require("node:path");
 
 const ROOT = path.join(__dirname, "..");
 const PRODUCT_ID = "9MZK46FHZV8K";
+const EXPECTED_IDENTITY = {
+  productId: PRODUCT_ID,
+  packageIdentityName: "YehorSha.ZenFlow",
+  publisher: "CN=EEB3FAA5-30F3-4886-A288-B72F7ED6729B",
+  publisherDisplayName: "YehorSha",
+  packageFamilyName: "YehorSha.ZenFlow_5m5fhwz1wz4xt",
+};
 const failures = [];
 const warnings = [];
 let passCount = 0;
@@ -102,7 +109,7 @@ function validateOptionalIdentityEnv() {
 
   const anyIdentity = Object.values(identity).some(Boolean);
   if (!anyIdentity) {
-    warnings.push("Partner Center Product Identity env values are absent; Store package identity remains UNVERIFIED");
+    warnings.push("Partner Center Product Identity env values are absent; CI/env mirror remains UNVERIFIED, public identity file is checked");
     return;
   }
 
@@ -112,20 +119,42 @@ function validateOptionalIdentityEnv() {
     pass();
   }
 
-  if (!/^[A-Za-z0-9_.-]{3,80}$/.test(identity.name)) {
-    failures.push("ZENFLOW_STORE_PACKAGE_IDENTITY_NAME has an unexpected format");
+  if (identity.name !== EXPECTED_IDENTITY.packageIdentityName) {
+    failures.push(`ZENFLOW_STORE_PACKAGE_IDENTITY_NAME must be ${EXPECTED_IDENTITY.packageIdentityName}`);
   } else {
     pass();
   }
 
-  if (!/^CN=.+/.test(identity.publisher)) {
-    failures.push("ZENFLOW_STORE_PUBLISHER should look like a Partner Center publisher subject, for example CN=...");
+  if (identity.publisher !== EXPECTED_IDENTITY.publisher) {
+    failures.push(`ZENFLOW_STORE_PUBLISHER must be ${EXPECTED_IDENTITY.publisher}`);
   } else {
     pass();
   }
 
-  if (identity.publisherDisplayName.length < 2 || identity.publisherDisplayName.length > 80) {
-    failures.push("ZENFLOW_STORE_PUBLISHER_DISPLAY_NAME must be 2-80 characters");
+  if (identity.publisherDisplayName !== EXPECTED_IDENTITY.publisherDisplayName) {
+    failures.push(`ZENFLOW_STORE_PUBLISHER_DISPLAY_NAME must be ${EXPECTED_IDENTITY.publisherDisplayName}`);
+  } else {
+    pass();
+  }
+}
+
+function requirePublicIdentity(identity) {
+  for (const [field, expected] of Object.entries(EXPECTED_IDENTITY)) {
+    if (identity[field] !== expected) {
+      failures.push(`docs/release/microsoft-store/product-identity.public.json ${field} must be ${expected}`);
+    } else {
+      pass();
+    }
+  }
+
+  if (!String(identity.storeUrl || "").endsWith(`/detail/${PRODUCT_ID}`)) {
+    failures.push("docs/release/microsoft-store/product-identity.public.json storeUrl must point to the Store product");
+  } else {
+    pass();
+  }
+
+  if (!String(identity.storeProtocolLink || "").endsWith(`productid=${PRODUCT_ID}`)) {
+    failures.push("docs/release/microsoft-store/product-identity.public.json storeProtocolLink must point to the Store product id");
   } else {
     pass();
   }
@@ -135,11 +164,13 @@ function main() {
   const packageJson = readJson("package.json");
   const tauriConfig = readJson("src-tauri/tauri.conf.json");
   const identityTemplate = readJson("docs/release/microsoft-store/identity.template.json");
+  const publicIdentity = readJson("docs/release/microsoft-store/product-identity.public.json");
 
   requireIncludes("docs/ai/MICROSOFT_STORE_MSIX_CONTRACT.md", [
     PRODUCT_ID,
     "MSIX or PWA app",
     "Product Identity",
+    "product-identity.public.json",
     "No visual regression",
     "No sync fork",
     "No secrets in the app or repository",
@@ -155,6 +186,7 @@ function main() {
     "Product Identity",
     "npm run desktop:store:check",
     "Do not place certificates",
+    "product-identity.public.json",
     "accepted package in the Partner Center draft",
   ]);
 
@@ -206,12 +238,14 @@ function main() {
     pass();
   }
   requirePlaceholderOnly(identityTemplate);
+  requirePublicIdentity(publicIdentity);
   validateOptionalIdentityEnv();
 
   requireNoHighConfidenceSecrets([
     "docs/ai/MICROSOFT_STORE_MSIX_CONTRACT.md",
     "docs/release/microsoft-store/README.md",
     "docs/release/microsoft-store/identity.template.json",
+    "docs/release/microsoft-store/product-identity.public.json",
     "scripts/check-microsoft-store-msix-contract.cjs",
   ]);
 

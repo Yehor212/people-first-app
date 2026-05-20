@@ -86,16 +86,20 @@ Copy these values from Partner Center after opening:
 
 `Apps and games` -> `ZenFlow` -> `Product management` -> `Product Identity`.
 
-Record them as environment variables or CI variables only:
+Record them in `docs/release/microsoft-store/product-identity.public.json`
+because these Store identity values are public package metadata, not secrets.
+Automation may also mirror them into trusted environment variables or CI
+variables:
 
 - `ZENFLOW_STORE_PRODUCT_ID=9MZK46FHZV8K`
-- `ZENFLOW_STORE_PACKAGE_IDENTITY_NAME`
-- `ZENFLOW_STORE_PUBLISHER`
-- `ZENFLOW_STORE_PUBLISHER_DISPLAY_NAME`
+- `ZENFLOW_STORE_PACKAGE_IDENTITY_NAME=YehorSha.ZenFlow`
+- `ZENFLOW_STORE_PUBLISHER=CN=EEB3FAA5-30F3-4886-A288-B72F7ED6729B`
+- `ZENFLOW_STORE_PUBLISHER_DISPLAY_NAME=YehorSha`
 
-Do not commit a real Publisher certificate subject if it is only available as a
-private signing/certificate artifact. It may be used in CI variables and release
-logs only when the Done Packet does not expose secrets.
+Do not commit certificate files, PFX base64 values, passwords, Store account
+credentials, or signing private keys. The `CN=...` Publisher string shown in
+Partner Center Product Identity is public package metadata and may be recorded
+for reproducible package manifests.
 
 ## MSIX Packaging Paths
 

@@ -135,6 +135,7 @@ function main() {
 
   requireFile("docs/release/microsoft-store/README.md");
   requireFile("docs/release/microsoft-store/identity.template.json");
+  requireFile("docs/release/microsoft-store/product-identity.public.json");
 
   requireIncludes("src/pages/Index.tsx", [
     "DesktopDownloadPage",
