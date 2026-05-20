@@ -68,6 +68,9 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
+          VITE_DESKTOP_SIGNED_RELEASE_URL: ${{ vars.VITE_DESKTOP_SIGNED_RELEASE_URL }}
+          VITE_DESKTOP_SIGNED_RELEASE_SHA256: ${{ vars.VITE_DESKTOP_SIGNED_RELEASE_SHA256 }}
+          VITE_DESKTOP_SIGNED_RELEASE_AUTHENTICODE: ${{ vars.VITE_DESKTOP_SIGNED_RELEASE_AUTHENTICODE }}
         run: npm run build
 
       # GitHub Pages serves direct URLs only when the path exists in the

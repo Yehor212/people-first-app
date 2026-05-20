@@ -1,0 +1,92 @@
+name: Desktop Windows Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag. Defaults to desktop-v<package version>."
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+concurrency:
+  group: desktop-release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  windows-signed-release:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Setup Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Verify desktop toolchain
+        run: npm run desktop:check
+
+      - name: Build desktop app
+        run: npm run desktop:build
+
+      - name: Sign Windows artifacts
+        env:
+          ZENFLOW_WINDOWS_CERT_PFX_BASE64: ${{ secrets.ZENFLOW_WINDOWS_CERT_PFX_BASE64 }}
+          ZENFLOW_WINDOWS_CERT_PASSWORD: ${{ secrets.ZENFLOW_WINDOWS_CERT_PASSWORD }}
+          ZENFLOW_WINDOWS_TIMESTAMP_URL: ${{ vars.ZENFLOW_WINDOWS_TIMESTAMP_URL }}
+        run: npm run desktop:sign
+
+      - name: Verify signed release artifacts
+        run: npm run desktop:release:check
+
+      - name: Prepare release metadata
+        id: meta
+        shell: pwsh
+        run: |
+          $version = node -p "require('./package.json').version"
+          $tagInput = "${{ github.event.inputs.tag }}"
+          $tag = if ([string]::IsNullOrWhiteSpace($tagInput)) { "desktop-v$version" } else { $tagInput.Trim() }
+          $installer = "src-tauri/target/release/bundle/nsis/ZenFlow_${version}_x64-setup.exe"
+          $sha = (Get-FileHash -Algorithm SHA256 -LiteralPath $installer).Hash
+          "tag=$tag" >> $env:GITHUB_OUTPUT
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "installer=$installer" >> $env:GITHUB_OUTPUT
+          "sha256=$sha" >> $env:GITHUB_OUTPUT
+          "url=https://github.com/${{ github.repository }}/releases/download/$tag/ZenFlow_${version}_x64-setup.exe" >> $env:GITHUB_OUTPUT
+
+      - name: Create draft GitHub release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $tag = "${{ steps.meta.outputs.tag }}"
+          $installer = "${{ steps.meta.outputs.installer }}"
+          $sha = "${{ steps.meta.outputs.sha256 }}"
+          $url = "${{ steps.meta.outputs.url }}"
+          $notes = @"
+          ZenFlow Desktop Windows signed release.
+
+          SHA-256: $sha
+          Signed installer URL after publishing: $url
+
+          After reviewing the draft release, set repository variables:
+          - VITE_DESKTOP_SIGNED_RELEASE_URL=$url
+          - VITE_DESKTOP_SIGNED_RELEASE_SHA256=$sha
+          - VITE_DESKTOP_SIGNED_RELEASE_AUTHENTICODE=Valid
+          "@
+          gh release create $tag $installer --draft --title "ZenFlow Desktop ${{ steps.meta.outputs.version }}" --notes $notes

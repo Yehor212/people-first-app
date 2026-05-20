@@ -33,6 +33,20 @@ link to the web app or GitHub Releases, but it must not expose an unsigned EXE
 or installer. Its primary download action stays locked until
 `npm run desktop:release:check` passes on signed artifacts.
 
+The Desktop Dock download button is unlocked only by public release metadata,
+not by a code edit. A production GitHub Pages build must provide all three
+variables:
+
+- `VITE_DESKTOP_SIGNED_RELEASE_URL` pointing to the signed
+  `ZenFlow_<version>_x64-setup.exe` asset under this repository's GitHub
+  Releases.
+- `VITE_DESKTOP_SIGNED_RELEASE_SHA256` containing the 64-character SHA-256 hash
+  from the signed installer.
+- `VITE_DESKTOP_SIGNED_RELEASE_AUTHENTICODE=Valid` after
+  `npm run desktop:release:check` has verified the installer.
+
+If any value is missing or malformed, `/desktop` must stay locked.
+
 ## Why This Exists
 
 The browser can lag for reasons ZenFlow does not control: extensions, old
@@ -182,8 +196,17 @@ Use these commands in order for Windows desktop evidence:
      commit PFX files, private keys, passwords, or generated signing material.
 5. `npm run desktop:release:check`
    - Public release proof. It must report Valid Authenticode signatures for the
-     app executable and installer. If it fails with `NotSigned`, the artifact is
-     not ready for users.
+   app executable and installer. If it fails with `NotSigned`, the artifact is
+   not ready for users.
+6. Trigger `.github/workflows/desktop-release.yml`
+   - The workflow builds on `windows-latest`, signs with the
+     `ZENFLOW_WINDOWS_CERT_PFX_BASE64` and `ZENFLOW_WINDOWS_CERT_PASSWORD`
+     secrets, runs the release check, and creates a draft GitHub Release.
+   - After the draft release is reviewed, set the public repository variables
+     `VITE_DESKTOP_SIGNED_RELEASE_URL`,
+     `VITE_DESKTOP_SIGNED_RELEASE_SHA256`, and
+     `VITE_DESKTOP_SIGNED_RELEASE_AUTHENTICODE=Valid`, then rebuild GitHub Pages
+     so `/desktop` exposes only the verified signed installer.
 
 If updater support is added, its private key stays outside the repository and
 the updater public key/config must be verified by this same release gate before

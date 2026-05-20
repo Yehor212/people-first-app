@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { DesktopDownloadPage } from "../DesktopDownloadPage";
 
@@ -18,6 +18,10 @@ vi.mock("@/components/state-of-mind/MiniValenceOrb", () => ({
 }));
 
 describe("DesktopDownloadPage", () => {
+  beforeEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   it("keeps public EXE download locked until a signed release is ready", () => {
     render(<DesktopDownloadPage />);
 
@@ -28,6 +32,23 @@ describe("DesktopDownloadPage", () => {
       "href",
       "https://github.com/Yehor212/people-first-app/releases",
     );
+  });
+
+  it("shows the download link only for a verified signed release configuration", () => {
+    vi.stubEnv(
+      "VITE_DESKTOP_SIGNED_RELEASE_URL",
+      "https://github.com/Yehor212/people-first-app/releases/download/desktop-v1.7.3/ZenFlow_1.7.3_x64-setup.exe",
+    );
+    vi.stubEnv("VITE_DESKTOP_SIGNED_RELEASE_SHA256", "B".repeat(64));
+    vi.stubEnv("VITE_DESKTOP_SIGNED_RELEASE_AUTHENTICODE", "Valid");
+
+    render(<DesktopDownloadPage />);
+
+    expect(screen.getByRole("link", { name: /Download signed EXE/i })).toHaveAttribute(
+      "href",
+      "https://github.com/Yehor212/people-first-app/releases/download/desktop-v1.7.3/ZenFlow_1.7.3_x64-setup.exe",
+    );
+    expect(screen.queryByRole("button", { name: /Signed EXE is being prepared/i })).not.toBeInTheDocument();
   });
 
   it("uses the canonical mini orb on the Desktop Dock visual surface", () => {

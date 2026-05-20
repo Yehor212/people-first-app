@@ -148,11 +148,36 @@ function main() {
   requireIncludes("src/pages/DesktopDownloadPage.tsx", [
     "MiniValenceOrb",
     "APP_VERSION",
-    "SIGNED_RELEASE_READY",
-    "SIGNED_RELEASE_DOWNLOAD_URL",
+    "getDesktopReleaseState",
     "aria-disabled=\"true\"",
     "https://github.com/Yehor212/people-first-app/releases",
     "data-testid=\"desktop-download-page\"",
+  ]);
+
+  requireIncludes("src/lib/desktopRelease.ts", [
+    "VITE_DESKTOP_SIGNED_RELEASE_URL",
+    "VITE_DESKTOP_SIGNED_RELEASE_SHA256",
+    "VITE_DESKTOP_SIGNED_RELEASE_AUTHENTICODE",
+    "isTrustedDesktopReleaseUrl",
+    "releases/download",
+    "ZenFlow_",
+    "x64-setup",
+  ]);
+
+  requireIncludes(".github/workflows/deploy.yml", [
+    "VITE_DESKTOP_SIGNED_RELEASE_URL",
+    "VITE_DESKTOP_SIGNED_RELEASE_SHA256",
+    "VITE_DESKTOP_SIGNED_RELEASE_AUTHENTICODE",
+  ]);
+
+  requireIncludes(".github/workflows/desktop-release.yml", [
+    "windows-latest",
+    "npm run desktop:build",
+    "npm run desktop:sign",
+    "npm run desktop:release:check",
+    "ZENFLOW_WINDOWS_CERT_PFX_BASE64",
+    "ZENFLOW_WINDOWS_CERT_PASSWORD",
+    "gh release create",
   ]);
 
   requireIncludes("scripts/run-with-msvc.cjs", [

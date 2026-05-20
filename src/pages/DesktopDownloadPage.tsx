@@ -14,12 +14,11 @@ import { MiniValenceOrb } from "@/components/state-of-mind/MiniValenceOrb";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useShouldAnimate } from "@/hooks/useShouldAnimate";
 import { APP_VERSION } from "@/lib/appVersion";
+import { getDesktopReleaseState } from "@/lib/desktopRelease";
 
 import "./DesktopDownloadPage.css";
 
 const GITHUB_RELEASES_URL = "https://github.com/Yehor212/people-first-app/releases";
-const SIGNED_RELEASE_READY = false;
-const SIGNED_RELEASE_DOWNLOAD_URL = "";
 
 const copy = {
   uk: {
@@ -37,6 +36,8 @@ const copy = {
     versionLabel: "Версія",
     signatureLabel: "Підпис",
     signatureValue: "Очікує signed release",
+    hashLabel: "SHA-256",
+    hashPending: "Очікує release hash",
     runtimeLabel: "Runtime",
     runtimeValue: "Tauri 2 + WebView2",
     orbitLabel: "Орби",
@@ -87,6 +88,8 @@ const copy = {
     versionLabel: "Version",
     signatureLabel: "Signature",
     signatureValue: "Waiting for signed release",
+    hashLabel: "SHA-256",
+    hashPending: "Waiting for release hash",
     runtimeLabel: "Runtime",
     runtimeValue: "Tauri 2 + WebView2",
     orbitLabel: "Orbs",
@@ -142,7 +145,7 @@ export function DesktopDownloadPage() {
   const tx = selectCopy(language);
   const webHref = buildAppHref();
   const v2Href = buildAppHref("orb?nav=v2&navLayout=phone");
-  const canDownload = SIGNED_RELEASE_READY && SIGNED_RELEASE_DOWNLOAD_URL.length > 0;
+  const release = getDesktopReleaseState();
 
   return (
     <main
@@ -194,10 +197,10 @@ export function DesktopDownloadPage() {
           <p className="desktop-download-page__lead">{tx.body}</p>
 
           <div className="desktop-download-page__actions">
-            {canDownload ? (
+            {release.ready ? (
               <a
                 className="desktop-download-page__primary"
-                href={SIGNED_RELEASE_DOWNLOAD_URL}
+                href={release.downloadUrl}
                 download
               >
                 <Download aria-hidden="true" />
@@ -237,7 +240,11 @@ export function DesktopDownloadPage() {
           </div>
           <div>
             <dt>{tx.signatureLabel}</dt>
-            <dd>{tx.signatureValue}</dd>
+            <dd>{release.ready ? release.signatureStatus : tx.signatureValue}</dd>
+          </div>
+          <div>
+            <dt>{tx.hashLabel}</dt>
+            <dd>{release.ready ? release.sha256.slice(0, 12) : tx.hashPending}</dd>
           </div>
           <div>
             <dt>{tx.runtimeLabel}</dt>
