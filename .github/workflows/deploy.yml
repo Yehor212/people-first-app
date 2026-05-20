@@ -75,7 +75,7 @@ jobs:
 
       # GitHub Pages serves direct URLs only when the path exists in the
       # artifact. Keep SPA fallback plus physical V2 route entrypoints so
-      # /orb, /habits, /diary, and /settings return 200 instead of 404.
+      # /orb, /habits, /diary, /settings, and /desktop return 200 instead of 404.
       - name: Prepare GitHub Pages SPA artifact
         run: node scripts/prepare-pages-artifact.cjs
 

@@ -7,7 +7,7 @@ const root = process.cwd();
 const distDir = path.join(root, "dist");
 const indexPath = path.join(distDir, "index.html");
 
-const routes = ["orb", "habits", "diary", "settings"];
+const routes = ["orb", "habits", "diary", "settings", "desktop"];
 
 if (!fs.existsSync(indexPath)) {
   throw new Error(`Cannot prepare GitHub Pages artifact: missing ${indexPath}`);
