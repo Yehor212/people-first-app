@@ -439,12 +439,14 @@ function main() {
   ]);
 
   requireIncludes("package.json", [
+    '"check:task-completion": "node scripts/check-task-completion-protocol.cjs"',
     '"check:sync-contract": "node scripts/check-sync-contract.cjs"',
     '"smoke:sync-health": "node scripts/smoke-sync-health.cjs"',
     '"smoke:sync-account": "node scripts/smoke-sync-account.cjs"',
     '"smoke:telegram-sync-drill": "node scripts/smoke-telegram-sync-drill.cjs"',
     '"check:github-sync-secrets": "node scripts/check-github-sync-secrets.cjs"',
     '"setup:sync-test-account": "node scripts/setup-sync-test-account.cjs"',
+    "npm run check:task-completion",
     "npm run check:sync-contract",
   ]);
 
@@ -509,6 +511,8 @@ function main() {
   ]);
 
   requireIncludes(".github/workflows/deploy.yml", [
+    "Check task completion protocol",
+    "npm run check:task-completion",
     "Check Telegram-grade sync contract",
     "npm run check:sync-contract",
     "Run Telegram sync drill",
