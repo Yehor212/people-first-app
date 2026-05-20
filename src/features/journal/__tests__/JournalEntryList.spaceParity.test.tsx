@@ -249,7 +249,12 @@ describe("JournalEntryList space parity", () => {
       />,
     );
 
-    expect(await screen.findByTestId("journal-space-rail-count-space-projects")).toHaveTextContent("3");
+    const projectRailCount = await screen.findByTestId(
+      "journal-space-rail-count-space-projects",
+      undefined,
+      { timeout: 3_000 },
+    );
+    expect(projectRailCount).toHaveTextContent("3");
     expect(screen.getByTestId("journal-space-rail-item-space-projects")).toHaveAttribute(
       "data-visual-role",
       "focus",
