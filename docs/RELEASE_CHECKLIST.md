@@ -52,7 +52,9 @@ Use this list before publishing on stores or web.
 
 ## Desktop EXE
 - Read `docs/ai/DESKTOP_EXE_RUNTIME_CONTRACT.md`.
+- If publishing through Microsoft Store, read `docs/ai/MICROSOFT_STORE_MSIX_CONTRACT.md`.
 - Run `npm run check:desktop-exe-contract`.
+- Run `npm run desktop:store:check` for any Microsoft Store/MSIX claim.
 - Run `npm run desktop:check`.
 - Confirm Visual Studio Build Tools with the `Desktop development with C++`
   workload is installed and loadable through `scripts/run-with-msvc.cjs`.
@@ -70,6 +72,21 @@ Use this list before publishing on stores or web.
 - Confirm the signed updater public key is present only when the private key is kept out of repo.
 - Confirm code signing status is `Valid`; unsigned local artifacts are development proof only.
 - Confirm no Supabase service-role key, signing key, GitHub token, Sentry auth token, or test-account password is bundled.
+
+## Microsoft Store / MSIX
+- Confirm Partner Center product id is `9MZK46FHZV8K`.
+- Open `Apps and games > ZenFlow > Product management > Product Identity` and
+  copy exact package identity values into trusted env/CI variables only.
+- Do not purchase, submit, publish, or change pricing without explicit approval.
+- Keep `docs/release/microsoft-store/identity.template.json` as a placeholder
+  template; never commit a private certificate, PFX base64, password, Store
+  credential, or service-role key.
+- Use either MSIX Packaging Tool conversion from the signed Tauri installer or
+  manual MakeAppx/SignTool packaging; do not claim Store-ready from NSIS output
+  alone.
+- Run Windows App Certification Kit before uploading a package for submission.
+- Upload only a signed package to the Partner Center draft and keep submission
+  in draft until final product approval.
 
 ## Sync and Data Convergence
 - Run `npm run check:sync-contract`.

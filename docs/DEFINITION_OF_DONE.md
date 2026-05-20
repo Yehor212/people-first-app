@@ -42,6 +42,7 @@ cross-platform user-flow changes.
 | 13 | Telegram 20-idea ledger | `docs/ai/TELEGRAM_GRADE_20_IDEA_LEDGER.md` rows touched by the change are marked `PASS`, `PARTIAL`, `UNVERIFIED`, `FAIL`, or `WAIVED` with evidence | Yes for sync/runtime/account/release claims |
 | 14 | iOS native gate | `npm run cap:sync:ios` plus the GitHub Actions `ios-gate` macOS simulator build for `ios/App/App.xcodeproj`; missing macOS/Xcode proof means iOS remains `UNVERIFIED` | Yes for iOS/WKWebView claims |
 | 15 | Desktop EXE contract | `npm run check:desktop-exe-contract`; local artifacts require `npm run desktop:check` and `npm run desktop:release:check:dev`; public `.exe` claims require `npm run desktop:release:check`, `/desktop` Desktop Dock screenshot, WebView2 trace evidence, signed updater/code-signing status, and no visual/canonical orb regression | Yes for desktop runtime, download page, or `.exe` claims |
+| 16 | Microsoft Store/MSIX contract | `npm run desktop:store:check`; Store package identity must come from Partner Center Product Identity, Store package/certification state stays `UNVERIFIED` until signed package and Windows App Certification Kit evidence exist | Yes for Partner Center, Store, MSIX, or Store-ready claims |
 
 ## Manual Checks (before major releases)
 
@@ -58,6 +59,7 @@ cross-platform user-flow changes.
 | 9 | Completion packet reviewed | `docs/ai/TASK_COMPLETION_PROTOCOL.md` status vocabulary used: `PASS`, `PARTIAL`, `UNVERIFIED`, `FAIL`, or `WAIVED` |
 | 10 | 20-idea ledger reviewed | `docs/ai/TELEGRAM_GRADE_20_IDEA_LEDGER.md` touched rows are named in the Done Packet |
 | 11 | Desktop EXE contract reviewed | `docs/ai/DESKTOP_EXE_RUNTIME_CONTRACT.md` read when desktop/WebView2/runtime packaging is touched |
+| 12 | Microsoft Store/MSIX contract reviewed | `docs/ai/MICROSOFT_STORE_MSIX_CONTRACT.md` read when Partner Center, Store, MSIX, or Product Identity is touched |
 
 ## Release-Only (before store/web publish)
 

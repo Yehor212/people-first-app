@@ -1,0 +1,12 @@
+{
+  "productId": "9MZK46FHZV8K",
+  "partnerCenterPath": "Apps and games > ZenFlow > Product management > Product Identity",
+  "packageIdentityName": "<copy from Partner Center Product Identity>",
+  "publisher": "<copy from Partner Center Product Identity>",
+  "publisherDisplayName": "<copy from Partner Center Product Identity>",
+  "notes": [
+    "Do not commit real certificate files, PFX base64 values, passwords, Store credentials, or service-role keys.",
+    "Values are case-sensitive and must be copied exactly before any MSIX package is claimed Store-ready.",
+    "This template is not a secret and is not a release artifact."
+  ]
+}

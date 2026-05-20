@@ -114,6 +114,7 @@ A task can be closed only after these steps are true:
 | Supabase/backend | Migration prefix check, generated types when schema changes, RLS/permission proof, no client secrets, rollback or repair path. |
 | Performance/startup | `npm run smoke:chrome-performance` or route-specific Chrome trace, cold boot and steady-state notes, max long task/LoAF evidence, no visual regression. |
 | Desktop EXE/runtime | `npm run check:desktop-exe-contract`, `/desktop` Desktop Dock screenshots, `npm run desktop:check`, `npm run desktop:release:check:dev` for local development artifacts or `npm run desktop:release:check` for public artifacts, WebView2/Tauri cold-start and interaction proof, signed updater/code-signing status, no bundled secrets, no visual or canonical orb regression. |
+| Microsoft Store/MSIX | `npm run desktop:store:check`, exact Partner Center Product Identity values supplied through env/CI, signed installer or MSIX proof, Windows App Certification Kit proof, no purchase/final submit unless explicitly approved, and no visual/sync/runtime fork. |
 | Security/privacy | Snyk or repo security scan for changed first-party code, no PII in diagnostics, no broad logging of journal/habit content, no weakened RLS/auth boundaries. |
 | Release/public URL | Remote CI/deploy result, cache-busted public URL, service-worker/stale-cache note when relevant. |
 | Native/PWA/cross-platform | Android/iOS/PWA/Desktop/phone matrix row marked `PASS` or `UNVERIFIED`; never imply native proof from web-only checks. |

@@ -79,8 +79,18 @@ function main() {
     "Signed updater is required",
     "npm run desktop:sign",
     "npm run desktop:release:check",
+    "docs/ai/MICROSOFT_STORE_MSIX_CONTRACT.md",
+    "npm run desktop:store:check",
     "npm run check:canonical-orbs",
     "npm run smoke:chrome-performance",
+  ]);
+
+  requireIncludes("docs/ai/MICROSOFT_STORE_MSIX_CONTRACT.md", [
+    "9MZK46FHZV8K",
+    "MSIX or PWA app",
+    "Product Identity",
+    "No purchase or final submission automation",
+    "Windows App Certification Kit",
   ]);
 
   requireIncludes("docs/adr/0008-zenflow-desktop-exe-runtime.md", [
@@ -118,9 +128,13 @@ function main() {
     "\"desktop:sign\": \"node scripts/sign-desktop-windows.cjs\"",
     "\"desktop:release:check\": \"node scripts/check-desktop-release-readiness.cjs\"",
     "\"desktop:release:check:dev\": \"node scripts/check-desktop-release-readiness.cjs --allow-unsigned-dev\"",
+    "\"desktop:store:check\": \"node scripts/check-microsoft-store-msix-contract.cjs\"",
     "\"check:desktop-exe-contract\": \"node scripts/check-desktop-exe-contract.cjs\"",
     "\"@tauri-apps/cli\"",
   ]);
+
+  requireFile("docs/release/microsoft-store/README.md");
+  requireFile("docs/release/microsoft-store/identity.template.json");
 
   requireIncludes("src/pages/Index.tsx", [
     "DesktopDownloadPage",

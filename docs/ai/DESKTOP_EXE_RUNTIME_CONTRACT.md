@@ -7,7 +7,10 @@ This document must be read before desktop runtime, startup performance,
 WebView2, packaging, installer, updater, telemetry, sync, storage, or security
 work. It extends `docs/ai/TELEGRAM_GRADE_RUNTIME_CONTRACT.md`,
 `docs/ai/CANONICAL_ORB_INVARIANT.md`, and
-`docs/ai/TASK_COMPLETION_PROTOCOL.md`.
+`docs/ai/TASK_COMPLETION_PROTOCOL.md`. If the work touches Partner Center,
+MSIX/MSIXUPLOAD, Microsoft Store submission, or Store package identity, also
+read `docs/ai/MICROSOFT_STORE_MSIX_CONTRACT.md` and run
+`npm run desktop:store:check`.
 
 ## Decision
 
@@ -46,6 +49,11 @@ variables:
   `npm run desktop:release:check` has verified the installer.
 
 If any value is missing or malformed, `/desktop` must stay locked.
+
+Microsoft Store distribution is a separate packaging/submission gate, not a
+replacement for this desktop runtime. The reserved Partner Center product id is
+`9MZK46FHZV8K`, but Store package identity values must be copied exactly from
+Partner Center Product Identity before any MSIX package is claimed ready.
 
 ## Why This Exists
 
