@@ -14,7 +14,7 @@ import { AuthGate } from "@/components/AuthGate";
 import { useThemeStore } from "@/stores/themeStore";
 import { useInnerWorld } from "@/hooks/useInnerWorld";
 import { getChallenges, getBadges } from "@/lib/challengeStorage";
-import { FORCE_NAV_V2 } from "@/lib/env";
+import { FORCE_NAV_V2, IS_DESKTOP_RUNTIME } from "@/lib/env";
 
 const IndexV1Impl = lazy(() => import("./IndexV1Impl"));
 const DesktopDownloadPage = lazy(() =>
@@ -23,6 +23,24 @@ const DesktopDownloadPage = lazy(() =>
 
 const NAV_V2_ROUTE_PATHS = new Set(["/orb", "/habits", "/diary", "/settings"]);
 const PUBLIC_ROUTE_PATHS = new Set(["/desktop"]);
+
+interface NavV2ShellDecision {
+  desktopRuntime: boolean;
+  forceNavV2: boolean;
+  designFlag: boolean;
+  queryOverride: boolean;
+  pathOverride: boolean;
+}
+
+export function shouldUseNavV2Shell(decision: NavV2ShellDecision): boolean {
+  return (
+    decision.desktopRuntime ||
+    decision.forceNavV2 ||
+    decision.designFlag ||
+    decision.queryOverride ||
+    decision.pathOverride
+  );
+}
 
 function getCurrentAppPath(): string {
   if (typeof window === "undefined") return "/";
@@ -72,7 +90,15 @@ export function Index() {
     );
   }
 
-  if (FORCE_NAV_V2 || navV2Flag || navV2QueryOverride || navV2PathOverride) {
+  if (
+    shouldUseNavV2Shell({
+      desktopRuntime: IS_DESKTOP_RUNTIME,
+      forceNavV2: FORCE_NAV_V2,
+      designFlag: navV2Flag,
+      queryOverride: navV2QueryOverride,
+      pathOverride: navV2PathOverride,
+    })
+  ) {
     return <IndexV2Impl />;
   }
 

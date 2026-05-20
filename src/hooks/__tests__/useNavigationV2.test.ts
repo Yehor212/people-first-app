@@ -73,6 +73,14 @@ describe("useNavigationV2", () => {
       expect(result.current.activePage).toBe<NavV2Page>("orb");
       expect(result.current.unknownPath).toBe("/missing-route");
     });
+
+    it("treats bundled desktop index.html as the app root", () => {
+      window.localStorage.setItem(STORAGE_KEY, "diary");
+      setPath("/index.html");
+      const { result } = renderHook(() => useNavigationV2());
+      expect(result.current.activePage).toBe<NavV2Page>("diary");
+      expect(result.current.unknownPath).toBeNull();
+    });
   });
 
   describe("setActivePage", () => {

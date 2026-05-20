@@ -19,6 +19,7 @@ function inferClassicBaseUrl(baseUrl: string): string {
 
 export const BASE_URL = normalizeBaseUrl(import.meta.env.BASE_URL || "/");
 export const FORCE_NAV_V2 = import.meta.env.VITE_FORCE_NAV_V2 === "true";
+export const IS_DESKTOP_RUNTIME = import.meta.env.VITE_DESKTOP_RUNTIME === "true";
 export const CLASSIC_BASE_URL = normalizeBaseUrl(
   (import.meta.env.VITE_CLASSIC_BASE_URL as string | undefined) || inferClassicBaseUrl(BASE_URL),
 );

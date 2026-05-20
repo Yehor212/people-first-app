@@ -53,6 +53,9 @@ function normalizePath(pathname: string): string {
     ? pathname.slice(base.length)
     : pathname;
   const normalized = stripped || "/";
+  if (normalized === "/index.html" || normalized.endsWith("/index.html")) {
+    return "/";
+  }
   return normalized.length > 1 && normalized.endsWith("/")
     ? normalized.slice(0, -1)
     : normalized;

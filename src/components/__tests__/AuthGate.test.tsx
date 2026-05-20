@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { AuthGate, isLocalDevBypassHost } from "@/components/AuthGate";
+import {
+  AuthGate,
+  isLocalDevBypassHost,
+  shouldBypassDesktopInteractiveGates,
+} from "@/components/AuthGate";
 
 const { splashScreenMock, appState, userState } = vi.hoisted(() => {
   const appState = {
@@ -125,6 +129,11 @@ describe("AuthGate", () => {
     expect(isLocalDevBypassHost("127.0.0.1")).toBe(true);
     expect(isLocalDevBypassHost("::1")).toBe(true);
     expect(isLocalDevBypassHost("yehor212.github.io")).toBe(false);
+  });
+
+  it("marks desktop runtime as shell-first so the installed app can open V2 immediately", () => {
+    expect(shouldBypassDesktopInteractiveGates(true)).toBe(true);
+    expect(shouldBypassDesktopInteractiveGates(false)).toBe(false);
   });
 
   it("renders children immediately when dev bypass query is present", () => {

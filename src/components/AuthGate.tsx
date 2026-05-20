@@ -11,6 +11,7 @@ import { WelcomeTutorial } from "@/components/WelcomeTutorial";
 import { OnboardingFlow } from "@/components/OnboardingFlow";
 import { PremiumLoader } from "@/components/PremiumLoader";
 import { NotificationPermission } from "@/components/NotificationPermission";
+import { IS_DESKTOP_RUNTIME } from "@/lib/env";
 
 interface AuthGateProps {
   isLoading: boolean;
@@ -22,6 +23,10 @@ const LOCAL_DEV_BYPASS_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
 
 export function isLocalDevBypassHost(hostname: string): boolean {
   return LOCAL_DEV_BYPASS_HOSTS.has(hostname);
+}
+
+export function shouldBypassDesktopInteractiveGates(isDesktopRuntime: boolean): boolean {
+  return isDesktopRuntime;
 }
 
 /**
@@ -171,6 +176,10 @@ export function AuthGate({ isLoading, splashTheme, children }: AuthGateProps) {
         <PremiumLoader size="lg" />
       </div>
     );
+  }
+
+  if (shouldBypassDesktopInteractiveGates(IS_DESKTOP_RUNTIME)) {
+    return <>{children}</>;
   }
 
   if (!hasSelectedLanguage) {

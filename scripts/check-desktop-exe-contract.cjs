@@ -73,6 +73,9 @@ function main() {
     "Desktop Dock",
     "sync_events.seq",
     "Desktop is a separate build path",
+    "After installation, the desktop executable must open the ZenFlow V2 program",
+    "VITE_DESKTOP_RUNTIME=true",
+    "shell-first",
     "Signed updater is required",
     "npm run desktop:sign",
     "npm run desktop:release:check",
@@ -121,8 +124,25 @@ function main() {
 
   requireIncludes("src/pages/Index.tsx", [
     "DesktopDownloadPage",
+    "IS_DESKTOP_RUNTIME",
+    "shouldUseNavV2Shell",
     "PUBLIC_ROUTE_PATHS",
     "\"/desktop\"",
+  ]);
+
+  requireIncludes("src/lib/env.ts", [
+    "IS_DESKTOP_RUNTIME",
+    "VITE_DESKTOP_RUNTIME",
+  ]);
+
+  requireIncludes("src/components/AuthGate.tsx", [
+    "IS_DESKTOP_RUNTIME",
+    "shouldBypassDesktopInteractiveGates",
+  ]);
+
+  requireIncludes("src/hooks/useNavigationV2.ts", [
+    "\"/index.html\"",
+    "normalized.endsWith(\"/index.html\")",
   ]);
 
   requireIncludes("src/pages/DesktopDownloadPage.tsx", [
@@ -177,8 +197,19 @@ function main() {
     }
 
     const beforeBuild = config.build?.beforeBuildCommand || "";
-    if (!beforeBuild.includes("VITE_APP_BASE=./") || !beforeBuild.includes("VITE_DISABLE_PWA=true")) {
-      failures.push("desktop beforeBuildCommand must use relative base and disable PWA");
+    if (
+      !beforeBuild.includes("VITE_APP_BASE=./") ||
+      !beforeBuild.includes("VITE_DISABLE_PWA=true") ||
+      !beforeBuild.includes("VITE_DESKTOP_RUNTIME=true")
+    ) {
+      failures.push("desktop beforeBuildCommand must use relative base, disable PWA, and force desktop runtime");
+    } else {
+      pass();
+    }
+
+    const beforeDev = config.build?.beforeDevCommand || "";
+    if (!beforeDev.includes("VITE_DESKTOP_RUNTIME=true")) {
+      failures.push("desktop beforeDevCommand must force desktop runtime for tauri dev");
     } else {
       pass();
     }

@@ -18,6 +18,15 @@ inside a controlled desktop runtime instead of the user's open Chrome profile.
 
 Desktop is not a visual fork. It is a runtime shell.
 
+After installation, the desktop executable must open the ZenFlow V2 program
+surface by default. The first visible app screen is the V2 shell, with the
+canonical state-of-mind orb experience available immediately through the normal
+V2 navigation. The EXE must not boot users into the V1 home page, the public
+`/desktop` marketing/download route, or a bundled `index.html` Not Found state.
+Desktop first-run language, auth, tutorial, onboarding, and notification prompts
+must not replace the V2 program shell. Account sync remains available from the
+normal V2 account/settings surfaces, but the installed app is shell-first.
+
 The public web route `/desktop` is the **Desktop Dock**: a safe user-facing
 download page for the Windows build. It may describe the desktop runtime and
 link to the web app or GitHub Releases, but it must not expose an unsigned EXE
@@ -48,6 +57,11 @@ interaction evidence.
      their current behavior.
    - Desktop build uses `VITE_APP_BASE=./` and `VITE_DISABLE_PWA=true` so the
      bundled app uses relative assets and does not install a web service worker.
+   - Desktop build and dev run with `VITE_DESKTOP_RUNTIME=true` so the installed
+     program starts in the V2 shell without changing public web routing.
+   - Desktop runtime bypasses replacement-style web onboarding gates after the
+     loading/error phase; the V2 shell stays the installed app's first program
+     surface.
 
 3. **No secrets in the executable.**
    - Supabase service-role keys, GitHub tokens, Sentry auth tokens, signing
@@ -82,13 +96,16 @@ interaction evidence.
 
 Desktop boot order:
 
-1. WebView2 opens the local bundled `dist` shell.
+1. WebView2 opens the local bundled `dist` shell with
+   `VITE_DESKTOP_RUNTIME=true`.
 2. Theme, language, safe areas, route shell, and error boundary paint first.
-3. Visible route data hydrates.
-4. Canonical WebGL orbs initialize through the existing renderer lifecycle.
-5. Sync runtime wakes after first paint and uses the same leader/gap/outbox
+3. The V2 program shell is selected before V1 lazy code is requested.
+4. Desktop runtime bypasses replacement-style web gates and keeps account
+   connection inside the V2 settings/account flow.
+5. Canonical WebGL orbs initialize through the existing renderer lifecycle.
+6. Sync runtime wakes after first paint and uses the same leader/gap/outbox
    rules as web.
-6. Non-critical diagnostics, cache warming, exports, charts, and optional
+7. Non-critical diagnostics, cache warming, exports, charts, and optional
    reports stay deferred.
 
 Desktop should not run the public PWA service worker. A stale service worker can
