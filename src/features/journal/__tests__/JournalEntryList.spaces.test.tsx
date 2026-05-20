@@ -226,10 +226,10 @@ describe("JournalEntryList spaces", () => {
       expect(screen.getByTestId("journal-space-mode-title")).toHaveTextContent("Мої вдячності");
     });
 
-    expect(screen.getByTestId("journal-space-capture-card-capture-gratitude")).toHaveTextContent(
+    expect(await screen.findByTestId("journal-space-capture-card-capture-gratitude")).toHaveTextContent(
       "Тиха ранкова прогулянка",
     );
-    expect(screen.getByTestId("journal-entry-card-entry-older")).toHaveTextContent("Older gratitude note");
+    expect(await screen.findByTestId("journal-entry-card-entry-older")).toHaveTextContent("Older gratitude note");
     expect(screen.queryByText("Цей простір порожній")).not.toBeInTheDocument();
   });
 
