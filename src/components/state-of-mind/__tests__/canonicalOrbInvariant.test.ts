@@ -63,7 +63,16 @@ describe("canonical orb invariant", () => {
       },
       {
         file: "src/pages/DesktopDownloadPage.tsx",
-        required: ["MiniValenceOrb", "SIGNED_RELEASE_READY", 'data-testid="desktop-download-page"'],
+        required: ["MiniValenceOrb", "getDesktopReleaseState", 'data-testid="desktop-download-page"'],
+      },
+      {
+        file: "src/lib/desktopRelease.ts",
+        required: [
+          "VITE_DESKTOP_SIGNED_RELEASE_URL",
+          "VITE_DESKTOP_SIGNED_RELEASE_SHA256",
+          "VITE_DESKTOP_SIGNED_RELEASE_AUTHENTICODE",
+          "isTrustedDesktopReleaseUrl",
+        ],
       },
       {
         file: "src/components/state-of-mind/CompactValenceOrb.tsx",
