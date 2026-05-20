@@ -133,6 +133,9 @@ docs/visual-aesthetic.md
 # Shader preview files (dev-only, not for production)
 *.preview.frag
 
+# Tauri desktop build artifacts
+src-tauri/target/
+
 # Claude Code enforcement tokens (one-time gate files)
 .preflight-token
 .postflight-done

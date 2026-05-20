@@ -62,6 +62,10 @@ describe("canonical orb invariant", () => {
         required: ["MiniValenceOrb", 'data-testid="v1-v2-portal-orb-core"'],
       },
       {
+        file: "src/pages/DesktopDownloadPage.tsx",
+        required: ["MiniValenceOrb", "SIGNED_RELEASE_READY", 'data-testid="desktop-download-page"'],
+      },
+      {
         file: "src/components/state-of-mind/CompactValenceOrb.tsx",
         required: ["MiniValenceOrb", "@deprecated"],
       },

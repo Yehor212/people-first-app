@@ -17,22 +17,34 @@ import { getChallenges, getBadges } from "@/lib/challengeStorage";
 import { FORCE_NAV_V2 } from "@/lib/env";
 
 const IndexV1Impl = lazy(() => import("./IndexV1Impl"));
+const DesktopDownloadPage = lazy(() =>
+  import("./DesktopDownloadPage").then((m) => ({ default: m.DesktopDownloadPage })),
+);
 
 const NAV_V2_ROUTE_PATHS = new Set(["/orb", "/habits", "/diary", "/settings"]);
+const PUBLIC_ROUTE_PATHS = new Set(["/desktop"]);
 
-function isNavV2RouteLocation(): boolean {
-  if (typeof window === "undefined") return false;
+function getCurrentAppPath(): string {
+  if (typeof window === "undefined") return "/";
 
   const base = (import.meta.env?.BASE_URL || "/").replace(/\/$/, "");
   const pathname = window.location.pathname;
   const rawAppPath = base && pathname.startsWith(base)
     ? pathname.slice(base.length) || "/"
     : pathname;
-  const appPath = rawAppPath.length > 1 && rawAppPath.endsWith("/")
+  return rawAppPath.length > 1 && rawAppPath.endsWith("/")
     ? rawAppPath.slice(0, -1)
     : rawAppPath;
+}
 
+function isNavV2RouteLocation(): boolean {
+  const appPath = getCurrentAppPath();
   return NAV_V2_ROUTE_PATHS.has(appPath);
+}
+
+function isPublicRouteLocation(): boolean {
+  const appPath = getCurrentAppPath();
+  return PUBLIC_ROUTE_PATHS.has(appPath);
 }
 
 /**
@@ -43,6 +55,7 @@ function isNavV2RouteLocation(): boolean {
  * V1 stays visually unchanged and is loaded as its own chunk when selected.
  */
 export function Index() {
+  const publicRoute = useMemo(isPublicRouteLocation, []);
   const navV2Flag = useDesignFlag("design.nav.v2");
   const navV2QueryOverride = useMemo(() => {
     if (typeof window === "undefined") return false;
@@ -50,6 +63,14 @@ export function Index() {
   }, []);
 
   const navV2PathOverride = useMemo(isNavV2RouteLocation, []);
+
+  if (publicRoute) {
+    return (
+      <Suspense fallback={null}>
+        <DesktopDownloadPage />
+      </Suspense>
+    );
+  }
 
   if (FORCE_NAV_V2 || navV2Flag || navV2QueryOverride || navV2PathOverride) {
     return <IndexV2Impl />;

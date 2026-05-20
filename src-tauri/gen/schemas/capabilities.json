@@ -1,0 +1,1 @@
+{"default":{"identifier":"default","description":"Default ZenFlow desktop capability. Keep least-privilege until a feature-specific security review adds more permissions.","local":true,"windows":["main"],"permissions":["core:default"]}}

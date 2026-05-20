@@ -41,6 +41,7 @@ cross-platform user-flow changes.
 | 12 | Task completion protocol | `docs/ai/TASK_COMPLETION_PROTOCOL.md` Done Packet lists scope, evidence, known gaps, rollback, and deploy state | Yes for claims that a task is complete |
 | 13 | Telegram 20-idea ledger | `docs/ai/TELEGRAM_GRADE_20_IDEA_LEDGER.md` rows touched by the change are marked `PASS`, `PARTIAL`, `UNVERIFIED`, `FAIL`, or `WAIVED` with evidence | Yes for sync/runtime/account/release claims |
 | 14 | iOS native gate | `npm run cap:sync:ios` plus the GitHub Actions `ios-gate` macOS simulator build for `ios/App/App.xcodeproj`; missing macOS/Xcode proof means iOS remains `UNVERIFIED` | Yes for iOS/WKWebView claims |
+| 15 | Desktop EXE contract | `npm run check:desktop-exe-contract`; local artifacts require `npm run desktop:check` and `npm run desktop:release:check:dev`; public `.exe` claims require `npm run desktop:release:check`, `/desktop` Desktop Dock screenshot, WebView2 trace evidence, signed updater/code-signing status, and no visual/canonical orb regression | Yes for desktop runtime, download page, or `.exe` claims |
 
 ## Manual Checks (before major releases)
 
@@ -56,6 +57,7 @@ cross-platform user-flow changes.
 | 8 | Sync diagnostics privacy checked | Run `npm run smoke:sync-health` or confirm public/debug sync evidence exposes only route/auth/online/queue/cursor/receipt metadata |
 | 9 | Completion packet reviewed | `docs/ai/TASK_COMPLETION_PROTOCOL.md` status vocabulary used: `PASS`, `PARTIAL`, `UNVERIFIED`, `FAIL`, or `WAIVED` |
 | 10 | 20-idea ledger reviewed | `docs/ai/TELEGRAM_GRADE_20_IDEA_LEDGER.md` touched rows are named in the Done Packet |
+| 11 | Desktop EXE contract reviewed | `docs/ai/DESKTOP_EXE_RUNTIME_CONTRACT.md` read when desktop/WebView2/runtime packaging is touched |
 
 ## Release-Only (before store/web publish)
 

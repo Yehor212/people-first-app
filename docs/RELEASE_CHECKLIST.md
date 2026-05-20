@@ -50,6 +50,27 @@ Use this list before publishing on stores or web.
 - Confirm no route exceeds the agreed Chrome long-task budget.
 - Confirm scrollability, safe areas, focus, and reduced-motion behavior for touched screens.
 
+## Desktop EXE
+- Read `docs/ai/DESKTOP_EXE_RUNTIME_CONTRACT.md`.
+- Run `npm run check:desktop-exe-contract`.
+- Run `npm run desktop:check`.
+- Confirm Visual Studio Build Tools with the `Desktop development with C++`
+  workload is installed and loadable through `scripts/run-with-msvc.cjs`.
+- Build the Windows artifact with `npm run desktop:build` before any public `.exe` claim.
+- Verify `/desktop` renders the Desktop Dock in phone and desktop layouts.
+- Confirm `/desktop` keeps public download disabled until `npm run desktop:release:check` passes on signed artifacts.
+- For local development evidence, run `npm run desktop:release:check:dev` and
+  keep its unsigned-artifact warning in the Done Packet.
+- For public desktop distribution, run `npm run desktop:sign` from a trusted
+  release runner with certificate secrets provided through environment
+  variables, then run `npm run desktop:release:check`.
+- Verify the packaged/debug app cold-starts without a non-canonical orb flash.
+- Verify V2 `/orb`, V1 home, diary, habits, and settings in phone and desktop layouts.
+- Confirm the desktop build uses relative assets and does not register the web PWA service worker.
+- Confirm the signed updater public key is present only when the private key is kept out of repo.
+- Confirm code signing status is `Valid`; unsigned local artifacts are development proof only.
+- Confirm no Supabase service-role key, signing key, GitHub token, Sentry auth token, or test-account password is bundled.
+
 ## Sync and Data Convergence
 - Run `npm run check:sync-contract`.
 - Run `npm run check:github-sync-secrets`; missing `ZENFLOW_SYNC_TEST_EMAIL` or `ZENFLOW_SYNC_TEST_PASSWORD` means same-account sync remains `UNVERIFIED`.

@@ -1,0 +1,49 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "ZenFlow",
+  "version": "1.7.3",
+  "identifier": "app.zenflow.desktop",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:8080/people-first-app/",
+    "beforeBuildCommand": "cross-env VITE_APP_BASE=./ VITE_DISABLE_PWA=true npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "ZenFlow",
+        "width": 1200,
+        "height": 820,
+        "minWidth": 390,
+        "minHeight": 640,
+        "resizable": true,
+        "fullscreen": false,
+        "center": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self' data: blob:; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; media-src 'self' data: blob: https:; connect-src 'self' ipc: http://ipc.localhost https://*.supabase.co wss://*.supabase.co https://*.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://*.sentry.io https://*.ingest.sentry.io; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"],
+    "publisher": "ZenFlow",
+    "category": "Utility",
+    "shortDescription": "Daily wellness and ritual flow",
+    "longDescription": "ZenFlow desktop runtime for daily wellness, habits, journaling, and state-of-mind tracking.",
+    "icon": [
+      "icons/128x128.png",
+      "icons/512x512.png"
+    ],
+    "windows": {
+      "nsis": {
+        "installMode": "perMachine",
+        "displayLanguageSelector": true
+      }
+    }
+  }
+}
+

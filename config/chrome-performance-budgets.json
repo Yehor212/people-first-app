@@ -24,7 +24,12 @@
           "path": "diary/?nav=v2&navLayout=phone",
           "readySelector": "[data-testid=\"journal-compact-empty-list\"], [data-testid=\"journal-empty-list\"]"
         },
-        { "name": "settings-v2-phone", "path": "settings/?nav=v2&navLayout=phone" }
+        { "name": "settings-v2-phone", "path": "settings/?nav=v2&navLayout=phone" },
+        {
+          "name": "desktop-dock-phone",
+          "path": "desktop?navLayout=phone",
+          "readySelector": "[data-testid=\"desktop-download-page\"]"
+        }
       ]
     },
     {
@@ -45,7 +50,12 @@
           "path": "diary/?nav=v2",
           "readySelector": "[data-testid=\"journal-compact-empty-list\"], [data-testid=\"journal-empty-list\"]"
         },
-        { "name": "settings-v2-desktop", "path": "settings/?nav=v2" }
+        { "name": "settings-v2-desktop", "path": "settings/?nav=v2" },
+        {
+          "name": "desktop-dock-desktop",
+          "path": "desktop",
+          "readySelector": "[data-testid=\"desktop-download-page\"]"
+        }
       ]
     }
   ]

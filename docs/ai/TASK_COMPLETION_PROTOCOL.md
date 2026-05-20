@@ -14,6 +14,7 @@ state. It complements:
 - `docs/ai/TELEGRAM_GRADE_SYNC_100_PERCENT_CLOSURE.md`
 - `docs/ai/TELEGRAM_GRADE_20_IDEA_LEDGER.md`
 - `docs/ai/CANONICAL_ORB_INVARIANT.md`
+- `docs/ai/DESKTOP_EXE_RUNTIME_CONTRACT.md`
 - `docs/DEFINITION_OF_DONE.md`
 - `docs/RELEASE_CHECKLIST.md`
 
@@ -112,6 +113,7 @@ A task can be closed only after these steps are true:
 | Sync/account/data | `npm run check:sync-contract`, `npm run smoke:telegram-sync-drill`, `npm run check:github-sync-secrets`, touched rows from `TELEGRAM_GRADE_20_IDEA_LEDGER.md`, entity round-trip proof, V1/V2 convergence when shared, anti-resurrection proof for deletes, account-boundary proof when auth is touched. Release claims must also cite the GitHub Actions `telegram-sync-drill` artifact from a freshly built preview. |
 | Supabase/backend | Migration prefix check, generated types when schema changes, RLS/permission proof, no client secrets, rollback or repair path. |
 | Performance/startup | `npm run smoke:chrome-performance` or route-specific Chrome trace, cold boot and steady-state notes, max long task/LoAF evidence, no visual regression. |
+| Desktop EXE/runtime | `npm run check:desktop-exe-contract`, `/desktop` Desktop Dock screenshots, `npm run desktop:check`, `npm run desktop:release:check:dev` for local development artifacts or `npm run desktop:release:check` for public artifacts, WebView2/Tauri cold-start and interaction proof, signed updater/code-signing status, no bundled secrets, no visual or canonical orb regression. |
 | Security/privacy | Snyk or repo security scan for changed first-party code, no PII in diagnostics, no broad logging of journal/habit content, no weakened RLS/auth boundaries. |
 | Release/public URL | Remote CI/deploy result, cache-busted public URL, service-worker/stale-cache note when relevant. |
 | Native/PWA/cross-platform | Android/iOS/PWA/Desktop/phone matrix row marked `PASS` or `UNVERIFIED`; never imply native proof from web-only checks. |
