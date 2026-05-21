@@ -1,0 +1,72 @@
+{
+  "generatedAt": "2026-05-21T02:04:53.777Z",
+  "source": {
+    "vector": "public/icon-source.svg",
+    "featureGraphic": "public/feature-graphic.svg"
+  },
+  "assets": [
+    {
+      "file": "zenflow-official-logo-source-1024.png",
+      "slot": "official vector logo source",
+      "dimensions": "1024x1024",
+      "width": 1024,
+      "height": 1024,
+      "sizeBytes": 282440
+    },
+    {
+      "file": "zenflow-official-app-tile-icon-300.png",
+      "slot": "1:1 App tile icon",
+      "dimensions": "300x300",
+      "width": 300,
+      "height": 300,
+      "sizeBytes": 59360
+    },
+    {
+      "file": "zenflow-official-box-art-1080.png",
+      "slot": "1:1 Box art",
+      "dimensions": "1080x1080",
+      "width": 1080,
+      "height": 1080,
+      "sizeBytes": 240891
+    },
+    {
+      "file": "zenflow-official-box-art-2160.png",
+      "slot": "1:1 Box art preferred",
+      "dimensions": "2160x2160",
+      "width": 2160,
+      "height": 2160,
+      "sizeBytes": 563064
+    },
+    {
+      "file": "zenflow-official-poster-art-720x1080.png",
+      "slot": "2:3 Poster art",
+      "dimensions": "720x1080",
+      "width": 720,
+      "height": 1080,
+      "sizeBytes": 185304
+    },
+    {
+      "file": "zenflow-official-poster-art-1440x2160.png",
+      "slot": "2:3 Poster art preferred",
+      "dimensions": "1440x2160",
+      "width": 1440,
+      "height": 2160,
+      "sizeBytes": 421084
+    },
+    {
+      "file": "zenflow-official-super-hero-art-1920x1080.png",
+      "slot": "16:9 Super hero art optional, no text",
+      "dimensions": "1920x1080",
+      "width": 1920,
+      "height": 1080,
+      "sizeBytes": 324532
+    }
+  ],
+  "constraints": [
+    "Source logo geometry is unchanged.",
+    "Only raster size, background composition, spacing, and export quality were improved.",
+    "Text is kept away from lower-third overlay zones.",
+    "All output files are under 50 MB.",
+    "The 16:9 super hero art contains no product title or text, matching Microsoft Store guidance."
+  ]
+}

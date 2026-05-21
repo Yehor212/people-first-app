@@ -13,6 +13,15 @@ Use this folder for templates, checklists, screenshots, and WACK/MSIX evidence.
 Do not place certificates, passwords, generated PFX files, Store credentials, or
 private signing keys here.
 
+Before editing Partner Center listing text or screenshots, read
+`STORE_LISTING_QUALITY_GATE.md`. It contains the approved copy pack,
+screenshot order, caption set, and self-audit checklist for a polished Store
+listing.
+
+For the current Partner Center draft, use `STORE_SUBMISSION_HANDOFF.md` as the
+operator checklist. It separates safe listing work from the final package upload
+and certification actions that need explicit product-owner approval.
+
 ## What To Copy From Partner Center
 
 Open:

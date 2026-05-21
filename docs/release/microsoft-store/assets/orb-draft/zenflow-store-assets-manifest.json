@@ -1,0 +1,72 @@
+{
+  "generatedAt": "2026-05-21T01:55:22.084Z",
+  "source": {
+    "publicSurface": "Captured from real Chrome profile on https://yehor212.github.io/people-first-app/orb?nav=v2&navLayout=phone",
+    "fullOrbCapture": "tmp/store-logo-canvas-2.png",
+    "cleanedSource": "zenflow-canonical-orb-source-1024.png"
+  },
+  "assets": [
+    {
+      "file": "zenflow-canonical-orb-source-1024.png",
+      "slot": "canonical source crop",
+      "dimensions": "1024x1024",
+      "width": 1024,
+      "height": 1024,
+      "sizeBytes": 745773
+    },
+    {
+      "file": "zenflow-store-app-tile-icon-300.png",
+      "slot": "1:1 App tile icon",
+      "dimensions": "300x300",
+      "width": 300,
+      "height": 300,
+      "sizeBytes": 79253
+    },
+    {
+      "file": "zenflow-store-box-art-1080.png",
+      "slot": "1:1 Box art",
+      "dimensions": "1080x1080",
+      "width": 1080,
+      "height": 1080,
+      "sizeBytes": 435008
+    },
+    {
+      "file": "zenflow-store-box-art-2160.png",
+      "slot": "1:1 Box art preferred",
+      "dimensions": "2160x2160",
+      "width": 2160,
+      "height": 2160,
+      "sizeBytes": 1253255
+    },
+    {
+      "file": "zenflow-store-poster-art-720x1080.png",
+      "slot": "2:3 Poster art",
+      "dimensions": "720x1080",
+      "width": 720,
+      "height": 1080,
+      "sizeBytes": 346311
+    },
+    {
+      "file": "zenflow-store-poster-art-1440x2160.png",
+      "slot": "2:3 Poster art preferred",
+      "dimensions": "1440x2160",
+      "width": 1440,
+      "height": 2160,
+      "sizeBytes": 979483
+    },
+    {
+      "file": "zenflow-store-super-hero-art-1920x1080.png",
+      "slot": "16:9 Super hero art optional",
+      "dimensions": "1920x1080",
+      "width": 1920,
+      "height": 1080,
+      "sizeBytes": 499800
+    }
+  ],
+  "constraints": [
+    "Runtime canonical orbs are not modified.",
+    "Store assets are raster PNG compositions only.",
+    "Text is kept away from lower-third overlay zones.",
+    "All output files are under 50 MB."
+  ]
+}
