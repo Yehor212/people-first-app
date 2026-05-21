@@ -18,6 +18,11 @@ Before editing Partner Center listing text or screenshots, read
 screenshot order, caption set, and self-audit checklist for a polished Store
 listing.
 
+When filling the live Partner Center form, use
+`PARTNER_CENTER_FIELD_PACKET.md` as the one-page copy/upload packet. It repeats
+only the current approved fields and keeps final certification blocked until
+package/signing proof exists.
+
 For the current Partner Center draft, use `STORE_SUBMISSION_HANDOFF.md` as the
 operator checklist. It separates safe listing work from the final package upload
 and certification actions that need explicit product-owner approval.

@@ -184,10 +184,25 @@ function main() {
   requireIncludes("docs/release/microsoft-store/README.md", [
     PRODUCT_ID,
     "Product Identity",
+    "PARTNER_CENTER_FIELD_PACKET.md",
     "npm run desktop:store:check",
     "Do not place certificates",
     "product-identity.public.json",
     "accepted package in the Partner Center draft",
+  ]);
+
+  requireIncludes("docs/release/microsoft-store/PARTNER_CENTER_FIELD_PACKET.md", [
+    PRODUCT_ID,
+    EXPECTED_IDENTITY.packageIdentityName,
+    EXPECTED_IDENTITY.publisher,
+    "Store listings complete",
+    "Packages uploaded and accepted",
+    "Certification submitted",
+    "docs/release/microsoft-store/store-screenshots/desktop/01-v2-orb-desktop.png",
+    "docs/release/microsoft-store/assets/official-logo/zenflow-official-app-tile-icon-300.png",
+    "npm run check:all",
+    "npm run desktop:store:check",
+    "https://learn.microsoft.com/en-us/windows/apps/publish/publish-your-app/msix/screenshots-and-images",
   ]);
 
   requireIncludes("docs/ai/DESKTOP_EXE_RUNTIME_CONTRACT.md", [
@@ -244,6 +259,7 @@ function main() {
   requireNoHighConfidenceSecrets([
     "docs/ai/MICROSOFT_STORE_MSIX_CONTRACT.md",
     "docs/release/microsoft-store/README.md",
+    "docs/release/microsoft-store/PARTNER_CENTER_FIELD_PACKET.md",
     "docs/release/microsoft-store/identity.template.json",
     "docs/release/microsoft-store/product-identity.public.json",
     "scripts/check-microsoft-store-msix-contract.cjs",

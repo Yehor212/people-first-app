@@ -34,6 +34,10 @@ Use `STORE_LISTING_QUALITY_GATE.md` as the source of truth for:
 - search terms,
 - screenshot captions.
 
+Use `PARTNER_CENTER_FIELD_PACKET.md` when the Partner Center form is open and
+you need the exact copy/paste text, screenshot paths, logo paths, and save
+checklist in one place.
+
 Do not add AI buzzwords, medical claims, pricing claims, competitor names, or
 future-feature promises. The listing should describe the app as a calm Windows
 wellness space with V2 mood flow, habits, journaling, focus, canonical WebGL
