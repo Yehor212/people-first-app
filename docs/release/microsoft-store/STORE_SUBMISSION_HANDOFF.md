@@ -47,13 +47,13 @@ or partially loaded frames.
 
 Recommended upload order for Desktop screenshots:
 
-1. `tmp/store-candidates/01-v2-orb-desktop-settled.png`
+1. `store-screenshots/desktop/01-v2-orb-desktop.png`
    - Caption: `Check in with your mood through ZenFlow's calm V2 orb flow.`
    - Status: recommended first screenshot.
-2. `tmp/store-candidates/02-v2-habits-desktop.png`
+2. `store-screenshots/desktop/02-v2-habits-desktop.png`
    - Caption: `Track habits and daily rituals without a crowded dashboard.`
    - Status: recommended second screenshot.
-3. `tmp/store-candidates/03-v2-diary-desktop.png`
+3. `store-screenshots/desktop/03-v2-diary-desktop.png`
    - Caption: `Write private reflections and keep your journal close.`
    - Status: acceptable privacy-safe screenshot.
 
@@ -61,8 +61,9 @@ Do not upload `tmp/store-candidates/04-desktop-download-page-settled.png` in
 its current form. The large hero orb intersects the headline, so it does not
 meet the visual polish bar for Store screenshots.
 
-Each recommended PNG is `1440x900`, above Microsoft's `1366x768` desktop
-minimum, and far below the `50 MB` screenshot limit.
+Each recommended PNG is committed under `store-screenshots/desktop/`, is
+`1440x900`, above Microsoft's `1366x768` desktop minimum, and far below the
+`50 MB` screenshot limit.
 
 ## Store Image Assets
 
