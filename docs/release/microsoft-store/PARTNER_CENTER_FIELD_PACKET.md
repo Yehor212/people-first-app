@@ -28,6 +28,11 @@ These values are public Partner Center identity fields. They are not secrets.
 
 ## Store Listing Text
 
+Use this section for the English Store listing only. For every other supported
+language, use `STORE_LISTING_LOCALIZED_PACKET.md` and
+`store-listing-localized.json`. Do not paste English text into a non-English
+listing as a shortcut.
+
 ### Short description
 
 ```text
@@ -120,12 +125,33 @@ Do not confuse app i18n with Store listing languages.
 | --- | --- |
 | App UI source languages | `en, uk, es, de, fr, ja, ar, he` |
 | English Store listing | `Complete` in Partner Center |
-| Additional Store listing languages | Only `English` is currently complete |
+| Additional Store listing languages | `READY IN REPO / LIVE UNVERIFIED` for `uk, es, de, fr, ja, ar, he`; only `English` is currently live complete |
 | Languages supported in packages | Empty until the Store package is uploaded |
 
 The English screenshots and English listing copy are for `languagecode=en`.
-Additional Store listing languages require localized copy and captions before
-they are added.
+Additional Store listing languages must be filled from
+`store-listing-localized.json`, preferably through Partner Center
+Export/Import. Package languages are a separate Partner Center proof surface and
+cannot be completed until the package is uploaded.
+
+## Localized Store Listing Packet
+
+Before changing `Manage additional languages`, review:
+
+- `docs/release/microsoft-store/STORE_LISTING_LOCALIZED_PACKET.md`
+- `docs/release/microsoft-store/store-listing-localized.json`
+
+Prepared listing languages:
+
+```text
+English, Ukrainian, Spanish, German, French, Japanese, Arabic, Hebrew
+```
+
+Safe live-update rule: do not use coordinate-only checkbox automation. Use
+Partner Center `Export listings` / `Import listings`, or add and save one
+language at a time with a screenshot after each language. If Partner Center
+proof is missing, the correct status is `READY IN REPO / LIVE UNVERIFIED`, not
+`PASS`.
 
 ## Desktop Screenshots
 
@@ -167,7 +193,8 @@ Mark a row `PASS` only after seeing it in Partner Center after save.
 | Properties complete | `PASS - seen in tmp/partner-center-overview-after-save.png on 2026-05-21` |
 | Age ratings complete | `PASS - seen in tmp/partner-center-overview-after-save.png on 2026-05-21` |
 | Store listings complete | `PASS - seen in tmp/partner-center-overview-after-save.png on 2026-05-21` |
-| Additional Store listing languages reviewed | `PARTIAL - tmp/partner-center-language-state-audit.png shows only English complete` |
+| Additional Store listing languages reviewed | `READY IN REPO / LIVE UNVERIFIED - store-listing-localized.json covers all 8 app languages; tmp/partner-center-language-state-audit.png still shows only English live complete` |
+| Localized Store listing packet reviewed | `PASS - npm run desktop:store:check validates localized copy, captions, search terms, and screenshot decision` |
 | Package language list reviewed | `FAIL - tmp/partner-center-language-state-audit.png shows package languages are unavailable until package upload` |
 | Desktop screenshots uploaded and visible | `PASS - three English Desktop screenshots uploaded and captioned in Partner Center` |
 | Store logos uploaded and visible | `PASS - poster, box, app tile 300/150/71, and super hero art uploaded in Partner Center` |
@@ -186,6 +213,8 @@ npm run check:canonical-orbs
 npm run check:task-completion
 npm run desktop:store:check
 npm run check:desktop-exe-contract
+npm run i18n:check
+npm run i18n:deep
 ```
 
 For a local development package, `npm run desktop:release:check:dev` may pass

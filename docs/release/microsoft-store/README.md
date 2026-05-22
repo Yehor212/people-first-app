@@ -23,15 +23,22 @@ When filling the live Partner Center form, use
 only the current approved fields and keeps final certification blocked until
 package/signing proof exists.
 
+For multilingual Store listing work, use
+`STORE_LISTING_LOCALIZED_PACKET.md` and
+`store-listing-localized.json`. The app supports `en`, `uk`, `es`, `de`, `fr`,
+`ja`, `ar`, and `he`; English is only the current live completed Store listing,
+not the whole product language strategy.
+
 For the current Partner Center draft, use `STORE_SUBMISSION_HANDOFF.md` as the
 operator checklist. It separates safe listing work from the final package upload
 and certification actions that need explicit product-owner approval.
 
 Use `STORE_SUBMISSION_AUDIT.md` when checking the Partner Center questionnaires
 or language state. The current app source supports `en`, `uk`, `es`, `de`,
-`fr`, `ja`, `ar`, and `he`, but the Store listing is currently complete only
-for English and package-supported languages cannot be verified until a package
-is uploaded.
+`fr`, `ja`, `ar`, and `he`. The localized listing packet is prepared in the
+repo for all eight languages, while the live Partner Center draft is currently
+complete only for English and package-supported languages cannot be verified
+until a package is uploaded.
 
 ## What To Copy From Partner Center
 

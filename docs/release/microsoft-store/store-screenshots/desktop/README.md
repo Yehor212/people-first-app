@@ -21,6 +21,10 @@ kept as release assets so Partner Center upload does not depend on temporary
 - All files are `1440x900`, above the Microsoft Store desktop minimum of
   `1366x768`.
 - The `languagecode=en` Store listing must use English UI screenshots only.
+- Non-English Store listing pages currently use these screenshots as the
+  approved neutral Desktop screenshot set with localized captions from
+  `../../store-listing-localized.json`; replace them only with per-language
+  screenshot proof.
 - The first screenshot shows the canonical V2 orb flow and should remain first.
 - The diary screenshot is intentionally privacy-safe and avoids real user text.
 - Do not add marketing overlays, captions inside the image, browser chrome, or

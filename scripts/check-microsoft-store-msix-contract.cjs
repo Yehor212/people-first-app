@@ -14,6 +14,28 @@ const EXPECTED_IDENTITY = {
   packageFamilyName: "YehorSha.ZenFlow_5m5fhwz1wz4xt",
 };
 const EXPECTED_APP_LANGUAGES = ["en", "uk", "es", "de", "fr", "ja", "ar", "he"];
+const EXPECTED_STORE_LANGUAGES = {
+  en: "English",
+  uk: "Ukrainian",
+  es: "Spanish",
+  de: "German",
+  fr: "French",
+  ja: "Japanese",
+  ar: "Arabic",
+  he: "Hebrew",
+};
+const STORE_LISTING_PACKET = "docs/release/microsoft-store/store-listing-localized.json";
+const BANNED_STORE_CLAIMS = [
+  /\bmedical advice\b/i,
+  /\bdiagnosis\b/i,
+  /\btreatment\b/i,
+  /\btherapy replacement\b/i,
+  /\bAI-powered\b/i,
+  /\bgame-changing\b/i,
+  /\brevolutionary\b/i,
+  /\bultimate\b/i,
+  /\btransform your life\b/i,
+];
 const failures = [];
 const warnings = [];
 let passCount = 0;
@@ -172,11 +194,147 @@ function requireAppLanguageFiles() {
   }
 }
 
+function requireLocalizedStorePacket(packet) {
+  const languages = packet.languages || {};
+  const screenshotFiles = packet.desktopScreenshotFiles || [];
+  const neutralDecision = String(packet.neutralScreenshotDecision || "");
+
+  if (!Array.isArray(screenshotFiles) || screenshotFiles.length !== 3) {
+    failures.push(`${STORE_LISTING_PACKET} must list the three approved Desktop screenshot files`);
+  } else {
+    for (const file of screenshotFiles) {
+      if (!fs.existsSync(abs(file))) {
+        failures.push(`${STORE_LISTING_PACKET} references missing screenshot ${file}`);
+      } else {
+        pass();
+      }
+    }
+  }
+
+  if (!neutralDecision.includes("English UI screenshots")) {
+    failures.push(`${STORE_LISTING_PACKET} must record the deliberate neutral-screenshot decision for non-English listings`);
+  } else {
+    pass();
+  }
+
+  for (const language of EXPECTED_APP_LANGUAGES) {
+    const listing = languages[language];
+    if (!listing) {
+      failures.push(`${STORE_LISTING_PACKET} is missing ${language}`);
+      continue;
+    }
+
+    if (listing.storeLanguage !== EXPECTED_STORE_LANGUAGES[language]) {
+      failures.push(`${STORE_LISTING_PACKET} ${language}.storeLanguage must be ${EXPECTED_STORE_LANGUAGES[language]}`);
+    } else {
+      pass();
+    }
+
+    if (listing.productName !== "ZenFlow") {
+      failures.push(`${STORE_LISTING_PACKET} ${language}.productName must remain ZenFlow`);
+    } else {
+      pass();
+    }
+
+    if (!["ltr", "rtl"].includes(listing.direction)) {
+      failures.push(`${STORE_LISTING_PACKET} ${language}.direction must be ltr or rtl`);
+    } else {
+      pass();
+    }
+
+    const expectedDirection = language === "ar" || language === "he" ? "rtl" : "ltr";
+    if (listing.direction !== expectedDirection) {
+      failures.push(`${STORE_LISTING_PACKET} ${language}.direction must be ${expectedDirection}`);
+    } else {
+      pass();
+    }
+
+    const shortDescription = String(listing.shortDescription || "");
+    if (shortDescription.length < 60 || shortDescription.length > 270) {
+      failures.push(`${STORE_LISTING_PACKET} ${language}.shortDescription must be 60-270 characters`);
+    } else {
+      pass();
+    }
+
+    const description = String(listing.description || "");
+    if (description.length < 600 || description.length > 10000) {
+      failures.push(`${STORE_LISTING_PACKET} ${language}.description must be 600-10000 characters`);
+    } else {
+      pass();
+    }
+
+    const whatsNew = String(listing.whatsNew || "");
+    if (whatsNew.length < 80 || whatsNew.length > 1500) {
+      failures.push(`${STORE_LISTING_PACKET} ${language}.whatsNew must be 80-1500 characters`);
+    } else {
+      pass();
+    }
+
+    if (!Array.isArray(listing.features) || listing.features.length !== 10) {
+      failures.push(`${STORE_LISTING_PACKET} ${language}.features must contain exactly 10 feature rows`);
+    } else {
+      for (const [index, feature] of listing.features.entries()) {
+        const value = String(feature || "");
+        if (!value || value.length > 200 || /^[\s-*•]+/.test(value)) {
+          failures.push(`${STORE_LISTING_PACKET} ${language}.features[${index}] must be non-empty, under 200 chars, and must not include bullet characters`);
+        } else {
+          pass();
+        }
+      }
+    }
+
+    if (!Array.isArray(listing.searchTerms) || listing.searchTerms.length < 4 || listing.searchTerms.length > 7) {
+      failures.push(`${STORE_LISTING_PACKET} ${language}.searchTerms must contain 4-7 Store terms`);
+    } else {
+      const unique = new Set(listing.searchTerms.map((term) => String(term).toLocaleLowerCase()));
+      if (unique.size !== listing.searchTerms.length) {
+        failures.push(`${STORE_LISTING_PACKET} ${language}.searchTerms must be unique`);
+      } else {
+        pass();
+      }
+    }
+
+    if (!Array.isArray(listing.screenshotCaptions) || listing.screenshotCaptions.length !== 3) {
+      failures.push(`${STORE_LISTING_PACKET} ${language}.screenshotCaptions must contain exactly three captions`);
+    } else {
+      for (const [index, caption] of listing.screenshotCaptions.entries()) {
+        const value = String(caption || "");
+        if (!value || value.length > 200) {
+          failures.push(`${STORE_LISTING_PACKET} ${language}.screenshotCaptions[${index}] must be non-empty and under 200 chars`);
+        } else {
+          pass();
+        }
+      }
+    }
+
+    const searchable = [
+      shortDescription,
+      description,
+      whatsNew,
+      ...(listing.features || []),
+      ...(listing.screenshotCaptions || []),
+    ].join("\n");
+    for (const pattern of BANNED_STORE_CLAIMS) {
+      if (pattern.test(searchable)) {
+        failures.push(`${STORE_LISTING_PACKET} ${language} contains banned Store claim: ${pattern}`);
+      }
+    }
+    pass();
+
+    if (language !== "en" && description === languages.en?.description) {
+      failures.push(`${STORE_LISTING_PACKET} ${language}.description must not reuse the English description verbatim`);
+    } else {
+      pass();
+    }
+  }
+}
+
 function main() {
   const packageJson = readJson("package.json");
   const tauriConfig = readJson("src-tauri/tauri.conf.json");
   const identityTemplate = readJson("docs/release/microsoft-store/identity.template.json");
   const publicIdentity = readJson("docs/release/microsoft-store/product-identity.public.json");
+  const localizedStorePacket = readJson(STORE_LISTING_PACKET);
 
   requireIncludes("docs/ai/MICROSOFT_STORE_MSIX_CONTRACT.md", [
     PRODUCT_ID,
@@ -194,12 +352,15 @@ function main() {
     "Store language truth",
     "Additional Store listing languages",
     "Languages supported in packages",
+    "store-listing-localized.json",
   ]);
 
   requireIncludes("docs/release/microsoft-store/README.md", [
     PRODUCT_ID,
     "Product Identity",
     "PARTNER_CENTER_FIELD_PACKET.md",
+    "STORE_LISTING_LOCALIZED_PACKET.md",
+    "store-listing-localized.json",
     "STORE_SUBMISSION_AUDIT.md",
     "npm run desktop:store:check",
     "Do not place certificates",
@@ -221,6 +382,7 @@ function main() {
     EXPECTED_IDENTITY.publisher,
     "Store listings complete",
     "Additional Store listing languages reviewed",
+    "Localized Store listing packet reviewed",
     "Package language list reviewed",
     "Packages uploaded and accepted",
     "Certification submitted",
@@ -238,6 +400,8 @@ function main() {
     "Languages supported in packages",
     "Additional Store listing languages",
     "en, uk, es, de, fr, ja, ar, he",
+    "store-listing-localized.json",
+    "localized packet is ready",
     "tmp/partner-center-language-state-audit.png",
     "Packages` is `Not started",
   ]);
@@ -245,12 +409,14 @@ function main() {
   requireIncludes("docs/release/microsoft-store/STORE_LISTING_QUALITY_GATE.md", [
     "Store Language Strategy",
     "en, uk, es, de, fr, ja, ar, he",
-    "English is the only completed Store listing language",
+    "store-listing-localized.json",
+    "English is the only live completed Store listing language",
     "Languages supported in packages",
   ]);
 
   requireIncludes("docs/release/microsoft-store/STORE_SUBMISSION_HANDOFF.md", [
     "STORE_SUBMISSION_AUDIT.md",
+    "STORE_LISTING_LOCALIZED_PACKET.md",
     "Language Release Rule",
     "Additional Store listing languages",
     "Languages supported in packages",
@@ -306,6 +472,7 @@ function main() {
   requirePlaceholderOnly(identityTemplate);
   requirePublicIdentity(publicIdentity);
   requireAppLanguageFiles();
+  requireLocalizedStorePacket(localizedStorePacket);
   validateOptionalIdentityEnv();
 
   requireNoHighConfidenceSecrets([
@@ -315,6 +482,8 @@ function main() {
     "docs/release/microsoft-store/STORE_SUBMISSION_AUDIT.md",
     "docs/release/microsoft-store/STORE_LISTING_QUALITY_GATE.md",
     "docs/release/microsoft-store/STORE_SUBMISSION_HANDOFF.md",
+    "docs/release/microsoft-store/STORE_LISTING_LOCALIZED_PACKET.md",
+    STORE_LISTING_PACKET,
     "docs/release/microsoft-store/identity.template.json",
     "docs/release/microsoft-store/product-identity.public.json",
     "scripts/check-microsoft-store-msix-contract.cjs",

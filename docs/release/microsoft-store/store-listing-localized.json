@@ -1,0 +1,302 @@
+{
+  "version": 1,
+  "lastReviewed": "2026-05-21",
+  "productId": "9MZK46FHZV8K",
+  "productName": "ZenFlow",
+  "sourceOfTruth": "Microsoft Partner Center -> Apps and games -> ZenFlow -> Submission 1 -> Store listings",
+  "desktopScreenshotFiles": [
+    "docs/release/microsoft-store/store-screenshots/desktop/01-v2-orb-desktop.png",
+    "docs/release/microsoft-store/store-screenshots/desktop/02-v2-habits-desktop.png",
+    "docs/release/microsoft-store/store-screenshots/desktop/03-v2-diary-desktop.png"
+  ],
+  "neutralScreenshotDecision": "English UI screenshots are the approved neutral Desktop screenshot set for this submission. Non-English Store listing pages must use localized copy and localized screenshot captions. If fully localized UI screenshots are added later, replace this decision with per-language screenshot evidence before certification.",
+  "officialReferences": [
+    "https://learn.microsoft.com/en-us/windows/apps/publish/publish-your-app/msix/add-and-edit-store-listing-info",
+    "https://learn.microsoft.com/en-us/windows/apps/publish/publish-your-app/msix/screenshots-and-images",
+    "https://learn.microsoft.com/en-us/windows/apps/publish/publish-your-app/supported-languages",
+    "https://learn.microsoft.com/en-us/windows/apps/publish/publish-your-app/msix/import-and-export-store-listings",
+    "https://learn.microsoft.com/en-us/windows/apps/publish/publish-your-app/msix/app-package-requirements#supported-languages"
+  ],
+  "languages": {
+    "en": {
+      "locale": "en",
+      "storeLanguage": "English",
+      "direction": "ltr",
+      "productName": "ZenFlow",
+      "shortDescription": "A calm Windows wellness space for mood check-ins, habits, journaling, and focus rituals - built around ZenFlow's V2 visual flow and a dedicated desktop runtime.",
+      "description": "ZenFlow turns daily wellness into a quiet desktop ritual.\n\nOpen one focused space for mood check-ins, habit tracking, private journaling, and focus sessions. The V2 experience is built around ZenFlow's canonical WebGL orb system: soft, responsive, and visual without turning your day into another noisy dashboard.\n\nUse ZenFlow when you want to slow down for a minute, name what you feel, keep small habits visible, and return to your work without carrying the whole day in your head.\n\nThe desktop shell gives ZenFlow its own controlled Windows space instead of relying on a crowded browser profile with many tabs, extensions, and stale cache. The goal is simple: keep the same ZenFlow visuals, keep the same data contract, and make the app feel steadier on desktop.\n\nZenFlow is designed for everyday reflection and self-organization. It is a private wellness companion for mood, habits, focus, and journaling, not a clinical service.",
+      "whatsNew": "Initial Microsoft Store submission for ZenFlow desktop: V2 mood flow, habits, journal, focus sessions, canonical WebGL visuals, and the desktop release shell.",
+      "features": [
+        "V2 mood check-ins with ZenFlow's canonical WebGL orb visuals",
+        "Habit tracking for daily rituals and streaks",
+        "Private journal for short notes and longer reflection",
+        "Focus sessions for calm work blocks",
+        "Desktop shell designed for fewer browser-profile distractions",
+        "Offline-capable workflow with sync-ready account support",
+        "Personal insights without a noisy dashboard",
+        "Light, dark, and OLED-friendly visual modes",
+        "V1 and V2 surfaces kept under one sync contract",
+        "In-app language support across English, Ukrainian, Spanish, German, French, Japanese, Arabic, and Hebrew"
+      ],
+      "searchTerms": [
+        "wellness",
+        "mood tracker",
+        "habit tracker",
+        "journal",
+        "focus timer",
+        "offline wellness",
+        "desktop wellness"
+      ],
+      "screenshotCaptions": [
+        "Name your mood in a quiet visual flow that stays out of your way.",
+        "Build steady daily rituals without turning your day into a dashboard.",
+        "Keep private reflection close to your work, with space to start small."
+      ]
+    },
+    "uk": {
+      "locale": "uk",
+      "storeLanguage": "Ukrainian",
+      "direction": "ltr",
+      "productName": "ZenFlow",
+      "shortDescription": "Спокійний Windows-простір для перевірок настрою, звичок, щоденника й фокус-ритуалів - із V2-візуальним потоком ZenFlow.",
+      "description": "ZenFlow перетворює щоденну турботу про себе на тихий настільний ритуал.\n\nВідкрийте один зосереджений простір для перевірки настрою, відстеження звичок, приватного щоденника та фокус-сесій. Досвід V2 побудований навколо канонічної WebGL-системи орбів ZenFlow: м'якої, чутливої та візуальної, але без перетворення дня на шумну панель показників.\n\nВикористовуйте ZenFlow, коли хочете на хвилину сповільнитися, назвати свій стан, тримати маленькі звички на виду й повернутися до роботи без зайвого внутрішнього шуму.\n\nНастільна оболонка дає ZenFlow окремий керований простір Windows замість перевантаженого профілю браузера з багатьма вкладками, розширеннями та застарілим кешем. Мета проста: ті самі візуали ZenFlow, той самий контракт даних і стабільніше відчуття на комп'ютері.\n\nZenFlow створений для щоденної рефлексії та самоорганізації. Це приватний wellness-супутник для настрою, звичок, фокусу й щоденника, а не клінічний сервіс.",
+      "whatsNew": "Перший реліз ZenFlow desktop для Microsoft Store: V2-потік настрою, звички, щоденник, фокус-сесії, канонічні WebGL-візуали та настільна оболонка.",
+      "features": [
+        "V2-перевірки настрою з канонічними WebGL-орбами ZenFlow",
+        "Відстеження щоденних ритуалів, звичок і серій",
+        "Приватний щоденник для коротких нотаток і глибшої рефлексії",
+        "Фокус-сесії для спокійних робочих блоків",
+        "Настільна оболонка з менше відволікань від браузерного профілю",
+        "Офлайн-сценарії з готовністю до синхронізації акаунта",
+        "Особисті інсайти без шумної панелі показників",
+        "Світлий, темний і OLED-дружній візуальні режими",
+        "V1 і V2 поверхні під одним контрактом синхронізації",
+        "Підтримка англійської, української, іспанської, німецької, французької, японської, арабської та івриту"
+      ],
+      "searchTerms": [
+        "самопочуття",
+        "настрій",
+        "звички",
+        "щоденник",
+        "фокус",
+        "офлайн",
+        "Windows"
+      ],
+      "screenshotCaptions": [
+        "Називайте свій настрій у тихому візуальному потоці, який не заважає.",
+        "Будуйте стабільні щоденні ритуали без шумної панелі показників.",
+        "Тримайте приватну рефлексію поруч із роботою й починайте з малого."
+      ]
+    },
+    "es": {
+      "locale": "es",
+      "storeLanguage": "Spanish",
+      "direction": "ltr",
+      "productName": "ZenFlow",
+      "shortDescription": "Un espacio tranquilo para Windows con estado de ánimo, hábitos, diario y enfoque, creado alrededor del flujo visual V2 de ZenFlow.",
+      "description": "ZenFlow convierte el cuidado diario en un ritual de escritorio silencioso.\n\nAbre un solo espacio para registrar cómo te sientes, seguir hábitos, escribir en privado y hacer sesiones de enfoque. La experiencia V2 se apoya en el sistema canónico de orbes WebGL de ZenFlow: suave, sensible y visual, sin convertir tu día en otro panel ruidoso.\n\nUsa ZenFlow cuando quieras bajar el ritmo durante un minuto, poner nombre a lo que sientes, mantener visibles tus pequeños hábitos y volver al trabajo con menos carga mental.\n\nLa versión de escritorio da a ZenFlow su propio espacio controlado en Windows, en lugar de depender de un perfil de navegador lleno de pestañas, extensiones y caché antigua. La intención es sencilla: conservar los mismos visuales de ZenFlow, mantener el mismo contrato de datos y hacer que la app se sienta más estable en el escritorio.\n\nZenFlow está pensado para la reflexión cotidiana y la organización personal. Es un compañero privado de bienestar para estado de ánimo, hábitos, enfoque y diario, no un servicio clínico.",
+      "whatsNew": "Primera entrega de ZenFlow desktop para Microsoft Store: flujo V2 de estado de ánimo, hábitos, diario, sesiones de enfoque, visuales WebGL canónicos y shell de escritorio.",
+      "features": [
+        "Registros de estado de ánimo V2 con los orbes WebGL canónicos de ZenFlow",
+        "Seguimiento de hábitos para rituales diarios y rachas",
+        "Diario privado para notas breves y reflexión más profunda",
+        "Sesiones de enfoque para bloques de trabajo tranquilos",
+        "Shell de escritorio con menos distracciones del perfil del navegador",
+        "Flujo sin conexión con soporte de cuenta preparado para sincronización",
+        "Ideas personales sin un panel ruidoso",
+        "Modos visuales claro, oscuro y aptos para OLED",
+        "Superficies V1 y V2 bajo un mismo contrato de sincronización",
+        "Soporte de idiomas: inglés, ucraniano, español, alemán, francés, japonés, árabe y hebreo"
+      ],
+      "searchTerms": [
+        "bienestar",
+        "estado de ánimo",
+        "hábitos",
+        "diario",
+        "enfoque",
+        "sin conexión",
+        "Windows"
+      ],
+      "screenshotCaptions": [
+        "Pon nombre a tu estado de ánimo en un flujo visual tranquilo.",
+        "Construye rituales diarios constantes sin convertir el día en un panel.",
+        "Mantén la reflexión privada cerca de tu trabajo, empezando por algo pequeño."
+      ]
+    },
+    "de": {
+      "locale": "de",
+      "storeLanguage": "German",
+      "direction": "ltr",
+      "productName": "ZenFlow",
+      "shortDescription": "Ein ruhiger Windows-Raum für Stimmung, Gewohnheiten, Journal und Fokusrituale, aufgebaut rund um ZenFlows visuelle V2-Erfahrung.",
+      "description": "ZenFlow macht tägliches Wohlbefinden zu einem leisen Desktop-Ritual.\n\nÖffne einen fokussierten Raum für Stimmungs-Check-ins, Gewohnheiten, private Journaleinträge und Fokus-Sitzungen. Die V2-Erfahrung baut auf ZenFlows kanonischem WebGL-Orb-System auf: weich, reaktionsfähig und visuell, ohne deinen Tag in ein weiteres lautes Dashboard zu verwandeln.\n\nNutze ZenFlow, wenn du für einen Moment langsamer werden, dein Gefühl benennen, kleine Gewohnheiten sichtbar halten und anschließend ruhiger zur Arbeit zurückkehren möchtest.\n\nDie Desktop-Shell gibt ZenFlow einen eigenen kontrollierten Windows-Raum, statt sich auf ein überladenes Browserprofil mit vielen Tabs, Erweiterungen und altem Cache zu verlassen. Das Ziel ist klar: dieselbe ZenFlow-Optik, derselbe Datenvertrag und ein stabileres Gefühl auf dem Desktop.\n\nZenFlow ist für alltägliche Reflexion und Selbstorganisation gedacht. Es ist ein privater Wellness-Begleiter für Stimmung, Gewohnheiten, Fokus und Journal, kein klinischer Dienst.",
+      "whatsNew": "Erste Microsoft Store Einreichung für ZenFlow Desktop: V2-Stimmungsfluss, Gewohnheiten, Journal, Fokus-Sitzungen, kanonische WebGL-Visuals und Desktop-Shell.",
+      "features": [
+        "V2-Stimmungs-Check-ins mit ZenFlows kanonischen WebGL-Orbs",
+        "Gewohnheitstracking für tägliche Rituale und Serien",
+        "Privates Journal für kurze Notizen und längere Reflexion",
+        "Fokus-Sitzungen für ruhige Arbeitsblöcke",
+        "Desktop-Shell mit weniger Ablenkung durch Browserprofile",
+        "Offline-fähiger Ablauf mit sync-bereitem Konto",
+        "Persönliche Einblicke ohne lautes Dashboard",
+        "Helle, dunkle und OLED-freundliche visuelle Modi",
+        "V1- und V2-Oberflächen unter einem gemeinsamen Sync-Vertrag",
+        "Sprachunterstützung für Englisch, Ukrainisch, Spanisch, Deutsch, Französisch, Japanisch, Arabisch und Hebräisch"
+      ],
+      "searchTerms": [
+        "wellness",
+        "stimmung",
+        "gewohnheiten",
+        "journal",
+        "fokus",
+        "offline",
+        "Windows"
+      ],
+      "screenshotCaptions": [
+        "Benenne deine Stimmung in einem ruhigen visuellen Ablauf.",
+        "Baue stetige tägliche Rituale auf, ohne ein lautes Dashboard.",
+        "Halte private Reflexion nah an deiner Arbeit und beginne klein."
+      ]
+    },
+    "fr": {
+      "locale": "fr",
+      "storeLanguage": "French",
+      "direction": "ltr",
+      "productName": "ZenFlow",
+      "shortDescription": "Un espace Windows calme pour l'humeur, les habitudes, le journal et la concentration, conçu autour du flux visuel V2 de ZenFlow.",
+      "description": "ZenFlow transforme le bien-être quotidien en un rituel de bureau discret.\n\nOuvrez un espace unique pour noter votre humeur, suivre vos habitudes, écrire dans un journal privé et lancer des sessions de concentration. L'expérience V2 s'appuie sur le système canonique d'orbes WebGL de ZenFlow: doux, réactif et visuel, sans transformer votre journée en tableau de bord bruyant.\n\nUtilisez ZenFlow quand vous voulez ralentir une minute, nommer ce que vous ressentez, garder vos petites habitudes visibles et revenir à votre travail avec moins de charge mentale.\n\nLa version desktop offre à ZenFlow son propre espace Windows maîtrisé au lieu de dépendre d'un profil de navigateur encombré d'onglets, d'extensions et d'ancien cache. L'objectif est simple: garder les mêmes visuels ZenFlow, le même contrat de données et une sensation plus stable sur ordinateur.\n\nZenFlow est conçu pour la réflexion quotidienne et l'organisation personnelle. C'est un compagnon privé de bien-être pour l'humeur, les habitudes, la concentration et le journal, pas un service clinique.",
+      "whatsNew": "Première soumission Microsoft Store pour ZenFlow desktop: flux d'humeur V2, habitudes, journal, sessions de concentration, visuels WebGL canoniques et shell desktop.",
+      "features": [
+        "Check-ins d'humeur V2 avec les orbes WebGL canoniques de ZenFlow",
+        "Suivi des habitudes pour rituels quotidiens et séries",
+        "Journal privé pour notes courtes et réflexion plus longue",
+        "Sessions de concentration pour blocs de travail calmes",
+        "Shell desktop avec moins de distractions du profil navigateur",
+        "Flux compatible hors ligne avec compte prêt pour la synchronisation",
+        "Insights personnels sans tableau de bord bruyant",
+        "Modes visuels clair, sombre et adaptés à l'OLED",
+        "Surfaces V1 et V2 gardées sous un seul contrat de synchronisation",
+        "Prise en charge de l'anglais, ukrainien, espagnol, allemand, français, japonais, arabe et hébreu"
+      ],
+      "searchTerms": [
+        "bien-être",
+        "humeur",
+        "habitudes",
+        "journal",
+        "concentration",
+        "hors ligne",
+        "Windows"
+      ],
+      "screenshotCaptions": [
+        "Nommez votre humeur dans un flux visuel calme qui reste discret.",
+        "Construisez des rituels quotidiens stables sans tableau de bord bruyant.",
+        "Gardez la réflexion privée près de votre travail, en commençant petit."
+      ]
+    },
+    "ja": {
+      "locale": "ja",
+      "storeLanguage": "Japanese",
+      "direction": "ltr",
+      "productName": "ZenFlow",
+      "shortDescription": "気分チェック、習慣、ジャーナル、集中リチュアルをひとつにまとめた、ZenFlow V2の視覚体験を中心にしたWindows向けの静かな空間です。",
+      "description": "ZenFlowは、毎日のウェルネスを静かなデスクトップのリチュアルにします。\n\n気分チェック、習慣の記録、プライベートなジャーナル、集中セッションを、ひとつの落ち着いた場所で扱えます。V2体験はZenFlowの正規WebGLオーブシステムを中心に作られています。やわらかく反応し、視覚的でありながら、日々を騒がしいダッシュボードにはしません。\n\n少しだけペースを落としたいとき、今の気分に名前をつけたいとき、小さな習慣を見える場所に置きたいとき、そして仕事へ静かに戻りたいときにZenFlowを使ってください。記録は大げさな分析よりも、毎日続けやすい静かな手触りを優先します。短いチェックインでも、長いジャーナルでも、画面は急かさず、必要な場所だけを見せます。\n\nデスクトップ版は、多数のタブ、拡張機能、古いキャッシュを抱えたブラウザプロファイルに頼らず、ZenFlow専用のWindows空間を用意します。目的は明確です。同じZenFlowのビジュアル、同じデータ契約、そしてデスクトップでより安定した感触を保つことです。\n\nZenFlowは、日常の内省と自己整理のために設計されています。気分、習慣、集中、ジャーナルを支えるプライベートなウェルネスコンパニオンであり、臨床サービスではありません。英語、ウクライナ語、スペイン語、ドイツ語、フランス語、日本語、アラビア語、ヘブライ語を同じ製品の中で扱えるよう、アプリ本体とストアの説明を分けて管理しています。",
+      "whatsNew": "ZenFlow desktopのMicrosoft Store初回申請です。V2気分フロー、習慣、ジャーナル、集中セッション、正規WebGLビジュアル、デスクトップシェルを含みます。",
+      "features": [
+        "ZenFlowの正規WebGLオーブによるV2気分チェック",
+        "毎日のリチュアルと連続記録のための習慣トラッキング",
+        "短いメモと深い内省のためのプライベートジャーナル",
+        "落ち着いた作業ブロックのための集中セッション",
+        "ブラウザプロファイルの distractions を減らすデスクトップシェル",
+        "同期対応アカウントを見据えたオフライン対応ワークフロー",
+        "騒がしいダッシュボードにしない個人向けインサイト",
+        "ライト、ダーク、OLEDに配慮したビジュアルモード",
+        "V1とV2の画面をひとつの同期契約で維持",
+        "英語、ウクライナ語、スペイン語、ドイツ語、フランス語、日本語、アラビア語、ヘブライ語に対応"
+      ],
+      "searchTerms": [
+        "ウェルネス",
+        "気分",
+        "習慣",
+        "ジャーナル",
+        "集中",
+        "オフライン",
+        "Windows"
+      ],
+      "screenshotCaptions": [
+        "邪魔にならない静かな視覚フローで、今の気分に名前をつけます。",
+        "一日をダッシュボードにせず、安定した日々のリチュアルを育てます。",
+        "小さく始められるプライベートな内省を、仕事のそばに置けます。"
+      ]
+    },
+    "ar": {
+      "locale": "ar",
+      "storeLanguage": "Arabic",
+      "direction": "rtl",
+      "productName": "ZenFlow",
+      "shortDescription": "مساحة Windows هادئة لتسجيل المزاج والعادات واليوميات وجلسات التركيز، مبنية حول التدفق البصري V2 في ZenFlow.",
+      "description": "يحوّل ZenFlow العناية اليومية بالذات إلى طقس هادئ على سطح المكتب.\n\nافتح مساحة واحدة مركزة لتسجيل المزاج، وتتبع العادات، وكتابة يوميات خاصة، وبدء جلسات تركيز. تجربة V2 مبنية حول نظام الكرات البصرية WebGL المعتمد في ZenFlow: ناعم، متجاوب، وبصري من دون تحويل يومك إلى لوحة صاخبة أخرى.\n\nاستخدم ZenFlow عندما تريد أن تهدأ لدقيقة، وتسمّي ما تشعر به، وتبقي العادات الصغيرة أمامك، ثم تعود إلى عملك بذهن أخف.\n\nتمنح نسخة سطح المكتب ZenFlow مساحة Windows مستقلة ومنضبطة بدلا من الاعتماد على ملف متصفح مزدحم بعلامات تبويب كثيرة، وإضافات، وذاكرة تخزين قديمة. الهدف بسيط: الحفاظ على نفس لغة ZenFlow البصرية، ونفس عقد البيانات، وإحساس أكثر ثباتا على الكمبيوتر.\n\nصُمم ZenFlow للتأمل اليومي والتنظيم الشخصي. إنه رفيق خاص للرفاهية يساعدك في المزاج والعادات والتركيز واليوميات، وليس خدمة سريرية.",
+      "whatsNew": "الإصدار الأول من ZenFlow desktop لمتجر Microsoft: تدفق المزاج V2، العادات، اليوميات، جلسات التركيز، المرئيات WebGL المعتمدة، وواجهة سطح المكتب.",
+      "features": [
+        "تسجيلات مزاج V2 مع كرات ZenFlow البصرية WebGL المعتمدة",
+        "تتبع العادات للطقوس اليومية والسلاسل",
+        "يوميات خاصة للملاحظات القصيرة والتأمل الأعمق",
+        "جلسات تركيز لكتل عمل هادئة",
+        "واجهة سطح مكتب تقلل تشتيت ملف المتصفح",
+        "سير عمل يعمل دون اتصال مع دعم حساب جاهز للمزامنة",
+        "رؤى شخصية من دون لوحة صاخبة",
+        "أوضاع بصرية فاتحة وداكنة ومناسبة لشاشات OLED",
+        "واجهات V1 و V2 ضمن عقد مزامنة واحد",
+        "دعم لغات داخل التطبيق: الإنجليزية والأوكرانية والإسبانية والألمانية والفرنسية واليابانية والعربية والعبرية"
+      ],
+      "searchTerms": [
+        "رفاهية",
+        "مزاج",
+        "عادات",
+        "يوميات",
+        "تركيز",
+        "دون اتصال",
+        "Windows"
+      ],
+      "screenshotCaptions": [
+        "سمّ مزاجك داخل تدفق بصري هادئ لا يزاحمك.",
+        "ابنِ طقوسا يومية ثابتة من دون تحويل يومك إلى لوحة صاخبة.",
+        "احتفظ بالتأمل الخاص قرب عملك، وابدأ بخطوة صغيرة."
+      ]
+    },
+    "he": {
+      "locale": "he",
+      "storeLanguage": "Hebrew",
+      "direction": "rtl",
+      "productName": "ZenFlow",
+      "shortDescription": "מרחב Windows שקט למצב רוח, הרגלים, יומן וריטואלי מיקוד, שנבנה סביב הזרימה הוויזואלית V2 של ZenFlow.",
+      "description": "ZenFlow הופך טיפוח יומיומי לריטואל שקט על שולחן העבודה.\n\nפתחו מרחב אחד ממוקד לבדיקות מצב רוח, מעקב אחר הרגלים, כתיבה ביומן פרטי וסשנים של מיקוד. חוויית V2 בנויה סביב מערכת האורבים הקנונית של ZenFlow ב-WebGL: רכה, מגיבה וויזואלית, בלי להפוך את היום לעוד לוח מחוונים רועש.\n\nהשתמשו ב-ZenFlow כשאתם רוצים להאט לדקה, לתת שם למה שאתם מרגישים, להשאיר הרגלים קטנים מול העיניים ולחזור לעבודה עם פחות עומס פנימי.\n\nגרסת הדסקטופ נותנת ל-ZenFlow מרחב Windows עצמאי ומבוקר, במקום להסתמך על פרופיל דפדפן עמוס בטאבים, הרחבות ומטמון ישן. המטרה פשוטה: לשמור על אותה שפה ויזואלית של ZenFlow, אותו חוזה נתונים, ותחושה יציבה יותר במחשב.\n\nZenFlow נועד לרפלקציה יומיומית ולארגון עצמי. זהו מלווה פרטי לוולנס סביב מצב רוח, הרגלים, מיקוד ויומן, ולא שירות קליני.",
+      "whatsNew": "הגשה ראשונה של ZenFlow desktop ל-Microsoft Store: זרימת מצב רוח V2, הרגלים, יומן, סשנים של מיקוד, ויזואליות WebGL קנונית ומעטפת דסקטופ.",
+      "features": [
+        "בדיקות מצב רוח V2 עם אורבי WebGL קנוניים של ZenFlow",
+        "מעקב אחר הרגלים לריטואלים יומיים ורצפים",
+        "יומן פרטי להערות קצרות ולרפלקציה עמוקה יותר",
+        "סשנים של מיקוד לבלוקי עבודה שקטים",
+        "מעטפת דסקטופ עם פחות הסחות מפרופיל הדפדפן",
+        "זרימת עבודה אופליין עם תמיכת חשבון מוכנה לסנכרון",
+        "תובנות אישיות בלי לוח מחוונים רועש",
+        "מצבים ויזואליים בהיר, כהה וידידותיים ל-OLED",
+        "משטחי V1 ו-V2 תחת חוזה סנכרון אחד",
+        "תמיכת שפות בתוך האפליקציה: אנגלית, אוקראינית, ספרדית, גרמנית, צרפתית, יפנית, ערבית ועברית"
+      ],
+      "searchTerms": [
+        "וולנס",
+        "מצב רוח",
+        "הרגלים",
+        "יומן",
+        "מיקוד",
+        "אופליין",
+        "Windows"
+      ],
+      "screenshotCaptions": [
+        "תנו שם למצב הרוח בתוך זרימה ויזואלית שקטה שלא מפריעה.",
+        "בנו ריטואלים יומיים יציבים בלי להפוך את היום ללוח מחוונים.",
+        "שמרו רפלקציה פרטית קרובה לעבודה, עם מקום להתחיל בקטן."
+      ]
+    }
+  }
+}

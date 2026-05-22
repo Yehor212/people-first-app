@@ -42,6 +42,11 @@ Use `PARTNER_CENTER_FIELD_PACKET.md` when the Partner Center form is open and
 you need the exact copy/paste text, screenshot paths, logo paths, and save
 checklist in one place.
 
+Use `STORE_LISTING_LOCALIZED_PACKET.md` and
+`store-listing-localized.json` for all non-English Store listing pages. They
+contain the prepared copy, feature rows, search terms, and screenshot captions
+for English, Ukrainian, Spanish, German, French, Japanese, Arabic, and Hebrew.
+
 Do not add AI buzzwords, medical claims, pricing claims, competitor names, or
 future-feature promises. The listing should describe the app as a calm Windows
 wellness space with V2 mood flow, habits, journaling, focus, canonical WebGL
@@ -102,6 +107,11 @@ identity later.
 7. Do not click `Submit for certification` until `Packages` is complete and the
    release gates below are green.
 
+For additional Store listing languages, do not use coordinate-only checkbox
+automation. Use Partner Center `Export listings` / `Import listings`, or save
+one language at a time from `store-listing-localized.json` and capture proof
+after every language.
+
 ## Current Partner Center Evidence
 
 Last checked in Partner Center on 2026-05-21 after saving the English Store
@@ -113,7 +123,7 @@ listing:
 | Properties | `Complete` | `tmp/partner-center-overview-after-save.png` |
 | Age ratings | `Complete` | `tmp/partner-center-overview-after-save.png` |
 | Store listings | `Complete` | `tmp/partner-center-overview-after-save.png` |
-| Additional Store listing languages | `English only` | `tmp/partner-center-language-state-audit.png` |
+| Additional Store listing languages | `READY IN REPO / LIVE UNVERIFIED` for seven non-English listings; live Partner Center still `English only` | `store-listing-localized.json`; `tmp/partner-center-language-state-audit.png` |
 | Languages supported in packages | `Unavailable until package upload` | `tmp/partner-center-language-state-audit.png` |
 | Packages | `Not started` | `tmp/partner-center-overview-after-save.png` |
 
@@ -122,11 +132,14 @@ complete.
 
 ## Language Release Rule
 
-The app source supports `en`, `uk`, `es`, `de`, `fr`, `ja`, `ar`, and `he`, but
-the current Microsoft Store listing is complete only for English. Do not add
-other Store listing languages or claim a complete multilingual Store release
-until localized listing copy, localized captions, screenshot decisions, and
-package language proof are available.
+The app source supports `en`, `uk`, `es`, `de`, `fr`, `ja`, `ar`, and `he`.
+The repo now contains the full localized Store listing packet for those
+languages. The current live Microsoft Store draft is still complete only for
+English until the localized packet is imported or manually saved in Partner
+Center and proof is captured.
+
+Do not claim a complete live multilingual Store release until Partner Center
+shows each added language as complete and package language proof is available.
 
 ## Release Gates Before Certification
 

@@ -86,6 +86,12 @@ reserved Store product.
    - English screenshots and descriptions prove only the English Store listing.
    - Additional Store listing languages require localized copy, captions, and
      screenshot decisions for each language.
+   - `docs/release/microsoft-store/store-listing-localized.json` is the
+     required source of truth for prepared Store listing copy across `en`,
+     `uk`, `es`, `de`, `fr`, `ja`, `ar`, and `he`.
+   - A language can be called live complete only after Partner Center proof
+     shows that language saved as complete. Repo packet proof alone is
+     `READY IN REPO / LIVE UNVERIFIED`.
    - `Languages supported in packages` is `UNVERIFIED` until packages are
      uploaded and Partner Center displays the detected language list.
 

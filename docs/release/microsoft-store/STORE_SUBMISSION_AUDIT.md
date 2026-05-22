@@ -35,7 +35,7 @@ References:
 | --- | --- | --- | --- |
 | App i18n source languages | `PASS` | `src/i18n/languages/{en,uk,es,de,fr,ja,ar,he}.ts`; `npm run i18n:check`; `npm run i18n:deep` | Keep all eight language files valid. |
 | English Store listing | `PASS` | Partner Center saved overview; `tmp/partner-center-overview-after-save.png`; English screenshots and captions in `store-screenshots/desktop/` | Keep English screenshots/copy in sync with current app surface. |
-| Additional Store listing languages | `PARTIAL` | Live language page shows only `English` as `Complete`; `tmp/partner-center-language-state-audit.png` | Do not add other languages until localized listing text, captions, and Store-safe screenshots are prepared for each language. |
+| Additional Store listing languages | `READY IN REPO / LIVE UNVERIFIED` | `store-listing-localized.json` contains all eight prepared Store listing languages; live language page still shows only `English` as `Complete`; `tmp/partner-center-language-state-audit.png` | Import or manually save the localized packet in Partner Center, then capture proof for each language. |
 | Package-supported languages | `FAIL` until package upload | Live language page says package languages will display after packages are uploaded; `Packages` is `Not started` | Build/upload accepted Store package, then verify the package language list. |
 | Certification | `FAIL` until package/signing/WACK proof | `npm run desktop:release:check` reports unsigned artifacts; no MSIX/AppX package found | Do not click `Submit for certification`. |
 
@@ -52,17 +52,18 @@ These map to Microsoft Store-supported language families:
 | App locale | Store language family | Current Store listing state |
 | --- | --- | --- |
 | `en` | English | `PASS` listing complete |
-| `uk` | Ukrainian | `UNVERIFIED` listing not added |
-| `es` | Spanish | `UNVERIFIED` listing not added |
-| `de` | German | `UNVERIFIED` listing not added |
-| `fr` | French | `UNVERIFIED` listing not added |
-| `ja` | Japanese | `UNVERIFIED` listing not added |
-| `ar` | Arabic | `UNVERIFIED` listing not added |
-| `he` | Hebrew | `UNVERIFIED` listing not added |
+| `uk` | Ukrainian | `READY IN REPO / LIVE UNVERIFIED` |
+| `es` | Spanish | `READY IN REPO / LIVE UNVERIFIED` |
+| `de` | German | `READY IN REPO / LIVE UNVERIFIED` |
+| `fr` | French | `READY IN REPO / LIVE UNVERIFIED` |
+| `ja` | Japanese | `READY IN REPO / LIVE UNVERIFIED` |
+| `ar` | Arabic | `READY IN REPO / LIVE UNVERIFIED` |
+| `he` | Hebrew | `READY IN REPO / LIVE UNVERIFIED` |
 
 Do not mark the multilingual Store release complete until every selected Store
-listing language has localized text and screenshots, and the uploaded package
-language list has been verified in Partner Center.
+listing language has been saved in Partner Center and the uploaded package
+language list has been verified there. The localized packet is ready in the
+repo; the live Store proof is still separate.
 
 ## Questionnaire Audit Matrix
 
@@ -73,7 +74,7 @@ language list has been verified in Partner Center.
 | Properties | `PASS` | `tmp/partner-center-overview-after-save.png` shows `Complete` | Must stay aligned with Windows desktop-only release. |
 | Age ratings | `PASS` | `tmp/partner-center-overview-after-save.png` shows `Complete` | No medical/therapy claims in listing copy. |
 | Store listings | `PASS` for English only | `tmp/partner-center-overview-after-save.png` shows `Complete`; English listing screenshots/captions uploaded | `PASS` does not mean every app UI language has a Store page. |
-| Additional Store listing languages | `PARTIAL` | `tmp/partner-center-language-state-audit.png` shows only English complete | Add only after localized assets exist. |
+| Additional Store listing languages | `READY IN REPO / LIVE UNVERIFIED` | `store-listing-localized.json` exists and is guarded by `npm run desktop:store:check`; `tmp/partner-center-language-state-audit.png` shows only English live complete | Use Export/Import or one-language-at-a-time manual save; capture live proof. |
 | Languages supported in packages | `FAIL` until package upload | `tmp/partner-center-language-state-audit.png` shows empty package language list | Expected while `Packages` is `Not started`, but blocks language release proof. |
 | Packages | `FAIL` | Partner Center overview shows `Not started`; no MSIX/AppX package artifact found | Certification cannot be submitted. |
 | Submission options | `UNVERIFIED` | Overview marked recommended, but final settings not audited after package upload | Recheck after package is added. |
@@ -85,18 +86,22 @@ language list has been verified in Partner Center.
 1. English screenshots and English description are valid only for the English
    Store listing.
 2. Do not reuse English captions as localized listing copy.
-3. Do not add Ukrainian, Spanish, German, French, Japanese, Arabic, or Hebrew
-   Store listing languages unless that language has:
+3. Use `STORE_LISTING_LOCALIZED_PACKET.md` and
+   `store-listing-localized.json` for Ukrainian, Spanish, German, French,
+   Japanese, Arabic, and Hebrew. Each language has:
    - localized short description,
    - localized full description,
    - localized feature rows,
    - localized search terms,
    - localized screenshot captions,
-   - Store-safe screenshots for that language or an explicit decision that
-     neutral screenshots with localized captions are acceptable.
-4. After package upload, verify `Languages supported in packages` against the
+   - a deliberate decision that the current English UI screenshots are the
+     neutral Desktop screenshot set for this submission.
+4. Do not add or save languages in Partner Center through coordinate-only
+   automation. Use Partner Center Export/Import or save one language at a time
+   with proof.
+5. After package upload, verify `Languages supported in packages` against the
    intended language list before certification.
-5. If Partner Center package languages and Store listing languages differ,
+6. If Partner Center package languages and Store listing languages differ,
    record the reason in this audit before submitting.
 
 ## Stop Conditions
@@ -106,6 +111,7 @@ Stop and report `PARTIAL` or `FAIL` when:
 - Partner Center shows only English but the release claim says all languages.
 - Package languages are empty because no package has been uploaded.
 - A non-English Store listing lacks localized copy or captions.
+- Partner Center language proof is missing after a listing import/manual save.
 - `Packages` is `Not started`.
 - `desktop:release:check` fails because artifacts are unsigned.
 - Windows App Certification Kit evidence is missing.

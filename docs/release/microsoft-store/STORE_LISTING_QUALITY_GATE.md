@@ -137,15 +137,20 @@ ZenFlow's app UI supports eight source languages:
 en, uk, es, de, fr, ja, ar, he
 ```
 
-That is not the same thing as having eight completed Microsoft Store listing
-languages. For the current Store submission:
+That is not the same thing as having eight live completed Microsoft Store
+listing languages. For the current Store submission:
 
-- English is the only completed Store listing language.
-- English screenshots and English descriptions are valid only for the English
-  listing.
-- Additional Store listing languages must not be added until each language has
-  localized listing copy, localized screenshot captions, and Store-safe
-  screenshots or a deliberate neutral-screenshot decision.
+- English is the only live completed Store listing language in Partner Center.
+- `store-listing-localized.json` is the source of truth for the prepared
+  multilingual listing copy for `en, uk, es, de, fr, ja, ar, he`.
+- `STORE_LISTING_LOCALIZED_PACKET.md` documents the import/manual update path
+  and the proof required before any non-English listing can be called live
+  complete.
+- English UI screenshots are the approved neutral Desktop screenshot set for
+  this submission. Non-English Store listing pages still require localized copy
+  and localized screenshot captions. If localized UI screenshots are added
+  later, replace the neutral screenshot decision with per-language screenshot
+  proof.
 - `Languages supported in packages` must be verified only after the package is
   uploaded; an empty package-language table is expected while `Packages` is
   `Not started`, but it blocks multilingual release proof.
