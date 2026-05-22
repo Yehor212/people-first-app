@@ -41,7 +41,7 @@ ZenFlow turns daily wellness into a quiet desktop ritual.
 
 Open one focused space for mood check-ins, habit tracking, private journaling, and focus sessions. The V2 experience is built around ZenFlow's canonical WebGL orb system: soft, responsive, and visual without turning your day into another noisy dashboard.
 
-Use ZenFlow when you want to slow down for a minute, name what you feel, keep your habits visible, and return to your work with less friction.
+Use ZenFlow when you want to slow down for a minute, name what you feel, keep small habits visible, and return to your work without carrying the whole day in your head.
 
 What you can do:
 
@@ -78,7 +78,7 @@ characters; Partner Center renders the bullet list.
 ```text
 V2 mood check-ins with ZenFlow's canonical WebGL orb visuals
 Habit tracking for daily rituals and streaks
-Private journal for reflection and emotional clarity
+Private journal for short notes and longer reflection
 Focus sessions for calm work blocks
 Desktop shell designed for fewer browser-profile distractions
 Offline-capable workflow with sync-ready account support
@@ -120,9 +120,9 @@ All three files are public-safe ZenFlow surfaces, committed release assets, PNG,
 
 | Order | File | Caption |
 | --- | --- | --- |
-| 1 | `docs/release/microsoft-store/store-screenshots/desktop/01-v2-orb-desktop.png` | `Check in with your mood through ZenFlow's calm V2 orb flow.` |
-| 2 | `docs/release/microsoft-store/store-screenshots/desktop/02-v2-habits-desktop.png` | `Track habits and daily rituals without a crowded dashboard.` |
-| 3 | `docs/release/microsoft-store/store-screenshots/desktop/03-v2-diary-desktop.png` | `Write private reflections and keep your journal close.` |
+| 1 | `docs/release/microsoft-store/store-screenshots/desktop/01-v2-orb-desktop.png` | `Name your mood in a quiet visual flow that stays out of your way.` |
+| 2 | `docs/release/microsoft-store/store-screenshots/desktop/02-v2-habits-desktop.png` | `Build steady daily rituals without turning your day into a dashboard.` |
+| 3 | `docs/release/microsoft-store/store-screenshots/desktop/03-v2-diary-desktop.png` | `Keep private reflection close to your work, with space to start small.` |
 
 Do not upload `tmp/store-candidates/04-desktop-download-page-settled.png`.
 That rejected capture has a hero text/orb overlap and is not Store-ready.
@@ -135,10 +135,12 @@ new Store identity direction.
 
 | Partner Center slot | Upload file |
 | --- | --- |
-| App tile icon / Store logo | `docs/release/microsoft-store/assets/official-logo/zenflow-official-app-tile-icon-300.png` |
+| App tile icon / Store logo 300x300 | `docs/release/microsoft-store/assets/official-logo/zenflow-official-app-tile-icon-300.png` |
+| App tile icon / Store logo 150x150 | `docs/release/microsoft-store/assets/official-logo/zenflow-official-app-tile-icon-150.png` |
+| App tile icon / Store logo 71x71 | `docs/release/microsoft-store/assets/official-logo/zenflow-official-app-tile-icon-71.png` |
 | 1:1 box art | `docs/release/microsoft-store/assets/official-logo/zenflow-official-box-art-2160.png` |
 | 2:3 poster art | `docs/release/microsoft-store/assets/official-logo/zenflow-official-poster-art-1440x2160.png` |
-| 16:9 super hero art, if requested | `docs/release/microsoft-store/assets/official-logo/zenflow-official-super-hero-art-1920x1080.png` |
+| 16:9 super hero art | `docs/release/microsoft-store/assets/official-logo/zenflow-official-super-hero-art-1920x1080.png` |
 
 ## Manual Save Checklist
 
@@ -146,13 +148,13 @@ Mark a row `PASS` only after seeing it in Partner Center after save.
 
 | Row | Status |
 | --- | --- |
-| Pricing and availability complete | `UNVERIFIED until checked in Partner Center` |
-| Properties complete | `UNVERIFIED until checked in Partner Center` |
-| Age ratings complete | `UNVERIFIED until checked in Partner Center` |
-| Store listings complete | `UNVERIFIED until checked in Partner Center` |
-| Desktop screenshots uploaded and visible | `UNVERIFIED until checked in Partner Center` |
-| Store logos uploaded and visible | `UNVERIFIED until checked in Partner Center` |
-| Packages uploaded and accepted | `UNVERIFIED until checked in Partner Center` |
+| Pricing and availability complete | `PASS - seen in tmp/partner-center-overview-after-save.png on 2026-05-21` |
+| Properties complete | `PASS - seen in tmp/partner-center-overview-after-save.png on 2026-05-21` |
+| Age ratings complete | `PASS - seen in tmp/partner-center-overview-after-save.png on 2026-05-21` |
+| Store listings complete | `PASS - seen in tmp/partner-center-overview-after-save.png on 2026-05-21` |
+| Desktop screenshots uploaded and visible | `PASS - three English Desktop screenshots uploaded and captioned in Partner Center` |
+| Store logos uploaded and visible | `PASS - poster, box, app tile 300/150/71, and super hero art uploaded in Partner Center` |
+| Packages uploaded and accepted | `FAIL - Partner Center shows Packages as Not started` |
 | Signed package or Microsoft Store package acceptance proof | `UNVERIFIED until package step is complete` |
 | Certification submitted | `NO - do not submit from this packet` |
 
@@ -180,6 +182,9 @@ that warning is not enough; a signed MSIX/package acceptance path is required.
 - Product features are separate Store bullets and must stay under 200
   characters each.
 - Desktop screenshots must be PNG, at least `1366x768`, no larger than `50 MB`.
+- The English listing (`languagecode=en`) must use English UI screenshots; do
+  not upload localized Ukrainian, Russian, or mixed-language captures to the
+  English Store listing.
 - Critical screenshot visuals and text should stay in the top two-thirds
   because Store overlays may cover the bottom third.
 - Do not add extra logos, icons, or marketing messages to screenshots.

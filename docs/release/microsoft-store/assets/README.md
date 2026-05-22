@@ -17,10 +17,12 @@ Recommended mapping:
 
 | Partner Center slot | File |
 | --- | --- |
-| App tile icon / Store logo | `official-logo/zenflow-official-app-tile-icon-300.png` |
+| App tile icon / Store logo 300x300 | `official-logo/zenflow-official-app-tile-icon-300.png` |
+| App tile icon / Store logo 150x150 | `official-logo/zenflow-official-app-tile-icon-150.png` |
+| App tile icon / Store logo 71x71 | `official-logo/zenflow-official-app-tile-icon-71.png` |
 | Box art 1:1 | `official-logo/zenflow-official-box-art-2160.png` |
 | Poster art 2:3 / 9:16-style vertical art | `official-logo/zenflow-official-poster-art-1440x2160.png` |
-| Super hero art 16:9, if requested | `official-logo/zenflow-official-super-hero-art-1920x1080.png` (no text/title) |
+| Super hero art 16:9 | `official-logo/zenflow-official-super-hero-art-1920x1080.png` (no text/title) |
 | Source-quality logo archive | `official-logo/zenflow-official-logo-source-1024.png` |
 
 ## Orb Drafts

@@ -22,6 +22,22 @@
       "sizeBytes": 59360
     },
     {
+      "file": "zenflow-official-app-tile-icon-150.png",
+      "slot": "1:1 App tile icon small",
+      "dimensions": "150x150",
+      "width": 150,
+      "height": 150,
+      "sizeBytes": 26474
+    },
+    {
+      "file": "zenflow-official-app-tile-icon-71.png",
+      "slot": "1:1 App tile icon compact",
+      "dimensions": "71x71",
+      "width": 71,
+      "height": 71,
+      "sizeBytes": 9129
+    },
+    {
       "file": "zenflow-official-box-art-1080.png",
       "slot": "1:1 Box art",
       "dimensions": "1080x1080",

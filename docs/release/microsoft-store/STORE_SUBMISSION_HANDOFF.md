@@ -52,13 +52,13 @@ or partially loaded frames.
 Recommended upload order for Desktop screenshots:
 
 1. `store-screenshots/desktop/01-v2-orb-desktop.png`
-   - Caption: `Check in with your mood through ZenFlow's calm V2 orb flow.`
+   - Caption: `Name your mood in a quiet visual flow that stays out of your way.`
    - Status: recommended first screenshot.
 2. `store-screenshots/desktop/02-v2-habits-desktop.png`
-   - Caption: `Track habits and daily rituals without a crowded dashboard.`
+   - Caption: `Build steady daily rituals without turning your day into a dashboard.`
    - Status: recommended second screenshot.
 3. `store-screenshots/desktop/03-v2-diary-desktop.png`
-   - Caption: `Write private reflections and keep your journal close.`
+   - Caption: `Keep private reflection close to your work, with space to start small.`
    - Status: acceptable privacy-safe screenshot.
 
 Do not upload `tmp/store-candidates/04-desktop-download-page-settled.png` in
@@ -75,10 +75,12 @@ Use `assets/official-logo/` for Partner Center Store logos:
 
 | Partner Center slot | File |
 | --- | --- |
-| 1:1 App tile icon / Store logo | `assets/official-logo/zenflow-official-app-tile-icon-300.png` |
+| 1:1 App tile icon / Store logo 300x300 | `assets/official-logo/zenflow-official-app-tile-icon-300.png` |
+| 1:1 App tile icon / Store logo 150x150 | `assets/official-logo/zenflow-official-app-tile-icon-150.png` |
+| 1:1 App tile icon / Store logo 71x71 | `assets/official-logo/zenflow-official-app-tile-icon-71.png` |
 | 1:1 Box art | `assets/official-logo/zenflow-official-box-art-2160.png` |
 | 9:16 Poster art | `assets/official-logo/zenflow-official-poster-art-1440x2160.png` |
-| 16:9 Super hero art, if requested | `assets/official-logo/zenflow-official-super-hero-art-1920x1080.png` |
+| 16:9 Super hero art | `assets/official-logo/zenflow-official-super-hero-art-1920x1080.png` |
 
 `assets/orb-draft/` is reference-only. Do not use draft orb exports as the
 primary Store logo unless the product owner explicitly chooses an orb-led Store
@@ -95,6 +97,22 @@ identity later.
 6. Confirm `Store listings` remains `Complete`.
 7. Do not click `Submit for certification` until `Packages` is complete and the
    release gates below are green.
+
+## Current Partner Center Evidence
+
+Last checked in Partner Center on 2026-05-21 after saving the English Store
+listing:
+
+| Section | Live status | Evidence |
+| --- | --- | --- |
+| Pricing and availability | `Complete` | `tmp/partner-center-overview-after-save.png` |
+| Properties | `Complete` | `tmp/partner-center-overview-after-save.png` |
+| Age ratings | `Complete` | `tmp/partner-center-overview-after-save.png` |
+| Store listings | `Complete` | `tmp/partner-center-overview-after-save.png` |
+| Packages | `Not started` | `tmp/partner-center-overview-after-save.png` |
+
+Certification was not submitted because the package upload step is still not
+complete.
 
 ## Release Gates Before Certification
 
