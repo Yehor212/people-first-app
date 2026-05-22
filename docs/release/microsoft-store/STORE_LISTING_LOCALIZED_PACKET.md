@@ -110,7 +110,7 @@ updater, or unavailable account workflow.
 | Store import/manual save complete | Partner Center proof for every added language |
 | Package languages complete | Partner Center package-language table after package upload |
 | Screenshots acceptable | File dimensions, PNG format, Store-safe visual review |
-| No false submission claim | Certification remains unsubmitted until package/signing/WACK proof exists |
+| No false submission claim | Certification remains unsubmitted until the generated MSIXUPLOAD is accepted and WACK or Store certification proof exists |
 
 Until Partner Center proof exists, the correct status is:
 

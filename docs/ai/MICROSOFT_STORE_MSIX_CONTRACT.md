@@ -128,7 +128,7 @@ for reproducible package manifests.
 
 ## MSIX Packaging Paths
 
-There are two acceptable paths.
+There are three acceptable paths.
 
 ### Path A: Convert The Signed Installer
 
@@ -163,6 +163,41 @@ Required proof:
 This path is more automation-friendly, but it needs careful manifest and asset
 work before it should be wired into CI.
 
+### Path C: Generate The Store MSIXUPLOAD Candidate
+
+Use the repo-owned package generator:
+
+```bash
+npm run desktop:store:package
+```
+
+The command uses Partner Center Product Identity values from
+`product-identity.public.json`, generates an `AppxManifest.xml`, creates
+official Store logo package assets, runs Windows SDK `MakePri.exe` when
+available, runs `MakeAppx.exe`, and writes:
+
+- `tmp/microsoft-store-msix/ZenFlow_1.7.3.0_x64.msix`
+- `tmp/microsoft-store-msix/ZenFlow_1.7.3.0_x64.msixupload`
+- `tmp/microsoft-store-msix/package-manifest.json`
+
+This is the current preferred repo path for the Partner Center product type
+`MSIX or PWA app`. Upload the `.msixupload` file in Partner Center under
+`Submission 1` -> `Packages`.
+
+Important distinction: for Microsoft Store MSIX submissions, Microsoft handles
+Store package signing after certification. Do not create or buy a PFX just to
+produce this Store upload candidate. Direct EXE/NSIS distribution and the
+separate MSI/EXE Store path still require Authenticode signing proof.
+
+Required proof:
+
+- `npm run desktop:store:package`
+- `tmp/microsoft-store-msix/package-manifest.json`
+- `MakeAppx.exe` output in the command log
+- Package upload accepted in Partner Center draft
+- Windows App Certification Kit result or Partner Center certification result
+- Package-language table reviewed after upload
+
 ## Release Gate
 
 A Microsoft Store release is complete only when every row is proved from the
@@ -179,8 +214,9 @@ final tree or final draft submission:
 | Package languages | `PASS` only after package upload shows the expected language list in Partner Center |
 | Partner Center tab audit | `PASS` only when `npm run desktop:store:check` validates `partner-center-tabs-audit.json` and every blocker tab has current live proof or remains explicitly blocked |
 | Sync unchanged | `PASS` only with `npm run check:sync-contract` and sync drill when account behavior is touched |
-| Package signed | `PASS` only with `npm run desktop:release:check` or MSIX SignTool proof |
-| Store certification | `PASS` only with Windows App Certification Kit evidence |
+| Store upload package generated | `PASS` only with `npm run desktop:store:package` and `package-manifest.json` |
+| Direct EXE/NSIS signed | `PASS` only with `npm run desktop:release:check`; required for direct downloads or MSI/EXE Store path, not for the generated Store MSIXUPLOAD candidate |
+| Store certification | `PASS` only with Windows App Certification Kit evidence or Partner Center accepted certification result |
 | Public claims | `PASS` only when `/desktop` and release notes point to verified signed artifacts |
 
 Anything missing stays `UNVERIFIED`. Do not call the Store release complete from
@@ -196,5 +232,9 @@ source-only proof.
   https://learn.microsoft.com/en-us/windows/msix/desktop/desktop-to-uwp-manual-conversion
 - Microsoft Store MSIX package requirements:
   https://learn.microsoft.com/en-us/windows/apps/publish/publish-your-app/msix/app-package-requirements
+- Microsoft upload app packages:
+  https://learn.microsoft.com/en-us/windows/apps/publish/publish-your-app/upload-app-packages?pivots=store-installer-msix&source=recommendations
+- Microsoft code signing options:
+  https://learn.microsoft.com/en-us/windows/apps/package-and-deploy/code-signing-options
 - MSIX Packaging Tool conversion from existing installer:
   https://learn.microsoft.com/en-us/windows/msix/packaging-tool/create-app-package

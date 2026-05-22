@@ -21,7 +21,7 @@ Use these statuses exactly:
 | `PASS` | Fresh repo or live Partner Center evidence proves the row for the current draft. |
 | `READY_IN_REPO_LIVE_UNVERIFIED` | The repo packet is prepared and guarded, but Partner Center live proof is not complete yet. |
 | `BLOCKED_UNTIL_PACKAGE_UPLOAD` | Partner Center cannot prove the row until a package is uploaded. |
-| `BLOCKED_UNTIL_SIGNING` | The Store release cannot advance until a signed package or accepted Store package exists. |
+| `BLOCKED_UNTIL_SIGNING` | Direct EXE/NSIS release cannot advance until Authenticode signing exists. |
 | `UNVERIFIED` | The row may be valid, but fresh proof is missing after the latest live change. |
 | `NOT_APPLICABLE` | The row is outside the current ZenFlow desktop Store submission scope. |
 
@@ -41,7 +41,7 @@ another product/build. No evidence = `UNVERIFIED` or `FAIL`, never `PASS`.
 | Additional Store listing languages | `READY_IN_REPO_LIVE_UNVERIFIED` | `store-listing-localized.json` covers `en`, `uk`, `es`, `de`, `fr`, `ja`, `ar`, `he`; live Partner Center still showed English only. | Use Export/Import listings or one-language-at-a-time save, then capture proof per language. |
 | Languages supported in packages | `BLOCKED_UNTIL_PACKAGE_UPLOAD` | Partner Center states package languages appear after packages are uploaded. | Upload accepted package, then compare detected package languages against the intended list. |
 | Store logos | `PASS` | Official logo assets are committed; Partner Center logo section proof exists in `tmp/partner-center-store-logos-visible.png`. | Keep official-logo assets; do not switch to draft orb exports without owner approval. |
-| Packages | `BLOCKED_UNTIL_SIGNING` | Partner Center showed `Packages` as `Not started`; `desktop:release:check` reports unsigned EXE/NSIS. | Create signed package or accepted Store package, then upload and capture proof. |
+| Packages | `BLOCKED_UNTIL_PACKAGE_UPLOAD` | Partner Center showed `Packages` as `Not started`; `npm run desktop:store:package` now generates the Store `.msixupload` candidate. | Upload `tmp/microsoft-store-msix/ZenFlow_1.7.3.0_x64.msixupload`, capture Partner Center acceptance proof, then review package languages. |
 | Submission Options | `UNVERIFIED` | Overview marked it recommended earlier, but it has not been freshly audited after package work. | Reopen after package upload and verify release timing/settings. |
 | Additional Testing Information | `UNVERIFIED` | No current live proof captured. | Add reviewer test notes if certification needs login or usage guidance. |
 | Product page experiment | `NOT_APPLICABLE` | First Store submission does not use product-page experiments. | Do not enable experiments before base page is certified. |
@@ -51,7 +51,7 @@ another product/build. No evidence = `UNVERIFIED` or `FAIL`, never `PASS`.
 | Maps | `NOT_APPLICABLE` | ZenFlow does not use Microsoft Maps. | Leave unused. |
 | Product collections and purchases | `NOT_APPLICABLE` | No Store commerce or in-app purchases. | Do not enable without owner approval and privacy/security review. |
 | Partner Center account verification | `UNVERIFIED` | A prior overview showed a red account-verification warning; current account state must be rechecked. | Verify account status before certification. |
-| Submit for certification | `BLOCKED_UNTIL_SIGNING` | Package/signing/WACK/accepted-package proof is missing. | Do not submit yet. |
+| Submit for certification | `BLOCKED_UNTIL_PACKAGE_UPLOAD` | Partner Center package acceptance, WACK or Store certification proof, package-language review, and account verification are missing. | Do not submit yet. |
 
 ## Why The Language Page Still Looks Incomplete
 
@@ -86,10 +86,10 @@ select the wrong language when search, scroll, or modal state changes.
 
 Stop and report `PARTIAL`, `UNVERIFIED`, or `BLOCKED` when any of these remain:
 
-- `Packages` is `Not started`.
-- Artifacts are unsigned for public release.
+- `Packages` is `Not started` until the generated MSIXUPLOAD is uploaded and accepted.
+- Direct EXE/NSIS artifacts are unsigned when direct distribution is in scope.
 - Partner Center account verification is not current.
-- No accepted package is visible in Partner Center.
+- No accepted generated MSIXUPLOAD package is visible in Partner Center.
 - Package languages are unavailable or not reviewed.
 - Additional Store listing languages are repo-ready but not live-proved.
 - Windows App Certification Kit or equivalent Store package acceptance proof is
@@ -105,5 +105,9 @@ Stop and report `PARTIAL`, `UNVERIFIED`, or `BLOCKED` when any of these remain:
   https://learn.microsoft.com/en-us/windows/apps/publish/publish-your-app/msix/import-and-export-store-listings
 - MSIX app package requirements:
   https://learn.microsoft.com/en-us/windows/apps/publish/publish-your-app/msix/app-package-requirements
+- Upload app packages:
+  https://learn.microsoft.com/en-us/windows/apps/publish/publish-your-app/upload-app-packages?pivots=store-installer-msix&source=recommendations
+- Microsoft code signing options:
+  https://learn.microsoft.com/en-us/windows/apps/package-and-deploy/code-signing-options
 - MSI/EXE app package requirements if the product path changes:
   https://learn.microsoft.com/en-us/windows/apps/publish/publish-your-app/msi/app-package-requirements

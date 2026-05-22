@@ -11,7 +11,7 @@
     "PASS": "Fresh repo or live Partner Center evidence proves the row for the current draft.",
     "READY_IN_REPO_LIVE_UNVERIFIED": "The repo packet is prepared and guarded, but Partner Center live proof is not complete yet.",
     "BLOCKED_UNTIL_PACKAGE_UPLOAD": "This Partner Center row cannot be finished until a package is uploaded.",
-    "BLOCKED_UNTIL_SIGNING": "This release row cannot be finished until a signed package or accepted Store package exists.",
+    "BLOCKED_UNTIL_SIGNING": "Direct EXE/NSIS release cannot advance until Authenticode signing exists.",
     "UNVERIFIED": "The row may be valid, but fresh proof is missing after the latest live change.",
     "NOT_APPLICABLE": "The row is not part of the current ZenFlow desktop submission scope."
   },
@@ -35,6 +35,16 @@
       "id": "msix-package-requirements",
       "url": "https://learn.microsoft.com/en-us/windows/apps/publish/publish-your-app/msix/app-package-requirements",
       "reason": "MSIX package identity, versioning, WACK, and supported language rules."
+    },
+    {
+      "id": "upload-app-packages",
+      "url": "https://learn.microsoft.com/en-us/windows/apps/publish/publish-your-app/upload-app-packages?pivots=store-installer-msix&source=recommendations",
+      "reason": "Partner Center package upload supports MSIXUPLOAD/MSIX package files for the current product path."
+    },
+    {
+      "id": "code-signing-options",
+      "url": "https://learn.microsoft.com/en-us/windows/apps/package-and-deploy/code-signing-options",
+      "reason": "Microsoft Store MSIX signing is handled by Microsoft after certification; direct EXE/NSIS remains separate."
     },
     {
       "id": "msi-exe-package-requirements",
@@ -150,13 +160,13 @@
     {
       "id": "packages",
       "label": "Submission 1 / Packages",
-      "status": "BLOCKED_UNTIL_SIGNING",
+      "status": "BLOCKED_UNTIL_PACKAGE_UPLOAD",
       "blocksCertification": true,
       "evidence": [
         "tmp/partner-center-overview-after-save.png shows Packages as Not started",
-        "npm run desktop:release:check currently reports the EXE and NSIS setup as NotSigned"
+        "npm run desktop:store:package generates tmp/microsoft-store-msix/ZenFlow_1.7.3.0_x64.msixupload"
       ],
-      "requiredNextAction": "Produce a signed installer or MSIX package, run WACK where applicable, upload/declare it in Partner Center, and capture accepted-package proof."
+      "requiredNextAction": "Upload the generated .msixupload in Partner Center, capture accepted-package proof, then review the detected package-language table."
     },
     {
       "id": "submission-options",
@@ -251,20 +261,20 @@
     {
       "id": "certification-submit",
       "label": "Submit for certification",
-      "status": "BLOCKED_UNTIL_SIGNING",
+      "status": "BLOCKED_UNTIL_PACKAGE_UPLOAD",
       "blocksCertification": true,
       "evidence": [
         "Packages is not started",
-        "Release artifacts are unsigned",
-        "No WACK or accepted-package proof is present"
+        "Generated MSIXUPLOAD has not been accepted in Partner Center",
+        "No WACK or accepted-package proof is present",
+        "Account verification must be rechecked"
       ],
       "requiredNextAction": "Do not submit until packages, signing/acceptance, language proof, and certification evidence are current."
     }
   ],
   "finalSubmitBlockers": [
     "Packages is not started in Partner Center.",
-    "Current EXE and NSIS setup are unsigned for public release.",
-    "No MSIX/AppX/MSIXUPLOAD or accepted EXE/MSI Store package proof is present.",
+    "The generated MSIXUPLOAD package has not been accepted in Partner Center.",
     "Package-supported languages cannot be verified until package upload.",
     "Seven non-English Store listing pages are ready in repo but not live-proved in Partner Center.",
     "Account verification must be freshly rechecked before certification."

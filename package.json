@@ -36,6 +36,7 @@
     "desktop:sign": "node scripts/sign-desktop-windows.cjs",
     "desktop:release:check": "node scripts/check-desktop-release-readiness.cjs",
     "desktop:release:check:dev": "node scripts/check-desktop-release-readiness.cjs --allow-unsigned-dev",
+    "desktop:store:package": "node scripts/create-microsoft-store-msix.cjs",
     "desktop:store:check": "node scripts/check-microsoft-store-msix-contract.cjs",
     "cap:sync": "npm run build:android && npx cap sync",
     "cap:sync:android": "npm run build:android && npx cap sync android",

@@ -44,7 +44,7 @@ The current live-state rule is:
 - English listing: `PASS`.
 - Non-English listing packet: `READY_IN_REPO_LIVE_UNVERIFIED`.
 - Package languages: `BLOCKED_UNTIL_PACKAGE_UPLOAD`.
-- Packages/certification: `BLOCKED_UNTIL_SIGNING`.
+- Packages/certification: `BLOCKED_UNTIL_PACKAGE_UPLOAD`.
 - Account verification: `UNVERIFIED` until rechecked before certification.
 
 ## Language State
@@ -55,7 +55,8 @@ The current live-state rule is:
 | English Store listing | `PASS` | Partner Center saved overview; `tmp/partner-center-overview-after-save.png`; English screenshots and captions in `store-screenshots/desktop/` | Keep English screenshots/copy in sync with current app surface. |
 | Additional Store listing languages | `READY IN REPO / LIVE UNVERIFIED` | `store-listing-localized.json` contains all eight prepared Store listing languages; live language page still shows only `English` as `Complete`; `tmp/partner-center-language-state-audit.png` | Import or manually save the localized packet in Partner Center, then capture proof for each language. |
 | Package-supported languages | `FAIL` until package upload | Live language page says package languages will display after packages are uploaded; `Packages` is `Not started` | Build/upload accepted Store package, then verify the package language list. |
-| Certification | `FAIL` until package/signing/WACK proof | `npm run desktop:release:check` reports unsigned artifacts; no MSIX/AppX package found | Do not click `Submit for certification`. |
+| Store MSIXUPLOAD candidate | `PASS` after repo generation | `npm run desktop:store:package`; `tmp/microsoft-store-msix/package-manifest.json` | Upload the generated `.msixupload` to Partner Center Packages. |
+| Certification | `FAIL` until package/WACK or Store certification proof | Generated package still needs Partner Center acceptance; direct EXE/NSIS artifacts remain unsigned for direct distribution | Do not click `Submit for certification` until Partner Center accepts the package and account verification is current. |
 
 ## Supported Language Intent
 
@@ -94,7 +95,8 @@ repo; the live Store proof is still separate.
 | Store listings | `PASS` for English only | `tmp/partner-center-overview-after-save.png` shows `Complete`; English listing screenshots/captions uploaded | `PASS` does not mean every app UI language has a Store page. |
 | Additional Store listing languages | `READY IN REPO / LIVE UNVERIFIED` | `store-listing-localized.json` exists and is guarded by `npm run desktop:store:check`; `tmp/partner-center-language-state-audit.png` shows only English live complete | Use Export/Import or one-language-at-a-time manual save; capture live proof. |
 | Languages supported in packages | `FAIL` until package upload | `tmp/partner-center-language-state-audit.png` shows empty package language list | Expected while `Packages` is `Not started`, but blocks language release proof. |
-| Packages | `FAIL` | Partner Center overview shows `Not started`; no MSIX/AppX package artifact found | Certification cannot be submitted. |
+| Store MSIXUPLOAD candidate | `PASS` after command proof | `npm run desktop:store:package` generates `tmp/microsoft-store-msix/ZenFlow_1.7.3.0_x64.msixupload` | This proves the repo can produce a candidate; live package acceptance is still separate. |
+| Packages | `FAIL until upload` | Partner Center overview shows `Not started`; generated MSIXUPLOAD has not been accepted live yet | Certification cannot be submitted until upload acceptance is visible. |
 | Submission options | `UNVERIFIED` | Overview marked recommended, but final settings not audited after package upload | Recheck after package is added. |
 | Store logos | `PASS` | Poster, box art, app tile 300/150/71, and hero art uploaded in Partner Center | Keep official-logo assets; orb drafts remain reference-only. |
 | Certification submit | `FAIL` until package and WACK pass | Not submitted by design | Do not submit from listing-only evidence. |
@@ -131,5 +133,6 @@ Stop and report `PARTIAL` or `FAIL` when:
 - A non-English Store listing lacks localized copy or captions.
 - Partner Center language proof is missing after a listing import/manual save.
 - `Packages` is `Not started`.
-- `desktop:release:check` fails because artifacts are unsigned.
+- generated MSIXUPLOAD package has not been accepted in Partner Center.
+- `desktop:release:check` fails because direct EXE/NSIS artifacts are unsigned when direct download release is in scope.
 - Windows App Certification Kit evidence is missing.

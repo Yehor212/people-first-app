@@ -69,22 +69,27 @@ them.
 Run:
 
 ```bash
+npm run desktop:store:package
 npm run desktop:store:check
 ```
 
-The command proves the Store guardrails are wired into the repo. If Product
-Identity environment variables are absent, it reports that Store packaging
-identity remains `UNVERIFIED`; that is expected until Partner Center values are
-copied.
+`desktop:store:package` writes the current Store upload candidate to
+`tmp/microsoft-store-msix/ZenFlow_1.7.3.0_x64.msixupload`.
+`desktop:store:check` proves the Store guardrails are wired into the repo. If
+Product Identity environment variables are absent, it reports that Store
+packaging identity remains `UNVERIFIED`; that is expected until Partner Center
+values are copied.
+
+The generated file is not final proof until it becomes an accepted package in the Partner Center draft.
 
 ## Release Rule
 
 Microsoft Store release is not complete until:
 
 - `npm run desktop:store:check`
+- `npm run desktop:store:package`
 - `npm run check:desktop-exe-contract`
 - `npm run check:canonical-orbs`
 - `npm run check:sync-contract`
-- signed installer or MSIX signature proof
-- Windows App Certification Kit proof
-- accepted package in the Partner Center draft
+- accepted generated MSIXUPLOAD package in the Partner Center draft
+- Windows App Certification Kit proof or Partner Center certification result

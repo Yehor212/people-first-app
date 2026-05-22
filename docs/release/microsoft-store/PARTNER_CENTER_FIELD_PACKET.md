@@ -10,6 +10,9 @@ Use this file when Partner Center is open at:
 Do not click `Submit for certification` from this packet. Certification is a
 separate release action that requires package/signing proof and explicit owner
 approval in the active thread.
+For the current `MSIX or PWA app` path, "package proof" means the generated
+MSIXUPLOAD has been accepted in Partner Center; direct EXE/NSIS signing is a
+separate distribution path.
 
 ## Product Identity
 
@@ -134,6 +137,37 @@ Additional Store listing languages must be filled from
 Export/Import. Package languages are a separate Partner Center proof surface and
 cannot be completed until the package is uploaded.
 
+## Store Package Upload
+
+Generate the package from the repo before opening the Partner Center `Packages`
+tab:
+
+```bash
+npm run desktop:store:package
+```
+
+Upload this generated file:
+
+```text
+tmp/microsoft-store-msix/ZenFlow_1.7.3.0_x64.msixupload
+```
+
+The generator uses the public Partner Center identity values:
+
+```text
+Name: YehorSha.ZenFlow
+Publisher: CN=EEB3FAA5-30F3-4886-A288-B72F7ED6729B
+PublisherDisplayName: YehorSha
+Version: 1.7.3.0
+Architecture: x64
+Languages: en-us, uk, es, de, fr, ja, ar, he
+```
+
+Do not upload the NSIS setup EXE to this `MSIX or PWA app` product path.
+Microsoft Store signing happens after certification for this Store MSIX upload
+path. Direct EXE/NSIS distribution remains separate and still needs
+Authenticode signing.
+
 ## Localized Store Listing Packet
 
 Before changing `Manage additional languages`, review:
@@ -195,14 +229,15 @@ Mark a row `PASS` only after seeing it in Partner Center after save.
 | Properties complete | `PASS - seen in tmp/partner-center-overview-after-save.png on 2026-05-21` |
 | Age ratings complete | `PASS - seen in tmp/partner-center-overview-after-save.png on 2026-05-21` |
 | Store listings complete | `PASS - seen in tmp/partner-center-overview-after-save.png on 2026-05-21` |
+| Store MSIXUPLOAD candidate generated | `PASS only after npm run desktop:store:package writes tmp/microsoft-store-msix/ZenFlow_1.7.3.0_x64.msixupload` |
 | Additional Store listing languages reviewed | `READY IN REPO / LIVE UNVERIFIED - store-listing-localized.json covers all 8 app languages; tmp/partner-center-language-state-audit.png still shows only English live complete` |
 | Localized Store listing packet reviewed | `PASS - npm run desktop:store:check validates localized copy, captions, search terms, and screenshot decision` |
 | Package language list reviewed | `FAIL - tmp/partner-center-language-state-audit.png shows package languages are unavailable until package upload` |
 | Desktop screenshots uploaded and visible | `PASS - three English Desktop screenshots uploaded and captioned in Partner Center` |
 | Store logos uploaded and visible | `PASS - poster, box, app tile 300/150/71, and super hero art uploaded in Partner Center` |
 | Partner Center tabs audit reviewed | `PARTIAL - PARTNER_CENTER_TABS_AUDIT.md covers every visible tab; package, package-language, account-verification, and certification rows remain blockers` |
-| Packages uploaded and accepted | `FAIL - Partner Center shows Packages as Not started` |
-| Signed package or Microsoft Store package acceptance proof | `UNVERIFIED until package step is complete` |
+| Packages uploaded and accepted | `FAIL until the generated .msixupload is accepted in Partner Center` |
+| Signed package or Microsoft Store package acceptance proof | `UNVERIFIED until package upload/certification evidence is complete` |
 | Certification submitted | `NO - do not submit from this packet` |
 
 ## Required Repo Proof Before Certification
@@ -214,6 +249,7 @@ npm run check:all
 npm run check:sync-contract
 npm run check:canonical-orbs
 npm run check:task-completion
+npm run desktop:store:package
 npm run desktop:store:check
 npm run check:desktop-exe-contract
 npm run i18n:check
@@ -221,8 +257,11 @@ npm run i18n:deep
 ```
 
 For a local development package, `npm run desktop:release:check:dev` may pass
-with an explicit unsigned warning. For a public Microsoft Store submission,
-that warning is not enough; a signed MSIX/package acceptance path is required.
+with an explicit unsigned warning. For this public Microsoft Store MSIX path,
+that warning is not enough; Partner Center must accept the generated
+MSIXUPLOAD and certification/WACK proof must be current. For direct public
+EXE/NSIS distribution, `npm run desktop:release:check` must show Valid
+Authenticode signatures.
 
 ## Microsoft Source Rules
 

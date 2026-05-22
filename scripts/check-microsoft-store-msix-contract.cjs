@@ -432,6 +432,8 @@ function requirePartnerCenterTabsAudit(audit) {
     "https://learn.microsoft.com/en-us/windows/apps/publish/publish-your-app/msix/screenshots-and-images",
     "https://learn.microsoft.com/en-us/windows/apps/publish/publish-your-app/msix/import-and-export-store-listings",
     "https://learn.microsoft.com/en-us/windows/apps/publish/publish-your-app/msix/app-package-requirements",
+    "https://learn.microsoft.com/en-us/windows/apps/publish/publish-your-app/upload-app-packages?pivots=store-installer-msix&source=recommendations",
+    "https://learn.microsoft.com/en-us/windows/apps/package-and-deploy/code-signing-options",
   ]) {
     if (!referenceUrls.has(requiredUrl)) {
       failures.push(`${PARTNER_CENTER_TABS_AUDIT} is missing official reference ${requiredUrl}`);
@@ -503,8 +505,8 @@ function requirePartnerCenterTabsAudit(audit) {
   }
 
   const packages = tabById.get("packages");
-  if (packages?.status !== "BLOCKED_UNTIL_SIGNING") {
-    failures.push(`${PARTNER_CENTER_TABS_AUDIT} packages must stay BLOCKED_UNTIL_SIGNING until signed/accepted package proof exists`);
+  if (packages?.status !== "BLOCKED_UNTIL_PACKAGE_UPLOAD") {
+    failures.push(`${PARTNER_CENTER_TABS_AUDIT} packages must stay BLOCKED_UNTIL_PACKAGE_UPLOAD until the generated package is accepted in Partner Center`);
   } else {
     pass();
   }
@@ -512,7 +514,7 @@ function requirePartnerCenterTabsAudit(audit) {
   const blockers = audit.finalSubmitBlockers || [];
   for (const requiredBlocker of [
     "Packages is not started",
-    "unsigned",
+    "generated MSIXUPLOAD",
     "Package-supported languages",
     "non-English Store listing pages",
     "Account verification",
@@ -544,7 +546,9 @@ function main() {
     "No purchase or final submission automation",
     "Path A: Convert The Signed Installer",
     "Path B: Manual MSIX Packaging",
+    "Path C: Generate The Store MSIXUPLOAD Candidate",
     "Windows App Certification Kit",
+    "npm run desktop:store:package",
     "npm run desktop:store:check",
     "Store language truth",
     "Additional Store listing languages",
@@ -566,6 +570,7 @@ function main() {
     "npm run desktop:store:check",
     "Do not place certificates",
     "product-identity.public.json",
+    "desktop:store:package",
     "accepted package in the Partner Center draft",
     "en",
     "uk",
@@ -582,6 +587,7 @@ function main() {
     EXPECTED_IDENTITY.packageIdentityName,
     EXPECTED_IDENTITY.publisher,
     "Store listings complete",
+    "Store MSIXUPLOAD candidate generated",
     "Additional Store listing languages reviewed",
     "Localized Store listing packet reviewed",
     "Package language list reviewed",
@@ -608,6 +614,7 @@ function main() {
     "localized packet is ready",
     "tmp/partner-center-language-state-audit.png",
     "Packages` is `Not started",
+    "generated MSIXUPLOAD",
   ]);
 
   requireIncludes("docs/release/microsoft-store/STORE_LISTING_QUALITY_GATE.md", [
@@ -651,16 +658,19 @@ function main() {
 
   requireIncludes("docs/ai/TASK_COMPLETION_PROTOCOL.md", [
     "Microsoft Store/MSIX",
+    "npm run desktop:store:package",
     "npm run desktop:store:check",
   ]);
 
   requireIncludes("docs/DEFINITION_OF_DONE.md", [
     "Microsoft Store/MSIX contract",
+    "npm run desktop:store:package",
     "npm run desktop:store:check",
   ]);
 
   requireIncludes("docs/RELEASE_CHECKLIST.md", [
     "Microsoft Store / MSIX",
+    "npm run desktop:store:package",
     "npm run desktop:store:check",
     "9MZK46FHZV8K",
   ]);
@@ -671,6 +681,26 @@ function main() {
   } else {
     pass();
   }
+
+  const storePackageScript = packageJson.scripts?.["desktop:store:package"];
+  if (storePackageScript !== "node scripts/create-microsoft-store-msix.cjs") {
+    failures.push("package.json must expose desktop:store:package");
+  } else {
+    pass();
+  }
+
+  requireIncludes("scripts/create-microsoft-store-msix.cjs", [
+    PRODUCT_ID,
+    EXPECTED_IDENTITY.packageIdentityName,
+    EXPECTED_IDENTITY.publisher,
+    "makeappx.exe",
+    "makepri.exe",
+    ".msixupload",
+    "runFullTrust",
+    "Windows.Desktop",
+    "PACKAGE_LANGUAGES",
+    "Microsoft Store signing is handled by Microsoft after certification",
+  ]);
 
   if (tauriConfig.productName !== "ZenFlow") {
     failures.push("src-tauri/tauri.conf.json productName must remain ZenFlow");
@@ -712,6 +742,7 @@ function main() {
     "docs/release/microsoft-store/identity.template.json",
     "docs/release/microsoft-store/product-identity.public.json",
     "scripts/check-microsoft-store-msix-contract.cjs",
+    "scripts/create-microsoft-store-msix.cjs",
   ]);
 
   for (const warning of warnings) {

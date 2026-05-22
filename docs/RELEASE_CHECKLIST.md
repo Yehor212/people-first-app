@@ -54,6 +54,7 @@ Use this list before publishing on stores or web.
 - Read `docs/ai/DESKTOP_EXE_RUNTIME_CONTRACT.md`.
 - If publishing through Microsoft Store, read `docs/ai/MICROSOFT_STORE_MSIX_CONTRACT.md`.
 - Run `npm run check:desktop-exe-contract`.
+- Run `npm run desktop:store:package` when preparing the Store `Packages` tab.
 - Run `npm run desktop:store:check` for any Microsoft Store/MSIX claim.
 - Run `npm run desktop:check`.
 - Confirm Visual Studio Build Tools with the `Desktop development with C++`
@@ -83,12 +84,16 @@ Use this list before publishing on stores or web.
   template; keep `product-identity.public.json` limited to public Store package
   metadata; never commit a private certificate, PFX base64, password, Store
   credential, or service-role key.
-- Use either MSIX Packaging Tool conversion from the signed Tauri installer or
-  manual MakeAppx/SignTool packaging; do not claim Store-ready from NSIS output
-  alone.
-- Run Windows App Certification Kit before uploading a package for submission.
-- Upload only a signed package to the Partner Center draft and keep submission
-  in draft until final product approval.
+- Use either MSIX Packaging Tool conversion, manual MakeAppx packaging, or the
+  repo generator `npm run desktop:store:package`; do not claim Store-ready from
+  NSIS output alone for this `MSIX or PWA app` product path.
+- Upload `tmp/microsoft-store-msix/ZenFlow_1.7.3.0_x64.msixupload` only after
+  `desktop:store:package` succeeds, then capture Partner Center accepted-package
+  proof and package-language proof.
+- For Store MSIX, Microsoft handles package signing after certification. Direct
+  EXE/NSIS distribution remains separate and requires Authenticode signing.
+- Run Windows App Certification Kit or record Partner Center certification proof
+  before claiming certification readiness.
 
 ## Sync and Data Convergence
 - Run `npm run check:sync-contract`.
