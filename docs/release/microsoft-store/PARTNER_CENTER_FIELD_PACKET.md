@@ -140,6 +140,8 @@ Before changing `Manage additional languages`, review:
 
 - `docs/release/microsoft-store/STORE_LISTING_LOCALIZED_PACKET.md`
 - `docs/release/microsoft-store/store-listing-localized.json`
+- `docs/release/microsoft-store/PARTNER_CENTER_TABS_AUDIT.md`
+- `docs/release/microsoft-store/partner-center-tabs-audit.json`
 
 Prepared listing languages:
 
@@ -198,6 +200,7 @@ Mark a row `PASS` only after seeing it in Partner Center after save.
 | Package language list reviewed | `FAIL - tmp/partner-center-language-state-audit.png shows package languages are unavailable until package upload` |
 | Desktop screenshots uploaded and visible | `PASS - three English Desktop screenshots uploaded and captioned in Partner Center` |
 | Store logos uploaded and visible | `PASS - poster, box, app tile 300/150/71, and super hero art uploaded in Partner Center` |
+| Partner Center tabs audit reviewed | `PARTIAL - PARTNER_CENTER_TABS_AUDIT.md covers every visible tab; package, package-language, account-verification, and certification rows remain blockers` |
 | Packages uploaded and accepted | `FAIL - Partner Center shows Packages as Not started` |
 | Signed package or Microsoft Store package acceptance proof | `UNVERIFIED until package step is complete` |
 | Certification submitted | `NO - do not submit from this packet` |

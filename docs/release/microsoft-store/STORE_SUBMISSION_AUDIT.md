@@ -29,6 +29,24 @@ References:
 - `https://learn.microsoft.com/en-us/windows/apps/publish/publish-your-app/msix/screenshots-and-images`
 - `https://learn.microsoft.com/en-us/windows/apps/publish/publish-your-app/msix/app-package-requirements#supported-languages`
 
+## Partner Center Tabs Audit
+
+Use `PARTNER_CENTER_TABS_AUDIT.md` and
+`partner-center-tabs-audit.json` for the full live-tab matrix. This audit
+checks Product Identity, Pricing and availability, Properties, Age ratings,
+Store listings, additional languages, package languages, Store logos, Packages,
+Submission Options, Additional Testing Information, Add-ons, WNS/MPNS, Xbox
+services, Maps, commerce services, Partner Center account verification, and
+Submit for certification.
+
+The current live-state rule is:
+
+- English listing: `PASS`.
+- Non-English listing packet: `READY_IN_REPO_LIVE_UNVERIFIED`.
+- Package languages: `BLOCKED_UNTIL_PACKAGE_UPLOAD`.
+- Packages/certification: `BLOCKED_UNTIL_SIGNING`.
+- Account verification: `UNVERIFIED` until rechecked before certification.
+
 ## Language State
 
 | Surface | Status | Evidence | Required next action |

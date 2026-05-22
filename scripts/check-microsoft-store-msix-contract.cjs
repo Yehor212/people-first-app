@@ -25,6 +25,43 @@ const EXPECTED_STORE_LANGUAGES = {
   he: "Hebrew",
 };
 const STORE_LISTING_PACKET = "docs/release/microsoft-store/store-listing-localized.json";
+const PARTNER_CENTER_TABS_AUDIT = "docs/release/microsoft-store/partner-center-tabs-audit.json";
+const EXPECTED_PARTNER_CENTER_TABS = [
+  "product-identity",
+  "manage-app-names",
+  "pricing-availability",
+  "properties",
+  "age-ratings",
+  "store-listings-english",
+  "additional-store-listing-languages",
+  "package-languages",
+  "store-logos",
+  "packages",
+  "submission-options",
+  "additional-testing-information",
+  "product-page-experiment",
+  "add-ons",
+  "wns-mpns",
+  "xbox-services",
+  "maps",
+  "product-collections-purchases",
+  "account-verification",
+  "certification-submit",
+];
+const ALLOWED_PARTNER_CENTER_TAB_STATUSES = new Set([
+  "PASS",
+  "READY_IN_REPO_LIVE_UNVERIFIED",
+  "BLOCKED_UNTIL_PACKAGE_UPLOAD",
+  "BLOCKED_UNTIL_SIGNING",
+  "UNVERIFIED",
+  "NOT_APPLICABLE",
+]);
+const CERTIFICATION_BLOCKER_TAB_IDS = new Set([
+  "package-languages",
+  "packages",
+  "account-verification",
+  "certification-submit",
+]);
 const BANNED_STORE_CLAIMS = [
   /\bmedical advice\b/i,
   /\bdiagnosis\b/i,
@@ -329,12 +366,172 @@ function requireLocalizedStorePacket(packet) {
   }
 }
 
+function readPngDimensions(file) {
+  const target = abs(file);
+  if (!fs.existsSync(target)) {
+    return null;
+  }
+
+  const buffer = fs.readFileSync(target);
+  const pngSignature = "89504e470d0a1a0a";
+  if (buffer.subarray(0, 8).toString("hex") !== pngSignature || buffer.length < 24) {
+    failures.push(`${file} must be a PNG file`);
+    return null;
+  }
+
+  return {
+    width: buffer.readUInt32BE(16),
+    height: buffer.readUInt32BE(20),
+  };
+}
+
+function requireMicrosoftStoreImages(packet) {
+  const screenshotFiles = packet.desktopScreenshotFiles || [];
+  for (const file of screenshotFiles) {
+    const dimensions = readPngDimensions(file);
+    if (!dimensions) continue;
+
+    if (dimensions.width < 1366 || dimensions.height < 768) {
+      failures.push(`${file} must be at least 1366x768 for Desktop Store screenshots; got ${dimensions.width}x${dimensions.height}`);
+    } else {
+      pass();
+    }
+
+    const size = fs.statSync(abs(file)).size;
+    const fiftyMb = 50 * 1024 * 1024;
+    if (size >= fiftyMb) {
+      failures.push(`${file} must stay below the Microsoft Store 50 MB screenshot limit`);
+    } else {
+      pass();
+    }
+  }
+}
+
+function requirePartnerCenterTabsAudit(audit) {
+  if (audit.version !== 1) {
+    failures.push(`${PARTNER_CENTER_TABS_AUDIT} version must be 1`);
+  } else {
+    pass();
+  }
+
+  if (audit.product?.productId !== PRODUCT_ID) {
+    failures.push(`${PARTNER_CENTER_TABS_AUDIT} product.productId must be ${PRODUCT_ID}`);
+  } else {
+    pass();
+  }
+
+  if (audit.product?.partnerCenterType !== "MSIX or PWA app") {
+    failures.push(`${PARTNER_CENTER_TABS_AUDIT} product.partnerCenterType must remain MSIX or PWA app until owner changes the product path`);
+  } else {
+    pass();
+  }
+
+  const referenceUrls = new Set((audit.officialReferences || []).map((reference) => reference.url));
+  for (const requiredUrl of [
+    "https://learn.microsoft.com/en-us/windows/apps/publish/publish-your-app/msix/add-and-edit-store-listing-info",
+    "https://learn.microsoft.com/en-us/windows/apps/publish/publish-your-app/msix/screenshots-and-images",
+    "https://learn.microsoft.com/en-us/windows/apps/publish/publish-your-app/msix/import-and-export-store-listings",
+    "https://learn.microsoft.com/en-us/windows/apps/publish/publish-your-app/msix/app-package-requirements",
+  ]) {
+    if (!referenceUrls.has(requiredUrl)) {
+      failures.push(`${PARTNER_CENTER_TABS_AUDIT} is missing official reference ${requiredUrl}`);
+    } else {
+      pass();
+    }
+  }
+
+  const tabs = Array.isArray(audit.tabs) ? audit.tabs : [];
+  if (tabs.length < EXPECTED_PARTNER_CENTER_TABS.length) {
+    failures.push(`${PARTNER_CENTER_TABS_AUDIT} must cover every expected Partner Center tab`);
+  } else {
+    pass();
+  }
+
+  const tabById = new Map(tabs.map((tab) => [tab.id, tab]));
+  for (const expectedId of EXPECTED_PARTNER_CENTER_TABS) {
+    const tab = tabById.get(expectedId);
+    if (!tab) {
+      failures.push(`${PARTNER_CENTER_TABS_AUDIT} is missing tab ${expectedId}`);
+      continue;
+    }
+
+    if (!ALLOWED_PARTNER_CENTER_TAB_STATUSES.has(tab.status)) {
+      failures.push(`${PARTNER_CENTER_TABS_AUDIT} tab ${expectedId} has invalid status ${tab.status}`);
+    } else {
+      pass();
+    }
+
+    if (!Array.isArray(tab.evidence) || tab.evidence.length === 0) {
+      failures.push(`${PARTNER_CENTER_TABS_AUDIT} tab ${expectedId} must include evidence`);
+    } else {
+      pass();
+    }
+
+    if (!String(tab.requiredNextAction || "").trim()) {
+      failures.push(`${PARTNER_CENTER_TABS_AUDIT} tab ${expectedId} must include requiredNextAction`);
+    } else {
+      pass();
+    }
+
+    if (CERTIFICATION_BLOCKER_TAB_IDS.has(expectedId)) {
+      if (tab.blocksCertification !== true) {
+        failures.push(`${PARTNER_CENTER_TABS_AUDIT} tab ${expectedId} must block certification`);
+      } else {
+        pass();
+      }
+
+      if (tab.status === "PASS") {
+        failures.push(`${PARTNER_CENTER_TABS_AUDIT} tab ${expectedId} cannot be PASS while package/signing/account proof is unresolved`);
+      } else {
+        pass();
+      }
+    }
+  }
+
+  const additionalLanguages = tabById.get("additional-store-listing-languages");
+  if (additionalLanguages?.status !== "READY_IN_REPO_LIVE_UNVERIFIED") {
+    failures.push(`${PARTNER_CENTER_TABS_AUDIT} additional Store listing languages must stay READY_IN_REPO_LIVE_UNVERIFIED until live proof exists`);
+  } else {
+    pass();
+  }
+
+  const packageLanguages = tabById.get("package-languages");
+  if (packageLanguages?.status !== "BLOCKED_UNTIL_PACKAGE_UPLOAD") {
+    failures.push(`${PARTNER_CENTER_TABS_AUDIT} package languages must stay BLOCKED_UNTIL_PACKAGE_UPLOAD until package upload proof exists`);
+  } else {
+    pass();
+  }
+
+  const packages = tabById.get("packages");
+  if (packages?.status !== "BLOCKED_UNTIL_SIGNING") {
+    failures.push(`${PARTNER_CENTER_TABS_AUDIT} packages must stay BLOCKED_UNTIL_SIGNING until signed/accepted package proof exists`);
+  } else {
+    pass();
+  }
+
+  const blockers = audit.finalSubmitBlockers || [];
+  for (const requiredBlocker of [
+    "Packages is not started",
+    "unsigned",
+    "Package-supported languages",
+    "non-English Store listing pages",
+    "Account verification",
+  ]) {
+    if (!blockers.some((blocker) => String(blocker).includes(requiredBlocker))) {
+      failures.push(`${PARTNER_CENTER_TABS_AUDIT} finalSubmitBlockers must include ${requiredBlocker}`);
+    } else {
+      pass();
+    }
+  }
+}
+
 function main() {
   const packageJson = readJson("package.json");
   const tauriConfig = readJson("src-tauri/tauri.conf.json");
   const identityTemplate = readJson("docs/release/microsoft-store/identity.template.json");
   const publicIdentity = readJson("docs/release/microsoft-store/product-identity.public.json");
   const localizedStorePacket = readJson(STORE_LISTING_PACKET);
+  const partnerCenterTabsAudit = readJson(PARTNER_CENTER_TABS_AUDIT);
 
   requireIncludes("docs/ai/MICROSOFT_STORE_MSIX_CONTRACT.md", [
     PRODUCT_ID,
@@ -353,6 +550,9 @@ function main() {
     "Additional Store listing languages",
     "Languages supported in packages",
     "store-listing-localized.json",
+    "PARTNER_CENTER_TABS_AUDIT.md",
+    "partner-center-tabs-audit.json",
+    "Partner Center account verification",
   ]);
 
   requireIncludes("docs/release/microsoft-store/README.md", [
@@ -362,6 +562,7 @@ function main() {
     "STORE_LISTING_LOCALIZED_PACKET.md",
     "store-listing-localized.json",
     "STORE_SUBMISSION_AUDIT.md",
+    "PARTNER_CENTER_TABS_AUDIT.md",
     "npm run desktop:store:check",
     "Do not place certificates",
     "product-identity.public.json",
@@ -384,6 +585,7 @@ function main() {
     "Additional Store listing languages reviewed",
     "Localized Store listing packet reviewed",
     "Package language list reviewed",
+    "Partner Center tabs audit reviewed",
     "Packages uploaded and accepted",
     "Certification submitted",
     "docs/release/microsoft-store/store-screenshots/desktop/01-v2-orb-desktop.png",
@@ -399,6 +601,8 @@ function main() {
     "Package languages",
     "Languages supported in packages",
     "Additional Store listing languages",
+    "Partner Center Tabs Audit",
+    "partner-center-tabs-audit.json",
     "en, uk, es, de, fr, ja, ar, he",
     "store-listing-localized.json",
     "localized packet is ready",
@@ -420,6 +624,23 @@ function main() {
     "Language Release Rule",
     "Additional Store listing languages",
     "Languages supported in packages",
+    "Partner Center Tabs Audit",
+  ]);
+
+  requireIncludes("docs/release/microsoft-store/PARTNER_CENTER_TABS_AUDIT.md", [
+    "Product Identity",
+    "Pricing and availability",
+    "Additional Store listing languages",
+    "Languages supported in packages",
+    "Packages",
+    "Submission Options",
+    "Additional Testing Information",
+    "Partner Center account verification",
+    "Submit for certification",
+    "BLOCKED_UNTIL_PACKAGE_UPLOAD",
+    "BLOCKED_UNTIL_SIGNING",
+    "READY_IN_REPO_LIVE_UNVERIFIED",
+    "https://learn.microsoft.com/en-us/windows/apps/publish/publish-your-app/msix/import-and-export-store-listings",
   ]);
 
   requireIncludes("docs/ai/DESKTOP_EXE_RUNTIME_CONTRACT.md", [
@@ -473,6 +694,8 @@ function main() {
   requirePublicIdentity(publicIdentity);
   requireAppLanguageFiles();
   requireLocalizedStorePacket(localizedStorePacket);
+  requireMicrosoftStoreImages(localizedStorePacket);
+  requirePartnerCenterTabsAudit(partnerCenterTabsAudit);
   validateOptionalIdentityEnv();
 
   requireNoHighConfidenceSecrets([
@@ -483,7 +706,9 @@ function main() {
     "docs/release/microsoft-store/STORE_LISTING_QUALITY_GATE.md",
     "docs/release/microsoft-store/STORE_SUBMISSION_HANDOFF.md",
     "docs/release/microsoft-store/STORE_LISTING_LOCALIZED_PACKET.md",
+    "docs/release/microsoft-store/PARTNER_CENTER_TABS_AUDIT.md",
     STORE_LISTING_PACKET,
+    PARTNER_CENTER_TABS_AUDIT,
     "docs/release/microsoft-store/identity.template.json",
     "docs/release/microsoft-store/product-identity.public.json",
     "scripts/check-microsoft-store-msix-contract.cjs",

@@ -40,6 +40,13 @@ repo for all eight languages, while the live Partner Center draft is currently
 complete only for English and package-supported languages cannot be verified
 until a package is uploaded.
 
+Use `PARTNER_CENTER_TABS_AUDIT.md` and
+`partner-center-tabs-audit.json` when checking every Partner Center tab. This is
+the release-blocker matrix for Pricing, Properties, Age ratings, Store
+listings, packages, account verification, optional services, and Submit for
+certification. It prevents calling the Store submission complete while package,
+language, or account proof is still missing.
+
 ## What To Copy From Partner Center
 
 Open:

@@ -1,0 +1,272 @@
+{
+  "version": 1,
+  "reviewedAt": "2026-05-22",
+  "product": {
+    "name": "ZenFlow",
+    "productId": "9MZK46FHZV8K",
+    "partnerCenterType": "MSIX or PWA app",
+    "submission": "Submission 1"
+  },
+  "statusVocabulary": {
+    "PASS": "Fresh repo or live Partner Center evidence proves the row for the current draft.",
+    "READY_IN_REPO_LIVE_UNVERIFIED": "The repo packet is prepared and guarded, but Partner Center live proof is not complete yet.",
+    "BLOCKED_UNTIL_PACKAGE_UPLOAD": "This Partner Center row cannot be finished until a package is uploaded.",
+    "BLOCKED_UNTIL_SIGNING": "This release row cannot be finished until a signed package or accepted Store package exists.",
+    "UNVERIFIED": "The row may be valid, but fresh proof is missing after the latest live change.",
+    "NOT_APPLICABLE": "The row is not part of the current ZenFlow desktop submission scope."
+  },
+  "officialReferences": [
+    {
+      "id": "store-listing-info",
+      "url": "https://learn.microsoft.com/en-us/windows/apps/publish/publish-your-app/msix/add-and-edit-store-listing-info",
+      "reason": "Store listing text, language, feature, screenshot, and Store logo rules."
+    },
+    {
+      "id": "screenshots-images",
+      "url": "https://learn.microsoft.com/en-us/windows/apps/publish/publish-your-app/msix/screenshots-and-images",
+      "reason": "Screenshot, caption, image-size, Store logo, and image quality rules."
+    },
+    {
+      "id": "import-export-listings",
+      "url": "https://learn.microsoft.com/en-us/windows/apps/publish/publish-your-app/msix/import-and-export-store-listings",
+      "reason": "Safe path for multilingual Store listing import/export instead of coordinate automation."
+    },
+    {
+      "id": "msix-package-requirements",
+      "url": "https://learn.microsoft.com/en-us/windows/apps/publish/publish-your-app/msix/app-package-requirements",
+      "reason": "MSIX package identity, versioning, WACK, and supported language rules."
+    },
+    {
+      "id": "msi-exe-package-requirements",
+      "url": "https://learn.microsoft.com/en-us/windows/apps/publish/publish-your-app/msi/app-package-requirements",
+      "reason": "If the product owner chooses MSI/EXE Store distribution later, the installer URL and every PE file must be signed."
+    }
+  ],
+  "tabs": [
+    {
+      "id": "product-identity",
+      "label": "Product management / Product Identity",
+      "status": "PASS",
+      "blocksCertification": false,
+      "evidence": [
+        "docs/release/microsoft-store/product-identity.public.json",
+        "Product Identity values copied from Partner Center: product id, package identity name, publisher, publisher display name, PFN"
+      ],
+      "requiredNextAction": "Use these exact values in any MSIX manifest or Store package; do not invent package identity fields."
+    },
+    {
+      "id": "manage-app-names",
+      "label": "Product management / Manage app names",
+      "status": "PASS",
+      "blocksCertification": false,
+      "evidence": [
+        "Partner Center product exists as ZenFlow",
+        "docs/release/microsoft-store/product-identity.public.json"
+      ],
+      "requiredNextAction": "Keep the Store listing product name and package display name aligned as ZenFlow."
+    },
+    {
+      "id": "pricing-availability",
+      "label": "Submission 1 / Pricing and availability",
+      "status": "PASS",
+      "blocksCertification": false,
+      "evidence": [
+        "tmp/partner-center-overview-after-save.png shows Pricing and availability as Complete on 2026-05-21"
+      ],
+      "requiredNextAction": "Recheck before certification because availability is a live commercial setting."
+    },
+    {
+      "id": "properties",
+      "label": "Submission 1 / Properties",
+      "status": "PASS",
+      "blocksCertification": false,
+      "evidence": [
+        "tmp/partner-center-overview-after-save.png shows Properties as Complete on 2026-05-21"
+      ],
+      "requiredNextAction": "Keep properties aligned with Windows desktop-only package scope."
+    },
+    {
+      "id": "age-ratings",
+      "label": "Submission 1 / Age ratings",
+      "status": "PASS",
+      "blocksCertification": false,
+      "evidence": [
+        "tmp/partner-center-overview-after-save.png shows Age ratings as Complete on 2026-05-21",
+        "docs/release/microsoft-store/store-listing-localized.json is checked for medical and hype claim bans"
+      ],
+      "requiredNextAction": "Recheck if any Store copy starts making clinical, therapy, diagnosis, or treatment claims."
+    },
+    {
+      "id": "store-listings-english",
+      "label": "Submission 1 / Store listings / English",
+      "status": "PASS",
+      "blocksCertification": false,
+      "evidence": [
+        "tmp/partner-center-overview-after-save.png shows Store listings as Complete on 2026-05-21",
+        "docs/release/microsoft-store/store-screenshots/desktop/01-v2-orb-desktop.png",
+        "docs/release/microsoft-store/store-screenshots/desktop/02-v2-habits-desktop.png",
+        "docs/release/microsoft-store/store-screenshots/desktop/03-v2-diary-desktop.png",
+        "docs/release/microsoft-store/PARTNER_CENTER_FIELD_PACKET.md"
+      ],
+      "requiredNextAction": "Keep English Store copy and screenshots as the English listing only, not as proof that every app language is live in Store."
+    },
+    {
+      "id": "additional-store-listing-languages",
+      "label": "Submission 1 / Store listings / Additional Store listing languages",
+      "status": "READY_IN_REPO_LIVE_UNVERIFIED",
+      "blocksCertification": false,
+      "evidence": [
+        "docs/release/microsoft-store/store-listing-localized.json contains en, uk, es, de, fr, ja, ar, he",
+        "docs/release/microsoft-store/STORE_LISTING_LOCALIZED_PACKET.md",
+        "tmp/partner-center-language-state-audit.png shows live Partner Center still has only English complete"
+      ],
+      "requiredNextAction": "Use Partner Center Export listings / Import listings, or one-language-at-a-time manual save, then capture live proof for every added language."
+    },
+    {
+      "id": "package-languages",
+      "label": "Submission 1 / Store listings / Languages supported in packages",
+      "status": "BLOCKED_UNTIL_PACKAGE_UPLOAD",
+      "blocksCertification": true,
+      "evidence": [
+        "tmp/partner-center-language-state-audit.png says package languages display only after packages are uploaded",
+        "Packages is not started in the live Partner Center overview"
+      ],
+      "requiredNextAction": "Upload the accepted Store package, then compare the detected package-language table to en, uk, es, de, fr, ja, ar, he before certification."
+    },
+    {
+      "id": "store-logos",
+      "label": "Submission 1 / Store listings / Store logos",
+      "status": "PASS",
+      "blocksCertification": false,
+      "evidence": [
+        "docs/release/microsoft-store/assets/official-logo/zenflow-official-app-tile-icon-300.png",
+        "docs/release/microsoft-store/assets/official-logo/zenflow-official-box-art-2160.png",
+        "docs/release/microsoft-store/assets/official-logo/zenflow-official-poster-art-1440x2160.png",
+        "docs/release/microsoft-store/assets/official-logo/zenflow-official-super-hero-art-1920x1080.png",
+        "tmp/partner-center-store-logos-visible.png"
+      ],
+      "requiredNextAction": "Keep official-logo assets as the Store identity. Do not replace them with draft orb exports without owner approval."
+    },
+    {
+      "id": "packages",
+      "label": "Submission 1 / Packages",
+      "status": "BLOCKED_UNTIL_SIGNING",
+      "blocksCertification": true,
+      "evidence": [
+        "tmp/partner-center-overview-after-save.png shows Packages as Not started",
+        "npm run desktop:release:check currently reports the EXE and NSIS setup as NotSigned"
+      ],
+      "requiredNextAction": "Produce a signed installer or MSIX package, run WACK where applicable, upload/declare it in Partner Center, and capture accepted-package proof."
+    },
+    {
+      "id": "submission-options",
+      "label": "Submission 1 / Submission Options",
+      "status": "UNVERIFIED",
+      "blocksCertification": false,
+      "evidence": [
+        "Live overview previously showed Submission options as Recommended, but this row was not freshly re-opened after package work"
+      ],
+      "requiredNextAction": "Reopen this tab after package upload and verify release timing, certification notes, and any special handling before final submit."
+    },
+    {
+      "id": "additional-testing-information",
+      "label": "Supplemental info / Additional Testing Information",
+      "status": "UNVERIFIED",
+      "blocksCertification": false,
+      "evidence": [
+        "No current live proof captured for this optional supplemental page"
+      ],
+      "requiredNextAction": "If Microsoft certification reviewers need account/login/test notes, add concise test instructions without credentials in source control."
+    },
+    {
+      "id": "product-page-experiment",
+      "label": "Product page experiment",
+      "status": "NOT_APPLICABLE",
+      "blocksCertification": false,
+      "evidence": [
+        "Current task is first Store submission readiness, not an A/B experiment"
+      ],
+      "requiredNextAction": "Do not enable experiments before the base Store page is certified."
+    },
+    {
+      "id": "add-ons",
+      "label": "Add-ons",
+      "status": "NOT_APPLICABLE",
+      "blocksCertification": false,
+      "evidence": [
+        "ZenFlow current Store package has no paid add-ons or additional Store products in scope"
+      ],
+      "requiredNextAction": "Leave add-ons out unless a future monetization/product decision explicitly adds them."
+    },
+    {
+      "id": "wns-mpns",
+      "label": "Product management / WNS/MPNS",
+      "status": "NOT_APPLICABLE",
+      "blocksCertification": false,
+      "evidence": [
+        "Current desktop submission does not depend on Microsoft Store push notification credentials"
+      ],
+      "requiredNextAction": "Only configure if a future Windows Store package implements WNS notifications."
+    },
+    {
+      "id": "xbox-services",
+      "label": "Services / Xbox services",
+      "status": "NOT_APPLICABLE",
+      "blocksCertification": false,
+      "evidence": [
+        "ZenFlow is a Windows wellness desktop app, not an Xbox game or Xbox services integration"
+      ],
+      "requiredNextAction": "Keep Xbox service settings unused unless product scope changes."
+    },
+    {
+      "id": "maps",
+      "label": "Services / Maps",
+      "status": "NOT_APPLICABLE",
+      "blocksCertification": false,
+      "evidence": [
+        "ZenFlow current app does not use Microsoft Maps APIs"
+      ],
+      "requiredNextAction": "Leave Maps disabled unless a future route intentionally adds location features."
+    },
+    {
+      "id": "product-collections-purchases",
+      "label": "Services / Product collections and purchases",
+      "status": "NOT_APPLICABLE",
+      "blocksCertification": false,
+      "evidence": [
+        "Current submission has no Store commerce or in-app purchases"
+      ],
+      "requiredNextAction": "Do not enable commerce paths without owner approval and privacy/security review."
+    },
+    {
+      "id": "account-verification",
+      "label": "Partner Center account verification",
+      "status": "UNVERIFIED",
+      "blocksCertification": true,
+      "evidence": [
+        "A prior Partner Center overview screenshot showed a red account-verification warning; current account verification state was not rechecked after language work"
+      ],
+      "requiredNextAction": "Before final submit, verify the Partner Center account is fully verified and that Submit for certification is enabled."
+    },
+    {
+      "id": "certification-submit",
+      "label": "Submit for certification",
+      "status": "BLOCKED_UNTIL_SIGNING",
+      "blocksCertification": true,
+      "evidence": [
+        "Packages is not started",
+        "Release artifacts are unsigned",
+        "No WACK or accepted-package proof is present"
+      ],
+      "requiredNextAction": "Do not submit until packages, signing/acceptance, language proof, and certification evidence are current."
+    }
+  ],
+  "finalSubmitBlockers": [
+    "Packages is not started in Partner Center.",
+    "Current EXE and NSIS setup are unsigned for public release.",
+    "No MSIX/AppX/MSIXUPLOAD or accepted EXE/MSI Store package proof is present.",
+    "Package-supported languages cannot be verified until package upload.",
+    "Seven non-English Store listing pages are ready in repo but not live-proved in Partner Center.",
+    "Account verification must be freshly rechecked before certification."
+  ]
+}

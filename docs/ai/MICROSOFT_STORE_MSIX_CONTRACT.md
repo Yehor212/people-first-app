@@ -95,6 +95,16 @@ reserved Store product.
    - `Languages supported in packages` is `UNVERIFIED` until packages are
      uploaded and Partner Center displays the detected language list.
 
+7. **Partner Center tab truth.**
+   - Every visible Partner Center tab must be audited through
+     `docs/release/microsoft-store/PARTNER_CENTER_TABS_AUDIT.md` and
+     `docs/release/microsoft-store/partner-center-tabs-audit.json`.
+   - Store listing proof does not prove Packages, package languages,
+     Submission Options, Partner Center account verification, or certification
+     readiness.
+   - `Submit for certification` stays blocked while packages/signing/WACK,
+     package-language, or account-verification proof is missing.
+
 ## Required Product Identity Values
 
 Copy these values from Partner Center after opening:
@@ -167,6 +177,7 @@ final tree or final draft submission:
 | Store contract guard | `PASS` only with `npm run desktop:store:check` |
 | Store listing languages | `PASS` only when each selected Store listing language has localized copy, captions, screenshots or explicit neutral-screenshot approval, and Partner Center proof |
 | Package languages | `PASS` only after package upload shows the expected language list in Partner Center |
+| Partner Center tab audit | `PASS` only when `npm run desktop:store:check` validates `partner-center-tabs-audit.json` and every blocker tab has current live proof or remains explicitly blocked |
 | Sync unchanged | `PASS` only with `npm run check:sync-contract` and sync drill when account behavior is touched |
 | Package signed | `PASS` only with `npm run desktop:release:check` or MSIX SignTool proof |
 | Store certification | `PASS` only with Windows App Certification Kit evidence |

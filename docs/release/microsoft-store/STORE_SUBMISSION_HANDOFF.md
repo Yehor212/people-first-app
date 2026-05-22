@@ -38,6 +38,12 @@ Use `STORE_SUBMISSION_AUDIT.md` as the source of truth for language and
 questionnaire completeness. It separates app i18n, Store listing languages, and
 package-supported languages.
 
+Use `PARTNER_CENTER_TABS_AUDIT.md` as the Partner Center Tabs Audit and source
+of truth for every Partner Center tab and live blocker. It records whether each
+tab is
+`PASS`, `READY_IN_REPO_LIVE_UNVERIFIED`, `BLOCKED_UNTIL_PACKAGE_UPLOAD`,
+`BLOCKED_UNTIL_SIGNING`, `UNVERIFIED`, or `NOT_APPLICABLE`.
+
 Use `PARTNER_CENTER_FIELD_PACKET.md` when the Partner Center form is open and
 you need the exact copy/paste text, screenshot paths, logo paths, and save
 checklist in one place.
@@ -126,6 +132,7 @@ listing:
 | Additional Store listing languages | `READY IN REPO / LIVE UNVERIFIED` for seven non-English listings; live Partner Center still `English only` | `store-listing-localized.json`; `tmp/partner-center-language-state-audit.png` |
 | Languages supported in packages | `Unavailable until package upload` | `tmp/partner-center-language-state-audit.png` |
 | Packages | `Not started` | `tmp/partner-center-overview-after-save.png` |
+| Partner Center tabs audit | `PARTIAL` because package, package-language, account-verification, and certification rows still block submit | `PARTNER_CENTER_TABS_AUDIT.md`; `partner-center-tabs-audit.json` |
 
 Certification was not submitted because the package upload step is still not
 complete.
