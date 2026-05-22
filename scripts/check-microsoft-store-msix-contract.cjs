@@ -13,6 +13,7 @@ const EXPECTED_IDENTITY = {
   publisherDisplayName: "YehorSha",
   packageFamilyName: "YehorSha.ZenFlow_5m5fhwz1wz4xt",
 };
+const EXPECTED_APP_LANGUAGES = ["en", "uk", "es", "de", "fr", "ja", "ar", "he"];
 const failures = [];
 const warnings = [];
 let passCount = 0;
@@ -160,6 +161,17 @@ function requirePublicIdentity(identity) {
   }
 }
 
+function requireAppLanguageFiles() {
+  for (const language of EXPECTED_APP_LANGUAGES) {
+    const file = `src/i18n/languages/${language}.ts`;
+    if (!fs.existsSync(abs(file))) {
+      failures.push(`${file} is missing; Store language audit expects ${EXPECTED_APP_LANGUAGES.join(", ")}`);
+    } else {
+      pass();
+    }
+  }
+}
+
 function main() {
   const packageJson = readJson("package.json");
   const tauriConfig = readJson("src-tauri/tauri.conf.json");
@@ -179,16 +191,28 @@ function main() {
     "Path B: Manual MSIX Packaging",
     "Windows App Certification Kit",
     "npm run desktop:store:check",
+    "Store language truth",
+    "Additional Store listing languages",
+    "Languages supported in packages",
   ]);
 
   requireIncludes("docs/release/microsoft-store/README.md", [
     PRODUCT_ID,
     "Product Identity",
     "PARTNER_CENTER_FIELD_PACKET.md",
+    "STORE_SUBMISSION_AUDIT.md",
     "npm run desktop:store:check",
     "Do not place certificates",
     "product-identity.public.json",
     "accepted package in the Partner Center draft",
+    "en",
+    "uk",
+    "es",
+    "de",
+    "fr",
+    "ja",
+    "ar",
+    "he",
   ]);
 
   requireIncludes("docs/release/microsoft-store/PARTNER_CENTER_FIELD_PACKET.md", [
@@ -196,6 +220,8 @@ function main() {
     EXPECTED_IDENTITY.packageIdentityName,
     EXPECTED_IDENTITY.publisher,
     "Store listings complete",
+    "Additional Store listing languages reviewed",
+    "Package language list reviewed",
     "Packages uploaded and accepted",
     "Certification submitted",
     "docs/release/microsoft-store/store-screenshots/desktop/01-v2-orb-desktop.png",
@@ -203,6 +229,31 @@ function main() {
     "npm run check:all",
     "npm run desktop:store:check",
     "https://learn.microsoft.com/en-us/windows/apps/publish/publish-your-app/msix/screenshots-and-images",
+  ]);
+
+  requireIncludes("docs/release/microsoft-store/STORE_SUBMISSION_AUDIT.md", [
+    "App i18n",
+    "Store listing languages",
+    "Package languages",
+    "Languages supported in packages",
+    "Additional Store listing languages",
+    "en, uk, es, de, fr, ja, ar, he",
+    "tmp/partner-center-language-state-audit.png",
+    "Packages` is `Not started",
+  ]);
+
+  requireIncludes("docs/release/microsoft-store/STORE_LISTING_QUALITY_GATE.md", [
+    "Store Language Strategy",
+    "en, uk, es, de, fr, ja, ar, he",
+    "English is the only completed Store listing language",
+    "Languages supported in packages",
+  ]);
+
+  requireIncludes("docs/release/microsoft-store/STORE_SUBMISSION_HANDOFF.md", [
+    "STORE_SUBMISSION_AUDIT.md",
+    "Language Release Rule",
+    "Additional Store listing languages",
+    "Languages supported in packages",
   ]);
 
   requireIncludes("docs/ai/DESKTOP_EXE_RUNTIME_CONTRACT.md", [
@@ -254,12 +305,16 @@ function main() {
   }
   requirePlaceholderOnly(identityTemplate);
   requirePublicIdentity(publicIdentity);
+  requireAppLanguageFiles();
   validateOptionalIdentityEnv();
 
   requireNoHighConfidenceSecrets([
     "docs/ai/MICROSOFT_STORE_MSIX_CONTRACT.md",
     "docs/release/microsoft-store/README.md",
     "docs/release/microsoft-store/PARTNER_CENTER_FIELD_PACKET.md",
+    "docs/release/microsoft-store/STORE_SUBMISSION_AUDIT.md",
+    "docs/release/microsoft-store/STORE_LISTING_QUALITY_GATE.md",
+    "docs/release/microsoft-store/STORE_SUBMISSION_HANDOFF.md",
     "docs/release/microsoft-store/identity.template.json",
     "docs/release/microsoft-store/product-identity.public.json",
     "scripts/check-microsoft-store-msix-contract.cjs",

@@ -80,6 +80,15 @@ reserved Store product.
    - If the package is unsigned or signed with a non-release certificate, public
      Store distribution state is `UNVERIFIED`.
 
+6. **Store language truth.**
+   - App i18n, Store listing languages, and package-supported languages are
+     separate proof surfaces.
+   - English screenshots and descriptions prove only the English Store listing.
+   - Additional Store listing languages require localized copy, captions, and
+     screenshot decisions for each language.
+   - `Languages supported in packages` is `UNVERIFIED` until packages are
+     uploaded and Partner Center displays the detected language list.
+
 ## Required Product Identity Values
 
 Copy these values from Partner Center after opening:
@@ -150,6 +159,8 @@ final tree or final draft submission:
 | Desktop runtime unchanged | `PASS` only with `npm run check:desktop-exe-contract` |
 | Canonical visuals unchanged | `PASS` only with `npm run check:canonical-orbs` and screenshot/browser proof |
 | Store contract guard | `PASS` only with `npm run desktop:store:check` |
+| Store listing languages | `PASS` only when each selected Store listing language has localized copy, captions, screenshots or explicit neutral-screenshot approval, and Partner Center proof |
+| Package languages | `PASS` only after package upload shows the expected language list in Partner Center |
 | Sync unchanged | `PASS` only with `npm run check:sync-contract` and sync drill when account behavior is touched |
 | Package signed | `PASS` only with `npm run desktop:release:check` or MSIX SignTool proof |
 | Store certification | `PASS` only with Windows App Certification Kit evidence |

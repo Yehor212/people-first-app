@@ -27,6 +27,12 @@ For the current Partner Center draft, use `STORE_SUBMISSION_HANDOFF.md` as the
 operator checklist. It separates safe listing work from the final package upload
 and certification actions that need explicit product-owner approval.
 
+Use `STORE_SUBMISSION_AUDIT.md` when checking the Partner Center questionnaires
+or language state. The current app source supports `en`, `uk`, `es`, `de`,
+`fr`, `ja`, `ar`, and `he`, but the Store listing is currently complete only
+for English and package-supported languages cannot be verified until a package
+is uploaded.
+
 ## What To Copy From Partner Center
 
 Open:

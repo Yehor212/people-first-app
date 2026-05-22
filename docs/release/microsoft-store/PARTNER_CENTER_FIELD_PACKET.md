@@ -85,7 +85,7 @@ Offline-capable workflow with sync-ready account support
 Personal insights without a noisy dashboard
 Light, dark, and OLED-friendly visual modes
 V1 and V2 surfaces kept under one sync contract
-Multi-language product foundation
+In-app language support across English, Ukrainian, Spanish, German, French, Japanese, Arabic, and Hebrew
 ```
 
 ### Search terms
@@ -111,6 +111,21 @@ desktop wellness
 | Voice title | `ZenFlow` |
 | Developed by | `YehorSha` |
 | Copyright | `Copyright 2026 YehorSha. All rights reserved.` |
+
+## Language State
+
+Do not confuse app i18n with Store listing languages.
+
+| Surface | Current state |
+| --- | --- |
+| App UI source languages | `en, uk, es, de, fr, ja, ar, he` |
+| English Store listing | `Complete` in Partner Center |
+| Additional Store listing languages | Only `English` is currently complete |
+| Languages supported in packages | Empty until the Store package is uploaded |
+
+The English screenshots and English listing copy are for `languagecode=en`.
+Additional Store listing languages require localized copy and captions before
+they are added.
 
 ## Desktop Screenshots
 
@@ -152,6 +167,8 @@ Mark a row `PASS` only after seeing it in Partner Center after save.
 | Properties complete | `PASS - seen in tmp/partner-center-overview-after-save.png on 2026-05-21` |
 | Age ratings complete | `PASS - seen in tmp/partner-center-overview-after-save.png on 2026-05-21` |
 | Store listings complete | `PASS - seen in tmp/partner-center-overview-after-save.png on 2026-05-21` |
+| Additional Store listing languages reviewed | `PARTIAL - tmp/partner-center-language-state-audit.png shows only English complete` |
+| Package language list reviewed | `FAIL - tmp/partner-center-language-state-audit.png shows package languages are unavailable until package upload` |
 | Desktop screenshots uploaded and visible | `PASS - three English Desktop screenshots uploaded and captioned in Partner Center` |
 | Store logos uploaded and visible | `PASS - poster, box, app tile 300/150/71, and super hero art uploaded in Partner Center` |
 | Packages uploaded and accepted | `FAIL - Partner Center shows Packages as Not started` |

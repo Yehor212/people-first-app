@@ -66,7 +66,7 @@ ZenFlow turns daily wellness into a quiet desktop ritual.
 
 Open one focused space for mood check-ins, habit tracking, private journaling, and focus sessions. The V2 experience is built around ZenFlow's canonical WebGL orb system: soft, responsive, and visual without turning your day into another noisy dashboard.
 
-Use ZenFlow when you want to slow down for a minute, name what you feel, keep your habits visible, and return to your work with less friction.
+Use ZenFlow when you want to slow down for a minute, name what you feel, keep small habits visible, and return to your work without carrying the whole day in your head.
 
 What you can do:
 
@@ -92,14 +92,14 @@ Paste these into Partner Center as separate feature rows. Do not add bullet char
 ```text
 V2 mood check-ins with ZenFlow's canonical WebGL orb visuals
 Habit tracking for daily rituals and streaks
-Private journal for reflection and emotional clarity
+Private journal for short notes and longer reflection
 Focus sessions for calm work blocks
 Desktop shell designed for fewer browser-profile distractions
 Offline-capable workflow with sync-ready account support
 Personal insights without a noisy dashboard
 Light, dark, and OLED-friendly visual modes
 V1 and V2 surfaces kept under one sync contract
-Multi-language product foundation
+In-app language support across English, Ukrainian, Spanish, German, French, Japanese, Arabic, and Hebrew
 ```
 
 ### Search Terms
@@ -121,13 +121,37 @@ desktop wellness
 Each caption is under 200 characters.
 
 ```text
-Check in with your mood through ZenFlow's calm V2 orb flow.
-Track habits and daily rituals without a crowded dashboard.
-Write private reflections and keep your journal close.
+Name your mood in a quiet visual flow that stays out of your way.
+Build steady daily rituals without turning your day into a dashboard.
+Keep private reflection close to your work, with space to start small.
 Use focus sessions when you need a clean work block.
 Review patterns and return to your day with more clarity.
 Run ZenFlow in a dedicated Windows desktop shell.
 ```
+
+## Store Language Strategy
+
+ZenFlow's app UI supports eight source languages:
+
+```text
+en, uk, es, de, fr, ja, ar, he
+```
+
+That is not the same thing as having eight completed Microsoft Store listing
+languages. For the current Store submission:
+
+- English is the only completed Store listing language.
+- English screenshots and English descriptions are valid only for the English
+  listing.
+- Additional Store listing languages must not be added until each language has
+  localized listing copy, localized screenshot captions, and Store-safe
+  screenshots or a deliberate neutral-screenshot decision.
+- `Languages supported in packages` must be verified only after the package is
+  uploaded; an empty package-language table is expected while `Packages` is
+  `Not started`, but it blocks multilingual release proof.
+
+Use `STORE_SUBMISSION_AUDIT.md` before changing Partner Center language
+settings.
 
 ## Screenshot Plan
 

@@ -34,6 +34,10 @@ Use `STORE_LISTING_QUALITY_GATE.md` as the source of truth for:
 - search terms,
 - screenshot captions.
 
+Use `STORE_SUBMISSION_AUDIT.md` as the source of truth for language and
+questionnaire completeness. It separates app i18n, Store listing languages, and
+package-supported languages.
+
 Use `PARTNER_CENTER_FIELD_PACKET.md` when the Partner Center form is open and
 you need the exact copy/paste text, screenshot paths, logo paths, and save
 checklist in one place.
@@ -109,10 +113,20 @@ listing:
 | Properties | `Complete` | `tmp/partner-center-overview-after-save.png` |
 | Age ratings | `Complete` | `tmp/partner-center-overview-after-save.png` |
 | Store listings | `Complete` | `tmp/partner-center-overview-after-save.png` |
+| Additional Store listing languages | `English only` | `tmp/partner-center-language-state-audit.png` |
+| Languages supported in packages | `Unavailable until package upload` | `tmp/partner-center-language-state-audit.png` |
 | Packages | `Not started` | `tmp/partner-center-overview-after-save.png` |
 
 Certification was not submitted because the package upload step is still not
 complete.
+
+## Language Release Rule
+
+The app source supports `en`, `uk`, `es`, `de`, `fr`, `ja`, `ar`, and `he`, but
+the current Microsoft Store listing is complete only for English. Do not add
+other Store listing languages or claim a complete multilingual Store release
+until localized listing copy, localized captions, screenshot decisions, and
+package language proof are available.
 
 ## Release Gates Before Certification
 
