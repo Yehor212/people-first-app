@@ -396,6 +396,24 @@ function assertPlaceholderLogoContract() {
 }
 
 function assertPwaInstallLogoContract() {
+  const sourceIndex = read("index.html");
+  for (const token of [
+    "apple-touch-icon.png",
+    "favicon-16.png",
+    "favicon-32.png",
+    "favicon-48.png",
+    "favicon-64.png",
+    "favicon.ico",
+    "pwa-192.png",
+  ]) {
+    if (!sourceIndex.includes(`href="%BASE_URL%${token}`)) {
+      fail(`index.html must reference ${token} through %BASE_URL%; copied route entrypoints must not resolve app icons under /orb, /habits, /diary, /settings, or /desktop`);
+    }
+  }
+  if (/href=["']\.\//.test(sourceIndex)) {
+    fail("index.html must not use ./ icon hrefs; GitHub Pages route entrypoints are copied into nested route directories");
+  }
+
   for (const rel of ["index.html", "docs/index.html"]) {
     const text = read(rel);
     if (/rel=["']icon["'][^>]+data:image\/svg\+xml/i.test(text)) {
