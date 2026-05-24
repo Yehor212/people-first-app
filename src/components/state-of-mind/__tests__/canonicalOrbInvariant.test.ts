@@ -236,7 +236,9 @@ describe("canonical orb invariant", () => {
     const v2DeployWorkflow = readSource(".github/workflows/deploy-v2-preview.yml");
 
     expect(packageJson).toContain('"check:canonical-orbs": "node scripts/check-canonical-orbs.mjs"');
-    expect(packageJson).toContain("npm run check:canonical-orbs && npx tsx scripts/check-visual-guards.ts");
+    expect(packageJson).toContain(
+      "npm run check:canonical-orbs && npm run assets:logos:check && npx tsx scripts/check-visual-guards.ts",
+    );
     expect(preCommit).toContain("node scripts/check-canonical-orbs.mjs");
     expect(deployWorkflow).toContain("npm run check:canonical-orbs");
     expect(v2DeployWorkflow).toContain("npm run check:canonical-orbs");
