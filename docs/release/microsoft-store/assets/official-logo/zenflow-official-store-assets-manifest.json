@@ -1,8 +1,37 @@
 {
-  "generatedAt": "2026-05-21T02:04:53.777Z",
+  "generatedAt": "2026-05-23T23:33:28.708Z",
   "source": {
     "vector": "public/icon-source.svg",
-    "featureGraphic": "public/feature-graphic.svg"
+    "generator": "scripts/generate-microsoft-store-logo-assets.cjs"
+  },
+  "designNotes": [
+    "One clean source generates every Store logo and artwork slot.",
+    "The ZenFlow leaf geometry is unchanged; the raster treatment removes filter-box artifacts.",
+    "Glow is intentionally restrained so thumbnails stay crisp in dark and light Store surfaces.",
+    "Square and poster lockups keep measured clear-space between the icon plate and product wordmark.",
+    "The large artwork keeps key imagery in the center/top half and leaves overlay-safe lower space.",
+    "Golden-ratio proportions are used only as an optical composition guide; platform readability and safe-zone rules are authoritative."
+  ],
+  "composition": {
+    "goldenRatio": 1.61803398875,
+    "minIconTitleClearSpaceRatio": 0.045,
+    "squareArt": {
+      "plateScale": 0.37,
+      "plateCenterY": 0.32,
+      "titleBaselineY": 0.66,
+      "titleFontScale": 0.092,
+      "iconTitleClearSpaceRatio": 0.0851
+    },
+    "posterArt": {
+      "plateScale": 0.42,
+      "plateCenterY": 0.27,
+      "titleBaselineY": 0.55,
+      "titleFontScale": 0.095,
+      "iconTitleClearSpaceRatio": 0.0919,
+      "titleSubtitleClearSpaceRatio": 0.0339,
+      "subtitleBaselineY": 0.61,
+      "subtitleFontScale": 0.029
+    }
   },
   "assets": [
     {
@@ -11,7 +40,7 @@
       "dimensions": "1024x1024",
       "width": 1024,
       "height": 1024,
-      "sizeBytes": 282440
+      "sizeBytes": 145975
     },
     {
       "file": "zenflow-official-app-tile-icon-300.png",
@@ -19,7 +48,7 @@
       "dimensions": "300x300",
       "width": 300,
       "height": 300,
-      "sizeBytes": 59360
+      "sizeBytes": 32934
     },
     {
       "file": "zenflow-official-app-tile-icon-150.png",
@@ -27,7 +56,7 @@
       "dimensions": "150x150",
       "width": 150,
       "height": 150,
-      "sizeBytes": 26474
+      "sizeBytes": 13601
     },
     {
       "file": "zenflow-official-app-tile-icon-71.png",
@@ -35,7 +64,7 @@
       "dimensions": "71x71",
       "width": 71,
       "height": 71,
-      "sizeBytes": 9129
+      "sizeBytes": 5125
     },
     {
       "file": "zenflow-official-box-art-1080.png",
@@ -43,7 +72,7 @@
       "dimensions": "1080x1080",
       "width": 1080,
       "height": 1080,
-      "sizeBytes": 240891
+      "sizeBytes": 169547
     },
     {
       "file": "zenflow-official-box-art-2160.png",
@@ -51,7 +80,7 @@
       "dimensions": "2160x2160",
       "width": 2160,
       "height": 2160,
-      "sizeBytes": 563064
+      "sizeBytes": 404571
     },
     {
       "file": "zenflow-official-poster-art-720x1080.png",
@@ -59,7 +88,7 @@
       "dimensions": "720x1080",
       "width": 720,
       "height": 1080,
-      "sizeBytes": 185304
+      "sizeBytes": 134060
     },
     {
       "file": "zenflow-official-poster-art-1440x2160.png",
@@ -67,7 +96,7 @@
       "dimensions": "1440x2160",
       "width": 1440,
       "height": 2160,
-      "sizeBytes": 421084
+      "sizeBytes": 309866
     },
     {
       "file": "zenflow-official-super-hero-art-1920x1080.png",
@@ -75,14 +104,13 @@
       "dimensions": "1920x1080",
       "width": 1920,
       "height": 1080,
-      "sizeBytes": 324532
+      "sizeBytes": 219955
     }
   ],
   "constraints": [
-    "Source logo geometry is unchanged.",
-    "Only raster size, background composition, spacing, and export quality were improved.",
-    "Text is kept away from lower-third overlay zones.",
-    "All output files are under 50 MB.",
-    "The 16:9 super hero art contains no product title or text, matching Microsoft Store guidance."
+    "No SVG filters are used in the official logo source or generated Store assets.",
+    "All output files are PNG and under 50 MB.",
+    "The 16:9 super hero art contains no product title or text, matching Microsoft Store guidance.",
+    "Runtime canonical WebGL orbs are not changed by this Store asset generation."
   ]
 }

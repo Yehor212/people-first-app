@@ -1,37 +1,56 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 500">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 500" width="1024" height="500" role="img" aria-label="ZenFlow">
   <defs>
-    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#5ab88a;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#3d8a68;stop-opacity:1" />
+    <linearGradient id="zfFeatureBase" x1="0" y1="0" x2="1024" y2="500" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#071513"/>
+      <stop offset=".48" stop-color="#0d3329"/>
+      <stop offset="1" stop-color="#06120f"/>
     </linearGradient>
+    <radialGradient id="zfFeatureGlow" cx="552.96" cy="215" r="420" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2ed99a" stop-opacity=".18"/>
+      <stop offset=".48" stop-color="#1fb982" stop-opacity=".065"/>
+      <stop offset="1" stop-color="#1fb982" stop-opacity="0"/>
+    </radialGradient>
+
+    <linearGradient id="zfFeatureIconPlate" x1="368.64" y1="96.63999999999999" x2="655.36" y2="383.36" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#286f59"/>
+      <stop offset=".48" stop-color="#2e9b70"/>
+      <stop offset="1" stop-color="#42c386"/>
+    </linearGradient>
+    <radialGradient id="zfFeatureIconHighlight" cx="454.656" cy="159.7184" r="206.4384" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff" stop-opacity=".16"/>
+      <stop offset=".52" stop-color="#fff" stop-opacity=".04"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="zfFeatureIconVignette" cx="575.0784" cy="308.81280000000004" r="183.50080000000003" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#083227" stop-opacity=".16"/>
+      <stop offset="1" stop-color="#083227" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="zfFeatureIconRim" x1="368.64" y1="96.63999999999999" x2="655.36" y2="383.36" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff" stop-opacity=".2"/>
+      <stop offset=".55" stop-color="#fff" stop-opacity=".055"/>
+      <stop offset="1" stop-color="#001f18" stop-opacity=".08"/>
+    </linearGradient>
+    <radialGradient id="zfFeatureIconLeafFill" cx="500.5312" cy="219.9296" r="108.95360000000001" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff" stop-opacity=".18"/>
+      <stop offset="1" stop-color="#fff" stop-opacity=".05"/>
+    </radialGradient>
   </defs>
+  <rect width="1024" height="500" fill="url(#zfFeatureBase)"/>
+  <rect width="1024" height="500" fill="url(#zfFeatureGlow)"/>
+  <path d="M-40.96 410 C 245.76 320, 430.08 90, 593.92 -40" fill="none" stroke="#8cfbd0" stroke-opacity=".08" stroke-width="6"/>
+  <path d="M245.76 560 C 512 390, 757.76 220, 1064.96 120" fill="none" stroke="#8cfbd0" stroke-opacity=".035" stroke-width="2.5"/>
 
-  <!-- Background -->
-  <rect width="1024" height="500" fill="url(#bgGrad)"/>
+    <rect x="368.64" y="96.63999999999999" width="286.72" height="286.72" rx="61.644800000000004" fill="url(#zfFeatureIconPlate)"/>
+      <rect x="368.64" y="96.63999999999999" width="286.72" height="286.72" rx="61.644800000000004" fill="url(#zfFeatureIconHighlight)"/>
+      <rect x="368.64" y="96.63999999999999" width="286.72" height="286.72" rx="61.644800000000004" fill="url(#zfFeatureIconVignette)"/>
+      <rect x="369.64" y="97.63999999999999" width="284.72" height="284.72" rx="60.644800000000004" fill="none" stroke="url(#zfFeatureIconRim)" stroke-width="1.1468800000000001"/>
 
-  <!-- Decorative circles -->
-  <circle cx="100" cy="400" r="150" fill="white" opacity="0.05"/>
-  <circle cx="924" cy="100" r="200" fill="white" opacity="0.05"/>
-  <circle cx="512" cy="250" r="300" fill="white" opacity="0.03"/>
+    <g transform="translate(428.851 152.550) scale(6.92907)"
+      fill="none" stroke-linecap="round" stroke-linejoin="round">
 
-  <!-- Leaf icon -->
-  <g transform="translate(120, 150) scale(8)"
-     fill="none"
-     stroke="white"
-     stroke-width="2"
-     stroke-linecap="round"
-     stroke-linejoin="round"
-     opacity="0.9">
-    <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/>
-    <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>
-  </g>
-
-  <!-- App name -->
-  <text x="380" y="220" font-family="Arial, sans-serif" font-size="72" font-weight="bold" fill="white">ZenFlow</text>
-
-  <!-- Tagline -->
-  <text x="380" y="290" font-family="Arial, sans-serif" font-size="28" fill="white" opacity="0.9">Habits • Mood • Focus • Gratitude</text>
-
-  <!-- Features -->
-  <text x="380" y="360" font-family="Arial, sans-serif" font-size="20" fill="white" opacity="0.7">Build mindful daily routines</text>
+      <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z" fill="url(#zfFeatureIconLeafFill)" stroke="#052c22" stroke-opacity=".18" stroke-width="2.28" transform="translate(.14 .22)"/>
+      <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" stroke="#052c22" stroke-opacity=".18" stroke-width="2.28" transform="translate(.14 .22)"/>
+      <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z" fill="url(#zfFeatureIconLeafFill)" stroke="#fff" stroke-width="2"/>
+      <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" stroke="#fff" stroke-width="2"/>
+    </g>
 </svg>

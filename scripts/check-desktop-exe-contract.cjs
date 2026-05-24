@@ -128,7 +128,7 @@ function main() {
     "\"desktop:sign\": \"node scripts/sign-desktop-windows.cjs\"",
     "\"desktop:release:check\": \"node scripts/check-desktop-release-readiness.cjs\"",
     "\"desktop:release:check:dev\": \"node scripts/check-desktop-release-readiness.cjs --allow-unsigned-dev\"",
-    "\"desktop:store:check\": \"node scripts/check-microsoft-store-msix-contract.cjs\"",
+    "\"desktop:store:check\": \"npm run assets:logos:check && node scripts/check-microsoft-store-msix-contract.cjs\"",
     "\"check:desktop-exe-contract\": \"node scripts/check-desktop-exe-contract.cjs\"",
     "\"@tauri-apps/cli\"",
   ]);

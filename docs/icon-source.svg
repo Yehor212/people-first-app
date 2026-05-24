@@ -1,24 +1,42 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="ZenFlow">
   <defs>
-    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#5ab88a;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#3d8a68;stop-opacity:1" />
+
+    <linearGradient id="zfIconPlate" x1="56.31999999999999" y1="56.31999999999999" x2="455.68" y2="455.68" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#286f59"/>
+      <stop offset=".48" stop-color="#2e9b70"/>
+      <stop offset="1" stop-color="#42c386"/>
     </linearGradient>
+    <radialGradient id="zfIconHighlight" cx="176.128" cy="144.17919999999998" r="287.5392" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff" stop-opacity=".16"/>
+      <stop offset=".52" stop-color="#fff" stop-opacity=".04"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="zfIconVignette" cx="343.8592" cy="351.8464" r="255.59040000000002" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#083227" stop-opacity=".16"/>
+      <stop offset="1" stop-color="#083227" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="zfIconRim" x1="56.31999999999999" y1="56.31999999999999" x2="455.68" y2="455.68" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff" stop-opacity=".2"/>
+      <stop offset=".55" stop-color="#fff" stop-opacity=".055"/>
+      <stop offset="1" stop-color="#001f18" stop-opacity=".08"/>
+    </linearGradient>
+    <radialGradient id="zfIconLeafFill" cx="240.0256" cy="228.0448" r="151.7568" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff" stop-opacity=".18"/>
+      <stop offset="1" stop-color="#fff" stop-opacity=".05"/>
+    </radialGradient>
   </defs>
 
-  <!-- Background rounded square -->
-  <rect x="16" y="16" width="480" height="480" rx="100" ry="100" fill="url(#bgGrad)"/>
+    <rect x="56.31999999999999" y="56.31999999999999" width="399.36" height="399.36" rx="85.86240000000001" fill="url(#zfIconPlate)"/>
+      <rect x="56.31999999999999" y="56.31999999999999" width="399.36" height="399.36" rx="85.86240000000001" fill="url(#zfIconHighlight)"/>
+      <rect x="56.31999999999999" y="56.31999999999999" width="399.36" height="399.36" rx="85.86240000000001" fill="url(#zfIconVignette)"/>
+      <rect x="57.31999999999999" y="57.31999999999999" width="397.36" height="397.36" rx="84.86240000000001" fill="none" stroke="url(#zfIconRim)" stroke-width="1.5974400000000002"/>
 
-  <!-- Lucide Leaf icon (exact paths, scaled and centered) -->
-  <g transform="translate(106, 106) scale(12.5)"
-     fill="none"
-     stroke="white"
-     stroke-width="2"
-     stroke-linecap="round"
-     stroke-linejoin="round">
-    <!-- Leaf body -->
-    <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/>
-    <!-- Stem -->
-    <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>
-  </g>
+    <g transform="translate(140.186 134.195) scale(9.65120)"
+      fill="none" stroke-linecap="round" stroke-linejoin="round">
+
+      <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z" fill="url(#zfIconLeafFill)" stroke="#052c22" stroke-opacity=".18" stroke-width="2.28" transform="translate(.14 .22)"/>
+      <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" stroke="#052c22" stroke-opacity=".18" stroke-width="2.28" transform="translate(.14 .22)"/>
+      <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z" fill="url(#zfIconLeafFill)" stroke="#fff" stroke-width="2"/>
+      <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" stroke="#fff" stroke-width="2"/>
+    </g>
 </svg>

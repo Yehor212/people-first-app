@@ -6,12 +6,32 @@ This folder separates Store upload assets from runtime visuals.
 
 Use `official-logo/` for Microsoft Partner Center.
 
-These files are generated from the existing vector brand source:
+These files are generated from the same no-filter brand pipeline as the web,
+PWA, Windows/Tauri, Android, and iOS icons:
 
 - `public/icon-source.svg`
-- `public/feature-graphic.svg`
+- `public/icon-source-round.svg`
+- `scripts/generate-icons.cjs`
+- `scripts/generate-microsoft-store-logo-assets.cjs`
 
-The geometry of the ZenFlow leaf logo is unchanged. Only raster size, spacing, background composition, and export quality were improved for Store upload slots.
+The geometry of the ZenFlow leaf logo is unchanged. Only raster size, spacing,
+background composition, glow strength, and export quality are controlled for
+Store upload slots. The source must not use SVG filters: the previous filter
+treatment created rectangular shader artifacts in exported PNG thumbnails.
+
+Regenerate and validate every logo surface with:
+
+```bash
+npm run assets:logos
+npm run assets:logos:check
+```
+
+For Store-only work, the narrower Store pack commands remain:
+
+```bash
+npm run desktop:store:assets
+npm run desktop:store:assets:check
+```
 
 Recommended mapping:
 
@@ -35,7 +55,18 @@ Do not use the orb drafts as the primary Store logo unless the product owner exp
 
 Upload the recommended files into Partner Center, then preview them before certification. Do not submit for certification until screenshots, listing text, package identity, and release options have all been checked against the current build.
 
+The logo pack is allowed to use golden-ratio proportions as a composition guide,
+but Store readiness is judged by practical evidence: correct dimensions, PNG
+format, readable small thumbnails, safe spacing, no hard square corners on app
+tiles, no excessive glow, and no visible rectangular shader blocks.
+
 Official Microsoft references used for this asset pack:
 
 - Microsoft Store screenshots and images: https://learn.microsoft.com/en-us/windows/apps/publish/publish-your-app/msix/screenshots-and-images
 - Windows app icon construction: https://learn.microsoft.com/en-us/windows/apps/design/style/iconography/app-icon-construction
+
+Platform icon references used by the full logo pipeline:
+
+- PWA maskable icons: https://web.dev/articles/maskable-icon
+- Android adaptive icons: https://developer.android.com/develop/ui/views/launch/icon_design_adaptive
+- Apple app icons: https://developer.apple.com/design/human-interface-guidelines/app-icons

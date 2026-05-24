@@ -1,81 +1,42 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="ZenFlow">
   <defs>
-    <!-- Rich background gradient -->
-    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#1a6b52"/>
-      <stop offset="50%" stop-color="#2a9d6e"/>
-      <stop offset="100%" stop-color="#3dbd80"/>
+
+    <linearGradient id="zfIconPlate" x1="56.31999999999999" y1="56.31999999999999" x2="455.68" y2="455.68" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#286f59"/>
+      <stop offset=".48" stop-color="#2e9b70"/>
+      <stop offset="1" stop-color="#42c386"/>
     </linearGradient>
-
-    <!-- Radial highlight for depth -->
-    <radialGradient id="bgHighlight" cx="35%" cy="35%" r="60%">
-      <stop offset="0%" stop-color="white" stop-opacity="0.12"/>
-      <stop offset="100%" stop-color="white" stop-opacity="0"/>
+    <radialGradient id="zfIconHighlight" cx="176.128" cy="144.17919999999998" r="287.5392" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff" stop-opacity=".16"/>
+      <stop offset=".52" stop-color="#fff" stop-opacity=".04"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
     </radialGradient>
-
-    <!-- Bottom shadow for dimension -->
-    <radialGradient id="bgShadow" cx="65%" cy="70%" r="50%">
-      <stop offset="0%" stop-color="#0a3d2e" stop-opacity="0.25"/>
-      <stop offset="100%" stop-color="#0a3d2e" stop-opacity="0"/>
+    <radialGradient id="zfIconVignette" cx="343.8592" cy="351.8464" r="255.59040000000002" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#083227" stop-opacity=".16"/>
+      <stop offset="1" stop-color="#083227" stop-opacity="0"/>
     </radialGradient>
-
-    <!-- Leaf glow -->
-    <radialGradient id="leafGlow" cx="50%" cy="45%" r="35%">
-      <stop offset="0%" stop-color="white" stop-opacity="0.2"/>
-      <stop offset="100%" stop-color="white" stop-opacity="0"/>
-    </radialGradient>
-
-    <!-- Leaf fill gradient -->
-    <linearGradient id="leafFill" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="white" stop-opacity="0.25"/>
-      <stop offset="100%" stop-color="white" stop-opacity="0.08"/>
+    <linearGradient id="zfIconRim" x1="56.31999999999999" y1="56.31999999999999" x2="455.68" y2="455.68" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff" stop-opacity=".2"/>
+      <stop offset=".55" stop-color="#fff" stop-opacity=".055"/>
+      <stop offset="1" stop-color="#001f18" stop-opacity=".08"/>
     </linearGradient>
-
-    <!-- Subtle inner border gradient -->
-    <linearGradient id="borderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="white" stop-opacity="0.2"/>
-      <stop offset="100%" stop-color="white" stop-opacity="0.05"/>
-    </linearGradient>
-
-    <!-- Drop shadow for leaf -->
-    <filter id="leafShadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feGaussianBlur in="SourceAlpha" stdDeviation="8" result="blur"/>
-      <feFlood flood-color="#0a3d2e" flood-opacity="0.3" result="color"/>
-      <feComposite in="color" in2="blur" operator="in" result="shadow"/>
-      <feOffset dx="2" dy="4" result="offsetShadow"/>
-      <feMerge>
-        <feMergeNode in="offsetShadow"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
-    </filter>
+    <radialGradient id="zfIconLeafFill" cx="240.0256" cy="228.0448" r="151.7568" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff" stop-opacity=".18"/>
+      <stop offset="1" stop-color="#fff" stop-opacity=".05"/>
+    </radialGradient>
   </defs>
 
-  <!-- Background rounded square -->
-  <rect x="16" y="16" width="480" height="480" rx="100" ry="100" fill="url(#bgGrad)"/>
+    <rect x="56.31999999999999" y="56.31999999999999" width="399.36" height="399.36" rx="85.86240000000001" fill="url(#zfIconPlate)"/>
+      <rect x="56.31999999999999" y="56.31999999999999" width="399.36" height="399.36" rx="85.86240000000001" fill="url(#zfIconHighlight)"/>
+      <rect x="56.31999999999999" y="56.31999999999999" width="399.36" height="399.36" rx="85.86240000000001" fill="url(#zfIconVignette)"/>
+      <rect x="57.31999999999999" y="57.31999999999999" width="397.36" height="397.36" rx="84.86240000000001" fill="none" stroke="url(#zfIconRim)" stroke-width="1.5974400000000002"/>
 
-  <!-- Depth: highlight top-left -->
-  <rect x="16" y="16" width="480" height="480" rx="100" ry="100" fill="url(#bgHighlight)"/>
+    <g transform="translate(140.186 134.195) scale(9.65120)"
+      fill="none" stroke-linecap="round" stroke-linejoin="round">
 
-  <!-- Depth: shadow bottom-right -->
-  <rect x="16" y="16" width="480" height="480" rx="100" ry="100" fill="url(#bgShadow)"/>
-
-  <!-- Subtle inner border -->
-  <rect x="18" y="18" width="476" height="476" rx="98" ry="98" fill="none" stroke="url(#borderGrad)" stroke-width="1.5"/>
-
-  <!-- Glow behind leaf -->
-  <ellipse cx="256" cy="240" rx="130" ry="130" fill="url(#leafGlow)"/>
-
-  <!-- Leaf icon with fill + stroke + shadow -->
-  <g transform="translate(106, 96) scale(12.5)" filter="url(#leafShadow)">
-    <!-- Leaf body filled -->
-    <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"
-          fill="url(#leafFill)" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-    <!-- Stem -->
-    <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"
-          fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-  </g>
-
-  <!-- Tiny sparkle accent -->
-  <circle cx="340" cy="140" r="3" fill="white" opacity="0.4"/>
-  <circle cx="345" cy="135" r="1.5" fill="white" opacity="0.6"/>
+      <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z" fill="url(#zfIconLeafFill)" stroke="#052c22" stroke-opacity=".18" stroke-width="2.28" transform="translate(.14 .22)"/>
+      <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" stroke="#052c22" stroke-opacity=".18" stroke-width="2.28" transform="translate(.14 .22)"/>
+      <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z" fill="url(#zfIconLeafFill)" stroke="#fff" stroke-width="2"/>
+      <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" stroke="#fff" stroke-width="2"/>
+    </g>
 </svg>

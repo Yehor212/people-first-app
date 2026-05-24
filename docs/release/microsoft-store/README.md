@@ -69,9 +69,22 @@ them.
 Run:
 
 ```bash
+npm run desktop:store:assets
+npm run desktop:store:assets:check
+npm run assets:logos:check
 npm run desktop:store:package
 npm run desktop:store:check
 ```
+
+`desktop:store:assets` regenerates the Store logo/artwork pack from the clean
+filter-free ZenFlow source. `desktop:store:assets:check` validates dimensions,
+PNG file sizes, transparent app-tile corners, and the no-filter/no-hard-square
+logo rule before the assets are uploaded.
+
+`assets:logos:check` verifies the broader cross-platform logo chain: web/PWA
+icons, maskable icon, favicon, Tauri/Windows icons, Android adaptive and legacy
+icons, iOS app icon, Store upload-pack mirrors, and SVG source filters. Use
+`npm run assets:logos` after changing logo source files.
 
 `desktop:store:package` writes the current Store upload candidate to
 `tmp/microsoft-store-msix/ZenFlow_1.7.3.0_x64.msixupload`.
@@ -87,6 +100,8 @@ The generated file is not final proof until it becomes an accepted package in th
 Microsoft Store release is not complete until:
 
 - `npm run desktop:store:check`
+- `npm run assets:logos:check`
+- `npm run desktop:store:assets:check`
 - `npm run desktop:store:package`
 - `npm run check:desktop-exe-contract`
 - `npm run check:canonical-orbs`

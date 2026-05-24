@@ -168,8 +168,26 @@ work before it should be wired into CI.
 Use the repo-owned package generator:
 
 ```bash
+npm run desktop:store:assets
+npm run desktop:store:assets:check
+npm run assets:logos:check
 npm run desktop:store:package
 ```
+
+`desktop:store:assets` regenerates the Partner Center logo/artwork PNGs from
+the clean ZenFlow leaf source. The source and generated assets must not use SVG
+filters or rectangular glow/shadow boxes; previous filter-box exports caused
+visible square shader artifacts in Store thumbnails. Golden-ratio proportions
+may guide the icon placement, but the acceptance rule is practical: small
+thumbnail readability, restrained glow, safe spacing, PNG dimensions, and no
+hard-square corners on app-tile assets.
+
+`assets:logos:check` is the wider release guard. It verifies that the same
+no-filter ZenFlow logo family is used by web/PWA icons, favicon, Tauri/Windows
+icons, Android adaptive and legacy icons, iOS AppIcon, Microsoft Store assets,
+and the Store upload-pack mirrors. If any surface still has an old filtered
+source, wrong dimensions, alpha where the platform needs opaque art, or a stale
+upload-pack copy, Store readiness is `FAIL`.
 
 The command uses Partner Center Product Identity values from
 `product-identity.public.json`, generates an `AppxManifest.xml`, creates
@@ -209,6 +227,7 @@ final tree or final draft submission:
 | Product Identity copied | `PASS` only with exact Partner Center values available through env/CI, never guessed |
 | Desktop runtime unchanged | `PASS` only with `npm run check:desktop-exe-contract` |
 | Canonical visuals unchanged | `PASS` only with `npm run check:canonical-orbs` and screenshot/browser proof |
+| Store logo pack clean | `PASS` only with `npm run desktop:store:assets:check`, `npm run assets:logos:check`, and visual review of app tile, box art, poster art, super hero art, web/PWA, Windows/Tauri, Android, and iOS logo surfaces |
 | Store contract guard | `PASS` only with `npm run desktop:store:check` |
 | Store listing languages | `PASS` only when each selected Store listing language has localized copy, captions, screenshots or explicit neutral-screenshot approval, and Partner Center proof |
 | Package languages | `PASS` only after package upload shows the expected language list in Partner Center |

@@ -675,8 +675,22 @@ function main() {
     "9MZK46FHZV8K",
   ]);
 
+  const storeAssetsScript = packageJson.scripts?.["desktop:store:assets"];
+  if (storeAssetsScript !== "node scripts/generate-microsoft-store-logo-assets.cjs") {
+    failures.push("package.json must expose desktop:store:assets");
+  } else {
+    pass();
+  }
+
+  const storeAssetsCheckScript = packageJson.scripts?.["desktop:store:assets:check"];
+  if (storeAssetsCheckScript !== "node scripts/check-microsoft-store-logo-assets.cjs") {
+    failures.push("package.json must expose desktop:store:assets:check");
+  } else {
+    pass();
+  }
+
   const storeScript = packageJson.scripts?.["desktop:store:check"];
-  if (storeScript !== "node scripts/check-microsoft-store-msix-contract.cjs") {
+  if (storeScript !== "npm run assets:logos:check && node scripts/check-microsoft-store-msix-contract.cjs") {
     failures.push("package.json must expose desktop:store:check");
   } else {
     pass();
@@ -700,6 +714,23 @@ function main() {
     "Windows.Desktop",
     "PACKAGE_LANGUAGES",
     "Microsoft Store signing is handled by Microsoft after certification",
+  ]);
+
+  requireIncludes("scripts/generate-microsoft-store-logo-assets.cjs", [
+    "zenflow-official-logo-source-1024.png",
+    "zenflow-official-app-tile-icon-300.png",
+    "zenflow-official-box-art-2160.png",
+    "zenflow-official-poster-art-1440x2160.png",
+    "zenflow-official-super-hero-art-1920x1080.png",
+    "No SVG filters",
+    "Golden-ratio proportions",
+    "Runtime canonical WebGL orbs are not changed",
+  ]);
+
+  requireIncludes("scripts/check-microsoft-store-logo-assets.cjs", [
+    "Microsoft Store logo asset gate passed",
+    "public/icon-source.svg must not use SVG filters",
+    "app tile should not read as a hard square",
   ]);
 
   if (tauriConfig.productName !== "ZenFlow") {

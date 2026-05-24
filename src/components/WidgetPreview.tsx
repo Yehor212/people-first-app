@@ -8,6 +8,40 @@ interface WidgetPreviewProps {
   data?: WidgetData;
 }
 
+const WIDGET_ACCENTS = {
+  orange: {
+    text: { color: "#f97316" },
+    card: {
+      color: "#f97316",
+      backgroundColor: "rgba(249, 115, 22, 0.10)",
+      borderColor: "rgba(249, 115, 22, 0.20)",
+    },
+  },
+  emerald: {
+    text: { color: "#10b981" },
+    card: {
+      color: "#10b981",
+      backgroundColor: "rgba(16, 185, 129, 0.10)",
+      borderColor: "rgba(16, 185, 129, 0.20)",
+    },
+  },
+  violet: {
+    text: { color: "#8b5cf6" },
+    card: {
+      color: "#8b5cf6",
+      backgroundColor: "rgba(139, 92, 246, 0.10)",
+      borderColor: "rgba(139, 92, 246, 0.20)",
+    },
+  },
+  amber: {
+    text: { color: "#d97706" },
+    card: {
+      backgroundColor: "rgba(245, 158, 11, 0.10)",
+      borderColor: "rgba(245, 158, 11, 0.20)",
+    },
+  },
+} as const;
+
 /**
  * Generate a smart insight message based on current stats
  */
@@ -65,19 +99,19 @@ function StatCard({
   icon,
   value,
   label,
-  colorClass,
-  bgClass,
+  colorStyle,
+  cardStyle,
 }: {
   icon: React.ReactNode;
   value: string | number;
   label: string;
-  colorClass: string;
-  bgClass: string;
+  colorStyle: React.CSSProperties;
+  cardStyle: React.CSSProperties;
 }) {
   return (
-    <div className={cn('flex flex-col items-center justify-center rounded-xl p-3 border', bgClass)}>
-      <div className={colorClass}>{icon}</div>
-      <div className={cn('text-xl font-bold mt-1', colorClass)}>{value}</div>
+    <div className="flex flex-col items-center justify-center rounded-xl p-3 border" style={cardStyle}>
+      <div style={colorStyle}>{icon}</div>
+      <div className="text-xl font-bold mt-1" style={colorStyle}>{value}</div>
       <div className="text-xs text-muted-foreground">{label}</div>
     </div>
   );
@@ -93,8 +127,8 @@ function _HabitsProgress({ done, total }: { done: number; total: number }) {
     <div className="w-full">
       <div className="h-1.5 bg-muted rounded-full overflow-hidden">
         <div
-          className="h-full bg-emerald-500 rounded-full motion-safe:transition-all motion-safe:duration-500 ease-out"
-          style={{ width: `${percentage}%` }}
+          className="h-full rounded-full motion-safe:transition-all motion-safe:duration-500 ease-out"
+          style={{ width: `${percentage}%`, backgroundColor: "#10b981" }}
         />
       </div>
     </div>
@@ -163,8 +197,8 @@ export function WidgetPreview({ data: providedData }: WidgetPreviewProps) {
             icon={<span className="text-lg">🔥</span>}
             value={data.streak}
             label={t.days}
-            colorClass="text-orange-500"
-            bgClass="bg-orange-500/10 border-orange-500/20"
+            colorStyle={WIDGET_ACCENTS.orange.text}
+            cardStyle={WIDGET_ACCENTS.orange.card}
           />
 
           {/* Habits Card */}
@@ -172,8 +206,8 @@ export function WidgetPreview({ data: providedData }: WidgetPreviewProps) {
             icon={<span className="text-lg font-bold text-emerald-500">✓</span>}
             value={`${data.habitsToday}/${data.habitsTotalToday}`}
             label={t.habits}
-            colorClass="text-emerald-500"
-            bgClass="bg-emerald-500/10 border-emerald-500/20"
+            colorStyle={WIDGET_ACCENTS.emerald.text}
+            cardStyle={WIDGET_ACCENTS.emerald.card}
           />
         </div>
 
@@ -200,8 +234,8 @@ export function WidgetPreview({ data: providedData }: WidgetPreviewProps) {
             icon={<span className="text-base">🔥</span>}
             value={data.streak}
             label={t.streak}
-            colorClass="text-orange-500"
-            bgClass="bg-orange-500/10 border-orange-500/20"
+            colorStyle={WIDGET_ACCENTS.orange.text}
+            cardStyle={WIDGET_ACCENTS.orange.card}
           />
 
           {/* Habits */}
@@ -209,8 +243,8 @@ export function WidgetPreview({ data: providedData }: WidgetPreviewProps) {
             icon={<span className="text-base font-bold text-emerald-500">✓</span>}
             value={`${data.habitsToday}/${data.habitsTotalToday}`}
             label={t.habits}
-            colorClass="text-emerald-500"
-            bgClass="bg-emerald-500/10 border-emerald-500/20"
+            colorStyle={WIDGET_ACCENTS.emerald.text}
+            cardStyle={WIDGET_ACCENTS.emerald.card}
           />
 
           {/* Focus */}
@@ -218,8 +252,8 @@ export function WidgetPreview({ data: providedData }: WidgetPreviewProps) {
             icon={<span className="text-base">⏱</span>}
             value={data.focusMinutes}
             label={t.minutes}
-            colorClass="text-violet-500"
-            bgClass="bg-violet-500/10 border-violet-500/20"
+            colorStyle={WIDGET_ACCENTS.violet.text}
+            cardStyle={WIDGET_ACCENTS.violet.card}
           />
         </div>
 
@@ -246,24 +280,24 @@ export function WidgetPreview({ data: providedData }: WidgetPreviewProps) {
             icon={<span className="text-base">🔥</span>}
             value={data.streak}
             label={t.streak}
-            colorClass="text-orange-500"
-            bgClass="bg-orange-500/10 border-orange-500/20"
+            colorStyle={WIDGET_ACCENTS.orange.text}
+            cardStyle={WIDGET_ACCENTS.orange.card}
           />
 
           <StatCard
             icon={<span className="text-base font-bold text-emerald-500">✓</span>}
             value={`${data.habitsToday}/${data.habitsTotalToday}`}
             label={t.habits}
-            colorClass="text-emerald-500"
-            bgClass="bg-emerald-500/10 border-emerald-500/20"
+            colorStyle={WIDGET_ACCENTS.emerald.text}
+            cardStyle={WIDGET_ACCENTS.emerald.card}
           />
 
           <StatCard
             icon={<span className="text-base">⏱</span>}
             value={data.focusMinutes}
             label={t.minutes}
-            colorClass="text-violet-500"
-            bgClass="bg-violet-500/10 border-violet-500/20"
+            colorStyle={WIDGET_ACCENTS.violet.text}
+            cardStyle={WIDGET_ACCENTS.violet.card}
           />
         </div>
 
@@ -274,8 +308,9 @@ export function WidgetPreview({ data: providedData }: WidgetPreviewProps) {
               <span
                 className={cn(
                   'text-sm',
-                  habit.completed ? 'text-emerald-500' : 'text-muted-foreground'
+                  habit.completed ? '' : 'text-muted-foreground'
                 )}
+                style={habit.completed ? WIDGET_ACCENTS.emerald.text : undefined}
               >
                 {habit.completed ? '✓' : '○'}
               </span>
@@ -298,9 +333,12 @@ export function WidgetPreview({ data: providedData }: WidgetPreviewProps) {
 
         {/* Badge (if present) */}
         {data.lastBadge && (
-          <div className="mt-3 bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 flex items-center gap-2">
+          <div
+            className="mt-3 border rounded-xl p-3 flex items-center gap-2"
+            style={WIDGET_ACCENTS.amber.card}
+          >
             <span className="text-lg">🏆</span>
-            <span className="text-sm font-medium text-amber-600 dark:text-amber-400 truncate">
+            <span className="text-sm font-medium truncate" style={WIDGET_ACCENTS.amber.text}>
               {data.lastBadge}
             </span>
           </div>

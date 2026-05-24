@@ -20,11 +20,16 @@ Use this list before publishing on stores or web.
 - Run cold-start and steady-state route smoke for V1/V2 phone and desktop.
 - Open the public URL with a cache-buster and confirm the deployed behavior.
 - Validate manifest icons and start URL.
+- Run `npm run assets:logos:check`; confirm `pwa-maskable-512.png` is
+  exactly 512x512, `apple-touch-icon.png` is opaque 180x180, and favicon/PWA
+  icons come from the same no-filter ZenFlow logo source.
 - Run Lighthouse PWA audit.
 
 ## iOS
 - Run the GitHub Actions `ios-gate` job or locally run `npm run cap:sync:ios`
   and build `ios/App/App.xcodeproj` for an iOS simulator.
+- Confirm the iOS app icon is the generated opaque 1024x1024 ZenFlow icon and
+  does not contain alpha, visible glow boxes, or off-brand fallback art.
 - Confirm `ios/App/CapApp-SPM/Package.swift` uses POSIX `/` paths after sync.
 - Confirm iOS `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` match the
   Android/package release version before store submission.
@@ -37,6 +42,8 @@ Use this list before publishing on stores or web.
 
 ## Android
 - Build signed AAB.
+- Confirm Android legacy and adaptive icons use the generated ZenFlow emerald
+  background, foreground leaf, and no SVG filter-derived square artifacts.
 - Verify first render in Android WebView with no visual downgrade.
 - Verify pause -> resume sync and Android back behavior on V2 routes.
 - Verify notifications permission prompt (Android 13+).
@@ -53,6 +60,9 @@ Use this list before publishing on stores or web.
 ## Desktop EXE
 - Read `docs/ai/DESKTOP_EXE_RUNTIME_CONTRACT.md`.
 - If publishing through Microsoft Store, read `docs/ai/MICROSOFT_STORE_MSIX_CONTRACT.md`.
+- Run `npm run assets:logos:check` before packaging; Windows taskbar, Start
+  menu, installer, Tauri bundle, and Store logos must come from the same
+  no-filter logo generator.
 - Run `npm run check:desktop-exe-contract`.
 - Run `npm run desktop:store:package` when preparing the Store `Packages` tab.
 - Run `npm run desktop:store:check` for any Microsoft Store/MSIX claim.
@@ -116,6 +126,11 @@ Use this list before publishing on stores or web.
 ## Store listing
 - App name, subtitle, description.
 - Screenshots for all required sizes.
+- Store logos regenerated with `npm run assets:logos` or the Store-only
+  `npm run desktop:store:assets`, then validated with
+  `npm run assets:logos:check` and `npm run desktop:store:assets:check`; app
+  tiles must not show hard square corners, excessive glow, or rectangular
+  shader blocks.
 - Privacy policy URL.
 - Support email and contact URL.
 

@@ -114,13 +114,14 @@ export default defineConfig(({ mode }) => {
               "apple-touch-icon.png",
               "pwa-192.png",
               "pwa-512.png",
+              "pwa-maskable-512.png",
               "robots.txt",
               "offline.html",
             ],
 
             // Production-ready manifest
             manifest: {
-              name: "ZenFlow — Daily Wellness",
+              name: "ZenFlow - Daily Wellness",
               short_name: "ZenFlow",
               description: "Habit, mood and productivity tracker. Works offline.",
 
@@ -131,7 +132,7 @@ export default defineConfig(({ mode }) => {
               orientation: "portrait-primary",
 
               theme_color: "#4a9d7c",
-              background_color: "#ffffff",
+              background_color: "#071513",
 
               lang: "en",
               dir: "ltr",

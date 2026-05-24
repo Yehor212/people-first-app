@@ -91,108 +91,105 @@ import { TypingDynamicsMirror } from "@/components/diary/TypingDynamicsMirror";
 const DIARY_FONTS_LOCAL = DIARY_FONTS;
 const DIARY_FONT_NAMES_LOCAL = DIARY_FONT_NAMES;
 
+type DiaryAccentStyle = Readonly<{
+  backgroundColor?: string;
+  borderColor?: string;
+  color?: string;
+  boxShadow?: string;
+}>;
+
+const DIARY_ACCENTS = {
+  purple: { backgroundColor: "rgba(168, 85, 247, 0.15)", color: "#c084fc", borderColor: "rgba(168, 85, 247, 0.30)" },
+  cyan: { backgroundColor: "rgba(6, 182, 212, 0.15)", color: "#22d3ee", borderColor: "rgba(6, 182, 212, 0.30)" },
+  emerald: { backgroundColor: "rgba(16, 185, 129, 0.15)", color: "#34d399", borderColor: "rgba(16, 185, 129, 0.30)" },
+  orange: { backgroundColor: "rgba(249, 115, 22, 0.15)", color: "#fb923c", borderColor: "rgba(249, 115, 22, 0.30)" },
+  violet: { backgroundColor: "rgba(139, 92, 246, 0.15)", color: "#a78bfa", borderColor: "rgba(139, 92, 246, 0.30)" },
+  pink: { backgroundColor: "rgba(236, 72, 153, 0.15)", color: "#f472b6", borderColor: "rgba(236, 72, 153, 0.30)" },
+  blue: { backgroundColor: "rgba(59, 130, 246, 0.15)", color: "#60a5fa", borderColor: "rgba(59, 130, 246, 0.30)" },
+  rose: { backgroundColor: "rgba(244, 63, 94, 0.15)", color: "#fb7185", borderColor: "rgba(244, 63, 94, 0.30)" },
+  green: { backgroundColor: "rgba(34, 197, 94, 0.15)", color: "#4ade80" },
+  amber: { backgroundColor: "rgba(245, 158, 11, 0.15)", color: "#fbbf24" },
+  red: { backgroundColor: "rgba(239, 68, 68, 0.15)", color: "#f87171" },
+} as const satisfies Record<string, DiaryAccentStyle>;
+
+function withInsetRing(style: DiaryAccentStyle, ringColor: string): React.CSSProperties {
+  return { ...style, boxShadow: `inset 0 0 0 2px ${ringColor}` };
+}
+
 const ATMOSPHERE_THEMES = [
   {
     name: "dark" as const,
     i18nKey: "diaryThemeCosmos",
     label: "Cosmos",
-    activeBg: "bg-purple-500/15",
-    activeText: "text-purple-400",
-    activeBorder: "border-purple-500/30",
+    activeStyle: DIARY_ACCENTS.purple,
   },
   {
     name: "ocean" as const,
     i18nKey: "diaryThemeOcean",
     label: "Ocean",
-    activeBg: "bg-cyan-500/15",
-    activeText: "text-cyan-400",
-    activeBorder: "border-cyan-500/30",
+    activeStyle: DIARY_ACCENTS.cyan,
   },
   {
     name: "forest" as const,
     i18nKey: "diaryThemeForest",
     label: "Forest",
-    activeBg: "bg-emerald-500/15",
-    activeText: "text-emerald-400",
-    activeBorder: "border-emerald-500/30",
+    activeStyle: DIARY_ACCENTS.emerald,
   },
   {
     name: "sunset" as const,
     i18nKey: "diaryThemeSunset",
     label: "Sunset",
-    activeBg: "bg-orange-500/15",
-    activeText: "text-orange-400",
-    activeBorder: "border-orange-500/30",
+    activeStyle: DIARY_ACCENTS.orange,
   },
   {
     name: "lavender" as const,
     i18nKey: "diaryThemeLavender",
     label: "Lavender",
-    activeBg: "bg-violet-500/15",
-    activeText: "text-violet-400",
-    activeBorder: "border-violet-500/30",
+    activeStyle: DIARY_ACCENTS.violet,
   },
   {
     name: "rose" as const,
     i18nKey: "diaryThemeRose",
     label: "Rose",
-    activeBg: "bg-pink-500/15",
-    activeText: "text-pink-400",
-    activeBorder: "border-pink-500/30",
+    activeStyle: DIARY_ACCENTS.pink,
   },
   {
     name: "midnight" as const,
     i18nKey: "diaryThemeMidnight",
     label: "Midnight",
-    activeBg: "bg-blue-500/15",
-    activeText: "text-blue-400",
-    activeBorder: "border-blue-500/30",
+    activeStyle: DIARY_ACCENTS.blue,
   },
   {
     name: "cherry" as const,
     i18nKey: "diaryThemeCherry",
     label: "Cherry",
-    activeBg: "bg-rose-500/15",
-    activeText: "text-rose-400",
-    activeBorder: "border-rose-500/30",
+    activeStyle: DIARY_ACCENTS.rose,
   },
 ];
 
 const MOOD_OPTIONS: {
   mood: MoodType;
-  activeBg: string;
-  activeText: string;
-  activeRing: string;
+  activeStyle: React.CSSProperties;
 }[] = [
   {
     mood: "great",
-    activeBg: "bg-green-500/15",
-    activeText: "text-green-400",
-    activeRing: "ring-green-400/40",
+    activeStyle: withInsetRing(DIARY_ACCENTS.green, "rgba(74, 222, 128, 0.40)"),
   },
   {
     mood: "good",
-    activeBg: "bg-emerald-500/15",
-    activeText: "text-emerald-400",
-    activeRing: "ring-emerald-400/40",
+    activeStyle: withInsetRing(DIARY_ACCENTS.emerald, "rgba(52, 211, 153, 0.40)"),
   },
   {
     mood: "okay",
-    activeBg: "bg-amber-500/15",
-    activeText: "text-amber-400",
-    activeRing: "ring-amber-400/40",
+    activeStyle: withInsetRing(DIARY_ACCENTS.amber, "rgba(251, 191, 36, 0.40)"),
   },
   {
     mood: "bad",
-    activeBg: "bg-orange-500/15",
-    activeText: "text-orange-400",
-    activeRing: "ring-orange-400/40",
+    activeStyle: withInsetRing(DIARY_ACCENTS.orange, "rgba(251, 146, 60, 0.40)"),
   },
   {
     mood: "terrible",
-    activeBg: "bg-red-500/15",
-    activeText: "text-red-400",
-    activeRing: "ring-red-400/40",
+    activeStyle: withInsetRing(DIARY_ACCENTS.red, "rgba(248, 113, 113, 0.40)"),
   },
 ];
 
@@ -816,9 +813,10 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                         className={cn(
                           "px-3 py-1.5 rounded-lg text-xs font-medium border motion-safe:transition-all",
                           isActive
-                            ? `${at.activeBg} ${at.activeText} ${at.activeBorder}`
+                            ? ""
                             : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 dark:hover:bg-white/10 hover:text-foreground"
                         )}
+                        style={isActive ? at.activeStyle : undefined}
                       >
                         {ts[at.i18nKey] || at.label}
                       </motion.button>
@@ -896,9 +894,10 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                       className={cn(
                         "w-9 h-9 rounded-full flex items-center justify-center text-muted-foreground motion-safe:transition-all",
                         mood === opt.mood
-                          ? `${opt.activeBg} ${opt.activeText} ring-2 ${opt.activeRing}`
+                          ? ""
                           : "hover:bg-white/10 dark:hover:bg-white/10"
                       )}
+                      style={mood === opt.mood ? opt.activeStyle : undefined}
                     >
                       <DiaryMiniOrb
                         mood={opt.mood}
@@ -1631,9 +1630,10 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                           className={cn(
                             "flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground motion-safe:transition-all",
                             mood === opt.mood
-                              ? `${opt.activeBg} ${opt.activeText} ring-2 ${opt.activeRing}`
+                              ? ""
                               : "hover:bg-primary/10 hover:text-primary"
                           )}
+                          style={mood === opt.mood ? opt.activeStyle : undefined}
                         >
                           <DiaryMiniOrb
                             mood={opt.mood}
