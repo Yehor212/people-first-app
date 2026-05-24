@@ -111,6 +111,11 @@ const SVG_EXPECTATIONS = [
   "docs/icon-source-round.svg",
   "docs/feature-graphic.svg",
 ];
+const DOCS_STATIC_HTML = fs
+  .readdirSync(path.join(ROOT, "docs"))
+  .filter((name) => /^(404|delete-account|privacy|privacy-policy|terms)(?:-[a-z]{2})?\.html$/.test(name))
+  .map((name) => `docs/${name}`)
+  .sort();
 const PUBLIC_STATIC_HTML = [
   "public/404.html",
   "public/delete-account.html",
@@ -118,12 +123,8 @@ const PUBLIC_STATIC_HTML = [
   "public/privacy.html",
   "public/privacy-policy.html",
   "public/terms.html",
-  "docs/404.html",
-  "docs/delete-account.html",
   "docs/offline.html",
-  "docs/privacy.html",
-  "docs/privacy-policy.html",
-  "docs/terms.html",
+  ...DOCS_STATIC_HTML,
 ];
 const WHITE_MARK_SAFE_ZONE_EXPECTATIONS = [
   "public/pwa-72.png",
@@ -350,6 +351,14 @@ function assertPublicStaticPageLogoContract() {
     const text = read(rel);
     if (!text.includes("https://yehor212.github.io/people-first-app/og-image.png")) {
       fail(`${rel} must expose og-image.png for public share previews`);
+    }
+  }
+  for (const rel of PUBLIC_STATIC_HTML.filter((file) => /\/(delete-account|privacy|privacy-policy|terms)(?:-[a-z]{2})?\.html$/.test(file))) {
+    const text = read(rel);
+    for (const token of ["title-logo", "pwa-72.png"]) {
+      if (!text.includes(token)) {
+        fail(`${rel} must render a visible canonical ZenFlow leaf mark in the page title`);
+      }
     }
   }
 }
