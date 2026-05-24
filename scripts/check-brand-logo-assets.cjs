@@ -397,6 +397,7 @@ function assertPlaceholderLogoContract() {
 
 function assertPwaInstallLogoContract() {
   const sourceIndex = read("index.html");
+  const mojibakeTokens = ["\u0432\u0402", "\u0420\u0406", "\u0420\u00b0", "\u0421\u0403"];
   for (const token of [
     "apple-touch-icon.png",
     "favicon-16.png",
@@ -427,6 +428,16 @@ function assertPwaInstallLogoContract() {
     if (!text.includes(`?v=${PWA_INSTALL_ICON_REVISION}`)) {
       fail(`${rel} must cache-bust browser app icons with ${PWA_INSTALL_ICON_REVISION}`);
     }
+    if (mojibakeTokens.some((token) => text.includes(token))) {
+      fail(`${rel} must not expose mojibake in browser title/meta install surfaces`);
+    }
+  }
+
+  const docsIndex = read("docs/index.html");
+  if (!docsIndex.includes(`manifest.webmanifest?v=${PWA_INSTALL_ICON_REVISION}`)) {
+    fail(
+      `docs/index.html must cache-bust the PWA manifest link with ${PWA_INSTALL_ICON_REVISION}; Chrome only refreshes installed app icons when manifest/icon URLs change`,
+    );
   }
 
   const docsManifest = JSON.parse(read("docs/manifest.webmanifest"));
