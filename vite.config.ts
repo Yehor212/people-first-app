@@ -31,7 +31,7 @@ function isDeferredJournalPreload(dep: string): boolean {
   );
 }
 
-const PWA_INSTALL_ICON_REVISION = "zenflow-classic-leaf-20260524";
+const PWA_INSTALL_ICON_REVISION = "zenflow-browser-leaf-20260524";
 const pwaIconSrc = (file: string) => `${file}?v=${PWA_INSTALL_ICON_REVISION}`;
 
 // https://vitejs.dev/config/
@@ -114,6 +114,10 @@ export default defineConfig(({ mode }) => {
             registerType: "autoUpdate",
             includeAssets: [
               "favicon.ico",
+              "favicon-16.png",
+              "favicon-32.png",
+              "favicon-48.png",
+              "favicon-64.png",
               "apple-touch-icon.png",
               "pwa-192.png",
               "pwa-512.png",

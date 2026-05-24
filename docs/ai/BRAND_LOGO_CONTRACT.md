@@ -18,6 +18,10 @@ desktop EXE, Microsoft Store assets, and future release work.
   `manifest.webmanifest` and HTML icon links. Chromium/Windows can keep
   installed app shortcuts pinned to an old icon URL, so changing only the PNG
   bytes is not enough evidence that users will see the new mark.
+- Browser toolbar/app-chip surfaces must expose explicit PNG favicons at
+  16x16, 32x32, 48x48, and 64x64 with the same cache revision. The Chromium
+  "open in app" chip can use the page favicon rather than the larger manifest
+  install icon, so relying only on `favicon.ico` or `pwa-192.png` is not enough.
 - Windows PWA install surfaces must include explicit 44x44, 50x50, 71x71,
   150x150, 310x310, 310x150, and 620x300 PNG entries in the web app manifest,
   generated from the same classic leaf source.
@@ -76,6 +80,9 @@ Before claiming logo work complete:
   favicon/PWA/apple links and the branded `public/placeholder.svg`
 - installed PWA proof that `dist/manifest.webmanifest` contains the explicit
   icon cache revision and Windows-specific icon sizes.
+- browser favicon proof that `dist/index.html` and the public deployed page
+  expose versioned `favicon-16.png`, `favicon-32.png`, `favicon-48.png`, and
+  `favicon-64.png`, and that the files resolve with the expected dimensions.
 - security scan for any changed script/runtime code
 
 ## Source References

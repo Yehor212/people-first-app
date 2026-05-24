@@ -6,13 +6,17 @@ const sharp = require("sharp");
 
 const ROOT = path.resolve(__dirname, "..");
 const MAX_STORE_BYTES = 50 * 1024 * 1024;
-const PWA_INSTALL_ICON_REVISION = "zenflow-classic-leaf-20260524";
+const PWA_INSTALL_ICON_REVISION = "zenflow-browser-leaf-20260524";
 const CLASSIC_LEAF_BODY = "M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z";
 const CLASSIC_LEAF_STEM = "M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12";
 const REJECTED_FLOW_LEAF_BODY = "M4.2 20.1C3.4 14.2 5.8 8.3 10.5 5.1c3.6-2.5 7.9-2.5 10.9-3.1.3 4.8-.5 9.3-3.8 12.8-3.5 3.7-8.7 5.7-13.4 5.3Z";
 const REJECTED_FLOW_LEAF_FLOW = "M8.4 14.4c2.4 1.1 5.8.4 8.6-2.9";
 
 const IMAGE_EXPECTATIONS = [
+  ...[16, 32, 48, 64].flatMap((size) => [
+    { file: `public/favicon-${size}.png`, width: size, height: size, alpha: "allowed" },
+    { file: `docs/favicon-${size}.png`, width: size, height: size, alpha: "allowed" },
+  ]),
   ...[72, 96, 128, 144, 152, 192, 384, 512].map((size) => ({
     file: `public/pwa-${size}.png`,
     width: size,
@@ -357,7 +361,7 @@ function assertNoLegacyStoreLogoDrafts() {
 function assertPublicStaticPageLogoContract() {
   for (const rel of PUBLIC_STATIC_HTML) {
     const text = read(rel);
-    for (const token of ["favicon.ico", "pwa-192.png", "apple-touch-icon.png"]) {
+    for (const token of ["favicon-16.png", "favicon-32.png", "favicon-48.png", "favicon-64.png", "favicon.ico", "pwa-192.png", "apple-touch-icon.png"]) {
       if (!text.includes(token)) {
         fail(`${rel} must expose ${token} so public, offline, and legal pages use the canonical ZenFlow app icon`);
       }
@@ -397,8 +401,10 @@ function assertPwaInstallLogoContract() {
     if (/rel=["']icon["'][^>]+data:image\/svg\+xml/i.test(text)) {
       fail(`${rel} must not use an inline emoji favicon; installed PWA shortcuts must use the canonical ZenFlow leaf assets`);
     }
-    if (!/favicon\.ico/.test(text) || !/pwa-192\.png/.test(text)) {
-      fail(`${rel} must expose favicon.ico and pwa-192.png for browser and PWA install surfaces`);
+    for (const token of ["favicon-16.png", "favicon-32.png", "favicon-48.png", "favicon-64.png", "favicon.ico", "pwa-192.png"]) {
+      if (!text.includes(token)) {
+        fail(`${rel} must expose ${token} for browser toolbar and PWA install surfaces`);
+      }
     }
     if (!text.includes(`?v=${PWA_INSTALL_ICON_REVISION}`)) {
       fail(`${rel} must cache-bust browser app icons with ${PWA_INSTALL_ICON_REVISION}`);

@@ -20,6 +20,18 @@ const MAX_SURFACE_H = 142;
 
 const ITEMS = [
   {
+    label: "Browser favicon 16",
+    rel: "public/favicon-16.png",
+    role: "Chrome toolbar app-chip favicon",
+    tiny: true,
+  },
+  {
+    label: "Browser favicon 32",
+    rel: "public/favicon-32.png",
+    role: "Browser tab and toolbar icon",
+    tiny: true,
+  },
+  {
     label: "PWA 192",
     rel: "public/pwa-192.png",
     role: "Install icon",

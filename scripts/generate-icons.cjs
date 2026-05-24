@@ -10,8 +10,9 @@ const LEAF_BODY = "M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0
 const LEAF_STEM = "M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12";
 const LEAF_DETAIL_SHADOW_MIN_SIZE = 72;
 
-const PWA_INSTALL_ICON_REVISION = "zenflow-classic-leaf-20260524";
+const PWA_INSTALL_ICON_REVISION = "zenflow-browser-leaf-20260524";
 const PWA_SIZES = [72, 96, 128, 144, 152, 192, 384, 512];
+const BROWSER_FAVICON_SIZES = [16, 32, 48, 64];
 const PWA_WINDOWS_ICONS = [
   { file: "pwa-windows-44.png", width: 44, height: 44, kind: "tile" },
   { file: "pwa-windows-50.png", width: 50, height: 50, kind: "tile" },
@@ -24,6 +25,7 @@ const PWA_WINDOWS_ICONS = [
 const DOCS_PWA_BASE = "/people-first-app/";
 const PUBLIC_TO_DOCS_ASSETS = [
   "favicon.ico",
+  ...BROWSER_FAVICON_SIZES.map((size) => `favicon-${size}.png`),
   "apple-touch-icon.png",
   "icon-512.png",
   "pwa-maskable-512.png",
@@ -480,6 +482,9 @@ async function generatePublicAssets() {
     })),
   );
   writeIco(path.join(publicDir, "favicon.ico"), faviconEntries);
+  for (const size of BROWSER_FAVICON_SIZES) {
+    await pngFromSvg(tileSvg({ width: size, height: size, scale: size <= 32 ? 0.88 : 0.82 }), path.join(publicDir, `favicon-${size}.png`));
+  }
   syncPublicInstallAssetsToDocs();
 }
 
