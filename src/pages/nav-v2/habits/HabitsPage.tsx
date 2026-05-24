@@ -145,7 +145,7 @@ export const HabitsPage = memo(function HabitsPage() {
     // Move focus to the <main> landmark (not the heading) so screen readers
     // announce the region while keyboard users don't see an outline drawn
     // around the title itself (A+++ polish — Law 9).
-    mainRef.current?.focus();
+    mainRef.current?.focus({ preventScroll: true });
   }, []);
 
   useEffect(() => {

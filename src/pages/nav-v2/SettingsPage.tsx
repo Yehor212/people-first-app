@@ -38,7 +38,7 @@ export const SettingsPage = memo(function SettingsPage() {
   const SettingsIcon = V2_NAV_ICONS.settings;
 
   useEffect(() => {
-    mainRef.current?.focus();
+    mainRef.current?.focus({ preventScroll: true });
   }, []);
 
   const themeLabel = appliedTheme === "paper" ? tx.themeLight : tx.themeDark;

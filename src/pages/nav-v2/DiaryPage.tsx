@@ -113,7 +113,7 @@ export const DiaryPage = memo(function DiaryPage({
     useState<JournalEntrySuggestion | null>(null);
 
   useEffect(() => {
-    h1Ref.current?.focus();
+    h1Ref.current?.focus({ preventScroll: true });
   }, []);
 
   useEffect(() => {

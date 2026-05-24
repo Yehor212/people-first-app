@@ -256,6 +256,35 @@ export function checkThemeBlind(file: string, lines: string[]): Violation[] {
   return violations;
 }
 
+// Rule 4: V2 route landmarks must not scroll the viewport when focused.
+
+export function checkV2RouteFocusScroll(file: string, lines: string[]): Violation[] {
+  const normalized = file.replace(/\\/g, "/");
+  if (!normalized.startsWith("src/pages/nav-v2/") || isTestLikeFile(file)) {
+    return [];
+  }
+
+  const violations: Violation[] = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (
+      /\b(?:mainRef|h1Ref)\.current\?\.focus\(/.test(line) &&
+      !line.includes("preventScroll")
+    ) {
+      violations.push({
+        file,
+        line: i + 1,
+        rule: "v2-focus-scroll",
+        detail: "V2 route landmark focus must use preventScroll to avoid clipped first paint",
+        severity: "HIGH",
+      });
+    }
+  }
+
+  return violations;
+}
+
 // Main
 
 function main() {
@@ -274,6 +303,7 @@ function main() {
       ...checkBackdropFilter(rel, lines),
       ...checkMotionSafe(rel, lines, { hasGlobalMotionGate: globalMotionGateEnabled }),
       ...checkThemeBlind(rel, lines),
+      ...checkV2RouteFocusScroll(rel, lines),
     );
   }
 
@@ -288,6 +318,7 @@ function main() {
     "backdrop-webkit": "Backdrop-filter without -webkit (Safari/iOS)",
     "motion-safe": "Animation without prefers-reduced-motion guard",
     "theme-blind": "Theme-blind color (missing dark: variant)",
+    "v2-focus-scroll": "V2 route focus can scroll/clamp the first paint",
   };
 
   let totalCritical = 0;

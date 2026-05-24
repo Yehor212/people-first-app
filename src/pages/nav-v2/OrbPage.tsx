@@ -106,7 +106,7 @@ export const OrbPage = memo(function OrbPage({
   } = useOrbMoodFlow({ navigateToPage, onAddMood });
 
   useEffect(() => {
-    mainRef.current?.focus();
+    mainRef.current?.focus({ preventScroll: true });
   }, []);
 
   useEffect(() => {
