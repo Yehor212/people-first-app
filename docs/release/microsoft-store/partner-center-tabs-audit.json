@@ -155,7 +155,7 @@
         "docs/release/microsoft-store/assets/official-logo/zenflow-official-super-hero-art-1920x1080.png",
         "tmp/partner-center-store-logos-visible.png"
       ],
-      "requiredNextAction": "Keep official-logo assets as the Store identity. Do not replace them with draft orb exports without owner approval."
+      "requiredNextAction": "Keep official-logo assets as the Store identity. Do not reintroduce old orb-led draft exports without owner approval."
     },
     {
       "id": "packages",

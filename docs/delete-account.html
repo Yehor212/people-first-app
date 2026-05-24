@@ -3,6 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#4a9d7c" />
+    <meta property="og:image" content="https://yehor212.github.io/people-first-app/og-image.png" />
+    <meta name="twitter:image" content="https://yehor212.github.io/people-first-app/og-image.png" />
+    <link rel="icon" href="./favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="192x192" href="./pwa-192.png" />
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
     <title>Delete Account</title>
     <style>
       body {
@@ -22,6 +28,15 @@
       }
       h1 {
         margin-top: 0;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .title-logo {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        flex: 0 0 auto;
       }
       .steps {
         margin: 16px 0 0;
@@ -40,7 +55,7 @@
   </head>
   <body>
     <div class="container">
-      <h1>How to delete your account and data</h1>
+      <h1><img class="title-logo" src="./pwa-72.png" width="40" height="40" alt="" aria-hidden="true" />How to delete your account and data</h1>
       <p>You can delete your account directly inside the app.</p>
       <ol class="steps">
         <li>Open Settings.</li>

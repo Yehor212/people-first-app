@@ -98,7 +98,7 @@ repo; the live Store proof is still separate.
 | Store MSIXUPLOAD candidate | `PASS` after command proof | `npm run desktop:store:package` generates `tmp/microsoft-store-msix/ZenFlow_1.7.3.0_x64.msixupload` | This proves the repo can produce a candidate; live package acceptance is still separate. |
 | Packages | `FAIL until upload` | Partner Center overview shows `Not started`; generated MSIXUPLOAD has not been accepted live yet | Certification cannot be submitted until upload acceptance is visible. |
 | Submission options | `UNVERIFIED` | Overview marked recommended, but final settings not audited after package upload | Recheck after package is added. |
-| Store logos | `PASS` | Poster, box art, app tile 300/150/71, and hero art uploaded in Partner Center | Keep official-logo assets; orb drafts remain reference-only. |
+| Store logos | `PASS` | Poster, box art, app tile 300/150/71, and hero art uploaded in Partner Center | Keep official-logo assets; old orb-led Store logo drafts are not part of repo truth. |
 | Certification submit | `FAIL` until package and WACK pass | Not submitted by design | Do not submit from listing-only evidence. |
 
 ## Store Language Policy For Future Work

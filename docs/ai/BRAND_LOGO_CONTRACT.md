@@ -17,6 +17,11 @@ desktop EXE, Microsoft Store assets, and future release work.
 - Runtime splash logo and generated image assets must use the same classic
   vector silhouette. The splash screen may change scale, shadow, or surrounding
   background only when the mark stays identical.
+- Public static pages (`404.html`, offline, privacy, terms, delete-account)
+  must expose the same canonical favicon, 192px PWA icon, Apple touch icon, and
+  share image as the main app. The offline screen and placeholder fallback must
+  display the ZenFlow leaf, never a browser/file-type icon, emoji, or gray
+  template placeholder.
 
 ## Quality Bar
 
@@ -60,6 +65,8 @@ Before claiming logo work complete:
   Microsoft Store surfaces
 - `npm run assets:logos:proof` for an honest proof sheet that separates tiny
   native rasters from high-resolution marketing surfaces
+- static public-page proof from `npm run assets:logos:check`, including
+  favicon/PWA/apple links and the branded `public/placeholder.svg`
 - security scan for any changed script/runtime code
 
 ## Source References

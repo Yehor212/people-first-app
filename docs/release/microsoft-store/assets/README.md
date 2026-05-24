@@ -45,11 +45,15 @@ Recommended mapping:
 | Super hero art 16:9 | `official-logo/zenflow-official-super-hero-art-1920x1080.png` (no text/title) |
 | Source-quality logo archive | `official-logo/zenflow-official-logo-source-1024.png` |
 
-## Orb Drafts
+## Old Drafts
 
-`orb-draft/` contains screenshots/export drafts from the V2 WebGL orb family. They are preserved only as visual reference.
+Old orb-led Store logo drafts are intentionally not kept in this folder. The
+only committed Store identity source is `official-logo/`, generated from the
+classic ZenFlow leaf pipeline.
 
-Do not use the orb drafts as the primary Store logo unless the product owner explicitly chooses orb-led branding. The runtime canonical orbs are frozen by `docs/ai/CANONICAL_ORB_INVARIANT.md`; Store assets must not change, replace, or re-route runtime orb rendering.
+The runtime canonical orbs are frozen by
+`docs/ai/CANONICAL_ORB_INVARIANT.md`; Store logo work must not change, replace,
+or re-route runtime orb rendering.
 
 ## Upload Rule
 

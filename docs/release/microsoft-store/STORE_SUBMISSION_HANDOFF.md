@@ -97,9 +97,9 @@ Use `assets/official-logo/` for Partner Center Store logos:
 | 9:16 Poster art | `assets/official-logo/zenflow-official-poster-art-1440x2160.png` |
 | 16:9 Super hero art | `assets/official-logo/zenflow-official-super-hero-art-1920x1080.png` |
 
-`assets/orb-draft/` is reference-only. Do not use draft orb exports as the
-primary Store logo unless the product owner explicitly chooses an orb-led Store
-identity later.
+Old orb-led Store logo drafts are removed from the committed upload set. Do not
+reintroduce draft orb exports as Store identity assets unless the product owner
+explicitly changes the brand direction in a future task.
 
 ## Manual Partner Center Steps
 

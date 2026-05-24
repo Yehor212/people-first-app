@@ -264,5 +264,6 @@ Score below 7/7 means do not upload yet.
 - Save public desktop listing proof under `tmp/store-listing-desktop-page-current.png` during the active audit run.
 - Do not use `localhost` as Store-listing proof. Use the public GitHub Pages URL or a signed desktop build capture.
 - Recommended Store logo assets: `docs/release/microsoft-store/assets/official-logo/`.
-- Orb drafts are reference-only: `docs/release/microsoft-store/assets/orb-draft/`.
+- Old orb-led Store logo drafts are not part of repo truth; use
+  `official-logo/` only.
 - Do not buy, submit, or certify the Partner Center draft without explicit user approval for that final action.

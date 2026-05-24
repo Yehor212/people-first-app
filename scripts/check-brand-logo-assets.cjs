@@ -111,6 +111,20 @@ const SVG_EXPECTATIONS = [
   "docs/icon-source-round.svg",
   "docs/feature-graphic.svg",
 ];
+const PUBLIC_STATIC_HTML = [
+  "public/404.html",
+  "public/delete-account.html",
+  "public/offline.html",
+  "public/privacy.html",
+  "public/privacy-policy.html",
+  "public/terms.html",
+  "docs/404.html",
+  "docs/delete-account.html",
+  "docs/offline.html",
+  "docs/privacy.html",
+  "docs/privacy-policy.html",
+  "docs/terms.html",
+];
 const WHITE_MARK_SAFE_ZONE_EXPECTATIONS = [
   "public/pwa-72.png",
   "public/pwa-192.png",
@@ -316,6 +330,42 @@ function assertPackageScripts() {
   }
 }
 
+function assertNoLegacyStoreLogoDrafts() {
+  const legacyDraftDir = path.join(ROOT, "docs", "release", "microsoft-store", "assets", "orb-draft");
+  if (fs.existsSync(legacyDraftDir)) {
+    fail("docs/release/microsoft-store/assets/orb-draft must not exist; Store identity uses official-logo only");
+  }
+}
+
+function assertPublicStaticPageLogoContract() {
+  for (const rel of PUBLIC_STATIC_HTML) {
+    const text = read(rel);
+    for (const token of ["favicon.ico", "pwa-192.png", "apple-touch-icon.png"]) {
+      if (!text.includes(token)) {
+        fail(`${rel} must expose ${token} so public, offline, and legal pages use the canonical ZenFlow app icon`);
+      }
+    }
+  }
+  for (const rel of PUBLIC_STATIC_HTML.filter((file) => !file.endsWith("/404.html"))) {
+    const text = read(rel);
+    if (!text.includes("https://yehor212.github.io/people-first-app/og-image.png")) {
+      fail(`${rel} must expose og-image.png for public share previews`);
+    }
+  }
+}
+
+function assertPlaceholderLogoContract() {
+  for (const rel of ["public/placeholder.svg", "docs/placeholder.svg"]) {
+    const text = read(rel);
+    for (const token of [CLASSIC_LEAF_BODY, CLASSIC_LEAF_STEM, 'aria-label="ZenFlow placeholder"']) {
+      if (!text.includes(token)) fail(`${rel} is missing ${token}`);
+    }
+    for (const rejected of ["#EAEAEA", "#C9C9C9", "<filter", "filter="]) {
+      if (text.includes(rejected)) fail(`${rel} must not keep the old gray placeholder or SVG filter artifact ${rejected}`);
+    }
+  }
+}
+
 function assertPwaInstallLogoContract() {
   for (const rel of ["index.html", "docs/index.html"]) {
     const text = read(rel);
@@ -434,6 +484,9 @@ async function main() {
   assertNativeSplashContracts();
   assertRuntimeSplashLogoContract();
   assertClassicLogoContract();
+  assertNoLegacyStoreLogoDrafts();
+  assertPublicStaticPageLogoContract();
+  assertPlaceholderLogoContract();
   assertProofSheetGeneratorContract();
   assertPwaInstallLogoContract();
   assertUploadPack();
