@@ -17,7 +17,11 @@
       },
       "routes": [
         { "name": "home-v1-phone", "path": "?navLayout=phone" },
-        { "name": "orb-v2-phone", "path": "orb/?nav=v2&navLayout=phone" },
+        {
+          "name": "orb-v2-phone",
+          "path": "orb/?nav=v2&navLayout=phone",
+          "readySelector": "[data-testid=\"orb-page-rim-glow\"] [data-orb-visual-ready=\"true\"]"
+        },
         { "name": "habits-v2-phone", "path": "habits/?nav=v2&navLayout=phone" },
         {
           "name": "diary-v2-phone",
@@ -43,7 +47,11 @@
       },
       "routes": [
         { "name": "home-v1-desktop", "path": "" },
-        { "name": "orb-v2-desktop", "path": "orb/?nav=v2" },
+        {
+          "name": "orb-v2-desktop",
+          "path": "orb/?nav=v2",
+          "readySelector": "[data-testid=\"orb-page-rim-glow\"] [data-orb-visual-ready=\"true\"]"
+        },
         { "name": "habits-v2-desktop", "path": "habits/?nav=v2" },
         {
           "name": "diary-v2-desktop",
