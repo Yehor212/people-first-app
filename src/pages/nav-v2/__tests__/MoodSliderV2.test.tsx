@@ -1,6 +1,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, act } from "@testing-library/react";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { MoodSliderV2 } from "../MoodSliderV2";
+
+const CSS_PATH = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "../MoodSliderV2.css",
+);
 
 // --- Mocks ---
 
@@ -347,6 +355,18 @@ describe("MoodSliderV2", () => {
     render(<MoodSliderV2 value={null} onCommit={vi.fn()} />);
     const handle = screen.getByTestId("mood-slider-v2-handle");
     expect(handle.getAttribute("data-animate")).toBe("false");
+  });
+
+  it("keeps the idle glow pulse compositor-friendly", () => {
+    const css = fs.readFileSync(CSS_PATH, "utf8");
+    const keyframeStart = css.indexOf("@keyframes mood-slider-v2-glow");
+    const keyframeEnd = css.indexOf("/* Live label row", keyframeStart);
+    const keyframes = css.slice(keyframeStart, keyframeEnd);
+
+    expect(keyframes).toContain("opacity:");
+    expect(keyframes).toContain("transform:");
+    expect(keyframes).not.toContain("box-shadow");
+    expect(css).not.toContain("mood-slider-v2-glow-paper");
   });
 
   it("aria-valuenow mirrors draft (not committed value) during keyboard steps", async () => {
