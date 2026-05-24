@@ -109,6 +109,8 @@ dev-dist/
 # ============================================
 *.csv
 nul
+$null
+/tmp/
 c:temp*
 supabase/.temp/
 
