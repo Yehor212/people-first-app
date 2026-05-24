@@ -139,6 +139,7 @@ export default defineConfig(({ mode }) => {
               short_name: "ZenFlow",
               description: "Habit, mood and productivity tracker. Works offline.",
 
+              id: base,
               start_url: base,
               scope: base,
 

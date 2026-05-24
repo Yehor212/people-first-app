@@ -439,8 +439,13 @@ function assertPwaInstallLogoContract() {
   if (docsManifest.name !== "ZenFlow - Daily Wellness" || docsManifest.short_name !== "ZenFlow") {
     fail("docs/manifest.webmanifest must keep clean ZenFlow install names without stale mojibake");
   }
-  if (docsManifest.lang !== "en" || docsManifest.start_url !== "/people-first-app/" || docsManifest.scope !== "/people-first-app/") {
-    fail("docs/manifest.webmanifest must keep the canonical GitHub Pages PWA scope and English store-facing install language");
+  if (
+    docsManifest.lang !== "en" ||
+    docsManifest.id !== "/people-first-app/" ||
+    docsManifest.start_url !== "/people-first-app/" ||
+    docsManifest.scope !== "/people-first-app/"
+  ) {
+    fail("docs/manifest.webmanifest must keep the canonical GitHub Pages PWA id, scope, start URL, and English store-facing install language");
   }
   if (!hasMaskable || !hasAny192 || !hasAny512) {
     fail("docs/manifest.webmanifest must expose 192, 512, and maskable ZenFlow install icons");

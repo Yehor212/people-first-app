@@ -18,6 +18,9 @@ desktop EXE, Microsoft Store assets, and future release work.
   `manifest.webmanifest` and HTML icon links. Chromium/Windows can keep
   installed app shortcuts pinned to an old icon URL, so changing only the PNG
   bytes is not enough evidence that users will see the new mark.
+- `manifest.webmanifest` must keep an explicit stable `id`, `start_url`, and
+  `scope` for the GitHub Pages app root. Do not change the manifest file URL
+  for cache busting; update icon URLs inside the manifest instead.
 - Browser toolbar/app-chip surfaces must expose explicit PNG favicons at
   16x16, 32x32, 48x48, and 64x64 with the same cache revision. The Chromium
   "open in app" chip can use the page favicon rather than the larger manifest
@@ -79,7 +82,7 @@ Before claiming logo work complete:
 - static public-page proof from `npm run assets:logos:check`, including
   favicon/PWA/apple links and the branded `public/placeholder.svg`
 - installed PWA proof that `dist/manifest.webmanifest` contains the explicit
-  icon cache revision and Windows-specific icon sizes.
+  PWA `id`, icon cache revision, and Windows-specific icon sizes.
 - browser favicon proof that `dist/index.html` and the public deployed page
   expose versioned `favicon-16.png`, `favicon-32.png`, `favicon-48.png`, and
   `favicon-64.png`, and that the files resolve with the expected dimensions.

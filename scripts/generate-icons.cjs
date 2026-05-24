@@ -372,6 +372,7 @@ function writeDocsWebManifest() {
     name: "ZenFlow - Daily Wellness",
     short_name: "ZenFlow",
     description: "Habit, mood and productivity tracker. Works offline.",
+    id: DOCS_PWA_BASE,
     start_url: DOCS_PWA_BASE,
     scope: DOCS_PWA_BASE,
     display: "standalone",
