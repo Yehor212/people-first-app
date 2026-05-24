@@ -6,6 +6,7 @@ const sharp = require("sharp");
 
 const ROOT = path.resolve(__dirname, "..");
 const MAX_STORE_BYTES = 50 * 1024 * 1024;
+const PWA_INSTALL_ICON_REVISION = "zenflow-classic-leaf-20260524";
 const CLASSIC_LEAF_BODY = "M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z";
 const CLASSIC_LEAF_STEM = "M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12";
 const REJECTED_FLOW_LEAF_BODY = "M4.2 20.1C3.4 14.2 5.8 8.3 10.5 5.1c3.6-2.5 7.9-2.5 10.9-3.1.3 4.8-.5 9.3-3.8 12.8-3.5 3.7-8.7 5.7-13.4 5.3Z";
@@ -26,6 +27,18 @@ const IMAGE_EXPECTATIONS = [
   })),
   { file: "public/pwa-maskable-512.png", width: 512, height: 512, alpha: "opaque" },
   { file: "docs/pwa-maskable-512.png", width: 512, height: 512, alpha: "opaque" },
+  ...[
+    ["pwa-windows-44.png", 44, 44, "allowed"],
+    ["pwa-windows-50.png", 50, 50, "allowed"],
+    ["pwa-windows-71.png", 71, 71, "allowed"],
+    ["pwa-windows-150.png", 150, 150, "allowed"],
+    ["pwa-windows-310.png", 310, 310, "allowed"],
+    ["pwa-windows-wide-310x150.png", 310, 150, "opaque"],
+    ["pwa-windows-splash-620x300.png", 620, 300, "opaque"],
+  ].flatMap(([file, width, height, alpha]) => [
+    { file: `public/${file}`, width, height, alpha },
+    { file: `docs/${file}`, width, height, alpha },
+  ]),
   { file: "public/apple-touch-icon.png", width: 180, height: 180, alpha: "opaque" },
   { file: "docs/apple-touch-icon.png", width: 180, height: 180, alpha: "opaque" },
   { file: "public/icon-512.png", width: 512, height: 512, alpha: "opaque" },
@@ -129,7 +142,10 @@ const PUBLIC_STATIC_HTML = [
 const WHITE_MARK_SAFE_ZONE_EXPECTATIONS = [
   "public/pwa-72.png",
   "public/pwa-192.png",
+  "public/pwa-windows-44.png",
+  "public/pwa-windows-50.png",
   "docs/pwa-192.png",
+  "docs/pwa-windows-44.png",
   "src-tauri/icons/32x32.png",
   "src-tauri/icons/StoreLogo.png",
   "android/app/src/main/res/mipmap-mdpi/ic_launcher.png",
@@ -384,13 +400,36 @@ function assertPwaInstallLogoContract() {
     if (!/favicon\.ico/.test(text) || !/pwa-192\.png/.test(text)) {
       fail(`${rel} must expose favicon.ico and pwa-192.png for browser and PWA install surfaces`);
     }
+    if (!text.includes(`?v=${PWA_INSTALL_ICON_REVISION}`)) {
+      fail(`${rel} must cache-bust browser app icons with ${PWA_INSTALL_ICON_REVISION}`);
+    }
   }
 
   const docsManifest = JSON.parse(read("docs/manifest.webmanifest"));
   const icons = docsManifest.icons || [];
-  const hasMaskable = icons.some((icon) => icon.src === "pwa-maskable-512.png" && /\bmaskable\b/.test(icon.purpose || ""));
-  const hasAny192 = icons.some((icon) => icon.src === "pwa-192.png" && icon.sizes === "192x192");
-  const hasAny512 = icons.some((icon) => icon.src === "pwa-512.png" && icon.sizes === "512x512");
+  const iconPath = (icon) => (icon.src || "").split("?")[0];
+  const iconRevision = (icon) => (icon.src || "").split("?")[1] || "";
+  const hasMaskable = icons.some((icon) => iconPath(icon) === "pwa-maskable-512.png" && /\bmaskable\b/.test(icon.purpose || ""));
+  const hasAny192 = icons.some((icon) => iconPath(icon) === "pwa-192.png" && icon.sizes === "192x192");
+  const hasAny512 = icons.some((icon) => iconPath(icon) === "pwa-512.png" && icon.sizes === "512x512");
+  const requiredWindowsSizes = new Set(["44x44", "50x50", "71x71", "150x150", "310x310", "310x150", "620x300"]);
+  for (const size of requiredWindowsSizes) {
+    if (!icons.some((icon) => icon.sizes === size && iconPath(icon).startsWith("pwa-windows-"))) {
+      fail(`docs/manifest.webmanifest must expose Windows/PWA install icon size ${size}`);
+    }
+  }
+  for (const icon of icons) {
+    if (iconRevision(icon) !== `v=${PWA_INSTALL_ICON_REVISION}`) {
+      fail(`docs/manifest.webmanifest icon ${icon.src} must use ${PWA_INSTALL_ICON_REVISION} so installed PWA shortcuts refresh stale cached icons`);
+    }
+  }
+  for (const shortcut of docsManifest.shortcuts || []) {
+    for (const icon of shortcut.icons || []) {
+      if (iconRevision(icon) !== `v=${PWA_INSTALL_ICON_REVISION}`) {
+        fail(`docs/manifest.webmanifest shortcut icon ${icon.src} must use ${PWA_INSTALL_ICON_REVISION}`);
+      }
+    }
+  }
   if (docsManifest.name !== "ZenFlow - Daily Wellness" || docsManifest.short_name !== "ZenFlow") {
     fail("docs/manifest.webmanifest must keep clean ZenFlow install names without stale mojibake");
   }

@@ -30,6 +30,17 @@ const ITEMS = [
     role: "High-density app icon",
   },
   {
+    label: "PWA Win 44",
+    rel: "public/pwa-windows-44.png",
+    role: "Installed app/taskbar icon",
+    tiny: true,
+  },
+  {
+    label: "PWA Win 150",
+    rel: "public/pwa-windows-150.png",
+    role: "Windows Start medium tile",
+  },
+  {
     label: "Tauri 32",
     rel: "src-tauri/icons/32x32.png",
     role: "Native window/taskbar small icon",
@@ -62,6 +73,16 @@ const ITEMS = [
     label: "Splash iOS",
     rel: "ios/App/App/Assets.xcassets/Splash.imageset/splash-2732x2732.png",
     role: "iOS launch image source",
+  },
+  {
+    label: "PWA Win wide",
+    rel: "public/pwa-windows-wide-310x150.png",
+    role: "Windows Start wide tile",
+  },
+  {
+    label: "PWA Win splash",
+    rel: "public/pwa-windows-splash-620x300.png",
+    role: "Windows PWA splash artwork",
   },
   {
     label: "Store tile 300",

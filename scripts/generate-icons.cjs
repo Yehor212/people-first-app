@@ -10,7 +10,17 @@ const LEAF_BODY = "M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0
 const LEAF_STEM = "M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12";
 const LEAF_DETAIL_SHADOW_MIN_SIZE = 72;
 
+const PWA_INSTALL_ICON_REVISION = "zenflow-classic-leaf-20260524";
 const PWA_SIZES = [72, 96, 128, 144, 152, 192, 384, 512];
+const PWA_WINDOWS_ICONS = [
+  { file: "pwa-windows-44.png", width: 44, height: 44, kind: "tile" },
+  { file: "pwa-windows-50.png", width: 50, height: 50, kind: "tile" },
+  { file: "pwa-windows-71.png", width: 71, height: 71, kind: "tile" },
+  { file: "pwa-windows-150.png", width: 150, height: 150, kind: "tile" },
+  { file: "pwa-windows-310.png", width: 310, height: 310, kind: "tile" },
+  { file: "pwa-windows-wide-310x150.png", width: 310, height: 150, kind: "wide" },
+  { file: "pwa-windows-splash-620x300.png", width: 620, height: 300, kind: "wide" },
+];
 const DOCS_PWA_BASE = "/people-first-app/";
 const PUBLIC_TO_DOCS_ASSETS = [
   "favicon.ico",
@@ -18,6 +28,7 @@ const PUBLIC_TO_DOCS_ASSETS = [
   "icon-512.png",
   "pwa-maskable-512.png",
   ...PWA_SIZES.map((size) => `pwa-${size}.png`),
+  ...PWA_WINDOWS_ICONS.map((icon) => icon.file),
 ];
 const ANDROID_SIZES = [
   { name: "mipmap-mdpi", size: 48 },
@@ -354,6 +365,7 @@ function writeAdaptiveXml(dir) {
 }
 
 function writeDocsWebManifest() {
+  const iconSrc = (file) => `${file}?v=${PWA_INSTALL_ICON_REVISION}`;
   const manifest = {
     name: "ZenFlow - Daily Wellness",
     short_name: "ZenFlow",
@@ -369,13 +381,19 @@ function writeDocsWebManifest() {
     categories: ["health", "lifestyle", "productivity"],
     icons: [
       ...PWA_SIZES.map((size) => ({
-        src: `pwa-${size}.png`,
+        src: iconSrc(`pwa-${size}.png`),
         sizes: `${size}x${size}`,
         type: "image/png",
         purpose: "any",
       })),
+      ...PWA_WINDOWS_ICONS.map((icon) => ({
+        src: iconSrc(icon.file),
+        sizes: `${icon.width}x${icon.height}`,
+        type: "image/png",
+        purpose: "any",
+      })),
       {
-        src: "pwa-maskable-512.png",
+        src: iconSrc("pwa-maskable-512.png"),
         sizes: "512x512",
         type: "image/png",
         purpose: "maskable",
@@ -387,14 +405,14 @@ function writeDocsWebManifest() {
         short_name: "Mood",
         description: "Quickly log your mood",
         url: `${DOCS_PWA_BASE}?tab=home`,
-        icons: [{ src: "pwa-192.png", sizes: "192x192", type: "image/png" }],
+        icons: [{ src: iconSrc("pwa-192.png"), sizes: "192x192", type: "image/png" }],
       },
       {
         name: "Track Habit",
         short_name: "Habit",
         description: "Mark a habit as completed",
         url: `${DOCS_PWA_BASE}?tab=home`,
-        icons: [{ src: "pwa-192.png", sizes: "192x192", type: "image/png" }],
+        icons: [{ src: iconSrc("pwa-192.png"), sizes: "192x192", type: "image/png" }],
       },
     ],
   };
@@ -426,6 +444,15 @@ async function generatePublicAssets() {
 
   for (const size of PWA_SIZES) {
     await pngFromSvg(tileSvg({ width: size, height: size, scale: 0.78 }), path.join(publicDir, `pwa-${size}.png`));
+  }
+  for (const icon of PWA_WINDOWS_ICONS) {
+    const svg =
+      icon.kind === "wide"
+        ? featureGraphicSvg({ width: icon.width, height: icon.height })
+        : tileSvg({ width: icon.width, height: icon.height, scale: icon.width <= 50 ? 0.86 : 0.8 });
+    await pngFromSvg(svg, path.join(publicDir, icon.file), {
+      flatten: icon.kind === "wide" ? "#071513" : undefined,
+    });
   }
   await pngFromSvg(fullBleedSvg({ width: 512, height: 512, leafScale: 0.52 }), path.join(publicDir, "pwa-maskable-512.png"), {
     flatten: "#2E9B70",

@@ -14,6 +14,13 @@ desktop EXE, Microsoft Store assets, and future release work.
   Windows, and compressed preview surfaces.
 - All app/platform/store logo files must be regenerated from the scripts, then
   validated with `npm run assets:logos:check`.
+- Installed PWA icon URLs must carry the current explicit cache revision in
+  `manifest.webmanifest` and HTML icon links. Chromium/Windows can keep
+  installed app shortcuts pinned to an old icon URL, so changing only the PNG
+  bytes is not enough evidence that users will see the new mark.
+- Windows PWA install surfaces must include explicit 44x44, 50x50, 71x71,
+  150x150, 310x310, 310x150, and 620x300 PNG entries in the web app manifest,
+  generated from the same classic leaf source.
 - Runtime splash logo and generated image assets must use the same classic
   vector silhouette. The splash screen may change scale, shadow, or surrounding
   background only when the mark stays identical.
@@ -67,6 +74,8 @@ Before claiming logo work complete:
   native rasters from high-resolution marketing surfaces
 - static public-page proof from `npm run assets:logos:check`, including
   favicon/PWA/apple links and the branded `public/placeholder.svg`
+- installed PWA proof that `dist/manifest.webmanifest` contains the explicit
+  icon cache revision and Windows-specific icon sizes.
 - security scan for any changed script/runtime code
 
 ## Source References
@@ -74,5 +83,7 @@ Before claiming logo work complete:
 - Apple app icons: https://developer.apple.com/design/human-interface-guidelines/app-icons
 - Android adaptive icons: https://developer.android.com/develop/ui/views/launch/icon_design_adaptive
 - Microsoft app icon construction: https://learn.microsoft.com/en-us/windows/apps/design/style/iconography/app-icon-construction
+- Microsoft Edge PWA icons and theme color: https://learn.microsoft.com/en-us/microsoft-edge/progressive-web-apps/how-to/icon-theme-color
+- MDN web app manifest icons: https://developer.mozilla.org/docs/Web/Progressive_web_apps/Manifest/Reference/icons
 - Material Design iconography: https://m3.material.io/styles/icons/overview
 - WCAG non-text contrast: https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast.html
