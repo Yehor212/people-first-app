@@ -1625,15 +1625,6 @@
     }
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .v2-preview-portal__portal,
-    .v2-preview-portal__portal-slit,
-    .v2-preview-portal__bridge-pulse,
-    .v2-preview-portal__stream-node,
-    .v2-preview-portal__orb-core {
-      animation: none;
-    }
-  }
 }
 
 @layer utilities {
@@ -2533,292 +2524,33 @@
   border-color: hsl(var(--destructive)) !important;
 }
 
-/* ========================================
-   ANIMATED MOOD EMOJIS - Unique per mood
-   ======================================== */
-
 /* Great mood — single settle, no rotation */
-@keyframes emoji-great {
-  0% {
-    transform: scale(0.96);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-
-.emoji-great {
-  animation: emoji-great 0.3s ease-out forwards;
-}
-
-.emoji-great:hover {
-  opacity: 0.85;
-}
-
 /* Good mood — gentle settle */
-@keyframes emoji-good {
-  0% {
-    transform: scale(0.97);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-
-.emoji-good {
-  animation: emoji-good 0.25s ease-out forwards;
-}
-
-.emoji-good:hover {
-  opacity: 0.85;
-}
-
 /* Okay mood — minimal settle */
-@keyframes emoji-okay {
-  0% {
-    transform: scale(0.98);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-
-.emoji-okay {
-  animation: emoji-okay 0.2s ease-out forwards;
-}
-
-.emoji-okay:hover {
-  opacity: 0.85;
-}
-
 /* Bad mood — subtle settle */
-@keyframes emoji-bad {
-  0% {
-    transform: scale(0.98);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-
-.emoji-bad {
-  animation: emoji-bad 0.3s ease-out forwards;
-}
-
-.emoji-bad:hover {
-  opacity: 0.85;
-}
-
 /* Terrible mood — subtle settle */
-@keyframes emoji-terrible {
-  0% {
-    transform: scale(0.97);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-
-.emoji-terrible {
-  animation: emoji-terrible 0.3s ease-out forwards;
-}
-
-.emoji-terrible:hover {
-  opacity: 0.85;
-}
-
 /* Emoji selection ring pulse — GPU-only via scale+opacity on pseudo border */
-@keyframes emoji-select-ring {
-  0% {
-    transform: scale(1);
-    opacity: 0.6;
-  }
-  100% {
-    transform: scale(1.5);
-    opacity: 0;
-  }
-}
-
-.emoji-select-ring::after {
-  content: "";
-  position: absolute;
-  inset: -4px;
-  border-radius: 50%;
-  border: 2px solid currentColor;
-  animation: emoji-select-ring 1.5s ease-out infinite;
-}
-
 /* ========================================
    STATS CARD ANIMATIONS
    ======================================== */
 
 /* Stat card entrance */
-@keyframes stat-card-enter {
-  0% {
-    opacity: 0;
-    transform: translateY(20px) scale(0.9);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-.stat-card-animated {
-  opacity: 0;
-  animation: stat-card-enter 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-}
-
-.stat-card-animated:nth-child(1) {
-  animation-delay: 0.1s;
-}
-.stat-card-animated:nth-child(2) {
-  animation-delay: 0.2s;
-}
-.stat-card-animated:nth-child(3) {
-  animation-delay: 0.3s;
-}
-.stat-card-animated:nth-child(4) {
-  animation-delay: 0.4s;
-}
 
 /* Streak fire animation - light: subtle shadow, dark: full glow */
-@keyframes streak-fire {
-  0%,
-  100% {
-    transform: scale(1) rotate(-1deg);
-  }
-  50% {
-    transform: scale(1.03) rotate(1deg);
-  }
-}
-.streak-icon-animated {
-  animation: streak-fire 1.2s ease-in-out infinite;
-  color: #ff6b35 !important;
-}
-.dark .streak-icon-animated {
-  filter: none;
-}
 
 /* Habits target pulse */
-@keyframes habits-pulse {
-  0%,
-  100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.03);
-  }
-}
-.habits-icon-animated {
-  animation: habits-pulse 1.5s ease-in-out infinite;
-  color: #22c55e !important;
-}
-.dark .habits-icon-animated {
-  filter: none;
-}
 
 /* Focus brain — subtle rotation */
-@keyframes focus-spin {
-  0%,
-  100% {
-    transform: scale(1) rotate(0deg);
-  }
-  50% {
-    transform: scale(1.02) rotate(3deg);
-  }
-}
-.focus-icon-animated {
-  animation: focus-spin 2s ease-in-out infinite;
-  color: #3b82f6 !important;
-}
-.dark .focus-icon-animated {
-  filter: none;
-}
 
 /* Gratitude heart beat — Apple: subtle double-pump */
-@keyframes heart-beat {
-  0%,
-  100% {
-    transform: scale(1);
-  }
-  10% {
-    transform: scale(1.06);
-  }
-  20% {
-    transform: scale(1);
-  }
-  30% {
-    transform: scale(1.04);
-  }
-  40% {
-    transform: scale(1);
-  }
-}
-.gratitude-icon-animated {
-  animation: heart-beat 1.2s ease-in-out infinite;
-  color: #ec4899 !important;
-}
-.dark .gratitude-icon-animated {
-  filter: none;
-}
 
 /* Number count up effect */
-@keyframes number-pop {
-  0% {
-    transform: scale(0.5);
-    opacity: 0;
-  }
-  60% {
-    transform: scale(1.3);
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-.number-animated {
-  opacity: 0;
-  animation: number-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-}
-
-/* Stat value glow on hover */
-.stat-card-animated:hover .stat-value {
-  text-shadow: 0 0 20px currentColor;
-  transform: scale(1.05);
-  transition: all 0.3s ease;
-}
 
 /* ========================================
    DUOLINGO-STYLE ACTION CELEBRATIONS
    ======================================== */
 
 /* Action success burst */
-@keyframes action-burst {
-  0% {
-    transform: scale(0);
-    opacity: 1;
-  }
-  50% {
-    transform: scale(1.5);
-    opacity: 0.8;
-  }
-  100% {
-    transform: scale(2);
-    opacity: 0;
-  }
-}
-
-.action-burst {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  background: radial-gradient(circle, currentColor 0%, transparent 70%);
-  animation: action-burst 0.6s ease-out forwards;
-  pointer-events: none;
-}
-
 /* XP gain popup */
 @keyframes xp-popup {
   0% {
@@ -2852,29 +2584,6 @@
 }
 
 /* Streak increase flame */
-@keyframes streak-increase {
-  0% {
-    transform: scale(1) translateY(0);
-    filter: brightness(1);
-  }
-  30% {
-    transform: scale(1.5) translateY(-10px);
-    filter: brightness(1.5);
-  }
-  60% {
-    transform: scale(1.8) translateY(-20px);
-    filter: brightness(2);
-  }
-  100% {
-    transform: scale(1) translateY(0);
-    filter: brightness(1);
-  }
-}
-
-.streak-increase {
-  animation: streak-increase 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
 /* Mood to calendar jump animation */
 @keyframes mood-jump-to-calendar {
   0% {
@@ -3848,15 +3557,6 @@ body.mood-bad .mood-particle {
   animation: breathing-circle 4s ease-in-out infinite;
 }
 
-/* Respect reduced-motion preference for mood ambient animations */
-@media (prefers-reduced-motion: reduce) {
-  .mood-particle,
-  .breathing-suggestion,
-  [class*="animate-zen-"] {
-    animation: none;
-  }
-}
-
 /* Hyperfocus breathing animation */
 @keyframes breathing {
   0%,
@@ -4082,27 +3782,6 @@ body.reduce-motion *::after {
   transition-duration: 0.01ms !important;
 }
 
-body.reduce-motion .animate-float,
-body.reduce-motion .animate-pulse-soft,
-body.reduce-motion .animate-fade-in,
-body.reduce-motion .animate-slide-up,
-body.reduce-motion .animate-scale-in,
-body.reduce-motion .animate-bounce-gentle,
-body.reduce-motion .animate-press,
-body.reduce-motion .animate-ripple,
-body.reduce-motion .animate-pulse-subtle,
-body.reduce-motion .animate-glow-pulse,
-body.reduce-motion .animate-bounce-fire,
-body.reduce-motion .animate-sparkle,
-body.reduce-motion .animate-confetti,
-body.reduce-motion .animate-bounce-check,
-body.reduce-motion .animate-checkmark-draw,
-body.reduce-motion .animate-success-pulse,
-body.reduce-motion .animate-ring-fill,
-body.reduce-motion .animate-energy-glow,
-body.reduce-motion .animate-pulse,
-body.reduce-motion .animate-bounce,
-body.reduce-motion .animate-spin,
 body.reduce-motion [class*="animate-"] {
   animation: none !important;
 }
@@ -4307,67 +3986,6 @@ input::-moz-focus-inner {
 }
 .card-shine::before {
   display: none;
-}
-
-/* ===== 3D CARD FLIP ===== */
-@keyframes card-flip-in {
-  0% {
-    transform: perspective(1000px) rotateY(90deg);
-    opacity: 0;
-  }
-  100% {
-    transform: perspective(1000px) rotateY(0deg);
-    opacity: 1;
-  }
-}
-
-@keyframes card-flip-out {
-  0% {
-    transform: perspective(1000px) rotateY(0deg);
-    opacity: 1;
-  }
-  100% {
-    transform: perspective(1000px) rotateY(-90deg);
-    opacity: 0;
-  }
-}
-
-.animate-card-flip-in {
-  animation: card-flip-in 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-  transform-style: preserve-3d;
-  backface-visibility: hidden;
-}
-
-.animate-card-flip-out {
-  animation: card-flip-out 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-  transform-style: preserve-3d;
-  backface-visibility: hidden;
-}
-
-.card-3d {
-  perspective: 1000px;
-  transform-style: preserve-3d;
-}
-
-.card-3d-inner {
-  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-  transform-style: preserve-3d;
-}
-
-.card-3d:hover .card-3d-inner {
-  transform: rotateY(180deg);
-}
-
-.card-3d-front,
-.card-3d-back {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  backface-visibility: hidden;
-}
-
-.card-3d-back {
-  transform: rotateY(180deg);
 }
 
 /* ===== WEATHER ANIMATIONS ===== */
@@ -4796,19 +4414,6 @@ input::-moz-focus-inner {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .zf-recovery-stage::before,
-  .zf-recovery-stage::after,
-  .zf-recovery-card::after,
-  .zf-recovery-orbit__halo,
-  .zf-recovery-orbit__scan,
-  .zf-recovery-orbit__satellite,
-  .zf-recovery-orbit__ring,
-  .zf-recovery-primary {
-    animation: none;
-  }
-}
-
 /* Aurora shimmer - for focused/energized weather */
 @keyframes aurora-shimmer {
   0% {
@@ -4899,80 +4504,6 @@ input::-moz-focus-inner {
   animation: crystal-rotate 0.3s ease-out forwards;
 }
 
-/* ===== RADIAL PROGRESS ANIMATIONS ===== */
-@keyframes radial-ring-fill {
-  0% {
-    stroke-dashoffset: var(--circumference, 283);
-    opacity: 0.3;
-  }
-  100% {
-    stroke-dashoffset: var(--target-offset, 0);
-    opacity: 1;
-  }
-}
-
-.animate-radial-ring-1 {
-  animation: radial-ring-fill 1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-
-.animate-radial-ring-2 {
-  animation: radial-ring-fill 1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-  animation-delay: 0.2s;
-}
-
-.animate-radial-ring-3 {
-  animation: radial-ring-fill 1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-  animation-delay: 0.4s;
-}
-
-/* Radial glow on hover */
-@keyframes radial-glow {
-  0%,
-  100% {
-    filter: drop-shadow(0 0 5px currentColor);
-  }
-  50% {
-    filter: drop-shadow(0 0 15px currentColor) drop-shadow(0 0 25px currentColor);
-  }
-}
-
-.radial-ring-glow:hover {
-  animation: radial-glow 1s ease-in-out infinite;
-}
-
-/* ===== ACHIEVEMENT CARD EFFECTS ===== */
-
-/* Rarity glow */
-.achievement-common {
-  --achievement-glow: hsl(0 0% 70%);
-}
-
-.achievement-rare {
-  --achievement-glow: hsl(217 91% 60%);
-}
-
-.achievement-epic {
-  --achievement-glow: hsl(270 70% 60%);
-}
-
-.achievement-legendary {
-  --achievement-glow: hsl(45 95% 55%);
-}
-
-@keyframes achievement-glow {
-  0%,
-  100% {
-    opacity: 0.8;
-  }
-  50% {
-    opacity: 1;
-  }
-}
-
-.animate-achievement-glow {
-  animation: achievement-glow 2s ease-in-out;
-}
-
 /* Unlock confetti burst */
 @keyframes confetti-burst {
   0% {
@@ -4989,23 +4520,6 @@ input::-moz-focus-inner {
 
 .animate-confetti-burst {
   animation: confetti-burst 0.8s ease-out forwards;
-}
-
-/* ===== STAT COUNTER EFFECTS ===== */
-@keyframes stat-number-glow {
-  0%,
-  100% {
-    text-shadow: 0 0 10px currentColor;
-  }
-  50% {
-    text-shadow:
-      0 0 20px currentColor,
-      0 0 30px currentColor;
-  }
-}
-
-.stat-number-glow {
-  animation: stat-number-glow 2s ease-in-out infinite;
 }
 
 /* Trend arrow animation */
@@ -5035,87 +4549,6 @@ input::-moz-focus-inner {
 
 .animate-trend-down {
   animation: trend-arrow-down 1s ease-in-out infinite;
-}
-
-/* ===== PREMIUM GRADIENT BACKGROUNDS ===== */
-.premium-gradient-purple {
-  background: linear-gradient(
-    135deg,
-    hsl(280 70% 50% / 0.15) 0%,
-    hsl(320 60% 50% / 0.1) 50%,
-    hsl(250 80% 60% / 0.15) 100%
-  );
-}
-
-.premium-gradient-teal {
-  background: linear-gradient(
-    135deg,
-    hsl(158 60% 50% / 0.15) 0%,
-    hsl(180 50% 45% / 0.1) 50%,
-    hsl(200 70% 55% / 0.15) 100%
-  );
-}
-
-.premium-gradient-sunset {
-  background: linear-gradient(
-    135deg,
-    hsl(350 70% 60% / 0.15) 0%,
-    hsl(25 80% 55% / 0.1) 50%,
-    hsl(45 90% 60% / 0.15) 100%
-  );
-}
-
-.premium-gradient-ocean {
-  background: linear-gradient(
-    135deg,
-    hsl(200 80% 50% / 0.15) 0%,
-    hsl(220 70% 55% / 0.1) 50%,
-    hsl(240 60% 60% / 0.15) 100%
-  );
-}
-
-/* ===== GLASSMORPHISM EFFECT ===== */
-.glass-card {
-  background: hsl(var(--card) / 0.7);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid hsl(var(--border) / 0.3);
-}
-
-.dark .glass-card {
-  background: hsl(var(--card) / 0.5);
-  border: 1px solid hsl(var(--border) / 0.2);
-}
-
-/* ===== WEEK STATS ENTRANCE ===== */
-@keyframes stat-card-premium-enter {
-  0% {
-    opacity: 0;
-    transform: translateY(30px) scale(0.9);
-    filter: blur(4px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-    filter: blur(0);
-  }
-}
-
-.animate-stat-premium-enter {
-  animation: stat-card-premium-enter 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-}
-
-.animate-stat-premium-enter-1 {
-  animation-delay: 0.1s;
-}
-.animate-stat-premium-enter-2 {
-  animation-delay: 0.2s;
-}
-.animate-stat-premium-enter-3 {
-  animation-delay: 0.3s;
-}
-.animate-stat-premium-enter-4 {
-  animation-delay: 0.4s;
 }
 
 /* ===== ORBIT SPIN FOR EMOTION GALAXY ===== */
@@ -5557,19 +4990,6 @@ body.reduce-motion .splash-night-thread {
   animation: none !important;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .splash-day-depth,
-  .splash-day-aurora,
-  .splash-day-bubble,
-  .splash-logo-ring,
-  .splash-night-depth,
-  .splash-night-ribbon,
-  .splash-night-vellum,
-  .splash-night-orb,
-  .splash-night-thread {
-    animation: none !important;
-  }
-}
 
 /* Subtle scale pulse — replaces FM scale: [1, 1.02, 1] loops */
 @keyframes zen-pulse {
@@ -6230,64 +5650,43 @@ body.reduce-motion .diary-animated {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .journal-light-atmosphere::after,
-  .journal-light-atmosphere__fiber {
-    animation: none;
-  }
-}
-
 [dir="rtl"] .habit-field-backdrop__progress-lane::after {
   transform-origin: right center;
 }
 
 .habit-field-backdrop__seed {
+  --habit-seed-role: var(--zf-role-body);
   position: absolute;
   top: var(--seed-top);
   left: var(--seed-left);
   width: var(--seed-size);
   height: var(--seed-size);
   border-radius: 999px;
-  background: hsl(var(--zf-role-body)/0.58);
+  background: hsl(var(--habit-seed-role)/0.58);
   box-shadow:
     0 0 0 0.42rem hsl(var(--background)/0.3),
-    0 0 1.25rem hsl(var(--zf-role-body)/0.22);
+    0 0 1.25rem hsl(var(--habit-seed-role)/0.22);
   opacity: 0.58;
 }
 
 .habit-field-backdrop__seed[data-seed-role="focus"] {
-  background: hsl(var(--zf-role-focus)/0.58);
-  box-shadow:
-    0 0 0 0.42rem hsl(var(--background)/0.3),
-    0 0 1.25rem hsl(var(--zf-role-focus)/0.22);
+  --habit-seed-role: var(--zf-role-focus);
 }
 
 .habit-field-backdrop__seed[data-seed-role="energy"] {
-  background: hsl(var(--zf-role-energy)/0.58);
-  box-shadow:
-    0 0 0 0.42rem hsl(var(--background)/0.3),
-    0 0 1.25rem hsl(var(--zf-role-energy)/0.22);
+  --habit-seed-role: var(--zf-role-energy);
 }
 
 .habit-field-backdrop__seed[data-seed-role="rest"] {
-  background: hsl(var(--zf-role-rest)/0.58);
-  box-shadow:
-    0 0 0 0.42rem hsl(var(--background)/0.3),
-    0 0 1.25rem hsl(var(--zf-role-rest)/0.22);
+  --habit-seed-role: var(--zf-role-rest);
 }
 
 .habit-field-backdrop__seed[data-seed-role="gratitude"] {
-  background: hsl(var(--zf-role-gratitude)/0.58);
-  box-shadow:
-    0 0 0 0.42rem hsl(var(--background)/0.3),
-    0 0 1.25rem hsl(var(--zf-role-gratitude)/0.22);
+  --habit-seed-role: var(--zf-role-gratitude);
 }
 
 .habit-field-backdrop__seed[data-seed-role="space"] {
-  background: hsl(var(--zf-role-space)/0.58);
-  box-shadow:
-    0 0 0 0.42rem hsl(var(--background)/0.3),
-    0 0 1.25rem hsl(var(--zf-role-space)/0.22);
+  --habit-seed-role: var(--zf-role-space);
 }
 
 .habit-field-backdrop[data-habit-state="active"] .habit-field-backdrop__root-map {
@@ -7195,17 +6594,6 @@ body.reduce-motion .diary-animated {
   animation: snap-release-speck 1.05s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .snap-release-halo,
-  .snap-release-core,
-  .snap-release-speck,
-  .snap-fragment-card,
-  .snap-card-scan,
-  .snap-pressure-wave {
-    animation: none;
-  }
-}
-
 /* ============================================
    STATE OF MIND — ANIMATIONS
    GPU-only: transform + opacity only in keyframes
@@ -7391,11 +6779,5 @@ html[data-theme-swap-mode="drawer-instant"] [data-theme-region="drawer-v2"] * {
   100% {
     transform: translate3d(0, -8px, 0);
     background-position: 18px -12px, -14px 16px, 22px 10px, 0 0, 28px 24px;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .journal-memory-field {
-    animation: none;
   }
 }

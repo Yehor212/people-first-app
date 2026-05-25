@@ -845,21 +845,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .day-cosmic__solar-portal::before,
-  .day-cosmic__solar-portal::after,
-  .day-cosmic__solar-portal-core,
-  .day-cosmic__solar-portal-orbit,
-  .day-cosmic__light-curtain,
-  .day-cosmic__sun-thread,
-  .day-cosmic__sun-shower,
-  .day-cosmic__sun-shower::after,
-  .day-cosmic__prism-ribbon,
-  .day-cosmic__caustics,
-  .day-cosmic__photon,
-  .day-cosmic__mote {
-    animation: none;
-  }
-
   .day-cosmic__mote {
     opacity: 0.6;
   }
@@ -1424,19 +1409,3 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .orb-day-scope .orb-page-rim-glow::before,
-  .orb-day-scope .orb-page-rim-glow::after,
-  .orb-day-scope .orb-day-anchor-field::before,
-  .orb-day-scope .orb-day-anchor-field::after,
-  .orb-day-scope .orb-day-anchor-spark,
-  .orb-day-flourish::before,
-  .orb-day-flourish::after,
-  .orb-day-flourish__prism,
-  .orb-day-flourish__caustic,
-  .orb-day-flourish__veil,
-  .orb-day-flourish__glint,
-  .orb-day-flourish__spark {
-    animation: none;
-  }
-}
