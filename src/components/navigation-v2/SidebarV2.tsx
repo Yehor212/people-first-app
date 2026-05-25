@@ -122,7 +122,8 @@ export const SidebarV2 = memo(function SidebarV2({
       {/* Skip link (sighted keyboard users) */}
       <a
         href="#main-content-v2"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:start-2 focus:z-[100] focus:rounded focus:bg-primary focus:px-3 focus:py-1 focus:text-primary-foreground"
+        data-testid="sidebar-v2-skip-link"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:start-3 focus:z-[100] focus:flex focus:min-h-[44px] focus:items-center focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground focus:shadow-lg"
       >
         {tx.skipToContent || "Skip to main content"}
       </a>

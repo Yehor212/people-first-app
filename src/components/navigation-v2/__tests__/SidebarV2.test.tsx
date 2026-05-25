@@ -104,7 +104,8 @@ describe("SidebarV2", () => {
 
   it("renders skip-to-content link anchored to #main-content-v2", () => {
     render(<SidebarV2 {...defaultProps} />);
-    const skip = screen.getByText("Skip to main content");
+    const skip = screen.getByTestId("sidebar-v2-skip-link");
     expect(skip.getAttribute("href")).toBe("#main-content-v2");
+    expect(skip.className).toContain("focus:min-h-[44px]");
   });
 });
