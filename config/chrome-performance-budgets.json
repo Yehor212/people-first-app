@@ -22,13 +22,21 @@
           "path": "orb/?nav=v2&navLayout=phone",
           "readySelector": "[data-testid=\"orb-page-rim-glow\"] [data-orb-visual-ready=\"true\"]"
         },
-        { "name": "habits-v2-phone", "path": "habits/?nav=v2&navLayout=phone" },
+        {
+          "name": "habits-v2-phone",
+          "path": "habits/?nav=v2&navLayout=phone",
+          "readySelector": "[data-testid=\"habits-hero-empty\"], [data-testid^=\"hero-group-\"]"
+        },
         {
           "name": "diary-v2-phone",
           "path": "diary/?nav=v2&navLayout=phone",
           "readySelector": "[data-testid=\"journal-compact-empty-list\"], [data-testid=\"journal-empty-list\"]"
         },
-        { "name": "settings-v2-phone", "path": "settings/?nav=v2&navLayout=phone" },
+        {
+          "name": "settings-v2-phone",
+          "path": "settings/?nav=v2&navLayout=phone",
+          "readySelector": "[data-testid=\"settings-page-control-card\"], [data-testid=\"settings-page-sections\"]"
+        },
         {
           "name": "desktop-dock-phone",
           "path": "desktop?navLayout=phone",
@@ -52,13 +60,21 @@
           "path": "orb/?nav=v2",
           "readySelector": "[data-testid=\"orb-page-rim-glow\"] [data-orb-visual-ready=\"true\"]"
         },
-        { "name": "habits-v2-desktop", "path": "habits/?nav=v2" },
+        {
+          "name": "habits-v2-desktop",
+          "path": "habits/?nav=v2",
+          "readySelector": "[data-testid=\"habits-hero-empty\"], [data-testid^=\"hero-group-\"]"
+        },
         {
           "name": "diary-v2-desktop",
           "path": "diary/?nav=v2",
           "readySelector": "[data-testid=\"journal-compact-empty-list\"], [data-testid=\"journal-empty-list\"]"
         },
-        { "name": "settings-v2-desktop", "path": "settings/?nav=v2" },
+        {
+          "name": "settings-v2-desktop",
+          "path": "settings/?nav=v2",
+          "readySelector": "[data-testid=\"settings-page-control-card\"], [data-testid=\"settings-page-sections\"]"
+        },
         {
           "name": "desktop-dock-desktop",
           "path": "desktop",
