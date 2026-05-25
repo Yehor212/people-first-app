@@ -481,13 +481,18 @@ export const ValenceOrb = memo(function ValenceOrb({
   onVisualReadyRef.current = onVisualReady;
   const markVisualReadyRef = useRef<() => void>(() => {});
   markVisualReadyRef.current = () => {
-    if (visualReadyRef.current) return;
+    const alreadyReady = visualReadyRef.current;
     visualReadyRef.current = true;
     const canvas = canvasElRef.current;
     if (canvas) {
       canvas.style.opacity = '1';
     }
-    wrapperRef.current?.setAttribute('data-orb-visual-ready', 'true');
+    const wrapper = wrapperRef.current;
+    wrapper?.querySelectorAll('canvas').forEach((orbCanvas) => {
+      orbCanvas.style.opacity = '1';
+    });
+    wrapper?.setAttribute('data-orb-visual-ready', 'true');
+    if (alreadyReady) return;
     onVisualReadyRef.current?.();
     setVisualReady(true);
   };
@@ -720,18 +725,27 @@ export const ValenceOrb = memo(function ValenceOrb({
 
     /** Degrade to Canvas 2D on a fresh canvas (WebGL canvas is locked) */
     const degradeToCanvas2D = () => {
+      const previousCanvas = activeCanvas;
       fallbackCanvas = createCanvas(size, canvasDpr);
+      markRendererTier(fallbackCanvas, 'canvas2d');
       ctx2d = fallbackCanvas.getContext('2d', { willReadFrequently: false });
 
       if (ctx2d) {
-        activeCanvas.style.display = 'none';
-        wrapper.appendChild(fallbackCanvas);
+        if (wrapper.contains(previousCanvas)) {
+          wrapper.replaceChild(fallbackCanvas, previousCanvas);
+        } else {
+          wrapper.appendChild(fallbackCanvas);
+        }
+        activeCanvas = fallbackCanvas;
+        canvasElRef.current = fallbackCanvas;
         render = renderCanvas2D;
 
         const state = stateRef.current;
         if (state) {
           renderCanvas2D(smoothValenceRef.current, state.time, state.particles);
         }
+      } else {
+        setCtxFailed(true);
       }
     };
 
@@ -905,6 +919,82 @@ export const ValenceOrb = memo(function ValenceOrb({
       if (!shouldTryWebGL(renderer) || signal.aborted) return;
 
       const explicitWebGLOverride = forceCanonicalWebGL;
+      let webglStartupRecoveryStarted = false;
+
+      const upgradeToMainThreadWebGL = async (): Promise<boolean> => {
+        if (!forceCanonicalWebGL && !probeWebGLWorks()) return false;
+
+        const gl2Canvas = createCanvas(size, dpr);
+        let result: OrbGLBuildResult | null = await createOrbGL2Async(gl2Canvas, {
+          signal,
+          timeoutMs: WEBGL_READINESS_TIMEOUT_MS,
+        });
+
+        let upgradeCanvas = gl2Canvas;
+        if (!result && !signal.aborted) {
+          const gl1Canvas = createCanvas(size, dpr);
+          result = await createOrbGLAsync(gl1Canvas, {
+            signal,
+            timeoutMs: WEBGL_READINESS_TIMEOUT_MS,
+          });
+          upgradeCanvas = gl1Canvas;
+        }
+
+        if (signal.aborted || !mountedRef.current) return false;
+        if (!result) return false;
+
+        const visibleCanvasAgeMs = performance.now() - visibleCanvasMountedAt;
+        const visibleUpgradeAgeMs = Math.max(result.durationMs, visibleCanvasAgeMs);
+        if (!shouldApplyWorkerWebGLUpgrade(visibleUpgradeAgeMs, explicitWebGLOverride)) {
+          rememberSlowWebGL(visibleUpgradeAgeMs);
+          result.renderer.dispose();
+          return false;
+        }
+
+        if (visibleUpgradeAgeMs > WEBGL_BUILD_BUDGET_MS) {
+          rememberSlowWebGL(visibleUpgradeAgeMs);
+        }
+
+        const previousCanvas = activeCanvas;
+        markRendererTier(upgradeCanvas, 'webgl-main');
+        glRenderer = result.renderer;
+        glRendererRef.current = result.renderer;
+        canvasElRef.current = upgradeCanvas;
+        ctx2d = null;
+        activeCanvas = upgradeCanvas;
+        render = renderGL;
+        attachWebGLListeners(upgradeCanvas);
+
+        if (wrapper.contains(previousCanvas)) {
+          wrapper.replaceChild(upgradeCanvas, previousCanvas);
+        } else {
+          wrapper.appendChild(upgradeCanvas);
+        }
+
+        const state = stateRef.current;
+        if (state) {
+          renderGL(smoothValenceRef.current, state.time, state.particles);
+        }
+
+        return true;
+      };
+
+      const recoverFromWebGLStartupFailure = () => {
+        if (webglStartupRecoveryStarted || signal.aborted || !mountedRef.current) return;
+        webglStartupRecoveryStarted = true;
+
+        if (!forceCanonicalWebGL) {
+          degradeToCanvas2D();
+          return;
+        }
+
+        void (async () => {
+          const recoveredWithWebGL = await upgradeToMainThreadWebGL();
+          if (!recoveredWithWebGL && !signal.aborted && mountedRef.current) {
+            degradeToCanvas2D();
+          }
+        })();
+      };
 
       if ((renderer === 'auto' || renderer === 'webgl') && canUseWorkerWebGL()) {
         const workerStartedAt = performance.now();
@@ -965,9 +1055,7 @@ export const ValenceOrb = memo(function ValenceOrb({
             );
             worker.terminate();
             if (webglWorker === worker) webglWorker = null;
-            if (!forceCanonicalWebGL && !signal.aborted && mountedRef.current) {
-              degradeToCanvas2D();
-            }
+            recoverFromWebGLStartupFailure();
             return;
           }
 
@@ -1024,67 +1112,16 @@ export const ValenceOrb = memo(function ValenceOrb({
           );
           worker.terminate();
           if (webglWorker === worker) webglWorker = null;
-          if (!forceCanonicalWebGL && !signal.aborted && mountedRef.current) {
-            degradeToCanvas2D();
-          }
+          recoverFromWebGLStartupFailure();
         };
 
         worker.postMessage({ type: 'init', canvas: offscreen, size, dpr }, [offscreen]);
         return;
       }
 
-      if (!forceCanonicalWebGL && !probeWebGLWorks()) return;
-
-      const gl2Canvas = createCanvas(size, dpr);
-      let result: OrbGLBuildResult | null = await createOrbGL2Async(gl2Canvas, {
-        signal,
-        timeoutMs: WEBGL_READINESS_TIMEOUT_MS,
-      });
-
-      let upgradeCanvas = gl2Canvas;
-      if (!result && !signal.aborted) {
-        const gl1Canvas = createCanvas(size, dpr);
-        result = await createOrbGLAsync(gl1Canvas, {
-          signal,
-          timeoutMs: WEBGL_READINESS_TIMEOUT_MS,
-        });
-        upgradeCanvas = gl1Canvas;
-      }
-
-      if (signal.aborted || !mountedRef.current) return;
-      if (!result) {
-        if (!forceCanonicalWebGL) {
-          degradeToCanvas2D();
-        }
-        return;
-      }
-
-      const visibleCanvasAgeMs = performance.now() - visibleCanvasMountedAt;
-      const visibleUpgradeAgeMs = Math.max(result.durationMs, visibleCanvasAgeMs);
-      if (!shouldApplyWorkerWebGLUpgrade(visibleUpgradeAgeMs, explicitWebGLOverride)) {
-        rememberSlowWebGL(visibleUpgradeAgeMs);
-        result.renderer.dispose();
-        return;
-      }
-
-      if (visibleUpgradeAgeMs > WEBGL_BUILD_BUDGET_MS) {
-        rememberSlowWebGL(visibleUpgradeAgeMs);
-      }
-
-      const previousCanvas = activeCanvas;
-      markRendererTier(upgradeCanvas, 'webgl-main');
-      glRenderer = result.renderer;
-      glRendererRef.current = result.renderer;
-      canvasElRef.current = upgradeCanvas;
-      ctx2d = null;
-      activeCanvas = upgradeCanvas;
-      render = renderGL;
-      attachWebGLListeners(upgradeCanvas);
-
-      if (wrapper.contains(previousCanvas)) {
-        wrapper.replaceChild(upgradeCanvas, previousCanvas);
-      } else {
-        wrapper.appendChild(upgradeCanvas);
+      const recoveredWithWebGL = await upgradeToMainThreadWebGL();
+      if (!recoveredWithWebGL && !signal.aborted && mountedRef.current) {
+        degradeToCanvas2D();
       }
     };
 

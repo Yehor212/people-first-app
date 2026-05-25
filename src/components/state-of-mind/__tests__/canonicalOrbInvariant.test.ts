@@ -141,7 +141,9 @@ describe("canonical orb invariant", () => {
     expect(source).toContain("onVisualReady");
     expect(source).toContain("canvas.style.opacity = '1'");
     expect(source).toContain("worker.onerror");
-    expect(source).toContain("if (!forceCanonicalWebGL && !signal.aborted && mountedRef.current)");
+    expect(source).toContain("recoverFromWebGLStartupFailure");
+    expect(source).toContain("upgradeToMainThreadWebGL");
+    expect(source).toContain("const recoveredWithWebGL = await upgradeToMainThreadWebGL()");
   });
 
   it("keeps canonical orb canvases paint-contained to avoid route-level render stalls", () => {
