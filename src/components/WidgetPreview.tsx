@@ -10,34 +10,34 @@ interface WidgetPreviewProps {
 
 const WIDGET_ACCENTS = {
   orange: {
-    text: { color: "#f97316" },
+    text: { color: "hsl(var(--zf-role-energy))" },
     card: {
-      color: "#f97316",
-      backgroundColor: "rgba(249, 115, 22, 0.10)",
-      borderColor: "rgba(249, 115, 22, 0.20)",
+      color: "hsl(var(--zf-role-energy))",
+      backgroundColor: "hsl(var(--zf-role-energy) / 0.10)",
+      borderColor: "hsl(var(--zf-role-energy) / 0.20)",
     },
   },
   emerald: {
-    text: { color: "#10b981" },
+    text: { color: "hsl(var(--zf-role-gratitude))" },
     card: {
-      color: "#10b981",
-      backgroundColor: "rgba(16, 185, 129, 0.10)",
-      borderColor: "rgba(16, 185, 129, 0.20)",
+      color: "hsl(var(--zf-role-gratitude))",
+      backgroundColor: "hsl(var(--zf-role-gratitude) / 0.10)",
+      borderColor: "hsl(var(--zf-role-gratitude) / 0.20)",
     },
   },
   violet: {
-    text: { color: "#8b5cf6" },
+    text: { color: "hsl(var(--zf-memory))" },
     card: {
-      color: "#8b5cf6",
-      backgroundColor: "rgba(139, 92, 246, 0.10)",
-      borderColor: "rgba(139, 92, 246, 0.20)",
+      color: "hsl(var(--zf-memory))",
+      backgroundColor: "hsl(var(--zf-memory) / 0.10)",
+      borderColor: "hsl(var(--zf-memory) / 0.20)",
     },
   },
   amber: {
-    text: { color: "#d97706" },
+    text: { color: "hsl(var(--zf-warning))" },
     card: {
-      backgroundColor: "rgba(245, 158, 11, 0.10)",
-      borderColor: "rgba(245, 158, 11, 0.20)",
+      backgroundColor: "hsl(var(--zf-warning) / 0.10)",
+      borderColor: "hsl(var(--zf-warning) / 0.20)",
     },
   },
 } as const;
@@ -128,7 +128,7 @@ function _HabitsProgress({ done, total }: { done: number; total: number }) {
       <div className="h-1.5 bg-muted rounded-full overflow-hidden">
         <div
           className="h-full rounded-full motion-safe:transition-all motion-safe:duration-500 ease-out"
-          style={{ width: `${percentage}%`, backgroundColor: "#10b981" }}
+          style={{ width: `${percentage}%`, backgroundColor: "hsl(var(--zf-role-gratitude))" }}
         />
       </div>
     </div>
