@@ -1,4 +1,3 @@
-// Refreshed after 20260525000000_private_sync_broadcast.sql; linked type generation is blocked by older remote schema drift.
 export type Json =
   | string
   | number
@@ -447,104 +446,6 @@ export type Database = {
           text?: string
           timestamp?: number
           updated_at?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
-      sync_events: {
-        Row: {
-          created_at: string
-          device_id: string
-          entity_id: string
-          entity_type: string
-          id: string
-          idempotency_key: string
-          op: string
-          payload: Json | null
-          seq: number
-          user_id: string
-          version: number
-        }
-        Insert: {
-          created_at?: string
-          device_id: string
-          entity_id: string
-          entity_type: string
-          id?: string
-          idempotency_key?: string
-          op: string
-          payload?: Json | null
-          seq?: number
-          user_id: string
-          version?: number
-        }
-        Update: {
-          created_at?: string
-          device_id?: string
-          entity_id?: string
-          entity_type?: string
-          id?: string
-          idempotency_key?: string
-          op?: string
-          payload?: Json | null
-          seq?: number
-          user_id?: string
-          version?: number
-        }
-        Relationships: []
-      }
-      sync_tombstones: {
-        Row: {
-          created_at: string
-          deleted_at: string
-          deleted_event_id: string | null
-          deleted_seq: number
-          device_id: string
-          entity_id: string
-          entity_type: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          deleted_at: string
-          deleted_event_id?: string | null
-          deleted_seq: number
-          device_id: string
-          entity_id: string
-          entity_type: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          deleted_at?: string
-          deleted_event_id?: string | null
-          deleted_seq?: number
-          device_id?: string
-          entity_id?: string
-          entity_type?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "sync_tombstones_deleted_event_id_fkey"
-            columns: ["deleted_event_id"]
-            isOneToOne: false
-            referencedRelation: "sync_events"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      sync_seq_counters: {
-        Row: {
-          last_seq: number
-          user_id: string
-        }
-        Insert: {
-          last_seq?: number
-          user_id: string
-        }
-        Update: {
-          last_seq?: number
           user_id?: string
         }
         Relationships: []
@@ -1092,6 +993,104 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      sync_events: {
+        Row: {
+          created_at: string
+          device_id: string
+          entity_id: string
+          entity_type: string
+          id: string
+          idempotency_key: string
+          op: string
+          payload: Json | null
+          seq: number
+          user_id: string
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          device_id: string
+          entity_id: string
+          entity_type: string
+          id?: string
+          idempotency_key?: string
+          op: string
+          payload?: Json | null
+          seq?: number
+          user_id: string
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          device_id?: string
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          idempotency_key?: string
+          op?: string
+          payload?: Json | null
+          seq?: number
+          user_id?: string
+          version?: number
+        }
+        Relationships: []
+      }
+      sync_seq_counters: {
+        Row: {
+          last_seq: number
+          user_id: string
+        }
+        Insert: {
+          last_seq?: number
+          user_id: string
+        }
+        Update: {
+          last_seq?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      sync_tombstones: {
+        Row: {
+          created_at: string
+          deleted_at: string
+          deleted_event_id: string | null
+          deleted_seq: number
+          device_id: string
+          entity_id: string
+          entity_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          deleted_at: string
+          deleted_event_id?: string | null
+          deleted_seq: number
+          device_id: string
+          entity_id: string
+          entity_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          deleted_at?: string
+          deleted_event_id?: string | null
+          deleted_seq?: number
+          device_id?: string
+          entity_id?: string
+          entity_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sync_tombstones_deleted_event_id_fkey"
+            columns: ["deleted_event_id"]
+            isOneToOne: false
+            referencedRelation: "sync_events"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       time_challenges: {
         Row: {
