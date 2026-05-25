@@ -23,6 +23,11 @@
   status = 200
 
 [[redirects]]
+  from = "/people-first-app/sw.js"
+  to = "/sw.js"
+  status = 200
+
+[[redirects]]
   from = "/people-first-app/version.json"
   to = "/version.json"
   status = 200
