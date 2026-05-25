@@ -34,6 +34,7 @@ import { verifySyncIntegrity } from "@/lib/syncIntegrity";
 import { isNative } from "@/lib/platform";
 import { App } from "@capacitor/app";
 import { useFeatureFlags } from "@/contexts/FeatureFlagsContext";
+import { shouldRunLegacyBackupSyncOnNativeResume } from "@/lib/cloudSyncResumePolicy";
 
 interface UseCloudSyncEffectsParams {
   setChallenges: Dispatch<
@@ -282,7 +283,11 @@ export function useCloudSyncEffects({
 
     App.addListener("appStateChange", ({ isActive }) => {
       if (isActive) {
-        logger.sync("[AppState] Resumed — triggering sync");
+        if (!shouldRunLegacyBackupSyncOnNativeResume(isDeltaSyncEnabled)) {
+          logger.sync("[AppState] Resumed — delta runtime owns core data sync");
+          return;
+        }
+        logger.sync("[AppState] Resumed — triggering legacy backup sync");
         void silentSync();
       }
     })
@@ -296,5 +301,5 @@ export function useCloudSyncEffects({
     return () => {
       listenerHandle?.remove();
     };
-  }, []);
+  }, [isDeltaSyncEnabled]);
 }

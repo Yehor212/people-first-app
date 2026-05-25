@@ -121,6 +121,12 @@ function receiptText(receipt: SyncHealthReceipt | null, tx: Record<string, strin
       return tx.syncActionGapRecovered || "Sync gap recovered";
     case "leader-skipped":
       return tx.syncActionAnotherTab || "Another tab is syncing";
+    case "queue-draining":
+      return tx.syncActionQueueDraining || "Sending saved actions";
+    case "queue-drained":
+      return tx.syncActionQueueDrained || "Saved actions sent";
+    case "queue-blocked":
+      return tx.syncActionQueueBlocked || "Saved actions need attention";
     case "session-missing":
       return tx.syncActionSignIn || "Sign in to sync";
     case "offline":

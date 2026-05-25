@@ -54,6 +54,9 @@ vi.mock("@/contexts/LanguageContext", () => ({
       syncActionSavedLocal: "{domain} saved locally",
       syncActionSynced: "{domain} synced",
       syncActionNeedsRetry: "{domain} needs retry",
+      syncActionQueueBlocked: "Saved actions need attention",
+      syncActionQueueDrained: "Saved actions sent",
+      syncActionQueueDraining: "Sending saved actions",
       syncDomainDefault: "Sync",
       syncDomainHabits: "Habits",
       syncDomainJournal: "Journal",
@@ -168,6 +171,29 @@ describe("SyncHealthCard", () => {
 
     expect(screen.getByTestId("sync-health-receipt")).toHaveTextContent("Journal synced");
     expect(screen.getByTestId("sync-recent-activity")).toHaveTextContent("Journal synced");
+  });
+
+  it("shows blocked saved-action receipts without exposing queued payloads", () => {
+    render(<SyncHealthCard />);
+
+    fireEvent(
+      window,
+      new CustomEvent(SYNC_HEALTH_RECEIPT_EVENT, {
+        detail: {
+          kind: "queue-blocked",
+          source: "delta",
+          actionType: "WRITE_SYNC_EVENT",
+          priority: "critical",
+        },
+      }),
+    );
+
+    expect(screen.getByTestId("sync-health-receipt")).toHaveTextContent(
+      "Saved actions need attention"
+    );
+    expect(screen.getByTestId("sync-health-card").textContent || "").not.toContain(
+      "private journal body"
+    );
   });
 
   it("shows a bounded sync inbox and never renders private queued payloads", () => {

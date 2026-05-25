@@ -10,6 +10,7 @@ import { useFeatureFlags } from "@/contexts/FeatureFlagsContext";
 import { logger } from "@/lib/logger";
 import { onRemoteChange } from "@/lib/syncBroadcast";
 import { runWithSyncLeaderLock } from "@/lib/syncLeader";
+import { offlineQueue } from "@/lib/offlineQueue";
 import { getCurrentSessionUserId, supabase } from "@/lib/supabaseClient";
 import {
   fetchAllDeltas,
@@ -29,6 +30,14 @@ import { scheduleIdle } from "@/lib/scheduleIdle";
 const DELTA_SYNC_INTERVAL = 5 * 60 * 1000;
 const MAX_GAP_SIZE = 1000;
 const GAP_WAIT_MS = 500;
+
+function pendingQueueCounts(): { pending: number; criticalPending: number } {
+  const actions = offlineQueue.getState().actions;
+  return {
+    pending: actions.length,
+    criticalPending: actions.filter((action) => action.type === "WRITE_SYNC_EVENT").length,
+  };
+}
 
 export function useDeltaSyncEffects(): void {
   const { isFeatureEnabled } = useFeatureFlags();
@@ -68,6 +77,42 @@ export function useDeltaSyncEffects(): void {
 
     try {
       const locked = await runWithSyncLeaderLock("delta-sync", async () => {
+        const pendingBefore = pendingQueueCounts();
+        if (pendingBefore.pending > 0) {
+          recordSyncHealthReceipt({
+            kind: "queue-draining",
+            source: "delta",
+            actionType:
+              pendingBefore.criticalPending > 0 ? "WRITE_SYNC_EVENT" : "offline-queue",
+            priority: pendingBefore.criticalPending > 0 ? "critical" : "normal",
+          });
+          await offlineQueue.processQueue();
+          dispatchAndSync({ type: "QUEUE_DRAINED" });
+
+          const pendingAfter = pendingQueueCounts();
+          if (pendingAfter.pending > 0) {
+            recordSyncHealthReceipt({
+              kind: "queue-blocked",
+              source: "delta",
+              actionType:
+                pendingAfter.criticalPending > 0 ? "WRITE_SYNC_EVENT" : "offline-queue",
+              priority: pendingAfter.criticalPending > 0 ? "critical" : "normal",
+            });
+            logger.sync(
+              "[DeltaSync] Delta pull blocked; saved local actions still need retry"
+            );
+            return;
+          }
+
+          recordSyncHealthReceipt({
+            kind: "queue-drained",
+            source: "delta",
+            actionType:
+              pendingBefore.criticalPending > 0 ? "WRITE_SYNC_EVENT" : "offline-queue",
+            priority: pendingBefore.criticalPending > 0 ? "critical" : "normal",
+          });
+        }
+
         dispatchAndSync({ type: "TRIGGER_DELTA" });
 
         const localSeq = await getLastSeq();

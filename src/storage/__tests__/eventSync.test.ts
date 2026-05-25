@@ -379,6 +379,39 @@ describe("eventSync auth guards", () => {
     expect(mocks.settingsPut).toHaveBeenCalledWith({ key: "sync-last-seq", value: 16 });
   });
 
+  it("applies later durable server events even when payload timestamps are stale", async () => {
+    const remoteHabit = {
+      id: "habit-seq-wins",
+      name: "Remote server event wins",
+      updatedAt: "2026-05-11T09:00:00.000Z",
+    };
+    mocks.habitTableGet.mockResolvedValue({
+      id: "habit-seq-wins",
+      name: "Local older durable state",
+      updatedAt: "2026-05-11T10:00:00.000Z",
+    });
+
+    const applied = await applyDelta(
+      [
+        {
+          id: "event-17",
+          seq: 17,
+          entity_type: "habit",
+          entity_id: "habit-seq-wins",
+          op: "upsert",
+          payload: remoteHabit,
+          device_id: "remote-device",
+          created_at: "2026-05-11T10:30:00.000Z",
+        },
+      ],
+      "current-device"
+    );
+
+    expect(applied).toBe(1);
+    expect(mocks.habitTablePut).toHaveBeenCalledWith(remoteHabit);
+    expect(mocks.settingsPut).toHaveBeenCalledWith({ key: "sync-last-seq", value: 17 });
+  });
+
   it("writes the durable event before broadcasting the remote wake-up signal", async () => {
     mocks.getCurrentUserId.mockResolvedValue("user-1");
 

@@ -53,6 +53,39 @@ let channel: RealtimeChannel | null = null;
 let handlers: RemoteChangeHandler[] = [];
 let currentDeviceId = "";
 
+const SYNC_ENTITIES = new Set<SyncEntity>([
+  "moods",
+  "habits",
+  "focus",
+  "gratitude",
+  "journal",
+  "settings",
+  "backup",
+]);
+
+function parseSyncSignal(payload: unknown): SyncSignal | null {
+  if (typeof payload !== "object" || payload === null || Array.isArray(payload)) return null;
+  const record = payload as Partial<SyncSignal>;
+  if (!record.entity || !SYNC_ENTITIES.has(record.entity)) return null;
+  if (typeof record.deviceId !== "string" || record.deviceId.length === 0) return null;
+  if (typeof record.ts !== "number" || !Number.isFinite(record.ts)) return null;
+  if (typeof record.seq !== "number" || !Number.isFinite(record.seq)) return null;
+  if (
+    record.eventSeq !== undefined &&
+    (typeof record.eventSeq !== "number" || !Number.isFinite(record.eventSeq))
+  ) {
+    return null;
+  }
+
+  return {
+    entity: record.entity,
+    deviceId: record.deviceId,
+    ts: record.ts,
+    seq: record.seq,
+    ...(typeof record.eventSeq === "number" ? { eventSeq: record.eventSeq } : {}),
+  };
+}
+
 /**
  * Initialize broadcast channel for a user. Call once after auth.
  */
@@ -65,10 +98,16 @@ export function initSyncBroadcast(userId: string): void {
   currentDeviceId = getDeviceId();
   const channelName = `sync-signal:${userId}`;
 
-  channel = supabase.channel(channelName);
+  channel = supabase.channel(channelName, {
+    config: { private: true },
+  });
 
   channel.on("broadcast", { event: "data-changed" }, ({ payload }) => {
-    const signal = payload as SyncSignal;
+    const signal = parseSyncSignal(payload);
+    if (!signal) {
+      logger.warn("[Broadcast] Ignored malformed sync signal");
+      return;
+    }
 
     // Ignore our own broadcasts
     if (signal.deviceId === currentDeviceId) return;

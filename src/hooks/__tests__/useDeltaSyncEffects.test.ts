@@ -10,7 +10,19 @@ const mocks = vi.hoisted(() => ({
   getPersistentDeviceId: vi.fn(),
   getServerMaxSeq: vi.fn(),
   loggerSync: vi.fn(),
+  offlineActions: [] as Array<{
+    id: string;
+    type: string;
+    entityId: string;
+    payload: unknown;
+    timestamp: number;
+    retries: number;
+    maxRetries: number;
+    priority?: string;
+  }>,
+  processQueue: vi.fn<() => Promise<void>>(),
   pullFromCloud: vi.fn(),
+  recordSyncHealthReceipt: vi.fn(),
   runWithSyncLeaderLock: vi.fn(),
   scheduleIdleCallbacks: [] as Array<() => void>,
   cancelIdle: vi.fn(),
@@ -37,6 +49,13 @@ vi.mock("@/lib/syncBroadcast", () => ({
 
 vi.mock("@/lib/syncLeader", () => ({
   runWithSyncLeaderLock: mocks.runWithSyncLeaderLock,
+}));
+
+vi.mock("@/lib/offlineQueue", () => ({
+  offlineQueue: {
+    getState: vi.fn(() => ({ actions: mocks.offlineActions })),
+    processQueue: mocks.processQueue,
+  },
 }));
 
 vi.mock("@/lib/scheduleIdle", () => ({
@@ -77,6 +96,10 @@ vi.mock("@/storage/realtimeSync", () => ({
   pullFromCloud: mocks.pullFromCloud,
 }));
 
+vi.mock("@/observability/syncHealthRecorder", () => ({
+  recordSyncHealthReceipt: mocks.recordSyncHealthReceipt,
+}));
+
 vi.mock("@capacitor/app", () => ({
   App: {
     addListener: vi.fn(async () => ({
@@ -90,6 +113,8 @@ import { useDeltaSyncEffects } from "../useDeltaSyncEffects";
 describe("useDeltaSyncEffects", () => {
   afterEach(() => {
     vi.clearAllMocks();
+    mocks.offlineActions = [];
+    mocks.processQueue.mockResolvedValue(undefined);
     mocks.scheduleIdleCallbacks.length = 0;
   });
 
@@ -115,5 +140,84 @@ describe("useDeltaSyncEffects", () => {
 
     unmount();
     expect(mocks.cancelIdle).toHaveBeenCalled();
+  });
+
+  it("drains queued local actions before fetching remote deltas", async () => {
+    mocks.getCurrentSessionUserId.mockResolvedValue("user-1");
+    mocks.getLastSeq.mockResolvedValue(10);
+    mocks.fetchAllDeltas.mockResolvedValue([]);
+    mocks.runWithSyncLeaderLock.mockImplementation(async (_name, task) => ({
+      acquired: true,
+      value: await task(),
+    }));
+    mocks.offlineActions = [
+      {
+        id: "queued-event",
+        type: "WRITE_SYNC_EVENT",
+        entityId: "sync-event:habit:habit-1:upsert",
+        payload: {},
+        timestamp: 1,
+        retries: 0,
+        maxRetries: 20,
+        priority: "critical",
+      },
+    ];
+    mocks.processQueue.mockImplementation(async () => {
+      mocks.offlineActions = [];
+    });
+
+    const { unmount } = renderHook(() => useDeltaSyncEffects());
+    mocks.scheduleIdleCallbacks[0]();
+
+    await waitFor(() => {
+      expect(mocks.fetchAllDeltas).toHaveBeenCalledWith(10, expect.any(AbortSignal));
+    });
+
+    expect(mocks.processQueue.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.fetchAllDeltas.mock.invocationCallOrder[0]
+    );
+    expect(mocks.recordSyncHealthReceipt).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: "queue-draining", actionType: "WRITE_SYNC_EVENT" })
+    );
+    expect(mocks.recordSyncHealthReceipt).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: "queue-drained", actionType: "WRITE_SYNC_EVENT" })
+    );
+
+    unmount();
+  });
+
+  it("blocks delta pulls while saved local actions remain unsent", async () => {
+    mocks.getCurrentSessionUserId.mockResolvedValue("user-1");
+    mocks.getLastSeq.mockResolvedValue(10);
+    mocks.runWithSyncLeaderLock.mockImplementation(async (_name, task) => ({
+      acquired: true,
+      value: await task(),
+    }));
+    mocks.offlineActions = [
+      {
+        id: "blocked-event",
+        type: "WRITE_SYNC_EVENT",
+        entityId: "sync-event:journal:journal-1:upsert",
+        payload: {},
+        timestamp: 1,
+        retries: 20,
+        maxRetries: 20,
+        priority: "critical",
+      },
+    ];
+
+    const { unmount } = renderHook(() => useDeltaSyncEffects());
+    mocks.scheduleIdleCallbacks[0]();
+
+    await waitFor(() => {
+      expect(mocks.recordSyncHealthReceipt).toHaveBeenCalledWith(
+        expect.objectContaining({ kind: "queue-blocked", actionType: "WRITE_SYNC_EVENT" })
+      );
+    });
+
+    expect(mocks.fetchAllDeltas).not.toHaveBeenCalled();
+    expect(mocks.applyDelta).not.toHaveBeenCalled();
+
+    unmount();
   });
 });

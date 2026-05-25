@@ -317,29 +317,41 @@ async function handleAppResume(): Promise<void> {
 
   // Trigger sync if online — drain offline queue + delta pull + haptic feedback
   if (navigator.onLine) {
+    let queueReadyForDelta = true;
     if (offlineQueue.hasPendingActions()) {
       logger.log("[Main] Processing pending offline queue on resume");
-      void offlineQueue.processQueue().then(() => {
-        void hapticSuccess(); // Subtle feedback: queued changes synced
-      });
+      try {
+        await offlineQueue.processQueue();
+        queueReadyForDelta = !offlineQueue.hasPendingActions();
+        if (queueReadyForDelta) {
+          void hapticSuccess(); // Subtle feedback: queued changes synced
+        }
+      } catch (err) {
+        queueReadyForDelta = false;
+        logger.warn("[Main] Offline queue processing on resume failed:", err);
+      }
     }
     // Delta pull on resume — fetch and apply new events from the eventSync cursor.
-    void runWithSyncLeaderLock("resume-delta-sync", () => pullAndApplyDeltasFromLastSeq())
-      .then((locked) => {
-        if (!locked.acquired) {
-          logger.log("[Main] Delta pull on resume skipped; another tab owns sync");
-          return;
-        }
+    if (queueReadyForDelta) {
+      void runWithSyncLeaderLock("resume-delta-sync", () => pullAndApplyDeltasFromLastSeq())
+        .then((locked) => {
+          if (!locked.acquired) {
+            logger.log("[Main] Delta pull on resume skipped; another tab owns sync");
+            return;
+          }
 
-        const result = locked.value;
-        if (!result) return;
-        if (result.fetched > 0) {
-          logger.log(
-            `[Main] Delta applied on resume: fetched=${result.fetched}, applied=${result.applied}, seq=${result.lastSeq}`
-          );
-        }
-      })
-      .catch((err) => logger.warn("[Main] Delta pull on resume failed:", err));
+          const result = locked.value;
+          if (!result) return;
+          if (result.fetched > 0) {
+            logger.log(
+              `[Main] Delta applied on resume: fetched=${result.fetched}, applied=${result.applied}, seq=${result.lastSeq}`
+            );
+          }
+        })
+        .catch((err) => logger.warn("[Main] Delta pull on resume failed:", err));
+    } else {
+      logger.warn("[Main] Delta pull on resume skipped; saved actions still need retry");
+    }
   }
   // Clean up stale share cache files (24+ hours old)
   void cleanupShareCache();

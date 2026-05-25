@@ -129,6 +129,15 @@ function main() {
     "SyncGapDetector",
     "onRemoteChange",
     "runWithSyncLeaderLock",
+    "offlineQueue.processQueue()",
+    "queue-blocked",
+  ]);
+
+  requireIncludes("src/lib/syncBroadcast.ts", [
+    "sync-signal:${userId}",
+    "config: { private: true }",
+    "parseSyncSignal",
+    "Only signals are broadcast, never data payloads",
   ]);
 
   requireIncludes("src/lib/syncLeader.ts", [
@@ -278,6 +287,7 @@ function main() {
     "priority: item.priority as OfflineActionPriority | undefined",
     "priority: action.priority",
     "Failed to persist queue to IndexedDB and localStorage",
+    "Critical sync event blocked after max retries",
   ]);
 
   requireIncludes("src/storage/db.ts", ["priority?: string"]);
@@ -319,6 +329,9 @@ function main() {
   requireMigrationToken(migrations, "CREATE TABLE IF NOT EXISTS public.device_sessions");
   requireMigrationToken(migrations, "device_sessions_select_own");
   requireMigrationToken(migrations, "GRANT SELECT, INSERT, UPDATE ON TABLE public.device_sessions TO authenticated");
+  requireMigrationToken(migrations, "ALTER TABLE realtime.messages ENABLE ROW LEVEL SECURITY");
+  requireMigrationToken(migrations, "sync broadcast receive own topic");
+  requireMigrationToken(migrations, "sync-signal:' || (SELECT auth.uid())::text");
 
   requireIncludes("docs/ai/SYNC_CONTRACT.md", [
     "sync_events.seq",

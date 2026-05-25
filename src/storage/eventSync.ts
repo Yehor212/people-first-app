@@ -547,7 +547,8 @@ async function rememberAppliedDelete(event: SyncEvent): Promise<void> {
 /**
  * Apply a batch of sync events to IndexedDB atomically.
  * All events + cursor update happen in ONE Dexie transaction.
- * Uses timestamp-based conflict resolution (keep newer, like pullFromCloud).
+ * Uses server event order as the cross-device authority. Entity timestamps only
+ * guard a newer local write that has not yet reached the durable event log.
  * Handles QuotaExceededError gracefully.
  */
 export async function applyDelta(events: SyncEvent[], currentDeviceId: string): Promise<number> {
@@ -605,8 +606,10 @@ export async function applyDelta(events: SyncEvent[], currentDeviceId: string): 
                 const local = await table.get(entityId);
                 if (local) {
                   const localTime = readEntityTimestampMs(local);
-                  const remoteTime =
-                    readEntityTimestampMs(event.payload) || readTimestampMs(event.created_at);
+                  const remoteTime = Math.max(
+                    readEntityTimestampMs(event.payload),
+                    readTimestampMs(event.created_at)
+                  );
                   if (localTime > remoteTime) break; // local is newer, skip
                 }
               }

@@ -10,7 +10,7 @@
  * - Automatic sync on reconnection
  * - Retry logic with exponential backoff
  * - Action deduplication
- * - Conflict resolution (last-write-wins)
+ * - Conflict protection for durable event-log writes
  * - Background Sync API support for sync after browser close
  */
 
@@ -529,8 +529,19 @@ class OfflineQueue {
         action.lastError = error instanceof Error ? error.message : String(error);
 
         if (action.retries >= action.maxRetries) {
-          logger.error("[OfflineQueue] Max retries reached, discarding action:", action.id);
-          await this.removeAction(action.id);
+          if (action.type === "WRITE_SYNC_EVENT") {
+            logger.error("[OfflineQueue] Critical sync event blocked after max retries:", action.id);
+            recordSyncHealthReceipt({
+              kind: "queue-blocked",
+              source: "queue",
+              actionType: action.type,
+              priority: action.priority || "normal",
+              errorName: error instanceof Error ? error.name : "UnknownError",
+            });
+          } else {
+            logger.error("[OfflineQueue] Max retries reached, discarding action:", action.id);
+            await this.removeAction(action.id);
+          }
         } else {
           // Exponential backoff before retry
           const delay = Math.min(RETRY_BASE_DELAY * Math.pow(2, action.retries), RETRY_MAX_DELAY);
