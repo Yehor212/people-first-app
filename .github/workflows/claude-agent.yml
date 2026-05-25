@@ -20,17 +20,28 @@ jobs:
   daily-health-check:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      HAS_ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY != '' }}
     steps:
+      - name: Skip Claude agent when API key is not configured
+        if: ${{ env.HAS_ANTHROPIC_API_KEY != 'true' }}
+        run: |
+          echo "Claude agent skipped: ANTHROPIC_API_KEY is not configured for this repository."
+
       - uses: actions/checkout@v6
+        if: ${{ env.HAS_ANTHROPIC_API_KEY == 'true' }}
 
       - uses: actions/setup-node@v6
+        if: ${{ env.HAS_ANTHROPIC_API_KEY == 'true' }}
         with:
           node-version: 22
           cache: npm
 
       - run: npm ci
+        if: ${{ env.HAS_ANTHROPIC_API_KEY == 'true' }}
 
       - name: Claude Agent - Daily Health Check
+        if: ${{ env.HAS_ANTHROPIC_API_KEY == 'true' }}
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}

@@ -26,7 +26,8 @@ jobs:
     steps:
       - name: Skip Claude review when API key is not configured
         if: ${{ env.HAS_ANTHROPIC_API_KEY != 'true' }}
-        run: echo "Claude review skipped: ANTHROPIC_API_KEY is not configured for this repository."
+        run: |
+          echo "Claude review skipped: ANTHROPIC_API_KEY is not configured for this repository."
 
       - uses: anthropics/claude-code-action@v1
         if: ${{ env.HAS_ANTHROPIC_API_KEY == 'true' }}
