@@ -102,7 +102,7 @@ export const HeroWeeklyHabitCard = memo(function HeroWeeklyHabitCard({
   const identityVerb = (habit.identityVerb ?? "").trim();
   const identityIcon = (habit.identityIcon ?? "").trim() || (habit.icon ?? "").trim() || "Sparkles";
   const identityVoteLabel = identityVerb
-    ? (tx.identityVoteFor || "Vote for {identity}").replace("{identity}", identityVerb)
+    ? (tx.identityVoteFor || "Step toward {identity}").replace("{identity}", identityVerb)
     : "";
   const weekDates = useMemo(() => getCurrentISOWeek(today), [today]);
   const planState = useMemo(() => getHabitPlanState(habit, today), [habit, today]);
@@ -361,8 +361,8 @@ export const HeroWeeklyHabitCard = memo(function HeroWeeklyHabitCard({
                     textClassName="text-xs leading-none"
                   />
                   {isCompletedToday
-                    ? tx.identityVoteCast || "vote cast"
-                    : tx.identityVotePending || "vote ready"}
+                    ? tx.identityVoteCast || "step logged"
+                    : tx.identityVotePending || "ready to mark"}
                 </span>
               ) : null}
               {streak > 0 ? (

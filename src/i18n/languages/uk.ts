@@ -885,7 +885,7 @@ export const uk: Translations = {
   localDataSafe: "Ваші локальні дані в безпеці. Увійдіть знову для відновлення синхронізації.",
   deleteAccount: "Видалити акаунт",
   deleteAccountConfirm: "Видалити акаунт?",
-  deleteAccountTypeConfirm: "Введіть DELETE для підтвердження:",
+  deleteAccountTypeConfirm: 'Введіть "ВИДАЛИТИ" для підтвердження:',
   deleteAccountWarning: "Буде видалено хмарні дані та доступ до акаунту.",
   deleteAccountSuccess: "Акаунт видалено.",
   deleteAccountError: "Не вдалося видалити акаунт.",
@@ -1294,7 +1294,7 @@ export const uk: Translations = {
   identityDefaultVerb: "людиною, яка тримає слово",
   identityVotePreview:
     "Після збереження картка покаже цей сенс; кожне виконання стане маленьким кроком.",
-  identityVoteFor: "Крок до {identity}",
+  identityVoteFor: "Крок до мети: {identity}",
   identityVoteCast: "крок зараховано",
   identityVotePending: "можна відмітити",
   habitImpact: "Вплив звичок",

@@ -1,5 +1,5 @@
 /**
- * IdentityMappingSection — identity-based habit fields.
+ * IdentityMappingSection — optional habit-purpose fields.
  */
 
 import { BadgeCheck, Fingerprint } from "lucide-react";
@@ -32,7 +32,7 @@ export function IdentityMappingSection({
   const clusterText = identityCluster.trim();
   const identityText = identityVerb.trim() || clusterText || ts.identityDefaultVerb;
   const displayIcon = identityIcon.trim() || habitIcon.trim() || "Sparkles";
-  const votePreview = (ts.identityVoteFor || "Vote for {identity}").replace(
+  const votePreview = (ts.identityVoteFor || "Step toward {identity}").replace(
     "{identity}",
     identityText,
   );
