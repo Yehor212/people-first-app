@@ -365,6 +365,9 @@ function assertPublicStaticPageLogoContract() {
       if (!text.includes(token)) {
         fail(`${rel} must expose ${token} so public, offline, and legal pages use the canonical ZenFlow app icon`);
       }
+      if (!text.includes(`${token}?v=${PWA_INSTALL_ICON_REVISION}`)) {
+        fail(`${rel} must cache-bust ${token} with ${PWA_INSTALL_ICON_REVISION}; stale static pages can keep old browser/PWA icons alive`);
+      }
     }
   }
   for (const rel of PUBLIC_STATIC_HTML.filter((file) => !file.endsWith("/404.html"))) {
@@ -437,6 +440,13 @@ function assertPwaInstallLogoContract() {
   if (!docsIndex.includes(`manifest.webmanifest?v=${PWA_INSTALL_ICON_REVISION}`)) {
     fail(
       `docs/index.html must cache-bust the PWA manifest link with ${PWA_INSTALL_ICON_REVISION}; Chrome only refreshes installed app icons when manifest/icon URLs change`,
+    );
+  }
+
+  const pagesArtifact = read("scripts/prepare-pages-artifact.cjs");
+  if (!pagesArtifact.includes(`pwaInstallIconRevision = "${PWA_INSTALL_ICON_REVISION}"`)) {
+    fail(
+      `scripts/prepare-pages-artifact.cjs must inject ${PWA_INSTALL_ICON_REVISION}; GitHub Pages deploy output owns the live manifest link`,
     );
   }
 
