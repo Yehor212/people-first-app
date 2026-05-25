@@ -139,7 +139,8 @@ describe("canonical orb invariant", () => {
     expect(source).toContain("visualReadyRef");
     expect(source).toContain("markVisualReadyRef");
     expect(source).toContain("onVisualReady");
-    expect(source).toContain("canvas.style.opacity = '1'");
+    expect(source).toContain("revealCanonicalCanvas");
+    expect(source).toContain("setProperty('opacity', '1', 'important')");
     expect(source).toContain("worker.onerror");
     expect(source).toContain("recoverFromWebGLStartupFailure");
     expect(source).toContain("upgradeToMainThreadWebGL");

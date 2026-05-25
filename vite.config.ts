@@ -31,7 +31,7 @@ function isDeferredJournalPreload(dep: string): boolean {
   );
 }
 
-const PWA_INSTALL_ICON_REVISION = "zenflow-browser-leaf-20260525-r4";
+const PWA_INSTALL_ICON_REVISION = "zenflow-browser-leaf-20260525-r5";
 const pwaIconSrc = (file: string) => `${file}?v=${PWA_INSTALL_ICON_REVISION}`;
 
 // https://vitejs.dev/config/

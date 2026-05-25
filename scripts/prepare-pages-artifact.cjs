@@ -6,7 +6,7 @@ const path = require("node:path");
 const root = process.cwd();
 const distDir = path.join(root, "dist");
 const indexPath = path.join(distDir, "index.html");
-const pwaInstallIconRevision = "zenflow-browser-leaf-20260525-r4";
+const pwaInstallIconRevision = "zenflow-browser-leaf-20260525-r5";
 
 const routes = ["orb", "habits", "diary", "settings", "desktop"];
 

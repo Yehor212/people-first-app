@@ -144,7 +144,7 @@ export function DeviceSessionsCard({ className, dense = false }: DeviceSessionsC
         <button
           type="button"
           onClick={() => void refresh()}
-          className="inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-full border border-border px-3 text-xs font-semibold text-muted-foreground hover:bg-accent/50 motion-safe:transition-colors"
+          className="inline-flex min-h-[44px] shrink-0 items-center gap-1.5 rounded-full border border-border px-3 text-xs font-semibold text-muted-foreground hover:bg-accent/50 motion-safe:transition-colors"
           disabled={loading}
         >
           <RefreshCw
@@ -219,7 +219,7 @@ export function DeviceSessionsCard({ className, dense = false }: DeviceSessionsC
                   type="button"
                   onClick={() => void handleRevoke(session)}
                   disabled={revokingId === session.id}
-                  className="min-h-10 shrink-0 rounded-full border border-border px-3 text-xs font-semibold text-muted-foreground hover:bg-accent/50 motion-safe:transition-colors"
+                  className="min-h-[44px] shrink-0 rounded-full border border-border px-3 text-xs font-semibold text-muted-foreground hover:bg-accent/50 motion-safe:transition-colors"
                 >
                   {revokingId === session.id
                     ? tx.syncRevoking || "Revoking"

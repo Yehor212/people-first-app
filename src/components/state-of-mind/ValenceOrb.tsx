@@ -483,13 +483,17 @@ export const ValenceOrb = memo(function ValenceOrb({
   markVisualReadyRef.current = () => {
     const alreadyReady = visualReadyRef.current;
     visualReadyRef.current = true;
+    const revealCanonicalCanvas = (orbCanvas: HTMLCanvasElement) => {
+      orbCanvas.style.setProperty('transition', 'none', 'important');
+      orbCanvas.style.setProperty('opacity', '1', 'important');
+    };
     const canvas = canvasElRef.current;
     if (canvas) {
-      canvas.style.opacity = '1';
+      revealCanonicalCanvas(canvas);
     }
     const wrapper = wrapperRef.current;
     wrapper?.querySelectorAll('canvas').forEach((orbCanvas) => {
-      orbCanvas.style.opacity = '1';
+      revealCanonicalCanvas(orbCanvas);
     });
     wrapper?.setAttribute('data-orb-visual-ready', 'true');
     if (alreadyReady) return;
