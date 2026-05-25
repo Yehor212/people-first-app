@@ -1,3 +1,4 @@
+// Refreshed after 20260525000000_private_sync_broadcast.sql; linked type generation is blocked by older remote schema drift.
 export type Json =
   | string
   | number
