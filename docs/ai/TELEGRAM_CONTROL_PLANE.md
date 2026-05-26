@@ -124,6 +124,8 @@ This implementation avoids a permanent paid host. Cloudflare Workers/Workflows a
 - `npm --prefix tools/telegram-control run activation:checklist`
 - `npm --prefix tools/telegram-control run activation:doctor`
 - `npm --prefix tools/telegram-control run activation:doctor -- --github --cloudflare`
+- `npm --prefix tools/telegram-control run telegram:doctor`
+- `npm --prefix tools/telegram-control run telegram:doctor -- --live`
 - `npm --prefix tools/telegram-control run setup:kv -- --dry-run`
 - `npm --prefix tools/telegram-control run github-app:manifest -- --base-url https://example.invalid`
 - `npm --prefix tools/telegram-control run secrets:bootstrap`
@@ -155,7 +157,7 @@ Any item without current command output must be marked `UNVERIFIED`.
 3. Run `npm --prefix tools/telegram-control run secrets:bootstrap -- --write-local` to generate local project-owned shared secrets, then run `npm --prefix tools/telegram-control run secrets:install-generated -- --cloudflare` after `wrangler login`; never place secret values in `wrangler.jsonc`.
 4. Put account-owned values in the prepared local shell and run `npm --prefix tools/telegram-control run secrets:install-account -- --dry-run`, then `npm --prefix tools/telegram-control run secrets:install-account -- --cloudflare` for Telegram/GitHub App Worker secrets. Use `--github --github-snyk` for GitHub Snyk only when `SNYK_TOKEN` exists. Use `--github --github-openai` only after explicit `OPENAI_API_KEY` approval.
 5. Deploy the Worker after `deploy:dry-run` passes.
-6. Set `TELEGRAM_WEBHOOK_URL=https://<worker-host>/telegram/webhook` locally and run `npm --prefix tools/telegram-control run set-webhook`.
+6. Set `TELEGRAM_WEBHOOK_URL=https://<worker-host>/telegram/webhook` locally and run `npm --prefix tools/telegram-control run set-webhook`, then `npm --prefix tools/telegram-control run telegram:doctor -- --live` to verify Bot API `getMe` and `getWebhookInfo` without printing the token.
 7. Configure the GitHub App and GitHub workflow secrets. After the Worker URL exists, run `npm --prefix tools/telegram-control run github-app:manifest -- --base-url https://<worker-host>` for a personal-account App, or add `--org <organization>` only for an organization-owned App, to generate the owner-controlled GitHub App manifest with `workflow_run`, `metadata:read`, and `actions:write`; then store the returned App ID, installation ID, private key, and webhook secret in Cloudflare. If `gh` is authenticated, use `npm --prefix tools/telegram-control run secrets:install-generated -- --github` for `TELEGRAM_CONTROL_CALLBACK_SECRET`; after the Worker URL exists, run `npm --prefix tools/telegram-control run set-github-callback-url -- --github` to store `TELEGRAM_CONTROL_CALLBACK_URL`. Use `npm --prefix tools/telegram-control run activation:checklist -- --github` or `npm --prefix tools/telegram-control run activation:doctor -- --github --cloudflare` to verify GitHub secret names, Cloudflare auth, callback URL shape, `OPENAI_API_KEY`, and optional `SNYK_TOKEN` without reading values.
 8. Send `/health` from the allowlisted Telegram account. Treat any missing secret or placeholder binding as `UNVERIFIED`, not operational.
 9. Run `npm --prefix tools/telegram-control run smoke:live` with `TELEGRAM_CONTROL_BASE_URL`; add `TELEGRAM_BOT_TOKEN` and `TELEGRAM_ADMIN_ID` to verify authenticated Mini App state.

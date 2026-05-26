@@ -60,6 +60,7 @@ console.log("   export TELEGRAM_BOT_TOKEN='<redacted>'");
 console.log("   export TELEGRAM_WEBHOOK_SECRET='<redacted>'");
 console.log("   npm --prefix tools/telegram-control run set-webhook -- --dry-run");
 console.log("   npm --prefix tools/telegram-control run set-webhook");
+console.log("   npm --prefix tools/telegram-control run telegram:doctor -- --live");
 console.log("");
 console.log("5. Configure Telegram command menu and Mini App button:");
 console.log("   PowerShell:");

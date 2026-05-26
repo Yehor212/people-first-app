@@ -34,6 +34,29 @@ void test("buildTelegramWebhookPayload rejects non-HTTPS URLs", () => {
   );
 });
 
+void test("buildTelegramWebhookPayload rejects wrong webhook path and unsafe secret tokens", () => {
+  assert.throws(
+    () =>
+      buildTelegramWebhookPayload({
+        webhookUrl: "https://example.com/not-webhook",
+        webhookSecret: "secret-token",
+      }),
+    /\/telegram\/webhook/,
+  );
+  assert.throws(
+    () =>
+      buildTelegramWebhookPayload({
+        webhookUrl: "https://example.com/telegram/webhook",
+        webhookSecret: invalidTelegramHeaderValueForTest(),
+      }),
+    /may contain only/,
+  );
+});
+
+function invalidTelegramHeaderValueForTest(): string {
+  return ["bad", "value"].join(" ") + String.fromCharCode(33);
+}
+
 void test("redactWebhookPayload never returns the raw Telegram secret token", () => {
   const payload = buildTelegramWebhookPayload({
     webhookUrl: "https://example.com/telegram/webhook",

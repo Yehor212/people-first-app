@@ -1,4 +1,5 @@
 import type { Env } from "./types";
+import { validateTelegramWebhookSecret, validateTelegramWebhookUrl } from "./telegram-readiness";
 
 export type SetupStatus = "PASS" | "UNVERIFIED" | "FAIL";
 
@@ -73,18 +74,18 @@ export function buildTelegramWebhookPayload(input: {
   allowed_updates: ["message", "callback_query"];
   drop_pending_updates: boolean;
 } {
-  const url = new URL(input.webhookUrl);
-
-  if (url.protocol !== "https:") {
-    throw new Error("Telegram webhook URL must use HTTPS");
+  const urlErrors = validateTelegramWebhookUrl(input.webhookUrl);
+  if (urlErrors.length > 0) {
+    throw new Error(urlErrors.join("; "));
   }
 
-  if (input.webhookSecret.length < 1 || input.webhookSecret.length > 256) {
-    throw new Error("Telegram webhook secret token must be 1-256 characters");
+  const secretErrors = validateTelegramWebhookSecret(input.webhookSecret);
+  if (secretErrors.length > 0) {
+    throw new Error(secretErrors.join("; "));
   }
 
   return {
-    url: url.toString(),
+    url: new URL(input.webhookUrl).toString(),
     secret_token: input.webhookSecret,
     allowed_updates: ["message", "callback_query"],
     drop_pending_updates: false,
