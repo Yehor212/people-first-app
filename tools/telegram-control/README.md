@@ -56,6 +56,31 @@ npm --prefix tools/telegram-control run secrets:bootstrap -- --write-local
 
 The write mode creates `.env.telegram-control.local`, which is ignored by git. It only contains `TELEGRAM_WEBHOOK_SECRET`, `GITHUB_WEBHOOK_SECRET`, and `TELEGRAM_CONTROL_CALLBACK_SECRET`. Account-owned credentials such as `TELEGRAM_BOT_TOKEN`, GitHub App ids/private key, and `OPENAI_API_KEY` must still come from their official account flows.
 
+If GitHub CLI is authenticated, store the generated callback secret without printing it:
+
+```bash
+npm --prefix tools/telegram-control run secrets:install-generated -- --github
+```
+
+This installs only `TELEGRAM_CONTROL_CALLBACK_SECRET` into GitHub Actions secrets. `TELEGRAM_CONTROL_CALLBACK_URL` still depends on the deployed Worker URL, and Cloudflare secrets still require `wrangler login`.
+
+After `wrangler login`, install the generated Worker-side shared secrets without printing them:
+
+```bash
+npm --prefix tools/telegram-control run secrets:install-generated -- --cloudflare
+```
+
+This writes only `TELEGRAM_WEBHOOK_SECRET`, `GITHUB_WEBHOOK_SECRET`, and `TELEGRAM_CONTROL_CALLBACK_SECRET` to Cloudflare. Account-owned Cloudflare secrets still need their official sources.
+
+Use the GitHub-aware or Cloudflare-aware activation checks when those CLIs are authenticated:
+
+```bash
+npm --prefix tools/telegram-control run activation:checklist -- --github
+npm --prefix tools/telegram-control run activation:checklist -- --cloudflare
+```
+
+The GitHub-aware check reads secret names only. It verifies whether `TELEGRAM_CONTROL_CALLBACK_SECRET`, `TELEGRAM_CONTROL_CALLBACK_URL`, `OPENAI_API_KEY`, and optional `SNYK_TOKEN` exist without reading their values.
+
 ## Required GitHub Secrets
 
 - `OPENAI_API_KEY`: required only for Codex-backed `plan`, `fix`, `review`, and `security`. When missing, the workflow reports `UNVERIFIED` and does not fake AI success.
@@ -157,3 +182,7 @@ Without `TELEGRAM_BOT_TOKEN` and an admin id, the live smoke still checks `/heal
 `npm --prefix tools/telegram-control run setup:plan` prints the activation commands without embedding secret values.
 
 `npm --prefix tools/telegram-control run secrets:bootstrap` generates only project-owned random secrets and prints redacted evidence. It never prints plaintext secret values.
+
+`npm --prefix tools/telegram-control run secrets:install-generated -- --github` reads `.env.telegram-control.local` and stores the generated callback secret in GitHub Actions without printing the value.
+
+`npm --prefix tools/telegram-control run secrets:install-generated -- --cloudflare` reads `.env.telegram-control.local` and stores generated Worker-side shared secrets through Wrangler stdin without printing values.

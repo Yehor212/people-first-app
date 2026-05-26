@@ -15,6 +15,7 @@
     "set-webhook": "node --import tsx scripts/set-webhook.ts",
     "set-bot-ui": "node --import tsx scripts/set-bot-ui.ts",
     "secrets:bootstrap": "node --import tsx scripts/bootstrap-secrets.ts",
+    "secrets:install-generated": "node --import tsx scripts/install-generated-secrets.ts",
     "deploy": "npx wrangler deploy",
     "deploy:dry-run": "npx wrangler deploy --dry-run"
   }

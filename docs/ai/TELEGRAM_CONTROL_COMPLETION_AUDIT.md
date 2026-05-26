@@ -31,7 +31,7 @@ The repository contains a verified Telegram control-plane implementation, but li
 | Deploy workflow main-ref guard | PASS | `.github/workflows/deploy.yml` step `Validate Telegram-approved deploy target` rejects Telegram-approved production deploys unless `GITHUB_REF=refs/heads/main` |
 | Rollback creates branch-only draft PR | PASS | `.github/workflows/telegram-control.yml` step `Create rollback proposal PR` requires Telegram approval, validates `target=<commit-or-ref>`, runs gates, and opens a draft PR without deploying |
 | Missing `OPENAI_API_KEY` does not fake success | PASS | `.github/workflows/telegram-control.yml` reports `UNVERIFIED` before Codex action |
-| Local Worker/package verification | PASS | `npm run check:telegram-control`: 44 unit tests, workflow invariants, local smoke, setup verifier, webhook dry-run, bot UI dry-run, and generated-secret dry-run ran |
+| Local Worker/package verification | PASS | `npm run check:telegram-control`: 46 unit tests, workflow invariants, local smoke, setup verifier, webhook dry-run, bot UI dry-run, generated-secret dry-run, and generated-secret install dry-run ran |
 | Local end-to-end smoke without live secrets | PASS | `npm --prefix tools/telegram-control run smoke:local`: health, Mini App state, auth rejection, status, approval, and callback verified |
 | Deployed Worker smoke helper exists | PASS | `npm --prefix tools/telegram-control run smoke:live` verifies `/health`, `/miniapp`, and signed Mini App state when env vars are present |
 | Telegram bot UI setup helper exists | PASS | `tools/telegram-control/scripts/set-bot-ui.ts`; tests `buildTelegramCommandsPayload exposes the full control command menu` and `buildTelegramMenuButtonPayload requires HTTPS Mini App URL` |
@@ -43,13 +43,18 @@ The repository contains a verified Telegram control-plane implementation, but li
 | Secret leak guard | PASS | `npm --prefix tools/telegram-control run check:secrets` scans control-plane files for token-shaped values |
 | Generated-secret dry-run | PASS | `npm --prefix tools/telegram-control run secrets:bootstrap` generates redacted evidence for project-owned shared secrets and does not print plaintext values |
 | Local generated shared-secret file | PASS | `npm --prefix tools/telegram-control run secrets:bootstrap -- --write-local` wrote `.env.telegram-control.local` without printing secret values; file is ignored by `.gitignore` via `.env.*` |
+| Generated callback secret installed in GitHub | PASS | `gh secret list --repo Yehor212/people-first-app` shows `TELEGRAM_CONTROL_CALLBACK_SECRET` updated on 2026-05-26; value was supplied from stdin and not printed |
+| GitHub-aware activation check | PASS | `npm --prefix tools/telegram-control run activation:checklist -- --github` reads GitHub secret names only and separates callback secret PASS from callback URL/OpenAI/Snyk UNVERIFIED |
+| Generated-secret install helper exists | PASS | `tools/telegram-control/scripts/install-generated-secrets.ts`; tests `parseGeneratedSecretsEnv only returns known generated secrets` and `requireGeneratedSecret rejects missing or short values` |
+| Cloudflare generated-secret installer exists | PASS | `tools/telegram-control/scripts/install-generated-secrets.ts` supports `--cloudflare`, verifies Wrangler auth first, and writes generated shared secrets via stdin without printing values |
+| Cloudflare-aware activation check exists | PASS | `npm --prefix tools/telegram-control run activation:checklist -- --cloudflare` checks Wrangler auth without exposing values |
 | Full current-worktree static gates | PASS | `npm run check:all` passed on the current worktree |
 | Task completion protocol | PASS | `npm run check:task-completion`: 72 invariants verified |
 | Sync contract | PASS | `npm run check:sync-contract`: 343 sync invariants verified |
 | Worker deploy dry-run | PASS | `npm --prefix tools/telegram-control run deploy:dry-run`: Wrangler 4.94.0 dry-run uploaded 55.23 KiB / gzip 12.74 KiB and detected Workflow/KV bindings |
 | Snyk code scan | PASS | `snyk code test`: total issues 0 |
 | Live Telegram bot webhook installed | UNVERIFIED | Requires real `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`, and deployed Worker URL |
-| Live Cloudflare KV namespace configured | UNVERIFIED | `tools/telegram-control/wrangler.jsonc` still contains `REPLACE_WITH_CLOUDFLARE_KV_NAMESPACE_ID` |
+| Live Cloudflare KV namespace configured | UNVERIFIED | `tools/telegram-control/wrangler.jsonc` still contains `REPLACE_WITH_CLOUDFLARE_KV_NAMESPACE_ID`; `wrangler whoami` reports not authenticated |
 | Live GitHub App dispatch configured | UNVERIFIED | Requires real GitHub App secrets in Cloudflare |
 | Live production deploy completion | UNVERIFIED | Requires deployed Worker, configured callbacks, and a real GitHub Pages deploy run URL |
 | Live Codex execution | UNVERIFIED | Requires GitHub `OPENAI_API_KEY` secret or a deliberate no-AI operating mode |
