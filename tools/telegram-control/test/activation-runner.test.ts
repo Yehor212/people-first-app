@@ -94,7 +94,7 @@ void test("activation runner all mode selects every live activation step", () =>
   assert.equal(steps.find((step) => step.id === "telegram-webhook")?.mutatesExternalState, true);
   assert.equal(
     steps.find((step) => step.id === "doctor")?.displayCommand,
-    "npm --prefix tools/telegram-control run activation:doctor -- --github --cloudflare",
+    "npm --prefix tools/telegram-control run activation:doctor -- --github --cloudflare --external-checks",
   );
   assert.equal(
     steps.find((step) => step.id === "telegram-doctor")?.displayCommand,

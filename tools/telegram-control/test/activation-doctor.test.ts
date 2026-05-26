@@ -7,6 +7,7 @@ import {
   summarizeGeneratedSecretFile,
   validateTelegramAdminIds,
 } from "../src/activation-doctor";
+import { buildGitHubStatusChecks } from "../src/github-status";
 import { formatGeneratedSecretsEnv, generateProjectSecrets } from "../src/secret-bootstrap";
 
 const localGeneratedEnvPath = [".env", "telegram-control", "local"].join(".");
@@ -58,4 +59,50 @@ void test("callback URL and Telegram admin id validation reject unsafe setup", (
   );
   assert.deepEqual(validateTelegramAdminIds("123, 456"), []);
   assert.match(validateTelegramAdminIds("123, abc").join("\n"), /non-numeric/);
+});
+
+void test("GitHub status checks fail closed during Actions or Pages incidents", () => {
+  const checks = buildGitHubStatusChecks({
+    components: [
+      { name: "Actions", status: "major_outage" },
+      { name: "Pages", status: "degraded_performance" },
+    ],
+    incidents: [
+      {
+        name: "Incident with Git Operations",
+        status: "investigating",
+        started_at: "2026-05-26T10:50:00.000Z",
+        components: [{ name: "Git Operations" }],
+      },
+      {
+        name: "Incident with Actions and Pages",
+        status: "investigating",
+        started_at: "2026-05-26T10:57:13.830Z",
+        components: [{ name: "Actions" }, { name: "Pages" }],
+      },
+    ],
+  });
+
+  assert.deepEqual(
+    checks.map((check) => check.status),
+    ["FAIL", "FAIL"],
+  );
+  assert.match(checks[0]?.evidence ?? "", /major_outage/);
+  assert.match(checks[1]?.evidence ?? "", /Incident with Actions and Pages/);
+  assert.doesNotMatch(checks[0]?.evidence ?? "", /Git Operations/);
+});
+
+void test("GitHub status checks pass when required components are operational", () => {
+  const checks = buildGitHubStatusChecks({
+    components: [
+      { name: "Actions", status: "operational" },
+      { name: "Pages", status: "operational" },
+    ],
+    incidents: [],
+  });
+
+  assert.deepEqual(
+    checks.map((check) => check.status),
+    ["PASS", "PASS"],
+  );
 });
