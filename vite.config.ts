@@ -31,7 +31,7 @@ function isDeferredJournalPreload(dep: string): boolean {
   );
 }
 
-const PWA_INSTALL_ICON_REVISION = "zenflow-browser-leaf-20260525-r5";
+const PWA_INSTALL_ICON_REVISION = "zenflow-browser-leaf-20260525-r6";
 const pwaIconSrc = (file: string) => `${file}?v=${PWA_INSTALL_ICON_REVISION}`;
 
 // https://vitejs.dev/config/
@@ -247,13 +247,26 @@ export default defineConfig(({ mode }) => {
       // esbuild stays for dev minification via optimizeDeps.
       minify: mode === "production" ? "terser" : "esbuild",
       terserOptions: {
+        module: true,
         compress: {
-          passes: 2,
+          drop_console: true,
+          module: true,
+          keep_fargs: false,
+          passes: 3,
           pure_funcs: [
             "console.log",
             "console.debug",
+            "console.warn",
             "console.info",
+            "console.error",
             "console.trace",
+            "logger.log",
+            "logger.debug",
+            "logger.info",
+            "logger.warn",
+            "logger.error",
+            "logger.sync",
+            "logger.auth",
           ],
         },
         format: { comments: false },
@@ -367,14 +380,21 @@ export default defineConfig(({ mode }) => {
     // Strip /*! license */ banners + dead debug code from production bundle.
     // Ship THIRD_PARTY_NOTICES.md alongside for compliance.
     // `pure` drops calls whose result is unused (all console.* return void),
-    // so every console.log/debug/info/trace invocation becomes dead code and
-    // is tree-shaken. console.error kept for runtime error visibility.
+    // so every console.log/debug/warn/info/error/trace invocation becomes dead
+    // code and is tree-shaken. Runtime errors still flow through Sentry/UI paths.
     // `drop: ['debugger']` removes stray debugger statements in production.
     esbuild: {
       legalComments: "none",
       pure:
         mode === "production"
-          ? ["console.log", "console.debug", "console.info", "console.trace"]
+          ? [
+              "console.log",
+              "console.debug",
+              "console.warn",
+              "console.info",
+              "console.error",
+              "console.trace",
+            ]
           : [],
       drop: mode === "production" ? ["debugger"] : [],
     },

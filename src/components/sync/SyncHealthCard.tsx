@@ -150,14 +150,8 @@ export function SyncHealthCard({ className, dense = false }: SyncHealthCardProps
   const { t, language } = useLanguage();
   const tx = t as unknown as Record<string, string>;
   const { state: orchestratorState } = useSyncOrchestrator();
-  const {
-    actions,
-    pendingCount,
-    isOnline,
-    isProcessing,
-    lastProcessedAt,
-    processQueue,
-  } = useOfflineQueue();
+  const { actions, pendingCount, isOnline, isProcessing, lastProcessedAt, processQueue } =
+    useOfflineQueue();
   const hasValidSession = useAppStore((s) => s.hasValidSession);
   const [lastReceipt, setLastReceipt] = useState<SyncHealthReceipt | null>(() => {
     if (typeof window === "undefined") return null;
@@ -175,9 +169,7 @@ export function SyncHealthCard({ className, dense = false }: SyncHealthCardProps
       const receipt = {
         ...detail,
         at: detail.at ?? Date.now(),
-        route:
-          detail.route ??
-          `${window.location.pathname}${window.location.search}`,
+        route: detail.route ?? `${window.location.pathname}${window.location.search}`,
       } as SyncHealthReceipt;
       setLastReceipt(receipt);
       setRecentReceipts((prev) => [...prev, receipt].slice(-MAX_RECENT_RECEIPTS));
