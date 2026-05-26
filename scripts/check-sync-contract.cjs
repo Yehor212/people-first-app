@@ -548,6 +548,7 @@ function main() {
     "ZENFLOW_SYNC_DRILL_URL",
     "syncHabits.delete.test.ts",
     "syncSettings.test.ts",
+    "journalDraftStorage.test.ts",
     "cloudSync.test.ts",
     "ZENFLOW_TELEGRAM_SYNC_DRILL_REQUIRED",
     "check:sync-contract",
