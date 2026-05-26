@@ -1,22 +1,34 @@
 /**
- * Remote CI Verification — checks GitHub Actions status for current commit.
+ * Remote CI Verification - checks GitHub Actions status for the current commit.
  *
  * Root cause fix for Anti-Pattern #13 "Local All-Clear":
- * Local CI (npm run ci:preflight) ≠ Remote CI (GitHub Actions).
- * This script is the ONLY authority for "CI passed."
+ * local CI is not remote CI. This script is the only authority for
+ * "remote CI passed" and requires every workflow for the current commit to pass.
  *
  * Usage:
- *   npx tsx scripts/check-remote-ci.ts          # Check latest run for current HEAD
- *   npx tsx scripts/check-remote-ci.ts --wait   # Wait for running CI to complete (max 15 min)
+ *   npx tsx scripts/check-remote-ci.ts          # Check current HEAD
+ *   npx tsx scripts/check-remote-ci.ts --wait   # Wait for running CI to complete
  *
  * Requires: gh CLI authenticated (gh auth login)
- * Exit: 0 = pass, 1 = fail/timeout, 2 = not authenticated
+ * Exit: 0 = pass, 1 = fail/timeout/running, 2 = local gh/repo setup problem
  */
 
 import { execSync } from "child_process";
 
-const MAX_WAIT_MS = 15 * 60 * 1000; // 15 minutes
-const POLL_INTERVAL_MS = 15 * 1000; // 15 seconds
+const MAX_WAIT_MS = 15 * 60 * 1000;
+const POLL_INTERVAL_MS = 15 * 1000;
+
+type CiRun = {
+  id: number;
+  status: string;
+  conclusion: string;
+  name: string;
+};
+
+type Job = {
+  name: string;
+  conclusion: string;
+};
 
 function run(cmd: string): string {
   try {
@@ -86,11 +98,65 @@ function classifyInfrastructureFailure(log: string): {
   return null;
 }
 
+function iconForConclusion(conclusion: string): string {
+  if (conclusion === "success") return "PASS";
+  if (conclusion === "skipped") return "SKIP";
+  if (!conclusion) return "PENDING";
+  return "FAIL";
+}
+
+function parseRuns(json: string): CiRun[] {
+  if (!json.startsWith("[")) return [];
+
+  const parsed = JSON.parse(json) as Array<{
+    databaseId: number;
+    status: string;
+    conclusion: string;
+    name: string;
+  }>;
+
+  return parsed.map((runItem) => ({
+    id: runItem.databaseId,
+    status: runItem.status,
+    conclusion: runItem.conclusion,
+    name: runItem.name,
+  }));
+}
+
+function findRuns(commitSha: string): CiRun[] {
+  try {
+    const result = run(
+      `gh run list --commit ${commitSha} --limit 20 --json databaseId,status,conclusion,name --jq "."`,
+    );
+    return parseRuns(result);
+  } catch {
+    return [];
+  }
+}
+
+function jobsForRun(runId: number): Job[] {
+  try {
+    const jobsJson = run(`gh run view ${runId} --json jobs --jq ".jobs"`);
+    if (!jobsJson.startsWith("[")) return [];
+    return JSON.parse(jobsJson) as Job[];
+  } catch {
+    return [];
+  }
+}
+
+function printRunList(ciRuns: CiRun[]): void {
+  console.log("\n  Workflows:");
+  for (const ciRun of ciRuns) {
+    console.log(
+      `    ${ciRun.name}: ${ciRun.status} / ${ciRun.conclusion || "pending"} (run ${ciRun.id})`,
+    );
+  }
+}
+
 function main(): void {
   const args = process.argv.slice(2);
   const doWait = args.includes("--wait");
 
-  // 1. Check gh auth
   console.log("\n  REMOTE CI VERIFICATION");
   console.log("=".repeat(50));
 
@@ -99,57 +165,29 @@ function main(): void {
     authStatus.includes("not logged in") ||
     authStatus.includes("error validating")
   ) {
-    console.error("\n  ✗ gh CLI not authenticated. Run: gh auth login\n");
+    console.error("\n  FAIL gh CLI not authenticated. Run: gh auth login\n");
     process.exit(2);
   }
-  console.log("\n  ✓ gh CLI authenticated");
+  console.log("\n  PASS gh CLI authenticated");
 
-  // 2. Get current commit
   const commitSha = run("git rev-parse HEAD");
   const commitShort = commitSha.slice(0, 7);
-  console.log(`  ✓ Current commit: ${commitShort}`);
+  console.log(`  PASS Current commit: ${commitShort}`);
 
-  // 3. Get repo info
   const repoInfo = run(
     "gh repo view --json nameWithOwner --jq .nameWithOwner 2>&1",
   );
   if (!repoInfo.includes("/")) {
     console.error(
-      "\n  ✗ Cannot determine repo. Run from a GitHub repo directory.\n",
+      "\n  FAIL Cannot determine repo. Run from a GitHub repo directory.\n",
     );
     process.exit(2);
   }
-  console.log(`  ✓ Repository: ${repoInfo}`);
+  console.log(`  PASS Repository: ${repoInfo}`);
 
-  // 4. Find CI run for this commit
-  const findRun = (): {
-    id: number;
-    status: string;
-    conclusion: string;
-    name: string;
-  } | null => {
-    try {
-      const result = run(
-        `gh run list --commit ${commitSha} --limit 1 --json databaseId,status,conclusion,name --jq ".[0]"`,
-      );
-      if (result && result.startsWith("{")) {
-        const parsed = JSON.parse(result);
-        return {
-          id: parsed.databaseId,
-          status: parsed.status,
-          conclusion: parsed.conclusion,
-          name: parsed.name,
-        };
-      }
-    } catch {
-      /* no run found */
-    }
-    return null;
-  };
+  let ciRuns = findRuns(commitSha);
 
-  let ciRun = findRun();
-
-  if (!ciRun) {
+  if (ciRuns.length === 0) {
     console.log("\n  ? No CI run found for commit " + commitShort);
     if (!doWait) {
       console.log("    Run with --wait to poll, or check:");
@@ -159,93 +197,105 @@ function main(): void {
     console.log("    Waiting for CI to start...");
   }
 
-  // 5. Wait for completion (if --wait)
   if (doWait) {
     const startTime = Date.now();
 
     while (Date.now() - startTime < MAX_WAIT_MS) {
-      ciRun = findRun();
+      ciRuns = findRuns(commitSha);
 
-      if (ciRun && ciRun.status === "completed") {
+      if (
+        ciRuns.length > 0 &&
+        ciRuns.every((ciRun) => ciRun.status === "completed")
+      ) {
         break;
       }
 
       const elapsed = Math.round((Date.now() - startTime) / 1000);
-      const status = ciRun ? ciRun.status : "not started";
-      process.stdout.write(`\r  ⏳ Waiting... ${elapsed}s (${status})   `);
+      const pendingCount = ciRuns.filter(
+        (ciRun) => ciRun.status !== "completed",
+      ).length;
+      const status =
+        ciRuns.length === 0 ? "not started" : `${pendingCount} running`;
+      process.stdout.write(`\r  Waiting... ${elapsed}s (${status})   `);
 
       sleep(POLL_INTERVAL_MS);
     }
 
     process.stdout.write("\r" + " ".repeat(60) + "\r");
 
-    if (!ciRun || ciRun.status !== "completed") {
-      console.log("\n  ✗ Timeout waiting for CI (15 min). Check manually:");
+    if (
+      ciRuns.length === 0 ||
+      ciRuns.some((ciRun) => ciRun.status !== "completed")
+    ) {
+      console.log("\n  FAIL Timeout waiting for remote CI. Check manually:");
       console.log(`    https://github.com/${repoInfo}/actions\n`);
       process.exit(1);
     }
   }
 
-  if (!ciRun) {
+  if (ciRuns.length === 0) {
     process.exit(1);
   }
 
-  // 6. Report result
-  console.log(`\n  Workflow: ${ciRun.name}`);
-  console.log(`  Run ID:   ${ciRun.id}`);
+  printRunList(ciRuns);
 
-  if (ciRun.status !== "completed") {
-    console.log(`  Status:   ${ciRun.status} (still running)`);
-    console.log(`\n  Run with --wait to poll until complete.\n`);
+  const pendingRuns = ciRuns.filter((ciRun) => ciRun.status !== "completed");
+  if (pendingRuns.length > 0) {
+    console.log(
+      `\n  Status: ${pendingRuns.length} workflow(s) still running for ${commitShort}`,
+    );
+    console.log("\n  Run with --wait to poll until complete.\n");
     process.exit(1);
   }
 
-  // 7. Get job details (JSON parsing — avoids encoding issues on Windows)
-  try {
-    const jobsJson = run(`gh run view ${ciRun.id} --json jobs --jq ".jobs"`);
-    if (jobsJson && jobsJson.startsWith("[")) {
-      const jobs = JSON.parse(jobsJson) as Array<{
-        name: string;
-        conclusion: string;
-      }>;
-      console.log("\n  Jobs:");
-      for (const job of jobs) {
-        const icon =
-          job.conclusion === "success"
-            ? "✓"
-            : job.conclusion === "skipped"
-              ? "~"
-              : "✗";
-        console.log(`    ${icon} ${job.name}: ${job.conclusion}`);
-      }
+  for (const ciRun of ciRuns) {
+    const jobs = jobsForRun(ciRun.id);
+    if (jobs.length === 0) continue;
+
+    console.log(`\n  Jobs: ${ciRun.name}`);
+    for (const job of jobs) {
+      console.log(
+        `    ${iconForConclusion(job.conclusion)} ${job.name}: ${job.conclusion}`,
+      );
     }
-  } catch {
-    /* job details unavailable */
   }
 
-  // 8. Final verdict
-  if (ciRun.conclusion === "success") {
+  const failedRuns = ciRuns.filter((ciRun) => ciRun.conclusion !== "success");
+  if (failedRuns.length === 0) {
     console.log(`\n${"=".repeat(50)}`);
-    console.log(`  RESULT: PASS ✓ (Remote CI verified for ${commitShort})`);
+    console.log(
+      `  RESULT: PASS (all remote workflows verified for ${commitShort})`,
+    );
     console.log(`${"=".repeat(50)}\n`);
     process.exit(0);
-  } else {
-    const failedLog = failedLogForRun(ciRun.id);
+  }
+
+  console.log(`\n${"=".repeat(50)}`);
+  console.log(
+    `  RESULT: FAIL (${failedRuns.length} workflow failure(s) for ${commitShort})`,
+  );
+  console.log(`${"=".repeat(50)}`);
+
+  for (const failedRun of failedRuns) {
+    const failedLog = failedLogForRun(failedRun.id);
     const infrastructureFailure = classifyInfrastructureFailure(failedLog);
-    console.log(`\n${"=".repeat(50)}`);
-    console.log(`  RESULT: FAIL ✗ (${ciRun.conclusion} for ${commitShort})`);
-    console.log(`${"=".repeat(50)}`);
+
+    console.log(
+      `\n  Failed workflow: ${failedRun.name} (${failedRun.conclusion})`,
+    );
     if (infrastructureFailure) {
-      console.log("\n  INFRASTRUCTURE FAILURE DETECTED");
+      console.log("  INFRASTRUCTURE FAILURE DETECTED");
       console.log(`  Reason:   ${infrastructureFailure.reason}`);
       console.log(`  Evidence: ${infrastructureFailure.evidence}`);
       console.log(
         "  Action:   Do not mark CI green. Rerun after GitHub Actions/Pages recovers.",
       );
     }
-    console.log(`\n  View logs: gh run view ${ciRun.id} --log-failed\n`);
-    process.exit(1);
+    console.log(`  View logs: gh run view ${failedRun.id} --log-failed`);
   }
+
+  console.log();
+  process.exit(1);
 }
 
 main();
