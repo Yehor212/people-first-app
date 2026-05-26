@@ -7,7 +7,7 @@ export class FakeKvNamespace implements KvNamespace {
     return this.values.get(key) ?? null;
   }
 
-  async put(key: string, value: string): Promise<void> {
+  async put(key: string, value: string, _options?: { expirationTtl?: number }): Promise<void> {
     this.values.set(key, value);
   }
 

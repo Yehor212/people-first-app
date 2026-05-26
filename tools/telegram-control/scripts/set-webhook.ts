@@ -6,6 +6,14 @@ const botToken = process.env.TELEGRAM_BOT_TOKEN;
 const webhookSecret = process.env.TELEGRAM_WEBHOOK_SECRET;
 
 if (!webhookUrl || !botToken || !webhookSecret) {
+  if (dryRun) {
+    console.log("Telegram setWebhook dry run: UNVERIFIED");
+    if (!webhookUrl) console.log("UNVERIFIED TELEGRAM_WEBHOOK_URL - missing from environment");
+    if (!botToken) console.log("UNVERIFIED TELEGRAM_BOT_TOKEN - missing from environment");
+    if (!webhookSecret) console.log("UNVERIFIED TELEGRAM_WEBHOOK_SECRET - missing from environment");
+    process.exit(0);
+  }
+
   console.error(
     "Missing required environment. Set TELEGRAM_WEBHOOK_URL, TELEGRAM_BOT_TOKEN, and TELEGRAM_WEBHOOK_SECRET.",
   );

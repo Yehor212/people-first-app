@@ -1,5 +1,5 @@
 import { isDispatchableKind } from "./commands";
-import { dispatchGitHubWorkflow, isGitHubConfigured } from "./github";
+import { cancelGitHubWorkflowRun, dispatchGitHubWorkflow, isGitHubConfigured } from "./github";
 import { createApprovalNonce } from "./security";
 import { saveJob } from "./storage";
 import type { CommandIntent, ControlJob, Env } from "./types";
@@ -31,6 +31,12 @@ export function createControlJob(
 export async function startJob(env: Env, job: ControlJob): Promise<ControlJob> {
   if (!isDispatchableKind(job.intent.kind)) {
     return updateJob(job, "ASK", ["Intent is not dispatchable"]);
+  }
+
+  if (!env.CONTROL_STATE) {
+    return updateJob(job, "unverified", [
+      "UNVERIFIED: CONTROL_STATE KV binding is not configured; job metadata cannot be stored",
+    ]);
   }
 
   if (job.intent.requiresConfirmation && job.status !== "queued") {
@@ -113,6 +119,57 @@ export function denyOrCancelJob(
   };
 }
 
+export async function cancelControlJob(
+  env: Env,
+  job: ControlJob,
+  telegramUserId: number,
+  nonce = "manual-cancel",
+): Promise<ControlJob> {
+  const evidence = [`Cancelled from Telegram user ${telegramUserId}`];
+  let status: ControlJob["status"] = "cancelled";
+
+  if (job.workflowInstanceId) {
+    if (env.CONTROL_WORKFLOW) {
+      try {
+        const instance = await env.CONTROL_WORKFLOW.get(job.workflowInstanceId);
+        await instance.terminate();
+        evidence.push(`Cloudflare Workflow terminated: ${job.workflowInstanceId}`);
+      } catch (error) {
+        status = "unverified";
+        evidence.push(`UNVERIFIED: Cloudflare Workflow termination failed: ${errorText(error)}`);
+      }
+    } else {
+      status = "unverified";
+      evidence.push("UNVERIFIED: Cloudflare Workflow binding is not available for termination");
+    }
+  }
+
+  if (job.githubRunId) {
+    if (isGitHubConfigured(env)) {
+      try {
+        await cancelGitHubWorkflowRun(env, job.githubRunId);
+        evidence.push(`GitHub workflow run cancellation requested: ${job.githubRunId}`);
+      } catch (error) {
+        status = "unverified";
+        evidence.push(`UNVERIFIED: GitHub workflow run cancellation failed: ${errorText(error)}`);
+      }
+    } else {
+      status = "unverified";
+      evidence.push("UNVERIFIED: GitHub App credentials are not configured for workflow run cancellation");
+    }
+  }
+
+  const updated = {
+    ...updateJob(job, status, evidence),
+    approvals: [
+      ...job.approvals,
+      { action: "cancel" as const, telegramUserId, nonce, at: new Date().toISOString() },
+    ],
+  };
+  await saveJob(env, updated);
+  return updated;
+}
+
 export function updateJob(job: ControlJob, status: ControlJob["status"], evidence: string[]): ControlJob {
   return {
     ...job,
@@ -124,4 +181,8 @@ export function updateJob(job: ControlJob, status: ControlJob["status"], evidenc
 
 function createJobId(): string {
   return `tg_${Date.now().toString(36)}_${crypto.randomUUID().slice(0, 8)}`;
+}
+
+function errorText(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }

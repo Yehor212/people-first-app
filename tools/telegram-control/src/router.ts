@@ -1,5 +1,5 @@
 import { isDispatchableKind, parseCommand } from "./commands";
-import { approveJob, createControlJob, denyOrCancelJob, startJob, updateJob } from "./control";
+import { approveJob, cancelControlJob, createControlJob, denyOrCancelJob, startJob, updateJob } from "./control";
 import { getLatestWorkflowRuns, githubConfigStatus, isGitHubConfigured } from "./github";
 import { handleMiniApp } from "./miniapp";
 import {
@@ -9,7 +9,15 @@ import {
   verifyTelegramWebhook,
   verifyWorkflowCallbackSecret,
 } from "./security";
-import { getJob, getLatestJob, listJobs, saveJob } from "./storage";
+import {
+  findJobByGitHubRunOrBranch,
+  getJob,
+  getLatestJob,
+  hasProcessedTelegramUpdate,
+  listJobs,
+  markTelegramUpdateProcessed,
+  saveJob,
+} from "./storage";
 import {
   answerCallbackQuery,
   approvalKeyboard,
@@ -50,20 +58,28 @@ export async function handleTelegramWebhook(request: Request, env: Env): Promise
   }
 
   const update = (await request.json()) as TelegramUpdate;
+  if (await hasProcessedTelegramUpdate(env, update.update_id)) {
+    return json({ ok: true, duplicate: true });
+  }
+
   const user = getTelegramUser(update);
   const chatId = getTelegramChatId(update);
 
   if (!user || chatId === null) {
+    await markTelegramUpdateProcessed(env, update.update_id);
     return json({ ok: true, ignored: "missing user or chat" });
   }
 
   if (!isAuthorizedTelegramUser(env, user.id)) {
     await sendTelegramMessage(env, chatId, "Unauthorized Telegram account. This control plane is admin-only.");
+    await markTelegramUpdateProcessed(env, update.update_id);
     return json({ ok: true, rejected: "unauthorized" });
   }
 
   if (update.callback_query) {
-    return handleTelegramCallback(env, update.callback_query.id, update.callback_query.data, user.id, chatId);
+    const response = await handleTelegramCallback(env, update.callback_query.id, update.callback_query.data, user.id, chatId);
+    await markTelegramUpdateProcessed(env, update.update_id);
+    return response;
   }
 
   const text = getTelegramText(update);
@@ -75,31 +91,48 @@ export async function handleTelegramWebhook(request: Request, env: Env): Promise
       chatId,
       "ASK: I could not map that to a safe command. Use /plan, /fix, /review, /test, /security, /status, /deploy, or /rollback.",
     );
+    await markTelegramUpdateProcessed(env, update.update_id);
     return json({ ok: true, status: "ASK" });
   }
 
   if (intent.kind === "health") {
     await sendTelegramMessage(env, chatId, formatHealth(await health(env)));
+    await markTelegramUpdateProcessed(env, update.update_id);
     return json({ ok: true });
   }
 
   if (intent.kind === "status") {
     await sendTelegramMessage(env, chatId, await formatStatus(env));
+    await markTelegramUpdateProcessed(env, update.update_id);
     return json({ ok: true });
   }
 
   if (intent.kind === "jobs") {
     await sendTelegramMessage(env, chatId, await formatJobs(env));
+    await markTelegramUpdateProcessed(env, update.update_id);
     return json({ ok: true });
   }
 
   if (intent.kind === "cancel" || intent.kind === "approve" || intent.kind === "deny") {
-    return handleManualSignal(env, intent.kind, intent.prompt, user.id, chatId);
+    const response = await handleManualSignal(env, intent.kind, intent.prompt, user.id, chatId);
+    await markTelegramUpdateProcessed(env, update.update_id);
+    return response;
   }
 
   if (!isDispatchableKind(intent.kind)) {
     await sendTelegramMessage(env, chatId, "ASK: This command is recognized but not dispatchable.");
+    await markTelegramUpdateProcessed(env, update.update_id);
     return json({ ok: true, status: "ASK" });
+  }
+
+  if (!env.CONTROL_STATE) {
+    await sendTelegramMessage(
+      env,
+      chatId,
+      "UNVERIFIED: CONTROL_STATE KV binding is not configured; no Telegram control job was started.",
+    );
+    await markTelegramUpdateProcessed(env, update.update_id);
+    return json({ ok: true, status: "unverified" });
   }
 
   const job = createControlJob(intent, user.id, chatId);
@@ -112,11 +145,13 @@ export async function handleTelegramWebhook(request: Request, env: Env): Promise
       formatApprovalRequest(job.id, intent.kind, intent.prompt),
       approvalKeyboard(job),
     );
+    await markTelegramUpdateProcessed(env, update.update_id);
     return json({ ok: true, job_id: job.id, status: job.status });
   }
 
   const started = await startJob(env, job);
   await sendTelegramMessage(env, chatId, formatJobStarted(started));
+  await markTelegramUpdateProcessed(env, update.update_id);
   return json({ ok: true, job_id: started.id, status: started.status });
 }
 
@@ -153,8 +188,12 @@ async function handleTelegramCallback(
     return json({ ok: true, job_id: started.id, status: started.status });
   }
 
-  const updated = denyOrCancelJob(job, signal.action, telegramUserId, signal.nonce);
-  await saveJob(env, updated);
+  const updated = signal.action === "cancel"
+    ? await cancelControlJob(env, job, telegramUserId, signal.nonce)
+    : denyOrCancelJob(job, signal.action, telegramUserId, signal.nonce);
+  if (signal.action !== "cancel") {
+    await saveJob(env, updated);
+  }
   await answerCallbackQuery(env, callbackQueryId, signal.action === "deny" ? "Denied." : "Cancelled.");
   await sendTelegramMessage(env, chatId, `Job ${updated.id} is ${updated.status}.`);
   return json({ ok: true, job_id: updated.id, status: updated.status });
@@ -182,14 +221,18 @@ export async function handleGitHubWebhook(request: Request, env: Env): Promise<R
       conclusion?: string;
     };
   };
-  const latest = await getLatestJob(env);
+  const matchedJob = await findJobByGitHubRunOrBranch(
+    env,
+    payload.workflow_run?.id,
+    payload.workflow_run?.head_branch,
+  );
 
   if (
-    latest &&
+    matchedJob &&
     payload.workflow_run?.id &&
-    (latest.githubRunId === payload.workflow_run.id || latest.branch === payload.workflow_run.head_branch)
+    (matchedJob.githubRunId === payload.workflow_run.id || matchedJob.branch === payload.workflow_run.head_branch)
   ) {
-    const updated = updateJob(latest, mapGitHubStatus(payload.workflow_run.status, payload.workflow_run.conclusion), [
+    const updated = updateJob(matchedJob, mapGitHubStatus(payload.workflow_run.status, payload.workflow_run.conclusion), [
       `GitHub ${event}: ${payload.workflow_run.status ?? "unknown"} / ${payload.workflow_run.conclusion ?? "none"}`,
     ]);
     updated.githubRunId = payload.workflow_run.id;
@@ -209,7 +252,7 @@ async function handleManualSignal(
   chatId: number | string,
 ): Promise<Response> {
   const [jobId, nonce] = prompt.trim().split(/\s+/);
-  if (!jobId || !nonce) {
+  if (!jobId || (action !== "cancel" && !nonce)) {
     await sendTelegramMessage(env, chatId, `ASK: use /${action} <job_id> <nonce>, or press the inline approval button.`);
     return json({ ok: true, status: "ASK" });
   }
@@ -220,7 +263,7 @@ async function handleManualSignal(
     return json({ ok: true, ignored: "missing job" });
   }
 
-  if (!safeEqual(job.approvalNonce, nonce)) {
+  if (action !== "cancel" && !safeEqual(job.approvalNonce, nonce)) {
     await sendTelegramMessage(env, chatId, "Approval nonce mismatch.");
     return json({ ok: true, rejected: "nonce mismatch" });
   }
@@ -233,8 +276,12 @@ async function handleManualSignal(
     return json({ ok: true, job_id: started.id, status: started.status });
   }
 
-  const updated = denyOrCancelJob(job, action, telegramUserId, nonce);
-  await saveJob(env, updated);
+  const updated = action === "cancel"
+    ? await cancelControlJob(env, job, telegramUserId, nonce ?? "manual-cancel")
+    : denyOrCancelJob(job, action, telegramUserId, nonce);
+  if (action !== "cancel") {
+    await saveJob(env, updated);
+  }
   await sendTelegramMessage(env, chatId, `Job ${updated.id} is ${updated.status}.`);
   return json({ ok: true, job_id: updated.id, status: updated.status });
 }

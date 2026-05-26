@@ -87,6 +87,23 @@ export async function getLatestWorkflowRuns(env: Env, limit = 5): Promise<unknow
   return response.json();
 }
 
+export async function cancelGitHubWorkflowRun(env: Env, githubRunId: number): Promise<void> {
+  const token = await getInstallationToken(env);
+  const owner = env.GITHUB_OWNER ?? "Yehor212";
+  const repo = env.GITHUB_REPO ?? "people-first-app";
+  const response = await githubFetch(
+    env,
+    token,
+    `/repos/${owner}/${repo}/actions/runs/${githubRunId}/cancel`,
+    { method: "POST" },
+  );
+
+  if (!response.ok) {
+    const body = await boundedText(response);
+    throw new Error(`GitHub workflow run cancel failed: ${response.status} ${body}`);
+  }
+}
+
 async function getInstallationToken(env: Env): Promise<string> {
   if (!env.GITHUB_APP_ID || !env.GITHUB_INSTALLATION_ID || !env.GITHUB_APP_PRIVATE_KEY) {
     throw new Error("GitHub App credentials are not fully configured");

@@ -15,6 +15,10 @@ The repository contains a verified Telegram control-plane implementation, but li
 | Destructive commands require confirmation | PASS | `tools/telegram-control/src/control.ts`; test `deploy command stops at approval gate before GitHub dispatch` |
 | Approval nonce flow exists | PASS | `tools/telegram-control/src/telegram.ts`; test `manual approve command validates nonce and starts approved job` |
 | GitHub webhook/callback verification exists | PASS | `tools/telegram-control/src/security.ts`; tests `GitHub HMAC verification rejects modified bodies` and `workflow callback updates matching job and keeps evidence` |
+| Telegram webhook idempotency exists | PASS | `tools/telegram-control/src/storage.ts`; test `duplicate Telegram update ids do not execute side effects twice` |
+| GitHub workflow_run updates exact job | PASS | `tools/telegram-control/src/storage.ts`; test `GitHub workflow_run webhook updates the matching branch instead of the latest job` |
+| Manual cancellation is honest | PASS | `tools/telegram-control/src/control.ts`; tests `manual cancel can stop a non-destructive queued job without a nonce` and `manual cancel reports UNVERIFIED when a known GitHub run cannot be cancelled` |
+| Missing KV fails closed | PASS | `tools/telegram-control/src/control.ts`, `tools/telegram-control/src/router.ts`, and `tools/telegram-control/src/miniapp.ts`; tests `dispatchable chat command is UNVERIFIED without KV and never reaches GitHub` and `miniapp dispatchable command is UNVERIFIED without KV` |
 | Mini App dashboard route exists | PASS | `tools/telegram-control/src/miniapp.ts`; test `miniapp HTML is served without exposing secrets` |
 | Mini App init data is verified | PASS | `tools/telegram-control/src/miniapp.ts`; tests `miniapp state requires Telegram init data`, `miniapp state accepts signed init data for allowlisted admin`, and `miniapp command rejects non-admin signed user` |
 | Mini App command surface reuses destructive approval gate | PASS | test `miniapp deploy command creates approval-gated job` |
@@ -24,7 +28,7 @@ The repository contains a verified Telegram control-plane implementation, but li
 | Deploy workflow main-ref guard | PASS | `.github/workflows/deploy.yml` step `Validate Telegram-approved deploy target` rejects Telegram-approved production deploys unless `GITHUB_REF=refs/heads/main` |
 | Rollback creates branch-only draft PR | PASS | `.github/workflows/telegram-control.yml` step `Create rollback proposal PR` requires Telegram approval, validates `target=<commit-or-ref>`, runs gates, and opens a draft PR without deploying |
 | Missing `OPENAI_API_KEY` does not fake success | PASS | `.github/workflows/telegram-control.yml` reports `UNVERIFIED` before Codex action |
-| Local Worker/package verification | PASS | `npm run check:telegram-control`: unit tests, workflow invariants, local smoke, and setup verifier ran |
+| Local Worker/package verification | PASS | `npm run check:telegram-control`: 31 unit tests, workflow invariants, local smoke, and setup verifier ran |
 | Local end-to-end smoke without live secrets | PASS | `npm --prefix tools/telegram-control run smoke:local`: health, Mini App state, auth rejection, status, approval, and callback verified |
 | Deployed Worker smoke helper exists | PASS | `npm --prefix tools/telegram-control run smoke:live` verifies `/health`, `/miniapp`, and signed Mini App state when env vars are present |
 | Workflow safety contract | PASS | `npm --prefix tools/telegram-control run check:workflow`: Telegram control and deploy workflow invariants verified |
@@ -35,7 +39,7 @@ The repository contains a verified Telegram control-plane implementation, but li
 | Full current-worktree static gates | PASS | `npm run check:all` passed on the current worktree |
 | Task completion protocol | PASS | `npm run check:task-completion`: 72 invariants verified |
 | Sync contract | PASS | `npm run check:sync-contract`: 343 sync invariants verified |
-| Worker deploy dry-run | PASS | `npm --prefix tools/telegram-control run deploy:dry-run`: Wrangler 4.94.0 dry-run uploaded 31.73 KiB and detected Workflow/KV bindings |
+| Worker deploy dry-run | PASS | `npm --prefix tools/telegram-control run deploy:dry-run`: Wrangler 4.94.0 dry-run uploaded 47.61 KiB / gzip 11.50 KiB and detected Workflow/KV bindings |
 | Snyk code scan | PASS | `snyk code test`: total issues 0 |
 | Live Telegram bot webhook installed | UNVERIFIED | Requires real `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`, and deployed Worker URL |
 | Live Cloudflare KV namespace configured | UNVERIFIED | `tools/telegram-control/wrangler.jsonc` still contains `REPLACE_WITH_CLOUDFLARE_KV_NAMESPACE_ID` |

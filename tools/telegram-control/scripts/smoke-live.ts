@@ -16,7 +16,17 @@ if (!baseUrl) {
   finish();
 }
 
-const origin = normalizeOrigin(baseUrl);
+let origin: string;
+try {
+  origin = normalizeOrigin(baseUrl);
+} catch (error) {
+  results.push({
+    status: "FAIL",
+    name: "base-url",
+    evidence: `Invalid TELEGRAM_CONTROL_BASE_URL "${baseUrl}": ${errorText(error)}`,
+  });
+  finish();
+}
 
 await checkHealth(origin);
 await checkMiniAppHtml(origin);

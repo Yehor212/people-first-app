@@ -177,6 +177,14 @@ async function handleMiniAppCommand(env: Env, session: MiniAppSession, rawComman
     return json({ ok: true, status: "ASK", message: "Command is not dispatchable from Mini App" });
   }
 
+  if (!env.CONTROL_STATE) {
+    return json({
+      ok: true,
+      status: "unverified",
+      message: "UNVERIFIED: CONTROL_STATE KV binding is not configured; no Telegram control job was started.",
+    });
+  }
+
   const job = createControlJob(intent, session.telegramUserId, session.telegramUserId);
   await saveJob(env, job);
 

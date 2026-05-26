@@ -161,6 +161,43 @@ void test("miniapp deploy command creates approval-gated job", async () => {
   }
 });
 
+void test("miniapp dispatchable command is UNVERIFIED without KV", async () => {
+  const originalFetch = globalThis.fetch;
+  const calls: string[] = [];
+  globalThis.fetch = async (input: string | URL | Request, _init?: RequestInit) => {
+    calls.push(input instanceof Request ? input.url : input.toString());
+    return Response.json({ ok: true });
+  };
+
+  try {
+    const env: Env = {
+      TELEGRAM_BOT_TOKEN: "bot-token",
+      TELEGRAM_ADMIN_IDS: "111",
+      GITHUB_APP_ID: "1",
+      GITHUB_INSTALLATION_ID: "2",
+      GITHUB_APP_PRIVATE_KEY: crypto.randomUUID(),
+      GITHUB_WEBHOOK_SECRET: crypto.randomUUID(),
+    };
+    const initData = await signInitData("bot-token", 111);
+    const response = await routeRequest(
+      new Request("https://worker.test/miniapp/command", {
+        method: "POST",
+        headers: { Authorization: `tma ${initData}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ command: "/fix typo" }),
+      }),
+      env,
+    );
+    const payload = (await response.json()) as { status: string; message: string };
+
+    assert.equal(response.status, 200);
+    assert.equal(payload.status, "unverified");
+    assert.match(payload.message, /CONTROL_STATE KV binding is not configured/);
+    assert.equal(calls.some((url) => url.includes("api.github.com")), false);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 async function signInitData(
   botToken: string,
   userId: number,
