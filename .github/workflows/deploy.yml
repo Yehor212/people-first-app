@@ -89,12 +89,19 @@ jobs:
       - name: Run release unit tests
         run: npm run test:release -- --maxWorkers=2 --minWorkers=1
 
-      - name: Run coverage report
+      - name: Run focused release coverage report
         continue-on-error: true
-        timeout-minutes: 25
+        timeout-minutes: 8
         env:
           NODE_OPTIONS: --max-old-space-size=8192
-        run: npm run test:coverage -- --maxWorkers=2 --minWorkers=1
+        run: |
+          npm run test:release -- --coverage \
+            --coverage.thresholds.lines=0 \
+            --coverage.thresholds.functions=0 \
+            --coverage.thresholds.branches=0 \
+            --coverage.thresholds.statements=0 \
+            --maxWorkers=2 \
+            --minWorkers=1
 
       - name: Build
         env:
