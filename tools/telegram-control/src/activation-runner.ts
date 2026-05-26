@@ -272,10 +272,10 @@ export function buildActivationRunSteps(options: ActivationRunOptions): Activati
         "tools/telegram-control",
         "run",
         "activation:doctor",
-        ...(runExternalChecks ? ["--", "--github", "--cloudflare"] : []),
+        ...(runExternalChecks ? ["--", "--github", "--cloudflare", "--external-checks"] : []),
       ],
       displayCommand: `npm --prefix tools/telegram-control run activation:doctor${
-        runExternalChecks ? " -- --github --cloudflare" : ""
+        runExternalChecks ? " -- --github --cloudflare --external-checks" : ""
       }`,
       applyEnabled: false,
     },

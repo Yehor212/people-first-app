@@ -35,6 +35,7 @@ export interface ActivationDoctorInput {
   githubSecrets: ReadonlySet<string>;
   cloudflareChecked: boolean;
   wranglerAuthenticated?: boolean;
+  externalChecks?: readonly ActivationCheck[];
 }
 
 const CLOUDFLARE_ACCOUNT_OWNED_SECRET_NAMES = [
@@ -126,6 +127,7 @@ export function buildActivationDoctorChecks(input: ActivationDoctorInput): Activ
         : "UNVERIFIED",
       evidence: "required before set-webhook can install a live Telegram webhook",
     },
+    ...(input.externalChecks ?? []),
   ];
 }
 

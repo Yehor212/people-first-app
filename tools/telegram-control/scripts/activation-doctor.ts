@@ -6,6 +6,7 @@ import {
   overallActivationStatus,
   summarizeGeneratedSecretFile,
 } from "../src/activation-doctor";
+import { fetchGitHubStatusChecks } from "../src/github-status";
 
 const root = resolve(import.meta.dirname, "../../..");
 const workerConfigPath = resolve(root, "tools/telegram-control/wrangler.jsonc");
@@ -15,6 +16,7 @@ const generatedSecretsPath = resolve(root, generatedSecretsFileName);
 const args = process.argv.slice(2);
 const checkGitHub = args.includes("--github");
 const checkCloudflare = args.includes("--cloudflare");
+const checkExternal = args.includes("--external-checks");
 const workerConfigExists = existsSync(workerConfigPath);
 const workerConfigText = workerConfigExists ? readFileSync(workerConfigPath, "utf8") : "";
 const generatedSecretsExists = existsSync(generatedSecretsPath);
@@ -35,6 +37,7 @@ const checks = buildActivationDoctorChecks({
   githubSecrets: githubSecretResult.names,
   cloudflareChecked: checkCloudflare,
   wranglerAuthenticated: checkCloudflare ? isWranglerAuthenticated() : undefined,
+  externalChecks: checkExternal ? await fetchGitHubStatusChecks() : [],
 });
 
 console.log("Telegram control activation doctor (report-only)");
