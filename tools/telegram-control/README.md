@@ -114,12 +114,15 @@ npm --prefix tools/telegram-control run activation:checklist -- --github
 npm --prefix tools/telegram-control run activation:checklist -- --cloudflare
 npm --prefix tools/telegram-control run activation:doctor
 npm --prefix tools/telegram-control run activation:doctor -- --github --cloudflare
+npm --prefix tools/telegram-control run telegram:doctor
+npm --prefix tools/telegram-control run telegram:doctor -- --live
 ```
 
-The activation runner composes KV setup, account-secret installation, generated-secret installation, Worker deploy, GitHub App manifest generation, GitHub callback URL, Telegram webhook, bot UI, live smoke, and the doctor into one ordered flow. Its default mode is dry-run/report-only. Mutating steps run only with `--apply` plus explicit step flags such as `--kv`, `--cloudflare-account-secrets`, `--deploy`, or `--telegram`; `--all` is reserved for a fully prepared operator shell.
+The activation runner composes KV setup, account-secret installation, generated-secret installation, Worker deploy, GitHub App manifest generation, GitHub callback URL, Telegram bot readiness, Telegram webhook, bot UI, live smoke, and the doctor into one ordered flow. Its default mode is dry-run/report-only. Mutating steps run only with `--apply` plus explicit step flags such as `--kv`, `--cloudflare-account-secrets`, `--deploy`, or `--telegram`; `--all` is reserved for a fully prepared operator shell.
 
 The GitHub-aware check reads secret names only. It verifies whether `TELEGRAM_CONTROL_CALLBACK_SECRET`, `TELEGRAM_CONTROL_CALLBACK_URL`, `OPENAI_API_KEY`, and optional `SNYK_TOKEN` exist without reading their values.
 The activation doctor summarizes Cloudflare, GitHub, callback URL, OpenAI, Snyk, and Telegram readiness as PASS/UNVERIFIED/FAIL without printing secret values. Its default mode is local-only; `--github --cloudflare` adds name-only GitHub secret checks and Wrangler auth status.
+The Telegram bot readiness doctor validates BotFather token shape, webhook secret-token rules, admin id allowlist, webhook URL, and Mini App URL without printing secret values. With `--live`, it additionally calls Telegram `getMe` and `getWebhookInfo` to prove the token and current webhook state.
 
 ## Required GitHub Secrets
 

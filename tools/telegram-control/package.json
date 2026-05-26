@@ -18,6 +18,7 @@
     "smoke:live": "node --import tsx scripts/smoke-live.ts",
     "set-webhook": "node --import tsx scripts/set-webhook.ts",
     "set-bot-ui": "node --import tsx scripts/set-bot-ui.ts",
+    "telegram:doctor": "node --import tsx scripts/telegram-doctor.ts",
     "set-github-callback-url": "node --import tsx scripts/set-github-callback-url.ts",
     "secrets:bootstrap": "node --import tsx scripts/bootstrap-secrets.ts",
     "secrets:install-account": "node --import tsx scripts/install-account-secrets.ts",

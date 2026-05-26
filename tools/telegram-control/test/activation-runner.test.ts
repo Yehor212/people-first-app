@@ -29,6 +29,11 @@ void test("activation runner defaults to non-mutating dry-run steps", () => {
     steps.find((step) => step.id === "github-callback-url")?.displayCommand,
     "npm --prefix tools/telegram-control run set-github-callback-url -- --dry-run",
   );
+  assert.equal(
+    steps.find((step) => step.id === "telegram-doctor")?.displayCommand,
+    "npm --prefix tools/telegram-control run telegram:doctor",
+  );
+  assert.equal(steps.find((step) => step.id === "telegram-doctor")?.mutatesExternalState, false);
 });
 
 void test("activation runner apply mode requires explicit mutating flags", () => {
@@ -90,6 +95,10 @@ void test("activation runner all mode selects every live activation step", () =>
   assert.equal(
     steps.find((step) => step.id === "doctor")?.displayCommand,
     "npm --prefix tools/telegram-control run activation:doctor -- --github --cloudflare",
+  );
+  assert.equal(
+    steps.find((step) => step.id === "telegram-doctor")?.displayCommand,
+    "npm --prefix tools/telegram-control run telegram:doctor -- --live",
   );
   assert.equal(steps.find((step) => step.id === "live-smoke")?.shouldRun, true);
 });

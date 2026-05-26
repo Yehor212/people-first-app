@@ -201,6 +201,22 @@ export function buildActivationRunSteps(options: ActivationRunOptions): Activati
       applyEnabled: applyGithubCallback,
     },
     {
+      id: "telegram-doctor",
+      label: "Telegram bot readiness doctor",
+      mutatesExternalState: false,
+      shouldRun: true,
+      command: "npm",
+      args: [
+        "--prefix",
+        "tools/telegram-control",
+        "run",
+        "telegram:doctor",
+        ...(runExternalChecks ? ["--", "--live"] : []),
+      ],
+      displayCommand: `npm --prefix tools/telegram-control run telegram:doctor${runExternalChecks ? " -- --live" : ""}`,
+      applyEnabled: false,
+    },
+    {
       id: "telegram-webhook",
       label: "Telegram webhook",
       mutatesExternalState: applyTelegram,
