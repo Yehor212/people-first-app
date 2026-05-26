@@ -7,11 +7,13 @@ const deployWorkflowPath = resolve(root, ".github/workflows/deploy.yml");
 const controlPath = resolve(root, "tools/telegram-control/src/control.ts");
 const workflowSourcePath = resolve(root, "tools/telegram-control/src/workflow.ts");
 const routerTestPath = resolve(root, "tools/telegram-control/test/router.test.ts");
+const wranglerConfigPath = resolve(root, "tools/telegram-control/wrangler.jsonc");
 const workflow = readFileSync(workflowPath, "utf8");
 const deployWorkflow = readFileSync(deployWorkflowPath, "utf8");
 const controlSource = readFileSync(controlPath, "utf8");
 const workflowSource = readFileSync(workflowSourcePath, "utf8");
 const routerTest = readFileSync(routerTestPath, "utf8");
+const wranglerConfig = readFileSync(wranglerConfigPath, "utf8");
 
 const telegramRequiredSubstrings = [
   "workflow_dispatch:",
@@ -61,6 +63,19 @@ const deployRequiredSubstrings = [
   "uses: actions/deploy-pages@v5.0.0",
 ];
 
+const wranglerRequiredSubstrings = [
+  '"secrets"',
+  '"required"',
+  '"TELEGRAM_BOT_TOKEN"',
+  '"TELEGRAM_WEBHOOK_SECRET"',
+  '"TELEGRAM_ADMIN_IDS"',
+  '"GITHUB_APP_ID"',
+  '"GITHUB_INSTALLATION_ID"',
+  '"GITHUB_APP_PRIVATE_KEY"',
+  '"GITHUB_WEBHOOK_SECRET"',
+  '"TELEGRAM_CONTROL_CALLBACK_SECRET"',
+];
+
 const sourceRequiredSubstrings = [
   [controlPath, controlSource, "APPROVAL_SIGNAL_TYPE"],
   [controlPath, controlSource, "Cloudflare Workflow is waiting for Telegram approval signal"],
@@ -79,6 +94,9 @@ const missing = [
   ...deployRequiredSubstrings
     .filter((value) => !deployWorkflow.includes(value))
     .map((value) => `.github/workflows/deploy.yml: ${value}`),
+  ...wranglerRequiredSubstrings
+    .filter((value) => !wranglerConfig.includes(value))
+    .map((value) => `tools/telegram-control/wrangler.jsonc: ${value}`),
   ...sourceRequiredSubstrings
     .filter(([, source, value]) => !source.includes(value))
     .map(([path, , value]) => `${path.replace(`${root}\\`, "")}: ${value}`),
@@ -94,6 +112,9 @@ if (missing.length > 0) {
 
 console.log(
   `Telegram workflow contract PASS - ${
-    telegramRequiredSubstrings.length + deployRequiredSubstrings.length + sourceRequiredSubstrings.length
+    telegramRequiredSubstrings.length +
+    deployRequiredSubstrings.length +
+    wranglerRequiredSubstrings.length +
+    sourceRequiredSubstrings.length
   } invariants verified.`,
 );
