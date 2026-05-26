@@ -111,6 +111,11 @@ cache-busted GitHub Pages URL when validating a deployed artifact.
      or desktop process exit.
    - Fire-and-forget writes are acceptable only for legacy compatibility or
      low-risk telemetry-like updates that do not affect user state.
+   - Device-local sync internals must never be account settings. Keys such as
+     `sync-last-seq`, `sync-cursor-v2`, `zenflow-device-id`, and local deletion
+     tracker rows are per-install state. They must be filtered from
+     `user_settings`, ignored if historical setting events exist, and never be
+     allowed to overwrite another device's cursor or device id.
 
 8. **V1 and V2 are one product state.**
    - V1 and V2 may have different UI, but they must read/write the same durable
@@ -209,6 +214,9 @@ Behavioral gates for user-visible sync work:
 - Journal drafts use the `journal_draft_*` setting namespace. Draft save,
   migration, dismiss, and save-clear paths must use ordered `setting` events so
   phone-to-desktop draft state is account sync, not only device-local storage.
+- Habit archive/unarchive state is account state. `isArchived` must be written
+  to cloud as `is_archived`, pulled back into Dexie, and protected by the same
+  event-log/tombstone rules as active habits.
 - For same-account release claims, run `npm run smoke:sync-account` with
   `ZENFLOW_SYNC_TEST_EMAIL` and `ZENFLOW_SYNC_TEST_PASSWORD`; without those
   credentials the live account layer is `UNVERIFIED`, not passed.

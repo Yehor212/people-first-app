@@ -241,6 +241,7 @@ function main() {
     'from("sync_tombstones")',
     "select(\"entity_type, entity_id, deleted_seq\")",
     "mergeSyncTombstones",
+    "isAccountSyncedSettingKey",
     "deletedIds.mood",
     "deletedIds.habit",
     "deletedIds.focus",
@@ -304,13 +305,24 @@ function main() {
   ]);
 
   requireIncludes("src/storage/sync/syncSettings.ts", [
+    "isAccountSyncedSettingKey",
     "deleteSettingFromCloud",
     "\"DELETE_SETTINGS\"",
     "await writeEventAndBroadcast(\"setting\", key, \"delete\"",
   ]);
 
+  requireIncludes("src/storage/sync/settingSyncPolicy.ts", [
+    "sync-last-seq",
+    "sync-cursor-v2",
+    "zenflow-device-id",
+    "DELETION_TRACKER_KEYS",
+    "isAccountSyncedSettingKey",
+  ]);
+
   requireIncludes("src/storage/sync/syncHabits.ts", [
     "Legacy habit delete tracked + evented",
+    "is_archived: Boolean(habit.isArchived)",
+    "Skipping server-tombstoned habit completion sync",
     "await writeEventAndBroadcast(\"habit\", habitId, \"delete\", null, deviceId)",
   ]);
 
@@ -534,6 +546,9 @@ function main() {
   requireIncludes("scripts/smoke-telegram-sync-drill.cjs", [
     "Telegram-grade sync drill",
     "ZENFLOW_SYNC_DRILL_URL",
+    "syncHabits.delete.test.ts",
+    "syncSettings.test.ts",
+    "cloudSync.test.ts",
     "ZENFLOW_TELEGRAM_SYNC_DRILL_REQUIRED",
     "check:sync-contract",
     "check:canonical-orbs",

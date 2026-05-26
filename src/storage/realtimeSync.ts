@@ -40,6 +40,7 @@ import {
   validateArray,
 } from "@/lib/schemas";
 import { decodeHabitCompletionFromCloud } from "./sync/habitCompletionCodec";
+import { isAccountSyncedSettingKey } from "./sync/settingSyncPolicy";
 
 // Re-export all per-entity sync functions so existing imports continue to work
 export {
@@ -129,7 +130,7 @@ export const pullFromCloud = async (): Promise<boolean> => {
         .eq("user_id", userId)
         .order("date", { ascending: false })
         .limit(1000),
-      supabase.from("habits").select("*").eq("user_id", userId).eq("is_archived", false).limit(200),
+      supabase.from("habits").select("*").eq("user_id", userId).limit(500),
       supabase
         .from("habit_completions")
         .select("*")
@@ -293,7 +294,7 @@ export const pullFromCloud = async (): Promise<boolean> => {
           frequency,
           question: "",
           description: "",
-          isArchived: false,
+          isArchived: Boolean(h.is_archived),
           position: 0,
           targetValue: h.daily_target || h.target_count || 0,
           targetType: cloudType === "reduce" ? "atMost" : "atLeast",
@@ -304,6 +305,7 @@ export const pullFromCloud = async (): Promise<boolean> => {
             h.requires_duration && h.start_date && h.target_duration
               ? calculateHabitEndDate(h.start_date, h.target_duration)
               : undefined,
+          updatedAt: h.updated_at || undefined,
         };
       }),
       "cloud-habits"
@@ -524,6 +526,7 @@ export const pullFromCloud = async (): Promise<boolean> => {
 
           // Settings
           for (const s of settingsData) {
+            if (!isAccountSyncedSettingKey(s.key)) continue;
             await db.settings.put({ key: s.key, value: s.value });
           }
         }
@@ -656,7 +659,10 @@ export const pushToCloud = async (): Promise<boolean> => {
     await processBatched(liveHabits, (h) => syncHabit(h));
     await processBatched(liveFocusSessions, (f) => syncFocusSession(f));
     await processBatched(liveGratitudeEntries, (g) => syncGratitude(g));
-    await processBatched(settings, (s) => syncSetting(s.key, s.value));
+    await processBatched(
+      settings.filter((s) => isAccountSyncedSettingKey(s.key)),
+      (s) => syncSetting(s.key, s.value)
+    );
     await processBatched(liveJournalEntries, (e) => syncJournalEntry(e));
     await processBatched(liveJournalPhotos, (p) => syncJournalPhoto(p));
     await processBatched(liveJournalAudio, (a) => syncJournalAudio(a));

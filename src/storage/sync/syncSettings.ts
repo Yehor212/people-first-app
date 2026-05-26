@@ -11,12 +11,18 @@ import { offlineQueue } from "@/lib/offlineQueue";
 import type { Json } from "@/types/supabase";
 import { getPersistentDeviceId, writeEventAndBroadcast } from "@/storage/eventSync";
 import { storageRemove } from "@/lib/safeJson";
+import { isAccountSyncedSettingKey } from "./settingSyncPolicy";
 
 // ============================================
 // SETTINGS SYNC
 // ============================================
 
 export const syncSetting = async (key: string, value: unknown): Promise<void> => {
+  if (!isAccountSyncedSettingKey(key)) {
+    logger.warn("[Sync] Skipping local-only setting sync:", key);
+    return;
+  }
+
   const userId = await getCurrentUserId();
   // Explicit validation to prevent RLS violations with undefined user_id
   if (!supabase) return;
@@ -67,6 +73,11 @@ export const syncSetting = async (key: string, value: unknown): Promise<void> =>
 
 export const deleteSettingFromCloud = async (key: string): Promise<void> => {
   storageRemove(key);
+
+  if (!isAccountSyncedSettingKey(key)) {
+    logger.warn("[Sync] Skipping local-only setting delete sync:", key);
+    return;
+  }
 
   const userId = await getCurrentUserId();
   if (!supabase) return;

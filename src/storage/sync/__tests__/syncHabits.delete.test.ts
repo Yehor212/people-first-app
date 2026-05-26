@@ -52,7 +52,8 @@ vi.mock("@/lib/validation", async () => {
   };
 });
 
-import { deleteHabitFromCloud, syncHabit } from "../syncHabits";
+import { deleteHabitFromCloud, syncHabit, syncHabitCompletion } from "../syncHabits";
+import type { Habit } from "@/types";
 
 describe("deleteHabitFromCloud", () => {
   beforeEach(() => {
@@ -158,6 +159,85 @@ describe("deleteHabitFromCloud", () => {
     expect(mocks.isEntityTombstonedOnServer).toHaveBeenCalledWith("habit", habitId);
     expect(mocks.trackDeletedHabitId).toHaveBeenCalledWith(habitId);
     expect(mocks.from).not.toHaveBeenCalledWith("habits");
+    expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
+  });
+
+  it("persists archive state and updated_at when syncing a habit", async () => {
+    const habitId = "11111111-1111-4111-8111-111111111111";
+    const habitUpsert = vi.fn().mockResolvedValue({ error: null });
+    const reminderEq = vi.fn().mockResolvedValue({ error: null });
+    const reminderDelete = vi.fn(() => ({ eq: reminderEq }));
+
+    mocks.from.mockImplementation((table: string) => {
+      if (table === "habits") return { upsert: habitUpsert };
+      if (table === "habit_reminders") return { delete: reminderDelete };
+      throw new Error(`Unexpected table: ${table}`);
+    });
+
+    const archivedHabit: Habit = {
+      id: habitId,
+      name: "Archived across devices",
+      icon: "sparkles",
+      color: 1,
+      position: 0,
+      habitType: "boolean",
+      frequency: { numerator: 1, denominator: 1 },
+      question: "Did you archive this habit?",
+      description: "",
+      entries: {},
+      reminders: [],
+      isArchived: true,
+      targetValue: 1,
+      targetType: "atLeast",
+      unit: "",
+      createdAt: 1760000000000,
+      updatedAt: "2026-05-25T12:00:00.000Z",
+    };
+
+    await syncHabit(archivedHabit);
+
+    expect(habitUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: habitId,
+        is_archived: true,
+        updated_at: "2026-05-25T12:00:00.000Z",
+      }),
+      { onConflict: "id" }
+    );
+    expect(mocks.writeEventAndBroadcast).toHaveBeenCalledWith(
+      "habit",
+      habitId,
+      "upsert",
+      expect.objectContaining({ id: habitId, isArchived: true }),
+      "device-1"
+    );
+  });
+
+  it("does not sync habit completions after a local habit tombstone", async () => {
+    const habitId = "11111111-1111-4111-8111-111111111111";
+    mocks.getDeletedHabitIds.mockResolvedValue(new Set([habitId]));
+
+    await syncHabitCompletion(habitId, "2026-05-25", true, 1, undefined, {
+      habitType: "boolean",
+      entryValue: 2,
+    });
+
+    expect(mocks.from).not.toHaveBeenCalled();
+    expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
+  });
+
+  it("does not sync habit completions after a server habit tombstone", async () => {
+    const habitId = "11111111-1111-4111-8111-111111111111";
+    mocks.isEntityTombstonedOnServer.mockResolvedValue(true);
+
+    await syncHabitCompletion(habitId, "2026-05-25", true, 1, undefined, {
+      habitType: "boolean",
+      entryValue: 2,
+    });
+
+    expect(mocks.isEntityTombstonedOnServer).toHaveBeenCalledWith("habit", habitId);
+    expect(mocks.trackDeletedHabitId).toHaveBeenCalledWith(habitId);
+    expect(mocks.from).not.toHaveBeenCalledWith("habit_completions");
     expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
   });
 });

@@ -69,6 +69,7 @@ export const syncHabit = async (habit: Habit): Promise<void> => {
     });
     const planState = getHabitPlanState(habit);
     const schedule = normalizeHabitSchedule(habit);
+    const updatedAt = habit.updatedAt || new Date().toISOString();
 
     const { error: habitError } = await supabase.from("habits").upsert(
       {
@@ -86,6 +87,8 @@ export const syncHabit = async (habit: Habit): Promise<void> => {
         daily_target: habit.targetValue ?? 1,
         target_count: habit.targetValue ?? null,
         template_id: habit.templateId || null,
+        is_archived: Boolean(habit.isArchived),
+        updated_at: updatedAt,
       },
       { onConflict: "id" }
     );
@@ -275,6 +278,12 @@ export const syncHabitCompletion = async (
     return;
   }
 
+  const deletedHabitIds = await getDeletedHabitIds();
+  if (deletedHabitIds.has(habitId)) {
+    logger.warn("[Sync] Skipping tombstoned habit completion sync:", habitId, date);
+    return;
+  }
+
   // P1-9 Fix: Add offline queue support (was missing)
   if (!navigator.onLine) {
     await offlineQueue.enqueue("TOGGLE_HABIT", `${habitId}_${date}`, {
@@ -288,6 +297,12 @@ export const syncHabitCompletion = async (
       entryValue: options?.entryValue,
     });
     logger.log("[Sync] Habit completion queued for offline:", habitId, date);
+    return;
+  }
+
+  if (await isEntityTombstonedOnServer("habit", habitId)) {
+    await trackDeletedHabitId(habitId);
+    logger.warn("[Sync] Skipping server-tombstoned habit completion sync:", habitId, date);
     return;
   }
 

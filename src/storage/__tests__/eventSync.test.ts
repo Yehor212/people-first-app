@@ -348,6 +348,35 @@ describe("eventSync auth guards", () => {
     expect(mocks.settingsPut).toHaveBeenCalledWith({ key: "sync-last-seq", value: 15 });
   });
 
+  it("ignores remote setting events for local-only sync cursor and device keys", async () => {
+    const applied = await applyDelta(
+      [
+        {
+          id: "event-local-only-setting",
+          seq: 16,
+          entity_type: "setting",
+          entity_id: "zenflow-device-id",
+          op: "upsert",
+          payload: {
+            key: "zenflow-device-id",
+            value: "remote-device-id",
+            updatedAt: "2026-05-11T10:05:00.000Z",
+          },
+          device_id: "remote-device",
+          created_at: "2026-05-11T10:05:00.000Z",
+        },
+      ],
+      "current-device"
+    );
+
+    expect(applied).toBe(0);
+    expect(mocks.settingsPut).not.toHaveBeenCalledWith({
+      key: "zenflow-device-id",
+      value: "remote-device-id",
+    });
+    expect(mocks.settingsPut).toHaveBeenCalledWith({ key: "sync-last-seq", value: 16 });
+  });
+
   it("records tombstones when applying remote delete events", async () => {
     const applied = await applyDelta(
       [

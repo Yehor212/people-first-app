@@ -118,6 +118,15 @@ describe("syncSettings", () => {
     expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
   });
 
+  it("does not sync local-only cursor or device settings to the account", async () => {
+    await syncSetting("zenflow-device-id", "device-from-this-browser");
+    await syncSetting("sync-last-seq", 42);
+
+    expect(mocks.from).not.toHaveBeenCalled();
+    expect(mocks.enqueue).not.toHaveBeenCalled();
+    expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
+  });
+
   it("writes a setting delete sync event after a successful cloud delete", async () => {
     await deleteSettingFromCloud("journal_draft_new");
 
@@ -150,6 +159,14 @@ describe("syncSettings", () => {
       key: "journal_draft_new",
     });
     expect(mocks.delete).not.toHaveBeenCalled();
+    expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
+  });
+
+  it("does not delete local-only settings from the account channel", async () => {
+    await deleteSettingFromCloud("sync-cursor-v2");
+
+    expect(mocks.delete).not.toHaveBeenCalled();
+    expect(mocks.enqueue).not.toHaveBeenCalled();
     expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
   });
 });

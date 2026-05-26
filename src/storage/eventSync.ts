@@ -23,6 +23,7 @@ import {
   getDeletionTrackerKeyForSyncEntity,
   normalizeDeletedIdsForStorage,
 } from "@/storage/deletionTracker";
+import { isAccountSyncedSettingKey } from "@/storage/sync/settingSyncPolicy";
 
 // ── Types ─────────────────────────────────────────────────────────────
 
@@ -518,6 +519,7 @@ async function applySettingEvent(event: SyncEvent): Promise<boolean> {
   const payload = event.payload || {};
   const key = typeof payload.key === "string" ? payload.key : event.entity_id;
   if (!key) return false;
+  if (!isAccountSyncedSettingKey(key)) return false;
 
   if (event.op === "delete") {
     await db.settings.delete(key);
