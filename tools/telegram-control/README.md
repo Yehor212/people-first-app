@@ -85,9 +85,12 @@ Use the GitHub-aware or Cloudflare-aware activation checks when those CLIs are a
 ```bash
 npm --prefix tools/telegram-control run activation:checklist -- --github
 npm --prefix tools/telegram-control run activation:checklist -- --cloudflare
+npm --prefix tools/telegram-control run activation:doctor
+npm --prefix tools/telegram-control run activation:doctor -- --github --cloudflare
 ```
 
 The GitHub-aware check reads secret names only. It verifies whether `TELEGRAM_CONTROL_CALLBACK_SECRET`, `TELEGRAM_CONTROL_CALLBACK_URL`, `OPENAI_API_KEY`, and optional `SNYK_TOKEN` exist without reading their values.
+The activation doctor summarizes Cloudflare, GitHub, callback URL, OpenAI, Snyk, and Telegram readiness as PASS/UNVERIFIED/FAIL without printing secret values. Its default mode is local-only; `--github --cloudflare` adds name-only GitHub secret checks and Wrangler auth status.
 
 ## Required GitHub Secrets
 
@@ -132,6 +135,7 @@ Production deploys are different from code-write jobs: after Telegram approval, 
 ```bash
 npm run check:telegram-control
 npm --prefix tools/telegram-control run activation:checklist
+npm --prefix tools/telegram-control run activation:doctor
 npm --prefix tools/telegram-control run setup:plan
 npm --prefix tools/telegram-control run check:secrets
 npm --prefix tools/telegram-control run smoke:local

@@ -1,0 +1,61 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import {
+  buildActivationDoctorChecks,
+  overallActivationStatus,
+  resolveCallbackUrlCheck,
+  summarizeGeneratedSecretFile,
+  validateTelegramAdminIds,
+} from "../src/activation-doctor";
+import { formatGeneratedSecretsEnv, generateProjectSecrets } from "../src/secret-bootstrap";
+
+const localGeneratedEnvPath = [".env", "telegram-control", "local"].join(".");
+
+void test("activation doctor separates missing evidence from hard failures", () => {
+  const checks = buildActivationDoctorChecks({
+    workerConfigPath: "tools/telegram-control/wrangler.jsonc",
+    workerConfigExists: true,
+    workerConfigText: "REPLACE_WITH_CLOUDFLARE_KV_NAMESPACE_ID",
+    workflowPath: ".github/workflows/telegram-control.yml",
+    workflowExists: true,
+    generatedSecretsPath: localGeneratedEnvPath,
+    generatedSecrets: { exists: false, presentNames: [], errors: [] },
+    env: {},
+    githubChecked: false,
+    githubSecretsAvailable: false,
+    githubSecrets: new Set(),
+    cloudflareChecked: false,
+  });
+
+  assert.equal(overallActivationStatus(checks), "UNVERIFIED");
+  assert.equal(checks.find((check) => check.name === "Cloudflare Worker config")?.status, "PASS");
+  assert.equal(
+    checks.find((check) => check.name === "Cloudflare KV namespace id")?.status,
+    "UNVERIFIED"
+  );
+});
+
+void test("generated secret file summary validates required generated names", () => {
+  const summary = summarizeGeneratedSecretFile(true, formatGeneratedSecretsEnv(generateProjectSecrets()));
+
+  assert.equal(summary.exists, true);
+  assert.deepEqual(summary.errors, []);
+  assert.deepEqual(summary.presentNames, [
+    "TELEGRAM_WEBHOOK_SECRET",
+    "GITHUB_WEBHOOK_SECRET",
+    "TELEGRAM_CONTROL_CALLBACK_SECRET",
+  ]);
+});
+
+void test("callback URL and Telegram admin id validation reject unsafe setup", () => {
+  assert.equal(
+    resolveCallbackUrlCheck({ TELEGRAM_CONTROL_BASE_URL: "https://worker.example" }).status,
+    "PASS"
+  );
+  assert.equal(
+    resolveCallbackUrlCheck({ TELEGRAM_CONTROL_BASE_URL: "http://worker.example" }).status,
+    "FAIL"
+  );
+  assert.deepEqual(validateTelegramAdminIds("123, 456"), []);
+  assert.match(validateTelegramAdminIds("123, abc").join("\n"), /non-numeric/);
+});

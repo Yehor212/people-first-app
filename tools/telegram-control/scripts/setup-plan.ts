@@ -71,6 +71,7 @@ console.log("   npm --prefix tools/telegram-control run secrets:install-generate
 console.log("   $env:TELEGRAM_CONTROL_BASE_URL='https://<worker-host>'");
 console.log("   npm --prefix tools/telegram-control run set-github-callback-url -- --dry-run");
 console.log("   npm --prefix tools/telegram-control run set-github-callback-url -- --github");
+console.log("   npm --prefix tools/telegram-control run activation:doctor -- --github --cloudflare");
 for (const secret of githubSecrets) {
   if (secret.note) {
     console.log(`   # ${secret.note}`);

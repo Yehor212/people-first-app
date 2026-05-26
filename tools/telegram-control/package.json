@@ -7,6 +7,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "verify:config": "node --import tsx scripts/verify-config.ts",
     "activation:checklist": "node --import tsx scripts/activation-checklist.ts",
+    "activation:doctor": "node --import tsx scripts/activation-doctor.ts",
     "setup:plan": "node --import tsx scripts/setup-plan.ts",
     "check:secrets": "node --import tsx scripts/check-no-secrets.ts",
     "check:workflow": "node --import tsx scripts/check-workflow-contract.ts",

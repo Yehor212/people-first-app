@@ -31,7 +31,7 @@ The repository contains a verified Telegram control-plane implementation, but li
 | Deploy workflow main-ref guard | PASS | `.github/workflows/deploy.yml` step `Validate Telegram-approved deploy target` rejects Telegram-approved production deploys unless `GITHUB_REF=refs/heads/main` |
 | Rollback creates branch-only draft PR | PASS | `.github/workflows/telegram-control.yml` step `Create rollback proposal PR` requires Telegram approval, validates `target=<commit-or-ref>`, runs gates, and opens a draft PR without deploying |
 | Missing `OPENAI_API_KEY` does not fake success | PASS | `.github/workflows/telegram-control.yml` reports `UNVERIFIED` before Codex action |
-| Local Worker/package verification | PASS | `npm run check:telegram-control`: 46 unit tests, workflow invariants, local smoke, setup verifier, webhook dry-run, bot UI dry-run, generated-secret dry-run, and generated-secret install dry-run ran |
+| Local Worker/package verification | PASS | `npm run check:telegram-control`: 52 unit tests, workflow invariants, local smoke, setup verifier, activation doctor, webhook dry-run, bot UI dry-run, generated-secret dry-run, and generated-secret install dry-run ran |
 | Local end-to-end smoke without live secrets | PASS | `npm --prefix tools/telegram-control run smoke:local`: health, Mini App state, auth rejection, status, approval, and callback verified |
 | Deployed Worker smoke helper exists | PASS | `npm --prefix tools/telegram-control run smoke:live` verifies `/health`, `/miniapp`, and signed Mini App state when env vars are present |
 | Telegram bot UI setup helper exists | PASS | `tools/telegram-control/scripts/set-bot-ui.ts`; tests `buildTelegramCommandsPayload exposes the full control command menu` and `buildTelegramMenuButtonPayload requires HTTPS Mini App URL` |
@@ -49,6 +49,7 @@ The repository contains a verified Telegram control-plane implementation, but li
 | Cloudflare generated-secret installer exists | PASS | `tools/telegram-control/scripts/install-generated-secrets.ts` supports `--cloudflare`, verifies Wrangler auth first, and writes generated shared secrets via stdin without printing values |
 | Cloudflare-aware activation check exists | PASS | `npm --prefix tools/telegram-control run activation:checklist -- --cloudflare` checks Wrangler auth without exposing values |
 | GitHub callback URL installer exists | PASS | `tools/telegram-control/scripts/set-github-callback-url.ts`; tests `callbackUrlFromBase normalizes Worker origin to GitHub webhook URL` and `validateCallbackUrl requires HTTPS GitHub webhook path without credentials` |
+| Activation doctor exists | PASS | `tools/telegram-control/src/activation-doctor.ts`, `tools/telegram-control/scripts/activation-doctor.ts`, and `npm --prefix tools/telegram-control run activation:doctor` report Cloudflare, GitHub, callback URL, OpenAI, Snyk, and Telegram readiness without printing secret values |
 | Full current-worktree static gates | PASS | `npm run check:all` passed on the current worktree |
 | Task completion protocol | PASS | `npm run check:task-completion`: 72 invariants verified |
 | Sync contract | PASS | `npm run check:sync-contract`: 343 sync invariants verified |
