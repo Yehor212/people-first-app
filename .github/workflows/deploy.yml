@@ -35,6 +35,7 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -193,6 +194,7 @@ jobs:
 
   android-gate:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     continue-on-error: true
     steps:
       - name: Checkout
@@ -243,6 +245,7 @@ jobs:
 
   ios-gate:
     runs-on: macos-latest
+    timeout-minutes: 45
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -276,6 +279,7 @@ jobs:
     if: github.event_name == 'push' || github.event.inputs.telegram_approval == 'telegram-approved'
     needs: [build] # android-gate and ios-gate run in parallel; web deploy waits only for web release gates
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
