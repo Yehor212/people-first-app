@@ -15,6 +15,7 @@ The repository contains a verified Telegram control-plane implementation, but li
 | Free text routes destructive intents into approval schema | PASS | `tools/telegram-control/src/commands.ts`; tests `free text deploy routes to destructive approval intent` and `free text rollback routes to destructive approval intent` |
 | Destructive commands require confirmation | PASS | `tools/telegram-control/src/control.ts`; test `deploy command stops at approval gate before GitHub dispatch` |
 | Approval nonce flow exists | PASS | `tools/telegram-control/src/telegram.ts`; test `manual approve command validates nonce and starts approved job` |
+| Cloudflare Workflow waits for approval/cancel signals | PASS | `tools/telegram-control/src/workflow.ts`; tests `approval-gated command starts a durable Workflow before waiting for Telegram approval`, `manual approve sends a Workflow approval signal instead of dispatching directly`, and `manual cancel sends a Workflow cancel signal while job is awaiting approval` |
 | GitHub webhook/callback verification exists | PASS | `tools/telegram-control/src/security.ts`; tests `GitHub HMAC verification rejects modified bodies` and `workflow callback updates matching job and keeps evidence` |
 | GitHub App auth is separate from webhook verification | PASS | `tools/telegram-control/src/github.ts`; test `status command uses GitHub App credentials without requiring webhook secret` |
 | Telegram webhook idempotency exists | PASS | `tools/telegram-control/src/storage.ts`; test `duplicate Telegram update ids do not execute side effects twice` |
@@ -30,11 +31,11 @@ The repository contains a verified Telegram control-plane implementation, but li
 | Deploy workflow main-ref guard | PASS | `.github/workflows/deploy.yml` step `Validate Telegram-approved deploy target` rejects Telegram-approved production deploys unless `GITHUB_REF=refs/heads/main` |
 | Rollback creates branch-only draft PR | PASS | `.github/workflows/telegram-control.yml` step `Create rollback proposal PR` requires Telegram approval, validates `target=<commit-or-ref>`, runs gates, and opens a draft PR without deploying |
 | Missing `OPENAI_API_KEY` does not fake success | PASS | `.github/workflows/telegram-control.yml` reports `UNVERIFIED` before Codex action |
-| Local Worker/package verification | PASS | `npm run check:telegram-control`: 38 unit tests, workflow invariants, local smoke, setup verifier, webhook dry-run, and bot UI dry-run ran |
+| Local Worker/package verification | PASS | `npm run check:telegram-control`: 41 unit tests, workflow invariants, local smoke, setup verifier, webhook dry-run, and bot UI dry-run ran |
 | Local end-to-end smoke without live secrets | PASS | `npm --prefix tools/telegram-control run smoke:local`: health, Mini App state, auth rejection, status, approval, and callback verified |
 | Deployed Worker smoke helper exists | PASS | `npm --prefix tools/telegram-control run smoke:live` verifies `/health`, `/miniapp`, and signed Mini App state when env vars are present |
 | Telegram bot UI setup helper exists | PASS | `tools/telegram-control/scripts/set-bot-ui.ts`; tests `buildTelegramCommandsPayload exposes the full control command menu` and `buildTelegramMenuButtonPayload requires HTTPS Mini App URL` |
-| Workflow safety contract | PASS | `npm --prefix tools/telegram-control run check:workflow`: Telegram control and deploy workflow invariants verified |
+| Workflow safety contract | PASS | `npm --prefix tools/telegram-control run check:workflow`: 50 Telegram control, deploy workflow, and durable approval-signal invariants verified |
 | CI drift guard | PASS | `.github/workflows/drift-checks.yml` includes `telegram-control` matrix entry running `npm run check:telegram-control` |
 | Activation checklist | PASS | `npm --prefix tools/telegram-control run activation:checklist` reports remaining external setup without exposing secrets |
 | Setup command plan | PASS | `npm --prefix tools/telegram-control run setup:plan` prints required Cloudflare/GitHub/Telegram commands without embedding secret values |
@@ -42,7 +43,7 @@ The repository contains a verified Telegram control-plane implementation, but li
 | Full current-worktree static gates | PASS | `npm run check:all` passed on the current worktree |
 | Task completion protocol | PASS | `npm run check:task-completion`: 72 invariants verified |
 | Sync contract | PASS | `npm run check:sync-contract`: 343 sync invariants verified |
-| Worker deploy dry-run | PASS | `npm --prefix tools/telegram-control run deploy:dry-run`: Wrangler 4.94.0 dry-run uploaded 47.61 KiB / gzip 11.50 KiB and detected Workflow/KV bindings |
+| Worker deploy dry-run | PASS | `npm --prefix tools/telegram-control run deploy:dry-run`: Wrangler 4.94.0 dry-run uploaded 55.23 KiB / gzip 12.74 KiB and detected Workflow/KV bindings |
 | Snyk code scan | PASS | `snyk code test`: total issues 0 |
 | Live Telegram bot webhook installed | UNVERIFIED | Requires real `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`, and deployed Worker URL |
 | Live Cloudflare KV namespace configured | UNVERIFIED | `tools/telegram-control/wrangler.jsonc` still contains `REPLACE_WITH_CLOUDFLARE_KV_NAMESPACE_ID` |

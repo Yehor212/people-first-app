@@ -1,5 +1,13 @@
 import { isDispatchableKind, parseCommand } from "./commands";
-import { approveJob, cancelControlJob, createControlJob, denyOrCancelJob, startJob, updateJob } from "./control";
+import {
+  approveJob,
+  cancelControlJob,
+  createControlJob,
+  denyOrCancelJob,
+  signalWorkflow,
+  startJob,
+  updateJob,
+} from "./control";
 import { getLatestWorkflowRuns, githubConfigStatus, isGitHubConfigured } from "./github";
 import { handleMiniApp } from "./miniapp";
 import {
@@ -139,14 +147,15 @@ export async function handleTelegramWebhook(request: Request, env: Env): Promise
   await saveJob(env, job);
 
   if (job.status === "awaiting_approval") {
+    const waiting = await startJob(env, job);
     await sendTelegramMessage(
       env,
       chatId,
-      formatApprovalRequest(job.id, intent.kind, intent.prompt),
-      approvalKeyboard(job),
+      formatApprovalRequest(waiting.id, intent.kind, intent.prompt),
+      approvalKeyboard(waiting),
     );
     await markTelegramUpdateProcessed(env, update.update_id);
-    return json({ ok: true, job_id: job.id, status: job.status });
+    return json({ ok: true, job_id: waiting.id, status: waiting.status });
   }
 
   const started = await startJob(env, job);
@@ -182,17 +191,29 @@ async function handleTelegramCallback(
   if (signal.action === "approve") {
     const approved = approveJob(job, telegramUserId, signal.nonce);
     await saveJob(env, approved);
-    const started = await startJob(env, approved);
+    const signaled = await signalWorkflow(env, approved, {
+      jobId: approved.id,
+      action: "approve",
+      nonce: signal.nonce,
+      telegramUserId,
+    });
+    const started = signaled.workflowInstanceId ? signaled : await startJob(env, signaled);
     await answerCallbackQuery(env, callbackQueryId, "Approved.");
     await sendTelegramMessage(env, chatId, formatJobStarted(started));
     return json({ ok: true, job_id: started.id, status: started.status });
   }
 
-  const updated = signal.action === "cancel"
+  let updated = signal.action === "cancel"
     ? await cancelControlJob(env, job, telegramUserId, signal.nonce)
     : denyOrCancelJob(job, signal.action, telegramUserId, signal.nonce);
   if (signal.action !== "cancel") {
     await saveJob(env, updated);
+    updated = await signalWorkflow(env, updated, {
+      jobId: updated.id,
+      action: signal.action,
+      nonce: signal.nonce,
+      telegramUserId,
+    });
   }
   await answerCallbackQuery(env, callbackQueryId, signal.action === "deny" ? "Denied." : "Cancelled.");
   await sendTelegramMessage(env, chatId, `Job ${updated.id} is ${updated.status}.`);
@@ -271,16 +292,28 @@ async function handleManualSignal(
   if (action === "approve") {
     const approved = approveJob(job, telegramUserId, nonce);
     await saveJob(env, approved);
-    const started = await startJob(env, approved);
+    const signaled = await signalWorkflow(env, approved, {
+      jobId: approved.id,
+      action: "approve",
+      nonce,
+      telegramUserId,
+    });
+    const started = signaled.workflowInstanceId ? signaled : await startJob(env, signaled);
     await sendTelegramMessage(env, chatId, formatJobStarted(started));
     return json({ ok: true, job_id: started.id, status: started.status });
   }
 
-  const updated = action === "cancel"
+  let updated = action === "cancel"
     ? await cancelControlJob(env, job, telegramUserId, nonce ?? "manual-cancel")
     : denyOrCancelJob(job, action, telegramUserId, nonce);
   if (action !== "cancel") {
     await saveJob(env, updated);
+    updated = await signalWorkflow(env, updated, {
+      jobId: updated.id,
+      action,
+      nonce,
+      telegramUserId,
+    });
   }
   await sendTelegramMessage(env, chatId, `Job ${updated.id} is ${updated.status}.`);
   return json({ ok: true, job_id: updated.id, status: updated.status });

@@ -18,6 +18,8 @@ flowchart LR
   MiniApp --> Worker
   Worker --> KV["Cloudflare KV job metadata"]
   Worker --> Workflow["Cloudflare Workflow ControlWorkflow"]
+  Worker --> Signal["Approval / cancel signals"]
+  Signal --> Workflow
   Workflow --> GitHub["GitHub workflow_dispatch"]
   GitHub --> Codex["openai/codex-action"]
   GitHub --> PR["codex/telegram-* draft PR"]
@@ -78,6 +80,7 @@ The v1 runtime uses Cloudflare Workers plus Cloudflare Workflows because it can 
 - GitHub Actions callbacks must send `X-Zenflow-Control-Secret`.
 - Mini App API calls must send `Authorization: tma <Telegram.WebApp.initData>` and pass server-side HMAC validation.
 - Approval callback data includes a nonce stored on the job.
+- Approval-gated jobs start a Cloudflare Workflow immediately; approve, deny, and cancel actions are delivered as Workflow events before any GitHub dispatch.
 - Worker KV stores metadata only; no ZenFlow user content is stored.
 - AI work is branch-scoped to `codex/telegram-*`.
 - Production deploy is only dispatched after Telegram approval and only from `main`.
@@ -94,6 +97,7 @@ This implementation avoids a permanent paid host. Cloudflare Workers/Workflows a
 - [GitHub workflow dispatch REST API](https://docs.github.com/en/rest/actions/workflows)
 - [Cloudflare Workers limits](https://developers.cloudflare.com/workers/platform/limits/)
 - [Cloudflare Workflows](https://developers.cloudflare.com/workflows/)
+- [Cloudflare Workflow events](https://developers.cloudflare.com/workflows/build/events-and-parameters/)
 - [OpenAI Codex Action](https://github.com/openai/codex-action)
 - [OpenAI tools and MCP](https://developers.openai.com/api/docs/guides/tools-connectors-mcp)
 - [Supabase Edge Functions](https://supabase.com/docs/guides/functions)

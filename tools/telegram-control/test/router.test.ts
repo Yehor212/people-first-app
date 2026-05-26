@@ -4,10 +4,48 @@ import { parseCommand } from "../src/commands";
 import { createControlJob } from "../src/control";
 import { routeRequest } from "../src/router";
 import { getJob, listJobs, saveJob } from "../src/storage";
-import type { Env } from "../src/types";
+import type { ControlWorkflowParams, Env, WorkflowBinding, WorkflowInstance } from "../src/types";
 import { FakeKvNamespace } from "./fake-kv";
 
 const encoder = new TextEncoder();
+
+class FakeWorkflowInstance implements WorkflowInstance {
+  public readonly events: Array<{ type: string; payload: unknown }> = [];
+  public terminated = false;
+
+  constructor(public readonly id: string) {}
+
+  async status(): Promise<unknown> {
+    return { status: this.terminated ? "terminated" : "running" };
+  }
+
+  async terminate(): Promise<void> {
+    this.terminated = true;
+  }
+
+  async sendEvent(options: { type: string; payload: unknown }): Promise<void> {
+    this.events.push(options);
+  }
+}
+
+class FakeWorkflowBinding implements WorkflowBinding<ControlWorkflowParams> {
+  public readonly instances = new Map<string, FakeWorkflowInstance>();
+
+  async create(options: { id?: string; params?: ControlWorkflowParams }): Promise<WorkflowInstance> {
+    const id = options.id ?? crypto.randomUUID();
+    const instance = new FakeWorkflowInstance(id);
+    this.instances.set(id, instance);
+    return instance;
+  }
+
+  async get(id: string): Promise<WorkflowInstance> {
+    const instance = this.instances.get(id);
+    if (!instance) {
+      throw new Error(`Workflow instance ${id} was not found`);
+    }
+    return instance;
+  }
+}
 
 void test("health reports missing GitHub configuration as not configured", async () => {
   const env: Env = { CONTROL_STATE: new FakeKvNamespace() };
@@ -253,6 +291,172 @@ void test("deploy command stops at approval gate before GitHub dispatch", async 
     assert.equal(payload.status, "awaiting_approval");
     assert.equal(job?.status, "awaiting_approval");
     assert.equal(calls.every((url) => !url.includes("api.github.com")), true);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+void test("approval-gated command starts a durable Workflow before waiting for Telegram approval", async () => {
+  const originalFetch = globalThis.fetch;
+  const calls: string[] = [];
+  globalThis.fetch = (async (input: string | URL | Request) => {
+    calls.push(input instanceof Request ? input.url : input.toString());
+    return Response.json({ ok: true });
+  });
+
+  try {
+    const workflow = new FakeWorkflowBinding();
+    const env: Env = {
+      TELEGRAM_BOT_TOKEN: "token",
+      TELEGRAM_WEBHOOK_SECRET: "secret",
+      TELEGRAM_ADMIN_IDS: "111",
+      CONTROL_STATE: new FakeKvNamespace(),
+      CONTROL_WORKFLOW: workflow,
+    };
+    const response = await routeRequest(
+      new Request("https://worker.test/telegram/webhook", {
+        method: "POST",
+        headers: { "X-Telegram-Bot-Api-Secret-Token": "secret" },
+        body: JSON.stringify({
+          update_id: 9050,
+          message: { text: "/deploy production", chat: { id: 1 }, from: { id: 111 } },
+        }),
+      }),
+      env,
+    );
+    const payload = (await response.json()) as { status: string };
+    const [job] = await listJobs(env, 1);
+
+    assert.equal(response.status, 200);
+    assert.equal(payload.status, "awaiting_approval");
+    assert.equal(job?.workflowInstanceId, job?.id);
+    assert.equal(workflow.instances.has(job?.id ?? ""), true);
+    assert.equal(job?.evidence.some((entry) => entry.includes("waiting for Telegram approval signal")), true);
+    assert.equal(calls.every((url) => !url.includes("api.github.com")), true);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+void test("manual approve sends a Workflow approval signal instead of dispatching directly", async () => {
+  const originalFetch = globalThis.fetch;
+  const calls: string[] = [];
+  globalThis.fetch = (async (input: string | URL | Request) => {
+    calls.push(input instanceof Request ? input.url : input.toString());
+    return Response.json({ ok: true });
+  });
+
+  try {
+    const workflow = new FakeWorkflowBinding();
+    const env: Env = {
+      TELEGRAM_BOT_TOKEN: "token",
+      TELEGRAM_WEBHOOK_SECRET: "secret",
+      TELEGRAM_ADMIN_IDS: "111",
+      CONTROL_STATE: new FakeKvNamespace(),
+      CONTROL_WORKFLOW: workflow,
+    };
+    await routeRequest(
+      new Request("https://worker.test/telegram/webhook", {
+        method: "POST",
+        headers: { "X-Telegram-Bot-Api-Secret-Token": "secret" },
+        body: JSON.stringify({
+          update_id: 9051,
+          message: { text: "/deploy production", chat: { id: 1 }, from: { id: 111 } },
+        }),
+      }),
+      env,
+    );
+    const [job] = await listJobs(env, 1);
+    const instance = workflow.instances.get(job?.workflowInstanceId ?? "");
+    assert.equal(Boolean(instance), true);
+
+    const response = await routeRequest(
+      new Request("https://worker.test/telegram/webhook", {
+        method: "POST",
+        headers: { "X-Telegram-Bot-Api-Secret-Token": "secret" },
+        body: JSON.stringify({
+          update_id: 9052,
+          message: {
+            text: `/approve ${job?.id} ${job?.approvalNonce}`,
+            chat: { id: 1 },
+            from: { id: 111 },
+          },
+        }),
+      }),
+      env,
+    );
+    const payload = (await response.json()) as { status: string };
+    const updated = await getJob(env, job?.id ?? "");
+
+    assert.equal(response.status, 200);
+    assert.equal(payload.status, "queued");
+    assert.equal(updated?.status, "queued");
+    assert.equal(instance?.events.length, 1);
+    assert.equal(instance?.events[0]?.type, "telegram-approval-signal");
+    assert.deepEqual(instance?.events[0]?.payload, {
+      jobId: job?.id,
+      action: "approve",
+      nonce: job?.approvalNonce,
+      telegramUserId: 111,
+    });
+    assert.equal(calls.every((url) => !url.includes("api.github.com")), true);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+void test("manual cancel sends a Workflow cancel signal while job is awaiting approval", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = (async () => Response.json({ ok: true }));
+
+  try {
+    const workflow = new FakeWorkflowBinding();
+    const env: Env = {
+      TELEGRAM_BOT_TOKEN: "token",
+      TELEGRAM_WEBHOOK_SECRET: "secret",
+      TELEGRAM_ADMIN_IDS: "111",
+      CONTROL_STATE: new FakeKvNamespace(),
+      CONTROL_WORKFLOW: workflow,
+    };
+    await routeRequest(
+      new Request("https://worker.test/telegram/webhook", {
+        method: "POST",
+        headers: { "X-Telegram-Bot-Api-Secret-Token": "secret" },
+        body: JSON.stringify({
+          update_id: 9053,
+          message: { text: "/deploy production", chat: { id: 1 }, from: { id: 111 } },
+        }),
+      }),
+      env,
+    );
+    const [job] = await listJobs(env, 1);
+    const instance = workflow.instances.get(job?.workflowInstanceId ?? "");
+
+    const response = await routeRequest(
+      new Request("https://worker.test/telegram/webhook", {
+        method: "POST",
+        headers: { "X-Telegram-Bot-Api-Secret-Token": "secret" },
+        body: JSON.stringify({
+          update_id: 9054,
+          message: {
+            text: `/cancel ${job?.id}`,
+            chat: { id: 1 },
+            from: { id: 111 },
+          },
+        }),
+      }),
+      env,
+    );
+    const payload = (await response.json()) as { status: string };
+    const updated = await getJob(env, job?.id ?? "");
+
+    assert.equal(response.status, 200);
+    assert.equal(payload.status, "cancelled");
+    assert.equal(updated?.status, "cancelled");
+    assert.equal(instance?.terminated, false);
+    assert.equal(instance?.events.length, 1);
+    assert.equal(instance?.events[0]?.type, "telegram-approval-signal");
+    assert.equal((instance?.events[0]?.payload as { action?: string } | undefined)?.action, "cancel");
   } finally {
     globalThis.fetch = originalFetch;
   }

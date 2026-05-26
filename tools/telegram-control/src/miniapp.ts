@@ -197,17 +197,18 @@ async function handleMiniAppCommand(env: Env, session: MiniAppSession, rawComman
   await saveJob(env, job);
 
   if (job.status === "awaiting_approval") {
+    const waiting = await startJob(env, job);
     await sendTelegramMessage(
       env,
       session.telegramUserId,
       [
         `Confirmation required for ${intent.kind}.`,
-        `Job: ${job.id}`,
+        `Job: ${waiting.id}`,
         intent.prompt ? `Prompt: ${intent.prompt.slice(0, 500)}` : "Prompt: none",
       ].join("\n"),
-      approvalKeyboard(job),
+      approvalKeyboard(waiting),
     );
-    return json({ ok: true, job_id: job.id, status: job.status });
+    return json({ ok: true, job_id: waiting.id, status: waiting.status, evidence: waiting.evidence });
   }
 
   const started = await startJob(env, job);

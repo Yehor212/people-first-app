@@ -4,8 +4,14 @@ import { resolve } from "node:path";
 const root = resolve(import.meta.dirname, "../../..");
 const workflowPath = resolve(root, ".github/workflows/telegram-control.yml");
 const deployWorkflowPath = resolve(root, ".github/workflows/deploy.yml");
+const controlPath = resolve(root, "tools/telegram-control/src/control.ts");
+const workflowSourcePath = resolve(root, "tools/telegram-control/src/workflow.ts");
+const routerTestPath = resolve(root, "tools/telegram-control/test/router.test.ts");
 const workflow = readFileSync(workflowPath, "utf8");
 const deployWorkflow = readFileSync(deployWorkflowPath, "utf8");
+const controlSource = readFileSync(controlPath, "utf8");
+const workflowSource = readFileSync(workflowSourcePath, "utf8");
+const routerTest = readFileSync(routerTestPath, "utf8");
 
 const telegramRequiredSubstrings = [
   "workflow_dispatch:",
@@ -55,6 +61,17 @@ const deployRequiredSubstrings = [
   "uses: actions/deploy-pages@v5.0.0",
 ];
 
+const sourceRequiredSubstrings = [
+  [controlPath, controlSource, "APPROVAL_SIGNAL_TYPE"],
+  [controlPath, controlSource, "Cloudflare Workflow is waiting for Telegram approval signal"],
+  [controlPath, controlSource, "instance.sendEvent"],
+  [workflowSourcePath, workflowSource, "waitForEvent<ApprovalSignal>"],
+  [workflowSourcePath, workflowSource, "Cloudflare Workflow received approve signal"],
+  [routerTestPath, routerTest, "approval-gated command starts a durable Workflow before waiting for Telegram approval"],
+  [routerTestPath, routerTest, "manual approve sends a Workflow approval signal instead of dispatching directly"],
+  [routerTestPath, routerTest, "manual cancel sends a Workflow cancel signal while job is awaiting approval"],
+] as const;
+
 const missing = [
   ...telegramRequiredSubstrings
     .filter((value) => !workflow.includes(value))
@@ -62,6 +79,9 @@ const missing = [
   ...deployRequiredSubstrings
     .filter((value) => !deployWorkflow.includes(value))
     .map((value) => `.github/workflows/deploy.yml: ${value}`),
+  ...sourceRequiredSubstrings
+    .filter(([, source, value]) => !source.includes(value))
+    .map(([path, , value]) => `${path.replace(`${root}\\`, "")}: ${value}`),
 ];
 
 if (missing.length > 0) {
@@ -74,6 +94,6 @@ if (missing.length > 0) {
 
 console.log(
   `Telegram workflow contract PASS - ${
-    telegramRequiredSubstrings.length + deployRequiredSubstrings.length
+    telegramRequiredSubstrings.length + deployRequiredSubstrings.length + sourceRequiredSubstrings.length
   } invariants verified.`,
 );

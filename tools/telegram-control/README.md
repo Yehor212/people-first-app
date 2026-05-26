@@ -22,6 +22,8 @@ It also serves a minimal Telegram Mini App dashboard at `/miniapp`. Mini App API
 
 Free text is parsed into the same schema. Low-confidence text becomes `ASK` and does not dispatch.
 
+Approval-gated commands start a Cloudflare Workflow before Telegram confirmation. The approval, denial, or cancellation is sent back into that Workflow as an event, so the durable runtime owns the pause/resume boundary instead of relying only on a chat callback.
+
 ## Mini App
 
 - `GET /miniapp` serves the Telegram dashboard shell.

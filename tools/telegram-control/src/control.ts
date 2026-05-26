@@ -7,7 +7,9 @@ import {
 } from "./github";
 import { createApprovalNonce } from "./security";
 import { saveJob } from "./storage";
-import type { CommandIntent, ControlJob, Env } from "./types";
+import type { ApprovalSignal, CommandIntent, ControlJob, Env } from "./types";
+
+export const APPROVAL_SIGNAL_TYPE = "telegram-approval-signal";
 
 export function createControlJob(
   intent: CommandIntent,
@@ -44,7 +46,20 @@ export async function startJob(env: Env, job: ControlJob): Promise<ControlJob> {
     ]);
   }
 
-  if (job.intent.requiresConfirmation && job.status !== "queued") {
+  if (job.intent.requiresConfirmation && job.status === "awaiting_approval") {
+    if (env.CONTROL_WORKFLOW && !job.workflowInstanceId) {
+      const instance = await env.CONTROL_WORKFLOW.create({ id: job.id, params: { jobId: job.id } });
+      const updated = {
+        ...updateJob(job, "awaiting_approval", [
+          `Cloudflare Workflow started: ${instance.id}`,
+          "Cloudflare Workflow is waiting for Telegram approval signal",
+        ]),
+        workflowInstanceId: instance.id,
+      };
+      await saveJob(env, updated);
+      return updated;
+    }
+
     await saveJob(env, job);
     return job;
   }
@@ -68,6 +83,46 @@ export async function startJob(env: Env, job: ControlJob): Promise<ControlJob> {
   }
 
   return dispatchJobDirectly(env, job);
+}
+
+export async function signalWorkflow(
+  env: Env,
+  job: ControlJob,
+  signal: ApprovalSignal,
+): Promise<ControlJob> {
+  if (!job.workflowInstanceId) {
+    return job;
+  }
+
+  if (!env.CONTROL_WORKFLOW) {
+    const updated = updateJob(job, "unverified", [
+      "UNVERIFIED: Cloudflare Workflow binding is not available for approval signal",
+    ]);
+    await saveJob(env, updated);
+    return updated;
+  }
+
+  try {
+    const instance = await env.CONTROL_WORKFLOW.get(job.workflowInstanceId);
+    if (!instance.sendEvent) {
+      const updated = updateJob(job, "unverified", [
+        "UNVERIFIED: Cloudflare Workflow instance does not support approval signals",
+      ]);
+      await saveJob(env, updated);
+      return updated;
+    }
+
+    await instance.sendEvent({ type: APPROVAL_SIGNAL_TYPE, payload: signal });
+    const updated = updateJob(job, job.status, [`Cloudflare Workflow signal sent: ${signal.action}`]);
+    await saveJob(env, updated);
+    return updated;
+  } catch (error) {
+    const updated = updateJob(job, "unverified", [
+      `UNVERIFIED: Cloudflare Workflow signal failed: ${errorText(error)}`,
+    ]);
+    await saveJob(env, updated);
+    return updated;
+  }
 }
 
 export async function dispatchJobDirectly(env: Env, job: ControlJob): Promise<ControlJob> {
@@ -132,6 +187,17 @@ export async function cancelControlJob(
 ): Promise<ControlJob> {
   const evidence = [`Cancelled from Telegram user ${telegramUserId}`];
   let status: ControlJob["status"] = "cancelled";
+
+  if (job.workflowInstanceId && job.status === "awaiting_approval") {
+    const updated = {
+      ...updateJob(job, status, evidence),
+      approvals: [
+        ...job.approvals,
+        { action: "cancel" as const, telegramUserId, nonce, at: new Date().toISOString() },
+      ],
+    };
+    return signalWorkflow(env, updated, { jobId: job.id, action: "cancel", nonce, telegramUserId });
+  }
 
   if (job.workflowInstanceId) {
     if (env.CONTROL_WORKFLOW) {
