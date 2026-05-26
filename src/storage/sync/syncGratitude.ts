@@ -12,6 +12,7 @@ import { supabase, getCurrentUserId } from "@/lib/supabaseClient";
 import { db } from "@/storage/db";
 import { GratitudeEntry } from "@/types";
 import { offlineQueue } from "@/lib/offlineQueue";
+import { isEntityTombstonedOnServer } from "./serverTombstones";
 
 // ============================================
 // GRATITUDE SYNC
@@ -26,6 +27,12 @@ export const syncGratitude = async (entry: GratitudeEntry): Promise<void> => {
     return;
   }
 
+  const deletedGratitudeIds = await getDeletedGratitudeIds();
+  if (deletedGratitudeIds.has(entry.id)) {
+    logger.warn("[Sync] Skipping tombstoned gratitude upsert:", entry.id);
+    return;
+  }
+
   // Skip granular sync for non-UUID IDs (nanoid) — data is persisted via JSONB backup
   if (!isValidUUID(entry.id)) {
     logger.log("[Sync] Skipping granular gratitude sync (non-UUID ID):", entry.id);
@@ -36,6 +43,12 @@ export const syncGratitude = async (entry: GratitudeEntry): Promise<void> => {
   if (!navigator.onLine) {
     await offlineQueue.enqueue("CREATE_GRATITUDE", entry.id, entry);
     logger.log("[Sync] Gratitude queued for offline sync:", entry.id);
+    return;
+  }
+
+  if (await isEntityTombstonedOnServer("gratitude", entry.id)) {
+    await trackDeletedGratitudeId(entry.id);
+    logger.warn("[Sync] Skipping server-tombstoned gratitude upsert:", entry.id);
     return;
   }
 
@@ -77,6 +90,8 @@ export const syncGratitude = async (entry: GratitudeEntry): Promise<void> => {
 };
 
 export const deleteGratitudeFromCloud = async (entryId: string): Promise<void> => {
+  await trackDeletedGratitudeId(entryId);
+
   const userId = await getCurrentUserId();
   if (!supabase || !userId) return;
 
@@ -101,7 +116,6 @@ export const deleteGratitudeFromCloud = async (entryId: string): Promise<void> =
       .eq("user_id", userId);
 
     if (error) throw error;
-    await trackDeletedGratitudeId(entryId);
     logger.log("[Sync] Gratitude deleted + tracked:", entryId);
     const deviceId = await getPersistentDeviceId();
     await writeEventAndBroadcast("gratitude", entryId, "delete", null, deviceId);

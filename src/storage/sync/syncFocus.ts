@@ -12,6 +12,7 @@ import { supabase, getCurrentUserId } from "@/lib/supabaseClient";
 import { db } from "@/storage/db";
 import { FocusSession } from "@/types";
 import { offlineQueue } from "@/lib/offlineQueue";
+import { isEntityTombstonedOnServer } from "./serverTombstones";
 
 // ============================================
 // FOCUS SESSION SYNC
@@ -26,6 +27,12 @@ export const syncFocusSession = async (session: FocusSession): Promise<void> => 
     return;
   }
 
+  const deletedFocusIds = await getDeletedFocusSessionIds();
+  if (deletedFocusIds.has(session.id)) {
+    logger.warn("[Sync] Skipping tombstoned focus session upsert:", session.id);
+    return;
+  }
+
   // Skip granular sync for non-UUID IDs (nanoid) — data is persisted via JSONB backup
   if (!isValidUUID(session.id)) {
     logger.log("[Sync] Skipping granular focus session sync (non-UUID ID):", session.id);
@@ -36,6 +43,11 @@ export const syncFocusSession = async (session: FocusSession): Promise<void> => 
   if (!navigator.onLine) {
     await offlineQueue.enqueue("CREATE_FOCUS_SESSION", session.id, session);
     logger.log("[Sync] Focus session queued for offline sync:", session.id);
+    return;
+  }
+
+  if (await isEntityTombstonedOnServer("focus", session.id)) {
+    logger.warn("[Sync] Skipping server-tombstoned focus session upsert:", session.id);
     return;
   }
 

@@ -466,9 +466,18 @@ function shouldKeepLocalHabitEntry(localEntry: unknown, event: SyncEvent): boole
   return Number.isFinite(localTime) && Number.isFinite(remoteTime) && localTime > remoteTime;
 }
 
-async function applyHabitCompletionEvent(event: SyncEvent): Promise<boolean> {
+async function applyHabitCompletionEvent(
+  event: SyncEvent,
+  isHabitTombstoned: (habitId: string) => Promise<boolean> = (habitId) =>
+    isEntityIdLocallyTombstoned("habit", habitId)
+): Promise<boolean> {
   const identity = readHabitCompletionIdentity(event);
   if (!identity) return false;
+
+  if (await isHabitTombstoned(identity.habitId)) {
+    await db.habits.delete(identity.habitId);
+    return false;
+  }
 
   const habit = await db.habits.get(identity.habitId);
   if (!habit) return false;
@@ -526,6 +535,14 @@ function readDeletedIdsSettingValue(value: unknown): string[] {
   return value.filter((id): id is string => typeof id === "string" && id.length > 0);
 }
 
+async function isEntityIdLocallyTombstoned(entityType: string, entityId: string): Promise<boolean> {
+  const key = getDeletionTrackerKeyForSyncEntity(entityType);
+  if (!key) return false;
+
+  const existing = await db.settings.get(key);
+  return readDeletedIdsSettingValue(existing?.value).includes(entityId);
+}
+
 async function rememberAppliedDelete(event: SyncEvent): Promise<void> {
   const key = getDeletionTrackerKeyForSyncEntity(event.entity_type);
   if (!key) return;
@@ -577,6 +594,18 @@ export async function applyDelta(events: SyncEvent[], currentDeviceId: string): 
 
   const maxSeq = events[events.length - 1].seq;
   let applied = 0;
+  const batchTombstones = new Map<string, Set<string>>();
+
+  const markBatchTombstone = (event: SyncEvent) => {
+    if (!getDeletionTrackerKeyForSyncEntity(event.entity_type)) return;
+    const ids = batchTombstones.get(event.entity_type) ?? new Set<string>();
+    ids.add(event.entity_id);
+    batchTombstones.set(event.entity_type, ids);
+  };
+
+  const isTombstonedInApply = async (entityType: string, entityId: string) =>
+    batchTombstones.get(entityType)?.has(entityId) ||
+    (await isEntityIdLocallyTombstoned(entityType, entityId));
 
   try {
     // applied is set AFTER successful commit — rolled-back tx won't trigger refresh
@@ -587,7 +616,12 @@ export async function applyDelta(events: SyncEvent[], currentDeviceId: string): 
         if (!tableName) continue;
 
         if (event.entity_type === "habit_completion") {
-          if (await applyHabitCompletionEvent(event)) txApplied++;
+          if (
+            await applyHabitCompletionEvent(event, (habitId) =>
+              isTombstonedInApply("habit", habitId)
+            )
+          )
+            txApplied++;
           continue;
         }
         if (event.entity_type === "setting") {
@@ -600,6 +634,9 @@ export async function applyDelta(events: SyncEvent[], currentDeviceId: string): 
         switch (event.op) {
           case "upsert":
             if (event.payload) {
+              if (await isTombstonedInApply(event.entity_type, event.entity_id)) {
+                break;
+              }
               // Timestamp-based conflict resolution: keep newer entry
               const entityId = event.payload.id as string;
               if (entityId) {
@@ -620,6 +657,7 @@ export async function applyDelta(events: SyncEvent[], currentDeviceId: string): 
           case "delete":
             await table.delete(event.entity_id);
             await rememberAppliedDelete(event);
+            markBatchTombstone(event);
             txApplied++;
             break;
         }

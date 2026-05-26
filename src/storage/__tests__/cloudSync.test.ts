@@ -23,6 +23,16 @@ vi.mock("@/storage/backup", () => ({
   importBackup: vi.fn(),
 }));
 
+vi.mock("@/storage/sync/serverTombstones", () => ({
+  fetchAndMergeServerTombstones: vi.fn(async () => ({
+    mood: new Set(),
+    habit: new Set(),
+    focus: new Set(),
+    gratitude: new Set(),
+    journal: new Set(),
+  })),
+}));
+
 vi.mock("@/hooks/useIndexedDB", () => ({
   triggerDataRefresh: vi.fn(),
 }));
@@ -59,6 +69,7 @@ import {
 } from "@/storage/cloudSync";
 
 import { exportBackup, importBackup } from "@/storage/backup";
+import { fetchAndMergeServerTombstones } from "@/storage/sync/serverTombstones";
 import { triggerDataRefresh } from "@/hooks/useIndexedDB";
 import { syncOrchestrator } from "@/lib/syncOrchestrator";
 import { isAbortError } from "@/lib/validation";
@@ -67,6 +78,7 @@ import { isAbortError } from "@/lib/validation";
 
 const mockExportBackup = vi.mocked(exportBackup);
 const mockImportBackup = vi.mocked(importBackup);
+const mockFetchAndMergeServerTombstones = vi.mocked(fetchAndMergeServerTombstones);
 const mockTriggerDataRefresh = vi.mocked(triggerDataRefresh);
 const mockOrchestratorSync = vi.mocked(syncOrchestrator.sync);
 
@@ -170,6 +182,19 @@ describe("syncWithCloud", () => {
     expect(result).toEqual({ status: "pushed" });
     expect(mockFrom).toHaveBeenCalledWith("user_backups");
     expect(mockUpsert).toHaveBeenCalled();
+  });
+
+  it("merges server tombstones before exporting the backup safety net", async () => {
+    mockSupabase = createMockSupabase();
+    mockExportBackup.mockResolvedValue(LOCAL_BACKUP as any);
+    mockMaybeSingle.mockResolvedValue({ data: null, error: null });
+
+    await syncWithCloud();
+
+    expect(mockFetchAndMergeServerTombstones).toHaveBeenCalled();
+    expect(mockFetchAndMergeServerTombstones.mock.invocationCallOrder[0]).toBeLessThan(
+      mockExportBackup.mock.invocationCallOrder[0]
+    );
   });
 
   it("merges remote data into local and returns merged status", async () => {

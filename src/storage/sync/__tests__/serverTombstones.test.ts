@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { db } from "@/storage/db";
+import type { Habit } from "@/types";
 import {
   getDeletedFocusSessionIds,
   getDeletedGratitudeIds,
@@ -7,12 +8,23 @@ import {
   getDeletedJournalEntryIds,
   getDeletedMoodIds,
 } from "@/storage/deletionTracker";
-import { collectSyncTombstoneIds, mergeSyncTombstones } from "@/storage/sync/serverTombstones";
+import {
+  collectSyncTombstoneIds,
+  mergeSyncTombstones,
+  purgeLocalRowsForSyncTombstones,
+} from "@/storage/sync/serverTombstones";
 
 describe("serverTombstones", () => {
   beforeEach(async () => {
     await db.open();
     await db.settings.clear();
+    await db.moods.clear();
+    await db.habits.clear();
+    await db.focusSessions.clear();
+    await db.gratitudeEntries.clear();
+    await db.journalEntries.clear();
+    await db.journalPhotos.clear();
+    await db.journalAudio.clear();
   });
 
   it("collects only supported sync tombstone entity families", () => {
@@ -53,5 +65,53 @@ describe("serverTombstones", () => {
     expect((await getDeletedFocusSessionIds()).has("focus-del")).toBe(true);
     expect((await getDeletedGratitudeIds()).has("gratitude-del")).toBe(true);
     expect((await getDeletedJournalEntryIds()).has("journal-del")).toBe(true);
+  });
+
+  it("purges stale local rows after server tombstones are merged", async () => {
+    const staleHabit: Habit = {
+      id: "habit-del",
+      name: "Deleted habit",
+      icon: "leaf",
+      color: 0,
+      position: 0,
+      createdAt: Date.now(),
+      habitType: "boolean",
+      frequency: { numerator: 1, denominator: 1 },
+      question: "Deleted?",
+      description: "",
+      isArchived: false,
+      targetValue: 1,
+      targetType: "atLeast",
+      unit: "",
+      entries: {},
+      reminders: [],
+    };
+
+    await db.habits.put(staleHabit);
+    await db.journalEntries.put({
+      id: "journal-del",
+      date: "2026-05-26",
+      title: "Deleted",
+      content: "stale",
+      stickers: [],
+      tags: [],
+      photoIds: ["photo-del"],
+      audioIds: ["audio-del"],
+      createdAt: 1,
+      updatedAt: 2,
+    });
+    await db.journalPhotos.put({ id: "photo-del", entryId: "journal-del", createdAt: 1 } as any);
+    await db.journalAudio.put({ id: "audio-del", entryId: "journal-del", createdAt: 1 } as any);
+
+    const ids = await mergeSyncTombstones([
+      { entity_type: "habit", entity_id: "habit-del" },
+      { entity_type: "journal", entity_id: "journal-del" },
+    ]);
+
+    await expect(purgeLocalRowsForSyncTombstones(ids)).resolves.toBe(true);
+    await expect(db.habits.get("habit-del")).resolves.toBeUndefined();
+    await expect(db.journalEntries.get("journal-del")).resolves.toBeUndefined();
+    await expect(db.journalPhotos.get("photo-del")).resolves.toBeUndefined();
+    await expect(db.journalAudio.get("audio-del")).resolves.toBeUndefined();
   });
 });

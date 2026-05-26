@@ -31,7 +31,7 @@ import { db } from "@/storage/db";
 import { MoodEntry, Habit, FocusSession, GratitudeEntry } from "@/types";
 import type { JournalEntry, JournalPhoto, JournalAudio } from "@/features/journal/types";
 import { RealtimeChannel } from "@supabase/supabase-js";
-import { mergeSyncTombstones } from "@/storage/sync/serverTombstones";
+import { fetchAndMergeServerTombstones, mergeSyncTombstones } from "@/storage/sync/serverTombstones";
 import {
   runtimeMoodEntrySchema,
   runtimeHabitSchema,
@@ -603,6 +603,7 @@ export const pushToCloud = async (): Promise<boolean> => {
   lazyCategorizedBreadcrumb("sync", "Starting pushToCloud");
 
   try {
+    const deletedIds = await fetchAndMergeServerTombstones();
     const [
       moods,
       habits,
@@ -623,15 +624,42 @@ export const pushToCloud = async (): Promise<boolean> => {
       db.journalAudio.toArray(),
     ]);
 
-    // Sync all data in batches to avoid overwhelming the backend
-    await processBatched(moods, (m) => syncMood(m));
-    await processBatched(habits, (h) => syncHabit(h));
-    await processBatched(focusSessions, (f) => syncFocusSession(f));
-    await processBatched(gratitudeEntries, (g) => syncGratitude(g));
+    const liveMoods =
+      deletedIds.mood.size > 0 ? moods.filter((m) => !deletedIds.mood.has(m.id)) : moods;
+    const liveHabits =
+      deletedIds.habit.size > 0 ? habits.filter((h) => !deletedIds.habit.has(h.id)) : habits;
+    const liveFocusSessions =
+      deletedIds.focus.size > 0
+        ? focusSessions.filter((f) => !deletedIds.focus.has(f.id))
+        : focusSessions;
+    const liveGratitudeEntries =
+      deletedIds.gratitude.size > 0
+        ? gratitudeEntries.filter((g) => !deletedIds.gratitude.has(g.id))
+        : gratitudeEntries;
+    const liveJournalEntries =
+      deletedIds.journal.size > 0
+        ? journalEntries.filter((e) => !deletedIds.journal.has(e.id))
+        : journalEntries;
+    const liveJournalPhotos =
+      deletedIds.journal.size > 0
+        ? journalPhotos.filter((p) => !deletedIds.journal.has(p.entryId))
+        : journalPhotos;
+    const liveJournalAudio =
+      deletedIds.journal.size > 0
+        ? journalAudio.filter((a) => !deletedIds.journal.has(a.entryId))
+        : journalAudio;
+
+    // Sync all data in batches to avoid overwhelming the backend.
+    // Server tombstones are merged first so stale local rows cannot create
+    // newer upsert events after another device has deleted the entity.
+    await processBatched(liveMoods, (m) => syncMood(m));
+    await processBatched(liveHabits, (h) => syncHabit(h));
+    await processBatched(liveFocusSessions, (f) => syncFocusSession(f));
+    await processBatched(liveGratitudeEntries, (g) => syncGratitude(g));
     await processBatched(settings, (s) => syncSetting(s.key, s.value));
-    await processBatched(journalEntries, (e) => syncJournalEntry(e));
-    await processBatched(journalPhotos, (p) => syncJournalPhoto(p));
-    await processBatched(journalAudio, (a) => syncJournalAudio(a));
+    await processBatched(liveJournalEntries, (e) => syncJournalEntry(e));
+    await processBatched(liveJournalPhotos, (p) => syncJournalPhoto(p));
+    await processBatched(liveJournalAudio, (a) => syncJournalAudio(a));
 
     lazyCategorizedBreadcrumb("sync", "pushToCloud completed", {
       moods: moods.length,

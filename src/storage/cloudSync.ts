@@ -6,6 +6,7 @@ import logger from "@/lib/logger";
 import type { Json } from "@/types/supabase";
 import { syncOrchestrator } from "@/lib/syncOrchestrator";
 import { generateSecureRandom, isAbortError } from "@/lib/validation";
+import { fetchAndMergeServerTombstones } from "@/storage/sync/serverTombstones";
 import type { SeverityLevel } from "@sentry/core";
 import type { ErrorCategory } from "@/lib/sentry";
 
@@ -143,6 +144,7 @@ const doSyncWithCloud = async (
       throw new Error("Sync operation aborted due to timeout");
     }
 
+    await fetchAndMergeServerTombstones();
     const localBackup = await exportBackup();
 
     // Check abort status before network call

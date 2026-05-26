@@ -374,6 +374,86 @@ describe("eventSync auth guards", () => {
     expect(mocks.settingsPut).toHaveBeenCalledWith({ key: "sync-last-seq", value: 15 });
   });
 
+  it("keeps habit tombstones authoritative over later stale upsert events", async () => {
+    const staleHabit = {
+      id: "habit-deleted",
+      name: "Stale resurrected habit",
+      updatedAt: "2026-05-11T09:00:00.000Z",
+    };
+
+    const applied = await applyDelta(
+      [
+        {
+          id: "event-delete-habit",
+          seq: 16,
+          entity_type: "habit",
+          entity_id: "habit-deleted",
+          op: "delete",
+          payload: null,
+          device_id: "remote-device",
+          created_at: "2026-05-11T10:00:00.000Z",
+        },
+        {
+          id: "event-stale-upsert",
+          seq: 17,
+          entity_type: "habit",
+          entity_id: "habit-deleted",
+          op: "upsert",
+          payload: staleHabit,
+          device_id: "other-stale-device",
+          created_at: "2026-05-11T10:30:00.000Z",
+        },
+      ],
+      "current-device"
+    );
+
+    expect(applied).toBe(1);
+    expect(mocks.habitTableDelete).toHaveBeenCalledWith("habit-deleted");
+    expect(mocks.habitTablePut).not.toHaveBeenCalledWith(staleHabit);
+    expect(mocks.settingsPut).toHaveBeenCalledWith({ key: "sync-last-seq", value: 17 });
+  });
+
+  it("does not apply habit completion events for locally tombstoned habits", async () => {
+    mocks.settingsGet.mockImplementation(async (key: string) => {
+      if (key === "zenflow-deleted-habit-ids") return { key, value: ["habit-deleted"] };
+      if (key === "sync-last-seq") return { key, value: 17 };
+      if (key === "zenflow-device-id") return { key, value: "current-device" };
+      return undefined;
+    });
+    mocks.habitTableGet.mockResolvedValue({
+      id: "habit-deleted",
+      name: "Stale local habit",
+      habitType: "boolean",
+      entries: {},
+    });
+
+    const applied = await applyDelta(
+      [
+        {
+          id: "event-stale-completion",
+          seq: 18,
+          entity_type: "habit_completion",
+          entity_id: "habit-deleted_2026-05-11",
+          op: "upsert",
+          payload: {
+            habitId: "habit-deleted",
+            date: "2026-05-11",
+            habitType: "boolean",
+            count: 1,
+          },
+          device_id: "other-stale-device",
+          created_at: "2026-05-11T10:40:00.000Z",
+        },
+      ],
+      "current-device"
+    );
+
+    expect(applied).toBe(0);
+    expect(mocks.habitTableDelete).toHaveBeenCalledWith("habit-deleted");
+    expect(mocks.habitTablePut).not.toHaveBeenCalled();
+    expect(mocks.settingsPut).toHaveBeenCalledWith({ key: "sync-last-seq", value: 18 });
+  });
+
   it("keeps newer local entities when remote event timestamps are ISO strings", async () => {
     const remoteHabit = {
       id: "habit-iso",

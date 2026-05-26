@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   getDeletedHabitIds: vi.fn(),
   getPersistentDeviceId: vi.fn(),
   writeEventAndBroadcast: vi.fn(),
+  isEntityTombstonedOnServer: vi.fn(),
 }));
 
 vi.mock("@/lib/supabaseClient", () => ({
@@ -29,6 +30,10 @@ vi.mock("@/storage/deletionTracker", () => ({
 vi.mock("@/storage/eventSync", () => ({
   getPersistentDeviceId: mocks.getPersistentDeviceId,
   writeEventAndBroadcast: mocks.writeEventAndBroadcast,
+}));
+
+vi.mock("@/storage/sync/serverTombstones", () => ({
+  isEntityTombstonedOnServer: mocks.isEntityTombstonedOnServer,
 }));
 
 vi.mock("@/lib/logger", () => ({
@@ -59,6 +64,7 @@ describe("deleteHabitFromCloud", () => {
     mocks.getCurrentUserId.mockResolvedValue("user-1");
     mocks.getDeletedHabitIds.mockResolvedValue(new Set());
     mocks.getPersistentDeviceId.mockResolvedValue("device-1");
+    mocks.isEntityTombstonedOnServer.mockResolvedValue(false);
     const deleteQuery = {
       eq: mocks.eq,
       then: (resolve: (value: { error: null }) => void) => resolve({ error: null }),
@@ -131,6 +137,27 @@ describe("deleteHabitFromCloud", () => {
     } as any);
 
     expect(mocks.from).not.toHaveBeenCalled();
+    expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
+  });
+
+  it("does not upsert a stale habit when the server already has a tombstone", async () => {
+    const habitId = "11111111-1111-4111-8111-111111111111";
+    mocks.isEntityTombstonedOnServer.mockResolvedValue(true);
+
+    await syncHabit({
+      id: habitId,
+      name: "Deleted on phone",
+      icon: "sparkles",
+      color: "blue",
+      frequency: { numerator: 1, denominator: 1 },
+      entries: {},
+      createdAt: "2026-05-25T10:00:00.000Z",
+      updatedAt: "2026-05-25T10:00:00.000Z",
+    } as any);
+
+    expect(mocks.isEntityTombstonedOnServer).toHaveBeenCalledWith("habit", habitId);
+    expect(mocks.trackDeletedHabitId).toHaveBeenCalledWith(habitId);
+    expect(mocks.from).not.toHaveBeenCalledWith("habits");
     expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
   });
 });

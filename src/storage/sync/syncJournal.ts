@@ -13,6 +13,7 @@ import { offlineQueue } from "@/lib/offlineQueue";
 import { generateEmbeddings } from "@/lib/journalAI";
 import { detectNetworkError } from "./syncUtils";
 import { getDeletedJournalEntryIds, trackDeletedJournalEntryId } from "@/storage/deletionTracker";
+import { isEntityTombstonedOnServer } from "./serverTombstones";
 
 // ============================================
 // JOURNAL SYNC
@@ -39,6 +40,12 @@ export const syncJournalEntry = async (entry: JournalEntry): Promise<void> => {
   if (!navigator.onLine) {
     await offlineQueue.enqueue("SYNC_JOURNAL_ENTRY", entry.id, entry);
     logger.log("[Sync] Journal entry queued for offline sync:", entry.id);
+    return;
+  }
+
+  if (await isEntityTombstonedOnServer("journal", entry.id)) {
+    await trackDeletedJournalEntryId(entry.id);
+    logger.warn("[Sync] Skipping server-tombstoned journal entry upsert:", entry.id);
     return;
   }
 
@@ -149,6 +156,11 @@ export const syncJournalPhoto = async (photo: JournalPhoto): Promise<void> => {
     return;
   }
 
+  if (await isEntityTombstonedOnServer("journal", photo.entryId)) {
+    logger.warn("[Sync] Skipping server-tombstoned journal photo upsert:", photo.id);
+    return;
+  }
+
   try {
     const { error } = await supabase.from("journal_photos").upsert(
       {
@@ -183,6 +195,11 @@ export const syncJournalAudio = async (audio: JournalAudio): Promise<void> => {
   const deletedEntryIds = await getDeletedJournalEntryIds();
   if (deletedEntryIds.has(audio.entryId)) {
     logger.warn("[Sync] Skipping tombstoned journal audio upsert:", audio.id);
+    return;
+  }
+
+  if (await isEntityTombstonedOnServer("journal", audio.entryId)) {
+    logger.warn("[Sync] Skipping server-tombstoned journal audio upsert:", audio.id);
     return;
   }
 

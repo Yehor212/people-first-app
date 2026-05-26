@@ -13,6 +13,7 @@ import { offlineQueue } from "@/lib/offlineQueue";
 import { getHabitPlanState } from "@/lib/habitPlan";
 import { normalizeHabitSchedule } from "@/lib/habitScheduling";
 import { doesNumericalStoredValueMeetTarget } from "@/lib/habits";
+import { isEntityTombstonedOnServer } from "./serverTombstones";
 import {
   encodeHabitCompletionForCloud,
   getCloudHabitCompletionSemanticFieldsForSync,
@@ -49,6 +50,12 @@ export const syncHabit = async (habit: Habit): Promise<void> => {
   if (!navigator.onLine) {
     await offlineQueue.enqueue("UPDATE_HABIT", habit.id, habit);
     logger.log("[Sync] Habit queued for offline sync:", habit.id);
+    return;
+  }
+
+  if (await isEntityTombstonedOnServer("habit", habit.id)) {
+    await trackDeletedHabitId(habit.id);
+    logger.warn("[Sync] Skipping server-tombstoned habit upsert:", habit.id);
     return;
   }
 

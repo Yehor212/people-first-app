@@ -29,6 +29,7 @@ import { MoodEntry } from "@/types";
 import type { Json } from "@/types/supabase";
 import { offlineQueue } from "@/lib/offlineQueue";
 import { detectNetworkError } from "./syncUtils";
+import { isEntityTombstonedOnServer } from "./serverTombstones";
 
 // ============================================
 // MOOD SYNC
@@ -40,6 +41,12 @@ export const syncMood = async (mood: MoodEntry): Promise<void> => {
   if (!supabase) return;
   if (!userId) {
     logger.warn("[Sync] Cannot sync mood: User not authenticated");
+    return;
+  }
+
+  const deletedMoodIds = await getDeletedMoodIds();
+  if (deletedMoodIds.has(mood.id)) {
+    logger.warn("[Sync] Skipping tombstoned mood upsert:", mood.id);
     return;
   }
 
@@ -61,6 +68,12 @@ export const syncMood = async (mood: MoodEntry): Promise<void> => {
       moodId: mood.id,
     });
     logger.log("[Sync] Mood queued for offline sync:", mood.id);
+    return;
+  }
+
+  if (await isEntityTombstonedOnServer("mood", mood.id)) {
+    await trackDeletedMoodId(mood.id);
+    logger.warn("[Sync] Skipping server-tombstoned mood upsert:", mood.id);
     return;
   }
 
@@ -138,6 +151,8 @@ export const syncMood = async (mood: MoodEntry): Promise<void> => {
 };
 
 export const deleteMoodFromCloud = async (moodId: string): Promise<void> => {
+  await trackDeletedMoodId(moodId);
+
   const userId = await getCurrentUserId();
   if (!supabase || !userId) return;
 
@@ -158,7 +173,6 @@ export const deleteMoodFromCloud = async (moodId: string): Promise<void> => {
     const { error } = await supabase.from("moods").delete().eq("id", moodId).eq("user_id", userId);
 
     if (error) throw error;
-    await trackDeletedMoodId(moodId);
     logger.log("[Sync] Mood deleted + tracked:", moodId);
     const deviceId = await getPersistentDeviceId();
     await writeEventAndBroadcast("mood", moodId, "delete", null, deviceId);
