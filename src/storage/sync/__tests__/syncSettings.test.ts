@@ -4,6 +4,8 @@ const mocks = vi.hoisted(() => ({
   getCurrentUserId: vi.fn(),
   from: vi.fn(),
   upsert: vi.fn(),
+  delete: vi.fn(),
+  match: vi.fn(),
   enqueue: vi.fn(),
   getPersistentDeviceId: vi.fn(),
   writeEventAndBroadcast: vi.fn(),
@@ -35,9 +37,9 @@ vi.mock("../syncUtils", () => ({
   detectNetworkError: vi.fn(() => false),
 }));
 
-import { syncSetting } from "../syncSettings";
+import { deleteSettingFromCloud, syncSetting } from "../syncSettings";
 
-describe("syncSetting", () => {
+describe("syncSettings", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     Object.defineProperty(navigator, "onLine", {
@@ -46,7 +48,9 @@ describe("syncSetting", () => {
     });
     mocks.getCurrentUserId.mockResolvedValue("user-1");
     mocks.upsert.mockResolvedValue({ error: null });
-    mocks.from.mockReturnValue({ upsert: mocks.upsert });
+    mocks.match.mockResolvedValue({ error: null });
+    mocks.delete.mockReturnValue({ match: mocks.match });
+    mocks.from.mockReturnValue({ upsert: mocks.upsert, delete: mocks.delete });
     mocks.getPersistentDeviceId.mockResolvedValue("device-1");
   });
 
@@ -111,6 +115,41 @@ describe("syncSetting", () => {
       value: false,
     });
     expect(mocks.upsert).not.toHaveBeenCalled();
+    expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
+  });
+
+  it("writes a setting delete sync event after a successful cloud delete", async () => {
+    await deleteSettingFromCloud("journal_draft_new");
+
+    expect(mocks.delete).toHaveBeenCalled();
+    expect(mocks.match).toHaveBeenCalledWith({
+      user_id: "user-1",
+      key: "journal_draft_new",
+    });
+    expect(mocks.writeEventAndBroadcast).toHaveBeenCalledWith(
+      "setting",
+      "journal_draft_new",
+      "delete",
+      expect.objectContaining({
+        key: "journal_draft_new",
+        deletedAt: expect.any(String),
+      }),
+      "device-1"
+    );
+  });
+
+  it("queues setting deletes while offline instead of writing partial cloud state", async () => {
+    Object.defineProperty(navigator, "onLine", {
+      configurable: true,
+      value: false,
+    });
+
+    await deleteSettingFromCloud("journal_draft_new");
+
+    expect(mocks.enqueue).toHaveBeenCalledWith("DELETE_SETTINGS", "journal_draft_new", {
+      key: "journal_draft_new",
+    });
+    expect(mocks.delete).not.toHaveBeenCalled();
     expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
   });
 });

@@ -516,6 +516,8 @@ const hebrewOverrides: Partial<Translations> = {
   privacyNoTrackingHint: "אנחנו לא אוספים נתוני התנהגות.",
   privacyAnalytics: "אנליטיקה",
   privacyAnalyticsHint: "עוזרת לשפר את האפליקציה. ניתן לכבות.",
+  privacyAds: "מודעות מתוגמלות",
+  privacyAdsHint: "סרטונים אופציונליים בלבד. SDK המודעות נשאר כבוי עד שתפעיל זאת.",
   privacyPolicy: "מדיניות פרטיות",
   termsOfService: "תנאי שימוש",
   openSourceLicenses: "רישיונות קוד פתוח",

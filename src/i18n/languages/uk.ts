@@ -564,6 +564,8 @@ export const uk: Translations = {
   privacyNoTrackingHint: "Ми не збираємо поведінкові дані.",
   privacyAnalytics: "Аналітика",
   privacyAnalyticsHint: "Допомагає покращувати додаток. Можна вимкнути.",
+  privacyAds: "Реклама з винагородою",
+  privacyAdsHint: "Лише необов’язкові відео. SDK реклами не запускається, доки це не ввімкнено.",
   privacyPolicy: "Політика конфіденційності",
   termsOfService: "Умови користування",
   openSourceLicenses: "Ліцензії відкритого коду",

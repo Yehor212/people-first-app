@@ -775,6 +775,8 @@ export interface Translations {
   privacyNoTrackingHint: string;
   privacyAnalytics: string;
   privacyAnalyticsHint: string;
+  privacyAds: string;
+  privacyAdsHint: string;
   privacyPolicy: string;
   termsOfService: string;
   openSourceLicenses: string;

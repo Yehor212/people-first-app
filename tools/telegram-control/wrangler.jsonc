@@ -1,0 +1,30 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "zenflow-telegram-control",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-05-26",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  },
+  "workflows": [
+    {
+      "name": "zenflow-control-workflow",
+      "binding": "CONTROL_WORKFLOW",
+      "class_name": "ControlWorkflow"
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "CONTROL_STATE",
+      "id": "REPLACE_WITH_CLOUDFLARE_KV_NAMESPACE_ID"
+    }
+  ],
+  "vars": {
+    "GITHUB_OWNER": "Yehor212",
+    "GITHUB_REPO": "people-first-app",
+    "GITHUB_WORKFLOW_FILE": "telegram-control.yml",
+    "GITHUB_BASE_REF": "main"
+  }
+}

@@ -550,6 +550,8 @@ export const ja: Translations = {
   privacyNoTrackingHint: "行動データは収集しません。",
   privacyAnalytics: "アナリティクス",
   privacyAnalyticsHint: "アプリ改善に役立ちます。オフにできます。",
+  privacyAds: "リワード広告",
+  privacyAdsHint: "任意の動画のみです。この設定をオンにするまで広告SDKは起動しません。",
   privacyPolicy: "プライバシーポリシー",
   termsOfService: "利用規約",
   openSourceLicenses: "オープンソースライセンス",

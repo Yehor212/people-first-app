@@ -63,3 +63,39 @@ export const syncSetting = async (key: string, value: unknown): Promise<void> =>
     throw error;
   }
 };
+
+export const deleteSettingFromCloud = async (key: string): Promise<void> => {
+  const userId = await getCurrentUserId();
+  if (!supabase) return;
+  if (!userId) {
+    logger.warn("[Sync] Cannot delete setting: User not authenticated");
+    return;
+  }
+
+  if (!navigator.onLine) {
+    await offlineQueue.enqueue("DELETE_SETTINGS", key, { key });
+    return;
+  }
+
+  try {
+    const deletedAt = new Date().toISOString();
+    const payload = { key, deletedAt };
+    const { error } = await supabase.from("user_settings").delete().match({ user_id: userId, key });
+
+    if (error) throw error;
+    const deviceId = await getPersistentDeviceId();
+    await writeEventAndBroadcast("setting", key, "delete", payload, deviceId);
+    logger.log("[Sync] Setting deleted:", key);
+  } catch (error) {
+    if (isAbortError(error)) {
+      logger.warn("[Sync] Setting delete aborted:", key);
+      return;
+    }
+    if (detectNetworkError(error)) {
+      await offlineQueue.enqueue("DELETE_SETTINGS", key, { key });
+      return;
+    }
+    logger.error("[Sync] Failed to delete setting:", error);
+    throw error;
+  }
+};

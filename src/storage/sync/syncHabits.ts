@@ -197,12 +197,6 @@ export const deleteHabitFromCloud = async (habitId: string): Promise<void> => {
   const userId = await getCurrentUserId();
   if (!supabase || !userId) return;
 
-  // Skip granular sync for non-UUID IDs (nanoid) — deletion tracker stays as permanent guard
-  if (!isValidUUID(habitId)) {
-    logger.log("[Sync] Skipping granular habit delete (non-UUID ID):", habitId);
-    return;
-  }
-
   // If offline, queue for later
   if (!navigator.onLine) {
     await offlineQueue.enqueue("DELETE_HABIT", habitId, { id: habitId });
@@ -211,6 +205,14 @@ export const deleteHabitFromCloud = async (habitId: string): Promise<void> => {
   }
 
   try {
+    if (!isValidUUID(habitId)) {
+      await trackDeletedHabitId(habitId);
+      const deviceId = await getPersistentDeviceId();
+      await writeEventAndBroadcast("habit", habitId, "delete", null, deviceId);
+      logger.log("[Sync] Legacy habit delete tracked + evented:", habitId);
+      return;
+    }
+
     const { error } = await supabase
       .from("habits")
       .delete()

@@ -27,118 +27,18 @@ import { useJournalVoice } from "./useJournalVoice";
 import { useAudioRecorder } from "./useAudioRecorder";
 import { logger } from "@/lib/logger";
 import { SK } from "@/lib/storageKeys";
-import {
-  safeLocalStorageSet,
-  safeJsonParse,
-  storageGetRaw,
-  storageSetRaw,
-  storageRemove,
-} from "@/lib/safeJson";
+import { safeJsonParse, storageGetRaw, storageSetRaw } from "@/lib/safeJson";
 import { useDiaryTheme } from "./useDiaryTheme";
 import { sanitizeRichContent } from "@/lib/sanitize";
 import { getJournalEditorContent } from "./journalDisplay";
 import { useThemeStore, type AppliedTheme } from "@/stores/themeStore";
-import { settingsRepo } from "@/storage/db";
-
-// ── Draft helpers (IndexedDB primary, localStorage fallback) ──
-
-interface DraftData {
-  title: string;
-  date: string;
-  content: string;
-  stickers: string[];
-  photoIds: string[];
-  audioIds?: string[];
-  mood?: MoodType;
-  tags: string[];
-  habitSnapshot?: {
-    habitId: string;
-    habitName: string;
-    habitIcon: string;
-    completed: boolean;
-  }[];
-  savedAt: number;
-  // Customizations (optional for backward compat with old drafts)
-  theme?: DiaryThemeName;
-  font?: DiaryFontName;
-  inkColor?: string;
-  paperTexture?: PaperTexture;
-  paperColor?: PaperColor;
-  bgIntensity?: BackgroundIntensity;
-  particleSpeed?: ParticleSpeed;
-  bgPattern?: DiaryBgPattern;
-  fontSize?: FontSizeName;
-  photoLayout?: Record<string, { x: number; y: number; width: number }>;
-}
-
-function getDraftKey(entryId: string | null): string {
-  return SK.journalDraft(entryId || "new");
-}
-
-async function saveDraft(key: string, data: DraftData) {
-  try {
-    await settingsRepo.put({ key, value: data });
-  } catch {
-    // Fallback to localStorage
-    safeLocalStorageSet(key, data);
-  }
-}
-
-async function loadDraft(key: string): Promise<DraftData | null> {
-  try {
-    const record = await settingsRepo.get(key);
-    if (record?.value) {
-      const data = record.value as DraftData;
-      if (Date.now() - data.savedAt > 7 * 86400000) {
-        await settingsRepo.delete(key);
-        return null;
-      }
-      return data;
-    }
-    // Migrate from localStorage if exists
-    const raw = storageGetRaw(key);
-    if (raw) {
-      const data = safeJsonParse<DraftData | null>(raw, null);
-      if (!data) {
-        storageRemove(key);
-        return null;
-      }
-      if (Date.now() - data.savedAt > 7 * 86400000) {
-        storageRemove(key);
-        return null;
-      }
-      // Migrate to IndexedDB
-      await settingsRepo.put({ key, value: data });
-      storageRemove(key);
-      return data;
-    }
-    return null;
-  } catch {
-    // Fallback to localStorage
-    try {
-      const raw = storageGetRaw(key);
-      if (!raw) return null;
-      const data = safeJsonParse<DraftData | null>(raw, null);
-      if (!data) return null;
-      if (Date.now() - data.savedAt > 7 * 86400000) {
-        storageRemove(key);
-        return null;
-      }
-      return data;
-    } catch {
-      return null;
-    }
-  }
-}
-
-async function clearDraft(key: string) {
-  try {
-    await settingsRepo.delete(key);
-  } catch {
-    /* non-critical */
-  }
-  storageRemove(key);
-}
+import {
+  clearJournalDraft as clearDraft,
+  getJournalDraftKey as getDraftKey,
+  loadJournalDraft as loadDraft,
+  saveJournalDraft as saveDraft,
+  type JournalDraftData as DraftData,
+} from "./journalDraftStorage";
 
 interface EditorSnapshot {
   title: string;

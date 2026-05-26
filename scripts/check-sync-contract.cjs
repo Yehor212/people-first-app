@@ -273,6 +273,8 @@ function main() {
 
   requireIncludes("src/lib/offlineQueueHandlers.ts", [
     "WRITE_SYNC_EVENT",
+    "DELETE_SETTINGS",
+    "deleteSettingFromCloud",
     "isSyncEventWriteIntent",
     "normalizeSyncEventWriteIntent",
     "action.payload = intent",
@@ -291,6 +293,26 @@ function main() {
   ]);
 
   requireIncludes("src/storage/db.ts", ["priority?: string"]);
+
+  requireIncludes("src/features/journal/journalDraftStorage.ts", [
+    "getJournalDraftKey",
+    "SK.journalDraft",
+    "settingsRepo.put",
+    "syncSetting(key, data)",
+    "deleteSettingFromCloud(key)",
+    "clearJournalDraft",
+  ]);
+
+  requireIncludes("src/storage/sync/syncSettings.ts", [
+    "deleteSettingFromCloud",
+    "\"DELETE_SETTINGS\"",
+    "await writeEventAndBroadcast(\"setting\", key, \"delete\"",
+  ]);
+
+  requireIncludes("src/storage/sync/syncHabits.ts", [
+    "Legacy habit delete tracked + evented",
+    "await writeEventAndBroadcast(\"habit\", habitId, \"delete\", null, deviceId)",
+  ]);
 
   for (const file of [
     "src/storage/sync/syncMoods.ts",

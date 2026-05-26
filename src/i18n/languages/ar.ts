@@ -555,6 +555,8 @@ const arabicOverrides: Partial<Translations> = {
   privacyNoTrackingHint: "لا نجمع بيانات سلوكية.",
   privacyAnalytics: "التحليلات",
   privacyAnalyticsHint: "تساعد على تحسين التطبيق. يمكن إيقافها.",
+  privacyAds: "إعلانات بمكافأة",
+  privacyAdsHint: "فيديوهات اختيارية فقط. تبقى حزمة الإعلانات متوقفة حتى تفعّل هذا الخيار.",
   privacyPolicy: "سياسة الخصوصية",
   termsOfService: "شروط الاستخدام",
   openSourceLicenses: "تراخيص المصدر المفتوح",

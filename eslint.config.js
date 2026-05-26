@@ -149,6 +149,7 @@ export default tseslint.config(
       "**/__tests__/**",
       "test/**",
       "e2e/**",
+      "tools/telegram-control/scripts/**",
     ],
     rules: {
       "no-console": "off",

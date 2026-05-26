@@ -1,8 +1,13 @@
 import { Shield } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { PrivacySettings } from "@/types";
+import type { PrivacySettings } from "@/types";
 import { Switch } from "@/components/ui/switch";
 import { BASE_URL } from "@/lib/env";
+import {
+  applyAdConsentPreference,
+  applyAnalyticsPreference,
+  applyNoTrackingPreference,
+} from "@/lib/privacyConsent";
 
 interface PrivacySectionProps {
   privacy: PrivacySettings;
@@ -22,27 +27,15 @@ export function PrivacySection({
   const termsHref = `${baseUrl}terms.html`;
 
   const handleNoTrackingChange = (checked: boolean) => {
-    // Prevent disabling both toggles
-    if (!checked && !privacy.analytics) {
-      return;
-    }
-    onPrivacyChange((prev) => ({
-      ...prev,
-      noTracking: checked,
-      analytics: checked ? false : prev.analytics,
-    }));
+    onPrivacyChange((prev) => applyNoTrackingPreference(prev, checked));
   };
 
   const handleAnalyticsChange = (checked: boolean) => {
-    // Prevent disabling both toggles
-    if (!checked && !privacy.noTracking) {
-      return;
-    }
-    onPrivacyChange((prev) => ({
-      ...prev,
-      analytics: checked,
-      noTracking: checked ? false : prev.noTracking,
-    }));
+    onPrivacyChange((prev) => applyAnalyticsPreference(prev, checked));
+  };
+
+  const handleAdConsentChange = (checked: boolean) => {
+    onPrivacyChange((prev) => applyAdConsentPreference(prev, checked));
   };
 
   return (
@@ -88,6 +81,23 @@ export function PrivacySection({
             checked={privacy.analytics}
             onCheckedChange={handleAnalyticsChange}
             aria-label={t.privacyAnalytics}
+            className="mt-0.5 shrink-0"
+          />
+        </div>
+
+        <div className="flex items-start justify-between gap-4 p-4 bg-secondary/50 rounded-xl">
+          <div>
+            <p className="text-sm font-medium text-foreground">
+              {t.privacyAds}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {t.privacyAdsHint}
+            </p>
+          </div>
+          <Switch
+            checked={privacy.adConsent === true}
+            onCheckedChange={handleAdConsentChange}
+            aria-label={t.privacyAds}
             className="mt-0.5 shrink-0"
           />
         </div>

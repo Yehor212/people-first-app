@@ -65,6 +65,7 @@ export {
   pullGratitudeFromCloud,
   // Settings
   syncSetting,
+  deleteSettingFromCloud,
   // Journal
   syncJournalEntry,
   deleteJournalEntryFromCloud,

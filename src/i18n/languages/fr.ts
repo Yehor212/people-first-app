@@ -570,6 +570,8 @@ export const fr: Translations = {
   privacyNoTrackingHint: "Nous ne collectons pas de données comportementales.",
   privacyAnalytics: "Analytiques",
   privacyAnalyticsHint: "Aide à améliorer l'app. Vous pouvez le désactiver.",
+  privacyAds: "Publicités récompensées",
+  privacyAdsHint: "Vidéos facultatives uniquement. Le SDK publicitaire reste désactivé tant que ce réglage est coupé.",
   privacyPolicy: "Politique de confidentialité",
   termsOfService: "Conditions d'utilisation",
   openSourceLicenses: "Licences open source",

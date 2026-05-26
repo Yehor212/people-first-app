@@ -10,7 +10,12 @@ import { syncMood, deleteMoodFromCloud } from "@/storage/realtimeSync";
 import { syncHabit, deleteHabitFromCloud, syncHabitCompletion } from "@/storage/realtimeSync";
 import { syncFocusSession } from "@/storage/realtimeSync";
 import { syncGratitude, deleteGratitudeFromCloud } from "@/storage/realtimeSync";
-import { syncJournalEntry, deleteJournalEntryFromCloud, syncSetting } from "@/storage/realtimeSync";
+import {
+  syncJournalEntry,
+  deleteJournalEntryFromCloud,
+  syncSetting,
+  deleteSettingFromCloud,
+} from "@/storage/realtimeSync";
 import { logger } from "./logger";
 import {
   isSyncEventWriteIntent,
@@ -159,6 +164,16 @@ export function initializeOfflineQueueHandlers(): void {
       return;
     }
     await syncSetting(payload.key, payload.value);
+  });
+
+  offlineQueue.registerHandler("DELETE_SETTINGS", async (action: OfflineAction) => {
+    const payload = action.payload as { key?: string } | null;
+    const key = typeof payload?.key === "string" ? payload.key : action.entityId;
+    if (!key) {
+      logger.warn("[OfflineQueue] Invalid settings delete payload, skipping:", action.entityId);
+      return;
+    }
+    await deleteSettingFromCloud(key);
   });
 
   // Journal handlers

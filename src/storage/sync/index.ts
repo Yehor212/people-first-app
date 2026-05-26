@@ -19,7 +19,7 @@ export { syncFocusSession, pullFocusFromCloud } from "./syncFocus";
 export { syncGratitude, deleteGratitudeFromCloud, pullGratitudeFromCloud } from "./syncGratitude";
 
 // Settings sync
-export { syncSetting } from "./syncSettings";
+export { syncSetting, deleteSettingFromCloud } from "./syncSettings";
 
 // Journal sync
 export {

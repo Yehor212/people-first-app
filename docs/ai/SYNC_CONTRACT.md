@@ -206,6 +206,9 @@ Behavioral gates for user-visible sync work:
   delayed remote pull must not bring the deleted entity back.
 - For settings and preferences, prove the active UI reads the same setting after
   hydration, reload, and route/shell switch.
+- Journal drafts use the `journal_draft_*` setting namespace. Draft save,
+  migration, dismiss, and save-clear paths must use ordered `setting` events so
+  phone-to-desktop draft state is account sync, not only device-local storage.
 - For same-account release claims, run `npm run smoke:sync-account` with
   `ZENFLOW_SYNC_TEST_EMAIL` and `ZENFLOW_SYNC_TEST_PASSWORD`; without those
   credentials the live account layer is `UNVERIFIED`, not passed.

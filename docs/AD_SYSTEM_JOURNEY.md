@@ -23,14 +23,14 @@ Allow users to **voluntarily watch rewarded video ads** to earn bonus treats (in
 |---|---|---|
 | **Free User** | Can watch rewarded ads, can decline, can toggle ad consent | Default actor |
 | **Premium User** | All ads disabled, no ad UI shown | $4.99/mo or $29.99/yr |
-| **Anonymous User** | Non-personalized ads only | No GDPR consent needed for non-personalized |
+| **Anonymous User** | Ads disabled until explicit opt-in | No ad SDK startup without consent |
 | **Ad SDK (AdMob)** | Renders video, reports completion | Client-side only, no SSV yet |
 | **Mood Gatekeeper** | Blocks/reduces ads based on mood | Automatic, not user-visible |
 
 ### Permission matrix:
 ```
-Free + adConsent=true  → Personalized rewarded ads
-Free + adConsent=false → Non-personalized rewarded ads
+Free + adConsent=true  → Opt-in rewarded ads may initialize
+Free + adConsent=false → No ad SDK initialization, no ad UI
 Premium                → No ads at all
 mood=terrible          → All ads blocked
 mood=bad               → Max 1 ad per session
@@ -217,12 +217,20 @@ N/A — the system is invisible when unavailable.
 | Ad injection/tampering | HTTPS only + AdMob SDK integrity |
 
 ### Privacy:
-- **No tracking without consent.** `adConsent = false` → non-personalized ads only
+- **No ad SDK without consent.** `adConsent = false` → no ad initialization and no ad UI
 - **No data sent to ad networks** beyond what AdMob SDK collects (device ID, app context)
 - **Mood data NEVER sent** to ad networks — mood gating is 100% client-side
 - **Premium removes all ad code paths** — no SDK initialization at all
 - User can revoke `adConsent` anytime in Settings → Privacy
 - GDPR Article 7: separate consent for analytics and ads
+
+### Current release status:
+- **Google Play release artifact ships with ads off.** `@capacitor-community/admob`
+  is not installed in `package.json`, so Android must not declare the AdMob app
+  ID or request `com.google.android.gms.permission.AD_ID`.
+- **Future rewarded ads require a single release change.** Install the SDK,
+  restore native declarations, update Play Console Ads/Data Safety, and rerun
+  the Google Play asset/declaration checks in the same release batch.
 
 ### Security:
 - Ad unit IDs in env vars, not hardcoded (except test IDs as fallback)
@@ -257,7 +265,7 @@ N/A — the system is invisible when unavailable.
 ### Component Hierarchy:
 ```
 <App>
-  <AdProvider adConsent={privacy.adConsent} isPremium={false}
+  <AdProvider adConsent={canInitializeRewardedAds(privacy)} isPremium={false}
               onEarnTreats={earnTreats} onEarnXp={awardXp}>
     <Index>
       <DailyRewards>

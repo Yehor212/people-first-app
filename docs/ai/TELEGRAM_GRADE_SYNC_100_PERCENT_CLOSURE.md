@@ -292,7 +292,7 @@ applicable, delete behavior where applicable, and V1/V2 convergence proof.
 | Gratitude | `gratitude` | gratitude rows + IndexedDB | Required | Required | Required |
 | Journal | `journal` | journal rows + IndexedDB | Required | Required | Required |
 | Journal media metadata | domain table | photo/audio metadata + Storage pointer | Required when removable | Required if surfaced | Required |
-| Settings | `setting` | settings table + IndexedDB | Not applicable unless clearing | Required | Required |
+| Settings and drafts | `setting` | settings table + IndexedDB | Required when clearing/dismissing | Required | Required |
 | Backup/import | recovery path | backup payload | Must not resurrect | Required when invoked | Required |
 
 If a new synced entity is added, update this table, `src/storage/eventSync.ts`,

@@ -1,0 +1,293 @@
+name: Telegram Control Plane
+
+on:
+  workflow_dispatch:
+    inputs:
+      job_id:
+        description: Telegram control job id
+        required: true
+        type: string
+      mode:
+        description: Control mode
+        required: true
+        type: choice
+        options:
+          - status
+          - plan
+          - fix
+          - review
+          - test
+          - security
+          - deploy
+          - rollback
+      prompt:
+        description: User prompt from Telegram
+        required: false
+        type: string
+        default: ""
+      base_ref:
+        description: Base branch or ref
+        required: false
+        type: string
+        default: main
+      approval_policy:
+        description: Telegram approval state
+        required: false
+        type: choice
+        default: auto
+        options:
+          - auto
+          - telegram-required
+          - telegram-approved
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  actions: read
+
+concurrency:
+  group: telegram-control-${{ inputs.job_id }}
+  cancel-in-progress: false
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  JOB_ID: ${{ inputs.job_id }}
+  MODE: ${{ inputs.mode }}
+  PROMPT: ${{ inputs.prompt }}
+  BASE_REF: ${{ inputs.base_ref || 'main' }}
+  APPROVAL_POLICY: ${{ inputs.approval_policy || 'auto' }}
+  WORK_BRANCH: codex/telegram-${{ inputs.job_id }}
+  HAS_OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY != '' }}
+  TELEGRAM_CONTROL_CALLBACK_URL: ${{ secrets.TELEGRAM_CONTROL_CALLBACK_URL }}
+  TELEGRAM_CONTROL_CALLBACK_SECRET: ${{ secrets.TELEGRAM_CONTROL_CALLBACK_SECRET }}
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+  control:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout base ref
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.BASE_REF }}
+          fetch-depth: 0
+
+      - name: Prepare callback helper
+        shell: bash
+        run: |
+          cat > /tmp/telegram-control-notify.sh <<'SCRIPT'
+          notify_control() {
+            local status="$1"
+            local evidence="$2"
+            local pr_url="${3:-}"
+            local run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+            if [ -z "${TELEGRAM_CONTROL_CALLBACK_URL:-}" ] || [ -z "${TELEGRAM_CONTROL_CALLBACK_SECRET:-}" ]; then
+              echo "Telegram callback skipped: TELEGRAM_CONTROL_CALLBACK_URL or TELEGRAM_CONTROL_CALLBACK_SECRET is not configured."
+              return 0
+            fi
+            jq -n \
+              --arg job_id "$JOB_ID" \
+              --arg status "$status" \
+              --arg github_run_url "$run_url" \
+              --arg branch "$WORK_BRANCH" \
+              --arg pr_url "$pr_url" \
+              --arg evidence "$evidence" \
+              '{job_id:$job_id,status:$status,github_run_url:$github_run_url,branch:$branch,pr_url:$pr_url,evidence:[$evidence]}' \
+              | curl -fsS \
+                -H "Content-Type: application/json" \
+                -H "X-Zenflow-Control-Secret: ${TELEGRAM_CONTROL_CALLBACK_SECRET}" \
+                --data-binary @- \
+                "${TELEGRAM_CONTROL_CALLBACK_URL}"
+          }
+          SCRIPT
+          chmod +x /tmp/telegram-control-notify.sh
+
+      - name: Validate control request
+        shell: bash
+        run: |
+          set -euo pipefail
+          . /tmp/telegram-control-notify.sh
+
+          case "$MODE" in
+            status|plan|fix|review|test|security|deploy|rollback) ;;
+            *)
+              notify_control "failed" "Invalid mode: $MODE"
+              echo "Invalid mode: $MODE" >&2
+              exit 1
+              ;;
+          esac
+
+          if [[ ! "$WORK_BRANCH" =~ ^codex/telegram-[A-Za-z0-9_.-]+$ ]]; then
+            notify_control "failed" "Unsafe generated branch name: $WORK_BRANCH"
+            echo "Unsafe generated branch name: $WORK_BRANCH" >&2
+            exit 1
+          fi
+
+          if [ "$MODE" = "deploy" ] || [ "$MODE" = "rollback" ]; then
+            if [ "$APPROVAL_POLICY" != "telegram-approved" ]; then
+              notify_control "failed" "Destructive mode requires Telegram approval."
+              echo "Destructive mode requires Telegram approval." >&2
+              exit 1
+            fi
+          fi
+
+          if [ "$BASE_REF" = "main" ] || [ "$BASE_REF" = "refs/heads/main" ]; then
+            echo "Base ref is main; writes still go only to $WORK_BRANCH."
+          fi
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Create isolated work branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "zenflow-telegram-control"
+          git config user.email "zenflow-telegram-control@users.noreply.github.com"
+          git checkout -B "$WORK_BRANCH"
+
+      - name: Status mode
+        if: ${{ inputs.mode == 'status' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          . /tmp/telegram-control-notify.sh
+          gh run list --limit 10
+          notify_control "succeeded" "Status mode listed recent workflow runs."
+
+      - name: Run requested test gates
+        if: ${{ inputs.mode == 'test' || inputs.mode == 'deploy' || inputs.mode == 'rollback' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run typecheck
+          npm run lint
+          npm run check:task-completion
+          npm run check:sync-contract
+          if [ "$MODE" = "deploy" ] || [ "$MODE" = "rollback" ]; then
+            npm run check:all
+          fi
+
+      - name: Optional Snyk code scan
+        if: ${{ inputs.mode == 'security' }}
+        shell: bash
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SNYK_TOKEN:-}" ]; then
+            echo "UNVERIFIED: SNYK_TOKEN is not configured; skipping snyk code test."
+            exit 0
+          fi
+          npx snyk code test
+
+      - name: Guard OpenAI API availability
+        if: ${{ inputs.mode == 'plan' || inputs.mode == 'fix' || inputs.mode == 'review' || inputs.mode == 'security' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          . /tmp/telegram-control-notify.sh
+          if [ "$HAS_OPENAI_API_KEY" != "true" ]; then
+            notify_control "UNVERIFIED" "OPENAI_API_KEY is missing; Codex action was not run."
+            echo "UNVERIFIED: OPENAI_API_KEY is missing; Codex action was not run." >&2
+            exit 1
+          fi
+
+      - name: Run Codex
+        id: run_codex
+        if: ${{ inputs.mode == 'plan' || inputs.mode == 'fix' || inputs.mode == 'review' || inputs.mode == 'security' }}
+        uses: openai/codex-action@v1
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          sandbox: workspace-write
+          safety-strategy: drop-sudo
+          output-file: artifacts/telegram-control-codex-final.md
+          prompt: |
+            You are operating ZenFlow through the Telegram Control Plane.
+
+            Mode: ${{ inputs.mode }}
+            Base ref: ${{ inputs.base_ref }}
+            Job id: ${{ inputs.job_id }}
+            Telegram prompt:
+            ${{ inputs.prompt }}
+
+            Hard constraints:
+            - Work only on branch `codex/telegram-${{ inputs.job_id }}`.
+            - Do not write directly to `main`.
+            - Do not expose secrets or user journal/habit content.
+            - Follow `AGENTS.md`, `ARCHITECTURE.md`, and `docs/ai/TASK_COMPLETION_PROTOCOL.md`.
+            - For destructive changes, stop and report `ASK`; production deploy, rollback, Supabase SQL/RLS, secrets, protected docs/hooks, and branch deletion require Telegram confirmation.
+            - Evidence must use current command output or current file paths. No evidence equals FAIL.
+
+            Required output:
+            - Summary of actions.
+            - Evidence commands run and their result.
+            - Whether the result is PASS, PARTIAL, UNVERIFIED, FAIL, or ASK.
+
+      - name: Run post-Codex safety gates
+        if: ${{ inputs.mode == 'fix' || inputs.mode == 'security' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run typecheck
+          npm run lint
+          npm run check:task-completion
+          npm run check:sync-contract
+
+      - name: Publish branch and PR
+        id: publish
+        if: ${{ inputs.mode == 'plan' || inputs.mode == 'fix' || inputs.mode == 'review' || inputs.mode == 'security' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          . /tmp/telegram-control-notify.sh
+          mkdir -p artifacts
+          git status --short
+          git add -A
+          git reset -- artifacts || true
+          if git diff --cached --quiet; then
+            notify_control "succeeded" "No repository changes were produced by Codex."
+            echo "pr_url=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          git commit -m "telegram control batch ${JOB_ID}"
+          git push --force-with-lease origin "$WORK_BRANCH"
+
+          pr_url="$(gh pr create \
+            --draft \
+            --base "$BASE_REF" \
+            --head "$WORK_BRANCH" \
+            --title "Telegram control: ${MODE} ${JOB_ID}" \
+            --body "Created by Telegram Control Plane job ${JOB_ID}.\n\nMode: ${MODE}\n\nPrompt:\n${PROMPT}")"
+          echo "pr_url=$pr_url" >> "$GITHUB_OUTPUT"
+          notify_control "succeeded" "Created Telegram control PR." "$pr_url"
+
+      - name: Final callback for non-Codex modes
+        if: ${{ inputs.mode == 'status' || inputs.mode == 'test' || inputs.mode == 'deploy' || inputs.mode == 'rollback' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          . /tmp/telegram-control-notify.sh
+          if [ "$MODE" = "rollback" ]; then
+            notify_control "UNVERIFIED" "Rollback command is approved but no repository rollback adapter exists yet."
+            echo "UNVERIFIED: rollback adapter is not implemented for this repository."
+            exit 1
+          fi
+          notify_control "succeeded" "${MODE} gates completed."
+
+      - name: Upload control artifacts
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: telegram-control-${{ inputs.job_id }}
+          path: artifacts
+          if-no-files-found: ignore

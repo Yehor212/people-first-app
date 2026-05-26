@@ -41,6 +41,8 @@ vi.mock("@/storage/realtimeSync", () => ({
   deleteGratitudeFromCloud: vi.fn(() => Promise.resolve()),
   syncJournalEntry: vi.fn(() => Promise.resolve()),
   deleteJournalEntryFromCloud: vi.fn(() => Promise.resolve()),
+  syncSetting: vi.fn(() => Promise.resolve()),
+  deleteSettingFromCloud: vi.fn(() => Promise.resolve()),
 }));
 
 vi.mock("@/storage/eventSync", () => ({
@@ -87,6 +89,8 @@ import {
   deleteGratitudeFromCloud,
   syncJournalEntry,
   deleteJournalEntryFromCloud,
+  syncSetting,
+  deleteSettingFromCloud,
 } from "@/storage/realtimeSync";
 import { writeQueuedEventAndBroadcast } from "@/storage/eventSync";
 import { safeValidate } from "@/lib/validation";
@@ -167,14 +171,15 @@ describe("offlineQueueHandlers", () => {
       expect(registeredTypes).toContain("CREATE_GRATITUDE");
       expect(registeredTypes).toContain("DELETE_GRATITUDE");
       expect(registeredTypes).toContain("UPDATE_SETTINGS");
+      expect(registeredTypes).toContain("DELETE_SETTINGS");
       expect(registeredTypes).toContain("SYNC_JOURNAL_ENTRY");
       expect(registeredTypes).toContain("DELETE_JOURNAL_ENTRY");
       expect(registeredTypes).toContain("WRITE_SYNC_EVENT");
     });
 
-    it("registers exactly 14 handlers", () => {
+    it("registers exactly 15 handlers", () => {
       initializeOfflineQueueHandlers();
-      expect(offlineQueue.registerHandler).toHaveBeenCalledTimes(14);
+      expect(offlineQueue.registerHandler).toHaveBeenCalledTimes(15);
     });
 
     it("calls processQueue when online", () => {
@@ -381,10 +386,33 @@ describe("offlineQueueHandlers", () => {
       expect(writeQueuedEventAndBroadcast).toHaveBeenCalledWith(intent);
     });
 
-    it("UPDATE_SETTINGS handler is a no-op placeholder", async () => {
+    it("UPDATE_SETTINGS handler calls syncSetting with valid payload", async () => {
       const handler = getHandler("UPDATE_SETTINGS");
-      // Should not throw
-      await expect(handler(makeAction("UPDATE_SETTINGS", {}, "settings"))).resolves.toBeUndefined();
+      await handler(
+        makeAction(
+          "UPDATE_SETTINGS",
+          { key: "journal_draft_new", value: { title: "draft" } },
+          "journal_draft_new"
+        )
+      );
+
+      expect(syncSetting).toHaveBeenCalledWith("journal_draft_new", { title: "draft" });
+    });
+
+    it("UPDATE_SETTINGS handler skips invalid payload", async () => {
+      const handler = getHandler("UPDATE_SETTINGS");
+      await handler(makeAction("UPDATE_SETTINGS", {}, "settings"));
+
+      expect(syncSetting).not.toHaveBeenCalled();
+    });
+
+    it("DELETE_SETTINGS handler calls deleteSettingFromCloud", async () => {
+      const handler = getHandler("DELETE_SETTINGS");
+      await handler(
+        makeAction("DELETE_SETTINGS", { key: "journal_draft_new" }, "journal_draft_new")
+      );
+
+      expect(deleteSettingFromCloud).toHaveBeenCalledWith("journal_draft_new");
     });
   });
 

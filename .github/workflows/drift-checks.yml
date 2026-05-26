@@ -11,6 +11,7 @@ on:
       # Run only when something we can drift on actually changes.
       - 'src/**'
       - 'docs/**'
+      - 'tools/telegram-control/**'
       - 'supabase/migrations/**'
       - 'package.json'
       - 'package-lock.json'
@@ -22,6 +23,7 @@ on:
       - 'scripts/check-oss-licenses.cjs'
       - 'scripts/a11y-icons-audit.cjs'
       - '.github/workflows/drift-checks.yml'
+      - '.github/workflows/telegram-control.yml'
   workflow_dispatch:
 
 concurrency:
@@ -61,6 +63,9 @@ jobs:
           - name: a11y-icons
             cmd: node scripts/a11y-icons-audit.cjs --max-icon-only=2 --max-decorative=136
             fix: add aria-label to icon-only buttons or aria-hidden="true" to decorative lucide icons
+          - name: telegram-control
+            cmd: npm run check:telegram-control
+            fix: run npm run check:telegram-control locally, then fix Worker tests, workflow contract, smoke, or setup verifier output
 
     steps:
       - uses: actions/checkout@v6

@@ -46,6 +46,7 @@ import { getChallenges, getBadges } from "@/lib/challengeStorage";
 import { GlobalScheduleBar } from "@/components/GlobalScheduleBar";
 import { FocusMiniPlayer } from "@/components/FocusMiniPlayer";
 import { analytics } from "@/lib/analytics";
+import { canInitializeRewardedAds } from "@/lib/privacyConsent";
 import { registerModalCloseCallback } from "@/lib/androidBackHandler";
 import { ModalLayer } from "@/components/ModalLayer";
 import { Navigation } from "@/components/Navigation";
@@ -374,7 +375,7 @@ export default function IndexV1Impl() {
         <AdProvider
           onEarnTreats={(amount) => earnTreats("ad", amount, "Ad reward")}
           onEarnXp={() => awardXp("habit")}
-          adConsent={true}
+          adConsent={canInitializeRewardedAds(privacy)}
           isPremium={false}
         >
           <div className="min-h-screen zen-gradient-hero lg:ps-[var(--sidebar-width,256px)] motion-safe:transition-[padding] motion-safe:duration-300">
