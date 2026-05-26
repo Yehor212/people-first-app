@@ -7,9 +7,13 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "verify:config": "node --import tsx scripts/verify-config.ts",
     "activation:checklist": "node --import tsx scripts/activation-checklist.ts",
+    "setup:plan": "node --import tsx scripts/setup-plan.ts",
+    "check:secrets": "node --import tsx scripts/check-no-secrets.ts",
     "check:workflow": "node --import tsx scripts/check-workflow-contract.ts",
     "smoke:local": "node --import tsx scripts/smoke-local.ts",
+    "smoke:live": "node --import tsx scripts/smoke-live.ts",
     "set-webhook": "node --import tsx scripts/set-webhook.ts",
+    "deploy": "npx wrangler deploy",
     "deploy:dry-run": "npx wrangler deploy --dry-run"
   }
 }

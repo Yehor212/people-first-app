@@ -6,6 +6,19 @@ on:
   pull_request:
     branches: ["main"]
   workflow_dispatch:
+    inputs:
+      telegram_control_job_id:
+        description: Telegram control job id that approved this deploy
+        required: false
+        type: string
+      telegram_approval:
+        description: Deploy only when set by Telegram Control Plane after approval
+        required: false
+        type: choice
+        default: manual-build-only
+        options:
+          - manual-build-only
+          - telegram-approved
 
 permissions:
   contents: read
@@ -25,6 +38,22 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+
+      - name: Validate Telegram-approved deploy target
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.telegram_approval == 'telegram-approved'
+        shell: bash
+        env:
+          TELEGRAM_CONTROL_JOB_ID: ${{ github.event.inputs.telegram_control_job_id }}
+        run: |
+          set -euo pipefail
+          if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+            echo "Telegram-approved production deploys must run from main."
+            exit 1
+          fi
+          if [ -z "${TELEGRAM_CONTROL_JOB_ID:-}" ]; then
+            echo "telegram_control_job_id is required for Telegram-approved deploys."
+            exit 1
+          fi
 
       - name: Setup Node
         uses: actions/setup-node@v6
@@ -155,7 +184,7 @@ jobs:
         run: npm run ratchet:check
 
       - name: Upload artifact
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' || github.event.inputs.telegram_approval == 'telegram-approved'
         uses: actions/upload-pages-artifact@v5
         with:
           path: dist
@@ -244,7 +273,7 @@ jobs:
         run: xcodebuild -project ios/App/App.xcodeproj -scheme App -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -configuration Debug CODE_SIGNING_ALLOWED=NO build
 
   deploy:
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' || github.event.inputs.telegram_approval == 'telegram-approved'
     needs: [build] # android-gate and ios-gate run in parallel; web deploy waits only for web release gates
     runs-on: ubuntu-latest
     environment:

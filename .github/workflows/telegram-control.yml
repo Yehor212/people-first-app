@@ -44,7 +44,7 @@ permissions:
   contents: write
   pull-requests: write
   issues: write
-  actions: read
+  actions: write
 
 concurrency:
   group: telegram-control-${{ inputs.job_id }}
@@ -176,6 +176,93 @@ jobs:
             npm run check:all
           fi
 
+      - name: Create rollback proposal PR
+        id: rollback_pr
+        if: ${{ inputs.mode == 'rollback' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          . /tmp/telegram-control-notify.sh
+
+          rollback_target="$(printf '%s\n' "$PROMPT" | sed -nE 's/.*\b(target|to|ref|commit)[=: ]+([A-Za-z0-9._\/-]+).*/\2/p' | head -n 1)"
+          if [ -z "$rollback_target" ]; then
+            first_token="$(printf '%s\n' "$PROMPT" | awk '{print $1}')"
+            second_token="$(printf '%s\n' "$PROMPT" | awk '{print $2}')"
+            if [ "$first_token" = "/rollback" ] || [ "$first_token" = "rollback" ]; then
+              rollback_target="$second_token"
+            else
+              rollback_target="$first_token"
+            fi
+          fi
+
+          if [[ ! "$rollback_target" =~ ^[A-Za-z0-9._/-]{7,80}$ ]] || [[ "$rollback_target" == -* ]]; then
+            notify_control "UNVERIFIED" "Rollback target missing or unsafe. Use /rollback target=<commit-or-ref>."
+            echo "UNVERIFIED: rollback target missing or unsafe. Use /rollback target=<commit-or-ref>." >&2
+            exit 1
+          fi
+
+          if ! git rev-parse --verify "${rollback_target}^{commit}" >/dev/null 2>&1; then
+            notify_control "UNVERIFIED" "Rollback target was not found as a commit: ${rollback_target}"
+            echo "UNVERIFIED: rollback target was not found as a commit." >&2
+            exit 1
+          fi
+
+          git checkout -B "$WORK_BRANCH"
+          if ! git revert --no-edit "$rollback_target"; then
+            git revert --abort || true
+            notify_control "UNVERIFIED" "Rollback revert had conflicts for target ${rollback_target}; manual PR required."
+            echo "UNVERIFIED: rollback revert had conflicts for target ${rollback_target}; manual PR required." >&2
+            exit 1
+          fi
+
+          npm run typecheck
+          npm run lint
+          npm run check:task-completion
+          npm run check:sync-contract
+
+          git push --force-with-lease origin "$WORK_BRANCH"
+          pr_url="$(gh pr create \
+            --draft \
+            --base "$BASE_REF" \
+            --head "$WORK_BRANCH" \
+            --title "Telegram rollback: ${rollback_target} (${JOB_ID})" \
+            --body "Created by Telegram Control Plane rollback job ${JOB_ID}.\n\nTarget: ${rollback_target}\n\nPrompt:\n${PROMPT}\n\nThis is a draft rollback PR. It does not deploy or write directly to main.")"
+          echo "pr_url=$pr_url" >> "$GITHUB_OUTPUT"
+          notify_control "succeeded" "Created rollback draft PR for ${rollback_target}." "$pr_url"
+
+      - name: Dispatch production deploy workflow
+        id: deploy_dispatch
+        if: ${{ inputs.mode == 'deploy' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          . /tmp/telegram-control-notify.sh
+
+          if [ "$BASE_REF" != "main" ] && [ "$BASE_REF" != "refs/heads/main" ]; then
+            notify_control "UNVERIFIED" "Production deploy requires base_ref=main; refusing deploy from ${BASE_REF}."
+            echo "UNVERIFIED: production deploy requires base_ref=main; refusing deploy from ${BASE_REF}." >&2
+            exit 1
+          fi
+
+          if ! gh workflow run deploy.yml \
+            --ref main \
+            -f telegram_control_job_id="$JOB_ID" \
+            -f telegram_approval=telegram-approved; then
+            notify_control "UNVERIFIED" "GitHub Pages deploy workflow dispatch failed."
+            echo "UNVERIFIED: GitHub Pages deploy workflow dispatch failed." >&2
+            exit 1
+          fi
+
+          sleep 8
+          deploy_run_json="$(gh run list --workflow deploy.yml --branch main --limit 1 --json databaseId,url,status,conclusion,createdAt 2>/dev/null || true)"
+          deploy_run_url="$(printf '%s' "$deploy_run_json" | jq -r '.[0].url // empty')"
+          if [ -n "$deploy_run_url" ]; then
+            echo "deploy_run_url=$deploy_run_url" >> "$GITHUB_OUTPUT"
+            notify_control "queued" "GitHub Pages deploy workflow dispatched." "$deploy_run_url"
+          else
+            notify_control "queued" "GitHub Pages deploy workflow dispatched; run URL not available yet."
+          fi
+
       - name: Optional Snyk code scan
         if: ${{ inputs.mode == 'security' }}
         shell: bash
@@ -272,16 +359,11 @@ jobs:
           notify_control "succeeded" "Created Telegram control PR." "$pr_url"
 
       - name: Final callback for non-Codex modes
-        if: ${{ inputs.mode == 'status' || inputs.mode == 'test' || inputs.mode == 'deploy' || inputs.mode == 'rollback' }}
+        if: ${{ inputs.mode == 'status' || inputs.mode == 'test' }}
         shell: bash
         run: |
           set -euo pipefail
           . /tmp/telegram-control-notify.sh
-          if [ "$MODE" = "rollback" ]; then
-            notify_control "UNVERIFIED" "Rollback command is approved but no repository rollback adapter exists yet."
-            echo "UNVERIFIED: rollback adapter is not implemented for this repository."
-            exit 1
-          fi
           notify_control "succeeded" "${MODE} gates completed."
 
       - name: Upload control artifacts

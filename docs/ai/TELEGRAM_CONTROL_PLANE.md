@@ -5,6 +5,7 @@ ZenFlow now has a Telegram-first control-plane scaffold that is separate from th
 - Worker source: `tools/telegram-control/`
 - Cloudflare config: `tools/telegram-control/wrangler.jsonc`
 - GitHub workflow: `.github/workflows/telegram-control.yml`
+- Mini App route: `/miniapp`
 - Completion/sync proof anchors: `docs/ai/TASK_COMPLETION_PROTOCOL.md`, `docs/ai/TELEGRAM_GRADE_RUNTIME_CONTRACT.md`, and `docs/ai/SYNC_CONTRACT.md`
 
 ## Architecture
@@ -13,11 +14,14 @@ ZenFlow now has a Telegram-first control-plane scaffold that is separate from th
 flowchart LR
   Admin["Telegram admin"] --> Bot["Telegram Bot API"]
   Bot --> Worker["Cloudflare Worker /telegram/webhook"]
+  Admin --> MiniApp["Telegram Mini App /miniapp"]
+  MiniApp --> Worker
   Worker --> KV["Cloudflare KV job metadata"]
   Worker --> Workflow["Cloudflare Workflow ControlWorkflow"]
   Workflow --> GitHub["GitHub workflow_dispatch"]
   GitHub --> Codex["openai/codex-action"]
   GitHub --> PR["codex/telegram-* draft PR"]
+  GitHub --> PagesDeploy["GitHub Pages deploy workflow"]
   GitHub --> Callback["/github/webhook callback"]
   Callback --> Worker
   Worker --> Bot
@@ -72,9 +76,11 @@ The v1 runtime uses Cloudflare Workers plus Cloudflare Workflows because it can 
 - Telegram users must be allowlisted in `TELEGRAM_ADMIN_IDS`.
 - GitHub webhooks must verify `X-Hub-Signature-256`.
 - GitHub Actions callbacks must send `X-Zenflow-Control-Secret`.
+- Mini App API calls must send `Authorization: tma <Telegram.WebApp.initData>` and pass server-side HMAC validation.
 - Approval callback data includes a nonce stored on the job.
 - Worker KV stores metadata only; no ZenFlow user content is stored.
 - AI work is branch-scoped to `codex/telegram-*`.
+- Production deploy is only dispatched after Telegram approval and only from `main`.
 - Missing `OPENAI_API_KEY` is reported as `UNVERIFIED`, never as success.
 
 ## No-Budget Constraint
@@ -98,17 +104,24 @@ This implementation avoids a permanent paid host. Cloudflare Workers/Workflows a
 - Unauthorized Telegram user is rejected before any GitHub dispatch.
 - `/status` and `/health` return state without starting Codex.
 - `/fix ...` creates a GitHub control job and dispatches branch-scoped work.
-- `/deploy` and `/rollback` stop at Telegram approval before dispatch.
+- `/deploy` stops at Telegram approval before dispatch, then queues the existing GitHub Pages deploy workflow from `main`.
+- `/rollback target=<commit-or-ref>` requires Telegram approval, creates a `codex/telegram-*` branch, reverts the target, runs gates, and opens a draft PR. It does not deploy directly.
 - Missing `OPENAI_API_KEY` returns `UNVERIFIED`.
 - Failed CI reports failure evidence back through `/github/webhook`.
+- A Telegram-approved production deploy from any ref other than `main` is rejected.
+- `/miniapp/state` rejects missing or invalid Telegram init data.
+- `/miniapp/command` uses the same command parser and destructive approval gate as chat commands.
 
 ## Verification Checklist
 
 - `npm run check:telegram-control`
 - `npm --prefix tools/telegram-control run activation:checklist`
+- `npm --prefix tools/telegram-control run setup:plan`
+- `npm --prefix tools/telegram-control run check:secrets`
 - `npm --prefix tools/telegram-control run verify:config`
 - `npm --prefix tools/telegram-control run check:workflow`
 - `npm --prefix tools/telegram-control run smoke:local`
+- `npm --prefix tools/telegram-control run smoke:live`
 - `npm --prefix tools/telegram-control run set-webhook -- --dry-run`
 - `npm run typecheck`
 - `npm run lint`
@@ -129,3 +142,5 @@ Any item without current command output must be marked `UNVERIFIED`.
 5. Set `TELEGRAM_WEBHOOK_URL=https://<worker-host>/telegram/webhook` locally and run `npm --prefix tools/telegram-control run set-webhook`.
 6. Configure the GitHub App and GitHub workflow secrets.
 7. Send `/health` from the allowlisted Telegram account. Treat any missing secret or placeholder binding as `UNVERIFIED`, not operational.
+8. Run `npm --prefix tools/telegram-control run smoke:live` with `TELEGRAM_CONTROL_BASE_URL`; add `TELEGRAM_BOT_TOKEN` and `TELEGRAM_ADMIN_ID` to verify authenticated Mini App state.
+9. Run `npm --prefix tools/telegram-control run check:secrets` before committing or sharing setup files.

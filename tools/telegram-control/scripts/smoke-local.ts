@@ -1,3 +1,4 @@
+import { computeTelegramMiniAppHash } from "../src/miniapp";
 import { routeRequest } from "../src/router";
 import { listJobs } from "../src/storage";
 import type { Env, KvNamespace } from "../src/types";
@@ -49,6 +50,17 @@ try {
   };
 
   await expectStatus("health", routeRequest(new Request("https://worker.test/health"), env), 200);
+  await expectStatus("miniapp html", routeRequest(new Request("https://worker.test/miniapp"), env), 200);
+
+  const initData = await signInitData("local-smoke-token", 111);
+  const miniappState = await routeRequest(
+    new Request("https://worker.test/miniapp/state", {
+      method: "POST",
+      headers: { Authorization: `tma ${initData}` },
+    }),
+    env,
+  );
+  assertEqual("miniapp state status", miniappState.status, 200);
 
   const unauthorized = await telegram(env, "/status", 999);
   assertEqual("unauthorized rejected", unauthorized.rejected, "unauthorized");
@@ -84,7 +96,7 @@ try {
   const callbackPayload = (await callback.json()) as { status?: string };
   assertEqual("workflow callback succeeds", callbackPayload.status, "succeeded");
 
-  console.log("Telegram control local smoke PASS - health, auth rejection, status, approval, and callback verified.");
+  console.log("Telegram control local smoke PASS - health, Mini App state, auth rejection, status, approval, and callback verified.");
 } finally {
   globalThis.fetch = originalFetch;
 }
@@ -118,4 +130,19 @@ function assertIncludes(name: string, actual: string, expected: string): void {
   if (!actual.includes(expected)) {
     throw new Error(`${name} failed: missing ${expected}`);
   }
+}
+
+async function signInitData(botToken: string, userId: number, authDate = Math.floor(Date.now() / 1000)): Promise<string> {
+  const params = new URLSearchParams({
+    auth_date: String(authDate),
+    query_id: "query",
+    user: JSON.stringify({ id: userId, first_name: "Admin" }),
+  });
+  const dataCheckString = [...params.entries()]
+    .map(([key, value]) => `${key}=${value}`)
+    .sort()
+    .join("\n");
+  const hash = await computeTelegramMiniAppHash(botToken, dataCheckString);
+  params.set("hash", hash);
+  return params.toString();
 }

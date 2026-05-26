@@ -1,6 +1,7 @@
 import { isDispatchableKind, parseCommand } from "./commands";
 import { approveJob, createControlJob, denyOrCancelJob, startJob, updateJob } from "./control";
 import { getLatestWorkflowRuns, githubConfigStatus, isGitHubConfigured } from "./github";
+import { handleMiniApp } from "./miniapp";
 import {
   isAuthorizedTelegramUser,
   safeEqual,
@@ -23,6 +24,10 @@ import type { Env, WorkflowCallbackPayload } from "./types";
 
 export async function routeRequest(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
+
+  if (url.pathname === "/miniapp" || url.pathname.startsWith("/miniapp/")) {
+    return handleMiniApp(request, env);
+  }
 
   if (request.method === "GET" && url.pathname === "/health") {
     return json(await health(env));
