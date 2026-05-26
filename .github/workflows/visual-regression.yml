@@ -1,8 +1,8 @@
-# Phase 2-B visual regression workflow — Playwright baselines + reg-actions diff.
+# Phase 2-B visual regression workflow - Playwright baselines + artifact proof.
 #
 # On every PR: builds the app, runs Playwright screenshot tests, uploads all
-# snapshots as a workflow artifact (30-day retention), and runs reg-viz to
-# publish a PR comment with any visual diffs. No S3/external storage needed —
+# snapshots as a workflow artifact (30-day retention), and writes a GitHub
+# step summary pointing reviewers at the diff artifact. No S3/external storage needed -
 # GitHub Actions artifacts store the images for free on open-source plan.
 #
 # Main branch: same flow but no PR comment (baselines only).
@@ -31,17 +31,15 @@ env:
 
 jobs:
   visual:
-    name: Playwright screenshots + reg-viz diff
+    name: Playwright screenshots + artifact diff
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
       contents: read
       pull-requests: write
     steps:
-      - name: Checkout (full history for reg-actions)
+      - name: Checkout
         uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -105,11 +103,14 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
 
-      - name: Publish visual diff comment (reg-actions)
-        if: always() && github.event_name == 'pull_request'
-        uses: reg-viz/reg-actions@v2
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          image-directory-path: e2e
-          matching-threshold: 0.05
-          target-hash: ${{ github.event.pull_request.base.sha }}
+      - name: Publish visual diff summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "### Visual Regression Evidence"
+            echo ""
+            echo "- Playwright snapshot tests are the blocking visual gate."
+            echo "- Visual artifacts are uploaded as \`visual-snapshots-${GITHUB_SHA}\`."
+            echo "- If this run failed, inspect \`test-results\` and \`playwright-report\` inside the artifact."
+          } >> "$GITHUB_STEP_SUMMARY"
