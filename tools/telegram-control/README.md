@@ -47,6 +47,21 @@ Set with `wrangler secret put`:
 
 Non-secret vars are in `wrangler.jsonc`: `GITHUB_OWNER`, `GITHUB_REPO`, `GITHUB_WORKFLOW_FILE`, and `GITHUB_BASE_REF`.
 
+Create or bind the free-tier `CONTROL_STATE` KV namespace without editing the config by hand:
+
+```bash
+npm --prefix tools/telegram-control run setup:kv -- --dry-run
+npm --prefix tools/telegram-control run setup:kv -- --create --write
+```
+
+If the KV namespace already exists, provide its Cloudflare namespace id explicitly:
+
+```bash
+npm --prefix tools/telegram-control run setup:kv -- --namespace-id <cloudflare-kv-id> --write
+```
+
+The helper validates the namespace id shape, updates only the `CONTROL_STATE` placeholder in `wrangler.jsonc`, and does not print secret values. KV namespace ids are account-bound identifiers, not secret keys.
+
 Project-owned random secrets can be generated locally without exposing values:
 
 ```bash
@@ -136,6 +151,7 @@ Production deploys are different from code-write jobs: after Telegram approval, 
 npm run check:telegram-control
 npm --prefix tools/telegram-control run activation:checklist
 npm --prefix tools/telegram-control run activation:doctor
+npm --prefix tools/telegram-control run setup:kv -- --dry-run
 npm --prefix tools/telegram-control run setup:plan
 npm --prefix tools/telegram-control run check:secrets
 npm --prefix tools/telegram-control run smoke:local

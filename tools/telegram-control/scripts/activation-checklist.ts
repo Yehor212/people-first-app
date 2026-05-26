@@ -23,7 +23,7 @@ const checks = [
       workerConfig && !workerConfig.includes("REPLACE_WITH_CLOUDFLARE_KV_NAMESPACE_ID")
         ? "PASS"
         : "UNVERIFIED",
-    next: "Create a free-tier KV namespace and replace REPLACE_WITH_CLOUDFLARE_KV_NAMESPACE_ID.",
+    next: "Run npm --prefix tools/telegram-control run setup:kv -- --create --write after wrangler login, or use --namespace-id <id> --write.",
   },
   {
     name: "GitHub control workflow",

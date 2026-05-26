@@ -19,11 +19,13 @@ const githubSecrets: Array<{ name: string; note?: string }> = [
 console.log("Telegram control setup plan");
 console.log("");
 console.log("1. Create free Cloudflare KV namespace:");
+console.log("   npm --prefix tools/telegram-control run setup:kv -- --dry-run");
+console.log("   npm --prefix tools/telegram-control run setup:kv -- --create --write");
 console.log(
-  "   npx wrangler kv namespace create CONTROL_STATE --config tools/telegram-control/wrangler.jsonc"
+  "   # Or, if the namespace already exists:"
 );
 console.log(
-  "   Then replace REPLACE_WITH_CLOUDFLARE_KV_NAMESPACE_ID in tools/telegram-control/wrangler.jsonc."
+  "   npm --prefix tools/telegram-control run setup:kv -- --namespace-id <cloudflare-kv-id> --write"
 );
 console.log("");
 console.log("2. Set Cloudflare secrets without printing values:");

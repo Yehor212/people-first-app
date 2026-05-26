@@ -123,6 +123,7 @@ This implementation avoids a permanent paid host. Cloudflare Workers/Workflows a
 - `npm --prefix tools/telegram-control run activation:checklist`
 - `npm --prefix tools/telegram-control run activation:doctor`
 - `npm --prefix tools/telegram-control run activation:doctor -- --github --cloudflare`
+- `npm --prefix tools/telegram-control run setup:kv -- --dry-run`
 - `npm --prefix tools/telegram-control run secrets:bootstrap`
 - `npm --prefix tools/telegram-control run secrets:install-generated -- --dry-run`
 - `npm --prefix tools/telegram-control run set-github-callback-url -- --dry-run --base-url https://example.invalid`
@@ -147,7 +148,7 @@ Any item without current command output must be marked `UNVERIFIED`.
 ## Operator Setup Flow
 
 1. Create a Telegram bot through BotFather and keep the token outside git.
-2. Create a Cloudflare KV namespace and replace `REPLACE_WITH_CLOUDFLARE_KV_NAMESPACE_ID` in `tools/telegram-control/wrangler.jsonc`.
+2. Create or bind the free-tier Cloudflare KV namespace with `npm --prefix tools/telegram-control run setup:kv -- --dry-run`, then `npm --prefix tools/telegram-control run setup:kv -- --create --write` after `wrangler login`, or `npm --prefix tools/telegram-control run setup:kv -- --namespace-id <cloudflare-kv-id> --write` if the namespace already exists.
 3. Run `npm --prefix tools/telegram-control run secrets:bootstrap -- --write-local` to generate local project-owned shared secrets, then run `npm --prefix tools/telegram-control run secrets:install-generated -- --cloudflare` after `wrangler login`; never place secret values in `wrangler.jsonc`.
 4. Deploy the Worker after `deploy:dry-run` passes.
 5. Set `TELEGRAM_WEBHOOK_URL=https://<worker-host>/telegram/webhook` locally and run `npm --prefix tools/telegram-control run set-webhook`.
