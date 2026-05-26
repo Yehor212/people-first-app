@@ -37,14 +37,12 @@ export interface ActivationDoctorInput {
   wranglerAuthenticated?: boolean;
 }
 
-const CLOUDFLARE_ACCOUNT_SECRET_NAMES = [
+const CLOUDFLARE_ACCOUNT_OWNED_SECRET_NAMES = [
   "TELEGRAM_BOT_TOKEN",
   "TELEGRAM_ADMIN_IDS",
   "GITHUB_APP_ID",
   "GITHUB_INSTALLATION_ID",
   "GITHUB_APP_PRIVATE_KEY",
-  "GITHUB_WEBHOOK_SECRET",
-  "TELEGRAM_CONTROL_CALLBACK_SECRET",
 ] as const;
 
 export function buildActivationDoctorChecks(input: ActivationDoctorInput): ActivationCheck[] {
@@ -82,7 +80,7 @@ export function buildActivationDoctorChecks(input: ActivationDoctorInput): Activ
     generatedSecretFileCheck(input),
     {
       name: "Cloudflare account-owned secret source",
-      status: hasAllEnv(input.env, CLOUDFLARE_ACCOUNT_SECRET_NAMES) ? "PASS" : "UNVERIFIED",
+      status: hasAllEnv(input.env, CLOUDFLARE_ACCOUNT_OWNED_SECRET_NAMES) ? "PASS" : "UNVERIFIED",
       evidence: "requires Telegram token/admin ids plus GitHub App credentials outside git",
     },
     {
