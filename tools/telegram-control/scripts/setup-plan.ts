@@ -44,7 +44,15 @@ console.log("   export TELEGRAM_WEBHOOK_SECRET='<redacted>'");
 console.log("   npm --prefix tools/telegram-control run set-webhook -- --dry-run");
 console.log("   npm --prefix tools/telegram-control run set-webhook");
 console.log("");
-console.log("5. Configure GitHub repository secrets:");
+console.log("5. Configure Telegram command menu and Mini App button:");
+console.log("   PowerShell:");
+console.log("   $env:TELEGRAM_MINI_APP_URL='https://<worker-host>/miniapp'");
+console.log("   bash/zsh:");
+console.log("   export TELEGRAM_MINI_APP_URL='https://<worker-host>/miniapp'");
+console.log("   npm --prefix tools/telegram-control run set-bot-ui -- --dry-run");
+console.log("   npm --prefix tools/telegram-control run set-bot-ui");
+console.log("");
+console.log("6. Configure GitHub repository secrets:");
 for (const secret of githubSecrets) {
   if (secret.note) {
     console.log(`   # ${secret.note}`);
@@ -52,7 +60,7 @@ for (const secret of githubSecrets) {
   console.log(`   gh secret set ${secret.name}`);
 }
 console.log("");
-console.log("6. Run deployed proof:");
+console.log("7. Run deployed proof:");
 console.log("   $env:TELEGRAM_CONTROL_BASE_URL='https://<worker-host>'");
 console.log("   $env:TELEGRAM_ADMIN_ID='<your Telegram numeric id>'");
 console.log("   npm --prefix tools/telegram-control run smoke:live");

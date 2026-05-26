@@ -168,6 +168,55 @@ void test("dispatchable chat command is UNVERIFIED without KV and never reaches 
   }
 });
 
+void test("status command uses GitHub App credentials without requiring webhook secret", async () => {
+  const originalFetch = globalThis.fetch;
+  const calls: Array<{ url: string; body: string }> = [];
+  globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
+    const url = input instanceof Request ? input.url : input.toString();
+    calls.push({ url, body: typeof init?.body === "string" ? init.body : "" });
+
+    if (url.endsWith("/app/installations/2/access_tokens")) {
+      return Response.json({ token: "installation-token" });
+    }
+
+    if (url.includes("/actions/workflows/telegram-control.yml/runs")) {
+      return Response.json({ workflow_runs: [{ id: 123, status: "completed", conclusion: "success" }] });
+    }
+
+    return Response.json({ ok: true });
+  });
+
+  try {
+    const env: Env = {
+      TELEGRAM_BOT_TOKEN: "token",
+      TELEGRAM_WEBHOOK_SECRET: "secret",
+      TELEGRAM_ADMIN_IDS: "111",
+      GITHUB_APP_ID: "1",
+      GITHUB_INSTALLATION_ID: "2",
+      GITHUB_APP_PRIVATE_KEY: await createTestPrivateKeyPem(),
+      CONTROL_STATE: new FakeKvNamespace(),
+    };
+    const response = await routeRequest(
+      new Request("https://worker.test/telegram/webhook", {
+        method: "POST",
+        headers: { "X-Telegram-Bot-Api-Secret-Token": "secret" },
+        body: JSON.stringify({
+          update_id: 9003,
+          message: { text: "/status", chat: { id: 1 }, from: { id: 111 } },
+        }),
+      }),
+      env,
+    );
+
+    assert.equal(response.status, 200);
+    assert.equal(calls.some((call) => call.url.includes("/app/installations/2/access_tokens")), true);
+    assert.equal(calls.some((call) => call.url.includes("/actions/workflows/telegram-control.yml/runs")), true);
+    assert.equal(calls.some((call) => call.body.includes("GitHub workflow status")), true);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 void test("deploy command stops at approval gate before GitHub dispatch", async () => {
   const originalFetch = globalThis.fetch;
   const calls: string[] = [];
@@ -340,6 +389,75 @@ void test("manual cancel reports UNVERIFIED when a known GitHub run cannot be ca
   }
 });
 
+void test("manual cancel finds and cancels an active GitHub run by branch when run id is missing", async () => {
+  const originalFetch = globalThis.fetch;
+  const calls: Array<{ url: string; method: string; body: string }> = [];
+  globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
+    const url = input instanceof Request ? input.url : input.toString();
+    const method = init?.method ?? (input instanceof Request ? input.method : "GET");
+    const body = typeof init?.body === "string" ? init.body : "";
+    calls.push({ url, method, body });
+
+    if (url.endsWith("/app/installations/2/access_tokens")) {
+      return Response.json({ token: "installation-token" });
+    }
+
+    if (url.includes("/actions/workflows/telegram-control.yml/runs")) {
+      return Response.json({
+        workflow_runs: [
+          { id: 456, head_branch: "other-branch", status: "in_progress", conclusion: null },
+          { id: 123, head_branch: activeBranch, status: "in_progress", conclusion: null },
+        ],
+      });
+    }
+
+    return Response.json({ ok: true });
+  });
+
+  const activeBranch = "codex/telegram-test-cancel";
+
+  try {
+    const kv = new FakeKvNamespace();
+    const env: Env = {
+      TELEGRAM_BOT_TOKEN: "token",
+      TELEGRAM_WEBHOOK_SECRET: "secret",
+      TELEGRAM_ADMIN_IDS: "111",
+      GITHUB_APP_ID: "1",
+      GITHUB_INSTALLATION_ID: "2",
+      GITHUB_APP_PRIVATE_KEY: await createTestPrivateKeyPem(),
+      CONTROL_STATE: kv,
+    };
+    const job = { ...createControlJob(parseCommand("/fix typo"), 111, 1), branch: activeBranch };
+    await saveJob(env, job);
+
+    const response = await routeRequest(
+      new Request("https://worker.test/telegram/webhook", {
+        method: "POST",
+        headers: { "X-Telegram-Bot-Api-Secret-Token": "secret" },
+        body: JSON.stringify({
+          update_id: 9102,
+          message: {
+            text: `/cancel ${job.id}`,
+            chat: { id: 1 },
+            from: { id: 111 },
+          },
+        }),
+      }),
+      env,
+    );
+    const payload = (await response.json()) as { status: string };
+    const updated = await getJob(env, job.id);
+
+    assert.equal(response.status, 200);
+    assert.equal(payload.status, "cancelled");
+    assert.equal(updated?.githubRunId, 123);
+    assert.equal(calls.some((call) => call.url.includes(`branch=${encodeURIComponent(activeBranch)}`)), true);
+    assert.equal(calls.some((call) => call.url.endsWith("/actions/runs/123/cancel") && call.method === "POST"), true);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 void test("workflow callback updates matching job and keeps evidence", async () => {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = (async () => Response.json({ ok: true }));
@@ -450,4 +568,21 @@ async function githubSignature(secret: string, body: string): Promise<string> {
   const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(body));
   const hex = [...new Uint8Array(signature)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
   return `sha256=${hex}`;
+}
+
+async function createTestPrivateKeyPem(): Promise<string> {
+  const pair = await crypto.subtle.generateKey(
+    {
+      name: "RSASSA-PKCS1-v1_5",
+      modulusLength: 2048,
+      publicExponent: new Uint8Array([1, 0, 1]),
+      hash: "SHA-256",
+    },
+    true,
+    ["sign", "verify"],
+  );
+  const pkcs8 = await crypto.subtle.exportKey("pkcs8", pair.privateKey);
+  const base64 = Buffer.from(pkcs8).toString("base64").match(/.{1,64}/g)?.join("\n") ?? "";
+  const pemLabel = ["PRIVATE", "KEY"].join(" ");
+  return `-----BEGIN ${pemLabel}-----\n${base64}\n-----END ${pemLabel}-----`;
 }

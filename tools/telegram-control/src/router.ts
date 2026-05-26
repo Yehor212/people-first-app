@@ -316,6 +316,8 @@ async function health(env: Env): Promise<Record<string, unknown>> {
     github: {
       configured: isGitHubConfigured(env),
       secrets: githubConfigStatus(env),
+      appConfigured: isGitHubConfigured(env),
+      webhookConfigured: Boolean(env.GITHUB_WEBHOOK_SECRET),
       owner: env.GITHUB_OWNER ?? "Yehor212",
       repo: env.GITHUB_REPO ?? "people-first-app",
       workflow: env.GITHUB_WORKFLOW_FILE ?? "telegram-control.yml",

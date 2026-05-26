@@ -59,6 +59,8 @@ Minimum:
 - Metadata: read
 - Actions: read/write
 
+`GITHUB_APP_ID`, `GITHUB_INSTALLATION_ID`, and `GITHUB_APP_PRIVATE_KEY` are enough for `/status`, workflow dispatch, and GitHub run cancellation. `GITHUB_WEBHOOK_SECRET` is separate: it verifies inbound GitHub webhook events and is still required for live webhook proof.
+
 For branch and PR publishing by `.github/workflows/telegram-control.yml`:
 
 - Contents: write
@@ -90,6 +92,7 @@ npm --prefix tools/telegram-control run setup:plan
 npm --prefix tools/telegram-control run check:secrets
 npm --prefix tools/telegram-control run smoke:local
 npm --prefix tools/telegram-control run smoke:live
+npm --prefix tools/telegram-control run set-bot-ui -- --dry-run
 npm --prefix tools/telegram-control run check:workflow
 npm --prefix tools/telegram-control run deploy:dry-run
 ```
@@ -109,6 +112,19 @@ npm --prefix tools/telegram-control run set-webhook
 ```
 
 The helper sends Telegram `setWebhook` with `secret_token`, so Telegram includes `X-Telegram-Bot-Api-Secret-Token` on each webhook request. The dry run prints only redacted secret state.
+
+## Bot UI Setup
+
+After the Worker is deployed, configure the Telegram slash-command menu and the Mini App menu button:
+
+```bash
+set TELEGRAM_BOT_TOKEN=<redacted>
+set TELEGRAM_MINI_APP_URL=https://<worker-host>/miniapp
+npm --prefix tools/telegram-control run set-bot-ui -- --dry-run
+npm --prefix tools/telegram-control run set-bot-ui
+```
+
+The helper calls Telegram `setMyCommands` and `setChatMenuButton`. The dry run prints command names and a redacted Mini App menu payload without exposing the bot token.
 
 ## Live Smoke
 

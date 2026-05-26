@@ -1,5 +1,10 @@
 import { isDispatchableKind } from "./commands";
-import { cancelGitHubWorkflowRun, dispatchGitHubWorkflow, isGitHubConfigured } from "./github";
+import {
+  cancelGitHubWorkflowRun,
+  dispatchGitHubWorkflow,
+  findCancelableWorkflowRunForBranch,
+  isGitHubConfigured,
+} from "./github";
 import { createApprovalNonce } from "./security";
 import { saveJob } from "./storage";
 import type { CommandIntent, ControlJob, Env } from "./types";
@@ -46,7 +51,7 @@ export async function startJob(env: Env, job: ControlJob): Promise<ControlJob> {
 
   if (!isGitHubConfigured(env)) {
     const updated = updateJob(job, "unverified", [
-      "UNVERIFIED: GitHub App credentials or webhook secret are not configured",
+      "UNVERIFIED: GitHub App credentials are not configured",
     ]);
     await saveJob(env, updated);
     return updated;
@@ -68,7 +73,7 @@ export async function startJob(env: Env, job: ControlJob): Promise<ControlJob> {
 export async function dispatchJobDirectly(env: Env, job: ControlJob): Promise<ControlJob> {
   if (!isGitHubConfigured(env)) {
     const updated = updateJob(job, "unverified", [
-      "UNVERIFIED: GitHub App credentials or webhook secret are not configured",
+      "UNVERIFIED: GitHub App credentials are not configured",
     ]);
     await saveJob(env, updated);
     return updated;
@@ -144,11 +149,27 @@ export async function cancelControlJob(
     }
   }
 
-  if (job.githubRunId) {
+  let githubRunId = job.githubRunId;
+  if (!githubRunId && job.branch && isGitHubConfigured(env)) {
+    try {
+      const branchRun = await findCancelableWorkflowRunForBranch(env, job.branch);
+      if (branchRun) {
+        githubRunId = branchRun.id;
+        evidence.push(`GitHub workflow run found by branch ${job.branch}: ${branchRun.id}`);
+      } else {
+        evidence.push(`No active GitHub workflow run found for branch ${job.branch}`);
+      }
+    } catch (error) {
+      status = "unverified";
+      evidence.push(`UNVERIFIED: GitHub workflow run lookup by branch failed: ${errorText(error)}`);
+    }
+  }
+
+  if (githubRunId) {
     if (isGitHubConfigured(env)) {
       try {
-        await cancelGitHubWorkflowRun(env, job.githubRunId);
-        evidence.push(`GitHub workflow run cancellation requested: ${job.githubRunId}`);
+        await cancelGitHubWorkflowRun(env, githubRunId);
+        evidence.push(`GitHub workflow run cancellation requested: ${githubRunId}`);
       } catch (error) {
         status = "unverified";
         evidence.push(`UNVERIFIED: GitHub workflow run cancellation failed: ${errorText(error)}`);
@@ -161,6 +182,7 @@ export async function cancelControlJob(
 
   const updated = {
     ...updateJob(job, status, evidence),
+    githubRunId,
     approvals: [
       ...job.approvals,
       { action: "cancel" as const, telegramUserId, nonce, at: new Date().toISOString() },

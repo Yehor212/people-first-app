@@ -1,6 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildTelegramWebhookPayload, redactWebhookPayload, validateRuntimeConfig } from "../src/setup";
+import {
+  buildTelegramCommandsPayload,
+  buildTelegramMenuButtonPayload,
+  buildTelegramWebhookPayload,
+  redactTelegramMenuButtonPayload,
+  redactWebhookPayload,
+  validateRuntimeConfig,
+} from "../src/setup";
 
 void test("buildTelegramWebhookPayload sets Telegram secret header token and allowed updates", () => {
   const payload = buildTelegramWebhookPayload({
@@ -34,6 +41,43 @@ void test("redactWebhookPayload never returns the raw Telegram secret token", ()
   });
 
   assert.equal(redactWebhookPayload(payload).webhookHeaderConfigured, true);
+});
+
+void test("buildTelegramCommandsPayload exposes the full control command menu", () => {
+  const payload = buildTelegramCommandsPayload();
+  const commands = payload.commands.map((command) => command.command);
+
+  assert.deepEqual(commands, [
+    "status",
+    "health",
+    "plan",
+    "fix",
+    "review",
+    "test",
+    "security",
+    "deploy",
+    "rollback",
+    "jobs",
+    "approve",
+    "deny",
+    "cancel",
+  ]);
+});
+
+void test("buildTelegramMenuButtonPayload requires HTTPS Mini App URL", () => {
+  assert.throws(() => buildTelegramMenuButtonPayload("http://example.com/miniapp"), /HTTPS/);
+
+  const payload = buildTelegramMenuButtonPayload("https://example.com/miniapp");
+  assert.equal(payload.menu_button.type, "web_app");
+  assert.equal(payload.menu_button.web_app.url, "https://example.com/miniapp");
+  assert.deepEqual(redactTelegramMenuButtonPayload(payload), {
+    menu_button: {
+      type: "web_app",
+      text: "ZenFlow Control",
+      webAppUrlConfigured: true,
+      webAppOrigin: "https://example.com",
+    },
+  });
 });
 
 void test("validateRuntimeConfig reports missing live secrets as UNVERIFIED", () => {

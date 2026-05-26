@@ -15,9 +15,10 @@ The repository contains a verified Telegram control-plane implementation, but li
 | Destructive commands require confirmation | PASS | `tools/telegram-control/src/control.ts`; test `deploy command stops at approval gate before GitHub dispatch` |
 | Approval nonce flow exists | PASS | `tools/telegram-control/src/telegram.ts`; test `manual approve command validates nonce and starts approved job` |
 | GitHub webhook/callback verification exists | PASS | `tools/telegram-control/src/security.ts`; tests `GitHub HMAC verification rejects modified bodies` and `workflow callback updates matching job and keeps evidence` |
+| GitHub App auth is separate from webhook verification | PASS | `tools/telegram-control/src/github.ts`; test `status command uses GitHub App credentials without requiring webhook secret` |
 | Telegram webhook idempotency exists | PASS | `tools/telegram-control/src/storage.ts`; test `duplicate Telegram update ids do not execute side effects twice` |
 | GitHub workflow_run updates exact job | PASS | `tools/telegram-control/src/storage.ts`; test `GitHub workflow_run webhook updates the matching branch instead of the latest job` |
-| Manual cancellation is honest | PASS | `tools/telegram-control/src/control.ts`; tests `manual cancel can stop a non-destructive queued job without a nonce` and `manual cancel reports UNVERIFIED when a known GitHub run cannot be cancelled` |
+| Manual cancellation is honest | PASS | `tools/telegram-control/src/control.ts`; tests `manual cancel can stop a non-destructive queued job without a nonce`, `manual cancel reports UNVERIFIED when a known GitHub run cannot be cancelled`, and `manual cancel finds and cancels an active GitHub run by branch when run id is missing` |
 | Missing KV fails closed | PASS | `tools/telegram-control/src/control.ts`, `tools/telegram-control/src/router.ts`, and `tools/telegram-control/src/miniapp.ts`; tests `dispatchable chat command is UNVERIFIED without KV and never reaches GitHub` and `miniapp dispatchable command is UNVERIFIED without KV` |
 | Mini App dashboard route exists | PASS | `tools/telegram-control/src/miniapp.ts`; test `miniapp HTML is served without exposing secrets` |
 | Mini App init data is verified | PASS | `tools/telegram-control/src/miniapp.ts`; tests `miniapp state requires Telegram init data`, `miniapp state accepts signed init data for allowlisted admin`, and `miniapp command rejects non-admin signed user` |
@@ -28,9 +29,10 @@ The repository contains a verified Telegram control-plane implementation, but li
 | Deploy workflow main-ref guard | PASS | `.github/workflows/deploy.yml` step `Validate Telegram-approved deploy target` rejects Telegram-approved production deploys unless `GITHUB_REF=refs/heads/main` |
 | Rollback creates branch-only draft PR | PASS | `.github/workflows/telegram-control.yml` step `Create rollback proposal PR` requires Telegram approval, validates `target=<commit-or-ref>`, runs gates, and opens a draft PR without deploying |
 | Missing `OPENAI_API_KEY` does not fake success | PASS | `.github/workflows/telegram-control.yml` reports `UNVERIFIED` before Codex action |
-| Local Worker/package verification | PASS | `npm run check:telegram-control`: 31 unit tests, workflow invariants, local smoke, and setup verifier ran |
+| Local Worker/package verification | PASS | `npm run check:telegram-control`: 35 unit tests, workflow invariants, local smoke, setup verifier, webhook dry-run, and bot UI dry-run ran |
 | Local end-to-end smoke without live secrets | PASS | `npm --prefix tools/telegram-control run smoke:local`: health, Mini App state, auth rejection, status, approval, and callback verified |
 | Deployed Worker smoke helper exists | PASS | `npm --prefix tools/telegram-control run smoke:live` verifies `/health`, `/miniapp`, and signed Mini App state when env vars are present |
+| Telegram bot UI setup helper exists | PASS | `tools/telegram-control/scripts/set-bot-ui.ts`; tests `buildTelegramCommandsPayload exposes the full control command menu` and `buildTelegramMenuButtonPayload requires HTTPS Mini App URL` |
 | Workflow safety contract | PASS | `npm --prefix tools/telegram-control run check:workflow`: Telegram control and deploy workflow invariants verified |
 | CI drift guard | PASS | `.github/workflows/drift-checks.yml` includes `telegram-control` matrix entry running `npm run check:telegram-control` |
 | Activation checklist | PASS | `npm --prefix tools/telegram-control run activation:checklist` reports remaining external setup without exposing secrets |
@@ -57,4 +59,5 @@ The repository contains a verified Telegram control-plane implementation, but li
 5. Configure `TELEGRAM_CONTROL_CALLBACK_URL` and `TELEGRAM_CONTROL_CALLBACK_SECRET` in GitHub.
 6. Optionally add GitHub `OPENAI_API_KEY`; without it, AI modes correctly return `UNVERIFIED`.
 7. Send `/health` and `/status` from the allowlisted Telegram account and save the responses as live evidence.
-8. Run `npm --prefix tools/telegram-control run smoke:live` and save the PASS output as deployed Worker evidence.
+8. Run `npm --prefix tools/telegram-control run set-bot-ui` after `set-webhook` so Telegram shows the command menu and Mini App button.
+9. Run `npm --prefix tools/telegram-control run smoke:live` and save the PASS output as deployed Worker evidence.

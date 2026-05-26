@@ -100,6 +100,63 @@ export function redactWebhookPayload(payload: ReturnType<typeof buildTelegramWeb
   };
 }
 
+export function buildTelegramCommandsPayload(): {
+  commands: Array<{ command: string; description: string }>;
+} {
+  return {
+    commands: [
+      { command: "status", description: "Show CI and control workflow status" },
+      { command: "health", description: "Show control-plane configuration health" },
+      { command: "plan", description: "Ask Codex for an implementation plan" },
+      { command: "fix", description: "Create a branch-scoped fix PR" },
+      { command: "review", description: "Run an evidence-backed review" },
+      { command: "test", description: "Run repository verification gates" },
+      { command: "security", description: "Run security-focused checks" },
+      { command: "deploy", description: "Queue production deploy after approval" },
+      { command: "rollback", description: "Create a rollback draft PR after approval" },
+      { command: "jobs", description: "List recent control jobs" },
+      { command: "approve", description: "Approve a job with id and nonce" },
+      { command: "deny", description: "Deny a job with id and nonce" },
+      { command: "cancel", description: "Cancel a control job" },
+    ],
+  };
+}
+
+export function buildTelegramMenuButtonPayload(miniAppUrl: string): {
+  menu_button: {
+    type: "web_app";
+    text: string;
+    web_app: { url: string };
+  };
+} {
+  const url = new URL(miniAppUrl);
+
+  if (url.protocol !== "https:") {
+    throw new Error("Telegram Mini App URL must use HTTPS");
+  }
+
+  return {
+    menu_button: {
+      type: "web_app",
+      text: "ZenFlow Control",
+      web_app: { url: url.toString() },
+    },
+  };
+}
+
+export function redactTelegramMenuButtonPayload(
+  payload: ReturnType<typeof buildTelegramMenuButtonPayload>,
+): Record<string, unknown> {
+  return {
+    menu_button: {
+      type: payload.menu_button.type,
+      text: payload.menu_button.text,
+      webAppUrlConfigured: Boolean(payload.menu_button.web_app.url),
+      webAppOrigin: new URL(payload.menu_button.web_app.url).origin,
+    },
+  };
+}
+
 function foldStatus(checks: SetupCheck[]): SetupStatus {
   if (checks.some((check) => check.status === "FAIL")) {
     return "FAIL";

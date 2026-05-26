@@ -133,6 +133,8 @@ async function miniAppState(env: Env, session: MiniAppSession): Promise<Record<s
       admins: Boolean(env.TELEGRAM_ADMIN_IDS),
       githubConfigured: isGitHubConfigured(env),
       githubSecrets: githubConfigStatus(env),
+      githubAppConfigured: isGitHubConfigured(env),
+      githubWebhookConfigured: Boolean(env.GITHUB_WEBHOOK_SECRET),
       kv: Boolean(env.CONTROL_STATE),
       workflow: Boolean(env.CONTROL_WORKFLOW),
       latestJob: latestJob

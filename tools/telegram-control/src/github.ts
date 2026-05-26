@@ -7,6 +7,14 @@ export interface GitHubDispatchResult {
   githubRunUrl?: string;
 }
 
+export interface GitHubWorkflowRunSummary {
+  id: number;
+  htmlUrl?: string;
+  headBranch?: string;
+  status?: string;
+  conclusion?: string | null;
+}
+
 export function githubConfigStatus(env: Env): Record<string, boolean> {
   return {
     GITHUB_APP_ID: Boolean(env.GITHUB_APP_ID),
@@ -17,7 +25,15 @@ export function githubConfigStatus(env: Env): Record<string, boolean> {
 }
 
 export function isGitHubConfigured(env: Env): boolean {
-  return Object.values(githubConfigStatus(env)).every(Boolean);
+  return isGitHubAppConfigured(env);
+}
+
+export function isGitHubAppConfigured(env: Env): boolean {
+  return Boolean(env.GITHUB_APP_ID && env.GITHUB_INSTALLATION_ID && env.GITHUB_APP_PRIVATE_KEY);
+}
+
+export function isGitHubWebhookConfigured(env: Env): boolean {
+  return Boolean(env.GITHUB_WEBHOOK_SECRET);
 }
 
 export async function dispatchGitHubWorkflow(env: Env, job: ControlJob): Promise<GitHubDispatchResult> {
@@ -102,6 +118,52 @@ export async function cancelGitHubWorkflowRun(env: Env, githubRunId: number): Pr
     const body = await boundedText(response);
     throw new Error(`GitHub workflow run cancel failed: ${response.status} ${body}`);
   }
+}
+
+export async function findCancelableWorkflowRunForBranch(
+  env: Env,
+  branch: string,
+): Promise<GitHubWorkflowRunSummary | null> {
+  const token = await getInstallationToken(env);
+  const owner = env.GITHUB_OWNER ?? "Yehor212";
+  const repo = env.GITHUB_REPO ?? "people-first-app";
+  const workflowFile = env.GITHUB_WORKFLOW_FILE ?? "telegram-control.yml";
+  const params = new URLSearchParams({ branch, per_page: "10" });
+  const response = await githubFetch(
+    env,
+    token,
+    `/repos/${owner}/${repo}/actions/workflows/${encodeURIComponent(workflowFile)}/runs?${params}`,
+  );
+
+  if (!response.ok) {
+    const body = await boundedText(response);
+    throw new Error(`GitHub workflow run lookup failed: ${response.status} ${body}`);
+  }
+
+  const payload = (await response.json()) as {
+    workflow_runs?: Array<{
+      id?: number;
+      html_url?: string;
+      head_branch?: string;
+      status?: string;
+      conclusion?: string | null;
+    }>;
+  };
+  const run = payload.workflow_runs?.find((candidate) => (
+    typeof candidate.id === "number" &&
+    candidate.head_branch === branch &&
+    isCancelableRunStatus(candidate.status, candidate.conclusion)
+  ));
+
+  return run?.id
+    ? {
+        id: run.id,
+        htmlUrl: run.html_url,
+        headBranch: run.head_branch,
+        status: run.status,
+        conclusion: run.conclusion,
+      }
+    : null;
 }
 
 async function getInstallationToken(env: Env): Promise<string> {
@@ -198,4 +260,12 @@ function pemToArrayBuffer(pem: string): ArrayBuffer {
 async function boundedText(response: Response): Promise<string> {
   const text = await response.text();
   return text.slice(0, 500);
+}
+
+function isCancelableRunStatus(status: string | undefined, conclusion: string | null | undefined): boolean {
+  if (status === "completed" || conclusion) {
+    return false;
+  }
+
+  return ["queued", "requested", "waiting", "pending", "in_progress"].includes(status ?? "");
 }
