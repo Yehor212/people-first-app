@@ -21,6 +21,11 @@ void test("activation runner defaults to non-mutating dry-run steps", () => {
   );
   assert.equal(steps.find((step) => step.id === "worker-deploy")?.displayCommand.endsWith("deploy:dry-run"), true);
   assert.equal(
+    steps.find((step) => step.id === "github-app-manifest")?.displayCommand,
+    "npm --prefix tools/telegram-control run github-app:manifest",
+  );
+  assert.equal(steps.find((step) => step.id === "github-app-manifest")?.mutatesExternalState, false);
+  assert.equal(
     steps.find((step) => step.id === "github-callback-url")?.displayCommand,
     "npm --prefix tools/telegram-control run set-github-callback-url -- --dry-run",
   );
@@ -75,6 +80,7 @@ void test("activation runner all mode selects every live activation step", () =>
 
   assert.equal(steps.find((step) => step.id === "kv")?.displayCommand.endsWith("--create --write"), true);
   assert.equal(steps.find((step) => step.id === "cloudflare-account-secrets")?.mutatesExternalState, true);
+  assert.equal(steps.find((step) => step.id === "github-app-manifest")?.mutatesExternalState, false);
   assert.match(
     steps.find((step) => step.id === "github-account-secrets")?.displayCommand ?? "",
     /--github --github-snyk/,

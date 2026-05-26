@@ -172,6 +172,16 @@ export function buildActivationRunSteps(options: ActivationRunOptions): Activati
       applyEnabled: applyDeploy,
     },
     {
+      id: "github-app-manifest",
+      label: "GitHub App manifest",
+      mutatesExternalState: false,
+      shouldRun: true,
+      command: "npm",
+      args: ["--prefix", "tools/telegram-control", "run", "github-app:manifest", "--"],
+      displayCommand: "npm --prefix tools/telegram-control run github-app:manifest",
+      applyEnabled: false,
+    },
+    {
       id: "github-callback-url",
       label: "GitHub callback URL secret",
       mutatesExternalState: applyGithubCallback,
