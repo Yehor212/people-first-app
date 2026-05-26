@@ -47,6 +47,15 @@ Set with `wrangler secret put`:
 
 Non-secret vars are in `wrangler.jsonc`: `GITHUB_OWNER`, `GITHUB_REPO`, `GITHUB_WORKFLOW_FILE`, and `GITHUB_BASE_REF`.
 
+Project-owned random secrets can be generated locally without exposing values:
+
+```bash
+npm --prefix tools/telegram-control run secrets:bootstrap
+npm --prefix tools/telegram-control run secrets:bootstrap -- --write-local
+```
+
+The write mode creates `.env.telegram-control.local`, which is ignored by git. It only contains `TELEGRAM_WEBHOOK_SECRET`, `GITHUB_WEBHOOK_SECRET`, and `TELEGRAM_CONTROL_CALLBACK_SECRET`. Account-owned credentials such as `TELEGRAM_BOT_TOKEN`, GitHub App ids/private key, and `OPENAI_API_KEY` must still come from their official account flows.
+
 ## Required GitHub Secrets
 
 - `OPENAI_API_KEY`: required only for Codex-backed `plan`, `fix`, `review`, and `security`. When missing, the workflow reports `UNVERIFIED` and does not fake AI success.
@@ -146,3 +155,5 @@ Without `TELEGRAM_BOT_TOKEN` and an admin id, the live smoke still checks `/heal
 `npm --prefix tools/telegram-control run check:secrets` scans the control-plane source, docs, and workflow for token-shaped values. It is included in `npm run check:telegram-control`.
 
 `npm --prefix tools/telegram-control run setup:plan` prints the activation commands without embedding secret values.
+
+`npm --prefix tools/telegram-control run secrets:bootstrap` generates only project-owned random secrets and prints redacted evidence. It never prints plaintext secret values.

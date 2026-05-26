@@ -23,6 +23,9 @@ console.log("   npx wrangler kv namespace create CONTROL_STATE --config tools/te
 console.log("   Then replace REPLACE_WITH_CLOUDFLARE_KV_NAMESPACE_ID in tools/telegram-control/wrangler.jsonc.");
 console.log("");
 console.log("2. Set Cloudflare secrets without printing values:");
+console.log("   npm --prefix tools/telegram-control run secrets:bootstrap");
+console.log("   npm --prefix tools/telegram-control run secrets:bootstrap -- --write-local");
+console.log("   Use generated TELEGRAM_WEBHOOK_SECRET, GITHUB_WEBHOOK_SECRET, and TELEGRAM_CONTROL_CALLBACK_SECRET from the local ignored env file.");
 for (const secret of cloudflareSecrets) {
   console.log(`   npx wrangler secret put ${secret} --config tools/telegram-control/wrangler.jsonc`);
 }

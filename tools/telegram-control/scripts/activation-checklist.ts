@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 const root = resolve(import.meta.dirname, "../../..");
 const workerConfigPath = resolve(root, "tools/telegram-control/wrangler.jsonc");
 const workflowPath = resolve(root, ".github/workflows/telegram-control.yml");
+const generatedSecretsPath = resolve(root, ".env.telegram-control.local");
 const workerConfig = existsSync(workerConfigPath) ? readFileSync(workerConfigPath, "utf8") : "";
 
 const checks = [
@@ -40,6 +41,11 @@ const checks = [
       ? "PASS"
       : "UNVERIFIED",
     next: "Set required Cloudflare secrets with wrangler secret put; do not commit values.",
+  },
+  {
+    name: "Generated project-owned shared secrets",
+    status: existsSync(generatedSecretsPath) ? "PASS" : "UNVERIFIED",
+    next: "Run npm --prefix tools/telegram-control run secrets:bootstrap -- --write-local to generate local TELEGRAM_WEBHOOK_SECRET, GITHUB_WEBHOOK_SECRET, and TELEGRAM_CONTROL_CALLBACK_SECRET.",
   },
   {
     name: "GitHub callback secrets",

@@ -14,6 +14,7 @@
     "smoke:live": "node --import tsx scripts/smoke-live.ts",
     "set-webhook": "node --import tsx scripts/set-webhook.ts",
     "set-bot-ui": "node --import tsx scripts/set-bot-ui.ts",
+    "secrets:bootstrap": "node --import tsx scripts/bootstrap-secrets.ts",
     "deploy": "npx wrangler deploy",
     "deploy:dry-run": "npx wrangler deploy --dry-run"
   }

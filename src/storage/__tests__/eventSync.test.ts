@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
   habitTableDelete: vi.fn(),
   broadcastChange: vi.fn(),
   enqueue: vi.fn(),
+  storageRemove: vi.fn(),
   supabase: null as { from: ReturnType<typeof vi.fn> } | null,
 }));
 
@@ -47,6 +48,10 @@ vi.mock("@/lib/offlineQueue", () => ({
   offlineQueue: {
     enqueue: mocks.enqueue,
   },
+}));
+
+vi.mock("@/lib/safeJson", () => ({
+  storageRemove: mocks.storageRemove,
 }));
 
 vi.mock("@/storage/db", () => ({
@@ -318,6 +323,29 @@ describe("eventSync auth guards", () => {
       value: true,
     });
     expect(mocks.settingsPut).toHaveBeenCalledWith({ key: "sync-last-seq", value: 14 });
+  });
+
+  it("removes local fallback storage when applying remote setting deletes", async () => {
+    const applied = await applyDelta(
+      [
+        {
+          id: "event-setting-delete",
+          seq: 15,
+          entity_type: "setting",
+          entity_id: "journal_draft_new",
+          op: "delete",
+          payload: { key: "journal_draft_new", deletedAt: "2026-05-11T10:00:00.000Z" },
+          device_id: "remote-device",
+          created_at: "2026-05-11T10:00:00.000Z",
+        },
+      ],
+      "current-device"
+    );
+
+    expect(applied).toBe(1);
+    expect(mocks.settingsDelete).toHaveBeenCalledWith("journal_draft_new");
+    expect(mocks.storageRemove).toHaveBeenCalledWith("journal_draft_new");
+    expect(mocks.settingsPut).toHaveBeenCalledWith({ key: "sync-last-seq", value: 15 });
   });
 
   it("records tombstones when applying remote delete events", async () => {

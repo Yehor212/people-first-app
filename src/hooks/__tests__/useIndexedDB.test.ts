@@ -3,12 +3,12 @@
  * Tests data persistence, fallbacks, and error handling
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { renderHook, act, waitFor } from '@testing-library/react';
-import { useIndexedDB, triggerDataRefresh } from '../useIndexedDB';
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { renderHook, act, waitFor } from "@testing-library/react";
+import { useIndexedDB, triggerDataRefresh } from "../useIndexedDB";
 
 // Mock logger
-vi.mock('@/lib/logger', () => ({
+vi.mock("@/lib/logger", () => ({
   logger: {
     log: vi.fn(),
     warn: vi.fn(),
@@ -43,11 +43,13 @@ const createMockTable = (initialData: Record<string, unknown> = {}) => {
       return Promise.resolve();
     }),
     _getStorage: () => storage,
-    _setStorage: (data: Record<string, unknown>) => { storage = data; },
+    _setStorage: (data: Record<string, unknown>) => {
+      storage = data;
+    },
   };
 };
 
-describe('useIndexedDB', () => {
+describe("useIndexedDB", () => {
   let mockTable: ReturnType<typeof createMockTable>;
   let localStorageMock: Record<string, string>;
 
@@ -56,29 +58,29 @@ describe('useIndexedDB', () => {
     localStorageMock = {};
 
     // Mock localStorage
-    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(
       (key) => localStorageMock[key] || null
     );
-    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(
-      (key, value) => { localStorageMock[key] = value; }
-    );
-    vi.spyOn(Storage.prototype, 'removeItem').mockImplementation(
-      (key) => { delete localStorageMock[key]; }
-    );
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation((key, value) => {
+      localStorageMock[key] = value;
+    });
+    vi.spyOn(Storage.prototype, "removeItem").mockImplementation((key) => {
+      delete localStorageMock[key];
+    });
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
-  describe('initial loading', () => {
-    it('returns initial value while loading', async () => {
+  describe("initial loading", () => {
+    it("returns initial value while loading", async () => {
       const { result } = renderHook(() =>
         useIndexedDB({
           table: mockTable as any,
-          localStorageKey: 'test_key',
+          localStorageKey: "test_key",
           initialValue: { count: 0 },
-          idField: 'key',
+          idField: "key",
         })
       );
 
@@ -88,17 +90,17 @@ describe('useIndexedDB', () => {
       expect(result.current[2]).toBe(true);
     });
 
-    it('loads data from IndexedDB on mount', async () => {
+    it("loads data from IndexedDB on mount", async () => {
       mockTable._setStorage({
-        test_key: { key: 'test_key', value: { count: 42 } },
+        test_key: { key: "test_key", value: { count: 42 } },
       });
 
       const { result } = renderHook(() =>
         useIndexedDB({
           table: mockTable as any,
-          localStorageKey: 'test_key',
+          localStorageKey: "test_key",
           initialValue: { count: 0 },
-          idField: 'key',
+          idField: "key",
         })
       );
 
@@ -109,18 +111,18 @@ describe('useIndexedDB', () => {
       expect(result.current[0]).toEqual({ count: 42 });
     });
 
-    it('merges loaded data with initialValue for objects', async () => {
+    it("merges loaded data with initialValue for objects", async () => {
       // Stored data is missing some fields
       mockTable._setStorage({
-        test_key: { key: 'test_key', value: { name: 'Test' } },
+        test_key: { key: "test_key", value: { name: "Test" } },
       });
 
       const { result } = renderHook(() =>
         useIndexedDB({
           table: mockTable as any,
-          localStorageKey: 'test_key',
-          initialValue: { name: '', count: 0, active: true },
-          idField: 'key',
+          localStorageKey: "test_key",
+          initialValue: { name: "", count: 0, active: true },
+          idField: "key",
         })
       );
 
@@ -130,23 +132,23 @@ describe('useIndexedDB', () => {
 
       // Should have merged values
       expect(result.current[0]).toEqual({
-        name: 'Test',
+        name: "Test",
         count: 0,
         active: true,
       });
     });
 
-    it('does not merge primitives', async () => {
+    it("does not merge primitives", async () => {
       mockTable._setStorage({
-        test_key: { key: 'test_key', value: 'stored_string' },
+        test_key: { key: "test_key", value: "stored_string" },
       });
 
       const { result } = renderHook(() =>
         useIndexedDB({
           table: mockTable as any,
-          localStorageKey: 'test_key',
-          initialValue: 'default',
-          idField: 'key',
+          localStorageKey: "test_key",
+          initialValue: "default",
+          idField: "key",
         })
       );
 
@@ -154,20 +156,20 @@ describe('useIndexedDB', () => {
         expect(result.current[2]).toBe(false);
       });
 
-      expect(result.current[0]).toBe('stored_string');
+      expect(result.current[0]).toBe("stored_string");
     });
 
-    it('does not merge arrays', async () => {
+    it("does not merge arrays", async () => {
       mockTable._setStorage({
-        test_key: { key: 'test_key', value: [1, 2, 3] },
+        test_key: { key: "test_key", value: [1, 2, 3] },
       });
 
       const { result } = renderHook(() =>
         useIndexedDB({
           table: mockTable as any,
-          localStorageKey: 'test_key',
+          localStorageKey: "test_key",
           initialValue: [] as number[],
-          idField: 'key',
+          idField: "key",
         })
       );
 
@@ -179,16 +181,16 @@ describe('useIndexedDB', () => {
     });
   });
 
-  describe('localStorage fallback', () => {
-    it('falls back to localStorage when IndexedDB is empty', async () => {
-      localStorageMock['test_key'] = JSON.stringify({ count: 99 });
+  describe("localStorage fallback", () => {
+    it("falls back to localStorage when IndexedDB is empty", async () => {
+      localStorageMock["test_key"] = JSON.stringify({ count: 99 });
 
       const { result } = renderHook(() =>
         useIndexedDB({
           table: mockTable as any,
-          localStorageKey: 'test_key',
+          localStorageKey: "test_key",
           initialValue: { count: 0 },
-          idField: 'key',
+          idField: "key",
         })
       );
 
@@ -199,15 +201,15 @@ describe('useIndexedDB', () => {
       expect(result.current[0]).toEqual({ count: 99 });
     });
 
-    it('migrates localStorage data to IndexedDB', async () => {
-      localStorageMock['test_key'] = JSON.stringify({ count: 99 });
+    it("migrates localStorage data to IndexedDB", async () => {
+      localStorageMock["test_key"] = JSON.stringify({ count: 99 });
 
       renderHook(() =>
         useIndexedDB({
           table: mockTable as any,
-          localStorageKey: 'test_key',
+          localStorageKey: "test_key",
           initialValue: { count: 0 },
-          idField: 'key',
+          idField: "key",
         })
       );
 
@@ -217,14 +219,14 @@ describe('useIndexedDB', () => {
     });
   });
 
-  describe('setValue', () => {
-    it('updates state immediately', async () => {
+  describe("setValue", () => {
+    it("updates state immediately", async () => {
       const { result } = renderHook(() =>
         useIndexedDB({
           table: mockTable as any,
-          localStorageKey: 'test_key',
+          localStorageKey: "test_key",
           initialValue: { count: 0 },
-          idField: 'key',
+          idField: "key",
         })
       );
 
@@ -239,17 +241,17 @@ describe('useIndexedDB', () => {
       expect(result.current[0]).toEqual({ count: 10 });
     });
 
-    it('accepts function updater', async () => {
+    it("accepts function updater", async () => {
       mockTable._setStorage({
-        test_key: { key: 'test_key', value: { count: 5 } },
+        test_key: { key: "test_key", value: { count: 5 } },
       });
 
       const { result } = renderHook(() =>
         useIndexedDB({
           table: mockTable as any,
-          localStorageKey: 'test_key',
+          localStorageKey: "test_key",
           initialValue: { count: 0 },
-          idField: 'key',
+          idField: "key",
         })
       );
 
@@ -264,13 +266,13 @@ describe('useIndexedDB', () => {
       expect(result.current[0]).toEqual({ count: 6 });
     });
 
-    it('persists to IndexedDB', async () => {
+    it("persists to IndexedDB", async () => {
       const { result } = renderHook(() =>
         useIndexedDB({
           table: mockTable as any,
-          localStorageKey: 'test_key',
+          localStorageKey: "test_key",
           initialValue: { count: 0 },
-          idField: 'key',
+          idField: "key",
         })
       );
 
@@ -284,19 +286,19 @@ describe('useIndexedDB', () => {
 
       await waitFor(() => {
         expect(mockTable.put).toHaveBeenCalledWith({
-          key: 'test_key',
+          key: "test_key",
           value: { count: 100 },
         });
       });
     });
 
-    it('backs up to localStorage', async () => {
+    it("backs up to localStorage", async () => {
       const { result } = renderHook(() =>
         useIndexedDB({
           table: mockTable as any,
-          localStorageKey: 'test_key',
+          localStorageKey: "test_key",
           initialValue: { count: 0 },
-          idField: 'key',
+          idField: "key",
         })
       );
 
@@ -309,16 +311,16 @@ describe('useIndexedDB', () => {
       });
 
       await waitFor(() => {
-        expect(localStorageMock['test_key']).toBe(JSON.stringify({ count: 100 }));
+        expect(localStorageMock["test_key"]).toBe(JSON.stringify({ count: 100 }));
       });
     });
   });
 
-  describe('array data', () => {
-    it('loads array data from IndexedDB', async () => {
+  describe("array data", () => {
+    it("loads array data from IndexedDB", async () => {
       const items = [
-        { id: '1', name: 'Item 1' },
-        { id: '2', name: 'Item 2' },
+        { id: "1", name: "Item 1" },
+        { id: "2", name: "Item 2" },
       ];
       mockTable._setStorage({
         item_0: items[0],
@@ -328,9 +330,9 @@ describe('useIndexedDB', () => {
       const { result } = renderHook(() =>
         useIndexedDB({
           table: mockTable as any,
-          localStorageKey: 'items',
+          localStorageKey: "items",
           initialValue: [] as Array<{ id: string; name: string }>,
-          idField: 'id',
+          idField: "id",
         })
       );
 
@@ -341,13 +343,13 @@ describe('useIndexedDB', () => {
       expect(result.current[0]).toHaveLength(2);
     });
 
-    it('clears table before saving array', async () => {
+    it("clears table before saving array", async () => {
       const { result } = renderHook(() =>
         useIndexedDB({
           table: mockTable as any,
-          localStorageKey: 'items',
+          localStorageKey: "items",
           initialValue: [] as Array<{ id: string; name: string }>,
-          idField: 'id',
+          idField: "id",
         })
       );
 
@@ -356,7 +358,7 @@ describe('useIndexedDB', () => {
       });
 
       act(() => {
-        result.current[1]([{ id: '1', name: 'New Item' }]);
+        result.current[1]([{ id: "1", name: "New Item" }]);
       });
 
       await waitFor(() => {
@@ -364,20 +366,45 @@ describe('useIndexedDB', () => {
         expect(mockTable.bulkPut).toHaveBeenCalled();
       });
     });
+
+    it("filters localStorage fallback arrays before migration", async () => {
+      const live = { id: "live", name: "Live Item" };
+      const deleted = { id: "deleted", name: "Deleted Item" };
+      localStorageMock.items = JSON.stringify([live, deleted]);
+
+      const { result } = renderHook(() =>
+        useIndexedDB({
+          table: mockTable as any,
+          localStorageKey: "items",
+          initialValue: [] as Array<{ id: string; name: string }>,
+          idField: "id",
+          fallbackArrayFilter: (items) =>
+            items.filter((item) => (item as { id?: string }).id !== "deleted"),
+        })
+      );
+
+      await waitFor(() => {
+        expect(result.current[2]).toBe(false);
+      });
+
+      expect(result.current[0]).toEqual([live]);
+      expect(mockTable.bulkPut).toHaveBeenCalledWith([live]);
+      expect(localStorageMock.items).toBe(JSON.stringify([live]));
+    });
   });
 
-  describe('triggerDataRefresh', () => {
-    it('reloads data for all hooks', async () => {
+  describe("triggerDataRefresh", () => {
+    it("reloads data for all hooks", async () => {
       mockTable._setStorage({
-        test_key: { key: 'test_key', value: { count: 1 } },
+        test_key: { key: "test_key", value: { count: 1 } },
       });
 
       const { result } = renderHook(() =>
         useIndexedDB({
           table: mockTable as any,
-          localStorageKey: 'test_key',
+          localStorageKey: "test_key",
           initialValue: { count: 0 },
-          idField: 'key',
+          idField: "key",
         })
       );
 
@@ -389,7 +416,7 @@ describe('useIndexedDB', () => {
 
       // Update storage externally
       mockTable._setStorage({
-        test_key: { key: 'test_key', value: { count: 999 } },
+        test_key: { key: "test_key", value: { count: 999 } },
       });
 
       // Trigger refresh
@@ -401,24 +428,91 @@ describe('useIndexedDB', () => {
         expect(result.current[0]).toEqual({ count: 999 });
       });
     });
+
+    it("clears stale array state and fallback when an external sync leaves the table empty", async () => {
+      const items = [
+        { id: "1", name: "Item 1" },
+        { id: "2", name: "Item 2" },
+      ];
+      mockTable._setStorage({
+        item_0: items[0],
+        item_1: items[1],
+      });
+      localStorageMock.items = JSON.stringify(items);
+
+      const { result } = renderHook(() =>
+        useIndexedDB({
+          table: mockTable as any,
+          localStorageKey: "items",
+          initialValue: [] as Array<{ id: string; name: string }>,
+          idField: "id",
+        })
+      );
+
+      await waitFor(() => {
+        expect(result.current[0]).toHaveLength(2);
+      });
+
+      mockTable._setStorage({});
+
+      act(() => {
+        triggerDataRefresh();
+      });
+
+      await waitFor(() => {
+        expect(result.current[0]).toEqual([]);
+      });
+      expect(localStorageMock.items).toBe(JSON.stringify([]));
+    });
+
+    it("clears stale setting state and fallback when an external sync deletes the key", async () => {
+      mockTable._setStorage({
+        test_key: { key: "test_key", value: { count: 1 } },
+      });
+      localStorageMock.test_key = JSON.stringify({ count: 1 });
+
+      const { result } = renderHook(() =>
+        useIndexedDB({
+          table: mockTable as any,
+          localStorageKey: "test_key",
+          initialValue: { count: 0 },
+          idField: "key",
+        })
+      );
+
+      await waitFor(() => {
+        expect(result.current[0]).toEqual({ count: 1 });
+      });
+
+      mockTable._setStorage({});
+
+      act(() => {
+        triggerDataRefresh();
+      });
+
+      await waitFor(() => {
+        expect(result.current[0]).toEqual({ count: 0 });
+      });
+      expect(localStorageMock.test_key).toBe(JSON.stringify({ count: 0 }));
+    });
   });
 
-  describe('error handling', () => {
-    it('handles IndexedDB errors gracefully', async () => {
+  describe("error handling", () => {
+    it("handles IndexedDB errors gracefully", async () => {
       const errorTable = {
         ...mockTable,
-        get: vi.fn(() => Promise.reject(new Error('IndexedDB error'))),
+        get: vi.fn(() => Promise.reject(new Error("IndexedDB error"))),
       };
 
       // Set localStorage fallback
-      localStorageMock['test_key'] = JSON.stringify({ count: 50 });
+      localStorageMock["test_key"] = JSON.stringify({ count: 50 });
 
       const { result } = renderHook(() =>
         useIndexedDB({
           table: errorTable as any,
-          localStorageKey: 'test_key',
+          localStorageKey: "test_key",
           initialValue: { count: 0 },
-          idField: 'key',
+          idField: "key",
         })
       );
 
@@ -430,17 +524,17 @@ describe('useIndexedDB', () => {
       expect(result.current[0]).toEqual({ count: 50 });
     });
 
-    it('handles localStorage errors gracefully', async () => {
-      vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
-        throw new Error('localStorage not available');
+    it("handles localStorage errors gracefully", async () => {
+      vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+        throw new Error("localStorage not available");
       });
 
       const { result } = renderHook(() =>
         useIndexedDB({
           table: mockTable as any,
-          localStorageKey: 'test_key',
+          localStorageKey: "test_key",
           initialValue: { count: 0 },
-          idField: 'key',
+          idField: "key",
         })
       );
 

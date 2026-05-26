@@ -5,7 +5,7 @@
 
 import { logger } from "@/lib/logger";
 import { writeEventAndBroadcast, getPersistentDeviceId } from "@/storage/eventSync";
-import { trackDeletedHabitId } from "@/storage/deletionTracker";
+import { getDeletedHabitIds, trackDeletedHabitId } from "@/storage/deletionTracker";
 import { isAbortError, isValidUUID } from "@/lib/validation";
 import { supabase, getCurrentUserId } from "@/lib/supabaseClient";
 import { ENTRY, type Habit, type LoopHabitType, type TargetType } from "@/types";
@@ -30,6 +30,12 @@ export const syncHabit = async (habit: Habit): Promise<void> => {
   if (!supabase) return;
   if (!userId) {
     logger.warn("[Sync] Cannot sync habit: User not authenticated");
+    return;
+  }
+
+  const deletedHabitIds = await getDeletedHabitIds();
+  if (deletedHabitIds.has(habit.id)) {
+    logger.warn("[Sync] Skipping tombstoned habit upsert:", habit.id);
     return;
   }
 
@@ -194,6 +200,8 @@ export const syncHabit = async (habit: Habit): Promise<void> => {
 };
 
 export const deleteHabitFromCloud = async (habitId: string): Promise<void> => {
+  await trackDeletedHabitId(habitId);
+
   const userId = await getCurrentUserId();
   if (!supabase || !userId) return;
 
@@ -206,7 +214,6 @@ export const deleteHabitFromCloud = async (habitId: string): Promise<void> => {
 
   try {
     if (!isValidUUID(habitId)) {
-      await trackDeletedHabitId(habitId);
       const deviceId = await getPersistentDeviceId();
       await writeEventAndBroadcast("habit", habitId, "delete", null, deviceId);
       logger.log("[Sync] Legacy habit delete tracked + evented:", habitId);
@@ -221,7 +228,6 @@ export const deleteHabitFromCloud = async (habitId: string): Promise<void> => {
 
     if (error) throw error;
 
-    await trackDeletedHabitId(habitId);
     logger.log("[Sync] Habit deleted + tracked:", habitId);
     const deviceId = await getPersistentDeviceId();
     await writeEventAndBroadcast("habit", habitId, "delete", null, deviceId);

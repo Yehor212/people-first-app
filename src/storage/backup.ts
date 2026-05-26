@@ -133,6 +133,11 @@ export const exportBackup = async (): Promise<BackupPayloadV3> => {
   const deletedMoodIds = [...(await getDeletedMoodIds())];
   const deletedFocusSessionIds = [...(await getDeletedFocusSessionIds())];
   const deletedGratitudeIds = [...(await getDeletedGratitudeIds())];
+  const deletedHabitSet = new Set(deletedHabitIds);
+  const deletedJournalEntrySet = new Set(deletedJournalEntryIds);
+  const deletedMoodSet = new Set(deletedMoodIds);
+  const deletedFocusSessionSet = new Set(deletedFocusSessionIds);
+  const deletedGratitudeSet = new Set(deletedGratitudeIds);
 
   // Use Dexie transaction for atomic point-in-time snapshot
   // This ensures all data is read consistently without interleaved writes
@@ -182,14 +187,16 @@ export const exportBackup = async (): Promise<BackupPayloadV3> => {
       }));
 
       return {
-        moods,
-        habits,
-        focusSessions,
-        gratitudeEntries,
+        moods: moods.filter((mood) => !deletedMoodSet.has(mood.id)),
+        habits: habits.filter((habit) => !deletedHabitSet.has(habit.id)),
+        focusSessions: focusSessions.filter((session) => !deletedFocusSessionSet.has(session.id)),
+        gratitudeEntries: gratitudeEntries.filter((entry) => !deletedGratitudeSet.has(entry.id)),
         settings,
-        journalEntries,
-        journalPhotos: optimizedPhotos,
-        journalAudio: optimizedAudio,
+        journalEntries: journalEntries.filter((entry) => !deletedJournalEntrySet.has(entry.id)),
+        journalPhotos: optimizedPhotos.filter(
+          (photo) => !deletedJournalEntrySet.has(photo.entryId)
+        ),
+        journalAudio: optimizedAudio.filter((audio) => !deletedJournalEntrySet.has(audio.entryId)),
       };
     }
   );

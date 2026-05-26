@@ -18,6 +18,7 @@ import type { Json } from "@/types/supabase";
 import type { IndexableType, Table } from "dexie";
 import type { LoopHabitType } from "@/types";
 import { decodeHabitCompletionFromCloud } from "@/storage/sync/habitCompletionCodec";
+import { storageRemove } from "@/lib/safeJson";
 import {
   getDeletionTrackerKeyForSyncEntity,
   normalizeDeletedIdsForStorage,
@@ -411,9 +412,7 @@ export async function pullAndApplyDeltasFromLastSeq(
   return { fetched: events.length, applied, lastSeq: maxSeq };
 }
 
-function readHabitCompletionIdentity(
-  event: SyncEvent
-): { habitId: string; date: string } | null {
+function readHabitCompletionIdentity(event: SyncEvent): { habitId: string; date: string } | null {
   const payload = event.payload;
   const payloadHabitId = typeof payload?.habitId === "string" ? payload.habitId : null;
   const payloadDate = typeof payload?.date === "string" ? payload.date : null;
@@ -513,6 +512,7 @@ async function applySettingEvent(event: SyncEvent): Promise<boolean> {
 
   if (event.op === "delete") {
     await db.settings.delete(key);
+    storageRemove(key);
     return true;
   }
 

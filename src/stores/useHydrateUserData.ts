@@ -1,8 +1,9 @@
-import { useEffect, useLayoutEffect, useRef } from 'react';
-import { useIndexedDB } from '@/hooks/useIndexedDB';
-import { db } from '@/storage/db';
-import { defaultReminderSettings } from '@/lib/reminders';
-import { useUserDataStore, type RegisteredSetters } from './userDataStore';
+import { useEffect, useLayoutEffect, useRef } from "react";
+import { useIndexedDB } from "@/hooks/useIndexedDB";
+import { db } from "@/storage/db";
+import { getDeletedHabitIds } from "@/storage/deletionTracker";
+import { defaultReminderSettings } from "@/lib/reminders";
+import { useUserDataStore, type RegisteredSetters } from "./userDataStore";
 import type {
   MoodEntry,
   Habit,
@@ -15,7 +16,7 @@ import type {
   CanvasGoal,
   DayRitual,
   ReflectionInsightCard,
-} from '@/types';
+} from "@/types";
 import {
   runtimeMoodEntrySchema,
   runtimeHabitSchema,
@@ -28,7 +29,17 @@ import {
   canvasGoalSchema,
   dayRitualSchema,
   reflectionInsightCardSchema,
-} from '@/lib/schemas';
+} from "@/lib/schemas";
+
+const filterTombstonedHabits = async (items: unknown[]): Promise<unknown[]> => {
+  const deletedIds = await getDeletedHabitIds();
+  if (deletedIds.size === 0) return items;
+  return items.filter((item) => {
+    if (!item || typeof item !== "object") return true;
+    const id = (item as { id?: unknown }).id;
+    return typeof id !== "string" || !deletedIds.has(id);
+  });
+};
 
 /**
  * Bridge hook: loads all user data from IndexedDB via useIndexedDB hooks,
@@ -42,155 +53,190 @@ export function useHydrateUserData(): void {
 
   const [hasSelectedLanguage, setHasSelectedLanguage, isLoadingLangSelected] = useIndexedDB({
     table: db.settings,
-    localStorageKey: 'zenflow-language-selected',
+    localStorageKey: "zenflow-language-selected",
     initialValue: false,
-    idField: 'key',
+    idField: "key",
   });
 
   const [userName, setUserName, isLoadingUserName] = useIndexedDB({
     table: db.settings,
-    localStorageKey: 'zenflow-username',
-    initialValue: 'Friend',
-    idField: 'key',
+    localStorageKey: "zenflow-username",
+    initialValue: "Friend",
+    idField: "key",
   });
 
   const [userNameCustom, setUserNameCustom, isLoadingUserNameCustom] = useIndexedDB({
     table: db.settings,
-    localStorageKey: 'zenflow-username-custom',
+    localStorageKey: "zenflow-username-custom",
     initialValue: false,
-    idField: 'key',
+    idField: "key",
   });
 
   const [moods, setMoods, isLoadingMoods] = useIndexedDB<MoodEntry[]>({
     table: db.moods,
-    localStorageKey: 'zenflow-moods',
+    localStorageKey: "zenflow-moods",
     initialValue: [],
     itemSchema: runtimeMoodEntrySchema,
   });
 
   const [habits, setHabits, isLoadingHabits] = useIndexedDB<Habit[]>({
     table: db.habits,
-    localStorageKey: 'zenflow-habits',
+    localStorageKey: "zenflow-habits",
     initialValue: [],
     itemSchema: runtimeHabitSchema,
+    fallbackArrayFilter: filterTombstonedHabits,
   });
 
   const [focusSessions, setFocusSessions, isLoadingFocus] = useIndexedDB<FocusSession[]>({
     table: db.focusSessions,
-    localStorageKey: 'zenflow-focus',
+    localStorageKey: "zenflow-focus",
     initialValue: [],
     itemSchema: runtimeFocusSessionSchema,
   });
 
-  const [gratitudeEntries, setGratitudeEntries, isLoadingGratitude] = useIndexedDB<GratitudeEntry[]>({
+  const [gratitudeEntries, setGratitudeEntries, isLoadingGratitude] = useIndexedDB<
+    GratitudeEntry[]
+  >({
     table: db.gratitudeEntries,
-    localStorageKey: 'zenflow-gratitude',
+    localStorageKey: "zenflow-gratitude",
     initialValue: [],
     itemSchema: runtimeGratitudeEntrySchema,
   });
 
   const [reminders, setReminders, isLoadingReminders] = useIndexedDB<ReminderSettings>({
     table: db.settings,
-    localStorageKey: 'zenflow-reminders',
+    localStorageKey: "zenflow-reminders",
     initialValue: defaultReminderSettings,
-    idField: 'key',
+    idField: "key",
     objectSchema: reminderSettingsSchema,
   });
 
   const [tutorialComplete, setTutorialComplete, isLoadingTutorial] = useIndexedDB({
     table: db.settings,
-    localStorageKey: 'zenflow-tutorial-complete',
+    localStorageKey: "zenflow-tutorial-complete",
     initialValue: false,
-    idField: 'key',
+    idField: "key",
   });
 
   const [onboardingComplete, setOnboardingComplete, isLoadingOnboarding] = useIndexedDB({
     table: db.settings,
-    localStorageKey: 'zenflow-onboarding-complete',
+    localStorageKey: "zenflow-onboarding-complete",
     initialValue: false,
-    idField: 'key',
+    idField: "key",
   });
 
-  const [notificationPermissionChecked, setNotificationPermissionChecked, isLoadingNotificationPermission] = useIndexedDB({
+  const [
+    notificationPermissionChecked,
+    setNotificationPermissionChecked,
+    isLoadingNotificationPermission,
+  ] = useIndexedDB({
     table: db.settings,
-    localStorageKey: 'zenflow-notification-permission-checked',
+    localStorageKey: "zenflow-notification-permission-checked",
     initialValue: false,
-    idField: 'key',
+    idField: "key",
   });
 
   const [googleAuthChecked, setGoogleAuthChecked, isLoadingGoogleAuth] = useIndexedDB({
     table: db.settings,
-    localStorageKey: 'zenflow-google-auth-checked',
+    localStorageKey: "zenflow-google-auth-checked",
     initialValue: false,
-    idField: 'key',
+    idField: "key",
   });
 
   const [privacy, setPrivacy, isLoadingPrivacy] = useIndexedDB<PrivacySettings>({
     table: db.settings,
-    localStorageKey: 'zenflow-privacy',
+    localStorageKey: "zenflow-privacy",
     initialValue: { noTracking: false, analytics: false, consentShown: false },
-    idField: 'key',
+    idField: "key",
     objectSchema: privacySettingsSchema,
   });
 
   const [scheduleEvents, setScheduleEvents, isLoadingSchedule] = useIndexedDB<ScheduleEvent[]>({
     table: db.settings,
-    localStorageKey: 'zenflow-schedule-events',
+    localStorageKey: "zenflow-schedule-events",
     initialValue: [],
-    idField: 'key',
+    idField: "key",
     itemSchema: scheduleEventSchema,
   });
 
-  const [microReflections, setMicroReflections, isLoadingMicroReflections] = useIndexedDB<MicroReflection[]>({
+  const [microReflections, setMicroReflections, isLoadingMicroReflections] = useIndexedDB<
+    MicroReflection[]
+  >({
     table: db.settings,
-    localStorageKey: 'zenflow-micro-reflections',
+    localStorageKey: "zenflow-micro-reflections",
     initialValue: [],
-    idField: 'key',
+    idField: "key",
     itemSchema: microReflectionSchema,
   });
 
   const [canvasGoals, setCanvasGoals, isLoadingCanvasGoals] = useIndexedDB<CanvasGoal[]>({
     table: db.settings,
-    localStorageKey: 'zenflow-canvas-goals',
+    localStorageKey: "zenflow-canvas-goals",
     initialValue: [],
-    idField: 'key',
+    idField: "key",
     itemSchema: canvasGoalSchema,
   });
 
   const [dayRituals, setDayRituals, isLoadingDayRituals] = useIndexedDB<DayRitual[]>({
     table: db.settings,
-    localStorageKey: 'zenflow-day-rituals',
+    localStorageKey: "zenflow-day-rituals",
     initialValue: [],
-    idField: 'key',
+    idField: "key",
     itemSchema: dayRitualSchema,
   });
 
-  const [reflectionInsights, setReflectionInsights, isLoadingReflectionInsights] = useIndexedDB<ReflectionInsightCard[]>({
+  const [reflectionInsights, setReflectionInsights, isLoadingReflectionInsights] = useIndexedDB<
+    ReflectionInsightCard[]
+  >({
     table: db.settings,
-    localStorageKey: 'zenflow-reflection-insights',
+    localStorageKey: "zenflow-reflection-insights",
     initialValue: [],
-    idField: 'key',
+    idField: "key",
     itemSchema: reflectionInsightCardSchema,
   });
 
   // ── Register IndexedDB setters (once, via stable refs) ──
 
   const settersRef = useRef<RegisteredSetters>({
-    setMoods, setHabits, setFocusSessions, setGratitudeEntries,
-    setReminders, setPrivacy, setScheduleEvents, setMicroReflections,
-    setCanvasGoals, setDayRituals, setReflectionInsights,
-    setUserName, setUserNameCustom, setHasSelectedLanguage,
-    setTutorialComplete, setOnboardingComplete,
-    setNotificationPermissionChecked, setGoogleAuthChecked,
+    setMoods,
+    setHabits,
+    setFocusSessions,
+    setGratitudeEntries,
+    setReminders,
+    setPrivacy,
+    setScheduleEvents,
+    setMicroReflections,
+    setCanvasGoals,
+    setDayRituals,
+    setReflectionInsights,
+    setUserName,
+    setUserNameCustom,
+    setHasSelectedLanguage,
+    setTutorialComplete,
+    setOnboardingComplete,
+    setNotificationPermissionChecked,
+    setGoogleAuthChecked,
   });
   // Keep ref current (useIndexedDB setters are useCallback-stable, but update ref just in case)
   settersRef.current = {
-    setMoods, setHabits, setFocusSessions, setGratitudeEntries,
-    setReminders, setPrivacy, setScheduleEvents, setMicroReflections,
-    setCanvasGoals, setDayRituals, setReflectionInsights,
-    setUserName, setUserNameCustom, setHasSelectedLanguage,
-    setTutorialComplete, setOnboardingComplete,
-    setNotificationPermissionChecked, setGoogleAuthChecked,
+    setMoods,
+    setHabits,
+    setFocusSessions,
+    setGratitudeEntries,
+    setReminders,
+    setPrivacy,
+    setScheduleEvents,
+    setMicroReflections,
+    setCanvasGoals,
+    setDayRituals,
+    setReflectionInsights,
+    setUserName,
+    setUserNameCustom,
+    setHasSelectedLanguage,
+    setTutorialComplete,
+    setOnboardingComplete,
+    setNotificationPermissionChecked,
+    setGoogleAuthChecked,
   };
 
   useEffect(() => {
@@ -212,7 +258,8 @@ export function useHydrateUserData(): void {
       setHasSelectedLanguage: (v) => settersRef.current.setHasSelectedLanguage(v),
       setTutorialComplete: (v) => settersRef.current.setTutorialComplete(v),
       setOnboardingComplete: (v) => settersRef.current.setOnboardingComplete(v),
-      setNotificationPermissionChecked: (v) => settersRef.current.setNotificationPermissionChecked(v),
+      setNotificationPermissionChecked: (v) =>
+        settersRef.current.setNotificationPermissionChecked(v),
       setGoogleAuthChecked: (v) => settersRef.current.setGoogleAuthChecked(v),
     };
     useUserDataStore.getState()._registerSetters(stableSetters);
@@ -221,12 +268,24 @@ export function useHydrateUserData(): void {
   // ── Sync values from useIndexedDB → Zustand store ──
 
   const isLoading =
-    isLoadingLangSelected || isLoadingUserName || isLoadingUserNameCustom ||
-    isLoadingMoods || isLoadingHabits || isLoadingFocus || isLoadingGratitude ||
-    isLoadingReminders || isLoadingTutorial || isLoadingOnboarding ||
-    isLoadingPrivacy || isLoadingNotificationPermission || isLoadingGoogleAuth ||
-    isLoadingSchedule || isLoadingMicroReflections || isLoadingCanvasGoals ||
-    isLoadingDayRituals || isLoadingReflectionInsights;
+    isLoadingLangSelected ||
+    isLoadingUserName ||
+    isLoadingUserNameCustom ||
+    isLoadingMoods ||
+    isLoadingHabits ||
+    isLoadingFocus ||
+    isLoadingGratitude ||
+    isLoadingReminders ||
+    isLoadingTutorial ||
+    isLoadingOnboarding ||
+    isLoadingPrivacy ||
+    isLoadingNotificationPermission ||
+    isLoadingGoogleAuth ||
+    isLoadingSchedule ||
+    isLoadingMicroReflections ||
+    isLoadingCanvasGoals ||
+    isLoadingDayRituals ||
+    isLoadingReflectionInsights;
 
   // Guard: prevent re-entry during the same synchronous render cycle.
   // _hydrateFromDB → set() → Zustand notify → re-render → useLayoutEffect fires again.
@@ -238,24 +297,50 @@ export function useHydrateUserData(): void {
     isHydratingRef.current = true;
 
     useUserDataStore.getState()._hydrateFromDB({
-      moods, habits, focusSessions, gratitudeEntries,
-      reminders, privacy, scheduleEvents, microReflections,
-      canvasGoals, dayRituals, reflectionInsights,
-      userName, userNameCustom, hasSelectedLanguage,
-      tutorialComplete, onboardingComplete,
-      notificationPermissionChecked, googleAuthChecked,
+      moods,
+      habits,
+      focusSessions,
+      gratitudeEntries,
+      reminders,
+      privacy,
+      scheduleEvents,
+      microReflections,
+      canvasGoals,
+      dayRituals,
+      reflectionInsights,
+      userName,
+      userNameCustom,
+      hasSelectedLanguage,
+      tutorialComplete,
+      onboardingComplete,
+      notificationPermissionChecked,
+      googleAuthChecked,
       isLoading,
     });
 
     // Release after microtask — allows next legitimate data change to hydrate
-    queueMicrotask(() => { isHydratingRef.current = false; });
+    queueMicrotask(() => {
+      isHydratingRef.current = false;
+    });
   }, [
-    moods, habits, focusSessions, gratitudeEntries,
-    reminders, privacy, scheduleEvents, microReflections,
-    canvasGoals, dayRituals, reflectionInsights,
-    userName, userNameCustom, hasSelectedLanguage,
-    tutorialComplete, onboardingComplete,
-    notificationPermissionChecked, googleAuthChecked,
+    moods,
+    habits,
+    focusSessions,
+    gratitudeEntries,
+    reminders,
+    privacy,
+    scheduleEvents,
+    microReflections,
+    canvasGoals,
+    dayRituals,
+    reflectionInsights,
+    userName,
+    userNameCustom,
+    hasSelectedLanguage,
+    tutorialComplete,
+    onboardingComplete,
+    notificationPermissionChecked,
+    googleAuthChecked,
     isLoading,
   ]);
 }

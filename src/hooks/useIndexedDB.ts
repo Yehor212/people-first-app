@@ -19,13 +19,36 @@ export const triggerDataRefresh = () => {
 // Dexie transaction which can take 10-20s on Android, blocking other hooks)
 const INDEXEDDB_TIMEOUT_MS = 30000;
 
+const sanitizeStoredValue = (value: unknown): unknown => {
+  if (Array.isArray(value)) {
+    return value.map((item) =>
+      item !== null && typeof item === "object"
+        ? sanitizeObject(item as Record<string, unknown>)
+        : item
+    );
+  }
+  if (value !== null && typeof value === "object") {
+    return sanitizeObject(value as Record<string, unknown>);
+  }
+  return value;
+};
+
+interface TimeoutResult<T> {
+  value: T;
+  timedOut: boolean;
+}
+
 // Helper to add timeout to promises
 // P2-3 Fix: Emit event when timeout occurs so UI can show stale data warning
-const withTimeout = <T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> => {
+const withTimeoutResult = <T>(
+  promise: Promise<T>,
+  ms: number,
+  fallback: T
+): Promise<TimeoutResult<T>> => {
   let timerId: ReturnType<typeof setTimeout> | null = null;
   return Promise.race([
-    promise,
-    new Promise<T>((resolve) => {
+    promise.then((value) => ({ value, timedOut: false })),
+    new Promise<TimeoutResult<T>>((resolve) => {
       timerId = setTimeout(() => {
         logger.warn(`[useIndexedDB] Operation timed out after ${ms}ms, using fallback`);
         // P2-3 Fix: Emit event so UI can optionally show "data may be stale" indicator
@@ -39,7 +62,7 @@ const withTimeout = <T>(promise: Promise<T>, ms: number, fallback: T): Promise<T
             })
           );
         }
-        resolve(fallback);
+        resolve({ value: fallback, timedOut: true });
       }, ms);
     }),
   ]).finally(() => {
@@ -156,6 +179,8 @@ interface UseIndexedDBOptions<T> {
   itemSchema?: z.ZodType<any>;
   /** Schema for validating single object values (when using idField='key') */
   objectSchema?: z.ZodType<any>;
+  /** Filters migrated localStorage fallback rows, e.g. to remove tombstoned entities. */
+  fallbackArrayFilter?: (items: unknown[]) => Promise<unknown[]> | unknown[];
 }
 
 export function useIndexedDB<T>({
@@ -165,6 +190,7 @@ export function useIndexedDB<T>({
   idField = "id",
   itemSchema,
   objectSchema,
+  fallbackArrayFilter,
 }: UseIndexedDBOptions<T>): [T, (value: T | ((prev: T) => T)) => void, boolean] {
   const [data, setData] = useState<T>(initialValue);
   const [isLoading, setIsLoading] = useState(true);
@@ -185,6 +211,7 @@ export function useIndexedDB<T>({
   // to prevent applyValidation → loadData → refresh effect from re-triggering on every render.
   const itemSchemaRef = useRef(itemSchema);
   const objectSchemaRef = useRef(objectSchema);
+  const fallbackArrayFilterRef = useRef(fallbackArrayFilter);
 
   // Apply schema validation if provided (otherwise passthrough)
   const applyValidation = useCallback(
@@ -214,7 +241,7 @@ export function useIndexedDB<T>({
         // For settings table with key field
         if (idField === "key") {
           // Use timeout to prevent hanging on IndexedDB operations
-          const record = await withTimeout(
+          const { value: record, timedOut } = await withTimeoutResult(
             table.get(localStorageKey),
             INDEXEDDB_TIMEOUT_MS,
             undefined
@@ -227,12 +254,20 @@ export function useIndexedDB<T>({
             if (isPrimitive || isArray) {
               // Don't merge primitives or arrays - just use the value directly
               const validated = applyValidation(record.value);
-              setData(validated !== null ? validated : defaults);
+              const nextValue = validated !== null ? validated : defaults;
+              setData(nextValue);
+              if (!safeLocalStorageSet(localStorageKey, nextValue)) {
+                logger.warn("localStorage backup failed while refreshing setting");
+              }
             } else {
               // Merge with initialValue to ensure all required fields exist (handles schema migrations)
               const merged = { ...defaults, ...record.value };
               const validated = applyValidation(merged);
-              setData(validated !== null ? validated : defaults);
+              const nextValue = validated !== null ? validated : defaults;
+              setData(nextValue);
+              if (!safeLocalStorageSet(localStorageKey, nextValue)) {
+                logger.warn("localStorage backup failed while refreshing setting");
+              }
             }
           } else if (isInitialLoad) {
             // Try localStorage fallback only on initial load
@@ -240,7 +275,7 @@ export function useIndexedDB<T>({
               const stored = storageGetRaw(localStorageKey, "");
               if (stored) {
                 try {
-                  const parsed = sanitizeObject(JSON.parse(stored));
+                  const parsed = sanitizeStoredValue(JSON.parse(stored));
                   // Only merge objects, not primitives or arrays
                   const isPrimitive = typeof parsed !== "object" || parsed === null;
                   const isArray = Array.isArray(parsed);
@@ -271,28 +306,50 @@ export function useIndexedDB<T>({
               // localStorage not available (Safari Private Mode, quota exceeded)
               logger.warn("localStorage not available:", storageError);
             }
+          } else if (!timedOut) {
+            setData(defaults);
+            if (!safeLocalStorageSet(localStorageKey, defaults)) {
+              logger.warn("localStorage backup failed while clearing stale setting fallback");
+            }
           }
         } else {
           // For array tables - use timeout
-          const records = await withTimeout(table.toArray(), INDEXEDDB_TIMEOUT_MS, [] as unknown[]);
+          const { value: records, timedOut } = await withTimeoutResult(
+            table.toArray(),
+            INDEXEDDB_TIMEOUT_MS,
+            [] as unknown[]
+          );
           if (records.length > 0) {
             const validated = applyValidation(records);
-            setData(validated !== null ? validated : defaults);
+            const nextValue = validated !== null ? validated : defaults;
+            setData(nextValue);
+            if (!safeLocalStorageSet(localStorageKey, nextValue)) {
+              logger.warn("localStorage backup failed while refreshing array");
+            }
           } else if (isInitialLoad) {
             // Try localStorage fallback only on initial load
             try {
               const stored = storageGetRaw(localStorageKey, "");
               if (stored) {
                 try {
-                  const parsed = sanitizeObject(JSON.parse(stored));
+                  const parsed = sanitizeStoredValue(JSON.parse(stored));
                   if (Array.isArray(parsed) && parsed.length > 0) {
-                    const validated = applyValidation(parsed);
-                    setData(validated !== null ? validated : defaults);
+                    const filtered = fallbackArrayFilterRef.current
+                      ? await fallbackArrayFilterRef.current(parsed)
+                      : parsed;
+                    const validated = applyValidation(filtered);
+                    const nextValue = validated !== null ? validated : defaults;
+                    setData(nextValue);
                     // Migrate to IndexedDB (don't wait, fire and forget)
-                    table.bulkPut(parsed).catch((err) => {
-                      // Log migration errors
-                      logger.warn("[useIndexedDB] Migration bulkPut failed:", err);
-                    });
+                    if (Array.isArray(filtered) && filtered.length > 0) {
+                      table.bulkPut(filtered).catch((err) => {
+                        // Log migration errors
+                        logger.warn("[useIndexedDB] Migration bulkPut failed:", err);
+                      });
+                    }
+                    if (!safeLocalStorageSet(localStorageKey, nextValue)) {
+                      logger.warn("localStorage backup failed while migrating array fallback");
+                    }
                   }
                 } catch (parseError) {
                   logger.warn("Failed to parse localStorage array data for migration:", parseError);
@@ -301,6 +358,11 @@ export function useIndexedDB<T>({
             } catch (storageError) {
               // localStorage not available (Safari Private Mode, quota exceeded)
               logger.warn("localStorage not available:", storageError);
+            }
+          } else if (!timedOut) {
+            setData(defaults);
+            if (!safeLocalStorageSet(localStorageKey, defaults)) {
+              logger.warn("localStorage backup failed while clearing stale array fallback");
             }
           }
         }
@@ -311,7 +373,7 @@ export function useIndexedDB<T>({
           const stored = storageGetRaw(localStorageKey, "");
           if (stored) {
             try {
-              const parsed = sanitizeObject(JSON.parse(stored));
+              const parsed = sanitizeStoredValue(JSON.parse(stored));
               // Only merge objects, not primitives or arrays
               const isPrimitive = typeof parsed !== "object" || parsed === null;
               const isArray = Array.isArray(parsed);

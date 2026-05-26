@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   eq: vi.fn(),
   enqueue: vi.fn(),
   trackDeletedHabitId: vi.fn(),
+  getDeletedHabitIds: vi.fn(),
   getPersistentDeviceId: vi.fn(),
   writeEventAndBroadcast: vi.fn(),
 }));
@@ -22,6 +23,7 @@ vi.mock("@/lib/offlineQueue", () => ({
 
 vi.mock("@/storage/deletionTracker", () => ({
   trackDeletedHabitId: mocks.trackDeletedHabitId,
+  getDeletedHabitIds: mocks.getDeletedHabitIds,
 }));
 
 vi.mock("@/storage/eventSync", () => ({
@@ -45,7 +47,7 @@ vi.mock("@/lib/validation", async () => {
   };
 });
 
-import { deleteHabitFromCloud } from "../syncHabits";
+import { deleteHabitFromCloud, syncHabit } from "../syncHabits";
 
 describe("deleteHabitFromCloud", () => {
   beforeEach(() => {
@@ -55,6 +57,7 @@ describe("deleteHabitFromCloud", () => {
       value: true,
     });
     mocks.getCurrentUserId.mockResolvedValue("user-1");
+    mocks.getDeletedHabitIds.mockResolvedValue(new Set());
     mocks.getPersistentDeviceId.mockResolvedValue("device-1");
     const deleteQuery = {
       eq: mocks.eq,
@@ -90,6 +93,7 @@ describe("deleteHabitFromCloud", () => {
     expect(mocks.enqueue).toHaveBeenCalledWith("DELETE_HABIT", "legacy-habit-id", {
       id: "legacy-habit-id",
     });
+    expect(mocks.trackDeletedHabitId).toHaveBeenCalledWith("legacy-habit-id");
     expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
   });
 
@@ -109,5 +113,24 @@ describe("deleteHabitFromCloud", () => {
       null,
       "device-1"
     );
+  });
+
+  it("does not upsert a habit that already has a local tombstone", async () => {
+    const habitId = "11111111-1111-4111-8111-111111111111";
+    mocks.getDeletedHabitIds.mockResolvedValue(new Set([habitId]));
+
+    await syncHabit({
+      id: habitId,
+      name: "Deleted",
+      icon: "sparkles",
+      color: "blue",
+      frequency: { numerator: 1, denominator: 1 },
+      entries: {},
+      createdAt: "2026-05-25T10:00:00.000Z",
+      updatedAt: "2026-05-25T10:00:00.000Z",
+    } as any);
+
+    expect(mocks.from).not.toHaveBeenCalled();
+    expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
   });
 });

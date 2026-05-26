@@ -31,15 +31,18 @@ The repository contains a verified Telegram control-plane implementation, but li
 | Deploy workflow main-ref guard | PASS | `.github/workflows/deploy.yml` step `Validate Telegram-approved deploy target` rejects Telegram-approved production deploys unless `GITHUB_REF=refs/heads/main` |
 | Rollback creates branch-only draft PR | PASS | `.github/workflows/telegram-control.yml` step `Create rollback proposal PR` requires Telegram approval, validates `target=<commit-or-ref>`, runs gates, and opens a draft PR without deploying |
 | Missing `OPENAI_API_KEY` does not fake success | PASS | `.github/workflows/telegram-control.yml` reports `UNVERIFIED` before Codex action |
-| Local Worker/package verification | PASS | `npm run check:telegram-control`: 41 unit tests, workflow invariants, local smoke, setup verifier, webhook dry-run, and bot UI dry-run ran |
+| Local Worker/package verification | PASS | `npm run check:telegram-control`: 44 unit tests, workflow invariants, local smoke, setup verifier, webhook dry-run, bot UI dry-run, and generated-secret dry-run ran |
 | Local end-to-end smoke without live secrets | PASS | `npm --prefix tools/telegram-control run smoke:local`: health, Mini App state, auth rejection, status, approval, and callback verified |
 | Deployed Worker smoke helper exists | PASS | `npm --prefix tools/telegram-control run smoke:live` verifies `/health`, `/miniapp`, and signed Mini App state when env vars are present |
 | Telegram bot UI setup helper exists | PASS | `tools/telegram-control/scripts/set-bot-ui.ts`; tests `buildTelegramCommandsPayload exposes the full control command menu` and `buildTelegramMenuButtonPayload requires HTTPS Mini App URL` |
+| Generated shared-secret bootstrap exists | PASS | `tools/telegram-control/scripts/bootstrap-secrets.ts`; tests `generated project secrets are base64url-safe and long enough`, `generated secret report never includes plaintext values`, and `local env output excludes account-owned secrets` |
 | Workflow safety contract | PASS | `npm --prefix tools/telegram-control run check:workflow`: 50 Telegram control, deploy workflow, and durable approval-signal invariants verified |
 | CI drift guard | PASS | `.github/workflows/drift-checks.yml` includes `telegram-control` matrix entry running `npm run check:telegram-control` |
 | Activation checklist | PASS | `npm --prefix tools/telegram-control run activation:checklist` reports remaining external setup without exposing secrets |
 | Setup command plan | PASS | `npm --prefix tools/telegram-control run setup:plan` prints required Cloudflare/GitHub/Telegram commands without embedding secret values |
 | Secret leak guard | PASS | `npm --prefix tools/telegram-control run check:secrets` scans control-plane files for token-shaped values |
+| Generated-secret dry-run | PASS | `npm --prefix tools/telegram-control run secrets:bootstrap` generates redacted evidence for project-owned shared secrets and does not print plaintext values |
+| Local generated shared-secret file | PASS | `npm --prefix tools/telegram-control run secrets:bootstrap -- --write-local` wrote `.env.telegram-control.local` without printing secret values; file is ignored by `.gitignore` via `.env.*` |
 | Full current-worktree static gates | PASS | `npm run check:all` passed on the current worktree |
 | Task completion protocol | PASS | `npm run check:task-completion`: 72 invariants verified |
 | Sync contract | PASS | `npm run check:sync-contract`: 343 sync invariants verified |

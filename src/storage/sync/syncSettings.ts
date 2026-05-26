@@ -10,6 +10,7 @@ import { supabase, getCurrentUserId } from "@/lib/supabaseClient";
 import { offlineQueue } from "@/lib/offlineQueue";
 import type { Json } from "@/types/supabase";
 import { getPersistentDeviceId, writeEventAndBroadcast } from "@/storage/eventSync";
+import { storageRemove } from "@/lib/safeJson";
 
 // ============================================
 // SETTINGS SYNC
@@ -65,6 +66,8 @@ export const syncSetting = async (key: string, value: unknown): Promise<void> =>
 };
 
 export const deleteSettingFromCloud = async (key: string): Promise<void> => {
+  storageRemove(key);
+
   const userId = await getCurrentUserId();
   if (!supabase) return;
   if (!userId) {

@@ -12,6 +12,7 @@ import type { JournalEntry, JournalPhoto, JournalAudio } from "@/features/journa
 import { offlineQueue } from "@/lib/offlineQueue";
 import { generateEmbeddings } from "@/lib/journalAI";
 import { detectNetworkError } from "./syncUtils";
+import { getDeletedJournalEntryIds, trackDeletedJournalEntryId } from "@/storage/deletionTracker";
 
 // ============================================
 // JOURNAL SYNC
@@ -26,6 +27,12 @@ export const syncJournalEntry = async (entry: JournalEntry): Promise<void> => {
   if (!supabase) return;
   if (!userId) {
     logger.warn("[Sync] Cannot sync journal entry: User not authenticated");
+    return;
+  }
+
+  const deletedEntryIds = await getDeletedJournalEntryIds();
+  if (deletedEntryIds.has(entry.id)) {
+    logger.warn("[Sync] Skipping tombstoned journal entry upsert:", entry.id);
     return;
   }
 
@@ -89,6 +96,8 @@ export const syncJournalEntry = async (entry: JournalEntry): Promise<void> => {
 };
 
 export const deleteJournalEntryFromCloud = async (entryId: string): Promise<void> => {
+  await trackDeletedJournalEntryId(entryId);
+
   const userId = await getCurrentUserId();
   if (!supabase || !userId) return;
 
@@ -134,6 +143,12 @@ export const syncJournalPhoto = async (photo: JournalPhoto): Promise<void> => {
   const userId = await getCurrentUserId();
   if (!supabase || !userId) return;
 
+  const deletedEntryIds = await getDeletedJournalEntryIds();
+  if (deletedEntryIds.has(photo.entryId)) {
+    logger.warn("[Sync] Skipping tombstoned journal photo upsert:", photo.id);
+    return;
+  }
+
   try {
     const { error } = await supabase.from("journal_photos").upsert(
       {
@@ -164,6 +179,12 @@ export const syncJournalPhoto = async (photo: JournalPhoto): Promise<void> => {
 export const syncJournalAudio = async (audio: JournalAudio): Promise<void> => {
   const userId = await getCurrentUserId();
   if (!supabase || !userId) return;
+
+  const deletedEntryIds = await getDeletedJournalEntryIds();
+  if (deletedEntryIds.has(audio.entryId)) {
+    logger.warn("[Sync] Skipping tombstoned journal audio upsert:", audio.id);
+    return;
+  }
 
   try {
     const { error } = await supabase.from("journal_audio").upsert(

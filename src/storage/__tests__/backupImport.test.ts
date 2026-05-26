@@ -1,7 +1,11 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { db } from "@/storage/db";
-import { importBackup, type BackupPayloadV3 } from "@/storage/backup";
-import { getDeletedHabitIds } from "@/storage/deletionTracker";
+import { exportBackup, importBackup, type BackupPayloadV3 } from "@/storage/backup";
+import {
+  getDeletedHabitIds,
+  mergeDeletedHabitIds,
+  mergeDeletedJournalEntryIds,
+} from "@/storage/deletionTracker";
 import { makeTestHabit } from "@/test/habitFixtures";
 
 describe("importBackup deletion precedence", () => {
@@ -86,5 +90,76 @@ describe("importBackup deletion precedence", () => {
     expect(deletedIds.size).toBe(tombstones.length);
     expect(deletedIds.has(deletedHabit.id)).toBe(true);
     expect(deletedIds.has(tombstones[tombstones.length - 1])).toBe(true);
+  });
+
+  it("does not export locally tombstoned habits or journal media from stale IndexedDB rows", async () => {
+    const deletedHabit = makeTestHabit({ id: "habit-stale", name: "Stale deleted" });
+    const liveHabit = makeTestHabit({ id: "habit-live", name: "Live" });
+    await db.habits.bulkAdd([deletedHabit, liveHabit]);
+    await db.journalEntries.bulkAdd([
+      {
+        id: "journal-stale",
+        date: "2026-05-25",
+        title: "Deleted",
+        content: "stale",
+        stickers: [],
+        tags: [],
+        photoIds: ["photo-stale"],
+        audioIds: ["audio-stale"],
+        createdAt: 1,
+        updatedAt: 2,
+      } as any,
+      {
+        id: "journal-live",
+        date: "2026-05-25",
+        title: "Live",
+        content: "keep",
+        stickers: [],
+        tags: [],
+        photoIds: ["photo-live"],
+        audioIds: ["audio-live"],
+        createdAt: 1,
+        updatedAt: 2,
+      } as any,
+    ]);
+    await db.journalPhotos.bulkAdd([
+      {
+        id: "photo-stale",
+        entryId: "journal-stale",
+        data: "x",
+        thumbnail: "x",
+        createdAt: 1,
+      } as any,
+      { id: "photo-live", entryId: "journal-live", data: "x", thumbnail: "x", createdAt: 1 } as any,
+    ]);
+    await db.journalAudio.bulkAdd([
+      {
+        id: "audio-stale",
+        entryId: "journal-stale",
+        data: "x",
+        mimeType: "audio/webm",
+        duration: 1,
+        createdAt: 1,
+      } as any,
+      {
+        id: "audio-live",
+        entryId: "journal-live",
+        data: "x",
+        mimeType: "audio/webm",
+        duration: 1,
+        createdAt: 1,
+      } as any,
+    ]);
+    await mergeDeletedHabitIds([deletedHabit.id]);
+    await mergeDeletedJournalEntryIds(["journal-stale"]);
+
+    const backup = await exportBackup();
+
+    expect(backup.data.habits.map((habit) => habit.id)).toEqual([liveHabit.id]);
+    expect(backup.data.journalEntries?.map((entry) => entry.id)).toEqual(["journal-live"]);
+    expect(backup.data.journalPhotos?.map((photo) => photo.id)).toEqual(["photo-live"]);
+    expect(backup.data.journalAudio?.map((audio) => audio.id)).toEqual(["audio-live"]);
+    expect(backup.deletedHabitIds).toContain(deletedHabit.id);
+    expect(backup.deletedJournalEntryIds).toContain("journal-stale");
   });
 });

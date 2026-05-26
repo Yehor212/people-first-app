@@ -85,6 +85,7 @@ The v1 runtime uses Cloudflare Workers plus Cloudflare Workflows because it can 
 - AI work is branch-scoped to `codex/telegram-*`.
 - Production deploy is only dispatched after Telegram approval and only from `main`.
 - Missing `OPENAI_API_KEY` is reported as `UNVERIFIED`, never as success.
+- `secrets:bootstrap` may generate only project-owned random shared secrets. It must not generate or print account-owned credentials such as Telegram bot tokens, GitHub App private keys, or OpenAI API keys.
 
 ## No-Budget Constraint
 
@@ -120,6 +121,7 @@ This implementation avoids a permanent paid host. Cloudflare Workers/Workflows a
 
 - `npm run check:telegram-control`
 - `npm --prefix tools/telegram-control run activation:checklist`
+- `npm --prefix tools/telegram-control run secrets:bootstrap`
 - `npm --prefix tools/telegram-control run setup:plan`
 - `npm --prefix tools/telegram-control run check:secrets`
 - `npm --prefix tools/telegram-control run verify:config`
@@ -141,7 +143,7 @@ Any item without current command output must be marked `UNVERIFIED`.
 
 1. Create a Telegram bot through BotFather and keep the token outside git.
 2. Create a Cloudflare KV namespace and replace `REPLACE_WITH_CLOUDFLARE_KV_NAMESPACE_ID` in `tools/telegram-control/wrangler.jsonc`.
-3. Set Cloudflare secrets with `wrangler secret put`; never place secret values in `wrangler.jsonc`.
+3. Run `npm --prefix tools/telegram-control run secrets:bootstrap -- --write-local` to generate local project-owned shared secrets, then set Cloudflare secrets with `wrangler secret put`; never place secret values in `wrangler.jsonc`.
 4. Deploy the Worker after `deploy:dry-run` passes.
 5. Set `TELEGRAM_WEBHOOK_URL=https://<worker-host>/telegram/webhook` locally and run `npm --prefix tools/telegram-control run set-webhook`.
 6. Configure the GitHub App and GitHub workflow secrets.
