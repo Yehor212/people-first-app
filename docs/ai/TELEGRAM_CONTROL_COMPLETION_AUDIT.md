@@ -12,6 +12,7 @@ The repository contains a verified Telegram control-plane implementation, but li
 | Telegram webhook verifies secret token | PASS | `tools/telegram-control/src/security.ts`; test `missing Telegram webhook secret is rejected before message handling` |
 | Telegram admin allowlist exists | PASS | `tools/telegram-control/src/security.ts`; test `unauthorized Telegram users are rejected before dispatch` |
 | Command schema covers status/health/plan/fix/review/test/security/deploy/rollback/jobs/approval | PASS | `tools/telegram-control/src/commands.ts`; `npm run check:telegram-control` |
+| Free text routes destructive intents into approval schema | PASS | `tools/telegram-control/src/commands.ts`; tests `free text deploy routes to destructive approval intent` and `free text rollback routes to destructive approval intent` |
 | Destructive commands require confirmation | PASS | `tools/telegram-control/src/control.ts`; test `deploy command stops at approval gate before GitHub dispatch` |
 | Approval nonce flow exists | PASS | `tools/telegram-control/src/telegram.ts`; test `manual approve command validates nonce and starts approved job` |
 | GitHub webhook/callback verification exists | PASS | `tools/telegram-control/src/security.ts`; tests `GitHub HMAC verification rejects modified bodies` and `workflow callback updates matching job and keeps evidence` |
@@ -29,7 +30,7 @@ The repository contains a verified Telegram control-plane implementation, but li
 | Deploy workflow main-ref guard | PASS | `.github/workflows/deploy.yml` step `Validate Telegram-approved deploy target` rejects Telegram-approved production deploys unless `GITHUB_REF=refs/heads/main` |
 | Rollback creates branch-only draft PR | PASS | `.github/workflows/telegram-control.yml` step `Create rollback proposal PR` requires Telegram approval, validates `target=<commit-or-ref>`, runs gates, and opens a draft PR without deploying |
 | Missing `OPENAI_API_KEY` does not fake success | PASS | `.github/workflows/telegram-control.yml` reports `UNVERIFIED` before Codex action |
-| Local Worker/package verification | PASS | `npm run check:telegram-control`: 35 unit tests, workflow invariants, local smoke, setup verifier, webhook dry-run, and bot UI dry-run ran |
+| Local Worker/package verification | PASS | `npm run check:telegram-control`: 38 unit tests, workflow invariants, local smoke, setup verifier, webhook dry-run, and bot UI dry-run ran |
 | Local end-to-end smoke without live secrets | PASS | `npm --prefix tools/telegram-control run smoke:local`: health, Mini App state, auth rejection, status, approval, and callback verified |
 | Deployed Worker smoke helper exists | PASS | `npm --prefix tools/telegram-control run smoke:live` verifies `/health`, `/miniapp`, and signed Mini App state when env vars are present |
 | Telegram bot UI setup helper exists | PASS | `tools/telegram-control/scripts/set-bot-ui.ts`; tests `buildTelegramCommandsPayload exposes the full control command menu` and `buildTelegramMenuButtonPayload requires HTTPS Mini App URL` |

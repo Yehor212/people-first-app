@@ -135,6 +135,12 @@ async function miniAppState(env: Env, session: MiniAppSession): Promise<Record<s
       githubSecrets: githubConfigStatus(env),
       githubAppConfigured: isGitHubConfigured(env),
       githubWebhookConfigured: Boolean(env.GITHUB_WEBHOOK_SECRET),
+      github: {
+        configured: isGitHubConfigured(env),
+        secrets: githubConfigStatus(env),
+        appConfigured: isGitHubConfigured(env),
+        webhookConfigured: Boolean(env.GITHUB_WEBHOOK_SECRET),
+      },
       kv: Boolean(env.CONTROL_STATE),
       workflow: Boolean(env.CONTROL_WORKFLOW),
       latestJob: latestJob

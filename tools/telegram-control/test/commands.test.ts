@@ -16,6 +16,20 @@ void test("deploy requires Telegram confirmation", () => {
   assert.equal(intent.requiresConfirmation, true);
 });
 
+void test("free text deploy routes to destructive approval intent", () => {
+  const intent = parseCommand("please deploy production now", "main");
+  assert.equal(intent.kind, "deploy");
+  assert.equal(intent.riskLevel, "high");
+  assert.equal(intent.requiresConfirmation, true);
+});
+
+void test("free text rollback routes to destructive approval intent", () => {
+  const intent = parseCommand("rollback target=abc1234", "main");
+  assert.equal(intent.kind, "rollback");
+  assert.equal(intent.riskLevel, "high");
+  assert.equal(intent.requiresConfirmation, true);
+});
+
 void test("protected prompt requires confirmation even for fix mode", () => {
   const intent = parseCommand("/fix update Supabase RLS policy", "main");
   assert.equal(intent.kind, "fix");

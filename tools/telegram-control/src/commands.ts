@@ -37,7 +37,7 @@ export function parseCommand(rawText: string, defaultTargetRef = "main"): Comman
     return buildIntent("ask", raw, raw, defaultTargetRef, 0.2);
   }
 
-  const freeTextKind = classifyFreeText(raw);
+  const freeTextKind = classifyDestructiveFreeText(raw) ?? classifyFreeText(raw);
   return buildIntent(freeTextKind.kind, raw, raw, defaultTargetRef, freeTextKind.confidence);
 }
 
@@ -103,6 +103,18 @@ function buildIntent(
     requestedGates: requestedGatesForKind(kind),
     confidence,
   };
+}
+
+function classifyDestructiveFreeText(text: string): { kind: CommandKind; confidence: number } | null {
+  if (/\b(deploy|release to production|publish production|go live)\b/i.test(text)) {
+    return { kind: "deploy", confidence: 0.72 };
+  }
+
+  if (/\b(rollback|revert production|roll back)\b/i.test(text)) {
+    return { kind: "rollback", confidence: 0.72 };
+  }
+
+  return null;
 }
 
 function classifyFreeText(text: string): { kind: CommandKind; confidence: number } {

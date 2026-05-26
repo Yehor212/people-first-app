@@ -12,10 +12,14 @@ const encoder = new TextEncoder();
 void test("health reports missing GitHub configuration as not configured", async () => {
   const env: Env = { CONTROL_STATE: new FakeKvNamespace() };
   const response = await routeRequest(new Request("https://worker.test/health"), env);
-  const payload = (await response.json()) as { github: { configured: boolean } };
+  const payload = (await response.json()) as {
+    github: { configured: boolean; appConfigured: boolean; webhookConfigured: boolean };
+  };
 
   assert.equal(response.status, 200);
   assert.equal(payload.github.configured, false);
+  assert.equal(payload.github.appConfigured, false);
+  assert.equal(payload.github.webhookConfigured, false);
 });
 
 void test("unauthorized Telegram users are rejected before dispatch", async () => {

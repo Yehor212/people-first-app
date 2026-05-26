@@ -48,6 +48,38 @@ void test("miniapp state accepts signed init data for allowlisted admin", async 
   assert.equal(payload.user.id, 111);
 });
 
+void test("miniapp state reports GitHub health fields consistently", async () => {
+  const env: Env = {
+    TELEGRAM_BOT_TOKEN: "bot-token",
+    TELEGRAM_ADMIN_IDS: "111",
+    CONTROL_STATE: new FakeKvNamespace(),
+  };
+  const initData = await signInitData("bot-token", 111);
+  const response = await routeRequest(
+    new Request("https://worker.test/miniapp/state", {
+      method: "POST",
+      headers: { Authorization: `tma ${initData}` },
+    }),
+    env,
+  );
+  const payload = (await response.json()) as {
+    health: {
+      githubConfigured: boolean;
+      githubAppConfigured: boolean;
+      githubWebhookConfigured: boolean;
+      github: { configured: boolean; appConfigured: boolean; webhookConfigured: boolean };
+    };
+  };
+
+  assert.equal(response.status, 200);
+  assert.equal(payload.health.githubConfigured, false);
+  assert.equal(payload.health.githubAppConfigured, false);
+  assert.equal(payload.health.githubWebhookConfigured, false);
+  assert.equal(payload.health.github.configured, false);
+  assert.equal(payload.health.github.appConfigured, false);
+  assert.equal(payload.health.github.webhookConfigured, false);
+});
+
 void test("miniapp command rejects non-admin signed user", async () => {
   const env: Env = {
     TELEGRAM_BOT_TOKEN: "bot-token",
