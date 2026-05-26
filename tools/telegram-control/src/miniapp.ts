@@ -1,6 +1,7 @@
 import { isDispatchableKind, parseCommand } from "./commands";
 import { createControlJob, startJob } from "./control";
 import { githubConfigStatus, isGitHubConfigured } from "./github";
+import { fetchGitHubStatusChecks } from "./github-status";
 import { isAuthorizedTelegramUser, safeEqual } from "./security";
 import { getLatestJob, listJobs, saveJob } from "./storage";
 import { approvalKeyboard, sendTelegramMessage } from "./telegram";
@@ -122,8 +123,11 @@ export async function validateTelegramInitData(
 }
 
 async function miniAppState(env: Env, session: MiniAppSession): Promise<Record<string, unknown>> {
-  const jobs = await listJobs(env, 8);
-  const latestJob = await getLatestJob(env);
+  const [jobs, latestJob, githubStatus] = await Promise.all([
+    listJobs(env, 8),
+    getLatestJob(env),
+    fetchGitHubStatusChecks(),
+  ]);
 
   return {
     ok: true,
@@ -143,6 +147,9 @@ async function miniAppState(env: Env, session: MiniAppSession): Promise<Record<s
       },
       kv: Boolean(env.CONTROL_STATE),
       workflow: Boolean(env.CONTROL_WORKFLOW),
+      external: {
+        githubStatus,
+      },
       latestJob: latestJob
         ? {
             id: latestJob.id,

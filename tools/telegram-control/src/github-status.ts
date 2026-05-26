@@ -1,6 +1,7 @@
 import type { ActivationCheck, ActivationStatus } from "./activation-doctor";
 
 const GITHUB_STATUS_URL = "https://www.githubstatus.com/api/v2/summary.json";
+const GITHUB_STATUS_TIMEOUT_MS = 3500;
 const REQUIRED_COMPONENTS = ["Actions", "Pages"] as const;
 
 interface GitHubStatusComponent {
@@ -30,9 +31,12 @@ interface GitHubStatusSummary {
 }
 
 export async function fetchGitHubStatusChecks(fetchImpl: typeof fetch = fetch): Promise<ActivationCheck[]> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), GITHUB_STATUS_TIMEOUT_MS);
   try {
     const response = await fetchImpl(GITHUB_STATUS_URL, {
       headers: { Accept: "application/json" },
+      signal: controller.signal,
     });
     if (!response.ok) {
       return [
@@ -52,6 +56,8 @@ export async function fetchGitHubStatusChecks(fetchImpl: typeof fetch = fetch): 
         evidence: error instanceof Error ? error.message : String(error),
       },
     ];
+  } finally {
+    clearTimeout(timeout);
   }
 }
 

@@ -48,16 +48,39 @@ class FakeWorkflowBinding implements WorkflowBinding<ControlWorkflowParams> {
 }
 
 void test("health reports missing GitHub configuration as not configured", async () => {
-  const env: Env = { CONTROL_STATE: new FakeKvNamespace() };
-  const response = await routeRequest(new Request("https://worker.test/health"), env);
-  const payload = (await response.json()) as {
-    github: { configured: boolean; appConfigured: boolean; webhookConfigured: boolean };
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (input: string | URL | Request) => {
+    const url = input instanceof Request ? input.url : input.toString();
+    assert.equal(url, "https://www.githubstatus.com/api/v2/summary.json");
+    return Response.json({
+      components: [
+        { name: "Actions", status: "operational" },
+        { name: "Pages", status: "operational" },
+      ],
+      incidents: [],
+    });
   };
 
-  assert.equal(response.status, 200);
-  assert.equal(payload.github.configured, false);
-  assert.equal(payload.github.appConfigured, false);
-  assert.equal(payload.github.webhookConfigured, false);
+  try {
+    const env: Env = { CONTROL_STATE: new FakeKvNamespace() };
+    const response = await routeRequest(new Request("https://worker.test/health"), env);
+    const payload = (await response.json()) as {
+      github: { configured: boolean; appConfigured: boolean; webhookConfigured: boolean };
+      external: { githubStatus: Array<{ name: string; status: string; evidence: string }> };
+    };
+
+    assert.equal(response.status, 200);
+    assert.equal(payload.github.configured, false);
+    assert.equal(payload.github.appConfigured, false);
+    assert.equal(payload.github.webhookConfigured, false);
+    assert.deepEqual(
+      payload.external.githubStatus.map((check) => check.status),
+      ["PASS", "PASS"],
+    );
+    assert.match(payload.external.githubStatus[0]?.evidence ?? "", /Actions is operational/);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });
 
 void test("unauthorized Telegram users are rejected before dispatch", async () => {

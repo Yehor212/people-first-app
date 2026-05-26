@@ -7,7 +7,7 @@ import {
   summarizeGeneratedSecretFile,
   validateTelegramAdminIds,
 } from "../src/activation-doctor";
-import { buildGitHubStatusChecks } from "../src/github-status";
+import { buildGitHubStatusChecks, fetchGitHubStatusChecks } from "../src/github-status";
 import { formatGeneratedSecretsEnv, generateProjectSecrets } from "../src/secret-bootstrap";
 
 const localGeneratedEnvPath = [".env", "telegram-control", "local"].join(".");
@@ -105,4 +105,18 @@ void test("GitHub status checks pass when required components are operational", 
     checks.map((check) => check.status),
     ["PASS", "PASS"],
   );
+});
+
+void test("GitHub status fetch failures are reported as unverified", async () => {
+  const checks = await fetchGitHubStatusChecks(async () => {
+    throw new Error("network timeout");
+  });
+
+  assert.deepEqual(checks, [
+    {
+      name: "GitHub Status",
+      status: "UNVERIFIED",
+      evidence: "network timeout",
+    },
+  ]);
 });

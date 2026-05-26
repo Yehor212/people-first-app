@@ -9,6 +9,7 @@ import {
   updateJob,
 } from "./control";
 import { getLatestWorkflowRuns, githubConfigStatus, isGitHubConfigured } from "./github";
+import { fetchGitHubStatusChecks } from "./github-status";
 import { handleMiniApp } from "./miniapp";
 import {
   isAuthorizedTelegramUser,
@@ -337,7 +338,10 @@ async function handleWorkflowCallback(env: Env, payload: WorkflowCallbackPayload
 }
 
 async function health(env: Env): Promise<Record<string, unknown>> {
-  const latestJob = await getLatestJob(env);
+  const [latestJob, githubStatus] = await Promise.all([
+    getLatestJob(env),
+    fetchGitHubStatusChecks(),
+  ]);
   return {
     ok: true,
     worker: "zenflow-telegram-control",
@@ -358,6 +362,9 @@ async function health(env: Env): Promise<Record<string, unknown>> {
     storage: {
       kv: Boolean(env.CONTROL_STATE),
       workflow: Boolean(env.CONTROL_WORKFLOW),
+    },
+    external: {
+      githubStatus,
     },
     latestJob: latestJob
       ? {
