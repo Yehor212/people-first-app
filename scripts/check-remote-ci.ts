@@ -34,6 +34,58 @@ function sleep(ms: number): void {
   execSync(`node -e "setTimeout(()=>{},${ms})"`, { stdio: "ignore" });
 }
 
+function failedLogForRun(runId: number): string {
+  return run(`gh run view ${runId} --log-failed 2>&1`);
+}
+
+function matchingEvidence(log: string, snippets: string[]): string | null {
+  const lowerLog = log.toLowerCase();
+  return (
+    snippets.find((snippet) => lowerLog.includes(snippet.toLowerCase())) ?? null
+  );
+}
+
+function classifyInfrastructureFailure(log: string): {
+  reason: string;
+  evidence: string;
+} | null {
+  const knownInfrastructureFailures = [
+    {
+      reason: "GitHub Actions could not download an action archive from codeload",
+      snippets: [
+        "failed to download archive",
+        "https://codeload.github.com",
+        "an action could not be found at the uri",
+      ],
+    },
+    {
+      reason: "GitHub Actions checkout/authentication failed before project code ran",
+      snippets: [
+        "your account is suspended",
+        "the requested url returned error: 403",
+        "fatal: unable to access",
+      ],
+    },
+    {
+      reason: "GitHub Actions lost runner/authentication access",
+      snippets: [
+        "authentication issues",
+        "failure in starting actions runs",
+        "downloading actions",
+      ],
+    },
+  ];
+
+  for (const failure of knownInfrastructureFailures) {
+    const evidence = matchingEvidence(log, failure.snippets);
+    if (evidence) {
+      return { reason: failure.reason, evidence };
+    }
+  }
+
+  return null;
+}
+
 function main(): void {
   const args = process.argv.slice(2);
   const doWait = args.includes("--wait");
@@ -178,9 +230,19 @@ function main(): void {
     console.log(`${"=".repeat(50)}\n`);
     process.exit(0);
   } else {
+    const failedLog = failedLogForRun(ciRun.id);
+    const infrastructureFailure = classifyInfrastructureFailure(failedLog);
     console.log(`\n${"=".repeat(50)}`);
     console.log(`  RESULT: FAIL ✗ (${ciRun.conclusion} for ${commitShort})`);
     console.log(`${"=".repeat(50)}`);
+    if (infrastructureFailure) {
+      console.log("\n  INFRASTRUCTURE FAILURE DETECTED");
+      console.log(`  Reason:   ${infrastructureFailure.reason}`);
+      console.log(`  Evidence: ${infrastructureFailure.evidence}`);
+      console.log(
+        "  Action:   Do not mark CI green. Rerun after GitHub Actions/Pages recovers.",
+      );
+    }
     console.log(`\n  View logs: gh run view ${ciRun.id} --log-failed\n`);
     process.exit(1);
   }
