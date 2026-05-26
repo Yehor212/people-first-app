@@ -90,7 +90,7 @@ jobs:
 
       - name: Run coverage report
         continue-on-error: true
-        timeout-minutes: 15
+        timeout-minutes: 25
         env:
           NODE_OPTIONS: --max-old-space-size=8192
         run: npm run test:coverage -- --maxWorkers=2 --minWorkers=1
