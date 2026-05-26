@@ -137,6 +137,15 @@ Minimum:
 
 `GITHUB_APP_ID`, `GITHUB_INSTALLATION_ID`, and `GITHUB_APP_PRIVATE_KEY` are enough for `/status`, workflow dispatch, and GitHub run cancellation. `GITHUB_WEBHOOK_SECRET` is separate: it verifies inbound GitHub webhook events and is still required for live webhook proof.
 
+Generate the GitHub App manifest after the deployed Worker URL exists:
+
+```bash
+npm --prefix tools/telegram-control run github-app:manifest -- --base-url https://<worker-host>
+npm --prefix tools/telegram-control run github-app:manifest -- --base-url https://<worker-host> --org <organization>
+```
+
+The manifest uses `workflow_run` webhooks, `metadata:read`, and `actions:write` by default. The helper uses GitHub's personal-account manifest target unless `--org <organization>` is provided. Add `--workflow-owned-prs` only if the GitHub App itself will create branches, issues, or PRs instead of the GitHub Actions workflow owning that work. The generated manifest does not include App ID, private key, webhook secret, or installation ID; GitHub returns those only through the owner-controlled manifest flow.
+
 For branch and PR publishing by `.github/workflows/telegram-control.yml`:
 
 - Contents: write

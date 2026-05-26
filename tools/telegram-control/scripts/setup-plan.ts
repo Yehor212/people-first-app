@@ -72,6 +72,8 @@ console.log("   npm --prefix tools/telegram-control run set-bot-ui -- --dry-run"
 console.log("   npm --prefix tools/telegram-control run set-bot-ui");
 console.log("");
 console.log("6. Configure GitHub repository secrets:");
+console.log("   npm --prefix tools/telegram-control run github-app:manifest -- --base-url https://<worker-host>");
+console.log("   # Add --org <organization> only for an organization-owned GitHub App.");
 console.log("   npm --prefix tools/telegram-control run secrets:install-generated -- --github");
 console.log("   $env:TELEGRAM_CONTROL_BASE_URL='https://<worker-host>'");
 console.log("   npm --prefix tools/telegram-control run set-github-callback-url -- --dry-run");
