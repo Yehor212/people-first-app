@@ -12,14 +12,14 @@ let callbackUrl: string;
 try {
   callbackUrl = explicitCallbackUrl ?? callbackUrlFromBase(baseUrl ?? "");
 } catch (error) {
-  console.error(`UNVERIFIED ${error instanceof Error ? error.message : String(error)}`);
+  printUnverified(error instanceof Error ? error.message : String(error));
   process.exit(dryRun ? 0 : 1);
 }
 
 const validationErrors = validateCallbackUrl(callbackUrl);
 if (validationErrors.length > 0) {
   for (const error of validationErrors) {
-    console.error(`UNVERIFIED ${error}`);
+    printUnverified(error);
   }
   process.exit(dryRun ? 0 : 1);
 }
@@ -64,4 +64,13 @@ function argValue(name: string): string | null {
 function redactUrl(value: string): string {
   const parsed = new URL(value);
   return `${parsed.protocol}//${parsed.host}${parsed.pathname}`;
+}
+
+function printUnverified(message: string): void {
+  const line = `UNVERIFIED ${message}`;
+  if (dryRun) {
+    console.log(line);
+    return;
+  }
+  console.error(line);
 }
