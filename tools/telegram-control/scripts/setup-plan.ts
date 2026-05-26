@@ -43,6 +43,7 @@ for (const secret of cloudflareSecrets) {
 console.log("");
 console.log("3. Deploy Worker after local proof:");
 console.log("   npm run check:telegram-control");
+console.log("   npm --prefix tools/telegram-control run activation:run");
 console.log("   npm --prefix tools/telegram-control run deploy:dry-run");
 console.log("   npx wrangler deploy --config tools/telegram-control/wrangler.jsonc");
 console.log("");
@@ -74,6 +75,8 @@ console.log("   $env:TELEGRAM_CONTROL_BASE_URL='https://<worker-host>'");
 console.log("   npm --prefix tools/telegram-control run set-github-callback-url -- --dry-run");
 console.log("   npm --prefix tools/telegram-control run set-github-callback-url -- --github");
 console.log("   npm --prefix tools/telegram-control run activation:doctor -- --github --cloudflare");
+console.log("   # Full explicit activation after all env vars and CLIs are ready:");
+console.log("   npm --prefix tools/telegram-control run activation:run -- --apply --kv --cloudflare-secrets --github-secrets --deploy --github-callback --telegram --live-smoke --external-checks");
 for (const secret of githubSecrets) {
   if (secret.note) {
     console.log(`   # ${secret.note}`);

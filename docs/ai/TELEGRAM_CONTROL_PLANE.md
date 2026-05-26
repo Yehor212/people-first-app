@@ -120,6 +120,7 @@ This implementation avoids a permanent paid host. Cloudflare Workers/Workflows a
 ## Verification Checklist
 
 - `npm run check:telegram-control`
+- `npm --prefix tools/telegram-control run activation:run`
 - `npm --prefix tools/telegram-control run activation:checklist`
 - `npm --prefix tools/telegram-control run activation:doctor`
 - `npm --prefix tools/telegram-control run activation:doctor -- --github --cloudflare`
@@ -155,4 +156,5 @@ Any item without current command output must be marked `UNVERIFIED`.
 6. Configure the GitHub App and GitHub workflow secrets. If `gh` is authenticated, use `npm --prefix tools/telegram-control run secrets:install-generated -- --github` for `TELEGRAM_CONTROL_CALLBACK_SECRET`; after the Worker URL exists, run `npm --prefix tools/telegram-control run set-github-callback-url -- --github` to store `TELEGRAM_CONTROL_CALLBACK_URL`. Use `npm --prefix tools/telegram-control run activation:checklist -- --github` or `npm --prefix tools/telegram-control run activation:doctor -- --github --cloudflare` to verify GitHub secret names, Cloudflare auth, callback URL shape, `OPENAI_API_KEY`, and optional `SNYK_TOKEN` without reading values.
 7. Send `/health` from the allowlisted Telegram account. Treat any missing secret or placeholder binding as `UNVERIFIED`, not operational.
 8. Run `npm --prefix tools/telegram-control run smoke:live` with `TELEGRAM_CONTROL_BASE_URL`; add `TELEGRAM_BOT_TOKEN` and `TELEGRAM_ADMIN_ID` to verify authenticated Mini App state.
-9. Run `npm --prefix tools/telegram-control run check:secrets` before committing or sharing setup files.
+9. After every prerequisite above is ready, run `npm --prefix tools/telegram-control run activation:run -- --apply --kv --cloudflare-secrets --github-secrets --deploy --github-callback --telegram --live-smoke --external-checks` from the prepared operator shell. Without `--apply`, the same runner remains dry-run/report-only.
+10. Run `npm --prefix tools/telegram-control run check:secrets` before committing or sharing setup files.

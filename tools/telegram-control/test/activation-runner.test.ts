@@ -1,0 +1,76 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import {
+  buildActivationRunSteps,
+  parseActivationRunOptions,
+  summarizeActivationRun,
+  type ActivationRunOptions,
+} from "../src/activation-runner";
+
+void test("activation runner defaults to non-mutating dry-run steps", () => {
+  const options = parseActivationRunOptions([], {});
+  const steps = buildActivationRunSteps(options);
+
+  assert.equal(options.apply, false);
+  assert.equal(steps.every((step) => !step.mutatesExternalState), true);
+  assert.equal(steps.find((step) => step.id === "live-smoke")?.shouldRun, false);
+  assert.equal(steps.find((step) => step.id === "doctor")?.shouldRun, true);
+  assert.equal(steps.find((step) => step.id === "worker-deploy")?.displayCommand.endsWith("deploy:dry-run"), true);
+  assert.equal(
+    steps.find((step) => step.id === "github-callback-url")?.displayCommand,
+    "npm --prefix tools/telegram-control run set-github-callback-url -- --dry-run",
+  );
+});
+
+void test("activation runner apply mode requires explicit mutating flags", () => {
+  const options = parseActivationRunOptions(["--apply"], {});
+  const steps = buildActivationRunSteps(options);
+
+  assert.equal(options.apply, true);
+  assert.equal(steps.some((step) => step.mutatesExternalState), false);
+  assert.match(summarizeActivationRun(options).join("\n"), /Mutating steps enabled: none/);
+});
+
+void test("activation runner enables selected live steps without printing namespace id", () => {
+  const options = parseActivationRunOptions(
+    ["--apply", "--kv", "--deploy", "--github-callback"],
+    { CONTROL_STATE_KV_ID: "0123456789abcdef0123456789abcdef" },
+  );
+  const steps = buildActivationRunSteps(options);
+
+  assert.equal(steps.find((step) => step.id === "worker-deploy")?.mutatesExternalState, true);
+  assert.equal(steps.find((step) => step.id === "github-callback-url")?.mutatesExternalState, true);
+  assert.equal(steps.find((step) => step.id === "kv")?.mutatesExternalState, true);
+  assert.match(steps.find((step) => step.id === "kv")?.displayCommand ?? "", /<CONTROL_STATE_KV_ID>/);
+  assert.doesNotMatch(
+    steps.map((step) => step.displayCommand).join("\n"),
+    /0123456789abcdef0123456789abcdef/,
+  );
+});
+
+void test("activation runner all mode selects every live activation step", () => {
+  const options: ActivationRunOptions = {
+    apply: true,
+    all: true,
+    kv: false,
+    createKv: true,
+    cloudflareSecrets: false,
+    githubSecrets: false,
+    deploy: false,
+    githubCallback: false,
+    telegram: false,
+    liveSmoke: false,
+    externalChecks: false,
+    hasControlStateKvId: false,
+    controlStateKvId: "",
+  };
+  const steps = buildActivationRunSteps(options);
+
+  assert.equal(steps.find((step) => step.id === "kv")?.displayCommand.endsWith("--create --write"), true);
+  assert.equal(steps.find((step) => step.id === "telegram-webhook")?.mutatesExternalState, true);
+  assert.equal(
+    steps.find((step) => step.id === "doctor")?.displayCommand,
+    "npm --prefix tools/telegram-control run activation:doctor -- --github --cloudflare",
+  );
+  assert.equal(steps.find((step) => step.id === "live-smoke")?.shouldRun, true);
+});

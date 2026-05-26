@@ -31,7 +31,7 @@ The repository contains a verified Telegram control-plane implementation, but li
 | Deploy workflow main-ref guard | PASS | `.github/workflows/deploy.yml` step `Validate Telegram-approved deploy target` rejects Telegram-approved production deploys unless `GITHUB_REF=refs/heads/main` |
 | Rollback creates branch-only draft PR | PASS | `.github/workflows/telegram-control.yml` step `Create rollback proposal PR` requires Telegram approval, validates `target=<commit-or-ref>`, runs gates, and opens a draft PR without deploying |
 | Missing `OPENAI_API_KEY` does not fake success | PASS | `.github/workflows/telegram-control.yml` reports `UNVERIFIED` before Codex action |
-| Local Worker/package verification | PASS | `npm run check:telegram-control`: 56 worker tests, workflow invariants, local smoke, setup verifier, KV setup dry-run, activation doctor, webhook dry-run, bot UI dry-run, generated-secret dry-run, and generated-secret install dry-run ran |
+| Local Worker/package verification | PASS | `npm run check:telegram-control`: 60 worker tests, workflow invariants, local smoke, setup verifier, KV setup dry-run, activation runner dry-run, activation doctor, webhook dry-run, bot UI dry-run, generated-secret dry-run, and generated-secret install dry-run ran |
 | Local end-to-end smoke without live secrets | PASS | `npm --prefix tools/telegram-control run smoke:local`: health, Mini App state, auth rejection, status, approval, and callback verified |
 | Deployed Worker smoke helper exists | PASS | `npm --prefix tools/telegram-control run smoke:live` verifies `/health`, `/miniapp`, and signed Mini App state when env vars are present |
 | Telegram bot UI setup helper exists | PASS | `tools/telegram-control/scripts/set-bot-ui.ts`; tests `buildTelegramCommandsPayload exposes the full control command menu` and `buildTelegramMenuButtonPayload requires HTTPS Mini App URL` |
@@ -49,6 +49,7 @@ The repository contains a verified Telegram control-plane implementation, but li
 | Cloudflare generated-secret installer exists | PASS | `tools/telegram-control/scripts/install-generated-secrets.ts` supports `--cloudflare`, verifies Wrangler auth first, and writes generated shared secrets via stdin without printing values |
 | Cloudflare-aware activation check exists | PASS | `npm --prefix tools/telegram-control run activation:checklist -- --cloudflare` checks Wrangler auth without exposing values |
 | GitHub callback URL installer exists | PASS | `tools/telegram-control/scripts/set-github-callback-url.ts`; tests `callbackUrlFromBase normalizes Worker origin to GitHub webhook URL` and `validateCallbackUrl requires HTTPS GitHub webhook path without credentials` |
+| Activation runner exists | PASS | `tools/telegram-control/src/activation-runner.ts`, `tools/telegram-control/scripts/activation-run.ts`, and `npm --prefix tools/telegram-control run activation:run` compose KV, secrets, deploy, callback URL, Telegram webhook/UI, live smoke, and doctor steps with dry-run default |
 | Activation doctor exists | PASS | `tools/telegram-control/src/activation-doctor.ts`, `tools/telegram-control/scripts/activation-doctor.ts`, and `npm --prefix tools/telegram-control run activation:doctor` report Cloudflare, GitHub, callback URL, OpenAI, Snyk, and Telegram readiness without printing secret values |
 | Cloudflare KV setup helper exists | PASS | `tools/telegram-control/src/kv-setup.ts`, `tools/telegram-control/scripts/setup-kv.ts`, and `npm --prefix tools/telegram-control run setup:kv -- --dry-run` validate/create/bind `CONTROL_STATE` KV without manual config edits |
 | Full current-worktree static gates | PASS | `npm run check:all` passed on the current worktree |
@@ -73,4 +74,5 @@ The repository contains a verified Telegram control-plane implementation, but li
 6. Optionally add GitHub `OPENAI_API_KEY`; without it, AI modes correctly return `UNVERIFIED`.
 7. Send `/health` and `/status` from the allowlisted Telegram account and save the responses as live evidence.
 8. Run `npm --prefix tools/telegram-control run set-bot-ui` after `set-webhook` so Telegram shows the command menu and Mini App button.
-9. Run `npm --prefix tools/telegram-control run smoke:live` and save the PASS output as deployed Worker evidence.
+9. Run `npm --prefix tools/telegram-control run activation:run -- --apply --kv --cloudflare-secrets --github-secrets --deploy --github-callback --telegram --live-smoke --external-checks` only after all env vars and CLIs are ready.
+10. Run `npm --prefix tools/telegram-control run smoke:live` and save the PASS output as deployed Worker evidence.
