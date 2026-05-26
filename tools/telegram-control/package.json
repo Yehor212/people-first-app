@@ -19,6 +19,7 @@
     "set-bot-ui": "node --import tsx scripts/set-bot-ui.ts",
     "set-github-callback-url": "node --import tsx scripts/set-github-callback-url.ts",
     "secrets:bootstrap": "node --import tsx scripts/bootstrap-secrets.ts",
+    "secrets:install-account": "node --import tsx scripts/install-account-secrets.ts",
     "secrets:install-generated": "node --import tsx scripts/install-generated-secrets.ts",
     "deploy": "npx wrangler deploy",
     "deploy:dry-run": "npx wrangler deploy --dry-run"

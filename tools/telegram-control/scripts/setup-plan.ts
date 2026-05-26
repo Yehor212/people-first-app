@@ -32,6 +32,8 @@ console.log("2. Set Cloudflare secrets without printing values:");
 console.log("   npm --prefix tools/telegram-control run secrets:bootstrap");
 console.log("   npm --prefix tools/telegram-control run secrets:bootstrap -- --write-local");
 console.log("   npm --prefix tools/telegram-control run secrets:install-generated -- --cloudflare");
+console.log("   npm --prefix tools/telegram-control run secrets:install-account -- --dry-run");
+console.log("   npm --prefix tools/telegram-control run secrets:install-account -- --cloudflare");
 console.log(
   "   Use generated TELEGRAM_WEBHOOK_SECRET, GITHUB_WEBHOOK_SECRET, and TELEGRAM_CONTROL_CALLBACK_SECRET from the local ignored env file."
 );
@@ -74,9 +76,11 @@ console.log("   npm --prefix tools/telegram-control run secrets:install-generate
 console.log("   $env:TELEGRAM_CONTROL_BASE_URL='https://<worker-host>'");
 console.log("   npm --prefix tools/telegram-control run set-github-callback-url -- --dry-run");
 console.log("   npm --prefix tools/telegram-control run set-github-callback-url -- --github");
+console.log("   npm --prefix tools/telegram-control run secrets:install-account -- --github --github-snyk");
+console.log("   # Add --github-openai only after explicit OPENAI_API_KEY approval.");
 console.log("   npm --prefix tools/telegram-control run activation:doctor -- --github --cloudflare");
 console.log("   # Full explicit activation after all env vars and CLIs are ready:");
-console.log("   npm --prefix tools/telegram-control run activation:run -- --apply --kv --cloudflare-secrets --github-secrets --deploy --github-callback --telegram --live-smoke --external-checks");
+console.log("   npm --prefix tools/telegram-control run activation:run -- --apply --kv --cloudflare-account-secrets --cloudflare-secrets --github-snyk-secret --github-secrets --deploy --github-callback --telegram --live-smoke --external-checks");
 for (const secret of githubSecrets) {
   if (secret.note) {
     console.log(`   # ${secret.note}`);

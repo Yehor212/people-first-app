@@ -3,6 +3,9 @@ export interface ActivationRunOptions {
   all: boolean;
   kv: boolean;
   createKv: boolean;
+  cloudflareAccountSecrets: boolean;
+  githubOpenAISecret: boolean;
+  githubSnykSecret: boolean;
   cloudflareSecrets: boolean;
   githubSecrets: boolean;
   deploy: boolean;
@@ -35,6 +38,9 @@ export function parseActivationRunOptions(
     all: args.includes("--all"),
     kv: args.includes("--kv"),
     createKv: args.includes("--create-kv"),
+    cloudflareAccountSecrets: args.includes("--cloudflare-account-secrets"),
+    githubOpenAISecret: args.includes("--github-openai-secret"),
+    githubSnykSecret: args.includes("--github-snyk-secret"),
     cloudflareSecrets: args.includes("--cloudflare-secrets"),
     githubSecrets: args.includes("--github-secrets"),
     deploy: args.includes("--deploy"),
@@ -50,6 +56,8 @@ export function parseActivationRunOptions(
 export function buildActivationRunSteps(options: ActivationRunOptions): ActivationRunStep[] {
   const applyAll = options.apply && options.all;
   const applyKv = options.apply && (options.kv || options.createKv || applyAll);
+  const applyCloudflareAccountSecrets = options.apply && (options.cloudflareAccountSecrets || applyAll);
+  const applyGitHubAccountSecrets = options.apply && (options.githubOpenAISecret || options.githubSnykSecret || applyAll);
   const applyCloudflareSecrets = options.apply && (options.cloudflareSecrets || applyAll);
   const applyGithubSecrets = options.apply && (options.githubSecrets || applyAll);
   const applyDeploy = options.apply && (options.deploy || applyAll);
@@ -75,6 +83,45 @@ export function buildActivationRunSteps(options: ActivationRunOptions): Activati
       ],
       displayCommand: `npm --prefix tools/telegram-control run setup:kv -- ${kvDisplayArgs(options, applyKv).join(" ")}`,
       applyEnabled: applyKv,
+    },
+    {
+      id: "cloudflare-account-secrets",
+      label: "Cloudflare account-owned secrets",
+      mutatesExternalState: applyCloudflareAccountSecrets,
+      shouldRun: true,
+      command: "npm",
+      args: [
+        "--prefix",
+        "tools/telegram-control",
+        "run",
+        "secrets:install-account",
+        "--",
+        ...(applyCloudflareAccountSecrets ? ["--cloudflare"] : ["--dry-run", "--cloudflare"]),
+      ],
+      displayCommand: `npm --prefix tools/telegram-control run secrets:install-account -- ${
+        applyCloudflareAccountSecrets ? "--cloudflare" : "--dry-run --cloudflare"
+      }`,
+      applyEnabled: applyCloudflareAccountSecrets,
+    },
+    {
+      id: "github-account-secrets",
+      label: "GitHub account-owned secrets",
+      mutatesExternalState: applyGitHubAccountSecrets,
+      shouldRun: true,
+      command: "npm",
+      args: [
+        "--prefix",
+        "tools/telegram-control",
+        "run",
+        "secrets:install-account",
+        "--",
+        ...githubAccountSecretArgs(options, applyGitHubAccountSecrets),
+      ],
+      displayCommand: `npm --prefix tools/telegram-control run secrets:install-account -- ${githubAccountSecretDisplayArgs(
+        options,
+        applyGitHubAccountSecrets,
+      ).join(" ")}`,
+      applyEnabled: applyGitHubAccountSecrets,
     },
     {
       id: "github-callback-secret",
@@ -240,4 +287,25 @@ function kvDisplayArgs(options: ActivationRunOptions, applyKv: boolean): string[
     return ["--create", "--write"];
   }
   return ["--namespace-id", "<CONTROL_STATE_KV_ID>", "--write"];
+}
+
+function githubAccountSecretArgs(options: ActivationRunOptions, applyGitHubAccountSecrets: boolean): string[] {
+  if (!applyGitHubAccountSecrets) {
+    return ["--dry-run", "--github"];
+  }
+  const args = ["--github"];
+  if (options.githubOpenAISecret) {
+    args.push("--github-openai");
+  }
+  if (options.githubSnykSecret || options.all) {
+    args.push("--github-snyk");
+  }
+  return args;
+}
+
+function githubAccountSecretDisplayArgs(
+  options: ActivationRunOptions,
+  applyGitHubAccountSecrets: boolean,
+): string[] {
+  return githubAccountSecretArgs(options, applyGitHubAccountSecrets);
 }

@@ -71,6 +71,16 @@ npm --prefix tools/telegram-control run secrets:bootstrap -- --write-local
 
 The write mode creates `.env.telegram-control.local`, which is ignored by git. It only contains `TELEGRAM_WEBHOOK_SECRET`, `GITHUB_WEBHOOK_SECRET`, and `TELEGRAM_CONTROL_CALLBACK_SECRET`. Account-owned credentials such as `TELEGRAM_BOT_TOKEN`, GitHub App ids/private key, and `OPENAI_API_KEY` must still come from their official account flows.
 
+Account-owned secrets can be installed from a prepared local shell without printing values:
+
+```bash
+npm --prefix tools/telegram-control run secrets:install-account -- --dry-run
+npm --prefix tools/telegram-control run secrets:install-account -- --cloudflare
+npm --prefix tools/telegram-control run secrets:install-account -- --github --github-snyk
+```
+
+`OPENAI_API_KEY` can also be installed from an already prepared environment with `--github --github-openai`, but this must only be run after explicit operator approval for that key. This helper does not create OpenAI keys.
+
 If GitHub CLI is authenticated, store the generated callback secret without printing it:
 
 ```bash
@@ -99,14 +109,14 @@ Use the GitHub-aware or Cloudflare-aware activation checks when those CLIs are a
 
 ```bash
 npm --prefix tools/telegram-control run activation:run
-npm --prefix tools/telegram-control run activation:run -- --apply --kv --cloudflare-secrets --github-secrets --deploy --github-callback --telegram --live-smoke --external-checks
+npm --prefix tools/telegram-control run activation:run -- --apply --kv --cloudflare-account-secrets --cloudflare-secrets --github-snyk-secret --github-secrets --deploy --github-callback --telegram --live-smoke --external-checks
 npm --prefix tools/telegram-control run activation:checklist -- --github
 npm --prefix tools/telegram-control run activation:checklist -- --cloudflare
 npm --prefix tools/telegram-control run activation:doctor
 npm --prefix tools/telegram-control run activation:doctor -- --github --cloudflare
 ```
 
-The activation runner composes KV setup, generated-secret installation, Worker deploy, GitHub callback URL, Telegram webhook, bot UI, live smoke, and the doctor into one ordered flow. Its default mode is dry-run/report-only. Mutating steps run only with `--apply` plus explicit step flags such as `--kv`, `--deploy`, or `--telegram`; `--all` is reserved for a fully prepared operator shell.
+The activation runner composes KV setup, account-secret installation, generated-secret installation, Worker deploy, GitHub callback URL, Telegram webhook, bot UI, live smoke, and the doctor into one ordered flow. Its default mode is dry-run/report-only. Mutating steps run only with `--apply` plus explicit step flags such as `--kv`, `--cloudflare-account-secrets`, `--deploy`, or `--telegram`; `--all` is reserved for a fully prepared operator shell.
 
 The GitHub-aware check reads secret names only. It verifies whether `TELEGRAM_CONTROL_CALLBACK_SECRET`, `TELEGRAM_CONTROL_CALLBACK_URL`, `OPENAI_API_KEY`, and optional `SNYK_TOKEN` exist without reading their values.
 The activation doctor summarizes Cloudflare, GitHub, callback URL, OpenAI, Snyk, and Telegram readiness as PASS/UNVERIFIED/FAIL without printing secret values. Its default mode is local-only; `--github --cloudflare` adds name-only GitHub secret checks and Wrangler auth status.
