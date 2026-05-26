@@ -48,6 +48,7 @@ The repository contains a verified Telegram control-plane implementation, but li
 | Generated-secret install helper exists | PASS | `tools/telegram-control/scripts/install-generated-secrets.ts`; tests `parseGeneratedSecretsEnv only returns known generated secrets` and `requireGeneratedSecret rejects missing or short values` |
 | Cloudflare generated-secret installer exists | PASS | `tools/telegram-control/scripts/install-generated-secrets.ts` supports `--cloudflare`, verifies Wrangler auth first, and writes generated shared secrets via stdin without printing values |
 | Cloudflare-aware activation check exists | PASS | `npm --prefix tools/telegram-control run activation:checklist -- --cloudflare` checks Wrangler auth without exposing values |
+| GitHub callback URL installer exists | PASS | `tools/telegram-control/scripts/set-github-callback-url.ts`; tests `callbackUrlFromBase normalizes Worker origin to GitHub webhook URL` and `validateCallbackUrl requires HTTPS GitHub webhook path without credentials` |
 | Full current-worktree static gates | PASS | `npm run check:all` passed on the current worktree |
 | Task completion protocol | PASS | `npm run check:task-completion`: 72 invariants verified |
 | Sync contract | PASS | `npm run check:sync-contract`: 343 sync invariants verified |

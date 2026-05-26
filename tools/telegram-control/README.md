@@ -64,6 +64,14 @@ npm --prefix tools/telegram-control run secrets:install-generated -- --github
 
 This installs only `TELEGRAM_CONTROL_CALLBACK_SECRET` into GitHub Actions secrets. `TELEGRAM_CONTROL_CALLBACK_URL` still depends on the deployed Worker URL, and Cloudflare secrets still require `wrangler login`.
 
+After the Worker is deployed, store the callback URL without editing GitHub settings by hand:
+
+```bash
+set TELEGRAM_CONTROL_BASE_URL=https://<worker-host>
+npm --prefix tools/telegram-control run set-github-callback-url -- --dry-run
+npm --prefix tools/telegram-control run set-github-callback-url -- --github
+```
+
 After `wrangler login`, install the generated Worker-side shared secrets without printing them:
 
 ```bash
@@ -186,3 +194,5 @@ Without `TELEGRAM_BOT_TOKEN` and an admin id, the live smoke still checks `/heal
 `npm --prefix tools/telegram-control run secrets:install-generated -- --github` reads `.env.telegram-control.local` and stores the generated callback secret in GitHub Actions without printing the value.
 
 `npm --prefix tools/telegram-control run secrets:install-generated -- --cloudflare` reads `.env.telegram-control.local` and stores generated Worker-side shared secrets through Wrangler stdin without printing values.
+
+`npm --prefix tools/telegram-control run set-github-callback-url -- --github` validates the deployed HTTPS Worker origin and stores `TELEGRAM_CONTROL_CALLBACK_URL=https://<worker-host>/github/webhook` in GitHub Actions secrets.

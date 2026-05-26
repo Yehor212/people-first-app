@@ -68,6 +68,9 @@ console.log("   npm --prefix tools/telegram-control run set-bot-ui");
 console.log("");
 console.log("6. Configure GitHub repository secrets:");
 console.log("   npm --prefix tools/telegram-control run secrets:install-generated -- --github");
+console.log("   $env:TELEGRAM_CONTROL_BASE_URL='https://<worker-host>'");
+console.log("   npm --prefix tools/telegram-control run set-github-callback-url -- --dry-run");
+console.log("   npm --prefix tools/telegram-control run set-github-callback-url -- --github");
 for (const secret of githubSecrets) {
   if (secret.note) {
     console.log(`   # ${secret.note}`);
