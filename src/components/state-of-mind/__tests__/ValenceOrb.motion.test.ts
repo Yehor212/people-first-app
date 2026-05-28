@@ -16,6 +16,7 @@ import {
   shouldStartIdleWakeSoftening,
 } from "../ValenceOrb";
 
+import { drawOrbScene } from "../orbRenderer";
 import { createOrbGL2 } from "../orbShader";
 
 vi.mock("../orbRenderer", async (importOriginal) => {
@@ -180,9 +181,45 @@ describe("ValenceOrb motion profile", () => {
       return {} as CanvasRenderingContext2D;
     });
 
-    const { queryByTestId } = render(createElement(ValenceOrb, { valence: 0, renderer: "webgl" }));
+    const { container, queryByTestId } = render(
+      createElement(ValenceOrb, { valence: 0, renderer: "webgl" }),
+    );
 
     expect(createOrbGL2).not.toHaveBeenCalled();
+    expect(container.querySelector("canvas[data-orb-first-paint-canvas='true']")).not.toBeNull();
+    expect(queryByTestId("valence-orb-first-paint-fallback")).toBeNull();
+  });
+
+  it("shows a canonical canvas first-paint frame immediately for forced WebGL orbs", () => {
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation((contextId) => {
+      if (contextId === "2d") {
+        return {} as CanvasRenderingContext2D;
+      }
+      return null;
+    });
+
+    const onFirstPaintReady = vi.fn();
+    const onVisualReady = vi.fn();
+
+    const { container, queryByTestId } = render(
+      createElement(ValenceOrb, {
+        valence: 0.25,
+        renderer: "webgl",
+        onFirstPaintReady,
+        onVisualReady,
+      }),
+    );
+
+    const wrapper = container.querySelector("[data-orb-renderer-policy='webgl']");
+    const firstPaintCanvas = container.querySelector("canvas[data-orb-first-paint-canvas='true']");
+
+    expect(wrapper).toHaveAttribute("data-orb-first-paint-ready", "true");
+    expect(wrapper).not.toHaveAttribute("data-orb-visual-ready");
+    expect(firstPaintCanvas).toHaveAttribute("data-orb-renderer-tier", "canvas2d");
+    expect(firstPaintCanvas).toHaveStyle({ opacity: "1" });
+    expect(drawOrbScene).toHaveBeenCalled();
+    expect(onFirstPaintReady).toHaveBeenCalledTimes(1);
+    expect(onVisualReady).not.toHaveBeenCalled();
     expect(queryByTestId("valence-orb-first-paint-fallback")).toBeNull();
   });
 

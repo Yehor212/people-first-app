@@ -48,7 +48,9 @@ interface ValenceOrbProps {
   transitionProfile?: OrbTransitionProfile;
   /** Renderer policy. Auto paints Canvas first, then upgrades to WebGL without blocking first paint. */
   renderer?: OrbRendererMode;
-  /** Fires once the visible canonical renderer has produced its first real frame. */
+  /** Fires once any canonical first-paint frame is visible. */
+  onFirstPaintReady?: () => void;
+  /** Fires once the stable renderer has produced its first real frame. */
   onVisualReady?: () => void;
 }
 
@@ -218,6 +220,17 @@ function createCanvas(size: number, dpr: number): HTMLCanvasElement {
 
 function markRendererTier(canvas: HTMLCanvasElement, tier: 'canvas2d' | 'webgl-main' | 'webgl-worker') {
   canvas.dataset.orbRendererTier = tier;
+}
+
+function markFirstPaintCanvas(canvas: HTMLCanvasElement) {
+  markRendererTier(canvas, 'canvas2d');
+  canvas.dataset.orbFirstPaintCanvas = 'true';
+  canvas.style.position = 'absolute';
+  canvas.style.inset = '0';
+  canvas.style.opacity = '1';
+  canvas.style.zIndex = '1';
+  canvas.style.pointerEvents = 'none';
+  canvas.style.transition = 'opacity 120ms ease-out';
 }
 
 function createFirstPaintFallbackStyle(
@@ -434,6 +447,7 @@ export const ValenceOrb = memo(function ValenceOrb({
   animationSpeed = CANONICAL_ORB_ANIMATION_SPEED,
   transitionProfile = "v1-soft",
   renderer = "auto",
+  onFirstPaintReady,
   onVisualReady,
 }: ValenceOrbProps) {
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -443,6 +457,7 @@ export const ValenceOrb = memo(function ValenceOrb({
   const glRendererRef = useRef<OrbGLRenderer | null>(null);
   const workerRendererRef = useRef<OrbWorkerController | null>(null);
   const canvasElRef = useRef<HTMLCanvasElement | null>(null);
+  const firstPaintReadyRef = useRef(false);
   const visualReadyRef = useRef(false);
   const [ctxFailed, setCtxFailed] = useState(false);
   const [visualReady, setVisualReady] = useState(false);
@@ -478,10 +493,21 @@ export const ValenceOrb = memo(function ValenceOrb({
   // Keep target valence in sync with prop
   const valenceRef = useRef(valence);
   valenceRef.current = valence;
+  const onFirstPaintReadyRef = useRef(onFirstPaintReady);
+  onFirstPaintReadyRef.current = onFirstPaintReady;
   const onVisualReadyRef = useRef(onVisualReady);
   onVisualReadyRef.current = onVisualReady;
+  const markFirstPaintReadyRef = useRef<() => void>(() => {});
+  markFirstPaintReadyRef.current = () => {
+    const alreadyReady = firstPaintReadyRef.current;
+    firstPaintReadyRef.current = true;
+    wrapperRef.current?.setAttribute('data-orb-first-paint-ready', 'true');
+    if (alreadyReady) return;
+    onFirstPaintReadyRef.current?.();
+  };
   const markVisualReadyRef = useRef<() => void>(() => {});
   markVisualReadyRef.current = () => {
+    markFirstPaintReadyRef.current();
     const alreadyReady = visualReadyRef.current;
     visualReadyRef.current = true;
     const revealCanonicalCanvas = (orbCanvas: HTMLCanvasElement) => {
@@ -493,7 +519,11 @@ export const ValenceOrb = memo(function ValenceOrb({
       revealCanonicalCanvas(canvas);
     }
     const wrapper = wrapperRef.current;
+    wrapper?.querySelectorAll('canvas[data-orb-first-paint-canvas="true"]').forEach((orbCanvas) => {
+      orbCanvas.remove();
+    });
     wrapper?.querySelectorAll('canvas').forEach((orbCanvas) => {
+      if (orbCanvas.dataset.orbFirstPaintCanvas === 'true') return;
       revealCanonicalCanvas(orbCanvas);
     });
     wrapper?.setAttribute('data-orb-visual-ready', 'true');
@@ -554,8 +584,10 @@ export const ValenceOrb = memo(function ValenceOrb({
     const wrapper = wrapperRef.current;
     if (!wrapper) return;
 
+    firstPaintReadyRef.current = false;
     visualReadyRef.current = false;
     setVisualReady(false);
+    wrapper.removeAttribute('data-orb-first-paint-ready');
     wrapper.removeAttribute('data-orb-visual-ready');
 
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -603,6 +635,7 @@ export const ValenceOrb = memo(function ValenceOrb({
     let webglEventCanvas: HTMLCanvasElement | null = null;
     let webglWorker: Worker | null = null;
     let forceWebGLStartupRecovered = false;
+    let firstPaintCanvas: HTMLCanvasElement | null = null;
 
     // Canvas 2D fallback is the first paint for "auto" only. Canonical WebGL
     // surfaces keep the same blank canvas until worker/async WebGL is ready so
@@ -723,8 +756,40 @@ export const ValenceOrb = memo(function ValenceOrb({
       markVisualReadyRef.current();
     };
 
+    const renderForcedWebGLFirstPaint = () => {
+      if (!forceCanonicalWebGL || firstPaintCanvas) return;
+
+      const firstCanvas = createCanvas(size, canvasDpr);
+      markFirstPaintCanvas(firstCanvas);
+      const firstPaintCtx = firstCanvas.getContext('2d', { willReadFrequently: false });
+      const state = stateRef.current;
+
+      if (!firstPaintCtx || !state) {
+        return;
+      }
+
+      try {
+        drawOrbScene(firstPaintCtx, {
+          valence: smoothValenceRef.current,
+          time: state.time,
+          particles: state.particles,
+          size,
+          dpr: canvasDpr,
+          isDark: isDarkRead(),
+          shimmer: shimmerRef.current,
+        });
+        firstPaintCanvas = firstCanvas;
+        wrapper.appendChild(firstCanvas);
+        markFirstPaintReadyRef.current();
+      } catch (err) {
+        recordError(err, { component: 'ValenceOrb', action: 'forced-webgl-first-paint-render' });
+      }
+    };
+
     const renderPendingWebGL = () => {};
     let render = glRenderer ? renderGL : (forceCanonicalWebGL ? renderPendingWebGL : renderCanvas2D);
+
+    renderForcedWebGLFirstPaint();
 
     // ── Fallback canvas for context loss recovery ──
     let fallbackCanvas: HTMLCanvasElement | null = null;
@@ -1242,11 +1307,18 @@ export const ValenceOrb = memo(function ValenceOrb({
       if (fallbackCanvas && wrapper.contains(fallbackCanvas)) {
         wrapper.removeChild(fallbackCanvas);
       }
+      if (firstPaintCanvas && wrapper.contains(firstPaintCanvas)) {
+        wrapper.removeChild(firstPaintCanvas);
+      }
     };
 
     // ── Animation gate ──
     if (!shouldAnimateCanonicalOrb()) {
-      try { render(valenceRef.current, 0, stateRef.current.particles); } catch { /* graceful: initial frame render failure invisible — orb shows fallback CSS */ }
+      if (forceCanonicalWebGL) {
+        degradeToCanvas2D();
+      } else {
+        try { render(valenceRef.current, 0, stateRef.current.particles); } catch { /* graceful: initial frame render failure invisible — orb shows fallback CSS */ }
+      }
       return cleanup;
     }
 
@@ -1335,7 +1407,8 @@ export const ValenceOrb = memo(function ValenceOrb({
   }, [valence, size]);
 
   // Only auto/canvas renderer policies may show this non-canonical emergency fallback.
-  // Explicit canonical WebGL surfaces stay blank until the real WebGL canvas paints.
+  // Explicit canonical WebGL surfaces use an internal canonical Canvas first-paint
+  // canvas instead of this CSS fallback while async WebGL warms up.
   const firstPaintFallback = showFirstPaintFallback ? (
     <span
       aria-hidden="true"

@@ -147,6 +147,19 @@ describe("canonical orb invariant", () => {
     expect(source).toContain("const recoveredWithWebGL = await upgradeToMainThreadWebGL()");
   });
 
+  it("allows only the canonical canvas renderer for forced WebGL first paint", () => {
+    const source = readSource("src/components/state-of-mind/ValenceOrb.tsx");
+
+    expect(source).toContain("renderForcedWebGLFirstPaint");
+    expect(source).toContain("markFirstPaintCanvas");
+    expect(source).toContain("canvas.dataset.orbFirstPaintCanvas = 'true'");
+    expect(source).toContain("drawOrbScene(firstPaintCtx");
+    expect(source).toContain("markFirstPaintReadyRef");
+    expect(source).toContain("onFirstPaintReady");
+    expect(source).not.toContain("valence-orb-static");
+    expect(source).not.toContain("lottie");
+  });
+
   it("keeps canonical orb canvases paint-contained to avoid route-level render stalls", () => {
     const source = readSource("src/components/state-of-mind/ValenceOrb.tsx");
 

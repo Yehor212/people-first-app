@@ -3,9 +3,25 @@ import { render } from "@testing-library/react";
 
 import { MiniValenceOrb } from "../MiniValenceOrb";
 
+vi.mock("../orbRenderer", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../orbRenderer")>();
+  return {
+    ...actual,
+    drawOrbScene: vi.fn(),
+  };
+});
+
 describe("MiniValenceOrb", () => {
+  let allow2dContext = false;
+
   beforeEach(() => {
-    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
+    allow2dContext = false;
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation((contextId) => {
+      if (allow2dContext && contextId === "2d") {
+        return {} as CanvasRenderingContext2D;
+      }
+      return null;
+    });
   });
 
   afterEach(() => {
@@ -47,12 +63,24 @@ describe("MiniValenceOrb", () => {
     expect(setIntervalSpy).not.toHaveBeenCalledWith(expect.any(Function), 320);
   });
 
-  it("keeps mini chrome hidden until the canonical orb reports a real frame", () => {
+  it("keeps mini chrome hidden when no canonical first-paint frame is available", () => {
     const { container } = render(
       <MiniValenceOrb valence={0} hasEntry={false} size="sm" chrome="badge" />,
     );
 
     expect(container.firstChild).toHaveClass("opacity-0");
+  });
+
+  it("reveals mini chrome as soon as the canonical first-paint frame is ready", () => {
+    allow2dContext = true;
+
+    const { container } = render(
+      <MiniValenceOrb valence={0} hasEntry={false} size="sm" chrome="badge" />,
+    );
+
+    expect(container.firstChild).toHaveClass("opacity-100");
+    expect(container.querySelector("[data-orb-first-paint-ready='true']")).not.toBeNull();
+    expect(container.querySelector("canvas[data-orb-first-paint-canvas='true']")).not.toBeNull();
   });
 
   it("renders the refine chrome with its larger lg preset", () => {

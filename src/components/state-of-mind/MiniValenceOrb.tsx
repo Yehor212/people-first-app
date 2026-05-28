@@ -154,6 +154,7 @@ function OrbCore({
           size={120}
           transitionProfile={transitionProfile}
           renderer={renderer}
+          onFirstPaintReady={onVisualReady}
           onVisualReady={onVisualReady}
         />
       </div>
