@@ -117,14 +117,16 @@ describe("canonical orb invariant", () => {
     expect(source).not.toContain("<svg");
   });
 
-  it("forces explicit webgl orb surfaces through a real WebGL first canvas", () => {
+  it("keeps explicit webgl orb surfaces on the canonical WebGL upgrade path", () => {
     const source = readSource("src/components/state-of-mind/ValenceOrb.tsx");
 
     expect(source).toContain("forceCanonicalWebGL");
     expect(source).toContain("createOrbGL2");
     expect(source).toContain("createOrbGL");
     expect(source).toContain("if (mode === 'webgl') return true");
-    expect(source).toContain("if (!glRenderer) {");
+    expect(source).toContain("if (!glRenderer && !holdForcedWebGLOnCanvasRenderer) {");
+    expect(source).toContain("shouldHoldForcedWebGLOnCanvasRenderer");
+    expect(source).toContain("data-orb-webgl-upgrade");
   });
 
   it("blocks non-canonical CSS fallback visuals on forced WebGL surfaces", () => {
@@ -153,6 +155,7 @@ describe("canonical orb invariant", () => {
     expect(source).toContain("renderForcedWebGLFirstPaint");
     expect(source).toContain("markFirstPaintCanvas");
     expect(source).toContain("canvas.dataset.orbFirstPaintCanvas = 'true'");
+    expect(source).toContain("drawOrbScene(ctx2d");
     expect(source).toContain("drawOrbScene(firstPaintCtx");
     expect(source).toContain("markFirstPaintReadyRef");
     expect(source).toContain("onFirstPaintReady");

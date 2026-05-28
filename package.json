@@ -210,7 +210,8 @@
     "workbox-strategies": "^7.1.0"
   },
   "overrides": {
-    "@rollup/plugin-terser": "^1.0.0"
+    "@rollup/plugin-terser": "^1.0.0",
+    "tmp": "^0.2.7"
   },
   "lint-staged": {
     "*.{ts,tsx}": [

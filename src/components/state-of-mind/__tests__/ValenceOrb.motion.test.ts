@@ -13,6 +13,7 @@ import {
   resolveOrbFrameInterval,
   resolveOrbTransitionSettings,
   shouldApplyWorkerWebGLUpgrade,
+  shouldHoldForcedWebGLOnCanvasRenderer,
   shouldStartIdleWakeSoftening,
 } from "../ValenceOrb";
 
@@ -109,7 +110,7 @@ describe("ValenceOrb motion profile", () => {
     expect(shouldApplyWorkerWebGLUpgrade(WEBGL_WORKER_READY_BUDGET_MS + 5000, true)).toBe(true);
   });
 
-  it("keeps full canonical orbs immediate while staggering mini WebGL upgrades", () => {
+  it("defers full canonical WebGL upgrades while staggering mini WebGL upgrades", () => {
     const fullOrb = resolveCanonicalWebGLUpgradeScheduling(true, 240, 1000, 1000);
     const firstMini = resolveCanonicalWebGLUpgradeScheduling(true, 120, 1000, 1000);
     const secondMini = resolveCanonicalWebGLUpgradeScheduling(
@@ -121,8 +122,8 @@ describe("ValenceOrb motion profile", () => {
     const autoOrb = resolveCanonicalWebGLUpgradeScheduling(false, 120, 1000, 1000);
 
     expect(fullOrb).toMatchObject({
-      delayMs: 0,
-      preferIdle: false,
+      delayMs: 1400,
+      preferIdle: true,
       nextMiniUpgradeStartAt: 1000,
     });
     expect(firstMini).toMatchObject({
@@ -135,6 +136,13 @@ describe("ValenceOrb motion profile", () => {
       preferIdle: true,
       nextMiniUpgradeStartAt: 1000,
     });
+  });
+
+  it("keeps forced full phone orbs on the canonical canvas renderer during startup", () => {
+    expect(shouldHoldForcedWebGLOnCanvasRenderer(true, 240, 449)).toBe(true);
+    expect(shouldHoldForcedWebGLOnCanvasRenderer(true, 240, 768)).toBe(false);
+    expect(shouldHoldForcedWebGLOnCanvasRenderer(true, 120, 449)).toBe(false);
+    expect(shouldHoldForcedWebGLOnCanvasRenderer(false, 240, 449)).toBe(false);
   });
 
   it("keeps canonical WebGL smooth even when runtime performance mode is active", () => {
@@ -221,6 +229,103 @@ describe("ValenceOrb motion profile", () => {
     expect(onFirstPaintReady).toHaveBeenCalledTimes(1);
     expect(onVisualReady).not.toHaveBeenCalled();
     expect(queryByTestId("valence-orb-first-paint-fallback")).toBeNull();
+  });
+
+  it("paints the phone forced-WebGL first frame into the mounted stable canvas", () => {
+    const originalInnerWidth = window.innerWidth;
+    Object.defineProperty(window, "innerWidth", {
+      configurable: true,
+      value: 449,
+    });
+
+    const getContextSpy = vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation((contextId) => {
+      if (contextId === "2d") {
+        return {} as CanvasRenderingContext2D;
+      }
+      return null;
+    });
+
+    const onFirstPaintReady = vi.fn();
+    const onVisualReady = vi.fn();
+
+    try {
+      const { container, queryByTestId } = render(
+        createElement(ValenceOrb, {
+          valence: 0.25,
+          renderer: "webgl",
+          size: 240,
+          onFirstPaintReady,
+          onVisualReady,
+        }),
+      );
+
+      const wrapper = container.querySelector("[data-orb-renderer-policy='webgl']");
+      const canvases = container.querySelectorAll("canvas");
+      const stableCanvas = canvases[0];
+
+      expect(wrapper).toHaveAttribute("data-orb-webgl-upgrade", "held-on-canvas");
+      expect(wrapper).toHaveAttribute("data-orb-first-paint-ready", "true");
+      expect(wrapper).toHaveAttribute("data-orb-visual-ready", "true");
+      expect(canvases).toHaveLength(1);
+      expect(getContextSpy).toHaveBeenCalledTimes(1);
+      expect(stableCanvas).toHaveAttribute("data-orb-renderer-tier", "canvas2d");
+      expect(stableCanvas).not.toHaveAttribute("data-orb-first-paint-canvas");
+      expect(stableCanvas).toHaveStyle({ opacity: "1" });
+      expect(drawOrbScene).toHaveBeenCalled();
+      expect(onFirstPaintReady).toHaveBeenCalledTimes(1);
+      expect(onVisualReady).toHaveBeenCalledTimes(1);
+      expect(queryByTestId("valence-orb-first-paint-fallback")).toBeNull();
+    } finally {
+      Object.defineProperty(window, "innerWidth", {
+        configurable: true,
+        value: originalInnerWidth,
+      });
+    }
+  });
+
+  it("delays phone forced-WebGL canvas animation after the visible first paint", () => {
+    vi.useFakeTimers();
+    const originalInnerWidth = window.innerWidth;
+    Object.defineProperty(window, "innerWidth", {
+      configurable: true,
+      value: 449,
+    });
+
+    vi.spyOn(window, "requestAnimationFrame").mockImplementation(() => 1);
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation((contextId) => {
+      if (contextId === "2d") {
+        return {} as CanvasRenderingContext2D;
+      }
+      return null;
+    });
+
+    try {
+      const { container } = render(
+        createElement(ValenceOrb, {
+          valence: 0.25,
+          renderer: "webgl",
+          size: 240,
+        }),
+      );
+
+      expect(container.querySelector("[data-orb-visual-ready='true']")).not.toBeNull();
+      expect(window.requestAnimationFrame).not.toHaveBeenCalled();
+
+      act(() => {
+        vi.advanceTimersByTime(15999);
+      });
+      expect(window.requestAnimationFrame).not.toHaveBeenCalled();
+
+      act(() => {
+        vi.advanceTimersByTime(1);
+      });
+      expect(window.requestAnimationFrame).toHaveBeenCalledTimes(1);
+    } finally {
+      Object.defineProperty(window, "innerWidth", {
+        configurable: true,
+        value: originalInnerWidth,
+      });
+    }
   });
 
   it("recovers forced WebGL orbs to the canonical canvas fallback when no first frame arrives", () => {

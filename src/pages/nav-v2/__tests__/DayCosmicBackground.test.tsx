@@ -114,6 +114,9 @@ describe("DayCosmicBackground", () => {
     expect(dayCosmicCss).toContain(".day-cosmic__bokeh");
     expect(dayCosmicCss).toContain("contain: paint");
     expect(dayCosmicCss).toContain("will-change: transform, opacity");
+    expect(dayCosmicCss).toContain("@media (max-width: 767px)");
+    expect(dayCosmicCss).toContain(".orb-day-scope .orb-page-rim-glow > button");
+    expect(dayCosmicCss).toContain("box-shadow: none");
   });
 
   it("paper grain is a static SVG with feTurbulence filter", () => {

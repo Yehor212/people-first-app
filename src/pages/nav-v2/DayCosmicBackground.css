@@ -1031,6 +1031,12 @@
     0 0 96px hsl(var(--zf-role-body) / 0.30);
 }
 
+@media (max-width: 767px) {
+  .orb-day-scope .orb-page-rim-glow > button {
+    box-shadow: none;
+  }
+}
+
 .orb-day-scope .orb-page-rim-glow > button canvas {
   filter:
     saturate(1.24)
@@ -1408,4 +1414,3 @@
     transform: translate3d(0.75rem, -1.1rem, 0) scale(1);
   }
 }
-

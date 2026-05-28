@@ -86,8 +86,11 @@ export const WEBGL_WORKER_READY_BUDGET_MS = 700;
 const WEBGL_READINESS_TIMEOUT_MS = 8000;
 export const WEBGL_FORCED_FIRST_FRAME_TIMEOUT_MS = 1400;
 const WEBGL_UPGRADE_DELAY_MS = 180;
+const FORCED_WEBGL_UPGRADE_DELAY_MS = 1400;
 const MINI_WEBGL_UPGRADE_DELAY_MS = 0;
 const MINI_WEBGL_UPGRADE_QUEUE_GAP_MS = 80;
+const PHONE_FORCED_WEBGL_CANVAS_VIEWPORT_MAX_WIDTH = 767;
+const PHONE_FORCED_WEBGL_CANVAS_ANIMATION_DELAY_MS = 16000;
 const IDLE_WAKE_SOFT_THRESHOLD_MS = 8000;
 const ORB_IDLE_WAKE_SOFT_EPSILON = 0.01;
 const MINI_ORB_CANONICAL_SIZE = 120;
@@ -325,6 +328,18 @@ export function shouldApplyWorkerWebGLUpgrade(
   return forcedWebGL || readyDurationMs <= WEBGL_WORKER_READY_BUDGET_MS;
 }
 
+export function shouldHoldForcedWebGLOnCanvasRenderer(
+  forceCanonicalWebGL: boolean,
+  size: number,
+  viewportWidth: number,
+): boolean {
+  return (
+    forceCanonicalWebGL &&
+    size > MINI_ORB_CANONICAL_SIZE &&
+    viewportWidth <= PHONE_FORCED_WEBGL_CANVAS_VIEWPORT_MAX_WIDTH
+  );
+}
+
 export function resolveCanonicalWebGLUpgradeScheduling(
   forceCanonicalWebGL: boolean,
   size: number,
@@ -345,8 +360,8 @@ export function resolveCanonicalWebGLUpgradeScheduling(
 
   if (size > MINI_ORB_CANONICAL_SIZE) {
     return {
-      delayMs: 0,
-      preferIdle: false,
+      delayMs: FORCED_WEBGL_UPGRADE_DELAY_MS,
+      preferIdle: true,
       nextMiniUpgradeStartAt,
     };
   }
@@ -589,6 +604,7 @@ export const ValenceOrb = memo(function ValenceOrb({
     setVisualReady(false);
     wrapper.removeAttribute('data-orb-first-paint-ready');
     wrapper.removeAttribute('data-orb-visual-ready');
+    wrapper.removeAttribute('data-orb-webgl-upgrade');
 
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const canvasDpr = 1;
@@ -624,11 +640,7 @@ export const ValenceOrb = memo(function ValenceOrb({
     // on the same canvas returns null — a new <canvas> element is required.
 
     const forceCanonicalWebGL = renderer === 'webgl' || getRendererOverride() === 'webgl';
-    let activeCanvas = createCanvas(size, forceCanonicalWebGL ? dpr : canvasDpr);
-    if (forceCanonicalWebGL) {
-      activeCanvas.style.opacity = '0';
-      activeCanvas.style.transition = 'opacity 160ms ease-out';
-    }
+    let activeCanvas = createCanvas(size, canvasDpr);
     let glRenderer: OrbGLRenderer | null = null;
     let workerRenderer: OrbWorkerController | null = null;
     let ctx2d: CanvasRenderingContext2D | null = null;
@@ -637,24 +649,38 @@ export const ValenceOrb = memo(function ValenceOrb({
     let forceWebGLStartupRecovered = false;
     let firstPaintCanvas: HTMLCanvasElement | null = null;
 
-    // Canvas 2D fallback is the first paint for "auto" only. Canonical WebGL
-    // surfaces keep the same blank canvas until worker/async WebGL is ready so
-    // Chrome never blocks the main thread compiling the heavy shader at mount.
-    if (!glRenderer && !forceCanonicalWebGL) {
-      const c2dCanvas = createCanvas(size, canvasDpr);
-      markRendererTier(c2dCanvas, 'canvas2d');
-      try {
-        ctx2d = c2dCanvas.getContext('2d', { willReadFrequently: false });
-      } catch (err) {
-        recordError(err, { component: 'ValenceOrb', action: 'canvas2d-probe' });
-        ctx2d = null;
-      }
+    // Canvas 2D is the canonical first stable renderer for every policy.
+    // Forced WebGL surfaces paint this first, then upgrade when Chrome has
+    // yielded enough startup time for the heavy worker/WebGL path.
+    markRendererTier(activeCanvas, 'canvas2d');
+    try {
+      ctx2d = activeCanvas.getContext('2d', { willReadFrequently: false });
+    } catch (err) {
+      recordError(err, { component: 'ValenceOrb', action: 'canvas2d-probe' });
+      ctx2d = null;
+    }
 
-      if (!ctx2d) {
+    if (!ctx2d) {
+      if (!forceCanonicalWebGL) {
         setCtxFailed(true);
         return;
       }
-      activeCanvas = c2dCanvas;
+      activeCanvas = createCanvas(size, dpr);
+      activeCanvas.style.opacity = '0';
+      activeCanvas.style.transition = 'opacity 160ms ease-out';
+    }
+
+    const holdForcedWebGLOnCanvasRenderer = Boolean(
+      ctx2d &&
+      shouldHoldForcedWebGLOnCanvasRenderer(
+        forceCanonicalWebGL,
+        size,
+        window.innerWidth || document.documentElement.clientWidth,
+      ) &&
+      getRendererOverride() !== 'webgl',
+    );
+    if (holdForcedWebGLOnCanvasRenderer) {
+      wrapper.setAttribute('data-orb-webgl-upgrade', 'held-on-canvas');
     }
 
     if (!activeCanvas) {
@@ -759,6 +785,32 @@ export const ValenceOrb = memo(function ValenceOrb({
     const renderForcedWebGLFirstPaint = () => {
       if (!forceCanonicalWebGL || firstPaintCanvas) return;
 
+      if (holdForcedWebGLOnCanvasRenderer) {
+        const state = stateRef.current;
+        if (!ctx2d || !state) return;
+
+        try {
+          drawOrbScene(ctx2d, {
+            valence: smoothValenceRef.current,
+            time: state.time,
+            particles: state.particles,
+            size,
+            dpr: canvasDpr,
+            isDark: isDarkRead(),
+            shimmer: shimmerRef.current,
+          });
+          activeCanvas.style.setProperty('transition', 'none', 'important');
+          activeCanvas.style.setProperty('opacity', '1', 'important');
+          delete activeCanvas.dataset.orbFirstPaintCanvas;
+          markRendererTier(activeCanvas, 'canvas2d');
+          canvasElRef.current = activeCanvas;
+          markVisualReadyRef.current();
+        } catch (err) {
+          recordError(err, { component: 'ValenceOrb', action: 'forced-webgl-first-paint-render' });
+        }
+        return;
+      }
+
       const firstCanvas = createCanvas(size, canvasDpr);
       markFirstPaintCanvas(firstCanvas);
       const firstPaintCtx = firstCanvas.getContext('2d', { willReadFrequently: false });
@@ -787,7 +839,7 @@ export const ValenceOrb = memo(function ValenceOrb({
     };
 
     const renderPendingWebGL = () => {};
-    let render = glRenderer ? renderGL : (forceCanonicalWebGL ? renderPendingWebGL : renderCanvas2D);
+    let render = glRenderer ? renderGL : (ctx2d ? renderCanvas2D : renderPendingWebGL);
 
     renderForcedWebGLFirstPaint();
 
@@ -997,7 +1049,7 @@ export const ValenceOrb = memo(function ValenceOrb({
     const upgradeToWebGL = async (signal: AbortSignal) => {
       if (!shouldTryWebGL(renderer) || signal.aborted) return;
 
-      const explicitWebGLOverride = forceCanonicalWebGL;
+      const explicitWebGLOverride = getRendererOverride() === 'webgl';
       let webglStartupRecoveryStarted = false;
 
       const upgradeToMainThreadWebGL = async (): Promise<boolean> => {
@@ -1023,7 +1075,10 @@ export const ValenceOrb = memo(function ValenceOrb({
         if (!result) return false;
 
         const visibleCanvasAgeMs = performance.now() - visibleCanvasMountedAt;
-        const visibleUpgradeAgeMs = Math.max(result.durationMs, visibleCanvasAgeMs);
+        const visibleUpgradeAgeMs =
+          forceCanonicalWebGL && visualReadyRef.current && !explicitWebGLOverride
+            ? result.durationMs
+            : Math.max(result.durationMs, visibleCanvasAgeMs);
         if (!shouldApplyWorkerWebGLUpgrade(visibleUpgradeAgeMs, explicitWebGLOverride)) {
           rememberSlowWebGL(visibleUpgradeAgeMs);
           result.renderer.dispose();
@@ -1067,6 +1122,11 @@ export const ValenceOrb = memo(function ValenceOrb({
           return;
         }
 
+        if (!explicitWebGLOverride && visualReadyRef.current) {
+          rememberSlowWebGL(performance.now() - visibleCanvasMountedAt);
+          return;
+        }
+
         void (async () => {
           const recoveredWithWebGL = await upgradeToMainThreadWebGL();
           if (!recoveredWithWebGL && !signal.aborted && mountedRef.current) {
@@ -1077,7 +1137,11 @@ export const ValenceOrb = memo(function ValenceOrb({
 
       if ((renderer === 'auto' || renderer === 'webgl') && canUseWorkerWebGL()) {
         const workerStartedAt = performance.now();
-        const workerCanvas = forceCanonicalWebGL ? activeCanvas : createCanvas(size, dpr);
+        const workerCanvas = createCanvas(size, dpr);
+        if (forceCanonicalWebGL) {
+          workerCanvas.style.opacity = '0';
+          workerCanvas.style.transition = 'opacity 160ms ease-out';
+        }
         markRendererTier(workerCanvas, 'webgl-worker');
         const offscreen = workerCanvas.transferControlToOffscreen();
         const worker = new Worker(new URL('./orbWorker.ts', import.meta.url), {
@@ -1122,6 +1186,16 @@ export const ValenceOrb = memo(function ValenceOrb({
           if (signal.aborted || !mountedRef.current) return;
 
           if (event.data.type === 'rendered') {
+            if (activeCanvas !== workerCanvas) {
+              const previousCanvas = activeCanvas;
+              activeCanvas = workerCanvas;
+              canvasElRef.current = workerCanvas;
+              if (wrapper.contains(previousCanvas)) {
+                wrapper.replaceChild(workerCanvas, previousCanvas);
+              } else {
+                wrapper.appendChild(workerCanvas);
+              }
+            }
             markVisualReadyRef.current();
             flushWorkerRender();
             return;
@@ -1140,7 +1214,10 @@ export const ValenceOrb = memo(function ValenceOrb({
 
           const readyDurationMs = performance.now() - workerStartedAt;
           const visibleCanvasAgeMs = performance.now() - visibleCanvasMountedAt;
-          const visibleUpgradeAgeMs = Math.max(readyDurationMs, visibleCanvasAgeMs);
+          const visibleUpgradeAgeMs =
+            forceCanonicalWebGL && visualReadyRef.current && !explicitWebGLOverride
+              ? readyDurationMs
+              : Math.max(readyDurationMs, visibleCanvasAgeMs);
           if (!shouldApplyWorkerWebGLUpgrade(visibleUpgradeAgeMs, explicitWebGLOverride)) {
             rememberSlowWebGL(visibleUpgradeAgeMs);
             worker.terminate();
@@ -1164,19 +1241,8 @@ export const ValenceOrb = memo(function ValenceOrb({
 
           workerRenderer = controller;
           workerRendererRef.current = controller;
-          canvasElRef.current = workerCanvas;
           ctx2d = null;
           render = renderWorkerGL;
-
-          if (activeCanvas !== workerCanvas) {
-            const previousCanvas = activeCanvas;
-            activeCanvas = workerCanvas;
-            if (wrapper.contains(previousCanvas)) {
-              wrapper.replaceChild(workerCanvas, previousCanvas);
-            } else {
-              wrapper.appendChild(workerCanvas);
-            }
-          }
 
           const state = stateRef.current;
           if (state) {
@@ -1224,6 +1290,7 @@ export const ValenceOrb = memo(function ValenceOrb({
     let webglUpgradeStarted = false;
     let webglUpgradePendingUntilVisible = false;
     let forceWebGLFirstFrameTimeoutId = 0;
+    let delayedCanvasAnimationTimeoutId = 0;
     const recoverForcedWebGLFirstFrame = () => {
       if (
         !forceCanonicalWebGL ||
@@ -1282,6 +1349,7 @@ export const ValenceOrb = memo(function ValenceOrb({
     const cleanup = () => {
       webglUpgradeAbort.abort();
       window.clearTimeout(forceWebGLFirstFrameTimeoutId);
+      window.clearTimeout(delayedCanvasAnimationTimeoutId);
       cancelWebGLUpgrade();
       cancelAnimationFrame(rafRef.current);
       upgradeVisibilityObserver?.disconnect();
@@ -1322,7 +1390,7 @@ export const ValenceOrb = memo(function ValenceOrb({
       return cleanup;
     }
 
-    if (!glRenderer) {
+    if (!glRenderer && !holdForcedWebGLOnCanvasRenderer) {
       const webglUpgradeScheduling = reserveCanonicalWebGLUpgradeScheduling(
         forceCanonicalWebGL,
         size,
@@ -1341,7 +1409,14 @@ export const ValenceOrb = memo(function ValenceOrb({
       });
     }
 
-    rafRef.current = requestAnimationFrame(loop);
+    if (holdForcedWebGLOnCanvasRenderer) {
+      delayedCanvasAnimationTimeoutId = window.setTimeout(() => {
+        if (!mountedRef.current || webglUpgradeAbort.signal.aborted) return;
+        rafRef.current = requestAnimationFrame(loop);
+      }, PHONE_FORCED_WEBGL_CANVAS_ANIMATION_DELAY_MS);
+    } else {
+      rafRef.current = requestAnimationFrame(loop);
+    }
 
     return cleanup;
   }, [renderer, size]);

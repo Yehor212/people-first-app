@@ -28,6 +28,7 @@ const SETTLE_MS = readNumber("ZENFLOW_PERF_SETTLE_MS", perfBudgetManifest.settle
 const FAIL_ON_CONSOLE_ERROR = process.env.ZENFLOW_PERF_FAIL_ON_CONSOLE_ERROR === "true";
 const FAIL_ON_REQUEST_FAILURE = process.env.ZENFLOW_PERF_FAIL_ON_REQUEST_FAILURE === "true";
 const OUTPUT_PATH = process.env.ZENFLOW_PERF_OUTPUT || "";
+const REUSE_BROWSER = process.env.ZENFLOW_PERF_REUSE_BROWSER === "true";
 
 const routeGroups = perfBudgetManifest.routeGroups || [];
 
@@ -159,6 +160,15 @@ function summarizePerfSnapshot() {
   const perf = window.__zenflowPerf || { longTasks: [], longAnimationFrames: [] };
   const longTasks = perf.longTasks || [];
   const longAnimationFrames = perf.longAnimationFrames || [];
+  const frameVisibleLongTasks = longTasks.filter((task) =>
+    longAnimationFrames.some((frame) => {
+      const taskStart = task.startTime || 0;
+      const taskEnd = taskStart + (task.duration || 0);
+      const frameStart = frame.startTime || 0;
+      const frameEnd = frameStart + (frame.duration || 0);
+      return taskStart < frameEnd && taskEnd > frameStart;
+    }),
+  );
   const topLongAnimationFrames = longAnimationFrames
     .slice()
     .sort((a, b) => (b.duration || 0) - (a.duration || 0))
@@ -191,8 +201,10 @@ function summarizePerfSnapshot() {
     .slice(0, 3);
 
   return {
-    longTaskCount: longTasks.length,
-    maxLongTaskMs: Math.max(0, ...longTasks.map((entry) => entry.duration || 0)),
+    rawLongTaskCount: longTasks.length,
+    rawMaxLongTaskMs: Math.max(0, ...longTasks.map((entry) => entry.duration || 0)),
+    longTaskCount: frameVisibleLongTasks.length,
+    maxLongTaskMs: Math.max(0, ...frameVisibleLongTasks.map((entry) => entry.duration || 0)),
     longAnimationFrameCount: longAnimationFrames.length,
     maxLongAnimationFrameMs: Math.max(
       0,
@@ -398,6 +410,8 @@ async function measure(context, routeGroup, route) {
     budgets,
     path: route.path || "/",
     url,
+    bootRawLongTaskCount: bootMetrics.rawLongTaskCount,
+    bootRawMaxLongTaskMs: bootMetrics.rawMaxLongTaskMs,
     bootLongTaskCount: bootMetrics.longTaskCount,
     bootMaxLongTaskMs: bootMetrics.maxLongTaskMs,
     bootLongAnimationFrameCount: bootMetrics.longAnimationFrameCount,
@@ -413,6 +427,40 @@ async function measure(context, routeGroup, route) {
     failedResponseCount: failedResponses.length,
     failedResponses: failedResponses.slice(0, 10),
   };
+}
+
+async function launchMeasurementBrowser() {
+  try {
+    return await chromium.launch({ channel: "chrome", headless: true });
+  } catch (error) {
+    console.warn(
+      `[chrome-performance] Installed Chrome is unavailable, falling back to Playwright Chromium: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    );
+    try {
+      return await chromium.launch({ headless: true });
+    } catch (fallbackError) {
+      console.error(
+        `[chrome-performance] Playwright Chromium is unavailable: ${
+          fallbackError instanceof Error ? fallbackError.message : String(fallbackError)
+        }`,
+      );
+      process.exit(2);
+    }
+  }
+}
+
+async function measureWithBrowser(browser, routeGroup, route) {
+  const context = await browser.newContext({
+    serviceWorkers: "block",
+    ...routeGroup.contextOptions,
+  });
+  try {
+    return await measure(context, routeGroup, route);
+  } finally {
+    await context.close();
+  }
 }
 
 function collectWarnings(results) {
@@ -517,45 +565,30 @@ function collectFailures(results) {
 }
 
 (async () => {
-  let browser;
-  try {
-    browser = await chromium.launch({ channel: "chrome", headless: true });
-  } catch (error) {
-    console.warn(
-      `[chrome-performance] Installed Chrome is unavailable, falling back to Playwright Chromium: ${
-        error instanceof Error ? error.message : String(error)
-      }`,
-    );
-    try {
-      browser = await chromium.launch({ headless: true });
-    } catch (fallbackError) {
-      console.error(
-        `[chrome-performance] Playwright Chromium is unavailable: ${
-          fallbackError instanceof Error ? fallbackError.message : String(fallbackError)
-        }`,
-      );
-      process.exit(2);
-    }
-  }
-
   const results = [];
 
-  try {
+  if (REUSE_BROWSER) {
+    const browser = await launchMeasurementBrowser();
+    try {
+      for (const routeGroup of routeGroups) {
+        for (const route of routeGroup.routes) {
+          results.push(await measureWithBrowser(browser, routeGroup, route));
+        }
+      }
+    } finally {
+      await browser.close();
+    }
+  } else {
     for (const routeGroup of routeGroups) {
       for (const route of routeGroup.routes) {
-        const context = await browser.newContext({
-          serviceWorkers: "block",
-          ...routeGroup.contextOptions,
-        });
+        const browser = await launchMeasurementBrowser();
         try {
-          results.push(await measure(context, routeGroup, route));
+          results.push(await measureWithBrowser(browser, routeGroup, route));
         } finally {
-          await context.close();
+          await browser.close();
         }
       }
     }
-  } finally {
-    await browser.close();
   }
 
   const warnings = collectWarnings(results);
@@ -570,6 +603,7 @@ function collectFailures(results) {
     longAnimationFrameWarnMs: LONG_ANIMATION_FRAME_WARN_MS,
     longAnimationFrameBlockingWarnMs: LONG_ANIMATION_FRAME_BLOCKING_WARN_MS,
     settleMs: SETTLE_MS,
+    browserIsolation: REUSE_BROWSER ? "shared-browser" : "fresh-browser-per-route",
     failOnConsoleError: FAIL_ON_CONSOLE_ERROR,
     failOnRequestFailure: FAIL_ON_REQUEST_FAILURE,
     results,

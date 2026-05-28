@@ -138,7 +138,12 @@ describe("V2 diary loading surface", () => {
     );
     expect(chromePerformanceBudgetSource).not.toContain("dev=true");
     expect(chromePerformanceSmokeSource).toContain("for (const route of routeGroup.routes)");
-    expect(chromePerformanceSmokeSource).toContain("results.push(await measure(context, routeGroup, route))");
+    expect(chromePerformanceSmokeSource).toContain("fresh-browser-per-route");
+    expect(chromePerformanceSmokeSource).toContain(
+      "results.push(await measureWithBrowser(browser, routeGroup, route))",
+    );
+    expect(chromePerformanceSmokeSource).toContain("rawMaxLongTaskMs");
+    expect(chromePerformanceSmokeSource).toContain("frameVisibleLongTasks");
     expect(chromePerformanceSmokeSource).toContain("async function waitForRouteReady(page, route)");
     expect(chromePerformanceSmokeSource).toContain("routeReadyBeforeSteady");
   });
