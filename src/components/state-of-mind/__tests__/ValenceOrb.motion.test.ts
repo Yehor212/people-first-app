@@ -1,10 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { render } from "@testing-library/react";
+import { act, render } from "@testing-library/react";
 import { createElement } from "react";
 
 import {
   ORB_TRANSITION_SETTINGS,
   ValenceOrb,
+  WEBGL_FORCED_FIRST_FRAME_TIMEOUT_MS,
   WEBGL_WORKER_READY_BUDGET_MS,
   allowsFirstPaintFallback,
   resolveCanonicalWebGLUpgradeScheduling,
@@ -17,6 +18,14 @@ import {
 
 import { createOrbGL2 } from "../orbShader";
 
+vi.mock("../orbRenderer", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../orbRenderer")>();
+  return {
+    ...actual,
+    drawOrbScene: vi.fn(),
+  };
+});
+
 vi.mock("../orbShader", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../orbShader")>();
   return {
@@ -28,6 +37,8 @@ vi.mock("../orbShader", async (importOriginal) => {
 
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+  vi.useRealTimers();
   delete document.documentElement.dataset.runtimePerf;
 });
 
@@ -173,5 +184,67 @@ describe("ValenceOrb motion profile", () => {
 
     expect(createOrbGL2).not.toHaveBeenCalled();
     expect(queryByTestId("valence-orb-first-paint-fallback")).toBeNull();
+  });
+
+  it("recovers forced WebGL orbs to the canonical canvas fallback when no first frame arrives", () => {
+    vi.useFakeTimers();
+
+    const hadTransferControl =
+      "transferControlToOffscreen" in HTMLCanvasElement.prototype;
+    const originalTransferControl =
+      HTMLCanvasElement.prototype.transferControlToOffscreen;
+    Object.defineProperty(HTMLCanvasElement.prototype, "transferControlToOffscreen", {
+      configurable: true,
+      value: vi.fn(() => ({ width: 0, height: 0 })),
+    });
+
+    class SilentWorker {
+      onmessage: ((event: MessageEvent) => void) | null = null;
+      onerror: ((event: ErrorEvent) => void) | null = null;
+      postMessage = vi.fn();
+      terminate = vi.fn();
+    }
+
+    vi.stubGlobal("OffscreenCanvas", class OffscreenCanvasStub {});
+    vi.stubGlobal("Worker", SilentWorker);
+
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation((contextId) => {
+      if (contextId === "2d") {
+        return {} as CanvasRenderingContext2D;
+      }
+      return null;
+    });
+
+    const onVisualReady = vi.fn();
+
+    try {
+      const { container } = render(
+        createElement(ValenceOrb, {
+          valence: 0,
+          renderer: "webgl",
+          onVisualReady,
+        }),
+      );
+
+      act(() => {
+        vi.advanceTimersByTime(WEBGL_FORCED_FIRST_FRAME_TIMEOUT_MS + 1);
+      });
+
+      expect(onVisualReady).toHaveBeenCalledTimes(1);
+      expect(container.querySelector("[data-orb-visual-ready='true']")).not.toBeNull();
+      expect(container.querySelector("[data-orb-renderer-tier='canvas2d']")).not.toBeNull();
+    } finally {
+      if (hadTransferControl) {
+        Object.defineProperty(HTMLCanvasElement.prototype, "transferControlToOffscreen", {
+          configurable: true,
+          value: originalTransferControl,
+        });
+      } else {
+        const canvasPrototype = HTMLCanvasElement.prototype as {
+          transferControlToOffscreen?: HTMLCanvasElement["transferControlToOffscreen"];
+        };
+        delete canvasPrototype.transferControlToOffscreen;
+      }
+    }
   });
 });

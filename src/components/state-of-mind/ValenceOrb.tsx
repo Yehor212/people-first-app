@@ -82,6 +82,7 @@ export const CANONICAL_ORB_ANIMATION_SPEED = 0.72;
 const WEBGL_BUILD_BUDGET_MS = 500;
 export const WEBGL_WORKER_READY_BUDGET_MS = 700;
 const WEBGL_READINESS_TIMEOUT_MS = 8000;
+export const WEBGL_FORCED_FIRST_FRAME_TIMEOUT_MS = 1400;
 const WEBGL_UPGRADE_DELAY_MS = 180;
 const MINI_WEBGL_UPGRADE_DELAY_MS = 0;
 const MINI_WEBGL_UPGRADE_QUEUE_GAP_MS = 80;
@@ -601,6 +602,7 @@ export const ValenceOrb = memo(function ValenceOrb({
     let ctx2d: CanvasRenderingContext2D | null = null;
     let webglEventCanvas: HTMLCanvasElement | null = null;
     let webglWorker: Worker | null = null;
+    let forceWebGLStartupRecovered = false;
 
     // Canvas 2D fallback is the first paint for "auto" only. Canonical WebGL
     // surfaces keep the same blank canvas until worker/async WebGL is ready so
@@ -729,6 +731,10 @@ export const ValenceOrb = memo(function ValenceOrb({
 
     /** Degrade to Canvas 2D on a fresh canvas (WebGL canvas is locked) */
     const degradeToCanvas2D = () => {
+      if (ctx2d && fallbackCanvas && activeCanvas === fallbackCanvas) {
+        return;
+      }
+
       const previousCanvas = activeCanvas;
       fallbackCanvas = createCanvas(size, canvasDpr);
       markRendererTier(fallbackCanvas, 'canvas2d');
@@ -742,6 +748,10 @@ export const ValenceOrb = memo(function ValenceOrb({
         }
         activeCanvas = fallbackCanvas;
         canvasElRef.current = fallbackCanvas;
+        glRendererRef.current?.dispose();
+        glRendererRef.current = null;
+        workerRendererRef.current?.dispose();
+        workerRendererRef.current = null;
         render = renderCanvas2D;
 
         const state = stateRef.current;
@@ -1148,6 +1158,34 @@ export const ValenceOrb = memo(function ValenceOrb({
     let cancelWebGLUpgrade = () => {};
     let webglUpgradeStarted = false;
     let webglUpgradePendingUntilVisible = false;
+    let forceWebGLFirstFrameTimeoutId = 0;
+    const recoverForcedWebGLFirstFrame = () => {
+      if (
+        !forceCanonicalWebGL ||
+        forceWebGLStartupRecovered ||
+        visualReadyRef.current ||
+        webglUpgradeAbort.signal.aborted ||
+        !mountedRef.current
+      ) {
+        return;
+      }
+
+      forceWebGLStartupRecovered = true;
+      webglUpgradeAbort.abort();
+      cancelWebGLUpgrade();
+      webglWorker?.terminate();
+      webglWorker = null;
+      workerRendererRef.current?.dispose();
+      workerRendererRef.current = null;
+      glRendererRef.current?.dispose();
+      glRendererRef.current = null;
+
+      recordError(
+        new Error('Canonical WebGL first frame timed out — degraded to Canvas 2D'),
+        { component: 'ValenceOrb', action: 'forced-webgl-first-frame-timeout' },
+      );
+      degradeToCanvas2D();
+    };
     const startWebGLUpgradeWhenVisible = () => {
       if (webglUpgradeAbort.signal.aborted || webglUpgradeStarted) return;
 
@@ -1178,6 +1216,7 @@ export const ValenceOrb = memo(function ValenceOrb({
     // ── Cleanup ──
     const cleanup = () => {
       webglUpgradeAbort.abort();
+      window.clearTimeout(forceWebGLFirstFrameTimeoutId);
       cancelWebGLUpgrade();
       cancelAnimationFrame(rafRef.current);
       upgradeVisibilityObserver?.disconnect();
@@ -1216,6 +1255,12 @@ export const ValenceOrb = memo(function ValenceOrb({
         forceCanonicalWebGL,
         size,
       );
+      if (forceCanonicalWebGL) {
+        forceWebGLFirstFrameTimeoutId = window.setTimeout(
+          recoverForcedWebGLFirstFrame,
+          WEBGL_FORCED_FIRST_FRAME_TIMEOUT_MS,
+        );
+      }
       cancelWebGLUpgrade = scheduleAfterFirstPaint(() => {
         startWebGLUpgradeWhenVisible();
       }, {
