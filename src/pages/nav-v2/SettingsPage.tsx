@@ -1,12 +1,14 @@
-import { memo, useEffect, useMemo, useRef } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Bell,
   DatabaseBackup,
   Globe2,
   Info,
+  LayoutGrid,
   Palette,
   ShieldCheck,
   SlidersHorizontal,
+  UserRound,
   type LucideIcon,
 } from "lucide-react";
 import { Bloom } from "@/lib/motion";
@@ -17,9 +19,31 @@ import { V2_NAV_ICONS } from "@/lib/v2IconSystem";
 import { ThemeToggleV2 } from "@/components/navigation-v2/ThemeToggleV2";
 import { DeviceSessionsCard } from "@/components/sync/DeviceSessionsCard";
 import { SyncHealthCard } from "@/components/sync/SyncHealthCard";
+import { SettingsPanel, type SettingsPanelProps } from "@/components/SettingsPanel";
 import { useThemeStore } from "@/stores/themeStore";
 import { cn } from "@/lib/utils";
 import { APP_VERSION } from "@/lib/appVersion";
+
+export type V2SettingsControls = Pick<
+  SettingsPanelProps,
+  | "userName"
+  | "onNameChange"
+  | "onResetData"
+  | "reminders"
+  | "onRemindersChange"
+  | "habits"
+  | "moods"
+  | "focusSessions"
+  | "gratitudeEntries"
+  | "privacy"
+  | "onPrivacyChange"
+  | "onOpenWidgetSettings"
+  | "initialOpenSection"
+>;
+
+interface SettingsPageProps {
+  controls?: V2SettingsControls;
+}
 
 interface SettingsSection {
   id: string;
@@ -29,10 +53,26 @@ interface SettingsSection {
   role: NonOrbVisualRole;
 }
 
-export const SettingsPage = memo(function SettingsPage() {
+const SETTINGS_PANEL_SECTION_BY_CARD: Record<string, string> = {
+  profile: "profile",
+  appearance: "profile",
+  language: "profile",
+  modules: "modules",
+  notifications: "notifications",
+  privacy: "security",
+  data: "data",
+  account: "account",
+  about: "about",
+};
+
+export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPageProps) {
   const { t } = useLanguage();
   const tx = t as unknown as Record<string, string>;
   const mainRef = useRef<HTMLElement>(null);
+  const controlDeckRef = useRef<HTMLElement>(null);
+  const [requestedSection, setRequestedSection] = useState<string | undefined>(
+    controls?.initialOpenSection,
+  );
   const appliedTheme = useThemeStore((s) => s.appliedTheme);
   const settingsTone = getRoleTone("settings");
   const SettingsIcon = V2_NAV_ICONS.settings;
@@ -41,9 +81,33 @@ export const SettingsPage = memo(function SettingsPage() {
     mainRef.current?.focus({ preventScroll: true });
   }, []);
 
+  const handleSectionOpen = useCallback((sectionId: string) => {
+    const targetSection = SETTINGS_PANEL_SECTION_BY_CARD[sectionId];
+    if (targetSection) {
+      setRequestedSection(targetSection);
+    }
+
+    if (controlDeckRef.current) {
+      const scrollToDeck = () =>
+        controlDeckRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      if (typeof window !== "undefined" && "requestAnimationFrame" in window) {
+        window.requestAnimationFrame(scrollToDeck);
+      } else {
+        scrollToDeck();
+      }
+    }
+  }, []);
+
   const themeLabel = appliedTheme === "paper" ? tx.themeLight : tx.themeDark;
   const sections = useMemo<SettingsSection[]>(
     () => [
+      {
+        id: "profile",
+        icon: UserRound,
+        label: tx.settingsGroupProfile || tx.profile || "Profile",
+        description: tx.yourName || "Name, language, and personal preferences.",
+        role: "settings",
+      },
       {
         id: "appearance",
         icon: Palette,
@@ -66,6 +130,13 @@ export const SettingsPage = memo(function SettingsPage() {
         role: "diary",
       },
       {
+        id: "modules",
+        icon: LayoutGrid,
+        label: tx.settingsGroupModules || "Modules",
+        description: tx.settingsModulesDescription || "Choose which ZenFlow tools stay visible.",
+        role: "space",
+      },
+      {
         id: "privacy",
         icon: ShieldCheck,
         label: tx.settingsGroupSecurity,
@@ -80,6 +151,13 @@ export const SettingsPage = memo(function SettingsPage() {
         role: "space",
       },
       {
+        id: "account",
+        icon: UserRound,
+        label: tx.settingsGroupAccount || tx.account || "Account",
+        description: tx.accountSettingsDesc || tx.settingsAccountDesc || "Account and reset controls.",
+        role: "focus",
+      },
+      {
         id: "about",
         icon: Info,
         label: tx.settingsGroupAbout,
@@ -90,16 +168,25 @@ export const SettingsPage = memo(function SettingsPage() {
     [
       themeLabel,
       tx.appearance,
+      tx.account,
+      tx.accountSettingsDesc,
       tx.language,
       tx.navV2Theme,
       tx.notifications,
+      tx.profile,
       tx.remindersDescription,
       tx.selectLanguage,
+      tx.settingsAccountDesc,
+      tx.settingsGroupAccount,
       tx.settingsExportDescription,
       tx.settingsGroupAbout,
+      tx.settingsGroupModules,
+      tx.settingsGroupProfile,
       tx.settingsGroupSecurity,
+      tx.settingsModulesDescription,
       tx.settingsSectionData,
       tx.settingsSecurityDesc,
+      tx.yourName,
     ],
   );
 
@@ -114,6 +201,7 @@ export const SettingsPage = memo(function SettingsPage() {
         aria-labelledby="settings-page-heading"
         data-testid="settings-page"
         data-visual-role="settings"
+        data-controls-wired={controls ? "true" : "false"}
       >
         <section
           className="relative overflow-hidden rounded-[2rem] border border-[hsl(var(--zf-role-settings)/0.24)] bg-[linear-gradient(145deg,hsl(var(--card)/0.92),hsl(var(--surface-elevated)/0.88)_52%,hsl(var(--zf-role-space)/0.08))] p-5 shadow-[var(--zen-shadow-soft)] backdrop-blur-xl md:p-7"
@@ -196,14 +284,20 @@ export const SettingsPage = memo(function SettingsPage() {
             const tone = getRoleTone(item.role);
             const Icon = item.icon;
             return (
-              <article
+              <button
+                type="button"
                 key={item.id}
+                onClick={() => handleSectionOpen(item.id)}
                 className={cn(
-                  "relative min-h-[116px] overflow-hidden rounded-3xl border bg-[hsl(var(--card)/0.76)] p-4 shadow-[var(--zen-shadow-card)]",
+                  "relative min-h-[116px] overflow-hidden rounded-3xl border bg-[hsl(var(--card)/0.76)] p-4 text-start shadow-[var(--zen-shadow-card)]",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--zf-role-settings)/0.52)] focus-visible:ring-offset-2",
+                  "motion-safe:transition-[transform,border-color,background-color,box-shadow] motion-safe:duration-200 hover:-translate-y-0.5 hover:bg-[hsl(var(--card)/0.88)]",
                   tone.borderClass,
                 )}
                 data-testid={`settings-section-${item.id}`}
                 data-visual-role={item.role}
+                aria-controls={controls ? "settings-v2-control-deck" : undefined}
+                aria-label={`${item.label}: ${item.description}`}
               >
                 <span
                   aria-hidden="true"
@@ -227,10 +321,28 @@ export const SettingsPage = memo(function SettingsPage() {
                     </span>
                   </span>
                 </div>
-              </article>
+              </button>
             );
           })}
         </section>
+
+        {controls && (
+          <section
+            ref={controlDeckRef}
+            id="settings-v2-control-deck"
+            className="scroll-mt-6"
+            aria-label={tx.settings || tx.navV2Settings}
+            data-testid="settings-page-control-deck"
+          >
+            <SettingsPanel
+              {...controls}
+              initialOpenSection={requestedSection || controls.initialOpenSection}
+              showHeading={false}
+              showSyncCards={false}
+              className="content-with-nav"
+            />
+          </section>
+        )}
       </main>
     </Bloom>
   );

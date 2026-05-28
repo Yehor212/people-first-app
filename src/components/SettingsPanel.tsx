@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Sparkles, Smartphone, ChevronRight, Download, CheckCircle } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePwaInstall } from "@/hooks/usePwaInstall";
-import {
+import type {
   Habit,
   ReminderSettings,
   PrivacySettings,
@@ -11,6 +11,7 @@ import {
   GratitudeEntry,
 } from "@/types";
 import { Accordion } from "@/components/ui/accordion";
+import { cn } from "@/lib/utils";
 import { DopamineSettingsComponent } from "@/components/DopamineSettings";
 import { FontScaleSettings } from "@/components/FontScaleSettings";
 import { DeviceSessionsCard } from "@/components/sync/DeviceSessionsCard";
@@ -26,7 +27,7 @@ import {
   WhatsNewBanner,
 } from "@/components/settings";
 
-interface SettingsPanelProps {
+export interface SettingsPanelProps {
   userName: string;
   onNameChange: (name: string) => void;
   onResetData: () => void;
@@ -42,6 +43,9 @@ interface SettingsPanelProps {
   onPrivacyChange: (value: PrivacySettings | ((prev: PrivacySettings) => PrivacySettings)) => void;
   onOpenWidgetSettings?: () => void;
   initialOpenSection?: string;
+  showHeading?: boolean;
+  showSyncCards?: boolean;
+  className?: string;
 }
 
 export function SettingsPanel({
@@ -58,6 +62,9 @@ export function SettingsPanel({
   onPrivacyChange,
   onOpenWidgetSettings,
   initialOpenSection,
+  showHeading = true,
+  showSyncCards = true,
+  className,
 }: SettingsPanelProps) {
   const { t } = useLanguage();
   const { canInstall, isInstalled, promptInstall } = usePwaInstall();
@@ -76,8 +83,13 @@ export function SettingsPanel({
   }, [initialOpenSection]);
 
   return (
-    <div className="space-y-4 motion-safe:animate-fade-in content-with-nav lg:max-w-3xl lg:mx-auto">
-      <h2 className="text-2xl font-bold text-foreground">{t.settings}</h2>
+    <div
+      className={cn(
+        "space-y-4 motion-safe:animate-fade-in content-with-nav lg:max-w-3xl lg:mx-auto",
+        className,
+      )}
+    >
+      {showHeading && <h2 className="text-2xl font-bold text-foreground">{t.settings}</h2>}
 
       {/* What's New Banner */}
       <WhatsNewBanner />
@@ -136,11 +148,15 @@ export function SettingsPanel({
         </button>
       )}
 
-      {/* Standalone: Sync health + offline outbox */}
-      <SyncHealthCard />
+      {showSyncCards && (
+        <>
+          {/* Standalone: Sync health + offline outbox */}
+          <SyncHealthCard />
 
-      {/* Standalone: Account devices */}
-      <DeviceSessionsCard />
+          {/* Standalone: Account devices */}
+          <DeviceSessionsCard />
+        </>
+      )}
 
       {/* Standalone: Font Scale */}
       <FontScaleSettings />

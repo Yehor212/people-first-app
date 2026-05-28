@@ -1,7 +1,7 @@
 import { lazy, Suspense, useMemo, useState } from "react";
 import { useDesignFlag } from "@/hooks/useDesignFlag";
 import { NavV2Orchestrator } from "@/components/navigation-v2/NavV2Orchestrator";
-import { useUserDataStore, useHydrateUserData } from "@/stores";
+import { getModalToggle, useUserDataStore, useHydrateUserData } from "@/stores";
 import { useAppLifecycle } from "@/hooks/useAppLifecycle";
 import { useDateTracking } from "@/hooks/useDateTracking";
 import { useAuthSession } from "@/hooks/useAuthSession";
@@ -9,6 +9,7 @@ import { useTelegramGradeSyncRuntime } from "@/hooks/useTelegramGradeSyncRuntime
 import { useChallengeHandlers } from "@/hooks/useChallengeHandlers";
 import { useMoodHandlers } from "@/hooks/useMoodHandlers";
 import { useGratitudeHandlers } from "@/hooks/useGratitudeHandlers";
+import { useSettingsHandlers } from "@/hooks/useSettingsHandlers";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { AuthGate } from "@/components/AuthGate";
 import { useThemeStore } from "@/stores/themeStore";
@@ -26,6 +27,7 @@ const DesktopDownloadPage = lazy(() =>
 
 const NAV_V2_ROUTE_PATHS = new Set(["/orb", "/habits", "/diary", "/settings"]);
 const PUBLIC_ROUTE_PATHS = new Set(["/desktop"]);
+const setShowWidgetSettings = getModalToggle("showWidgetSettings");
 
 interface NavV2ShellDecision {
   desktopRuntime: boolean;
@@ -125,9 +127,15 @@ function IndexV2Impl() {
   const habits = useUserDataStore((s) => s.habits);
   const focusSessions = useUserDataStore((s) => s.focusSessions);
   const gratitudeEntries = useUserDataStore((s) => s.gratitudeEntries);
+  const userName = useUserDataStore((s) => s.userName);
+  const reminders = useUserDataStore((s) => s.reminders);
+  const setReminders = useUserDataStore((s) => s.setReminders);
   const appliedTheme = useThemeStore((s) => s.appliedTheme);
   const isLoadingUserData = useUserDataStore((s) => s.isLoading);
   const privacy = useUserDataStore((s) => s.privacy);
+  const setPrivacy = useUserDataStore((s) => s.setPrivacy);
+  const emptyScheduleEvents = useMemo(() => [], []);
+  const { handleNameChange, handleResetData } = useSettingsHandlers(emptyScheduleEvents);
   const {
     world: innerWorld,
     isLoading: isLoadingInnerWorld,
@@ -160,6 +168,35 @@ function IndexV2Impl() {
     feedCreatures,
     updateChallengeProgress,
   });
+  const settingsControls = useMemo(
+    () => ({
+      userName,
+      onNameChange: handleNameChange,
+      onResetData: handleResetData,
+      reminders,
+      onRemindersChange: setReminders,
+      habits,
+      moods,
+      focusSessions,
+      gratitudeEntries,
+      privacy,
+      onPrivacyChange: setPrivacy,
+      onOpenWidgetSettings: () => setShowWidgetSettings(true),
+    }),
+    [
+      focusSessions,
+      gratitudeEntries,
+      habits,
+      handleNameChange,
+      handleResetData,
+      moods,
+      privacy,
+      reminders,
+      setPrivacy,
+      setReminders,
+      userName,
+    ],
+  );
 
   return (
     <>
@@ -171,7 +208,11 @@ function IndexV2Impl() {
           adConsent={canInitializeRewardedAds(privacy)}
           isPremium={false}
         >
-          <NavV2Orchestrator onAddMood={handleAddMood} onAddGratitude={handleAddGratitude} />
+          <NavV2Orchestrator
+            onAddMood={handleAddMood}
+            onAddGratitude={handleAddGratitude}
+            settingsControls={settingsControls}
+          />
         </AdProvider>
       </AuthGate>
     </>

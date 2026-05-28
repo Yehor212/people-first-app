@@ -11,6 +11,7 @@ import { NotFoundPage } from "@/components/NotFoundPage";
 import { SidebarV2 } from "./SidebarV2";
 import { DrawerV2 } from "./DrawerV2";
 import type { GratitudeEntry, MoodEntry } from "@/types";
+import type { V2SettingsControls } from "@/pages/nav-v2/SettingsPage";
 
 const CommandPalette = lazy(() => import("@/components/desktop/CommandPalette"));
 const OrbPage = lazy(() => import("@/pages/nav-v2/OrbPage").then((m) => ({ default: m.OrbPage })));
@@ -43,6 +44,7 @@ const SettingsPage = lazy(() =>
 interface NavV2OrchestratorProps {
   onAddMood?: (entry: MoodEntry) => void;
   onAddGratitude?: (entry: GratitudeEntry) => void;
+  settingsControls?: V2SettingsControls;
 }
 
 function shouldForceWebNavigation(): boolean {
@@ -61,6 +63,7 @@ function shouldForceWebNavigation(): boolean {
 export const NavV2Orchestrator = memo(function NavV2Orchestrator({
   onAddMood,
   onAddGratitude,
+  settingsControls,
 }: NavV2OrchestratorProps) {
   const { t } = useLanguage();
   const tx = t as unknown as Record<string, string>;
@@ -152,7 +155,7 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
         onAddGratitude={onAddGratitude}
       />
     ) : (
-      <SettingsPage />
+      <SettingsPage controls={settingsControls} />
     );
 
   return (

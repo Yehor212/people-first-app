@@ -1,5 +1,5 @@
 import type React from "react";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { SettingsPage } from "../SettingsPage";
 
@@ -13,6 +13,10 @@ vi.mock("@/contexts/LanguageContext", () => ({
       themeDark: "Dark",
       theme: "Theme",
       appearance: "Appearance",
+      settingsGroupProfile: "Profile",
+      yourName: "Your name",
+      settingsGroupModules: "Modules",
+      settingsModulesDescription: "Choose modules.",
       notifications: "Notifications",
       remindersDescription: "Reminder controls.",
       language: "Language",
@@ -22,6 +26,8 @@ vi.mock("@/contexts/LanguageContext", () => ({
       settingsSecurityDesc: "Protect your space.",
       settingsSectionData: "Data",
       settingsExportDescription: "Backup and export.",
+      settingsGroupAccount: "Account",
+      settingsAccountDesc: "Account controls.",
       settingsGroupAbout: "About",
     },
   }),
@@ -56,6 +62,57 @@ vi.mock("@/stores/themeStore", () => ({
     selector({ appliedTheme: "paper" }),
 }));
 
+vi.mock("@/components/SettingsPanel", () => ({
+  SettingsPanel: ({
+    userName,
+    initialOpenSection,
+    showHeading,
+    showSyncCards,
+  }: {
+    userName: string;
+    initialOpenSection?: string;
+    showHeading?: boolean;
+    showSyncCards?: boolean;
+  }) => (
+    <section
+      data-testid="settings-panel"
+      data-user-name={userName}
+      data-open-section={initialOpenSection || ""}
+      data-show-heading={showHeading ? "true" : "false"}
+      data-show-sync-cards={showSyncCards ? "true" : "false"}
+    >
+      Settings controls
+    </section>
+  ),
+}));
+
+function createSettingsControls() {
+  return {
+    userName: "Avery",
+    onNameChange: vi.fn(),
+    onResetData: vi.fn(),
+    reminders: {
+      enabled: true,
+      moodTimeMorning: "09:00",
+      moodTimeAfternoon: "14:00",
+      moodTimeEvening: "20:00",
+      habitTime: "08:00",
+      focusTime: "10:00",
+      days: [1, 2, 3, 4, 5],
+      quietHours: { start: "22:00", end: "07:00" },
+      habitIds: [],
+    },
+    onRemindersChange: vi.fn(),
+    habits: [],
+    moods: [],
+    focusSessions: [],
+    gratitudeEntries: [],
+    privacy: { noTracking: false, analytics: false, consentShown: true },
+    onPrivacyChange: vi.fn(),
+    onOpenWidgetSettings: vi.fn(),
+  };
+}
+
 describe("SettingsPage", () => {
   it("renders a paper-native V2 settings control surface", () => {
     render(<SettingsPage />);
@@ -80,5 +137,24 @@ describe("SettingsPage", () => {
       "data-visual-role",
       "rest",
     );
+    expect(screen.getByTestId("settings-page")).toHaveAttribute("data-controls-wired", "false");
+  });
+
+  it("wires the real SettingsPanel control deck when V2 receives settings controls", () => {
+    render(<SettingsPage controls={createSettingsControls()} />);
+
+    expect(screen.getByTestId("settings-page")).toHaveAttribute("data-controls-wired", "true");
+    expect(screen.getByTestId("settings-page-control-deck")).toBeInTheDocument();
+    expect(screen.getByTestId("settings-panel")).toHaveAttribute("data-user-name", "Avery");
+    expect(screen.getByTestId("settings-panel")).toHaveAttribute("data-show-heading", "false");
+    expect(screen.getByTestId("settings-panel")).toHaveAttribute("data-show-sync-cards", "false");
+  });
+
+  it("opens the matching real settings section from the V2 section cards", () => {
+    render(<SettingsPage controls={createSettingsControls()} />);
+
+    fireEvent.click(screen.getByTestId("settings-section-data"));
+
+    expect(screen.getByTestId("settings-panel")).toHaveAttribute("data-open-section", "data");
   });
 });
