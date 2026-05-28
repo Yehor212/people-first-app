@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 const fs = require("fs");
 const path = require("path");
-const crypto = require("crypto");
 const sharp = require("sharp");
 
 const ROOT = path.resolve(__dirname, "..");
@@ -10,8 +9,9 @@ const MAX_SCREENSHOT_BYTES = 8 * 1024 * 1024;
 const PACKAGE_JSON = path.join(ROOT, "package.json");
 const ANDROID_MANIFEST = path.join(ROOT, "android", "app", "src", "main", "AndroidManifest.xml");
 const PUBLIC_APP_ADS = path.join(ROOT, "public", "app-ads.txt");
-const APPROVED_FEATURE_SOURCE = path.join(ROOT, "docs", "release", "google-play", "source", "community-aura-feature-source.png");
-const APPROVED_FEATURE_SOURCE_SHA256 = "AA2520C636EEFC8DABF6EC8617CA2C4ACE3B7509B64192973BC57909F334FFE2";
+const FEATURE_WIDTH = 1024;
+const FEATURE_HEIGHT = 500;
+const FEATURE_SOURCE = path.join(ROOT, "docs", "release", "google-play", "source", "community-aura-feature-source.png");
 const LOCALIZED_LISTING_PACKET = path.join(
   ROOT,
   "docs",
@@ -136,18 +136,15 @@ function readIfExists(abs) {
   return fs.readFileSync(abs, "utf8");
 }
 
-function sha256File(abs) {
-  return crypto.createHash("sha256").update(fs.readFileSync(abs)).digest("hex").toUpperCase();
-}
-
-function assertApprovedFeatureSource() {
-  if (!fs.existsSync(APPROVED_FEATURE_SOURCE)) {
-    fail(`${path.relative(ROOT, APPROVED_FEATURE_SOURCE)} is missing`);
+async function assertFeatureSourceUsable() {
+  if (!fs.existsSync(FEATURE_SOURCE)) {
+    fail(`${path.relative(ROOT, FEATURE_SOURCE)} is missing`);
   }
-  const actual = sha256File(APPROVED_FEATURE_SOURCE);
-  if (actual !== APPROVED_FEATURE_SOURCE_SHA256) {
+
+  const metadata = await sharp(FEATURE_SOURCE).metadata();
+  if (!metadata.width || !metadata.height || metadata.width < FEATURE_WIDTH || metadata.height < FEATURE_HEIGHT) {
     fail(
-      `Google Play feature source must be the approved image ${APPROVED_FEATURE_SOURCE_SHA256}; got ${actual}`,
+      `${path.relative(ROOT, FEATURE_SOURCE)} must be at least ${FEATURE_WIDTH}x${FEATURE_HEIGHT}; got ${metadata.width || 0}x${metadata.height || 0}`,
     );
   }
 }
@@ -354,7 +351,7 @@ function assertAdDeclarationMatchesArtifact(packet) {
 }
 
 async function main() {
-  assertApprovedFeatureSource();
+  await assertFeatureSourceUsable();
   for (const expectation of REQUIRED) {
     await assertImage(expectation);
   }

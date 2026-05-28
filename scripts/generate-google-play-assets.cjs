@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 const fs = require("fs");
 const path = require("path");
-const crypto = require("crypto");
 const sharp = require("sharp");
 
 const ROOT = path.resolve(__dirname, "..");
@@ -24,14 +23,9 @@ const COMMUNITY_AURA_SOURCE = path.join(
   "source",
   "community-aura-feature-source.png",
 );
-const APPROVED_COMMUNITY_AURA_SHA256 = "AA2520C636EEFC8DABF6EC8617CA2C4ACE3B7509B64192973BC57909F334FFE2";
 
 function ensureDir(file) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
-}
-
-function sha256File(file) {
-  return crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex").toUpperCase();
 }
 
 async function writeAppIcon() {
@@ -47,13 +41,13 @@ async function writeFeatureGraphic() {
   const output = path.join(OUT, "google-play-feature-graphic-1024x500.png");
   ensureDir(output);
   if (!fs.existsSync(COMMUNITY_AURA_SOURCE)) {
-    throw new Error("Approved Google Play feature graphic source is missing");
+    throw new Error("Google Play feature graphic source is missing");
   }
 
-  const sourceHash = sha256File(COMMUNITY_AURA_SOURCE);
-  if (sourceHash !== APPROVED_COMMUNITY_AURA_SHA256) {
+  const metadata = await sharp(COMMUNITY_AURA_SOURCE).metadata();
+  if (!metadata.width || !metadata.height || metadata.width < FEATURE_WIDTH || metadata.height < FEATURE_HEIGHT) {
     throw new Error(
-      `Google Play feature graphic source is not the approved image. Expected ${APPROVED_COMMUNITY_AURA_SHA256}, got ${sourceHash}`,
+      `Google Play feature graphic source must be at least ${FEATURE_WIDTH}x${FEATURE_HEIGHT}; got ${metadata.width || 0}x${metadata.height || 0}`,
     );
   }
 

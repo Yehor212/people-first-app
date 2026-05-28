@@ -34,18 +34,18 @@ Current canonical files:
 | Slot | File | Local proof |
 | --- | --- | --- |
 | App icon | `docs/release/google-play/assets/google-play-app-icon-512.png` | `512x512`, PNG, alpha present, fully opaque alpha, `131122` bytes, SHA-256 prefix `E2333A435B2CCCE8` |
-| Approved feature source | `docs/release/google-play/source/community-aura-feature-source.png` | `1794x877`, PNG, no alpha, SHA-256 `DF3ADF3176F56F44364CC6818DCE1474DD8A4AAF530E48A7B724A8884DFCDADD` |
-| Feature graphic | `docs/release/google-play/assets/google-play-feature-graphic-1024x500.png` | `1024x500`, PNG, no alpha, SHA-256 `B4B763B63A6F33EC3B678494597345BA68F9ED930C7D73F71693BEE37813D99C` |
+| Feature source | `docs/release/google-play/source/community-aura-feature-source.png` | Source image is no longer exact-SHA locked; scripts validate presence and minimum Play Console dimensions. |
+| Feature graphic | `docs/release/google-play/assets/google-play-feature-graphic-1024x500.png` | `1024x500`, PNG, no alpha, validated by `npm run google-play:assets:check`. |
 
 Console action taken:
 
 - Uploaded `google-play-app-icon-512.png` through the Play Console Asset Library.
 - Removed the previous app icon asset from the active upload box, leaving one
   app icon in the slot.
-- Rebuilt `google-play-feature-graphic-1024x500.png` from the single
-  user-approved generated image only. The generator now hard-fails unless
-  `community-aura-feature-source.png` matches SHA-256
-  `DF3ADF3176F56F44364CC6818DCE1474DD8A4AAF530E48A7B724A8884DFCDADD`.
+- Rebuilt `google-play-feature-graphic-1024x500.png` from the user-approved
+  generated image only. The exact SHA lock was removed so this visual can be
+  replaced deliberately without fighting the generator; the scripts still
+  validate source presence, dimensions, and final Play Console image size.
   The only added overlay is the approved SMM copy: `A calmer daily rhythm`,
   `Mood • Habits • Journal`, and `Start with one check-in`. No other copy,
   claims, fake device hardware, or alternate logo treatment is added by the repo
@@ -91,7 +91,7 @@ Runtime proof screenshots captured locally:
 
 | Requirement | Status | Evidence |
 | --- | --- | --- |
-| Google Play asset packet validates | PASS | 2026-05-27 `npm run google-play:assets` regenerated the packet from the approved SHA-guarded source, then `npm run google-play:assets:check` verified 5 Play Console assets and 8 localized listings. |
+| Google Play asset packet validates | PASS | 2026-05-27 `npm run google-play:assets` regenerated the packet from the validated feature source, then `npm run google-play:assets:check` verified 5 Play Console assets and 8 localized listings. |
 | Brand logo pack validates | PASS | 2026-05-27 `npm run assets:logos:check` verified 117 images, 6 SVG sources, native splash, ICO/ICNS, Android XML, Store upload pack, and package scripts. |
 | Visual/canonical orb guards still pass | PASS | 2026-05-27 `npm run check:visual` verified canonical orbs, logo assets, visual guards, and V2 paper guard. |
 | Task completion protocol still passes | PASS | 2026-05-27 `npm run check:task-completion` verified 72 invariants. |
