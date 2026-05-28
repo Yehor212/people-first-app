@@ -34,7 +34,7 @@ Current canonical files:
 | Slot | File | Local proof |
 | --- | --- | --- |
 | App icon | `docs/release/google-play/assets/google-play-app-icon-512.png` | `512x512`, PNG, alpha present, fully opaque alpha, `131122` bytes, SHA-256 prefix `E2333A435B2CCCE8` |
-| Feature source | `docs/release/google-play/source/community-aura-feature-source.png` | Source image is not hash-pinned; scripts validate presence and minimum Play Console dimensions. |
+| Feature source | `docs/release/google-play/source/community-aura-feature-source.png` | Replaceable user-approved source; scripts validate presence and minimum Play Console dimensions, not a fixed content hash. |
 | Feature graphic | `docs/release/google-play/assets/google-play-feature-graphic-1024x500.png` | `1024x500`, PNG, no alpha, validated by `npm run google-play:assets:check`. |
 
 Console action taken:
@@ -82,7 +82,7 @@ Runtime proof screenshots captured locally:
 | Default store listing short description matches V2 ads draft | PASS | Re-opened `main-store-listing`; field value was `Turn feelings into rhythm with mood, habits, and a private journal.` |
 | Default store listing full description has no stale no-ads claim | PASS | Re-opened `main-store-listing`; field value ends with the current optional rewarded ads disclosure and contains no stale no-ads wording. |
 | Store listing app icon uses current ZenFlow leaf packet | PASS | Saved Play Console slot shows the single current high-quality ZenFlow leaf app icon after upload/removal flow. |
-| Store listing feature graphic uses the approved Community Aura source | PASS | Saved Play Console slot shows the single current `google-play-feature-graphic-1024x500.png` visual as `1 of 1`, with no extra image count error. Fresh screenshot proof: `tmp/play-console-approved-feature-proof.png`. |
+| Store listing feature graphic uses the current approved source | PASS | Saved Play Console slot shows the single current `google-play-feature-graphic-1024x500.png` visual as `1 of 1`, with no extra image count error. Fresh screenshot proof: `tmp/play-console-approved-feature-proof.png`. |
 | Ads declaration is aligned with V2 AdMob draft | PASS | Play Console Ads section was previously set to Ads = Yes for the V2 draft path. |
 | Advertising ID declaration is aligned with Android artifact | PASS | Play Console Advertising ID section was previously set to Yes for analytics and ads/marketing. |
 | Data Safety has a draft change ready for review | PASS | Publishing overview previously listed Data Safety among unsubmitted draft changes. |
@@ -113,6 +113,7 @@ production monetization blockers.
 
 Google Play Console is now corrected for the V2 draft store listing surfaces:
 the active default listing uses the current high-quality ZenFlow app icon, the
-single approved Community Aura feature graphic, and the current SMM/ASO-safe
-short/full English description. Final certification/review remains
-intentionally unsubmitted.
+current user-approved feature graphic, and the current SMM/ASO-safe short/full
+English description. The feature graphic is not content-hash locked and may be
+replaced deliberately when a better user-approved source is chosen. Final
+certification/review remains intentionally unsubmitted.

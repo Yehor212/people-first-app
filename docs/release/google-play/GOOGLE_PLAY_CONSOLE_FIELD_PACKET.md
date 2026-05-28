@@ -80,14 +80,17 @@ Feature graphic:
 docs/release/google-play/assets/google-play-feature-graphic-1024x500.png
 ```
 
-Use the generated Community Aura feature graphic as the main product key visual.
+Use the current user-approved feature graphic as the main product key visual.
 The editable source is
 `docs/release/google-play/source/community-aura-feature-source.png`.
 Do not pin this image to a content hash: the source is allowed to be
 replaced deliberately when the user approves a better version, and the release
 checks validate the dimensions and exported Play Console file instead.
-The current source file contains the Community Aura image with the three
-placeholder fields filled:
+The current source file is intentionally replaceable. When the user approves a
+new visual, replace this source file, regenerate the 1024x500 Play asset, and
+rerun the Google Play asset checks. The repo must not preserve a stale
+feature-graphic variant by hash, renderer script, or wording. The current source
+file should keep any marketing copy short and Play-safe, for example:
 
 ```text
 A calmer daily rhythm
@@ -95,10 +98,9 @@ Mood • Habits • Journal
 Start with one check-in
 ```
 
-The release asset must be only a 1024x500 crop/resize of that approved source.
-Do not add other copy, claims, ratings, fake device hardware, a hand-drawn logo
-variant, or an unreviewed screenshot collage. Screenshots are uploaded
-separately below.
+The release asset must be generated directly from the current approved source.
+Do not add claims, ratings, fake device hardware, a hand-drawn logo variant, or
+an unreviewed screenshot collage. Screenshots are uploaded separately below.
 
 Desktop screenshots:
 
