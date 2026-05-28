@@ -69,6 +69,6 @@
     @com.getcapacitor.PluginMethod public <methods>;
 }
 
-# AdMob
+# Google Mobile Ads / AdMob release path
 -keep class com.google.android.gms.ads.** { *; }
 -keep class com.google.ads.** { *; }

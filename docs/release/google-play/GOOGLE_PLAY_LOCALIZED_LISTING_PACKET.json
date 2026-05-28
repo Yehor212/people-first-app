@@ -1,0 +1,143 @@
+{
+  "schemaVersion": 2,
+  "releasePolicy": {
+    "draftOnly": true,
+    "packageName": "com.zenflow.app",
+    "appName": "ZenFlow",
+    "ads": "Yes",
+    "advertisingId": "Yes",
+    "privacyPolicyUrl": "https://yehor212.github.io/people-first-app/privacy.html",
+    "adModel": "Optional rewarded ads only; no banners, no pop-ups, no interstitials during mood checks or journaling."
+  },
+  "sharedAssets": {
+    "appIcon": "docs/release/google-play/assets/google-play-app-icon-512.png",
+    "featureGraphic": "docs/release/google-play/assets/google-play-feature-graphic-1024x500.png",
+    "screenshots": [
+      "docs/release/google-play/screenshots/desktop/01-v2-orb-desktop.png",
+      "docs/release/google-play/screenshots/desktop/02-v2-habits-desktop.png",
+      "docs/release/google-play/screenshots/desktop/03-v2-diary-desktop.png"
+    ]
+  },
+  "locales": {
+    "en-US": {
+      "languageName": "English (United States)",
+      "appName": "ZenFlow",
+      "shortDescription": "Turn feelings into rhythm with mood, habits, and a private journal.",
+      "fullDescription": "ZenFlow helps you turn a noisy day into a calmer daily rhythm.\n\nStart with a quick mood check-in, keep meaningful habits in sight, and write private journal notes without opening a crowded dashboard. The experience is designed to feel fast, focused, and gentle: one place to notice how you feel, remember what matters, and come back tomorrow with less friction.\n\nWhy people use ZenFlow:\n- Check in with your mood in seconds\n- Keep daily habits visible and easy to return to\n- Write private reflections without social pressure\n- Continue across supported web and app surfaces\n- Use a calm interface built for daily repetition\n\nZenFlow may offer optional rewarded ads for small in-app bonuses after consent. Ads are not shown inside mood check-ins, active focus sessions, or journaling moments.",
+      "featureBullets": [
+        "Fast mood check-ins for the moment you are in",
+        "Habit tracking that keeps routines visible",
+        "Private journaling without social pressure",
+        "Optional rewarded bonuses after consent",
+        "A calm daily interface built for return use"
+      ],
+      "whatsNew": "Initial Android release with ZenFlow V2: mood flow, habits, private journal, refreshed brand assets, and optional rewarded ads support."
+    },
+    "uk-UA": {
+      "languageName": "Ukrainian",
+      "appName": "ZenFlow",
+      "shortDescription": "Настрій, звички й приватний щоденник у спокійному щоденному ритмі.",
+      "fullDescription": "ZenFlow — спокійний щоденний простір для настрою, звичок і приватних записів.\n\nПочинайте з короткої перевірки настрою, тримайте звички під рукою та записуйте думки без перевантаженого інтерфейсу. ZenFlow створено для щоденного використання: швидкий старт, зрозуміла навігація, м'які візуальні деталі, локальне збереження даних і опційна синхронізація з акаунтом.\n\nЩо можна робити:\n- Фіксувати настрій за кілька секунд\n- Будувати й переглядати щоденні звички\n- Вести приватний щоденник для рефлексії\n- Продовжувати роботу на підтримуваних web і app поверхнях\n- Користуватися спокійним інтерфейсом без тиску\n\nZenFlow може пропонувати необов'язкову rewarded-рекламу для невеликих бонусів після згоди. Реклама не показується під час перевірки настрою, активного фокусу чи записів у щоденнику.",
+      "featureBullets": [
+        "Швидка візуальна перевірка настрою",
+        "Звички для повторюваних рутин",
+        "Приватний щоденник для рефлексії",
+        "Бонуси за рекламу лише після згоди",
+        "Спокійний інтерфейс на щодень"
+      ],
+      "whatsNew": "Перший Android-реліз із ZenFlow V2: настрій, звички, щоденник, оновлені бренд-матеріали та optional rewarded ads."
+    },
+    "es-ES": {
+      "languageName": "Spanish (Spain)",
+      "appName": "ZenFlow",
+      "shortDescription": "Ánimo, hábitos y diario privado en un flujo diario tranquilo.",
+      "fullDescription": "ZenFlow es un compañero diario tranquilo para registrar tu estado de ánimo, cuidar tus hábitos y escribir un diario privado.\n\nEmpieza con una revisión rápida de cómo te sientes, mantén tus hábitos diarios visibles y escribe entradas privadas sin convertir tu día en un panel saturado. ZenFlow está pensado para el uso diario: apertura rápida, navegación clara, visuales suaves, almacenamiento local y sincronización opcional con cuenta.\n\nQué puedes hacer:\n- Registrar tu estado de ánimo en segundos\n- Crear y revisar hábitos diarios\n- Mantener un diario privado para reflexionar\n- Continuar en superficies web y app compatibles\n- Usar una interfaz enfocada en claridad, no presión\n\nZenFlow puede ofrecer anuncios recompensados opcionales para pequeños bonus dentro de la app después del consentimiento. No aparecen durante los registros de ánimo, sesiones de enfoque activas ni escritura del diario.",
+      "featureBullets": [
+        "Registro visual del estado de ánimo",
+        "Seguimiento de hábitos repetibles",
+        "Diario privado para reflexión",
+        "Bonus opcionales tras consentimiento",
+        "Interfaz tranquila para uso diario"
+      ],
+      "whatsNew": "Primer lanzamiento Android con ZenFlow V2, ánimo, hábitos, diario, marca renovada y soporte para anuncios recompensados opcionales."
+    },
+    "de-DE": {
+      "languageName": "German",
+      "appName": "ZenFlow",
+      "shortDescription": "Stimmung, Gewohnheiten und privates Tagebuch in einem ruhigen Tagesfluss.",
+      "fullDescription": "ZenFlow ist ein ruhiger täglicher Begleiter für Stimmung, Gewohnheiten und private Journaleinträge.\n\nBeginne mit einem schnellen Stimmungs-Check-in, behalte tägliche Gewohnheiten im Blick und schreibe private Notizen, ohne deinen Tag in ein überladenes Dashboard zu verwandeln. ZenFlow ist für tägliche Nutzung gebaut: schneller Start, klare Navigation, sanfte visuelle Details, lokale Datenspeicherung und optionale Konto-Synchronisierung.\n\nWas du tun kannst:\n- Deine Stimmung in Sekunden festhalten\n- Tägliche Gewohnheiten aufbauen und prüfen\n- Ein privates Journal zur Reflexion führen\n- Auf unterstützten Web- und App-Oberflächen weitermachen\n- Eine ruhige Oberfläche nutzen, die Klarheit statt Druck bietet\n\nZenFlow kann nach Zustimmung optionale Rewarded Ads für kleine In-App-Boni anbieten. Sie erscheinen nicht während Stimmungs-Check-ins, aktiver Fokus-Sessions oder beim Schreiben im Journal.",
+      "featureBullets": [
+        "Visuelle Stimmungs-Check-ins",
+        "Gewohnheiten für tägliche Routinen",
+        "Privates Journal zur Reflexion",
+        "Optionale Boni nach Zustimmung",
+        "Ruhige Oberfläche für den Alltag"
+      ],
+      "whatsNew": "Erster Android-Release mit ZenFlow V2, Stimmung, Gewohnheiten, Journal, neuen Markenassets und optionalen Rewarded Ads."
+    },
+    "fr-FR": {
+      "languageName": "French",
+      "appName": "ZenFlow",
+      "shortDescription": "Humeur, habitudes et journal privé dans un rituel quotidien calme.",
+      "fullDescription": "ZenFlow est un compagnon quotidien calme pour suivre l'humeur, construire des habitudes et tenir un journal privé.\n\nCommencez par un rapide point d'humeur, gardez vos habitudes quotidiennes visibles et écrivez des notes privées sans transformer votre journée en tableau de bord bruyant. ZenFlow est conçu pour un usage régulier: ouverture rapide, navigation claire, visuels doux, stockage local et synchronisation de compte optionnelle.\n\nCe que vous pouvez faire:\n- Capturer votre humeur en quelques secondes\n- Créer et relire des habitudes quotidiennes\n- Tenir un journal privé pour la réflexion\n- Continuer sur les surfaces web et app compatibles\n- Utiliser une interface claire, sans pression\n\nZenFlow peut proposer des publicités récompensées optionnelles pour de petits bonus après consentement. Elles ne s'affichent pas pendant les points d'humeur, les sessions de concentration actives ou l'écriture du journal.",
+      "featureBullets": [
+        "Points d'humeur visuels",
+        "Suivi d'habitudes répétables",
+        "Journal privé pour réfléchir",
+        "Bonus optionnels après consentement",
+        "Interface calme au quotidien"
+      ],
+      "whatsNew": "Première version Android avec ZenFlow V2, humeur, habitudes, journal, marque actualisée et publicités récompensées optionnelles."
+    },
+    "ja-JP": {
+      "languageName": "Japanese",
+      "appName": "ZenFlow",
+      "shortDescription": "気分、習慣、プライベート日記を静かな毎日の流れで記録。",
+      "fullDescription": "ZenFlowは、気分の記録、習慣づくり、プライベート日記を落ち着いて続けるための毎日のコンパニオンです。\n\n短い気分チェックから始め、毎日の習慣を見やすく保ち、騒がしいダッシュボードにせず自分の言葉を残せます。ZenFlowは日々使いやすいように設計されています。すばやい起動、分かりやすいナビゲーション、やわらかなビジュアル、ローカル優先の保存、任意のアカウント同期を備えています。\n\nできること:\n- 数秒で気分を記録\n- 毎日の習慣を作成して振り返る\n- 気づきをプライベート日記に残す\n- 対応するWebとアプリ環境で続ける\n- 圧迫感のない、見通しのよい画面を使う\n\nZenFlowは、同意後に小さなアプリ内ボーナスのための任意のリワード広告を表示する場合があります。気分チェック中、集中セッション中、日記を書いている時間には表示されません。",
+      "featureBullets": [
+        "視覚的な気分チェックイン",
+        "続けやすい習慣トラッキング",
+        "振り返りのための私的な日記",
+        "同意後の任意リワード",
+        "毎日使いやすい静かな画面"
+      ],
+      "whatsNew": "ZenFlow V2、気分フロー、習慣、日記、更新されたブランド素材、任意のリワード広告対応を含む初回Androidリリースです。"
+    },
+    "ar-SA": {
+      "languageName": "Arabic",
+      "appName": "ZenFlow",
+      "shortDescription": "تتبع المزاج والعادات والمذكرات الخاصة في تدفق يومي هادئ.",
+      "fullDescription": "ZenFlow رفيق يومي هادئ لتتبع المزاج وبناء العادات وكتابة المذكرات الخاصة.\n\nابدأ بفحص سريع للمزاج، واجعل العادات اليومية واضحة أمامك، واكتب ملاحظاتك الخاصة دون تحويل يومك إلى لوحة مزدحمة. صمم ZenFlow للاستخدام اليومي المتكرر: فتح سريع، تنقل واضح، مؤثرات بصرية لطيفة، تخزين محلي، ومزامنة اختيارية مع الحساب.\n\nما يمكنك فعله:\n- تسجيل المزاج خلال ثوان\n- بناء العادات اليومية ومراجعتها\n- الاحتفاظ بمذكرة خاصة للتأمل\n- المتابعة عبر الويب والتطبيقات المدعومة\n- استخدام واجهة هادئة تركز على الوضوح لا الضغط\n\nقد يقدم ZenFlow إعلانات بمكافأة اختيارية للحصول على مكافآت صغيرة داخل التطبيق بعد الموافقة. لا تظهر أثناء تسجيل المزاج أو جلسات التركيز النشطة أو كتابة المذكرات.",
+      "featureBullets": [
+        "تسجيل بصري للمزاج",
+        "تتبع عادات قابلة للتكرار",
+        "مذكرة خاصة للتأمل",
+        "مكافآت اختيارية بعد الموافقة",
+        "واجهة هادئة للاستخدام اليومي"
+      ],
+      "whatsNew": "الإصدار الأول على Android مع ZenFlow V2 والمزاج والعادات والمذكرات والهوية الجديدة ودعم الإعلانات الاختيارية بمكافأة."
+    },
+    "he-IL": {
+      "languageName": "Hebrew",
+      "appName": "ZenFlow",
+      "shortDescription": "מעקב מצב רוח, הרגלים ויומן פרטי בשגרה יומית רגועה.",
+      "fullDescription": "ZenFlow הוא מרחב יומי רגוע למעקב אחר מצב רוח, בניית הרגלים וכתיבה ביומן פרטי.\n\nאפשר להתחיל בבדיקת מצב רוח קצרה, לשמור הרגלים יומיים במקום ברור, ולכתוב רשומות פרטיות בלי להפוך את היום ללוח עמוס. ZenFlow נבנה לשימוש יומי חוזר: פתיחה מהירה, ניווט ברור, מראה עדין, שמירה מקומית וסנכרון חשבון אופציונלי.\n\nמה אפשר לעשות:\n- לתעד מצב רוח בכמה שניות\n- לבנות ולבדוק הרגלים יומיים\n- לשמור יומן פרטי להתבוננות\n- להמשיך במשטחי web ואפליקציה נתמכים\n- להשתמש בממשק שקט וברור ללא לחץ\n\nZenFlow עשוי להציע פרסומות מתוגמלות אופציונליות לבונוסים קטנים בתוך האפליקציה לאחר הסכמה. הן לא מוצגות בזמן בדיקת מצב רוח, סשן מיקוד פעיל או כתיבה ביומן.",
+      "featureBullets": [
+        "בדיקות מצב רוח ויזואליות",
+        "מעקב הרגלים לשגרות חוזרות",
+        "יומן פרטי להתבוננות",
+        "בונוסים אופציונליים בהסכמה",
+        "ממשק רגוע לשימוש יומי"
+      ],
+      "whatsNew": "גרסת Android ראשונה עם ZenFlow V2, מצב רוח, הרגלים, יומן, נכסי מותג מעודכנים ותמיכה בפרסומות מתוגמלות אופציונליות."
+    }
+  },
+  "consoleDraftInstructions": [
+    "Open Store listings and add all locales listed in this packet.",
+    "Copy the matching locale text exactly; do not use mojibake text from docs/STORE_LISTING.md.",
+    "Upload the shared verified app icon and feature graphic for every locale unless Play Console inherits them from the default listing.",
+    "Set App content Ads to Yes and Advertising ID to Yes for the AdMob release path.",
+    "Save each locale as draft and capture proof screenshots.",
+    "Do not click Submit for certification during this draft-only pass."
+  ]
+}

@@ -6,30 +6,31 @@ verified files, not from ad hoc exports.
 
 ## Current Release Decision
 
-ZenFlow's current Android artifact must be submitted as **no ads**.
+ZenFlow's current Android path is an **ads-enabled draft** built around
+optional rewarded ads. Play Console must match the artifact:
 
-Evidence:
+- Ads declaration: `Yes`.
+- Advertising ID declaration: `Yes`.
+- Ad format: optional rewarded ads only.
+- No banners, no pop-ups, and no interstitials during mood checks, active focus,
+  or journaling.
+- User-facing ad initialization stays behind ZenFlow privacy consent and the
+  native Google UMP consent flow.
 
-- `package.json` does not install `@capacitor-community/admob`.
-- `android/app/src/main/AndroidManifest.xml` must not declare the AdMob app ID.
-- The built release manifest must not request
-  `com.google.android.gms.permission.AD_ID` or Android `ACCESS_ADSERVICES_*`
-  permissions.
-- `android/app/google-services.json` must not include `admob_app_id`.
-- `public/app-ads.txt` must not publish ad seller lines.
-- Rewarded ad UI remains dormant unless a future release adds the SDK, env IDs,
-  privacy consent, and Play Console ad/data declarations together.
+Evidence expected before production monetization:
 
-If a future release ships AdMob, make that a separate release task and update:
-
-- `package.json`
-- `android/app/src/main/AndroidManifest.xml`
-- Google Play App content: Ads
-- Google Play App content: Data safety / Advertising ID
-- `public/app-ads.txt`
-- `android/app/google-services.json`
-- `docs/AD_SYSTEM_JOURNEY.md`
-- `docs/release/google-play/GOOGLE_PLAY_CONSOLE_FIELD_PACKET.md`
+- `package.json` installs `@capacitor-community/admob`.
+- `android/app/src/main/AndroidManifest.xml` declares the AdMob app ID metadata.
+- The built release manifest requests
+  `com.google.android.gms.permission.AD_ID`.
+- The built release manifest may also include Android `ACCESS_ADSERVICES_*`
+  permissions contributed by Google Mobile Ads. Treat those as part of the same
+  ads-enabled declaration path.
+- `GOOGLE_PLAY_LOCALIZED_LISTING_PACKET.json` declares `ads=Yes` and
+  `advertisingId=Yes`.
+- Real AdMob app/ad unit IDs are configured outside the repo before publishing.
+- `public/app-ads.txt` should be added with the real AdMob publisher line before
+  production monetization. Do not add a fake publisher line.
 
 ## Generated Assets
 
@@ -47,6 +48,36 @@ Output:
 - `screenshots/desktop/01-v2-orb-desktop.png`
 - `screenshots/desktop/02-v2-habits-desktop.png`
 - `screenshots/desktop/03-v2-diary-desktop.png`
+
+The feature graphic is intentionally not a plain app-icon banner. It is the
+product-led key visual for the listing: canonical ZenFlow leaf mark from
+`public/icon-512.png`, a short emotional hook, mood/habit/journal pillars, a
+real V2 mood-flow product panel, and the mood-color path. It avoids fake device
+hardware frames and keeps screenshots as separate full-interface proof.
+
+## Localized Listing Packet
+
+Use `GOOGLE_PLAY_LOCALIZED_LISTING_PACKET.json` as the copy/paste source for
+Google Play Store listings. It intentionally does not reuse `docs/STORE_LISTING.md`
+for non-English copy because that older marketing draft contains mojibake text
+in several sections.
+
+Current required listing languages:
+
+- `en-US` English (United States)
+- `uk-UA` Ukrainian
+- `es-ES` Spanish (Spain)
+- `de-DE` German
+- `fr-FR` French
+- `ja-JP` Japanese
+- `ar-SA` Arabic
+- `he-IL` Hebrew
+
+The release check validates that every listing has a non-empty app name, short
+description, full description, feature bullets, and what's-new text within the
+Google Play field limits used by this release packet. It also verifies the
+packet remains draft-only and aligned with the current ads/Advertising-ID
+release decision.
 
 ## Official Google Requirements Used
 

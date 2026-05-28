@@ -225,12 +225,18 @@ N/A — the system is invisible when unavailable.
 - GDPR Article 7: separate consent for analytics and ads
 
 ### Current release status:
-- **Google Play release artifact ships with ads off.** `@capacitor-community/admob`
-  is not installed in `package.json`, so Android must not declare the AdMob app
-  ID or request `com.google.android.gms.permission.AD_ID`.
-- **Future rewarded ads require a single release change.** Install the SDK,
-  restore native declarations, update Play Console Ads/Data Safety, and rerun
-  the Google Play asset/declaration checks in the same release batch.
+- **Google Play draft is ads-enabled.** `@capacitor-community/admob` is
+  installed, Android declares the AdMob app ID metadata, and the release
+  manifest must request `com.google.android.gms.permission.AD_ID`.
+- **Play Console must match the artifact.** App content declarations for this
+  release path are `Ads = Yes` and `Advertising ID = Yes`.
+- **Production monetization still needs real external AdMob values.** The repo
+  accepts `VITE_ADMOB_APP_ID_ANDROID` and `VITE_ADMOB_REWARDED_ID_ANDROID`;
+  test IDs are allowed only for development builds. Add `public/app-ads.txt`
+  only after copying the real AdMob publisher line.
+- **User experience stays opt-in.** No banners, pop-ups, or interstitials are
+  allowed in mood check-ins, active focus, or journaling; rewarded ads initialize
+  only after ZenFlow privacy consent plus native Google consent.
 
 ### Security:
 - Ad unit IDs in env vars, not hardcoded (except test IDs as fallback)
@@ -348,15 +354,15 @@ Phase 2 would add a Supabase Edge Function for SSV verification.
 | `src/components/FocusTimer.tsx` | ✅ Modified | Added RewardedAdPrompt in reflection |
 | `src/i18n/translations.ts` | ✅ Modified | 4 keys × 9 languages |
 
-### Phase 3: Wire into App (TODO — when AdMob SDK installed)
-| Task | File |
-|---|---|
-| Install `@capacitor-community/admob` | `package.json` |
-| Wrap App with `<AdProvider>` | `src/pages/Index.tsx` or `App.tsx` |
-| Pass `earnTreats`/`awardXp` callbacks | `src/pages/Index.tsx` |
-| Feed current mood to `setCurrentMood()` | `src/pages/Index.tsx` |
-| Add companion low-treats prompt | `src/components/garden/CompanionCard.tsx` |
-| Add inline ad consent | New component |
+### Phase 3: Native App Wiring
+| Status | Task | File |
+|---|---|---|
+| DONE | Install `@capacitor-community/admob` | `package.json` |
+| DONE | Wrap V1/V2 app shells with `<AdProvider>` | `src/pages/IndexV1Impl.tsx`, `src/pages/Index.tsx` |
+| DONE | Pass `earnTreats`/`awardXp` callbacks | `src/pages/IndexV1Impl.tsx`, `src/pages/Index.tsx` |
+| TODO | Feed current mood to `setCurrentMood()` | `src/pages/Index.tsx` |
+| TODO | Add companion low-treats prompt | `src/components/garden/CompanionCard.tsx` |
+| TODO | Add inline ad consent | New component |
 
 ### Phase 4: Premium Tier (TODO)
 | Task | File |

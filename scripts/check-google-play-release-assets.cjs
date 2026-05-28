@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
 const sharp = require("sharp");
 
 const ROOT = path.resolve(__dirname, "..");
@@ -8,16 +9,19 @@ const MAX_APP_ICON_BYTES = 1024 * 1024;
 const MAX_SCREENSHOT_BYTES = 8 * 1024 * 1024;
 const PACKAGE_JSON = path.join(ROOT, "package.json");
 const ANDROID_MANIFEST = path.join(ROOT, "android", "app", "src", "main", "AndroidManifest.xml");
-const GOOGLE_SERVICES_JSON = path.join(ROOT, "android", "app", "google-services.json");
 const PUBLIC_APP_ADS = path.join(ROOT, "public", "app-ads.txt");
+const APPROVED_FEATURE_SOURCE = path.join(ROOT, "docs", "release", "google-play", "source", "community-aura-feature-source.png");
+const APPROVED_FEATURE_SOURCE_SHA256 = "AA2520C636EEFC8DABF6EC8617CA2C4ACE3B7509B64192973BC57909F334FFE2";
+const LOCALIZED_LISTING_PACKET = path.join(
+  ROOT,
+  "docs",
+  "release",
+  "google-play",
+  "GOOGLE_PLAY_LOCALIZED_LISTING_PACKET.json",
+);
 const ANDROID_BUILT_RELEASE_MANIFESTS = [
   path.join(ROOT, "android", "app", "build", "intermediates", "merged_manifest", "release", "processReleaseMainManifest", "AndroidManifest.xml"),
   path.join(ROOT, "android", "app", "build", "intermediates", "bundle_manifest", "release", "processApplicationManifestReleaseForBundle", "AndroidManifest.xml"),
-];
-
-const FORBIDDEN_NO_ADS_RUNTIME_MARKERS = [
-  "com.google.android.gms.ads.APPLICATION_ID",
-  "com.google.android.gms.ads.",
 ];
 
 const FORBIDDEN_NO_ADS_PERMISSION_MARKERS = [
@@ -26,6 +30,12 @@ const FORBIDDEN_NO_ADS_PERMISSION_MARKERS = [
   "android.permission.ACCESS_ADSERVICES_ATTRIBUTION",
   "android.permission.ACCESS_ADSERVICES_CUSTOM_AUDIENCE",
   "android.permission.ACCESS_ADSERVICES_TOPICS",
+];
+const REQUIRED_ADS_RUNTIME_MARKERS = [
+  "com.google.android.gms.ads.APPLICATION_ID",
+];
+const REQUIRED_ADS_PERMISSION_MARKERS = [
+  "com.google.android.gms.permission.AD_ID",
 ];
 
 const REQUIRED = [
@@ -56,6 +66,67 @@ const REQUIRED = [
   })),
 ];
 
+const REQUIRED_LOCALES = ["en-US", "uk-UA", "es-ES", "de-DE", "fr-FR", "ja-JP", "ar-SA", "he-IL"];
+const LISTING_LIMITS = {
+  appName: 30,
+  shortDescription: 80,
+  fullDescription: 4000,
+  whatsNew: 500,
+  featureBullet: 80,
+};
+const MOJIBAKE_MARKERS = [
+  "\uFFFD",
+  "Ã",
+  "Â",
+  "Ð",
+  "Ñ",
+  "Р°",
+  "Рµ",
+  "Рё",
+  "Рі",
+  "Рј",
+  "Рѕ",
+  "Рї",
+  "Рґ",
+  "Рє",
+  "Р»",
+  "Рќ",
+  "СЃ",
+  "С‚",
+  "СЂ",
+  "С–",
+  "СЊ",
+  "СЏ",
+  "С”",
+  "С€",
+  "ГЎ",
+  "Г©",
+  "Гі",
+  "Гј",
+  "Г¤",
+  "Г¶",
+  "ГЁ",
+  "Г§",
+  "гЃ",
+  "гЂ",
+  "г‚",
+  "гѓ",
+  "ж°",
+  "зї",
+  "иЁ",
+  "йќ",
+  "Ш§",
+  "ШЄ",
+  "Ш±",
+  "Щ„",
+  "Щ…",
+  "Чћ",
+  "Чў",
+  "Ч§",
+  "ЧЁ",
+  "Ч•",
+];
+
 function fail(message) {
   throw new Error(message);
 }
@@ -65,12 +136,114 @@ function readIfExists(abs) {
   return fs.readFileSync(abs, "utf8");
 }
 
+function sha256File(abs) {
+  return crypto.createHash("sha256").update(fs.readFileSync(abs)).digest("hex").toUpperCase();
+}
+
+function assertApprovedFeatureSource() {
+  if (!fs.existsSync(APPROVED_FEATURE_SOURCE)) {
+    fail(`${path.relative(ROOT, APPROVED_FEATURE_SOURCE)} is missing`);
+  }
+  const actual = sha256File(APPROVED_FEATURE_SOURCE);
+  if (actual !== APPROVED_FEATURE_SOURCE_SHA256) {
+    fail(
+      `Google Play feature source must be the approved image ${APPROVED_FEATURE_SOURCE_SHA256}; got ${actual}`,
+    );
+  }
+}
+
+function assertNoMojibake(value, label) {
+  for (const marker of MOJIBAKE_MARKERS) {
+    if (value.includes(marker)) {
+      fail(`${label} contains likely mojibake marker ${JSON.stringify(marker)}`);
+    }
+  }
+}
+
+function assertTextField(value, label, maxLength) {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    fail(`${label} must be a non-empty string`);
+  }
+  assertNoMojibake(value, label);
+  const length = Array.from(value).length;
+  if (length > maxLength) {
+    fail(`${label} exceeds ${maxLength} characters; got ${length}`);
+  }
+}
+
+function assertLocalizedListingPacket() {
+  if (!fs.existsSync(LOCALIZED_LISTING_PACKET)) {
+    fail(`${path.relative(ROOT, LOCALIZED_LISTING_PACKET)} is missing`);
+  }
+
+  const packet = JSON.parse(fs.readFileSync(LOCALIZED_LISTING_PACKET, "utf8"));
+  if (packet.releasePolicy?.draftOnly !== true) {
+    fail("Google Play localized listing packet must be draftOnly=true");
+  }
+  if (packet.releasePolicy?.packageName !== "com.zenflow.app") {
+    fail("Google Play localized listing packet must target com.zenflow.app");
+  }
+  if (packet.releasePolicy?.ads !== "Yes" || packet.releasePolicy?.advertisingId !== "Yes") {
+    fail("Google Play localized listing packet must match the current ads/Advertising-ID release");
+  }
+
+  const assetPaths = [
+    packet.sharedAssets?.appIcon,
+    packet.sharedAssets?.featureGraphic,
+    ...(packet.sharedAssets?.screenshots || []),
+  ];
+  for (const rel of assetPaths) {
+    if (typeof rel !== "string" || !rel) {
+      fail("Google Play localized listing packet contains an invalid shared asset path");
+    }
+    if (!fs.existsSync(path.join(ROOT, rel))) {
+      fail(`Google Play localized listing packet points at missing asset ${rel}`);
+    }
+  }
+
+  const locales = packet.locales || {};
+  const actualLocales = Object.keys(locales).sort();
+  const expectedLocales = [...REQUIRED_LOCALES].sort();
+  if (JSON.stringify(actualLocales) !== JSON.stringify(expectedLocales)) {
+    fail(`Google Play localized listing packet locales must be ${expectedLocales.join(", ")}; got ${actualLocales.join(", ")}`);
+  }
+
+  for (const locale of REQUIRED_LOCALES) {
+    const listing = locales[locale];
+    if (!listing || typeof listing !== "object") {
+      fail(`Google Play localized listing packet is missing ${locale}`);
+    }
+    assertTextField(listing.languageName, `${locale}.languageName`, 80);
+    assertTextField(listing.appName, `${locale}.appName`, LISTING_LIMITS.appName);
+    assertTextField(listing.shortDescription, `${locale}.shortDescription`, LISTING_LIMITS.shortDescription);
+    assertTextField(listing.fullDescription, `${locale}.fullDescription`, LISTING_LIMITS.fullDescription);
+    assertTextField(listing.whatsNew, `${locale}.whatsNew`, LISTING_LIMITS.whatsNew);
+    if (!Array.isArray(listing.featureBullets) || listing.featureBullets.length < 3 || listing.featureBullets.length > 5) {
+      fail(`${locale}.featureBullets must contain 3-5 items`);
+    }
+    listing.featureBullets.forEach((bullet, index) => {
+      assertTextField(bullet, `${locale}.featureBullets[${index}]`, LISTING_LIMITS.featureBullet);
+    });
+  }
+
+  return packet;
+}
+
 function hasPermissionRemoval(manifest, permission) {
   const tags = manifest.match(/<uses-permission\b[\s\S]*?\/?>/g) || [];
   return tags.some(
     (tag) =>
       (tag.includes(`android:name="${permission}"`) || tag.includes(`android:name='${permission}'`)) &&
       (tag.includes('tools:node="remove"') || tag.includes("tools:node='remove'")),
+  );
+}
+
+function hasPermissionDeclaration(manifest, permission) {
+  const tags = manifest.match(/<uses-permission\b[\s\S]*?\/?>/g) || [];
+  return tags.some(
+    (tag) =>
+      (tag.includes(`android:name="${permission}"`) || tag.includes(`android:name='${permission}'`)) &&
+      !(tag.includes('tools:node="remove"') || tag.includes("tools:node='remove'")),
   );
 }
 
@@ -120,7 +293,7 @@ async function assertImage(expectation) {
   }
 }
 
-function assertAdDeclarationMatchesArtifact() {
+function assertAdDeclarationMatchesArtifact(packet) {
   const packageJson = JSON.parse(fs.readFileSync(PACKAGE_JSON, "utf8"));
   const deps = {
     ...packageJson.dependencies,
@@ -128,8 +301,12 @@ function assertAdDeclarationMatchesArtifact() {
   };
   const hasAdMobDependency = Boolean(deps["@capacitor-community/admob"]);
 
-  if (hasAdMobDependency) {
-    fail("@capacitor-community/admob is installed, but this Google Play packet is declared as no ads");
+  if (packet.releasePolicy?.ads !== "Yes" || packet.releasePolicy?.advertisingId !== "Yes") {
+    fail("Google Play packet must declare Ads=Yes and Advertising ID=Yes for this AdMob release path");
+  }
+
+  if (!hasAdMobDependency) {
+    fail("@capacitor-community/admob must be installed for the current ads release path");
   }
 
   const sourceManifest = readIfExists(ANDROID_MANIFEST);
@@ -137,56 +314,53 @@ function assertAdDeclarationMatchesArtifact() {
     fail("android/app/src/main/AndroidManifest.xml is missing");
   }
 
-  for (const marker of FORBIDDEN_NO_ADS_RUNTIME_MARKERS) {
-    if (sourceManifest.includes(marker)) {
-      fail(`${path.relative(ROOT, ANDROID_MANIFEST)} contains ${marker}; no-ads release must not declare ad runtime metadata`);
+  for (const marker of REQUIRED_ADS_RUNTIME_MARKERS) {
+    if (!sourceManifest.includes(marker)) {
+      fail(`${path.relative(ROOT, ANDROID_MANIFEST)} must declare ${marker} for the AdMob release path`);
+    }
+  }
+
+  for (const permission of REQUIRED_ADS_PERMISSION_MARKERS) {
+    if (!hasPermissionDeclaration(sourceManifest, permission)) {
+      fail(`${path.relative(ROOT, ANDROID_MANIFEST)} must declare ${permission} for the current ads/Advertising-ID release`);
     }
   }
 
   for (const permission of FORBIDDEN_NO_ADS_PERMISSION_MARKERS) {
-    if (!hasPermissionRemoval(sourceManifest, permission)) {
-      fail(`${path.relative(ROOT, ANDROID_MANIFEST)} must remove ${permission} with tools:node="remove" for the current no-ads/no-Advertising-ID release`);
+    if (hasPermissionRemoval(sourceManifest, permission)) {
+      fail(`${path.relative(ROOT, ANDROID_MANIFEST)} still removes ${permission}; remove tools:node="remove" for the ads release path`);
     }
   }
-
-  const forbiddenBuiltMarkers = [
-    ...FORBIDDEN_NO_ADS_RUNTIME_MARKERS,
-    ...FORBIDDEN_NO_ADS_PERMISSION_MARKERS,
-  ];
 
   for (const manifestPath of ANDROID_BUILT_RELEASE_MANIFESTS) {
     const manifest = readIfExists(manifestPath);
     if (!manifest) continue;
-    for (const marker of forbiddenBuiltMarkers) {
-      if (manifest.includes(marker)) {
-        fail(`${path.relative(ROOT, manifestPath)} contains ${marker}; no-ads/no-Advertising-ID release is not truthful`);
+    for (const marker of REQUIRED_ADS_RUNTIME_MARKERS) {
+      if (!manifest.includes(marker)) {
+        fail(`${path.relative(ROOT, manifestPath)} must contain ${marker}; run the Android release manifest step after ad changes`);
+      }
+    }
+    for (const permission of REQUIRED_ADS_PERMISSION_MARKERS) {
+      if (!hasPermissionDeclaration(manifest, permission)) {
+        fail(`${path.relative(ROOT, manifestPath)} must contain ${permission}; Play Console Advertising ID=Yes would be unverified`);
       }
     }
   }
 
-  const googleServices = readIfExists(GOOGLE_SERVICES_JSON);
-  if (googleServices && /"admob_app_id"\s*:/.test(googleServices)) {
-    fail("android/app/google-services.json contains admob_app_id; remove it for the current no-ads release");
-  }
-
   const appAds = readIfExists(PUBLIC_APP_ADS);
-  if (appAds) {
-    const sellerLines = appAds
-      .split(/\r?\n/)
-      .map((line) => line.trim())
-      .filter((line) => line && !line.startsWith("#"));
-    if (sellerLines.length > 0) {
-      fail("public/app-ads.txt contains ad seller lines; remove it for the current no-ads release");
-    }
+  if (!appAds) {
+    console.warn("[google-play-assets] WARN - public/app-ads.txt is missing; add the real AdMob publisher line before production monetization");
   }
 }
 
 async function main() {
+  assertApprovedFeatureSource();
   for (const expectation of REQUIRED) {
     await assertImage(expectation);
   }
-  assertAdDeclarationMatchesArtifact();
-  console.log(`[google-play-assets] PASS - ${REQUIRED.length} Play Console assets verified`);
+  const packet = assertLocalizedListingPacket();
+  assertAdDeclarationMatchesArtifact(packet);
+  console.log(`[google-play-assets] PASS - ${REQUIRED.length} Play Console assets and ${REQUIRED_LOCALES.length} localized listings verified`);
 }
 
 main().catch((error) => {

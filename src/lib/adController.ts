@@ -10,9 +10,12 @@ import { isNative, platform } from '@/lib/platform';
 import { logger } from '@/lib/logger';
 import { IS_DEV } from '@/lib/env';
 import {
-  AD_UNIT_IDS,
   AD_FREQUENCY,
   AD_MOOD_RULES,
+  type AdPlatform,
+  getRewardedAdUnitId,
+  hasRewardedAdUnitId,
+  isGoogleTestAdUnit,
 } from '@/lib/adConfig';
 import { SK } from '@/lib/storageKeys';
 import { storageGetRaw, storageSetRaw } from '@/lib/safeJson';
@@ -49,7 +52,37 @@ const state: AdControllerState = {
   lastDismissTime: 0,
 };
 
-let AdMobPlugin: any = null; // any: Capacitor AdMob plugin type not exported, loaded dynamically
+let AdMobPlugin: any = null; // any: Capacitor AdMob plugin type is loaded dynamically
+
+function getNativeAdPlatform(): AdPlatform | null {
+  return platform === 'android' || platform === 'ios' ? platform : null;
+}
+
+async function canRequestNativeAds(module: any): Promise<boolean> {
+  if (!AdMobPlugin || typeof AdMobPlugin.requestConsentInfo !== 'function') {
+    return true;
+  }
+
+  try {
+    const requiredStatus = module.AdmobConsentStatus?.REQUIRED ?? 'REQUIRED';
+    const obtainedStatus = module.AdmobConsentStatus?.OBTAINED ?? 'OBTAINED';
+    const notRequiredStatus = module.AdmobConsentStatus?.NOT_REQUIRED ?? 'NOT_REQUIRED';
+    let consentInfo = await AdMobPlugin.requestConsentInfo({
+      tagForUnderAgeOfConsent: false,
+    });
+
+    if (consentInfo?.isConsentFormAvailable && consentInfo.status === requiredStatus) {
+      consentInfo = await AdMobPlugin.showConsentForm();
+    }
+
+    return consentInfo?.canRequestAds === true ||
+      consentInfo?.status === obtainedStatus ||
+      consentInfo?.status === notRequiredStatus;
+  } catch (err) {
+    logger.warn('[Ads] Consent check failed; ads disabled for this session:', err);
+    return false;
+  }
+}
 
 // ============================================
 // INITIALIZATION
@@ -71,15 +104,33 @@ export async function initializeAds(): Promise<boolean> {
   }
 
   try {
+    const targetPlatform = getNativeAdPlatform();
+    if (!targetPlatform || !hasRewardedAdUnitId(targetPlatform)) {
+      state.initialized = true;
+      state.sdkAvailable = false;
+      logger.log('[Ads] No rewarded ad unit configured — ads disabled');
+      return false;
+    }
+
     // Dynamic import — if package isn't installed, this throws
-    // @vite-ignore prevents Rollup from failing when the package isn't installed
+    // @vite-ignore keeps the app resilient if the native package is omitted in web-only builds.
     const moduleName = '@capacitor-community/admob';
     const module = await import(/* @vite-ignore */ moduleName);
     AdMobPlugin = module.AdMob;
 
     await AdMobPlugin.initialize({
       initializeForTesting: IS_DEV,
+      tagForChildDirectedTreatment: false,
+      tagForUnderAgeOfConsent: false,
+      maxAdContentRating: module.MaxAdContentRating?.General ?? 'General',
     });
+
+    if (!(await canRequestNativeAds(module))) {
+      state.initialized = true;
+      state.sdkAvailable = false;
+      logger.log('[Ads] Consent not available — ads disabled');
+      return false;
+    }
 
     state.initialized = true;
     state.sdkAvailable = true;
@@ -108,10 +159,15 @@ async function prepareRewardedAd(): Promise<void> {
   if (!state.sdkAvailable || !AdMobPlugin) return;
 
   try {
-    const adId = AD_UNIT_IDS[platform as 'android' | 'ios']?.rewarded;
+    const targetPlatform = getNativeAdPlatform();
+    const adId = targetPlatform ? getRewardedAdUnitId(targetPlatform) : '';
     if (!adId) return;
 
-    await AdMobPlugin.prepareRewardVideoAd({ adId });
+    await AdMobPlugin.prepareRewardVideoAd({
+      adId,
+      isTesting: IS_DEV || isGoogleTestAdUnit(adId),
+      npa: true,
+    });
     state.rewardedReady = true;
   } catch (err) {
     state.rewardedReady = false;
@@ -129,6 +185,11 @@ export function canShowRewardedAd(currentMood?: string): {
 } {
   if (!state.sdkAvailable) {
     return { allowed: false, reason: 'sdk_unavailable' };
+  }
+
+  const targetPlatform = getNativeAdPlatform();
+  if (!targetPlatform || !hasRewardedAdUnitId(targetPlatform)) {
+    return { allowed: false, reason: 'ad_unit_unconfigured' };
   }
 
   // Mood gating

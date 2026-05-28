@@ -13,6 +13,9 @@ import { OfflineBanner } from "@/components/OfflineBanner";
 import { AuthGate } from "@/components/AuthGate";
 import { useThemeStore } from "@/stores/themeStore";
 import { useInnerWorld } from "@/hooks/useInnerWorld";
+import { useGamification } from "@/hooks/useGamification";
+import { AdProvider } from "@/contexts/AdContext";
+import { canInitializeRewardedAds } from "@/lib/privacyConsent";
 import { getChallenges, getBadges } from "@/lib/challengeStorage";
 import { FORCE_NAV_V2, IS_DESKTOP_RUNTIME } from "@/lib/env";
 
@@ -124,6 +127,7 @@ function IndexV2Impl() {
   const gratitudeEntries = useUserDataStore((s) => s.gratitudeEntries);
   const appliedTheme = useThemeStore((s) => s.appliedTheme);
   const isLoadingUserData = useUserDataStore((s) => s.isLoading);
+  const privacy = useUserDataStore((s) => s.privacy);
   const {
     world: innerWorld,
     isLoading: isLoadingInnerWorld,
@@ -131,6 +135,7 @@ function IndexV2Impl() {
     attractCreature,
     feedCreatures,
   } = useInnerWorld();
+  const { awardXp } = useGamification();
   const isLoading = isLoadingUserData || isLoadingInnerWorld;
 
   useAuthSession(isLoading);
@@ -160,7 +165,14 @@ function IndexV2Impl() {
     <>
       <OfflineBanner />
       <AuthGate isLoading={isLoading} splashTheme={appliedTheme}>
-        <NavV2Orchestrator onAddMood={handleAddMood} onAddGratitude={handleAddGratitude} />
+        <AdProvider
+          onEarnTreats={(amount) => earnTreats("ad", amount, "Ad reward")}
+          onEarnXp={() => awardXp("habit")}
+          adConsent={canInitializeRewardedAds(privacy)}
+          isPremium={false}
+        >
+          <NavV2Orchestrator onAddMood={handleAddMood} onAddGratitude={handleAddGratitude} />
+        </AdProvider>
       </AuthGate>
     </>
   );

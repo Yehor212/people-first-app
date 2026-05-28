@@ -7,6 +7,11 @@ if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 }
 
+def zenflowAdMobAndroidAppId = project.findProperty("ZENFLOW_ADMOB_ANDROID_APP_ID")
+        ?: System.getenv("ZENFLOW_ADMOB_ANDROID_APP_ID")
+        ?: System.getenv("VITE_ADMOB_APP_ID_ANDROID")
+        ?: "ca-app-pub-3940256099942544~3347511713"
+
 android {
     namespace = "com.zenflow.app"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -16,6 +21,9 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 34
         versionName "1.7.3"
+        manifestPlaceholders = [
+                adMobApplicationId: zenflowAdMobAndroidAppId
+        ]
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.

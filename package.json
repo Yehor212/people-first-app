@@ -106,6 +106,7 @@
     "assets:splash:dark": "node scripts/generate-dark-splash.cjs"
   },
   "dependencies": {
+    "@capacitor-community/admob": "^8.0.0",
     "@capacitor-community/safe-area": "^8.0.1",
     "@capacitor/android": "^8.0.0",
     "@capacitor/app": "^8.0.0",

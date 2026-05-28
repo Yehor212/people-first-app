@@ -5,6 +5,22 @@ current repo state and generated release assets.
 
 ## Store Listing
 
+Primary localized packet:
+
+```text
+docs/release/google-play/GOOGLE_PLAY_LOCALIZED_LISTING_PACKET.json
+```
+
+Fill all of these Google Play listing languages from that packet:
+
+```text
+en-US, uk-UA, es-ES, de-DE, fr-FR, ja-JP, ar-SA, he-IL
+```
+
+Do not copy non-English listing text from `docs/STORE_LISTING.md`; that older
+marketing draft contains mojibake in several localized sections. The JSON packet
+above is the clean UTF-8 source of truth for this release.
+
 App name:
 
 ```text
@@ -14,40 +30,40 @@ ZenFlow
 Short description:
 
 ```text
-Track mood, habits, and journaling in one calm daily flow.
+Turn feelings into rhythm with mood, habits, and a private journal.
 ```
 
 Full description:
 
 ```text
-ZenFlow is a calm daily companion for mood tracking, habits, and journaling.
+ZenFlow helps you turn a noisy day into a calmer daily rhythm.
 
-Start with a quick mood check-in, keep daily habits visible, and write private journal entries without turning your day into a dashboard. ZenFlow is built for repeated daily use: fast opening, clear navigation, gentle visuals, and local-first storage with account sync support.
+Start with a quick mood check-in, keep meaningful habits in sight, and write private journal notes without opening a crowded dashboard. The experience is designed to feel fast, focused, and gentle: one place to notice how you feel, remember what matters, and come back tomorrow with less friction.
 
-What you can do:
-- Capture your mood in seconds
-- Build and review daily habits
-- Keep a private journal
+Why people use ZenFlow:
+- Check in with your mood in seconds
+- Keep daily habits visible and easy to return to
+- Write private reflections without social pressure
 - Continue across supported web and app surfaces
-- Use a focused interface designed for clarity, not noise
+- Use a calm interface built for daily repetition
 
-ZenFlow avoids aggressive engagement patterns. It is made to feel quiet, readable, and dependable every day.
+ZenFlow may offer optional rewarded ads for small in-app bonuses after consent. Ads are not shown inside mood check-ins, active focus sessions, or journaling moments.
 ```
 
 Product feature bullets:
 
 ```text
-Mood check-ins with a visual daily flow
-Habit tracking for repeatable routines
-Private journaling for reflection
-Local-first experience with account sync support
-Calm interface for daily use
+Fast mood check-ins for the moment you are in
+Habit tracking that keeps routines visible
+Private journaling without social pressure
+Optional rewarded bonuses after consent
+A calm daily interface built for return use
 ```
 
 What's new:
 
 ```text
-Initial Android release with the V2 ZenFlow experience, mood flow, habits, journal, and refreshed brand assets.
+Initial Android release with ZenFlow V2: mood flow, habits, private journal, refreshed brand assets, and optional rewarded ads support.
 ```
 
 ## Graphics Upload Map
@@ -64,6 +80,25 @@ Feature graphic:
 docs/release/google-play/assets/google-play-feature-graphic-1024x500.png
 ```
 
+Use the generated Community Aura feature graphic as the main product key visual.
+The only approved source is
+`docs/release/google-play/source/community-aura-feature-source.png`, whose
+SHA-256 is
+`8F9E3909905AF68AB5A2394DF3BD0D785613E81E5C4B2E4A8CCF2F150B679ED9`.
+The approved source is the original Community Aura image with the three
+placeholder fields already filled:
+
+```text
+A calmer daily rhythm
+Mood • Habits • Journal
+Start with one check-in
+```
+
+The release asset must be only a 1024x500 crop/resize of that approved source.
+Do not add other copy, claims, ratings, fake device hardware, a hand-drawn logo
+variant, or an unreviewed screenshot collage. Screenshots are uploaded
+separately below.
+
 Desktop screenshots:
 
 ```text
@@ -77,25 +112,31 @@ docs/release/google-play/screenshots/desktop/03-v2-diary-desktop.png
 Ads:
 
 ```text
-No
+Yes
 ```
 
 Reason:
 
 ```text
-The current Android artifact does not install or initialize an ad SDK, does not ship AdMob seller metadata, and does not publish app-ads.txt ad seller lines. Rewarded ads are documented as a future opt-in path and are disabled in this release.
+The current Android release path installs the official Capacitor AdMob plugin and supports optional rewarded ads after user consent. ZenFlow must not show banners, pop-ups, or interstitial ads during mood check-ins, active focus sessions, or journaling.
 ```
 
 Advertising ID:
 
 ```text
-No
+Yes
 ```
 
 Reason:
 
 ```text
-The current Android release manifest must not request com.google.android.gms.permission.AD_ID or Android ACCESS_ADSERVICES_* permissions.
+The ads-enabled Android release declares com.google.android.gms.permission.AD_ID for Google Mobile Ads / AdMob. Play Console Advertising ID must be Yes for this artifact.
+```
+
+Android manifest proof note:
+
+```text
+The merged release manifest also contains Android Privacy Sandbox ACCESS_ADSERVICES_* permissions contributed by the Google Mobile Ads dependency. Treat this as part of the ads-enabled release path and keep Data safety / Advertising ID answers aligned with Google Mobile Ads SDK behavior.
 ```
 
 Privacy policy:
@@ -119,15 +160,19 @@ Adults and general wellness users. Not directed to children.
 Data safety note:
 
 ```text
-Declare only the data types actually collected by the current Android artifact. Mood, habit, and journal content are user-entered wellness data and must not be described as advertising data. Do not declare Advertising ID unless the Android manifest and dependency tree include an advertising SDK release.
+Declare only the data types actually collected by the current Android artifact. Mood, habit, and journal content are user-entered wellness data and must not be described as advertising data. Advertising ID and Android ad services permissions are present for the installed Google Mobile Ads / AdMob release path and should be declared only for ads/analytics purposes tied to that SDK.
 ```
 
 ## Pre-Submit Checklist
 
 - `npm run google-play:assets`
 - `npm run google-play:assets:check`
-- Android release manifest/build proof that the merged manifest has no
-  `AD_ID`, `ACCESS_ADSERVICES_*`, AdMob app ID, or ad seller file.
+- Confirm all 8 localized Store Listing drafts are saved from
+  `GOOGLE_PLAY_LOCALIZED_LISTING_PACKET.json`.
+- Capture Play Console screenshots for Store Listing, app icon, feature graphic,
+  Ads = `Yes`, Advertising ID = `Yes`, and the draft dashboard state.
+- Android release manifest/build proof that the merged manifest includes
+  `com.google.android.gms.permission.AD_ID` and the AdMob app ID metadata.
 - `npm run assets:logos:check`
 - `npm run check:visual`
 - `npm run typecheck`
@@ -135,13 +180,12 @@ Declare only the data types actually collected by the current Android artifact. 
 - Confirm the package uploaded to Play Console is generated from the same commit
   as this packet.
 
-## Future Ads Release Rule
+## Production AdMob Rule
 
-If ZenFlow later ships rewarded ads:
+Before publishing production monetization:
 
-1. Add the official Capacitor AdMob dependency.
-2. Restore the AdMob app ID and `AD_ID` permission intentionally.
-3. Restore `public/app-ads.txt` with the approved seller line.
-4. Add a fresh privacy/data safety review.
-5. Change Play Console Ads and Advertising ID declarations to `Yes`.
-6. Update this packet in the same commit.
+1. Create the real Android app and rewarded ad unit in AdMob.
+2. Set `VITE_ADMOB_APP_ID_ANDROID` and `VITE_ADMOB_REWARDED_ID_ANDROID`.
+3. Add `public/app-ads.txt` with the real publisher line.
+4. Re-run the Android release manifest/build proof.
+5. Re-check Play Console Ads, Advertising ID, and Data safety sections.

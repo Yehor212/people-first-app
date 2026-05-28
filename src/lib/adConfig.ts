@@ -7,22 +7,53 @@
  * Mood-aware gating prevents ads when user is feeling bad.
  */
 
-import { ADMOB_REWARDED_ID_ANDROID, ADMOB_BANNER_ID_ANDROID, ADMOB_REWARDED_ID_IOS, ADMOB_BANNER_ID_IOS } from '@/lib/env';
+import { ADMOB_REWARDED_ID_ANDROID, ADMOB_BANNER_ID_ANDROID, ADMOB_REWARDED_ID_IOS, ADMOB_BANNER_ID_IOS, IS_DEV } from '@/lib/env';
 
 // ============================================
-// AD UNIT IDS (replace with real IDs from AdMob)
+// AD UNIT IDS
 // ============================================
+
+export const GOOGLE_ADMOB_TEST_IDS = {
+  android: {
+    rewarded: 'ca-app-pub-3940256099942544/5224354917',
+    banner: 'ca-app-pub-3940256099942544/6300978111',
+  },
+  ios: {
+    rewarded: 'ca-app-pub-3940256099942544/1712485313',
+    banner: 'ca-app-pub-3940256099942544/2934735716',
+  },
+} as const;
+
+function adUnitId(envValue: string, testValue: string): string {
+  return envValue || (IS_DEV ? testValue : '');
+}
 
 export const AD_UNIT_IDS = {
   android: {
-    rewarded: ADMOB_REWARDED_ID_ANDROID,
-    banner: ADMOB_BANNER_ID_ANDROID,     // test ID (no banner unit yet)
+    rewarded: adUnitId(ADMOB_REWARDED_ID_ANDROID, GOOGLE_ADMOB_TEST_IDS.android.rewarded),
+    banner: adUnitId(ADMOB_BANNER_ID_ANDROID, GOOGLE_ADMOB_TEST_IDS.android.banner),
   },
   ios: {
-    rewarded: ADMOB_REWARDED_ID_IOS,     // test ID
-    banner: ADMOB_BANNER_ID_IOS,         // test ID
+    rewarded: adUnitId(ADMOB_REWARDED_ID_IOS, GOOGLE_ADMOB_TEST_IDS.ios.rewarded),
+    banner: adUnitId(ADMOB_BANNER_ID_IOS, GOOGLE_ADMOB_TEST_IDS.ios.banner),
   },
 } as const;
+
+export type AdPlatform = keyof typeof AD_UNIT_IDS;
+
+export function getRewardedAdUnitId(targetPlatform: AdPlatform): string {
+  return AD_UNIT_IDS[targetPlatform]?.rewarded || '';
+}
+
+export function hasRewardedAdUnitId(targetPlatform: AdPlatform): boolean {
+  return getRewardedAdUnitId(targetPlatform).trim().length > 0;
+}
+
+export function isGoogleTestAdUnit(adId: string): boolean {
+  return Object.values(GOOGLE_ADMOB_TEST_IDS).some((ids) =>
+    Object.values(ids).some((testId) => testId === adId),
+  );
+}
 
 // ============================================
 // FREQUENCY CAPS — prevent ad fatigue

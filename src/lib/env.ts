@@ -39,6 +39,8 @@ export const SPOTIFY_CLIENT_ID = (import.meta.env.VITE_SPOTIFY_CLIENT_ID as stri
 export const GOOGLE_WEB_CLIENT_ID = (import.meta.env.VITE_GOOGLE_WEB_CLIENT_ID as string) || "";
 
 // AdMob — IDs must come from environment variables, no hardcoded production IDs
+export const ADMOB_APP_ID_ANDROID =
+  (import.meta.env.VITE_ADMOB_APP_ID_ANDROID as string) || "";
 export const ADMOB_REWARDED_ID_ANDROID =
   (import.meta.env.VITE_ADMOB_REWARDED_ID_ANDROID as string) || "";
 export const ADMOB_BANNER_ID_ANDROID =
