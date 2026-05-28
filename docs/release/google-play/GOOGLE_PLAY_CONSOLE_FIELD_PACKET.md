@@ -81,12 +81,13 @@ docs/release/google-play/assets/google-play-feature-graphic-1024x500.png
 ```
 
 Use the generated Community Aura feature graphic as the main product key visual.
-The only approved source is
-`docs/release/google-play/source/community-aura-feature-source.png`, whose
-SHA-256 is
-`8F9E3909905AF68AB5A2394DF3BD0D785613E81E5C4B2E4A8CCF2F150B679ED9`.
-The approved source is the original Community Aura image with the three
-placeholder fields already filled:
+The editable source is
+`docs/release/google-play/source/community-aura-feature-source.png`.
+Do not pin this image to a content hash: the source is allowed to be
+replaced deliberately when the user approves a better version, and the release
+checks validate the dimensions and exported Play Console file instead.
+The current source file contains the Community Aura image with the three
+placeholder fields filled:
 
 ```text
 A calmer daily rhythm

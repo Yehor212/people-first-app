@@ -34,7 +34,7 @@ Current canonical files:
 | Slot | File | Local proof |
 | --- | --- | --- |
 | App icon | `docs/release/google-play/assets/google-play-app-icon-512.png` | `512x512`, PNG, alpha present, fully opaque alpha, `131122` bytes, SHA-256 prefix `E2333A435B2CCCE8` |
-| Feature source | `docs/release/google-play/source/community-aura-feature-source.png` | Source image is no longer exact-SHA locked; scripts validate presence and minimum Play Console dimensions. |
+| Feature source | `docs/release/google-play/source/community-aura-feature-source.png` | Source image is not hash-pinned; scripts validate presence and minimum Play Console dimensions. |
 | Feature graphic | `docs/release/google-play/assets/google-play-feature-graphic-1024x500.png` | `1024x500`, PNG, no alpha, validated by `npm run google-play:assets:check`. |
 
 Console action taken:
@@ -43,7 +43,7 @@ Console action taken:
 - Removed the previous app icon asset from the active upload box, leaving one
   app icon in the slot.
 - Rebuilt `google-play-feature-graphic-1024x500.png` from the user-approved
-  generated image only. The exact SHA lock was removed so this visual can be
+  generated image only. The exact hash pin was removed so this visual can be
   replaced deliberately without fighting the generator; the scripts still
   validate source presence, dimensions, and final Play Console image size.
   The only added overlay is the approved SMM copy: `A calmer daily rhythm`,
