@@ -34,6 +34,16 @@ const REQUIRED_SURFACES = [
       "if (mode === 'webgl') return true",
       "data-orb-renderer-policy={renderer}",
     ],
+    forbidden: [
+      "held-on-canvas",
+      "renderForcedWebGLFirstPaint",
+      "markFirstPaintCanvas",
+      "orbFirstPaintCanvas",
+      "data-orb-first-paint-canvas",
+      "valence-orb-first-paint-fallback",
+      "createFirstPaintFallbackStyle",
+      "PHONE_FORCED_WEBGL_CANVAS",
+    ],
   },
   {
     file: "src/components/state-of-mind/MiniValenceOrb.tsx",

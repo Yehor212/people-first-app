@@ -20,7 +20,7 @@
  * a '2d' context — a new <canvas> element is the only solution.
  */
 
-import { useRef, useEffect, useState, memo, type CSSProperties } from 'react';
+import { useRef, useEffect, useState, memo } from 'react';
 import { shouldAnimate } from '@/lib/animationUtils';
 import { recordError } from '@/lib/crashReporting';
 import { hapticTap } from '@/lib/haptics';
@@ -30,7 +30,7 @@ import { SSK } from '@/lib/storageKeys';
 import { createParticlePool, updateParticles, burstParticles } from './particleSystem';
 import { drawOrbScene, getShapeParams } from './orbRenderer';
 import { valenceToHSL } from './colorUtils';
-import { createOrbGL2Async, createOrbGLAsync } from './orbShader';
+import { createOrbGL2, createOrbGL, createOrbGL2Async, createOrbGLAsync } from './orbShader';
 import type { Particle } from './particleSystem';
 import type { OrbGLBuildResult, OrbGLRenderer } from './orbShader';
 
@@ -46,7 +46,7 @@ interface ValenceOrbProps {
   animationSpeed?: number;
   /** Controls how the orb settles into a new mood state. */
   transitionProfile?: OrbTransitionProfile;
-  /** Renderer policy. Auto paints Canvas first, then upgrades to WebGL without blocking first paint. */
+  /** Renderer policy. Explicit WebGL surfaces never display Canvas/CSS substitute orbs. */
   renderer?: OrbRendererMode;
   /** Fires once any canonical first-paint frame is visible. */
   onFirstPaintReady?: () => void;
@@ -86,11 +86,9 @@ export const WEBGL_WORKER_READY_BUDGET_MS = 700;
 const WEBGL_READINESS_TIMEOUT_MS = 8000;
 export const WEBGL_FORCED_FIRST_FRAME_TIMEOUT_MS = 1400;
 const WEBGL_UPGRADE_DELAY_MS = 180;
-const FORCED_WEBGL_UPGRADE_DELAY_MS = 1400;
+const FORCED_WEBGL_UPGRADE_DELAY_MS = 0;
 const MINI_WEBGL_UPGRADE_DELAY_MS = 0;
 const MINI_WEBGL_UPGRADE_QUEUE_GAP_MS = 80;
-const PHONE_FORCED_WEBGL_CANVAS_VIEWPORT_MAX_WIDTH = 767;
-const PHONE_FORCED_WEBGL_CANVAS_ANIMATION_DELAY_MS = 16000;
 const IDLE_WAKE_SOFT_THRESHOLD_MS = 8000;
 const ORB_IDLE_WAKE_SOFT_EPSILON = 0.01;
 const MINI_ORB_CANONICAL_SIZE = 120;
@@ -225,62 +223,13 @@ function markRendererTier(canvas: HTMLCanvasElement, tier: 'canvas2d' | 'webgl-m
   canvas.dataset.orbRendererTier = tier;
 }
 
-function markFirstPaintCanvas(canvas: HTMLCanvasElement) {
-  markRendererTier(canvas, 'canvas2d');
-  canvas.dataset.orbFirstPaintCanvas = 'true';
-  canvas.style.position = 'absolute';
-  canvas.style.inset = '0';
-  canvas.style.opacity = '1';
-  canvas.style.zIndex = '1';
-  canvas.style.pointerEvents = 'none';
-  canvas.style.transition = 'opacity 120ms ease-out';
-}
-
-function createFirstPaintFallbackStyle(
-  valence: number,
-  size: number,
-  isReady: boolean,
-): CSSProperties {
-  const color = valenceToHSL(valence);
-  const highlightLightness = Math.min(92, color.l + 18);
-  const glowLightness = Math.min(86, color.l + 8);
-  const blurPx = Math.max(3, Math.round(size * 0.018));
-  const glowPx = Math.round(size * 0.24);
-
-  const style: CSSProperties & Record<`--${string}`, string | number> = {
-    '--orb-first-paint-highlight': `${color.h} ${Math.min(100, color.s + 10)}% ${highlightLightness}%`,
-    '--orb-first-paint-glow': `${color.h} ${color.s}% ${glowLightness}%`,
-    '--orb-first-paint-core': `${color.h} ${color.s}% ${Math.max(18, color.l - 8)}%`,
-    position: 'absolute',
-    left: '50%',
-    top: '50%',
-    width: size * 0.78,
-    height: size * 0.78,
-    borderRadius: '9999px',
-    pointerEvents: 'none',
-    zIndex: 1,
-    opacity: isReady ? 0 : 1,
-    transform: 'translate3d(-50%, -50%, 0)',
-    transition: 'opacity 180ms ease-out',
-    willChange: 'opacity',
-    background: `radial-gradient(circle at 35% 32%,
-      hsl(var(--orb-first-paint-highlight) / 0.82),
-      hsl(var(--orb-first-paint-glow) / 0.38) 46%,
-      hsl(var(--orb-first-paint-core) / 0.14) 70%,
-      transparent 82%)`,
-    boxShadow: `0 0 ${glowPx}px hsl(var(--orb-first-paint-glow) / 0.22)`,
-    filter: `blur(${blurPx}px)`,
-  };
-
-  return style;
-}
-
 export function allowsFirstPaintFallback(
   renderer: OrbRendererMode,
   rendererOverride: OrbRendererMode | null,
 ): boolean {
-  const resolvedRenderer = rendererOverride ?? renderer;
-  return resolvedRenderer !== "webgl";
+  void renderer;
+  void rendererOverride;
+  return false;
 }
 
 export function shouldShowFirstPaintFallback(
@@ -288,7 +237,8 @@ export function shouldShowFirstPaintFallback(
   rendererOverride: OrbRendererMode | null,
   visualReady: boolean,
 ): boolean {
-  return allowsFirstPaintFallback(renderer, rendererOverride) && !visualReady;
+  void visualReady;
+  return allowsFirstPaintFallback(renderer, rendererOverride);
 }
 
 function getRendererOverride(): OrbRendererMode | null {
@@ -328,18 +278,6 @@ export function shouldApplyWorkerWebGLUpgrade(
   return forcedWebGL || readyDurationMs <= WEBGL_WORKER_READY_BUDGET_MS;
 }
 
-export function shouldHoldForcedWebGLOnCanvasRenderer(
-  forceCanonicalWebGL: boolean,
-  size: number,
-  viewportWidth: number,
-): boolean {
-  return (
-    forceCanonicalWebGL &&
-    size > MINI_ORB_CANONICAL_SIZE &&
-    viewportWidth <= PHONE_FORCED_WEBGL_CANVAS_VIEWPORT_MAX_WIDTH
-  );
-}
-
 export function resolveCanonicalWebGLUpgradeScheduling(
   forceCanonicalWebGL: boolean,
   size: number,
@@ -361,7 +299,7 @@ export function resolveCanonicalWebGLUpgradeScheduling(
   if (size > MINI_ORB_CANONICAL_SIZE) {
     return {
       delayMs: FORCED_WEBGL_UPGRADE_DELAY_MS,
-      preferIdle: true,
+      preferIdle: false,
       nextMiniUpgradeStartAt,
     };
   }
@@ -475,14 +413,6 @@ export const ValenceOrb = memo(function ValenceOrb({
   const firstPaintReadyRef = useRef(false);
   const visualReadyRef = useRef(false);
   const [ctxFailed, setCtxFailed] = useState(false);
-  const [visualReady, setVisualReady] = useState(false);
-  const rendererOverride = getRendererOverride();
-  const showFirstPaintFallback = shouldShowFirstPaintFallback(
-    renderer,
-    rendererOverride,
-    visualReady,
-  );
-  const canShowContextFailureFallback = allowsFirstPaintFallback(renderer, rendererOverride);
   const genesisStartRef = useRef(0);
   const touchRef = useRef<{ x: number; y: number; startTime: number } | null>(null);
   const shimmerRef = useRef(0); // P3: 1.0→0 decaying flash on large valence change
@@ -534,17 +464,12 @@ export const ValenceOrb = memo(function ValenceOrb({
       revealCanonicalCanvas(canvas);
     }
     const wrapper = wrapperRef.current;
-    wrapper?.querySelectorAll('canvas[data-orb-first-paint-canvas="true"]').forEach((orbCanvas) => {
-      orbCanvas.remove();
-    });
     wrapper?.querySelectorAll('canvas').forEach((orbCanvas) => {
-      if (orbCanvas.dataset.orbFirstPaintCanvas === 'true') return;
       revealCanonicalCanvas(orbCanvas);
     });
     wrapper?.setAttribute('data-orb-visual-ready', 'true');
     if (alreadyReady) return;
     onVisualReadyRef.current?.();
-    setVisualReady(true);
   };
 
   useEffect(() => {
@@ -601,7 +526,6 @@ export const ValenceOrb = memo(function ValenceOrb({
 
     firstPaintReadyRef.current = false;
     visualReadyRef.current = false;
-    setVisualReady(false);
     wrapper.removeAttribute('data-orb-first-paint-ready');
     wrapper.removeAttribute('data-orb-visual-ready');
     wrapper.removeAttribute('data-orb-webgl-upgrade');
@@ -647,45 +571,40 @@ export const ValenceOrb = memo(function ValenceOrb({
     let webglEventCanvas: HTMLCanvasElement | null = null;
     let webglWorker: Worker | null = null;
     let forceWebGLStartupRecovered = false;
-    let firstPaintCanvas: HTMLCanvasElement | null = null;
 
-    // Canvas 2D is the canonical first stable renderer for every policy.
-    // Forced WebGL surfaces paint this first, then upgrade when Chrome has
-    // yielded enough startup time for the heavy worker/WebGL path.
-    markRendererTier(activeCanvas, 'canvas2d');
-    try {
-      ctx2d = activeCanvas.getContext('2d', { willReadFrequently: false });
-    } catch (err) {
-      recordError(err, { component: 'ValenceOrb', action: 'canvas2d-probe' });
-      ctx2d = null;
-    }
-
-    if (!ctx2d) {
-      if (!forceCanonicalWebGL) {
-        setCtxFailed(true);
-        return;
-      }
+    if (forceCanonicalWebGL) {
       activeCanvas = createCanvas(size, dpr);
       activeCanvas.style.opacity = '0';
       activeCanvas.style.transition = 'opacity 160ms ease-out';
-    }
 
-    const holdForcedWebGLOnCanvasRenderer = Boolean(
-      ctx2d &&
-      shouldHoldForcedWebGLOnCanvasRenderer(
-        forceCanonicalWebGL,
-        size,
-        window.innerWidth || document.documentElement.clientWidth,
-      ) &&
-      getRendererOverride() !== 'webgl',
-    );
-    if (holdForcedWebGLOnCanvasRenderer) {
-      wrapper.setAttribute('data-orb-webgl-upgrade', 'held-on-canvas');
-    }
+      glRenderer = createOrbGL2(activeCanvas);
+      if (!glRenderer) {
+        const gl1Canvas = createCanvas(size, dpr);
+        gl1Canvas.style.opacity = '0';
+        gl1Canvas.style.transition = 'opacity 160ms ease-out';
+        const gl1Renderer = createOrbGL(gl1Canvas);
+        if (gl1Renderer) {
+          activeCanvas = gl1Canvas;
+          glRenderer = gl1Renderer;
+        }
+      }
 
-    if (!activeCanvas) {
-      setCtxFailed(true);
-      return;
+      if (glRenderer) {
+        markRendererTier(activeCanvas, 'webgl-main');
+      }
+    } else {
+      markRendererTier(activeCanvas, 'canvas2d');
+      try {
+        ctx2d = activeCanvas.getContext('2d', { willReadFrequently: false });
+      } catch (err) {
+        recordError(err, { component: 'ValenceOrb', action: 'canvas2d-probe' });
+        ctx2d = null;
+      }
+
+      if (!ctx2d) {
+        setCtxFailed(true);
+        return;
+      }
     }
 
     glRendererRef.current = glRenderer;
@@ -782,72 +701,37 @@ export const ValenceOrb = memo(function ValenceOrb({
       markVisualReadyRef.current();
     };
 
-    const renderForcedWebGLFirstPaint = () => {
-      if (!forceCanonicalWebGL || firstPaintCanvas) return;
-
-      if (holdForcedWebGLOnCanvasRenderer) {
-        const state = stateRef.current;
-        if (!ctx2d || !state) return;
-
-        try {
-          drawOrbScene(ctx2d, {
-            valence: smoothValenceRef.current,
-            time: state.time,
-            particles: state.particles,
-            size,
-            dpr: canvasDpr,
-            isDark: isDarkRead(),
-            shimmer: shimmerRef.current,
-          });
-          activeCanvas.style.setProperty('transition', 'none', 'important');
-          activeCanvas.style.setProperty('opacity', '1', 'important');
-          delete activeCanvas.dataset.orbFirstPaintCanvas;
-          markRendererTier(activeCanvas, 'canvas2d');
-          canvasElRef.current = activeCanvas;
-          markVisualReadyRef.current();
-        } catch (err) {
-          recordError(err, { component: 'ValenceOrb', action: 'forced-webgl-first-paint-render' });
-        }
-        return;
-      }
-
-      const firstCanvas = createCanvas(size, canvasDpr);
-      markFirstPaintCanvas(firstCanvas);
-      const firstPaintCtx = firstCanvas.getContext('2d', { willReadFrequently: false });
-      const state = stateRef.current;
-
-      if (!firstPaintCtx || !state) {
-        return;
-      }
-
-      try {
-        drawOrbScene(firstPaintCtx, {
-          valence: smoothValenceRef.current,
-          time: state.time,
-          particles: state.particles,
-          size,
-          dpr: canvasDpr,
-          isDark: isDarkRead(),
-          shimmer: shimmerRef.current,
-        });
-        firstPaintCanvas = firstCanvas;
-        wrapper.appendChild(firstCanvas);
-        markFirstPaintReadyRef.current();
-      } catch (err) {
-        recordError(err, { component: 'ValenceOrb', action: 'forced-webgl-first-paint-render' });
-      }
-    };
-
     const renderPendingWebGL = () => {};
     let render = glRenderer ? renderGL : (ctx2d ? renderCanvas2D : renderPendingWebGL);
 
-    renderForcedWebGLFirstPaint();
+    const renderInitialWebGLFrame = () => {
+      if (!forceCanonicalWebGL || !glRenderer) return;
+      const state = stateRef.current;
+      if (!state) return;
+
+      try {
+        renderGL(smoothValenceRef.current, state.time, state.particles);
+      } catch (err) {
+        recordError(err, { component: 'ValenceOrb', action: 'webgl-initial-render' });
+        glRenderer.dispose();
+        glRenderer = null;
+        glRendererRef.current = null;
+        render = renderPendingWebGL;
+      }
+    };
+
+    renderInitialWebGLFrame();
 
     // ── Fallback canvas for context loss recovery ──
     let fallbackCanvas: HTMLCanvasElement | null = null;
 
     /** Degrade to Canvas 2D on a fresh canvas (WebGL canvas is locked) */
     const degradeToCanvas2D = () => {
+      if (forceCanonicalWebGL) {
+        setCtxFailed(true);
+        return;
+      }
+
       if (ctx2d && fallbackCanvas && activeCanvas === fallbackCanvas) {
         return;
       }
@@ -1023,7 +907,11 @@ export const ValenceOrb = memo(function ValenceOrb({
       }
 
       recordError(
-        new Error('WebGL context lost — degraded to Canvas 2D'),
+        new Error(
+          forceCanonicalWebGL
+            ? 'WebGL context lost without using a substitute orb'
+            : 'WebGL context lost — degraded to Canvas 2D',
+        ),
         { component: 'ValenceOrb' },
       );
     };
@@ -1290,7 +1178,6 @@ export const ValenceOrb = memo(function ValenceOrb({
     let webglUpgradeStarted = false;
     let webglUpgradePendingUntilVisible = false;
     let forceWebGLFirstFrameTimeoutId = 0;
-    let delayedCanvasAnimationTimeoutId = 0;
     const recoverForcedWebGLFirstFrame = () => {
       if (
         !forceCanonicalWebGL ||
@@ -1313,10 +1200,10 @@ export const ValenceOrb = memo(function ValenceOrb({
       glRendererRef.current = null;
 
       recordError(
-        new Error('Canonical WebGL first frame timed out — degraded to Canvas 2D'),
+        new Error('Canonical WebGL first frame timed out without using a substitute orb'),
         { component: 'ValenceOrb', action: 'forced-webgl-first-frame-timeout' },
       );
-      degradeToCanvas2D();
+      setCtxFailed(true);
     };
     const startWebGLUpgradeWhenVisible = () => {
       if (webglUpgradeAbort.signal.aborted || webglUpgradeStarted) return;
@@ -1349,7 +1236,6 @@ export const ValenceOrb = memo(function ValenceOrb({
     const cleanup = () => {
       webglUpgradeAbort.abort();
       window.clearTimeout(forceWebGLFirstFrameTimeoutId);
-      window.clearTimeout(delayedCanvasAnimationTimeoutId);
       cancelWebGLUpgrade();
       cancelAnimationFrame(rafRef.current);
       upgradeVisibilityObserver?.disconnect();
@@ -1375,22 +1261,29 @@ export const ValenceOrb = memo(function ValenceOrb({
       if (fallbackCanvas && wrapper.contains(fallbackCanvas)) {
         wrapper.removeChild(fallbackCanvas);
       }
-      if (firstPaintCanvas && wrapper.contains(firstPaintCanvas)) {
-        wrapper.removeChild(firstPaintCanvas);
-      }
     };
 
     // ── Animation gate ──
     if (!shouldAnimateCanonicalOrb()) {
       if (forceCanonicalWebGL) {
-        degradeToCanvas2D();
+        const state = stateRef.current;
+        if (glRendererRef.current && state) {
+          try {
+            renderGL(smoothValenceRef.current, state.time, state.particles);
+          } catch (err) {
+            recordError(err, { component: 'ValenceOrb', action: 'webgl-static-render' });
+            setCtxFailed(true);
+          }
+        } else {
+          setCtxFailed(true);
+        }
       } else {
-        try { render(valenceRef.current, 0, stateRef.current.particles); } catch { /* graceful: initial frame render failure invisible — orb shows fallback CSS */ }
+        try { render(valenceRef.current, 0, stateRef.current.particles); } catch { /* graceful: initial frame render failure leaves the canvas untouched */ }
       }
       return cleanup;
     }
 
-    if (!glRenderer && !holdForcedWebGLOnCanvasRenderer) {
+    if (!glRenderer) {
       const webglUpgradeScheduling = reserveCanonicalWebGLUpgradeScheduling(
         forceCanonicalWebGL,
         size,
@@ -1409,14 +1302,7 @@ export const ValenceOrb = memo(function ValenceOrb({
       });
     }
 
-    if (holdForcedWebGLOnCanvasRenderer) {
-      delayedCanvasAnimationTimeoutId = window.setTimeout(() => {
-        if (!mountedRef.current || webglUpgradeAbort.signal.aborted) return;
-        rafRef.current = requestAnimationFrame(loop);
-      }, PHONE_FORCED_WEBGL_CANVAS_ANIMATION_DELAY_MS);
-    } else {
-      rafRef.current = requestAnimationFrame(loop);
-    }
+    rafRef.current = requestAnimationFrame(loop);
 
     return cleanup;
   }, [renderer, size]);
@@ -1467,6 +1353,7 @@ export const ValenceOrb = memo(function ValenceOrb({
       });
       markVisualReadyRef.current();
     } else {
+      if (renderer === 'webgl' || getRendererOverride() === 'webgl') return;
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
       drawOrbScene(ctx, {
@@ -1479,18 +1366,7 @@ export const ValenceOrb = memo(function ValenceOrb({
       });
       markVisualReadyRef.current();
     }
-  }, [valence, size]);
-
-  // Only auto/canvas renderer policies may show this non-canonical emergency fallback.
-  // Explicit canonical WebGL surfaces use an internal canonical Canvas first-paint
-  // canvas instead of this CSS fallback while async WebGL warms up.
-  const firstPaintFallback = showFirstPaintFallback ? (
-    <span
-      aria-hidden="true"
-      data-testid="valence-orb-first-paint-fallback"
-      style={createFirstPaintFallbackStyle(valence, size, visualReady)}
-    />
-  ) : null;
+  }, [valence, size, renderer]);
 
   if (ctxFailed) {
     return (
@@ -1510,26 +1386,7 @@ export const ValenceOrb = memo(function ValenceOrb({
           backfaceVisibility: 'hidden',
         }}
         aria-hidden="true"
-      >
-        {canShowContextFailureFallback ? (
-          <>
-            {firstPaintFallback}
-            <div
-              className="rounded-full motion-safe:animate-pulse"
-              style={{
-                width: size * 0.7,
-                height: size * 0.7,
-                background: `radial-gradient(circle at 35% 35%,
-                  hsl(var(--primary) / 0.3),
-                  hsl(var(--primary) / 0.15) 50%,
-                  hsl(var(--primary) / 0.05) 80%,
-                  transparent)`,
-                filter: 'blur(4px)',
-              }}
-            />
-          </>
-        ) : null}
-      </div>
+      />
     );
   }
 
@@ -1551,8 +1408,6 @@ export const ValenceOrb = memo(function ValenceOrb({
         backfaceVisibility: 'hidden',
       }}
       aria-hidden="true"
-    >
-      {firstPaintFallback}
-    </div>
+    />
   );
 });

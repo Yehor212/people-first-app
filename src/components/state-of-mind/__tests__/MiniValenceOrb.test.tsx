@@ -2,6 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { render } from "@testing-library/react";
 
 import { MiniValenceOrb } from "../MiniValenceOrb";
+import { drawOrbScene } from "../orbRenderer";
+import { createOrbGL, createOrbGL2 } from "../orbShader";
 
 vi.mock("../orbRenderer", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../orbRenderer")>();
@@ -10,6 +12,25 @@ vi.mock("../orbRenderer", async (importOriginal) => {
     drawOrbScene: vi.fn(),
   };
 });
+
+vi.mock("../orbShader", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../orbShader")>();
+  return {
+    ...actual,
+    createOrbGL2: vi.fn(() => null),
+    createOrbGL: vi.fn(() => null),
+    createOrbGL2Async: vi.fn(() => Promise.resolve(null)),
+    createOrbGLAsync: vi.fn(() => Promise.resolve(null)),
+  };
+});
+
+function createMockGLRenderer() {
+  return {
+    render: vi.fn(),
+    dispose: vi.fn(),
+    isContextLost: vi.fn(() => false),
+  };
+}
 
 describe("MiniValenceOrb", () => {
   let allow2dContext = false;
@@ -26,6 +47,10 @@ describe("MiniValenceOrb", () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.mocked(createOrbGL2).mockReset();
+    vi.mocked(createOrbGL2).mockReturnValue(null);
+    vi.mocked(createOrbGL).mockReset();
+    vi.mocked(createOrbGL).mockReturnValue(null);
   });
 
   it("keeps the legacy bare md preset as the default compact orb", () => {
@@ -71,8 +96,9 @@ describe("MiniValenceOrb", () => {
     expect(container.firstChild).toHaveClass("opacity-0");
   });
 
-  it("reveals mini chrome as soon as the canonical first-paint frame is ready", () => {
-    allow2dContext = true;
+  it("reveals mini chrome only after the canonical WebGL frame is ready", () => {
+    const renderer = createMockGLRenderer();
+    vi.mocked(createOrbGL2).mockReturnValue(renderer);
 
     const { container } = render(
       <MiniValenceOrb valence={0} hasEntry={false} size="sm" chrome="badge" />,
@@ -80,7 +106,10 @@ describe("MiniValenceOrb", () => {
 
     expect(container.firstChild).toHaveClass("opacity-100");
     expect(container.querySelector("[data-orb-first-paint-ready='true']")).not.toBeNull();
-    expect(container.querySelector("canvas[data-orb-first-paint-canvas='true']")).not.toBeNull();
+    expect(container.querySelector("[data-orb-visual-ready='true']")).not.toBeNull();
+    expect(container.querySelector("[data-orb-renderer-tier='webgl-main']")).not.toBeNull();
+    expect(container.querySelector("canvas[data-orb-first-paint-canvas='true']")).toBeNull();
+    expect(drawOrbScene).not.toHaveBeenCalled();
   });
 
   it("renders the refine chrome with its larger lg preset", () => {

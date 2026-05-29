@@ -124,20 +124,18 @@ describe("canonical orb invariant", () => {
     expect(source).toContain("createOrbGL2");
     expect(source).toContain("createOrbGL");
     expect(source).toContain("if (mode === 'webgl') return true");
-    expect(source).toContain("if (!glRenderer && !holdForcedWebGLOnCanvasRenderer) {");
-    expect(source).toContain("shouldHoldForcedWebGLOnCanvasRenderer");
+    expect(source).toContain("if (!glRenderer) {");
     expect(source).toContain("data-orb-webgl-upgrade");
   });
 
-  it("blocks non-canonical CSS fallback visuals on forced WebGL surfaces", () => {
+  it("blocks non-canonical CSS fallback visuals on every orb surface", () => {
     const source = readSource("src/components/state-of-mind/ValenceOrb.tsx");
 
-    expect(source).toContain("valence-orb-first-paint-fallback");
-    expect(source).toContain("createFirstPaintFallbackStyle");
     expect(source).toContain("allowsFirstPaintFallback");
-    expect(source).toContain("return resolvedRenderer !== \"webgl\"");
-    expect(source).toContain("const canShowContextFailureFallback");
-    expect(source).toContain("canShowContextFailureFallback ? (");
+    expect(source).toContain("return false");
+    expect(source).not.toContain("valence-orb-first-paint-fallback");
+    expect(source).not.toContain("createFirstPaintFallbackStyle");
+    expect(source).not.toContain("motion-safe:animate-pulse");
     expect(source).toContain("visualReadyRef");
     expect(source).toContain("markVisualReadyRef");
     expect(source).toContain("onVisualReady");
@@ -149,14 +147,16 @@ describe("canonical orb invariant", () => {
     expect(source).toContain("const recoveredWithWebGL = await upgradeToMainThreadWebGL()");
   });
 
-  it("allows only the canonical canvas renderer for forced WebGL first paint", () => {
+  it("forbids Canvas2D first-paint substitutes for forced WebGL surfaces", () => {
     const source = readSource("src/components/state-of-mind/ValenceOrb.tsx");
 
-    expect(source).toContain("renderForcedWebGLFirstPaint");
-    expect(source).toContain("markFirstPaintCanvas");
-    expect(source).toContain("canvas.dataset.orbFirstPaintCanvas = 'true'");
-    expect(source).toContain("drawOrbScene(ctx2d");
-    expect(source).toContain("drawOrbScene(firstPaintCtx");
+    expect(source).toContain("renderInitialWebGLFrame");
+    expect(source).toContain("createOrbGL2(activeCanvas)");
+    expect(source).toContain("markRendererTier(activeCanvas, 'webgl-main')");
+    expect(source).not.toContain("renderForcedWebGLFirstPaint");
+    expect(source).not.toContain("markFirstPaintCanvas");
+    expect(source).not.toContain("orbFirstPaintCanvas");
+    expect(source).not.toContain("held-on-canvas");
     expect(source).toContain("markFirstPaintReadyRef");
     expect(source).toContain("onFirstPaintReady");
     expect(source).not.toContain("valence-orb-static");

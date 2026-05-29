@@ -135,7 +135,7 @@ Large valence changes trigger a desaturation+brighten flash (luminance boost, 40
 | **B** | WebGL 1.0 (GLSL ES 1.0) | 10/10 | 60 | GL2 unavailable |
 | **C** | Canvas 2D | 8/10 | 30 | WebGL unavailable |
 
-All tiers share identical shape presets, color mapping, and particle system. Context loss recovery: seamless A→C→A on WebGL restore.
+All tiers share identical shape presets, color mapping, and particle system. Context loss recovery: seamless A→C→A on WebGL restore. Product surfaces that explicitly request `renderer="webgl"` are stricter than the generic tier table: they must not show Canvas 2D, CSS, SVG, icon, static ring, or Lottie substitutes during first paint, warmup, timeout recovery, or phone layout startup. If WebGL cannot produce a canonical frame, the surface fails closed instead of showing a pseudo-orb.
 
 ### 3.2 Quality Parameters
 
