@@ -5,6 +5,21 @@ import { BASE_URL } from "@/lib/env";
 
 const NATIVE_REDIRECT_URL = "com.zenflow.app://login-callback";
 const V2_ROUTE_PATHS = new Set(["/orb", "/habits", "/diary", "/settings"]);
+const ALLOWED_WEB_ORIGINS = [
+  "https://yehor212.github.io",
+  "capacitor://localhost",
+  "https://zenflow.app",
+] as const;
+const LOOPBACK_OAUTH_PORTS = new Set([
+  "3000",
+  "4173",
+  "4174",
+  "4175",
+  "4176",
+  "5173",
+  "8080",
+]);
+const LOOPBACK_OAUTH_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
 
 function normalizeBasePath(basePath: string): string {
   const cleanBase = basePath.startsWith("/") ? basePath : `/${basePath}`;
@@ -23,6 +38,21 @@ function stripBasePath(pathname: string, basePath: string): string {
 function normalizeAppRoutePath(pathname: string): string {
   if (!pathname || pathname === "/") return "/";
   return pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
+}
+
+export function isAllowedLocalOAuthOrigin(rawOrigin: string): boolean {
+  let parsed: URL;
+  try {
+    parsed = new URL(rawOrigin);
+  } catch {
+    return false;
+  }
+
+  return (
+    parsed.protocol === "http:" &&
+    LOOPBACK_OAUTH_HOSTS.has(parsed.hostname) &&
+    LOOPBACK_OAUTH_PORTS.has(parsed.port)
+  );
 }
 
 function getV2RedirectPath(basePath: string): string | null {
@@ -96,25 +126,11 @@ export const getAuthRedirectUrl = () => {
   }
 
   // Web: construct clean redirect URL with origin allowlist (OWASP L18)
-  const ALLOWED_ORIGINS = [
-    "https://yehor212.github.io",
-    "capacitor://localhost",
-    "https://zenflow.app",
-    ...(import.meta.env.DEV
-      ? [
-          "http://localhost:3000",
-          "http://localhost:5173",
-          "http://localhost:8080",
-          "http://127.0.0.1:3000",
-          "http://127.0.0.1:5173",
-          "http://127.0.0.1:8080",
-        ]
-      : []),
-  ] as const;
   const rawOrigin = window.location.origin;
-  const origin = (ALLOWED_ORIGINS as readonly string[]).includes(rawOrigin)
+  const origin = (ALLOWED_WEB_ORIGINS as readonly string[]).includes(rawOrigin) ||
+    isAllowedLocalOAuthOrigin(rawOrigin)
     ? rawOrigin
-    : ALLOWED_ORIGINS[0];
+    : ALLOWED_WEB_ORIGINS[0];
   const basePath = BASE_URL;
 
   // Ensure proper path format (no double slashes)

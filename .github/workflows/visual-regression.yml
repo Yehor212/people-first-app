@@ -60,6 +60,8 @@ jobs:
         run: npm run build
         env:
           CI: "true"
+          VITE_ENABLE_FACEBOOK_AUTH: ${{ vars.VITE_ENABLE_FACEBOOK_AUTH || 'true' }}
+          VITE_ENABLE_TELEGRAM_AUTH: ${{ vars.VITE_ENABLE_TELEGRAM_AUTH || 'false' }}
 
       - name: Verify visual baselines exist (Percy/Sauce anti-pattern guard)
         # Phase 2-B.1 hardening: fail the workflow if NO baseline PNGs are

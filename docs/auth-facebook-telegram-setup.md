@@ -17,6 +17,14 @@ VITE_ENABLE_TELEGRAM_AUTH=true
 Local defaults in `.env.example` stay `false` so unfinished dashboard setup does
 not expose broken buttons in normal builds.
 
+GitHub Pages and native CI builds pass these public flags explicitly:
+
+- `VITE_ENABLE_FACEBOOK_AUTH` defaults to `true` because the ZenFlow Facebook app
+  is configured.
+- `VITE_ENABLE_TELEGRAM_AUTH` defaults to `false`; flip the GitHub repository
+  variable to `true` only after the Supabase `custom:telegram` OIDC provider is
+  fully configured and smoke-tested.
+
 ## Supabase Project
 
 - Project name: `ZenFlow`
@@ -48,12 +56,14 @@ account without replacing that account's sync data.
 3. Add this valid OAuth redirect URI:
 
 ```text
-https://bwgfslmxmueyglpumkbf.supabase.co/auth/v1/callback
+https://api.zenflowapp.online/auth/v1/callback
 ```
 
 4. Confirm `public_profile` and `email` permissions are enabled.
 5. Copy the Facebook App ID and App Secret.
 6. In Supabase Auth Providers, enable Facebook and paste the App ID and Secret.
+7. Enable `Allow users without an email` to keep provider behavior consistent
+   with Telegram and prevent email-optional identities from being rejected.
 
 Do not paste the Facebook secret into the repo or chat.
 

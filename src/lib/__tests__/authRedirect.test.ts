@@ -23,6 +23,7 @@ vi.mock('@/lib/env', () => ({
 import {
   getAuthRedirectUrl,
   getCleanAuthCallbackUrl,
+  isAllowedLocalOAuthOrigin,
   isNativePlatform,
   handleAuthCallback,
   AUTH_COMPLETE_EVENT,
@@ -115,6 +116,14 @@ describe('getAuthRedirectUrl', () => {
     const url = getAuthRedirectUrl();
 
     expect(url).toBe(`${window.location.origin}/people-first-app/orb?nav=v2`);
+  });
+
+  it('allows loopback preview origins without opening arbitrary redirects', () => {
+    expect(isAllowedLocalOAuthOrigin('http://127.0.0.1:4175')).toBe(true);
+    expect(isAllowedLocalOAuthOrigin('http://localhost:5173')).toBe(true);
+    expect(isAllowedLocalOAuthOrigin('https://127.0.0.1:4175')).toBe(false);
+    expect(isAllowedLocalOAuthOrigin('http://evil.localhost.example:4175')).toBe(false);
+    expect(isAllowedLocalOAuthOrigin('http://127.0.0.1:9999')).toBe(false);
   });
 });
 

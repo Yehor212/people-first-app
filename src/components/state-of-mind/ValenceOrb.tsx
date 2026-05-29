@@ -360,6 +360,23 @@ function canUseWorkerWebGL(): boolean {
   }
 }
 
+function isPhoneLikeViewport(): boolean {
+  try {
+    return (
+      (window.innerWidth || document.documentElement.clientWidth) < 768 ||
+      window.matchMedia?.('(pointer: coarse)').matches === true ||
+      (navigator.maxTouchPoints || 0) > 0
+    );
+  } catch {
+    return false;
+  }
+}
+
+export function shouldUseWorkerWebGL(forceCanonicalWebGL: boolean): boolean {
+  if (!canUseWorkerWebGL()) return false;
+  return !(forceCanonicalWebGL && isPhoneLikeViewport());
+}
+
 function scheduleAfterFirstPaint(
   task: () => void,
   options: { preferIdle?: boolean; delayMs?: number } = {},
@@ -690,11 +707,21 @@ export const ValenceOrb = memo(function ValenceOrb({
 
     // ── Fallback canvas for context loss recovery ──
     let fallbackCanvas: HTMLCanvasElement | null = null;
+    const removeImperativeCanvases = () => {
+      wrapper.querySelectorAll('canvas').forEach((orbCanvas) => {
+        orbCanvas.remove();
+      });
+      canvasElRef.current = null;
+    };
+    const failCanonicalWebGLClosed = () => {
+      removeImperativeCanvases();
+      setCtxFailed(true);
+    };
 
     /** Degrade to Canvas 2D on a fresh canvas (WebGL canvas is locked) */
     const degradeToCanvas2D = () => {
       if (forceCanonicalWebGL) {
-        setCtxFailed(true);
+        failCanonicalWebGLClosed();
         return;
       }
 
@@ -728,6 +755,11 @@ export const ValenceOrb = memo(function ValenceOrb({
       } else {
         setCtxFailed(true);
       }
+    };
+
+    let forceWebGLFirstFrameTimeoutId = 0;
+    let recoverForcedWebGLStartup = () => {
+      failCanonicalWebGLClosed();
     };
 
     // ── Animation loop ──
@@ -909,20 +941,25 @@ export const ValenceOrb = memo(function ValenceOrb({
       const upgradeToMainThreadWebGL = async (): Promise<boolean> => {
         if (!forceCanonicalWebGL && !probeWebGLWorks()) return false;
 
-        const gl2Canvas = createCanvas(size, dpr);
-        let result: OrbGLBuildResult | null = await createOrbGL2Async(gl2Canvas, {
+        if (forceWebGLFirstFrameTimeoutId !== 0) {
+          window.clearTimeout(forceWebGLFirstFrameTimeoutId);
+          forceWebGLFirstFrameTimeoutId = 0;
+        }
+
+        const gl1Canvas = createCanvas(size, dpr);
+        let result: OrbGLBuildResult | null = await createOrbGLAsync(gl1Canvas, {
           signal,
           timeoutMs: WEBGL_READINESS_TIMEOUT_MS,
         });
 
-        let upgradeCanvas = gl2Canvas;
+        let upgradeCanvas = gl1Canvas;
         if (!result && !signal.aborted) {
-          const gl1Canvas = createCanvas(size, dpr);
-          result = await createOrbGLAsync(gl1Canvas, {
+          const gl2Canvas = createCanvas(size, dpr);
+          result = await createOrbGL2Async(gl2Canvas, {
             signal,
             timeoutMs: WEBGL_READINESS_TIMEOUT_MS,
           });
-          upgradeCanvas = gl1Canvas;
+          upgradeCanvas = gl2Canvas;
         }
 
         if (signal.aborted || !mountedRef.current) return false;
@@ -988,8 +1025,9 @@ export const ValenceOrb = memo(function ValenceOrb({
           }
         })();
       };
+      recoverForcedWebGLStartup = recoverFromWebGLStartupFailure;
 
-      if ((renderer === 'auto' || renderer === 'webgl') && canUseWorkerWebGL()) {
+      if ((renderer === 'auto' || renderer === 'webgl') && shouldUseWorkerWebGL(forceCanonicalWebGL)) {
         const workerStartedAt = performance.now();
         const workerCanvas = createCanvas(size, dpr);
         if (forceCanonicalWebGL) {
@@ -1143,7 +1181,6 @@ export const ValenceOrb = memo(function ValenceOrb({
     let cancelWebGLUpgrade = () => {};
     let webglUpgradeStarted = false;
     let webglUpgradePendingUntilVisible = false;
-    let forceWebGLFirstFrameTimeoutId = 0;
     const armForcedWebGLFirstFrameTimeout = () => {
       if (!forceCanonicalWebGL || forceWebGLFirstFrameTimeoutId !== 0) return;
       forceWebGLFirstFrameTimeoutId = window.setTimeout(
@@ -1163,7 +1200,6 @@ export const ValenceOrb = memo(function ValenceOrb({
       }
 
       forceWebGLStartupRecovered = true;
-      webglUpgradeAbort.abort();
       cancelWebGLUpgrade();
       webglWorker?.terminate();
       webglWorker = null;
@@ -1171,12 +1207,14 @@ export const ValenceOrb = memo(function ValenceOrb({
       workerRendererRef.current = null;
       glRendererRef.current?.dispose();
       glRendererRef.current = null;
+      workerRenderer = null;
+      glRenderer = null;
 
       recordError(
         new Error('Canonical WebGL first frame timed out without using a substitute orb'),
         { component: 'ValenceOrb', action: 'forced-webgl-first-frame-timeout' },
       );
-      setCtxFailed(true);
+      recoverForcedWebGLStartup();
     };
     const startWebGLUpgradeWhenVisible = () => {
       if (webglUpgradeAbort.signal.aborted || webglUpgradeStarted) return;

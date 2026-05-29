@@ -1,10 +1,14 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Bell,
+  CheckCircle2,
+  Cloud,
+  Clock3,
   DatabaseBackup,
   Globe2,
   Info,
   LayoutGrid,
+  LockKeyhole,
   Palette,
   ShieldCheck,
   SlidersHorizontal,
@@ -20,7 +24,10 @@ import { ThemeToggleV2 } from "@/components/navigation-v2/ThemeToggleV2";
 import { DeviceSessionsCard } from "@/components/sync/DeviceSessionsCard";
 import { SyncHealthCard } from "@/components/sync/SyncHealthCard";
 import { SettingsPanel, type SettingsPanelProps } from "@/components/SettingsPanel";
+import { useFeatureFlags, type ToggleableFeature } from "@/contexts/FeatureFlagsContext";
 import { useThemeStore } from "@/stores/themeStore";
+import { useAppStore } from "@/stores";
+import { supabase } from "@/lib/supabaseClient";
 import { cn } from "@/lib/utils";
 import { APP_VERSION } from "@/lib/appVersion";
 
@@ -53,6 +60,25 @@ interface SettingsSection {
   role: NonOrbVisualRole;
 }
 
+interface SettingsCockpitCard {
+  id: string;
+  icon: LucideIcon;
+  label: string;
+  value: string;
+  description: string;
+  role: NonOrbVisualRole;
+}
+
+const OPTIONAL_MODULES: ToggleableFeature[] = [
+  "focusTimer",
+  "breathingExercise",
+  "gratitudeJournal",
+  "quests",
+  "tasks",
+  "challenges",
+  "innerWorld",
+];
+
 const SETTINGS_PANEL_SECTION_BY_CARD: Record<string, string> = {
   profile: "profile",
   appearance: "profile",
@@ -73,9 +99,13 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
   const [requestedSection, setRequestedSection] = useState<string | undefined>(
     controls?.initialOpenSection,
   );
+  const [selectedCardId, setSelectedCardId] = useState<string>("profile");
   const appliedTheme = useThemeStore((s) => s.appliedTheme);
+  const hasValidSession = useAppStore((s) => s.hasValidSession);
+  const { flags } = useFeatureFlags();
   const settingsTone = getRoleTone("settings");
   const SettingsIcon = V2_NAV_ICONS.settings;
+  const settingsLead = `${tx.settingsCloudSyncTitle}: ${tx.settingsCloudSyncDescription}`;
 
   useEffect(() => {
     mainRef.current?.focus({ preventScroll: true });
@@ -84,10 +114,11 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
   const handleSectionOpen = useCallback((sectionId: string) => {
     const targetSection = SETTINGS_PANEL_SECTION_BY_CARD[sectionId];
     if (targetSection) {
+      setSelectedCardId(sectionId);
       setRequestedSection(targetSection);
     }
 
-    if (controlDeckRef.current) {
+    if (controls && controlDeckRef.current) {
       const scrollToDeck = () =>
         controlDeckRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       if (typeof window !== "undefined" && "requestAnimationFrame" in window) {
@@ -96,9 +127,41 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
         scrollToDeck();
       }
     }
-  }, []);
+  }, [controls]);
 
   const themeLabel = appliedTheme === "paper" ? tx.themeLight : tx.themeDark;
+  const enabledOptionalModules = useMemo(
+    () => OPTIONAL_MODULES.filter((moduleId) => flags[moduleId]).length,
+    [flags],
+  );
+  const totalModules = OPTIONAL_MODULES.length + 2;
+  const enabledModules = enabledOptionalModules + 2;
+  const reminderSummary = controls?.reminders.enabled
+    ? `${tx.moodReminder}: ${
+        controls.reminders.moodTimeMorning || "09:00"
+      } | ${tx.habitReminder}: ${controls.reminders.habitTime || "08:00"}`
+    : tx.notificationsComingSoon || "Off";
+  const dataSummary = controls
+    ? `${controls.moods?.length ?? 0} ${tx.moodEntries} | ${controls.habits.length} ${
+        tx.habits
+      } | ${controls.focusSessions?.length ?? 0} ${tx.focus}`
+    : tx.settingsExportDescription;
+  const syncStatus = !supabase
+    ? tx.cloudSyncDisabled || tx.settingsCloudSyncDisabledByUser
+    : hasValidSession === false
+      ? tx.sessionExpiredSettings
+      : hasValidSession === null
+        ? tx.syncing
+        : tx.settingsCloudSyncEnabled;
+  const syncDescription =
+    hasValidSession === false
+      ? tx.localDataSafe
+      : tx.settingsCloudSyncDescription;
+  const privacySummary = controls?.privacy.noTracking
+    ? tx.privacyNoTracking
+    : controls?.privacy.analytics
+      ? tx.privacyAnalytics
+      : tx.privacyDescription;
   const sections = useMemo<SettingsSection[]>(
     () => [
       {
@@ -189,6 +252,69 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
       tx.yourName,
     ],
   );
+  const selectedSection = sections.find((section) => section.id === selectedCardId);
+  const cockpitCards = useMemo<SettingsCockpitCard[]>(
+    () => [
+      {
+        id: "account",
+        icon: Cloud,
+        label: tx.settingsCloudSyncTitle,
+        value: syncStatus,
+        description: syncDescription,
+        role: "space",
+      },
+      {
+        id: "notifications",
+        icon: Clock3,
+        label: tx.settingsGroupNotifications,
+        value: reminderSummary,
+        description: tx.remindersDescription,
+        role: "focus",
+      },
+      {
+        id: "modules",
+        icon: LayoutGrid,
+        label: tx.settingsGroupModules,
+        value: `${enabledModules}/${totalModules}`,
+        description: tx.settingsModulesDescription,
+        role: "settings",
+      },
+      {
+        id: "privacy",
+        icon: LockKeyhole,
+        label: tx.privacyTitle,
+        value: privacySummary,
+        description: tx.privacyDescription,
+        role: "rest",
+      },
+      {
+        id: "data",
+        icon: DatabaseBackup,
+        label: tx.settingsGroupData,
+        value: dataSummary,
+        description: tx.settingsExportDescription,
+        role: "diary",
+      },
+    ],
+    [
+      dataSummary,
+      enabledModules,
+      privacySummary,
+      reminderSummary,
+      syncDescription,
+      syncStatus,
+      totalModules,
+      tx.privacyDescription,
+      tx.privacyTitle,
+      tx.remindersDescription,
+      tx.settingsCloudSyncTitle,
+      tx.settingsExportDescription,
+      tx.settingsGroupData,
+      tx.settingsGroupModules,
+      tx.settingsGroupNotifications,
+      tx.settingsModulesDescription,
+    ],
+  );
 
   return (
     <Bloom key="settings-page" transition={staggerDelay("primary")}>
@@ -236,7 +362,7 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
                 {tx.navV2Settings}
               </h1>
               <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground font-body">
-                {tx.navV2SettingsPlaceholder}
+                {settingsLead}
               </p>
             </div>
           </div>
@@ -267,6 +393,7 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
 
         <SyncHealthCard
           dense
+          allowManualRetry={false}
           className="border-[hsl(var(--zf-role-space)/0.24)] bg-[hsl(var(--card)/0.76)] shadow-[var(--zen-shadow-card)]"
         />
 
@@ -274,6 +401,65 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
           dense
           className="border-[hsl(var(--zf-role-settings)/0.24)] bg-[hsl(var(--card)/0.76)] shadow-[var(--zen-shadow-card)]"
         />
+
+        <section
+          className="rounded-[1.75rem] border border-[hsl(var(--border)/0.58)] bg-[hsl(var(--card)/0.72)] p-3 shadow-[var(--zen-shadow-card)] backdrop-blur-xl"
+          aria-label={tx.settings || tx.navV2Settings}
+          data-testid="settings-cockpit"
+        >
+          <div className="grid gap-3 min-[560px]:grid-cols-2">
+            {cockpitCards.map((item) => {
+              const tone = getRoleTone(item.role);
+              const Icon = item.icon;
+              return (
+                <button
+                  type="button"
+                  key={item.id}
+                  onClick={() => handleSectionOpen(item.id)}
+                  aria-pressed={selectedCardId === item.id}
+                  aria-controls={controls ? "settings-v2-control-deck" : undefined}
+                  aria-label={`${item.label}: ${item.value}. ${item.description}`}
+                  className={cn(
+                    "group relative min-h-[132px] overflow-hidden rounded-3xl border bg-[hsl(var(--background)/0.44)] p-4 text-start",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--zf-role-settings)/0.52)] focus-visible:ring-offset-2",
+                    "motion-safe:transition-[transform,border-color,background-color,box-shadow] motion-safe:duration-200 hover:-translate-y-0.5 hover:bg-[hsl(var(--card)/0.9)]",
+                    selectedCardId === item.id
+                      ? "border-[hsl(var(--zf-role-settings)/0.48)] shadow-[0_18px_46px_-28px_hsl(var(--zf-role-settings)/0.82)]"
+                      : tone.borderClass,
+                  )}
+                  data-testid={`settings-cockpit-card-${item.id}`}
+                  data-visual-role={item.role}
+                >
+                  <span
+                    aria-hidden="true"
+                    className={cn("absolute inset-x-5 top-0 h-[2px] rounded-b-full", tone.railClass)}
+                  />
+                  <span className="flex items-start gap-3">
+                    <span
+                      className={cn(
+                        "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border",
+                        tone.iconClass,
+                      )}
+                    >
+                      <Icon className="h-5 w-5" aria-hidden="true" />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-sm font-semibold text-foreground">
+                        {item.label}
+                      </span>
+                      <span className="mt-2 block text-base font-semibold leading-tight text-foreground">
+                        {item.value}
+                      </span>
+                      <span className="mt-2 block text-xs leading-relaxed text-muted-foreground">
+                        {item.description}
+                      </span>
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
 
         <section
           className="grid gap-3 min-[520px]:grid-cols-2"
@@ -293,9 +479,12 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--zf-role-settings)/0.52)] focus-visible:ring-offset-2",
                   "motion-safe:transition-[transform,border-color,background-color,box-shadow] motion-safe:duration-200 hover:-translate-y-0.5 hover:bg-[hsl(var(--card)/0.88)]",
                   tone.borderClass,
+                  selectedCardId === item.id &&
+                    "border-[hsl(var(--zf-role-settings)/0.48)] bg-[hsl(var(--card)/0.92)]",
                 )}
                 data-testid={`settings-section-${item.id}`}
                 data-visual-role={item.role}
+                aria-pressed={selectedCardId === item.id}
                 aria-controls={controls ? "settings-v2-control-deck" : undefined}
                 aria-label={`${item.label}: ${item.description}`}
               >
@@ -334,6 +523,26 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
             aria-label={tx.settings || tx.navV2Settings}
             data-testid="settings-page-control-deck"
           >
+            {selectedSection && (
+              <div
+                className="mb-3 rounded-3xl border border-[hsl(var(--border)/0.58)] bg-[hsl(var(--card)/0.72)] p-4 shadow-[var(--zen-shadow-card)]"
+                data-testid="settings-page-control-deck-header"
+              >
+                <div className="flex items-start gap-3">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[hsl(var(--zf-role-settings)/0.12)] text-[hsl(var(--zf-role-settings))]">
+                    <CheckCircle2 className="h-5 w-5" aria-hidden="true" />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-sm font-semibold text-foreground">
+                      {selectedSection.label}
+                    </span>
+                    <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
+                      {selectedSection.description}
+                    </span>
+                  </span>
+                </div>
+              </div>
+            )}
             <SettingsPanel
               {...controls}
               initialOpenSection={requestedSection || controls.initialOpenSection}

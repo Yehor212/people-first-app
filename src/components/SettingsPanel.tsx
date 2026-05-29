@@ -73,12 +73,10 @@ export function SettingsPanel({
     initialOpenSection ? [initialOpenSection] : ["profile"]
   );
 
-  // Auto-open and scroll to section when initialOpenSection changes
+  // Route-driven section changes should make the requested settings area primary.
   useEffect(() => {
     if (initialOpenSection) {
-      setOpenSections((prev) =>
-        prev.includes(initialOpenSection) ? prev : [...prev, initialOpenSection]
-      );
+      setOpenSections([initialOpenSection]);
     }
   }, [initialOpenSection]);
 

@@ -30,6 +30,7 @@ const MAX_PENDING_ROWS = 3;
 interface SyncHealthCardProps {
   className?: string;
   dense?: boolean;
+  allowManualRetry?: boolean;
 }
 
 const STATUS_META: Record<
@@ -146,7 +147,11 @@ function pendingActionText(action: OfflineAction, tx: Record<string, string>): s
   return renderTemplate(tx.syncActionSavedLocal || "{domain} saved locally", { domain });
 }
 
-export function SyncHealthCard({ className, dense = false }: SyncHealthCardProps) {
+export function SyncHealthCard({
+  className,
+  dense = false,
+  allowManualRetry = true,
+}: SyncHealthCardProps) {
   const { t, language } = useLanguage();
   const tx = t as unknown as Record<string, string>;
   const { state: orchestratorState } = useSyncOrchestrator();
@@ -369,7 +374,7 @@ export function SyncHealthCard({ className, dense = false }: SyncHealthCardProps
         </div>
       )}
 
-      {(pendingCount > 0 || status === "error") && (
+      {allowManualRetry && (pendingCount > 0 || status === "error") && (
         <button
           type="button"
           onClick={() => {

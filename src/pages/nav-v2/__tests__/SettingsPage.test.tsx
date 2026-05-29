@@ -29,6 +29,25 @@ vi.mock("@/contexts/LanguageContext", () => ({
       settingsGroupAccount: "Account",
       settingsAccountDesc: "Account controls.",
       settingsGroupAbout: "About",
+      settingsCloudSyncTitle: "Automatic sync",
+      settingsCloudSyncEnabled: "Automatic sync active",
+      settingsCloudSyncDescription: "Signed-in data stays synced across devices.",
+      settingsCloudSyncDisabledByUser: "Sync paused",
+      cloudSyncDisabled: "Cloud sync disabled",
+      sessionExpiredSettings: "Your session has expired",
+      localDataSafe: "Your local data is safe.",
+      syncing: "Syncing...",
+      settingsGroupData: "Data & Privacy",
+      moodReminder: "Mood",
+      habitReminder: "Habit",
+      notificationsComingSoon: "Off",
+      moodEntries: "Mood entries",
+      habits: "Habits",
+      focus: "Focus",
+      privacyTitle: "Privacy",
+      privacyDescription: "Your data stays on device.",
+      privacyNoTracking: "No tracking",
+      privacyAnalytics: "Analytics",
     },
   }),
 }));
@@ -50,7 +69,14 @@ vi.mock("@/components/navigation-v2/ThemeToggleV2", () => ({
 }));
 
 vi.mock("@/components/sync/SyncHealthCard", () => ({
-  SyncHealthCard: () => <section data-testid="sync-health-card">Sync health</section>,
+  SyncHealthCard: ({ allowManualRetry }: { allowManualRetry?: boolean }) => (
+    <section
+      data-testid="sync-health-card"
+      data-allow-manual-retry={String(allowManualRetry ?? true)}
+    >
+      Sync health
+    </section>
+  ),
 }));
 
 vi.mock("@/components/sync/DeviceSessionsCard", () => ({
@@ -60,6 +86,31 @@ vi.mock("@/components/sync/DeviceSessionsCard", () => ({
 vi.mock("@/stores/themeStore", () => ({
   useThemeStore: (selector: (s: { appliedTheme: string }) => unknown) =>
     selector({ appliedTheme: "paper" }),
+}));
+
+vi.mock("@/stores", () => ({
+  useAppStore: (selector: (s: { hasValidSession: boolean }) => unknown) =>
+    selector({ hasValidSession: true }),
+}));
+
+vi.mock("@/contexts/FeatureFlagsContext", () => ({
+  useFeatureFlags: () => ({
+    flags: {
+      focusTimer: true,
+      breathingExercise: true,
+      gratitudeJournal: true,
+      quests: true,
+      tasks: true,
+      challenges: false,
+      aiCoach: false,
+      innerWorld: true,
+      deltaSync: true,
+    },
+  }),
+}));
+
+vi.mock("@/lib/supabaseClient", () => ({
+  supabase: {},
 }));
 
 vi.mock("@/components/SettingsPanel", () => ({
@@ -123,8 +174,16 @@ describe("SettingsPage", () => {
     );
     expect(screen.getByTestId("settings-page-control-card")).toBeInTheDocument();
     expect(screen.getByTestId("settings-v2-theme-toggle")).toBeInTheDocument();
-    expect(screen.getByTestId("sync-health-card")).toBeInTheDocument();
+    expect(screen.getByTestId("sync-health-card")).toHaveAttribute(
+      "data-allow-manual-retry",
+      "false",
+    );
     expect(screen.getByTestId("device-sessions-card")).toBeInTheDocument();
+    expect(screen.getByTestId("settings-cockpit")).toBeInTheDocument();
+    expect(screen.getByTestId("settings-cockpit-card-account")).toHaveTextContent(
+      "Automatic sync active",
+    );
+    expect(screen.getByTestId("settings-cockpit-card-modules")).toHaveTextContent("8/9");
     expect(screen.getByText("Appearance").closest("[data-visual-role]")).toHaveAttribute(
       "data-visual-role",
       "mind",
@@ -145,6 +204,7 @@ describe("SettingsPage", () => {
 
     expect(screen.getByTestId("settings-page")).toHaveAttribute("data-controls-wired", "true");
     expect(screen.getByTestId("settings-page-control-deck")).toBeInTheDocument();
+    expect(screen.getByTestId("settings-page-control-deck-header")).toHaveTextContent("Profile");
     expect(screen.getByTestId("settings-panel")).toHaveAttribute("data-user-name", "Avery");
     expect(screen.getByTestId("settings-panel")).toHaveAttribute("data-show-heading", "false");
     expect(screen.getByTestId("settings-panel")).toHaveAttribute("data-show-sync-cards", "false");
@@ -156,5 +216,23 @@ describe("SettingsPage", () => {
     fireEvent.click(screen.getByTestId("settings-section-data"));
 
     expect(screen.getByTestId("settings-panel")).toHaveAttribute("data-open-section", "data");
+    expect(screen.getByTestId("settings-section-data")).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByTestId("settings-page-control-deck-header")).toHaveTextContent("Data");
+  });
+
+  it("opens detail sections from the V2 cockpit without exposing a manual sync action", () => {
+    render(<SettingsPage controls={createSettingsControls()} />);
+
+    fireEvent.click(screen.getByTestId("settings-cockpit-card-account"));
+
+    expect(screen.getByTestId("settings-panel")).toHaveAttribute("data-open-section", "account");
+    expect(screen.getByTestId("settings-cockpit-card-account")).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.getByTestId("sync-health-card")).toHaveAttribute(
+      "data-allow-manual-retry",
+      "false",
+    );
   });
 });
