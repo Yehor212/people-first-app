@@ -30,7 +30,7 @@ import { SSK } from '@/lib/storageKeys';
 import { createParticlePool, updateParticles, burstParticles } from './particleSystem';
 import { drawOrbScene, getShapeParams } from './orbRenderer';
 import { valenceToHSL } from './colorUtils';
-import { createOrbGL2, createOrbGL, createOrbGL2Async, createOrbGLAsync } from './orbShader';
+import { createOrbGL2Async, createOrbGLAsync } from './orbShader';
 import type { Particle } from './particleSystem';
 import type { OrbGLBuildResult, OrbGLRenderer } from './orbShader';
 
@@ -84,7 +84,7 @@ export const CANONICAL_ORB_ANIMATION_SPEED = 0.72;
 const WEBGL_BUILD_BUDGET_MS = 500;
 export const WEBGL_WORKER_READY_BUDGET_MS = 700;
 const WEBGL_READINESS_TIMEOUT_MS = 8000;
-export const WEBGL_FORCED_FIRST_FRAME_TIMEOUT_MS = 1400;
+export const WEBGL_FORCED_FIRST_FRAME_TIMEOUT_MS = 5000;
 const WEBGL_UPGRADE_DELAY_MS = 180;
 const FORCED_WEBGL_UPGRADE_DELAY_MS = 0;
 const MINI_WEBGL_UPGRADE_DELAY_MS = 0;
@@ -576,22 +576,6 @@ export const ValenceOrb = memo(function ValenceOrb({
       activeCanvas = createCanvas(size, dpr);
       activeCanvas.style.opacity = '0';
       activeCanvas.style.transition = 'opacity 160ms ease-out';
-
-      glRenderer = createOrbGL2(activeCanvas);
-      if (!glRenderer) {
-        const gl1Canvas = createCanvas(size, dpr);
-        gl1Canvas.style.opacity = '0';
-        gl1Canvas.style.transition = 'opacity 160ms ease-out';
-        const gl1Renderer = createOrbGL(gl1Canvas);
-        if (gl1Renderer) {
-          activeCanvas = gl1Canvas;
-          glRenderer = gl1Renderer;
-        }
-      }
-
-      if (glRenderer) {
-        markRendererTier(activeCanvas, 'webgl-main');
-      }
     } else {
       markRendererTier(activeCanvas, 'canvas2d');
       try {
@@ -703,24 +687,6 @@ export const ValenceOrb = memo(function ValenceOrb({
 
     const renderPendingWebGL = () => {};
     let render = glRenderer ? renderGL : (ctx2d ? renderCanvas2D : renderPendingWebGL);
-
-    const renderInitialWebGLFrame = () => {
-      if (!forceCanonicalWebGL || !glRenderer) return;
-      const state = stateRef.current;
-      if (!state) return;
-
-      try {
-        renderGL(smoothValenceRef.current, state.time, state.particles);
-      } catch (err) {
-        recordError(err, { component: 'ValenceOrb', action: 'webgl-initial-render' });
-        glRenderer.dispose();
-        glRenderer = null;
-        glRendererRef.current = null;
-        render = renderPendingWebGL;
-      }
-    };
-
-    renderInitialWebGLFrame();
 
     // ── Fallback canvas for context loss recovery ──
     let fallbackCanvas: HTMLCanvasElement | null = null;
@@ -1264,22 +1230,9 @@ export const ValenceOrb = memo(function ValenceOrb({
     };
 
     // ── Animation gate ──
-    if (!shouldAnimateCanonicalOrb()) {
-      if (forceCanonicalWebGL) {
-        const state = stateRef.current;
-        if (glRendererRef.current && state) {
-          try {
-            renderGL(smoothValenceRef.current, state.time, state.particles);
-          } catch (err) {
-            recordError(err, { component: 'ValenceOrb', action: 'webgl-static-render' });
-            setCtxFailed(true);
-          }
-        } else {
-          setCtxFailed(true);
-        }
-      } else {
-        try { render(valenceRef.current, 0, stateRef.current.particles); } catch { /* graceful: initial frame render failure leaves the canvas untouched */ }
-      }
+    const shouldAnimateOrb = shouldAnimateCanonicalOrb();
+    if (!shouldAnimateOrb && !forceCanonicalWebGL) {
+      try { render(valenceRef.current, 0, stateRef.current.particles); } catch { /* graceful: initial frame render failure leaves the canvas untouched */ }
       return cleanup;
     }
 
@@ -1302,7 +1255,9 @@ export const ValenceOrb = memo(function ValenceOrb({
       });
     }
 
-    rafRef.current = requestAnimationFrame(loop);
+    if (shouldAnimateOrb) {
+      rafRef.current = requestAnimationFrame(loop);
+    }
 
     return cleanup;
   }, [renderer, size]);

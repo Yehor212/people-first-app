@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { render } from "@testing-library/react";
+import { act, render } from "@testing-library/react";
 
 import { MiniValenceOrb } from "../MiniValenceOrb";
 import { drawOrbScene } from "../orbRenderer";
-import { createOrbGL, createOrbGL2 } from "../orbShader";
+import { createOrbGL2Async, createOrbGLAsync } from "../orbShader";
 
 vi.mock("../orbRenderer", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../orbRenderer")>();
@@ -17,8 +17,6 @@ vi.mock("../orbShader", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../orbShader")>();
   return {
     ...actual,
-    createOrbGL2: vi.fn(() => null),
-    createOrbGL: vi.fn(() => null),
     createOrbGL2Async: vi.fn(() => Promise.resolve(null)),
     createOrbGLAsync: vi.fn(() => Promise.resolve(null)),
   };
@@ -46,12 +44,67 @@ describe("MiniValenceOrb", () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     vi.restoreAllMocks();
-    vi.mocked(createOrbGL2).mockReset();
-    vi.mocked(createOrbGL2).mockReturnValue(null);
-    vi.mocked(createOrbGL).mockReset();
-    vi.mocked(createOrbGL).mockReturnValue(null);
+    window.history.replaceState(null, "", "/");
+    vi.mocked(createOrbGL2Async).mockReset();
+    vi.mocked(createOrbGL2Async).mockResolvedValue(null);
+    vi.mocked(createOrbGLAsync).mockReset();
+    vi.mocked(createOrbGLAsync).mockResolvedValue(null);
   });
+
+  function stubVisibleOrbRect() {
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
+      width: 120,
+      height: 120,
+      top: 0,
+      left: 0,
+      right: 120,
+      bottom: 120,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    });
+  }
+
+  function installQueuedRaf() {
+    const callbacks: FrameRequestCallback[] = [];
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(() => ({
+      bottom: 96,
+      height: 96,
+      left: 0,
+      right: 96,
+      top: 0,
+      width: 96,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    }));
+    vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => {
+      callbacks.push(callback);
+      return callbacks.length;
+    });
+    vi.spyOn(window, "cancelAnimationFrame").mockImplementation(() => {});
+
+    return {
+      flushNextFrame() {
+        const callback = callbacks.shift();
+        callback?.(performance.now());
+      },
+    };
+  }
+
+  async function flushScheduledWebGLUpgrade(flushNextFrame: () => void) {
+    await act(async () => {
+      for (let elapsed = 0; elapsed < 4900; elapsed += 100) {
+        flushNextFrame();
+        vi.advanceTimersByTime(100);
+        await Promise.resolve();
+        await Promise.resolve();
+        if (vi.mocked(createOrbGL2Async).mock.calls.length > 0) break;
+      }
+    });
+  }
 
   it("keeps the legacy bare md preset as the default compact orb", () => {
     const { container } = render(<MiniValenceOrb valence={0.2} hasEntry />);
@@ -96,14 +149,28 @@ describe("MiniValenceOrb", () => {
     expect(container.firstChild).toHaveClass("opacity-0");
   });
 
-  it("reveals mini chrome only after the canonical WebGL frame is ready", () => {
+  it("reveals mini chrome only after the canonical WebGL frame is ready", async () => {
+    vi.useFakeTimers();
+    window.history.replaceState(null, "", "/?orbRenderer=webgl");
+    vi.stubGlobal("OffscreenCanvas", undefined);
+    stubVisibleOrbRect();
+    const { flushNextFrame } = installQueuedRaf();
     const renderer = createMockGLRenderer();
-    vi.mocked(createOrbGL2).mockReturnValue(renderer);
+    vi.mocked(createOrbGL2Async).mockResolvedValue({
+      renderer,
+      durationMs: 1,
+      tier: "webgl2",
+    });
 
     const { container } = render(
       <MiniValenceOrb valence={0} hasEntry={false} size="sm" chrome="badge" />,
     );
 
+    expect(container.firstChild).toHaveClass("opacity-0");
+
+    await flushScheduledWebGLUpgrade(flushNextFrame);
+
+    expect(createOrbGL2Async).toHaveBeenCalledTimes(1);
     expect(container.firstChild).toHaveClass("opacity-100");
     expect(container.querySelector("[data-orb-first-paint-ready='true']")).not.toBeNull();
     expect(container.querySelector("[data-orb-visual-ready='true']")).not.toBeNull();

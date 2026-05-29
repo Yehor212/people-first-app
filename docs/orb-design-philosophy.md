@@ -4,6 +4,16 @@
 
 ---
 
+## 0. Runtime Canon
+
+Product surfaces that request `renderer="webgl"` may show only the canonical
+WebGL renderer: worker WebGL or async main-thread WebGL. Canvas2D, SVG, icon,
+CSS ring, static gradient, Lottie, and synchronous first-paint stand-ins are
+not acceptable substitutes. If WebGL cannot produce the canonical frame, the
+surface fails closed instead of displaying a non-canonical orb.
+
+---
+
 ## 1. DESIGN DNA — What Makes This Orb
 
 ### 1.1 The Shape Language: Gielis Superformula

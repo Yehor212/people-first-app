@@ -147,12 +147,14 @@ describe("canonical orb invariant", () => {
     expect(source).toContain("const recoveredWithWebGL = await upgradeToMainThreadWebGL()");
   });
 
-  it("forbids Canvas2D first-paint substitutes for forced WebGL surfaces", () => {
+  it("forbids Canvas2D and synchronous main-thread first-paint substitutes for forced WebGL surfaces", () => {
     const source = readSource("src/components/state-of-mind/ValenceOrb.tsx");
 
-    expect(source).toContain("renderInitialWebGLFrame");
-    expect(source).toContain("createOrbGL2(activeCanvas)");
-    expect(source).toContain("markRendererTier(activeCanvas, 'webgl-main')");
+    expect(source).toContain("createOrbGL2Async(gl2Canvas");
+    expect(source).toContain("markRendererTier(upgradeCanvas, 'webgl-main')");
+    expect(source).not.toContain("renderInitialWebGLFrame");
+    expect(source).not.toContain("createOrbGL2(activeCanvas)");
+    expect(source).not.toContain("createOrbGL(gl1Canvas)");
     expect(source).not.toContain("renderForcedWebGLFirstPaint");
     expect(source).not.toContain("markFirstPaintCanvas");
     expect(source).not.toContain("orbFirstPaintCanvas");
