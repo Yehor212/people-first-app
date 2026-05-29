@@ -205,7 +205,7 @@ export function DeviceSessionsCard({ className, dense = false }: DeviceSessionsC
                     {isCurrent
                       ? tx.syncDeviceCurrent || "Current device"
                       : isRevoked
-                        ? tx.syncDeviceRevoked || "Revoked"
+                        ? tx.syncDeviceRevoked || "Inactive"
                         : `${tx.syncDeviceLastSeen || "Last seen"} ${formatRelativeTime(
                             session.last_seen_at,
                             language,
@@ -223,7 +223,7 @@ export function DeviceSessionsCard({ className, dense = false }: DeviceSessionsC
                 >
                   {revokingId === session.id
                     ? tx.syncRevoking || "Revoking"
-                    : tx.syncRevokeDevice || "Revoke"}
+                    : tx.syncRevokeDevice || "Mark inactive"}
                 </button>
               )}
             </article>
@@ -233,7 +233,7 @@ export function DeviceSessionsCard({ className, dense = false }: DeviceSessionsC
 
       <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
         {tx.syncDeviceSessionsFootnote ||
-          "This is sync presence, not raw browser fingerprinting or journal content."}
+          "Marking a device inactive hides it from sync presence; it does not sign that device out."}
       </p>
     </section>
   );

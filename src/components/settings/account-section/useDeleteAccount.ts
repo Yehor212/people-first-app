@@ -1,13 +1,10 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { deleteAccount } from '@/lib/accountService';
-import { stopAutoSync } from '@/storage/cloudSync';
-import { clearLocalUserData } from '@/storage/db';
-import { triggerDataRefresh } from '@/hooks/useIndexedDB';
 import { logger } from '@/lib/logger';
 
 interface UseDeleteAccountOptions {
-  onResetData: () => void;
+  onResetData: () => void | Promise<void>;
   t: Record<string, string>;
 }
 
@@ -34,10 +31,7 @@ export function useDeleteAccount({ onResetData, t }: UseDeleteAccountOptions) {
     try {
       const result = await deleteAccount();
       if (!result.success) throw new Error(result.error || 'Delete failed');
-      stopAutoSync();
-      await clearLocalUserData();
-      triggerDataRefresh();
-      onResetData();
+      await onResetData();
       setShowDeleteConfirm(false);
       setDeleteStatus(t.deleteAccountSuccess);
     } catch (error) {

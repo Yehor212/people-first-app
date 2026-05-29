@@ -28,7 +28,7 @@ import { useDataExport } from "./useDataExport";
 import { useDataImport } from "./useDataImport";
 
 interface DataSectionProps {
-  onResetData: () => void;
+  onResetData: () => void | Promise<void>;
   privacy: PrivacySettings;
   onPrivacyChange: (
     value: PrivacySettings | ((prev: PrivacySettings) => PrivacySettings),
@@ -55,6 +55,7 @@ export function DataSection({
 
   const [dataStatus, setDataStatus] = useState<string | null>(null);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [isResettingData, setIsResettingData] = useState(false);
 
   const exp = useDataExport({
     setDataStatus,
@@ -98,9 +99,18 @@ export function DataSection({
     return () => window.clearTimeout(timer);
   }, [dataStatus]);
 
-  const handleReset = () => {
-    onResetData();
-    setShowResetConfirm(false);
+  const handleReset = async () => {
+    setIsResettingData(true);
+    setDataStatus(null);
+    try {
+      await onResetData();
+      setShowResetConfirm(false);
+      setDataStatus(tRecord.resetDataSuccess || "Your local ZenFlow data has been reset.");
+    } catch {
+      setDataStatus(tRecord.resetDataError || "Data reset failed. Please try again.");
+    } finally {
+      setIsResettingData(false);
+    }
   };
 
   return (
@@ -294,16 +304,18 @@ export function DataSection({
                     <button
                       onClick={() => setShowResetConfirm(false)}
                       aria-label={t.cancel}
+                      disabled={isResettingData}
                       className="flex-1 py-2 min-h-[44px] bg-secondary text-secondary-foreground rounded-lg"
                     >
                       {t.cancel}
                     </button>
                     <button
-                      onClick={handleReset}
+                      onClick={() => void handleReset()}
                       aria-label={t.delete}
+                      disabled={isResettingData}
                       className="flex-1 py-2 min-h-[44px] bg-destructive text-destructive-foreground rounded-lg"
                     >
-                      {t.delete}
+                      {isResettingData ? tRecord.resetting || "Resetting..." : t.delete}
                     </button>
                   </div>
                 </div>

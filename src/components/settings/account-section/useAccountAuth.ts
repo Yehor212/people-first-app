@@ -117,6 +117,8 @@ export function useAccountAuth({ onNameChange, t }: UseAccountAuthOptions) {
         }
       }
       stopAutoSync();
+      const { clearDeviceIdCache } = await import("@/storage/eventSync");
+      clearDeviceIdCache();
       await clearLocalUserData();
       triggerDataRefresh();
       await removePushToken();

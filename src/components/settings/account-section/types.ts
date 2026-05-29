@@ -1,7 +1,7 @@
 export interface AccountSectionProps {
   userName: string;
   onNameChange: (name: string) => void;
-  onResetData: () => void;
+  onResetData: () => void | Promise<void>;
 }
 
 /** Format an unknown error into a readable string */

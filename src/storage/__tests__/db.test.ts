@@ -32,6 +32,7 @@ import {
   journalSpacesRepo,
   journalPracticeSessionsRepo,
   journalEntryLinksRepo,
+  journalSpaceCapturesRepo,
 } from '@/storage/db';
 
 const EXPECTED_TABLES = [
@@ -41,6 +42,7 @@ const EXPECTED_TABLES = [
   'gratitudeEntries',
   'settings',
   'offlineQueue',
+  'deadLetterQueue',
   'journalEntries',
   'journalPhotos',
   'journalAudio',
@@ -48,6 +50,7 @@ const EXPECTED_TABLES = [
   'journalSpaces',
   'journalPracticeSessions',
   'journalEntryLinks',
+  'journalSpaceCaptures',
 ];
 
 // ─── Database Instance ───────────────────────────────────────────
@@ -120,6 +123,10 @@ describe('repository exports', () => {
   it('journalEntryLinksRepo is db.journalEntryLinks', () => {
     expect(journalEntryLinksRepo).toBe(db.journalEntryLinks);
   });
+
+  it('journalSpaceCapturesRepo is db.journalSpaceCaptures', () => {
+    expect(journalSpaceCapturesRepo).toBe(db.journalSpaceCaptures);
+  });
 });
 
 // ─── clearLocalUserData ──────────────────────────────────────────
@@ -137,12 +144,20 @@ describe('clearLocalUserData', () => {
     await db.journalSpaces.put({ id: 'space-1', iconKey: 'folder', accent: 'primary', private: false, sortOrder: 1, createdAt: Date.now(), updatedAt: Date.now() } as any);
     await db.journalPracticeSessions.put({ id: 'practice-1', practiceId: 'focus-note', startedAt: Date.now() });
     await db.journalEntryLinks.put({ id: 'link-1', entryId: 'entry-1', targetType: 'space', targetId: 'space-1', createdAt: Date.now() } as any);
+    await db.offlineQueue.put({ id: 'queue-1', type: 'WRITE_SYNC_EVENT', entityId: 'habit-1', payload: {}, timestamp: Date.now(), retries: 0, maxRetries: 3 });
+    await db.deadLetterQueue.put({ id: 'dead-1', type: 'WRITE_SYNC_EVENT', entityId: 'habit-1', payload: {}, lastError: 'failed', failedAt: Date.now() });
+    await db.settings.put({ key: 'sync-last-seq', value: 42 });
+    await db.settings.put({ key: 'zenflow-device-id', value: 'device-old' });
+    await db.settings.put({ key: 'zenflow-deleted-habit-ids', value: ['habit-old'] });
 
     // Set some localStorage keys that should be cleared
     localStorage.setItem('zenflow-moods', 'data');
     localStorage.setItem('zenflow-habits', 'data');
     localStorage.setItem('zenflow_cloud_sync_enabled', 'true');
     localStorage.setItem('zenflow_offline_queue', '[]');
+    localStorage.setItem('zenflow-device-id', 'device-old');
+    localStorage.setItem('sync-last-seq', '42');
+    localStorage.setItem('zenflow-deleted-habit-ids', '["habit-old"]');
   });
 
   it('clears moods table', async () => {
@@ -182,6 +197,19 @@ describe('clearLocalUserData', () => {
     await expect(db.journalSpaces.count()).resolves.toBe(0);
     await expect(db.journalPracticeSessions.count()).resolves.toBe(0);
     await expect(db.journalEntryLinks.count()).resolves.toBe(0);
+  });
+
+  it('clears offline queues and account-bound sync state', async () => {
+    await clearLocalUserData();
+
+    await expect(db.offlineQueue.count()).resolves.toBe(0);
+    await expect(db.deadLetterQueue.count()).resolves.toBe(0);
+    await expect(db.settings.get('sync-last-seq')).resolves.toBeUndefined();
+    await expect(db.settings.get('zenflow-device-id')).resolves.toBeUndefined();
+    await expect(db.settings.get('zenflow-deleted-habit-ids')).resolves.toBeUndefined();
+    expect(localStorage.getItem('sync-last-seq')).toBeNull();
+    expect(localStorage.getItem('zenflow-device-id')).toBeNull();
+    expect(localStorage.getItem('zenflow-deleted-habit-ids')).toBeNull();
   });
 
   it('removes expected localStorage keys', async () => {

@@ -18,6 +18,10 @@ const mockSetScheduleEvents = vi.fn();
 const mockSetCanvasGoals = vi.fn();
 const mockSetOnboardingComplete = vi.fn();
 const mockSetHasSelectedLanguage = vi.fn();
+const mockClearLocalUserData = vi.fn(() => Promise.resolve());
+const mockStopAutoSync = vi.fn();
+const mockClearDeviceIdCache = vi.fn();
+const mockTriggerDataRefresh = vi.fn();
 const mockScheduleEvents = [
   { id: 'e1', title: 'Manual Event', date: '2026-02-19', startHour: 9, startMinute: 0, endHour: 10, endMinute: 0, color: '#ff0000', source: 'manual' as const },
   { id: 'e2', title: 'Habit Event', date: '2026-02-19', startHour: 11, startMinute: 0, endHour: 12, endMinute: 0, color: '#00ff00', source: 'habit' as const },
@@ -56,6 +60,7 @@ vi.mock('@/lib/habits', () => ({
 const mockSyncWithCloud = vi.fn((_mode: unknown) => Promise.resolve());
 vi.mock('@/storage/cloudSync', () => ({
   syncWithCloud: (mode: unknown) => mockSyncWithCloud(mode),
+  stopAutoSync: () => mockStopAutoSync(),
 }));
 
 const mockMoodsToArray = vi.fn(() => Promise.resolve([{ id: 'm1' }]));
@@ -64,12 +69,21 @@ const mockFocusSessionsToArray = vi.fn(() => Promise.resolve([{ id: 'f1' }]));
 const mockGratitudeEntriesToArray = vi.fn(() => Promise.resolve([{ id: 'g1' }]));
 
 vi.mock('@/storage/db', () => ({
+  clearLocalUserData: () => mockClearLocalUserData(),
   db: {
     moods: { toArray: () => mockMoodsToArray() },
     habits: { toArray: () => mockHabitsToArray() },
     focusSessions: { toArray: () => mockFocusSessionsToArray() },
     gratitudeEntries: { toArray: () => mockGratitudeEntriesToArray() },
   },
+}));
+
+vi.mock('@/storage/eventSync', () => ({
+  clearDeviceIdCache: () => mockClearDeviceIdCache(),
+}));
+
+vi.mock('@/hooks/useIndexedDB', () => ({
+  triggerDataRefresh: () => mockTriggerDataRefresh(),
 }));
 
 // --- import under test after mocks ---
@@ -84,13 +98,16 @@ describe('useSettingsHandlers', () => {
     vi.clearAllMocks();
   });
 
-  it('handleResetData clears all arrays and sets name to Friend', () => {
+  it('handleResetData clears persistent local data, arrays, and sets name to Friend', async () => {
     const { result } = renderHook(() => useSettingsHandlers(allScheduleEvents));
 
-    act(() => {
-      result.current.handleResetData();
+    await act(async () => {
+      await result.current.handleResetData();
     });
 
+    expect(mockStopAutoSync).toHaveBeenCalled();
+    expect(mockClearDeviceIdCache).toHaveBeenCalled();
+    expect(mockClearLocalUserData).toHaveBeenCalled();
     expect(mockSetMoods).toHaveBeenCalledWith([]);
     expect(mockSetHabits).toHaveBeenCalledWith([]);
     expect(mockSetFocusSessions).toHaveBeenCalledWith([]);
@@ -101,6 +118,7 @@ describe('useSettingsHandlers', () => {
     expect(mockSetUserNameCustom).toHaveBeenCalledWith(false);
     expect(mockSetOnboardingComplete).toHaveBeenCalledWith(false);
     expect(mockSetHasSelectedLanguage).toHaveBeenCalledWith(false);
+    expect(mockTriggerDataRefresh).toHaveBeenCalled();
   });
 
   it('handleNameChange sets name and custom flag', () => {
@@ -195,11 +213,11 @@ describe('useSettingsHandlers', () => {
     expect(mockSetMoods).not.toHaveBeenCalled();
   });
 
-  it('handleResetData resets onboarding state', () => {
+  it('handleResetData resets onboarding state', async () => {
     const { result } = renderHook(() => useSettingsHandlers(allScheduleEvents));
 
-    act(() => {
-      result.current.handleResetData();
+    await act(async () => {
+      await result.current.handleResetData();
     });
 
     expect(mockSetOnboardingComplete).toHaveBeenCalledWith(false);

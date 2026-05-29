@@ -62,7 +62,7 @@ vi.mock("@/contexts/LanguageContext", () => ({
       syncDeviceSessionsActive: "Active devices",
       syncDeviceCurrent: "Current device",
       syncDeviceLastSeen: "Last seen",
-      syncRevokeDevice: "Revoke",
+      syncRevokeDevice: "Mark inactive",
       syncRevoking: "Revoking",
       syncDeviceSessionsFootnote: "No private content is stored.",
     },
@@ -102,10 +102,10 @@ describe("DeviceSessionsCard", () => {
     expect(cardText).not.toContain("device_phone_private");
   });
 
-  it("soft-revokes a non-current device only", async () => {
+  it("marks a non-current device inactive only", async () => {
     render(<DeviceSessionsCard />);
 
-    const revoke = await screen.findByRole("button", { name: "Revoke" });
+    const revoke = await screen.findByRole("button", { name: "Mark inactive" });
     fireEvent.click(revoke);
 
     await waitFor(() => {

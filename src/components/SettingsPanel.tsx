@@ -30,7 +30,7 @@ import {
 export interface SettingsPanelProps {
   userName: string;
   onNameChange: (name: string) => void;
-  onResetData: () => void;
+  onResetData: () => void | Promise<void>;
   reminders: ReminderSettings;
   onRemindersChange: (
     value: ReminderSettings | ((prev: ReminderSettings) => ReminderSettings)

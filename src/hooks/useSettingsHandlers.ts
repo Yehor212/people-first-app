@@ -3,8 +3,9 @@ import { useUserDataStore } from '@/stores';
 import { logger } from '@/lib/logger';
 import { generateId } from '@/lib/utils';
 import { normalizeHabit } from '@/lib/habits';
-import { db } from '@/storage/db';
-import { syncWithCloud } from '@/storage/cloudSync';
+import { triggerDataRefresh } from '@/hooks/useIndexedDB';
+import { clearLocalUserData, db } from '@/storage/db';
+import { stopAutoSync, syncWithCloud } from '@/storage/cloudSync';
 import type { ScheduleEvent } from '@/types';
 
 /**
@@ -22,7 +23,8 @@ export function useSettingsHandlers(allScheduleEvents: ScheduleEvent[]) {
   const setCanvasGoals = useUserDataStore(s => s.setCanvasGoals);
   const setOnboardingComplete = useUserDataStore(s => s.setOnboardingComplete);
   const setHasSelectedLanguage = useUserDataStore(s => s.setHasSelectedLanguage);
-  const handleResetData = useCallback(() => {
+
+  const resetInMemoryState = useCallback(() => {
     setMoods([]);
     setHabits([]);
     setFocusSessions([]);
@@ -34,6 +36,15 @@ export function useSettingsHandlers(allScheduleEvents: ScheduleEvent[]) {
     setOnboardingComplete(false);
     setHasSelectedLanguage(false);
   }, [setMoods, setHabits, setFocusSessions, setGratitudeEntries, setScheduleEvents, setCanvasGoals, setUserName, setUserNameCustom, setOnboardingComplete, setHasSelectedLanguage]);
+
+  const handleResetData = useCallback(async () => {
+    stopAutoSync();
+    const { clearDeviceIdCache } = await import('@/storage/eventSync');
+    clearDeviceIdCache();
+    await clearLocalUserData();
+    resetInMemoryState();
+    triggerDataRefresh();
+  }, [resetInMemoryState]);
 
   const handleNameChange = useCallback((name: string) => {
     setUserName(name);

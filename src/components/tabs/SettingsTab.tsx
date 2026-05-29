@@ -16,7 +16,7 @@ const setShowWidgetSettings = getModalToggle("showWidgetSettings");
 interface SettingsTabProps {
   userName: string;
   onNameChange: (name: string) => void;
-  onResetData: () => void;
+  onResetData: () => void | Promise<void>;
   reminders: ReminderSettings;
   onRemindersChange: (
     updater: ReminderSettings | ((prev: ReminderSettings) => ReminderSettings)

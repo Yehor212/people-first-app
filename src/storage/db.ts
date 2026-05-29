@@ -235,6 +235,34 @@ const USER_SETTINGS_KEYS = [
   "gamification",
 ];
 
+const USER_BOUNDARY_LOCAL_ONLY_KEYS = [
+  "sync-last-seq",
+  "sync-cursor-v2",
+  "zenflow-device-id",
+  "zenflow-deleted-habit-ids",
+  "zenflow-deleted-journal-entry-ids",
+  "zenflow-deleted-mood-ids",
+  "zenflow-deleted-focus-session-ids",
+  "zenflow-deleted-gratitude-ids",
+  SK.DEVICE_ID,
+  SK.LAST_SYNC_SEQ,
+  SK.SYNC_LEADER_LOCK,
+  SK.JOURNAL_PASSWORD,
+  SK.JOURNAL_BIOMETRIC,
+  SK.JOURNAL_SCREENSHOT_BLOCK,
+  SK.JOURNAL_PRIVATE_MODE,
+  SK.JOURNAL_LOCK_TIMEOUT,
+  SK.JOURNAL_PASSWORD_RESET,
+];
+
+interface ClearLocalUserDataOptions {
+  /**
+   * Clears per-account sync cursors, deletion tombstones, local journal locks,
+   * and the stable sync device id. Keep enabled for sign-out/delete/reset flows.
+   */
+  includeUserBoundaryState?: boolean;
+}
+
 /**
  * Clear all user data from IndexedDB and localStorage.
  * Called on sign-out / delete-account to prevent data leakage between accounts.
@@ -242,7 +270,14 @@ const USER_SETTINGS_KEYS = [
  * IMPORTANT: Call stopAutoSync() BEFORE this function to prevent
  * background sync from uploading empty data to cloud.
  */
-export const clearLocalUserData = async (): Promise<void> => {
+export const clearLocalUserData = async (
+  options: ClearLocalUserDataOptions = {}
+): Promise<void> => {
+  const { includeUserBoundaryState = true } = options;
+  const settingsKeysToDelete = includeUserBoundaryState
+    ? [...USER_SETTINGS_KEYS, ...USER_BOUNDARY_LOCAL_ONLY_KEYS]
+    : USER_SETTINGS_KEYS;
+
   try {
     await db.transaction(
       "rw",
@@ -260,6 +295,7 @@ export const clearLocalUserData = async (): Promise<void> => {
         db.journalEntryLinks,
         db.journalSpaceCaptures,
         db.offlineQueue,
+        db.deadLetterQueue,
         db.settings,
       ],
       async () => {
@@ -276,8 +312,9 @@ export const clearLocalUserData = async (): Promise<void> => {
         await db.journalEntryLinks.clear();
         await db.journalSpaceCaptures.clear();
         await db.offlineQueue.clear();
-        // Delete user-specific settings rows (keep device-level settings)
-        await db.settings.bulkDelete(USER_SETTINGS_KEYS);
+        await db.deadLetterQueue.clear();
+        // Delete account-bound settings and local-only sync state.
+        await db.settings.bulkDelete(settingsKeysToDelete);
       }
     );
   } catch (error) {
@@ -296,6 +333,7 @@ export const clearLocalUserData = async (): Promise<void> => {
     ...USER_SETTINGS_KEYS,
     SK.CLOUD_SYNC_ENABLED, // Cloud sync preference (per-account)
     SK.OFFLINE_QUEUE, // Offline queue localStorage fallback
+    ...(includeUserBoundaryState ? USER_BOUNDARY_LOCAL_ONLY_KEYS : []),
   ];
   allUserKeys.forEach((key) => storageRemove(key));
 };
