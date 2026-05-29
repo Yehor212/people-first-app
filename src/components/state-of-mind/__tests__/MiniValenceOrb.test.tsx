@@ -69,17 +69,6 @@ describe("MiniValenceOrb", () => {
 
   function installQueuedRaf() {
     const callbacks: FrameRequestCallback[] = [];
-    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(() => ({
-      bottom: 96,
-      height: 96,
-      left: 0,
-      right: 96,
-      top: 0,
-      width: 96,
-      x: 0,
-      y: 0,
-      toJSON: () => ({}),
-    }));
     vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => {
       callbacks.push(callback);
       return callbacks.length;

@@ -71,17 +71,6 @@ function stubVisibleOrbRect() {
 
 function installQueuedRaf() {
   const callbacks: FrameRequestCallback[] = [];
-  vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(() => ({
-    bottom: 240,
-    height: 240,
-    left: 0,
-    right: 240,
-    top: 0,
-    width: 240,
-    x: 0,
-    y: 0,
-    toJSON: () => ({}),
-  }));
   vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => {
     callbacks.push(callback);
     return callbacks.length;
@@ -374,6 +363,95 @@ describe("ValenceOrb motion profile", () => {
     expect(container.querySelector("[data-orb-visual-ready='true']")).not.toBeNull();
     expect(container.querySelector("[data-orb-webgl-upgrade='held-on-canvas']")).toBeNull();
     expect(container.querySelector("[data-orb-renderer-tier='canvas2d']")).toBeNull();
+    expect(drawOrbScene).not.toHaveBeenCalled();
+  });
+
+  it("does not time out forced WebGL before an offscreen orb becomes visible", async () => {
+    vi.useFakeTimers();
+    const { flushNextFrame } = installQueuedRaf();
+    vi.stubGlobal("OffscreenCanvas", undefined);
+
+    let isVisible = false;
+    const makeRect = (top: number): DOMRectReadOnly => ({
+      bottom: top + 240,
+      height: 240,
+      left: 0,
+      right: 240,
+      top,
+      width: 240,
+      x: 0,
+      y: top,
+      toJSON: () => ({}),
+    });
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(() =>
+      makeRect(isVisible ? 0 : 10_000),
+    );
+
+    const observerCallbacks: IntersectionObserverCallback[] = [];
+    vi.stubGlobal(
+      "IntersectionObserver",
+      class {
+        constructor(callback: IntersectionObserverCallback) {
+          observerCallbacks.push(callback);
+        }
+        disconnect = vi.fn();
+        observe = vi.fn();
+        takeRecords = vi.fn(() => []);
+        unobserve = vi.fn();
+      },
+    );
+
+    const renderer = createMockGLRenderer();
+    vi.mocked(createOrbGL2Async).mockResolvedValue({
+      renderer,
+      durationMs: 1,
+      tier: "webgl2",
+    });
+
+    const { container } = render(
+      createElement(ValenceOrb, {
+        valence: 0.25,
+        renderer: "webgl",
+        size: 240,
+      }),
+    );
+
+    await flushScheduledWebGLUpgrade(flushNextFrame);
+
+    expect(createOrbGL2Async).not.toHaveBeenCalled();
+    expect(container.querySelector("[data-orb-visual-ready='true']")).toBeNull();
+
+    act(() => {
+      vi.advanceTimersByTime(WEBGL_FORCED_FIRST_FRAME_TIMEOUT_MS + 1);
+    });
+
+    expect(createOrbGL2Async).not.toHaveBeenCalled();
+    expect(container.querySelector("[data-orb-renderer-tier='canvas2d']")).toBeNull();
+
+    const wrapper = container.querySelector("[data-orb-renderer-policy='webgl']");
+    if (!wrapper) throw new Error("Expected forced WebGL wrapper");
+    const visibleEntry = {
+      boundingClientRect: makeRect(0),
+      intersectionRatio: 1,
+      intersectionRect: makeRect(0),
+      isIntersecting: true,
+      rootBounds: null,
+      target: wrapper,
+      time: performance.now(),
+    } satisfies IntersectionObserverEntry;
+
+    isVisible = true;
+    await act(async () => {
+      for (const callback of observerCallbacks) {
+        callback([visibleEntry], {} as IntersectionObserver);
+      }
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(createOrbGL2Async).toHaveBeenCalledTimes(1);
+    expect(container.querySelector("[data-orb-visual-ready='true']")).not.toBeNull();
+    expect(container.querySelector("[data-orb-renderer-tier='webgl-main']")).not.toBeNull();
     expect(drawOrbScene).not.toHaveBeenCalled();
   });
 

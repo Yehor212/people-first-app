@@ -930,10 +930,10 @@ export const ValenceOrb = memo(function ValenceOrb({
 
         const visibleCanvasAgeMs = performance.now() - visibleCanvasMountedAt;
         const visibleUpgradeAgeMs =
-          forceCanonicalWebGL && visualReadyRef.current && !explicitWebGLOverride
+          forceCanonicalWebGL && !explicitWebGLOverride
             ? result.durationMs
             : Math.max(result.durationMs, visibleCanvasAgeMs);
-        if (!shouldApplyWorkerWebGLUpgrade(visibleUpgradeAgeMs, explicitWebGLOverride)) {
+        if (!shouldApplyWorkerWebGLUpgrade(visibleUpgradeAgeMs, forceCanonicalWebGL || explicitWebGLOverride)) {
           rememberSlowWebGL(visibleUpgradeAgeMs);
           result.renderer.dispose();
           return false;
@@ -1069,10 +1069,10 @@ export const ValenceOrb = memo(function ValenceOrb({
           const readyDurationMs = performance.now() - workerStartedAt;
           const visibleCanvasAgeMs = performance.now() - visibleCanvasMountedAt;
           const visibleUpgradeAgeMs =
-            forceCanonicalWebGL && visualReadyRef.current && !explicitWebGLOverride
+            forceCanonicalWebGL && !explicitWebGLOverride
               ? readyDurationMs
               : Math.max(readyDurationMs, visibleCanvasAgeMs);
-          if (!shouldApplyWorkerWebGLUpgrade(visibleUpgradeAgeMs, explicitWebGLOverride)) {
+          if (!shouldApplyWorkerWebGLUpgrade(visibleUpgradeAgeMs, forceCanonicalWebGL || explicitWebGLOverride)) {
             rememberSlowWebGL(visibleUpgradeAgeMs);
             worker.terminate();
             if (webglWorker === worker) webglWorker = null;
@@ -1144,6 +1144,13 @@ export const ValenceOrb = memo(function ValenceOrb({
     let webglUpgradeStarted = false;
     let webglUpgradePendingUntilVisible = false;
     let forceWebGLFirstFrameTimeoutId = 0;
+    const armForcedWebGLFirstFrameTimeout = () => {
+      if (!forceCanonicalWebGL || forceWebGLFirstFrameTimeoutId !== 0) return;
+      forceWebGLFirstFrameTimeoutId = window.setTimeout(
+        recoverForcedWebGLFirstFrame,
+        WEBGL_FORCED_FIRST_FRAME_TIMEOUT_MS,
+      );
+    };
     const recoverForcedWebGLFirstFrame = () => {
       if (
         !forceCanonicalWebGL ||
@@ -1181,6 +1188,7 @@ export const ValenceOrb = memo(function ValenceOrb({
 
       webglUpgradePendingUntilVisible = false;
       webglUpgradeStarted = true;
+      armForcedWebGLFirstFrameTimeout();
       void upgradeToWebGL(webglUpgradeAbort.signal);
     };
 
@@ -1241,12 +1249,6 @@ export const ValenceOrb = memo(function ValenceOrb({
         forceCanonicalWebGL,
         size,
       );
-      if (forceCanonicalWebGL) {
-        forceWebGLFirstFrameTimeoutId = window.setTimeout(
-          recoverForcedWebGLFirstFrame,
-          WEBGL_FORCED_FIRST_FRAME_TIMEOUT_MS,
-        );
-      }
       cancelWebGLUpgrade = scheduleAfterFirstPaint(() => {
         startWebGLUpgradeWhenVisible();
       }, {
