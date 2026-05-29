@@ -12,6 +12,7 @@ vi.mock('@/lib/logger', () => ({
 import {
   isCloudSyncEnabled,
   setCloudSyncEnabled,
+  ensureCloudSyncEnabled,
   migrateExistingUser,
   getCloudSyncKey,
 } from '@/lib/cloudSyncSettings';
@@ -65,6 +66,26 @@ describe('setCloudSyncEnabled', () => {
 
 // ─── migrateExistingUser ────────────────────────────────────────
 
+describe('ensureCloudSyncEnabled', () => {
+  it('sets cloud sync to true when no value is stored', () => {
+    mockedGetRaw.mockReturnValue('');
+    ensureCloudSyncEnabled();
+    expect(mockedSetRaw).toHaveBeenCalledWith(SK.CLOUD_SYNC_ENABLED, 'true');
+  });
+
+  it('sets cloud sync to true when a legacy disabled value is stored', () => {
+    mockedGetRaw.mockReturnValue('false');
+    ensureCloudSyncEnabled();
+    expect(mockedSetRaw).toHaveBeenCalledWith(SK.CLOUD_SYNC_ENABLED, 'true');
+  });
+
+  it('does not rewrite an already enabled value', () => {
+    mockedGetRaw.mockReturnValue('true');
+    ensureCloudSyncEnabled();
+    expect(mockedSetRaw).not.toHaveBeenCalled();
+  });
+});
+
 describe('migrateExistingUser', () => {
   it('sets cloud sync to true when no existing setting (empty string → null via ||)', () => {
     mockedGetRaw.mockReturnValue('');
@@ -78,10 +99,10 @@ describe('migrateExistingUser', () => {
     expect(mockedSetRaw).not.toHaveBeenCalled();
   });
 
-  it('does not change when existing value is "false"', () => {
+  it('upgrades a legacy disabled value to automatic sync', () => {
     mockedGetRaw.mockReturnValue('false');
     migrateExistingUser();
-    expect(mockedSetRaw).not.toHaveBeenCalled();
+    expect(mockedSetRaw).toHaveBeenCalledWith(SK.CLOUD_SYNC_ENABLED, 'true');
   });
 });
 

@@ -65,8 +65,16 @@ const GENERALLY_ALLOWED_IDENTICAL_VALUES = [
   /^L, km, min\.\.\.$/,
 ];
 
+const AUTH_PROVIDER_BRAND_KEYS = [
+  "authProviderGoogle",
+  "authProviderFacebook",
+  "authProviderTelegram",
+  "authProviderApple",
+] as const;
+
 const ALLOWED_IDENTICAL_KEYS: Partial<Record<Language, ReadonlySet<string>>> = {
   uk: new Set([
+    ...AUTH_PROVIDER_BRAND_KEYS,
     "hiddenAchievement",
     "emailPlaceholder",
     "dopamineADHD",
@@ -76,6 +84,7 @@ const ALLOWED_IDENTICAL_KEYS: Partial<Record<Language, ReadonlySet<string>>> = {
     "journalHubEyebrow",
   ]),
   es: new Set([
+    ...AUTH_PROVIDER_BRAND_KEYS,
     "min",
     "moodNeutral",
     "color",
@@ -104,6 +113,7 @@ const ALLOWED_IDENTICAL_KEYS: Partial<Record<Language, ReadonlySet<string>>> = {
     "somTagNeutral",
   ]),
   de: new Set([
+    ...AUTH_PROVIDER_BRAND_KEYS,
     "okay",
     "scheduleStart",
     "moodOkay",
@@ -147,6 +157,7 @@ const ALLOWED_IDENTICAL_KEYS: Partial<Record<Language, ReadonlySet<string>>> = {
     "navV2Orb",
   ]),
   fr: new Set([
+    ...AUTH_PROVIDER_BRAND_KEYS,
     "minutes",
     "min",
     "moduleGratitude",
@@ -219,7 +230,16 @@ const ALLOWED_IDENTICAL_KEYS: Partial<Record<Language, ReadonlySet<string>>> = {
     "navV2Menu",
     "navV2HabitsCategoryFocus",
   ]),
-  ja: new Set(["hiddenAchievement", "emailPlaceholder", "dopamineADHD", "premium", "companionNight"]),
+  ja: new Set([
+    ...AUTH_PROVIDER_BRAND_KEYS,
+    "hiddenAchievement",
+    "emailPlaceholder",
+    "dopamineADHD",
+    "premium",
+    "companionNight",
+  ]),
+  ar: new Set([...AUTH_PROVIDER_BRAND_KEYS]),
+  he: new Set([...AUTH_PROVIDER_BRAND_KEYS]),
 };
 
 function getKeyName(name: ts.PropertyName): string | undefined {

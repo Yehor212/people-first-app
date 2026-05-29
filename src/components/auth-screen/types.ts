@@ -1,6 +1,6 @@
-// Temporarily disabled auth providers (not production-ready)
+import type { SocialAuthProviderId } from "@/lib/authProviders";
+
 export const SHOW_APPLE_AUTH = false;
-export const SHOW_FACEBOOK_AUTH = false;
 export const SHOW_PHONE_AUTH = false;
 
 // Phone number validation: E.164 format (+7-15 digits)
@@ -13,7 +13,7 @@ export interface AuthScreenProps {
 }
 
 // Track which provider is currently loading
-export type AuthProvider = 'google' | 'apple' | 'facebook' | 'phone' | null;
+export type AuthProvider = SocialAuthProviderId | 'phone' | null;
 
 // Phone auth flow steps
 export type PhoneStep = 'idle' | 'input' | 'otp';

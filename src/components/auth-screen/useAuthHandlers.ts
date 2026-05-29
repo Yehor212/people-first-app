@@ -4,6 +4,12 @@ import { getAuthRedirectUrl } from "@/lib/authRedirect";
 import { isNative } from "@/lib/platform";
 import { canStartAuthFlow, startAuthFlow, endAuthFlow } from "@/lib/authGuard";
 import { authenticateWithGoogleNative } from "@/lib/nativeGoogleAuth";
+import {
+  buildOAuthCredentials,
+  isTrustedOAuthRedirectUrl,
+  type SocialAuthProviderId,
+} from "@/lib/authProviders";
+import { openOAuthUrl } from "@/lib/nativeOAuthBrowser";
 import { logger } from "@/lib/logger";
 import { analytics } from "@/lib/analytics";
 import { hapticError } from "@/lib/haptics";
@@ -17,7 +23,7 @@ const OTP_COOLDOWN_MS = 60_000; // 60 seconds between OTP sends
 export function useAuthHandlers(session: Session, t: Record<string, string>) {
   const lastOtpSendRef = useRef(0);
   // Generic OAuth sign-in handler
-  const handleOAuthSignIn = async (provider: "google" | "apple" | "facebook") => {
+  const handleOAuthSignIn = async (provider: SocialAuthProviderId) => {
     if (!supabase) {
       session.setError(t.authSupabaseNotConfigured);
       return;
@@ -52,29 +58,11 @@ export function useAuthHandlers(session: Session, t: Record<string, string>) {
       logger.log("[Auth] Platform:", platform);
       session.setDebugInfo(`Platform: ${platform}, Redirect: ${redirectUrl}`);
 
-      const options: {
-        redirectTo: string;
-        scopes?: string;
-        queryParams?: Record<string, string>;
-        skipBrowserRedirect?: boolean;
-      } = {
-        redirectTo: redirectUrl,
-      };
-      if (isNative) {
-        options.skipBrowserRedirect = true;
-      }
-
-      if (provider === "google") {
-        options.queryParams = { prompt: "select_account" };
-      } else if (provider === "apple") {
-        options.scopes = "name email";
-      } else if (provider === "facebook") {
-        options.scopes = "email,public_profile";
-      }
-
       const { data, error: signInError } = await supabase.auth.signInWithOAuth({
-        provider,
-        options,
+        ...buildOAuthCredentials(provider, {
+          redirectTo: redirectUrl,
+          skipBrowserRedirect: isNative,
+        }),
       });
 
       if (signInError) {
@@ -104,28 +92,15 @@ export function useAuthHandlers(session: Session, t: Record<string, string>) {
         logger.log(`[Auth] ${provider} OAuth URL generated`);
         session.setDebugInfo(`OAuth URL generated successfully`);
         if (isNative) {
-          // OWASP L19: validate OAuth redirect domain before navigation
-          try {
-            const oauthUrl = new URL(data.url);
-            const trustedDomains = [
-              ".supabase.co",
-              "accounts.google.com",
-              "appleid.apple.com",
-              ".facebook.com",
-            ];
-            if (
-              !trustedDomains.some((d) => oauthUrl.hostname === d || oauthUrl.hostname.endsWith(d))
-            ) {
-              logger.error("[Auth] Untrusted OAuth redirect domain:", oauthUrl.hostname);
-              session.setError("Authentication service unavailable.");
-              return;
-            }
-          } catch {
-            logger.error("[Auth] Invalid OAuth URL format");
+          if (!isTrustedOAuthRedirectUrl(data.url, provider)) {
+            logger.error("[Auth] Untrusted OAuth redirect URL blocked");
             session.setError("Authentication service unavailable.");
+            if (session.oauthTimeoutRef.current) clearTimeout(session.oauthTimeoutRef.current);
+            endAuthFlow();
+            session.setLoadingProvider(null);
             return;
           }
-          window.location.assign(data.url);
+          await openOAuthUrl(data.url);
           logger.log(`[Auth] ${provider} OAuth URL navigation started`);
         }
       } else if (isNative) {
@@ -144,6 +119,14 @@ export function useAuthHandlers(session: Session, t: Record<string, string>) {
       endAuthFlow();
       session.setLoadingProvider(null);
     }
+  };
+
+  const handleProviderSignIn = (provider: SocialAuthProviderId) => {
+    if (provider === "google") {
+      void handleGoogleSignIn();
+      return;
+    }
+    void handleOAuthSignIn(provider);
   };
 
   const handleGoogleSignIn = async () => {
@@ -190,6 +173,7 @@ export function useAuthHandlers(session: Session, t: Record<string, string>) {
   };
   const handleAppleSignIn = () => void handleOAuthSignIn("apple");
   const handleFacebookSignIn = () => void handleOAuthSignIn("facebook");
+  const handleTelegramSignIn = () => void handleOAuthSignIn("telegram");
 
   // Phone Auth handlers
   const handlePhoneStart = () => {
@@ -343,6 +327,8 @@ export function useAuthHandlers(session: Session, t: Record<string, string>) {
     handleGoogleSignIn,
     handleAppleSignIn,
     handleFacebookSignIn,
+    handleTelegramSignIn,
+    handleProviderSignIn,
     handlePhoneStart,
     handleSendOtp,
     handleVerifyOtp,

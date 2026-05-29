@@ -9,6 +9,8 @@ import { supabase } from "@/lib/supabaseClient";
 import { decodeInviteData } from "@/lib/friendChallenge";
 import { endAuthFlow } from "@/lib/authGuard";
 import { subscribeToDeepLinks } from "@/lib/deepLinks";
+import { getAuthUserDisplayName } from "@/lib/authUser";
+import { closeOAuthBrowser } from "@/lib/nativeOAuthBrowser";
 
 const setShowChallengeModal = getModalToggle("showChallengeModal");
 
@@ -135,9 +137,9 @@ export function useDeepLinkHandler(): void {
       }
 
       const session = await waitForSession();
+      await closeOAuthBrowser();
       if (session?.user) {
-        const metadata = session.user.user_metadata;
-        const name = metadata?.full_name || metadata?.name || "Friend";
+        const name = getAuthUserDisplayName(session.user);
 
         logger.log("[Auth] OAuth callback session established");
         setAuthBypassFlag(true);

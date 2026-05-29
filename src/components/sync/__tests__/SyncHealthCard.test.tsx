@@ -134,6 +134,12 @@ describe("SyncHealthCard", () => {
     expect(cardText).not.toContain("private habit name");
   });
 
+  it("does not show a manual sync action when there is no pending work", () => {
+    render(<SyncHealthCard />);
+
+    expect(screen.queryByRole("button", { name: "Sync now" })).not.toBeInTheDocument();
+  });
+
   it("lets the user retry pending outbox work", () => {
     mocks.offline.actions = [
       {

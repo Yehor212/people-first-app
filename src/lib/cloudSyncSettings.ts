@@ -1,13 +1,11 @@
 /**
  * Cloud Sync Settings
  *
- * Manages user's cloud synchronization preferences.
- * Allows users to control when their data syncs to Supabase cloud.
+ * Manages cloud synchronization availability.
  *
- * Philosophy: Privacy-first, user control
- * - OFF by default for new sign-ins
- * - ON for existing users (migration)
- * - User can toggle anytime
+ * Philosophy: signed-in accounts stay synchronized automatically.
+ * Users opt out by signing out or deleting their account; the old local toggle is
+ * treated as a legacy preference and is upgraded on the next signed-in session.
  */
 
 import { logger } from './logger';
@@ -29,25 +27,24 @@ export const isCloudSyncEnabled = (): boolean => {
  */
 export const setCloudSyncEnabled = (enabled: boolean): void => {
   storageSetRaw(SK.CLOUD_SYNC_ENABLED, String(enabled));
-  logger.log(`[CloudSync] Cloud sync ${enabled ? 'enabled' : 'disabled'} by user`);
+  logger.log(`[CloudSync] Cloud sync ${enabled ? 'enabled' : 'paused'}`);
 };
 
 /**
- * Migration helper: Auto-enable cloud sync for existing signed-in users
- * Call this once when user has a session but no cloud sync preference set
- *
- * Why? Users who signed in before v1.1.1 expect sync to continue working.
- * New users after v1.1.1 will have sync OFF by default (privacy-first).
+ * Ensures signed-in accounts cannot remain silently unsynchronized because of an
+ * old local toggle value.
  */
-export const migrateExistingUser = (): void => {
-  const existingSetting = storageGetRaw(SK.CLOUD_SYNC_ENABLED) || null;
-
-  // Only migrate if no preference set yet
-  if (existingSetting === null) {
+export const ensureCloudSyncEnabled = (): void => {
+  if (!isCloudSyncEnabled()) {
     setCloudSyncEnabled(true);
-    logger.log('[CloudSync] Migrated existing user: cloud sync enabled');
+    logger.log('[CloudSync] Automatic account sync enabled');
   }
 };
+
+/**
+ * Backward-compatible migration hook used by auth/session code.
+ */
+export const migrateExistingUser = ensureCloudSyncEnabled;
 
 /**
  * Get the localStorage key (for testing)

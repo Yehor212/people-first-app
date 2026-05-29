@@ -21,6 +21,8 @@ import { migrateExistingUser } from "@/lib/cloudSyncSettings";
 import { logger } from "@/lib/logger";
 import { endAuthFlow } from "@/lib/authGuard";
 import { APP_VERSION } from "@/lib/appVersion";
+import { getAuthUserDisplayName } from "@/lib/authUser";
+import { closeOAuthBrowser } from "@/lib/nativeOAuthBrowser";
 
 /**
  * Manages Supabase auth session lifecycle:
@@ -189,10 +191,10 @@ export function useAuthSession(isLoading: boolean): void {
           if (!active) return;
 
           if (data.session?.user) {
-            const metadata = data.session.user.user_metadata;
-            const name = metadata?.full_name || metadata?.name || "Friend";
+            const name = getAuthUserDisplayName(data.session.user);
 
             logger.log("[Auth] Pending auth processed successfully");
+            void closeOAuthBrowser();
             setAuthBypassFlag(true);
             setHasValidSession(true);
             setWebOAuthError(null);
@@ -204,10 +206,12 @@ export function useAuthSession(isLoading: boolean): void {
           } else {
             logger.error("[Index] Pending auth callback had no session");
             setWebOAuthError("Google sign-in did not complete. Please try again.");
+            void closeOAuthBrowser();
             endAuthFlow();
           }
         } catch (error) {
           logger.error("[Index] Failed to process pending auth:", error);
+          void closeOAuthBrowser();
           setWebOAuthError(
             error instanceof Error ? error.message : "Google sign-in failed. Please try again."
           );
@@ -322,10 +326,7 @@ export function useAuthSession(isLoading: boolean): void {
         data: { session },
       } = await supabase.auth.getSession();
       if (!active || !session?.user) return;
-      const metadata = session.user.user_metadata as
-        | { full_name?: string; name?: string }
-        | undefined;
-      const candidate = metadata?.full_name || metadata?.name;
+      const candidate = getAuthUserDisplayName(session.user, "");
       if (candidate && candidate !== userNameRef.current) {
         setUserName(candidate);
       }
@@ -337,10 +338,7 @@ export function useAuthSession(isLoading: boolean): void {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!active || !session?.user || userNameCustomRef.current) return;
-      const metadata = session.user.user_metadata as
-        | { full_name?: string; name?: string }
-        | undefined;
-      const candidate = metadata?.full_name || metadata?.name;
+      const candidate = getAuthUserDisplayName(session.user, "");
       if (candidate && candidate !== userNameRef.current) {
         setUserName(candidate);
       }

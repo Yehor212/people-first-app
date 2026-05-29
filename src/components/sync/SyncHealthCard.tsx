@@ -369,18 +369,23 @@ export function SyncHealthCard({ className, dense = false }: SyncHealthCardProps
         </div>
       )}
 
-      <button
-        type="button"
-        onClick={() => {
-          void processQueue();
-        }}
-        disabled={!canRetry}
-        className="mt-4 flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-secondary px-4 py-3 text-sm font-semibold text-secondary-foreground motion-safe:transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-55"
-        aria-label={tx.syncNow || "Sync now"}
-      >
-        <RefreshCw className={cn("h-4 w-4", isProcessing && "motion-safe:animate-spin")} aria-hidden="true" />
-        {tx.syncNow || "Sync now"}
-      </button>
+      {(pendingCount > 0 || status === "error") && (
+        <button
+          type="button"
+          onClick={() => {
+            void processQueue();
+          }}
+          disabled={!canRetry}
+          className="mt-4 flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-secondary px-4 py-3 text-sm font-semibold text-secondary-foreground motion-safe:transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-55"
+          aria-label={tx.syncNow || "Sync now"}
+        >
+          <RefreshCw
+            className={cn("h-4 w-4", isProcessing && "motion-safe:animate-spin")}
+            aria-hidden="true"
+          />
+          {tx.syncNow || "Sync now"}
+        </button>
+      )}
     </section>
   );
 }

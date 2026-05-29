@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabaseClient";
 import { getAuthRedirectUrl } from "@/lib/authRedirect";
 import { isNative } from "@/lib/platform";
@@ -10,6 +11,18 @@ import { offlineQueue } from "@/lib/offlineQueue";
 import { stopAutoSync } from "@/storage/cloudSync";
 import { clearLocalUserData } from "@/storage/db";
 import { triggerDataRefresh } from "@/hooks/useIndexedDB";
+import {
+  buildOAuthCredentials,
+  getEnabledAccountAuthProviders,
+  isTrustedOAuthRedirectUrl,
+  type SocialAuthProviderId,
+} from "@/lib/authProviders";
+import {
+  getAuthUserAccountLabel,
+  getAuthUserDisplayName,
+  getLinkedAuthProviderIds,
+} from "@/lib/authUser";
+import { openOAuthUrl } from "@/lib/nativeOAuthBrowser";
 import { logger } from "@/lib/logger";
 
 interface UseAccountAuthOptions {
@@ -19,43 +32,106 @@ interface UseAccountAuthOptions {
 
 export function useAccountAuth({ onNameChange, t }: UseAccountAuthOptions) {
   const [authStatus, setAuthStatus] = useState<string | null>(null);
-  const [sessionEmail, setSessionEmail] = useState<string | null>(null);
-  const [isSigningIn, setIsSigningIn] = useState(false);
+  const [sessionUser, setSessionUser] = useState<User | null>(null);
+  const [signingInProvider, setSigningInProvider] = useState<SocialAuthProviderId | null>(null);
+  const [linkingProvider, setLinkingProvider] = useState<SocialAuthProviderId | null>(null);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const enabledProviders = useMemo(() => getEnabledAccountAuthProviders(), []);
 
-  // Auto-clear status messages after 3s
   useEffect(() => {
     if (!authStatus) return;
     const timer = window.setTimeout(() => setAuthStatus(null), 3000);
     return () => window.clearTimeout(timer);
   }, [authStatus]);
 
-  // Session check + auth state subscription
   useEffect(() => {
     if (!supabase) return;
     supabase.auth
       .getSession()
       .then(({ data }) => {
-        setSessionEmail(data.session?.user?.email ?? null);
+        setSessionUser(data.session?.user ?? null);
       })
       .catch((err) => logger.warn("[Account]", "Session check failed:", err));
-    const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSessionEmail(session?.user?.email ?? null);
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSessionUser(session?.user ?? null);
     });
     return () => {
-      subscription?.subscription?.unsubscribe?.();
+      subscription.unsubscribe();
     };
   }, []);
 
-  const handleGoogle = async () => {
+  const runOAuth = async (
+    provider: SocialAuthProviderId,
+    mode: "signIn" | "link",
+  ): Promise<void> => {
     if (!supabase) {
       setAuthStatus(t.authNotConfigured);
       return;
     }
-    setIsSigningIn(true);
+
+    if (!canStartAuthFlow()) {
+      setAuthStatus(t.authTooManyAttempts || "Too many attempts. Please wait.");
+      return;
+    }
+
+    startAuthFlow();
+    const setLoading = mode === "link" ? setLinkingProvider : setSigningInProvider;
+    setLoading(provider);
+    setAuthStatus(null);
+
     try {
-      // Native Android: use native account picker (no browser redirect)
-      if (isNative) {
+      const redirectUrl = getAuthRedirectUrl();
+      const credentials = buildOAuthCredentials(provider, {
+        redirectTo: redirectUrl,
+        skipBrowserRedirect: isNative,
+      });
+      logger.log(`[AccountSection] Starting ${provider} ${mode} with redirect:`, redirectUrl);
+
+      const { data, error } =
+        mode === "link"
+          ? await supabase.auth.linkIdentity(credentials)
+          : await supabase.auth.signInWithOAuth(credentials);
+
+      if (error) {
+        logger.error(`[AccountSection] ${provider} ${mode} error:`, error);
+        setAuthStatus(mode === "link" ? t.authProviderLinkFailed : t.authError);
+        return;
+      }
+
+      if (data?.url && isNative) {
+        if (!isTrustedOAuthRedirectUrl(data.url, provider)) {
+          logger.error("[AccountSection] Untrusted OAuth redirect URL blocked");
+          setAuthStatus(t.authUnexpectedError || "Authentication service unavailable.");
+          return;
+        }
+        await openOAuthUrl(data.url);
+      }
+    } catch (err) {
+      logger.error(`[AccountSection] ${provider} ${mode} exception:`, err);
+      setAuthStatus(mode === "link" ? t.authProviderLinkFailed : t.authUnexpectedError);
+    } finally {
+      endAuthFlow();
+      setLoading(null);
+    }
+  };
+
+  const handleProvider = async (provider: SocialAuthProviderId) => {
+    if (!supabase) {
+      setAuthStatus(t.authNotConfigured);
+      return;
+    }
+
+    if (provider === "google" && isNative) {
+      if (!canStartAuthFlow()) {
+        setAuthStatus(t.authTooManyAttempts || "Too many attempts. Please wait.");
+        return;
+      }
+      startAuthFlow();
+      setSigningInProvider(provider);
+      setAuthStatus(null);
+      try {
         logger.log("[AccountSection] Starting native Google sign-in");
         const result = await authenticateWithGoogleNative();
         if (result.success) {
@@ -63,39 +139,21 @@ export function useAccountAuth({ onNameChange, t }: UseAccountAuthOptions) {
         } else if (result.error !== "cancelled") {
           setAuthStatus(result.error || t.authGoogleSignInFailed || "Google Sign-In failed.");
         }
-        return;
+      } catch (err) {
+        logger.error("[AccountSection] Native Google sign-in error:", err);
+        setAuthStatus(t.authGoogleSignInFailed || "Google Sign-In failed.");
+      } finally {
+        endAuthFlow();
+        setSigningInProvider(null);
       }
-
-      // Web: existing OAuth redirect flow — with auth guard (OWASP M3)
-      if (!canStartAuthFlow()) {
-        setAuthStatus(t.authTooManyAttempts || "Too many attempts. Please wait.");
-        return;
-      }
-      startAuthFlow();
-      const redirectUrl = getAuthRedirectUrl();
-      logger.log("[AccountSection] Starting Google sign-in with redirect:", redirectUrl);
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: redirectUrl,
-          queryParams: { prompt: "select_account" },
-        },
-      });
-      if (error) {
-        logger.error("[AccountSection] Google sign-in error:", error);
-        setAuthStatus(t.authError);
-      }
-      // Web redirects automatically via Supabase SDK
-      if (data?.url) {
-        logger.log("[AccountSection] Google OAuth URL generated");
-      }
-    } catch (err) {
-      logger.error("[AccountSection] Sign-in error:", err);
-      setAuthStatus(t.authGoogleSignInFailed || "Google Sign-In failed.");
-    } finally {
-      endAuthFlow();
-      setIsSigningIn(false);
+      return;
     }
+
+    await runOAuth(provider, "signIn");
+  };
+
+  const handleLinkProvider = async (provider: SocialAuthProviderId) => {
+    await runOAuth(provider, "link");
   };
 
   const handleSignOut = async () => {
@@ -108,7 +166,7 @@ export function useAccountAuth({ onNameChange, t }: UseAccountAuthOptions) {
           await Promise.race([
             offlineQueue.processQueue(),
             new Promise((_, reject) =>
-              setTimeout(() => reject(new Error("Queue flush timeout")), 10000)
+              setTimeout(() => reject(new Error("Queue flush timeout")), 10000),
             ),
           ]);
           logger.log("[AccountSection] Offline queue flushed successfully");
@@ -135,10 +193,19 @@ export function useAccountAuth({ onNameChange, t }: UseAccountAuthOptions) {
   return {
     authStatus,
     setAuthStatus,
-    sessionEmail,
-    isSigningIn,
+    sessionUser,
+    sessionUserId: sessionUser?.id ?? null,
+    sessionAccountLabel: getAuthUserAccountLabel(sessionUser),
+    sessionDisplayName: getAuthUserDisplayName(sessionUser),
+    linkedProviderIds: getLinkedAuthProviderIds(sessionUser),
+    enabledProviders,
+    hasSession: !!sessionUser,
+    signingInProvider,
+    linkingProvider,
+    isSigningIn: signingInProvider !== null,
     isSigningOut,
-    handleGoogle,
+    handleProvider,
+    handleLinkProvider,
     handleSignOut,
   };
 }

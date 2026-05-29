@@ -5,6 +5,7 @@ import { isNative } from "@/lib/platform";
 import { endAuthFlow } from "@/lib/authGuard";
 import { App } from "@capacitor/app";
 import { logger } from "@/lib/logger";
+import { getAuthUserDisplayName } from "@/lib/authUser";
 import type { AuthProvider, PhoneStep } from "./types";
 
 interface UseAuthSessionOptions {
@@ -79,8 +80,7 @@ export function useAuthSession({
           return;
         }
         if (data.session?.user) {
-          const metadata = data.session.user.user_metadata;
-          const name = metadata?.full_name || metadata?.name || "Friend";
+          const name = getAuthUserDisplayName(data.session.user);
           const email = data.session.user.email || "";
           tryComplete({ name, email }, "checkSession");
         }
@@ -99,8 +99,7 @@ export function useAuthSession({
         logger.log("[Auth] Auth state changed:", event);
         if (event === "SIGNED_IN" && session?.user) {
           endAuthFlow();
-          const metadata = session.user.user_metadata;
-          const name = metadata?.full_name || metadata?.name || "Friend";
+          const name = getAuthUserDisplayName(session.user);
           const email = session.user.email || "";
           tryComplete({ name, email }, "onAuthStateChange");
         } else if (event === "SIGNED_OUT") {
@@ -147,8 +146,7 @@ export function useAuthSession({
         if (!isMounted) return;
 
         if (data.session?.user) {
-          const metadata = data.session.user.user_metadata;
-          const name = metadata?.full_name || metadata?.name || "Friend";
+          const name = getAuthUserDisplayName(data.session.user);
           const email = data.session.user.email || "";
           tryComplete({ name, email }, "checkSessionOnResume");
         } else if (!hasCompletedRef.current) {

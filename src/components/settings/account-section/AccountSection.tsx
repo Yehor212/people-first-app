@@ -1,8 +1,10 @@
 import { useRef, useEffect } from "react";
-import { Cloud, CheckCircle, Loader2, Mail } from "lucide-react";
+import { CheckCircle, Cloud, Link2, Loader2, Mail } from "lucide-react";
+import { AuthProviderButton } from "@/components/auth/AuthProviderButton";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useBackHandler } from "@/hooks/useBackHandler";
 import { useScrollLock } from "@/hooks/useScrollLock";
+import { getAuthProviderConfig, type SocialAuthProviderConfig } from "@/lib/authProviders";
 import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -28,7 +30,7 @@ export function AccountSection({
 
   const auth = useAccountAuth({ onNameChange, t: tRecord });
   const sync = useAccountSync({
-    sessionEmail: auth.sessionEmail,
+    sessionUserId: auth.sessionUserId,
     setAuthStatus: auth.setAuthStatus,
     t: tRecord,
   });
@@ -53,6 +55,16 @@ export function AccountSection({
 
   const baseUrl = BASE_URL;
   const deleteAccountHref = `${baseUrl}delete-account.html`;
+  const getProviderName = (provider: SocialAuthProviderConfig) =>
+    tRecord[provider.nameKey] || provider.fallbackName;
+  const formatProviderText = (template: string | undefined, provider: SocialAuthProviderConfig) =>
+    (template || "Connect {provider}").replace("{provider}", getProviderName(provider));
+  const linkedProviderLabels = auth.linkedProviderIds.map((providerId) =>
+    getProviderName(getAuthProviderConfig(providerId)),
+  );
+  const linkableProviders = auth.enabledProviders.filter(
+    (provider) => !auth.linkedProviderIds.includes(provider.id),
+  );
 
   return (
     <AccordionItem
@@ -80,17 +92,67 @@ export function AccountSection({
           <p className="text-sm text-muted-foreground">
             {t.cloudSyncDisabled || "Cloud sync is not available."}
           </p>
-        ) : auth.sessionEmail ? (
+        ) : auth.hasSession ? (
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
               {t.signedInAs || "Signed in as"}{" "}
               <span className="text-foreground font-medium">
-                {auth.sessionEmail}
+                {auth.sessionAccountLabel || auth.sessionDisplayName}
               </span>
             </p>
 
-            {/* Cloud Sync Toggle */}
-            <div className="p-4 bg-secondary/30 rounded-xl border border-border">
+            <div className="p-4 bg-secondary/30 rounded-xl border border-border space-y-3">
+              <div className="flex items-center gap-2">
+                <Link2 className="w-5 h-5 shrink-0 text-muted-foreground" />
+                <span className="font-medium text-foreground">
+                  {t.authLinkedProviders || "Connected sign-in methods"}
+                </span>
+              </div>
+              {linkedProviderLabels.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {linkedProviderLabels.map((label) => (
+                    <span
+                      key={label}
+                      className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground"
+                    >
+                      {label}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {linkableProviders.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs text-muted-foreground">
+                    {t.authConnectMoreProviders ||
+                      "Connect another sign-in method to keep this account across devices."}
+                  </p>
+                  {linkableProviders.map((provider) => {
+                    const isLinking = auth.linkingProvider === provider.id;
+                    const linkLabel = formatProviderText(t.authConnectProvider, provider);
+                    const linkingLabel = formatProviderText(t.authLinkingProvider, provider);
+                    return (
+                      <AuthProviderButton
+                        key={provider.id}
+                        provider={provider}
+                        label={linkLabel}
+                        loadingLabel={linkingLabel}
+                        isLoading={isLinking}
+                        disabled={auth.linkingProvider !== null}
+                        onClick={() => {
+                          void auth.handleLinkProvider(provider.id);
+                        }}
+                        className="min-h-[44px] py-2.5 text-sm shadow-none"
+                      />
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div
+              className="p-4 bg-secondary/30 rounded-xl border border-border"
+              data-testid="account-automatic-sync-card"
+            >
               <div className="flex items-center justify-between gap-4 mb-2">
                 <div className="flex items-center gap-2">
                   <Cloud
@@ -105,25 +167,25 @@ export function AccountSection({
                     {t.settingsCloudSyncTitle || "Cloud Sync"}
                   </span>
                 </div>
-                <Switch
-                  checked={sync.cloudSyncEnabled}
-                  onCheckedChange={sync.handleCloudSyncToggle}
-                  aria-label={t.settingsCloudSyncTitle || "Cloud Sync"}
-                  className="shrink-0"
-                />
+                <span
+                  className={cn(
+                    "inline-flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold",
+                    sync.cloudSyncEnabled
+                      ? "border-primary/25 bg-primary/10 text-primary"
+                      : "border-border bg-muted text-muted-foreground",
+                  )}
+                  role="status"
+                >
+                  <CheckCircle className="h-3 w-3" aria-hidden="true" />
+                  {sync.cloudSyncEnabled
+                    ? t.settingsCloudSyncEnabled || "Automatic sync is active"
+                    : t.sessionExpired || "Sync paused"}
+                </span>
               </div>
               <p className="text-xs text-muted-foreground">
                 {t.settingsCloudSyncDescription ||
-                  "Sync your data across devices."}
+                  "Your signed-in account stays synced across devices automatically."}
               </p>
-              {sync.cloudSyncEnabled && (
-                <div className="mt-2 flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
-                  <CheckCircle className="w-3 h-3" />
-                  <span>
-                    {t.settingsCloudSyncEnabled || "Cloud sync is active"}
-                  </span>
-                </div>
-              )}
             </div>
 
             {/* Weekly Digest Toggle */}
@@ -171,22 +233,6 @@ export function AccountSection({
 
             {/* Google Calendar Toggle — hidden until Google OAuth verification is complete */}
 
-            <button
-              onClick={() => {
-                void sync.handleSync();
-              }}
-              className="w-full py-3 bg-secondary text-secondary-foreground rounded-xl font-medium hover:bg-muted motion-safe:transition-colors btn-press flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={!sync.cloudSyncEnabled || sync.isSyncing}
-            >
-              {sync.isSyncing && (
-                <Loader2
-                  className="w-4 h-4 motion-safe:animate-spin"
-                  aria-label={t.syncing || "Syncing..."} aria-hidden="true" />
-              )}
-              {sync.isSyncing
-                ? t.syncing || "Syncing..."
-                : t.syncNow || "Sync Now"}
-            </button>
             <button
               onClick={() => {
                 void auth.handleSignOut();
@@ -300,20 +346,19 @@ export function AccountSection({
                 </p>
               </div>
             )}
-            <button
-              onClick={() => {
-                void auth.handleGoogle();
-              }}
-              disabled={auth.isSigningIn}
-              className="w-full py-3 zen-gradient text-primary-foreground rounded-xl font-medium hover:opacity-90 motion-safe:transition-opacity flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {auth.isSigningIn && (
-                <Loader2
-                  className="w-4 h-4 motion-safe:animate-spin"
-                  aria-label={t.signingIn || "Signing in..."} aria-hidden="true" />
-              )}
-              {t.continueWithGoogle || "Continue with Google"}
-            </button>
+            {auth.enabledProviders.map((provider) => (
+              <AuthProviderButton
+                key={provider.id}
+                provider={provider}
+                label={tRecord[provider.labelKey] || provider.fallbackLabel}
+                loadingLabel={tRecord[provider.loadingLabelKey] || provider.fallbackLoadingLabel}
+                isLoading={auth.signingInProvider === provider.id}
+                disabled={auth.isSigningIn}
+                onClick={() => {
+                  void auth.handleProvider(provider.id);
+                }}
+              />
+            ))}
           </div>
         )}
 
