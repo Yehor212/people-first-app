@@ -32,6 +32,7 @@ import {
   type SettingsCockpitCardData,
   type SettingsPageCardData,
 } from "./settings/components/SettingsPageComponents";
+import { SettingsSectionSwitcher } from "./settings/components/SettingsSectionSwitcher";
 import { V2SettingsControlDeck } from "./settings/V2SettingsControlDeck";
 import type { V2SettingsControls, V2SettingsSectionId } from "./settings/types";
 
@@ -88,19 +89,27 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
     );
   }, [controls?.initialOpenSection]);
 
-  const handleSectionOpen = useCallback((sectionId: V2SettingsSectionId) => {
+  const openSection = useCallback((sectionId: V2SettingsSectionId, scrollToDeck = false) => {
     setSelectedCardId(sectionId);
 
-    if (controls && controlDeckRef.current) {
-      const scrollToDeck = () =>
+    if (scrollToDeck && controls && controlDeckRef.current) {
+      const scrollToSelectedDeck = () =>
         controlDeckRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       if (typeof window !== "undefined" && "requestAnimationFrame" in window) {
-        window.requestAnimationFrame(scrollToDeck);
+        window.requestAnimationFrame(scrollToSelectedDeck);
       } else {
-        scrollToDeck();
+        scrollToSelectedDeck();
       }
     }
   }, [controls]);
+
+  const handleSwitcherOpen = useCallback((sectionId: V2SettingsSectionId) => {
+    openSection(sectionId);
+  }, [openSection]);
+
+  const handleOverviewOpen = useCallback((sectionId: V2SettingsSectionId) => {
+    openSection(sectionId, true);
+  }, [openSection]);
 
   const themeLabel = appliedTheme === "paper" ? tx.themeLight : tx.themeDark;
   const enabledOptionalModules = useMemo(
@@ -303,32 +312,15 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
           themeLabel={themeLabel}
         />
 
-        <SyncHealthCard
-          dense
-          allowManualRetry={false}
-          surface="settings-space"
-        />
-
-        <DeviceSessionsCard
-          dense
-          surface="settings"
-        />
-
-        <SettingsCockpit
-          items={cockpitCards}
-          selectedId={selectedCardId}
-          controlsWired={Boolean(controls)}
-          onOpen={handleSectionOpen}
-          label={tx.settings || tx.navV2Settings}
-        />
-
-        <SettingsSectionGrid
-          items={sections}
-          selectedId={selectedCardId}
-          controlsWired={Boolean(controls)}
-          onOpen={handleSectionOpen}
-          label={tx.navV2Settings}
-        />
+        {controls && (
+          <SettingsSectionSwitcher
+            items={sections}
+            selectedId={selectedCardId}
+            controlsWired
+            onOpen={handleSwitcherOpen}
+            label={tx.settings || tx.navV2Settings}
+          />
+        )}
 
         {controls && (
           <SettingsControlDeckRegion
@@ -344,6 +336,33 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
             <V2SettingsControlDeck controls={controls} selectedSectionId={selectedCardId} />
           </SettingsControlDeckRegion>
         )}
+
+        <SyncHealthCard
+          dense
+          allowManualRetry={false}
+          surface="settings-space"
+        />
+
+        <DeviceSessionsCard
+          dense
+          surface="settings"
+        />
+
+        <SettingsCockpit
+          items={cockpitCards}
+          selectedId={selectedCardId}
+          controlsWired={Boolean(controls)}
+          onOpen={handleOverviewOpen}
+          label={tx.settings || tx.navV2Settings}
+        />
+
+        <SettingsSectionGrid
+          items={sections}
+          selectedId={selectedCardId}
+          controlsWired={Boolean(controls)}
+          onOpen={handleOverviewOpen}
+          label={tx.navV2Settings}
+        />
       </SettingsPageShell>
     </Bloom>
   );

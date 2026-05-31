@@ -74,17 +74,17 @@ export function SettingsHeroCard({
 
   return (
     <section
-      className="relative overflow-hidden rounded-[2rem] border border-[hsl(var(--zf-role-settings)/0.24)] bg-[linear-gradient(145deg,hsl(var(--card)/0.92),hsl(var(--surface-elevated)/0.88)_52%,hsl(var(--zf-role-space)/0.08))] p-5 shadow-[var(--zen-shadow-soft)] backdrop-blur-xl md:p-7"
+      className="relative overflow-hidden rounded-[1.75rem] border border-[hsl(var(--zf-role-settings)/0.24)] bg-[linear-gradient(145deg,hsl(var(--card)/0.92),hsl(var(--surface-elevated)/0.88)_52%,hsl(var(--zf-role-space)/0.08))] p-4 shadow-[var(--zen-shadow-soft)] backdrop-blur-xl md:p-5"
       data-testid="settings-page-control-card"
     >
-      <div className="relative flex items-start gap-4">
+      <div className="relative flex items-start gap-3">
         <span
           className={cn(
-            "flex h-14 w-14 shrink-0 items-center justify-center rounded-3xl border shadow-sm",
+            "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border shadow-sm",
             settingsTone.iconClass,
           )}
         >
-          <SettingsIcon className="h-6 w-6" aria-hidden="true" />
+          <SettingsIcon className="h-5 w-5" aria-hidden="true" />
         </span>
         <div className="min-w-0">
           <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[hsl(var(--zf-role-settings)/0.76)]">
@@ -102,27 +102,25 @@ export function SettingsHeroCard({
         </div>
       </div>
 
-      <div className="relative mt-5 rounded-3xl border border-[hsl(var(--border)/0.58)] bg-[hsl(var(--card)/0.72)] p-3 shadow-inner">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-3">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[hsl(var(--zf-role-mind)/0.12)] text-[hsl(var(--zf-role-mind))]">
-              <SlidersHorizontal className="h-5 w-5" aria-hidden="true" />
+      <div className="relative mt-4 flex min-h-[64px] items-center justify-between gap-3 rounded-2xl border-t border-[hsl(var(--border)/0.42)] bg-[hsl(var(--background)/0.24)] px-3 py-2 backdrop-blur-sm">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[hsl(var(--zf-role-mind)/0.12)] text-[hsl(var(--zf-role-mind))]">
+            <SlidersHorizontal className="h-5 w-5" aria-hidden="true" />
+          </span>
+          <span className="min-w-0">
+            <span className="block text-sm font-semibold text-foreground drop-shadow-[0_1px_8px_hsl(var(--background)/0.72)]">
+              {themeTitle}
             </span>
-            <span className="min-w-0">
-              <span className="block text-sm font-semibold text-foreground">
-                {themeTitle}
-              </span>
-              <span className="block truncate text-xs text-muted-foreground">
-                {themeLabel}
-              </span>
+            <span className="block truncate text-xs text-muted-foreground drop-shadow-[0_1px_8px_hsl(var(--background)/0.72)]">
+              {themeLabel}
             </span>
-          </div>
-          <ThemeToggleV2
-            collapsed
-            presentation="settings-card"
-            testId="settings-v2-theme-toggle"
-          />
+          </span>
         </div>
+        <ThemeToggleV2
+          collapsed
+          presentation="settings-card"
+          testId="settings-v2-theme-toggle"
+        />
       </div>
     </section>
   );

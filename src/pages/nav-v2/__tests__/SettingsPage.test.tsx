@@ -3,6 +3,46 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { SettingsPage } from "../SettingsPage";
 
+function expectDocumentOrder(first: HTMLElement, second: HTMLElement) {
+  expect(
+    Boolean(first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING),
+  ).toBe(true);
+}
+
+function installScrollIntoViewSpy() {
+  const scrollDescriptor = Object.getOwnPropertyDescriptor(Element.prototype, "scrollIntoView");
+  const rafDescriptor = Object.getOwnPropertyDescriptor(window, "requestAnimationFrame");
+  const scrollIntoView = vi.fn();
+
+  Object.defineProperty(Element.prototype, "scrollIntoView", {
+    configurable: true,
+    value: scrollIntoView,
+  });
+  Object.defineProperty(window, "requestAnimationFrame", {
+    configurable: true,
+    value: (callback: FrameRequestCallback) => {
+      callback(0);
+      return 0;
+    },
+  });
+
+  return {
+    scrollIntoView,
+    restore: () => {
+      if (scrollDescriptor) {
+        Object.defineProperty(Element.prototype, "scrollIntoView", scrollDescriptor);
+      } else {
+        Reflect.deleteProperty(Element.prototype, "scrollIntoView");
+      }
+      if (rafDescriptor) {
+        Object.defineProperty(window, "requestAnimationFrame", rafDescriptor);
+      } else {
+        Reflect.deleteProperty(window, "requestAnimationFrame");
+      }
+    },
+  };
+}
+
 vi.mock("@/contexts/LanguageContext", () => ({
   useLanguage: () => ({
     t: {
@@ -349,40 +389,96 @@ describe("SettingsPage", () => {
     render(<SettingsPage controls={createSettingsControls()} />);
 
     expect(screen.getByTestId("settings-page")).toHaveAttribute("data-controls-wired", "true");
+    expect(screen.getByTestId("settings-section-switcher")).toBeInTheDocument();
+    expect(screen.getByTestId("settings-section-switcher-profile")).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.getByTestId("settings-section-switcher-profile")).toHaveAttribute(
+      "aria-controls",
+      "settings-v2-control-deck",
+    );
     expect(screen.getByTestId("settings-page-control-deck")).toBeInTheDocument();
     expect(screen.getByTestId("settings-page-control-deck-header")).toHaveTextContent("Profile");
     expect(screen.getByDisplayValue("Avery")).toBeInTheDocument();
     expect(screen.queryByTestId("settings-panel")).not.toBeInTheDocument();
+
+    expectDocumentOrder(
+      screen.getByTestId("settings-page-control-card"),
+      screen.getByTestId("settings-section-switcher"),
+    );
+    expectDocumentOrder(
+      screen.getByTestId("settings-section-switcher"),
+      screen.getByTestId("settings-page-control-deck"),
+    );
+    expectDocumentOrder(
+      screen.getByTestId("settings-page-control-deck"),
+      screen.getByTestId("sync-health-card"),
+    );
+  });
+
+  it("opens real settings sections from the compact section switcher", () => {
+    const { restore, scrollIntoView } = installScrollIntoViewSpy();
+
+    try {
+      render(<SettingsPage controls={createSettingsControls()} />);
+
+      fireEvent.click(screen.getByTestId("settings-section-switcher-data"));
+
+      expect(screen.getByTestId("settings-v2-panel-data")).toBeInTheDocument();
+      expect(screen.getByTestId("settings-section-switcher-data")).toHaveAttribute(
+        "aria-pressed",
+        "true",
+      );
+      expect(screen.getByTestId("settings-page-control-deck-header")).toHaveTextContent("Data");
+      expect(scrollIntoView).not.toHaveBeenCalled();
+    } finally {
+      restore();
+    }
   });
 
   it("opens the matching real settings section from the V2 section cards", () => {
-    render(<SettingsPage controls={createSettingsControls()} />);
+    const { restore, scrollIntoView } = installScrollIntoViewSpy();
 
-    fireEvent.click(screen.getByTestId("settings-section-data"));
+    try {
+      render(<SettingsPage controls={createSettingsControls()} />);
 
-    expect(screen.getByTestId("settings-v2-panel-data")).toBeInTheDocument();
-    expect(screen.queryByTestId("settings-panel")).not.toBeInTheDocument();
-    expect(screen.getByTestId("settings-section-data")).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByTestId("settings-page-control-deck-header")).toHaveTextContent("Data");
+      fireEvent.click(screen.getByTestId("settings-section-data"));
+
+      expect(screen.getByTestId("settings-v2-panel-data")).toBeInTheDocument();
+      expect(screen.queryByTestId("settings-panel")).not.toBeInTheDocument();
+      expect(screen.getByTestId("settings-section-data")).toHaveAttribute("aria-pressed", "true");
+      expect(screen.getByTestId("settings-page-control-deck-header")).toHaveTextContent("Data");
+      expect(scrollIntoView).toHaveBeenCalledTimes(1);
+    } finally {
+      restore();
+    }
   });
 
   it("opens detail sections from the V2 cockpit without exposing a manual sync action", () => {
-    render(<SettingsPage controls={createSettingsControls()} />);
+    const { restore, scrollIntoView } = installScrollIntoViewSpy();
 
-    fireEvent.click(screen.getByTestId("settings-cockpit-card-account"));
+    try {
+      render(<SettingsPage controls={createSettingsControls()} />);
 
-    expect(screen.getByTestId("settings-v2-panel-account")).toBeInTheDocument();
-    expect(screen.getByTestId("settings-v2-automatic-sync-card")).toHaveTextContent(
-      "Automatic sync active",
-    );
-    expect(screen.queryByTestId("settings-panel")).not.toBeInTheDocument();
-    expect(screen.getByTestId("settings-cockpit-card-account")).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
-    expect(screen.getByTestId("sync-health-card")).toHaveAttribute(
-      "data-allow-manual-retry",
-      "false",
-    );
+      fireEvent.click(screen.getByTestId("settings-cockpit-card-account"));
+
+      expect(screen.getByTestId("settings-v2-panel-account")).toBeInTheDocument();
+      expect(screen.getByTestId("settings-v2-automatic-sync-card")).toHaveTextContent(
+        "Automatic sync active",
+      );
+      expect(screen.queryByTestId("settings-panel")).not.toBeInTheDocument();
+      expect(screen.getByTestId("settings-cockpit-card-account")).toHaveAttribute(
+        "aria-pressed",
+        "true",
+      );
+      expect(screen.getByTestId("sync-health-card")).toHaveAttribute(
+        "data-allow-manual-retry",
+        "false",
+      );
+      expect(scrollIntoView).toHaveBeenCalledTimes(1);
+    } finally {
+      restore();
+    }
   });
 });
