@@ -4,9 +4,9 @@ import { describe, expect, it, vi } from "vitest";
 import { SettingsPage } from "../SettingsPage";
 
 function expectDocumentOrder(first: HTMLElement, second: HTMLElement) {
-  expect(
-    Boolean(first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING),
-  ).toBe(true);
+  expect(Boolean(first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(
+    true
+  );
 }
 
 function installScrollIntoViewSpy() {
@@ -351,132 +351,128 @@ function createSettingsControls() {
 }
 
 describe("SettingsPage", () => {
-  it("renders a paper-native V2 settings control surface", () => {
+  it("renders one unified V2 settings module list", () => {
     render(<SettingsPage />);
 
-    expect(screen.getByTestId("settings-page")).toHaveAttribute(
-      "data-visual-role",
-      "settings",
-    );
+    expect(screen.getByTestId("settings-page")).toHaveAttribute("data-visual-role", "settings");
     expect(screen.getByTestId("settings-page-control-card")).toBeInTheDocument();
     expect(screen.getByTestId("settings-v2-theme-toggle")).toBeInTheDocument();
-    expect(screen.getByTestId("sync-health-card")).toHaveAttribute(
-      "data-allow-manual-retry",
-      "false",
+    expect(screen.queryByTestId("sync-health-card")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("device-sessions-card")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("settings-section-switcher")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("settings-page-control-deck")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("settings-cockpit")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("settings-page-sections")).not.toBeInTheDocument();
+    expect(screen.getByTestId("settings-module-list")).toBeInTheDocument();
+    expect(screen.getByTestId("settings-module-card-account")).toHaveTextContent(
+      "Automatic sync active"
     );
-    expect(screen.getByTestId("device-sessions-card")).toBeInTheDocument();
-    expect(screen.getByTestId("settings-cockpit")).toBeInTheDocument();
-    expect(screen.getByTestId("settings-cockpit-card-account")).toHaveTextContent(
-      "Automatic sync active",
+    expect(screen.getByTestId("settings-module-card-modules")).toHaveTextContent("8/9");
+    expect(screen.getByTestId("settings-module-card-appearance")).toHaveAttribute(
+      "aria-expanded",
+      "false"
     );
-    expect(screen.getByTestId("settings-cockpit-card-modules")).toHaveTextContent("8/9");
-    expect(screen.getByText("Appearance").closest("[data-visual-role]")).toHaveAttribute(
+    expect(screen.getByTestId("settings-module-appearance")).toHaveAttribute(
       "data-visual-role",
-      "mind",
+      "mind"
     );
-    expect(screen.getByText("Notifications").closest("[data-visual-role]")).toHaveAttribute(
+    expect(screen.getByTestId("settings-module-notifications")).toHaveAttribute(
       "data-visual-role",
-      "focus",
+      "focus"
     );
-    expect(screen.getByText("Security").closest("[data-visual-role]")).toHaveAttribute(
+    expect(screen.getByTestId("settings-module-privacy")).toHaveAttribute(
       "data-visual-role",
-      "rest",
+      "rest"
     );
     expect(screen.getByTestId("settings-page")).toHaveAttribute("data-controls-wired", "false");
   });
 
-  it("wires the native V2 control deck when V2 receives settings controls", () => {
+  it("opens the profile module by default inside the first card", () => {
     render(<SettingsPage controls={createSettingsControls()} />);
 
     expect(screen.getByTestId("settings-page")).toHaveAttribute("data-controls-wired", "true");
-    expect(screen.getByTestId("settings-section-switcher")).toBeInTheDocument();
-    expect(screen.getByTestId("settings-section-switcher-profile")).toHaveAttribute(
-      "aria-pressed",
-      "true",
+    expect(screen.queryByTestId("settings-section-switcher")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("settings-page-control-deck")).not.toBeInTheDocument();
+    expect(screen.getByTestId("settings-module-card-profile")).toHaveAttribute(
+      "aria-expanded",
+      "true"
     );
-    expect(screen.getByTestId("settings-section-switcher-profile")).toHaveAttribute(
-      "aria-controls",
-      "settings-v2-control-deck",
-    );
-    expect(screen.getByTestId("settings-page-control-deck")).toBeInTheDocument();
-    expect(screen.getByTestId("settings-page-control-deck-header")).toHaveTextContent("Profile");
+    expect(screen.getByTestId("settings-module-panel-profile")).toBeInTheDocument();
+    expect(screen.getByTestId("settings-v2-panel-profile")).toBeInTheDocument();
     expect(screen.getByDisplayValue("Avery")).toBeInTheDocument();
     expect(screen.queryByTestId("settings-panel")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("sync-health-card")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("device-sessions-card")).not.toBeInTheDocument();
 
     expectDocumentOrder(
       screen.getByTestId("settings-page-control-card"),
-      screen.getByTestId("settings-section-switcher"),
-    );
-    expectDocumentOrder(
-      screen.getByTestId("settings-section-switcher"),
-      screen.getByTestId("settings-page-control-deck"),
-    );
-    expectDocumentOrder(
-      screen.getByTestId("settings-page-control-deck"),
-      screen.getByTestId("sync-health-card"),
+      screen.getByTestId("settings-module-list")
     );
   });
 
-  it("opens real settings sections from the compact section switcher", () => {
+  it("opens the matching real settings module directly under the clicked card", () => {
     const { restore, scrollIntoView } = installScrollIntoViewSpy();
 
     try {
       render(<SettingsPage controls={createSettingsControls()} />);
 
-      fireEvent.click(screen.getByTestId("settings-section-switcher-data"));
+      fireEvent.click(screen.getByTestId("settings-module-card-data"));
 
-      expect(screen.getByTestId("settings-v2-panel-data")).toBeInTheDocument();
-      expect(screen.getByTestId("settings-section-switcher-data")).toHaveAttribute(
-        "aria-pressed",
-        "true",
+      expect(screen.getByTestId("settings-module-card-data")).toHaveAttribute(
+        "aria-expanded",
+        "true"
       );
-      expect(screen.getByTestId("settings-page-control-deck-header")).toHaveTextContent("Data");
+      expect(screen.getByTestId("settings-module-card-profile")).toHaveAttribute(
+        "aria-expanded",
+        "false"
+      );
+      expect(screen.getByTestId("settings-module-panel-data")).toBeInTheDocument();
+      expect(screen.getByTestId("settings-v2-panel-data")).toBeInTheDocument();
+      expect(screen.queryByTestId("settings-panel")).not.toBeInTheDocument();
+      expect(document.querySelectorAll('[data-testid^="settings-module-panel-"]')).toHaveLength(1);
       expect(scrollIntoView).not.toHaveBeenCalled();
     } finally {
       restore();
     }
   });
 
-  it("opens the matching real settings section from the V2 section cards", () => {
+  it("keeps one module open and shows automatic sync without a manual sync button", () => {
     const { restore, scrollIntoView } = installScrollIntoViewSpy();
 
     try {
       render(<SettingsPage controls={createSettingsControls()} />);
 
-      fireEvent.click(screen.getByTestId("settings-section-data"));
+      fireEvent.click(screen.getByTestId("settings-module-card-account"));
 
-      expect(screen.getByTestId("settings-v2-panel-data")).toBeInTheDocument();
-      expect(screen.queryByTestId("settings-panel")).not.toBeInTheDocument();
-      expect(screen.getByTestId("settings-section-data")).toHaveAttribute("aria-pressed", "true");
-      expect(screen.getByTestId("settings-page-control-deck-header")).toHaveTextContent("Data");
-      expect(scrollIntoView).toHaveBeenCalledTimes(1);
-    } finally {
-      restore();
-    }
-  });
-
-  it("opens detail sections from the V2 cockpit without exposing a manual sync action", () => {
-    const { restore, scrollIntoView } = installScrollIntoViewSpy();
-
-    try {
-      render(<SettingsPage controls={createSettingsControls()} />);
-
-      fireEvent.click(screen.getByTestId("settings-cockpit-card-account"));
-
+      expect(screen.getByTestId("settings-module-card-account")).toHaveAttribute(
+        "aria-expanded",
+        "true"
+      );
+      expect(screen.getByTestId("settings-module-panel-account")).toBeInTheDocument();
       expect(screen.getByTestId("settings-v2-panel-account")).toBeInTheDocument();
       expect(screen.getByTestId("settings-v2-automatic-sync-card")).toHaveTextContent(
-        "Automatic sync active",
-      );
-      expect(screen.queryByTestId("settings-panel")).not.toBeInTheDocument();
-      expect(screen.getByTestId("settings-cockpit-card-account")).toHaveAttribute(
-        "aria-pressed",
-        "true",
+        "Automatic sync active"
       );
       expect(screen.getByTestId("sync-health-card")).toHaveAttribute(
         "data-allow-manual-retry",
-        "false",
+        "false"
       );
-      expect(scrollIntoView).toHaveBeenCalledTimes(1);
+      expect(screen.getByTestId("device-sessions-card")).toBeInTheDocument();
+      expectDocumentOrder(
+        screen.getByTestId("settings-v2-panel-account"),
+        screen.getByTestId("sync-health-card")
+      );
+      expect(
+        screen.queryByRole("button", { name: /sync now|manual sync/i })
+      ).not.toBeInTheDocument();
+      expect(screen.queryByTestId("settings-panel")).not.toBeInTheDocument();
+      expect(document.querySelectorAll('[data-testid^="settings-module-panel-"]')).toHaveLength(1);
+
+      fireEvent.click(screen.getByTestId("settings-module-card-account"));
+
+      expect(screen.getByTestId("settings-module-panel-account")).toBeInTheDocument();
+      expect(document.querySelectorAll('[data-testid^="settings-module-panel-"]')).toHaveLength(1);
+      expect(scrollIntoView).not.toHaveBeenCalled();
     } finally {
       restore();
     }

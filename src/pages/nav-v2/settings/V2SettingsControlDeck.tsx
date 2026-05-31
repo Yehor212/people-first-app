@@ -41,6 +41,8 @@ import { FeedbackForm } from "@/components/FeedbackForm";
 import { ChangelogPanel } from "@/components/ChangelogPanel";
 import { LegalModal } from "@/components/LegalModal";
 import { SmartRemindersCard } from "@/components/SmartRemindersCard";
+import { DeviceSessionsCard } from "@/components/sync/DeviceSessionsCard";
+import { SyncHealthCard } from "@/components/sync/SyncHealthCard";
 import { TimeInputInline } from "@/components/ui/time-input";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useFeatureFlags, type ToggleableFeature } from "@/contexts/FeatureFlagsContext";
@@ -60,7 +62,12 @@ import { checkForAppUpdate, openGooglePlayStore, type UpdateState } from "@/lib/
 import { APP_VERSION } from "@/lib/appVersion";
 import { BASE_URL } from "@/lib/env";
 import { logger } from "@/lib/logger";
-import { getNotificationSound, NOTIFICATION_SOUNDS, setNotificationSound, type NotificationSoundType } from "@/lib/notificationSounds";
+import {
+  getNotificationSound,
+  NOTIFICATION_SOUNDS,
+  setNotificationSound,
+  type NotificationSoundType,
+} from "@/lib/notificationSounds";
 import { isAndroid, isNative } from "@/lib/platform";
 import { sanitizeUserName } from "@/lib/sanitize";
 import { safeLocalStorageGet, storageGetRaw, storageSetRaw } from "@/lib/safeJson";
@@ -96,15 +103,69 @@ const MODULES: Array<{
   core?: boolean;
   feature?: ToggleableFeature;
 }> = [
-  { id: "mood", icon: CheckCircle2, titleKey: "settingsModuleMood", descriptionKey: "settingsModuleMoodDesc", core: true },
-  { id: "habits", icon: LayoutGrid, titleKey: "settingsModuleHabits", descriptionKey: "settingsModuleHabitsDesc", core: true },
-  { id: "focusTimer", icon: Clock3, titleKey: "settingsModuleFocus", descriptionKey: "settingsModuleFocusDesc", feature: "focusTimer" },
-  { id: "breathingExercise", icon: Zap, titleKey: "settingsModuleBreathing", descriptionKey: "settingsModuleBreathingDesc", feature: "breathingExercise" },
-  { id: "gratitudeJournal", icon: Sparkles, titleKey: "gratitude", descriptionKey: "journalDescription", feature: "gratitudeJournal" },
-  { id: "quests", icon: CheckCircle2, titleKey: "settingsModuleQuests", descriptionKey: "settingsModuleQuestsDesc", feature: "quests" },
-  { id: "tasks", icon: FileText, titleKey: "settingsModuleTasks", descriptionKey: "settingsModuleTasksDesc", feature: "tasks" },
-  { id: "challenges", icon: Shield, titleKey: "settingsModuleChallenges", descriptionKey: "settingsModuleChallengesDesc", feature: "challenges" },
-  { id: "innerWorld", icon: LayoutGrid, titleKey: "settingsModuleGarden", descriptionKey: "settingsModuleGardenDesc", feature: "innerWorld" },
+  {
+    id: "mood",
+    icon: CheckCircle2,
+    titleKey: "settingsModuleMood",
+    descriptionKey: "settingsModuleMoodDesc",
+    core: true,
+  },
+  {
+    id: "habits",
+    icon: LayoutGrid,
+    titleKey: "settingsModuleHabits",
+    descriptionKey: "settingsModuleHabitsDesc",
+    core: true,
+  },
+  {
+    id: "focusTimer",
+    icon: Clock3,
+    titleKey: "settingsModuleFocus",
+    descriptionKey: "settingsModuleFocusDesc",
+    feature: "focusTimer",
+  },
+  {
+    id: "breathingExercise",
+    icon: Zap,
+    titleKey: "settingsModuleBreathing",
+    descriptionKey: "settingsModuleBreathingDesc",
+    feature: "breathingExercise",
+  },
+  {
+    id: "gratitudeJournal",
+    icon: Sparkles,
+    titleKey: "gratitude",
+    descriptionKey: "journalDescription",
+    feature: "gratitudeJournal",
+  },
+  {
+    id: "quests",
+    icon: CheckCircle2,
+    titleKey: "settingsModuleQuests",
+    descriptionKey: "settingsModuleQuestsDesc",
+    feature: "quests",
+  },
+  {
+    id: "tasks",
+    icon: FileText,
+    titleKey: "settingsModuleTasks",
+    descriptionKey: "settingsModuleTasksDesc",
+    feature: "tasks",
+  },
+  {
+    id: "challenges",
+    icon: Shield,
+    titleKey: "settingsModuleChallenges",
+    descriptionKey: "settingsModuleChallengesDesc",
+    feature: "challenges",
+  },
+  {
+    id: "innerWorld",
+    icon: LayoutGrid,
+    titleKey: "settingsModuleGarden",
+    descriptionKey: "settingsModuleGardenDesc",
+    feature: "innerWorld",
+  },
 ];
 
 const FONT_SCALE_LABELS: Record<number, string> = {
@@ -128,12 +189,9 @@ function getProviderName(tx: Record<string, string>, provider: SocialAuthProvide
 function formatProviderText(
   tx: Record<string, string>,
   template: string | undefined,
-  provider: SocialAuthProviderConfig,
+  provider: SocialAuthProviderConfig
 ) {
-  return (template || "Connect {provider}").replace(
-    "{provider}",
-    getProviderName(tx, provider),
-  );
+  return (template || "Connect {provider}").replace("{provider}", getProviderName(tx, provider));
 }
 
 function ProfilePanel({ controls }: { controls: V2SettingsControls }) {
@@ -185,7 +243,10 @@ function ProfilePanel({ controls }: { controls: V2SettingsControls }) {
       description={tx.yourName || "Name and personal preferences."}
       testId="settings-v2-panel-profile"
     >
-      <label className="block text-xs font-semibold text-muted-foreground" htmlFor="settings-v2-name">
+      <label
+        className="block text-xs font-semibold text-muted-foreground"
+        htmlFor="settings-v2-name"
+      >
         {tx.yourName || "Your name"}
       </label>
       <div className="flex flex-col gap-2 min-[520px]:flex-row">
@@ -242,7 +303,11 @@ function AppearancePanel() {
       description={tx.navV2Theme || tx.theme || "Theme"}
       testId="settings-v2-panel-appearance"
     >
-      <div className="grid gap-2 min-[520px]:grid-cols-3" role="group" aria-label={tx.themeLabel || "Theme"}>
+      <div
+        className="grid gap-2 min-[520px]:grid-cols-3"
+        role="group"
+        aria-label={tx.themeLabel || "Theme"}
+      >
         {themeOptions.map((option) => {
           const Icon = option.icon;
           return (
@@ -255,7 +320,7 @@ function AppearancePanel() {
                 "flex min-h-[92px] flex-col items-center justify-center gap-2 rounded-2xl border p-3 text-sm font-semibold motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                 theme === option.value
                   ? "border-primary bg-primary/10 text-primary"
-                  : "border-[hsl(var(--border)/0.55)] bg-[hsl(var(--background)/0.34)] text-foreground hover:bg-muted",
+                  : "border-[hsl(var(--border)/0.55)] bg-[hsl(var(--background)/0.34)] text-foreground hover:bg-muted"
               )}
             >
               <Icon className="h-5 w-5" aria-hidden="true" />
@@ -288,7 +353,11 @@ function LanguagePanel() {
       description={tx.selectLanguage || "Choose language."}
       testId="settings-v2-panel-language"
     >
-      <div className="grid gap-2 min-[520px]:grid-cols-2" role="group" aria-label={tx.language || "Language"}>
+      <div
+        className="grid gap-2 min-[520px]:grid-cols-2"
+        role="group"
+        aria-label={tx.language || "Language"}
+      >
         {LANGUAGES.map((lang) => (
           <button
             key={lang}
@@ -299,7 +368,7 @@ function LanguagePanel() {
               "min-h-[48px] rounded-2xl border px-4 py-3 text-start text-sm font-semibold motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
               language === lang
                 ? "border-primary bg-primary/10 text-primary"
-                : "border-[hsl(var(--border)/0.55)] bg-[hsl(var(--background)/0.34)] text-foreground hover:bg-muted",
+                : "border-[hsl(var(--border)/0.55)] bg-[hsl(var(--background)/0.34)] text-foreground hover:bg-muted"
             )}
           >
             {languageNames[lang]}
@@ -360,7 +429,7 @@ function NotificationsPanel({ controls }: { controls: V2SettingsControls }) {
   const tx = t as unknown as Record<string, string>;
   const quickActions = useQuickActions();
   const [selectedSound, setSelectedSound] = useState<NotificationSoundType>(() =>
-    getNotificationSound(),
+    getNotificationSound()
   );
   const dayOptions = [
     { value: 1, label: tx.mon || "Mon" },
@@ -373,7 +442,9 @@ function NotificationsPanel({ controls }: { controls: V2SettingsControls }) {
   ];
 
   const setReminder = (
-    value: V2SettingsControls["reminders"] | ((prev: V2SettingsControls["reminders"]) => V2SettingsControls["reminders"]),
+    value:
+      | V2SettingsControls["reminders"]
+      | ((prev: V2SettingsControls["reminders"]) => V2SettingsControls["reminders"])
   ) => controls.onRemindersChange(value);
 
   const updateSound = (sound: NotificationSoundType) => {
@@ -429,7 +500,11 @@ function NotificationsPanel({ controls }: { controls: V2SettingsControls }) {
             <p className="mb-2 text-xs font-semibold text-muted-foreground">
               {tx.reminderDays || "Reminder days"}
             </p>
-            <div className="flex flex-wrap gap-2" role="group" aria-label={tx.reminderDays || "Reminder days"}>
+            <div
+              className="flex flex-wrap gap-2"
+              role="group"
+              aria-label={tx.reminderDays || "Reminder days"}
+            >
               {dayOptions.map(({ value, label }) => (
                 <button
                   key={value}
@@ -447,7 +522,7 @@ function NotificationsPanel({ controls }: { controls: V2SettingsControls }) {
                     "min-h-[44px] rounded-xl px-3 text-sm font-semibold motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                     controls.reminders.days.includes(value)
                       ? "bg-primary text-primary-foreground"
-                      : "bg-secondary text-secondary-foreground hover:bg-muted",
+                      : "bg-secondary text-secondary-foreground hover:bg-muted"
                   )}
                 >
                   {label}
@@ -497,7 +572,7 @@ function NotificationsPanel({ controls }: { controls: V2SettingsControls }) {
                     "min-h-[64px] rounded-2xl border p-3 text-start motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                     selectedSound === sound.id
                       ? "border-primary bg-primary/10"
-                      : "border-[hsl(var(--border)/0.55)] bg-[hsl(var(--card)/0.48)] hover:bg-muted",
+                      : "border-[hsl(var(--border)/0.55)] bg-[hsl(var(--card)/0.48)] hover:bg-muted"
                   )}
                 >
                   <span className="block text-sm font-semibold text-foreground">{label}</span>
@@ -543,7 +618,9 @@ function PrivacyPanel({ controls }: { controls: V2SettingsControls }) {
     <PanelFrame
       icon={Shield}
       title={tx.settingsGroupSecurity || tx.privacyTitle || "Privacy & security"}
-      description={tx.settingsSecurityDesc || tx.privacyDescription || "Control privacy and journal lock."}
+      description={
+        tx.settingsSecurityDesc || tx.privacyDescription || "Control privacy and journal lock."
+      }
       testId="settings-v2-panel-privacy"
     >
       <ToggleRow
@@ -606,10 +683,20 @@ function PrivacyPanel({ controls }: { controls: V2SettingsControls }) {
       </div>
 
       <div className="flex flex-wrap gap-3 text-sm">
-        <a className="text-primary underline hover:text-primary/90" href={privacyHref} target="_blank" rel="noopener noreferrer">
+        <a
+          className="text-primary underline hover:text-primary/90"
+          href={privacyHref}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           {tx.privacyPolicy || "Privacy Policy"}
         </a>
-        <a className="text-primary underline hover:text-primary/90" href={termsHref} target="_blank" rel="noopener noreferrer">
+        <a
+          className="text-primary underline hover:text-primary/90"
+          href={termsHref}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           {tx.termsOfService || "Terms of Service"}
         </a>
       </div>
@@ -692,7 +779,9 @@ function DataPanel({ controls }: { controls: V2SettingsControls }) {
             variant="primary"
             testId="settings-v2-export-json"
           >
-            {exp.isExporting ? tx.exporting || "Exporting..." : tx.settingsExportTitle || tx.exportData || "Export"}
+            {exp.isExporting
+              ? tx.exporting || "Exporting..."
+              : tx.settingsExportTitle || tx.exportData || "Export"}
           </ActionButton>
           <ActionButton
             icon={exp.isExportingCSV ? Loader2 : FileSpreadsheet}
@@ -718,7 +807,11 @@ function DataPanel({ controls }: { controls: V2SettingsControls }) {
           <p className="mb-2 text-xs font-semibold text-muted-foreground">
             {tx.importMode || "Import mode"}
           </p>
-          <div className="mb-3 grid gap-2 min-[420px]:grid-cols-2" role="group" aria-label={tx.importMode || "Import mode"}>
+          <div
+            className="mb-3 grid gap-2 min-[420px]:grid-cols-2"
+            role="group"
+            aria-label={tx.importMode || "Import mode"}
+          >
             {(["merge", "replace"] as const).map((mode) => (
               <button
                 key={mode}
@@ -729,7 +822,7 @@ function DataPanel({ controls }: { controls: V2SettingsControls }) {
                   "min-h-[44px] rounded-xl border px-3 text-sm font-semibold motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                   imp.importMode === mode
                     ? "border-primary bg-primary/10 text-primary"
-                    : "border-[hsl(var(--border)/0.55)] bg-[hsl(var(--card)/0.48)] text-foreground hover:bg-muted",
+                    : "border-[hsl(var(--border)/0.55)] bg-[hsl(var(--card)/0.48)] text-foreground hover:bg-muted"
                 )}
               >
                 {mode === "merge" ? tx.importMerge || "Merge" : tx.importReplace || "Replace"}
@@ -749,7 +842,9 @@ function DataPanel({ controls }: { controls: V2SettingsControls }) {
             disabled={imp.isImporting}
             testId="settings-v2-import"
           >
-            {imp.isImporting ? tx.importing || "Importing..." : tx.settingsImportTitle || tx.importData || "Import"}
+            {imp.isImporting
+              ? tx.importing || "Importing..."
+              : tx.settingsImportTitle || tx.importData || "Import"}
           </ActionButton>
         </div>
 
@@ -815,7 +910,9 @@ function DataPanel({ controls }: { controls: V2SettingsControls }) {
             <p className="mt-2 text-sm text-muted-foreground">
               {tx.importConfirmMessage || "Import data from this file?"}
             </p>
-            <p className="mt-2 truncate text-xs text-muted-foreground">{imp.pendingImportFile.name}</p>
+            <p className="mt-2 truncate text-xs text-muted-foreground">
+              {imp.pendingImportFile.name}
+            </p>
             <div className="mt-4 grid gap-2 min-[360px]:grid-cols-2">
               <button
                 type="button"
@@ -853,11 +950,11 @@ function AccountPanel({ controls }: { controls: V2SettingsControls }) {
   const del = useDeleteAccount({ onResetData: controls.onResetData, t: tx });
   const { setShowDeleteConfirm, showDeleteConfirm } = del;
   const deleteAccountHref = `${BASE_URL}delete-account.html`;
-  const linkedProviderLabels = auth.linkedProviderIds.map(
-    (providerId) => getProviderName(tx, getAuthProviderConfig(providerId)),
+  const linkedProviderLabels = auth.linkedProviderIds.map((providerId) =>
+    getProviderName(tx, getAuthProviderConfig(providerId))
   );
   const linkableProviders = auth.enabledProviders.filter(
-    (provider) => !auth.linkedProviderIds.includes(provider.id),
+    (provider) => !auth.linkedProviderIds.includes(provider.id)
   );
 
   useBackHandler(showDeleteConfirm, () => setShowDeleteConfirm(false));
@@ -1092,6 +1189,10 @@ function AccountPanel({ controls }: { controls: V2SettingsControls }) {
         {auth.authStatus && <p className="text-sm text-muted-foreground">{auth.authStatus}</p>}
         {del.deleteStatus && <p className="text-sm text-muted-foreground">{del.deleteStatus}</p>}
       </div>
+
+      <SyncHealthCard dense allowManualRetry={false} surface="settings-space" />
+
+      <DeviceSessionsCard dense surface="settings" />
     </PanelFrame>
   );
 }
@@ -1248,7 +1349,9 @@ function AboutPanel({ controls }: { controls: V2SettingsControls }) {
 
         {isInstalled && (
           <div className="rounded-2xl border border-primary/20 bg-primary/10 p-4">
-            <p className="text-sm font-semibold text-foreground">{tx.appInstalled || "App installed"}</p>
+            <p className="text-sm font-semibold text-foreground">
+              {tx.appInstalled || "App installed"}
+            </p>
             <p className="mt-1 text-xs text-muted-foreground">
               {tx.appInstalledDescription || "ZenFlow is installed on this device."}
             </p>

@@ -1,5 +1,5 @@
 import { forwardRef, type ReactNode } from "react";
-import { CheckCircle2, SlidersHorizontal, type LucideIcon } from "lucide-react";
+import { ChevronDown, SlidersHorizontal, type LucideIcon } from "lucide-react";
 import { ThemeToggleV2 } from "@/components/navigation-v2/ThemeToggleV2";
 import { getRoleTone, type NonOrbVisualRole } from "@/lib/nonOrbVisualRoles";
 import { V2_NAV_ICONS } from "@/lib/v2IconSystem";
@@ -14,8 +14,8 @@ export interface SettingsPageCardData {
   role: NonOrbVisualRole;
 }
 
-export interface SettingsCockpitCardData extends SettingsPageCardData {
-  value: string;
+export interface SettingsModuleCardData extends SettingsPageCardData {
+  value?: string;
 }
 
 interface SettingsPageShellProps {
@@ -31,16 +31,13 @@ interface SettingsHeroCardProps {
   themeLabel: string;
 }
 
-interface SettingsCardCollectionProps<T extends SettingsPageCardData> {
-  items: T[];
-  selectedId: V2SettingsSectionId;
+interface SettingsModuleListProps {
+  items: SettingsModuleCardData[];
+  expandedId: V2SettingsSectionId;
   onOpen: (sectionId: V2SettingsSectionId) => void;
   controlsWired: boolean;
-}
-
-interface SettingsControlDeckHeaderProps {
   label: string;
-  description: string;
+  renderPanel: (item: SettingsModuleCardData) => ReactNode;
 }
 
 export const SettingsPageShell = forwardRef<HTMLElement, SettingsPageShellProps>(
@@ -60,15 +57,10 @@ export const SettingsPageShell = forwardRef<HTMLElement, SettingsPageShellProps>
         {children}
       </main>
     );
-  },
+  }
 );
 
-export function SettingsHeroCard({
-  title,
-  lead,
-  themeTitle,
-  themeLabel,
-}: SettingsHeroCardProps) {
+export function SettingsHeroCard({ title, lead, themeTitle, themeLabel }: SettingsHeroCardProps) {
   const SettingsIcon = V2_NAV_ICONS.settings;
   const settingsTone = getRoleTone("settings");
 
@@ -81,7 +73,7 @@ export function SettingsHeroCard({
         <span
           className={cn(
             "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border shadow-sm",
-            settingsTone.iconClass,
+            settingsTone.iconClass
           )}
         >
           <SettingsIcon className="h-5 w-5" aria-hidden="true" />
@@ -116,231 +108,149 @@ export function SettingsHeroCard({
             </span>
           </span>
         </div>
-        <ThemeToggleV2
-          collapsed
-          presentation="settings-card"
-          testId="settings-v2-theme-toggle"
-        />
+        <ThemeToggleV2 collapsed presentation="settings-card" testId="settings-v2-theme-toggle" />
       </div>
     </section>
   );
 }
 
-export function SettingsCockpit({
+export function SettingsModuleList({
   items,
-  selectedId,
+  expandedId,
   onOpen,
   controlsWired,
   label,
-}: SettingsCardCollectionProps<SettingsCockpitCardData> & { label: string }) {
+  renderPanel,
+}: SettingsModuleListProps) {
   return (
-    <section
-      className="rounded-[1.75rem] border border-[hsl(var(--border)/0.58)] bg-[hsl(var(--card)/0.72)] p-3 shadow-[var(--zen-shadow-card)] backdrop-blur-xl"
-      aria-label={label}
-      data-testid="settings-cockpit"
-    >
-      <div className="grid gap-3 min-[560px]:grid-cols-2">
-        {items.map((item) => (
-          <SettingsCockpitCard
+    <section aria-label={label} className="grid gap-3" data-testid="settings-module-list">
+      {items.map((item) => {
+        const expanded = expandedId === item.id;
+        const panelId = `settings-module-panel-${item.id}`;
+        const buttonId = `settings-module-card-${item.id}`;
+
+        return (
+          <SettingsModuleCard
             key={item.id}
             item={item}
-            selected={selectedId === item.id}
+            expanded={expanded}
             controlsWired={controlsWired}
+            buttonId={buttonId}
+            panelId={panelId}
             onOpen={onOpen}
-          />
-        ))}
-      </div>
+          >
+            {expanded && controlsWired ? (
+              <div
+                id={panelId}
+                role="region"
+                aria-labelledby={buttonId}
+                className="mt-3 rounded-3xl border border-[hsl(var(--border)/0.52)] bg-[hsl(var(--background)/0.34)] p-3 shadow-inner"
+                data-testid={`settings-module-panel-${item.id}`}
+              >
+                <div className="mb-3 rounded-2xl border border-[hsl(var(--border)/0.42)] bg-[hsl(var(--card)/0.52)] p-3">
+                  <p className="text-sm font-semibold text-foreground">{item.label}</p>
+                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                    {item.description}
+                  </p>
+                </div>
+                {renderPanel(item)}
+              </div>
+            ) : null}
+          </SettingsModuleCard>
+        );
+      })}
     </section>
   );
 }
 
-export function SettingsSectionGrid({
-  items,
-  selectedId,
-  onOpen,
-  controlsWired,
-  label,
-}: SettingsCardCollectionProps<SettingsPageCardData> & { label: string }) {
-  return (
-    <section
-      className="grid gap-3 min-[520px]:grid-cols-2"
-      aria-label={label}
-      data-testid="settings-page-sections"
-    >
-      {items.map((item) => (
-        <SettingsSectionCard
-          key={item.id}
-          item={item}
-          selected={selectedId === item.id}
-          controlsWired={controlsWired}
-          onOpen={onOpen}
-        />
-      ))}
-    </section>
-  );
-}
-
-export const SettingsControlDeckRegion = forwardRef<HTMLElement, {
-  children: ReactNode;
-  label: string;
-}>(function SettingsControlDeckRegion({ children, label }, ref) {
-  return (
-    <section
-      ref={ref}
-      id="settings-v2-control-deck"
-      className="scroll-mt-6"
-      aria-label={label}
-      data-testid="settings-page-control-deck"
-    >
-      {children}
-    </section>
-  );
-});
-
-export function SettingsControlDeckHeader({
-  label,
-  description,
-}: SettingsControlDeckHeaderProps) {
-  return (
-    <div
-      className="mb-3 rounded-3xl border border-[hsl(var(--border)/0.58)] bg-[hsl(var(--card)/0.72)] p-4 shadow-[var(--zen-shadow-card)]"
-      data-testid="settings-page-control-deck-header"
-    >
-      <div className="flex items-start gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[hsl(var(--zf-role-settings)/0.12)] text-[hsl(var(--zf-role-settings))]">
-          <CheckCircle2 className="h-5 w-5" aria-hidden="true" />
-        </span>
-        <span className="min-w-0">
-          <span className="block text-sm font-semibold text-foreground">
-            {label}
-          </span>
-          <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
-            {description}
-          </span>
-        </span>
-      </div>
-    </div>
-  );
-}
-
-function SettingsCockpitCard({
+function SettingsModuleCard({
   item,
-  selected,
+  expanded,
   controlsWired,
+  buttonId,
+  panelId,
   onOpen,
+  children,
 }: {
-  item: SettingsCockpitCardData;
-  selected: boolean;
+  item: SettingsModuleCardData;
+  expanded: boolean;
   controlsWired: boolean;
+  buttonId: string;
+  panelId: string;
   onOpen: (sectionId: V2SettingsSectionId) => void;
+  children: ReactNode;
 }) {
   const tone = getRoleTone(item.role);
   const Icon = item.icon;
 
   return (
-    <button
-      type="button"
-      onClick={() => onOpen(item.id)}
-      aria-pressed={selected}
-      aria-controls={controlsWired ? "settings-v2-control-deck" : undefined}
-      aria-label={`${item.label}: ${item.value}. ${item.description}`}
+    <article
       className={cn(
-        "group relative min-h-[132px] overflow-hidden rounded-3xl border bg-[hsl(var(--background)/0.44)] p-4 text-start",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--zf-role-settings)/0.52)] focus-visible:ring-offset-2",
-        "motion-safe:transition-[transform,border-color,background-color,box-shadow] motion-safe:duration-200 hover:-translate-y-0.5 hover:bg-[hsl(var(--card)/0.9)]",
-        selected
-          ? "border-[hsl(var(--zf-role-settings)/0.48)] shadow-[0_18px_46px_-28px_hsl(var(--zf-role-settings)/0.82)]"
-          : tone.borderClass,
+        "relative overflow-hidden rounded-3xl border bg-[hsl(var(--card)/0.76)] p-3 shadow-[var(--zen-shadow-card)]",
+        "motion-safe:transition-[border-color,background-color,box-shadow] motion-safe:duration-200",
+        expanded
+          ? "border-[hsl(var(--zf-role-settings)/0.52)] bg-[hsl(var(--card)/0.9)] shadow-[0_18px_46px_-28px_hsl(var(--zf-role-settings)/0.82)]"
+          : tone.borderClass
       )}
-      data-testid={`settings-cockpit-card-${item.id}`}
       data-visual-role={item.role}
+      data-testid={`settings-module-${item.id}`}
     >
       <span
         aria-hidden="true"
         className={cn("absolute inset-x-5 top-0 h-[2px] rounded-b-full", tone.railClass)}
       />
-      <span className="flex items-start gap-3">
+      <button
+        id={buttonId}
+        type="button"
+        onClick={() => onOpen(item.id)}
+        className={cn(
+          "relative flex min-h-[96px] w-full items-start gap-3 rounded-[1.35rem] p-3 text-start",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--zf-role-settings)/0.52)] focus-visible:ring-offset-2",
+          "motion-safe:transition-[transform,background-color] motion-safe:duration-200 hover:-translate-y-0.5 hover:bg-[hsl(var(--card)/0.72)]"
+        )}
+        data-testid={`settings-module-card-${item.id}`}
+        aria-expanded={expanded}
+        aria-controls={panelId}
+        aria-label={
+          item.value
+            ? `${item.label}: ${item.value}. ${item.description}`
+            : `${item.label}: ${item.description}`
+        }
+        aria-disabled={!controlsWired}
+      >
         <SettingsCardIcon icon={Icon} role={item.role} />
         <span className="min-w-0">
-          <span className="block text-sm font-semibold text-foreground">
-            {item.label}
-          </span>
-          <span className="mt-2 block text-base font-semibold leading-tight text-foreground">
-            {item.value}
-          </span>
+          <span className="block text-sm font-semibold text-foreground">{item.label}</span>
+          {item.value ? (
+            <span className="mt-2 block text-base font-semibold leading-tight text-foreground">
+              {item.value}
+            </span>
+          ) : null}
           <span className="mt-2 block text-xs leading-relaxed text-muted-foreground">
             {item.description}
           </span>
         </span>
-      </span>
-    </button>
+        <ChevronDown
+          className={cn(
+            "ml-auto mt-1 h-4 w-4 shrink-0 text-muted-foreground motion-safe:transition-transform motion-safe:duration-200",
+            expanded && "rotate-180 text-foreground"
+          )}
+          aria-hidden="true"
+        />
+      </button>
+      {children}
+    </article>
   );
 }
 
-function SettingsSectionCard({
-  item,
-  selected,
-  controlsWired,
-  onOpen,
-}: {
-  item: SettingsPageCardData;
-  selected: boolean;
-  controlsWired: boolean;
-  onOpen: (sectionId: V2SettingsSectionId) => void;
-}) {
-  const tone = getRoleTone(item.role);
-  const Icon = item.icon;
-
-  return (
-    <button
-      type="button"
-      onClick={() => onOpen(item.id)}
-      className={cn(
-        "relative min-h-[116px] overflow-hidden rounded-3xl border bg-[hsl(var(--card)/0.76)] p-4 text-start shadow-[var(--zen-shadow-card)]",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--zf-role-settings)/0.52)] focus-visible:ring-offset-2",
-        "motion-safe:transition-[transform,border-color,background-color,box-shadow] motion-safe:duration-200 hover:-translate-y-0.5 hover:bg-[hsl(var(--card)/0.88)]",
-        tone.borderClass,
-        selected && "border-[hsl(var(--zf-role-settings)/0.48)] bg-[hsl(var(--card)/0.92)]",
-      )}
-      data-testid={`settings-section-${item.id}`}
-      data-visual-role={item.role}
-      aria-pressed={selected}
-      aria-controls={controlsWired ? "settings-v2-control-deck" : undefined}
-      aria-label={`${item.label}: ${item.description}`}
-    >
-      <span
-        aria-hidden="true"
-        className={cn("absolute inset-x-5 top-0 h-[2px] rounded-b-full", tone.railClass)}
-      />
-      <div className="flex items-start gap-3">
-        <SettingsCardIcon icon={Icon} role={item.role} />
-        <span className="min-w-0">
-          <span className="block text-sm font-semibold text-foreground">
-            {item.label}
-          </span>
-          <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
-            {item.description}
-          </span>
-        </span>
-      </div>
-    </button>
-  );
-}
-
-function SettingsCardIcon({
-  icon: Icon,
-  role,
-}: {
-  icon: LucideIcon;
-  role: NonOrbVisualRole;
-}) {
+function SettingsCardIcon({ icon: Icon, role }: { icon: LucideIcon; role: NonOrbVisualRole }) {
   const tone = getRoleTone(role);
 
   return (
     <span
       className={cn(
         "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border",
-        tone.iconClass,
+        tone.iconClass
       )}
     >
       <Icon className="h-5 w-5" aria-hidden="true" />

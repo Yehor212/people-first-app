@@ -1,6 +1,5 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import {
-  Bell,
   Cloud,
   Clock3,
   DatabaseBackup,
@@ -9,30 +8,22 @@ import {
   LayoutGrid,
   LockKeyhole,
   Palette,
-  ShieldCheck,
   UserRound,
 } from "lucide-react";
 import { Bloom } from "@/lib/motion";
 import { staggerDelay } from "@/lib/motion/choreography";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { DeviceSessionsCard } from "@/components/sync/DeviceSessionsCard";
-import { SyncHealthCard } from "@/components/sync/SyncHealthCard";
 import { useFeatureFlags, type ToggleableFeature } from "@/contexts/FeatureFlagsContext";
 import { useThemeStore } from "@/stores/themeStore";
 import { useAppStore } from "@/stores";
 import { supabase } from "@/lib/supabaseClient";
 import { APP_VERSION } from "@/lib/appVersion";
 import {
-  SettingsCockpit,
-  SettingsControlDeckHeader,
-  SettingsControlDeckRegion,
   SettingsHeroCard,
+  SettingsModuleList,
   SettingsPageShell,
-  SettingsSectionGrid,
-  type SettingsCockpitCardData,
-  type SettingsPageCardData,
+  type SettingsModuleCardData,
 } from "./settings/components/SettingsPageComponents";
-import { SettingsSectionSwitcher } from "./settings/components/SettingsSectionSwitcher";
 import { V2SettingsControlDeck } from "./settings/V2SettingsControlDeck";
 import type { V2SettingsControls, V2SettingsSectionId } from "./settings/types";
 
@@ -69,9 +60,8 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
   const { t } = useLanguage();
   const tx = t as unknown as Record<string, string>;
   const mainRef = useRef<HTMLElement>(null);
-  const controlDeckRef = useRef<HTMLElement>(null);
   const [selectedCardId, setSelectedCardId] = useState<V2SettingsSectionId>(
-    INITIAL_SECTION_TO_V2_SECTION[controls?.initialOpenSection || "profile"] || "profile",
+    INITIAL_SECTION_TO_V2_SECTION[controls?.initialOpenSection || "profile"] || "profile"
   );
   const appliedTheme = useThemeStore((s) => s.appliedTheme);
   const hasValidSession = useAppStore((s) => s.hasValidSession);
@@ -84,37 +74,17 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
 
   useEffect(() => {
     if (!controls?.initialOpenSection) return;
-    setSelectedCardId(
-      INITIAL_SECTION_TO_V2_SECTION[controls.initialOpenSection] || "profile",
-    );
+    setSelectedCardId(INITIAL_SECTION_TO_V2_SECTION[controls.initialOpenSection] || "profile");
   }, [controls?.initialOpenSection]);
 
-  const openSection = useCallback((sectionId: V2SettingsSectionId, scrollToDeck = false) => {
+  function openSection(sectionId: V2SettingsSectionId) {
     setSelectedCardId(sectionId);
-
-    if (scrollToDeck && controls && controlDeckRef.current) {
-      const scrollToSelectedDeck = () =>
-        controlDeckRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-      if (typeof window !== "undefined" && "requestAnimationFrame" in window) {
-        window.requestAnimationFrame(scrollToSelectedDeck);
-      } else {
-        scrollToSelectedDeck();
-      }
-    }
-  }, [controls]);
-
-  const handleSwitcherOpen = useCallback((sectionId: V2SettingsSectionId) => {
-    openSection(sectionId);
-  }, [openSection]);
-
-  const handleOverviewOpen = useCallback((sectionId: V2SettingsSectionId) => {
-    openSection(sectionId, true);
-  }, [openSection]);
+  }
 
   const themeLabel = appliedTheme === "paper" ? tx.themeLight : tx.themeDark;
   const enabledOptionalModules = useMemo(
     () => OPTIONAL_MODULES.filter((moduleId) => flags[moduleId]).length,
-    [flags],
+    [flags]
   );
   const totalModules = OPTIONAL_MODULES.length + 2;
   const enabledModules = enabledOptionalModules + 2;
@@ -136,15 +106,13 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
         ? tx.syncing
         : tx.settingsCloudSyncEnabled;
   const syncDescription =
-    hasValidSession === false
-      ? tx.localDataSafe
-      : tx.settingsCloudSyncDescription;
+    hasValidSession === false ? tx.localDataSafe : tx.settingsCloudSyncDescription;
   const privacySummary = controls?.privacy.noTracking
     ? tx.privacyNoTracking
     : controls?.privacy.analytics
       ? tx.privacyAnalytics
       : tx.privacyDescription;
-  const sections = useMemo<SettingsPageCardData[]>(
+  const modules = useMemo<SettingsModuleCardData[]>(
     () => [
       {
         id: "profile",
@@ -154,17 +122,27 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
         role: "settings",
       },
       {
+        id: "account",
+        icon: Cloud,
+        label: tx.settingsCloudSyncTitle,
+        value: syncStatus,
+        description: syncDescription,
+        role: "space",
+      },
+      {
         id: "appearance",
         icon: Palette,
         label: tx.appearance,
         description: `${tx.navV2Theme}: ${themeLabel}`,
+        value: themeLabel,
         role: "mind",
       },
       {
         id: "notifications",
-        icon: Bell,
-        label: tx.notifications,
+        icon: Clock3,
+        label: tx.settingsGroupNotifications || tx.notifications,
         description: tx.remindersDescription,
+        value: reminderSummary,
         role: "focus",
       },
       {
@@ -179,28 +157,24 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
         icon: LayoutGrid,
         label: tx.settingsGroupModules || "Modules",
         description: tx.settingsModulesDescription || "Choose which ZenFlow tools stay visible.",
+        value: `${enabledModules}/${totalModules}`,
         role: "space",
       },
       {
         id: "privacy",
-        icon: ShieldCheck,
-        label: tx.settingsGroupSecurity,
-        description: tx.settingsSecurityDesc,
+        icon: LockKeyhole,
+        label: tx.settingsGroupSecurity || tx.privacyTitle,
+        description: tx.settingsSecurityDesc || tx.privacyDescription,
+        value: privacySummary,
         role: "rest",
       },
       {
         id: "data",
         icon: DatabaseBackup,
-        label: tx.settingsSectionData,
+        label: tx.settingsGroupData || tx.settingsSectionData,
         description: tx.settingsExportDescription,
+        value: dataSummary,
         role: "space",
-      },
-      {
-        id: "account",
-        icon: UserRound,
-        label: tx.settingsGroupAccount || tx.account || "Account",
-        description: tx.accountSettingsDesc || tx.settingsAccountDesc || "Account and reset controls.",
-        role: "focus",
       },
       {
         id: "about",
@@ -211,91 +185,36 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
       },
     ],
     [
-      themeLabel,
-      tx.appearance,
-      tx.account,
-      tx.accountSettingsDesc,
-      tx.language,
-      tx.navV2Theme,
-      tx.notifications,
-      tx.profile,
-      tx.remindersDescription,
-      tx.selectLanguage,
-      tx.settingsAccountDesc,
-      tx.settingsGroupAccount,
-      tx.settingsExportDescription,
-      tx.settingsGroupAbout,
-      tx.settingsGroupModules,
-      tx.settingsGroupProfile,
-      tx.settingsGroupSecurity,
-      tx.settingsModulesDescription,
-      tx.settingsSectionData,
-      tx.settingsSecurityDesc,
-      tx.yourName,
-    ],
-  );
-  const selectedSection = sections.find((section) => section.id === selectedCardId);
-  const cockpitCards = useMemo<SettingsCockpitCardData[]>(
-    () => [
-      {
-        id: "account",
-        icon: Cloud,
-        label: tx.settingsCloudSyncTitle,
-        value: syncStatus,
-        description: syncDescription,
-        role: "space",
-      },
-      {
-        id: "notifications",
-        icon: Clock3,
-        label: tx.settingsGroupNotifications,
-        value: reminderSummary,
-        description: tx.remindersDescription,
-        role: "focus",
-      },
-      {
-        id: "modules",
-        icon: LayoutGrid,
-        label: tx.settingsGroupModules,
-        value: `${enabledModules}/${totalModules}`,
-        description: tx.settingsModulesDescription,
-        role: "settings",
-      },
-      {
-        id: "privacy",
-        icon: LockKeyhole,
-        label: tx.privacyTitle,
-        value: privacySummary,
-        description: tx.privacyDescription,
-        role: "rest",
-      },
-      {
-        id: "data",
-        icon: DatabaseBackup,
-        label: tx.settingsGroupData,
-        value: dataSummary,
-        description: tx.settingsExportDescription,
-        role: "diary",
-      },
-    ],
-    [
       dataSummary,
       enabledModules,
       privacySummary,
       reminderSummary,
       syncDescription,
       syncStatus,
+      themeLabel,
       totalModules,
+      tx.appearance,
+      tx.language,
+      tx.navV2Theme,
+      tx.notifications,
       tx.privacyDescription,
       tx.privacyTitle,
+      tx.profile,
       tx.remindersDescription,
+      tx.selectLanguage,
       tx.settingsCloudSyncTitle,
       tx.settingsExportDescription,
+      tx.settingsGroupAbout,
       tx.settingsGroupData,
       tx.settingsGroupModules,
       tx.settingsGroupNotifications,
+      tx.settingsGroupProfile,
+      tx.settingsGroupSecurity,
       tx.settingsModulesDescription,
-    ],
+      tx.settingsSectionData,
+      tx.settingsSecurityDesc,
+      tx.yourName,
+    ]
   );
 
   return (
@@ -312,56 +231,17 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
           themeLabel={themeLabel}
         />
 
-        {controls && (
-          <SettingsSectionSwitcher
-            items={sections}
-            selectedId={selectedCardId}
-            controlsWired
-            onOpen={handleSwitcherOpen}
-            label={tx.settings || tx.navV2Settings}
-          />
-        )}
-
-        {controls && (
-          <SettingsControlDeckRegion
-            ref={controlDeckRef}
-            label={tx.settings || tx.navV2Settings}
-          >
-            {selectedSection && (
-              <SettingsControlDeckHeader
-                label={selectedSection.label}
-                description={selectedSection.description}
-              />
-            )}
-            <V2SettingsControlDeck controls={controls} selectedSectionId={selectedCardId} />
-          </SettingsControlDeckRegion>
-        )}
-
-        <SyncHealthCard
-          dense
-          allowManualRetry={false}
-          surface="settings-space"
-        />
-
-        <DeviceSessionsCard
-          dense
-          surface="settings"
-        />
-
-        <SettingsCockpit
-          items={cockpitCards}
-          selectedId={selectedCardId}
+        <SettingsModuleList
+          items={modules}
+          expandedId={selectedCardId}
           controlsWired={Boolean(controls)}
-          onOpen={handleOverviewOpen}
+          onOpen={openSection}
           label={tx.settings || tx.navV2Settings}
-        />
-
-        <SettingsSectionGrid
-          items={sections}
-          selectedId={selectedCardId}
-          controlsWired={Boolean(controls)}
-          onOpen={handleOverviewOpen}
-          label={tx.navV2Settings}
+          renderPanel={(item) =>
+            controls ? (
+              <V2SettingsControlDeck controls={controls} selectedSectionId={item.id} />
+            ) : null
+          }
         />
       </SettingsPageShell>
     </Bloom>
