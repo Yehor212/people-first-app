@@ -1,7 +1,6 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Bell,
-  CheckCircle2,
   Cloud,
   Clock3,
   DatabaseBackup,
@@ -11,62 +10,35 @@ import {
   LockKeyhole,
   Palette,
   ShieldCheck,
-  SlidersHorizontal,
   UserRound,
-  type LucideIcon,
 } from "lucide-react";
 import { Bloom } from "@/lib/motion";
 import { staggerDelay } from "@/lib/motion/choreography";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { getRoleTone, type NonOrbVisualRole } from "@/lib/nonOrbVisualRoles";
-import { V2_NAV_ICONS } from "@/lib/v2IconSystem";
-import { ThemeToggleV2 } from "@/components/navigation-v2/ThemeToggleV2";
 import { DeviceSessionsCard } from "@/components/sync/DeviceSessionsCard";
 import { SyncHealthCard } from "@/components/sync/SyncHealthCard";
-import { SettingsPanel, type SettingsPanelProps } from "@/components/SettingsPanel";
 import { useFeatureFlags, type ToggleableFeature } from "@/contexts/FeatureFlagsContext";
 import { useThemeStore } from "@/stores/themeStore";
 import { useAppStore } from "@/stores";
 import { supabase } from "@/lib/supabaseClient";
-import { cn } from "@/lib/utils";
 import { APP_VERSION } from "@/lib/appVersion";
+import {
+  SettingsCockpit,
+  SettingsControlDeckHeader,
+  SettingsControlDeckRegion,
+  SettingsHeroCard,
+  SettingsPageShell,
+  SettingsSectionGrid,
+  type SettingsCockpitCardData,
+  type SettingsPageCardData,
+} from "./settings/components/SettingsPageComponents";
+import { V2SettingsControlDeck } from "./settings/V2SettingsControlDeck";
+import type { V2SettingsControls, V2SettingsSectionId } from "./settings/types";
 
-export type V2SettingsControls = Pick<
-  SettingsPanelProps,
-  | "userName"
-  | "onNameChange"
-  | "onResetData"
-  | "reminders"
-  | "onRemindersChange"
-  | "habits"
-  | "moods"
-  | "focusSessions"
-  | "gratitudeEntries"
-  | "privacy"
-  | "onPrivacyChange"
-  | "onOpenWidgetSettings"
-  | "initialOpenSection"
->;
+export type { V2SettingsControls };
 
 interface SettingsPageProps {
   controls?: V2SettingsControls;
-}
-
-interface SettingsSection {
-  id: string;
-  icon: LucideIcon;
-  label: string;
-  description: string;
-  role: NonOrbVisualRole;
-}
-
-interface SettingsCockpitCard {
-  id: string;
-  icon: LucideIcon;
-  label: string;
-  value: string;
-  description: string;
-  role: NonOrbVisualRole;
 }
 
 const OPTIONAL_MODULES: ToggleableFeature[] = [
@@ -79,13 +51,14 @@ const OPTIONAL_MODULES: ToggleableFeature[] = [
   "innerWorld",
 ];
 
-const SETTINGS_PANEL_SECTION_BY_CARD: Record<string, string> = {
+const INITIAL_SECTION_TO_V2_SECTION: Record<string, V2SettingsSectionId> = {
   profile: "profile",
-  appearance: "profile",
-  language: "profile",
+  appearance: "appearance",
+  language: "language",
   modules: "modules",
   notifications: "notifications",
-  privacy: "security",
+  privacy: "privacy",
+  security: "privacy",
   data: "data",
   account: "account",
   about: "about",
@@ -96,27 +69,27 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
   const tx = t as unknown as Record<string, string>;
   const mainRef = useRef<HTMLElement>(null);
   const controlDeckRef = useRef<HTMLElement>(null);
-  const [requestedSection, setRequestedSection] = useState<string | undefined>(
-    controls?.initialOpenSection,
+  const [selectedCardId, setSelectedCardId] = useState<V2SettingsSectionId>(
+    INITIAL_SECTION_TO_V2_SECTION[controls?.initialOpenSection || "profile"] || "profile",
   );
-  const [selectedCardId, setSelectedCardId] = useState<string>("profile");
   const appliedTheme = useThemeStore((s) => s.appliedTheme);
   const hasValidSession = useAppStore((s) => s.hasValidSession);
   const { flags } = useFeatureFlags();
-  const settingsTone = getRoleTone("settings");
-  const SettingsIcon = V2_NAV_ICONS.settings;
   const settingsLead = `${tx.settingsCloudSyncTitle}: ${tx.settingsCloudSyncDescription}`;
 
   useEffect(() => {
     mainRef.current?.focus({ preventScroll: true });
   }, []);
 
-  const handleSectionOpen = useCallback((sectionId: string) => {
-    const targetSection = SETTINGS_PANEL_SECTION_BY_CARD[sectionId];
-    if (targetSection) {
-      setSelectedCardId(sectionId);
-      setRequestedSection(targetSection);
-    }
+  useEffect(() => {
+    if (!controls?.initialOpenSection) return;
+    setSelectedCardId(
+      INITIAL_SECTION_TO_V2_SECTION[controls.initialOpenSection] || "profile",
+    );
+  }, [controls?.initialOpenSection]);
+
+  const handleSectionOpen = useCallback((sectionId: V2SettingsSectionId) => {
+    setSelectedCardId(sectionId);
 
     if (controls && controlDeckRef.current) {
       const scrollToDeck = () =>
@@ -162,7 +135,7 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
     : controls?.privacy.analytics
       ? tx.privacyAnalytics
       : tx.privacyDescription;
-  const sections = useMemo<SettingsSection[]>(
+  const sections = useMemo<SettingsPageCardData[]>(
     () => [
       {
         id: "profile",
@@ -253,7 +226,7 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
     ],
   );
   const selectedSection = sections.find((section) => section.id === selectedCardId);
-  const cockpitCards = useMemo<SettingsCockpitCard[]>(
+  const cockpitCards = useMemo<SettingsCockpitCardData[]>(
     () => [
       {
         id: "account",
@@ -318,241 +291,60 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
 
   return (
     <Bloom key="settings-page" transition={staggerDelay("primary")}>
-      <main
+      <SettingsPageShell
         ref={mainRef}
-        id="main-content-v2"
-        role="main"
-        tabIndex={-1}
-        className="mx-auto flex min-h-[100svh] max-w-3xl flex-col gap-4 px-4 py-6 outline-none md:px-6 md:py-10"
-        aria-labelledby="settings-page-heading"
-        data-testid="settings-page"
-        data-visual-role="settings"
-        data-controls-wired={controls ? "true" : "false"}
+        labelledBy="settings-page-heading"
+        controlsWired={Boolean(controls)}
       >
-        <section
-          className="relative overflow-hidden rounded-[2rem] border border-[hsl(var(--zf-role-settings)/0.24)] bg-[linear-gradient(145deg,hsl(var(--card)/0.92),hsl(var(--surface-elevated)/0.88)_52%,hsl(var(--zf-role-space)/0.08))] p-5 shadow-[var(--zen-shadow-soft)] backdrop-blur-xl md:p-7"
-          data-testid="settings-page-control-card"
-        >
-          <div
-            aria-hidden="true"
-            className="absolute -right-16 -top-20 h-44 w-44 rounded-full bg-[hsl(var(--zf-role-settings)/0.12)] blur-3xl"
-          />
-          <div
-            aria-hidden="true"
-            className="absolute -bottom-24 left-10 h-56 w-56 rounded-full bg-[hsl(var(--zf-role-rest)/0.10)] blur-3xl"
-          />
-
-          <div className="relative flex items-start gap-4">
-            <span
-              className={cn(
-                "flex h-14 w-14 shrink-0 items-center justify-center rounded-3xl border shadow-sm",
-                settingsTone.iconClass,
-              )}
-            >
-              <SettingsIcon className="h-6 w-6" aria-hidden="true" />
-            </span>
-            <div className="min-w-0">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[hsl(var(--zf-role-settings)/0.76)]">
-                ZENFLOW
-              </p>
-              <h1
-                id="settings-page-heading"
-                className="mt-1 font-display text-3xl font-semibold tracking-tight text-foreground"
-              >
-                {tx.navV2Settings}
-              </h1>
-              <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground font-body">
-                {settingsLead}
-              </p>
-            </div>
-          </div>
-
-          <div className="relative mt-5 rounded-3xl border border-[hsl(var(--border)/0.58)] bg-[hsl(var(--card)/0.72)] p-3 shadow-inner">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex min-w-0 items-center gap-3">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[hsl(var(--zf-role-mind)/0.12)] text-[hsl(var(--zf-role-mind))]">
-                  <SlidersHorizontal className="h-5 w-5" aria-hidden="true" />
-                </span>
-                <span className="min-w-0">
-                  <span className="block text-sm font-semibold text-foreground">
-                    {tx.navV2Theme}
-                  </span>
-                  <span className="block truncate text-xs text-muted-foreground">
-                    {themeLabel}
-                  </span>
-                </span>
-              </div>
-              <ThemeToggleV2
-                collapsed
-                className="rounded-full border border-[hsl(var(--border)/0.55)] bg-[hsl(var(--card)/0.72)] px-2"
-                testId="settings-v2-theme-toggle"
-              />
-            </div>
-          </div>
-        </section>
+        <SettingsHeroCard
+          title={tx.navV2Settings}
+          lead={settingsLead}
+          themeTitle={tx.navV2Theme}
+          themeLabel={themeLabel}
+        />
 
         <SyncHealthCard
           dense
           allowManualRetry={false}
-          className="border-[hsl(var(--zf-role-space)/0.24)] bg-[hsl(var(--card)/0.76)] shadow-[var(--zen-shadow-card)]"
+          surface="settings-space"
         />
 
         <DeviceSessionsCard
           dense
-          className="border-[hsl(var(--zf-role-settings)/0.24)] bg-[hsl(var(--card)/0.76)] shadow-[var(--zen-shadow-card)]"
+          surface="settings"
         />
 
-        <section
-          className="rounded-[1.75rem] border border-[hsl(var(--border)/0.58)] bg-[hsl(var(--card)/0.72)] p-3 shadow-[var(--zen-shadow-card)] backdrop-blur-xl"
-          aria-label={tx.settings || tx.navV2Settings}
-          data-testid="settings-cockpit"
-        >
-          <div className="grid gap-3 min-[560px]:grid-cols-2">
-            {cockpitCards.map((item) => {
-              const tone = getRoleTone(item.role);
-              const Icon = item.icon;
-              return (
-                <button
-                  type="button"
-                  key={item.id}
-                  onClick={() => handleSectionOpen(item.id)}
-                  aria-pressed={selectedCardId === item.id}
-                  aria-controls={controls ? "settings-v2-control-deck" : undefined}
-                  aria-label={`${item.label}: ${item.value}. ${item.description}`}
-                  className={cn(
-                    "group relative min-h-[132px] overflow-hidden rounded-3xl border bg-[hsl(var(--background)/0.44)] p-4 text-start",
-                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--zf-role-settings)/0.52)] focus-visible:ring-offset-2",
-                    "motion-safe:transition-[transform,border-color,background-color,box-shadow] motion-safe:duration-200 hover:-translate-y-0.5 hover:bg-[hsl(var(--card)/0.9)]",
-                    selectedCardId === item.id
-                      ? "border-[hsl(var(--zf-role-settings)/0.48)] shadow-[0_18px_46px_-28px_hsl(var(--zf-role-settings)/0.82)]"
-                      : tone.borderClass,
-                  )}
-                  data-testid={`settings-cockpit-card-${item.id}`}
-                  data-visual-role={item.role}
-                >
-                  <span
-                    aria-hidden="true"
-                    className={cn("absolute inset-x-5 top-0 h-[2px] rounded-b-full", tone.railClass)}
-                  />
-                  <span className="flex items-start gap-3">
-                    <span
-                      className={cn(
-                        "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border",
-                        tone.iconClass,
-                      )}
-                    >
-                      <Icon className="h-5 w-5" aria-hidden="true" />
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block text-sm font-semibold text-foreground">
-                        {item.label}
-                      </span>
-                      <span className="mt-2 block text-base font-semibold leading-tight text-foreground">
-                        {item.value}
-                      </span>
-                      <span className="mt-2 block text-xs leading-relaxed text-muted-foreground">
-                        {item.description}
-                      </span>
-                    </span>
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </section>
+        <SettingsCockpit
+          items={cockpitCards}
+          selectedId={selectedCardId}
+          controlsWired={Boolean(controls)}
+          onOpen={handleSectionOpen}
+          label={tx.settings || tx.navV2Settings}
+        />
 
-        <section
-          className="grid gap-3 min-[520px]:grid-cols-2"
-          aria-label={tx.navV2Settings}
-          data-testid="settings-page-sections"
-        >
-          {sections.map((item) => {
-            const tone = getRoleTone(item.role);
-            const Icon = item.icon;
-            return (
-              <button
-                type="button"
-                key={item.id}
-                onClick={() => handleSectionOpen(item.id)}
-                className={cn(
-                  "relative min-h-[116px] overflow-hidden rounded-3xl border bg-[hsl(var(--card)/0.76)] p-4 text-start shadow-[var(--zen-shadow-card)]",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--zf-role-settings)/0.52)] focus-visible:ring-offset-2",
-                  "motion-safe:transition-[transform,border-color,background-color,box-shadow] motion-safe:duration-200 hover:-translate-y-0.5 hover:bg-[hsl(var(--card)/0.88)]",
-                  tone.borderClass,
-                  selectedCardId === item.id &&
-                    "border-[hsl(var(--zf-role-settings)/0.48)] bg-[hsl(var(--card)/0.92)]",
-                )}
-                data-testid={`settings-section-${item.id}`}
-                data-visual-role={item.role}
-                aria-pressed={selectedCardId === item.id}
-                aria-controls={controls ? "settings-v2-control-deck" : undefined}
-                aria-label={`${item.label}: ${item.description}`}
-              >
-                <span
-                  aria-hidden="true"
-                  className={cn("absolute inset-x-5 top-0 h-[2px] rounded-b-full", tone.railClass)}
-                />
-                <div className="flex items-start gap-3">
-                  <span
-                    className={cn(
-                      "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border",
-                      tone.iconClass,
-                    )}
-                  >
-                    <Icon className="h-5 w-5" aria-hidden="true" />
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block text-sm font-semibold text-foreground">
-                      {item.label}
-                    </span>
-                    <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
-                      {item.description}
-                    </span>
-                  </span>
-                </div>
-              </button>
-            );
-          })}
-        </section>
+        <SettingsSectionGrid
+          items={sections}
+          selectedId={selectedCardId}
+          controlsWired={Boolean(controls)}
+          onOpen={handleSectionOpen}
+          label={tx.navV2Settings}
+        />
 
         {controls && (
-          <section
+          <SettingsControlDeckRegion
             ref={controlDeckRef}
-            id="settings-v2-control-deck"
-            className="scroll-mt-6"
-            aria-label={tx.settings || tx.navV2Settings}
-            data-testid="settings-page-control-deck"
+            label={tx.settings || tx.navV2Settings}
           >
             {selectedSection && (
-              <div
-                className="mb-3 rounded-3xl border border-[hsl(var(--border)/0.58)] bg-[hsl(var(--card)/0.72)] p-4 shadow-[var(--zen-shadow-card)]"
-                data-testid="settings-page-control-deck-header"
-              >
-                <div className="flex items-start gap-3">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[hsl(var(--zf-role-settings)/0.12)] text-[hsl(var(--zf-role-settings))]">
-                    <CheckCircle2 className="h-5 w-5" aria-hidden="true" />
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block text-sm font-semibold text-foreground">
-                      {selectedSection.label}
-                    </span>
-                    <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
-                      {selectedSection.description}
-                    </span>
-                  </span>
-                </div>
-              </div>
+              <SettingsControlDeckHeader
+                label={selectedSection.label}
+                description={selectedSection.description}
+              />
             )}
-            <SettingsPanel
-              {...controls}
-              initialOpenSection={requestedSection || controls.initialOpenSection}
-              showHeading={false}
-              showSyncCards={false}
-              className="content-with-nav"
-            />
-          </section>
+            <V2SettingsControlDeck controls={controls} selectedSectionId={selectedCardId} />
+          </SettingsControlDeckRegion>
         )}
-      </main>
+      </SettingsPageShell>
     </Bloom>
   );
 });

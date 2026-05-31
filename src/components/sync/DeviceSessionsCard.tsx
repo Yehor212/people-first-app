@@ -20,9 +20,17 @@ import {
 } from "@/storage/deviceSessions";
 
 interface DeviceSessionsCardProps {
-  className?: string;
   dense?: boolean;
+  surface?: "default" | "settings";
 }
+
+const DEVICE_SESSIONS_SURFACE_CLASS: Record<
+  NonNullable<DeviceSessionsCardProps["surface"]>,
+  string
+> = {
+  default: "border-border bg-card",
+  settings: "border-[hsl(var(--zf-role-settings)/0.24)] bg-[hsl(var(--card)/0.76)]",
+};
 
 function formatRelativeTime(value: string, locale: string): string {
   const timestamp = new Date(value).getTime();
@@ -51,7 +59,10 @@ function iconForPlatform(platform: DeviceSessionPlatform) {
   return Laptop;
 }
 
-export function DeviceSessionsCard({ className, dense = false }: DeviceSessionsCardProps) {
+export function DeviceSessionsCard({
+  dense = false,
+  surface = "default",
+}: DeviceSessionsCardProps) {
   const { t, language } = useLanguage();
   const tx = t as unknown as Record<string, string>;
   const [sessions, setSessions] = useState<DeviceSession[]>([]);
@@ -119,9 +130,9 @@ export function DeviceSessionsCard({ className, dense = false }: DeviceSessionsC
   return (
     <section
       className={cn(
-        "rounded-2xl border border-border bg-card p-5 shadow-[var(--zen-shadow-card)]",
+        "rounded-2xl border p-5 shadow-[var(--zen-shadow-card)]",
+        DEVICE_SESSIONS_SURFACE_CLASS[surface],
         dense && "p-4",
-        className,
       )}
       data-testid="device-sessions-card"
       aria-labelledby="device-sessions-card-title"

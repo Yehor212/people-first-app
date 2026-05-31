@@ -28,10 +28,15 @@ const MAX_RECENT_RECEIPTS = 4;
 const MAX_PENDING_ROWS = 3;
 
 interface SyncHealthCardProps {
-  className?: string;
   dense?: boolean;
   allowManualRetry?: boolean;
+  surface?: "default" | "settings-space";
 }
+
+const SYNC_HEALTH_SURFACE_CLASS: Record<NonNullable<SyncHealthCardProps["surface"]>, string> = {
+  default: "border-border bg-card",
+  "settings-space": "border-[hsl(var(--zf-role-space)/0.24)] bg-[hsl(var(--card)/0.76)]",
+};
 
 const STATUS_META: Record<
   SyncHealthState,
@@ -148,9 +153,9 @@ function pendingActionText(action: OfflineAction, tx: Record<string, string>): s
 }
 
 export function SyncHealthCard({
-  className,
   dense = false,
   allowManualRetry = true,
+  surface = "default",
 }: SyncHealthCardProps) {
   const { t, language } = useLanguage();
   const tx = t as unknown as Record<string, string>;
@@ -240,14 +245,15 @@ export function SyncHealthCard({
   return (
     <section
       className={cn(
-        "rounded-2xl border border-border bg-card p-5 shadow-[var(--zen-shadow-card)]",
+        "rounded-2xl border p-5 shadow-[var(--zen-shadow-card)]",
+        SYNC_HEALTH_SURFACE_CLASS[surface],
         dense && "p-4",
-        className,
       )}
       data-testid="sync-health-card"
+      data-allow-manual-retry={allowManualRetry ? "true" : "false"}
       aria-labelledby="sync-health-card-title"
     >
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex flex-col gap-3 min-[520px]:flex-row min-[520px]:items-start min-[520px]:justify-between">
         <div className="flex min-w-0 items-start gap-3">
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
             <ShieldCheck className="h-5 w-5" aria-hidden="true" />
@@ -264,7 +270,7 @@ export function SyncHealthCard({
 
         <span
           className={cn(
-            "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold",
+            "inline-flex w-fit shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold",
             meta.className,
           )}
           role="status"

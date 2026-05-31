@@ -141,7 +141,8 @@ export function AccountSection({
                         onClick={() => {
                           void auth.handleLinkProvider(provider.id);
                         }}
-                        className="min-h-[44px] py-2.5 text-sm shadow-none"
+                        size="compact"
+                        surface="subtle"
                       />
                     );
                   })}

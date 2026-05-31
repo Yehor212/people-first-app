@@ -273,8 +273,7 @@ export const DrawerV2 = memo(function DrawerV2({
           >
             <ThemeToggleV2
               testId="drawer-v2-theme-toggle"
-              className="w-full justify-between rounded-2xl px-3.5 py-3 text-[hsl(var(--nav-v2-drawer-muted))] hover:bg-[hsl(var(--nav-v2-item-hover)/0.82)] hover:text-[hsl(var(--nav-v2-drawer-text))] focus-visible:ring-primary focus-visible:ring-offset-[hsl(var(--nav-v2-drawer-end))]"
-              labelClassName="font-display text-sm"
+              presentation="drawer"
             />
           </div>
           <button

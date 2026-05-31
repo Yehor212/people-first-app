@@ -58,7 +58,7 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
               isLoading={session.loadingProvider === provider.id}
               disabled={session.isLoading || !supabase}
               onClick={() => handlers.handleProviderSignIn(provider.id)}
-              className="py-4 text-lg"
+              size="large"
             />
           ))}
 

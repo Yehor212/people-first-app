@@ -9,8 +9,26 @@ interface AuthProviderButtonProps {
   isLoading: boolean;
   disabled?: boolean;
   onClick: () => void;
-  className?: string;
+  size?: "default" | "compact" | "large";
+  surface?: "default" | "subtle";
 }
+
+const AUTH_PROVIDER_BUTTON_SIZE_CLASS: Record<
+  NonNullable<AuthProviderButtonProps["size"]>,
+  string
+> = {
+  compact: "min-h-[44px] px-4 py-2.5 text-sm",
+  default: "min-h-[48px] px-4 py-3.5 text-base",
+  large: "min-h-[56px] px-4 py-4 text-lg",
+};
+
+const AUTH_PROVIDER_BUTTON_SURFACE_CLASS: Record<
+  NonNullable<AuthProviderButtonProps["surface"]>,
+  string
+> = {
+  default: "bg-card shadow-[var(--zen-shadow-soft)] hover:bg-muted",
+  subtle: "bg-[hsl(var(--card)/0.58)] shadow-none hover:bg-muted",
+};
 
 function AuthProviderIcon({ provider }: { provider: SocialAuthProviderConfig }) {
   if (provider.id === "telegram") {
@@ -53,7 +71,8 @@ export function AuthProviderButton({
   isLoading,
   disabled,
   onClick,
-  className,
+  size = "default",
+  surface = "default",
 }: AuthProviderButtonProps) {
   return (
     <button
@@ -62,8 +81,9 @@ export function AuthProviderButton({
       aria-label={isLoading ? loadingLabel : label}
       aria-disabled={disabled}
       className={cn(
-        "w-full min-h-[48px] py-3.5 px-4 bg-card hover:bg-muted text-foreground font-semibold rounded-2xl motion-safe:transition-all zen-shadow-soft text-base flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed border border-border/60",
-        className,
+        "flex w-full items-center justify-center gap-3 rounded-2xl border border-border/60 font-semibold text-foreground motion-safe:transition-all disabled:cursor-not-allowed disabled:opacity-50",
+        AUTH_PROVIDER_BUTTON_SIZE_CLASS[size],
+        AUTH_PROVIDER_BUTTON_SURFACE_CLASS[surface],
       )}
     >
       {isLoading ? (

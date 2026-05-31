@@ -62,15 +62,33 @@ function swapDrawerThemeInstantly(nextTheme: "paper" | "ink", setTheme: (theme: 
 
 interface ThemeToggleV2Props {
   collapsed?: boolean;
-  className?: string;
-  labelClassName?: string;
+  presentation?: "sidebar" | "drawer" | "settings-card";
   testId?: string;
 }
 
+const THEME_TOGGLE_PRESENTATION_CLASSES: Record<
+  NonNullable<ThemeToggleV2Props["presentation"]>,
+  { button: string; label: string }
+> = {
+  sidebar: {
+    button: "",
+    label: "text-xs",
+  },
+  drawer: {
+    button:
+      "w-full justify-between rounded-2xl px-3.5 py-3 text-[hsl(var(--nav-v2-drawer-muted))] hover:bg-[hsl(var(--nav-v2-item-hover)/0.82)] hover:text-[hsl(var(--nav-v2-drawer-text))] focus-visible:ring-primary focus-visible:ring-offset-[hsl(var(--nav-v2-drawer-end))]",
+    label: "font-display text-sm",
+  },
+  "settings-card": {
+    button:
+      "rounded-full border border-[hsl(var(--border)/0.55)] bg-[hsl(var(--card)/0.72)] px-2",
+    label: "text-xs",
+  },
+};
+
 export function ThemeToggleV2({
   collapsed = false,
-  className,
-  labelClassName,
+  presentation = "sidebar",
   testId = "sidebar-v2-theme-toggle",
 }: ThemeToggleV2Props) {
   const { t } = useLanguage();
@@ -152,6 +170,7 @@ export function ThemeToggleV2({
   const ariaLabel = isDark
     ? t.switchToLight || "Switch to light mode"
     : t.switchToDark || "Switch to dark mode";
+  const presentationClasses = THEME_TOGGLE_PRESENTATION_CLASSES[presentation];
 
   // SSR / pre-hydration placeholder — static, zero hydration risk.
   if (!mounted) {
@@ -160,7 +179,7 @@ export function ThemeToggleV2({
         className={cn(
           "flex items-center rounded-lg px-3 py-2 min-h-[44px]",
           collapsed && "justify-center px-2",
-          className,
+          presentationClasses.button,
         )}
         aria-hidden="true"
       >
@@ -182,7 +201,7 @@ export function ThemeToggleV2({
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
         "motion-safe:transition-colors motion-safe:duration-200",
         collapsed && "justify-center px-2",
-        className,
+        presentationClasses.button,
       )}
     >
       <span
@@ -221,7 +240,7 @@ export function ThemeToggleV2({
       </span>
 
       {!collapsed && (
-        <span className={cn("text-xs", labelClassName)}>
+        <span className={presentationClasses.label}>
           {isDark ? t.themeLight || "Light" : t.themeDark || "Dark"}
         </span>
       )}

@@ -83,6 +83,43 @@ vi.mock("@/components/sync/DeviceSessionsCard", () => ({
   DeviceSessionsCard: () => <section data-testid="device-sessions-card">Device sessions</section>,
 }));
 
+vi.mock("@/components/auth/AuthProviderButton", () => ({
+  AuthProviderButton: ({ label }: { label: string }) => (
+    <button type="button" data-testid="auth-provider-button">
+      {label}
+    </button>
+  ),
+}));
+
+vi.mock("@/components/SmartRemindersCard", () => ({
+  SmartRemindersCard: () => <section data-testid="smart-reminders-card">Smart reminders</section>,
+}));
+
+vi.mock("@/components/DopamineSettings", () => ({
+  DopamineSettingsComponent: () => <section data-testid="dopamine-settings-modal" />,
+}));
+
+vi.mock("@/components/FeedbackForm", () => ({
+  FeedbackForm: () => null,
+}));
+
+vi.mock("@/components/ChangelogPanel", () => ({
+  ChangelogPanel: () => null,
+}));
+
+vi.mock("@/components/LegalModal", () => ({
+  LegalModal: () => null,
+}));
+
+vi.mock("@/components/ThemeToggle", () => ({
+  useTheme: () => ({
+    theme: "system",
+    effectiveTheme: "light",
+    changeTheme: vi.fn(),
+    mounted: true,
+  }),
+}));
+
 vi.mock("@/stores/themeStore", () => ({
   useThemeStore: (selector: (s: { appliedTheme: string }) => unknown) =>
     selector({ appliedTheme: "paper" }),
@@ -113,28 +150,137 @@ vi.mock("@/lib/supabaseClient", () => ({
   supabase: {},
 }));
 
-vi.mock("@/components/SettingsPanel", () => ({
-  SettingsPanel: ({
-    userName,
-    initialOpenSection,
-    showHeading,
-    showSyncCards,
-  }: {
-    userName: string;
-    initialOpenSection?: string;
-    showHeading?: boolean;
-    showSyncCards?: boolean;
-  }) => (
-    <section
-      data-testid="settings-panel"
-      data-user-name={userName}
-      data-open-section={initialOpenSection || ""}
-      data-show-heading={showHeading ? "true" : "false"}
-      data-show-sync-cards={showSyncCards ? "true" : "false"}
-    >
-      Settings controls
-    </section>
-  ),
+vi.mock("@/components/settings/account-section/useAccountAuth", () => ({
+  useAccountAuth: () => ({
+    authStatus: null,
+    setAuthStatus: vi.fn(),
+    sessionUserId: "user-1",
+    sessionAccountLabel: "avery@example.com",
+    sessionDisplayName: "Avery",
+    linkedProviderIds: [],
+    enabledProviders: [],
+    hasSession: true,
+    signingInProvider: null,
+    linkingProvider: null,
+    isSigningIn: false,
+    isSigningOut: false,
+    handleProvider: vi.fn(),
+    handleLinkProvider: vi.fn(),
+    handleSignOut: vi.fn(),
+  }),
+}));
+
+vi.mock("@/components/settings/account-section/useAccountSync", () => ({
+  useAccountSync: () => ({
+    cloudSyncEnabled: true,
+    weeklyDigestEnabled: false,
+    setWeeklyDigestEnabled: vi.fn(),
+    weeklyDigestLoading: false,
+    weeklyDigestTouchedRef: { current: false },
+    handleWeeklyDigestToggle: vi.fn(),
+  }),
+}));
+
+vi.mock("@/components/settings/account-section/useDeleteAccount", () => ({
+  useDeleteAccount: () => ({
+    showDeleteConfirm: false,
+    setShowDeleteConfirm: vi.fn(),
+    deleteStatus: null,
+    deleteConfirmInput: "",
+    setDeleteConfirmInput: vi.fn(),
+    isDeletingAccount: false,
+    handleDeleteAccount: vi.fn(),
+  }),
+}));
+
+vi.mock("@/components/settings/data-section/useDataExport", () => ({
+  useDataExport: () => ({
+    isExporting: false,
+    isExportingCSV: false,
+    isExportingPDF: false,
+    handleExport: vi.fn(),
+    handleExportCSV: vi.fn(),
+    handleExportPDF: vi.fn(),
+  }),
+}));
+
+vi.mock("@/components/settings/data-section/useDataImport", () => ({
+  useDataImport: () => ({
+    importMode: "merge",
+    setImportMode: vi.fn(),
+    isImporting: false,
+    showImportConfirm: false,
+    pendingImportFile: null,
+    fileInputRef: { current: null },
+    handleImportClick: vi.fn(),
+    handleImportFile: vi.fn(),
+    handleImportCancel: vi.fn(),
+    handleImportConfirm: vi.fn(),
+  }),
+}));
+
+vi.mock("@/hooks/usePwaInstall", () => ({
+  usePwaInstall: () => ({ canInstall: false, isInstalled: false, promptInstall: vi.fn() }),
+}));
+
+vi.mock("@/hooks/useQuickActions", () => ({
+  useQuickActions: () => ({
+    isEnabled: false,
+    isAndroid: false,
+    toggle: vi.fn(),
+    onAction: vi.fn(),
+  }),
+}));
+
+vi.mock("@/hooks/useFontScale", () => ({
+  FONT_SCALE_LEVELS: [0.85, 0.9, 1, 1.1, 1.2, 1.3, 1.5],
+  useFontScale: () => ({ scale: 1, setFontScale: vi.fn() }),
+}));
+
+vi.mock("@/hooks/useDemoMode", () => ({
+  useDemoMode: () => ({ toggleDemoMode: vi.fn() }),
+}));
+
+vi.mock("@/features/journal", () => ({
+  LOCK_TIMEOUT_OPTIONS: [{ ms: 300000, label: "5 minutes" }],
+  setAutoLockMs: vi.fn(),
+}));
+
+vi.mock("@/lib/platform", () => ({
+  isNative: false,
+  isAndroid: false,
+}));
+
+vi.mock("@/lib/env", () => ({
+  IS_DEV: false,
+  MODE: "test",
+  BASE_URL: "https://example.test/",
+  FORCE_NAV_V2: true,
+  IS_DESKTOP_RUNTIME: false,
+  CLASSIC_BASE_URL: "https://example.test/",
+  SUPABASE_URL: undefined,
+  SUPABASE_ANON_KEY: undefined,
+  SENTRY_DSN: undefined,
+  SPOTIFY_CLIENT_ID: "",
+  GOOGLE_WEB_CLIENT_ID: "",
+  ENABLE_FACEBOOK_AUTH: false,
+  ENABLE_TELEGRAM_AUTH: false,
+  ADMOB_APP_ID_ANDROID: "",
+  ADMOB_REWARDED_ID_ANDROID: "",
+  ADMOB_BANNER_ID_ANDROID: "",
+  ADMOB_REWARDED_ID_IOS: "",
+  ADMOB_BANNER_ID_IOS: "",
+}));
+
+vi.mock("@/lib/notificationSounds", () => ({
+  NOTIFICATION_SOUNDS: [],
+  getNotificationSound: () => "default",
+  setNotificationSound: vi.fn(),
+}));
+
+vi.mock("@/lib/appUpdateManager", () => ({
+  checkForAppUpdate: vi.fn(),
+  openGooglePlayStore: vi.fn(),
 }));
 
 function createSettingsControls() {
@@ -199,15 +345,14 @@ describe("SettingsPage", () => {
     expect(screen.getByTestId("settings-page")).toHaveAttribute("data-controls-wired", "false");
   });
 
-  it("wires the real SettingsPanel control deck when V2 receives settings controls", () => {
+  it("wires the native V2 control deck when V2 receives settings controls", () => {
     render(<SettingsPage controls={createSettingsControls()} />);
 
     expect(screen.getByTestId("settings-page")).toHaveAttribute("data-controls-wired", "true");
     expect(screen.getByTestId("settings-page-control-deck")).toBeInTheDocument();
     expect(screen.getByTestId("settings-page-control-deck-header")).toHaveTextContent("Profile");
-    expect(screen.getByTestId("settings-panel")).toHaveAttribute("data-user-name", "Avery");
-    expect(screen.getByTestId("settings-panel")).toHaveAttribute("data-show-heading", "false");
-    expect(screen.getByTestId("settings-panel")).toHaveAttribute("data-show-sync-cards", "false");
+    expect(screen.getByDisplayValue("Avery")).toBeInTheDocument();
+    expect(screen.queryByTestId("settings-panel")).not.toBeInTheDocument();
   });
 
   it("opens the matching real settings section from the V2 section cards", () => {
@@ -215,7 +360,8 @@ describe("SettingsPage", () => {
 
     fireEvent.click(screen.getByTestId("settings-section-data"));
 
-    expect(screen.getByTestId("settings-panel")).toHaveAttribute("data-open-section", "data");
+    expect(screen.getByTestId("settings-v2-panel-data")).toBeInTheDocument();
+    expect(screen.queryByTestId("settings-panel")).not.toBeInTheDocument();
     expect(screen.getByTestId("settings-section-data")).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByTestId("settings-page-control-deck-header")).toHaveTextContent("Data");
   });
@@ -225,7 +371,11 @@ describe("SettingsPage", () => {
 
     fireEvent.click(screen.getByTestId("settings-cockpit-card-account"));
 
-    expect(screen.getByTestId("settings-panel")).toHaveAttribute("data-open-section", "account");
+    expect(screen.getByTestId("settings-v2-panel-account")).toBeInTheDocument();
+    expect(screen.getByTestId("settings-v2-automatic-sync-card")).toHaveTextContent(
+      "Automatic sync active",
+    );
+    expect(screen.queryByTestId("settings-panel")).not.toBeInTheDocument();
     expect(screen.getByTestId("settings-cockpit-card-account")).toHaveAttribute(
       "aria-pressed",
       "true",
