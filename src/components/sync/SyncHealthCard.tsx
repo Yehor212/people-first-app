@@ -29,6 +29,7 @@ const MAX_PENDING_ROWS = 3;
 
 interface SyncHealthCardProps {
   dense?: boolean;
+  compact?: boolean;
   allowManualRetry?: boolean;
   surface?: "default" | "settings-space";
 }
@@ -105,7 +106,7 @@ function actionDomainLabel(actionType: string | undefined, tx: Record<string, st
 function renderTemplate(template: string, values: Record<string, string | number>): string {
   return Object.entries(values).reduce(
     (next, [key, value]) => next.split(`{${key}}`).join(String(value)),
-    template,
+    template
   );
 }
 
@@ -154,6 +155,7 @@ function pendingActionText(action: OfflineAction, tx: Record<string, string>): s
 
 export function SyncHealthCard({
   dense = false,
+  compact = false,
   allowManualRetry = true,
   surface = "default",
 }: SyncHealthCardProps) {
@@ -192,11 +194,11 @@ export function SyncHealthCard({
   const cloudEnabled = isCloudSyncEnabled();
   const criticalPending = useMemo(
     () => actions.filter((action) => action.priority === "critical").length,
-    [actions],
+    [actions]
   );
   const failedPending = useMemo(
     () => actions.filter((action) => Boolean(action.lastError)).length,
-    [actions],
+    [actions]
   );
 
   const status: SyncHealthState = useMemo(() => {
@@ -221,8 +223,12 @@ export function SyncHealthCard({
   const meta = STATUS_META[status];
   const Icon = meta.icon;
   const latestQueuedAt = useMemo(
-    () => actions.reduce<number | null>((latest, action) => Math.max(latest ?? 0, action.timestamp), null),
-    [actions],
+    () =>
+      actions.reduce<number | null>(
+        (latest, action) => Math.max(latest ?? 0, action.timestamp),
+        null
+      ),
+    [actions]
   );
   const lastActivityAt = lastReceipt?.at ?? latestQueuedAt ?? lastProcessedAt ?? null;
   const statusLabel =
@@ -248,8 +254,10 @@ export function SyncHealthCard({
         "rounded-2xl border p-5 shadow-[var(--zen-shadow-card)]",
         SYNC_HEALTH_SURFACE_CLASS[surface],
         dense && "p-4",
+        compact && "shadow-none"
       )}
       data-testid="sync-health-card"
+      data-compact={compact ? "true" : "false"}
       data-allow-manual-retry={allowManualRetry ? "true" : "false"}
       aria-labelledby="sync-health-card-title"
     >
@@ -271,7 +279,7 @@ export function SyncHealthCard({
         <span
           className={cn(
             "inline-flex w-fit shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold",
-            meta.className,
+            meta.className
           )}
           role="status"
           aria-live="polite"
@@ -284,10 +292,19 @@ export function SyncHealthCard({
         </span>
       </div>
 
-      <div className="mt-4 grid grid-cols-3 gap-2" data-testid="sync-health-metrics">
+      <div
+        className={cn(
+          "mt-4 grid gap-2",
+          compact ? "grid-cols-[repeat(auto-fit,minmax(5.75rem,1fr))]" : "grid-cols-3"
+        )}
+        data-testid="sync-health-metrics"
+      >
         <Metric label={tx.syncPending || "Waiting"} value={String(pendingCount)} />
         <Metric label={tx.syncPriority || "Important"} value={String(criticalPending)} />
-        <Metric label={tx.syncLastSync || "Last sync"} value={formatTime(lastActivityAt, language)} />
+        <Metric
+          label={tx.syncLastSync || "Last sync"}
+          value={formatTime(lastActivityAt, language)}
+        />
       </div>
 
       <div className="mt-4 rounded-xl border border-border bg-muted/30 p-3">
@@ -304,62 +321,64 @@ export function SyncHealthCard({
         )}
       </div>
 
-      <div
-        className="mt-4 rounded-xl border border-border bg-background/35 p-3"
-        data-testid="sync-inbox"
-      >
-        <div className="flex items-center justify-between gap-3">
-          <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
-            {tx.syncInboxTitle || "Sync inbox"}
-          </p>
-          <span className="rounded-full bg-muted px-2 py-1 text-[11px] font-semibold text-muted-foreground">
-            {pendingCount}
-          </span>
+      {(!compact || pendingRows.length > 0 || pendingCount > 0) && (
+        <div
+          className="mt-4 rounded-xl border border-border bg-background/35 p-3"
+          data-testid="sync-inbox"
+        >
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
+              {tx.syncInboxTitle || "Sync inbox"}
+            </p>
+            <span className="rounded-full bg-muted px-2 py-1 text-[11px] font-semibold text-muted-foreground">
+              {pendingCount}
+            </span>
+          </div>
+
+          {pendingRows.length === 0 ? (
+            <p className="mt-2 text-sm text-muted-foreground">
+              {tx.syncOutboxEmpty || "No local actions are waiting."}
+            </p>
+          ) : (
+            <ul className="mt-3 space-y-2" aria-label={tx.syncInboxTitle || "Sync inbox"}>
+              {pendingRows.map((action) => (
+                <li
+                  key={action.id}
+                  className="flex items-center justify-between gap-3 rounded-lg border border-border bg-muted/20 px-3 py-2"
+                >
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-medium text-foreground">
+                      {pendingActionText(action, tx)}
+                    </span>
+                    <span className="block text-xs text-muted-foreground">
+                      {action.priority === "critical"
+                        ? tx.syncPriorityCritical || "Important"
+                        : tx.syncOutboxWaiting || "Waiting for sync"}
+                    </span>
+                  </span>
+                  {action.retries > 0 && (
+                    <span className="shrink-0 rounded-full bg-muted px-2 py-1 text-[11px] text-muted-foreground">
+                      {renderTemplate(tx.syncRetryCount || "{count} retry", {
+                        count: action.retries,
+                      })}
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {pendingRemainder > 0 && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              {renderTemplate(tx.syncOutboxMore || "{count} more waiting", {
+                count: pendingRemainder,
+              })}
+            </p>
+          )}
         </div>
+      )}
 
-        {pendingRows.length === 0 ? (
-          <p className="mt-2 text-sm text-muted-foreground">
-            {tx.syncOutboxEmpty || "No local actions are waiting."}
-          </p>
-        ) : (
-          <ul className="mt-3 space-y-2" aria-label={tx.syncInboxTitle || "Sync inbox"}>
-            {pendingRows.map((action) => (
-              <li
-                key={action.id}
-                className="flex items-center justify-between gap-3 rounded-lg border border-border bg-muted/20 px-3 py-2"
-              >
-                <span className="min-w-0">
-                  <span className="block truncate text-sm font-medium text-foreground">
-                    {pendingActionText(action, tx)}
-                  </span>
-                  <span className="block text-xs text-muted-foreground">
-                    {action.priority === "critical"
-                      ? tx.syncPriorityCritical || "Important"
-                      : tx.syncOutboxWaiting || "Waiting for sync"}
-                  </span>
-                </span>
-                {action.retries > 0 && (
-                  <span className="shrink-0 rounded-full bg-muted px-2 py-1 text-[11px] text-muted-foreground">
-                    {renderTemplate(tx.syncRetryCount || "{count} retry", {
-                      count: action.retries,
-                    })}
-                  </span>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-
-        {pendingRemainder > 0 && (
-          <p className="mt-2 text-xs text-muted-foreground">
-            {renderTemplate(tx.syncOutboxMore || "{count} more waiting", {
-              count: pendingRemainder,
-            })}
-          </p>
-        )}
-      </div>
-
-      {recentReceipts.length > 0 && (
+      {!compact && recentReceipts.length > 0 && (
         <div
           className="mt-4 rounded-xl border border-border bg-background/35 p-3"
           data-testid="sync-recent-activity"
@@ -367,7 +386,10 @@ export function SyncHealthCard({
           <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
             {tx.syncRecentActivity || "Recent sync activity"}
           </p>
-          <ul className="mt-3 space-y-2" aria-label={tx.syncRecentActivity || "Recent sync activity"}>
+          <ul
+            className="mt-3 space-y-2"
+            aria-label={tx.syncRecentActivity || "Recent sync activity"}
+          >
             {recentReceipts.map((receipt, index) => (
               <li
                 key={`${receipt.kind}-${receipt.at}-${index}`}

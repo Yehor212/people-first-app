@@ -975,10 +975,12 @@ function AccountPanel({ controls }: { controls: V2SettingsControls }) {
   return (
     <PanelFrame
       icon={Cloud}
-      title={tx.settingsGroupAccount || tx.account || "Account"}
+      title={tx.settingsCloudSyncTitle || tx.settingsGroupAccount || tx.account || "Account"}
       description={tx.settingsCloudSyncDescription || "Signed-in data stays synced automatically."}
       testId="settings-v2-panel-account"
     >
+      <SyncHealthCard compact dense allowManualRetry={false} surface="settings-space" />
+
       {!supabase ? (
         <p className="rounded-2xl border border-[hsl(var(--border)/0.5)] bg-[hsl(var(--background)/0.34)] p-4 text-sm text-muted-foreground">
           {tx.cloudSyncDisabled || "Cloud sync is not available."}
@@ -992,32 +994,6 @@ function AccountPanel({ controls }: { controls: V2SettingsControls }) {
                 {auth.sessionAccountLabel || auth.sessionDisplayName}
               </span>
             </p>
-          </div>
-
-          <div
-            className="rounded-2xl border border-primary/20 bg-primary/10 p-4"
-            data-testid="settings-v2-automatic-sync-card"
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex min-w-0 items-start gap-3">
-                <Cloud className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
-                <span className="min-w-0">
-                  <span className="block text-sm font-semibold text-foreground">
-                    {tx.settingsCloudSyncTitle || "Automatic sync"}
-                  </span>
-                  <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
-                    {tx.settingsCloudSyncDescription ||
-                      "Your account stays synced across devices automatically."}
-                  </span>
-                </span>
-              </div>
-              <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-primary/25 bg-primary/10 px-2.5 py-1 text-[11px] font-semibold text-primary">
-                <CheckCircle2 className="h-3 w-3" aria-hidden="true" />
-                {sync.cloudSyncEnabled
-                  ? tx.settingsCloudSyncEnabled || "Automatic sync active"
-                  : tx.sessionExpired || "Sync paused"}
-              </span>
-            </div>
           </div>
 
           <div className="rounded-2xl border border-[hsl(var(--border)/0.5)] bg-[hsl(var(--background)/0.34)] p-4">
@@ -1189,8 +1165,6 @@ function AccountPanel({ controls }: { controls: V2SettingsControls }) {
         {auth.authStatus && <p className="text-sm text-muted-foreground">{auth.authStatus}</p>}
         {del.deleteStatus && <p className="text-sm text-muted-foreground">{del.deleteStatus}</p>}
       </div>
-
-      <SyncHealthCard dense allowManualRetry={false} surface="settings-space" />
 
       <DeviceSessionsCard dense surface="settings" />
     </PanelFrame>
