@@ -979,7 +979,13 @@ function AccountPanel({ controls }: { controls: V2SettingsControls }) {
       description={tx.settingsCloudSyncDescription || "Signed-in data stays synced automatically."}
       testId="settings-v2-panel-account"
     >
-      <SyncHealthCard compact dense allowManualRetry={false} surface="settings-space" />
+      <SyncHealthCard
+        compact
+        dense
+        showHeader={false}
+        allowManualRetry={false}
+        surface="settings-space"
+      />
 
       {!supabase ? (
         <p className="rounded-2xl border border-[hsl(var(--border)/0.5)] bg-[hsl(var(--background)/0.34)] p-4 text-sm text-muted-foreground">

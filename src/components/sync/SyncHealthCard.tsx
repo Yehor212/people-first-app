@@ -30,6 +30,7 @@ const MAX_PENDING_ROWS = 3;
 interface SyncHealthCardProps {
   dense?: boolean;
   compact?: boolean;
+  showHeader?: boolean;
   allowManualRetry?: boolean;
   surface?: "default" | "settings-space";
 }
@@ -156,6 +157,7 @@ function pendingActionText(action: OfflineAction, tx: Record<string, string>): s
 export function SyncHealthCard({
   dense = false,
   compact = false,
+  showHeader = true,
   allowManualRetry = true,
   surface = "default",
 }: SyncHealthCardProps) {
@@ -247,6 +249,24 @@ export function SyncHealthCard({
   const canRetry = cloudEnabled && isOnline && pendingCount > 0 && !isProcessing;
   const pendingRows = actions.slice(0, MAX_PENDING_ROWS);
   const pendingRemainder = Math.max(0, actions.length - pendingRows.length);
+  const title = tx.settingsCloudSyncTitle || "Cloud sync";
+  const description = tx.settingsCloudSyncDescription || "Sync your data across devices.";
+  const statusBadge = (
+    <span
+      className={cn(
+        "inline-flex w-fit shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold",
+        meta.className
+      )}
+      role="status"
+      aria-live="polite"
+    >
+      <Icon
+        className={cn("h-3.5 w-3.5", status === "syncing" && "motion-safe:animate-spin")}
+        aria-hidden="true"
+      />
+      {statusLabel}
+    </span>
+  );
 
   return (
     <section
@@ -259,38 +279,28 @@ export function SyncHealthCard({
       data-testid="sync-health-card"
       data-compact={compact ? "true" : "false"}
       data-allow-manual-retry={allowManualRetry ? "true" : "false"}
-      aria-labelledby="sync-health-card-title"
+      aria-labelledby={showHeader ? "sync-health-card-title" : undefined}
+      aria-label={showHeader ? undefined : title}
     >
-      <div className="flex flex-col gap-3 min-[520px]:flex-row min-[520px]:items-start min-[520px]:justify-between">
-        <div className="flex min-w-0 items-start gap-3">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-            <ShieldCheck className="h-5 w-5" aria-hidden="true" />
-          </span>
-          <div className="min-w-0">
-            <h3 id="sync-health-card-title" className="text-base font-semibold text-foreground">
-              {tx.settingsCloudSyncTitle || "Cloud sync"}
-            </h3>
-            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-              {tx.settingsCloudSyncDescription || "Sync your data across devices."}
-            </p>
+      {showHeader ? (
+        <div className="flex flex-col gap-3 min-[520px]:flex-row min-[520px]:items-start min-[520px]:justify-between">
+          <div className="flex min-w-0 items-start gap-3">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <ShieldCheck className="h-5 w-5" aria-hidden="true" />
+            </span>
+            <div className="min-w-0">
+              <h3 id="sync-health-card-title" className="text-base font-semibold text-foreground">
+                {title}
+              </h3>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{description}</p>
+            </div>
           </div>
-        </div>
 
-        <span
-          className={cn(
-            "inline-flex w-fit shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold",
-            meta.className
-          )}
-          role="status"
-          aria-live="polite"
-        >
-          <Icon
-            className={cn("h-3.5 w-3.5", status === "syncing" && "motion-safe:animate-spin")}
-            aria-hidden="true"
-          />
-          {statusLabel}
-        </span>
-      </div>
+          {statusBadge}
+        </div>
+      ) : (
+        <div className="flex justify-start">{statusBadge}</div>
+      )}
 
       <div
         className={cn(
