@@ -2,6 +2,14 @@
 
 All notable changes to ZenFlow will be documented in this file.
 
+## [2.0.0] - 2026-06-01
+
+### Changed - V2 Release
+- Bumped the public ZenFlow version to 2.0.0 across web, Android, iOS, and desktop metadata.
+- Updated the in-app "What's New" source so the 2.0.0 release has visible user-facing notes.
+
+---
+
 ## [1.7.1] — 2026-02-13
 
 ### Changed — Google-Only Authentication

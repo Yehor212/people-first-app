@@ -194,8 +194,8 @@ The command uses Partner Center Product Identity values from
 official Store logo package assets, runs Windows SDK `MakePri.exe` when
 available, runs `MakeAppx.exe`, and writes:
 
-- `tmp/microsoft-store-msix/ZenFlow_1.7.3.0_x64.msix`
-- `tmp/microsoft-store-msix/ZenFlow_1.7.3.0_x64.msixupload`
+- `tmp/microsoft-store-msix/ZenFlow_2.0.0.0_x64.msix`
+- `tmp/microsoft-store-msix/ZenFlow_2.0.0.0_x64.msixupload`
 - `tmp/microsoft-store-msix/package-manifest.json`
 
 This is the current preferred repo path for the Partner Center product type

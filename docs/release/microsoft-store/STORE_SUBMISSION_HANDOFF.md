@@ -112,7 +112,7 @@ explicitly changes the brand direction in a future task.
 6. Confirm `Store listings` remains `Complete`.
 7. Generate the Store package with `npm run desktop:store:package`.
 8. Open `Submission 1` -> `Packages` and upload
-   `tmp/microsoft-store-msix/ZenFlow_1.7.3.0_x64.msixupload`.
+   `tmp/microsoft-store-msix/ZenFlow_2.0.0.0_x64.msixupload`.
 9. Confirm Partner Center accepts the package and then review the detected
    package-language table.
 10. Do not click `Submit for certification` until `Packages` is complete and the

@@ -4,7 +4,7 @@ import { isTrustedDesktopReleaseUrl, resolveDesktopRelease } from "../desktopRel
 
 describe("desktopRelease", () => {
   const validUrl =
-    "https://github.com/Yehor212/people-first-app/releases/download/desktop-v1.7.3/ZenFlow_1.7.3_x64-setup.exe";
+    "https://github.com/Yehor212/people-first-app/releases/download/desktop-v2.0.0/ZenFlow_2.0.0_x64-setup.exe";
   const validHash = "A".repeat(64);
 
   it("keeps the public download locked when release proof is missing", () => {
@@ -21,12 +21,12 @@ describe("desktopRelease", () => {
     expect(isTrustedDesktopReleaseUrl(validUrl)).toBe(true);
     expect(
       isTrustedDesktopReleaseUrl(
-        "https://github.com/Yehor212/people-first-app/releases/download/desktop-v1.7.3/zenflow-desktop.exe",
+        "https://github.com/Yehor212/people-first-app/releases/download/desktop-v2.0.0/zenflow-desktop.exe",
       ),
     ).toBe(false);
     expect(
       isTrustedDesktopReleaseUrl(
-        "https://example.com/Yehor212/people-first-app/releases/download/v1/ZenFlow_1.7.3_x64-setup.exe",
+        "https://example.com/Yehor212/people-first-app/releases/download/v1/ZenFlow_2.0.0_x64-setup.exe",
       ),
     ).toBe(false);
   });

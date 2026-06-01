@@ -37,7 +37,7 @@ describe("DesktopDownloadPage", () => {
   it("shows the download link only for a verified signed release configuration", () => {
     vi.stubEnv(
       "VITE_DESKTOP_SIGNED_RELEASE_URL",
-      "https://github.com/Yehor212/people-first-app/releases/download/desktop-v1.7.3/ZenFlow_1.7.3_x64-setup.exe",
+      "https://github.com/Yehor212/people-first-app/releases/download/desktop-v2.0.0/ZenFlow_2.0.0_x64-setup.exe",
     );
     vi.stubEnv("VITE_DESKTOP_SIGNED_RELEASE_SHA256", "B".repeat(64));
     vi.stubEnv("VITE_DESKTOP_SIGNED_RELEASE_AUTHENTICODE", "Valid");
@@ -46,7 +46,7 @@ describe("DesktopDownloadPage", () => {
 
     expect(screen.getByRole("link", { name: /Download signed EXE/i })).toHaveAttribute(
       "href",
-      "https://github.com/Yehor212/people-first-app/releases/download/desktop-v1.7.3/ZenFlow_1.7.3_x64-setup.exe",
+      "https://github.com/Yehor212/people-first-app/releases/download/desktop-v2.0.0/ZenFlow_2.0.0_x64-setup.exe",
     );
     expect(screen.queryByRole("button", { name: /Signed EXE is being prepared/i })).not.toBeInTheDocument();
   });

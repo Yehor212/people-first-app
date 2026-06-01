@@ -164,7 +164,7 @@
       "blocksCertification": true,
       "evidence": [
         "tmp/partner-center-overview-after-save.png shows Packages as Not started",
-        "npm run desktop:store:package generates tmp/microsoft-store-msix/ZenFlow_1.7.3.0_x64.msixupload"
+        "npm run desktop:store:package generates tmp/microsoft-store-msix/ZenFlow_2.0.0.0_x64.msixupload"
       ],
       "requiredNextAction": "Upload the generated .msixupload in Partner Center, capture accepted-package proof, then review the detected package-language table."
     },

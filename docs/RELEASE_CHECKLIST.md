@@ -97,7 +97,7 @@ Use this list before publishing on stores or web.
 - Use either MSIX Packaging Tool conversion, manual MakeAppx packaging, or the
   repo generator `npm run desktop:store:package`; do not claim Store-ready from
   NSIS output alone for this `MSIX or PWA app` product path.
-- Upload `tmp/microsoft-store-msix/ZenFlow_1.7.3.0_x64.msixupload` only after
+- Upload `tmp/microsoft-store-msix/ZenFlow_2.0.0.0_x64.msixupload` only after
   `desktop:store:package` succeeds, then capture Partner Center accepted-package
   proof and package-language proof.
 - For Store MSIX, Microsoft handles package signing after certification. Direct

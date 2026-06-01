@@ -1,6 +1,6 @@
 [package]
 name = "zenflow-desktop"
-version = "1.7.3"
+version = "2.0.0"
 description = "ZenFlow desktop runtime"
 authors = ["ZenFlow"]
 edition = "2021"

@@ -45,6 +45,32 @@ function withAccent(icon: React.ReactNode, accent: keyof typeof CHANGELOG_ICON_S
 
 // Changelog entries by version — exported for SettingsPanel banner
 export const CHANGELOG: Record<string, ChangelogItem[]> = {
+  "2.0.0": [
+    {
+      icon: withAccent(<Sparkles className="w-5 h-5" aria-hidden="true" />, "purple"),
+      titleKey: "whatsNew.zenflowV2.title",
+      descriptionKey: "whatsNew.zenflowV2.description",
+      title: "ZenFlow V2",
+      description:
+        "A cleaner cross-platform experience for mood check-ins, habits, journaling, and daily rhythm.",
+    },
+    {
+      icon: withAccent(<RefreshCw className="w-5 h-5" aria-hidden="true" />, "blue"),
+      titleKey: "whatsNew.syncV2.title",
+      descriptionKey: "whatsNew.syncV2.description",
+      title: "Automatic Sync",
+      description:
+        "Account data stays aligned across devices with passive sync status instead of manual sync controls.",
+    },
+    {
+      icon: withAccent(<Settings className="w-5 h-5" aria-hidden="true" />, "green"),
+      titleKey: "whatsNew.settingsV2.title",
+      descriptionKey: "whatsNew.settingsV2.description",
+      title: "Modular Settings",
+      description:
+        "Settings now open as focused inline modules with clearer account, privacy, language, and appearance controls.",
+    },
+  ],
   "1.7.2": [
     {
       icon: withAccent(<Palette className="w-5 h-5" aria-hidden="true" />, "purple"),

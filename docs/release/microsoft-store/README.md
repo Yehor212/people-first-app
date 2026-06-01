@@ -87,7 +87,7 @@ icons, iOS app icon, Store upload-pack mirrors, and SVG source filters. Use
 `npm run assets:logos` after changing logo source files.
 
 `desktop:store:package` writes the current Store upload candidate to
-`tmp/microsoft-store-msix/ZenFlow_1.7.3.0_x64.msixupload`.
+`tmp/microsoft-store-msix/ZenFlow_2.0.0.0_x64.msixupload`.
 `desktop:store:check` proves the Store guardrails are wired into the repo. If
 Product Identity environment variables are absent, it reports that Store
 packaging identity remains `UNVERIFIED`; that is expected until Partner Center

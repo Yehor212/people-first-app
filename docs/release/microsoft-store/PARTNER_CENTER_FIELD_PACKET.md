@@ -149,7 +149,7 @@ npm run desktop:store:package
 Upload this generated file:
 
 ```text
-tmp/microsoft-store-msix/ZenFlow_1.7.3.0_x64.msixupload
+tmp/microsoft-store-msix/ZenFlow_2.0.0.0_x64.msixupload
 ```
 
 The generator uses the public Partner Center identity values:
@@ -158,7 +158,7 @@ The generator uses the public Partner Center identity values:
 Name: YehorSha.ZenFlow
 Publisher: CN=EEB3FAA5-30F3-4886-A288-B72F7ED6729B
 PublisherDisplayName: YehorSha
-Version: 1.7.3.0
+Version: 2.0.0.0
 Architecture: x64
 Languages: en-us, uk, es, de, fr, ja, ar, he
 ```
@@ -229,7 +229,7 @@ Mark a row `PASS` only after seeing it in Partner Center after save.
 | Properties complete | `PASS - seen in tmp/partner-center-overview-after-save.png on 2026-05-21` |
 | Age ratings complete | `PASS - seen in tmp/partner-center-overview-after-save.png on 2026-05-21` |
 | Store listings complete | `PASS - seen in tmp/partner-center-overview-after-save.png on 2026-05-21` |
-| Store MSIXUPLOAD candidate generated | `PASS only after npm run desktop:store:package writes tmp/microsoft-store-msix/ZenFlow_1.7.3.0_x64.msixupload` |
+| Store MSIXUPLOAD candidate generated | `PASS only after npm run desktop:store:package writes tmp/microsoft-store-msix/ZenFlow_2.0.0.0_x64.msixupload` |
 | Additional Store listing languages reviewed | `READY IN REPO / LIVE UNVERIFIED - store-listing-localized.json covers all 8 app languages; tmp/partner-center-language-state-audit.png still shows only English live complete` |
 | Localized Store listing packet reviewed | `PASS - npm run desktop:store:check validates localized copy, captions, search terms, and screenshot decision` |
 | Package language list reviewed | `FAIL - tmp/partner-center-language-state-audit.png shows package languages are unavailable until package upload` |
