@@ -140,6 +140,16 @@ describe("SyncHealthCard", () => {
     expect(screen.queryByRole("button", { name: "Sync now" })).not.toBeInTheDocument();
   });
 
+  it("keeps embedded account sync status quiet when everything is already synced", () => {
+    render(<SyncHealthCard compact showHeader={false} allowManualRetry={false} quietWhenIdle />);
+
+    expect(screen.getByTestId("sync-health-card")).toHaveTextContent("Sync complete.");
+    expect(screen.queryByTestId("sync-health-metrics")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("sync-health-receipt")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("sync-inbox")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Sync now" })).not.toBeInTheDocument();
+  });
+
   it("lets the user retry pending outbox work", () => {
     mocks.offline.actions = [
       {

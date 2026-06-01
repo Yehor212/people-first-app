@@ -75,6 +75,8 @@ type OrbWorkerController = {
 
 const WEBGL_FRAME_INTERVAL = 1000 / 60; // 60fps for healthy WebGL sessions.
 const CANVAS_FRAME_INTERVAL = 1000 / 30; // 30fps for Canvas 2D fallback
+const ORB_FRAME_CLOCK_REANCHOR_GAP_MS = 750;
+const ORB_MAX_FRAME_DELTA_SECONDS = 0.05;
 
 function shouldAnimateCanonicalOrb(): boolean {
   return shouldAnimate({ respectRuntimePerformance: false });
@@ -137,6 +139,20 @@ export function resolveOrbFrameInterval(
 ): number {
   if (!hasWebGLRenderer) return CANVAS_FRAME_INTERVAL;
   return WEBGL_FRAME_INTERVAL;
+}
+
+export function resolveOrbFrameDeltaSeconds(
+  previousFrameAtMs: number,
+  currentFrameAtMs: number,
+): number {
+  if (!Number.isFinite(previousFrameAtMs) || previousFrameAtMs <= 0) return 0;
+  if (!Number.isFinite(currentFrameAtMs)) return 0;
+
+  const elapsedMs = currentFrameAtMs - previousFrameAtMs;
+  if (!Number.isFinite(elapsedMs) || elapsedMs <= 0) return 0;
+  if (elapsedMs > ORB_FRAME_CLOCK_REANCHOR_GAP_MS) return 0;
+
+  return Math.min(elapsedMs / 1000, ORB_MAX_FRAME_DELTA_SECONDS);
 }
 
 export function resolveOrbTransitionSettings(
@@ -805,6 +821,11 @@ export const ValenceOrb = memo(function ValenceOrb({
       rafScheduled = false;
     };
 
+    const resetFrameClock = () => {
+      const state = stateRef.current;
+      if (state) state.lastFrame = 0;
+    };
+
     const requestNextFrame = () => {
       if (disposed || rafScheduled || !mountedRef.current) return;
       rafScheduled = true;
@@ -821,6 +842,13 @@ export const ValenceOrb = memo(function ValenceOrb({
       const state = stateRef.current;
       if (!state) return;
 
+      const documentHidden = typeof document !== "undefined" && document.hidden;
+      if (documentHidden || !isVisibleRef.current) {
+        resetFrameClock();
+        requestNextFrame();
+        return;
+      }
+
       // Runtime dopamine gate
       if (!shouldAnimateCanonicalOrb()) {
         try { render(state.currentValence, state.time, state.particles); } catch { /* graceful: static frame render failure invisible — orb just stays as-is */ }
@@ -830,13 +858,13 @@ export const ValenceOrb = memo(function ValenceOrb({
       // Throttle: healthy WebGL stays 60fps; strained Chrome/WebView sessions keep
       // the canonical renderer but reduce compositor pressure to the fallback cadence.
       const frameInterval = resolveOrbFrameInterval(Boolean(glRendererRef.current || workerRenderer));
-      const elapsed = timestamp - state.lastFrame;
-      if (elapsed < frameInterval) {
+      const elapsed = state.lastFrame > 0 ? timestamp - state.lastFrame : frameInterval;
+      if (state.lastFrame > 0 && elapsed < frameInterval) {
         requestNextFrame();
         return;
       }
-      // dt in seconds (clamped to avoid spiral-of-death on tab-switch)
-      const dt = Math.min(elapsed / 1000, 0.1);
+      // Re-anchor instead of catching up after hidden tabs, reload restore, or long stalls.
+      const dt = resolveOrbFrameDeltaSeconds(state.lastFrame, timestamp);
       state.lastFrame = timestamp;
 
       // ── P3: Shimmer detection (large valence change from stable state) ──
@@ -971,6 +999,7 @@ export const ValenceOrb = memo(function ValenceOrb({
       // Keep Canvas 2D after a context loss. Recompiling immediately can repeat
       // the same Chrome/GPU stall that caused the fallback in the first place.
       if (shouldAnimateCanonicalOrb() && mountedRef.current) {
+        resetFrameClock();
         requestNextFrame();
       }
     };
@@ -984,6 +1013,39 @@ export const ValenceOrb = memo(function ValenceOrb({
     if (glRenderer) {
       attachWebGLListeners(activeCanvas);
     }
+
+    const restartAnimationClock = () => {
+      resetFrameClock();
+      if (shouldAnimateCanonicalOrb() && mountedRef.current && !disposed) {
+        requestNextFrame();
+      }
+    };
+
+    const pauseAnimationClock = () => {
+      resetFrameClock();
+      cancelNextFrame();
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        pauseAnimationClock();
+        return;
+      }
+
+      restartAnimationClock();
+    };
+
+    const handlePageHide = () => {
+      pauseAnimationClock();
+    };
+
+    const handlePageShow = () => {
+      restartAnimationClock();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('pagehide', handlePageHide);
+    window.addEventListener('pageshow', handlePageShow);
 
     const upgradeToWebGL = async (signal: AbortSignal) => {
       if (!shouldTryWebGL(renderer) || signal.aborted) return;
@@ -1351,6 +1413,11 @@ export const ValenceOrb = memo(function ValenceOrb({
       upgradeVisibilityObserver = new IntersectionObserver(
         ([entry]) => {
           isVisibleRef.current = entry.isIntersecting;
+          if (!entry.isIntersecting) {
+            resetFrameClock();
+          } else {
+            restartAnimationClock();
+          }
           if (entry.isIntersecting && webglUpgradePendingUntilVisible) {
             startWebGLUpgradeWhenVisible();
           }
@@ -1368,6 +1435,9 @@ export const ValenceOrb = memo(function ValenceOrb({
       cancelWebGLUpgrade();
       cancelNextFrame();
       upgradeVisibilityObserver?.disconnect();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('pagehide', handlePageHide);
+      window.removeEventListener('pageshow', handlePageShow);
       wrapper.removeEventListener('pointerdown', handlePointerDown);
       if (webglEventCanvas) {
         webglEventCanvas.removeEventListener('webglcontextlost', handleContextLost);

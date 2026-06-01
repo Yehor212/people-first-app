@@ -112,14 +112,17 @@ vi.mock("@/components/sync/SyncHealthCard", () => ({
   SyncHealthCard: ({
     allowManualRetry,
     compact,
+    quietWhenIdle,
   }: {
     allowManualRetry?: boolean;
     compact?: boolean;
+    quietWhenIdle?: boolean;
   }) => (
     <section
       data-testid="sync-health-card"
       data-compact={String(compact ?? false)}
       data-allow-manual-retry={String(allowManualRetry ?? true)}
+      data-quiet-when-idle={String(quietWhenIdle ?? false)}
     >
       Sync health
     </section>
@@ -476,12 +479,19 @@ describe("SettingsPage", () => {
       );
       expect(screen.getByTestId("settings-module-panel-account")).toBeInTheDocument();
       expect(screen.getByTestId("settings-v2-panel-account")).toBeInTheDocument();
+      expect(screen.getByTestId("settings-module-panel-account")).not.toHaveTextContent(
+        "Automatic syncSigned-in data stays synced across devices."
+      );
       expect(screen.queryByTestId("settings-v2-automatic-sync-card")).not.toBeInTheDocument();
       expect(screen.getByTestId("sync-health-card")).toHaveAttribute(
         "data-allow-manual-retry",
         "false"
       );
       expect(screen.getByTestId("sync-health-card")).toHaveAttribute("data-compact", "true");
+      expect(screen.getByTestId("sync-health-card")).toHaveAttribute(
+        "data-quiet-when-idle",
+        "true"
+      );
       expect(screen.getByTestId("device-sessions-card")).toBeInTheDocument();
       expectDocumentOrder(
         screen.getByTestId("settings-v2-panel-account"),

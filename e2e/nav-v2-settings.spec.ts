@@ -133,7 +133,7 @@ test.describe("V2 Settings card module accordion", () => {
       "data-allow-manual-retry",
       "false"
     );
-    await expect(page.getByTestId("device-sessions-card")).toBeVisible();
+    await expect(page.getByTestId("device-sessions-card")).toHaveCount(0);
     expect(page.url()).toBe(beforeUrl);
 
     const cardRect = await page.getByTestId("settings-module-card-account").evaluate((node) => {
@@ -183,6 +183,7 @@ test.describe("V2 Settings card module accordion", () => {
     );
     await expect(page.getByTestId("settings-module-panel-account")).toBeVisible();
     await expect(page.getByTestId("sync-health-card")).toBeVisible();
+    await expect(page.getByTestId("device-sessions-card")).toHaveCount(0);
 
     await page.getByTestId("settings-module-card-account").click();
 

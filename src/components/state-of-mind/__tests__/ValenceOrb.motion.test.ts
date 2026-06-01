@@ -10,6 +10,7 @@ import {
   allowsFirstPaintFallback,
   resolveCanonicalWebGLUpgradeScheduling,
   resolveFrameTransitionProfile,
+  resolveOrbFrameDeltaSeconds,
   resolveOrbFrameInterval,
   resolveOrbTransitionSettings,
   shouldApplyWorkerWebGLUpgrade,
@@ -87,20 +88,34 @@ function stubVisibleOrbRect() {
 }
 
 function installQueuedRaf() {
-  const callbacks: FrameRequestCallback[] = [];
+  const callbacks = new Map<number, FrameRequestCallback>();
+  let nextFrameId = 1;
   vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => {
-    callbacks.push(callback);
-    return callbacks.length;
+    const frameId = nextFrameId++;
+    callbacks.set(frameId, callback);
+    return frameId;
   });
-  vi.spyOn(window, "cancelAnimationFrame").mockImplementation(() => {});
+  vi.spyOn(window, "cancelAnimationFrame").mockImplementation((frameId) => {
+    callbacks.delete(frameId);
+  });
 
   return {
     pendingCount() {
-      return callbacks.length;
+      return callbacks.size;
     },
     flushNextFrame() {
-      const callback = callbacks.shift();
+      const nextEntry = callbacks.entries().next().value;
+      if (!nextEntry) return;
+      const [frameId, callback] = nextEntry;
+      callbacks.delete(frameId);
       callback?.(performance.now());
+    },
+    flushFrameAt(timestamp: number) {
+      const nextEntry = callbacks.entries().next().value;
+      if (!nextEntry) return;
+      const [frameId, callback] = nextEntry;
+      callbacks.delete(frameId);
+      callback?.(timestamp);
     },
   };
 }
@@ -248,6 +263,78 @@ describe("ValenceOrb motion profile", () => {
 
     expect(resolveOrbFrameInterval(true)).toBeCloseTo(1000 / 60);
     expect(resolveOrbFrameInterval(false)).toBeCloseTo(1000 / 30);
+  });
+
+  it("reanchors large frame gaps instead of catching up missed orb motion", () => {
+    expect(resolveOrbFrameDeltaSeconds(0, 1000)).toBe(0);
+    expect(resolveOrbFrameDeltaSeconds(1000, 1034)).toBeCloseTo(0.034);
+    expect(resolveOrbFrameDeltaSeconds(1000, 1100)).toBe(0.05);
+    expect(resolveOrbFrameDeltaSeconds(1000, 20_000)).toBe(0);
+  });
+
+  it("resumes after browser lifecycle pauses without a fast-spin catch-up frame", async () => {
+    vi.useFakeTimers();
+    stubVisibleOrbRect();
+    const hiddenSpy = vi.spyOn(document, "hidden", "get").mockReturnValue(false);
+    const { flushFrameAt, pendingCount } = installQueuedRaf();
+
+    render(
+      createElement(ValenceOrb, {
+        valence: 0.25,
+        renderer: "canvas",
+        animationSpeed: 1,
+      }),
+    );
+
+    const latestOrbTime = () => vi.mocked(drawOrbScene).mock.calls.at(-1)?.[1].time ?? 0;
+
+    await act(async () => {
+      flushFrameAt(900);
+      await Promise.resolve();
+    });
+
+    await act(async () => {
+      flushFrameAt(1000);
+      await Promise.resolve();
+    });
+    const firstFrameTime = latestOrbTime();
+
+    await act(async () => {
+      flushFrameAt(1060);
+      await Promise.resolve();
+    });
+    const beforePauseTime = latestOrbTime();
+
+    expect(beforePauseTime).toBeGreaterThan(firstFrameTime);
+
+    hiddenSpy.mockReturnValue(true);
+    act(() => {
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+
+    expect(pendingCount()).toBe(0);
+
+    hiddenSpy.mockReturnValue(false);
+    act(() => {
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+
+    expect(pendingCount()).toBe(1);
+
+    await act(async () => {
+      flushFrameAt(20_000);
+      await Promise.resolve();
+    });
+    const afterResumeTime = latestOrbTime();
+
+    expect(afterResumeTime).toBeCloseTo(beforePauseTime, 3);
+
+    await act(async () => {
+      flushFrameAt(20_060);
+      await Promise.resolve();
+    });
+
+    expect(latestOrbTime()).toBeGreaterThan(afterResumeTime);
   });
 
   it("blocks non-canonical first-paint fallbacks for forced WebGL orb surfaces", () => {

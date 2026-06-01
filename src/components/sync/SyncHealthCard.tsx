@@ -32,6 +32,7 @@ interface SyncHealthCardProps {
   compact?: boolean;
   showHeader?: boolean;
   allowManualRetry?: boolean;
+  quietWhenIdle?: boolean;
   surface?: "default" | "settings-space";
 }
 
@@ -81,7 +82,7 @@ const STATUS_META: Record<
 };
 
 function formatTime(value: number | null, locale: string): string {
-  if (!value) return "—";
+  if (!value) return "-";
   try {
     return new Intl.DateTimeFormat(locale, {
       hour: "2-digit",
@@ -159,6 +160,7 @@ export function SyncHealthCard({
   compact = false,
   showHeader = true,
   allowManualRetry = true,
+  quietWhenIdle = false,
   surface = "default",
 }: SyncHealthCardProps) {
   const { t, language } = useLanguage();
@@ -249,6 +251,24 @@ export function SyncHealthCard({
   const canRetry = cloudEnabled && isOnline && pendingCount > 0 && !isProcessing;
   const pendingRows = actions.slice(0, MAX_PENDING_ROWS);
   const pendingRemainder = Math.max(0, actions.length - pendingRows.length);
+  const hasActionableSyncState =
+    status === "syncing" ||
+    status === "pending" ||
+    status === "offline" ||
+    status === "error" ||
+    pendingCount > 0 ||
+    criticalPending > 0 ||
+    failedPending > 0;
+  const useQuietIdle = compact && quietWhenIdle && !hasActionableSyncState;
+  const showMetrics =
+    !useQuietIdle &&
+    (!compact ||
+      pendingCount > 0 ||
+      criticalPending > 0 ||
+      failedPending > 0 ||
+      Boolean(lastActivityAt));
+  const showLatestAction =
+    !useQuietIdle && (!compact || pendingCount > 0 || failedPending > 0 || Boolean(lastReceipt));
   const title = tx.settingsCloudSyncTitle || "Cloud sync";
   const description = tx.settingsCloudSyncDescription || "Sync your data across devices.";
   const statusBadge = (
@@ -302,34 +322,47 @@ export function SyncHealthCard({
         <div className="flex justify-start">{statusBadge}</div>
       )}
 
-      <div
-        className={cn(
-          "mt-4 grid gap-2",
-          compact ? "grid-cols-[repeat(auto-fit,minmax(5.75rem,1fr))]" : "grid-cols-3"
-        )}
-        data-testid="sync-health-metrics"
-      >
-        <Metric label={tx.syncPending || "Waiting"} value={String(pendingCount)} />
-        <Metric label={tx.syncPriority || "Important"} value={String(criticalPending)} />
-        <Metric
-          label={tx.syncLastSync || "Last sync"}
-          value={formatTime(lastActivityAt, language)}
-        />
-      </div>
+      {showMetrics && (
+        <div
+          className={cn(
+            "mt-4 grid gap-2",
+            compact ? "grid-cols-[repeat(auto-fit,minmax(5.75rem,1fr))]" : "grid-cols-3"
+          )}
+          data-testid="sync-health-metrics"
+        >
+          {(!compact || pendingCount > 0 || status === "pending") && (
+            <Metric label={tx.syncPending || "Waiting"} value={String(pendingCount)} />
+          )}
+          {(!compact || criticalPending > 0 || failedPending > 0) && (
+            <Metric label={tx.syncPriority || "Important"} value={String(criticalPending)} />
+          )}
+          {(!compact || lastActivityAt) && (
+            <Metric
+              label={tx.syncLastSync || "Last sync"}
+              value={formatTime(lastActivityAt, language)}
+            />
+          )}
+        </div>
+      )}
 
-      <div className="mt-4 rounded-xl border border-border bg-muted/30 p-3">
-        <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
-          {tx.syncLatestAction || "Latest action"}
-        </p>
-        <p className="mt-1 text-sm font-medium text-foreground" data-testid="sync-health-receipt">
-          {receiptText(lastReceipt, tx)}
-        </p>
-        {failedPending > 0 && (
-          <p className="mt-1 text-xs text-destructive">
-            {tx.syncRetryHint || "Some local actions need another sync attempt."}
+      {showLatestAction && (
+        <div className="mt-4 rounded-xl border border-border bg-muted/30 p-3">
+          <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
+            {tx.syncLatestAction || "Latest action"}
           </p>
-        )}
-      </div>
+          <p
+            className="mt-1 text-sm font-medium text-foreground"
+            data-testid="sync-health-receipt"
+          >
+            {receiptText(lastReceipt, tx)}
+          </p>
+          {failedPending > 0 && (
+            <p className="mt-1 text-xs text-destructive">
+              {tx.syncRetryHint || "Some local actions need another sync attempt."}
+            </p>
+          )}
+        </div>
+      )}
 
       {(!compact || pendingRows.length > 0 || pendingCount > 0) && (
         <div

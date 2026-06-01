@@ -9,6 +9,7 @@ interface PanelFrameProps {
   description: string;
   children: ReactNode;
   testId: string;
+  showHeader?: boolean;
 }
 
 interface ToggleRowProps {
@@ -47,6 +48,7 @@ export function PanelFrame({
   description,
   children,
   testId,
+  showHeader = true,
 }: PanelFrameProps) {
   return (
     <section
@@ -57,17 +59,19 @@ export function PanelFrame({
         aria-hidden="true"
         className="absolute inset-x-6 top-0 h-[2px] rounded-b-full bg-[linear-gradient(90deg,hsl(var(--zf-role-settings)/0.18),hsl(var(--zf-role-space)/0.7),hsl(var(--zf-role-rest)/0.2))]"
       />
-      <div className="mb-4 flex items-start gap-3">
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[hsl(var(--zf-role-settings)/0.28)] bg-[hsl(var(--zf-role-settings)/0.12)] text-[hsl(var(--zf-role-settings))]">
-          <Icon className="h-5 w-5" aria-hidden="true" />
-        </span>
-        <span className="min-w-0">
-          <span className="block text-base font-semibold text-foreground">{title}</span>
-          <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
-            {description}
+      {showHeader && (
+        <div className="mb-4 flex items-start gap-3">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[hsl(var(--zf-role-settings)/0.28)] bg-[hsl(var(--zf-role-settings)/0.12)] text-[hsl(var(--zf-role-settings))]">
+            <Icon className="h-5 w-5" aria-hidden="true" />
           </span>
-        </span>
-      </div>
+          <span className="min-w-0">
+            <span className="block text-base font-semibold text-foreground">{title}</span>
+            <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
+              {description}
+            </span>
+          </span>
+        </div>
+      )}
       <div className="space-y-3">{children}</div>
     </section>
   );

@@ -144,15 +144,9 @@ export function SettingsModuleList({
                 id={panelId}
                 role="region"
                 aria-labelledby={buttonId}
-                className="mt-3 rounded-3xl border border-[hsl(var(--border)/0.52)] bg-[hsl(var(--background)/0.34)] p-3 shadow-inner"
+                className="mt-3 rounded-3xl border border-[hsl(var(--border)/0.52)] bg-[hsl(var(--background)/0.34)] p-2 shadow-inner md:p-3"
                 data-testid={`settings-module-panel-${item.id}`}
               >
-                <div className="mb-3 rounded-2xl border border-[hsl(var(--border)/0.42)] bg-[hsl(var(--card)/0.52)] p-3">
-                  <p className="text-sm font-semibold text-foreground">{item.label}</p>
-                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                    {item.description}
-                  </p>
-                </div>
                 {renderPanel(item)}
               </div>
             ) : null}

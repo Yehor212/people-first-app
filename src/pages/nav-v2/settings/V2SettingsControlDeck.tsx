@@ -857,6 +857,7 @@ function AccountPanel({ controls }: { controls: V2SettingsControls }) {
       title={tx.settingsCloudSyncTitle || tx.settingsGroupAccount || tx.account || "Account"}
       description={tx.settingsCloudSyncDescription || "Signed-in data stays synced automatically."}
       testId="settings-v2-panel-account"
+      showHeader={false}
     >
       <SyncHealthCard
         compact
@@ -864,6 +865,7 @@ function AccountPanel({ controls }: { controls: V2SettingsControls }) {
         showHeader={false}
         allowManualRetry={false}
         surface="settings-space"
+        quietWhenIdle
       />
 
       {!supabase ? (
@@ -1051,7 +1053,7 @@ function AccountPanel({ controls }: { controls: V2SettingsControls }) {
         {del.deleteStatus && <p className="text-sm text-muted-foreground">{del.deleteStatus}</p>}
       </div>
 
-      <DeviceSessionsCard dense surface="settings" />
+      {supabase && auth.hasSession && <DeviceSessionsCard dense surface="settings" />}
     </PanelFrame>
   );
 }
