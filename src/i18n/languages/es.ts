@@ -650,7 +650,7 @@ export const es: Translations = {
   settingsWhatsNewGotIt: "¡Entendido!",
   // v1.5.9 What's New
   settingsWhatsNewFeatureToggles: "Interruptores de funciones",
-  settingsWhatsNewFeatureTogglesDesc: "Activa/desactiva módulos en Configuración",
+  settingsWhatsNewFeatureTogglesDesc: "Elige módulos durante la incorporación",
   settingsWhatsNewBugFixes158: "Corrección de errores",
   settingsWhatsNewBugFixes158Desc: "Problemas de sincronización y estabilidad corregidos",
   settingsWhatsNewUIImprovements: "Mejoras de interfaz",
@@ -720,7 +720,7 @@ export const es: Translations = {
 
   // Modules Onboarding
   modulesOnboardingTitle: "Elige funciones",
-  modulesOnboardingSubtitle: "Puedes cambiar esto más tarde en ajustes",
+  modulesOnboardingSubtitle: "Elige las herramientas que deben aparecer primero",
   modulesSelected: "funciones seleccionadas",
   coreModulesNote: "El rastreador de humor y los hábitos siempre están habilitados",
 

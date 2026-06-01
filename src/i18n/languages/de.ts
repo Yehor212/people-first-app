@@ -647,7 +647,7 @@ export const de: Translations = {
   settingsWhatsNewGotIt: "Verstanden!",
   // v1.5.9 What's New
   settingsWhatsNewFeatureToggles: "Funktions-Schalter",
-  settingsWhatsNewFeatureTogglesDesc: "Module in Einstellungen aktivieren/deaktivieren",
+  settingsWhatsNewFeatureTogglesDesc: "Module beim Einstieg auswählen",
   settingsWhatsNewBugFixes158: "Fehlerbehebungen",
   settingsWhatsNewBugFixes158Desc: "Sync-Probleme und Stabilität verbessert",
   settingsWhatsNewUIImprovements: "UI-Verbesserungen",
@@ -717,7 +717,7 @@ export const de: Translations = {
 
   // Modules Onboarding
   modulesOnboardingTitle: "Funktionen wählen",
-  modulesOnboardingSubtitle: "Sie können dies später in den Einstellungen ändern",
+  modulesOnboardingSubtitle: "Wähle die Werkzeuge aus, die zuerst erscheinen sollen",
   modulesSelected: "Funktionen ausgewählt",
   coreModulesNote: "Stimmungs-Tracker und Gewohnheiten sind immer aktiviert",
 

@@ -643,7 +643,7 @@ export const uk: Translations = {
   settingsWhatsNewGotIt: "Зрозуміло!",
   // v1.5.9 What's New
   settingsWhatsNewFeatureToggles: "Перемикачі модулів",
-  settingsWhatsNewFeatureTogglesDesc: "Вмикайте/вимикайте модулі в Налаштуваннях",
+  settingsWhatsNewFeatureTogglesDesc: "Обирайте модулі під час онбордингу",
   settingsWhatsNewBugFixes158: "Виправлення помилок",
   settingsWhatsNewBugFixes158Desc: "Виправлено проблеми синхронізації та стабільності",
   settingsWhatsNewUIImprovements: "Покращення інтерфейсу",
@@ -711,7 +711,7 @@ export const uk: Translations = {
 
   // Modules Onboarding
   modulesOnboardingTitle: "Оберіть функції",
-  modulesOnboardingSubtitle: "Ви можете змінити це пізніше в налаштуваннях",
+  modulesOnboardingSubtitle: "Оберіть інструменти, які мають з'явитися першими",
   modulesSelected: "функцій обрано",
   coreModulesNote: "Трекер настрою та Звички завжди увімкнені",
 

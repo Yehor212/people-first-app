@@ -651,7 +651,7 @@ export const fr: Translations = {
   settingsWhatsNewGotIt: "Compris !",
   // v1.5.9 What's New
   settingsWhatsNewFeatureToggles: "Interrupteurs de fonctionnalités",
-  settingsWhatsNewFeatureTogglesDesc: "Activez/désactivez les modules dans Paramètres",
+  settingsWhatsNewFeatureTogglesDesc: "Choisissez les modules pendant l'accueil",
   settingsWhatsNewBugFixes158: "Corrections de bugs",
   settingsWhatsNewBugFixes158Desc: "Problèmes de synchronisation et stabilité corrigés",
   settingsWhatsNewUIImprovements: "Améliorations de l'interface",
@@ -721,7 +721,7 @@ export const fr: Translations = {
 
   // Modules Onboarding
   modulesOnboardingTitle: "Choisir les fonctions",
-  modulesOnboardingSubtitle: "Vous pouvez modifier cela plus tard dans les paramètres",
+  modulesOnboardingSubtitle: "Choisissez les outils à afficher en premier",
   modulesSelected: "fonctions sélectionnées",
   coreModulesNote: "Le suivi de l'humeur et les habitudes sont toujours activés",
 

@@ -635,7 +635,7 @@ const arabicOverrides: Partial<Translations> = {
 
   // Feature Toggles
   settingsWhatsNewFeatureToggles: "تبديل الميزات",
-  settingsWhatsNewFeatureTogglesDesc: "تخصيص الميزات المرئية",
+  settingsWhatsNewFeatureTogglesDesc: "اختر الوحدات أثناء الإعداد الأولي",
   settingsWhatsNewBugFixes158: "إصلاحات",
   settingsWhatsNewBugFixes158Desc: "تحسينات الاستقرار والأداء",
   settingsWhatsNewUIImprovements: "تحسينات الواجهة",
@@ -703,7 +703,7 @@ const arabicOverrides: Partial<Translations> = {
 
   // Modules Onboarding
   modulesOnboardingTitle: "اختر وحداتك",
-  modulesOnboardingSubtitle: "يمكنك تغييرها لاحقاً من الإعدادات",
+  modulesOnboardingSubtitle: "اختر الأدوات التي تظهر أولاً",
   modulesSelected: "وحدات مختارة",
   coreModulesNote: "تتبع المزاج والعادات دائماً متاحة",
 

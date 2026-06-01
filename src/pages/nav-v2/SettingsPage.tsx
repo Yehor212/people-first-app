@@ -5,7 +5,6 @@ import {
   DatabaseBackup,
   Globe2,
   Info,
-  LayoutGrid,
   LockKeyhole,
   Palette,
   UserRound,
@@ -13,7 +12,6 @@ import {
 import { Bloom } from "@/lib/motion";
 import { staggerDelay } from "@/lib/motion/choreography";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useFeatureFlags, type ToggleableFeature } from "@/contexts/FeatureFlagsContext";
 import { useThemeStore } from "@/stores/themeStore";
 import { useAppStore } from "@/stores";
 import { supabase } from "@/lib/supabaseClient";
@@ -33,21 +31,10 @@ interface SettingsPageProps {
   controls?: V2SettingsControls;
 }
 
-const OPTIONAL_MODULES: ToggleableFeature[] = [
-  "focusTimer",
-  "breathingExercise",
-  "gratitudeJournal",
-  "quests",
-  "tasks",
-  "challenges",
-  "innerWorld",
-];
-
 const INITIAL_SECTION_TO_V2_SECTION: Record<string, V2SettingsSectionId> = {
   profile: "profile",
   appearance: "appearance",
   language: "language",
-  modules: "modules",
   notifications: "notifications",
   privacy: "privacy",
   security: "privacy",
@@ -65,7 +52,6 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
   );
   const appliedTheme = useThemeStore((s) => s.appliedTheme);
   const hasValidSession = useAppStore((s) => s.hasValidSession);
-  const { flags } = useFeatureFlags();
   const settingsLead = `${tx.settingsCloudSyncTitle}: ${tx.settingsCloudSyncDescription}`;
 
   useEffect(() => {
@@ -84,12 +70,6 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
   }
 
   const themeLabel = appliedTheme === "paper" ? tx.themeLight : tx.themeDark;
-  const enabledOptionalModules = useMemo(
-    () => OPTIONAL_MODULES.filter((moduleId) => flags[moduleId]).length,
-    [flags]
-  );
-  const totalModules = OPTIONAL_MODULES.length + 2;
-  const enabledModules = enabledOptionalModules + 2;
   const reminderSummary = controls?.reminders.enabled
     ? `${tx.moodReminder}: ${
         controls.reminders.moodTimeMorning || "09:00"
@@ -155,14 +135,6 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
         role: "diary",
       },
       {
-        id: "modules",
-        icon: LayoutGrid,
-        label: tx.settingsGroupModules || "Modules",
-        description: tx.settingsModulesDescription || "Choose which ZenFlow tools stay visible.",
-        value: `${enabledModules}/${totalModules}`,
-        role: "space",
-      },
-      {
         id: "privacy",
         icon: LockKeyhole,
         label: tx.settingsGroupSecurity || tx.privacyTitle,
@@ -188,13 +160,11 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
     ],
     [
       dataSummary,
-      enabledModules,
       privacySummary,
       reminderSummary,
       syncDescription,
       syncStatus,
       themeLabel,
-      totalModules,
       tx.appearance,
       tx.language,
       tx.navV2Theme,
@@ -208,11 +178,9 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
       tx.settingsExportDescription,
       tx.settingsGroupAbout,
       tx.settingsGroupData,
-      tx.settingsGroupModules,
       tx.settingsGroupNotifications,
       tx.settingsGroupProfile,
       tx.settingsGroupSecurity,
-      tx.settingsModulesDescription,
       tx.settingsSectionData,
       tx.settingsSecurityDesc,
       tx.yourName,

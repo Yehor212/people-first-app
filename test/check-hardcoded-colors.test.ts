@@ -54,7 +54,7 @@ describe("check-hardcoded-colors allowlist", () => {
       isAllowedFile("C:/project/people-first-app/src/components/Button.tsx"),
     ).toBe(false);
     expect(
-      isAllowedFile("C:/project/people-first-app/src/components/settings/ModulesSection.tsx"),
+      isAllowedFile("C:/project/people-first-app/src/components/settings/ProfileSection.tsx"),
     ).toBe(false);
   });
 

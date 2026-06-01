@@ -374,7 +374,7 @@ describe("SettingsPage", () => {
     expect(screen.getByTestId("settings-module-card-account")).toHaveTextContent(
       "Automatic sync active"
     );
-    expect(screen.getByTestId("settings-module-card-modules")).toHaveTextContent("8/9");
+    expect(screen.queryByTestId("settings-module-card-modules")).not.toBeInTheDocument();
     expect(screen.getByTestId("settings-module-card-appearance")).toHaveAttribute(
       "aria-expanded",
       "false"
@@ -415,6 +415,25 @@ describe("SettingsPage", () => {
       screen.getByTestId("settings-page-control-card"),
       screen.getByTestId("settings-module-list")
     );
+  });
+
+  it("falls back to profile when the removed modules section is requested initially", () => {
+    render(
+      <SettingsPage
+        controls={{
+          ...createSettingsControls(),
+          initialOpenSection: "modules",
+        }}
+      />
+    );
+
+    expect(screen.queryByTestId("settings-module-card-modules")).not.toBeInTheDocument();
+    expect(screen.getByTestId("settings-module-card-profile")).toHaveAttribute(
+      "aria-expanded",
+      "true"
+    );
+    expect(screen.getByTestId("settings-module-panel-profile")).toBeInTheDocument();
+    expect(screen.queryByTestId("settings-v2-panel-modules")).not.toBeInTheDocument();
   });
 
   it("opens the matching real settings module directly under the clicked card", () => {

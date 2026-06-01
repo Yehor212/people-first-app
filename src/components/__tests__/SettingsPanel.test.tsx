@@ -49,7 +49,6 @@ vi.mock("@/components/settings", () => ({
   AboutSection: () => <div data-testid="section-about" />,
   AccountSection: () => <div data-testid="section-account" />,
   DataSection: () => <div data-testid="section-data" />,
-  ModulesSection: () => <div data-testid="section-modules" />,
   NotificationsSection: () => <div data-testid="section-notifications" />,
   ProfileSection: () => <div data-testid="section-profile" />,
   SecuritySection: () => <div data-testid="section-security" />,
@@ -121,5 +120,17 @@ describe("SettingsPanel section routing", () => {
       "data-open-sections",
       "account",
     );
+
+    expect(screen.queryByTestId("section-modules")).not.toBeInTheDocument();
+  });
+
+  it("falls back to profile when the removed modules section is requested", () => {
+    render(<SettingsPanel {...baseProps} initialOpenSection="modules" />);
+
+    expect(screen.getByTestId("settings-accordion")).toHaveAttribute(
+      "data-open-sections",
+      "profile",
+    );
+    expect(screen.queryByTestId("section-modules")).not.toBeInTheDocument();
   });
 });

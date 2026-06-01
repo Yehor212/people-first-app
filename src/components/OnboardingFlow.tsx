@@ -273,7 +273,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
               {t.modulesOnboardingTitle || "Choose Features"}
             </h2>
             <p className="text-muted-foreground text-sm">
-              {t.modulesOnboardingSubtitle || "You can change this later in settings"}
+              {t.modulesOnboardingSubtitle || "Choose the tools that should appear first"}
             </p>
           </div>
 

@@ -529,7 +529,7 @@ test.describe("Empty States", () => {
  * Settings
  *
  * Verifies that the settings panel loads and contains its key accordion
- * sections: profile, modules, notifications, data, and account.
+ * sections: profile, notifications, data, and account.
  * Uses the Accordion component which has trigger buttons.
  */
 test.describe("Settings", () => {
@@ -552,12 +552,11 @@ test.describe("Settings", () => {
     });
     await expect(settingsHeading).toBeVisible({ timeout: 10000 });
 
-    // The settings panel uses an Accordion with these groups:
+    // The settings panel uses settings groups for:
     // 1. Profile (settingsGroupProfile)
-    // 2. Modules (settingsGroupModules)
-    // 3. Notifications (settingsGroupNotifications)
-    // 4. Data (settingsGroupData)
-    // 5. Account (settingsGroupAccount)
+    // 2. Notifications (settingsGroupNotifications)
+    // 3. Data (settingsGroupData)
+    // 4. Account (settingsGroupAccount)
     // Each accordion item has a trigger button. Verify they exist.
 
     // Check for at least the major accordion section triggers.
@@ -571,11 +570,11 @@ test.describe("Settings", () => {
     });
     await expect(profileSection.first()).toBeVisible({ timeout: 10000 });
 
-    // Modules section
+    // Module toggles were intentionally removed from Settings.
     const modulesSection = page.locator("button").filter({
       hasText: /modules|модули|модулі|módulos|module/i,
     });
-    await expect(modulesSection.first()).toBeVisible({ timeout: 10000 });
+    await expect(modulesSection).toHaveCount(0);
 
     // Notifications section
     const notificationsSection = page.locator("button").filter({

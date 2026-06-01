@@ -596,7 +596,7 @@ const hebrewOverrides: Partial<Translations> = {
 
   // Feature Toggles
   settingsWhatsNewFeatureToggles: "החלפת תכונות",
-  settingsWhatsNewFeatureTogglesDesc: "התאם תכונות נראות",
+  settingsWhatsNewFeatureTogglesDesc: "בחר מודולים בתהליך ההצטרפות",
   settingsWhatsNewBugFixes158: "תיקונים",
   settingsWhatsNewBugFixes158Desc: "שיפורי יציבות וביצועים",
   settingsWhatsNewUIImprovements: "שיפורי ממשק",
@@ -664,7 +664,7 @@ const hebrewOverrides: Partial<Translations> = {
 
   // Modules Onboarding
   modulesOnboardingTitle: "בחר את המודולים שלך",
-  modulesOnboardingSubtitle: "תוכל לשנות זאת מאוחר יותר בהגדרות",
+  modulesOnboardingSubtitle: "בחר את הכלים שיופיעו קודם",
   modulesSelected: "מודולים נבחרו",
   coreModulesNote: "מעקב מצב רוח והרגלים תמיד זמינים",
 

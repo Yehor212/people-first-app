@@ -160,7 +160,7 @@ export const CHANGELOG: Record<string, ChangelogItem[]> = {
       titleKey: "whatsNew.featureToggles.title",
       descriptionKey: "whatsNew.featureToggles.description",
       title: "Feature Toggles",
-      description: "Enable/disable app modules in Settings.",
+      description: "Choose app modules during onboarding.",
     },
     {
       icon: withAccent(<Shield className="w-5 h-5" aria-hidden="true" />, "green"),

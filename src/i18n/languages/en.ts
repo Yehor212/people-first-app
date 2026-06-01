@@ -641,7 +641,7 @@ export const en: Translations = {
   settingsWhatsNewGotIt: "Got it!",
   // v1.5.9 What's New
   settingsWhatsNewFeatureToggles: "Feature Toggles",
-  settingsWhatsNewFeatureTogglesDesc: "Enable/disable modules in Settings",
+  settingsWhatsNewFeatureTogglesDesc: "Choose modules during onboarding",
   settingsWhatsNewBugFixes158: "Bug Fixes",
   settingsWhatsNewBugFixes158Desc: "Fixed sync issues and improved stability",
   settingsWhatsNewUIImprovements: "UI Improvements",
@@ -710,7 +710,7 @@ export const en: Translations = {
 
   // Modules Onboarding
   modulesOnboardingTitle: "Choose Features",
-  modulesOnboardingSubtitle: "You can change this later in settings",
+  modulesOnboardingSubtitle: "Choose the tools that should appear first",
   modulesSelected: "features selected",
   coreModulesNote: "Mood Tracker and Habits are always enabled",
 

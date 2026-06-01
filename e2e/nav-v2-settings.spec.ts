@@ -49,6 +49,7 @@ async function expectAccordionHierarchy(page: import("@playwright/test").Page) {
   await expect(page.getByTestId("settings-cockpit")).toHaveCount(0);
   await expect(page.getByTestId("settings-page-sections")).toHaveCount(0);
   await expect(page.getByTestId("settings-module-list")).toBeVisible();
+  await expect(page.getByTestId("settings-module-card-modules")).toHaveCount(0);
   await expect(page.getByTestId("settings-module-card-profile")).toHaveAttribute(
     "aria-expanded",
     "true"

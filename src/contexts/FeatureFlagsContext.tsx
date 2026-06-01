@@ -1,7 +1,7 @@
 /**
  * Feature Flags Context
  *
- * Allows users to enable/disable app modules through Settings.
+ * Resolves optional app modules from onboarding and progressive unlocks.
  * Works alongside the progressive unlock system from onboardingFlow.ts
  * AND the behavioral Garden Gate system (IA Blueprint Phase 5).
  *

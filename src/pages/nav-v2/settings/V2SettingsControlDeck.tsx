@@ -14,7 +14,6 @@ import {
   Globe2,
   History,
   Info,
-  LayoutGrid,
   Loader2,
   LockKeyhole,
   Mail,
@@ -45,7 +44,6 @@ import { DeviceSessionsCard } from "@/components/sync/DeviceSessionsCard";
 import { SyncHealthCard } from "@/components/sync/SyncHealthCard";
 import { TimeInputInline } from "@/components/ui/time-input";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useFeatureFlags, type ToggleableFeature } from "@/contexts/FeatureFlagsContext";
 import { LOCK_TIMEOUT_OPTIONS, setAutoLockMs } from "@/features/journal";
 import { useBackHandler } from "@/hooks/useBackHandler";
 import { useDemoMode } from "@/hooks/useDemoMode";
@@ -75,7 +73,6 @@ import { SK } from "@/lib/storageKeys";
 import { cn } from "@/lib/utils";
 import { updateProfileName } from "@/lib/accountService";
 import { userNameSchema } from "@/lib/validation";
-import { isFeatureUnlocked } from "@/lib/onboardingFlow";
 import { Language, languageNames } from "@/i18n/translations";
 import { ThemeOption, useTheme } from "@/components/ThemeToggle";
 import { useScrollLock } from "@/hooks/useScrollLock";
@@ -94,79 +91,6 @@ interface V2SettingsControlDeckProps {
 }
 
 const LANGUAGES: Language[] = ["en", "uk", "es", "de", "fr", "ja", "ar", "he"];
-
-const MODULES: Array<{
-  id: "mood" | "habits" | ToggleableFeature;
-  icon: LucideIcon;
-  titleKey: string;
-  descriptionKey: string;
-  core?: boolean;
-  feature?: ToggleableFeature;
-}> = [
-  {
-    id: "mood",
-    icon: CheckCircle2,
-    titleKey: "settingsModuleMood",
-    descriptionKey: "settingsModuleMoodDesc",
-    core: true,
-  },
-  {
-    id: "habits",
-    icon: LayoutGrid,
-    titleKey: "settingsModuleHabits",
-    descriptionKey: "settingsModuleHabitsDesc",
-    core: true,
-  },
-  {
-    id: "focusTimer",
-    icon: Clock3,
-    titleKey: "settingsModuleFocus",
-    descriptionKey: "settingsModuleFocusDesc",
-    feature: "focusTimer",
-  },
-  {
-    id: "breathingExercise",
-    icon: Zap,
-    titleKey: "settingsModuleBreathing",
-    descriptionKey: "settingsModuleBreathingDesc",
-    feature: "breathingExercise",
-  },
-  {
-    id: "gratitudeJournal",
-    icon: Sparkles,
-    titleKey: "gratitude",
-    descriptionKey: "journalDescription",
-    feature: "gratitudeJournal",
-  },
-  {
-    id: "quests",
-    icon: CheckCircle2,
-    titleKey: "settingsModuleQuests",
-    descriptionKey: "settingsModuleQuestsDesc",
-    feature: "quests",
-  },
-  {
-    id: "tasks",
-    icon: FileText,
-    titleKey: "settingsModuleTasks",
-    descriptionKey: "settingsModuleTasksDesc",
-    feature: "tasks",
-  },
-  {
-    id: "challenges",
-    icon: Shield,
-    titleKey: "settingsModuleChallenges",
-    descriptionKey: "settingsModuleChallengesDesc",
-    feature: "challenges",
-  },
-  {
-    id: "innerWorld",
-    icon: LayoutGrid,
-    titleKey: "settingsModuleGarden",
-    descriptionKey: "settingsModuleGardenDesc",
-    feature: "innerWorld",
-  },
-];
 
 const FONT_SCALE_LABELS: Record<number, string> = {
   0.85: "fontScaleTiny",
@@ -375,51 +299,6 @@ function LanguagePanel() {
           </button>
         ))}
       </div>
-    </PanelFrame>
-  );
-}
-
-function ModulesPanel() {
-  const { t } = useLanguage();
-  const tx = t as unknown as Record<string, string>;
-  const { setFlag, isFeatureEnabled } = useFeatureFlags();
-
-  return (
-    <PanelFrame
-      icon={LayoutGrid}
-      title={tx.settingsGroupModules || "Modules"}
-      description={tx.settingsModulesDescription || "Choose which tools stay visible."}
-      testId="settings-v2-panel-modules"
-    >
-      {MODULES.map((module) => {
-        const Icon = module.icon;
-        const enabled = module.core ? true : isFeatureEnabled(module.feature as ToggleableFeature);
-        const locked =
-          module.feature === "focusTimer" ||
-          module.feature === "quests" ||
-          module.feature === "tasks" ||
-          module.feature === "challenges"
-            ? !isFeatureUnlocked(module.feature)
-            : false;
-        return (
-          <ToggleRow
-            key={module.id}
-            icon={Icon}
-            title={tx[module.titleKey] || module.id}
-            description={
-              locked
-                ? tx.settingsModuleUnlockHint || "Unlock this from your progress."
-                : tx[module.descriptionKey] || ""
-            }
-            checked={enabled && !locked}
-            disabled={module.core || locked}
-            onCheckedChange={(checked) => {
-              if (module.feature) setFlag(module.feature, checked);
-            }}
-            testId={`settings-v2-module-${module.id}`}
-          />
-        );
-      })}
     </PanelFrame>
   );
 }
@@ -1417,8 +1296,6 @@ export const V2SettingsControlDeck = memo(function V2SettingsControlDeck({
       return <AppearancePanel />;
     case "language":
       return <LanguagePanel />;
-    case "modules":
-      return <ModulesPanel />;
     case "notifications":
       return <NotificationsPanel controls={controls} />;
     case "privacy":

@@ -11,7 +11,6 @@ export type V2SettingsSectionId =
   | "profile"
   | "appearance"
   | "language"
-  | "modules"
   | "notifications"
   | "privacy"
   | "data"
@@ -37,4 +36,3 @@ export interface V2SettingsControls {
   onOpenWidgetSettings?: () => void;
   initialOpenSection?: string;
 }
-

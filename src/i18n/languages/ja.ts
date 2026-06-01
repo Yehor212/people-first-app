@@ -628,7 +628,7 @@ export const ja: Translations = {
   settingsWhatsNewGotIt: "了解！",
   // v1.5.9 What's New
   settingsWhatsNewFeatureToggles: "機能トグル",
-  settingsWhatsNewFeatureTogglesDesc: "設定でモジュールを有効/無効化",
+  settingsWhatsNewFeatureTogglesDesc: "オンボーディングでモジュールを選択",
   settingsWhatsNewBugFixes158: "バグ修正",
   settingsWhatsNewBugFixes158Desc: "同期の問題を修正し安定性を向上",
   settingsWhatsNewUIImprovements: "UI改善",
@@ -696,7 +696,7 @@ export const ja: Translations = {
 
   // Modules Onboarding
   modulesOnboardingTitle: "機能を選択",
-  modulesOnboardingSubtitle: "後で設定で変更できます",
+  modulesOnboardingSubtitle: "最初に表示するツールを選びましょう",
   modulesSelected: "機能を選択中",
   coreModulesNote: "気分トラッカーと習慣は常に有効です",
 

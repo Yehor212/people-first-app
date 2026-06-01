@@ -19,7 +19,6 @@ import { SyncHealthCard } from "@/components/sync/SyncHealthCard";
 import {
   ProfileSection,
   AboutSection,
-  ModulesSection,
   NotificationsSection,
   DataSection,
   AccountSection,
@@ -48,6 +47,16 @@ export interface SettingsPanelProps {
   className?: string;
 }
 
+const REMOVED_SETTINGS_SECTIONS = new Set(["modules"]);
+
+function normalizeInitialOpenSection(section?: string) {
+  if (!section || REMOVED_SETTINGS_SECTIONS.has(section)) {
+    return "profile";
+  }
+
+  return section;
+}
+
 export function SettingsPanel({
   userName,
   onNameChange,
@@ -69,14 +78,14 @@ export function SettingsPanel({
   const { t } = useLanguage();
   const { canInstall, isInstalled, promptInstall } = usePwaInstall();
   const [showDopamineSettings, setShowDopamineSettings] = useState(false);
-  const [openSections, setOpenSections] = useState<string[]>(
-    initialOpenSection ? [initialOpenSection] : ["profile"]
-  );
+  const [openSections, setOpenSections] = useState<string[]>([
+    normalizeInitialOpenSection(initialOpenSection),
+  ]);
 
   // Route-driven section changes should make the requested settings area primary.
   useEffect(() => {
     if (initialOpenSection) {
-      setOpenSections([initialOpenSection]);
+      setOpenSections([normalizeInitialOpenSection(initialOpenSection)]);
     }
   }, [initialOpenSection]);
 
@@ -100,7 +109,6 @@ export function SettingsPanel({
         className="space-y-3"
       >
         <ProfileSection userName={userName} onNameChange={onNameChange} />
-        <ModulesSection />
         <NotificationsSection
           reminders={reminders}
           onRemindersChange={onRemindersChange}
