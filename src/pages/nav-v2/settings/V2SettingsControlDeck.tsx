@@ -40,8 +40,6 @@ import { FeedbackForm } from "@/components/FeedbackForm";
 import { ChangelogPanel } from "@/components/ChangelogPanel";
 import { LegalModal } from "@/components/LegalModal";
 import { SmartRemindersCard } from "@/components/SmartRemindersCard";
-import { DeviceSessionsCard } from "@/components/sync/DeviceSessionsCard";
-import { SyncHealthCard } from "@/components/sync/SyncHealthCard";
 import { TimeInputInline } from "@/components/ui/time-input";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { LOCK_TIMEOUT_OPTIONS, setAutoLockMs } from "@/features/journal";
@@ -859,15 +857,6 @@ function AccountPanel({ controls }: { controls: V2SettingsControls }) {
       testId="settings-v2-panel-account"
       showHeader={false}
     >
-      <SyncHealthCard
-        compact
-        dense
-        showHeader={false}
-        allowManualRetry={false}
-        surface="settings-space"
-        quietWhenIdle
-      />
-
       {!supabase ? (
         <p className="rounded-2xl border border-[hsl(var(--border)/0.5)] bg-[hsl(var(--background)/0.34)] p-4 text-sm text-muted-foreground">
           {tx.cloudSyncDisabled || "Cloud sync is not available."}
@@ -1052,8 +1041,6 @@ function AccountPanel({ controls }: { controls: V2SettingsControls }) {
         {auth.authStatus && <p className="text-sm text-muted-foreground">{auth.authStatus}</p>}
         {del.deleteStatus && <p className="text-sm text-muted-foreground">{del.deleteStatus}</p>}
       </div>
-
-      {supabase && auth.hasSession && <DeviceSessionsCard dense surface="settings" />}
     </PanelFrame>
   );
 }

@@ -112,16 +112,19 @@ vi.mock("@/components/sync/SyncHealthCard", () => ({
   SyncHealthCard: ({
     allowManualRetry,
     compact,
+    hideWhenIdle,
     quietWhenIdle,
   }: {
     allowManualRetry?: boolean;
     compact?: boolean;
+    hideWhenIdle?: boolean;
     quietWhenIdle?: boolean;
   }) => (
     <section
       data-testid="sync-health-card"
       data-compact={String(compact ?? false)}
       data-allow-manual-retry={String(allowManualRetry ?? true)}
+      data-hide-when-idle={String(hideWhenIdle ?? false)}
       data-quiet-when-idle={String(quietWhenIdle ?? false)}
     >
       Sync health
@@ -361,7 +364,7 @@ function createSettingsControls() {
 }
 
 describe("SettingsPage", () => {
-  it("renders one unified V2 settings module list", () => {
+  it("renders a passive V2 settings overview when controls are not wired", () => {
     render(<SettingsPage />);
 
     expect(screen.getByTestId("settings-page")).toHaveAttribute("data-visual-role", "settings");
@@ -374,6 +377,10 @@ describe("SettingsPage", () => {
     expect(screen.queryByTestId("settings-cockpit")).not.toBeInTheDocument();
     expect(screen.queryByTestId("settings-page-sections")).not.toBeInTheDocument();
     expect(screen.getByTestId("settings-module-list")).toBeInTheDocument();
+    expect(screen.getByTestId("settings-module-card-profile")).toHaveAttribute(
+      "aria-expanded",
+      "false"
+    );
     expect(screen.getByTestId("settings-module-card-account")).toHaveTextContent(
       "Automatic sync active"
     );
@@ -397,26 +404,49 @@ describe("SettingsPage", () => {
     expect(screen.getByTestId("settings-page")).toHaveAttribute("data-controls-wired", "false");
   });
 
-  it("opens the profile module by default inside the first card", () => {
+  it("puts the selected controls before sync and status content", () => {
     render(<SettingsPage controls={createSettingsControls()} />);
 
     expect(screen.getByTestId("settings-page")).toHaveAttribute("data-controls-wired", "true");
-    expect(screen.queryByTestId("settings-section-switcher")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("settings-page-control-deck")).not.toBeInTheDocument();
-    expect(screen.getByTestId("settings-module-card-profile")).toHaveAttribute(
-      "aria-expanded",
+    expect(screen.getByTestId("settings-section-switcher")).toBeInTheDocument();
+    expect(screen.getByTestId("settings-page-control-deck")).toHaveAttribute(
+      "data-selected-section",
+      "profile"
+    );
+    expect(screen.getByTestId("settings-section-switcher-profile")).toHaveAttribute(
+      "aria-pressed",
       "true"
     );
-    expect(screen.getByTestId("settings-module-panel-profile")).toBeInTheDocument();
+    expect(screen.getByTestId("settings-section-switcher-profile")).toHaveAttribute(
+      "aria-controls",
+      "settings-v2-control-deck"
+    );
     expect(screen.getByTestId("settings-v2-panel-profile")).toBeInTheDocument();
     expect(screen.getByDisplayValue("Avery")).toBeInTheDocument();
     expect(screen.queryByTestId("settings-panel")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("sync-health-card")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("device-sessions-card")).not.toBeInTheDocument();
+    expect(screen.getByTestId("sync-health-card")).toHaveAttribute(
+      "data-allow-manual-retry",
+      "false"
+    );
+    expect(screen.getByTestId("sync-health-card")).toHaveAttribute("data-compact", "true");
+    expect(screen.getByTestId("sync-health-card")).toHaveAttribute(
+      "data-hide-when-idle",
+      "false"
+    );
+    expect(screen.getByTestId("device-sessions-card")).toBeInTheDocument();
+    expect(screen.queryByTestId("settings-module-list")).not.toBeInTheDocument();
 
     expectDocumentOrder(
       screen.getByTestId("settings-page-control-card"),
-      screen.getByTestId("settings-module-list")
+      screen.getByTestId("settings-section-switcher")
+    );
+    expectDocumentOrder(
+      screen.getByTestId("settings-section-switcher"),
+      screen.getByTestId("settings-page-control-deck")
+    );
+    expectDocumentOrder(
+      screen.getByTestId("settings-page-control-deck"),
+      screen.getByTestId("sync-health-card")
     );
   });
 
@@ -431,55 +461,64 @@ describe("SettingsPage", () => {
     );
 
     expect(screen.queryByTestId("settings-module-card-modules")).not.toBeInTheDocument();
-    expect(screen.getByTestId("settings-module-card-profile")).toHaveAttribute(
-      "aria-expanded",
+    expect(screen.getByTestId("settings-section-switcher-profile")).toHaveAttribute(
+      "aria-pressed",
       "true"
     );
-    expect(screen.getByTestId("settings-module-panel-profile")).toBeInTheDocument();
+    expect(screen.getByTestId("settings-page-control-deck")).toHaveAttribute(
+      "data-selected-section",
+      "profile"
+    );
     expect(screen.queryByTestId("settings-v2-panel-modules")).not.toBeInTheDocument();
   });
 
-  it("opens the matching real settings module directly under the clicked card", () => {
+  it("opens the matching settings module in the fixed control deck", () => {
     const { restore, scrollIntoView } = installScrollIntoViewSpy();
 
     try {
       render(<SettingsPage controls={createSettingsControls()} />);
 
-      fireEvent.click(screen.getByTestId("settings-module-card-data"));
+      fireEvent.click(screen.getByTestId("settings-section-switcher-data"));
 
-      expect(screen.getByTestId("settings-module-card-data")).toHaveAttribute(
-        "aria-expanded",
+      expect(screen.getByTestId("settings-section-switcher-data")).toHaveAttribute(
+        "aria-pressed",
         "true"
       );
-      expect(screen.getByTestId("settings-module-card-profile")).toHaveAttribute(
-        "aria-expanded",
+      expect(screen.getByTestId("settings-section-switcher-profile")).toHaveAttribute(
+        "aria-pressed",
         "false"
       );
-      expect(screen.getByTestId("settings-module-panel-data")).toBeInTheDocument();
+      expect(screen.getByTestId("settings-page-control-deck")).toHaveAttribute(
+        "data-selected-section",
+        "data"
+      );
       expect(screen.getByTestId("settings-v2-panel-data")).toBeInTheDocument();
       expect(screen.queryByTestId("settings-panel")).not.toBeInTheDocument();
-      expect(document.querySelectorAll('[data-testid^="settings-module-panel-"]')).toHaveLength(1);
+      expect(document.querySelectorAll('[data-testid^="settings-module-panel-"]')).toHaveLength(0);
       expect(scrollIntoView).not.toHaveBeenCalled();
     } finally {
       restore();
     }
   });
 
-  it("lets the open module collapse and shows automatic sync without a manual sync button", () => {
+  it("keeps automatic sync below the active account controls without a manual sync button", () => {
     const { restore, scrollIntoView } = installScrollIntoViewSpy();
 
     try {
       render(<SettingsPage controls={createSettingsControls()} />);
 
-      fireEvent.click(screen.getByTestId("settings-module-card-account"));
+      fireEvent.click(screen.getByTestId("settings-section-switcher-account"));
 
-      expect(screen.getByTestId("settings-module-card-account")).toHaveAttribute(
-        "aria-expanded",
+      expect(screen.getByTestId("settings-section-switcher-account")).toHaveAttribute(
+        "aria-pressed",
         "true"
       );
-      expect(screen.getByTestId("settings-module-panel-account")).toBeInTheDocument();
+      expect(screen.getByTestId("settings-page-control-deck")).toHaveAttribute(
+        "data-selected-section",
+        "account"
+      );
       expect(screen.getByTestId("settings-v2-panel-account")).toBeInTheDocument();
-      expect(screen.getByTestId("settings-module-panel-account")).not.toHaveTextContent(
+      expect(screen.getByTestId("settings-v2-panel-account")).not.toHaveTextContent(
         "Automatic syncSigned-in data stays synced across devices."
       );
       expect(screen.queryByTestId("settings-v2-automatic-sync-card")).not.toBeInTheDocument();
@@ -492,30 +531,25 @@ describe("SettingsPage", () => {
         "data-quiet-when-idle",
         "true"
       );
+      expect(screen.getByTestId("sync-health-card")).toHaveAttribute(
+        "data-hide-when-idle",
+        "false"
+      );
       expect(screen.getByTestId("device-sessions-card")).toBeInTheDocument();
       expectDocumentOrder(
-        screen.getByTestId("settings-v2-panel-account"),
+        screen.getByTestId("settings-page-control-deck"),
         screen.getByTestId("sync-health-card")
       );
+      expect(
+        screen.getByTestId("settings-v2-panel-account").querySelector(
+          '[data-testid="sync-health-card"]'
+        )
+      ).toBeNull();
       expect(
         screen.queryByRole("button", { name: /sync now|manual sync/i })
       ).not.toBeInTheDocument();
       expect(screen.queryByTestId("settings-panel")).not.toBeInTheDocument();
-      expect(document.querySelectorAll('[data-testid^="settings-module-panel-"]')).toHaveLength(1);
-
-      fireEvent.click(screen.getByTestId("settings-module-card-account"));
-
-      expect(screen.getByTestId("settings-module-card-account")).toHaveAttribute(
-        "aria-expanded",
-        "false"
-      );
-      expect(screen.queryByTestId("settings-module-panel-account")).not.toBeInTheDocument();
       expect(document.querySelectorAll('[data-testid^="settings-module-panel-"]')).toHaveLength(0);
-      expect(
-        Array.from(document.querySelectorAll('[data-testid^="settings-module-card-"]')).every(
-          (card) => card.getAttribute("aria-expanded") === "false"
-        )
-      ).toBe(true);
       expect(scrollIntoView).not.toHaveBeenCalled();
     } finally {
       restore();

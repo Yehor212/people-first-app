@@ -42,21 +42,25 @@ async function primeApp(page: import("@playwright/test").Page) {
   );
 }
 
-async function expectAccordionHierarchy(page: import("@playwright/test").Page) {
+async function expectControlsFirstHierarchy(page: import("@playwright/test").Page) {
   await expect(page.getByTestId("settings-page-control-card")).toBeVisible();
-  await expect(page.getByTestId("settings-section-switcher")).toHaveCount(0);
-  await expect(page.getByTestId("settings-page-control-deck")).toHaveCount(0);
-  await expect(page.getByTestId("settings-cockpit")).toHaveCount(0);
-  await expect(page.getByTestId("settings-page-sections")).toHaveCount(0);
-  await expect(page.getByTestId("settings-module-list")).toBeVisible();
-  await expect(page.getByTestId("settings-module-card-modules")).toHaveCount(0);
-  await expect(page.getByTestId("settings-module-card-profile")).toHaveAttribute(
-    "aria-expanded",
+  await expect(page.getByTestId("settings-section-switcher")).toBeVisible();
+  await expect(page.getByTestId("settings-page-control-deck")).toBeVisible();
+  await expect(page.getByTestId("sync-health-card")).toBeVisible();
+  await expect(page.getByTestId("settings-module-list")).toHaveCount(0);
+
+  await expect(page.getByTestId("settings-section-switcher-profile")).toHaveAttribute(
+    "aria-pressed",
     "true"
   );
-  await expect(page.getByTestId("settings-module-panel-profile")).toBeVisible();
-  await expect(page.getByTestId("sync-health-card")).toHaveCount(0);
-  await expect(page.getByTestId("device-sessions-card")).toHaveCount(0);
+  await expect(page.getByTestId("settings-section-switcher-profile")).toHaveAttribute(
+    "aria-controls",
+    "settings-v2-control-deck"
+  );
+  await expect(page.getByTestId("settings-page-control-deck")).toHaveAttribute(
+    "data-selected-section",
+    "profile"
+  );
 
   const metrics = await page.evaluate(() => {
     const readRect = (testId: string) => {
@@ -66,132 +70,84 @@ async function expectAccordionHierarchy(page: import("@playwright/test").Page) {
       return {
         bottom: rect.bottom,
         height: rect.height,
-        left: rect.left,
-        right: rect.right,
         top: rect.top,
-        width: rect.width,
       };
     };
 
     return {
       viewportHeight: window.innerHeight,
       hero: readRect("settings-page-control-card"),
-      modules: readRect("settings-module-list"),
+      switcher: readRect("settings-section-switcher"),
+      deck: readRect("settings-page-control-deck"),
+      sync: readRect("sync-health-card"),
     };
   });
 
-  expect(metrics.modules.top).toBeGreaterThanOrEqual(metrics.hero.bottom - 1);
-  expect(metrics.modules.top).toBeLessThan(metrics.viewportHeight - 120);
+  expect(metrics.switcher.top).toBeGreaterThanOrEqual(metrics.hero.bottom - 1);
+  expect(metrics.deck.top).toBeGreaterThanOrEqual(metrics.switcher.bottom - 1);
+  expect(metrics.deck.bottom).toBeLessThanOrEqual(metrics.sync.top + 1);
+  expect(metrics.deck.top).toBeLessThan(metrics.viewportHeight - 120);
 }
 
-test.describe("V2 Settings card module accordion", () => {
-  test("phone layout keeps sync status inside the module accordion", async ({ page }) => {
+test.describe("V2 Settings controls-first hierarchy", () => {
+  test("phone layout puts selected controls before passive sync and status content", async ({
+    page,
+  }) => {
     await primeApp(page);
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(`${APP_BASE}/settings?nav=v2&navLayout=phone&dev=true`);
     await page.evaluate(() => document.fonts.ready);
 
-    await expectAccordionHierarchy(page);
+    await expectControlsFirstHierarchy(page);
   });
 
-  test("desktop layout keeps the same accordion hierarchy without a duplicate deck", async ({
-    page,
-  }) => {
+  test("desktop layout keeps the selected controls before status content", async ({ page }) => {
     await primeApp(page);
     await page.setViewportSize({ width: 1280, height: 720 });
     await page.goto(`${APP_BASE}/settings?nav=v2&navLayout=desktop&dev=true`);
     await page.evaluate(() => document.fonts.ready);
 
-    await expectAccordionHierarchy(page);
+    await expectControlsFirstHierarchy(page);
   });
 
-  test("module cards expand and collapse in place without route changes", async ({ page }) => {
+  test("switcher changes the inline control deck without route changes or page scroll", async ({
+    page,
+  }) => {
     await primeApp(page);
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(`${APP_BASE}/settings?nav=v2&navLayout=phone&dev=true`);
     await page.evaluate(() => document.fonts.ready);
 
     const beforeUrl = page.url();
+    const beforeScrollY = await page.evaluate(() => window.scrollY);
 
-    await page.getByTestId("settings-module-card-account").scrollIntoViewIfNeeded();
+    await page.getByTestId("settings-section-switcher-account").click();
 
-    await page.getByTestId("settings-module-card-account").click();
-
-    await expect(page.getByTestId("settings-module-card-account")).toHaveAttribute(
-      "aria-expanded",
+    await expect(page.getByTestId("settings-section-switcher-account")).toHaveAttribute(
+      "aria-pressed",
       "true"
     );
-    await expect(page.getByTestId("settings-module-card-profile")).toHaveAttribute(
-      "aria-expanded",
+    await expect(page.getByTestId("settings-section-switcher-profile")).toHaveAttribute(
+      "aria-pressed",
       "false"
     );
-    await expect(page.getByTestId("settings-module-panel-account")).toBeVisible();
+    await expect(page.getByTestId("settings-page-control-deck")).toHaveAttribute(
+      "data-selected-section",
+      "account"
+    );
     await expect(page.getByTestId("settings-v2-panel-account")).toBeVisible();
-    await expect(page.getByTestId("settings-module-panel-profile")).toHaveCount(0);
-    await expect(page.getByTestId("sync-health-card")).toBeVisible();
     await expect(page.getByTestId("sync-health-card")).toHaveAttribute(
       "data-allow-manual-retry",
       "false"
     );
-    await expect(page.getByTestId("device-sessions-card")).toHaveCount(0);
-    expect(page.url()).toBe(beforeUrl);
 
-    const cardRect = await page.getByTestId("settings-module-card-account").evaluate((node) => {
-      const rect = node.getBoundingClientRect();
-      return { top: rect.top };
-    });
-    const panelRect = await page.getByTestId("settings-module-panel-account").evaluate((node) => {
-      const rect = node.getBoundingClientRect();
-      return { top: rect.top };
-    });
-    const visiblePanels = await page.evaluate(
-      () => document.querySelectorAll('[data-testid^="settings-module-panel-"]').length
-    );
     const syncInsideAccountPanel = await page.evaluate(() => {
       const sync = document.querySelector('[data-testid="sync-health-card"]');
-      return Boolean(sync?.closest('[data-testid="settings-module-panel-account"]'));
+      return Boolean(sync?.closest('[data-testid="settings-v2-panel-account"]'));
     });
 
-    expect(visiblePanels).toBe(1);
-    expect(syncInsideAccountPanel).toBe(true);
-    expect(panelRect.top).toBeGreaterThanOrEqual(cardRect.top);
-
-    await page.getByTestId("settings-module-card-account").click();
-
-    await expect(page.getByTestId("settings-module-card-account")).toHaveAttribute(
-      "aria-expanded",
-      "false"
-    );
-    await expect(page.getByTestId("settings-module-panel-account")).toHaveCount(0);
-    await expect(page.locator('[data-testid^="settings-module-panel-"]')).toHaveCount(0);
+    expect(syncInsideAccountPanel).toBe(false);
     expect(page.url()).toBe(beforeUrl);
-  });
-
-  test("desktop module cards use the same collapsible accordion behavior", async ({ page }) => {
-    await primeApp(page);
-    await page.setViewportSize({ width: 1280, height: 720 });
-    await page.goto(`${APP_BASE}/settings?nav=v2&navLayout=desktop&dev=true`);
-    await page.evaluate(() => document.fonts.ready);
-
-    const beforeUrl = page.url();
-
-    await page.getByTestId("settings-module-card-account").click();
-
-    await expect(page.getByTestId("settings-module-card-account")).toHaveAttribute(
-      "aria-expanded",
-      "true"
-    );
-    await expect(page.getByTestId("settings-module-panel-account")).toBeVisible();
-    await expect(page.getByTestId("sync-health-card")).toBeVisible();
-    await expect(page.getByTestId("device-sessions-card")).toHaveCount(0);
-
-    await page.getByTestId("settings-module-card-account").click();
-
-    await expect(page.getByTestId("settings-module-card-account")).toHaveAttribute(
-      "aria-expanded",
-      "false"
-    );
-    await expect(page.locator('[data-testid^="settings-module-panel-"]')).toHaveCount(0);
-    expect(page.url()).toBe(beforeUrl);
+    expect(await page.evaluate(() => window.scrollY)).toBe(beforeScrollY);
   });
 });

@@ -16,12 +16,15 @@ import { useThemeStore } from "@/stores/themeStore";
 import { useAppStore } from "@/stores";
 import { supabase } from "@/lib/supabaseClient";
 import { APP_VERSION } from "@/lib/appVersion";
+import { DeviceSessionsCard } from "@/components/sync/DeviceSessionsCard";
+import { SyncHealthCard } from "@/components/sync/SyncHealthCard";
 import {
   SettingsHeroCard,
   SettingsModuleList,
   SettingsPageShell,
   type SettingsModuleCardData,
 } from "./settings/components/SettingsPageComponents";
+import { SettingsSectionSwitcher } from "./settings/components/SettingsSectionSwitcher";
 import { V2SettingsControlDeck } from "./settings/V2SettingsControlDeck";
 import type { V2SettingsControls, V2SettingsSectionId } from "./settings/types";
 
@@ -47,7 +50,7 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
   const { t } = useLanguage();
   const tx = t as unknown as Record<string, string>;
   const mainRef = useRef<HTMLElement>(null);
-  const [selectedCardId, setSelectedCardId] = useState<V2SettingsSectionId | null>(
+  const [selectedSectionId, setSelectedSectionId] = useState<V2SettingsSectionId>(
     INITIAL_SECTION_TO_V2_SECTION[controls?.initialOpenSection || "profile"] || "profile"
   );
   const appliedTheme = useThemeStore((s) => s.appliedTheme);
@@ -60,13 +63,11 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
 
   useEffect(() => {
     if (!controls?.initialOpenSection) return;
-    setSelectedCardId(INITIAL_SECTION_TO_V2_SECTION[controls.initialOpenSection] || "profile");
+    setSelectedSectionId(INITIAL_SECTION_TO_V2_SECTION[controls.initialOpenSection] || "profile");
   }, [controls?.initialOpenSection]);
 
   function openSection(sectionId: V2SettingsSectionId) {
-    setSelectedCardId((currentSectionId) =>
-      currentSectionId === sectionId ? null : sectionId
-    );
+    setSelectedSectionId(sectionId);
   }
 
   const themeLabel = appliedTheme === "paper" ? tx.themeLight : tx.themeDark;
@@ -201,18 +202,53 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
           themeLabel={themeLabel}
         />
 
-        <SettingsModuleList
-          items={modules}
-          expandedId={selectedCardId}
-          controlsWired={Boolean(controls)}
-          onOpen={openSection}
-          label={tx.settings || tx.navV2Settings}
-          renderPanel={(item) =>
-            controls ? (
-              <V2SettingsControlDeck controls={controls} selectedSectionId={item.id} />
-            ) : null
-          }
-        />
+        {controls ? (
+          <>
+            <SettingsSectionSwitcher
+              items={modules}
+              selectedId={selectedSectionId}
+              controlsWired={true}
+              onOpen={openSection}
+              label={tx.settings || tx.navV2Settings}
+            />
+
+            <section
+              id="settings-v2-control-deck"
+              className="grid gap-3"
+              data-testid="settings-page-control-deck"
+              data-selected-section={selectedSectionId}
+            >
+              <V2SettingsControlDeck controls={controls} selectedSectionId={selectedSectionId} />
+            </section>
+
+            <section
+              aria-label={tx.settingsCloudSyncTitle || tx.settingsGroupAccount || "Sync status"}
+              className="grid gap-3"
+              data-testid="settings-status-overview"
+            >
+              <SyncHealthCard
+                compact
+                dense
+                showHeader
+                allowManualRetry={false}
+                surface="settings-space"
+                quietWhenIdle
+              />
+              {supabase && hasValidSession === true && (
+                <DeviceSessionsCard dense surface="settings" />
+              )}
+            </section>
+          </>
+        ) : (
+          <SettingsModuleList
+            items={modules}
+            expandedId={null}
+            controlsWired={false}
+            onOpen={openSection}
+            label={tx.settings || tx.navV2Settings}
+            renderPanel={() => null}
+          />
+        )}
       </SettingsPageShell>
     </Bloom>
   );
