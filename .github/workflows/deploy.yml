@@ -87,7 +87,7 @@ jobs:
         run: npm run check:sync-contract
 
       - name: Run release unit tests
-        run: npm run test:release -- --maxWorkers=2 --minWorkers=1
+        run: npm run test:release -- --maxWorkers=2
 
       - name: Run focused release coverage report
         continue-on-error: true
@@ -100,8 +100,7 @@ jobs:
             --coverage.thresholds.functions=0 \
             --coverage.thresholds.branches=0 \
             --coverage.thresholds.statements=0 \
-            --maxWorkers=2 \
-            --minWorkers=1
+            --maxWorkers=2
 
       - name: Build
         env:
@@ -138,6 +137,7 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Run Telegram sync drill
+        id: telegram-sync-drill
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
@@ -166,7 +166,7 @@ jobs:
           npm run smoke:telegram-sync-drill
 
       - name: Upload Telegram sync drill artifact
-        if: always()
+        if: always() && steps.telegram-sync-drill.outcome != 'skipped'
         uses: actions/upload-artifact@v7
         with:
           name: telegram-sync-drill
