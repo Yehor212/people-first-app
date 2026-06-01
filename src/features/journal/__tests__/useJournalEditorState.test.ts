@@ -11,7 +11,7 @@
  * T06: Draft persistence lifecycle
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import type { SaveState } from "../SaveIndicator";
@@ -616,15 +616,19 @@ describe("T06: Draft persistence lifecycle", () => {
     ...overrides,
   });
 
-  let clearDraftFn: ReturnType<typeof vi.fn>;
-  let saveDraftFn: ReturnType<typeof vi.fn>;
-  let onSave: ReturnType<typeof vi.fn>;
+  type ClearDraftFn = (key: string) => Promise<void>;
+  type SaveDraftFn = (key: string, data: DraftData) => Promise<void>;
+  type OnSaveFn = () => Promise<void>;
+
+  let clearDraftFn: Mock<ClearDraftFn>;
+  let saveDraftFn: Mock<SaveDraftFn>;
+  let onSave: Mock<OnSaveFn>;
 
   beforeEach(() => {
     vi.useFakeTimers();
-    clearDraftFn = vi.fn(() => Promise.resolve());
-    saveDraftFn = vi.fn(() => Promise.resolve());
-    onSave = vi.fn(() => Promise.resolve());
+    clearDraftFn = vi.fn<ClearDraftFn>(() => Promise.resolve());
+    saveDraftFn = vi.fn<SaveDraftFn>(() => Promise.resolve());
+    onSave = vi.fn<OnSaveFn>(() => Promise.resolve());
   });
 
   afterEach(() => {
@@ -658,7 +662,7 @@ describe("T06: Draft persistence lifecycle", () => {
   });
 
   it("clearDraft NOT called when save fails", async () => {
-    onSave = vi.fn(() => Promise.reject(new Error("save failed")));
+    onSave = vi.fn<OnSaveFn>(() => Promise.reject(new Error("save failed")));
 
     const { result } = renderHook(() =>
       useDraftPersistence({

@@ -271,8 +271,11 @@ describe('journalHubStorage', () => {
             },
           ]),
         ),
+        reverse: vi.fn(() => ({
+          sortBy: vi.fn(() => Promise.resolve([])),
+        })),
       })),
-    });
+    } as ReturnType<typeof mockPracticeSessionsTable.where>);
 
     const traces = await getQuietReleaseTraceSummaries();
 
@@ -315,7 +318,7 @@ describe('journalHubStorage', () => {
       equals: vi.fn(() => ({
         toArray: vi.fn(() => Promise.resolve([existing])),
       })),
-    });
+    } as ReturnType<typeof mockEntryLinksTable.where>);
 
     const link = await linkEntryToSpace('entry-1', 'space-projects');
 
@@ -338,7 +341,7 @@ describe('journalHubStorage', () => {
           ]),
         ),
       })),
-    });
+    } as ReturnType<typeof mockEntryLinksTable.where>);
 
     await unlinkEntryFromSpace('entry-1', 'space-projects');
 
@@ -356,7 +359,7 @@ describe('journalHubStorage', () => {
           ]),
         ),
       })),
-    });
+    } as ReturnType<typeof mockEntryLinksTable.where>);
 
     const links = await getSpaceEntryLinks('space-projects');
 
