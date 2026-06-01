@@ -443,7 +443,7 @@ describe("SettingsPage", () => {
     }
   });
 
-  it("keeps one module open and shows automatic sync without a manual sync button", () => {
+  it("lets the open module collapse and shows automatic sync without a manual sync button", () => {
     const { restore, scrollIntoView } = installScrollIntoViewSpy();
 
     try {
@@ -476,8 +476,17 @@ describe("SettingsPage", () => {
 
       fireEvent.click(screen.getByTestId("settings-module-card-account"));
 
-      expect(screen.getByTestId("settings-module-panel-account")).toBeInTheDocument();
-      expect(document.querySelectorAll('[data-testid^="settings-module-panel-"]')).toHaveLength(1);
+      expect(screen.getByTestId("settings-module-card-account")).toHaveAttribute(
+        "aria-expanded",
+        "false"
+      );
+      expect(screen.queryByTestId("settings-module-panel-account")).not.toBeInTheDocument();
+      expect(document.querySelectorAll('[data-testid^="settings-module-panel-"]')).toHaveLength(0);
+      expect(
+        Array.from(document.querySelectorAll('[data-testid^="settings-module-card-"]')).every(
+          (card) => card.getAttribute("aria-expanded") === "false"
+        )
+      ).toBe(true);
       expect(scrollIntoView).not.toHaveBeenCalled();
     } finally {
       restore();

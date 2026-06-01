@@ -33,7 +33,7 @@ interface SettingsHeroCardProps {
 
 interface SettingsModuleListProps {
   items: SettingsModuleCardData[];
-  expandedId: V2SettingsSectionId;
+  expandedId: V2SettingsSectionId | null;
   onOpen: (sectionId: V2SettingsSectionId) => void;
   controlsWired: boolean;
   label: string;

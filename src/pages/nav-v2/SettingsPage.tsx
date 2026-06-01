@@ -60,7 +60,7 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
   const { t } = useLanguage();
   const tx = t as unknown as Record<string, string>;
   const mainRef = useRef<HTMLElement>(null);
-  const [selectedCardId, setSelectedCardId] = useState<V2SettingsSectionId>(
+  const [selectedCardId, setSelectedCardId] = useState<V2SettingsSectionId | null>(
     INITIAL_SECTION_TO_V2_SECTION[controls?.initialOpenSection || "profile"] || "profile"
   );
   const appliedTheme = useThemeStore((s) => s.appliedTheme);
@@ -78,7 +78,9 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
   }, [controls?.initialOpenSection]);
 
   function openSection(sectionId: V2SettingsSectionId) {
-    setSelectedCardId(sectionId);
+    setSelectedCardId((currentSectionId) =>
+      currentSectionId === sectionId ? null : sectionId
+    );
   }
 
   const themeLabel = appliedTheme === "paper" ? tx.themeLight : tx.themeDark;

@@ -104,7 +104,7 @@ test.describe("V2 Settings card module accordion", () => {
     await expectAccordionHierarchy(page);
   });
 
-  test("module cards expand in place without route changes", async ({ page }) => {
+  test("module cards expand and collapse in place without route changes", async ({ page }) => {
     await primeApp(page);
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(`${APP_BASE}/settings?nav=v2&navLayout=phone&dev=true`);
@@ -154,5 +154,42 @@ test.describe("V2 Settings card module accordion", () => {
     expect(visiblePanels).toBe(1);
     expect(syncInsideAccountPanel).toBe(true);
     expect(panelRect.top).toBeGreaterThanOrEqual(cardRect.top);
+
+    await page.getByTestId("settings-module-card-account").click();
+
+    await expect(page.getByTestId("settings-module-card-account")).toHaveAttribute(
+      "aria-expanded",
+      "false"
+    );
+    await expect(page.getByTestId("settings-module-panel-account")).toHaveCount(0);
+    await expect(page.locator('[data-testid^="settings-module-panel-"]')).toHaveCount(0);
+    expect(page.url()).toBe(beforeUrl);
+  });
+
+  test("desktop module cards use the same collapsible accordion behavior", async ({ page }) => {
+    await primeApp(page);
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await page.goto(`${APP_BASE}/settings?nav=v2&navLayout=desktop&dev=true`);
+    await page.evaluate(() => document.fonts.ready);
+
+    const beforeUrl = page.url();
+
+    await page.getByTestId("settings-module-card-account").click();
+
+    await expect(page.getByTestId("settings-module-card-account")).toHaveAttribute(
+      "aria-expanded",
+      "true"
+    );
+    await expect(page.getByTestId("settings-module-panel-account")).toBeVisible();
+    await expect(page.getByTestId("sync-health-card")).toBeVisible();
+
+    await page.getByTestId("settings-module-card-account").click();
+
+    await expect(page.getByTestId("settings-module-card-account")).toHaveAttribute(
+      "aria-expanded",
+      "false"
+    );
+    await expect(page.locator('[data-testid^="settings-module-panel-"]')).toHaveCount(0);
+    expect(page.url()).toBe(beforeUrl);
   });
 });
