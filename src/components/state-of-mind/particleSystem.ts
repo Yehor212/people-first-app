@@ -20,6 +20,32 @@ export interface Particle {
   hueOffset: number;
 }
 
+const BASE_PARTICLE_FPS = 30;
+const MAX_PARTICLE_FRAME_SCALE = 1.5;
+
+export function resolveParticleFrameScale(dtSeconds = 1 / BASE_PARTICLE_FPS): number {
+  if (!Number.isFinite(dtSeconds) || dtSeconds <= 0) return 0;
+  return Math.min(MAX_PARTICLE_FRAME_SCALE, dtSeconds * BASE_PARTICLE_FPS);
+}
+
+export function resolveParticleVelocityCap(valence: number, calmFactor = 0): number {
+  const clampedValence = Math.max(-1, Math.min(1, valence));
+  const clampedCalm = Math.max(0, Math.min(1, calmFactor));
+  const agitation = Math.max(0, -clampedValence);
+  const uplift = Math.max(0, clampedValence);
+  const cap = 0.46 + agitation * 0.18 + uplift * 0.04;
+  return cap * (1 - clampedCalm * 0.35);
+}
+
+function clampParticleVelocity(p: Particle, maxSpeed: number): void {
+  const speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
+  if (speed <= maxSpeed || speed === 0) return;
+
+  const scale = maxSpeed / speed;
+  p.vx *= scale;
+  p.vy *= scale;
+}
+
 /** Spawn a single particle at a random position in the spawn ring */
 function spawnParticle(
   cx: number,
@@ -105,14 +131,20 @@ export function updateParticles(
   innerR: number,
   outerR: number,
   calmFactor = 0,
+  dtSeconds = 1 / BASE_PARTICLE_FPS,
 ): void {
+  const frameScale = resolveParticleFrameScale(dtSeconds);
+  if (frameScale === 0) return;
+
   // Valence-driven behavior parameters
   const speedMult = (1.5 - valence) * (1 - calmFactor * 0.5); // idle → 50% slower
   const jitter = (1 - valence) * 0.15 * (1 - calmFactor * 0.7); // idle → 70% less jitter
+  const velocityCap = resolveParticleVelocityCap(valence, calmFactor);
+  const damping = Math.pow(0.97, frameScale);
 
   for (let i = 0; i < particles.length; i++) {
     const p = particles[i];
-    p.life++;
+    p.life += frameScale;
 
     if (p.life >= p.maxLife) {
       // Recycle: respawn at new position in ring
@@ -140,8 +172,8 @@ export function updateParticles(
     }
 
     // Add jitter for negative valence
-    p.vx += (Math.random() - 0.5) * jitter;
-    p.vy += (Math.random() - 0.5) * jitter;
+    p.vx += (Math.random() - 0.5) * jitter * frameScale;
+    p.vy += (Math.random() - 0.5) * jitter * frameScale;
 
     // Gentle tangential drift for positive valence (orbital feel)
     if (valence > 0) {
@@ -151,16 +183,18 @@ export function updateParticles(
       // Tangential force (perpendicular to radial)
       const tangentX = -dy / dist;
       const tangentY = dx / dist;
-      p.vx += tangentX * 0.02 * valence;
-      p.vy += tangentY * 0.02 * valence;
+      p.vx += tangentX * 0.02 * valence * frameScale;
+      p.vy += tangentY * 0.02 * valence * frameScale;
     }
 
-    // Apply velocity with speed multiplier
-    p.x += p.vx * speedMult;
-    p.y += p.vy * speedMult;
+    // Damping + explicit cap prevent long-running sessions from visually
+    // "winding up" into a faster orbit after the first calm seconds.
+    p.vx *= damping;
+    p.vy *= damping;
+    clampParticleVelocity(p, velocityCap);
 
-    // Damping to prevent runaway velocity
-    p.vx *= 0.97;
-    p.vy *= 0.97;
+    // Apply velocity with speed multiplier
+    p.x += p.vx * speedMult * frameScale;
+    p.y += p.vy * speedMult * frameScale;
   }
 }

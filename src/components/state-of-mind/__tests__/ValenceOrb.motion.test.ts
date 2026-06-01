@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, render } from "@testing-library/react";
 import { createElement } from "react";
 
@@ -13,12 +13,13 @@ import {
   resolveOrbFrameInterval,
   resolveOrbTransitionSettings,
   shouldApplyWorkerWebGLUpgrade,
+  shouldDropLateVisibleWebGLUpgrade,
   shouldStartIdleWakeSoftening,
   shouldUseWorkerWebGL,
 } from "../ValenceOrb";
 
 import { drawOrbScene } from "../orbRenderer";
-import { createOrbGL2Async, createOrbGLAsync } from "../orbShader";
+import { createOrbGL, createOrbGL2, createOrbGL2Async, createOrbGLAsync } from "../orbShader";
 
 vi.mock("../orbRenderer", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../orbRenderer")>();
@@ -32,6 +33,8 @@ vi.mock("../orbShader", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../orbShader")>();
   return {
     ...actual,
+    createOrbGL: vi.fn(() => null),
+    createOrbGL2: vi.fn(() => null),
     createOrbGL2Async: vi.fn(() => Promise.resolve(null)),
     createOrbGLAsync: vi.fn(() => Promise.resolve(null)),
   };
@@ -45,9 +48,22 @@ function createMockGLRenderer() {
   };
 }
 
+beforeEach(() => {
+  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation((contextId) => {
+    if (contextId === "2d") {
+      return {} as CanvasRenderingContext2D;
+    }
+    return null;
+  });
+});
+
 afterEach(() => {
   vi.useRealTimers();
   vi.restoreAllMocks();
+  vi.mocked(createOrbGL).mockReset();
+  vi.mocked(createOrbGL).mockReturnValue(null);
+  vi.mocked(createOrbGL2).mockReset();
+  vi.mocked(createOrbGL2).mockReturnValue(null);
   vi.mocked(createOrbGL2Async).mockReset();
   vi.mocked(createOrbGL2Async).mockResolvedValue(null);
   vi.mocked(createOrbGLAsync).mockReset();
@@ -79,6 +95,9 @@ function installQueuedRaf() {
   vi.spyOn(window, "cancelAnimationFrame").mockImplementation(() => {});
 
   return {
+    pendingCount() {
+      return callbacks.length;
+    },
     flushNextFrame() {
       const callback = callbacks.shift();
       callback?.(performance.now());
@@ -161,6 +180,41 @@ describe("ValenceOrb motion profile", () => {
     expect(shouldApplyWorkerWebGLUpgrade(WEBGL_WORKER_READY_BUDGET_MS + 5000, true)).toBe(true);
   });
 
+  it("keeps a stable visible forced-WebGL canvas instead of swapping it late", () => {
+    expect(
+      shouldDropLateVisibleWebGLUpgrade({
+        forceCanonicalWebGL: true,
+        explicitWebGLOverride: false,
+        visualReady: true,
+        visibleCanvasAgeMs: 1001,
+      }),
+    ).toBe(true);
+    expect(
+      shouldDropLateVisibleWebGLUpgrade({
+        forceCanonicalWebGL: true,
+        explicitWebGLOverride: false,
+        visualReady: false,
+        visibleCanvasAgeMs: 20_000,
+      }),
+    ).toBe(false);
+    expect(
+      shouldDropLateVisibleWebGLUpgrade({
+        forceCanonicalWebGL: true,
+        explicitWebGLOverride: true,
+        visualReady: true,
+        visibleCanvasAgeMs: 20_000,
+      }),
+    ).toBe(false);
+    expect(
+      shouldDropLateVisibleWebGLUpgrade({
+        forceCanonicalWebGL: false,
+        explicitWebGLOverride: false,
+        visualReady: true,
+        visibleCanvasAgeMs: 20_000,
+      }),
+    ).toBe(false);
+  });
+
   it("starts full canonical WebGL immediately while staggering mini WebGL upgrades", () => {
     const fullOrb = resolveCanonicalWebGLUpgradeScheduling(true, 240, 1000, 1000);
     const firstMini = resolveCanonicalWebGLUpgradeScheduling(true, 120, 1000, 1000);
@@ -204,7 +258,7 @@ describe("ValenceOrb motion profile", () => {
     expect(allowsFirstPaintFallback("canvas", null)).toBe(false);
   });
 
-  it("paints forced WebGL surfaces through a WebGL canvas after async readiness", async () => {
+  it("keeps forced WebGL surfaces stable after the immediate visible prepaint", async () => {
     vi.useFakeTimers();
     stubVisibleOrbRect();
     const { flushNextFrame } = installQueuedRaf();
@@ -229,27 +283,68 @@ describe("ValenceOrb motion profile", () => {
 
     const wrapper = container.querySelector("[data-orb-renderer-policy='webgl']");
 
-    expect(wrapper).not.toHaveAttribute("data-orb-first-paint-ready");
-    expect(wrapper).not.toHaveAttribute("data-orb-visual-ready");
+    expect(wrapper).toHaveAttribute("data-orb-first-paint-ready", "true");
+    expect(wrapper).toHaveAttribute("data-orb-visual-ready", "true");
+    expect(onFirstPaintReady).toHaveBeenCalledTimes(1);
+    expect(onVisualReady).toHaveBeenCalledTimes(1);
 
     await flushScheduledWebGLUpgrade(flushNextFrame);
 
     const canvas = container.querySelector("canvas");
 
-    expect(createOrbGLAsync).toHaveBeenCalledTimes(1);
+    expect(createOrbGLAsync).not.toHaveBeenCalled();
     expect(createOrbGL2Async).not.toHaveBeenCalled();
-    expect(renderer.render).toHaveBeenCalledTimes(1);
+    expect(renderer.render).not.toHaveBeenCalled();
+    expect(renderer.dispose).not.toHaveBeenCalled();
     expect(wrapper).toHaveAttribute("data-orb-first-paint-ready", "true");
     expect(wrapper).toHaveAttribute("data-orb-visual-ready", "true");
-    expect(canvas).toHaveAttribute("data-orb-renderer-tier", "webgl-main");
+    expect(canvas).toHaveAttribute("data-orb-renderer-tier", "canvas2d");
     expect(canvas).not.toHaveAttribute("data-orb-first-paint-canvas");
-    expect(drawOrbScene).not.toHaveBeenCalled();
+    expect(drawOrbScene).toHaveBeenCalled();
     expect(onFirstPaintReady).toHaveBeenCalledTimes(1);
     expect(onVisualReady).toHaveBeenCalledTimes(1);
     expect(queryByTestId("valence-orb-first-paint-fallback")).toBeNull();
   });
 
-  it("keeps phone forced WebGL off the worker path even when worker WebGL is available", async () => {
+  it("does not stack duplicate animation loops from repeated WebGL restore events", async () => {
+    vi.useFakeTimers();
+    const originalUrl = window.location.href;
+    window.history.pushState({}, "", "?orbRenderer=webgl");
+    stubVisibleOrbRect();
+    const { flushNextFrame, pendingCount } = installQueuedRaf();
+    const renderer = createMockGLRenderer();
+    vi.mocked(createOrbGLAsync).mockResolvedValue({
+      renderer,
+      durationMs: 1,
+      tier: "webgl",
+    });
+
+    try {
+      const { container } = render(
+        createElement(ValenceOrb, {
+          valence: 0.25,
+          renderer: "webgl",
+        }),
+      );
+
+      await flushScheduledWebGLUpgrade(flushNextFrame);
+
+      const canvas = container.querySelector("canvas");
+      if (!canvas) throw new Error("Expected WebGL canvas");
+
+      const pendingBeforeRestore = pendingCount();
+      act(() => {
+        canvas.dispatchEvent(new Event("webglcontextrestored"));
+        canvas.dispatchEvent(new Event("webglcontextrestored"));
+      });
+
+      expect(pendingCount()).toBeLessThanOrEqual(pendingBeforeRestore + 1);
+    } finally {
+      window.history.pushState({}, "", originalUrl);
+    }
+  });
+
+  it("keeps forced WebGL hero rendering on the main-thread canvas even when worker WebGL is available", async () => {
     vi.useFakeTimers();
     stubVisibleOrbRect();
     const { flushNextFrame } = installQueuedRaf();
@@ -258,7 +353,27 @@ describe("ValenceOrb motion profile", () => {
       "transferControlToOffscreen" in HTMLCanvasElement.prototype;
     const originalTransferControl =
       HTMLCanvasElement.prototype.transferControlToOffscreen;
-    const WorkerStub = vi.fn();
+    class WorkerStub {
+      onmessage: ((event: MessageEvent<{ type: "ready" | "rendered"; requestId?: number }>) => void) | null = null;
+      onerror: ((event: ErrorEvent) => void) | null = null;
+      postMessage = vi.fn((message: { type: "init" | "render" | "dispose"; requestId?: number }) => {
+        if (message.type === "init") {
+          queueMicrotask(() => {
+            this.onmessage?.({ data: { type: "ready" } } as MessageEvent<{ type: "ready" }>);
+          });
+          return;
+        }
+        if (message.type === "render") {
+          queueMicrotask(() => {
+            this.onmessage?.({
+              data: { type: "rendered", requestId: message.requestId },
+            } as MessageEvent<{ type: "rendered"; requestId?: number }>);
+          });
+        }
+      });
+      terminate = vi.fn();
+    }
+    const WorkerSpy = vi.fn(() => new WorkerStub());
 
     Object.defineProperty(window, "innerWidth", {
       configurable: true,
@@ -269,7 +384,7 @@ describe("ValenceOrb motion profile", () => {
       value: vi.fn(() => ({ width: 0, height: 0 })),
     });
     vi.stubGlobal("OffscreenCanvas", class OffscreenCanvasStub {});
-    vi.stubGlobal("Worker", WorkerStub);
+    vi.stubGlobal("Worker", WorkerSpy);
 
     const renderer = createMockGLRenderer();
     vi.mocked(createOrbGLAsync).mockResolvedValue({
@@ -290,13 +405,19 @@ describe("ValenceOrb motion profile", () => {
       );
 
       await flushScheduledWebGLUpgrade(flushNextFrame);
+      await act(async () => {
+        await Promise.resolve();
+        await Promise.resolve();
+        await Promise.resolve();
+      });
 
-      expect(WorkerStub).not.toHaveBeenCalled();
-      expect(createOrbGLAsync).toHaveBeenCalledTimes(1);
+      expect(WorkerSpy).not.toHaveBeenCalled();
+      expect(createOrbGLAsync).not.toHaveBeenCalled();
       expect(createOrbGL2Async).not.toHaveBeenCalled();
-      expect(container.querySelector("[data-orb-renderer-tier='webgl-main']")).not.toBeNull();
+      expect(container.querySelector("[data-orb-renderer-tier='webgl-main']")).toBeNull();
+      expect(renderer.dispose).not.toHaveBeenCalled();
       expect(container.querySelector("[data-orb-visual-ready='true']")).not.toBeNull();
-      expect(drawOrbScene).not.toHaveBeenCalled();
+      expect(drawOrbScene).toHaveBeenCalled();
     } finally {
       Object.defineProperty(window, "innerWidth", {
         configurable: true,
@@ -316,12 +437,18 @@ describe("ValenceOrb motion profile", () => {
     }
   });
 
-  it("does not draw Canvas2D first-paint frames when forced WebGL is unavailable", async () => {
+  it("recovers forced WebGL startup failure to a stable Canvas2D frame on the same hero canvas", async () => {
     vi.useFakeTimers();
     stubVisibleOrbRect();
     const { flushNextFrame } = installQueuedRaf();
     const onFirstPaintReady = vi.fn();
     const onVisualReady = vi.fn();
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation((contextId) => {
+      if (contextId === "2d") {
+        return {} as CanvasRenderingContext2D;
+      }
+      return null;
+    });
 
     const { container, queryByTestId } = render(
       createElement(ValenceOrb, {
@@ -333,18 +460,22 @@ describe("ValenceOrb motion profile", () => {
     );
 
     const wrapper = container.querySelector("[data-orb-renderer-policy='webgl']");
+    const initialCanvas = container.querySelector("canvas");
+    expect(initialCanvas).not.toBeNull();
 
     await flushScheduledWebGLUpgrade(flushNextFrame);
 
-    expect(createOrbGL2Async).toHaveBeenCalledTimes(1);
-    expect(createOrbGLAsync).toHaveBeenCalledTimes(1);
-    expect(wrapper).not.toHaveAttribute("data-orb-first-paint-ready");
-    expect(wrapper).not.toHaveAttribute("data-orb-visual-ready");
-    expect(container.querySelector("[data-orb-renderer-tier='canvas2d']")).toBeNull();
+    expect(createOrbGL2Async).not.toHaveBeenCalled();
+    expect(createOrbGLAsync).not.toHaveBeenCalled();
+    expect(createOrbGL).not.toHaveBeenCalled();
+    expect(createOrbGL2).not.toHaveBeenCalled();
+    expect(wrapper).toHaveAttribute("data-orb-first-paint-ready", "true");
+    expect(wrapper).toHaveAttribute("data-orb-visual-ready", "true");
+    expect(container.querySelector("[data-orb-renderer-tier='canvas2d']")).toBe(initialCanvas);
     expect(container.querySelector("canvas[data-orb-first-paint-canvas='true']")).toBeNull();
-    expect(drawOrbScene).not.toHaveBeenCalled();
-    expect(onFirstPaintReady).not.toHaveBeenCalled();
-    expect(onVisualReady).not.toHaveBeenCalled();
+    expect(drawOrbScene).toHaveBeenCalled();
+    expect(onFirstPaintReady).toHaveBeenCalledTimes(1);
+    expect(onVisualReady).toHaveBeenCalledTimes(1);
     expect(queryByTestId("valence-orb-first-paint-fallback")).toBeNull();
   });
 
@@ -381,8 +512,8 @@ describe("ValenceOrb motion profile", () => {
 
       const wrapper = container.querySelector("[data-orb-renderer-policy='webgl']");
 
-      expect(wrapper).not.toHaveAttribute("data-orb-first-paint-ready");
-      expect(wrapper).not.toHaveAttribute("data-orb-visual-ready");
+      expect(wrapper).toHaveAttribute("data-orb-first-paint-ready", "true");
+      expect(wrapper).toHaveAttribute("data-orb-visual-ready", "true");
 
       await flushScheduledWebGLUpgrade(flushNextFrame);
 
@@ -393,10 +524,11 @@ describe("ValenceOrb motion profile", () => {
       expect(wrapper).toHaveAttribute("data-orb-first-paint-ready", "true");
       expect(wrapper).toHaveAttribute("data-orb-visual-ready", "true");
       expect(canvases).toHaveLength(1);
-      expect(stableCanvas).toHaveAttribute("data-orb-renderer-tier", "webgl-main");
+      expect(stableCanvas).toHaveAttribute("data-orb-renderer-tier", "canvas2d");
       expect(stableCanvas).not.toHaveAttribute("data-orb-first-paint-canvas");
       expect(stableCanvas).toHaveStyle({ opacity: "1" });
-      expect(drawOrbScene).not.toHaveBeenCalled();
+      expect(drawOrbScene).toHaveBeenCalled();
+      expect(renderer.dispose).not.toHaveBeenCalled();
       expect(onFirstPaintReady).toHaveBeenCalledTimes(1);
       expect(onVisualReady).toHaveBeenCalledTimes(1);
     } finally {
@@ -430,8 +562,8 @@ describe("ValenceOrb motion profile", () => {
 
     expect(container.querySelector("[data-orb-visual-ready='true']")).not.toBeNull();
     expect(container.querySelector("[data-orb-webgl-upgrade='held-on-canvas']")).toBeNull();
-    expect(container.querySelector("[data-orb-renderer-tier='canvas2d']")).toBeNull();
-    expect(drawOrbScene).not.toHaveBeenCalled();
+    expect(container.querySelector("[data-orb-renderer-tier='canvas2d']")).not.toBeNull();
+    expect(drawOrbScene).toHaveBeenCalled();
   });
 
   it("does not time out forced WebGL before an offscreen orb becomes visible", async () => {
@@ -487,14 +619,14 @@ describe("ValenceOrb motion profile", () => {
     await flushScheduledWebGLUpgrade(flushNextFrame);
 
     expect(createOrbGLAsync).not.toHaveBeenCalled();
-    expect(container.querySelector("[data-orb-visual-ready='true']")).toBeNull();
+    expect(container.querySelector("[data-orb-visual-ready='true']")).not.toBeNull();
 
     act(() => {
       vi.advanceTimersByTime(WEBGL_FORCED_FIRST_FRAME_TIMEOUT_MS + 1);
     });
 
     expect(createOrbGLAsync).not.toHaveBeenCalled();
-    expect(container.querySelector("[data-orb-renderer-tier='canvas2d']")).toBeNull();
+    expect(container.querySelector("[data-orb-renderer-tier='canvas2d']")).not.toBeNull();
 
     const wrapper = container.querySelector("[data-orb-renderer-policy='webgl']");
     if (!wrapper) throw new Error("Expected forced WebGL wrapper");
@@ -517,14 +649,15 @@ describe("ValenceOrb motion profile", () => {
       await Promise.resolve();
     });
 
-    expect(createOrbGLAsync).toHaveBeenCalledTimes(1);
+    expect(createOrbGLAsync).not.toHaveBeenCalled();
     expect(createOrbGL2Async).not.toHaveBeenCalled();
     expect(container.querySelector("[data-orb-visual-ready='true']")).not.toBeNull();
-    expect(container.querySelector("[data-orb-renderer-tier='webgl-main']")).not.toBeNull();
-    expect(drawOrbScene).not.toHaveBeenCalled();
+    expect(container.querySelector("[data-orb-renderer-tier='webgl-main']")).toBeNull();
+    expect(renderer.dispose).not.toHaveBeenCalled();
+    expect(drawOrbScene).toHaveBeenCalled();
   });
 
-  it("fails forced WebGL closed instead of recovering to Canvas2D when no first frame arrives", async () => {
+  it("recovers forced WebGL first-frame timeout to Canvas2D instead of leaving the orb blank", async () => {
     vi.useFakeTimers();
     stubVisibleOrbRect();
     const { flushNextFrame } = installQueuedRaf();
@@ -576,11 +709,11 @@ describe("ValenceOrb motion profile", () => {
         await Promise.resolve();
       });
 
-      expect(onVisualReady).not.toHaveBeenCalled();
-      expect(container.querySelector("[data-orb-visual-ready='true']")).toBeNull();
-      expect(container.querySelector("[data-orb-renderer-tier='canvas2d']")).toBeNull();
-      expect(container.querySelector("canvas")).toBeNull();
-      expect(drawOrbScene).not.toHaveBeenCalled();
+      expect(onVisualReady).toHaveBeenCalledTimes(1);
+      expect(container.querySelector("[data-orb-visual-ready='true']")).not.toBeNull();
+      expect(container.querySelector("[data-orb-renderer-tier='canvas2d']")).not.toBeNull();
+      expect(container.querySelector("canvas")).not.toBeNull();
+      expect(drawOrbScene).toHaveBeenCalled();
     } finally {
       if (hadTransferControl) {
         Object.defineProperty(HTMLCanvasElement.prototype, "transferControlToOffscreen", {

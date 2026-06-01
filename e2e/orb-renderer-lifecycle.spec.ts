@@ -33,7 +33,9 @@ async function primeOrbPage(page: import("@playwright/test").Page) {
     win.__zenOrbCanvasEvents = [];
 
     const isCanvas = (node: Node): node is HTMLCanvasElement =>
-      node instanceof HTMLCanvasElement;
+      node.nodeName === "CANVAS" &&
+      typeof (node as HTMLCanvasElement).width === "number" &&
+      typeof (node as HTMLCanvasElement).height === "number";
 
     const originalAppendChild = Element.prototype.appendChild;
     Element.prototype.appendChild = function appendChildWithOrbProbe<T extends Node>(
@@ -104,5 +106,37 @@ test.describe("V2 orb renderer lifecycle", () => {
     }, LATE_SWAP_CUTOFF_MS);
 
     expect(lateVisibleSwaps).toEqual([]);
+
+    await page.reload({ waitUntil: "domcontentloaded" });
+    const heroOrb = page.locator(
+      '[data-testid="orb-page-hero"] [data-orb-renderer-policy]',
+    );
+    await expect(heroOrb).toBeVisible();
+    await expect(heroOrb).toHaveAttribute("data-orb-visual-ready", "true", {
+      timeout: 20000,
+    });
+
+    const afterReload = await page.evaluate(() => {
+      const hero = document.querySelector('[data-testid="orb-page-hero"]');
+      const canvases = Array.from(hero?.querySelectorAll("canvas") ?? []).filter(
+        (canvas) => canvas.width >= 200 && canvas.height >= 200,
+      );
+      const readyWrapper = hero?.querySelector(
+        '[data-orb-renderer-policy][data-orb-visual-ready="true"]',
+      );
+      return {
+        ready: Boolean(readyWrapper),
+        visibleHeroCanvases: canvases.filter(
+          (canvas) => canvas.offsetWidth > 0 && canvas.offsetHeight > 0,
+        ).length,
+        tiers: canvases.map((canvas) => canvas.dataset.orbRendererTier ?? ""),
+      };
+    });
+
+    expect(afterReload).toMatchObject({
+      ready: true,
+      visibleHeroCanvases: 1,
+    });
+    expect(afterReload.tiers).toContain("canvas2d");
   });
 });
