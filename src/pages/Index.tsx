@@ -1,4 +1,12 @@
-import { lazy, Suspense, useMemo, useState } from "react";
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useMemo,
+  useRef,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 import { useDesignFlag } from "@/hooks/useDesignFlag";
 import { NavV2Orchestrator } from "@/components/navigation-v2/NavV2Orchestrator";
 import { getModalToggle, useUserDataStore, useHydrateUserData } from "@/stores";
@@ -28,6 +36,8 @@ const DesktopDownloadPage = lazy(() =>
 const NAV_V2_ROUTE_PATHS = new Set(["/orb", "/habits", "/diary", "/settings"]);
 const PUBLIC_ROUTE_PATHS = new Set(["/desktop"]);
 const setShowWidgetSettings = getModalToggle("showWidgetSettings");
+type ChallengeList = ReturnType<typeof getChallenges>;
+type BadgeList = ReturnType<typeof getBadges>;
 
 interface NavV2ShellDecision {
   desktopRuntime: boolean;
@@ -121,8 +131,16 @@ function IndexV2Impl() {
   useDateTracking();
   useHydrateUserData();
 
-  const [, setChallenges] = useState(() => getChallenges());
-  const [, setBadges] = useState(() => getBadges());
+  const challengesRef = useRef<ChallengeList | null>(null);
+  const badgesRef = useRef<BadgeList | null>(null);
+  const setChallenges = useCallback<Dispatch<SetStateAction<ChallengeList>>>((next) => {
+    const current = challengesRef.current ?? getChallenges();
+    challengesRef.current = typeof next === "function" ? next(current) : next;
+  }, []);
+  const setBadges = useCallback<Dispatch<SetStateAction<BadgeList>>>((next) => {
+    const current = badgesRef.current ?? getBadges();
+    badgesRef.current = typeof next === "function" ? next(current) : next;
+  }, []);
   const moods = useUserDataStore((s) => s.moods);
   const habits = useUserDataStore((s) => s.habits);
   const focusSessions = useUserDataStore((s) => s.focusSessions);

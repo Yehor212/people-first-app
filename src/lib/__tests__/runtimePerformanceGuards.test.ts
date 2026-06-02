@@ -61,4 +61,15 @@ describe("runtime performance guards", () => {
       resumeBlock.indexOf("if (navigator.onLine)"),
     );
   });
+
+  it("keeps V2 shell challenge storage lazy until progress changes", () => {
+    const source = readSource("src/pages/Index.tsx");
+
+    expect(source).not.toContain("useState(() => getChallenges())");
+    expect(source).not.toContain("useState(() => getBadges())");
+    expect(source).toContain("useRef<ChallengeList | null>(null)");
+    expect(source).toContain("useRef<BadgeList | null>(null)");
+    expect(source).toContain("const current = challengesRef.current ?? getChallenges()");
+    expect(source).toContain("const current = badgesRef.current ?? getBadges()");
+  });
 });
