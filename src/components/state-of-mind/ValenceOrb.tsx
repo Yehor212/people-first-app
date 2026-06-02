@@ -380,21 +380,6 @@ function reserveCanonicalWebGLUpgradeScheduling(
   };
 }
 
-function hasViewportIntersection(node: HTMLElement): boolean {
-  const rect = node.getBoundingClientRect();
-  const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
-  const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
-
-  return (
-    rect.width > 0 &&
-    rect.height > 0 &&
-    rect.bottom > 0 &&
-    rect.right > 0 &&
-    rect.top < viewportHeight &&
-    rect.left < viewportWidth
-  );
-}
-
 function canUseWorkerWebGL(): boolean {
   try {
     return (
@@ -605,7 +590,7 @@ export const ValenceOrb = memo(function ValenceOrb({
     if (!wrapper) return;
     if (typeof IntersectionObserver === "undefined") return;
 
-    isVisibleRef.current = hasViewportIntersection(wrapper);
+    isVisibleRef.current = false;
 
     const observer = new IntersectionObserver(
       ([entry]) => { isVisibleRef.current = entry.isIntersecting; },
@@ -631,7 +616,7 @@ export const ValenceOrb = memo(function ValenceOrb({
 
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const canvasDpr = 1;
-    isVisibleRef.current = hasViewportIntersection(wrapper);
+    isVisibleRef.current = typeof IntersectionObserver === "undefined";
 
     // Initialize animation state
     const cx = size / 2;
@@ -1475,7 +1460,7 @@ export const ValenceOrb = memo(function ValenceOrb({
         ) {
           return;
         }
-        if (hasViewportIntersection(wrapper)) {
+        if (isVisibleRef.current) {
           startWebGLUpgradeWhenVisible();
           return;
         }
@@ -1521,7 +1506,7 @@ export const ValenceOrb = memo(function ValenceOrb({
     const startWebGLUpgradeWhenVisible = () => {
       if (webglUpgradeAbort.signal.aborted || webglUpgradeStarted) return;
 
-      if (!hasViewportIntersection(wrapper)) {
+      if (!isVisibleRef.current) {
         webglUpgradePendingUntilVisible = true;
         schedulePendingVisibilityRetry();
         return;

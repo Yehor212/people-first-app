@@ -191,14 +191,16 @@ describe("canonical orb invariant", () => {
     expect(source).toContain("willChange: 'transform'");
   });
 
-  it("defers canonical WebGL upgrades until mini-orbs are actually visible", () => {
+  it("defers canonical WebGL upgrades through IntersectionObserver without synchronous layout reads", () => {
     const source = readSource("src/components/state-of-mind/ValenceOrb.tsx");
 
-    expect(source).toContain("function hasViewportIntersection");
-    expect(source).toContain("rect.bottom > 0");
-    expect(source).toContain("rect.top < viewportHeight");
+    expect(source).not.toContain("function hasViewportIntersection");
+    expect(source).not.toContain("rect.bottom > 0");
+    expect(source).not.toContain("rect.top < viewportHeight");
+    expect(source).toContain("isVisibleRef.current = typeof IntersectionObserver === \"undefined\"");
     expect(source).toContain("webglUpgradePendingUntilVisible");
     expect(source).toContain("startWebGLUpgradeWhenVisible");
+    expect(source).toContain("if (!isVisibleRef.current)");
     expect(source).toContain("resolveCanonicalWebGLUpgradeScheduling");
     expect(source).toContain("MINI_WEBGL_UPGRADE_DELAY_MS");
     expect(source).toContain("MINI_WEBGL_UPGRADE_QUEUE_GAP_MS");

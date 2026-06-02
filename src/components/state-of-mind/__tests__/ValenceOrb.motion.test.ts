@@ -880,24 +880,12 @@ describe("ValenceOrb motion profile", () => {
     expect(drawOrbScene).not.toHaveBeenCalled();
   });
 
-  it("starts forced WebGL from a visibility retry when IntersectionObserver misses the visible surface", async () => {
+  it("does not poll layout while waiting for IntersectionObserver visibility", async () => {
     vi.useFakeTimers();
     const { flushNextFrame } = installQueuedRaf();
-
-    let isVisible = false;
-    const makeRect = (top: number): DOMRectReadOnly => ({
-      bottom: top + 240,
-      height: 240,
-      left: 0,
-      right: 240,
-      top,
-      width: 240,
-      x: 0,
-      y: top,
-      toJSON: () => ({}),
-    });
-    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(() =>
-      makeRect(isVisible ? 0 : 10_000),
+    const getBoundingClientRectSpy = vi.spyOn(
+      HTMLElement.prototype,
+      "getBoundingClientRect",
     );
 
     vi.stubGlobal(
@@ -928,15 +916,15 @@ describe("ValenceOrb motion profile", () => {
     await flushScheduledWebGLUpgrade(flushNextFrame);
     expect(createOrbGLAsync).not.toHaveBeenCalled();
 
-    isVisible = true;
     await act(async () => {
-      vi.advanceTimersByTime(WEBGL_VISIBILITY_RETRY_INTERVAL_MS);
+      vi.advanceTimersByTime(WEBGL_VISIBILITY_RETRY_INTERVAL_MS * 3);
       await Promise.resolve();
       await Promise.resolve();
     });
 
-    expect(createOrbGLAsync).toHaveBeenCalledTimes(1);
-    expect(container.querySelector("[data-orb-renderer-tier='webgl-main']")).not.toBeNull();
+    expect(getBoundingClientRectSpy).not.toHaveBeenCalled();
+    expect(createOrbGLAsync).not.toHaveBeenCalled();
+    expect(container.querySelector("[data-orb-renderer-tier='webgl-main']")).toBeNull();
     expect(container.querySelector("[data-orb-renderer-tier='canvas2d']")).toBeNull();
     expect(drawOrbScene).not.toHaveBeenCalled();
   });
