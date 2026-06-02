@@ -17,21 +17,10 @@
 }
 
 .day-cosmic,
-.day-cosmic.overflow-hidden,
 .day-cosmic__base,
 .day-cosmic__sun-threads,
 .orb-day-flourish {
-  overflow: hidden;
-}
-
-@supports (overflow: clip) {
-  .day-cosmic,
-  .day-cosmic.overflow-hidden,
-  .day-cosmic__base,
-  .day-cosmic__sun-threads,
-  .orb-day-flourish {
-    overflow: clip;
-  }
+  overflow: clip;
 }
 
 .day-cosmic__bokeh,

@@ -240,7 +240,7 @@ export const DayCosmicBackground = memo(function DayCosmicBackground() {
       aria-hidden="true"
       data-testid="day-cosmic-background"
       data-daymode={daymode}
-      className="day-cosmic pointer-events-none absolute inset-0 z-0 overflow-hidden"
+      className="day-cosmic pointer-events-none absolute inset-0 z-0"
       style={DAY_PALETTES[daymode]}
     >
       {/* Layer 1 — base aurora radial mesh */}
