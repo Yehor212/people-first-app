@@ -4788,6 +4788,19 @@ input::-moz-focus-inner {
   background: var(--splash-day-topbar);
 }
 
+.splash-theme-shell {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+  transition:
+    opacity 0.5s ease-in-out,
+    transform 0.5s ease-in-out;
+}
+
+.splash-theme-shell[data-splash-fade-out="true"] {
+  opacity: 0;
+  transform: translate3d(0, 0, 0) scale(1.02);
+}
+
 .splash-day-depth {
   animation: zen-glow-breathe 4s ease-in-out infinite;
 }
@@ -4979,6 +4992,7 @@ input::-moz-focus-inner {
 }
 
 body.reduce-motion .splash-day-depth,
+body.reduce-motion .splash-theme-shell,
 body.reduce-motion .splash-day-aurora,
 body.reduce-motion .splash-day-bubble,
 body.reduce-motion .splash-logo-ring,
@@ -4988,6 +5002,7 @@ body.reduce-motion .splash-night-vellum,
 body.reduce-motion .splash-night-orb,
 body.reduce-motion .splash-night-thread {
   animation: none !important;
+  transition: none !important;
 }
 
 

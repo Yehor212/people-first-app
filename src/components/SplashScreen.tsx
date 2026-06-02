@@ -453,19 +453,15 @@ export function SplashScreen({
   const isNightBackground = splashTheme === "ink" || splashTheme === "oled";
 
   return (
-    <motion.div
+    <div
       key="loading"
       data-testid="splash-theme-shell"
       data-splash-theme={splashTheme}
       data-splash-instant={instant ? "true" : "false"}
       data-splash-scene={isNightBackground ? "night" : "day"}
-      className="fixed inset-0 z-[80] flex flex-col items-center justify-center overflow-hidden bg-[var(--splash-bg)] text-[var(--splash-copy)] will-change-transform"
+      data-splash-fade-out={loadingFadeOut ? "true" : "false"}
+      className="splash-theme-shell fixed inset-0 z-[80] flex flex-col items-center justify-center overflow-hidden bg-[var(--splash-bg)] text-[var(--splash-copy)] will-change-transform"
       style={splashThemeVars[splashTheme]}
-      animate={{
-        opacity: loadingFadeOut ? 0 : 1,
-        scale: loadingFadeOut ? 1.02 : 1,
-      }}
-      transition={{ duration: 0.5, ease: "easeInOut" }}
       aria-live="polite"
     >
       {isNightBackground ? (
@@ -588,6 +584,6 @@ export function SplashScreen({
       >
         <PremiumLoader size="xl" label={t.loading} />
       </motion.div>
-    </motion.div>
+    </div>
   );
 }

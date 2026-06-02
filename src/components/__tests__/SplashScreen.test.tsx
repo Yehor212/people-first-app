@@ -72,6 +72,22 @@ describe("SplashScreen", () => {
     expect(screen.getByTestId("splash-infinity-loader")).toBeInTheDocument();
   });
 
+  it("drives root fade-out through the CSS data contract", () => {
+    render(
+      <SplashScreen
+        loadingFadeOut
+        subtitle="Preparing your zen space..."
+        instant
+      />,
+    );
+
+    expect(screen.getByTestId("splash-theme-shell")).toHaveAttribute(
+      "data-splash-fade-out",
+      "true",
+    );
+    expect(screen.getByTestId("splash-theme-shell")).toHaveClass("splash-theme-shell");
+  });
+
   it("keeps the bright paper logo treatment on the dark splash scene", () => {
     render(
       <SplashScreen
