@@ -11,6 +11,7 @@ export default tseslint.config(
       "dist",
       "android",
       "coverage",
+      "output/**",
       "src-tauri/target/**",
       "scripts",
       "supabase/functions/**",

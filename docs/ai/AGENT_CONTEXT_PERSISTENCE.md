@@ -8,7 +8,7 @@ This is an operator protocol, not application runtime code. It applies to Codex,
 
 Use a Context7-style layered memory model:
 
-1. Always-loaded rules: `AGENTS.md`, `ARCHITECTURE.md`, and the Ruflow+ docs under `docs/ai/`.
+1. Always-loaded rules: tracked `AGENTS.md`, `ARCHITECTURE.md`, and the Ruflow+ docs under `docs/ai/`.
 2. Task-scoped retrieval: a local ZenFlow Context MCP resolves the task to a context profile and returns a compact pack from live repo files.
 3. Durable knowledge graph: the official MCP memory server remains the long-term observation store, backed by a repo-local JSONL file.
 4. Explicit writeback: store only distilled, reusable facts after meaningful work.
@@ -185,6 +185,9 @@ Prefer `add_observations` on existing entities over creating near-duplicate enti
 
 For this repo, context persistence is considered usable when:
 
+- `AGENTS.md` is the tracked canonical agent entrypoint.
+- `CLAUDE.md` is tracked and imports `AGENTS.md` instead of duplicating stale guidance.
+- `npm run check:agent-context` passes.
 - `.mcp.json` contains the `memory` server with `MEMORY_FILE_PATH` pointing to `.Codex\memory\mcp-memory.jsonl`.
 - `.Codex\memory\mcp-memory.jsonl` exists and contains seed entities for ZenFlow, Ruflow+, session start, writeback, and verification discipline.
 - `npm run ai:ruflow-plus:check` still passes after any Ruflow+ template changes.

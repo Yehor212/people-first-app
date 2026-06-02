@@ -98,6 +98,7 @@
     "ai:context:check": "node tools/zenflow-context/server.mjs --cli --context startup --topic \"startup verification\" --max-chars 5000",
     "ai:context:auto": "node tools/zenflow-context/auto-context.mjs",
     "ai:context:auto-check": "node tools/zenflow-context/auto-context.mjs --check",
+    "check:agent-context": "node scripts/check-agent-context.mjs",
     "check:types-fresh": "node scripts/check-types-freshness.cjs",
     "check:supabase-migration-prefixes": "node scripts/check-supabase-migration-prefixes.cjs",
     "check:licenses": "node scripts/check-oss-licenses.cjs",

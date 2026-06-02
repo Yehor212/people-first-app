@@ -33,6 +33,7 @@ interface SyncHealthCardProps {
   showHeader?: boolean;
   allowManualRetry?: boolean;
   quietWhenIdle?: boolean;
+  hideWhenIdle?: boolean;
   surface?: "default" | "settings-space";
 }
 
@@ -161,6 +162,7 @@ export function SyncHealthCard({
   showHeader = true,
   allowManualRetry = true,
   quietWhenIdle = false,
+  hideWhenIdle = false,
   surface = "default",
 }: SyncHealthCardProps) {
   const { t, language } = useLanguage();
@@ -251,26 +253,34 @@ export function SyncHealthCard({
   const canRetry = cloudEnabled && isOnline && pendingCount > 0 && !isProcessing;
   const pendingRows = actions.slice(0, MAX_PENDING_ROWS);
   const pendingRemainder = Math.max(0, actions.length - pendingRows.length);
+  const waitingCount = Math.max(pendingCount, orchestratorState.queueLength);
   const hasActionableSyncState =
     status === "syncing" ||
     status === "pending" ||
     status === "offline" ||
+    status === "paused" ||
     status === "error" ||
-    pendingCount > 0 ||
+    actions.length > 0 ||
+    waitingCount > 0 ||
     criticalPending > 0 ||
     failedPending > 0;
   const useQuietIdle = compact && quietWhenIdle && !hasActionableSyncState;
   const showMetrics =
     !useQuietIdle &&
     (!compact ||
-      pendingCount > 0 ||
+      waitingCount > 0 ||
       criticalPending > 0 ||
       failedPending > 0 ||
       Boolean(lastActivityAt));
   const showLatestAction =
-    !useQuietIdle && (!compact || pendingCount > 0 || failedPending > 0 || Boolean(lastReceipt));
+    !useQuietIdle && (!compact || waitingCount > 0 || failedPending > 0 || Boolean(lastReceipt));
   const title = tx.settingsCloudSyncTitle || "Cloud sync";
   const description = tx.settingsCloudSyncDescription || "Sync your data across devices.";
+
+  if (compact && hideWhenIdle && !hasActionableSyncState) {
+    return null;
+  }
+
   const statusBadge = (
     <span
       className={cn(
@@ -330,8 +340,8 @@ export function SyncHealthCard({
           )}
           data-testid="sync-health-metrics"
         >
-          {(!compact || pendingCount > 0 || status === "pending") && (
-            <Metric label={tx.syncPending || "Waiting"} value={String(pendingCount)} />
+          {(!compact || waitingCount > 0 || status === "pending") && (
+            <Metric label={tx.syncPending || "Waiting"} value={String(waitingCount)} />
           )}
           {(!compact || criticalPending > 0 || failedPending > 0) && (
             <Metric label={tx.syncPriority || "Important"} value={String(criticalPending)} />
@@ -364,7 +374,7 @@ export function SyncHealthCard({
         </div>
       )}
 
-      {(!compact || pendingRows.length > 0 || pendingCount > 0) && (
+      {(!compact || pendingRows.length > 0 || waitingCount > 0) && (
         <div
           className="mt-4 rounded-xl border border-border bg-background/35 p-3"
           data-testid="sync-inbox"
@@ -374,13 +384,17 @@ export function SyncHealthCard({
               {tx.syncInboxTitle || "Sync inbox"}
             </p>
             <span className="rounded-full bg-muted px-2 py-1 text-[11px] font-semibold text-muted-foreground">
-              {pendingCount}
+              {waitingCount}
             </span>
           </div>
 
-          {pendingRows.length === 0 ? (
+          {pendingRows.length === 0 && waitingCount === 0 ? (
             <p className="mt-2 text-sm text-muted-foreground">
               {tx.syncOutboxEmpty || "No local actions are waiting."}
+            </p>
+          ) : pendingRows.length === 0 ? (
+            <p className="mt-2 text-sm text-muted-foreground">
+              {tx.syncActionQueueDraining || "Sending saved actions"}
             </p>
           ) : (
             <ul className="mt-3 space-y-2" aria-label={tx.syncInboxTitle || "Sync inbox"}>

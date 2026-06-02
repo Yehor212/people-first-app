@@ -29,6 +29,8 @@ const REQUIRED_SURFACES = [
     file: "src/components/state-of-mind/ValenceOrb.tsx",
     required: [
       "forceCanonicalWebGL",
+      "isDebugCanvasFallbackAllowed",
+      "!debugCanvasFallbackAllowed && (renderer === 'webgl' || rendererOverride === 'webgl')",
       "createOrbGL2Async",
       "createOrbGLAsync",
       "if (mode === 'webgl') return true",
@@ -41,6 +43,9 @@ const REQUIRED_SURFACES = [
       "markFirstPaintCanvas",
       "orbFirstPaintCanvas",
       "data-orb-first-paint-canvas",
+      "forced-canvas2d-prepaint",
+      "forceCanonicalWebGL && ctx2d",
+      "fallbackCanvas = forceCanonicalWebGL",
       "valence-orb-first-paint-fallback",
       "createFirstPaintFallbackStyle",
       "createOrbGL2(activeCanvas)",

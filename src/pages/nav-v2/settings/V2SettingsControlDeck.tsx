@@ -2,7 +2,6 @@ import { memo, useEffect, useRef, useState } from "react";
 import {
   Bell,
   CheckCircle2,
-  ChevronDown,
   Clock3,
   Cloud,
   DatabaseBackup,
@@ -68,7 +67,6 @@ import { isAndroid, isNative } from "@/lib/platform";
 import { sanitizeUserName } from "@/lib/sanitize";
 import { safeLocalStorageGet, storageGetRaw, storageSetRaw } from "@/lib/safeJson";
 import { SK } from "@/lib/storageKeys";
-import { cn } from "@/lib/utils";
 import { updateProfileName } from "@/lib/accountService";
 import { userNameSchema } from "@/lib/validation";
 import { Language, languageNames } from "@/i18n/translations";
@@ -80,7 +78,22 @@ import { useAccountAuth } from "@/components/settings/account-section/useAccount
 import { useAccountSync } from "@/components/settings/account-section/useAccountSync";
 import { useDeleteAccount } from "@/components/settings/account-section/useDeleteAccount";
 import { supabase } from "@/lib/supabaseClient";
-import { ActionButton, PanelFrame, ToggleRow } from "./components/V2SettingsControlPrimitives";
+import {
+  ActionButton,
+  PanelFrame,
+  SettingsButtonGrid,
+  SettingsChoiceButton,
+  SettingsDialog,
+  SettingsExternalLink,
+  SettingsFieldHeader,
+  SettingsInlineButton,
+  SettingsInset,
+  SettingsInsetButton,
+  SettingsSelectField,
+  SettingsStatus,
+  SettingsTextInput,
+  ToggleRow,
+} from "./components/V2SettingsControlPrimitives";
 import type { V2SettingsControls, V2SettingsSectionId } from "./types";
 
 interface V2SettingsControlDeckProps {
@@ -165,33 +178,26 @@ function ProfilePanel({ controls }: { controls: V2SettingsControls }) {
       description={tx.yourName || "Name and personal preferences."}
       testId="settings-v2-panel-profile"
     >
-      <label
-        className="block text-xs font-semibold text-muted-foreground"
-        htmlFor="settings-v2-name"
-      >
-        {tx.yourName || "Your name"}
-      </label>
+      <SettingsFieldHeader htmlFor="settings-v2-name" title={tx.yourName || "Your name"} />
       <div className="flex flex-col gap-2 min-[520px]:flex-row">
-        <input
+        <SettingsTextInput
           id="settings-v2-name"
-          type="text"
           value={name}
-          onChange={(event) => setName(event.target.value)}
+          onChange={setName}
           autoComplete="name"
-          className="min-h-[48px] flex-1 rounded-2xl border border-[hsl(var(--border)/0.55)] bg-[hsl(var(--background)/0.48)] px-4 text-base text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          fill
         />
-        <button
-          type="button"
+        <SettingsInlineButton
           onClick={() => {
             void handleNameSave();
           }}
-          className="min-h-[48px] rounded-2xl px-5 text-sm font-semibold text-primary-foreground zen-gradient focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          variant="primary"
         >
           {tx.save || "Save"}
-        </button>
+        </SettingsInlineButton>
       </div>
       <div role="status" aria-live="polite">
-        {nameStatus && <p className="text-xs text-muted-foreground">{nameStatus}</p>}
+        <SettingsStatus>{nameStatus}</SettingsStatus>
       </div>
     </PanelFrame>
   );
@@ -225,32 +231,19 @@ function AppearancePanel() {
       description={tx.navV2Theme || tx.theme || "Theme"}
       testId="settings-v2-panel-appearance"
     >
-      <div
-        className="grid gap-2 min-[520px]:grid-cols-3"
-        role="group"
-        aria-label={tx.themeLabel || "Theme"}
-      >
-        {themeOptions.map((option) => {
-          const Icon = option.icon;
-          return (
-            <button
-              key={option.value}
-              type="button"
-              onClick={() => changeTheme(option.value)}
-              aria-pressed={theme === option.value}
-              className={cn(
-                "flex min-h-[92px] flex-col items-center justify-center gap-2 rounded-2xl border p-3 text-sm font-semibold motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                theme === option.value
-                  ? "border-primary bg-primary/10 text-primary"
-                  : "border-[hsl(var(--border)/0.55)] bg-[hsl(var(--background)/0.34)] text-foreground hover:bg-muted"
-              )}
-            >
-              <Icon className="h-5 w-5" aria-hidden="true" />
-              {option.label}
-            </button>
-          );
-        })}
-      </div>
+      <SettingsButtonGrid columns="three" role="group" ariaLabel={tx.themeLabel || "Theme"}>
+        {themeOptions.map((option) => (
+          <SettingsChoiceButton
+            key={option.value}
+            icon={option.icon}
+            selected={theme === option.value}
+            onClick={() => changeTheme(option.value)}
+            presentation="stacked"
+          >
+            {option.label}
+          </SettingsChoiceButton>
+        ))}
+      </SettingsButtonGrid>
 
       <ToggleRow
         icon={Moon}
@@ -275,28 +268,17 @@ function LanguagePanel() {
       description={tx.selectLanguage || "Choose language."}
       testId="settings-v2-panel-language"
     >
-      <div
-        className="grid gap-2 min-[520px]:grid-cols-2"
-        role="group"
-        aria-label={tx.language || "Language"}
-      >
+      <SettingsButtonGrid columns="two" role="group" ariaLabel={tx.language || "Language"}>
         {LANGUAGES.map((lang) => (
-          <button
+          <SettingsChoiceButton
             key={lang}
-            type="button"
             onClick={() => setLanguage(lang)}
-            aria-pressed={language === lang}
-            className={cn(
-              "min-h-[48px] rounded-2xl border px-4 py-3 text-start text-sm font-semibold motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-              language === lang
-                ? "border-primary bg-primary/10 text-primary"
-                : "border-[hsl(var(--border)/0.55)] bg-[hsl(var(--background)/0.34)] text-foreground hover:bg-muted"
-            )}
+            selected={language === lang}
           >
             {languageNames[lang]}
-          </button>
+          </SettingsChoiceButton>
         ))}
-      </div>
+      </SettingsButtonGrid>
     </PanelFrame>
   );
 }
@@ -346,7 +328,7 @@ function NotificationsPanel({ controls }: { controls: V2SettingsControls }) {
       />
 
       {controls.reminders.enabled && (
-        <div className="space-y-3 rounded-2xl border border-[hsl(var(--border)/0.5)] bg-[hsl(var(--background)/0.34)] p-3">
+        <SettingsInset>
           <TimeInputInline
             label={tx.morning || "Morning"}
             value={controls.reminders.moodTimeMorning || "09:00"}
@@ -374,40 +356,34 @@ function NotificationsPanel({ controls }: { controls: V2SettingsControls }) {
           />
 
           <div>
-            <p className="mb-2 text-xs font-semibold text-muted-foreground">
-              {tx.reminderDays || "Reminder days"}
-            </p>
+            <SettingsFieldHeader title={tx.reminderDays || "Reminder days"} />
             <div
               className="flex flex-wrap gap-2"
               role="group"
               aria-label={tx.reminderDays || "Reminder days"}
             >
               {dayOptions.map(({ value, label }) => (
-                <button
+                <SettingsChoiceButton
                   key={value}
-                  type="button"
                   onClick={() =>
                     setReminder((prev) => ({
                       ...prev,
                       days: prev.days.includes(value)
                         ? prev.days.filter((day) => day !== value)
                         : [...prev.days, value].sort((a, b) => a - b),
-                    }))
+                      }))
                   }
-                  aria-pressed={controls.reminders.days.includes(value)}
-                  className={cn(
-                    "min-h-[44px] rounded-xl px-3 text-sm font-semibold motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                    controls.reminders.days.includes(value)
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-secondary text-secondary-foreground hover:bg-muted"
-                  )}
+                  selected={controls.reminders.days.includes(value)}
+                  presentation="compact"
+                  selectedTone="solid"
+                  surface="secondary"
                 >
                   {label}
-                </button>
+                </SettingsChoiceButton>
               ))}
             </div>
           </div>
-        </div>
+        </SettingsInset>
       )}
 
       {controls.reminders.enabled && (
@@ -429,38 +405,27 @@ function NotificationsPanel({ controls }: { controls: V2SettingsControls }) {
       )}
 
       {isNative && (
-        <div className="rounded-2xl border border-[hsl(var(--border)/0.5)] bg-[hsl(var(--background)/0.34)] p-4">
-          <div className="mb-3 flex items-center gap-2">
-            <Volume2 className="h-4 w-4 text-primary" aria-hidden="true" />
-            <p className="text-sm font-semibold text-foreground">
-              {tx.notificationSound || "Notification sound"}
-            </p>
-          </div>
-          <div className="grid gap-2 min-[520px]:grid-cols-2">
+        <SettingsInset>
+          <SettingsFieldHeader icon={Volume2} title={tx.notificationSound || "Notification sound"} />
+          <SettingsButtonGrid columns="two">
             {NOTIFICATION_SOUNDS.map((sound) => {
               const label = tx[sound.labelKey] || sound.id;
               return (
-                <button
+                <SettingsChoiceButton
                   key={sound.id}
-                  type="button"
                   onClick={() => updateSound(sound.id)}
-                  aria-pressed={selectedSound === sound.id}
-                  className={cn(
-                    "min-h-[64px] rounded-2xl border p-3 text-start motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                    selectedSound === sound.id
-                      ? "border-primary bg-primary/10"
-                      : "border-[hsl(var(--border)/0.55)] bg-[hsl(var(--card)/0.48)] hover:bg-muted"
-                  )}
+                  selected={selectedSound === sound.id}
+                  surface="card"
                 >
                   <span className="block text-sm font-semibold text-foreground">{label}</span>
                   <span className="mt-1 block text-xs text-muted-foreground">
                     {tx[`${sound.labelKey}Desc`] || sound.description}
                   </span>
-                </button>
+                </SettingsChoiceButton>
               );
             })}
-          </div>
-        </div>
+          </SettingsButtonGrid>
+        </SettingsInset>
       )}
 
       {isAndroid && (
@@ -531,51 +496,31 @@ function PrivacyPanel({ controls }: { controls: V2SettingsControls }) {
         testId="settings-v2-ad-consent"
       />
 
-      <div className="rounded-2xl border border-[hsl(var(--border)/0.5)] bg-[hsl(var(--background)/0.34)] p-4">
-        <label
+      <SettingsInset>
+        <SettingsFieldHeader
           htmlFor="settings-v2-journal-lock"
-          className="mb-2 flex items-center gap-2 text-sm font-semibold text-foreground"
-        >
-          <Clock3 className="h-4 w-4 text-primary" aria-hidden="true" />
-          {tx.journalLockTimeout || "Journal auto-lock"}
-        </label>
-        <p className="mb-3 text-xs text-muted-foreground">
-          {tx.journalLockTimeoutDesc || "Automatically lock journal after inactivity."}
-        </p>
-        <div className="relative">
-          <select
-            id="settings-v2-journal-lock"
-            value={timeoutMs}
-            onChange={(event) => updateTimeout(Number(event.target.value))}
-            className="min-h-[48px] w-full appearance-none rounded-2xl border border-[hsl(var(--border)/0.55)] bg-[hsl(var(--card)/0.58)] px-4 pe-11 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            {LOCK_TIMEOUT_OPTIONS.map((option) => (
-              <option key={option.ms} value={option.ms}>
-                {tx[`lockTimeout_${option.ms}`] || option.label}
-              </option>
-            ))}
-          </select>
-          <ChevronDown className="pointer-events-none absolute end-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        </div>
-      </div>
+          icon={Clock3}
+          title={tx.journalLockTimeout || "Journal auto-lock"}
+          description={tx.journalLockTimeoutDesc || "Automatically lock journal after inactivity."}
+        />
+        <SettingsSelectField
+          id="settings-v2-journal-lock"
+          value={timeoutMs}
+          onChange={(value) => updateTimeout(Number(value))}
+          options={LOCK_TIMEOUT_OPTIONS.map((option) => ({
+            value: option.ms,
+            label: tx[`lockTimeout_${option.ms}`] || option.label,
+          }))}
+        />
+      </SettingsInset>
 
       <div className="flex flex-wrap gap-3 text-sm">
-        <a
-          className="text-primary underline hover:text-primary/90"
-          href={privacyHref}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
+        <SettingsExternalLink href={privacyHref} size="sm">
           {tx.privacyPolicy || "Privacy Policy"}
-        </a>
-        <a
-          className="text-primary underline hover:text-primary/90"
-          href={termsHref}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
+        </SettingsExternalLink>
+        <SettingsExternalLink href={termsHref} size="sm">
           {tx.termsOfService || "Terms of Service"}
-        </a>
+        </SettingsExternalLink>
       </div>
     </PanelFrame>
   );
@@ -646,7 +591,7 @@ function DataPanel({ controls }: { controls: V2SettingsControls }) {
         description={tx.settingsExportDescription || "Export, import, and protect your data."}
         testId="settings-v2-panel-data"
       >
-        <div className="grid gap-2 min-[520px]:grid-cols-3">
+        <SettingsButtonGrid columns="three">
           <ActionButton
             icon={exp.isExporting ? Loader2 : FileJson}
             onClick={() => {
@@ -678,34 +623,23 @@ function DataPanel({ controls }: { controls: V2SettingsControls }) {
           >
             {tx.exportPDF || "PDF"}
           </ActionButton>
-        </div>
+        </SettingsButtonGrid>
 
-        <div className="rounded-2xl border border-[hsl(var(--border)/0.5)] bg-[hsl(var(--background)/0.34)] p-4">
-          <p className="mb-2 text-xs font-semibold text-muted-foreground">
-            {tx.importMode || "Import mode"}
-          </p>
-          <div
-            className="mb-3 grid gap-2 min-[420px]:grid-cols-2"
-            role="group"
-            aria-label={tx.importMode || "Import mode"}
-          >
+        <SettingsInset>
+          <SettingsFieldHeader title={tx.importMode || "Import mode"} />
+          <SettingsButtonGrid columns="confirm" role="group" ariaLabel={tx.importMode || "Import mode"}>
             {(["merge", "replace"] as const).map((mode) => (
-              <button
+              <SettingsChoiceButton
                 key={mode}
-                type="button"
                 onClick={() => imp.setImportMode(mode)}
-                aria-pressed={imp.importMode === mode}
-                className={cn(
-                  "min-h-[44px] rounded-xl border px-3 text-sm font-semibold motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                  imp.importMode === mode
-                    ? "border-primary bg-primary/10 text-primary"
-                    : "border-[hsl(var(--border)/0.55)] bg-[hsl(var(--card)/0.48)] text-foreground hover:bg-muted"
-                )}
+                selected={imp.importMode === mode}
+                presentation="compact"
+                surface="card"
               >
                 {mode === "merge" ? tx.importMerge || "Merge" : tx.importReplace || "Replace"}
-              </button>
+              </SettingsChoiceButton>
             ))}
-          </div>
+          </SettingsButtonGrid>
           <input
             ref={imp.fileInputRef}
             type="file"
@@ -723,10 +657,10 @@ function DataPanel({ controls }: { controls: V2SettingsControls }) {
               ? tx.importing || "Importing..."
               : tx.settingsImportTitle || tx.importData || "Import"}
           </ActionButton>
-        </div>
+        </SettingsInset>
 
         <div role="status" aria-live="polite">
-          {dataStatus && <p className="text-sm text-muted-foreground">{dataStatus}</p>}
+          <SettingsStatus>{dataStatus}</SettingsStatus>
         </div>
 
         {!showResetConfirm ? (
@@ -739,77 +673,47 @@ function DataPanel({ controls }: { controls: V2SettingsControls }) {
             {tx.resetAllData || "Reset all data"}
           </ActionButton>
         ) : (
-          <div className="rounded-2xl border border-destructive/20 bg-destructive/10 p-4">
-            <p className="mb-3 text-sm font-semibold text-destructive">
-              {tx.areYouSure || "Are you sure?"} {tx.cannotBeUndone || "This cannot be undone."}
-            </p>
-            <div className="grid gap-2 min-[420px]:grid-cols-2">
-              <button
-                type="button"
+          <SettingsInset tone="danger">
+            <SettingsFieldHeader
+              tone="danger"
+              title={`${tx.areYouSure || "Are you sure?"} ${
+                tx.cannotBeUndone || "This cannot be undone."
+              }`}
+            />
+            <SettingsButtonGrid columns="confirm">
+              <SettingsInlineButton
                 onClick={() => setShowResetConfirm(false)}
                 disabled={isResettingData}
-                className="min-h-[44px] rounded-xl bg-secondary px-3 text-sm font-semibold text-secondary-foreground"
               >
                 {tx.cancel}
-              </button>
-              <button
-                type="button"
+              </SettingsInlineButton>
+              <SettingsInlineButton
                 onClick={() => {
                   void handleReset();
                 }}
                 disabled={isResettingData}
-                className="min-h-[44px] rounded-xl bg-destructive px-3 text-sm font-semibold text-destructive-foreground disabled:opacity-60"
+                variant="danger"
               >
                 {isResettingData ? tx.resetting || "Resetting..." : tx.delete || "Delete"}
-              </button>
-            </div>
-          </div>
+              </SettingsInlineButton>
+            </SettingsButtonGrid>
+          </SettingsInset>
         )}
       </PanelFrame>
 
       {imp.showImportConfirm && imp.pendingImportFile && (
-        <div
-          className="fixed inset-0 z-[60] flex items-center justify-center p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="settings-v2-import-title"
-        >
-          <button
-            type="button"
-            className="fixed inset-0 bg-background/70 backdrop-blur-md"
-            aria-label={tx.cancel}
-            onClick={imp.handleImportCancel}
-          />
-          <div className="relative w-full max-w-sm rounded-[1.5rem] border border-[hsl(var(--border)/0.58)] bg-card p-5 shadow-2xl">
-            <h3 id="settings-v2-import-title" className="text-lg font-semibold text-foreground">
-              {tx.importConfirmTitle || "Import Backup"}
-            </h3>
-            <p className="mt-2 text-sm text-muted-foreground">
-              {tx.importConfirmMessage || "Import data from this file?"}
-            </p>
-            <p className="mt-2 truncate text-xs text-muted-foreground">
-              {imp.pendingImportFile.name}
-            </p>
-            <div className="mt-4 grid gap-2 min-[360px]:grid-cols-2">
-              <button
-                type="button"
-                onClick={imp.handleImportCancel}
-                className="min-h-[44px] rounded-xl bg-secondary px-3 text-sm font-semibold text-secondary-foreground"
-              >
-                {tx.cancel}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  void imp.handleImportConfirm();
-                }}
-                className="min-h-[44px] rounded-xl px-3 text-sm font-semibold text-primary-foreground zen-gradient"
-              >
-                {tx.settingsImportTitle || tx.importData || "Import"}
-              </button>
-            </div>
-          </div>
-        </div>
+        <SettingsDialog
+          titleId="settings-v2-import-title"
+          title={tx.importConfirmTitle || "Import Backup"}
+          description={tx.importConfirmMessage || "Import data from this file?"}
+          detail={imp.pendingImportFile.name}
+          cancelLabel={tx.cancel}
+          confirmLabel={tx.settingsImportTitle || tx.importData || "Import"}
+          onCancel={imp.handleImportCancel}
+          onConfirm={() => {
+            void imp.handleImportConfirm();
+          }}
+        />
       )}
     </>
   );
@@ -858,27 +762,25 @@ function AccountPanel({ controls }: { controls: V2SettingsControls }) {
       showHeader={false}
     >
       {!supabase ? (
-        <p className="rounded-2xl border border-[hsl(var(--border)/0.5)] bg-[hsl(var(--background)/0.34)] p-4 text-sm text-muted-foreground">
-          {tx.cloudSyncDisabled || "Cloud sync is not available."}
-        </p>
+        <SettingsInset>
+          <SettingsStatus>{tx.cloudSyncDisabled || "Cloud sync is not available."}</SettingsStatus>
+        </SettingsInset>
       ) : auth.hasSession ? (
         <>
-          <div className="rounded-2xl border border-[hsl(var(--border)/0.5)] bg-[hsl(var(--background)/0.34)] p-4">
+          <SettingsInset>
             <p className="text-sm text-muted-foreground">
               {tx.signedInAs || "Signed in as"}{" "}
               <span className="font-semibold text-foreground">
                 {auth.sessionAccountLabel || auth.sessionDisplayName}
               </span>
             </p>
-          </div>
+          </SettingsInset>
 
-          <div className="rounded-2xl border border-[hsl(var(--border)/0.5)] bg-[hsl(var(--background)/0.34)] p-4">
-            <div className="mb-3 flex items-center gap-2">
-              <Mail className="h-4 w-4 text-primary" aria-hidden="true" />
-              <p className="text-sm font-semibold text-foreground">
-                {tx.weeklyDigestTitle || "Weekly Progress Report"}
-              </p>
-            </div>
+          <SettingsInset>
+            <SettingsFieldHeader
+              icon={Mail}
+              title={tx.weeklyDigestTitle || "Weekly Progress Report"}
+            />
             <ToggleRow
               icon={Mail}
               title={tx.weeklyDigestTitle || "Weekly Progress Report"}
@@ -895,12 +797,10 @@ function AccountPanel({ controls }: { controls: V2SettingsControls }) {
               }}
               testId="settings-v2-weekly-digest"
             />
-          </div>
+          </SettingsInset>
 
-          <div className="rounded-2xl border border-[hsl(var(--border)/0.5)] bg-[hsl(var(--background)/0.34)] p-4">
-            <p className="mb-3 text-sm font-semibold text-foreground">
-              {tx.authLinkedProviders || "Connected sign-in methods"}
-            </p>
+          <SettingsInset>
+            <SettingsFieldHeader title={tx.authLinkedProviders || "Connected sign-in methods"} />
             {linkedProviderLabels.length > 0 && (
               <div className="mb-3 flex flex-wrap gap-2">
                 {linkedProviderLabels.map((label) => (
@@ -932,7 +832,7 @@ function AccountPanel({ controls }: { controls: V2SettingsControls }) {
                 );
               })}
             </div>
-          </div>
+          </SettingsInset>
 
           <ActionButton
             icon={auth.isSigningOut ? Loader2 : UserRound}
@@ -956,36 +856,34 @@ function AccountPanel({ controls }: { controls: V2SettingsControls }) {
               {tx.deleteAccount || "Delete account"}
             </ActionButton>
           ) : (
-            <div className="rounded-2xl border border-destructive/20 bg-destructive/10 p-4">
-              <p className="text-sm font-semibold text-destructive">
-                {tx.deleteAccountConfirm || "Delete your account?"}
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {tx.deleteAccountWarning || "This action cannot be undone."}
-              </p>
-              <label className="mt-3 block text-xs font-semibold text-destructive">
-                {tx.deleteAccountTypeConfirm || "Type DELETE to confirm:"}
-              </label>
-              <input
-                type="text"
-                value={del.deleteConfirmInput}
-                onChange={(event) => del.setDeleteConfirmInput(event.target.value)}
-                className="mt-2 min-h-[44px] w-full rounded-xl border border-destructive/20 bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                autoComplete="off"
+            <SettingsInset tone="danger">
+              <SettingsFieldHeader
+                tone="danger"
+                title={tx.deleteAccountConfirm || "Delete your account?"}
+                description={tx.deleteAccountWarning || "This action cannot be undone."}
               />
-              <div className="mt-3 grid gap-2 min-[420px]:grid-cols-2">
-                <button
-                  type="button"
+              <SettingsFieldHeader
+                htmlFor="settings-v2-delete-confirm"
+                tone="danger"
+                title={tx.deleteAccountTypeConfirm || "Type DELETE to confirm:"}
+              />
+              <SettingsTextInput
+                id="settings-v2-delete-confirm"
+                value={del.deleteConfirmInput}
+                onChange={del.setDeleteConfirmInput}
+                autoComplete="off"
+                tone="danger"
+              />
+              <SettingsButtonGrid columns="confirm">
+                <SettingsInlineButton
                   onClick={() => {
                     del.setShowDeleteConfirm(false);
                     del.setDeleteConfirmInput("");
                   }}
-                  className="min-h-[44px] rounded-xl bg-secondary px-3 text-sm font-semibold text-secondary-foreground"
                 >
                   {tx.cancel}
-                </button>
-                <button
-                  type="button"
+                </SettingsInlineButton>
+                <SettingsInlineButton
                   onClick={() => {
                     void del.handleDeleteAccount();
                   }}
@@ -993,33 +891,28 @@ function AccountPanel({ controls }: { controls: V2SettingsControls }) {
                     del.deleteConfirmInput !== (tx.deleteConfirmWord || "DELETE") ||
                     del.isDeletingAccount
                   }
-                  className="min-h-[44px] rounded-xl bg-destructive px-3 text-sm font-semibold text-destructive-foreground disabled:opacity-50"
+                  variant="danger"
                 >
                   {del.isDeletingAccount ? tx.deleting || "Deleting..." : tx.delete || "Delete"}
-                </button>
-              </div>
-            </div>
+                </SettingsInlineButton>
+              </SettingsButtonGrid>
+            </SettingsInset>
           )}
 
-          <a
-            href={deleteAccountHref}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs text-primary underline hover:text-primary/90"
-          >
+          <SettingsExternalLink href={deleteAccountHref}>
             {tx.deleteAccountLink || "Learn about account deletion"}
-          </a>
+          </SettingsExternalLink>
         </>
       ) : (
         <div className="space-y-3">
-          <div className="rounded-2xl border border-[hsl(var(--border)/0.5)] bg-[hsl(var(--background)/0.34)] p-4">
+          <SettingsInset>
             <p className="text-sm font-semibold text-foreground">
               {tx.sessionExpiredSettings || "Sign in to sync automatically."}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
               {tx.localDataSafe || "Your local data is safe."}
             </p>
-          </div>
+          </SettingsInset>
           {auth.enabledProviders.map((provider) => (
             <AuthProviderButton
               key={provider.id}
@@ -1038,8 +931,8 @@ function AccountPanel({ controls }: { controls: V2SettingsControls }) {
       )}
 
       <div role="status" aria-live="polite">
-        {auth.authStatus && <p className="text-sm text-muted-foreground">{auth.authStatus}</p>}
-        {del.deleteStatus && <p className="text-sm text-muted-foreground">{del.deleteStatus}</p>}
+        <SettingsStatus>{auth.authStatus}</SettingsStatus>
+        <SettingsStatus>{del.deleteStatus}</SettingsStatus>
       </div>
     </PanelFrame>
   );
@@ -1102,8 +995,7 @@ function AboutPanel({ controls }: { controls: V2SettingsControls }) {
         description={`ZenFlow ${APP_VERSION}`}
         testId="settings-v2-panel-about"
       >
-        <button
-          type="button"
+        <SettingsInsetButton
           onClick={handleVersionTap}
           onKeyDown={(event) => {
             if (event.key === "Enter" || event.key === " ") {
@@ -1111,7 +1003,6 @@ function AboutPanel({ controls }: { controls: V2SettingsControls }) {
               handleVersionTap();
             }
           }}
-          className="rounded-2xl border border-[hsl(var(--border)/0.5)] bg-[hsl(var(--background)/0.34)] p-4 text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >
           <span className="block text-sm font-semibold text-foreground">
             {tx.appName || "ZenFlow"} v{APP_VERSION}
@@ -1119,7 +1010,7 @@ function AboutPanel({ controls }: { controls: V2SettingsControls }) {
           <span className="mt-1 block text-xs text-muted-foreground">
             {tx.tagline || "Mood, habits, and journal in one calm flow."}
           </span>
-        </button>
+        </SettingsInsetButton>
 
         {controls.onOpenWidgetSettings && (
           <ActionButton icon={Smartphone} onClick={controls.onOpenWidgetSettings}>
@@ -1127,16 +1018,12 @@ function AboutPanel({ controls }: { controls: V2SettingsControls }) {
           </ActionButton>
         )}
 
-        <div className="rounded-2xl border border-[hsl(var(--border)/0.5)] bg-[hsl(var(--background)/0.34)] p-4">
-          <div className="mb-3 flex items-center gap-2">
-            <Type className="h-4 w-4 text-primary" aria-hidden="true" />
-            <p className="text-sm font-semibold text-foreground">
-              {tx.fontScaleTitle || "Text Size"}
-            </p>
-          </div>
-          <p className="mb-3 text-xs text-muted-foreground">
-            {tx.fontScalePreviewSub || "Adjust text size across the app."}
-          </p>
+        <SettingsInset>
+          <SettingsFieldHeader
+            icon={Type}
+            title={tx.fontScaleTitle || "Text Size"}
+            description={tx.fontScalePreviewSub || "Adjust text size across the app."}
+          />
           <div className="mb-2 flex items-center justify-between px-1">
             <span className="text-xs text-muted-foreground">A</span>
             <span className="text-sm font-semibold text-foreground">
@@ -1154,9 +1041,9 @@ function AboutPanel({ controls }: { controls: V2SettingsControls }) {
             className="h-2 w-full cursor-pointer appearance-none rounded-full bg-muted accent-primary"
             aria-label={tx.fontScaleTitle || "Text Size"}
           />
-        </div>
+        </SettingsInset>
 
-        <div className="grid gap-2 min-[520px]:grid-cols-2">
+        <SettingsButtonGrid columns="two">
           <ActionButton icon={Sparkles} onClick={() => setShowDopamineSettings(true)}>
             {tx.dopamineSettings || "Feedback style"}
           </ActionButton>
@@ -1193,17 +1080,15 @@ function AboutPanel({ controls }: { controls: V2SettingsControls }) {
           >
             {tx.openSourceLicenses || "Open source licenses"}
           </ActionButton>
-        </div>
+        </SettingsButtonGrid>
 
         {isInstalled && (
-          <div className="rounded-2xl border border-primary/20 bg-primary/10 p-4">
-            <p className="text-sm font-semibold text-foreground">
-              {tx.appInstalled || "App installed"}
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              {tx.appInstalledDescription || "ZenFlow is installed on this device."}
-            </p>
-          </div>
+          <SettingsInset tone="success">
+            <SettingsFieldHeader
+              title={tx.appInstalled || "App installed"}
+              description={tx.appInstalledDescription || "ZenFlow is installed on this device."}
+            />
+          </SettingsInset>
         )}
 
         {!isInstalled && canInstall && (
@@ -1219,7 +1104,7 @@ function AboutPanel({ controls }: { controls: V2SettingsControls }) {
         )}
 
         {isNative && (
-          <div className="space-y-2 rounded-2xl border border-[hsl(var(--border)/0.5)] bg-[hsl(var(--background)/0.34)] p-4">
+          <SettingsInset>
             <ActionButton
               icon={updateCheckStatus === "checking" ? Loader2 : RefreshCw}
               onClick={() => {
@@ -1232,9 +1117,9 @@ function AboutPanel({ controls }: { controls: V2SettingsControls }) {
                 : tx.checkForUpdates || "Check for Updates"}
             </ActionButton>
             {updateCheckStatus === "latest" && (
-              <p className="text-center text-xs text-muted-foreground">
+              <SettingsStatus center>
                 {tx.appUpToDate || "App is up to date"}
-              </p>
+              </SettingsStatus>
             )}
             {updateCheckStatus === "available" && updateState && (
               <ActionButton
@@ -1248,21 +1133,21 @@ function AboutPanel({ controls }: { controls: V2SettingsControls }) {
               </ActionButton>
             )}
             {updateCheckStatus === "available" && updateState?.releaseNotes && (
-              <p className="text-center text-xs text-muted-foreground">
+              <SettingsStatus center>
                 {typeof updateState.releaseNotes === "string"
                   ? updateState.releaseNotes
                   : updateState.releaseNotes[language] ||
                     updateState.releaseNotes.en ||
                     Object.values(updateState.releaseNotes)[0] ||
                     ""}
-              </p>
+              </SettingsStatus>
             )}
             {updateCheckStatus === "error" && (
-              <p className="text-center text-xs text-muted-foreground">
+              <SettingsStatus center>
                 {tx.updateCheckFailed || "Could not check for updates. Try again later."}
-              </p>
+              </SettingsStatus>
             )}
-          </div>
+          </SettingsInset>
         )}
       </PanelFrame>
 

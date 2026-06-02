@@ -110,8 +110,11 @@ Writeback rule:
 
 If you want this orchestration layer to be portable across teammates and machines:
 
-1. Keep `docs/ai/` as the tracked source of truth.
-2. Treat `.Codex/` and `.agents/` as local working copies.
-3. Recreate or sync local files from the tracked docs when a new environment is set up.
-4. Do not assume local ignored files exist on another machine.
-5. If you need cross-platform ignore behavior, add an explicit `/.Codex/` ignore rule rather than relying on Windows case-insensitive matching.
+1. Keep `AGENTS.md`, `CLAUDE.md`, and `docs/ai/` as the tracked source of truth.
+2. Keep `CLAUDE.md` as a bridge that imports `AGENTS.md`; do not duplicate project rules in both files.
+3. Treat `.Codex/` and `.agents/` as local working copies.
+4. Recreate or sync local files from the tracked docs when a new environment is set up.
+5. Do not assume local ignored files exist on another machine.
+6. Keep `.mcp.json` ignored and private; examples must avoid raw tokens and use placeholders or environment variables.
+7. Run `npm run check:agent-context` plus `npm run ai:ruflow-plus:check` after changing agent instructions, context profiles, or Ruflow+ templates.
+8. If you need cross-platform ignore behavior, add an explicit `/.Codex/` ignore rule rather than relying on Windows case-insensitive matching.

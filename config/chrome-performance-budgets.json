@@ -20,7 +20,8 @@
         {
           "name": "orb-v2-phone",
           "path": "orb/?nav=v2&navLayout=phone",
-          "readySelector": "[data-testid=\"orb-page-rim-glow\"] [data-orb-visual-ready=\"true\"]"
+          "readySelector": "[data-testid=\"orb-page-hero\"] [data-orb-renderer-policy=\"webgl\"][data-orb-visual-ready=\"true\"]",
+          "readyTimeoutMs": 45000
         },
         {
           "name": "habits-v2-phone",
@@ -58,7 +59,8 @@
         {
           "name": "orb-v2-desktop",
           "path": "orb/?nav=v2",
-          "readySelector": "[data-testid=\"orb-page-rim-glow\"] [data-orb-visual-ready=\"true\"]"
+          "readySelector": "[data-testid=\"orb-page-hero\"] [data-orb-renderer-policy=\"webgl\"][data-orb-visual-ready=\"true\"]",
+          "readyTimeoutMs": 45000
         },
         {
           "name": "habits-v2-desktop",

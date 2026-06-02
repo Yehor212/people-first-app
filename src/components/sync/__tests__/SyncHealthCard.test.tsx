@@ -150,6 +150,89 @@ describe("SyncHealthCard", () => {
     expect(screen.queryByRole("button", { name: "Sync now" })).not.toBeInTheDocument();
   });
 
+  it("hides embedded account sync chrome when idle and requested", () => {
+    render(
+      <SyncHealthCard
+        compact
+        showHeader={false}
+        allowManualRetry={false}
+        quietWhenIdle
+        hideWhenIdle
+      />
+    );
+
+    expect(screen.queryByTestId("sync-health-card")).not.toBeInTheDocument();
+  });
+
+  it("does not hide embedded account sync when the account state is paused", () => {
+    mocks.hasValidSession = false;
+
+    render(
+      <SyncHealthCard
+        compact
+        showHeader={false}
+        allowManualRetry={false}
+        quietWhenIdle
+        hideWhenIdle
+      />
+    );
+
+    expect(screen.getByTestId("sync-health-card")).toHaveTextContent("Cloud sync paused");
+    expect(screen.queryByRole("button", { name: "Sync now" })).not.toBeInTheDocument();
+  });
+
+  it("still shows embedded account sync status when action is needed", () => {
+    mocks.offline.actions = [
+      {
+        id: "local-1",
+        type: "SYNC_JOURNAL_ENTRY",
+        entityId: "journal-private-id",
+        payload: {},
+        timestamp: 1000,
+        retries: 0,
+        maxRetries: 5,
+      },
+    ];
+    mocks.offline.pendingCount = 1;
+    mocks.offline.hasPendingActions = true;
+
+    render(
+      <SyncHealthCard
+        compact
+        showHeader={false}
+        allowManualRetry={false}
+        quietWhenIdle
+        hideWhenIdle
+      />
+    );
+
+    expect(screen.getByTestId("sync-health-card")).toHaveTextContent("Waiting");
+    expect(screen.getByTestId("sync-inbox")).toHaveTextContent("Journal saved locally");
+    expect(screen.queryByRole("button", { name: "Sync now" })).not.toBeInTheDocument();
+  });
+
+  it("uses orchestrator queue length when compact sync work has no offline rows", () => {
+    mocks.orchestrator.queueLength = 2;
+
+    render(
+      <SyncHealthCard
+        compact
+        showHeader={false}
+        allowManualRetry={false}
+        quietWhenIdle
+        hideWhenIdle
+      />
+    );
+
+    expect(screen.getByTestId("sync-health-card")).toHaveTextContent("Waiting");
+    expect(screen.getByTestId("sync-health-metrics")).toHaveTextContent("2");
+    expect(screen.getByTestId("sync-inbox")).toHaveTextContent("2");
+    expect(screen.getByTestId("sync-inbox")).toHaveTextContent("Sending saved actions");
+    expect(screen.getByTestId("sync-inbox")).not.toHaveTextContent(
+      "No local actions are waiting."
+    );
+  });
+
   it("lets the user retry pending outbox work", () => {
     mocks.offline.actions = [
       {

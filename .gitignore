@@ -43,7 +43,8 @@ android/build/
 # Claude / AI agent temp files
 # ============================================
 tmpclaude*
-CLAUDE.md
+CLAUDE.local.md
+AGENTS.local.md
 .claude/*
 !.claude/rules/
 !.claude/hooks/
@@ -53,6 +54,7 @@ CLAUDE.md
 .claude-flow/
 .swarm/
 .mcp.json
+.mcp.local.json
 memory/
 .superpowers/
 docs/superpowers/
@@ -189,7 +191,8 @@ output/playwright/v1-*.png
 output/playwright/*.png
 output/playwright/public-v2/
 output/snyk-code*.err
-output/snyk-code*.json
+output/snyk-*.json
+output/snyk-tracked-scan*/
 
 # Ruflo / AgentDB local databases
 vectors.db

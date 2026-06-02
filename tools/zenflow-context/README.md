@@ -46,6 +46,7 @@ Memory is routing context, not proof. Fresh command output still wins over store
 ## CLI Check
 
 ```bash
+npm run check:agent-context
 npm run ai:context:check
 npm run ai:context:auto-check
 ```
@@ -70,3 +71,7 @@ Keep Context7 enabled alongside this server:
 - ZenFlow Context: local project rules, architecture, scripts, memories, and verification routing.
 
 The server speaks the current MCP stdio newline JSON-RPC transport and also accepts older `Content-Length` framed messages for compatibility with older clients.
+
+Do not copy local credentials into examples or tracked docs. Root `.mcp.json`
+is a private, ignored runtime file; examples must use only placeholders,
+non-secret servers, or environment-variable references.

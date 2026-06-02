@@ -121,6 +121,8 @@ describe("canonical orb invariant", () => {
     const source = readSource("src/components/state-of-mind/ValenceOrb.tsx");
 
     expect(source).toContain("forceCanonicalWebGL");
+    expect(source).toContain("isDebugCanvasFallbackAllowed");
+    expect(source).toContain("!debugCanvasFallbackAllowed && (renderer === 'webgl' || rendererOverride === 'webgl')");
     expect(source).toContain("createOrbGL2");
     expect(source).toContain("createOrbGL");
     expect(source).toContain("if (mode === 'webgl') return true");
@@ -152,6 +154,9 @@ describe("canonical orb invariant", () => {
 
     expect(source).toContain("createOrbGL2Async(gl2Canvas");
     expect(source).toContain("markRendererTier(upgradeCanvas, 'webgl-main')");
+    expect(source).not.toContain("forced-canvas2d-prepaint");
+    expect(source).not.toContain("forceCanonicalWebGL && ctx2d");
+    expect(source).not.toContain("fallbackCanvas = forceCanonicalWebGL");
     expect(source).not.toContain("renderInitialWebGLFrame");
     expect(source).not.toContain("createOrbGL2(activeCanvas)");
     expect(source).not.toContain("createOrbGL(gl1Canvas)");
@@ -163,6 +168,17 @@ describe("canonical orb invariant", () => {
     expect(source).toContain("onFirstPaintReady");
     expect(source).not.toContain("valence-orb-static");
     expect(source).not.toContain("lottie");
+  });
+
+  it("keeps forced WebGL tests from accepting product Canvas2D recovery", () => {
+    const source = readSource("src/components/state-of-mind/__tests__/ValenceOrb.motion.test.ts");
+
+    expect(source).toContain("renders forced WebGL surfaces from a WebGL canvas without Canvas2D prepaint");
+    expect(source).toContain("does not recover forced WebGL startup failure to Canvas2D in product mode");
+    expect(source).toContain("allows Canvas2D fallback only through the explicit debug override");
+    expect(source).not.toContain("recovers forced WebGL startup failure to a stable Canvas2D frame");
+    expect(source).not.toContain("recovers forced WebGL first-frame timeout to Canvas2D");
+    expect(source).not.toContain('toHaveAttribute("data-orb-renderer-tier", "canvas2d")');
   });
 
   it("keeps canonical orb canvases paint-contained to avoid route-level render stalls", () => {
@@ -184,8 +200,9 @@ describe("canonical orb invariant", () => {
     expect(source).toContain("webglUpgradePendingUntilVisible");
     expect(source).toContain("startWebGLUpgradeWhenVisible");
     expect(source).toContain("resolveCanonicalWebGLUpgradeScheduling");
+    expect(source).toContain("MINI_WEBGL_UPGRADE_DELAY_MS");
     expect(source).toContain("MINI_WEBGL_UPGRADE_QUEUE_GAP_MS");
-    expect(source).toContain("preferIdle: false");
+    expect(source).toContain("preferIdle: true");
   });
 
   it("keeps worker WebGL shader readiness asynchronous before status checks", () => {

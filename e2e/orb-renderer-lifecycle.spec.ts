@@ -83,7 +83,7 @@ test.describe("V2 orb renderer lifecycle", () => {
     });
     await expect(page.locator('[data-orb-transition-profile="v1-soft"]').last()).toBeVisible();
 
-    await page.waitForTimeout(22000);
+    await page.waitForTimeout(5000);
 
     const lateVisibleSwaps = await page.evaluate((lateSwapCutoffMs) => {
       const win = window as typeof window & {
@@ -108,24 +108,39 @@ test.describe("V2 orb renderer lifecycle", () => {
     expect(lateVisibleSwaps).toEqual([]);
 
     await page.reload({ waitUntil: "domcontentloaded" });
-    const heroOrb = page.locator(
-      '[data-testid="orb-page-hero"] [data-orb-renderer-policy]',
+    await page.waitForFunction(
+      () =>
+        Array.from(
+          document.querySelectorAll<HTMLElement>(
+            '[data-orb-renderer-policy="webgl"][data-orb-visual-ready="true"]',
+          ),
+        ).some((wrapper) =>
+          Array.from(wrapper.querySelectorAll<HTMLCanvasElement>("canvas")).some(
+            (canvas) =>
+              canvas.width >= 200 &&
+              canvas.height >= 200 &&
+              canvas.offsetWidth > 0 &&
+              canvas.offsetHeight > 0 &&
+              (canvas.dataset.orbRendererTier === "webgl-main" ||
+                canvas.dataset.orbRendererTier === "webgl-worker"),
+          ),
+        ),
+      { timeout: 30000 },
     );
-    await expect(heroOrb).toBeVisible();
-    await expect(heroOrb).toHaveAttribute("data-orb-visual-ready", "true", {
-      timeout: 20000,
-    });
 
     const afterReload = await page.evaluate(() => {
-      const hero = document.querySelector('[data-testid="orb-page-hero"]');
-      const canvases = Array.from(hero?.querySelectorAll("canvas") ?? []).filter(
-        (canvas) => canvas.width >= 200 && canvas.height >= 200,
+      const readyWrappers = Array.from(
+        document.querySelectorAll<HTMLElement>(
+          '[data-orb-renderer-policy="webgl"][data-orb-visual-ready="true"]',
+        ),
       );
-      const readyWrapper = hero?.querySelector(
-        '[data-orb-renderer-policy][data-orb-visual-ready="true"]',
+      const canvases = readyWrappers.flatMap((wrapper) =>
+        Array.from(wrapper.querySelectorAll<HTMLCanvasElement>("canvas")).filter(
+          (canvas) => canvas.width >= 200 && canvas.height >= 200,
+        ),
       );
       return {
-        ready: Boolean(readyWrapper),
+        ready: readyWrappers.length > 0,
         visibleHeroCanvases: canvases.filter(
           (canvas) => canvas.offsetWidth > 0 && canvas.offsetHeight > 0,
         ).length,
@@ -137,6 +152,11 @@ test.describe("V2 orb renderer lifecycle", () => {
       ready: true,
       visibleHeroCanvases: 1,
     });
-    expect(afterReload.tiers).toContain("canvas2d");
+    expect(afterReload.tiers).not.toContain("canvas2d");
+    expect(afterReload.tiers).toEqual(
+      expect.arrayContaining([
+        expect.stringMatching(/^webgl-(main|worker)$/),
+      ]),
+    );
   });
 });

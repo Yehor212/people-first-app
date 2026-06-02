@@ -77,6 +77,7 @@ let renderer: OrbWorkerRenderer | null = null;
 let pendingRender: Extract<WorkerMessage, { type: 'render' }> | null = null;
 let initGeneration = 0;
 let disposed = false;
+const WORKER_ASYNC_BUILD_TIMEOUT_MS = 900;
 
 function hslToRgb(h: number, s: number, l: number): [number, number, number] {
   const sn = s / 100;
@@ -150,7 +151,7 @@ function waitForParallelCompile(
   gl: GLContext,
   program: WebGLProgram,
   extension: KHRParallelShaderCompile,
-  timeoutMs = 8000,
+  timeoutMs = WORKER_ASYNC_BUILD_TIMEOUT_MS,
 ): Promise<boolean> {
   const started = performance.now();
 
@@ -438,11 +439,15 @@ async function createRenderer(canvas: OffscreenCanvas): Promise<OrbWorkerRendere
     gl.getExtension('OES_standard_derivatives');
     const glRenderer = await buildRendererAsync(gl, VERT_SRC, FRAG_SRC);
     if (glRenderer) return glRenderer;
+    const syncRenderer = buildRenderer(gl, VERT_SRC, FRAG_SRC);
+    if (syncRenderer) return syncRenderer;
   }
 
   const gl2 = canvas.getContext('webgl2', GL_OPTIONS);
   if (!gl2) return null;
-  return await buildRendererAsync(gl2, VERT_SRC_300, FRAG_SRC_300);
+  const gl2Renderer = await buildRendererAsync(gl2, VERT_SRC_300, FRAG_SRC_300);
+  if (gl2Renderer) return gl2Renderer;
+  return buildRenderer(gl2, VERT_SRC_300, FRAG_SRC_300);
 }
 
 async function handleWorkerMessage(message: WorkerMessage) {

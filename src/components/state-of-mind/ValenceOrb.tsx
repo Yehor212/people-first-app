@@ -87,12 +87,14 @@ const WEBGL_BUILD_BUDGET_MS = 500;
 export const WEBGL_WORKER_READY_BUDGET_MS = 700;
 const WEBGL_READINESS_TIMEOUT_MS = 8000;
 const FORCED_WEBGL_READINESS_TIMEOUT_MS = 900;
-export const WEBGL_FORCED_FIRST_FRAME_TIMEOUT_MS = 900;
+export const WEBGL_FORCED_FIRST_FRAME_TIMEOUT_MS = 30000;
+export const WEBGL_VISIBILITY_RETRY_INTERVAL_MS = 250;
+const FORCED_WEBGL_WORKER_STARTUP_TIMEOUT_MS = 30000;
 export const WEBGL_VISIBLE_UPGRADE_DEADLINE_MS = 1000;
 const WEBGL_UPGRADE_DELAY_MS = 180;
 const FORCED_WEBGL_UPGRADE_DELAY_MS = 0;
-const MINI_WEBGL_UPGRADE_DELAY_MS = 0;
-const MINI_WEBGL_UPGRADE_QUEUE_GAP_MS = 80;
+const MINI_WEBGL_UPGRADE_DELAY_MS = 12000;
+const MINI_WEBGL_UPGRADE_QUEUE_GAP_MS = 6000;
 const IDLE_WAKE_SOFT_THRESHOLD_MS = 8000;
 const ORB_IDLE_WAKE_SOFT_EPSILON = 0.01;
 const MINI_ORB_CANONICAL_SIZE = 120;
@@ -289,9 +291,18 @@ function getRendererOverride(): OrbRendererMode | null {
   return null;
 }
 
+function isDebugCanvasFallbackAllowed(rendererOverride: OrbRendererMode | null): boolean {
+  if (rendererOverride !== 'canvas') return false;
+  try {
+    return new URLSearchParams(window.location.search).get('dev') === 'true';
+  } catch {
+    return false;
+  }
+}
+
 function shouldTryWebGL(mode: OrbRendererMode): boolean {
   const override = getRendererOverride();
-  if (override === 'canvas') return false;
+  if (isDebugCanvasFallbackAllowed(override)) return false;
   if (override === 'webgl') return true;
   if (mode === 'canvas') return false;
   if (mode === 'webgl') return true;
@@ -345,7 +356,7 @@ export function resolveCanonicalWebGLUpgradeScheduling(
 
   return {
     delayMs: Math.max(0, Math.round(earliestStartAt - now)),
-    preferIdle: false,
+    preferIdle: true,
     nextMiniUpgradeStartAt: earliestStartAt + MINI_WEBGL_UPGRADE_QUEUE_GAP_MS,
   };
 }
@@ -409,9 +420,10 @@ function isPhoneLikeViewport(): boolean {
   }
 }
 
-export function shouldUseWorkerWebGL(forceCanonicalWebGL: boolean): boolean {
+export function shouldUseWorkerWebGL(forceCanonicalWebGL: boolean, size = Number.POSITIVE_INFINITY): boolean {
+  void size;
   if (!canUseWorkerWebGL()) return false;
-  if (forceCanonicalWebGL) return false;
+  if (forceCanonicalWebGL) return true;
   return !isPhoneLikeViewport();
 }
 
@@ -421,6 +433,7 @@ function scheduleAfterFirstPaint(
 ): () => void {
   let cancelled = false;
   let timeoutId = 0;
+  let idleId = 0;
   const preferIdle = options.preferIdle ?? true;
   const delayMs = options.delayMs ?? WEBGL_UPGRADE_DELAY_MS;
 
@@ -431,9 +444,20 @@ function scheduleAfterFirstPaint(
 
   const requestIdle = window.requestIdleCallback;
   if (preferIdle && requestIdle) {
-    const idleId = requestIdle(run, { timeout: delayMs + 600 });
+    const queueIdle = () => {
+      if (cancelled) return;
+      idleId = requestIdle(run, { timeout: 600 });
+    };
+
+    if (delayMs > 0) {
+      timeoutId = window.setTimeout(queueIdle, delayMs);
+    } else {
+      queueIdle();
+    }
+
     return () => {
       cancelled = true;
+      window.clearTimeout(timeoutId);
       window.cancelIdleCallback?.(idleId);
     };
   }
@@ -517,6 +541,7 @@ export const ValenceOrb = memo(function ValenceOrb({
     const revealCanonicalCanvas = (orbCanvas: HTMLCanvasElement) => {
       orbCanvas.style.setProperty('transition', 'none', 'important');
       orbCanvas.style.setProperty('opacity', '1', 'important');
+      orbCanvas.setAttribute('data-orb-visual-ready', 'true');
     };
     const canvas = canvasElRef.current;
     if (canvas) {
@@ -588,6 +613,9 @@ export const ValenceOrb = memo(function ValenceOrb({
     wrapper.removeAttribute('data-orb-first-paint-ready');
     wrapper.removeAttribute('data-orb-visual-ready');
     wrapper.removeAttribute('data-orb-webgl-upgrade');
+    wrapper.querySelectorAll('canvas[data-orb-visual-ready]').forEach((canvas) => {
+      canvas.removeAttribute('data-orb-visual-ready');
+    });
 
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const canvasDpr = 1;
@@ -622,7 +650,10 @@ export const ValenceOrb = memo(function ValenceOrb({
     // Per HTML spec, once getContext('webgl2') succeeds, getContext('2d')
     // on the same canvas returns null — a new <canvas> element is required.
 
-    const forceCanonicalWebGL = renderer === 'webgl' || getRendererOverride() === 'webgl';
+    const rendererOverride = getRendererOverride();
+    const debugCanvasFallbackAllowed = isDebugCanvasFallbackAllowed(rendererOverride);
+    const forceCanonicalWebGL =
+      !debugCanvasFallbackAllowed && (renderer === 'webgl' || rendererOverride === 'webgl');
     let activeCanvas = createCanvas(size, canvasDpr);
     let glRenderer: OrbGLRenderer | null = null;
     let workerRenderer: OrbWorkerController | null = null;
@@ -631,16 +662,7 @@ export const ValenceOrb = memo(function ValenceOrb({
     let webglWorker: Worker | null = null;
     let forceWebGLStartupRecovered = false;
 
-    if (forceCanonicalWebGL) {
-      activeCanvas = createCanvas(size, dpr);
-      markRendererTier(activeCanvas, 'canvas2d');
-      try {
-        ctx2d = activeCanvas.getContext('2d', { willReadFrequently: false });
-      } catch (err) {
-        recordError(err, { component: 'ValenceOrb', action: 'forced-canvas2d-prepaint' });
-        ctx2d = null;
-      }
-    } else {
+    if (!forceCanonicalWebGL) {
       markRendererTier(activeCanvas, 'canvas2d');
       try {
         ctx2d = activeCanvas.getContext('2d', { willReadFrequently: false });
@@ -656,9 +678,13 @@ export const ValenceOrb = memo(function ValenceOrb({
     }
 
     glRendererRef.current = glRenderer;
-    canvasElRef.current = activeCanvas;
-    wrapper.appendChild(activeCanvas);
-    const visibleCanvasMountedAt = performance.now();
+    if (!forceCanonicalWebGL) {
+      canvasElRef.current = activeCanvas;
+      wrapper.appendChild(activeCanvas);
+    } else {
+      canvasElRef.current = null;
+    }
+    let visibleCanvasMountedAt = !forceCanonicalWebGL ? performance.now() : 0;
 
     // ── Genesis easing (ease-out-back with slight overshoot) ──
     const computeGenesis = (timestamp: number): number => {
@@ -755,38 +781,27 @@ export const ValenceOrb = memo(function ValenceOrb({
     let disposed = false;
     let rafScheduled = false;
 
-    if (forceCanonicalWebGL && ctx2d) {
-      const state = stateRef.current;
-      if (state) {
-        renderCanvas2D(smoothValenceRef.current, state.time, state.particles);
-      }
-    }
-
     // ── Fallback canvas for context loss recovery ──
     let fallbackCanvas: HTMLCanvasElement | null = null;
-    /** Degrade to Canvas 2D. Forced hero surfaces reuse their first canvas when possible. */
+    /** Degrade to Canvas 2D only for non-forced surfaces or explicit debug fallback. */
     const degradeToCanvas2D = () => {
+      if (forceCanonicalWebGL && !debugCanvasFallbackAllowed) {
+        render = renderPendingWebGL;
+        setCtxFailed(true);
+        return;
+      }
+
       if (ctx2d && fallbackCanvas && activeCanvas === fallbackCanvas) {
         return;
       }
 
       const previousCanvas = activeCanvas;
-      fallbackCanvas = forceCanonicalWebGL ? activeCanvas : createCanvas(size, canvasDpr);
+      fallbackCanvas = createCanvas(size, canvasDpr);
       markRendererTier(fallbackCanvas, 'canvas2d');
       try {
         ctx2d = fallbackCanvas.getContext('2d', { willReadFrequently: false });
       } catch {
         ctx2d = null;
-      }
-
-      if (!ctx2d && forceCanonicalWebGL) {
-        fallbackCanvas = createCanvas(size, canvasDpr);
-        markRendererTier(fallbackCanvas, 'canvas2d');
-        try {
-          ctx2d = fallbackCanvas.getContext('2d', { willReadFrequently: false });
-        } catch {
-          ctx2d = null;
-        }
       }
 
       if (ctx2d) {
@@ -799,6 +814,7 @@ export const ValenceOrb = memo(function ValenceOrb({
         }
         activeCanvas = fallbackCanvas;
         canvasElRef.current = fallbackCanvas;
+        visibleCanvasMountedAt = performance.now();
         glRendererRef.current?.dispose();
         glRendererRef.current = null;
         workerRendererRef.current?.dispose();
@@ -943,7 +959,12 @@ export const ValenceOrb = memo(function ValenceOrb({
       if (glRendererRef.current?.isContextLost()) {
         glRendererRef.current.dispose();
         glRendererRef.current = null;
-        degradeToCanvas2D();
+        if (!forceCanonicalWebGL || debugCanvasFallbackAllowed) {
+          degradeToCanvas2D();
+        } else {
+          render = renderPendingWebGL;
+          setCtxFailed(true);
+        }
       }
 
       // Draw scene (skip when off-screen, catch errors to prevent loop death)
@@ -957,7 +978,13 @@ export const ValenceOrb = memo(function ValenceOrb({
             // WebGL render threw — degrade to Canvas 2D
             glRendererRef.current.dispose();
             glRendererRef.current = null;
-            degradeToCanvas2D();
+            if (!forceCanonicalWebGL || debugCanvasFallbackAllowed) {
+              degradeToCanvas2D();
+            } else {
+              render = renderPendingWebGL;
+              setCtxFailed(true);
+              return;
+            }
           } else {
             // Canvas 2D render also threw — give up
             cancelNextFrame();
@@ -978,7 +1005,12 @@ export const ValenceOrb = memo(function ValenceOrb({
       glRendererRef.current = null;
 
       // Cannot getContext('2d') on a WebGL-locked canvas — create a fresh one
-      degradeToCanvas2D();
+      if (!forceCanonicalWebGL || debugCanvasFallbackAllowed) {
+        degradeToCanvas2D();
+      } else {
+        render = renderPendingWebGL;
+        setCtxFailed(true);
+      }
 
       // Restart RAF loop with Canvas 2D rendering
       if (ctx2d && shouldAnimateCanonicalOrb() && mountedRef.current) {
@@ -1050,7 +1082,7 @@ export const ValenceOrb = memo(function ValenceOrb({
     const upgradeToWebGL = async (signal: AbortSignal) => {
       if (!shouldTryWebGL(renderer) || signal.aborted) return;
 
-      const explicitWebGLOverride = getRendererOverride() === 'webgl';
+      const explicitWebGLOverride = rendererOverride === 'webgl';
       let webglStartupRecoveryStarted = false;
       if (forceCanonicalWebGL && !explicitWebGLOverride && visualReadyRef.current) {
         return;
@@ -1077,7 +1109,7 @@ export const ValenceOrb = memo(function ValenceOrb({
         });
 
         let upgradeCanvas = gl1Canvas;
-        if (!result && forceCanonicalWebGL && !signal.aborted) {
+        if (!result && !forceCanonicalWebGL && !signal.aborted) {
           const syncStartedAt = performance.now();
           const syncCanvas = createCanvas(size, dpr);
           const syncRenderer = createOrbGL(syncCanvas);
@@ -1100,7 +1132,7 @@ export const ValenceOrb = memo(function ValenceOrb({
           upgradeCanvas = gl2Canvas;
         }
 
-        if (!result && forceCanonicalWebGL && !signal.aborted) {
+        if (!result && !forceCanonicalWebGL && !signal.aborted) {
           const syncStartedAt = performance.now();
           const syncCanvas = createCanvas(size, dpr);
           const syncRenderer = createOrbGL2(syncCanvas);
@@ -1121,7 +1153,8 @@ export const ValenceOrb = memo(function ValenceOrb({
           forceWebGLFirstFrameTimeoutId = 0;
         }
 
-        const visibleCanvasAgeMs = performance.now() - visibleCanvasMountedAt;
+        const visibleCanvasAgeMs =
+          visibleCanvasMountedAt > 0 ? performance.now() - visibleCanvasMountedAt : 0;
         const visibleUpgradeAgeMs =
           forceCanonicalWebGL && !explicitWebGLOverride
             ? result.durationMs
@@ -1152,16 +1185,27 @@ export const ValenceOrb = memo(function ValenceOrb({
         render = renderGL;
         attachWebGLListeners(upgradeCanvas);
 
+        const state = stateRef.current;
+        if (state) {
+          try {
+            renderGL(smoothValenceRef.current, state.time, state.particles);
+          } catch (err) {
+            recordError(err, { component: 'ValenceOrb', action: 'webgl-first-frame' });
+            result.renderer.dispose();
+            glRenderer = null;
+            glRendererRef.current = null;
+            canvasElRef.current = null;
+            render = renderPendingWebGL;
+            return false;
+          }
+        }
+
         if (wrapper.contains(previousCanvas)) {
           wrapper.replaceChild(upgradeCanvas, previousCanvas);
         } else {
           wrapper.appendChild(upgradeCanvas);
         }
-
-        const state = stateRef.current;
-        if (state) {
-          renderGL(smoothValenceRef.current, state.time, state.particles);
-        }
+        visibleCanvasMountedAt = performance.now();
 
         return true;
       };
@@ -1183,15 +1227,19 @@ export const ValenceOrb = memo(function ValenceOrb({
         void (async () => {
           const recoveredWithWebGL = await upgradeToMainThreadWebGL();
           if (!recoveredWithWebGL && !signal.aborted && mountedRef.current) {
-            degradeToCanvas2D();
+            if (!forceCanonicalWebGL || debugCanvasFallbackAllowed) {
+              degradeToCanvas2D();
+            } else {
+              setCtxFailed(true);
+            }
           }
         })();
       };
 
-      if ((renderer === 'auto' || renderer === 'webgl') && shouldUseWorkerWebGL(forceCanonicalWebGL)) {
+      if ((renderer === 'auto' || renderer === 'webgl') && shouldUseWorkerWebGL(forceCanonicalWebGL, size)) {
         const workerStartedAt = performance.now();
-        const workerCanvas = forceCanonicalWebGL ? activeCanvas : createCanvas(size, dpr);
-        if (forceCanonicalWebGL && workerCanvas !== activeCanvas) {
+        const workerCanvas = createCanvas(size, dpr);
+        if (forceCanonicalWebGL) {
           workerCanvas.style.opacity = '0';
           workerCanvas.style.transition = 'opacity 160ms ease-out';
         }
@@ -1206,6 +1254,14 @@ export const ValenceOrb = memo(function ValenceOrb({
         let nextWorkerRenderId = 0;
         let workerRenderInFlight = false;
         let latestWorkerPayload: OrbWorkerPayload | null = null;
+        let workerStartupTimeoutId = 0;
+
+        const clearWorkerStartupTimeout = () => {
+          if (workerStartupTimeoutId !== 0) {
+            window.clearTimeout(workerStartupTimeoutId);
+            workerStartupTimeoutId = 0;
+          }
+        };
 
         const postWorkerRender = (payload: OrbWorkerPayload) => {
           if (signal.aborted || !mountedRef.current) return;
@@ -1239,9 +1295,11 @@ export const ValenceOrb = memo(function ValenceOrb({
           if (signal.aborted || !mountedRef.current) return;
 
           if (event.data.type === 'rendered') {
-            if (activeCanvas !== workerCanvas) {
+            clearWorkerStartupTimeout();
+            if (activeCanvas !== workerCanvas || !wrapper.contains(workerCanvas)) {
               if (shouldKeepCurrentVisibleCanvas()) {
                 rememberSlowWebGL(performance.now() - visibleCanvasMountedAt);
+                clearWorkerStartupTimeout();
                 worker.terminate();
                 if (webglWorker === worker) webglWorker = null;
                 if (workerRendererRef.current === workerRenderer) {
@@ -1267,6 +1325,7 @@ export const ValenceOrb = memo(function ValenceOrb({
               } else {
                 wrapper.appendChild(workerCanvas);
               }
+              visibleCanvasMountedAt = performance.now();
             }
             workerRendererRef.current = workerRenderer;
             canvasElRef.current = workerCanvas;
@@ -1282,6 +1341,7 @@ export const ValenceOrb = memo(function ValenceOrb({
               new Error(event.data.reason || 'Worker WebGL renderer failed'),
               { component: 'ValenceOrb', action: 'worker-webgl' },
             );
+            clearWorkerStartupTimeout();
             worker.terminate();
             if (webglWorker === worker) webglWorker = null;
             recoverFromWebGLStartupFailure();
@@ -1296,6 +1356,7 @@ export const ValenceOrb = memo(function ValenceOrb({
               : Math.max(readyDurationMs, visibleCanvasAgeMs);
           if (!shouldApplyWorkerWebGLUpgrade(visibleUpgradeAgeMs, forceCanonicalWebGL || explicitWebGLOverride)) {
             rememberSlowWebGL(visibleUpgradeAgeMs);
+            clearWorkerStartupTimeout();
             worker.terminate();
             if (webglWorker === worker) webglWorker = null;
             return;
@@ -1328,10 +1389,27 @@ export const ValenceOrb = memo(function ValenceOrb({
             new Error('Worker WebGL renderer errored before first paint'),
             { component: 'ValenceOrb', action: 'worker-webgl-error' },
           );
+          clearWorkerStartupTimeout();
           worker.terminate();
           if (webglWorker === worker) webglWorker = null;
           recoverFromWebGLStartupFailure();
         };
+
+        if (forceCanonicalWebGL) {
+          workerStartupTimeoutId = window.setTimeout(() => {
+            if (signal.aborted || !mountedRef.current || visualReadyRef.current) return;
+            clearWorkerStartupTimeout();
+            worker.terminate();
+            if (webglWorker === worker) webglWorker = null;
+            if (workerRendererRef.current === workerRenderer) {
+              workerRendererRef.current = null;
+            }
+            workerRenderer = null;
+            workerRenderInFlight = false;
+            latestWorkerPayload = null;
+            setCtxFailed(true);
+          }, FORCED_WEBGL_WORKER_STARTUP_TIMEOUT_MS);
+        }
 
         worker.postMessage({ type: 'init', canvas: offscreen, size, dpr }, [offscreen]);
         return;
@@ -1339,13 +1417,18 @@ export const ValenceOrb = memo(function ValenceOrb({
 
       const recoveredWithWebGL = await upgradeToMainThreadWebGL();
       if (!recoveredWithWebGL && !signal.aborted && mountedRef.current) {
-        degradeToCanvas2D();
+        if (!forceCanonicalWebGL || debugCanvasFallbackAllowed) {
+          degradeToCanvas2D();
+        } else {
+          setCtxFailed(true);
+        }
       }
     };
 
     // ── Touch ripple handler (P2) ──
     const handlePointerDown = (e: PointerEvent) => {
-      const rect = activeCanvas.getBoundingClientRect();
+      const rect = (canvasElRef.current ?? activeCanvas).getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) return;
       const x = (e.clientX - rect.left) / rect.width;
       const y = 1.0 - (e.clientY - rect.top) / rect.height; // flip Y for WebGL UV
       const state = stateRef.current;
@@ -1362,6 +1445,31 @@ export const ValenceOrb = memo(function ValenceOrb({
     let cancelWebGLUpgrade = () => {};
     let webglUpgradeStarted = false;
     let webglUpgradePendingUntilVisible = false;
+    let pendingVisibilityRetryId = 0;
+    const clearPendingVisibilityRetry = () => {
+      if (pendingVisibilityRetryId !== 0) {
+        window.clearTimeout(pendingVisibilityRetryId);
+        pendingVisibilityRetryId = 0;
+      }
+    };
+    const schedulePendingVisibilityRetry = () => {
+      if (pendingVisibilityRetryId !== 0 || webglUpgradeAbort.signal.aborted) return;
+      pendingVisibilityRetryId = window.setTimeout(() => {
+        pendingVisibilityRetryId = 0;
+        if (
+          webglUpgradeAbort.signal.aborted ||
+          webglUpgradeStarted ||
+          !webglUpgradePendingUntilVisible
+        ) {
+          return;
+        }
+        if (hasViewportIntersection(wrapper)) {
+          startWebGLUpgradeWhenVisible();
+          return;
+        }
+        schedulePendingVisibilityRetry();
+      }, WEBGL_VISIBILITY_RETRY_INTERVAL_MS);
+    };
     const armForcedWebGLFirstFrameTimeout = () => {
       if (!forceCanonicalWebGL || forceWebGLFirstFrameTimeoutId !== 0) return;
       forceWebGLFirstFrameTimeoutId = window.setTimeout(
@@ -1392,16 +1500,22 @@ export const ValenceOrb = memo(function ValenceOrb({
       workerRenderer = null;
       glRenderer = null;
 
-      degradeToCanvas2D();
+      if (!forceCanonicalWebGL || debugCanvasFallbackAllowed) {
+        degradeToCanvas2D();
+      } else {
+        setCtxFailed(true);
+      }
     };
     const startWebGLUpgradeWhenVisible = () => {
       if (webglUpgradeAbort.signal.aborted || webglUpgradeStarted) return;
 
       if (!hasViewportIntersection(wrapper)) {
         webglUpgradePendingUntilVisible = true;
+        schedulePendingVisibilityRetry();
         return;
       }
 
+      clearPendingVisibilityRetry();
       webglUpgradePendingUntilVisible = false;
       webglUpgradeStarted = true;
       armForcedWebGLFirstFrameTimeout();
@@ -1432,6 +1546,7 @@ export const ValenceOrb = memo(function ValenceOrb({
       disposed = true;
       webglUpgradeAbort.abort();
       window.clearTimeout(forceWebGLFirstFrameTimeoutId);
+      clearPendingVisibilityRetry();
       cancelWebGLUpgrade();
       cancelNextFrame();
       upgradeVisibilityObserver?.disconnect();

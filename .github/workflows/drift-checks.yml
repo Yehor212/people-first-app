@@ -11,12 +11,16 @@ on:
       # Run only when something we can drift on actually changes.
       - 'src/**'
       - 'docs/**'
+      - 'AGENTS.md'
       - 'tools/telegram-control/**'
+      - 'tools/zenflow-context/**'
+      - 'tools/ruflow-plus/**'
       - 'supabase/migrations/**'
       - 'package.json'
       - 'package-lock.json'
       - 'ARCHITECTURE.md'
       - 'CLAUDE.md'
+      - 'scripts/check-agent-context.mjs'
       - 'scripts/doc-counts.cjs'
       - 'scripts/check-types-freshness.cjs'
       - 'scripts/check-supabase-migration-prefixes.cjs'
@@ -51,6 +55,9 @@ jobs:
           - name: supabase-migration-prefixes
             cmd: node scripts/check-supabase-migration-prefixes.cjs
             fix: create new migrations via `supabase migration new <name>` and avoid duplicate numeric prefixes in supabase/migrations
+          - name: agent-context
+            cmd: npm run check:agent-context
+            fix: keep AGENTS.md tracked, CLAUDE.md as an AGENTS bridge, and ZenFlow Context profiles pointed at real headings
           - name: retry-tests
             cmd: npx vitest run src/lib/__tests__/retry.test.ts src/lib/__tests__/appUpdateManager.test.ts src/lib/__tests__/lazyWithRetry.test.ts
             fix: fix failing tests in src/lib/retry.ts (or migrated call-sites)

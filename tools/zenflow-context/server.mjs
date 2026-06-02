@@ -34,7 +34,7 @@ const contextProfiles = {
       "верификация",
     ],
     sections: [
-      { file: "AGENTS.md", headings: ["Architecture", "Conventions", "Safety", "CI", "Work Mode"] },
+      { file: "AGENTS.md", headings: ["Architecture", "Agent Entry Points", "Conventions", "CI And Verification", "Ruflow+ And Work Mode"] },
       { file: "ARCHITECTURE.md", headings: ["Codebase Metrics", "Tech Stack", "State Management", "Data Flow"] },
       { file: "docs/ai/SYNC_CONTRACT.md", headings: ["North Star", "Non-Negotiable Invariants", "Required Verification For Sync Changes"] },
       { file: "docs/ai/AGENT_CONTEXT_PERSISTENCE.md", headings: ["Session Start Protocol", "Context7-Style Retrieval", "Writeback Protocol", "Verification"] },
@@ -71,9 +71,9 @@ const contextProfiles = {
     purpose: "Recover visual rules, cross-platform UI requirements, motion/a11y constraints, and verification routes.",
     keywords: ["ui", "интерфейс", "visual", "визуал", "motion", "анимация", "accessibility", "доступность", "rtl", "i18n", "mobile", "android", "ios", "touch", "theme", "тема"],
     sections: [
-      { file: "AGENTS.md", headings: ["Conventions", "Safety", "CI"] },
+      { file: "AGENTS.md", headings: ["Conventions", "Safety", "CI And Verification"] },
       { file: "ARCHITECTURE.md", headings: ["UI Design Constraints", "Performance & Motion", "i18n"] },
-      { file: "docs/ai/PREFLIGHT_OPERATOR_TEMPLATE.md", headings: ["Risk Depth", "Visual Audit Matrix", "Verification Plan"] },
+      { file: "docs/ai/PREFLIGHT_OPERATOR_TEMPLATE.md", headings: ["Default Depth For ZenFlow", "Mandatory Runtime Contract For L3/L4 Work", "Visual Audit Defaults"] },
     ],
     scripts: ["check:colors", "check:visual", "i18n:check", "i18n:deep", "test:e2e"],
   },
@@ -82,9 +82,9 @@ const contextProfiles = {
     purpose: "Recover quality gates, blocked-path handling, and evidence discipline.",
     keywords: ["verify", "verification", "проверка", "верификация", "ci", "test", "тест", "lint", "typecheck", "gate", "evidence", "доказательство", "regression", "регрессия", "audit", "аудит", "hooks", "хуки"],
     sections: [
-      { file: "AGENTS.md", headings: ["CI", "Commit Pipeline", "Enforcement"] },
-      { file: "docs/ai/PREFLIGHT_OPERATOR_TEMPLATE.md", headings: ["Verification Plan", "Evidence", "GO / STOP / ASK"] },
-      { file: "docs/ai/RUFLOW_PLUS_BLUEPRINT.md", headings: ["Evidence Checklist", "Completion Standard"] },
+      { file: "AGENTS.md", headings: ["CI And Verification", "Commit Pipeline", "Ruflow+ And Work Mode"] },
+      { file: "docs/ai/PREFLIGHT_OPERATOR_TEMPLATE.md", headings: ["Non-Negotiables", "Default Depth For ZenFlow", "Ready-To-Use Template"] },
+      { file: "docs/ai/RUFLOW_PLUS_BLUEPRINT.md", headings: ["Anti-Drift Contract", "Evidence Checklist"] },
       { file: "docs/ai/AGENT_CONTEXT_PERSISTENCE.md", headings: ["Verification"] },
     ],
     scripts: ["typecheck", "lint", "check:all", "ci:preflight", "ci:remote", "ci:remote:wait"],
@@ -572,6 +572,19 @@ function listZenflowContexts() {
   }));
 }
 
+function getZenflowContextManifest() {
+  return Object.entries(contextProfiles).map(([id, profile]) => ({
+    id,
+    label: profile.label,
+    purpose: profile.purpose,
+    sections: profile.sections.map((section) => ({
+      file: section.file,
+      headings: [...section.headings],
+    })),
+    scripts: [...profile.scripts],
+  }));
+}
+
 async function callTool(name, args = {}) {
   if (name === "resolve_zenflow_context") {
     return resolveZenflowContext(args);
@@ -724,6 +737,7 @@ async function handleMessage(body, getFraming = () => "newline") {
 
 export {
   getZenflowContext,
+  getZenflowContextManifest,
   listZenflowContexts,
   recordZenflowLesson,
   resolveZenflowContext,
