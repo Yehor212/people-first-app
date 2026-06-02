@@ -861,7 +861,6 @@ export const ValenceOrb = memo(function ValenceOrb({
       const documentHidden = typeof document !== "undefined" && document.hidden;
       if (documentHidden || !isVisibleRef.current) {
         resetFrameClock();
-        requestNextFrame();
         return;
       }
 

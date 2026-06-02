@@ -401,6 +401,40 @@ describe("ValenceOrb motion profile", () => {
     expect(latestOrbTime()).toBeGreaterThan(afterResumeTime);
   });
 
+  it("does not keep scheduling background RAF frames after the document becomes hidden mid-frame", async () => {
+    vi.useFakeTimers();
+    stubVisibleOrbRect();
+    const hiddenSpy = vi.spyOn(document, "hidden", "get").mockReturnValue(false);
+    const { flushFrameAt, pendingCount } = installQueuedRaf();
+
+    render(
+      createElement(ValenceOrb, {
+        valence: 0.25,
+        renderer: "canvas",
+        animationSpeed: 1,
+      }),
+    );
+
+    expect(pendingCount()).toBeGreaterThanOrEqual(1);
+
+    await act(async () => {
+      flushFrameAt(900);
+      vi.advanceTimersByTime(0);
+      await Promise.resolve();
+    });
+
+    expect(pendingCount()).toBe(1);
+
+    hiddenSpy.mockReturnValue(true);
+    await act(async () => {
+      flushFrameAt(1000);
+      await Promise.resolve();
+    });
+
+    expect(pendingCount()).toBe(0);
+    expect(drawOrbScene).not.toHaveBeenCalled();
+  });
+
   it("blocks non-canonical first-paint fallbacks for forced WebGL orb surfaces", () => {
     expect(allowsFirstPaintFallback("webgl", null)).toBe(false);
     expect(allowsFirstPaintFallback("auto", "webgl")).toBe(false);
