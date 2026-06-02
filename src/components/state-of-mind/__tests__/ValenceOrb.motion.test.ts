@@ -633,6 +633,133 @@ describe("ValenceOrb motion profile", () => {
     }
   });
 
+  it("does not catch up hidden worker-render time after WebGL worker backpressure", async () => {
+    vi.useFakeTimers();
+    stubVisibleOrbRect();
+    const { flushNextFrame, flushFrameAt } = installQueuedRaf();
+    const originalInnerWidth = window.innerWidth;
+    const hadTransferControl =
+      "transferControlToOffscreen" in HTMLCanvasElement.prototype;
+    const originalTransferControl =
+      HTMLCanvasElement.prototype.transferControlToOffscreen;
+    const renderMessages: Array<{
+      type: "render";
+      requestId?: number;
+      payload: { time: number };
+    }> = [];
+
+    class WorkerStub {
+      onmessage: ((event: MessageEvent<{ type: "ready" | "rendered"; requestId?: number }>) => void) | null = null;
+      onerror: ((event: ErrorEvent) => void) | null = null;
+      postMessage = vi.fn((message: {
+        type: "init" | "render" | "dispose";
+        requestId?: number;
+        payload?: { time: number };
+      }) => {
+        if (message.type === "init") {
+          queueMicrotask(() => {
+            this.onmessage?.({ data: { type: "ready" } } as MessageEvent<{ type: "ready" }>);
+          });
+          return;
+        }
+        if (message.type === "render" && message.payload) {
+          renderMessages.push({
+            type: "render",
+            requestId: message.requestId,
+            payload: message.payload,
+          });
+        }
+      });
+      terminate = vi.fn();
+      flushRendered() {
+        const lastRequestId = renderMessages.at(-1)?.requestId;
+        queueMicrotask(() => {
+          this.onmessage?.({
+            data: { type: "rendered", requestId: lastRequestId },
+          } as MessageEvent<{ type: "rendered"; requestId?: number }>);
+        });
+      }
+    }
+    const workerInstances: WorkerStub[] = [];
+    const WorkerSpy = vi.fn(function WorkerMock() {
+      const worker = new WorkerStub();
+      workerInstances.push(worker);
+      return worker;
+    });
+
+    Object.defineProperty(window, "innerWidth", {
+      configurable: true,
+      value: 449,
+    });
+    Object.defineProperty(HTMLCanvasElement.prototype, "transferControlToOffscreen", {
+      configurable: true,
+      value: vi.fn(() => ({ width: 0, height: 0 })),
+    });
+    vi.stubGlobal("OffscreenCanvas", class OffscreenCanvasStub {});
+    vi.stubGlobal("Worker", WorkerSpy);
+
+    try {
+      render(
+        createElement(ValenceOrb, {
+          valence: 0.25,
+          renderer: "webgl",
+          size: 240,
+          animationSpeed: 1,
+        }),
+      );
+
+      await flushScheduledWebGLUpgrade(flushNextFrame);
+      await act(async () => {
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+
+      expect(renderMessages).toHaveLength(1);
+      const firstRenderTime = renderMessages[0].payload.time;
+
+      for (let i = 0; i < 100; i += 1) {
+        act(() => {
+          flushFrameAt(1000 + i * 16);
+        });
+      }
+
+      expect(renderMessages).toHaveLength(1);
+
+      workerInstances[0]?.flushRendered();
+      await act(async () => {
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+
+      act(() => {
+        flushFrameAt(3000);
+      });
+      await act(async () => {
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+
+      expect(renderMessages.length).toBeGreaterThanOrEqual(2);
+      expect(renderMessages[1].payload.time - firstRenderTime).toBeLessThanOrEqual(0.05);
+    } finally {
+      Object.defineProperty(window, "innerWidth", {
+        configurable: true,
+        value: originalInnerWidth,
+      });
+      if (hadTransferControl) {
+        Object.defineProperty(HTMLCanvasElement.prototype, "transferControlToOffscreen", {
+          configurable: true,
+          value: originalTransferControl,
+        });
+      } else {
+        const canvasPrototype = HTMLCanvasElement.prototype as {
+          transferControlToOffscreen?: HTMLCanvasElement["transferControlToOffscreen"];
+        };
+        delete canvasPrototype.transferControlToOffscreen;
+      }
+    }
+  });
+
   it("does not recover forced WebGL startup failure to Canvas2D in product mode", async () => {
     vi.useFakeTimers();
     stubVisibleOrbRect();

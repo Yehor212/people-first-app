@@ -203,12 +203,12 @@ export const OrbPage = memo(function OrbPage({
     ? "pt-[calc(env(safe-area-inset-top)+1rem)]"
     : "pt-[calc(env(safe-area-inset-top)+1.25rem)]";
   const selectContentLayoutClass = isUltraDenseSelectStep
-    ? "flex flex-1 min-h-0 flex-col justify-center overflow-y-auto px-1 pb-24 pt-12 md:pb-28 md:pt-10"
+    ? "flex flex-1 min-h-0 flex-col justify-center overflow-y-auto overflow-x-hidden px-1 pb-24 pt-12 md:pb-28 md:pt-10"
     : isDenseSelectStep
-    ? "flex flex-1 min-h-0 flex-col justify-center overflow-y-auto px-1 pb-24 pt-12 md:pb-28 md:pt-8"
+    ? "flex flex-1 min-h-0 flex-col justify-center overflow-y-auto overflow-x-hidden px-1 pb-24 pt-12 md:pb-28 md:pt-8"
     : isShortViewport
-    ? "flex flex-1 min-h-0 flex-col justify-center overflow-y-auto px-1 pb-24 pt-8 md:pb-28"
-    : "flex flex-1 min-h-0 flex-col justify-center overflow-y-auto px-1 pb-24 md:pb-28";
+    ? "flex flex-1 min-h-0 flex-col justify-center overflow-y-auto overflow-x-hidden px-1 pb-24 pt-8 md:pb-28"
+    : "flex flex-1 min-h-0 flex-col justify-center overflow-y-auto overflow-x-hidden px-1 pb-24 md:pb-28";
 
   return (
     <Bloom key="orb-page" transition={staggerDelay("primary")}>

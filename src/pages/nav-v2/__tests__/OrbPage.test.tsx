@@ -244,6 +244,24 @@ describe("OrbPage progressive flow", () => {
     expect(screen.getByTestId("orb-page-select")).toBeInTheDocument();
   });
 
+  it("clips horizontal overflow inside the orb step scrollers", () => {
+    render(<OrbPage onAddMood={onAddMoodMock} />);
+
+    const selectScroller = screen
+      .getByTestId("orb-page-select")
+      .closest(".overflow-y-auto");
+
+    expect(selectScroller).toHaveClass("overflow-x-hidden");
+
+    fireEvent.click(screen.getByTestId("orb-page-next"));
+
+    const refineScroller = screen
+      .getByTestId("orb-page-refine")
+      .closest(".overflow-y-auto");
+
+    expect(refineScroller).toHaveClass("overflow-x-hidden");
+  });
+
   it("uses the day flourish instead of the shooting star in paper theme", () => {
     themeState.appliedTheme = "paper";
 

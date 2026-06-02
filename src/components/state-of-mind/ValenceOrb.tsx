@@ -657,6 +657,9 @@ export const ValenceOrb = memo(function ValenceOrb({
     let ctx2d: CanvasRenderingContext2D | null = null;
     let webglEventCanvas: HTMLCanvasElement | null = null;
     let webglWorker: Worker | null = null;
+    let nextWorkerRenderId = 0;
+    let workerRenderInFlight = false;
+    let latestWorkerPayload: OrbWorkerPayload | null = null;
     let forceWebGLStartupRecovered = false;
 
     if (!forceCanonicalWebGL) {
@@ -865,6 +868,14 @@ export const ValenceOrb = memo(function ValenceOrb({
       // Runtime dopamine gate
       if (!shouldAnimateCanonicalOrb()) {
         try { render(state.currentValence, state.time, state.particles); } catch { /* graceful: static frame render failure invisible — orb just stays as-is */ }
+        return;
+      }
+
+      // The worker owns the visible WebGL frame. If it is still rendering the
+      // previous payload, do not advance shader time/particles behind the
+      // user's back and then "catch up" in one visible frame.
+      if (workerRenderer && workerRenderInFlight) {
+        requestNextFrame();
         return;
       }
 
@@ -1247,10 +1258,9 @@ export const ValenceOrb = memo(function ValenceOrb({
           name: 'zenflow-orb-renderer',
         });
         webglWorker = worker;
-
-        let nextWorkerRenderId = 0;
-        let workerRenderInFlight = false;
-        let latestWorkerPayload: OrbWorkerPayload | null = null;
+        nextWorkerRenderId = 0;
+        workerRenderInFlight = false;
+        latestWorkerPayload = null;
         let workerStartupTimeoutId = 0;
 
         const clearWorkerStartupTimeout = () => {
