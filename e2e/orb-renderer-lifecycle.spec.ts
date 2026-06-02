@@ -72,6 +72,66 @@ async function primeOrbPage(page: import("@playwright/test").Page) {
 }
 
 test.describe("V2 orb renderer lifecycle", () => {
+  test("does not create horizontally scrollable decorative orb layers", async ({
+    page,
+  }) => {
+    await primeOrbPage(page);
+    await page.addInitScript(() => {
+      localStorage.setItem("zenflow-theme", "paper");
+    });
+    await page.setViewportSize({ width: 449, height: 698 });
+    await page.goto("orb?nav=v2&navLayout=phone&dev=true", {
+      waitUntil: "domcontentloaded",
+    });
+    await expect(page.getByTestId("orb-page-next")).toBeVisible();
+
+    const overflowAudit = await page.evaluate(() => {
+      const orbPage = document.querySelector<HTMLElement>('[data-testid="orb-page"]');
+      if (!orbPage) {
+        throw new Error("Orb page root was not rendered");
+      }
+
+      const decorativeLayers = Array.from(
+        orbPage.querySelectorAll<HTMLElement>(
+          [
+            '[data-testid="cosmic-orb-flourish-layer"]',
+            '[data-testid="day-cosmic-background"]',
+            '[data-testid^="day-cosmic-"]',
+            '[data-testid="orb-day-flourish"]',
+          ].join(", "),
+        ),
+      );
+
+      const scrollableDecorativeLayers = decorativeLayers
+        .map((element) => {
+          const before = element.scrollLeft;
+          element.scrollLeft = 1;
+          const canScrollX = element.scrollLeft > 0;
+          element.scrollLeft = before;
+          return {
+            testId: element.dataset.testid ?? "",
+            className: element.className,
+            clientWidth: element.clientWidth,
+            scrollWidth: element.scrollWidth,
+            overflowX: getComputedStyle(element).overflowX,
+            canScrollX,
+          };
+        })
+        .filter((entry) => entry.canScrollX);
+
+      return {
+        bodyOverflowX: document.body.scrollWidth - document.body.clientWidth,
+        documentOverflowX:
+          document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        scrollableDecorativeLayers,
+      };
+    });
+
+    expect(overflowAudit.bodyOverflowX).toBeLessThanOrEqual(0);
+    expect(overflowAudit.documentOverflowX).toBeLessThanOrEqual(0);
+    expect(overflowAudit.scrollableDecorativeLayers).toEqual([]);
+  });
+
   test("does not swap the visible hero orb canvas after the first stable frame", async ({
     page,
   }) => {

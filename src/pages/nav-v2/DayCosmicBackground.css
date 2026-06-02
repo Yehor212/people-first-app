@@ -16,6 +16,24 @@
   isolation: isolate;
 }
 
+.day-cosmic,
+.day-cosmic.overflow-hidden,
+.day-cosmic__base,
+.day-cosmic__sun-threads,
+.orb-day-flourish {
+  overflow: hidden;
+}
+
+@supports (overflow: clip) {
+  .day-cosmic,
+  .day-cosmic.overflow-hidden,
+  .day-cosmic__base,
+  .day-cosmic__sun-threads,
+  .orb-day-flourish {
+    overflow: clip;
+  }
+}
+
 .day-cosmic__bokeh,
 .day-cosmic__horizon-glow,
 .day-cosmic__light-curtain,
@@ -65,7 +83,6 @@
 .day-cosmic__base {
   position: absolute;
   inset: 0;
-  overflow: hidden;
   background:
     radial-gradient(ellipse 92% 54% at 50% 115%, var(--day-horizon) 0%, transparent 68%),
     radial-gradient(ellipse 84% 48% at 50% 40%, hsl(56 100% 90% / 0.22) 0%, transparent 60%),
@@ -342,7 +359,6 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  overflow: hidden;
   mix-blend-mode: screen;
 }
 
@@ -1075,7 +1091,6 @@
 .orb-day-flourish {
   position: absolute;
   inset: 0;
-  overflow: hidden;
   isolation: isolate;
 }
 
