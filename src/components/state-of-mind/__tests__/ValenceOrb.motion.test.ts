@@ -603,6 +603,17 @@ describe("ValenceOrb motion profile", () => {
       expect(renderer.dispose).not.toHaveBeenCalled();
       expect(container.querySelector("[data-orb-visual-ready='true']")).not.toBeNull();
       expect(drawOrbScene).not.toHaveBeenCalled();
+
+      const querySelectorAllSpy = vi.spyOn(HTMLElement.prototype, "querySelectorAll");
+      act(() => {
+        flushNextFrame();
+      });
+      await act(async () => {
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+
+      expect(querySelectorAllSpy).not.toHaveBeenCalledWith("canvas");
     } finally {
       Object.defineProperty(window, "innerWidth", {
         configurable: true,

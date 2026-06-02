@@ -532,17 +532,30 @@ export const ValenceOrb = memo(function ValenceOrb({
   };
   const markVisualReadyRef = useRef<() => void>(() => {});
   markVisualReadyRef.current = () => {
-    markFirstPaintReadyRef.current();
     const alreadyReady = visualReadyRef.current;
-    visualReadyRef.current = true;
-    if (!alreadyReady && firstVisualReadyAtRef.current === 0) {
-      firstVisualReadyAtRef.current = performance.now();
-    }
     const revealCanonicalCanvas = (orbCanvas: HTMLCanvasElement) => {
       orbCanvas.style.setProperty('transition', 'none', 'important');
       orbCanvas.style.setProperty('opacity', '1', 'important');
       orbCanvas.setAttribute('data-orb-visual-ready', 'true');
     };
+
+    if (alreadyReady) {
+      const canvas = canvasElRef.current;
+      if (canvas && canvas.getAttribute('data-orb-visual-ready') !== 'true') {
+        revealCanonicalCanvas(canvas);
+      }
+      const wrapper = wrapperRef.current;
+      if (wrapper && wrapper.getAttribute('data-orb-visual-ready') !== 'true') {
+        wrapper.setAttribute('data-orb-visual-ready', 'true');
+      }
+      return;
+    }
+
+    markFirstPaintReadyRef.current();
+    visualReadyRef.current = true;
+    if (firstVisualReadyAtRef.current === 0) {
+      firstVisualReadyAtRef.current = performance.now();
+    }
     const canvas = canvasElRef.current;
     if (canvas) {
       revealCanonicalCanvas(canvas);
@@ -552,7 +565,6 @@ export const ValenceOrb = memo(function ValenceOrb({
       revealCanonicalCanvas(orbCanvas);
     });
     wrapper?.setAttribute('data-orb-visual-ready', 'true');
-    if (alreadyReady) return;
     onVisualReadyRef.current?.();
   };
 
