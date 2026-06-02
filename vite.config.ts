@@ -131,6 +131,8 @@ export default defineConfig(({ mode }) => {
               "pwa-windows-splash-620x300.png",
               "robots.txt",
               "offline.html",
+              "runtime-perf-bootstrap.js",
+              "registerSW.js",
             ],
 
             // Production-ready manifest
@@ -199,7 +201,26 @@ export default defineConfig(({ mode }) => {
 
             // P1 Fix: injectManifest configuration for custom SW
             injectManifest: {
-              globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+              // Keep install precache to the real app shell and canonical orb boot path.
+              // Large/lazy route chunks and social graphics are cached on demand by sw.ts.
+              globPatterns: [
+                "index.html",
+                "manifest.webmanifest",
+                "runtime-perf-bootstrap.js",
+                "registerSW.js",
+                "assets/index-*.js",
+                "assets/index-*.css",
+                "assets/state-vendor-*.js",
+                "assets/capacitor-*.js",
+                "assets/lucide-icons-*.js",
+                "assets/supabase-*.js",
+                "assets/utils-vendor-*.js",
+                "assets/dexie-*.js",
+                "assets/OrbPage-*.js",
+                "assets/OrbPage-*.css",
+                "assets/orbWorker-*.js",
+                "assets/*.woff2",
+              ],
               // version-check.js and version.json MUST always be fetched from network.
               // If precached, the old SW serves stale version-check.js with the old
               // version string baked in, making the version check pass incorrectly.

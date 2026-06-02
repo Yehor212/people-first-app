@@ -23,6 +23,13 @@ declare const self: ServiceWorkerGlobalScope;
 
 const CLIENT_MESSAGE_TYPES = ["SKIP_WAITING", "CLEAR_CACHES", "REGISTER_SYNC"] as const;
 type ClientMessageType = (typeof CLIENT_MESSAGE_TYPES)[number];
+const SAME_ORIGIN_RUNTIME_ASSET_DESTINATIONS = new Set<RequestDestination>([
+  "font",
+  "image",
+  "script",
+  "style",
+]);
+
 interface ClientMessage {
   type: ClientMessageType;
 }
@@ -82,6 +89,26 @@ registerRoute(
       new ExpirationPlugin({
         maxEntries: 7,
         maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days
+        purgeOnQuotaError: true,
+      }),
+    ],
+  })
+);
+
+// Cache same-origin lazy chunks/assets on demand instead of during SW install.
+// This keeps the install precache small enough for constrained browser quotas
+// while retaining offline reuse after the asset was actually needed.
+registerRoute(
+  ({ url, request }) =>
+    url.origin === self.location.origin &&
+    url.pathname.includes("/assets/") &&
+    SAME_ORIGIN_RUNTIME_ASSET_DESTINATIONS.has(request.destination),
+  new CacheFirst({
+    cacheName: "zenflow-runtime-assets",
+    plugins: [
+      new ExpirationPlugin({
+        maxEntries: 120,
+        maxAgeSeconds: 14 * 24 * 60 * 60, // 14 days
         purgeOnQuotaError: true,
       }),
     ],
