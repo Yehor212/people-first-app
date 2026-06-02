@@ -230,6 +230,41 @@ function JournalCompactEmptyListShell({
   );
 }
 
+function JournalPageEmptyListShell({
+  ts,
+  onNewEntry,
+}: {
+  ts: Record<string, string>;
+  onNewEntry: () => void;
+}) {
+  return (
+    <div
+      className="flex min-h-[420px] flex-1 items-center justify-center rounded-[28px] border border-border/40 bg-card/30 p-6"
+      data-testid="journal-empty-list"
+    >
+      <div className="w-full max-w-md rounded-[1.6rem] border border-border/25 bg-card/45 p-6 text-center backdrop-blur-xl">
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-primary/20 bg-primary/[0.10] text-primary">
+          <PenLine className="h-6 w-6" aria-hidden="true" />
+        </div>
+        <h3 className="text-base font-semibold text-foreground">
+          {ts.journalEmpty || "Your diary is empty"}
+        </h3>
+        <p className="mx-auto mt-2 max-w-[300px] text-sm leading-relaxed text-muted-foreground">
+          {ts.journalEmptyHint || "Start writing to capture your thoughts, feelings, and memories."}
+        </p>
+        <button
+          type="button"
+          onClick={onNewEntry}
+          className="mt-5 inline-flex min-h-[44px] items-center justify-center gap-2 rounded-2xl bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-[0_14px_34px_hsl(var(--primary)/0.20)] motion-safe:transition-transform active:scale-[0.98]"
+        >
+          <Plus className="h-4 w-4" aria-hidden="true" />
+          {ts.journalNewEntry || "New entry"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 type ModuleState = "card" | "open";
 
 interface JournalModuleProps {
@@ -1677,23 +1712,32 @@ export const JournalModule = memo(function JournalModule({
                           />
                         ))}
 
-                        <div className="relative min-h-[420px] flex-1 overflow-hidden rounded-[28px] border border-border/40 bg-card/30">
-                          <Suspense fallback={null}>
-                            <LazyDiaryEmptyCanvas
-                              onNewEntry={handleNewEntry}
-                              onNewEntryWithPrompt={(_prompt) => {
-                                handleNewEntry();
-                              }}
-                              streak={streak}
-                              entriesThisWeek={
-                                journal.entries.filter((e) => {
-                                  const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-                                  return e.createdAt > weekAgo;
-                                }).length
-                              }
-                            />
-                          </Suspense>
-                        </div>
+                        {journal.loading ? (
+                          <JournalDeferredPanelFallback label={t.loading || "Loading..."} />
+                        ) : journal.totalCount === 0 && !journal.loading ? (
+                          <JournalPageEmptyListShell
+                            ts={ts}
+                            onNewEntry={handleNewEntry}
+                          />
+                        ) : (
+                          <div className="relative min-h-[420px] flex-1 overflow-hidden rounded-[28px] border border-border/40 bg-card/30">
+                            <Suspense fallback={null}>
+                              <LazyDiaryEmptyCanvas
+                                onNewEntry={handleNewEntry}
+                                onNewEntryWithPrompt={(_prompt) => {
+                                  handleNewEntry();
+                                }}
+                                streak={streak}
+                                entriesThisWeek={
+                                  journal.entries.filter((e) => {
+                                    const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+                                    return e.createdAt > weekAgo;
+                                  }).length
+                                }
+                              />
+                            </Suspense>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}

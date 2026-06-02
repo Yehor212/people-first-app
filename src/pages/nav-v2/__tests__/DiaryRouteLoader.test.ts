@@ -122,7 +122,14 @@ describe("V2 diary loading surface", () => {
     expect(journalModuleSource).toContain("showSpaces={false}");
     expect(journalModuleSource).toContain("showFab={false}");
     expect(journalModuleSource).toContain("JournalCompactEmptyListShell");
+    expect(journalModuleSource).toContain("JournalPageEmptyListShell");
     expect(journalModuleSource).toContain("journal.totalCount === 0 && !journal.loading");
+    expect(journalModuleSource).toContain("journal.loading ? (");
+    expect(journalModuleSource).toContain("journal.totalCount === 0 && !journal.loading ? (");
+    expect(journalModuleSource).toContain('<JournalPageEmptyListShell');
+    expect(journalModuleSource).toMatch(
+      /data-testid="journal-detail-pane"[\s\S]*?journal\.loading \? \([\s\S]*?<JournalDeferredPanelFallback[\s\S]*?\) : journal\.totalCount === 0 && !journal\.loading \? \([\s\S]*?<JournalPageEmptyListShell/,
+    );
 
     expect(journalEntryListSource).toContain("showSpaces?: boolean");
     expect(journalEntryListSource).toContain("if (!showSpaces) return");
