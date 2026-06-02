@@ -82,6 +82,7 @@ registerRoute(
       new ExpirationPlugin({
         maxEntries: 7,
         maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days
+        purgeOnQuotaError: true,
       }),
     ],
   })
@@ -98,6 +99,7 @@ registerRoute(
       new ExpirationPlugin({
         maxEntries: 100,
         maxAgeSeconds: 7 * 24 * 60 * 60, // 7 days
+        purgeOnQuotaError: true,
       }),
     ],
   })
@@ -112,6 +114,7 @@ registerRoute(
       new ExpirationPlugin({
         maxEntries: 200,
         maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days
+        purgeOnQuotaError: true,
       }),
     ],
   })
@@ -126,6 +129,7 @@ registerRoute(
       new ExpirationPlugin({
         maxEntries: 10,
         maxAgeSeconds: 365 * 24 * 60 * 60, // 1 year
+        purgeOnQuotaError: true,
       }),
     ],
   })
@@ -140,6 +144,7 @@ registerRoute(
       new ExpirationPlugin({
         maxEntries: 20,
         maxAgeSeconds: 365 * 24 * 60 * 60, // 1 year
+        purgeOnQuotaError: true,
       }),
     ],
   })

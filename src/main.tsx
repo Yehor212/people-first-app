@@ -236,20 +236,9 @@ window.addEventListener("vite:preloadError", (event) => {
  */
 // Save critical state before app closes
 window.addEventListener("beforeunload", () => {
-  try {
-    // Save offline queue state synchronously
-    const queueState = offlineQueue.getState();
-    if (queueState.actions.length > 0) {
-      // Use localStorage as it's synchronous
-      safeLocalStorageSet(SK.LAST_STATE, {
-        timestamp: Date.now(),
-        pendingActions: queueState.actions.length,
-        queueSnapshot: queueState.actions.slice(0, 10), // Save first 10 for recovery
-      });
-      logger.log(`[Main] Saved ${queueState.actions.length} pending actions before unload`);
-    }
-  } catch (_error) {
-    // Ignore errors during unload
+  const pendingActions = savePendingQueueSnapshot({ includeQueueSnapshot: true });
+  if (pendingActions > 0) {
+    logger.log(`[Main] Saved ${pendingActions} pending actions before unload`);
   }
 });
 
@@ -260,6 +249,51 @@ window.addEventListener("beforeunload", () => {
  */
 let isHandlingPause = false;
 let isHandlingResume = false;
+let pendingLifecycleTaskId: number | null = null;
+
+function savePendingQueueSnapshot(options: {
+  hidden?: boolean;
+  includeQueueSnapshot?: boolean;
+} = {}): number {
+  try {
+    const queueState = offlineQueue.getState();
+    if (queueState.actions.length === 0) return 0;
+
+    safeLocalStorageSet(SK.LAST_STATE, {
+      timestamp: Date.now(),
+      pendingActions: queueState.actions.length,
+      ...(options.hidden ? { hidden: true } : {}),
+      ...(options.includeQueueSnapshot
+        ? { queueSnapshot: queueState.actions.slice(0, 10) }
+        : {}),
+    });
+    return queueState.actions.length;
+  } catch (_error) {
+    // Ignore errors during lifecycle snapshots.
+    return 0;
+  }
+}
+
+function yieldToNextTask(): Promise<void> {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, 0);
+  });
+}
+
+function scheduleLifecycleTask(kind: "pause" | "resume"): void {
+  if (pendingLifecycleTaskId !== null) {
+    window.clearTimeout(pendingLifecycleTaskId);
+  }
+
+  pendingLifecycleTaskId = window.setTimeout(() => {
+    pendingLifecycleTaskId = null;
+    if (kind === "pause") {
+      handleAppPause();
+      return;
+    }
+    void handleAppResume();
+  }, 0);
+}
 
 function handleAppPause(): void {
   if (isHandlingPause) return;
@@ -275,18 +309,7 @@ function handleAppPause(): void {
     logger.warn("[Main] cloudSync flush failed during pause:", err);
   }
 
-  try {
-    const queueState = offlineQueue.getState();
-    if (queueState.actions.length > 0) {
-      safeLocalStorageSet(SK.LAST_STATE, {
-        timestamp: Date.now(),
-        pendingActions: queueState.actions.length,
-        hidden: true,
-      });
-    }
-  } catch (_error) {
-    // Ignore errors
-  }
+  savePendingQueueSnapshot({ hidden: true });
 
   // Reset flag after short delay to allow next pause event
   setTimeout(() => {
@@ -298,7 +321,9 @@ async function handleAppResume(): Promise<void> {
   if (isHandlingResume) return;
   isHandlingResume = true;
 
+  await yieldToNextTask();
   await resumeAllAudio();
+  await yieldToNextTask();
 
   // Proactive version check on EVERY tab resume — prevents stale chunk errors.
   // When user returns to a tab left open across deploys, old JS in memory
@@ -316,6 +341,8 @@ async function handleAppResume(): Promise<void> {
   }
 
   // Trigger sync if online — drain offline queue + delta pull + haptic feedback
+  await yieldToNextTask();
+
   if (navigator.onLine) {
     let queueReadyForDelta = true;
     if (offlineQueue.hasPendingActions()) {
@@ -365,9 +392,10 @@ async function handleAppResume(): Promise<void> {
 // Handle visibility change (app going to background on mobile)
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") {
-    handleAppPause();
+    savePendingQueueSnapshot({ hidden: true });
+    scheduleLifecycleTask("pause");
   } else if (document.visibilityState === "visible") {
-    void handleAppResume();
+    scheduleLifecycleTask("resume");
   }
 });
 
@@ -380,13 +408,13 @@ if (isNative) {
   // App paused (going to background)
   const pauseListener = CapacitorApp.addListener("pause", () => {
     logger.log("[Main] App paused - saving state");
-    handleAppPause();
+    scheduleLifecycleTask("pause");
   });
 
   // App resumed (coming back to foreground)
   const resumeListener = CapacitorApp.addListener("resume", () => {
     logger.log("[Main] App resumed - checking for pending sync");
-    void handleAppResume();
+    scheduleLifecycleTask("resume");
   });
 
   // Cleanup on HMR to prevent listener stacking
