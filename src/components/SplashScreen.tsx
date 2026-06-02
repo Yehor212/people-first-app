@@ -1,4 +1,3 @@
-import { motion } from "framer-motion";
 import type { CSSProperties } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { safeJsonParse, storageGetRaw } from "@/lib/safeJson";
@@ -470,15 +469,8 @@ export function SplashScreen({
         <DaySplashBackground />
       )}
 
-      <motion.div
-        className="relative z-10 mb-6 flex h-20 w-20 items-center justify-center"
-        initial={instant ? false : { scale: 0, rotate: -15 }}
-        animate={{ scale: 1, rotate: 0 }}
-        transition={
-          instant
-            ? { duration: 0.16, ease: "easeOut" }
-            : { type: "spring", stiffness: 180, damping: 14, delay: 0.1 }
-        }
+      <div
+        className="splash-brand-logo relative z-10 mb-6 flex h-20 w-20 items-center justify-center"
         data-testid="splash-brand-logo"
       >
         {!isNightBackground ? (
@@ -555,35 +547,26 @@ export function SplashScreen({
           <circle cx="340" cy="140" r="3" fill="white" opacity="0.4" />
           <circle cx="345" cy="135" r="1.5" fill="white" opacity="0.6" />
         </svg>
-      </motion.div>
+      </div>
 
-      <motion.h1
-        className="relative z-10 text-3xl font-bold tracking-[0.15em] text-[var(--splash-copy)]"
-        initial={instant ? false : { opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: instant ? 0 : 0.5, duration: instant ? 0.16 : 0.5, ease: "easeOut" }}
+      <h1
+        className="splash-title relative z-10 text-3xl font-bold tracking-[0.15em] text-[var(--splash-copy)]"
       >
         ZenFlow
-      </motion.h1>
+      </h1>
 
-      <motion.p
-        className="relative z-10 mt-3 text-sm text-[var(--splash-muted)]"
-        initial={instant ? false : { opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: instant ? 0 : 0.8, duration: instant ? 0.16 : 0.5 }}
+      <p
+        className="splash-subtitle relative z-10 mt-3 text-sm text-[var(--splash-muted)]"
       >
         {subtitle}
-      </motion.p>
+      </p>
 
-      <motion.div
-        className="relative z-10 mt-8 flex min-h-[8.125rem] items-center justify-center drop-shadow-[0_0_2rem_var(--splash-loader-shadow)]"
-        initial={instant ? false : { opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: instant ? 0 : 1.0, duration: instant ? 0.16 : undefined }}
+      <div
+        className="splash-loader relative z-10 mt-8 flex min-h-[8.125rem] items-center justify-center drop-shadow-[0_0_2rem_var(--splash-loader-shadow)]"
         data-testid="splash-infinity-loader"
       >
         <PremiumLoader size="xl" label={t.loading} />
-      </motion.div>
+      </div>
     </div>
   );
 }

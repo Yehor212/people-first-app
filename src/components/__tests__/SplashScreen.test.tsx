@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { SplashScreen } from "@/components/SplashScreen";
@@ -86,6 +87,13 @@ describe("SplashScreen", () => {
       "true",
     );
     expect(screen.getByTestId("splash-theme-shell")).toHaveClass("splash-theme-shell");
+  });
+
+  it("keeps the boot splash off Framer Motion's runtime layout path", () => {
+    const source = readFileSync("src/components/SplashScreen.tsx", "utf8");
+
+    expect(source).not.toContain("from \"framer-motion\"");
+    expect(source).not.toContain("<motion.");
   });
 
   it("keeps the bright paper logo treatment on the dark splash scene", () => {

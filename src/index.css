@@ -4801,6 +4801,66 @@ input::-moz-focus-inner {
   transform: translate3d(0, 0, 0) scale(1.02);
 }
 
+@keyframes splash-brand-enter {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(0) rotate(-15deg);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+  }
+}
+
+@keyframes splash-fade-up {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 1.25rem, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes splash-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.splash-brand-logo {
+  animation: splash-brand-enter 0.55s cubic-bezier(0.2, 0.9, 0.2, 1) 0.1s both;
+  will-change: transform, opacity;
+}
+
+.splash-title {
+  animation: splash-fade-up 0.5s ease-out 0.5s both;
+  will-change: transform, opacity;
+}
+
+.splash-subtitle {
+  animation: splash-fade-in 0.5s ease-out 0.8s both;
+  will-change: opacity;
+}
+
+.splash-loader {
+  animation: splash-fade-in 0.42s ease-out 1s both;
+  will-change: opacity;
+}
+
+.splash-theme-shell[data-splash-instant="true"] .splash-brand-logo,
+.splash-theme-shell[data-splash-instant="true"] .splash-title,
+.splash-theme-shell[data-splash-instant="true"] .splash-subtitle,
+.splash-theme-shell[data-splash-instant="true"] .splash-loader {
+  animation-delay: 0s;
+  animation-duration: 0.16s;
+  animation-timing-function: ease-out;
+}
+
 .splash-day-depth {
   animation: zen-glow-breathe 4s ease-in-out infinite;
 }
@@ -4993,6 +5053,10 @@ input::-moz-focus-inner {
 
 body.reduce-motion .splash-day-depth,
 body.reduce-motion .splash-theme-shell,
+body.reduce-motion .splash-brand-logo,
+body.reduce-motion .splash-title,
+body.reduce-motion .splash-subtitle,
+body.reduce-motion .splash-loader,
 body.reduce-motion .splash-day-aurora,
 body.reduce-motion .splash-day-bubble,
 body.reduce-motion .splash-logo-ring,
