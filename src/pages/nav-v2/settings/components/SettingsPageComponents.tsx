@@ -1,4 +1,4 @@
-import { forwardRef, type ReactNode } from "react";
+import { forwardRef, type CSSProperties, type ReactNode } from "react";
 import { ChevronDown, SlidersHorizontal, type LucideIcon } from "lucide-react";
 import { ThemeToggleV2 } from "@/components/navigation-v2/ThemeToggleV2";
 import { getRoleTone, type NonOrbVisualRole } from "@/lib/nonOrbVisualRoles";
@@ -39,6 +39,8 @@ interface SettingsModuleListProps {
   label: string;
   renderPanel: (item: SettingsModuleCardData) => ReactNode;
 }
+
+const settingsModuleTextWrapStyle: CSSProperties = { overflowWrap: "anywhere" };
 
 export const SettingsPageShell = forwardRef<HTMLElement, SettingsPageShellProps>(
   function SettingsPageShell({ children, controlsWired, labelledBy }, ref) {
@@ -213,22 +215,22 @@ function SettingsModuleCard({
         aria-disabled={!controlsWired}
       >
         <SettingsCardIcon icon={Icon} role={item.role} />
-        <span className="min-w-0 flex-1">
-          <span className="block break-words text-sm font-semibold text-foreground">
+        <span className="min-w-0 flex-1" style={settingsModuleTextWrapStyle}>
+          <span className="block text-sm font-semibold text-foreground">
             {item.label}
           </span>
           {item.value ? (
-            <span className="mt-2 block break-words text-base font-semibold leading-tight text-foreground">
+            <span className="mt-2 block text-base font-semibold leading-tight text-foreground">
               {item.value}
             </span>
           ) : null}
-          <span className="mt-2 block break-words text-xs leading-relaxed text-muted-foreground">
+          <span className="mt-2 block text-xs leading-relaxed text-muted-foreground">
             {item.description}
           </span>
         </span>
         <ChevronDown
           className={cn(
-            "ms-auto mt-1 h-4 w-4 shrink-0 text-muted-foreground motion-safe:transition-transform motion-safe:duration-200",
+            "mt-1 h-4 w-4 shrink-0 text-muted-foreground motion-safe:transition-transform motion-safe:duration-200",
             expanded && "rotate-180 text-foreground"
           )}
           aria-hidden="true"
