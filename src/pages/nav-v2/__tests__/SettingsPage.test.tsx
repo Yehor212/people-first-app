@@ -9,6 +9,19 @@ function expectDocumentOrder(first: HTMLElement, second: HTMLElement) {
   );
 }
 
+function expectDeckInsideModulePanel(sectionId: string) {
+  const moduleList = screen.getByTestId("settings-module-list");
+  const selectedButton = screen.getByTestId(`settings-module-card-${sectionId}`);
+  const panel = screen.getByTestId(`settings-module-panel-${sectionId}`);
+  const deck = screen.getByTestId("settings-page-control-deck");
+
+  expect(moduleList).toContainElement(panel);
+  expect(panel).toContainElement(deck);
+  expect(panel).toHaveAttribute("role", "region");
+  expect(panel).toHaveAttribute("aria-labelledby", `settings-module-card-${sectionId}`);
+  expect(selectedButton).toHaveAttribute("aria-controls", `settings-module-panel-${sectionId}`);
+}
+
 function installScrollIntoViewSpy() {
   const scrollDescriptor = Object.getOwnPropertyDescriptor(Element.prototype, "scrollIntoView");
   const rafDescriptor = Object.getOwnPropertyDescriptor(window, "requestAnimationFrame");
@@ -408,19 +421,29 @@ describe("SettingsPage", () => {
     render(<SettingsPage controls={createSettingsControls()} />);
 
     expect(screen.getByTestId("settings-page")).toHaveAttribute("data-controls-wired", "true");
-    expect(screen.getByTestId("settings-section-switcher")).toBeInTheDocument();
+    expect(screen.getByTestId("settings-module-list")).toBeInTheDocument();
+    expect(screen.queryByTestId("settings-section-switcher")).not.toBeInTheDocument();
     expect(screen.getByTestId("settings-page-control-deck")).toHaveAttribute(
       "data-selected-section",
       "profile"
     );
-    expect(screen.getByTestId("settings-section-switcher-profile")).toHaveAttribute(
-      "aria-pressed",
-      "true"
-    );
-    expect(screen.getByTestId("settings-section-switcher-profile")).toHaveAttribute(
-      "aria-controls",
+    expect(screen.getByTestId("settings-page-control-deck")).toHaveAttribute(
+      "id",
       "settings-v2-control-deck"
     );
+    expect(screen.getByTestId("settings-module-card-profile")).toHaveAttribute(
+      "aria-controls",
+      "settings-module-panel-profile"
+    );
+    expect(screen.getByTestId("settings-module-card-profile")).toHaveAttribute(
+      "aria-expanded",
+      "true"
+    );
+    expect(screen.getByTestId("settings-module-card-account")).toHaveAttribute(
+      "aria-expanded",
+      "false"
+    );
+    expectDeckInsideModulePanel("profile");
     expect(screen.getByTestId("settings-v2-panel-profile")).toBeInTheDocument();
     expect(screen.getByDisplayValue("Avery")).toBeInTheDocument();
     expect(screen.queryByTestId("settings-panel")).not.toBeInTheDocument();
@@ -434,14 +457,13 @@ describe("SettingsPage", () => {
       "false"
     );
     expect(screen.getByTestId("device-sessions-card")).toBeInTheDocument();
-    expect(screen.queryByTestId("settings-module-list")).not.toBeInTheDocument();
 
     expectDocumentOrder(
       screen.getByTestId("settings-page-control-card"),
-      screen.getByTestId("settings-section-switcher")
+      screen.getByTestId("settings-module-list")
     );
     expectDocumentOrder(
-      screen.getByTestId("settings-section-switcher"),
+      screen.getByTestId("settings-module-list"),
       screen.getByTestId("settings-page-control-deck")
     );
     expectDocumentOrder(
@@ -461,14 +483,16 @@ describe("SettingsPage", () => {
     );
 
     expect(screen.queryByTestId("settings-module-card-modules")).not.toBeInTheDocument();
-    expect(screen.getByTestId("settings-section-switcher-profile")).toHaveAttribute(
-      "aria-pressed",
+    expect(screen.queryByTestId("settings-section-switcher")).not.toBeInTheDocument();
+    expect(screen.getByTestId("settings-module-card-profile")).toHaveAttribute(
+      "aria-expanded",
       "true"
     );
     expect(screen.getByTestId("settings-page-control-deck")).toHaveAttribute(
       "data-selected-section",
       "profile"
     );
+    expectDeckInsideModulePanel("profile");
     expect(screen.queryByTestId("settings-v2-panel-modules")).not.toBeInTheDocument();
   });
 
@@ -478,23 +502,25 @@ describe("SettingsPage", () => {
     try {
       render(<SettingsPage controls={createSettingsControls()} />);
 
-      fireEvent.click(screen.getByTestId("settings-section-switcher-data"));
+      fireEvent.click(screen.getByTestId("settings-module-card-data"));
 
-      expect(screen.getByTestId("settings-section-switcher-data")).toHaveAttribute(
-        "aria-pressed",
+      expect(screen.queryByTestId("settings-section-switcher")).not.toBeInTheDocument();
+      expect(screen.getByTestId("settings-module-card-data")).toHaveAttribute(
+        "aria-expanded",
         "true"
       );
-      expect(screen.getByTestId("settings-section-switcher-profile")).toHaveAttribute(
-        "aria-pressed",
+      expect(screen.getByTestId("settings-module-card-profile")).toHaveAttribute(
+        "aria-expanded",
         "false"
       );
       expect(screen.getByTestId("settings-page-control-deck")).toHaveAttribute(
         "data-selected-section",
         "data"
       );
+      expectDeckInsideModulePanel("data");
       expect(screen.getByTestId("settings-v2-panel-data")).toBeInTheDocument();
       expect(screen.queryByTestId("settings-panel")).not.toBeInTheDocument();
-      expect(document.querySelectorAll('[data-testid^="settings-module-panel-"]')).toHaveLength(0);
+      expect(document.querySelectorAll('[data-testid^="settings-module-panel-"]')).toHaveLength(1);
       expect(scrollIntoView).not.toHaveBeenCalled();
     } finally {
       restore();
@@ -507,16 +533,18 @@ describe("SettingsPage", () => {
     try {
       render(<SettingsPage controls={createSettingsControls()} />);
 
-      fireEvent.click(screen.getByTestId("settings-section-switcher-account"));
+      fireEvent.click(screen.getByTestId("settings-module-card-account"));
 
-      expect(screen.getByTestId("settings-section-switcher-account")).toHaveAttribute(
-        "aria-pressed",
+      expect(screen.queryByTestId("settings-section-switcher")).not.toBeInTheDocument();
+      expect(screen.getByTestId("settings-module-card-account")).toHaveAttribute(
+        "aria-expanded",
         "true"
       );
       expect(screen.getByTestId("settings-page-control-deck")).toHaveAttribute(
         "data-selected-section",
         "account"
       );
+      expectDeckInsideModulePanel("account");
       expect(screen.getByTestId("settings-v2-panel-account")).toBeInTheDocument();
       expect(screen.getByTestId("settings-v2-panel-account")).not.toHaveTextContent(
         "Automatic syncSigned-in data stays synced across devices."
@@ -549,7 +577,7 @@ describe("SettingsPage", () => {
         screen.queryByRole("button", { name: /sync now|manual sync/i })
       ).not.toBeInTheDocument();
       expect(screen.queryByTestId("settings-panel")).not.toBeInTheDocument();
-      expect(document.querySelectorAll('[data-testid^="settings-module-panel-"]')).toHaveLength(0);
+      expect(document.querySelectorAll('[data-testid^="settings-module-panel-"]')).toHaveLength(1);
       expect(scrollIntoView).not.toHaveBeenCalled();
     } finally {
       restore();

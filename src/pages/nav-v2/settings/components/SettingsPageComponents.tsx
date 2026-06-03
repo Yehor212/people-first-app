@@ -123,7 +123,7 @@ export function SettingsModuleList({
   renderPanel,
 }: SettingsModuleListProps) {
   return (
-    <section aria-label={label} className="grid gap-3" data-testid="settings-module-list">
+    <section aria-label={label} className="grid min-w-0 gap-3" data-testid="settings-module-list">
       {items.map((item) => {
         const expanded = expandedId === item.id;
         const panelId = `settings-module-panel-${item.id}`;
@@ -144,7 +144,7 @@ export function SettingsModuleList({
                 id={panelId}
                 role="region"
                 aria-labelledby={buttonId}
-                className="mt-3 rounded-3xl border border-[hsl(var(--border)/0.52)] bg-[hsl(var(--background)/0.34)] p-2 shadow-inner md:p-3"
+                className="mt-3 min-w-0 rounded-3xl border border-[hsl(var(--border)/0.52)] bg-[hsl(var(--background)/0.34)] p-2 shadow-inner md:p-3"
                 data-testid={`settings-module-panel-${item.id}`}
               >
                 {renderPanel(item)}
@@ -180,7 +180,7 @@ function SettingsModuleCard({
   return (
     <article
       className={cn(
-        "relative overflow-hidden rounded-3xl border bg-[hsl(var(--card)/0.76)] p-3 shadow-[var(--zen-shadow-card)]",
+        "relative min-w-0 overflow-hidden rounded-3xl border bg-[hsl(var(--card)/0.76)] p-3 shadow-[var(--zen-shadow-card)]",
         "motion-safe:transition-[border-color,background-color,box-shadow] motion-safe:duration-200",
         expanded
           ? "border-[hsl(var(--zf-role-settings)/0.52)] bg-[hsl(var(--card)/0.9)] shadow-[0_18px_46px_-28px_hsl(var(--zf-role-settings)/0.82)]"
@@ -198,7 +198,7 @@ function SettingsModuleCard({
         type="button"
         onClick={() => onOpen(item.id)}
         className={cn(
-          "relative flex min-h-[96px] w-full items-start gap-3 rounded-[1.35rem] p-3 text-start",
+          "relative flex min-h-[96px] w-full min-w-0 items-start gap-3 rounded-[1.35rem] p-3 text-start",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--zf-role-settings)/0.52)] focus-visible:ring-offset-2",
           "motion-safe:transition-[transform,background-color] motion-safe:duration-200 hover:-translate-y-0.5 hover:bg-[hsl(var(--card)/0.72)]"
         )}
@@ -213,20 +213,22 @@ function SettingsModuleCard({
         aria-disabled={!controlsWired}
       >
         <SettingsCardIcon icon={Icon} role={item.role} />
-        <span className="min-w-0">
-          <span className="block text-sm font-semibold text-foreground">{item.label}</span>
+        <span className="min-w-0 flex-1">
+          <span className="block break-words text-sm font-semibold text-foreground">
+            {item.label}
+          </span>
           {item.value ? (
-            <span className="mt-2 block text-base font-semibold leading-tight text-foreground">
+            <span className="mt-2 block break-words text-base font-semibold leading-tight text-foreground">
               {item.value}
             </span>
           ) : null}
-          <span className="mt-2 block text-xs leading-relaxed text-muted-foreground">
+          <span className="mt-2 block break-words text-xs leading-relaxed text-muted-foreground">
             {item.description}
           </span>
         </span>
         <ChevronDown
           className={cn(
-            "ml-auto mt-1 h-4 w-4 shrink-0 text-muted-foreground motion-safe:transition-transform motion-safe:duration-200",
+            "ms-auto mt-1 h-4 w-4 shrink-0 text-muted-foreground motion-safe:transition-transform motion-safe:duration-200",
             expanded && "rotate-180 text-foreground"
           )}
           aria-hidden="true"

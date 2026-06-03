@@ -24,7 +24,6 @@ import {
   SettingsPageShell,
   type SettingsModuleCardData,
 } from "./settings/components/SettingsPageComponents";
-import { SettingsSectionSwitcher } from "./settings/components/SettingsSectionSwitcher";
 import { V2SettingsControlDeck } from "./settings/V2SettingsControlDeck";
 import type { V2SettingsControls, V2SettingsSectionId } from "./settings/types";
 
@@ -204,22 +203,26 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
 
         {controls ? (
           <>
-            <SettingsSectionSwitcher
+            <SettingsModuleList
               items={modules}
-              selectedId={selectedSectionId}
+              expandedId={selectedSectionId}
               controlsWired={true}
               onOpen={openSection}
+              renderPanel={() => (
+                <div
+                  id="settings-v2-control-deck"
+                  className="grid min-w-0 gap-3"
+                  data-testid="settings-page-control-deck"
+                  data-selected-section={selectedSectionId}
+                >
+                  <V2SettingsControlDeck
+                    controls={controls}
+                    selectedSectionId={selectedSectionId}
+                  />
+                </div>
+              )}
               label={tx.settings || tx.navV2Settings}
             />
-
-            <section
-              id="settings-v2-control-deck"
-              className="grid gap-3"
-              data-testid="settings-page-control-deck"
-              data-selected-section={selectedSectionId}
-            >
-              <V2SettingsControlDeck controls={controls} selectedSectionId={selectedSectionId} />
-            </section>
 
             <section
               aria-label={tx.settingsCloudSyncTitle || tx.settingsGroupAccount || "Sync status"}

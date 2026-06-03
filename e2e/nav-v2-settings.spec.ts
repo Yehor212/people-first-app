@@ -1,14 +1,17 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { createRequire } from "module";
 
 const require = createRequire(import.meta.url);
 const packageJson = require("../package.json") as { version: string };
 const APP_BASE = "/people-first-app";
 
-async function primeApp(page: import("@playwright/test").Page) {
+async function primeApp(page: Page, options: { language?: "en" | "ar" | "he" } = {}) {
+  const language = options.language ?? "en";
+
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.addInitScript(
-    ({ appVersion }: { appVersion: string }) => {
+    ({ appVersion, language }: { appVersion: string; language: "en" | "ar" | "he" }) => {
+      localStorage.setItem("zenflow-language", JSON.stringify(language));
       localStorage.setItem("zenflow-language-selected", JSON.stringify(true));
       localStorage.setItem("zenflow-google-auth-checked", JSON.stringify(true));
       localStorage.setItem("zenflow-tutorial-complete", JSON.stringify(true));
@@ -38,31 +41,35 @@ async function primeApp(page: import("@playwright/test").Page) {
       localStorage.setItem("zenflow-privacy-acknowledged", JSON.stringify(true));
       localStorage.setItem("zenflow-orb-first-run-dismissed", "1");
     },
-    { appVersion: packageJson.version }
+    { appVersion: packageJson.version, language }
   );
 }
 
-async function expectControlsFirstHierarchy(page: import("@playwright/test").Page) {
+async function expectControlsFirstHierarchy(page: Page, selectedSectionId = "profile") {
   await expect(page.getByTestId("settings-page-control-card")).toBeVisible();
-  await expect(page.getByTestId("settings-section-switcher")).toBeVisible();
+  await expect(page.getByTestId("settings-module-list")).toBeVisible();
   await expect(page.getByTestId("settings-page-control-deck")).toBeVisible();
   await expect(page.getByTestId("sync-health-card")).toBeVisible();
-  await expect(page.getByTestId("settings-module-list")).toHaveCount(0);
+  await expect(page.getByTestId("settings-section-switcher")).toHaveCount(0);
 
-  await expect(page.getByTestId("settings-section-switcher-profile")).toHaveAttribute(
-    "aria-pressed",
+  await expect(page.getByTestId(`settings-module-card-${selectedSectionId}`)).toHaveAttribute(
+    "aria-expanded",
     "true"
   );
-  await expect(page.getByTestId("settings-section-switcher-profile")).toHaveAttribute(
+  await expect(page.getByTestId(`settings-module-card-${selectedSectionId}`)).toHaveAttribute(
     "aria-controls",
-    "settings-v2-control-deck"
+    `settings-module-panel-${selectedSectionId}`
   );
   await expect(page.getByTestId("settings-page-control-deck")).toHaveAttribute(
     "data-selected-section",
-    "profile"
+    selectedSectionId
+  );
+  await expect(page.getByTestId("settings-page-control-deck")).toHaveAttribute(
+    "id",
+    "settings-v2-control-deck"
   );
 
-  const metrics = await page.evaluate(() => {
+  const metrics = await page.evaluate((selectedSectionId) => {
     const readRect = (testId: string) => {
       const node = document.querySelector(`[data-testid="${testId}"]`);
       if (!node) throw new Error(`Missing ${testId}`);
@@ -70,23 +77,58 @@ async function expectControlsFirstHierarchy(page: import("@playwright/test").Pag
       return {
         bottom: rect.bottom,
         height: rect.height,
+        left: rect.left,
+        right: rect.right,
         top: rect.top,
+        width: rect.width,
       };
     };
 
+    const pageWidth = document.documentElement.clientWidth;
+    const moduleList = document.querySelector('[data-testid="settings-module-list"]');
+    const panel = document.querySelector(`[data-testid="settings-module-panel-${selectedSectionId}"]`);
+    const deck = document.querySelector('[data-testid="settings-page-control-deck"]');
+    const selectedButton = document.querySelector(
+      `[data-testid="settings-module-card-${selectedSectionId}"]`
+    );
+
+    if (!moduleList || !panel || !deck || !selectedButton) {
+      throw new Error("Missing settings accordion nodes");
+    }
+
     return {
+      deckInsidePanel: panel.contains(deck),
+      moduleListClientWidth: moduleList.clientWidth,
+      moduleListOverflowX: getComputedStyle(moduleList).overflowX,
+      moduleListScrollWidth: moduleList.scrollWidth,
+      pageOverflowX: Math.max(
+        0,
+        document.documentElement.scrollWidth - pageWidth,
+        document.body.scrollWidth - pageWidth
+      ),
+      panelClientWidth: panel.clientWidth,
+      panelInsideList: moduleList.contains(panel),
+      panelOverflowX: getComputedStyle(panel).overflowX,
+      panelScrollWidth: panel.scrollWidth,
       viewportHeight: window.innerHeight,
       hero: readRect("settings-page-control-card"),
-      switcher: readRect("settings-section-switcher"),
+      moduleList: readRect("settings-module-list"),
       deck: readRect("settings-page-control-deck"),
       sync: readRect("sync-health-card"),
     };
-  });
+  }, selectedSectionId);
 
-  expect(metrics.switcher.top).toBeGreaterThanOrEqual(metrics.hero.bottom - 1);
-  expect(metrics.deck.top).toBeGreaterThanOrEqual(metrics.switcher.bottom - 1);
-  expect(metrics.deck.bottom).toBeLessThanOrEqual(metrics.sync.top + 1);
+  expect(metrics.moduleList.top).toBeGreaterThanOrEqual(metrics.hero.bottom - 1);
+  expect(metrics.panelInsideList).toBe(true);
+  expect(metrics.deckInsidePanel).toBe(true);
+  expect(metrics.deck.top).toBeGreaterThanOrEqual(metrics.moduleList.top);
+  expect(metrics.sync.top).toBeGreaterThanOrEqual(metrics.moduleList.bottom - 1);
   expect(metrics.deck.top).toBeLessThan(metrics.viewportHeight - 120);
+  expect(metrics.pageOverflowX).toBe(0);
+  expect(metrics.moduleListScrollWidth).toBeLessThanOrEqual(metrics.moduleListClientWidth + 1);
+  expect(metrics.panelScrollWidth).toBeLessThanOrEqual(metrics.panelClientWidth + 1);
+  expect(metrics.moduleListOverflowX).not.toBe("auto");
+  expect(metrics.panelOverflowX).not.toBe("auto");
 }
 
 test.describe("V2 Settings controls-first hierarchy", () => {
@@ -110,7 +152,28 @@ test.describe("V2 Settings controls-first hierarchy", () => {
     await expectControlsFirstHierarchy(page);
   });
 
-  test("switcher changes the inline control deck without route changes or page scroll", async ({
+  test("wide desktop phone-layout mode keeps settings cards without horizontal scrolling", async ({
+    page,
+  }) => {
+    await primeApp(page);
+    await page.setViewportSize({ width: 1920, height: 983 });
+    await page.goto(`${APP_BASE}/settings?nav=v2&navLayout=phone&dev=true`);
+    await page.evaluate(() => document.fonts.ready);
+
+    await expectControlsFirstHierarchy(page);
+  });
+
+  test("RTL layout keeps the card accordion inside the page width", async ({ page }) => {
+    await primeApp(page, { language: "he" });
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await page.goto(`${APP_BASE}/settings?nav=v2&navLayout=desktop&dev=true`);
+    await page.evaluate(() => document.fonts.ready);
+
+    await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
+    await expectControlsFirstHierarchy(page);
+  });
+
+  test("module card changes the inline control deck without route changes or page scroll", async ({
     page,
   }) => {
     await primeApp(page);
@@ -119,16 +182,15 @@ test.describe("V2 Settings controls-first hierarchy", () => {
     await page.evaluate(() => document.fonts.ready);
 
     const beforeUrl = page.url();
-    const beforeScrollY = await page.evaluate(() => window.scrollY);
 
-    await page.getByTestId("settings-section-switcher-account").click();
+    await page.getByTestId("settings-module-card-account").click();
 
-    await expect(page.getByTestId("settings-section-switcher-account")).toHaveAttribute(
-      "aria-pressed",
+    await expect(page.getByTestId("settings-module-card-account")).toHaveAttribute(
+      "aria-expanded",
       "true"
     );
-    await expect(page.getByTestId("settings-section-switcher-profile")).toHaveAttribute(
-      "aria-pressed",
+    await expect(page.getByTestId("settings-module-card-profile")).toHaveAttribute(
+      "aria-expanded",
       "false"
     );
     await expect(page.getByTestId("settings-page-control-deck")).toHaveAttribute(
@@ -147,7 +209,7 @@ test.describe("V2 Settings controls-first hierarchy", () => {
     });
 
     expect(syncInsideAccountPanel).toBe(false);
+    await expectControlsFirstHierarchy(page, "account");
     expect(page.url()).toBe(beforeUrl);
-    expect(await page.evaluate(() => window.scrollY)).toBe(beforeScrollY);
   });
 });
