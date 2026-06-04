@@ -82,6 +82,19 @@ function assertTrackedInstructionFile(relativePath) {
   return read(relativePath);
 }
 
+function assertGovernanceFile(relativePath) {
+  if (!existsSync(path.join(repoRoot, relativePath))) {
+    fail(`${relativePath} is missing`);
+    return "";
+  }
+  if (isIgnored(relativePath) && !isTracked(relativePath)) {
+    fail(`${relativePath} must not be ignored unless it is tracked`);
+  }
+  const text = read(relativePath);
+  assertNoSecrets(relativePath, text);
+  return text;
+}
+
 function assertSizeBudget(relativePath, text, maxBytes, maxLines) {
   const bytes = byteLength(text);
   const lines = lineCount(text);
@@ -120,6 +133,109 @@ function assertNoSecrets(relativePath, text) {
   const match = text.match(SECRET_PATTERN);
   if (match) {
     fail(`${relativePath} appears to contain a raw secret-like token near "${match[0].slice(0, 24)}"`);
+  }
+}
+
+function assertAgentChangeGovernance(agents) {
+  if (agents && !hasHeading(agents, "Agent Change Governance")) {
+    fail('AGENTS.md is missing required heading "Agent Change Governance"');
+  }
+
+  const governance = assertGovernanceFile("docs/ai/AGENT_CHANGE_GOVERNANCE.md");
+  if (governance) {
+    for (const required of [
+      "Source Evidence",
+      "Radical Change Triggers",
+      "Required Agent Change Notice",
+      "Protected Surfaces",
+      "Evidence Gates",
+      "Human Escalation",
+      "PR And CI Backstops",
+      "Subagent Audit Rules",
+    ]) {
+      if (!hasHeading(governance, required)) {
+        fail(`docs/ai/AGENT_CHANGE_GOVERNANCE.md is missing required heading "${required}"`);
+      }
+    }
+    if (!/\bAGENT_CHANGE_NOTICE\b/.test(governance)) {
+      fail("docs/ai/AGENT_CHANGE_GOVERNANCE.md must define AGENT_CHANGE_NOTICE");
+    }
+  }
+
+  const prTemplate = assertGovernanceFile(".github/PULL_REQUEST_TEMPLATE.md");
+  if (prTemplate) {
+    if (!hasHeading(prTemplate, "Agent Change Notice")) {
+      fail('.github/PULL_REQUEST_TEMPLATE.md is missing heading "Agent Change Notice"');
+    }
+    if (!/\bAGENT_CHANGE_NOTICE\b/.test(prTemplate)) {
+      fail(".github/PULL_REQUEST_TEMPLATE.md must include AGENT_CHANGE_NOTICE");
+    }
+  }
+
+  const codeowners = assertGovernanceFile(".github/CODEOWNERS");
+  if (codeowners && !/@Yehor212\b/.test(codeowners)) {
+    warn(".github/CODEOWNERS does not mention @Yehor212; verify owner review routing");
+  }
+
+  const driftWorkflow = assertGovernanceFile(".github/workflows/drift-checks.yml");
+  if (driftWorkflow) {
+    if (!/npm run ai:ruflow-plus:check/.test(driftWorkflow)) {
+      fail("drift-checks.yml must run npm run ai:ruflow-plus:check");
+    }
+    if (!/npm run enforcement:check/.test(driftWorkflow)) {
+      fail("drift-checks.yml must run npm run enforcement:check");
+    }
+  }
+
+  const claudeSettings = assertGovernanceFile(".claude/settings.json");
+  if (claudeSettings) {
+    if (!/"PreToolUse"/.test(claudeSettings)) {
+      fail(".claude/settings.json must register PreToolUse hooks");
+    }
+    if (!/\.claude\/hooks\/tool-guard\.cjs/.test(claudeSettings)) {
+      fail(".claude/settings.json must register tool-guard.cjs");
+    }
+    if (!/\.claude\/hooks\/protected-files\.cjs/.test(claudeSettings)) {
+      fail(".claude/settings.json must register protected-files.cjs");
+    }
+  }
+
+  if (isTracked(".claude/settings.local.json")) {
+    fail(".claude/settings.local.json must stay untracked; local agent permissions are machine-local");
+  }
+
+  const toolGuard = assertGovernanceFile(".claude/hooks/tool-guard.cjs");
+  if (toolGuard && !/BLOCKED_PARSE_ERROR/.test(toolGuard)) {
+    fail("tool-guard.cjs must fail closed on malformed hook input");
+  }
+
+  const protectedFiles = assertGovernanceFile(".claude/hooks/protected-files.cjs");
+  if (protectedFiles) {
+    for (const marker of ["AGENTS.md", ".Codex-md-unlock", ".claude-md-unlock"]) {
+      if (!protectedFiles.includes(marker)) {
+        fail(`protected-files.cjs must protect or recognize ${marker}`);
+      }
+    }
+  }
+
+  const pkg = assertGovernanceFile("package.json");
+  if (pkg && !/"security:scan"\s*:/.test(pkg)) {
+    fail('package.json must define "security:scan" for Snyk/audit fallback');
+  }
+
+  const telegramWorkflow = assertGovernanceFile(".github/workflows/telegram-control.yml");
+  if (telegramWorkflow) {
+    if (/git add -A/.test(telegramWorkflow)) {
+      fail("telegram-control.yml must not use git add -A");
+    }
+    if (/--body[\s\S]{0,500}Prompt:\\n\$\{PROMPT\}/.test(telegramWorkflow)) {
+      fail("telegram-control.yml must not write the raw Telegram prompt into PR bodies");
+    }
+    for (const marker of ["Prompt SHA256", "Sensitive staged path", "Secret-like staged diff"]) {
+      if (!telegramWorkflow.includes(marker)) {
+        fail(`telegram-control.yml must include ${marker} guard`);
+      }
+    }
   }
 }
 
@@ -173,6 +289,7 @@ async function main() {
       "Architecture",
       "Agent Entry Points",
       "Ruflow+ And Work Mode",
+      "Agent Change Governance",
       "Snyk And Security Fallback",
     ]) {
       if (!hasHeading(agents, required)) {
@@ -194,6 +311,7 @@ async function main() {
 
   assertNoRepoIgnoreForCanonicalFiles();
   assertLocalMcpBoundary();
+  assertAgentChangeGovernance(agents);
 
   for (const example of [
     "tools/zenflow-context/mcp-server.example.json",

@@ -7,8 +7,8 @@
  *
  * Two protection tiers:
  * - BLOCKED: always blocked (secrets, audit log)
- * - UNLOCK_PROTECTED: blocked unless .claude-md-unlock token exists (project config)
- *   User creates token manually: echo 1 > .claude-md-unlock
+ * - UNLOCK_PROTECTED: blocked unless a one-time unlock token exists (project config)
+ *   User creates a token manually: echo 1 > .claude-md-unlock or .Codex-md-unlock
  *   Token is one-time — consumed after single allowed edit.
  *
  * Note: CLAUDE_FILE_PATH env var does NOT exist in Claude Code SDK
@@ -37,9 +37,18 @@ const BLOCKED = [
 ];
 
 // Protected but unlockable — prevents self-tampering (AAI006)
-// User can create .claude-md-unlock to allow one edit
-const UNLOCK_PROTECTED = ['CLAUDE.md', '.claude/settings.json'];
-const UNLOCK_TOKEN = path.join(ROOT, '.claude-md-unlock');
+// User can create .claude-md-unlock or .Codex-md-unlock to allow one edit
+const UNLOCK_PROTECTED = [
+  'AGENTS.md',
+  'CLAUDE.md',
+  '.claude/settings.json',
+  '.codex/config.toml',
+  '.Codex/settings.json',
+];
+const UNLOCK_TOKENS = [
+  path.join(ROOT, '.claude-md-unlock'),
+  path.join(ROOT, '.Codex-md-unlock'),
+];
 
 function block(reason) {
   console.log(JSON.stringify({ decision: 'block', reason }));
@@ -72,20 +81,22 @@ process.stdin.on('end', () => {
 
     // Tier 2: Unlock-protected files (CLAUDE.md, settings.json) — AAI006 self-tampering prevention
     const isUnlockProtected = UNLOCK_PROTECTED.some(b => {
+      if (b === 'AGENTS.md') return basename === b;
       if (b === 'CLAUDE.md') return basename === b;
       return filePath.includes(b);
     });
     if (isUnlockProtected) {
       try {
-        if (fs.existsSync(UNLOCK_TOKEN)) {
-          fs.unlinkSync(UNLOCK_TOKEN); // One-time token consumed
+        const token = UNLOCK_TOKENS.find(t => fs.existsSync(t));
+        if (token) {
+          fs.unlinkSync(token); // One-time token consumed
           // Allow this edit — fall through
         } else {
-          block('PROTECTED FILE: ' + filePath + '. Create .claude-md-unlock to allow one edit: echo 1 > .claude-md-unlock');
+          block('PROTECTED FILE: ' + filePath + '. Create .claude-md-unlock or .Codex-md-unlock to allow one edit.');
         }
       } catch {
         // Race condition on token — fail-closed
-        block('PROTECTED FILE: ' + filePath + ' (token check failed). Create .claude-md-unlock to allow one edit.');
+        block('PROTECTED FILE: ' + filePath + ' (token check failed). Create .claude-md-unlock or .Codex-md-unlock to allow one edit.');
       }
     }
     // Tier 3: Hook Integrity Ratchet (Law of Irrationality — system assumes agent WILL try to weaken rules)

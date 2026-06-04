@@ -137,6 +137,16 @@ jobs:
             echo "Base ref is main; writes still go only to $WORK_BRANCH."
           fi
 
+      - name: Prepare prompt metadata
+        id: prompt_meta
+        shell: bash
+        run: |
+          set -euo pipefail
+          prompt_sha="$(printf '%s' "$PROMPT" | sha256sum | awk '{print $1}')"
+          prompt_bytes="$(printf '%s' "$PROMPT" | wc -c | tr -d ' ')"
+          echo "sha=$prompt_sha" >> "$GITHUB_OUTPUT"
+          echo "bytes=$prompt_bytes" >> "$GITHUB_OUTPUT"
+
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
@@ -226,7 +236,7 @@ jobs:
             --base "$BASE_REF" \
             --head "$WORK_BRANCH" \
             --title "Telegram rollback: ${rollback_target} (${JOB_ID})" \
-            --body "Created by Telegram Control Plane rollback job ${JOB_ID}.\n\nTarget: ${rollback_target}\n\nPrompt:\n${PROMPT}\n\nThis is a draft rollback PR. It does not deploy or write directly to main.")"
+            --body "Created by Telegram Control Plane rollback job ${JOB_ID}.\n\nTarget: ${rollback_target}\n\nPrompt SHA256: ${{ steps.prompt_meta.outputs.sha }}\nPrompt bytes: ${{ steps.prompt_meta.outputs.bytes }}\n\nThis is a draft rollback PR. It does not deploy or write directly to main.")"
           echo "pr_url=$pr_url" >> "$GITHUB_OUTPUT"
           notify_control "succeeded" "Created rollback draft PR for ${rollback_target}." "$pr_url"
 
@@ -310,6 +320,7 @@ jobs:
             - Work only on branch `codex/telegram-${{ inputs.job_id }}`.
             - Do not write directly to `main`.
             - Do not expose secrets or user journal/habit content.
+            - Do not copy the raw Telegram prompt into PR bodies, artifacts, logs, or comments; use only a redacted summary or prompt hash.
             - Follow `AGENTS.md`, `ARCHITECTURE.md`, and `docs/ai/TASK_COMPLETION_PROTOCOL.md`.
             - For destructive changes, stop and report `ASK`; production deploy, rollback, Supabase SQL/RLS, secrets, protected docs/hooks, and branch deletion require Telegram confirmation.
             - Evidence must use current command output or current file paths. No evidence equals FAIL.
@@ -338,8 +349,44 @@ jobs:
           . /tmp/telegram-control-notify.sh
           mkdir -p artifacts
           git status --short
-          git add -A
-          git reset -- artifacts || true
+          stage_paths=(
+            AGENTS.md
+            ARCHITECTURE.md
+            CHANGELOG.md
+            README.md
+            SECURITY.md
+            CONTRIBUTING.md
+            package.json
+            package-lock.json
+            src
+            docs
+            e2e
+            test
+            scripts
+            tools
+            public
+            supabase
+            config
+            .github
+            android
+            ios
+            src-tauri
+          )
+          for path in "${stage_paths[@]}"; do
+            if [ -e "$path" ]; then
+              git add "$path"
+            fi
+          done
+          git reset -- artifacts output coverage dist node_modules .mcp.json .mcp.local.json .claude/settings.local.json || true
+          if git diff --cached --name-only | grep -E '(^|/)(\.env|\.env\..*|\.mcp\.json|\.mcp\.local\.json|google-services\.json|GoogleService-Info\.plist|.*\.keystore|.*\.jks|\.claude/settings\.local\.json)$' >/dev/null; then
+            echo "::error title=Sensitive staged path::A forbidden sensitive/local file was staged."
+            git diff --cached --name-only
+            exit 1
+          fi
+          if git diff --cached --unified=0 | grep -E -q '(ghp_|github_pat_|sbp_|ctx7sk-|sk-[A-Za-z0-9_-]{20,}|Authorization:[[:space:]]*Bearer[[:space:]]+)'; then
+            echo "::error title=Secret-like staged diff::A secret-like token was detected in the staged diff."
+            exit 1
+          fi
           if git diff --cached --quiet; then
             notify_control "succeeded" "No repository changes were produced by Codex."
             echo "pr_url=" >> "$GITHUB_OUTPUT"
@@ -354,7 +401,7 @@ jobs:
             --base "$BASE_REF" \
             --head "$WORK_BRANCH" \
             --title "Telegram control: ${MODE} ${JOB_ID}" \
-            --body "Created by Telegram Control Plane job ${JOB_ID}.\n\nMode: ${MODE}\n\nPrompt:\n${PROMPT}")"
+            --body "Created by Telegram Control Plane job ${JOB_ID}.\n\nMode: ${MODE}\n\nPrompt SHA256: ${{ steps.prompt_meta.outputs.sha }}\nPrompt bytes: ${{ steps.prompt_meta.outputs.bytes }}")"
           echo "pr_url=$pr_url" >> "$GITHUB_OUTPUT"
           notify_control "succeeded" "Created Telegram control PR." "$pr_url"
 

@@ -101,8 +101,9 @@ process.stdin.on('end', () => {
 
     process.exit(0);
   } catch (e) {
-    // Fail-open — don't break Bash on parse error
-    process.stderr.write('HOOK WARNING [tool-guard]: parse error, failing open\n');
-    process.exit(0);
+    // Fail-closed: malformed hook input means the guard cannot prove the command is safe.
+    audit('BLOCKED_PARSE_ERROR: ' + (e.message || e));
+    process.stderr.write('HOOK ERROR [tool-guard]: parse error, failing closed\n');
+    process.exit(2);
   }
 });

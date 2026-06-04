@@ -53,6 +53,7 @@
     "check:colors": "npx tsx scripts/check-hardcoded-colors.ts",
     "check:strings": "node --experimental-strip-types scripts/check-hardcoded-strings.ts",
     "audit:check": "npm audit --audit-level=high",
+    "security:scan": "npm run audit:check && snyk code test",
     "constitution:check": "node --experimental-strip-types scripts/check-constitution.ts",
     "ratchet:check": "npx tsx scripts/check-ratchet.ts",
     "ratchet:update": "npx tsx scripts/check-ratchet.ts --update",

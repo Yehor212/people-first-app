@@ -45,6 +45,7 @@ Available local context profiles:
 | `architecture` | Zustand/Dexie/Supabase/state/sync boundaries and the `docs/ai/SYNC_CONTRACT.md` invariants |
 | `ui` | visual, motion, i18n/RTL, accessibility, platform parity |
 | `verification` | CI gates, test routing, evidence discipline |
+| `governance` | radical-change notices, protected surfaces, agent/tool safety, PR/CI backstops |
 | `external_docs` | routing to Context7 plus installed package awareness |
 
 CLI proof:
@@ -115,16 +116,17 @@ At the start of non-trivial work:
 
 1. Read `AGENTS.md` and `ARCHITECTURE.md`.
 2. Read this file when the task involves agents, memory, orchestration, audits, or multi-session continuity.
-3. Read `docs/ai/SYNC_CONTRACT.md` before any sync, state hydration, backup, offline queue, lifecycle, or Supabase data-sync change.
-4. Read `docs/ai/PREFLIGHT_OPERATOR_TEMPLATE.md` before cross-platform UI, public deploy, sync, CI, or repeated-regression work.
-5. Search MCP memory before planning:
+3. Read `docs/ai/AGENT_CHANGE_GOVERNANCE.md` before radical/protected-surface changes, agent/tool governance, CI/hooks, broad refactors, or multi-domain work.
+4. Read `docs/ai/SYNC_CONTRACT.md` before any sync, state hydration, backup, offline queue, lifecycle, or Supabase data-sync change.
+5. Read `docs/ai/PREFLIGHT_OPERATOR_TEMPLATE.md` before cross-platform UI, public deploy, sync, CI, or repeated-regression work.
+6. Search MCP memory before planning:
    - `ZenFlow`
    - `RuflowPlus`
    - `Verification_Discipline`
    - task-specific keywords
-6. Treat memory as routing context, not fresh proof. Re-verify drift-prone facts with repo files, current commands, browser evidence, CI logs, or official web docs.
-7. Include memory-derived assumptions in the visible pre-flight artifact when Ruflow+ mode applies.
-8. If the task follows a repeated regression, explicitly add an incident-derived gate to the plan: original failure reproduction, adjacent state/platform coverage, and a public artifact check when the bug was seen on GitHub Pages.
+7. Treat memory as routing context, not fresh proof. Re-verify drift-prone facts with repo files, current commands, browser evidence, CI logs, or official web docs.
+8. Include memory-derived assumptions in the visible pre-flight artifact when Ruflow+ mode applies.
+9. If the task follows a repeated regression, explicitly add an incident-derived gate to the plan: original failure reproduction, adjacent state/platform coverage, and a public artifact check when the bug was seen on GitHub Pages.
 
 If MCP memory tools are unavailable, fall back to:
 

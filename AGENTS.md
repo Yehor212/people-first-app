@@ -33,10 +33,20 @@ Supported platforms: Web/Vite, PWA, Android/Capacitor, iOS/WKWebView, Desktop/Ta
 
 - For substantial work, use the tracked source of truth in `docs/ai/RUFLOW_PLUS_BLUEPRINT.md`.
 - Use `docs/ai/PREFLIGHT_OPERATOR_TEMPLATE.md` for visible evidence-backed preflight artifacts.
+- For radical or protected-surface changes, read `docs/ai/AGENT_CHANGE_GOVERNANCE.md` and emit an `AGENT_CHANGE_NOTICE` before editing.
 - Simple 1-3 file tasks can stay solo.
 - Medium 4-10 file or 2+ domain tasks use a small guided team or guardian review.
 - Complex audits, architecture changes, enforcement changes, and 10+ file work use Ruflow+/Teamlead discipline.
 - Every specialist output must include evidence, platform/domain impact, verification, unresolved risk, and `GO / STOP / ASK`.
+
+## Agent Change Governance
+
+- A radical change is any broad rewrite, visible-system replacement, route/shell change, storage/sync/auth/privacy change, native/platform change, dependency/security/CI/hook change, or docs/prompt change that alters how future agents work.
+- Before such work, post an `AGENT_CHANGE_NOTICE` with risk level, trigger, current behavior evidence, proposed write set, platform/domain impact, rollback, verification, and `GO / ASK / STOP`.
+- User requests for narrow bug fixes do not authorize redesigns, visual replacements, data migrations, or weakened guards unless the user explicitly approves that scope.
+- Treat `AGENTS.md`, `ARCHITECTURE.md`, `docs/ai/**`, `.github/**`, `.claude/**`, `.codex/**`, `.Codex/**`, `.agents/**`, `scripts/**`, storage/sync/auth/privacy, native folders, service worker/PWA, and canonical orb files as protected surfaces.
+- For architecture/refactor claims, stale `doc-counts` or `constitution:check` output is a STOP/UNVERIFIED condition until refreshed or explicitly waived.
+- For public, runtime, sync, security, visual, or cross-platform claims, use fresh command/browser/CI evidence and mark unknowns `UNVERIFIED`; never cite old CI, memory, or subagent summaries as PASS by themselves.
 
 ## Conventions
 
@@ -64,6 +74,7 @@ Supported platforms: Web/Vite, PWA, Android/Capacitor, iOS/WKWebView, Desktop/Ta
 - Pull before push in sync operations.
 - Never commit or push law docs: `docs/law*.md`, `docs/laws*.md`, `docs/visual-aesthetic.md`.
 - Do not expose secrets, tokens, local MCP credentials, user journal content, habit data, or unnecessary PII.
+- Do not read or print raw `.mcp.json`; inspect only redacted server names/config shape when absolutely necessary.
 - `.mcp.json` is local and ignored. Examples must use placeholders or environment variables only.
 - `AGENTS.md` and `.Codex/settings.json` are protected; create `.Codex-md-unlock` only for an authorized edit and remove it afterward.
 

@@ -51,6 +51,7 @@ AGENTS.local.md
 !.claude/settings.json
 !.claude/agents/
 !.claude/skills/
+.claude/settings.local.json
 .claude-flow/
 .swarm/
 .mcp.json

@@ -1,0 +1,42 @@
+# Notification backstop for owner review.
+# Branch protection or rulesets must enable required CODEOWNER review for this
+# file to block merges. Without that server-side rule it still requests review.
+
+* @Yehor212
+
+AGENTS.md @Yehor212
+CLAUDE.md @Yehor212
+ARCHITECTURE.md @Yehor212
+SECURITY.md @Yehor212
+CONTRIBUTING.md @Yehor212
+
+.github/ @Yehor212
+.claude/ @Yehor212
+.codex/ @Yehor212
+.Codex/ @Yehor212
+.agents/ @Yehor212
+docs/ai/ @Yehor212
+docs/adr/ @Yehor212
+scripts/ @Yehor212
+tools/zenflow-context/ @Yehor212
+tools/ruflow-plus/ @Yehor212
+
+src/storage/ @Yehor212
+src/lib/offlineQueue.ts @Yehor212
+src/lib/offlineQueueHandlers.ts @Yehor212
+src/lib/privacyConsent.ts @Yehor212
+src/hooks/useAuthSession.ts @Yehor212
+src/hooks/useCloudSyncEffects.ts @Yehor212
+src/hooks/useDeltaSyncEffects.ts @Yehor212
+supabase/ @Yehor212
+
+src/components/state-of-mind/ @Yehor212
+src/pages/Index.tsx @Yehor212
+src/pages/IndexV1Impl.tsx @Yehor212
+src/pages/nav-v2/ @Yehor212
+src/sw.ts @Yehor212
+vite.config.ts @Yehor212
+
+android/ @Yehor212
+ios/ @Yehor212
+src-tauri/ @Yehor212

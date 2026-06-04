@@ -12,6 +12,9 @@ on:
       - 'src/**'
       - 'docs/**'
       - 'AGENTS.md'
+      - '.github/CODEOWNERS'
+      - '.github/PULL_REQUEST_TEMPLATE.md'
+      - '.claude/**'
       - 'tools/telegram-control/**'
       - 'tools/zenflow-context/**'
       - 'tools/ruflow-plus/**'
@@ -58,6 +61,12 @@ jobs:
           - name: agent-context
             cmd: npm run check:agent-context
             fix: keep AGENTS.md tracked, CLAUDE.md as an AGENTS bridge, and ZenFlow Context profiles pointed at real headings
+          - name: ruflow-plus
+            cmd: npm run ai:ruflow-plus:check
+            fix: run npm run ai:ruflow-plus:sync and commit regenerated tracked templates
+          - name: enforcement-health
+            cmd: npm run enforcement:check
+            fix: register missing blocking hooks or document intentional advisory-only enforcement
           - name: retry-tests
             cmd: npx vitest run src/lib/__tests__/retry.test.ts src/lib/__tests__/appUpdateManager.test.ts src/lib/__tests__/lazyWithRetry.test.ts
             fix: fix failing tests in src/lib/retry.ts (or migrated call-sites)

@@ -34,8 +34,9 @@ const contextProfiles = {
       "верификация",
     ],
     sections: [
-      { file: "AGENTS.md", headings: ["Architecture", "Agent Entry Points", "Conventions", "CI And Verification", "Ruflow+ And Work Mode"] },
+      { file: "AGENTS.md", headings: ["Architecture", "Agent Entry Points", "Conventions", "CI And Verification", "Ruflow+ And Work Mode", "Agent Change Governance"] },
       { file: "ARCHITECTURE.md", headings: ["Codebase Metrics", "Tech Stack", "State Management", "Data Flow"] },
+      { file: "docs/ai/AGENT_CHANGE_GOVERNANCE.md", headings: ["Radical Change Triggers", "Required Agent Change Notice", "Evidence Gates"] },
       { file: "docs/ai/SYNC_CONTRACT.md", headings: ["North Star", "Non-Negotiable Invariants", "Required Verification For Sync Changes"] },
       { file: "docs/ai/AGENT_CONTEXT_PERSISTENCE.md", headings: ["Session Start Protocol", "Context7-Style Retrieval", "Writeback Protocol", "Verification"] },
       { file: "docs/ai/RUFLOW_PLUS_REPO_INTEGRATION.md", headings: ["Persistent Agent Context", "Shell Environment Defaults"] },
@@ -66,6 +67,18 @@ const contextProfiles = {
     ],
     scripts: ["doc-counts", "check:types-fresh", "check:supabase-migration-prefixes", "ai:ruflow-plus:check"],
   },
+  governance: {
+    label: "Agent Change Governance",
+    purpose: "Recover radical-change notices, protected surfaces, tool safety, and PR/CI backstops.",
+    keywords: ["governance", "agent", "agents", "radical", "protected", "notice", "AGENT_CHANGE_NOTICE", "hook", "workflow", "ci", "ruflow", "subagent", "plugin", "connector", "mcp", "security", "privacy"],
+    sections: [
+      { file: "AGENTS.md", headings: ["Agent Change Governance", "Ruflow+ And Work Mode", "Safety", "CI And Verification"] },
+      { file: "docs/ai/AGENT_CHANGE_GOVERNANCE.md", headings: ["Radical Change Triggers", "Required Agent Change Notice", "Protected Surfaces", "Evidence Gates", "Human Escalation", "PR And CI Backstops", "Subagent Audit Rules"] },
+      { file: "docs/ai/PREFLIGHT_OPERATOR_TEMPLATE.md", headings: ["Default Depth For ZenFlow", "Non-Negotiables", "Agent-Wide Inheritance"] },
+      { file: "docs/ai/RUFLOW_PLUS_BLUEPRINT.md", headings: ["Anti-Drift Contract", "Evidence Checklist"] },
+    ],
+    scripts: ["check:agent-context", "ai:ruflow-plus:check", "enforcement:check", "ci:preflight"],
+  },
   ui: {
     label: "UI, Motion, Accessibility",
     purpose: "Recover visual rules, cross-platform UI requirements, motion/a11y constraints, and verification routes.",
@@ -83,11 +96,12 @@ const contextProfiles = {
     keywords: ["verify", "verification", "проверка", "верификация", "ci", "test", "тест", "lint", "typecheck", "gate", "evidence", "доказательство", "regression", "регрессия", "audit", "аудит", "hooks", "хуки"],
     sections: [
       { file: "AGENTS.md", headings: ["CI And Verification", "Commit Pipeline", "Ruflow+ And Work Mode"] },
+      { file: "docs/ai/AGENT_CHANGE_GOVERNANCE.md", headings: ["Evidence Gates", "PR And CI Backstops"] },
       { file: "docs/ai/PREFLIGHT_OPERATOR_TEMPLATE.md", headings: ["Non-Negotiables", "Default Depth For ZenFlow", "Ready-To-Use Template"] },
       { file: "docs/ai/RUFLOW_PLUS_BLUEPRINT.md", headings: ["Anti-Drift Contract", "Evidence Checklist"] },
       { file: "docs/ai/AGENT_CONTEXT_PERSISTENCE.md", headings: ["Verification"] },
     ],
-    scripts: ["typecheck", "lint", "check:all", "ci:preflight", "ci:remote", "ci:remote:wait"],
+    scripts: ["typecheck", "lint", "check:all", "ci:preflight", "ci:remote", "ci:remote:wait", "check:agent-context"],
   },
   external_docs: {
     label: "External Library Docs",
