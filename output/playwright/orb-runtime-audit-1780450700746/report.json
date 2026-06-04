@@ -1,0 +1,237 @@
+{
+  "auditId": 1780450700746,
+  "url": "http://127.0.0.1:8080/people-first-app/orb?nav=v2&navLayout=phone&dev=true&_audit=1780450700746",
+  "initial": {
+    "label": "initial",
+    "href": "http://127.0.0.1:8080/people-first-app/orb?nav=v2&navLayout=phone&dev=true&_audit=1780450700746",
+    "viewport": {
+      "width": 447,
+      "height": 914,
+      "dpr": 1
+    },
+    "documentWidth": {
+      "scrollWidth": 447,
+      "clientWidth": 447,
+      "bodyScrollWidth": 447
+    },
+    "overflowX": 0,
+    "overflowNodes": [],
+    "canvasCount": 1,
+    "tiers": [
+      "webgl-main"
+    ],
+    "primaryTier": "webgl-main",
+    "primaryCanvas": {
+      "tier": "webgl-main",
+      "firstPaint": null,
+      "width": 280,
+      "height": 280,
+      "area": 78400
+    },
+    "policies": [
+      {
+        "policy": "webgl",
+        "visualReady": "true",
+        "firstPaintReady": "true"
+      }
+    ],
+    "sliderRect": {
+      "left": 40,
+      "right": 407,
+      "width": 367
+    },
+    "audit": {
+      "workerConstructs": [],
+      "mainPostMessages": 0,
+      "mainPostKinds": {},
+      "workerMessageEvents": 0,
+      "workerMessageKinds": {},
+      "transferCalls": 0,
+      "webglContextCalls": 1,
+      "webgl2ContextCalls": 2,
+      "canvas2dCalls": 0,
+      "errors": []
+    },
+    "raf": {
+      "count": 9,
+      "avgDelta": 3.7,
+      "maxDelta": 16.7,
+      "p95Delta": 16.6,
+      "over50ms": 0,
+      "over100ms": 0
+    },
+    "textSample": "Log how you're feeling\n\nName what you feel.\n\nIn this moment\nAt a specific time\nFor the whole day\nNeutral\nVery Unpleasant\nVery Pleasant\nNext\nThree steps to your first entry\n1\nMove the slider to match how you feel\n2\nChoose"
+  },
+  "afterIdle": {
+    "label": "after-idle-65s",
+    "href": "http://127.0.0.1:8080/people-first-app/orb?nav=v2&navLayout=phone&dev=true&_audit=1780450700746",
+    "viewport": {
+      "width": 447,
+      "height": 914,
+      "dpr": 1
+    },
+    "documentWidth": {
+      "scrollWidth": 447,
+      "clientWidth": 447,
+      "bodyScrollWidth": 447
+    },
+    "overflowX": 0,
+    "overflowNodes": [],
+    "canvasCount": 1,
+    "tiers": [
+      "webgl-main"
+    ],
+    "primaryTier": "webgl-main",
+    "primaryCanvas": {
+      "tier": "webgl-main",
+      "firstPaint": null,
+      "width": 280,
+      "height": 280,
+      "area": 78400
+    },
+    "policies": [
+      {
+        "policy": "webgl",
+        "visualReady": "true",
+        "firstPaintReady": "true"
+      }
+    ],
+    "sliderRect": {
+      "left": 40,
+      "right": 407,
+      "width": 367
+    },
+    "audit": {
+      "workerConstructs": [
+        "blob:http://127.0.0.1:8080/c5c5a049-2b5f-4115-8322-2e517b62cbae"
+      ],
+      "mainPostMessages": 9,
+      "mainPostKinds": {
+        "unknown": 9
+      },
+      "workerMessageEvents": 11,
+      "workerMessageKinds": {
+        "unknown": 11
+      },
+      "transferCalls": 0,
+      "webglContextCalls": 1,
+      "webgl2ContextCalls": 2,
+      "canvas2dCalls": 0,
+      "errors": []
+    },
+    "raf": {
+      "count": 1095,
+      "avgDelta": 60.9,
+      "maxDelta": 1599.9,
+      "p95Delta": 66.7,
+      "over50ms": 703,
+      "over100ms": 2
+    },
+    "textSample": "Log how you're feeling\n\nName what you feel.\n\nIn this moment\nAt a specific time\nFor the whole day\nNeutral\nVery Unpleasant\nVery Pleasant\nNext\nThree steps to your first entry\n1\nMove the slider to match how you feel\n2\nChoose"
+  },
+  "afterDrag": {
+    "label": "after-drag-transition",
+    "href": "http://127.0.0.1:8080/people-first-app/orb?nav=v2&navLayout=phone&dev=true&_audit=1780450700746",
+    "viewport": {
+      "width": 447,
+      "height": 914,
+      "dpr": 1
+    },
+    "documentWidth": {
+      "scrollWidth": 447,
+      "clientWidth": 447,
+      "bodyScrollWidth": 447
+    },
+    "overflowX": 0,
+    "overflowNodes": [],
+    "canvasCount": 1,
+    "tiers": [
+      "webgl-main"
+    ],
+    "primaryTier": "webgl-main",
+    "primaryCanvas": {
+      "tier": "webgl-main",
+      "firstPaint": null,
+      "width": 280,
+      "height": 280,
+      "area": 78400
+    },
+    "policies": [
+      {
+        "policy": "webgl",
+        "visualReady": "true",
+        "firstPaintReady": "true"
+      }
+    ],
+    "sliderRect": {
+      "left": 40,
+      "right": 407,
+      "width": 367
+    },
+    "audit": {
+      "workerConstructs": [
+        "blob:http://127.0.0.1:8080/c5c5a049-2b5f-4115-8322-2e517b62cbae"
+      ],
+      "mainPostMessages": 31,
+      "mainPostKinds": {
+        "unknown": 31
+      },
+      "workerMessageEvents": 33,
+      "workerMessageKinds": {
+        "unknown": 33
+      },
+      "transferCalls": 0,
+      "webglContextCalls": 1,
+      "webgl2ContextCalls": 2,
+      "canvas2dCalls": 0,
+      "errors": []
+    },
+    "raf": {
+      "count": 146,
+      "avgDelta": 64.15,
+      "maxDelta": 383.3,
+      "p95Delta": 66.8,
+      "over50ms": 106,
+      "over100ms": 1
+    },
+    "textSample": "Log how you're feeling\n\nName what you feel.\n\nIn this moment\nAt a specific time\nFor the whole day\nNeutral\nVery Unpleasant\nVery Pleasant\nNext"
+  },
+  "quickViewports": [
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "overflowX": 0,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "canvasCount": 1,
+      "tiers": [
+        "webgl-main"
+      ],
+      "sliderRect": {
+        "left": 40,
+        "right": 350,
+        "width": 310
+      }
+    },
+    {
+      "viewport": {
+        "width": 720,
+        "height": 912
+      },
+      "overflowX": 0,
+      "scrollWidth": 710,
+      "clientWidth": 720,
+      "canvasCount": 0,
+      "tiers": [],
+      "sliderRect": {
+        "left": 40,
+        "right": 670,
+        "width": 630
+      }
+    }
+  ],
+  "screenshotPath": "output\\playwright\\orb-runtime-audit-1780450700746\\447x914-after-drag.png",
+  "outDir": "output\\playwright\\orb-runtime-audit-1780450700746"
+}

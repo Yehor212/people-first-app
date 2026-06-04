@@ -38,6 +38,25 @@ describe("ValenceSlider", () => {
     expect(label.querySelectorAll(".som-valence-chip__orb")).toHaveLength(0);
   });
 
+  it("keeps enough inline padding for endpoint thumb overflow", () => {
+    render(<ValenceSlider value={1} onChange={vi.fn()} />);
+
+    const slider = screen.getByRole("slider");
+    const shell = slider.parentElement;
+
+    expect(shell).toHaveClass("px-5");
+    expect(shell).not.toHaveClass("px-2");
+  });
+
+  it("positions endpoint thumb inside an inset rail instead of the slider edge", () => {
+    render(<ValenceSlider value={1} onChange={vi.fn()} />);
+
+    expect(screen.getByTestId("valence-slider-thumb-rail")).toHaveStyle({
+      left: "14px",
+      right: "14px",
+    });
+  });
+
   it("coalesces drag updates while keeping press and release immediate", () => {
     const rafQueue: FrameRequestCallback[] = [];
     const requestAnimationFrameSpy = vi

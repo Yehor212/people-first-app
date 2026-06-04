@@ -24,10 +24,9 @@ import { useRef, useEffect, useLayoutEffect, useState, memo } from 'react';
 import { shouldAnimate } from '@/lib/animationUtils';
 import { recordError } from '@/lib/crashReporting';
 import { hapticTap } from '@/lib/haptics';
-import { hapticMedium } from '@/lib/haptics';
 import { safeSessionStorageGet, safeSessionStorageSet } from '@/lib/safeJson';
 import { SSK } from '@/lib/storageKeys';
-import { createParticlePool, updateParticles, burstParticles } from './particleSystem';
+import { createParticlePool, updateParticles } from './particleSystem';
 import { drawOrbScene, getShapeParams } from './orbRenderer';
 import { valenceToHSL } from './colorUtils';
 import { createOrbGL2, createOrbGL, createOrbGL2Async, createOrbGLAsync } from './orbShader';
@@ -73,6 +72,14 @@ type OrbWorkerController = {
   dispose: () => void;
 };
 
+interface OrbRuntimeState {
+  targetValence: number;
+  currentValence: number;
+  time: number;
+  particles: Particle[];
+  lastFrame: number;
+}
+
 const WEBGL_FRAME_INTERVAL = 1000 / 60; // 60fps for healthy WebGL sessions.
 const CANVAS_FRAME_INTERVAL = 1000 / 30; // 30fps for Canvas 2D fallback
 const ORB_FRAME_CLOCK_REANCHOR_GAP_MS = 750;
@@ -97,9 +104,83 @@ const MINI_WEBGL_UPGRADE_DELAY_MS = 12000;
 const MINI_WEBGL_UPGRADE_QUEUE_GAP_MS = 6000;
 const IDLE_WAKE_SOFT_THRESHOLD_MS = 8000;
 const ORB_IDLE_WAKE_SOFT_EPSILON = 0.01;
+const ORB_SUBTLE_TRANSITION_SHIMMER = 0.12;
+const ORB_SUBTLE_TRANSITION_SHIMMER_DELTA = 0.3;
 const MINI_ORB_CANONICAL_SIZE = 120;
+const ORB_RUNTIME_SNAPSHOT_TTL_MS = 10_000;
+const ORB_RUNTIME_SNAPSHOT_VALENCE_EPSILON = 0.001;
 
 let nextMiniWebGLUpgradeStartAt = 0;
+
+type OrbRuntimeSnapshot = {
+  targetValence: number;
+  time: number;
+  currentValence: number;
+  smoothValence: number;
+  storedAt: number;
+};
+
+const orbRuntimeSnapshots = new Map<string, OrbRuntimeSnapshot>();
+
+function resolveOrbRuntimeSnapshotKey(renderer: OrbRendererMode, size: number): string {
+  const sizeBucket = size > MINI_ORB_CANONICAL_SIZE ? "full" : Math.round(size);
+  return `${renderer}:${sizeBucket}`;
+}
+
+function pruneStaleOrbRuntimeSnapshots(now: number) {
+  for (const [key, snapshot] of orbRuntimeSnapshots) {
+    if (now - snapshot.storedAt > ORB_RUNTIME_SNAPSHOT_TTL_MS) {
+      orbRuntimeSnapshots.delete(key);
+    }
+  }
+}
+
+function readOrbRuntimeSnapshot(
+  renderer: OrbRendererMode,
+  size: number,
+  targetValence: number,
+  now: number,
+): OrbRuntimeSnapshot | null {
+  pruneStaleOrbRuntimeSnapshots(now);
+  const snapshot = orbRuntimeSnapshots.get(resolveOrbRuntimeSnapshotKey(renderer, size));
+  if (!snapshot) return null;
+  if (now - snapshot.storedAt > ORB_RUNTIME_SNAPSHOT_TTL_MS) return null;
+  if (Math.abs(snapshot.targetValence - targetValence) > ORB_RUNTIME_SNAPSHOT_VALENCE_EPSILON) {
+    return null;
+  }
+  return snapshot;
+}
+
+function rememberOrbRuntimeSnapshot(
+  renderer: OrbRendererMode,
+  size: number,
+  state: OrbRuntimeState | null,
+  smoothValence: number,
+  now: number,
+) {
+  if (!state) return;
+  if (!Number.isFinite(state.time) || state.time < 0) return;
+  if (
+    !Number.isFinite(state.targetValence) ||
+    !Number.isFinite(state.currentValence) ||
+    !Number.isFinite(smoothValence)
+  ) {
+    return;
+  }
+  pruneStaleOrbRuntimeSnapshots(now);
+  orbRuntimeSnapshots.set(resolveOrbRuntimeSnapshotKey(renderer, size), {
+    targetValence: state.targetValence,
+    time: state.time,
+    currentValence: state.currentValence,
+    smoothValence,
+    storedAt: now,
+  });
+}
+
+export function resetOrbRuntimeSnapshotsForTests(): void {
+  orbRuntimeSnapshots.clear();
+  nextMiniWebGLUpgradeStartAt = 0;
+}
 
 export type OrbTransitionProfile = "standard" | "v1-soft" | "input-soft";
 export type OrbRendererMode = "auto" | "canvas" | "webgl";
@@ -480,8 +561,7 @@ export const ValenceOrb = memo(function ValenceOrb({
   const [ctxFailed, setCtxFailed] = useState(false);
   const genesisStartRef = useRef(0);
   const touchRef = useRef<{ x: number; y: number; startTime: number } | null>(null);
-  const shimmerRef = useRef(0); // P3: 1.0→0 decaying flash on large valence change
-  const prevStableValenceRef = useRef(0); // P3: last settled valence for delta detection
+  const shimmerRef = useRef(0); // subtle target-change glow; never a late burst
   const lastInteractionRef = useRef(performance.now()); // P4: idle awareness
   const smoothValenceRef = useRef(valence); // P5: smoothed valence for organic color/shape flow
   const targetValenceRef = useRef(valence);
@@ -492,13 +572,7 @@ export const ValenceOrb = memo(function ValenceOrb({
   transitionProfileRef.current = transitionProfile;
 
   // Mutable animation state — avoids React re-renders during animation
-  const stateRef = useRef<{
-    targetValence: number;
-    currentValence: number;
-    time: number;
-    particles: Particle[];
-    lastFrame: number;
-  } | null>(null);
+  const stateRef = useRef<OrbRuntimeState | null>(null);
 
   // Keep target valence in sync with prop
   const valenceRef = useRef(valence);
@@ -567,6 +641,10 @@ export const ValenceOrb = memo(function ValenceOrb({
       return;
     }
 
+    if (Math.abs(valence - state.currentValence) > ORB_SUBTLE_TRANSITION_SHIMMER_DELTA) {
+      shimmerRef.current = Math.max(shimmerRef.current, ORB_SUBTLE_TRANSITION_SHIMMER);
+    }
+
     const now = performance.now();
     const idleElapsedMs = now - lastInteractionRef.current;
     idleWakeSoftActiveRef.current = shouldStartIdleWakeSoftening(
@@ -623,11 +701,22 @@ export const ValenceOrb = memo(function ValenceOrb({
     const cy = size / 2;
     const innerR = size * 0.28;
     const outerR = size * 0.42;
+    const runtimeSnapshot = readOrbRuntimeSnapshot(
+      renderer,
+      size,
+      valenceRef.current,
+      performance.now(),
+    );
+    const initialCurrentValence = runtimeSnapshot?.currentValence ?? valenceRef.current;
+    const initialSmoothValence = runtimeSnapshot?.smoothValence ?? valenceRef.current;
+    const initialTime = runtimeSnapshot?.time ?? 0;
 
+    targetValenceRef.current = valenceRef.current;
+    smoothValenceRef.current = initialSmoothValence;
     stateRef.current = {
       targetValence: valenceRef.current,
-      currentValence: valenceRef.current,
-      time: 0,
+      currentValence: initialCurrentValence,
+      time: initialTime,
       particles: createParticlePool(PARTICLE_COUNT, cx, cy, innerR, outerR),
       lastFrame: 0,
     };
@@ -890,20 +979,9 @@ export const ValenceOrb = memo(function ValenceOrb({
       const dt = resolveOrbFrameDeltaSeconds(state.lastFrame, timestamp);
       state.lastFrame = timestamp;
 
-      // ── P3: Shimmer detection (large valence change from stable state) ──
-      const settled = Math.abs(state.targetValence - state.currentValence) < 0.01;
-      if (settled) {
-        // Check if new target diverges significantly from last stable value
-        const delta = Math.abs(state.targetValence - prevStableValenceRef.current);
-        if (delta > 0.3 && shimmerRef.current < 0.1) {
-          shimmerRef.current = 1.0;
-          void hapticMedium(); // tactile punctuation for the transformation
-          burstParticles(state.particles, 8, cx, cy, innerR, outerR);
-        }
-        prevStableValenceRef.current = state.currentValence;
-      }
-
-      // Shimmer decay: dt-based exponential (~0.8s half-life, frame-rate independent)
+      // Shimmer decay: dt-based exponential (~0.8s half-life, frame-rate independent).
+      // Keep it as a quiet target-change glow; delayed high-energy bursts read as
+      // a sudden spin-up after the transition should already feel settled.
       shimmerRef.current *= Math.pow(0.08, dt); // 0.08^(1/30) ≈ 0.92 per frame at 30fps
       if (shimmerRef.current < 0.005) shimmerRef.current = 0;
 
@@ -1550,6 +1628,13 @@ export const ValenceOrb = memo(function ValenceOrb({
     // ── Cleanup ──
     const cleanup = () => {
       disposed = true;
+      rememberOrbRuntimeSnapshot(
+        renderer,
+        size,
+        stateRef.current,
+        smoothValenceRef.current,
+        performance.now(),
+      );
       webglUpgradeAbort.abort();
       window.clearTimeout(forceWebGLFirstFrameTimeoutId);
       clearPendingVisibilityRetry();

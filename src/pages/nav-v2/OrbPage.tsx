@@ -238,7 +238,7 @@ export const OrbPage = memo(function OrbPage({
 
         <div
           className={cn(
-            "relative z-10 mx-auto flex h-[100svh] max-w-3xl flex-col px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] md:px-6 md:pb-[calc(env(safe-area-inset-bottom)+1.5rem)]",
+            "relative z-10 mx-auto flex h-[100svh] w-full min-w-0 max-w-3xl flex-col overflow-x-hidden px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] md:px-6 md:pb-[calc(env(safe-area-inset-bottom)+1.5rem)]",
             pageChromePaddingClass,
           )}
         >

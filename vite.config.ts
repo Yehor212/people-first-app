@@ -16,6 +16,24 @@ function normalizeBasePath(value: string): string {
   return value.endsWith("/") ? value : `${value}/`;
 }
 
+function collapseDuplicatedBasePathUrls(html: string, base: string): string {
+  const normalizedBase = normalizeBasePath(base);
+  if (!normalizedBase.startsWith("/") || normalizedBase === "/") return html;
+
+  const duplicatedBase = `${normalizedBase}${normalizedBase.replace(/^\//, "")}`;
+  return html.replaceAll(duplicatedBase, normalizedBase);
+}
+
+function normalizeIndexBasePathPlugin(base: string) {
+  return {
+    name: "zenflow-normalize-index-base-path",
+    enforce: "post" as const,
+    transformIndexHtml(html: string) {
+      return collapseDuplicatedBasePathUrls(html, base);
+    },
+  };
+}
+
 function isDeferredObservabilityPreload(dep: string): boolean {
   return dep.startsWith("assets/sentry-");
 }
@@ -248,6 +266,7 @@ export default defineConfig(({ mode }) => {
             },
           })
         : null,
+      normalizeIndexBasePathPlugin(base),
     ].filter(Boolean),
 
     resolve: {

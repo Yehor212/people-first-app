@@ -5850,7 +5850,6 @@ body.reduce-motion .diary-animated {
 .habit-identity-cue {
   border-color: hsl(var(--zf-role-gratitude) / 0.3);
   background:
-    linear-gradient(108deg, transparent 0 16%, hsl(var(--zf-role-energy) / 0.1) 16% 16.65%, transparent 16.65% 100%),
     radial-gradient(circle at 92% 48%, hsl(var(--zf-role-body) / 0.12), transparent 28%),
     linear-gradient(
       135deg,
@@ -5876,17 +5875,40 @@ body.reduce-motion .diary-animated {
     0 10px 24px -22px hsl(var(--zf-role-body) / 0.56);
 }
 
+@media (min-width: 1024px) {
+  .habits-hero-zone__active {
+    display: grid;
+    grid-template-columns: minmax(15rem, 17rem) minmax(0, 1fr);
+    gap: 1.5rem;
+    align-items: start;
+  }
+
+  .habits-hero-zone__desktop-rail {
+    position: sticky;
+    top: calc(env(safe-area-inset-top, 0px) + 2rem);
+  }
+
+  .habits-groups-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+    gap: 1rem;
+    align-items: start;
+  }
+
+  .habits-groups-grid > .habit-growth-group {
+    margin: 0;
+  }
+}
+
 .habit-growth-group {
+  min-width: 0;
   border: 1px solid var(--habit-group-role-line);
   background:
     radial-gradient(circle at 18% 8%, var(--habit-group-role-soft), transparent 34%),
-    radial-gradient(circle at 96% 86%, hsl(var(--background)/0.36), transparent 38%),
     linear-gradient(180deg, hsl(var(--card)/0.44), hsl(var(--background)/0.18));
   box-shadow:
     inset 0 1px 0 hsl(var(--foreground)/0.08),
     0 24px 58px -46px var(--habit-group-role);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
 }
 
 .habit-growth-group__aura {

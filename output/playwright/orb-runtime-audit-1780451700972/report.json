@@ -1,0 +1,179 @@
+{
+  "auditId": 1780451700972,
+  "url": "http://127.0.0.1:8080/people-first-app/orb?nav=v2&navLayout=phone&dev=true&_audit=1780451700972",
+  "initial": {
+    "label": "initial",
+    "viewport": {
+      "width": 447,
+      "height": 914,
+      "dpr": 1
+    },
+    "documentWidth": {
+      "scrollWidth": 447,
+      "clientWidth": 447,
+      "bodyScrollWidth": 447
+    },
+    "overflowX": 0,
+    "canvasCount": 1,
+    "tiers": [
+      "webgl-main"
+    ],
+    "primaryTier": "webgl-main",
+    "primaryCanvas": {
+      "tier": "webgl-main",
+      "width": 280,
+      "height": 280,
+      "area": 78400
+    },
+    "policies": [
+      {
+        "policy": "webgl",
+        "visualReady": "true",
+        "firstPaintReady": "true"
+      }
+    ],
+    "sliderRect": {
+      "left": 40,
+      "right": 407,
+      "width": 367
+    },
+    "audit": {
+      "workerConstructs": [],
+      "mainPostMessages": 0,
+      "transferCalls": 0,
+      "webglContextCalls": 1,
+      "webgl2ContextCalls": 0,
+      "canvas2dCalls": 0,
+      "errors": []
+    },
+    "raf": {
+      "count": 40,
+      "avgDelta": 44.58,
+      "maxDelta": 1633.3,
+      "p95Delta": 16.7,
+      "over50ms": 1,
+      "over100ms": 1
+    },
+    "textSample": "Log how you're feeling\n\nName what you feel.\n\nIn this moment\nAt a specific time\nFor the whole day\nNeutral\nVery Unpleasant\nVery Pleasant\nNext\nThree steps to your first entry\n1\nMove t"
+  },
+  "afterIdle": {
+    "label": "after-idle-65s",
+    "viewport": {
+      "width": 447,
+      "height": 914,
+      "dpr": 1
+    },
+    "documentWidth": {
+      "scrollWidth": 447,
+      "clientWidth": 447,
+      "bodyScrollWidth": 447
+    },
+    "overflowX": 0,
+    "canvasCount": 1,
+    "tiers": [
+      "webgl-main"
+    ],
+    "primaryTier": "webgl-main",
+    "primaryCanvas": {
+      "tier": "webgl-main",
+      "width": 280,
+      "height": 280,
+      "area": 78400
+    },
+    "policies": [
+      {
+        "policy": "webgl",
+        "visualReady": "true",
+        "firstPaintReady": "true"
+      }
+    ],
+    "sliderRect": {
+      "left": 40,
+      "right": 407,
+      "width": 367
+    },
+    "audit": {
+      "workerConstructs": [
+        {
+          "url": "blob:http://127.0.0.1:8080/0cb3b9f1-8048-41be-84fe-007b40a87c38"
+        }
+      ],
+      "mainPostMessages": 44,
+      "transferCalls": 0,
+      "webglContextCalls": 1,
+      "webgl2ContextCalls": 0,
+      "canvas2dCalls": 0,
+      "errors": []
+    },
+    "raf": {
+      "count": 815,
+      "avgDelta": 82.18,
+      "maxDelta": 1633.3,
+      "p95Delta": 133.3,
+      "over50ms": 722,
+      "over100ms": 146
+    },
+    "textSample": "Log how you're feeling\n\nName what you feel.\n\nIn this moment\nAt a specific time\nFor the whole day\nNeutral\nVery Unpleasant\nVery Pleasant\nNext\nThree steps to your first entry\n1\nMove t"
+  },
+  "afterDrag": {
+    "label": "after-drag-transition",
+    "viewport": {
+      "width": 447,
+      "height": 914,
+      "dpr": 1
+    },
+    "documentWidth": {
+      "scrollWidth": 447,
+      "clientWidth": 447,
+      "bodyScrollWidth": 447
+    },
+    "overflowX": 0,
+    "canvasCount": 1,
+    "tiers": [
+      "webgl-main"
+    ],
+    "primaryTier": "webgl-main",
+    "primaryCanvas": {
+      "tier": "webgl-main",
+      "width": 280,
+      "height": 280,
+      "area": 78400
+    },
+    "policies": [
+      {
+        "policy": "webgl",
+        "visualReady": "true",
+        "firstPaintReady": "true"
+      }
+    ],
+    "sliderRect": {
+      "left": 40,
+      "right": 407,
+      "width": 367
+    },
+    "audit": {
+      "workerConstructs": [
+        {
+          "url": "blob:http://127.0.0.1:8080/0cb3b9f1-8048-41be-84fe-007b40a87c38"
+        }
+      ],
+      "mainPostMessages": 79,
+      "transferCalls": 0,
+      "webglContextCalls": 2,
+      "webgl2ContextCalls": 0,
+      "canvas2dCalls": 0,
+      "errors": []
+    },
+    "raf": {
+      "count": 144,
+      "avgDelta": 83.68,
+      "maxDelta": 500,
+      "p95Delta": 133.4,
+      "over50ms": 106,
+      "over100ms": 53
+    },
+    "textSample": "Log how you're feeling\n\nName what you feel.\n\nIn this moment\nAt a specific time\nFor the whole day\nNeutral\nVery Unpleasant\nVery Pleasant\nNext"
+  },
+  "screenshotPath": "output\\playwright\\orb-runtime-audit-1780451700972\\447x914-after-drag.png",
+  "outDir": "output\\playwright\\orb-runtime-audit-1780451700972"
+}

@@ -123,6 +123,32 @@ describe("HabitsHeroZone", () => {
     expect(screen.getByText("Today you choose to be")).toBeInTheDocument();
   });
 
+  it("exposes the desktop adaptive rail and grouped-grid scaffold", () => {
+    render(
+      <HabitsHeroZone
+        todaysHabits={[baseHabit]}
+        dailyProgress={{ completed: 1, total: 3, ratio: 1 / 3 }}
+        onToggleHabit={vi.fn()}
+        onDeleteHabit={vi.fn()}
+        onCreateHabit={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByTestId("habits-groups-grid")).toHaveClass("habits-groups-grid");
+    expect(screen.getByTestId("habits-desktop-command")).toHaveClass(
+      "habits-desktop-command",
+    );
+    expect(screen.getByTestId("habits-hero-create-desktop")).toHaveClass("w-full");
+    expect(screen.getByRole("progressbar", { name: "Today's habits" })).toHaveAttribute(
+      "aria-valuenow",
+      "1",
+    );
+    expect(screen.getByRole("progressbar", { name: "Today's habits" })).toHaveAttribute(
+      "aria-valuemax",
+      "3",
+    );
+  });
+
   it("renders one weekly row per habit and groups by time-of-day", () => {
     const morning: Habit = {
       ...baseHabit,

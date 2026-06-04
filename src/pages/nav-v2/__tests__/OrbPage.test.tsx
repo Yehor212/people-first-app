@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
+import { readFileSync } from "node:fs";
 import type { AppliedTheme } from "@/stores/themeStore";
 
 import { OrbPage } from "../OrbPage";
@@ -260,6 +261,15 @@ describe("OrbPage progressive flow", () => {
       .closest(".overflow-y-auto");
 
     expect(refineScroller).toHaveClass("overflow-x-hidden");
+  });
+
+  it("constrains scope controls so translated labels cannot create horizontal scrollbars", () => {
+    const scopeCss = readFileSync("src/pages/nav-v2/MoodScopeSelector.css", "utf8");
+
+    expect(scopeCss).toContain(".mood-scope-chip-row");
+    expect(scopeCss).toContain("max-width: 100%");
+    expect(scopeCss).toContain("overflow-x: clip");
+    expect(scopeCss).toContain(".mood-scope-time-reveal");
   });
 
   it("uses the day flourish instead of the shooting star in paper theme", () => {

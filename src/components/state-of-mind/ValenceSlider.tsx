@@ -181,7 +181,7 @@ export function ValenceSlider({ value, onChange }: ValenceSliderProps) {
   const valenceColor = valenceToColor(value);
 
   return (
-    <div className="w-full px-2">
+    <div className="w-full px-5">
       {/* Valence label — aria-live for screen readers, color synced with valence */}
       <div className="text-center mb-4" aria-live="polite" aria-atomic="true">
         <span
@@ -198,7 +198,10 @@ export function ValenceSlider({ value, onChange }: ValenceSliderProps) {
       <div
         ref={trackRef}
         className="relative flex items-center touch-none select-none cursor-pointer"
-        style={{ height: THUMB_SIZE + TOUCH_PADDING * 2, padding: `${TOUCH_PADDING}px ${THUMB_SIZE / 2}px` }}
+        style={{
+          height: THUMB_SIZE + TOUCH_PADDING * 2,
+          padding: `${TOUCH_PADDING}px ${THUMB_SIZE / 2}px`,
+        }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
@@ -222,49 +225,62 @@ export function ValenceSlider({ value, onChange }: ValenceSliderProps) {
           }}
         />
 
-        {/* 7 tick marks */}
-        {SNAP_POSITIONS.map((pos, i) => {
-          const pct = ((pos + 1) / 2) * 100;
-          const isActive = i === snapIdx;
-          return (
-            <div
-              key={i}
-              className="absolute rounded-full"
-              style={{
-                width: isActive ? 6 : 4,
-                height: isActive ? 6 : 4,
-                backgroundColor: isActive ? 'hsl(var(--foreground))' : 'hsl(var(--foreground) / 0.4)',
-                left: `calc(${pct}% - ${(isActive ? 6 : 4) / 2}px)`,
-                top: '50%',
-                transform: 'translateY(-50%)',
-                transition: 'all 150ms ease-out',
-              }}
-              aria-hidden="true"
-            />
-          );
-        })}
-
-        {/* Thumb — spring snap on press/release */}
-        <motion.div
-          animate={{ scale: isPressed ? 1.15 : 1 }}
-          transition={zenMotion.snappy}
-          className="absolute rounded-full bg-white shadow-zen-md ring-1 ring-black/10 dark:bg-gray-100 dark:ring-white/20"
+        <div
+          className="pointer-events-none absolute inset-y-0"
+          data-testid="valence-slider-thumb-rail"
           style={{
-            width: THUMB_SIZE,
-            height: THUMB_SIZE,
-            left: `calc(${thumbPercent}% - ${THUMB_SIZE / 2}px)`,
+            left: THUMB_SIZE / 2,
+            right: THUMB_SIZE / 2,
           }}
-        />
+          aria-hidden="true"
+        >
+          {/* 7 tick marks */}
+          {SNAP_POSITIONS.map((pos, i) => {
+            const pct = ((pos + 1) / 2) * 100;
+            const isActive = i === snapIdx;
+            const tickSize = isActive ? 6 : 4;
+            return (
+              <div
+                key={i}
+                className="absolute rounded-full"
+                style={{
+                  width: tickSize,
+                  height: tickSize,
+                  backgroundColor: isActive
+                    ? 'hsl(var(--foreground))'
+                    : 'hsl(var(--foreground) / 0.4)',
+                  left: `${pct}%`,
+                  top: '50%',
+                  marginLeft: -tickSize / 2,
+                  transform: 'translateY(-50%)',
+                  transition: 'all 150ms ease-out',
+                }}
+                aria-hidden="true"
+              />
+            );
+          })}
+
+          {/* Thumb — spring snap on press/release */}
+          <motion.div
+            animate={{ scale: isPressed ? 1.15 : 1 }}
+            transition={zenMotion.snappy}
+            className="absolute rounded-full bg-white shadow-zen-md ring-1 ring-black/10 dark:bg-gray-100 dark:ring-white/20"
+            style={{
+              width: THUMB_SIZE,
+              height: THUMB_SIZE,
+              left: `${thumbPercent}%`,
+              top: '50%',
+              marginLeft: -THUMB_SIZE / 2,
+              marginTop: -THUMB_SIZE / 2,
+            }}
+          />
+        </div>
       </div>
 
       {/* Min/Max labels */}
       <div className="flex justify-between rtl:flex-row-reverse px-1 mt-1">
-        <span className="text-xs text-muted-foreground">
-          {t.somVeryUnpleasant}
-        </span>
-        <span className="text-xs text-muted-foreground">
-          {t.somVeryPleasant}
-        </span>
+        <span className="text-xs text-muted-foreground">{t.somVeryUnpleasant}</span>
+        <span className="text-xs text-muted-foreground">{t.somVeryPleasant}</span>
       </div>
     </div>
   );

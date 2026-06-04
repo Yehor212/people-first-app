@@ -528,11 +528,11 @@ export const HabitsPage = memo(function HabitsPage() {
         data-habit-count={todaysHabits.length}
       >
         <HabitFieldBackdrop isEmpty={isEmpty} animate={animateBackdrop} />
-        <div className="relative z-[1] mx-auto min-h-screen w-full max-w-3xl">
-          <header className="min-h-[5.75rem] px-4 ps-20 pt-[calc(env(safe-area-inset-top)+1.75rem)] md:min-h-0 md:px-6 md:ps-6 md:pt-12">
+        <div className="relative z-[1] mx-auto min-h-screen w-full max-w-3xl lg:max-w-none">
+          <header className="mx-auto min-h-[5.75rem] w-full max-w-[88rem] px-4 ps-20 pt-[calc(env(safe-area-inset-top)+1.75rem)] md:min-h-0 md:px-6 md:ps-6 md:pt-12 lg:px-10 lg:pt-14 xl:px-14">
             <h1
               id="habits-page-heading"
-              className="font-display text-3xl font-semibold leading-[1.08] tracking-tight text-foreground md:text-4xl"
+              className="font-display text-3xl font-semibold leading-[1.08] tracking-tight text-foreground md:text-4xl lg:text-5xl"
             >
               {tx.navV2Habits}
             </h1>

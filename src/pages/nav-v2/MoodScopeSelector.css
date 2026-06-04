@@ -29,6 +29,10 @@
   flex-wrap: wrap;
   justify-content: center;
   gap: 0.5rem;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow-x: clip;
   padding: 0.375rem;
   border-radius: 9999px;
   background: color-mix(in oklab, hsl(var(--card)) 30%, transparent);
@@ -84,8 +88,13 @@
 /* Time-picker reveal */
 .mood-scope-time-reveal {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: center;
   gap: 0.625rem;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   padding: 0.5rem 1rem;
   border-radius: 9999px;
   background: color-mix(in oklab, hsl(var(--card)) 35%, transparent);
