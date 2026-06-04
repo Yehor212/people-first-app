@@ -52,6 +52,7 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
   const [selectedSectionId, setSelectedSectionId] = useState<V2SettingsSectionId>(
     INITIAL_SECTION_TO_V2_SECTION[controls?.initialOpenSection || "profile"] || "profile"
   );
+  const themePreference = useThemeStore((s) => s.theme);
   const appliedTheme = useThemeStore((s) => s.appliedTheme);
   const hasValidSession = useAppStore((s) => s.hasValidSession);
   const settingsLead = `${tx.settingsCloudSyncTitle}: ${tx.settingsCloudSyncDescription}`;
@@ -69,7 +70,14 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
     setSelectedSectionId(sectionId);
   }
 
-  const themeLabel = appliedTheme === "paper" ? tx.themeLight : tx.themeDark;
+  const themeLabel =
+    themePreference === "auto"
+      ? tx.themeSystem || "System"
+      : themePreference === "oled"
+        ? tx.oledDarkMode || "OLED"
+        : appliedTheme === "paper"
+          ? tx.themeLight
+          : tx.themeDark;
   const reminderSummary = controls?.reminders.enabled
     ? `${tx.moodReminder}: ${
         controls.reminders.moodTimeMorning || "09:00"
@@ -99,7 +107,7 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
       {
         id: "profile",
         icon: UserRound,
-        label: tx.settingsGroupProfile || tx.profile || "Profile",
+        label: tx.profile || tx.settingsGroupProfile || "Profile",
         description: tx.yourName || "Name, language, and personal preferences.",
         role: "settings",
       },
@@ -208,39 +216,42 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
               expandedId={selectedSectionId}
               controlsWired={true}
               onOpen={openSection}
-              renderPanel={() => (
+              renderPanel={(item) => (
                 <div
                   id="settings-v2-control-deck"
                   className="grid min-w-0 gap-3"
                   data-testid="settings-page-control-deck"
-                  data-selected-section={selectedSectionId}
+                  data-selected-section={item.id}
                 >
                   <V2SettingsControlDeck
                     controls={controls}
-                    selectedSectionId={selectedSectionId}
+                    selectedSectionId={item.id}
                   />
+                  {item.id === "account" && (
+                    <section
+                      aria-label={
+                        tx.settingsCloudSyncTitle || tx.settingsGroupAccount || "Sync status"
+                      }
+                      className="grid min-w-0 gap-3"
+                      data-testid="settings-status-overview"
+                    >
+                      <SyncHealthCard
+                        compact
+                        dense
+                        showHeader
+                        allowManualRetry={false}
+                        surface="settings-space"
+                        quietWhenIdle
+                      />
+                      {supabase && hasValidSession === true && (
+                        <DeviceSessionsCard dense surface="settings" />
+                      )}
+                    </section>
+                  )}
                 </div>
               )}
               label={tx.settings || tx.navV2Settings}
             />
-
-            <section
-              aria-label={tx.settingsCloudSyncTitle || tx.settingsGroupAccount || "Sync status"}
-              className="grid gap-3"
-              data-testid="settings-status-overview"
-            >
-              <SyncHealthCard
-                compact
-                dense
-                showHeader
-                allowManualRetry={false}
-                surface="settings-space"
-                quietWhenIdle
-              />
-              {supabase && hasValidSession === true && (
-                <DeviceSessionsCard dense surface="settings" />
-              )}
-            </section>
           </>
         ) : (
           <SettingsModuleList

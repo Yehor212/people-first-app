@@ -38,6 +38,14 @@ describe("privacyConsent", () => {
     });
   });
 
+  it("allows the explicit no-tracking switch to turn off without enabling optional tracking", () => {
+    expect(applyNoTrackingPreference({ ...base, noTracking: true }, false)).toMatchObject({
+      noTracking: false,
+      analytics: false,
+      adConsent: false,
+    });
+  });
+
   it("turns no-tracking off when analytics is enabled", () => {
     expect(applyAnalyticsPreference({ ...base, noTracking: true }, true)).toMatchObject({
       noTracking: false,

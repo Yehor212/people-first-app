@@ -65,12 +65,13 @@ import {
 } from "@/lib/notificationSounds";
 import { isAndroid, isNative } from "@/lib/platform";
 import { sanitizeUserName } from "@/lib/sanitize";
-import { safeLocalStorageGet, storageGetRaw, storageSetRaw } from "@/lib/safeJson";
+import { safeLocalStorageGet, storageSetRaw } from "@/lib/safeJson";
 import { SK } from "@/lib/storageKeys";
 import { updateProfileName } from "@/lib/accountService";
 import { userNameSchema } from "@/lib/validation";
 import { Language, languageNames } from "@/i18n/translations";
-import { ThemeOption, useTheme } from "@/components/ThemeToggle";
+import { setThemePreference } from "@/components/ThemeToggle";
+import { useThemeStore, type ThemePreference } from "@/stores/themeStore";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { useDataExport } from "@/components/settings/data-section/useDataExport";
 import { useDataImport } from "@/components/settings/data-section/useDataImport";
@@ -119,6 +120,20 @@ function getStoredLockTimeoutMs(): number {
 
 function getProviderName(tx: Record<string, string>, provider: SocialAuthProviderConfig) {
   return tx[provider.nameKey] || provider.fallbackName;
+}
+
+function syncLegacyThemePreference(theme: ThemePreference) {
+  const oledEnabled = theme === "oled";
+  storageSetRaw(SK.OLED_MODE, String(oledEnabled));
+  document.documentElement.classList.toggle("oled", oledEnabled);
+
+  if (theme === "paper") {
+    setThemePreference("light");
+  } else if (theme === "auto") {
+    setThemePreference("system");
+  } else {
+    setThemePreference("dark");
+  }
 }
 
 function formatProviderText(
@@ -174,7 +189,7 @@ function ProfilePanel({ controls }: { controls: V2SettingsControls }) {
   return (
     <PanelFrame
       icon={UserRound}
-      title={tx.settingsGroupProfile || tx.profile || "Profile"}
+      title={tx.profile || tx.settingsGroupProfile || "Profile"}
       description={tx.yourName || "Name and personal preferences."}
       testId="settings-v2-panel-profile"
     >
@@ -206,22 +221,24 @@ function ProfilePanel({ controls }: { controls: V2SettingsControls }) {
 function AppearancePanel() {
   const { t } = useLanguage();
   const tx = t as unknown as Record<string, string>;
-  const { theme, changeTheme } = useTheme();
-  const [oledMode, setOledMode] = useState(() => storageGetRaw(SK.OLED_MODE) === "true");
+  const theme = useThemeStore((s) => s.theme);
+  const appliedTheme = useThemeStore((s) => s.appliedTheme);
+  const setTheme = useThemeStore((s) => s.setTheme);
 
   useEffect(() => {
-    document.documentElement.classList.toggle("oled", oledMode);
-  }, [oledMode]);
+    syncLegacyThemePreference(theme);
+  }, [appliedTheme, theme]);
 
-  const updateOled = (checked: boolean) => {
-    setOledMode(checked);
-    storageSetRaw(SK.OLED_MODE, String(checked));
-  };
+  const updateTheme = (nextTheme: ThemePreference) => setTheme(nextTheme);
 
-  const themeOptions: Array<{ value: ThemeOption; icon: LucideIcon; label: string }> = [
-    { value: "light", icon: Sun, label: tx.themeLight || "Light" },
-    { value: "dark", icon: Moon, label: tx.themeDark || "Dark" },
-    { value: "system", icon: Smartphone, label: tx.themeSystem || "System" },
+  const themeOptions: Array<{
+    value: Exclude<ThemePreference, "oled">;
+    icon: LucideIcon;
+    label: string;
+  }> = [
+    { value: "paper", icon: Sun, label: tx.themeLight || "Light" },
+    { value: "ink", icon: Moon, label: tx.themeDark || "Dark" },
+    { value: "auto", icon: Smartphone, label: tx.themeSystem || "System" },
   ];
 
   return (
@@ -237,8 +254,9 @@ function AppearancePanel() {
             key={option.value}
             icon={option.icon}
             selected={theme === option.value}
-            onClick={() => changeTheme(option.value)}
+            onClick={() => updateTheme(option.value)}
             presentation="stacked"
+            testId={`settings-v2-theme-choice-${option.value}`}
           >
             {option.label}
           </SettingsChoiceButton>
@@ -249,8 +267,8 @@ function AppearancePanel() {
         icon={Moon}
         title={tx.oledDarkMode || "OLED Dark Mode"}
         description={tx.oledDarkModeHint || "Pure black theme for OLED screens."}
-        checked={oledMode}
-        onCheckedChange={updateOled}
+        checked={theme === "oled"}
+        onCheckedChange={(checked) => updateTheme(checked ? "oled" : "ink")}
         testId="settings-v2-oled-toggle"
       />
     </PanelFrame>

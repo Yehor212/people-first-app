@@ -8,10 +8,6 @@ export function applyNoTrackingPreference(
   privacy: PrivacySettings,
   checked: boolean,
 ): PrivacySettings {
-  if (!checked && !privacy.analytics && !privacy.adConsent) {
-    return privacy;
-  }
-
   return {
     ...privacy,
     noTracking: checked,

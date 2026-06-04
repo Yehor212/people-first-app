@@ -1,7 +1,29 @@
 import type React from "react";
-import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen, within } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { SettingsPage } from "../SettingsPage";
+
+const themeStoreMock = vi.hoisted(() => {
+  const state = {
+    theme: "paper" as "paper" | "ink" | "oled" | "auto",
+    appliedTheme: "paper" as "paper" | "ink" | "oled",
+  };
+  const setTheme = vi.fn((theme: "paper" | "ink" | "oled" | "auto") => {
+    state.theme = theme;
+    state.appliedTheme =
+      theme === "auto"
+        ? "paper"
+        : theme;
+    document.documentElement.dataset.theme = state.appliedTheme;
+  });
+
+  return { state, setTheme };
+});
+
+const languageContextMock = vi.hoisted(() => ({
+  language: "en",
+  setLanguage: vi.fn(),
+}));
 
 function expectDocumentOrder(first: HTMLElement, second: HTMLElement) {
   expect(Boolean(first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(
@@ -58,15 +80,22 @@ function installScrollIntoViewSpy() {
 
 vi.mock("@/contexts/LanguageContext", () => ({
   useLanguage: () => ({
+    language: languageContextMock.language,
+    setLanguage: languageContextMock.setLanguage,
     t: {
       navV2Settings: "Settings",
       navV2Theme: "Theme",
       navV2SettingsPlaceholder: "Prepare your controls.",
       themeLight: "Light",
       themeDark: "Dark",
+      themeSystem: "System",
       theme: "Theme",
+      themeLabel: "Theme",
       appearance: "Appearance",
-      settingsGroupProfile: "Profile",
+      oledDarkMode: "OLED dark theme",
+      oledDarkModeHint: "Pure black theme for OLED screens.",
+      profile: "Profile",
+      settingsGroupProfile: "Profile & Appearance",
       yourName: "Your name",
       settingsGroupModules: "Modules",
       settingsModulesDescription: "Choose modules.",
@@ -101,6 +130,7 @@ vi.mock("@/contexts/LanguageContext", () => ({
       privacyDescription: "Your data stays on device.",
       privacyNoTracking: "No tracking",
       privacyAnalytics: "Analytics",
+      enableReminders: "Enable reminders",
     },
   }),
 }));
@@ -184,11 +214,29 @@ vi.mock("@/components/ThemeToggle", () => ({
     changeTheme: vi.fn(),
     mounted: true,
   }),
+  setThemePreference: vi.fn(),
 }));
 
 vi.mock("@/stores/themeStore", () => ({
-  useThemeStore: (selector: (s: { appliedTheme: string }) => unknown) =>
-    selector({ appliedTheme: "paper" }),
+  useThemeStore: Object.assign(
+    (selector: (s: {
+      theme: "paper" | "ink" | "oled" | "auto";
+      appliedTheme: "paper" | "ink" | "oled";
+      setTheme: typeof themeStoreMock.setTheme;
+    }) => unknown) =>
+      selector({
+        theme: themeStoreMock.state.theme,
+        appliedTheme: themeStoreMock.state.appliedTheme,
+        setTheme: themeStoreMock.setTheme,
+      }),
+    {
+      getState: () => ({
+        theme: themeStoreMock.state.theme,
+        appliedTheme: themeStoreMock.state.appliedTheme,
+        setTheme: themeStoreMock.setTheme,
+      }),
+    }
+  ),
 }));
 
 vi.mock("@/stores", () => ({
@@ -377,6 +425,17 @@ function createSettingsControls() {
 }
 
 describe("SettingsPage", () => {
+  beforeEach(() => {
+    themeStoreMock.state.theme = "paper";
+    themeStoreMock.state.appliedTheme = "paper";
+    themeStoreMock.setTheme.mockClear();
+    languageContextMock.language = "en";
+    languageContextMock.setLanguage.mockClear();
+    delete document.documentElement.dataset.theme;
+    document.documentElement.classList.remove("oled", "dark");
+    localStorage.clear();
+  });
+
   it("renders a passive V2 settings overview when controls are not wired", () => {
     render(<SettingsPage />);
 
@@ -390,6 +449,10 @@ describe("SettingsPage", () => {
     expect(screen.queryByTestId("settings-cockpit")).not.toBeInTheDocument();
     expect(screen.queryByTestId("settings-page-sections")).not.toBeInTheDocument();
     expect(screen.getByTestId("settings-module-list")).toBeInTheDocument();
+    expect(screen.getByTestId("settings-module-card-profile")).toHaveTextContent("Profile");
+    expect(screen.getByTestId("settings-module-card-profile")).not.toHaveTextContent(
+      "Profile & Appearance"
+    );
     expect(screen.getByTestId("settings-module-card-profile")).toHaveAttribute(
       "aria-expanded",
       "false"
@@ -417,7 +480,7 @@ describe("SettingsPage", () => {
     expect(screen.getByTestId("settings-page")).toHaveAttribute("data-controls-wired", "false");
   });
 
-  it("puts the selected controls before sync and status content", () => {
+  it("keeps the selected profile controls in the module without standalone sync status", () => {
     render(<SettingsPage controls={createSettingsControls()} />);
 
     expect(screen.getByTestId("settings-page")).toHaveAttribute("data-controls-wired", "true");
@@ -447,16 +510,13 @@ describe("SettingsPage", () => {
     expect(screen.getByTestId("settings-v2-panel-profile")).toBeInTheDocument();
     expect(screen.getByDisplayValue("Avery")).toBeInTheDocument();
     expect(screen.queryByTestId("settings-panel")).not.toBeInTheDocument();
-    expect(screen.getByTestId("sync-health-card")).toHaveAttribute(
-      "data-allow-manual-retry",
-      "false"
+    expect(screen.queryByTestId("settings-status-overview")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("sync-health-card")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("device-sessions-card")).not.toBeInTheDocument();
+    expect(screen.getByTestId("settings-v2-panel-profile")).toHaveTextContent("Profile");
+    expect(screen.getByTestId("settings-v2-panel-profile")).not.toHaveTextContent(
+      "Profile & Appearance"
     );
-    expect(screen.getByTestId("sync-health-card")).toHaveAttribute("data-compact", "true");
-    expect(screen.getByTestId("sync-health-card")).toHaveAttribute(
-      "data-hide-when-idle",
-      "false"
-    );
-    expect(screen.getByTestId("device-sessions-card")).toBeInTheDocument();
 
     expectDocumentOrder(
       screen.getByTestId("settings-page-control-card"),
@@ -465,10 +525,6 @@ describe("SettingsPage", () => {
     expectDocumentOrder(
       screen.getByTestId("settings-module-list"),
       screen.getByTestId("settings-page-control-deck")
-    );
-    expectDocumentOrder(
-      screen.getByTestId("settings-page-control-deck"),
-      screen.getByTestId("sync-health-card")
     );
   });
 
@@ -527,7 +583,7 @@ describe("SettingsPage", () => {
     }
   });
 
-  it("keeps automatic sync below the active account controls without a manual sync button", () => {
+  it("keeps automatic sync status inside the active account module without a manual sync button", () => {
     const { restore, scrollIntoView } = installScrollIntoViewSpy();
 
     try {
@@ -564,15 +620,19 @@ describe("SettingsPage", () => {
         "false"
       );
       expect(screen.getByTestId("device-sessions-card")).toBeInTheDocument();
-      expectDocumentOrder(
-        screen.getByTestId("settings-page-control-deck"),
+      expect(screen.getByTestId("settings-module-panel-account")).toContainElement(
+        screen.getByTestId("settings-status-overview")
+      );
+      expect(screen.getByTestId("settings-status-overview")).toContainElement(
         screen.getByTestId("sync-health-card")
       );
-      expect(
-        screen.getByTestId("settings-v2-panel-account").querySelector(
-          '[data-testid="sync-health-card"]'
-        )
-      ).toBeNull();
+      expect(screen.getByTestId("settings-status-overview")).toContainElement(
+        screen.getByTestId("device-sessions-card")
+      );
+      expectDocumentOrder(
+        screen.getByTestId("settings-v2-panel-account"),
+        screen.getByTestId("sync-health-card")
+      );
       expect(
         screen.queryByRole("button", { name: /sync now|manual sync/i })
       ).not.toBeInTheDocument();
@@ -582,5 +642,90 @@ describe("SettingsPage", () => {
     } finally {
       restore();
     }
+  });
+
+  it("wires V2 appearance choices to the canonical theme store", () => {
+    render(
+      <SettingsPage
+        controls={{
+          ...createSettingsControls(),
+          initialOpenSection: "appearance",
+        }}
+      />
+    );
+
+    expect(screen.getByTestId("settings-module-card-appearance")).toHaveTextContent("Light");
+    expect(screen.getByTestId("settings-v2-theme-choice-paper")).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    );
+
+    fireEvent.click(screen.getByTestId("settings-v2-theme-choice-ink"));
+    expect(themeStoreMock.setTheme).toHaveBeenLastCalledWith("ink");
+    expect(document.documentElement.dataset.theme).toBe("ink");
+
+    fireEvent.click(screen.getByTestId("settings-v2-theme-choice-auto"));
+    expect(themeStoreMock.setTheme).toHaveBeenLastCalledWith("auto");
+    expect(document.documentElement.dataset.theme).toBe("paper");
+
+    const oledToggle = within(screen.getByTestId("settings-v2-oled-toggle")).getByRole("switch", {
+      name: "OLED dark theme",
+    });
+    fireEvent.click(oledToggle);
+    expect(themeStoreMock.setTheme).toHaveBeenLastCalledWith("oled");
+    expect(document.documentElement.dataset.theme).toBe("oled");
+  });
+
+  it("wires language choices to the language context", () => {
+    render(<SettingsPage controls={createSettingsControls()} />);
+
+    fireEvent.click(screen.getByTestId("settings-module-card-language"));
+    fireEvent.click(screen.getByRole("button", { name: "Українська" }));
+
+    expect(languageContextMock.setLanguage).toHaveBeenCalledWith("uk");
+  });
+
+  it("wires notification reminder controls to the settings callback", () => {
+    const controls = createSettingsControls();
+    render(<SettingsPage controls={controls} />);
+
+    fireEvent.click(screen.getByTestId("settings-module-card-notifications"));
+    fireEvent.click(
+      within(screen.getByTestId("settings-v2-reminders-toggle")).getByRole("switch", {
+        name: "Enable reminders",
+      })
+    );
+
+    const enabledUpdater = controls.onRemindersChange.mock.calls.at(-1)?.[0];
+    expect(typeof enabledUpdater).toBe("function");
+    expect(enabledUpdater(controls.reminders)).toMatchObject({ enabled: false });
+
+    fireEvent.click(screen.getByRole("button", { name: "Mon" }));
+    const dayUpdater = controls.onRemindersChange.mock.calls.at(-1)?.[0];
+    expect(typeof dayUpdater).toBe("function");
+    expect(dayUpdater(controls.reminders).days).not.toContain(1);
+  });
+
+  it("lets the explicit no-tracking switch turn off no-tracking without enabling analytics", () => {
+    const controls = {
+      ...createSettingsControls(),
+      privacy: { noTracking: true, analytics: false, consentShown: true, adConsent: false },
+    };
+    render(<SettingsPage controls={controls} />);
+
+    fireEvent.click(screen.getByTestId("settings-module-card-privacy"));
+    fireEvent.click(
+      within(screen.getByTestId("settings-v2-no-tracking")).getByRole("switch", {
+        name: "No tracking",
+      })
+    );
+
+    const updater = controls.onPrivacyChange.mock.calls.at(-1)?.[0];
+    expect(typeof updater).toBe("function");
+    expect(updater(controls.privacy)).toMatchObject({
+      noTracking: false,
+      analytics: false,
+      adConsent: false,
+    });
   });
 });
