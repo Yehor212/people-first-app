@@ -1,0 +1,154 @@
+{
+  "cutoffMs": 1200,
+  "early": {
+    "label": "after-first-visible",
+    "href": "http://localhost:8080/people-first-app/orb?nav=v2&navLayout=phone&dev=true&_audit=1780613850679",
+    "viewport": {
+      "width": 447,
+      "height": 698,
+      "dpr": 1
+    },
+    "bodyOverflowX": 0,
+    "documentOverflowX": -10,
+    "wrappers": [
+      {
+        "policy": "webgl",
+        "firstPaintReady": "true",
+        "visualReady": "true",
+        "transition": "v1-soft",
+        "speed": "0.72",
+        "rect": {
+          "width": 203,
+          "height": 203,
+          "top": 103
+        },
+        "canvases": [
+          {
+            "tier": "canvas2d",
+            "ready": "true",
+            "width": 240,
+            "height": 240,
+            "offsetWidth": 240,
+            "offsetHeight": 240,
+            "opacity": "1"
+          }
+        ]
+      }
+    ],
+    "hero": {
+      "policy": "webgl",
+      "firstPaintReady": "true",
+      "visualReady": "true",
+      "transition": "v1-soft",
+      "speed": "0.72",
+      "rect": {
+        "width": 203,
+        "height": 203,
+        "top": 103
+      },
+      "canvases": [
+        {
+          "tier": "canvas2d",
+          "ready": "true",
+          "width": 240,
+          "height": 240,
+          "offsetWidth": 240,
+          "offsetHeight": 240,
+          "opacity": "1"
+        }
+      ]
+    },
+    "canvasEvents": [
+      {
+        "event": "appendCanvas",
+        "at": 1277,
+        "newWidth": 240,
+        "tier": "canvas2d",
+        "ready": ""
+      }
+    ],
+    "firstHeroCanvasAt": 1277,
+    "lateHeroSwaps": []
+  },
+  "settled": {
+    "label": "after-5s",
+    "href": "http://localhost:8080/people-first-app/orb?nav=v2&navLayout=phone&dev=true&_audit=1780613850679",
+    "viewport": {
+      "width": 447,
+      "height": 698,
+      "dpr": 1
+    },
+    "bodyOverflowX": 0,
+    "documentOverflowX": -10,
+    "wrappers": [
+      {
+        "policy": "webgl",
+        "firstPaintReady": "true",
+        "visualReady": "true",
+        "transition": "v1-soft",
+        "speed": "0.72",
+        "rect": {
+          "width": 240,
+          "height": 240,
+          "top": 56
+        },
+        "canvases": [
+          {
+            "tier": "webgl-worker",
+            "ready": "true",
+            "width": 240,
+            "height": 240,
+            "offsetWidth": 240,
+            "offsetHeight": 240,
+            "opacity": "1"
+          }
+        ]
+      }
+    ],
+    "hero": {
+      "policy": "webgl",
+      "firstPaintReady": "true",
+      "visualReady": "true",
+      "transition": "v1-soft",
+      "speed": "0.72",
+      "rect": {
+        "width": 240,
+        "height": 240,
+        "top": 56
+      },
+      "canvases": [
+        {
+          "tier": "webgl-worker",
+          "ready": "true",
+          "width": 240,
+          "height": 240,
+          "offsetWidth": 240,
+          "offsetHeight": 240,
+          "opacity": "1"
+        }
+      ]
+    },
+    "canvasEvents": [
+      {
+        "event": "appendCanvas",
+        "at": 1277,
+        "newWidth": 240,
+        "tier": "canvas2d",
+        "ready": ""
+      },
+      {
+        "event": "replaceCanvas",
+        "at": 2261,
+        "oldWidth": 240,
+        "newWidth": 240,
+        "oldTier": "canvas2d",
+        "newTier": "webgl-worker",
+        "oldReady": "true",
+        "newReady": ""
+      }
+    ],
+    "firstHeroCanvasAt": 1277,
+    "lateHeroSwaps": []
+  },
+  "screenshot": "C:\\project\\people-first-app\\output\\playwright\\orb-runtime-audit\\orb-phone-runtime.png"
+}
