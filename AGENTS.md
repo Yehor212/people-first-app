@@ -29,6 +29,14 @@ Supported platforms: Web/Vite, PWA, Android/Capacitor, iOS/WKWebView, Desktop/Ta
 - Repo-local context packs are documented in `docs/ai/AGENT_CONTEXT_PERSISTENCE.md` and served by `tools/zenflow-context/server.mjs`.
 - Verify agent context health with `npm run check:agent-context`, `npm run ai:context:check`, and `npm run ai:context:auto-check`.
 
+## Canonical Project And Runtime Target
+
+- Treat `C:\project\people-first-app` and remote `https://github.com/Yehor212/people-first-app.git` as the canonical project unless the user explicitly names another repo.
+- Do not treat dated Codex session folders under `C:\Users\egors\Documents\Codex\...` as the real project source of truth.
+- The canonical public app target is `https://yehor212.github.io/people-first-app/`; for the V2 orb phone flow use `https://yehor212.github.io/people-first-app/orb/?nav=v2&navLayout=phone`.
+- For user-visible runtime bugs, verify with local repo tests and browser/runtime checks against this app target or a production-equivalent local build of the same route. If the claim is about deployed GitHub Pages behavior, verify the cache-busted public URL after deploy before claiming PASS.
+- If verification needs authentication, navigate to the real app sign-in flow and pause for the user to complete authorization. Do not request, store, print, or handle user credentials or tokens.
+
 ## Ruflow+ And Work Mode
 
 - For substantial work, use the tracked source of truth in `docs/ai/RUFLOW_PLUS_BLUEPRINT.md`.
