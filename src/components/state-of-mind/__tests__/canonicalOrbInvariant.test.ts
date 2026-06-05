@@ -19,7 +19,7 @@ describe("canonical orb invariant", () => {
     const canonicalSurfaces = [
       {
         file: "src/pages/nav-v2/OrbPageSteps.tsx",
-        required: ["ValenceOrb", "MiniValenceOrb", 'transitionProfile="v1-soft"'],
+        required: ["ValenceOrb", "MiniValenceOrb", 'transitionProfile="input-soft"'],
       },
       {
         file: "src/components/state-of-mind/StateOfMindModal.tsx",
