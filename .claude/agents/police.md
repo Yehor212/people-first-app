@@ -238,4 +238,4 @@ Source: NASA IV&V, ICLR 2024, METR 2025, Anthropic Engineering.
 - **Original user request**: Team Lead stores verbatim in delegation brief. Police should check brief completeness against actual changes.
 - **Intentional deviations**: if Team Lead documents a justified deviation (with file:line evidence), Police should verify the justification is sound, not auto-reject.
 - **Tool audit trail**: cross-reference `.tool-audit-trail` for evidence fabrication — claimed READs must match actual tool calls.
-- **Ruflo task check**: before approving, run `mcp__ruflo__task_list(status:"pending")` — if any tasks still pending, REJECT. All tasks must be complete before commit.
+- **Ruflo task check**: if Ruflo MCP task tools are callable, run `mcp__ruflo__task_list(status:"pending")` before approving; if they are unavailable, verify the coordinator's local task checklist and mark Ruflo-specific evidence `UNVERIFIED` instead of fabricating task results.

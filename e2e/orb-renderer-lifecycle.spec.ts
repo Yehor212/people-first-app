@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-const LATE_SWAP_CUTOFF_MS = 1000;
+const LATE_SWAP_CUTOFF_MS = 1200;
 
 async function primeOrbPage(page: import("@playwright/test").Page) {
   await page.addInitScript(() => {
@@ -154,12 +154,18 @@ test.describe("V2 orb renderer lifecycle", () => {
           newWidth?: number;
         }>;
       };
-      return (win.__zenOrbCanvasEvents ?? []).filter((event) => {
+      const heroEvents = (win.__zenOrbCanvasEvents ?? []).filter(
+        (event) => (event.oldWidth ?? 0) >= 200 || (event.newWidth ?? 0) >= 200,
+      );
+      const firstHeroCanvasAt = Math.min(
+        ...heroEvents.map((event) => event.at),
+      );
+      return heroEvents.filter((event) => {
         const isVisibleHeroCanvas =
           (event.oldWidth ?? 0) >= 200 || (event.newWidth ?? 0) >= 200;
         return (
           event.event === "replaceCanvas" &&
-          event.at > lateSwapCutoffMs &&
+          event.at - firstHeroCanvasAt > lateSwapCutoffMs &&
           isVisibleHeroCanvas
         );
       });
@@ -181,7 +187,8 @@ test.describe("V2 orb renderer lifecycle", () => {
               canvas.height >= 200 &&
               canvas.offsetWidth > 0 &&
               canvas.offsetHeight > 0 &&
-              (canvas.dataset.orbRendererTier === "webgl-main" ||
+              (canvas.dataset.orbRendererTier === "canvas2d" ||
+                canvas.dataset.orbRendererTier === "webgl-main" ||
                 canvas.dataset.orbRendererTier === "webgl-worker"),
           ),
         ),
@@ -212,10 +219,9 @@ test.describe("V2 orb renderer lifecycle", () => {
       ready: true,
       visibleHeroCanvases: 1,
     });
-    expect(afterReload.tiers).not.toContain("canvas2d");
     expect(afterReload.tiers).toEqual(
       expect.arrayContaining([
-        expect.stringMatching(/^webgl-(main|worker)$/),
+        expect.stringMatching(/^(canvas2d|webgl-(main|worker))$/),
       ]),
     );
   });

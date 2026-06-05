@@ -149,11 +149,13 @@ describe("canonical orb invariant", () => {
     expect(source).toContain("const recoveredWithWebGL = await upgradeToMainThreadWebGL()");
   });
 
-  it("forbids Canvas2D and synchronous main-thread first-paint substitutes for forced WebGL surfaces", () => {
+  it("allows only canonical Canvas2D recovery while forbidding ad-hoc first-paint substitutes", () => {
     const source = readSource("src/components/state-of-mind/ValenceOrb.tsx");
 
     expect(source).toContain("createOrbGL2Async(gl2Canvas");
     expect(source).toContain("markRendererTier(upgradeCanvas, 'webgl-main')");
+    expect(source).toContain("canUseCanonicalCanvasRecovery");
+    expect(source).toContain("markRendererTier(activeCanvas, 'canvas2d')");
     expect(source).not.toContain("forced-canvas2d-prepaint");
     expect(source).not.toContain("forceCanonicalWebGL && ctx2d");
     expect(source).not.toContain("fallbackCanvas = forceCanonicalWebGL");
@@ -170,15 +172,16 @@ describe("canonical orb invariant", () => {
     expect(source).not.toContain("lottie");
   });
 
-  it("keeps forced WebGL tests from accepting product Canvas2D recovery", () => {
+  it("keeps forced WebGL tests explicit about product Canvas2D recovery", () => {
     const source = readSource("src/components/state-of-mind/__tests__/ValenceOrb.motion.test.ts");
 
     expect(source).toContain("renders forced WebGL surfaces from a WebGL canvas without Canvas2D prepaint");
-    expect(source).toContain("does not recover forced WebGL startup failure to Canvas2D in product mode");
+    expect(source).toContain("recovers forced WebGL startup failure to the canonical Canvas2D renderer in product mode");
+    expect(source).toContain("keeps forced WebGL product surfaces visible through canonical Canvas2D after first-frame timeout");
     expect(source).toContain("allows Canvas2D fallback only through the explicit debug override");
     expect(source).not.toContain("recovers forced WebGL startup failure to a stable Canvas2D frame");
     expect(source).not.toContain("recovers forced WebGL first-frame timeout to Canvas2D");
-    expect(source).not.toContain('toHaveAttribute("data-orb-renderer-tier", "canvas2d")');
+    expect(source).toContain("[data-orb-renderer-tier='canvas2d']");
   });
 
   it("keeps canonical orb canvases paint-contained to avoid route-level render stalls", () => {
@@ -197,7 +200,7 @@ describe("canonical orb invariant", () => {
     expect(source).not.toContain("function hasViewportIntersection");
     expect(source).not.toContain("rect.bottom > 0");
     expect(source).not.toContain("rect.top < viewportHeight");
-    expect(source).toContain("isVisibleRef.current = typeof IntersectionObserver === \"undefined\"");
+    expect(source).toContain("isVisibleRef.current = true");
     expect(source).toContain("webglUpgradePendingUntilVisible");
     expect(source).toContain("startWebGLUpgradeWhenVisible");
     expect(source).toContain("if (!isVisibleRef.current)");

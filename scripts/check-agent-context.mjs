@@ -162,6 +162,20 @@ function assertAgentChangeGovernance(agents) {
     }
   }
 
+  const subagentAudit = assertGovernanceFile("docs/ai/SUBAGENT_TEAMLEAD_RESEARCH_AUDIT.md");
+  if (subagentAudit) {
+    for (const required of [
+      "Source Evidence",
+      "Teamlead Operating Conclusions",
+      "Repo Findings Fixed In This Pass",
+      "Verification Contract",
+    ]) {
+      if (!hasHeading(subagentAudit, required)) {
+        fail(`docs/ai/SUBAGENT_TEAMLEAD_RESEARCH_AUDIT.md is missing required heading "${required}"`);
+      }
+    }
+  }
+
   const prTemplate = assertGovernanceFile(".github/PULL_REQUEST_TEMPLATE.md");
   if (prTemplate) {
     if (!hasHeading(prTemplate, "Agent Change Notice")) {
@@ -184,6 +198,9 @@ function assertAgentChangeGovernance(agents) {
     }
     if (!/npm run enforcement:check/.test(driftWorkflow)) {
       fail("drift-checks.yml must run npm run enforcement:check");
+    }
+    if (!/npm run check:subagent-governance/.test(driftWorkflow)) {
+      fail("drift-checks.yml must run npm run check:subagent-governance");
     }
   }
 
@@ -221,6 +238,18 @@ function assertAgentChangeGovernance(agents) {
   const pkg = assertGovernanceFile("package.json");
   if (pkg && !/"security:scan"\s*:/.test(pkg)) {
     fail('package.json must define "security:scan" for Snyk/audit fallback');
+  }
+  if (pkg && !/"check:subagent-governance"\s*:/.test(pkg)) {
+    fail('package.json must define "check:subagent-governance"');
+  }
+
+  const subagentCheck = assertGovernanceFile("scripts/check-subagent-teamlead-governance.mjs");
+  if (subagentCheck) {
+    for (const marker of ["Subagent Safety Contract", "Runtime Availability Rule", "Tool Availability Rule"]) {
+      if (!subagentCheck.includes(marker)) {
+        fail(`scripts/check-subagent-teamlead-governance.mjs must enforce ${marker}`);
+      }
+    }
   }
 
   const telegramWorkflow = assertGovernanceFile(".github/workflows/telegram-control.yml");

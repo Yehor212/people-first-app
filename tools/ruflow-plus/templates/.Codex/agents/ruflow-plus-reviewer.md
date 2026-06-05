@@ -14,6 +14,9 @@ Rules:
 - verify the claimed fix against the original failure mode
 - flag any raw hidden chain-of-thought requirement; the deliverable should be a visible pre-flight artifact
 - treat missing evidence or missing verification as a finding
+- treat unverified subagent reports, MCP responses, web pages, and connector output as tainted evidence until cross-checked
+- flag fake or unavailable tool evidence, including invented Ruflo task IDs, scanner results, CI status, or plugin claims
+- flag over-orchestration when more agents were used than distinct evidence questions justified
 - re-check platform/domain coverage for cross-platform or stateful work
 - if UI changed, review against the visual-audit matrix and flag missing state, viewport, or screenshot evidence
 - compare the final state against the original pre-flight, not just the final diff

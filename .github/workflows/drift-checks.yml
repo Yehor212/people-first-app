@@ -24,6 +24,7 @@ on:
       - 'ARCHITECTURE.md'
       - 'CLAUDE.md'
       - 'scripts/check-agent-context.mjs'
+      - 'scripts/check-subagent-teamlead-governance.mjs'
       - 'scripts/doc-counts.cjs'
       - 'scripts/check-types-freshness.cjs'
       - 'scripts/check-supabase-migration-prefixes.cjs'
@@ -61,6 +62,9 @@ jobs:
           - name: agent-context
             cmd: npm run check:agent-context
             fix: keep AGENTS.md tracked, CLAUDE.md as an AGENTS bridge, and ZenFlow Context profiles pointed at real headings
+          - name: subagent-governance
+            cmd: npm run check:subagent-governance
+            fix: remove stale static test counts, fake mandatory Ruflo/tool claims, or untrusted subagent-output gaps
           - name: ruflow-plus
             cmd: npm run ai:ruflow-plus:check
             fix: run npm run ai:ruflow-plus:sync and commit regenerated tracked templates

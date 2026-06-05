@@ -34,6 +34,8 @@ const REQUIRED_SURFACES = [
       "createOrbGL2Async",
       "createOrbGLAsync",
       "if (mode === 'webgl') return true",
+      "canUseCanonicalCanvasRecovery",
+      "markRendererTier(activeCanvas, 'canvas2d')",
       "data-orb-renderer-policy={renderer}",
     ],
     forbidden: [
