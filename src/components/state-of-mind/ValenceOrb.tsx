@@ -4,10 +4,10 @@
  * Progressive enhancement (Law 22 — probe highest tier first):
  *   WebGL 2.0 available → GLSL 300 es shader (10/10 quality, 60fps capable)
  *   WebGL 1.0 available → GLSL ES 1.0 shader (10/10 quality, 60fps capable)
- *   Neither available → Canvas 2D fallback (8/10 quality, 30fps)
+ *   Neither available → Canvas 2D fallback only for non-forced/debug surfaces
  *
  * Both paths share the same particle system, shape presets, and color mapping.
- * Context loss recovery: seamless WebGL → Canvas 2D → WebGL on restore.
+ * Context loss recovery: non-forced surfaces may fall back; forced canonical surfaces stay WebGL-only.
  *
  * Law 12 (Performance): 30fps RAF, IntersectionObserver pause, DPR cap at 2x.
  * Law 18 (Cleanup): mounted guard, RAF cancel, observer disconnect, GL dispose, listener removal.
@@ -739,8 +739,7 @@ export const ValenceOrb = memo(function ValenceOrb({
     const explicitWebGLOverride = rendererOverride === 'webgl';
     const forceCanonicalWebGL =
       !debugCanvasFallbackAllowed && (renderer === 'webgl' || rendererOverride === 'webgl');
-    const canUseCanonicalCanvasRecovery =
-      !forceCanonicalWebGL || debugCanvasFallbackAllowed || !explicitWebGLOverride;
+    const canUseCanonicalCanvasRecovery = !forceCanonicalWebGL || debugCanvasFallbackAllowed;
     let activeCanvas = createCanvas(size, canvasDpr);
     let glRenderer: OrbGLRenderer | null = null;
     let workerRenderer: OrbWorkerController | null = null;
@@ -884,7 +883,7 @@ export const ValenceOrb = memo(function ValenceOrb({
 
     // ── Fallback canvas for context loss recovery ──
     let fallbackCanvas: HTMLCanvasElement | null = null;
-    /** Degrade to canonical Canvas 2D for product recovery; strict debug WebGL stays WebGL-only. */
+    /** Degrade to Canvas 2D only for non-forced/debug recovery; forced canonical surfaces stay WebGL-only. */
     const degradeToCanvas2D = () => {
       if (!canUseCanonicalCanvasRecovery) {
         render = renderPendingWebGL;
@@ -1121,7 +1120,7 @@ export const ValenceOrb = memo(function ValenceOrb({
         setCtxFailed(true);
       }
 
-      // Restart RAF loop with Canvas 2D rendering
+      // Restart RAF loop only when a non-forced/debug Canvas 2D recovery exists.
       if (ctx2d && shouldAnimateCanonicalOrb() && mountedRef.current) {
         requestNextFrame();
       }

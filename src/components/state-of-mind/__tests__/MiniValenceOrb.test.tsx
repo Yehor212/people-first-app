@@ -142,7 +142,7 @@ describe("MiniValenceOrb", () => {
     expect(container.firstChild).toHaveClass("opacity-0");
   });
 
-  it("reveals mini chrome from the canonical Canvas2D first paint while WebGL is delayed", async () => {
+  it("keeps mini chrome hidden while forced WebGL is delayed instead of revealing Canvas2D", async () => {
     vi.useFakeTimers();
     allow2dContext = true;
     vi.stubGlobal("OffscreenCanvas", undefined);
@@ -153,10 +153,10 @@ describe("MiniValenceOrb", () => {
       <MiniValenceOrb valence={0} hasEntry={false} size="sm" chrome="badge" />,
     );
 
-    expect(container.firstChild).toHaveClass("opacity-100");
-    expect(container.querySelector("[data-orb-first-paint-ready='true']")).not.toBeNull();
-    expect(container.querySelector("[data-orb-visual-ready='true']")).not.toBeNull();
-    expect(container.querySelector("[data-orb-renderer-tier='canvas2d']")).not.toBeNull();
+    expect(container.firstChild).toHaveClass("opacity-0");
+    expect(container.querySelector("[data-orb-first-paint-ready='true']")).toBeNull();
+    expect(container.querySelector("[data-orb-visual-ready='true']")).toBeNull();
+    expect(container.querySelector("[data-orb-renderer-tier='canvas2d']")).toBeNull();
     expect(createOrbGLAsync).not.toHaveBeenCalled();
 
     await act(async () => {
@@ -166,7 +166,7 @@ describe("MiniValenceOrb", () => {
       await Promise.resolve();
     });
 
-    expect(container.firstChild).toHaveClass("opacity-100");
+    expect(container.firstChild).toHaveClass("opacity-0");
     expect(createOrbGLAsync).not.toHaveBeenCalled();
 
     await act(async () => {

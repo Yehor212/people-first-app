@@ -187,8 +187,7 @@ test.describe("V2 orb renderer lifecycle", () => {
               canvas.height >= 200 &&
               canvas.offsetWidth > 0 &&
               canvas.offsetHeight > 0 &&
-              (canvas.dataset.orbRendererTier === "canvas2d" ||
-                canvas.dataset.orbRendererTier === "webgl-main" ||
+              (canvas.dataset.orbRendererTier === "webgl-main" ||
                 canvas.dataset.orbRendererTier === "webgl-worker"),
           ),
         ),
@@ -221,7 +220,7 @@ test.describe("V2 orb renderer lifecycle", () => {
     });
     expect(afterReload.tiers).toEqual(
       expect.arrayContaining([
-        expect.stringMatching(/^(canvas2d|webgl-(main|worker))$/),
+        expect.stringMatching(/^webgl-(main|worker)$/),
       ]),
     );
   });
