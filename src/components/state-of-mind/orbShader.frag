@@ -221,8 +221,8 @@ void main() {
   // ── Physiological Breathing (inhale 4 → hold 1 → exhale 5 → pause 2 beats) ──
   // Valence-adaptive period: anxious breathes fast, calm breathes slow
   float breathPeriod = mix(8.0, 16.0, (uValence + 1.0) * 0.5);
-  float breathJitter = snoise(vec3(uTime * 0.03, 500.0, 0.0)) * 0.05; // ±5% organic drift
-  float breathPhase = fract(uTime / (breathPeriod * (1.0 + breathJitter)));
+  float breathJitter = snoise(vec3(uTime * 0.03, 500.0, 0.0)) * 0.05; // bounded ±5% phase drift
+  float breathPhase = fract(uTime / breathPeriod + breathJitter);
   float breathInhale = smoothstep(0.0, 0.333, breathPhase);
   float breathExhale = 1.0 - smoothstep(0.417, 0.833, breathPhase);
   float breathPause = step(0.833, breathPhase);

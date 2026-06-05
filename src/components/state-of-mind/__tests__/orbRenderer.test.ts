@@ -3,7 +3,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-import { getShapeParams } from "../orbRenderer";
+import { getShapeParams, resolveStableBreathPhase } from "../orbRenderer";
 
 const shaderSource = readFileSync(
   join(dirname(fileURLToPath(import.meta.url)), "../orbShader.frag"),
@@ -66,5 +66,24 @@ describe("orb shape presets", () => {
       "float stableShapeM = uValence < 0.0 ? 3.0 : uShapeM;",
     );
     expect(shaderSource).toContain("else if (v < -0.500)");
+  });
+
+  it("keeps breathing phase speed stable in long-running orb sessions", () => {
+    const period = 8;
+    const frameSeconds = 1 / 60;
+    const earlyStep =
+      resolveStableBreathPhase(frameSeconds, period, 0.05) -
+      resolveStableBreathPhase(0, period, 0.05);
+    const lateStep =
+      resolveStableBreathPhase(600 + frameSeconds, period, -0.05) -
+      resolveStableBreathPhase(600, period, -0.05);
+
+    expect(earlyStep).toBeCloseTo(frameSeconds / period, 8);
+    expect(lateStep).toBeCloseTo(frameSeconds / period, 8);
+  });
+
+  it("does not divide absolute shader time by a changing jittered period", () => {
+    expect(shaderSource).toContain("float breathPhase = fract(uTime / breathPeriod + breathJitter);");
+    expect(shaderSource).not.toContain("uTime / (breathPeriod * (1.0 + breathJitter))");
   });
 });

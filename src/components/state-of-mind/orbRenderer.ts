@@ -311,12 +311,18 @@ function presenceScaleForValence(valence: number): number {
   return 1 - negativePressure(valence) * 0.12;
 }
 
+export function resolveStableBreathPhase(t: number, period: number, phaseJitter = 0): number {
+  if (!Number.isFinite(t) || !Number.isFinite(period) || period <= 0) return 0;
+  const boundedPhase = t / period + phaseJitter;
+  return ((boundedPhase % 1) + 1) % 1;
+}
+
 /**
  * Physiological breathing curve (inhale 4 → hold 1 → exhale 5 → pause 2 beats).
  * Returns 0→1→0 with natural timing. Matches WebGL shader breathCycle.
  */
-function breathCycle(t: number, period: number): number {
-  const phase = (((t / period) % 1) + 1) % 1; // fract (handles negative t)
+function breathCycle(t: number, period: number, phaseJitter = 0): number {
+  const phase = resolveStableBreathPhase(t, period, phaseJitter);
   const inhale = smoothstep(0.0, 0.333, phase);
   const exhale = 1.0 - smoothstep(0.417, 0.833, phase);
   const pause = phase >= 0.833 ? 1.0 : 0.0;
@@ -1475,12 +1481,11 @@ export function drawOrbScene(
 
   // ── Physiological breathing (inhale→hold→exhale→pause, wave from outer to inner) ──
   const breathPeriod = mapRange(valence, -1, 1, 8.0, 16.0); // anxious=fast, calm=slow
-  const breathJitter = noise2d(time * 0.03, 500) * 0.05; // ±5% organic drift
-  const jitteredPeriod = breathPeriod * (1 + breathJitter);
-  const outerBreath = 1 + breathCycle(time, jitteredPeriod) * 0.05 - 0.025; // ±0.025
-  const bodyBreath = 1 + breathCycle(time - 0.8, jitteredPeriod) * 0.04 - 0.02; // ±0.020, phase-lagged
+  const breathJitter = noise2d(time * 0.03, 500) * 0.05; // bounded ±5% phase drift
+  const outerBreath = 1 + breathCycle(time, breathPeriod, breathJitter) * 0.05 - 0.025; // ±0.025
+  const bodyBreath = 1 + breathCycle(time - 0.8, breathPeriod, breathJitter) * 0.04 - 0.02; // ±0.020, phase-lagged
   const innerBreath =
-    1 + breathCycle(time - 1.6, jitteredPeriod) * 0.03 - 0.015; // ±0.015, more lagged
+    1 + breathCycle(time - 1.6, breathPeriod, breathJitter) * 0.03 - 0.015; // ±0.015, more lagged
 
   // Layer 0: Cached glow layer (real shadowBlur, ~0ms per frame)
   const glowCanvas = getOrCreateGlowCache(baseRadius * 1.2, hsl, isDark);
