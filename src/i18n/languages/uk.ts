@@ -1307,7 +1307,7 @@ export const uk: Translations = {
   identityDefaultVerb: "людиною, яка тримає слово",
   identityVotePreview:
     "Після збереження картка покаже цей сенс; кожне виконання стане маленьким кроком.",
-  identityVoteFor: "Крок до мети: {identity}",
+  identityVoteFor: "Крок до {identity}",
   identityVoteCast: "крок зараховано",
   identityVotePending: "можна відмітити",
   habitImpact: "Вплив звичок",

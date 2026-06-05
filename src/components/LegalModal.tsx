@@ -61,11 +61,6 @@ const OSS_LICENSES = [
     url: "https://github.com/cure53/DOMPurify",
   },
   {
-    name: "Recharts",
-    license: "MIT",
-    url: "https://github.com/recharts/recharts",
-  },
-  {
     name: "date-fns",
     license: "MIT",
     url: "https://github.com/date-fns/date-fns",

@@ -1,10 +1,9 @@
 /**
- * HabitFrequencyChart — Recharts BarChart showing completions by day of week.
+ * HabitFrequencyChart — SVG bar chart showing completions by day of week.
  * Deep Space aesthetic: transparent bg, habit color bars, subtle grid.
  */
 
 import { memo, useMemo } from "react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Cell } from "recharts";
 import { cn } from "@/lib/utils";
 import { getFrequencyByWeekday } from "@/lib/habitScore";
 import { resolveHabitColor } from "@/lib/habitColorUtils";
@@ -12,7 +11,14 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useChartFontSizes } from "@/lib/chartTokens";
 import type { Habit } from "@/types";
 
-const CHART_MARGIN = { top: 4, right: 4, bottom: 0, left: -20 } as const;
+const CHART_WIDTH = 320;
+const CHART_HEIGHT = 128;
+const CHART_LEFT = 24;
+const CHART_RIGHT = 8;
+const CHART_TOP = 10;
+const CHART_BOTTOM = 24;
+const CHART_INNER_WIDTH = CHART_WIDTH - CHART_LEFT - CHART_RIGHT;
+const CHART_INNER_HEIGHT = CHART_HEIGHT - CHART_TOP - CHART_BOTTOM;
 
 interface HabitFrequencyChartProps {
   habit: Habit;
@@ -49,6 +55,9 @@ export const HabitFrequencyChart = memo(function HabitFrequencyChart({
   }, [habit, dayLabels]);
 
   const maxCount = useMemo(() => Math.max(...data.map((d) => d.count), 1), [data]);
+  const habitColor = resolveHabitColor(habit.color);
+  const slotWidth = CHART_INNER_WIDTH / data.length;
+  const barWidth = Math.max(14, slotWidth - 12);
 
   return (
     <div className={cn("", className)}>
@@ -62,42 +71,61 @@ export const HabitFrequencyChart = memo(function HabitFrequencyChart({
         aria-label={`${ts.weekdayFrequency || "Habit frequency by day"}: ${data.map((d) => `${d.day} ${d.count}`).join(", ")}`}
       >
         <div className="aspect-[5/2] @sm:aspect-[3/1] min-h-[100px] max-h-[200px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data} margin={CHART_MARGIN}>
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke="hsl(0 0% 100% / 0.04)"
-                vertical={false}
-              />
-              <XAxis
-                dataKey="day"
-                tick={{
-                  fill: "hsl(var(--muted-foreground))",
-                  fontSize: chartFonts.axis,
-                }}
-                axisLine={{ stroke: "hsl(0 0% 100% / 0.06)" }}
-                tickLine={false}
-              />
-              <YAxis
-                tick={{
-                  fill: "hsl(var(--muted-foreground) / 0.7)",
-                  fontSize: chartFonts.axis,
-                }}
-                axisLine={false}
-                tickLine={false}
-                allowDecimals={false}
-              />
-              <Bar dataKey="count" radius={[4, 4, 0, 0]} maxBarSize={28}>
-                {data.map((entry, index) => (
-                  <Cell
-                    key={index}
-                    fill={resolveHabitColor(habit.color)}
-                    fillOpacity={0.3 + (entry.count / maxCount) * 0.6}
+          <svg className="h-full w-full overflow-visible" viewBox="0 0 320 128" aria-hidden="true">
+            {[0, maxCount].map((value) => {
+              const y = CHART_TOP + ((maxCount - value) / maxCount) * CHART_INNER_HEIGHT;
+              return (
+                <g key={value}>
+                  <line
+                    x1={CHART_LEFT}
+                    x2={CHART_WIDTH - CHART_RIGHT}
+                    y1={y}
+                    y2={y}
+                    stroke="hsl(var(--border) / 0.35)"
+                    strokeDasharray="3 4"
                   />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+                  <text
+                    x={CHART_LEFT - 8}
+                    y={y + 4}
+                    fill="hsl(var(--muted-foreground))"
+                    fontSize={chartFonts.axis}
+                    textAnchor="end"
+                  >
+                    {value}
+                  </text>
+                </g>
+              );
+            })}
+            {data.map((entry, index) => {
+              const height = Math.max((entry.count / maxCount) * CHART_INNER_HEIGHT, entry.count > 0 ? 5 : 2);
+              const x = CHART_LEFT + index * slotWidth + (slotWidth - barWidth) / 2;
+              const y = CHART_TOP + CHART_INNER_HEIGHT - height;
+              return (
+                <g key={entry.day}>
+                  <rect
+                    x={x}
+                    y={y}
+                    width={barWidth}
+                    height={height}
+                    rx="4"
+                    fill={entry.count > 0 ? habitColor : "hsl(var(--muted) / 0.45)"}
+                    opacity={entry.count > 0 ? 0.35 + (entry.count / maxCount) * 0.55 : 1}
+                  >
+                    <title>{`${entry.day}: ${entry.count}`}</title>
+                  </rect>
+                  <text
+                    x={x + barWidth / 2}
+                    y={CHART_HEIGHT - 6}
+                    fill="hsl(var(--muted-foreground))"
+                    fontSize={chartFonts.axis}
+                    textAnchor="middle"
+                  >
+                    {entry.day}
+                  </text>
+                </g>
+              );
+            })}
+          </svg>
         </div>
       </div>
     </div>

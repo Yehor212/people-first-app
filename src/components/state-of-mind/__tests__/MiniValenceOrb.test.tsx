@@ -107,7 +107,7 @@ describe("MiniValenceOrb", () => {
       "data-orb-transition-profile",
       "v1-soft",
     );
-    expect(canonicalOrb).toHaveAttribute("data-orb-animation-speed", "0.72");
+    expect(canonicalOrb).toHaveAttribute("data-orb-animation-speed", "1");
     expect(canonicalOrb).toHaveAttribute("data-orb-renderer-policy", "webgl");
   });
 

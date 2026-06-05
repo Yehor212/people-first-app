@@ -83,7 +83,7 @@ function getPrefillSpaceIds(prefill: JournalEntryPrefill | null | undefined): st
   );
 }
 
-// Lazy-load JournalStats to avoid CJS TDZ (Recharts)
+// Lazy-load JournalStats because it is a dense stats surface.
 const LazyJournalStats = lazyWithRetry(
   () => import("./JournalStats").then((m) => ({ default: m.JournalStats })),
   "JournalStats"

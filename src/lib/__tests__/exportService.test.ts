@@ -36,6 +36,7 @@ const mockRevokeObjectURL = vi.fn();
 
 beforeEach(() => {
   vi.restoreAllMocks();
+  vi.clearAllMocks();
 
   // Mock document.createElement
   vi.spyOn(document, 'createElement').mockReturnValue({

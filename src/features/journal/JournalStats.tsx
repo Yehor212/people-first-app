@@ -1,26 +1,13 @@
 /**
  * JournalStats — Advanced statistics view for journal
  *
- * IMPORTANT: This component imports Recharts (CJS) and MUST be lazy-loaded
- * to avoid TDZ errors. Use lazyWithRetry() or React.lazy() from the parent.
+ * IMPORTANT: This component is still lazy-loaded because it is a dense stats
+ * surface with animated SVG charts and correlation widgets.
  */
 
 import { useMemo, useState, useRef, useEffect, useCallback, memo } from "react";
 import { ArrowLeft, ChevronLeft, ChevronRight, Flame } from "lucide-react";
 import { motion } from "framer-motion";
-import {
-  PieChart,
-  Pie,
-  Cell,
-  LineChart,
-  Line,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { JournalEntry } from "./types";
@@ -58,9 +45,226 @@ const MOOD_PIXEL_BG: Record<MoodType, string> = {
   terrible: "bg-[hsl(var(--mood-terrible))]",
 };
 
+type MoodDistributionPoint = {
+  name: string;
+  value: number;
+  color: string;
+};
+
+type MoodTimelinePoint = {
+  week: string;
+  avg: number;
+};
+
+type FrequencyPoint = {
+  week: string;
+  count: number;
+};
+
+const SVG_CHART = {
+  width: 320,
+  height: 140,
+  left: 28,
+  right: 10,
+  top: 12,
+  bottom: 28,
+} as const;
+
+const SVG_INNER_WIDTH = SVG_CHART.width - SVG_CHART.left - SVG_CHART.right;
+const SVG_INNER_HEIGHT = SVG_CHART.height - SVG_CHART.top - SVG_CHART.bottom;
+
+function DonutMoodChart({ data }: { data: MoodDistributionPoint[] }) {
+  const total = data.reduce((sum, entry) => sum + entry.value, 0);
+  if (total <= 0) return null;
+
+  const radius = 38;
+  const circumference = Math.PI * 2 * radius;
+  let cumulative = 0;
+
+  return (
+    <svg className="h-[120px] w-[120px] flex-shrink-0" viewBox="0 0 120 120" aria-hidden="true">
+      <circle
+        cx="60"
+        cy="60"
+        r={radius}
+        fill="none"
+        stroke="hsl(var(--muted) / 0.35)"
+        strokeWidth="18"
+      />
+      {data.map((entry) => {
+        const portion = entry.value / total;
+        const dashLength = portion * circumference;
+        const dashOffset = -cumulative * circumference;
+        cumulative += portion;
+
+        return (
+          <circle
+            key={entry.name}
+            className="journal-chart-slice"
+            cx="60"
+            cy="60"
+            r={radius}
+            fill="none"
+            stroke={entry.color}
+            strokeWidth="18"
+            strokeLinecap="round"
+            strokeDasharray={`${dashLength} ${circumference}`}
+            strokeDashoffset={dashOffset}
+            transform="rotate(-90 60 60)"
+          >
+            <title>{`${entry.name}: ${entry.value}`}</title>
+          </circle>
+        );
+      })}
+      <circle cx="60" cy="60" r="26" fill="hsl(var(--card))" />
+    </svg>
+  );
+}
+
+function chartX(index: number, length: number): number {
+  if (length <= 1) return SVG_CHART.left + SVG_INNER_WIDTH / 2;
+  return SVG_CHART.left + (index / (length - 1)) * SVG_INNER_WIDTH;
+}
+
+function scoreY(value: number): number {
+  const clamped = Math.min(Math.max(value, 1), 5);
+  return SVG_CHART.top + ((5 - clamped) / 4) * SVG_INNER_HEIGHT;
+}
+
+function MoodLineChart({ data, axisFontSize }: { data: MoodTimelinePoint[]; axisFontSize: number }) {
+  const points = data.map((entry, index) => ({
+    ...entry,
+    x: chartX(index, data.length),
+    y: scoreY(entry.avg),
+  }));
+  const linePath = points
+    .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`)
+    .join(" ");
+
+  return (
+    <svg className="h-[140px] w-full overflow-visible" viewBox="0 0 320 140" aria-hidden="true">
+      {[1, 2, 3, 4, 5].map((score) => {
+        const y = scoreY(score);
+        return (
+          <g key={score}>
+            <line
+              x1={SVG_CHART.left}
+              x2={SVG_CHART.width - SVG_CHART.right}
+              y1={y}
+              y2={y}
+              stroke="hsl(var(--border) / 0.35)"
+              strokeDasharray="3 4"
+            />
+            <text
+              x={SVG_CHART.left - 8}
+              y={y + 4}
+              fill="hsl(var(--muted-foreground))"
+              fontSize={axisFontSize}
+              textAnchor="end"
+            >
+              {score}
+            </text>
+          </g>
+        );
+      })}
+      <path
+        className="journal-chart-line"
+        d={linePath}
+        fill="none"
+        stroke="hsl(var(--primary))"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        vectorEffect="non-scaling-stroke"
+      />
+      {points.map((point) => (
+        <circle key={`${point.week}-${point.avg}`} cx={point.x} cy={point.y} r="3.2" fill="hsl(var(--primary))">
+          <title>{`${point.week}: ${point.avg.toFixed(1)}`}</title>
+        </circle>
+      ))}
+      {points.map((point, index) => (
+        <text
+          key={`${point.week}-${index}`}
+          x={point.x}
+          y={SVG_CHART.height - 6}
+          fill="hsl(var(--muted-foreground))"
+          fontSize={axisFontSize}
+          textAnchor="middle"
+        >
+          {point.week}
+        </text>
+      ))}
+    </svg>
+  );
+}
+
+function FrequencyBarChart({ data, axisFontSize }: { data: FrequencyPoint[]; axisFontSize: number }) {
+  const maxCount = Math.max(...data.map((entry) => entry.count), 1);
+  const slotWidth = SVG_INNER_WIDTH / data.length;
+  const barWidth = Math.max(12, slotWidth - 8);
+
+  return (
+    <svg className="h-[120px] w-full overflow-visible" viewBox="0 0 320 120" aria-hidden="true">
+      {[0, maxCount].map((value) => {
+        const y = SVG_CHART.top + ((maxCount - value) / maxCount) * 74;
+        return (
+          <g key={value}>
+            <line
+              x1={SVG_CHART.left}
+              x2={SVG_CHART.width - SVG_CHART.right}
+              y1={y}
+              y2={y}
+              stroke="hsl(var(--border) / 0.35)"
+              strokeDasharray="3 4"
+            />
+            <text
+              x={SVG_CHART.left - 8}
+              y={y + 4}
+              fill="hsl(var(--muted-foreground))"
+              fontSize={axisFontSize}
+              textAnchor="end"
+            >
+              {value}
+            </text>
+          </g>
+        );
+      })}
+      {data.map((entry, index) => {
+        const height = Math.max((entry.count / maxCount) * 74, entry.count > 0 ? 4 : 2);
+        const x = SVG_CHART.left + index * slotWidth + (slotWidth - barWidth) / 2;
+        const y = SVG_CHART.top + 74 - height;
+        return (
+          <g key={entry.week}>
+            <rect
+              className="journal-chart-bar"
+              x={x}
+              y={y}
+              width={barWidth}
+              height={height}
+              rx="4"
+              fill={entry.count > 0 ? "hsl(var(--primary) / 0.72)" : "hsl(var(--muted) / 0.45)"}
+            >
+              <title>{`${entry.week}: ${entry.count}`}</title>
+            </rect>
+            <text
+              x={x + barWidth / 2}
+              y="114"
+              fill="hsl(var(--muted-foreground))"
+              fontSize={axisFontSize}
+              textAnchor="middle"
+            >
+              {entry.week}
+            </text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
 /**
  * useChartPathAnimation — Applies stroke-dasharray draw animation
- * to all <path> elements inside a Recharts container on scroll-into-view.
+ * to local SVG chart paths on scroll-into-view.
  * EP6_US006 T1: Chart Path Drawing Animation
  */
 function useChartPathAnimation() {
@@ -74,9 +278,7 @@ function useChartPathAnimation() {
     const el = containerRef.current;
     if (!el) return;
 
-    const paths = el.querySelectorAll<SVGPathElement>(
-      ".recharts-line-curve, .recharts-bar-rectangle path, .recharts-pie-sector path"
-    );
+    const paths = el.querySelectorAll<SVGGeometryElement>(".journal-chart-line");
 
     paths.forEach((path, idx) => {
       const length = path.getTotalLength();
@@ -97,7 +299,7 @@ function useChartPathAnimation() {
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          // Small delay to ensure Recharts has rendered paths
+          // Small delay to ensure SVG paths have rendered.
           requestAnimationFrame(() => applyAnimation());
           observer.disconnect();
         }
@@ -621,23 +823,7 @@ export const JournalStats = memo(function JournalStats({ entries, onBack }: Jour
                   role="img"
                   aria-label={`${ts.journalStatsMoodDist || "Mood Distribution"}: ${moodDist.map((m) => `${m.name} ${m.value}`).join(", ")}`}
                 >
-                  <ResponsiveContainer width="100%" height={120}>
-                    <PieChart>
-                      <Pie
-                        data={moodDist}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={30}
-                        outerRadius={55}
-                        dataKey="value"
-                        stroke="none"
-                      >
-                        {moodDist.map((entry, idx) => (
-                          <Cell key={idx} fill={entry.color} />
-                        ))}
-                      </Pie>
-                    </PieChart>
-                  </ResponsiveContainer>
+                  <DonutMoodChart data={moodDist} />
                   <div className="flex-1 space-y-1">
                     {moodDist.map((m) => (
                       <div key={m.name} className="flex items-center gap-2">
@@ -667,32 +853,7 @@ export const JournalStats = memo(function JournalStats({ entries, onBack }: Jour
                 <h3 className="text-xs font-bold text-muted-foreground/50 uppercase tracking-widest mb-3">
                   {ts.journalStatsMoodTime || "Mood Over Time"}
                 </h3>
-                <ResponsiveContainer width="100%" height={140}>
-                  <LineChart data={moodTimeline}>
-                    <XAxis dataKey="week" tick={{ fontSize: chartFonts.axis }} stroke="#888" />
-                    <YAxis
-                      domain={[1, 5]}
-                      tick={{ fontSize: chartFonts.axis }}
-                      stroke="#888"
-                      width={20}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        fontSize: chartFonts.tooltip,
-                        borderRadius: 8,
-                        border: "none",
-                        boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                      }}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="avg"
-                      stroke="#818cf8"
-                      strokeWidth={2}
-                      dot={{ r: 3 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
+                <MoodLineChart data={moodTimeline} axisFontSize={chartFonts.axis} />
               </div>
             )}
 
@@ -710,26 +871,7 @@ export const JournalStats = memo(function JournalStats({ entries, onBack }: Jour
                 <h3 className="text-xs font-bold text-muted-foreground/50 uppercase tracking-widest mb-3">
                   {ts.journalStatsFrequency || "Writing Frequency"}
                 </h3>
-                <ResponsiveContainer width="100%" height={120}>
-                  <BarChart data={frequency}>
-                    <XAxis dataKey="week" tick={{ fontSize: chartFonts.axis }} stroke="#888" />
-                    <YAxis
-                      tick={{ fontSize: chartFonts.axis }}
-                      stroke="#888"
-                      width={20}
-                      allowDecimals={false}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        fontSize: chartFonts.tooltip,
-                        borderRadius: 8,
-                        border: "none",
-                        boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                      }}
-                    />
-                    <Bar dataKey="count" fill="#818cf8" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
+                <FrequencyBarChart data={frequency} axisFontSize={chartFonts.axis} />
               </div>
             )}
 
