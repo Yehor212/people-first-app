@@ -74,7 +74,10 @@ const REQUIRED_SURFACES = [
   },
   {
     file: "src/pages/nav-v2/OrbPageSteps.tsx",
-    required: ["ValenceOrb", "MiniValenceOrb", 'transitionProfile="v1-soft"', 'renderer="webgl"'],
+    required: ["ValenceOrb", "MiniValenceOrb", 'renderer="webgl"'],
+    requiredAny: [
+      ['transitionProfile="v1-soft"', 'transitionProfile="input-soft"'],
+    ],
   },
   {
     file: "src/components/state-of-mind/StateOfMindModal.tsx",
@@ -214,6 +217,16 @@ function checkRequiredSurfaces(violations) {
           surface.file,
           `forbidden alternate orb primitive: ${forbidden}`,
           forbidden,
+        );
+      }
+    }
+    for (const options of surface.requiredAny ?? []) {
+      if (!options.some((option) => source.includes(option))) {
+        pushViolation(
+          violations,
+          surface.file,
+          `missing one canonical token from: ${options.join(" | ")}`,
+          options[0],
         );
       }
     }

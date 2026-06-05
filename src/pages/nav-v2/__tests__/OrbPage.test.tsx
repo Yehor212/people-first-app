@@ -59,12 +59,12 @@ vi.mock("@/lib/haptics", () => ({
 }));
 
 vi.mock("@/components/state-of-mind/ValenceOrb", () => ({
-  CANONICAL_ORB_ANIMATION_SPEED: 0.72,
+  CANONICAL_ORB_ANIMATION_SPEED: 1,
   ValenceOrb: ({
     valence,
     size,
-    transitionProfile = "v1-soft",
-    animationSpeed = 0.72,
+    transitionProfile = "input-soft",
+    animationSpeed = 1,
     renderer = "auto",
   }: {
     valence: number;
@@ -313,11 +313,11 @@ describe("OrbPage progressive flow", () => {
     );
     expect(screen.getByTestId("valence-orb")).toHaveAttribute(
       "data-transition-profile",
-      "v1-soft",
+      "input-soft",
     );
     expect(screen.getByTestId("valence-orb")).toHaveAttribute(
       "data-animation-speed",
-      "0.72",
+      "1",
     );
     expect(screen.getByTestId("valence-orb")).toHaveAttribute(
       "data-renderer",
@@ -339,7 +339,7 @@ describe("OrbPage progressive flow", () => {
     );
   });
 
-  it("keeps desktop on the same canonical orb motion as phone layouts", () => {
+  it("keeps desktop and phone on the same restored full-speed canonical orb motion", () => {
     setViewport(1024, 900);
 
     render(<OrbPage onAddMood={onAddMoodMock} />);
@@ -347,7 +347,7 @@ describe("OrbPage progressive flow", () => {
     expect(screen.queryByTestId("orb-aura")).not.toBeInTheDocument();
     expect(screen.getByTestId("valence-orb")).toHaveAttribute(
       "data-animation-speed",
-      "0.72",
+      "1",
     );
     expect(screen.getByTestId("valence-orb")).toHaveAttribute(
       "data-renderer",

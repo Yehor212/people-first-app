@@ -89,7 +89,7 @@ function shouldAnimateCanonicalOrb(): boolean {
   return shouldAnimate({ respectRuntimePerformance: false });
 }
 const PARTICLE_COUNT = 22;
-export const CANONICAL_ORB_ANIMATION_SPEED = 0.72;
+export const CANONICAL_ORB_ANIMATION_SPEED = 1;
 const WEBGL_BUILD_BUDGET_MS = 500;
 export const WEBGL_WORKER_READY_BUDGET_MS = 700;
 const WEBGL_READINESS_TIMEOUT_MS = 8000;
@@ -102,7 +102,6 @@ const WEBGL_UPGRADE_DELAY_MS = 180;
 const FORCED_WEBGL_UPGRADE_DELAY_MS = 240;
 const MINI_WEBGL_UPGRADE_DELAY_MS = 900;
 const MINI_WEBGL_UPGRADE_QUEUE_GAP_MS = 6000;
-const IDLE_WAKE_SOFT_THRESHOLD_MS = 8000;
 const ORB_IDLE_WAKE_SOFT_EPSILON = 0.01;
 const ORB_SUBTLE_TRANSITION_SHIMMER = 0.12;
 const ORB_SUBTLE_TRANSITION_SHIMMER_DELTA = 0.3;
@@ -260,11 +259,10 @@ export function shouldStartIdleWakeSoftening(
   idleElapsedMs: number,
   targetDelta: number,
 ): boolean {
-  return (
-    profile === "input-soft" &&
-    idleElapsedMs >= IDLE_WAKE_SOFT_THRESHOLD_MS &&
-    Math.abs(targetDelta) > ORB_IDLE_WAKE_SOFT_EPSILON
-  );
+  void profile;
+  void idleElapsedMs;
+  void targetDelta;
+  return false;
 }
 
 export function shouldDropLateVisibleWebGLUpgrade({
@@ -290,7 +288,8 @@ export function resolveFrameTransitionProfile(
   profile: OrbTransitionProfile,
   idleWakeSoftActive: boolean,
 ): OrbTransitionProfile {
-  return idleWakeSoftActive && profile === "input-soft" ? "v1-soft" : profile;
+  void idleWakeSoftActive;
+  return profile;
 }
 
 function frameRateIndependentLerp(baseLerp: number, dt: number, referenceFps: number): number {
@@ -1033,11 +1032,10 @@ export const ValenceOrb = memo(function ValenceOrb({
       // Interpolate valence (exponential ease)
       state.currentValence += targetDelta * lerpRate;
 
-      // ── P4: Idle awareness (meditative slowdown after 8s inactivity) ──
+      // P4: keep shader time stable while preserving subtle idle visual calm.
       const idleElapsed = timestamp - lastInteractionRef.current;
       const idleFactor = Math.max(0, Math.min(1, (idleElapsed - 8000) / 4000));
-
-      state.time += dt * animationSpeedRef.current * (1 - idleFactor * 0.4); // idle → 40% slower internal time
+      state.time += dt * animationSpeedRef.current;
 
       // P5: Smoothed valence — organic flow between color/shape states
       // Lower factor → slow-breath settle. User feedback 2026-04-18:

@@ -267,12 +267,12 @@ describe("ValenceOrb motion profile", () => {
     expect(finalTail.visualBaseLerp).toBeLessThan(broadMove.visualBaseLerp);
   });
 
-  it("softens the first input transition after the orb has been idle", () => {
-    expect(shouldStartIdleWakeSoftening("input-soft", 9000, -0.667)).toBe(true);
+  it("keeps input transitions on the same responsive profile after idle", () => {
+    expect(shouldStartIdleWakeSoftening("input-soft", 9000, -0.667)).toBe(false);
     expect(shouldStartIdleWakeSoftening("input-soft", 1000, -0.667)).toBe(false);
     expect(shouldStartIdleWakeSoftening("v1-soft", 9000, -0.667)).toBe(false);
 
-    expect(resolveFrameTransitionProfile("input-soft", true)).toBe("v1-soft");
+    expect(resolveFrameTransitionProfile("input-soft", true)).toBe("input-soft");
     expect(resolveFrameTransitionProfile("input-soft", false)).toBe("input-soft");
     expect(resolveFrameTransitionProfile("standard", true)).toBe("standard");
   });
@@ -421,6 +421,54 @@ describe("ValenceOrb motion profile", () => {
     expect(resolveOrbFrameDeltaSeconds(1000, 1034)).toBeCloseTo(0.034);
     expect(resolveOrbFrameDeltaSeconds(1000, 1100)).toBe(0.05);
     expect(resolveOrbFrameDeltaSeconds(1000, 20_000)).toBe(0);
+  });
+
+  it("keeps canonical shader time cadence stable before idle, during idle, and after interaction", async () => {
+    vi.useFakeTimers();
+    stubVisibleOrbRect();
+    const { flushFrameAt } = installQueuedRaf();
+
+    const { container } = render(
+      createElement(ValenceOrb, {
+        valence: 0.25,
+        renderer: "canvas",
+        animationSpeed: 1,
+      }),
+    );
+
+    const latestOrbTime = () => vi.mocked(drawOrbScene).mock.calls.at(-1)?.[1].time ?? 0;
+
+    await act(async () => {
+      flushFrameAt(1000);
+      flushFrameAt(1050);
+      await Promise.resolve();
+    });
+    const earlyFrame = latestOrbTime();
+
+    let beforeIdleFrame = earlyFrame;
+    let idleFrame = earlyFrame;
+    for (let timestamp = 1100; timestamp <= 9000; timestamp += 50) {
+      await act(async () => {
+        flushFrameAt(timestamp);
+        await Promise.resolve();
+      });
+      beforeIdleFrame = idleFrame;
+      idleFrame = latestOrbTime();
+    }
+
+    const hero = container.querySelector("[data-orb-renderer-policy='canvas']");
+    act(() => {
+      hero?.dispatchEvent(new MouseEvent("pointerdown", { clientX: 120, clientY: 120, bubbles: true }));
+    });
+
+    await act(async () => {
+      flushFrameAt(9050);
+      await Promise.resolve();
+    });
+    const afterInteraction = latestOrbTime();
+
+    expect(idleFrame - beforeIdleFrame).toBeCloseTo(0.05, 4);
+    expect(afterInteraction - idleFrame).toBeCloseTo(0.05, 4);
   });
 
   it("resumes after browser lifecycle pauses without a fast-spin catch-up frame", async () => {
