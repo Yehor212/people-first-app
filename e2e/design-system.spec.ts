@@ -98,7 +98,9 @@ async function primeApp(page: import("@playwright/test").Page, oklchEnabled: boo
 }
 
 async function waitForApp(page: import("@playwright/test").Page) {
-  await page.goto("/", { waitUntil: "load", timeout: 45000 });
+  // Keep navigation relative to Playwright's baseURL. A leading "/" drops the
+  // /people-first-app/ GitHub Pages base path when this test targets production.
+  await page.goto("", { waitUntil: "load", timeout: 45000 });
   const nav = page.locator('[role="navigation"]');
   await expect(nav.first()).toBeVisible({ timeout: 30000 });
   // CRITICAL Phase 2-B.2 fix: wait for @fontsource-variable Fraunces/Inter/
