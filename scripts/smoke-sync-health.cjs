@@ -3,7 +3,7 @@
 
 const { chromium } = require("@playwright/test");
 
-const DEFAULT_URL = "http://localhost:8080/people-first-app/?navLayout=phone&syncHealth=1";
+const DEFAULT_URL = "https://yehor212.github.io/people-first-app/?navLayout=phone&syncHealth=1";
 const TARGET_URL = withSyncHealthFlag(process.env.ZENFLOW_SYNC_HEALTH_URL || DEFAULT_URL);
 const OUTPUT_PATH = process.env.ZENFLOW_SYNC_HEALTH_OUTPUT || "";
 const REQUIRED = process.env.ZENFLOW_SYNC_HEALTH_REQUIRED === "true";

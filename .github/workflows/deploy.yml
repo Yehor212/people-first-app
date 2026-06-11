@@ -144,25 +144,19 @@ jobs:
           ZENFLOW_SYNC_TEST_EMAIL: ${{ secrets.ZENFLOW_SYNC_TEST_EMAIL }}
           ZENFLOW_SYNC_TEST_PASSWORD: ${{ secrets.ZENFLOW_SYNC_TEST_PASSWORD }}
           ZENFLOW_TELEGRAM_SYNC_DRILL_OUTPUT: artifacts/telegram-sync-drill.json
+          ZENFLOW_SYNC_DRILL_URL: https://yehor212.github.io/people-first-app/settings?nav=v2&navLayout=phone&syncHealth=1
         shell: bash
         run: |
           mkdir -p artifacts
-          npm run preview -- --host 127.0.0.1 --port 4173 > artifacts/telegram-sync-drill-preview.log 2>&1 &
-          preview_pid=$!
-          trap 'kill "$preview_pid" || true' EXIT
-
-          for _ in {1..60}; do
-            if curl -fsS http://127.0.0.1:4173/people-first-app/ > /dev/null; then
-              break
-            fi
-            sleep 1
-          done
-          curl -fsS http://127.0.0.1:4173/people-first-app/ > /dev/null
+          {
+            echo "Public sync drill target: $ZENFLOW_SYNC_DRILL_URL"
+            curl -fsS "https://yehor212.github.io/people-first-app/" > /dev/null
+            curl -fsS "$ZENFLOW_SYNC_DRILL_URL" > /dev/null
+          } > artifacts/telegram-sync-drill-preview.log 2>&1
 
           if [ -n "$ZENFLOW_SYNC_TEST_EMAIL" ] && [ -n "$ZENFLOW_SYNC_TEST_PASSWORD" ]; then
             export ZENFLOW_TELEGRAM_SYNC_DRILL_REQUIRED=true
           fi
-          export ZENFLOW_SYNC_DRILL_URL="http://127.0.0.1:4173/people-first-app/settings?nav=v2&navLayout=phone&syncHealth=1"
           npm run smoke:telegram-sync-drill
 
       - name: Upload Telegram sync drill artifact

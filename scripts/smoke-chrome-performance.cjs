@@ -11,7 +11,7 @@ const DATA_SCHEMA_VERSION = Number(
   appVersionSource.match(/export const DATA_SCHEMA_VERSION = (\d+)/)?.[1] || 1,
 );
 
-const BASE_URL = process.env.ZENFLOW_PERF_URL || "http://localhost:8080/people-first-app/";
+const BASE_URL = process.env.ZENFLOW_PERF_URL || "https://yehor212.github.io/people-first-app/";
 const MAX_LONG_TASK_MS = readNumber(
   "ZENFLOW_PERF_MAX_LONG_TASK_MS",
   perfBudgetManifest.defaultBudgets?.maxLongTaskMs || 500,

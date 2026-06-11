@@ -3,7 +3,7 @@
 const { chromium } = require("playwright");
 
 const THEME_STORAGE_KEY = "zenflow:theme-v0c";
-const DEFAULT_URL = "http://localhost:8080/people-first-app/orb?nav=v2&navLayout=phone";
+const DEFAULT_URL = "https://yehor212.github.io/people-first-app/orb?nav=v2&navLayout=phone";
 const targetUrl = process.env.ZENFLOW_V2_SPLASH_URL || DEFAULT_URL;
 
 if (targetUrl.includes("dev=true") || targetUrl.includes("splashPreview")) {

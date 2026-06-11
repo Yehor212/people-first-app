@@ -1,5 +1,9 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const PUBLIC_APP_URL = process.env.ZENFLOW_PLAYWRIGHT_BASE_URL || 'https://yehor212.github.io/people-first-app/';
+const LOCAL_APP_URL = 'http://localhost:8080/people-first-app/';
+const USE_LOCAL_WEBSERVER = process.env.ZENFLOW_PLAYWRIGHT_USE_LOCAL_SERVER === 'true';
+
 /**
  * Playwright E2E Test Configuration
  *
@@ -24,7 +28,7 @@ export default defineConfig({
   snapshotPathTemplate: '{testDir}/{testFileName}-snapshots/{arg}-{projectName}{ext}',
 
   use: {
-    baseURL: 'http://localhost:8080/people-first-app/',
+    baseURL: USE_LOCAL_WEBSERVER ? LOCAL_APP_URL : PUBLIC_APP_URL,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },
@@ -41,12 +45,15 @@ export default defineConfig({
     }] : []),
   ],
 
-  /* In CI: serve built dist/ via vite preview (env vars already baked in by Build step).
-     Locally: use vite dev server (reads .env.local). */
-  webServer: {
-    command: process.env.CI ? 'npm run preview' : 'npm run dev',
-    url: 'http://localhost:8080/people-first-app/',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120 * 1000,
-  },
+  /* Default proof target is the deployed public app. Local dev/preview is opt-in only. */
+  ...(USE_LOCAL_WEBSERVER
+    ? {
+        webServer: {
+          command: process.env.CI ? 'npm run preview' : 'npm run dev',
+          url: LOCAL_APP_URL,
+          reuseExistingServer: !process.env.CI,
+          timeout: 120 * 1000,
+        },
+      }
+    : {}),
 });

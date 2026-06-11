@@ -17,7 +17,9 @@ const { spawnSync } = require("node:child_process");
 const ROOT = path.join(__dirname, "..");
 const OUTPUT_PATH = process.env.ZENFLOW_TELEGRAM_SYNC_DRILL_OUTPUT || "";
 const REQUIRED = process.env.ZENFLOW_TELEGRAM_SYNC_DRILL_REQUIRED === "true";
-const SYNC_DRILL_URL = process.env.ZENFLOW_SYNC_DRILL_URL || "";
+const DEFAULT_SYNC_DRILL_URL =
+  "https://yehor212.github.io/people-first-app/settings?nav=v2&navLayout=phone&syncHealth=1";
+const SYNC_DRILL_URL = process.env.ZENFLOW_SYNC_DRILL_URL || DEFAULT_SYNC_DRILL_URL;
 const MAX_BUFFER = 1024 * 1024 * 20;
 
 const TARGETED_SYNC_TESTS = [
@@ -212,7 +214,7 @@ function runBrowserProof() {
     record(
       "privacy-safe browser sync health",
       "UNVERIFIED",
-      "ZENFLOW_SYNC_DRILL_URL is not set; run against a preview or public cache-busted URL"
+      "ZENFLOW_SYNC_DRILL_URL is not set and no default public URL is configured"
     );
     return;
   }

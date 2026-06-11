@@ -39,7 +39,7 @@ test.describe("Deploy smoke", () => {
   });
 
   test("V1 portal exposes readable Ukrainian V2 entry points", async ({ page }) => {
-    await page.goto("/?navLayout=desktop&dev=true", { waitUntil: "domcontentloaded" });
+    await page.goto("?navLayout=desktop&dev=true", { waitUntil: "domcontentloaded" });
 
     const portal = page.getByTestId("v1-v2-portal");
     await expect(portal).toBeVisible({ timeout: 30_000 });
