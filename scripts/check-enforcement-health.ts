@@ -13,10 +13,13 @@
 import * as fs from "fs";
 import * as path from "path";
 
-const ROOT = "c:/project/people-first-app";
-const HOOKS_DIR = path.join(ROOT, ".claude/hooks");
-const RULES_DIR = path.join(ROOT, ".claude/rules");
-const SETTINGS = path.join(ROOT, ".claude/settings.json");
+const CANONICAL_ROOT = "c:/project/people-first-app";
+const ROOT = fs.existsSync(path.join(CANONICAL_ROOT, ".claude"))
+  ? CANONICAL_ROOT
+  : process.cwd();
+const HOOKS_DIR = path.join(ROOT, ".claude", "hooks");
+const RULES_DIR = path.join(ROOT, ".claude", "rules");
+const SETTINGS = path.join(ROOT, ".claude", "settings.json");
 const CLAUDE_MD = path.join(ROOT, "CLAUDE.md");
 const DOCS_DIR = path.join(ROOT, "docs");
 const GITIGNORE = path.join(ROOT, ".gitignore");
@@ -35,6 +38,17 @@ interface CheckResult {
 const results: CheckResult[] = [];
 let failCount = 0;
 let warnCount = 0;
+
+function isWindowsAbsolute(filePath: string): boolean {
+  return /^[A-Za-z]:[\\/]/.test(filePath);
+}
+
+function resolveRepoPath(filePath: string): string {
+  if (path.isAbsolute(filePath) || isWindowsAbsolute(filePath)) {
+    return filePath;
+  }
+  return path.join(ROOT, filePath);
+}
 
 function pass(name: string, detail: string) {
   results.push({ name, status: "PASS", detail });
@@ -88,7 +102,8 @@ function checkHookSystem() {
     .filter((f) => f.endsWith(".cjs") && !f.startsWith("test-"));
   for (const hp of hookPaths) {
     const normalized = hp.replace(/\\/g, "/");
-    if (fs.existsSync(normalized)) {
+    const resolved = resolveRepoPath(normalized);
+    if (fs.existsSync(resolved)) {
       pass(`hook:${path.basename(normalized)}`, "Exists on disk");
     } else {
       fail(
@@ -441,18 +456,31 @@ function checkLawSpecs() {
     "visual-aesthetic.md",
   ];
 
-  // 4a. All 14 spec files exist
-  let existCount = 0;
-  for (const lf of requiredLawFiles) {
-    const fullPath = path.join(DOCS_DIR, lf);
-    if (fs.existsSync(fullPath)) {
-      existCount++;
-    } else {
+  const gitignore = fs.readFileSync(GITIGNORE, "utf8");
+  const lawSpecsAreLocalOnly =
+    gitignore.includes("docs/law*.md") &&
+    gitignore.includes("docs/laws*.md") &&
+    gitignore.includes("docs/visual-aesthetic.md");
+
+  // 4a. Local law reference specs are intentionally ignored, so CI should not
+  // fail when they are absent from the tracked checkout.
+  const missingLawFiles = requiredLawFiles.filter(
+    (lf) => !fs.existsSync(path.join(DOCS_DIR, lf)),
+  );
+  if (missingLawFiles.length === 0) {
+    pass(
+      "law-specs",
+      `All ${requiredLawFiles.length} local law spec files exist`,
+    );
+  } else if (lawSpecsAreLocalOnly) {
+    warn(
+      "law-specs",
+      `${missingLawFiles.length} local-only law spec files absent from tracked checkout`,
+    );
+  } else {
+    for (const lf of missingLawFiles) {
       fail(`law-spec:${lf}`, "Law spec file MISSING");
     }
-  }
-  if (existCount === requiredLawFiles.length) {
-    pass("law-specs", `All ${requiredLawFiles.length} law spec files exist`);
   }
 
   // 4b. commit-gate REQUIRED_LAW_FILES matches our list
@@ -460,8 +488,13 @@ function checkLawSpecs() {
     path.join(HOOKS_DIR, "commit-gate.cjs"),
     "utf8",
   );
+  const usesAutoDiscoveredLawFiles =
+    commitGate.includes("fs.readdirSync(DOCS_DIR)") &&
+    commitGate.includes("visual-aesthetic.md");
   const gateMatch = commitGate.match(/REQUIRED_LAW_FILES\s*=\s*\[([\s\S]*?)\]/);
-  if (gateMatch) {
+  if (usesAutoDiscoveredLawFiles) {
+    pass("law-gate-sync", "commit-gate auto-discovers local law specs");
+  } else if (gateMatch) {
     const gateFiles =
       gateMatch[1].match(/'([^']+)'/g)?.map((s) => s.replace(/'/g, "")) || [];
     const missing = requiredLawFiles.filter((f) => !gateFiles.includes(f));
@@ -483,7 +516,6 @@ function checkLawSpecs() {
   }
 
   // 4c. Law docs gitignored (should NOT be committed)
-  const gitignore = fs.readFileSync(GITIGNORE, "utf8");
   if (gitignore.includes("docs/law") || gitignore.includes("law*.md")) {
     pass("law-gitignore", "Law docs pattern in .gitignore");
   } else {

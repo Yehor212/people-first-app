@@ -73,7 +73,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .claude/learning/post-task-learner.cjs",
+            "command": "node .claude/hooks/tool-audit-trail.cjs",
             "timeout": 3
           }
         ]
@@ -85,7 +85,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .claude/learning/session-end-trainer.cjs",
+            "command": "node .claude/hooks/session-end.cjs",
             "timeout": 10
           }
         ]
