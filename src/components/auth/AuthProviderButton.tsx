@@ -10,7 +10,7 @@ interface AuthProviderButtonProps {
   disabled?: boolean;
   onClick: () => void;
   size?: "default" | "compact" | "large";
-  surface?: "default" | "subtle";
+  surface?: "default" | "subtle" | "glass";
 }
 
 const AUTH_PROVIDER_BUTTON_SIZE_CLASS: Record<
@@ -19,7 +19,7 @@ const AUTH_PROVIDER_BUTTON_SIZE_CLASS: Record<
 > = {
   compact: "min-h-[44px] px-4 py-2.5 text-sm",
   default: "min-h-[48px] px-4 py-3.5 text-base",
-  large: "min-h-[56px] px-4 py-4 text-lg",
+  large: "min-h-[56px] px-3 py-3.5 text-[clamp(0.95rem,4vw,1.125rem)] sm:px-4 sm:py-4",
 };
 
 const AUTH_PROVIDER_BUTTON_SURFACE_CLASS: Record<
@@ -28,6 +28,8 @@ const AUTH_PROVIDER_BUTTON_SURFACE_CLASS: Record<
 > = {
   default: "bg-card shadow-[var(--zen-shadow-soft)] hover:bg-muted",
   subtle: "bg-[hsl(var(--card)/0.58)] shadow-none hover:bg-muted",
+  glass:
+    "entry-action-tile bg-[hsl(var(--card)/0.58)] shadow-[inset_0_1px_0_hsl(var(--foreground)/0.06),0_18px_36px_-28px_hsl(var(--primary)/0.78)] hover:bg-[hsl(var(--card)/0.78)]",
 };
 
 function AuthProviderIcon({ provider }: { provider: SocialAuthProviderConfig }) {
@@ -76,14 +78,15 @@ export function AuthProviderButton({
 }: AuthProviderButtonProps) {
   return (
     <button
+      type="button"
       onClick={onClick}
       disabled={disabled}
       aria-label={isLoading ? loadingLabel : label}
       aria-disabled={disabled}
       className={cn(
-        "flex w-full items-center justify-center gap-3 rounded-2xl border border-border/60 font-semibold text-foreground motion-safe:transition-all disabled:cursor-not-allowed disabled:opacity-50",
+        "flex w-full items-center justify-center gap-2.5 rounded-2xl border border-border/60 font-semibold text-foreground motion-safe:transition-all disabled:cursor-not-allowed disabled:opacity-50 sm:gap-3",
         AUTH_PROVIDER_BUTTON_SIZE_CLASS[size],
-        AUTH_PROVIDER_BUTTON_SURFACE_CLASS[surface],
+        AUTH_PROVIDER_BUTTON_SURFACE_CLASS[surface]
       )}
     >
       {isLoading ? (
@@ -91,7 +94,7 @@ export function AuthProviderButton({
       ) : (
         <>
           <AuthProviderIcon provider={provider} />
-          <span>{label}</span>
+          <span className="min-w-0 whitespace-nowrap text-center leading-tight">{label}</span>
         </>
       )}
     </button>

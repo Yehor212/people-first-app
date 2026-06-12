@@ -1,5 +1,5 @@
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen, within } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AuthScreen } from "../AuthScreen";
 
 const { handlers, providers, session } = vi.hoisted(() => {
@@ -67,9 +67,31 @@ const { handlers, providers, session } = vi.hoisted(() => {
   };
 });
 
+const themeState = vi.hoisted(() => {
+  const state: {
+    theme: "paper" | "ink" | "oled" | "auto";
+    appliedTheme: "paper" | "ink" | "oled";
+  } = {
+    theme: "paper",
+    appliedTheme: "paper",
+  };
+
+  return {
+    state,
+    setTheme: vi.fn((theme: "paper" | "ink" | "oled" | "auto") => {
+      state.theme = theme;
+      state.appliedTheme =
+        theme === "ink" || theme === "oled" ? theme : "paper";
+    }),
+    setThemePreference: vi.fn(),
+    storageSetRaw: vi.fn(),
+  };
+});
+
 vi.mock("@/contexts/LanguageContext", () => ({
   useLanguage: () => ({
     t: {
+      appearance: "Appearance",
       authWelcomeTitle: "Welcome to ZenFlow",
       authWelcomeSubtitle: "Sign in to sync your data across devices",
       authContinueWith: "Sign in to continue",
@@ -86,9 +108,36 @@ vi.mock("@/contexts/LanguageContext", () => ({
       legalAnd: "and",
       privacyPolicy: "Privacy Policy",
       termsOfService: "Terms of Service",
+      themeDark: "Dark",
+      themeLight: "Light",
+      themeSystem: "System",
       ariaBack: "Back",
+      appName: "ZenFlow",
     },
   }),
+}));
+
+vi.mock("@/stores/themeStore", () => ({
+  useThemeStore: (selector: (state: typeof themeState.state & { setTheme: typeof themeState.setTheme }) => unknown) =>
+    selector({
+      ...themeState.state,
+      setTheme: themeState.setTheme,
+    }),
+}));
+
+vi.mock("@/components/ThemeToggle", () => ({
+  setThemePreference: themeState.setThemePreference,
+}));
+
+vi.mock("@/lib/safeJson", () => ({
+  storageSetRaw: themeState.storageSetRaw,
+}));
+
+vi.mock("@/lib/animationUtils", () => ({
+  shouldAnimate: () => false,
+  zenMotion: {
+    gentle: { duration: 0 },
+  },
 }));
 
 vi.mock("@/lib/supabaseClient", () => ({
@@ -108,11 +157,46 @@ vi.mock("../useAuthHandlers", () => ({
 }));
 
 describe("AuthScreen provider buttons", () => {
+  beforeEach(() => {
+    themeState.state.theme = "paper";
+    themeState.state.appliedTheme = "paper";
+    themeState.setTheme.mockClear();
+    themeState.setThemePreference.mockClear();
+    themeState.storageSetRaw.mockClear();
+    handlers.handleProviderSignIn.mockClear();
+  });
+
   it("renders enabled Facebook and Telegram buttons beside Google", () => {
     render(<AuthScreen onComplete={vi.fn()} />);
 
+    expect(screen.getByTestId("auth-screen")).toHaveAttribute("data-entry-theme", "paper");
+    expect(screen.getByTestId("zenflow-auth-logo-image")).toHaveAttribute(
+      "src",
+      expect.stringMatching(/(?:icon-source\.svg|data:image\/svg\+xml)/)
+    );
     expect(screen.getByRole("button", { name: "Continue with Google" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Continue with Facebook" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Continue with Telegram" })).toBeInTheDocument();
+    expect(within(screen.getByTestId("auth-screen-panel")).queryByText("ZenFlow")).toBeNull();
+    expect(screen.getByRole("radio", { name: "Light" })).toHaveAttribute("aria-checked", "true");
+  });
+
+  it("keeps provider buttons as safe button actions and delegates provider selection", () => {
+    render(<AuthScreen onComplete={vi.fn()} />);
+
+    const googleButton = screen.getByRole("button", { name: "Continue with Google" });
+    expect(googleButton).toHaveAttribute("type", "button");
+
+    fireEvent.click(googleButton);
+    expect(handlers.handleProviderSignIn).toHaveBeenCalledWith("google");
+  });
+
+  it("lets users switch from day mode to dark mode before signing in", () => {
+    render(<AuthScreen onComplete={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole("radio", { name: "Dark" }));
+
+    expect(themeState.setTheme).toHaveBeenCalledWith("ink");
+    expect(themeState.setThemePreference).toHaveBeenLastCalledWith("dark");
   });
 });

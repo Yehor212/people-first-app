@@ -49,6 +49,12 @@ const config: CapacitorConfig = {
        * See: https://developer.android.com/develop/ui/views/notifications/channels
        */
     },
+    SystemBars: {
+      insetsHandling: "css",
+      style: "DEFAULT",
+      hidden: false,
+      animation: "NONE",
+    },
   },
 };
 
