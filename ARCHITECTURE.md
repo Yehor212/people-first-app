@@ -40,11 +40,11 @@ Checked by `npm run constitution:check`. Update these values from fresh command 
 
 | Metric | Value | Source |
 | --- | ---: | --- |
-| Source files | **837** | `find src -name '*.ts' -o -name '*.tsx' ...` |
-| Test files | **297** | `find src test -name '*.test.*' -o -name '*.spec.*'` |
+| Source files | **859** | `find src -name '*.ts' -o -name '*.tsx' ...` |
+| Test files | **313** | `find src test -name '*.test.*' -o -name '*.spec.*'` |
 | Silent `.catch(() => {})` | **0** | `grep -rn '.catch.*=> {}' src/` |
-| React.memo | **118** | `grep -rl 'memo(' src/ --include='*.tsx'` |
-| index.css LOC | **7,361** | `wc -l < src/index.css` |
+| React.memo | **119** | `grep -rl 'memo(' src/ --include='*.tsx'` |
+| index.css LOC | **6,855** | `wc -l < src/index.css` |
 | Inline style={{}} | **313** | `grep -rn 'style={{' src/ --include='*.tsx'` |
 | exhaustive-deps suppressions | **20** | `grep -rn 'eslint-disable.*exhaustive-deps' src/` |
 | Hook coverage | **63** | `47/75 hook tests` |

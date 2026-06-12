@@ -23,6 +23,7 @@ import {
 
 import { drawOrbScene } from "../orbRenderer";
 import { createOrbGL, createOrbGL2, createOrbGL2Async, createOrbGLAsync } from "../orbShader";
+import { createOrbWebGpuAsync } from "../orbWebGpu";
 
 vi.mock("../orbRenderer", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../orbRenderer")>();
@@ -40,6 +41,14 @@ vi.mock("../orbShader", async (importOriginal) => {
     createOrbGL2: vi.fn(() => null),
     createOrbGL2Async: vi.fn(() => Promise.resolve(null)),
     createOrbGLAsync: vi.fn(() => Promise.resolve(null)),
+  };
+});
+
+vi.mock("../orbWebGpu", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../orbWebGpu")>();
+  return {
+    ...actual,
+    createOrbWebGpuAsync: vi.fn(() => Promise.resolve(null)),
   };
 });
 
@@ -67,6 +76,8 @@ afterEach(() => {
   vi.mocked(createOrbGL2Async).mockResolvedValue(null);
   vi.mocked(createOrbGLAsync).mockReset();
   vi.mocked(createOrbGLAsync).mockResolvedValue(null);
+  vi.mocked(createOrbWebGpuAsync).mockReset();
+  vi.mocked(createOrbWebGpuAsync).mockResolvedValue(null);
   resetOrbRuntimeSnapshotsForTests();
   vi.unstubAllGlobals();
   delete document.documentElement.dataset.runtimePerf;
@@ -619,6 +630,46 @@ describe("ValenceOrb motion profile", () => {
     expect(allowsFirstPaintFallback("canvas", "webgl")).toBe(false);
     expect(allowsFirstPaintFallback("auto", null)).toBe(false);
     expect(allowsFirstPaintFallback("canvas", null)).toBe(false);
+  });
+
+  it("uses WebGPU before WebGL when the canonical WebGPU pipeline is available", async () => {
+    vi.useFakeTimers();
+    stubVisibleOrbRect();
+    const { flushNextFrame } = installQueuedRaf();
+    const renderer = createMockGLRenderer();
+    vi.mocked(createOrbWebGpuAsync).mockResolvedValue({
+      renderer,
+      durationMs: 1,
+      tier: "webgpu",
+    });
+    vi.mocked(createOrbGLAsync).mockResolvedValue({
+      renderer: createMockGLRenderer(),
+      durationMs: 1,
+      tier: "webgl",
+    });
+
+    const { container } = render(
+      createElement(ValenceOrb, {
+        valence: 0.25,
+        renderer: "webgl",
+        size: 240,
+      }),
+    );
+
+    expect(container.querySelector("[data-orb-renderer-tier='canvas2d']")).toBeNull();
+    expect(drawOrbScene).not.toHaveBeenCalled();
+
+    await flushScheduledWebGLUpgrade(flushNextFrame);
+
+    expect(createOrbWebGpuAsync).toHaveBeenCalledTimes(1);
+    expect(createOrbGLAsync).not.toHaveBeenCalled();
+    expect(createOrbGL2Async).not.toHaveBeenCalled();
+    expect(renderer.render).toHaveBeenCalled();
+    expect(renderer.dispose).not.toHaveBeenCalled();
+    expect(container.querySelector("[data-orb-renderer-tier='webgpu-main']")).not.toBeNull();
+    expect(container.querySelector("[data-orb-renderer-tier='webgl-main']")).toBeNull();
+    expect(container.querySelector("[data-orb-renderer-tier='canvas2d']")).toBeNull();
+    expect(container.querySelector("[data-orb-visual-ready='true']")).not.toBeNull();
   });
 
   it("renders forced WebGL surfaces from a WebGL canvas without Canvas2D prepaint", async () => {
@@ -1509,7 +1560,7 @@ describe("ValenceOrb motion profile", () => {
     expect(drawOrbScene).not.toHaveBeenCalled();
   });
 
-  it("keeps an offscreen forced WebGL orb WebGL-only instead of painting Canvas2D while hidden", async () => {
+  it("keeps an offscreen forced WebGL orb GPU-only instead of painting Canvas2D while hidden", async () => {
     vi.useFakeTimers();
     const { flushNextFrame } = installQueuedRaf();
     vi.stubGlobal("OffscreenCanvas", undefined);
@@ -1705,7 +1756,7 @@ describe("ValenceOrb motion profile", () => {
     expect(drawOrbScene).not.toHaveBeenCalled();
   });
 
-  it("keeps forced WebGL product surfaces WebGL-only after first-frame timeout", async () => {
+  it("keeps forced WebGL product surfaces GPU-only after first-frame timeout", async () => {
     vi.useFakeTimers();
     stubVisibleOrbRect();
     const { flushNextFrame } = installQueuedRaf();

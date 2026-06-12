@@ -2,12 +2,13 @@
  * ValenceOrb — GPU-accelerated orb for State of Mind valence step.
  *
  * Progressive enhancement (Law 22 — probe highest tier first):
+ *   WebGPU available → WGSL shader (canonical GPU path, async pipeline)
  *   WebGL 2.0 available → GLSL 300 es shader (10/10 quality, 60fps capable)
  *   WebGL 1.0 available → GLSL ES 1.0 shader (10/10 quality, 60fps capable)
  *   Neither available → Canvas 2D fallback only for non-forced/debug surfaces
  *
  * Both paths share the same particle system, shape presets, and color mapping.
- * Context loss recovery: non-forced surfaces may fall back; forced canonical surfaces stay WebGL-only.
+ * Context loss recovery: non-forced surfaces may fall back; forced canonical surfaces stay GPU-only.
  *
  * Law 12 (Performance): 30fps RAF, IntersectionObserver pause, DPR cap at 2x.
  * Law 18 (Cleanup): mounted guard, RAF cancel, observer disconnect, GL dispose, listener removal.
@@ -30,8 +31,10 @@ import { createParticlePool, updateParticles } from './particleSystem';
 import { drawOrbScene, getShapeParams } from './orbRenderer';
 import { valenceToHSL } from './colorUtils';
 import { createOrbGL2, createOrbGL, createOrbGL2Async, createOrbGLAsync } from './orbShader';
+import { createOrbWebGpuAsync } from './orbWebGpu';
 import type { Particle } from './particleSystem';
 import type { OrbGLBuildResult, OrbGLRenderer } from './orbShader';
+import type { OrbWebGpuBuildResult, OrbWebGpuRenderer } from './orbWebGpu';
 
 // Module-level: genesis plays only once per browser session
 let genesisPlayed = false;
@@ -338,7 +341,10 @@ function createCanvas(size: number, dpr: number): HTMLCanvasElement {
   return c;
 }
 
-function markRendererTier(canvas: HTMLCanvasElement, tier: 'canvas2d' | 'webgl-main' | 'webgl-worker') {
+function markRendererTier(
+  canvas: HTMLCanvasElement,
+  tier: 'canvas2d' | 'webgpu-main' | 'webgl-main' | 'webgl-worker',
+) {
   canvas.dataset.orbRendererTier = tier;
 }
 
@@ -388,6 +394,13 @@ function shouldTryWebGL(mode: OrbRendererMode): boolean {
   if (mode === 'webgl') return true;
   if (hasSlowWebGLSession()) return false;
   return true;
+}
+
+function shouldTryCanonicalGpu(mode: OrbRendererMode): boolean {
+  const override = getRendererOverride();
+  if (isDebugCanvasFallbackAllowed(override)) return false;
+  if (override === 'webgl') return true;
+  return mode !== 'canvas';
 }
 
 function rememberSlowWebGL(durationMs: number) {
@@ -551,6 +564,7 @@ export const ValenceOrb = memo(function ValenceOrb({
   const rafRef = useRef(0);
   const mountedRef = useRef(true);
   const isVisibleRef = useRef(true);
+  const webGpuRendererRef = useRef<OrbWebGpuRenderer | null>(null);
   const glRendererRef = useRef<OrbGLRenderer | null>(null);
   const workerRendererRef = useRef<OrbWorkerController | null>(null);
   const canvasElRef = useRef<HTMLCanvasElement | null>(null);
@@ -740,6 +754,7 @@ export const ValenceOrb = memo(function ValenceOrb({
       !debugCanvasFallbackAllowed && (renderer === 'webgl' || rendererOverride === 'webgl');
     const canUseCanonicalCanvasRecovery = !forceCanonicalWebGL || debugCanvasFallbackAllowed;
     let activeCanvas = createCanvas(size, canvasDpr);
+    let webGpuRenderer: OrbWebGpuRenderer | null = null;
     let glRenderer: OrbGLRenderer | null = null;
     let workerRenderer: OrbWorkerController | null = null;
     let ctx2d: CanvasRenderingContext2D | null = null;
@@ -765,6 +780,7 @@ export const ValenceOrb = memo(function ValenceOrb({
       }
     }
 
+    webGpuRendererRef.current = webGpuRenderer;
     glRendererRef.current = glRenderer;
     if (ctx2d) {
       canvasElRef.current = activeCanvas;
@@ -801,6 +817,32 @@ export const ValenceOrb = memo(function ValenceOrb({
       const color = valenceToHSL(v);
       color.h = (color.h + Math.sin(t * 0.5) * 2 + 360) % 360;
       gl.render({
+        valence: v,
+        time: t,
+        size,
+        dpr,
+        isDark: isDarkRead(),
+        color,
+        shape: getShapeParams(v),
+        particles,
+        genesis: computeGenesis(timestamp),
+        touch: computeTouch(t),
+        shimmer: shimmerRef.current,
+      });
+      markVisualReadyRef.current();
+    };
+
+    const renderWebGPU = (
+      v: number,
+      t: number,
+      particles: Particle[],
+      timestamp = performance.now(),
+    ) => {
+      const webGpu = webGpuRendererRef.current;
+      if (!webGpu) return;
+      const color = valenceToHSL(v);
+      color.h = (color.h + Math.sin(t * 0.5) * 2 + 360) % 360;
+      webGpu.render({
         valence: v,
         time: t,
         size,
@@ -876,13 +918,15 @@ export const ValenceOrb = memo(function ValenceOrb({
     };
 
     const renderPendingWebGL = () => {};
-    let render = glRenderer ? renderGL : (ctx2d ? renderCanvas2D : renderPendingWebGL);
+    let render = webGpuRenderer
+      ? renderWebGPU
+      : (glRenderer ? renderGL : (ctx2d ? renderCanvas2D : renderPendingWebGL));
     let disposed = false;
     let rafScheduled = false;
 
     // ── Fallback canvas for context loss recovery ──
     let fallbackCanvas: HTMLCanvasElement | null = null;
-    /** Degrade to Canvas 2D only for non-forced/debug recovery; forced canonical surfaces stay WebGL-only. */
+    /** Degrade to Canvas 2D only for non-forced/debug recovery; forced canonical surfaces stay GPU-only. */
     const degradeToCanvas2D = () => {
       if (!canUseCanonicalCanvasRecovery) {
         render = renderPendingWebGL;
@@ -926,6 +970,9 @@ export const ValenceOrb = memo(function ValenceOrb({
         activeCanvas = fallbackCanvas;
         canvasElRef.current = fallbackCanvas;
         visibleCanvasMountedAt = performance.now();
+        webGpuRendererRef.current?.dispose();
+        webGpuRendererRef.current = null;
+        webGpuRenderer = null;
         glRendererRef.current?.dispose();
         glRendererRef.current = null;
         workerRendererRef.current?.dispose();
@@ -991,7 +1038,7 @@ export const ValenceOrb = memo(function ValenceOrb({
 
       // Throttle: healthy WebGL stays 60fps; strained Chrome/WebView sessions keep
       // the canonical renderer but reduce compositor pressure to the fallback cadence.
-      const frameInterval = resolveOrbFrameInterval(Boolean(glRendererRef.current || workerRenderer));
+      const frameInterval = resolveOrbFrameInterval(Boolean(webGpuRendererRef.current || glRendererRef.current || workerRenderer));
       const elapsed = state.lastFrame > 0 ? timestamp - state.lastFrame : frameInterval;
       if (state.lastFrame > 0 && elapsed < frameInterval) {
         requestNextFrame();
@@ -1061,7 +1108,19 @@ export const ValenceOrb = memo(function ValenceOrb({
         );
       }
 
-      // Proactive context loss detection (iOS 17+ WKWebView — context lost without event)
+      // Proactive context loss detection (WebGPU device loss / iOS 17+ WKWebView WebGL loss without event)
+      if (webGpuRendererRef.current?.isContextLost()) {
+        webGpuRendererRef.current.dispose();
+        webGpuRendererRef.current = null;
+        webGpuRenderer = null;
+        if (canUseCanonicalCanvasRecovery) {
+          degradeToCanvas2D();
+        } else {
+          render = renderPendingWebGL;
+          setCtxFailed(true);
+        }
+      }
+
       if (glRendererRef.current?.isContextLost()) {
         glRendererRef.current.dispose();
         glRendererRef.current = null;
@@ -1080,7 +1139,19 @@ export const ValenceOrb = memo(function ValenceOrb({
         } catch (err) {
           recordError(err, { component: 'ValenceOrb', action: 'render' });
 
-          if (glRendererRef.current) {
+          if (webGpuRendererRef.current) {
+            // WebGPU render threw — recover only through approved fallback paths.
+            webGpuRendererRef.current.dispose();
+            webGpuRendererRef.current = null;
+            webGpuRenderer = null;
+            if (canUseCanonicalCanvasRecovery) {
+              degradeToCanvas2D();
+            } else {
+              render = renderPendingWebGL;
+              setCtxFailed(true);
+              return;
+            }
+          } else if (glRendererRef.current) {
             // WebGL render threw — degrade to Canvas 2D
             glRendererRef.current.dispose();
             glRendererRef.current = null;
@@ -1186,7 +1257,7 @@ export const ValenceOrb = memo(function ValenceOrb({
     window.addEventListener('pageshow', handlePageShow);
 
     const upgradeToWebGL = async (signal: AbortSignal) => {
-      if (!shouldTryWebGL(renderer) || signal.aborted) return;
+      if (!shouldTryCanonicalGpu(renderer) || signal.aborted) return;
 
       let webglStartupRecoveryStarted = false;
       const shouldKeepCurrentVisibleCanvas = () => {
@@ -1315,6 +1386,81 @@ export const ValenceOrb = memo(function ValenceOrb({
         return true;
       };
 
+      const upgradeToWebGPU = async (): Promise<boolean> => {
+        const readinessTimeoutMs = forceCanonicalWebGL
+          ? FORCED_WEBGL_READINESS_TIMEOUT_MS
+          : WEBGL_READINESS_TIMEOUT_MS;
+        const webGpuCanvas = createCanvas(size, dpr);
+        const result: OrbWebGpuBuildResult | null = await createOrbWebGpuAsync(webGpuCanvas, {
+          signal,
+          timeoutMs: readinessTimeoutMs,
+        });
+
+        if (signal.aborted || !mountedRef.current) return false;
+        if (!result) return false;
+        if (forceWebGLFirstFrameTimeoutId !== 0) {
+          window.clearTimeout(forceWebGLFirstFrameTimeoutId);
+          forceWebGLFirstFrameTimeoutId = 0;
+        }
+
+        const visibleCanvasAgeMs =
+          visibleCanvasMountedAt > 0 ? performance.now() - visibleCanvasMountedAt : 0;
+        const visibleUpgradeAgeMs =
+          forceCanonicalWebGL && !explicitWebGLOverride
+            ? result.durationMs
+            : Math.max(result.durationMs, visibleCanvasAgeMs);
+        if (!shouldApplyWorkerWebGLUpgrade(visibleUpgradeAgeMs, forceCanonicalWebGL || explicitWebGLOverride)) {
+          rememberSlowWebGL(visibleUpgradeAgeMs);
+          result.renderer.dispose();
+          return false;
+        }
+
+        if (visibleUpgradeAgeMs > WEBGL_BUILD_BUDGET_MS) {
+          rememberSlowWebGL(visibleUpgradeAgeMs);
+        }
+
+        if (shouldKeepCurrentVisibleCanvas()) {
+          rememberSlowWebGL(performance.now() - visibleCanvasMountedAt);
+          result.renderer.dispose();
+          return true;
+        }
+
+        const previousCanvas = activeCanvas;
+        markRendererTier(webGpuCanvas, 'webgpu-main');
+        webGpuRenderer = result.renderer;
+        webGpuRendererRef.current = result.renderer;
+        glRendererRef.current?.dispose();
+        glRendererRef.current = null;
+        canvasElRef.current = webGpuCanvas;
+        ctx2d = null;
+        activeCanvas = webGpuCanvas;
+        render = renderWebGPU;
+
+        const state = stateRef.current;
+        if (state) {
+          try {
+            renderWebGPU(smoothValenceRef.current, state.time, state.particles);
+          } catch (err) {
+            recordError(err, { component: 'ValenceOrb', action: 'webgpu-first-frame' });
+            result.renderer.dispose();
+            webGpuRenderer = null;
+            webGpuRendererRef.current = null;
+            canvasElRef.current = null;
+            render = renderPendingWebGL;
+            return false;
+          }
+        }
+
+        if (wrapper.contains(previousCanvas)) {
+          wrapper.replaceChild(webGpuCanvas, previousCanvas);
+        } else {
+          wrapper.appendChild(webGpuCanvas);
+        }
+        visibleCanvasMountedAt = performance.now();
+
+        return true;
+      };
+
       const recoverFromWebGLStartupFailure = () => {
         if (webglStartupRecoveryStarted || signal.aborted || !mountedRef.current) return;
         webglStartupRecoveryStarted = true;
@@ -1340,6 +1486,10 @@ export const ValenceOrb = memo(function ValenceOrb({
           }
         })();
       };
+
+      const upgradedWithWebGPU = await upgradeToWebGPU();
+      if (upgradedWithWebGPU) return;
+      if (!shouldTryWebGL(renderer) || signal.aborted) return;
 
       if ((renderer === 'auto' || renderer === 'webgl') && shouldUseWorkerWebGL(forceCanonicalWebGL, size)) {
         const workerStartedAt = performance.now();
@@ -1412,7 +1562,9 @@ export const ValenceOrb = memo(function ValenceOrb({
                 workerRenderer = null;
                 workerRenderInFlight = false;
                 latestWorkerPayload = null;
-                if (glRendererRef.current) {
+                if (webGpuRendererRef.current) {
+                  render = renderWebGPU;
+                } else if (glRendererRef.current) {
                   render = renderGL;
                 } else if (ctx2d) {
                   render = renderCanvas2D;
@@ -1599,9 +1751,12 @@ export const ValenceOrb = memo(function ValenceOrb({
       webglWorker = null;
       workerRendererRef.current?.dispose();
       workerRendererRef.current = null;
+      webGpuRendererRef.current?.dispose();
+      webGpuRendererRef.current = null;
       glRendererRef.current?.dispose();
       glRendererRef.current = null;
       workerRenderer = null;
+      webGpuRenderer = null;
       glRenderer = null;
 
       if (canUseCanonicalCanvasRecovery) {
@@ -1675,6 +1830,8 @@ export const ValenceOrb = memo(function ValenceOrb({
       } else if (webglWorker) {
         webglWorker.terminate();
       }
+      webGpuRendererRef.current?.dispose();
+      webGpuRendererRef.current = null;
       glRendererRef.current?.dispose();
       glRendererRef.current = null;
       canvasElRef.current = null;
@@ -1733,6 +1890,24 @@ export const ValenceOrb = memo(function ValenceOrb({
 
     if (workerRendererRef.current) {
       workerRendererRef.current.render({
+        valence,
+        time: 0,
+        size,
+        dpr,
+        isDark: document.documentElement.classList.contains('dark'),
+        color: valenceToHSL(valence),
+        shape: getShapeParams(valence),
+        particles: state.particles,
+        genesis: 1.0,
+        touch: { x: 0, y: 0, age: 0 },
+        shimmer: 0,
+      });
+      markVisualReadyRef.current();
+      return;
+    }
+
+    if (webGpuRendererRef.current) {
+      webGpuRendererRef.current.render({
         valence,
         time: 0,
         size,
