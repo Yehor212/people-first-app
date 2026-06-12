@@ -17,6 +17,8 @@ import { MoodScopeSelector } from "./MoodScopeSelector";
 
 type Tx = Record<string, string>;
 
+export const MOOD_SUPPORT_RESOURCE_URL = "https://findahelpline.com/";
+
 interface OrbSelectStepProps {
   tx: Tx;
   selectContentLayoutClass: string;
@@ -290,12 +292,11 @@ export function OrbRefineStep({
         {draftEmotion && isSensitiveTag(draftEmotion) && (
           <div className="flex justify-center">
             <a
-              href="/support"
+              href={MOOD_SUPPORT_RESOURCE_URL}
               data-testid="mood-support-link"
+              target="_blank"
+              rel="noopener noreferrer"
               className="text-xs text-foreground/55 motion-safe:transition-colors hover:text-primary"
-              onClick={(event) => {
-                event.preventDefault();
-              }}
             >
               {tx.moodSupportLink || "Need support?"}
             </a>

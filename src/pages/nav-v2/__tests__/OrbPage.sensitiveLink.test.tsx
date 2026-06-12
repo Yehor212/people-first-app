@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { OrbPage } from "../OrbPage";
+import { MOOD_SUPPORT_RESOURCE_URL } from "../OrbPageSteps";
 import { useMoodEntryDraftStore } from "@/stores/moodEntryDraftStore";
 import { useDiaryDraftStore } from "@/stores/diaryDraftStore";
 
@@ -267,20 +268,15 @@ describe("OrbPage — Phase 3-A.4c-ii-c sensitive emotion support link", () => {
   });
 
   // --- interaction ---
-  it("support link calls preventDefault (stub route for future /support)", () => {
+  it("support link opens the verified external support resource safely", () => {
     render(<OrbPage />);
     fireEvent.click(screen.getByTestId("mood-slider"));
     fireEvent.click(screen.getByTestId("orb-page-next"));
     fireEvent.click(screen.getByTestId("emotion-tag-mock-hopeless"));
     const link = screen.getByTestId("mood-support-link");
-    const event = new MouseEvent("click", {
-      bubbles: true,
-      cancelable: true,
-    });
-    const propagated = link.dispatchEvent(event);
-    // dispatchEvent returns false when preventDefault was called on a
-    // cancelable event.
-    expect(propagated).toBe(false);
+    expect(link).toHaveAttribute("href", MOOD_SUPPORT_RESOURCE_URL);
+    expect(link).toHaveAttribute("target", "_blank");
+    expect(link).toHaveAttribute("rel", "noopener noreferrer");
   });
 
   it("support link disappears when the sensitive choice is toggled off", () => {

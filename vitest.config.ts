@@ -11,7 +11,12 @@ export default defineConfig({
     setupFiles: ["./test/setup.ts"],
     // Exclude Playwright E2E tests (they run separately via npm run test:e2e)
     // Exclude `.claude/worktrees/**` — isolated agent branches, not part of main suite.
-    exclude: ["node_modules", "e2e/**", ".claude/worktrees/**"],
+    exclude: [
+      "node_modules",
+      "e2e/**",
+      ".claude/worktrees/**",
+      "tools/telegram-control/test/**",
+    ],
     coverage: {
       provider: "v8",
       reporter: isCi ? ["text", "json-summary"] : ["text", "html", "json-summary"],
