@@ -13,17 +13,25 @@
 import * as fs from "fs";
 import * as path from "path";
 
-const ROOT = "c:/project/people-first-app";
-const HOOKS_DIR = path.join(ROOT, ".claude/hooks");
-const RULES_DIR = path.join(ROOT, ".claude/rules");
-const SETTINGS = path.join(ROOT, ".claude/settings.json");
+const CANONICAL_WINDOWS_ROOT = "c:/project/people-first-app";
+const ROOT = path.resolve(process.env.ZENFLOW_REPO_ROOT ?? process.cwd());
+const HOOKS_DIR = path.join(ROOT, ".claude", "hooks");
+const RULES_DIR = path.join(ROOT, ".claude", "rules");
+const SETTINGS = path.join(ROOT, ".claude", "settings.json");
 const CLAUDE_MD = path.join(ROOT, "CLAUDE.md");
 const DOCS_DIR = path.join(ROOT, "docs");
 const GITIGNORE = path.join(ROOT, ".gitignore");
 
 // Memory is in user-level dir
-const MEMORY_DIR =
-  "C:/Users/egors/.claude/projects/c--project-people-first-app/memory";
+const MEMORY_DIR = process.env.ZENFLOW_MEMORY_DIR
+  ? path.resolve(process.env.ZENFLOW_MEMORY_DIR)
+  : path.join(
+      process.env.HOME ?? "",
+      ".claude",
+      "projects",
+      "c--project-people-first-app",
+      "memory",
+    );
 const MEMORY_INDEX = path.join(MEMORY_DIR, "MEMORY.md");
 
 interface CheckResult {
@@ -48,6 +56,25 @@ function fail(name: string, detail: string) {
 function warn(name: string, detail: string) {
   results.push({ name, status: "WARN", detail });
   warnCount++;
+}
+
+function toRepoPath(filePath: string): string {
+  const normalized = filePath.replace(/\\/g, "/");
+  const lower = normalized.toLowerCase();
+  if (lower.startsWith(CANONICAL_WINDOWS_ROOT)) {
+    const relative = normalized
+      .slice(CANONICAL_WINDOWS_ROOT.length)
+      .replace(/^\/+/, "");
+    return path.join(ROOT, relative);
+  }
+  if (/^[A-Za-z]:\//.test(normalized) || path.isAbsolute(filePath)) {
+    return path.normalize(filePath);
+  }
+  return path.join(ROOT, normalized);
+}
+
+function isLocalLearningHook(filePath: string): boolean {
+  return filePath.replace(/\\/g, "/").includes(".claude/learning/");
 }
 
 // ============================================================
@@ -88,8 +115,14 @@ function checkHookSystem() {
     .filter((f) => f.endsWith(".cjs") && !f.startsWith("test-"));
   for (const hp of hookPaths) {
     const normalized = hp.replace(/\\/g, "/");
-    if (fs.existsSync(normalized)) {
+    const resolved = toRepoPath(normalized);
+    if (fs.existsSync(resolved)) {
       pass(`hook:${path.basename(normalized)}`, "Exists on disk");
+    } else if (isLocalLearningHook(normalized)) {
+      warn(
+        `hook:${path.basename(normalized)}`,
+        `Registered local learning hook is not present in this checkout: ${normalized}`,
+      );
     } else {
       fail(
         `hook:${path.basename(normalized)}`,
@@ -448,11 +481,19 @@ function checkLawSpecs() {
     if (fs.existsSync(fullPath)) {
       existCount++;
     } else {
-      fail(`law-spec:${lf}`, "Law spec file MISSING");
+      warn(
+        `law-spec:${lf}`,
+        "Local law spec file missing; these private docs are intentionally gitignored",
+      );
     }
   }
   if (existCount === requiredLawFiles.length) {
     pass("law-specs", `All ${requiredLawFiles.length} law spec files exist`);
+  } else {
+    warn(
+      "law-specs",
+      `${existCount}/${requiredLawFiles.length} private law spec files present in this checkout`,
+    );
   }
 
   // 4b. commit-gate REQUIRED_LAW_FILES matches our list

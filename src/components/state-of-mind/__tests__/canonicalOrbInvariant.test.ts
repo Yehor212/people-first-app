@@ -117,17 +117,25 @@ describe("canonical orb invariant", () => {
     expect(source).not.toContain("<svg");
   });
 
-  it("keeps explicit webgl orb surfaces on the canonical WebGL upgrade path", () => {
+  it("keeps explicit orb surfaces on the canonical WebGPU-first upgrade path", () => {
     const source = readSource("src/components/state-of-mind/ValenceOrb.tsx");
+    const webgpuSource = readSource("src/components/state-of-mind/orbWebGpu.ts");
 
     expect(source).toContain("forceCanonicalWebGL");
     expect(source).toContain("isDebugCanvasFallbackAllowed");
-    expect(source).toContain("!debugCanvasFallbackAllowed && (renderer === 'webgl' || rendererOverride === 'webgl')");
+    expect(source).toContain("renderer === 'webgpu'");
+    expect(source).toContain("rendererOverride === 'webgpu'");
+    expect(source).toContain("createOrbWebGPUAsync");
     expect(source).toContain("createOrbGL2");
     expect(source).toContain("createOrbGL");
+    expect(source).toContain("if (mode === 'webgpu') return true");
     expect(source).toContain("if (mode === 'webgl') return true");
     expect(source).toContain("if (!glRenderer) {");
     expect(source).toContain("data-orb-webgl-upgrade");
+    expect(webgpuSource).toContain("navigator");
+    expect(webgpuSource).toContain("requestAdapter");
+    expect(webgpuSource).toContain("createRenderPipelineAsync");
+    expect(webgpuSource).toContain("tier: 'webgpu'");
   });
 
   it("blocks non-canonical CSS fallback visuals on every orb surface", () => {
@@ -152,8 +160,9 @@ describe("canonical orb invariant", () => {
   it("keeps forced WebGL recovery WebGL-only while forbidding ad-hoc first-paint substitutes", () => {
     const source = readSource("src/components/state-of-mind/ValenceOrb.tsx");
 
+    expect(source).toContain("createOrbWebGPUAsync(webgpuCanvas");
     expect(source).toContain("createOrbGL2Async(gl2Canvas");
-    expect(source).toContain("markRendererTier(upgradeCanvas, 'webgl-main')");
+    expect(source).toContain("markRendererTier(upgradeCanvas, result.tier === 'webgpu' ? 'webgpu-main' : 'webgl-main')");
     expect(source).toContain("canUseCanonicalCanvasRecovery");
     expect(source).toContain("const canUseCanonicalCanvasRecovery = !forceCanonicalWebGL || debugCanvasFallbackAllowed");
     expect(source).toContain("markRendererTier(activeCanvas, 'canvas2d')");

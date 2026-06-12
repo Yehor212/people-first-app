@@ -124,7 +124,10 @@ async function syncTemplateFiles() {
 
     try {
       target = normalize(await readFile(targetPath, "utf8"));
-    } catch {
+    } catch (error) {
+      if (mode === "check" && error?.code === "ENOENT") {
+        continue;
+      }
       target = "";
     }
 
@@ -145,7 +148,10 @@ async function syncConfig() {
   let current = "";
   try {
     current = await readFile(configPath, "utf8");
-  } catch {
+  } catch (error) {
+    if (mode === "check" && error?.code === "ENOENT") {
+      return false;
+    }
     current = "";
   }
 

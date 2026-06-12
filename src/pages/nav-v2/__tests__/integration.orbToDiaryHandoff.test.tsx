@@ -1,53 +1,56 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 
 import { DiaryPage } from "../DiaryPage";
 import { OrbPage } from "../OrbPage";
 import { useDiaryDraftStore } from "@/stores/diaryDraftStore";
 import { useMoodEntryDraftStore } from "@/stores/moodEntryDraftStore";
 
+const languageContextMock = vi.hoisted(() => ({
+  language: "en",
+  setLanguage: vi.fn(),
+  isRTL: false,
+  t: {
+    goodMorning: "Good morning",
+    goodAfternoon: "Good afternoon",
+    goodEvening: "Good evening",
+    somLogFeeling: "Log how you feel",
+    next: "Next",
+    back: "Back",
+    howAreYouFeeling: "How are you feeling?",
+    journalPrompt6: "How are you feeling right now?",
+    journalContinueWriting: "Continue writing",
+    journalStartToday: "Start today's entry",
+    orbWhisper1: "whisper",
+    orbWhisper2: "whisper",
+    orbWhisper3: "whisper",
+    orbWhisper4: "whisper",
+    orbWhisper5: "whisper",
+    orbScopeGroupLabel: "When?",
+    orbScopeNow: "Now",
+    orbScopeDay: "Day",
+    orbScopeSpecific: "Specific",
+    orbScopeSpecificTimeLabel: "Pick time",
+    orbSkip: "Later",
+    orbFirstRunTitle: "Three steps",
+    orbFirstRunStep1: "A",
+    orbFirstRunStep2: "B",
+    orbFirstRunStep3: "C",
+    orbFirstRunGotIt: "Got it",
+    navV2Diary: "Diary",
+    diary: "Diary",
+    loading: "Loading...",
+    moodGreat: "Great",
+    moodGood: "Good",
+    moodOkay: "Okay",
+    moodBad: "Bad",
+    moodTerrible: "Terrible",
+    somTagHopeful: "Hopeful",
+  },
+}));
+
 vi.mock("@/contexts/LanguageContext", () => ({
-  useLanguage: () => ({
-    t: {
-      goodMorning: "Good morning",
-      goodAfternoon: "Good afternoon",
-      goodEvening: "Good evening",
-      somLogFeeling: "Log how you feel",
-      next: "Next",
-      back: "Back",
-      howAreYouFeeling: "How are you feeling?",
-      journalPrompt6: "How are you feeling right now?",
-      journalContinueWriting: "Continue writing",
-      journalStartToday: "Start today's entry",
-      orbWhisper1: "whisper",
-      orbWhisper2: "whisper",
-      orbWhisper3: "whisper",
-      orbWhisper4: "whisper",
-      orbWhisper5: "whisper",
-      orbScopeGroupLabel: "When?",
-      orbScopeNow: "Now",
-      orbScopeDay: "Day",
-      orbScopeSpecific: "Specific",
-      orbScopeSpecificTimeLabel: "Pick time",
-      orbSkip: "Later",
-      orbFirstRunTitle: "Three steps",
-      orbFirstRunStep1: "A",
-      orbFirstRunStep2: "B",
-      orbFirstRunStep3: "C",
-      orbFirstRunGotIt: "Got it",
-      navV2Diary: "Diary",
-      diary: "Diary",
-      loading: "Loading...",
-      moodGreat: "Great",
-      moodGood: "Good",
-      moodOkay: "Okay",
-      moodBad: "Bad",
-      moodTerrible: "Terrible",
-      somTagHopeful: "Hopeful",
-    },
-    language: "en",
-    isRTL: false,
-  }),
+  useLanguage: () => languageContextMock,
 }));
 
 vi.mock("@/lib/haptics", () => ({
@@ -166,6 +169,10 @@ describe("Integration — Orb -> Diary handoff via pendingMoodContext", () => {
     onAddMoodMock.mockClear();
     useMoodEntryDraftStore.getState().reset();
     useDiaryDraftStore.getState().clearPendingMoodContext();
+  });
+
+  afterEach(() => {
+    cleanup();
   });
 
   it("writes enriched pendingMoodContext only on final transfer", () => {

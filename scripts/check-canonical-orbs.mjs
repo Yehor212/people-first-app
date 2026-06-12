@@ -30,9 +30,12 @@ const REQUIRED_SURFACES = [
     required: [
       "forceCanonicalWebGL",
       "isDebugCanvasFallbackAllowed",
-      "!debugCanvasFallbackAllowed && (renderer === 'webgl' || rendererOverride === 'webgl')",
+      "renderer === 'webgpu'",
+      "rendererOverride === 'webgpu'",
+      "createOrbWebGPUAsync",
       "createOrbGL2Async",
       "createOrbGLAsync",
+      "if (mode === 'webgpu') return true",
       "if (mode === 'webgl') return true",
       "canUseCanonicalCanvasRecovery",
       "const canUseCanonicalCanvasRecovery = !forceCanonicalWebGL || debugCanvasFallbackAllowed",

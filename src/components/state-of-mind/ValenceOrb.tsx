@@ -2,9 +2,10 @@
  * ValenceOrb — GPU-accelerated orb for State of Mind valence step.
  *
  * Progressive enhancement (Law 22 — probe highest tier first):
+ *   WebGPU available → WGSL shader (preferred Chrome/desktop tier)
  *   WebGL 2.0 available → GLSL 300 es shader (10/10 quality, 60fps capable)
  *   WebGL 1.0 available → GLSL ES 1.0 shader (10/10 quality, 60fps capable)
- *   Neither available → Canvas 2D fallback only for non-forced/debug surfaces
+ *   None available → Canvas 2D fallback only for non-forced/debug surfaces
  *
  * Both paths share the same particle system, shape presets, and color mapping.
  * Context loss recovery: non-forced surfaces may fall back; forced canonical surfaces stay WebGL-only.
@@ -30,6 +31,7 @@ import { createParticlePool, updateParticles } from './particleSystem';
 import { drawOrbScene, getShapeParams } from './orbRenderer';
 import { valenceToHSL } from './colorUtils';
 import { createOrbGL2, createOrbGL, createOrbGL2Async, createOrbGLAsync } from './orbShader';
+import { createOrbWebGPUAsync } from './orbWebGpu';
 import type { Particle } from './particleSystem';
 import type { OrbGLBuildResult, OrbGLRenderer } from './orbShader';
 
@@ -182,7 +184,7 @@ export function resetOrbRuntimeSnapshotsForTests(): void {
 }
 
 export type OrbTransitionProfile = "standard" | "v1-soft" | "input-soft";
-export type OrbRendererMode = "auto" | "canvas" | "webgl";
+export type OrbRendererMode = "auto" | "canvas" | "webgpu" | "webgl";
 
 interface OrbTransitionSettings {
   targetBaseLerp: number;
@@ -338,7 +340,7 @@ function createCanvas(size: number, dpr: number): HTMLCanvasElement {
   return c;
 }
 
-function markRendererTier(canvas: HTMLCanvasElement, tier: 'canvas2d' | 'webgl-main' | 'webgl-worker') {
+function markRendererTier(canvas: HTMLCanvasElement, tier: 'canvas2d' | 'webgpu-main' | 'webgl-main' | 'webgl-worker') {
   canvas.dataset.orbRendererTier = tier;
 }
 
@@ -363,7 +365,7 @@ export function shouldShowFirstPaintFallback(
 function getRendererOverride(): OrbRendererMode | null {
   try {
     const requested = new URLSearchParams(window.location.search).get('orbRenderer');
-    if (requested === 'canvas' || requested === 'webgl') return requested;
+    if (requested === 'canvas' || requested === 'webgpu' || requested === 'webgl') return requested;
   } catch {
     // graceful: malformed location should never block the orb
   }
@@ -383,8 +385,10 @@ function isDebugCanvasFallbackAllowed(rendererOverride: OrbRendererMode | null):
 function shouldTryWebGL(mode: OrbRendererMode): boolean {
   const override = getRendererOverride();
   if (isDebugCanvasFallbackAllowed(override)) return false;
+  if (override === 'webgpu') return true;
   if (override === 'webgl') return true;
   if (mode === 'canvas') return false;
+  if (mode === 'webgpu') return true;
   if (mode === 'webgl') return true;
   if (hasSlowWebGLSession()) return false;
   return true;
@@ -735,9 +739,10 @@ export const ValenceOrb = memo(function ValenceOrb({
 
     const rendererOverride = getRendererOverride();
     const debugCanvasFallbackAllowed = isDebugCanvasFallbackAllowed(rendererOverride);
-    const explicitWebGLOverride = rendererOverride === 'webgl';
+    const explicitWebGLOverride = rendererOverride === 'webgl' || rendererOverride === 'webgpu';
     const forceCanonicalWebGL =
-      !debugCanvasFallbackAllowed && (renderer === 'webgl' || rendererOverride === 'webgl');
+      !debugCanvasFallbackAllowed &&
+      (renderer === 'webgl' || renderer === 'webgpu' || rendererOverride === 'webgl' || rendererOverride === 'webgpu');
     const canUseCanonicalCanvasRecovery = !forceCanonicalWebGL || debugCanvasFallbackAllowed;
     let activeCanvas = createCanvas(size, canvasDpr);
     let glRenderer: OrbGLRenderer | null = null;
@@ -1201,19 +1206,30 @@ export const ValenceOrb = memo(function ValenceOrb({
         });
       };
 
-      const upgradeToMainThreadWebGL = async (): Promise<boolean> => {
-        if (!forceCanonicalWebGL && !probeWebGLWorks()) return false;
-
+      const upgradeToMainThreadWebGL = async (webgpuOnly = false): Promise<boolean> => {
         const readinessTimeoutMs = forceCanonicalWebGL
           ? FORCED_WEBGL_READINESS_TIMEOUT_MS
           : WEBGL_READINESS_TIMEOUT_MS;
-        const gl1Canvas = createCanvas(size, dpr);
-        let result: OrbGLBuildResult | null = await createOrbGLAsync(gl1Canvas, {
+        const webgpuCanvas = createCanvas(size, dpr);
+        let result: OrbGLBuildResult | null = await createOrbWebGPUAsync(webgpuCanvas, {
           signal,
           timeoutMs: readinessTimeoutMs,
         });
+        let upgradeCanvas = webgpuCanvas;
 
-        let upgradeCanvas = gl1Canvas;
+        if (webgpuOnly && !result) return false;
+
+        if (!result && !forceCanonicalWebGL && !probeWebGLWorks()) return false;
+
+        if (!result && !signal.aborted) {
+          const gl1Canvas = createCanvas(size, dpr);
+          result = await createOrbGLAsync(gl1Canvas, {
+            signal,
+            timeoutMs: readinessTimeoutMs,
+          });
+          upgradeCanvas = gl1Canvas;
+        }
+
         if (!result && !forceCanonicalWebGL && !signal.aborted) {
           const syncStartedAt = performance.now();
           const syncCanvas = createCanvas(size, dpr);
@@ -1281,21 +1297,23 @@ export const ValenceOrb = memo(function ValenceOrb({
         }
 
         const previousCanvas = activeCanvas;
-        markRendererTier(upgradeCanvas, 'webgl-main');
+        markRendererTier(upgradeCanvas, result.tier === 'webgpu' ? 'webgpu-main' : 'webgl-main');
         glRenderer = result.renderer;
         glRendererRef.current = result.renderer;
         canvasElRef.current = upgradeCanvas;
         ctx2d = null;
         activeCanvas = upgradeCanvas;
         render = renderGL;
-        attachWebGLListeners(upgradeCanvas);
+        if (result.tier !== 'webgpu') {
+          attachWebGLListeners(upgradeCanvas);
+        }
 
         const state = stateRef.current;
         if (state) {
           try {
             renderGL(smoothValenceRef.current, state.time, state.particles);
           } catch (err) {
-            recordError(err, { component: 'ValenceOrb', action: 'webgl-first-frame' });
+            recordError(err, { component: 'ValenceOrb', action: `${result.tier}-first-frame` });
             result.renderer.dispose();
             glRenderer = null;
             glRendererRef.current = null;
@@ -1341,7 +1359,10 @@ export const ValenceOrb = memo(function ValenceOrb({
         })();
       };
 
-      if ((renderer === 'auto' || renderer === 'webgl') && shouldUseWorkerWebGL(forceCanonicalWebGL, size)) {
+      const recoveredWithWebGPU = await upgradeToMainThreadWebGL(true);
+      if (recoveredWithWebGPU) return;
+
+      if ((renderer === 'auto' || renderer === 'webgpu' || renderer === 'webgl') && shouldUseWorkerWebGL(forceCanonicalWebGL, size)) {
         const workerStartedAt = performance.now();
         const workerCanvas = createCanvas(size, dpr);
         if (forceCanonicalWebGL) {
@@ -1765,7 +1786,8 @@ export const ValenceOrb = memo(function ValenceOrb({
       });
       markVisualReadyRef.current();
     } else {
-      if (renderer === 'webgl' || getRendererOverride() === 'webgl') return;
+      const rendererOverride = getRendererOverride();
+      if (renderer === 'webgl' || renderer === 'webgpu' || rendererOverride === 'webgl' || rendererOverride === 'webgpu') return;
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
       drawOrbScene(ctx, {
