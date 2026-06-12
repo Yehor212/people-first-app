@@ -286,6 +286,7 @@ describe("OrbPage progressive flow", () => {
     render(<OrbPage onAddMood={onAddMoodMock} />);
     const next = screen.getByTestId("orb-page-next");
     expect(next).toBeDisabled();
+    expect(next).toHaveClass("bg-muted");
 
     fireEvent.click(next);
     expect(screen.queryByTestId("orb-page-refine")).not.toBeInTheDocument();
@@ -293,6 +294,7 @@ describe("OrbPage progressive flow", () => {
 
     fireEvent.click(screen.getByTestId("mood-orb-option-good"));
     expect(next).not.toBeDisabled();
+    expect(next).toHaveClass("bg-primary");
     fireEvent.click(next);
 
     expect(screen.getByTestId("orb-page-refine")).toBeInTheDocument();
