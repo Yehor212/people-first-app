@@ -254,6 +254,7 @@ describe("OrbPage progressive flow", () => {
 
     expect(selectScroller).toHaveClass("overflow-x-hidden");
 
+    fireEvent.click(screen.getByTestId("mood-orb-option-good"));
     fireEvent.click(screen.getByTestId("orb-page-next"));
 
     const refineScroller = screen
@@ -281,15 +282,21 @@ describe("OrbPage progressive flow", () => {
     expect(screen.queryByTestId("shooting-star-stub")).toBeNull();
   });
 
-  it("allows Next from the neutral center on first render", () => {
+  it("requires an explicit mood choice before leaving the select step", () => {
     render(<OrbPage onAddMood={onAddMoodMock} />);
     const next = screen.getByTestId("orb-page-next");
-    expect(next).not.toBeDisabled();
+    expect(next).toBeDisabled();
 
+    fireEvent.click(next);
+    expect(screen.queryByTestId("orb-page-refine")).not.toBeInTheDocument();
+    expect(useMoodEntryDraftStore.getState().valence).toBeNull();
+
+    fireEvent.click(screen.getByTestId("mood-orb-option-good"));
+    expect(next).not.toBeDisabled();
     fireEvent.click(next);
 
     expect(screen.getByTestId("orb-page-refine")).toBeInTheDocument();
-    expect(useMoodEntryDraftStore.getState().valence).toBe(0);
+    expect(useMoodEntryDraftStore.getState().valence).toBe(0.5);
   });
 
   it("keeps the V1 neutral orb baseline before the user moves the slider", () => {
@@ -355,7 +362,7 @@ describe("OrbPage progressive flow", () => {
     );
   });
 
-  it("requires a time before leaving the select step when scope is specific", () => {
+  it("requires both a mood choice and time before leaving the select step when scope is specific", () => {
     render(<OrbPage onAddMood={onAddMoodMock} />);
 
     fireEvent.click(screen.getByTestId("mood-scope-chip-specific"));
@@ -364,6 +371,9 @@ describe("OrbPage progressive flow", () => {
     fireEvent.change(screen.getByTestId("mood-scope-time-input"), {
       target: { value: "14:30" },
     });
+    expect(screen.getByTestId("orb-page-next")).toBeDisabled();
+
+    fireEvent.click(screen.getByTestId("mood-orb-option-good"));
     expect(screen.getByTestId("orb-page-next")).not.toBeDisabled();
   });
 
@@ -420,6 +430,7 @@ describe("OrbPage progressive flow", () => {
   it("opens Diary with a valid handoff even when no exact feeling is chosen", () => {
     render(<OrbPage onAddMood={onAddMoodMock} />);
 
+    fireEvent.click(screen.getByTestId("mood-orb-option-good"));
     fireEvent.click(screen.getByTestId("orb-page-next"));
     fireEvent.click(screen.getByTestId("orb-page-open-diary"));
 
@@ -427,8 +438,8 @@ describe("OrbPage progressive flow", () => {
     expect(onAddMoodMock).toHaveBeenCalledTimes(1);
     expect(setMoodsSpy).not.toHaveBeenCalled();
     expect(useDiaryDraftStore.getState().pendingMoodContext).toMatchObject({
-      valence: 0,
-      mood: "okay",
+      valence: 0.5,
+      mood: "good",
       scope: "now",
       specificTime: null,
       emotion: null,
@@ -464,6 +475,7 @@ describe("OrbPage progressive flow", () => {
       <OrbPage navigateToPage={navigateToPage} onAddMood={onAddMoodMock} />,
     );
 
+    fireEvent.click(screen.getByTestId("mood-orb-option-good"));
     fireEvent.click(screen.getByTestId("orb-page-next"));
     fireEvent.click(screen.getByTestId("orb-page-open-diary"));
 
