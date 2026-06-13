@@ -156,7 +156,7 @@ Default startup priority:
 - Synchronous full-backup export/import during initial render.
 - Starting expensive chart, Lottie, export, sticker, or telemetry bundles before
   the route needs them.
-- Replacing canonical WebGL orb visuals with a cheaper look to reduce blocking.
+- Replacing canonical WebGPU/WebGL orb visuals with a cheaper look to reduce blocking.
 - Late visible renderer swaps that change the orb look or perceived motion.
 - Long-running loops inside render, layout effects, or input handlers.
 - Multiple lifecycle listeners triggering the same sync work without dedupe.

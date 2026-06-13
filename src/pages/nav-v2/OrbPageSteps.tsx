@@ -110,7 +110,7 @@ export function OrbSelectStep({
                   size={heroOrbSize}
                   animationSpeed={orbAnimationSpeed}
                   transitionProfile="input-soft"
-                  renderer="webgl"
+                  renderer="webgpu"
                 />
               </button>
             </div>

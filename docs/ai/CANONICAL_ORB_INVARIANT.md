@@ -7,15 +7,17 @@ The state-of-mind orb visuals are frozen product canon.
 - Full-size mood/state-of-mind surfaces must render through `ValenceOrb`.
 - Compact surfaces must render through `MiniValenceOrb`.
 - Legacy wrappers may stay only if they delegate into `MiniValenceOrb`.
-- The canonical renderer policy is WebGL-first. Product orb surfaces that pass
-  `renderer="webgl"` must paint only WebGL canvases.
-- A worker WebGL canvas (`data-orb-renderer-tier="webgl-worker"`) and async
-  main-thread WebGL canvas (`data-orb-renderer-tier="webgl-main"`) are both
-  canonical. Synchronous main-thread shader compilation during first paint is
-  not canonical because it stalls route boot.
+- The canonical renderer policy is WebGPU-first. Product orb surfaces that pass
+  `renderer="webgpu"` must try WebGPU first and fall back only through the
+  canonical WebGL renderer path.
+- A WebGPU canvas (`data-orb-renderer-tier="webgpu-main"`), worker WebGL canvas
+  (`data-orb-renderer-tier="webgl-worker"`), and async main-thread WebGL canvas
+  (`data-orb-renderer-tier="webgl-main"`) are canonical. Synchronous main-thread
+  shader compilation during first paint is not canonical because it stalls route
+  boot.
 - Canvas is only an explicit availability fallback for non-forced debug/auto
   paths. It must never be used as a first-paint, timeout recovery, or phone
-  warmup substitute for a forced WebGL orb.
+  warmup substitute for a forced WebGPU/WebGL orb.
 - Do not replace the orb with SVG icons, Lucide icons, CSS-only rings, static gradients, Lottie, canvas-first replicas, or a second mini-orb implementation.
 
 ## Protected Surfaces

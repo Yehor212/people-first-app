@@ -276,7 +276,7 @@ Required:
 - full surfaces use `ValenceOrb`;
 - mini/portal/sidebar/drawer/diary surfaces use `MiniValenceOrb`;
 - `npm run check:canonical-orbs` remains green;
-- any performance optimization must preserve WebGL-first canonical visuals.
+- any performance optimization must preserve WebGPU-first canonical visuals with the canonical WebGL fallback path.
 
 ## Entity Coverage Matrix
 

@@ -110,6 +110,8 @@ describe("canonical orb invariant", () => {
     const source = readSource("src/components/state-of-mind/MiniValenceOrb.tsx");
 
     expect(source).toContain("<ValenceOrb");
+    expect(source).toContain('renderer = "webgpu"');
+    expect(source).toContain('renderer !== "webgl" && renderer !== "webgpu"');
     expect(source).toContain("MINI_VALENCE_IDLE_CANONICAL_VALENCE");
     expect(source).toContain("const displayValence = hasEntry ? valence : MINI_VALENCE_IDLE_CANONICAL_VALENCE");
     expect(source).not.toContain("setInterval");
@@ -119,8 +121,14 @@ describe("canonical orb invariant", () => {
 
   it("keeps explicit orb surfaces on the canonical WebGPU-first upgrade path", () => {
     const source = readSource("src/components/state-of-mind/ValenceOrb.tsx");
+    const miniSource = readSource("src/components/state-of-mind/MiniValenceOrb.tsx");
+    const orbStepsSource = readSource("src/pages/nav-v2/OrbPageSteps.tsx");
+    const stateOfMindModalSource = readSource("src/components/state-of-mind/StateOfMindModal.tsx");
     const webgpuSource = readSource("src/components/state-of-mind/orbWebGpu.ts");
 
+    expect(miniSource).toContain('renderer = "webgpu"');
+    expect(orbStepsSource).toContain('renderer="webgpu"');
+    expect(stateOfMindModalSource).toContain('renderer="webgpu"');
     expect(source).toContain("forceCanonicalWebGL");
     expect(source).toContain("isDebugCanvasFallbackAllowed");
     expect(source).toContain("renderer === 'webgpu'");
