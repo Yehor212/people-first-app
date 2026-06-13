@@ -1,4 +1,4 @@
-import { Loader2, Send } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import type { SocialAuthProviderConfig } from "@/lib/authProviders";
 import { cn } from "@/lib/utils";
 
@@ -35,26 +35,34 @@ const AUTH_PROVIDER_BUTTON_SURFACE_CLASS: Record<
 function AuthProviderIcon({ provider }: { provider: SocialAuthProviderConfig }) {
   if (provider.id === "telegram") {
     return (
-      <span
-        className="flex h-6 w-6 shrink-0 items-center justify-center text-primary"
+      <svg
+        className="h-6 w-6 shrink-0"
+        viewBox="0 0 24 24"
         aria-hidden="true"
         data-testid={`auth-provider-icon-${provider.id}`}
       >
-        <Send className="h-5 w-5" />
-      </span>
+        <circle cx="12" cy="12" r="12" fill="#2AABEE" />
+        <path
+          fill="#FFFFFF"
+          d="M18.94 6.47 16.91 16c-.15.68-.55.85-1.12.53l-3.08-2.27-1.49 1.44c-.16.16-.3.3-.62.3l.22-3.14 5.71-5.15c.25-.22-.05-.34-.38-.12l-7.06 4.44-3.04-.95c-.66-.21-.68-.66.14-.98l11.9-4.59c.55-.2 1.04.13.85.96Z"
+        />
+      </svg>
     );
   }
 
   if (provider.id === "facebook") {
     return (
       <svg
-        className="h-6 w-6 shrink-0 text-primary"
+        className="h-6 w-6 shrink-0"
         viewBox="0 0 24 24"
-        fill="currentColor"
         aria-hidden="true"
         data-testid={`auth-provider-icon-${provider.id}`}
       >
-        <path d="M14.55 8.18V6.95c0-.6.4-.74.68-.74h1.73V3.08L14.58 3c-2.64 0-4.08 1.57-4.08 4.44v.74H7.82v3.18h2.68V21h3.3v-9.64h2.76l.37-3.18h-3.1Z" />
+        <circle cx="12" cy="12" r="12" fill="#1877F2" />
+        <path
+          fill="#FFFFFF"
+          d="M15.55 13.5 16 10.58h-2.8V8.69c0-.8.39-1.58 1.65-1.58h1.27V4.62s-1.15-.2-2.26-.2c-2.3 0-3.8 1.39-3.8 3.92v2.24H7.5v2.92h2.56v7.06a10.3 10.3 0 0 0 3.14 0V13.5h2.35Z"
+        />
       </svg>
     );
   }

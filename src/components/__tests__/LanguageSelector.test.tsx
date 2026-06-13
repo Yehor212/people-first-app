@@ -163,6 +163,8 @@ describe("LanguageSelector", () => {
     );
     expect(screen.queryByText("Skip")).toBeNull();
     expect(screen.queryByText("Your journey to mindful living starts here")).toBeNull();
+    expect(screen.queryByTestId("entry-gate-backdrop-star")).toBeNull();
+    expect(screen.getAllByTestId("entry-gate-backdrop-flow-mark")).toHaveLength(2);
   });
 
   it("selects a language and completes without form submission side effects", () => {

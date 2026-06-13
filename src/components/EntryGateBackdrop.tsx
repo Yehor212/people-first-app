@@ -1,5 +1,4 @@
 import { motion } from "framer-motion";
-import { Sparkles } from "lucide-react";
 
 interface EntryGateBackdropProps {
   animated: boolean;
@@ -11,9 +10,9 @@ const orbs = [
   { left: "31%", top: "91%", size: 5, color: "hsl(var(--zf-role-energy) / 0.32)", delay: 1.1 },
 ];
 
-const stars = [
-  { left: "22%", top: "11%", delay: 0.1 },
-  { left: "78%", top: "34%", delay: 0.8 },
+const flowMarks = [
+  { left: "22%", top: "11%", delay: 0.1, rotate: -12, scale: 0.96 },
+  { left: "78%", top: "34%", delay: 0.8, rotate: 18, scale: 0.84 },
 ];
 
 export function EntryGateBackdrop({ animated }: EntryGateBackdropProps) {
@@ -43,24 +42,53 @@ export function EntryGateBackdrop({ animated }: EntryGateBackdropProps) {
           />
         ))}
 
-        {stars.map((star) => (
+        {flowMarks.map((mark) => (
           <motion.span
-            key={`${star.left}-${star.top}`}
+            key={`${mark.left}-${mark.top}`}
             className="absolute"
-            data-testid="entry-gate-backdrop-star"
+            data-testid="entry-gate-backdrop-flow-mark"
             style={{
-              left: star.left,
-              top: star.top,
+              left: mark.left,
+              top: mark.top,
               display: "grid",
-              width: 32,
-              height: 32,
+              width: 34,
+              height: 34,
               placeItems: "center",
-              color: "hsl(var(--primary) / 0.45)",
+              color: "hsl(var(--primary) / 0.5)",
             }}
-            animate={animated ? { opacity: [0.24, 0.76, 0.3], rotate: [0, 12, -6, 0] } : undefined}
-            transition={{ duration: 6.8, delay: star.delay, repeat: Infinity, ease: "easeInOut" }}
+            animate={
+              animated
+                ? {
+                    opacity: [0.22, 0.68, 0.28],
+                    y: [0, -8, 2, 0],
+                  }
+                : undefined
+            }
+            transition={{ duration: 7.4, delay: mark.delay, repeat: Infinity, ease: "easeInOut" }}
           >
-            <Sparkles className="h-4 w-4" />
+            <svg
+              className="h-7 w-7"
+              viewBox="0 0 32 32"
+              fill="none"
+              aria-hidden="true"
+              style={{ transform: `rotate(${mark.rotate}deg) scale(${mark.scale})` }}
+            >
+              <path
+                d="M7.5 18.2c4.8-9.2 13-10.5 17.2-7.5-.9 7.4-6.8 12.6-15.1 10.2 2.5-1 5.1-2.9 7.4-5.7"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M8.3 22.6c3.6 3 8.8 3.7 13.6 1.1"
+                stroke="currentColor"
+                strokeWidth="1.45"
+                strokeLinecap="round"
+                opacity="0.58"
+              />
+              <circle cx="23.8" cy="7.6" r="1.35" fill="currentColor" opacity="0.58" />
+            </svg>
           </motion.span>
         ))}
       </div>

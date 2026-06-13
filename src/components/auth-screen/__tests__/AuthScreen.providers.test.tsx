@@ -213,8 +213,14 @@ describe("AuthScreen provider buttons", () => {
   it("uses centered brand icons for social providers", () => {
     render(<AuthScreen onComplete={vi.fn()} />);
 
-    expect(screen.getByTestId("auth-provider-icon-google")).toHaveClass("h-6", "w-6");
-    expect(screen.getByTestId("auth-provider-icon-facebook")).toHaveClass("h-6", "w-6");
-    expect(screen.getByTestId("auth-provider-icon-telegram")).toHaveClass("h-6", "w-6");
+    const googleIcon = screen.getByTestId("auth-provider-icon-google");
+    const facebookIcon = screen.getByTestId("auth-provider-icon-facebook");
+    const telegramIcon = screen.getByTestId("auth-provider-icon-telegram");
+
+    expect(googleIcon).toHaveClass("h-6", "w-6");
+    expect(facebookIcon).toHaveClass("h-6", "w-6");
+    expect(telegramIcon).toHaveClass("h-6", "w-6");
+    expect(facebookIcon.querySelector('circle[fill="#1877F2"]')).toBeTruthy();
+    expect(telegramIcon.querySelector('circle[fill="#2AABEE"]')).toBeTruthy();
   });
 });
