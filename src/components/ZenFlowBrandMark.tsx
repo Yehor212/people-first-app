@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
-import zenFlowBrandMarkAssetSrc from "../../public/icon-source.svg?url";
+import { BASE_URL } from "@/lib/env";
 
-export const zenFlowBrandMarkSrc = zenFlowBrandMarkAssetSrc;
+export const zenFlowBrandMarkSrc = `${BASE_URL}icon-source.svg`;
 
 interface ZenFlowBrandMarkProps {
   className?: string;

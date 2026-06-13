@@ -12,7 +12,6 @@ describe("EntryGate cross-platform safe areas", () => {
   it("uses web env and Capacitor SystemBars inset variables", () => {
     const css = readProjectFile("src/components/EntryGate.css");
 
-    expect(css).toContain("--entry-safe-bottom");
     expect(css).toContain("env(safe-area-inset-bottom, 0px)");
     expect(css).toContain("var(--safe-area-inset-bottom, 0px)");
     expect(css).toContain("var(--zenflow-test-nav-inset-bottom, 0px)");

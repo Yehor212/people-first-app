@@ -172,13 +172,12 @@ describe("AuthScreen provider buttons", () => {
     expect(screen.getByTestId("auth-screen")).toHaveAttribute("data-entry-theme", "paper");
     expect(screen.getByTestId("zenflow-auth-logo-image")).toHaveAttribute(
       "src",
-      expect.stringMatching(/(?:icon-source\.svg|data:image\/svg\+xml)/)
+      expect.stringMatching(/icon-source\.svg$/)
     );
     expect(screen.getByRole("button", { name: "Continue with Google" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Continue with Facebook" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Continue with Telegram" })).toBeInTheDocument();
     expect(within(screen.getByTestId("auth-screen-panel")).queryByText("ZenFlow")).toBeNull();
-    expect(screen.getByRole("radio", { name: "Light" })).toHaveAttribute("aria-checked", "true");
   });
 
   it("keeps provider buttons as safe button actions and delegates provider selection", () => {
@@ -191,12 +190,13 @@ describe("AuthScreen provider buttons", () => {
     expect(handlers.handleProviderSignIn).toHaveBeenCalledWith("google");
   });
 
-  it("lets users switch from day mode to dark mode before signing in", () => {
+  it("keeps sign-in focused without unrelated theme controls", () => {
     render(<AuthScreen onComplete={vi.fn()} />);
 
-    fireEvent.click(screen.getByRole("radio", { name: "Dark" }));
-
-    expect(themeState.setTheme).toHaveBeenCalledWith("ink");
-    expect(themeState.setThemePreference).toHaveBeenLastCalledWith("dark");
+    expect(screen.queryByRole("radio", { name: "Light" })).toBeNull();
+    expect(screen.queryByRole("radio", { name: "Dark" })).toBeNull();
+    expect(screen.queryByRole("radio", { name: "System" })).toBeNull();
+    expect(themeState.setTheme).not.toHaveBeenCalled();
+    expect(themeState.setThemePreference).not.toHaveBeenCalled();
   });
 });

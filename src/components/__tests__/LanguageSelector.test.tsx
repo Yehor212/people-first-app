@@ -131,7 +131,7 @@ describe("LanguageSelector", () => {
 
     expect(screen.getByTestId("zenflow-language-logo-image")).toHaveAttribute(
       "src",
-      expect.stringMatching(/(?:icon-source\.svg|data:image\/svg\+xml)/)
+      expect.stringMatching(/icon-source\.svg$/)
     );
     expect(screen.getByTestId("language-selector-screen")).toHaveAttribute(
       "aria-labelledby",
@@ -141,8 +141,6 @@ describe("LanguageSelector", () => {
       "data-entry-theme",
       "ink"
     );
-    expect(screen.getByRole("radiogroup", { name: "Appearance" })).toBeInTheDocument();
-    expect(screen.getByRole("radio", { name: "Dark" })).toHaveAttribute("aria-checked", "true");
     const languageGroup = screen.getByRole("radiogroup", { name: "Select language" });
     expect(languageGroup).toBeInTheDocument();
     expect(within(languageGroup).getAllByRole("radio")).toHaveLength(8);
@@ -170,12 +168,13 @@ describe("LanguageSelector", () => {
     expect(onComplete).toHaveBeenCalledTimes(2);
   });
 
-  it("lets users choose day mode before continuing", () => {
+  it("keeps the entry step free of unrelated theme controls", () => {
     render(<LanguageSelector onComplete={vi.fn()} />);
 
-    fireEvent.click(screen.getByRole("radio", { name: "Light" }));
-
-    expect(themeState.setTheme).toHaveBeenCalledWith("paper");
-    expect(themeState.setThemePreference).toHaveBeenLastCalledWith("light");
+    expect(screen.queryByRole("radio", { name: "Light" })).toBeNull();
+    expect(screen.queryByRole("radio", { name: "Dark" })).toBeNull();
+    expect(screen.queryByRole("radio", { name: "System" })).toBeNull();
+    expect(themeState.setTheme).not.toHaveBeenCalled();
+    expect(themeState.setThemePreference).not.toHaveBeenCalled();
   });
 });

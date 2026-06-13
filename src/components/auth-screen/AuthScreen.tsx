@@ -7,7 +7,6 @@ import {
   Phone,
 } from "lucide-react";
 import { useEffect } from "react";
-import { EntryThemeControl } from "@/components/EntryThemeControl";
 import { AuthProviderButton } from "@/components/auth/AuthProviderButton";
 import { ZenFlowBrandMark } from "@/components/ZenFlowBrandMark";
 import { resetEntryGateScroll } from "@/components/entryGateScroll";
@@ -61,16 +60,15 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
 
   return (
     <main
-      className="entry-gate-screen relative isolate flex items-start justify-center overflow-x-hidden overflow-y-auto text-foreground sm:items-center"
+      className="entry-gate-screen relative isolate flex items-start justify-center overflow-x-hidden overflow-y-auto text-foreground"
       aria-labelledby="auth-title"
       data-testid="auth-screen"
       data-entry-theme={appliedTheme}
     >
       <div aria-hidden="true" className="entry-gate-aurora" />
-      <div aria-hidden="true" className="entry-gate-stars" />
 
       <motion.section
-        className="relative z-10 flex w-full max-w-[31rem] flex-col gap-4 sm:gap-5"
+        className="relative z-10 flex w-full max-w-lg flex-col gap-4"
         initial={animated ? "hidden" : false}
         animate="visible"
         variants={authShellVariants}
@@ -78,26 +76,25 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
       >
         <header className="text-center">
           <ZenFlowBrandMark
-            className="mx-auto mb-3 h-16 w-16 rounded-[1.35rem] sm:mb-4 sm:h-20 sm:w-20 sm:rounded-[1.65rem]"
+            className="mx-auto mb-3 h-16 w-16 rounded-2xl"
             testId="zenflow-auth-logo"
           />
           <h1
             id="auth-title"
-            className="mx-auto max-w-[13ch] text-3xl font-bold leading-none text-foreground sm:max-w-none sm:text-4xl"
+            className="mx-auto max-w-xs text-3xl font-bold leading-none text-foreground"
           >
             {t.authWelcomeTitle}
           </h1>
           <p
             id="auth-subtitle"
-            className="mx-auto mt-2 max-w-[25rem] text-sm leading-6 text-muted-foreground sm:mt-3"
+            className="mx-auto mt-2 max-w-md text-sm leading-6 text-muted-foreground"
           >
             {t.authWelcomeSubtitle}
           </p>
-          <EntryThemeControl className="mt-3 sm:mt-4" />
         </header>
 
         <section
-          className="entry-glass-panel rounded-[1.5rem] border border-border/50 p-3.5 shadow-2xl sm:rounded-[2rem] sm:p-5"
+          className="entry-glass-panel rounded-3xl border border-border/50 p-3.5 shadow-2xl"
           aria-labelledby="auth-methods-title"
           aria-busy={session.isLoading}
           data-testid="auth-screen-panel"
@@ -106,7 +103,7 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
             <div>
               <h2
                 id="auth-methods-title"
-                className="text-lg font-semibold text-foreground sm:text-xl"
+                className="text-lg font-semibold text-foreground"
               >
                 {t.authContinueWith}
               </h2>

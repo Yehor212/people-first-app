@@ -84,7 +84,7 @@ export function AuthProviderButton({
       aria-label={isLoading ? loadingLabel : label}
       aria-disabled={disabled}
       className={cn(
-        "flex w-full items-center justify-center gap-2.5 rounded-2xl border border-border/60 font-semibold text-foreground motion-safe:transition-all disabled:cursor-not-allowed disabled:opacity-50 sm:gap-3",
+        "flex w-full items-center justify-center gap-2.5 rounded-2xl border border-border/60 font-semibold text-foreground motion-safe:transition-all disabled:cursor-not-allowed disabled:opacity-80 sm:gap-3",
         AUTH_PROVIDER_BUTTON_SIZE_CLASS[size],
         AUTH_PROVIDER_BUTTON_SURFACE_CLASS[surface]
       )}
