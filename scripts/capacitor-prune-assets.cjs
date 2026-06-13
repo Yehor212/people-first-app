@@ -3,8 +3,8 @@
  * capacitor-prune-assets.cjs — strip store-only assets from dist/ for APK
  *
  * These files exist in public/ for Play Store listing uploads and docs
- * references but are NEVER loaded by the app at runtime. Including them
- * in the APK adds ~408 KB of dead weight (APK asset footprint).
+ * references but are not loaded by the native runtime. Including them in
+ * the APK adds dead weight (APK asset footprint).
  *
  * Only runs when CAPACITOR_BUILD=true so PWA web deploys keep the files
  * (they might be served for SEO/social share or Play Store manifest).
@@ -28,9 +28,9 @@ const PRUNE = [
   "feature-graphic.png",
   "feature-graphic.webp",
   "feature-graphic.svg",
-  // Icon source vectors — used only by scripts/generate-icons.cjs at build
-  // time to regenerate pwa-*.png. NOT loaded at runtime.
-  "icon-source.svg",
+  // Round icon source vector — used only by scripts/generate-icons.cjs at
+  // build time to regenerate pwa-*.png. NOT loaded at runtime. Keep
+  // icon-source.svg: the entry gate brand mark references the official SVG.
   "icon-source-round.svg",
   // icon-512.png: alt-size output, manifest uses pwa-512.png exclusively.
   // Verified: 0 refs in src/ or vite.config.ts manifest.
