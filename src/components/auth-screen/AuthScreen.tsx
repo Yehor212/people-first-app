@@ -3,7 +3,6 @@ import {
   AlertCircle,
   ArrowLeft,
   Loader2,
-  LockKeyhole,
   Phone,
 } from "lucide-react";
 import { useEffect } from "react";
@@ -76,21 +75,15 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
       >
         <header className="text-center">
           <ZenFlowBrandMark
-            className="mx-auto mb-3 h-16 w-16 rounded-2xl"
+            className="mx-auto mb-3 h-[72px] w-[72px] rounded-[1.35rem]"
             testId="zenflow-auth-logo"
           />
           <h1
             id="auth-title"
-            className="mx-auto max-w-xs text-3xl font-bold leading-none text-foreground"
+            className="mx-auto max-w-xs text-4xl font-black leading-none text-foreground sm:text-5xl"
           >
             {t.authWelcomeTitle}
           </h1>
-          <p
-            id="auth-subtitle"
-            className="mx-auto mt-2 max-w-md text-sm leading-6 text-muted-foreground"
-          >
-            {t.authWelcomeSubtitle}
-          </p>
         </header>
 
         <section
@@ -99,21 +92,13 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
           aria-busy={session.isLoading}
           data-testid="auth-screen-panel"
         >
-          <div className="mb-4 flex items-start justify-between gap-3">
-            <div>
-              <h2
-                id="auth-methods-title"
-                className="text-lg font-semibold text-foreground"
-              >
-                {t.authContinueWith}
-              </h2>
-            </div>
-            <div
-              className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-primary/20 bg-primary/10 text-primary"
-              aria-hidden="true"
+          <div className="mb-4">
+            <h2
+              id="auth-methods-title"
+              className="text-xl font-bold leading-tight text-foreground"
             >
-              <LockKeyhole className="h-5 w-5" />
-            </div>
+              {t.authContinueWith}
+            </h2>
           </div>
 
           <motion.div

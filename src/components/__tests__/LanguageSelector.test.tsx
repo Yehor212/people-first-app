@@ -47,7 +47,6 @@ vi.mock("@/contexts/LanguageContext", () => ({
       language: "Language",
       appearance: "Appearance",
       selectLanguage: "Select language",
-      skip: "Skip",
       themeDark: "Dark",
       themeLight: "Light",
       themeSystem: "System",
@@ -133,6 +132,10 @@ describe("LanguageSelector", () => {
       "src",
       expect.stringMatching(/icon-source\.svg$/)
     );
+    expect(screen.getByTestId("zenflow-language-logo-image")).toHaveAttribute(
+      "alt",
+      "ZenFlow"
+    );
     expect(screen.getByTestId("language-selector-screen")).toHaveAttribute(
       "aria-labelledby",
       "language-selector-title"
@@ -149,9 +152,11 @@ describe("LanguageSelector", () => {
       "aria-checked",
       "false"
     );
+    expect(screen.queryByText("Skip")).toBeNull();
+    expect(screen.queryByText("Your journey to mindful living starts here")).toBeNull();
   });
 
-  it("selects a language and completes from both actions without form submission side effects", () => {
+  it("selects a language and completes without form submission side effects", () => {
     const onComplete = vi.fn();
     render(<LanguageSelector onComplete={onComplete} />);
 
@@ -159,13 +164,10 @@ describe("LanguageSelector", () => {
     expect(languageState.setLanguage).toHaveBeenCalledWith("uk");
 
     const continueButton = screen.getByTestId("language-continue");
-    const skipButton = screen.getByTestId("language-skip");
     expect(continueButton).toHaveAttribute("type", "button");
-    expect(skipButton).toHaveAttribute("type", "button");
 
     fireEvent.click(continueButton);
-    fireEvent.click(skipButton);
-    expect(onComplete).toHaveBeenCalledTimes(2);
+    expect(onComplete).toHaveBeenCalledTimes(1);
   });
 
   it("keeps the entry step free of unrelated theme controls", () => {

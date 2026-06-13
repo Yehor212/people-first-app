@@ -19,7 +19,7 @@ const AUTH_PROVIDER_BUTTON_SIZE_CLASS: Record<
 > = {
   compact: "min-h-[44px] px-4 py-2.5 text-sm",
   default: "min-h-[48px] px-4 py-3.5 text-base",
-  large: "min-h-[56px] px-3 py-3.5 text-[clamp(0.95rem,4vw,1.125rem)] sm:px-4 sm:py-4",
+  large: "min-h-[56px] px-3 py-3.5 text-base sm:px-4 sm:py-4 sm:text-lg",
 };
 
 const AUTH_PROVIDER_BUTTON_SURFACE_CLASS: Record<

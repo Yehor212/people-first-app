@@ -14,15 +14,10 @@
   padding-inline: max(1rem, calc(var(--entry-safe-left) + 1rem))
     max(1rem, calc(var(--entry-safe-right) + 1rem));
   background:
-    radial-gradient(ellipse 82% 52% at 50% -8%, hsl(var(--zf-primary) / 0.24), transparent 66%),
-    linear-gradient(155deg, hsl(var(--background)), hsl(var(--secondary)) 52%, hsl(var(--card)));
-}
-
-.entry-gate-screen[data-entry-theme="paper"] {
-  background:
-    radial-gradient(ellipse 96% 58% at 50% 112%, hsl(var(--zf-role-energy) / 0.24), transparent 66%),
-    radial-gradient(circle at 12% 22%, hsl(var(--zf-role-body) / 0.22), transparent 42%),
-    linear-gradient(164deg, hsl(var(--background)), hsl(var(--surface-overlay, var(--muted))) 48%, hsl(var(--card)));
+    radial-gradient(circle at 12% 8%, hsl(var(--zf-role-body) / 0.32), transparent 34%),
+    radial-gradient(circle at 88% 16%, hsl(var(--zf-role-focus) / 0.26), transparent 36%),
+    radial-gradient(ellipse 80% 46% at 50% 108%, hsl(var(--zf-role-energy) / 0.16), transparent 68%),
+    linear-gradient(154deg, hsl(var(--background)), hsl(var(--surface-elevated, var(--secondary))) 52%, hsl(var(--card)));
 }
 
 .entry-gate-aurora {
@@ -30,8 +25,9 @@
   inset: -22% -28%;
   pointer-events: none;
   background:
-    radial-gradient(circle at 18% 24%, hsl(var(--zf-primary) / 0.24), transparent 42%),
-    radial-gradient(circle at 84% 14%, hsl(var(--zf-trace) / 0.2), transparent 44%);
+    radial-gradient(circle at 18% 24%, hsl(var(--zf-role-body) / 0.28), transparent 42%),
+    radial-gradient(circle at 84% 14%, hsl(var(--zf-role-focus) / 0.22), transparent 44%),
+    radial-gradient(ellipse at 52% 90%, hsl(var(--zf-role-energy) / 0.12), transparent 48%);
   filter: blur(28px);
   opacity: 0.82;
   animation: eg-aurora 14s ease-in-out infinite alternate;
@@ -40,11 +36,14 @@
 .entry-glass-panel {
   background: linear-gradient(
     155deg,
-    hsl(var(--card) / 0.88),
-    hsl(var(--secondary) / 0.76)
+    hsl(var(--card) / 0.86),
+    hsl(var(--surface-elevated, var(--secondary)) / 0.72)
   );
   -webkit-backdrop-filter: blur(var(--surface-glass-blur));
   backdrop-filter: blur(var(--surface-glass-blur));
+  box-shadow:
+    0 24px 70px -46px hsl(var(--zf-role-focus) / 0.72),
+    inset 0 1px 0 hsl(var(--foreground) / 0.10);
 }
 
 @keyframes eg-aurora {

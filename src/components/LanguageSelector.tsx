@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { ArrowRight, Check, Globe2 } from "lucide-react";
+import { ArrowRight, Check } from "lucide-react";
 import { type MouseEvent, useEffect } from "react";
 
 import { ZenFlowBrandMark } from "@/components/ZenFlowBrandMark";
@@ -65,11 +65,6 @@ export function LanguageSelector({ onComplete }: LanguageSelectorProps) {
     onComplete();
   };
 
-  const handleSkip = () => {
-    resetEntryGateScroll("language-selector-screen");
-    onComplete();
-  };
-
   return (
     <main
       className="entry-gate-screen relative isolate flex items-start justify-center overflow-x-hidden overflow-y-auto text-foreground"
@@ -88,41 +83,21 @@ export function LanguageSelector({ onComplete }: LanguageSelectorProps) {
       >
         <header className="text-center">
           <ZenFlowBrandMark
-            className="mx-auto mb-3 h-16 w-16 rounded-2xl"
+            className="mx-auto mb-3 h-[72px] w-[72px] rounded-[1.35rem]"
             testId="zenflow-language-logo"
           />
           <h1
             id="language-selector-title"
-            className="mx-auto max-w-xs text-3xl font-bold leading-none text-foreground"
+            className="mx-auto max-w-xs text-4xl font-black leading-none text-foreground sm:text-5xl"
           >
             {t.welcomeTitle}
           </h1>
-          <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-muted-foreground">
-            {t.welcomeSubtitle}
-          </p>
         </header>
 
         <section
-          className="entry-glass-panel rounded-3xl border border-border/50 p-3.5 shadow-2xl"
-          aria-labelledby="language-selector-choice-title"
+          className="entry-glass-panel rounded-3xl border border-border/50 p-3 shadow-2xl sm:p-3.5"
+          aria-label={t.selectLanguage}
         >
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <div>
-              <h2
-                id="language-selector-choice-title"
-                className="text-lg font-semibold text-foreground"
-              >
-                {t.selectLanguage}
-              </h2>
-            </div>
-            <div
-              className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-primary/20 bg-primary/10 text-primary"
-              aria-hidden="true"
-            >
-              <Globe2 className="h-5 w-5" />
-            </div>
-          </div>
-
           <motion.div
             className="grid grid-cols-2 gap-2"
             role="radiogroup"
@@ -172,26 +147,15 @@ export function LanguageSelector({ onComplete }: LanguageSelectorProps) {
           </motion.div>
         </section>
 
-        <div className="space-y-3">
-          <button
-            type="button"
-            onClick={handleContinue}
-            className="btn-press flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-base font-semibold text-primary-foreground shadow-lg transition-all hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-            data-testid="language-continue"
-          >
-            <span>{t.continue}</span>
-            <ArrowRight className="h-4 w-4" aria-hidden="true" />
-          </button>
-
-          <button
-            type="button"
-            onClick={handleSkip}
-            className="btn-press min-h-12 w-full rounded-full border border-border/55 bg-card/45 px-6 py-3 text-base font-medium text-muted-foreground transition-all hover:border-primary/35 hover:bg-card/70 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-            data-testid="language-skip"
-          >
-            {t.skip || "Skip"}
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={handleContinue}
+          className="btn-press flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-base font-semibold text-primary-foreground shadow-lg transition-all hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          data-testid="language-continue"
+        >
+          <span>{t.continue}</span>
+          <ArrowRight className="h-4 w-4" aria-hidden="true" />
+        </button>
 
       </motion.section>
     </main>

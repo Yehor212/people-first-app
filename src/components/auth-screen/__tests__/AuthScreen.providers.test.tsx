@@ -174,10 +174,12 @@ describe("AuthScreen provider buttons", () => {
       "src",
       expect.stringMatching(/icon-source\.svg$/)
     );
+    expect(screen.getByTestId("zenflow-auth-logo-image")).toHaveAttribute("alt", "ZenFlow");
     expect(screen.getByRole("button", { name: "Continue with Google" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Continue with Facebook" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Continue with Telegram" })).toBeInTheDocument();
     expect(within(screen.getByTestId("auth-screen-panel")).queryByText("ZenFlow")).toBeNull();
+    expect(screen.queryByText("Sign in to sync your data across devices")).toBeNull();
   });
 
   it("keeps provider buttons as safe button actions and delegates provider selection", () => {
