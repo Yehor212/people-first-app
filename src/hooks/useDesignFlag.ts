@@ -9,17 +9,16 @@
  *   5. rollout_percent = 0    → false
  *   6. 1..99                  → deterministic hash(userId + key) % 100 < rollout_percent
  *
- * Rollout hash is DETERMINISTIC per (userId, key) pair so the same user always
- * sees the same state (no flicker between sessions). Anonymous users get a
- * stable random identifier persisted in localStorage.
+ * Rollout hash is DETERMINISTIC per (bucketId, key) pair so the same browser
+ * profile always sees the same state without mid-session flicker. Anonymous
+ * users get a stable random identifier persisted in localStorage.
  *
  * For non-React contexts (e.g. animationUtils, audioManager), use the static
  * variant isDesignFlagEnabledStatic().
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useDesignFlagStore } from "@/stores/designFlagStore";
-import { supabase } from "@/lib/supabaseClient";
 import { storageGetRaw, storageSetRaw } from "@/lib/safeJson";
 import { SK } from "@/lib/storageKeys";
 
@@ -72,35 +71,11 @@ export function evaluateDesignFlag(
 
 export function useDesignFlag(key: string): boolean {
   const flag = useDesignFlagStore((s) => s.flags[key]);
-  const [userId, setUserId] = useState<string | null>(null);
-
-  // Async-resolve the user ID without re-subscribing (auth changes are rare; a
-  // stale bucket never flips from true→false mid-session because the hash is
-  // deterministic per userId — the user can only transition anon→authenticated
-  // once per app lifetime, and the re-bucketing is an intended consequence).
-  useEffect(() => {
-    let cancelled = false;
-    if (!supabase) {
-      setUserId(null);
-      return;
-    }
-    supabase.auth
-      .getUser()
-      .then(({ data }) => {
-        if (!cancelled) setUserId(data.user?.id ?? null);
-      })
-      .catch(() => {
-        if (!cancelled) setUserId(null);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const [bucketId] = useState(() => getBucketId(null));
 
   return useMemo(() => {
-    const bucketId = getBucketId(userId);
     return evaluateDesignFlag(flag, bucketId, key);
-  }, [flag, userId, key]);
+  }, [flag, bucketId, key]);
 }
 
 /**

@@ -30,6 +30,7 @@ import {
   evaluateDesignFlag,
 } from "../useDesignFlag";
 import { useDesignFlagStore } from "@/stores/designFlagStore";
+import { SK } from "@/lib/storageKeys";
 
 function seed(
   key: string,
@@ -153,6 +154,41 @@ describe("useDesignFlag (React hook)", () => {
     await waitFor(() => {
       expect(result.current).toBe(false);
     });
+  });
+
+  it("keeps the same rollout bucket for the hook lifetime", () => {
+    const key = "design.experiment.sticky-bucket";
+    const flag = { enabled: true, rollout_percent: 50, killswitch: false };
+    let initialBucket = "";
+    let oppositeBucket = "";
+
+    for (let i = 0; i < 1000; i += 1) {
+      const candidate = `bucket-${i}`;
+      const current = evaluateDesignFlag(flag, candidate, key);
+      if (!initialBucket) {
+        initialBucket = candidate;
+        continue;
+      }
+      if (current !== evaluateDesignFlag(flag, initialBucket, key)) {
+        oppositeBucket = candidate;
+        break;
+      }
+    }
+
+    expect(initialBucket).not.toBe("");
+    expect(oppositeBucket).not.toBe("");
+
+    seed(key, true, 50);
+    window.localStorage.setItem(SK.ANON_ID, initialBucket);
+    const expected = evaluateDesignFlag(flag, initialBucket, key);
+    const { result, rerender } = renderHook(() => useDesignFlag(key));
+
+    expect(result.current).toBe(expected);
+    window.localStorage.setItem(SK.ANON_ID, oppositeBucket);
+    expect(evaluateDesignFlag(flag, oppositeBucket, key)).not.toBe(expected);
+
+    rerender();
+    expect(result.current).toBe(expected);
   });
 });
 

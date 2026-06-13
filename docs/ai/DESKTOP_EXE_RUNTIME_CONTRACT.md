@@ -124,7 +124,7 @@ Desktop boot order:
 3. The V2 program shell is selected before V1 lazy code is requested.
 4. Desktop runtime bypasses replacement-style web gates and keeps account
    connection inside the V2 settings/account flow.
-5. Canonical WebGL orbs initialize through the existing renderer lifecycle.
+5. Canonical WebGPU/WebGL orbs initialize through the existing renderer lifecycle.
 6. Sync runtime wakes after first paint and uses the same leader/gap/outbox
    rules as web.
 7. Non-critical diagnostics, cache warming, exports, charts, and optional

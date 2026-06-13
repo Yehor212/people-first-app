@@ -30,9 +30,12 @@ const REQUIRED_SURFACES = [
     required: [
       "forceCanonicalWebGL",
       "isDebugCanvasFallbackAllowed",
-      "!debugCanvasFallbackAllowed && (renderer === 'webgl' || rendererOverride === 'webgl')",
+      "renderer === 'webgpu'",
+      "rendererOverride === 'webgpu'",
+      "createOrbWebGPUAsync",
       "createOrbGL2Async",
       "createOrbGLAsync",
+      "if (mode === 'webgpu') return true",
       "if (mode === 'webgl') return true",
       "canUseCanonicalCanvasRecovery",
       "const canUseCanonicalCanvasRecovery = !forceCanonicalWebGL || debugCanvasFallbackAllowed",
@@ -61,7 +64,7 @@ const REQUIRED_SURFACES = [
       "import { ValenceOrb",
       "<ValenceOrb",
       'transitionProfile = "v1-soft"',
-      'renderer = "webgl"',
+      'renderer = "webgpu"',
       "MINI_VALENCE_IDLE_CANONICAL_VALENCE",
       "const displayValence = hasEntry ? valence : MINI_VALENCE_IDLE_CANONICAL_VALENCE",
     ],
@@ -74,14 +77,14 @@ const REQUIRED_SURFACES = [
   },
   {
     file: "src/pages/nav-v2/OrbPageSteps.tsx",
-    required: ["ValenceOrb", "MiniValenceOrb", 'renderer="webgl"'],
+    required: ["ValenceOrb", "MiniValenceOrb", 'renderer="webgpu"'],
     requiredAny: [
       ['transitionProfile="v1-soft"', 'transitionProfile="input-soft"'],
     ],
   },
   {
     file: "src/components/state-of-mind/StateOfMindModal.tsx",
-    required: ["ValenceOrb", 'renderer="webgl"'],
+    required: ["ValenceOrb", 'renderer="webgpu"'],
   },
   {
     file: "src/components/tabs/HomeTab.tsx",

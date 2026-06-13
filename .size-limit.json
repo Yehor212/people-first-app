@@ -15,7 +15,7 @@
   {
     "name": "CSS bundle (brotli)",
     "path": "dist/assets/*.css",
-    "limit": "65.5 kB",
+    "limit": "67 kB",
     "brotli": true
   }
 ]

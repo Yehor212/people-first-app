@@ -177,9 +177,9 @@ export const MiniValenceOrb = memo(function MiniValenceOrb({
   containerClassName,
   orbClassName,
   transitionProfile = "v1-soft",
-  renderer = "webgl",
+  renderer = "webgpu",
 }: MiniValenceOrbProps) {
-  const [visualReady, setVisualReady] = useState(renderer !== "webgl");
+  const [visualReady, setVisualReady] = useState(renderer !== "webgl" && renderer !== "webgpu");
   const handleVisualReady = useCallback(() => {
     setVisualReady(true);
   }, []);

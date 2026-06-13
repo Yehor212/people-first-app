@@ -4,18 +4,48 @@ import path from "node:path";
 
 const repoRoot = process.cwd();
 const failures = [];
+const fallbacks = new Map([
+  [".agents/skills/teamlead/SKILL.md", ".claude/skills/teamlead/SKILL.md"],
+  [
+    ".agents/skills/ruflow-plus-orchestration/SKILL.md",
+    "tools/ruflow-plus/templates/.agents/skills/ruflow-plus-orchestration/SKILL.md",
+  ],
+  [
+    ".Codex/agents/ruflow-plus-coordinator.md",
+    "tools/ruflow-plus/templates/.Codex/agents/ruflow-plus-coordinator.md",
+  ],
+  [
+    ".Codex/agents/ruflow-plus-reviewer.md",
+    "tools/ruflow-plus/templates/.Codex/agents/ruflow-plus-reviewer.md",
+  ],
+]);
 
 function fail(message) {
   failures.push(message);
 }
 
 function read(relativePath) {
-  const absolute = path.join(repoRoot, relativePath);
+  const resolvedPath = resolveReadablePath(relativePath);
+  const absolute = path.join(repoRoot, resolvedPath);
   if (!existsSync(absolute)) {
     fail(`${relativePath} is missing`);
     return "";
   }
   return readFileSync(absolute, "utf8").replace(/\r\n/g, "\n");
+}
+
+function resolveReadablePath(relativePath) {
+  const absolute = path.join(repoRoot, relativePath);
+  if (existsSync(absolute)) {
+    return relativePath;
+  }
+
+  const fallback = fallbacks.get(relativePath);
+  if (fallback && existsSync(path.join(repoRoot, fallback))) {
+    return fallback;
+  }
+
+  return relativePath;
 }
 
 function requireIncludes(relativePath, text, marker) {

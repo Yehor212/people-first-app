@@ -321,7 +321,7 @@ describe("OrbPage progressive flow", () => {
     );
     expect(screen.getByTestId("valence-orb")).toHaveAttribute(
       "data-renderer",
-      "webgl",
+      "webgpu",
     );
     expect(screen.queryByTestId("orb-aura")).not.toBeInTheDocument();
   });
@@ -351,7 +351,7 @@ describe("OrbPage progressive flow", () => {
     );
     expect(screen.getByTestId("valence-orb")).toHaveAttribute(
       "data-renderer",
-      "webgl",
+      "webgpu",
     );
   });
 

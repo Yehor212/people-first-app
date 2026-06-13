@@ -11,7 +11,7 @@ Before writing code, consider what user may have forgotten:
 - Cross-platform (Android back handler, safe-area, webkit prefix)
 - Accessibility (aria-label, touch 44px, reduced-motion)
 - i18n (8 languages: en, uk, es, de, fr, ja, ar, he. RTL for ar/he)
-- Tests (vitest suite — 3224 tests, zero regression)
+- Tests (run exact current command output; never rely on historical counts)
 - State integrity (Zustand + Dexie + Supabase sync)
 - Security (no secrets, no XSS, no injection)
 - Performance (bundle, 60 FPS orb, lazy loading)

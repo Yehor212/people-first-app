@@ -9,9 +9,10 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     setupFiles: ["./test/setup.ts"],
-    // Exclude Playwright E2E tests (they run separately via npm run test:e2e)
+    // Exclude Playwright E2E tests (they run separately via npm run test:e2e).
     // Exclude `.claude/worktrees/**` — isolated agent branches, not part of main suite.
-    exclude: ["node_modules", "e2e/**", ".claude/worktrees/**"],
+    // Exclude `tools/telegram-control/**` — separate Node test-runner package covered by check:telegram-control.
+    exclude: ["node_modules", "e2e/**", ".claude/worktrees/**", "tools/telegram-control/test/**"],
     coverage: {
       provider: "v8",
       reporter: isCi ? ["text", "json-summary"] : ["text", "html", "json-summary"],
@@ -38,6 +39,7 @@ export default defineConfig({
         "docs/",
         "dev-dist/",
         "scripts/",
+        "tools/telegram-control/**",
         "*.ts",
         // Agent worktrees (isolated branches) — not part of main coverage scope.
         ".claude/worktrees/**",

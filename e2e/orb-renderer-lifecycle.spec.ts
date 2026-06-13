@@ -178,7 +178,7 @@ test.describe("V2 orb renderer lifecycle", () => {
       () =>
         Array.from(
           document.querySelectorAll<HTMLElement>(
-            '[data-orb-renderer-policy="webgl"][data-orb-visual-ready="true"]',
+            '[data-orb-renderer-policy="webgpu"][data-orb-visual-ready="true"]',
           ),
         ).some((wrapper) =>
           Array.from(wrapper.querySelectorAll<HTMLCanvasElement>("canvas")).some(
@@ -187,7 +187,8 @@ test.describe("V2 orb renderer lifecycle", () => {
               canvas.height >= 200 &&
               canvas.offsetWidth > 0 &&
               canvas.offsetHeight > 0 &&
-              (canvas.dataset.orbRendererTier === "webgl-main" ||
+              (canvas.dataset.orbRendererTier === "webgpu-main" ||
+                canvas.dataset.orbRendererTier === "webgl-main" ||
                 canvas.dataset.orbRendererTier === "webgl-worker"),
           ),
         ),
@@ -197,7 +198,7 @@ test.describe("V2 orb renderer lifecycle", () => {
     const afterReload = await page.evaluate(() => {
       const readyWrappers = Array.from(
         document.querySelectorAll<HTMLElement>(
-          '[data-orb-renderer-policy="webgl"][data-orb-visual-ready="true"]',
+          '[data-orb-renderer-policy="webgpu"][data-orb-visual-ready="true"]',
         ),
       );
       const canvases = readyWrappers.flatMap((wrapper) =>

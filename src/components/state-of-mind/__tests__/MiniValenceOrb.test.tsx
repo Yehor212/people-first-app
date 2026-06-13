@@ -108,7 +108,7 @@ describe("MiniValenceOrb", () => {
       "v1-soft",
     );
     expect(canonicalOrb).toHaveAttribute("data-orb-animation-speed", "1");
-    expect(canonicalOrb).toHaveAttribute("data-orb-renderer-policy", "webgl");
+    expect(canonicalOrb).toHaveAttribute("data-orb-renderer-policy", "webgpu");
   });
 
   it("renders the canonical badge chrome for Diary-style mini-orbs", () => {
@@ -129,7 +129,7 @@ describe("MiniValenceOrb", () => {
 
     expect(container.querySelector("[data-orb-renderer-policy]")).toHaveAttribute(
       "data-orb-renderer-policy",
-      "webgl",
+      "webgpu",
     );
     expect(setIntervalSpy).not.toHaveBeenCalledWith(expect.any(Function), 320);
   });
@@ -142,7 +142,7 @@ describe("MiniValenceOrb", () => {
     expect(container.firstChild).toHaveClass("opacity-0");
   });
 
-  it("keeps mini chrome hidden while forced WebGL is delayed instead of revealing Canvas2D", async () => {
+  it("keeps mini chrome hidden while forced WebGPU/WebGL fallback is delayed instead of revealing Canvas2D", async () => {
     vi.useFakeTimers();
     allow2dContext = true;
     vi.stubGlobal("OffscreenCanvas", undefined);
@@ -177,7 +177,7 @@ describe("MiniValenceOrb", () => {
     expect(createOrbGLAsync).not.toHaveBeenCalled();
   });
 
-  it("reveals mini chrome only after the canonical WebGL frame is ready", async () => {
+  it("reveals mini chrome only after the canonical WebGPU/WebGL fallback frame is ready", async () => {
     vi.useFakeTimers();
     window.history.replaceState(null, "", "/?orbRenderer=webgl");
     vi.stubGlobal("OffscreenCanvas", undefined);

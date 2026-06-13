@@ -113,7 +113,7 @@ function hslToRgb(h: number, s: number, l: number): [number, number, number] {
 // ── Shader Compilation ──
 
 type GLContext = WebGLRenderingContext | WebGL2RenderingContext;
-type OrbGLTier = 'webgl2' | 'webgl';
+export type OrbGLTier = 'webgpu' | 'webgl2' | 'webgl';
 
 interface KHRParallelShaderCompile {
   COMPLETION_STATUS_KHR: number;

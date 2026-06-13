@@ -29,8 +29,8 @@ This state is not a release. It is a reserved product shell.
 ## Decision
 
 ZenFlow desktop stays a Tauri 2 Windows app. The installed program must open the
-same V2 app surface as the desktop EXE contract: V2 shell first, canonical WebGL
-orbs, Telegram-grade sync runtime, and no visual fork.
+same V2 app surface as the desktop EXE contract: V2 shell first, canonical
+WebGPU/WebGL orbs, Telegram-grade sync runtime, and no visual fork.
 
 The Store path is a packaging and submission path only. It must not introduce a
 second product UI, a simplified orb, a separate sync stack, or a web-only PWA
@@ -52,7 +52,7 @@ reserved Store product.
 1. **No visual regression.**
    - Full orbs remain `ValenceOrb`.
    - Mini orbs remain `MiniValenceOrb`.
-   - The Store build cannot replace WebGL orbs with CSS, SVG, screenshots,
+   - The Store build cannot replace WebGPU/WebGL orbs with CSS, SVG, screenshots,
      icons, or a lighter visual family.
 
 2. **No sync fork.**

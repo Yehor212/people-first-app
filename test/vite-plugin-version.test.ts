@@ -1,22 +1,37 @@
 // @vitest-environment node
 
 import { describe, expect, it } from "vitest";
-import type { Plugin, ResolvedConfig } from "vite";
+import type {
+  IndexHtmlTransformContext,
+  IndexHtmlTransformHook,
+  MinimalPluginContextWithoutEnvironment,
+  Plugin,
+  ResolvedConfig,
+} from "vite";
 import { versionPlugin } from "../vite-plugin-version";
 
-function getConfigResolved(plugin: Plugin) {
+type ConfigResolvedHook = (
+  this: MinimalPluginContextWithoutEnvironment,
+  config: ResolvedConfig,
+) => void | Promise<void>;
+
+const pluginContext = {
+  meta: { rollupVersion: "test", watchMode: false },
+} as MinimalPluginContextWithoutEnvironment;
+
+function getConfigResolved(plugin: Plugin): ConfigResolvedHook | undefined {
   const hook = plugin.configResolved;
   if (!hook) return undefined;
   return typeof hook === "function" ? hook : hook.handler;
 }
 
-function getTransformIndexHtml(plugin: Plugin) {
+function getTransformIndexHtml(plugin: Plugin): IndexHtmlTransformHook | undefined {
   const hook = plugin.transformIndexHtml;
   if (!hook) return undefined;
   if (typeof hook === "function") {
     return hook;
   }
-  return "handler" in hook ? hook.handler : hook.transform;
+  return hook.handler;
 }
 
 function createResolvedConfig(command: "serve" | "build"): ResolvedConfig {
@@ -25,13 +40,13 @@ function createResolvedConfig(command: "serve" | "build"): ResolvedConfig {
     build: { outDir: "dist" },
     base: "/people-first-app/",
     command,
-  } as never;
+  } as unknown as ResolvedConfig;
 }
 
 const indexHtmlContext = {
   path: "/index.html",
   filename: "/index.html",
-} as never;
+} as IndexHtmlTransformContext;
 
 describe("versionPlugin HTML injection", () => {
   it("does not inject version-check.js during dev serve", async () => {
@@ -39,9 +54,13 @@ describe("versionPlugin HTML injection", () => {
     const configResolved = getConfigResolved(plugin);
     const transformIndexHtml = getTransformIndexHtml(plugin);
 
-    await configResolved?.(createResolvedConfig("serve"));
+    await configResolved?.call(pluginContext, createResolvedConfig("serve"));
 
-    expect(transformIndexHtml?.("", indexHtmlContext)).toBeUndefined();
+    const transformResult = await Promise.resolve(
+      transformIndexHtml?.call(pluginContext, "", indexHtmlContext),
+    );
+
+    expect(transformResult).toBeUndefined();
   });
 
   it("injects a deferred version-check.js for build output", async () => {
@@ -49,12 +68,19 @@ describe("versionPlugin HTML injection", () => {
     const configResolved = getConfigResolved(plugin);
     const transformIndexHtml = getTransformIndexHtml(plugin);
 
-    await configResolved?.(createResolvedConfig("build"));
+    await configResolved?.call(pluginContext, createResolvedConfig("build"));
 
-    expect(transformIndexHtml?.("", indexHtmlContext)).toEqual([
+    const transformResult = await Promise.resolve(
+      transformIndexHtml?.call(pluginContext, "", indexHtmlContext),
+    );
+
+    expect(transformResult).toEqual([
       {
         tag: "script",
-        attrs: { src: "/people-first-app/version-check.js?bt=1234567890", defer: true },
+        attrs: {
+          src: "/people-first-app/version-check.js?bt=1234567890",
+          defer: true,
+        },
         injectTo: "head-prepend",
       },
     ]);
