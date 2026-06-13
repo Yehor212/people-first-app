@@ -61,7 +61,7 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
 
   return (
     <main
-      className="entry-gate-screen relative isolate flex items-start justify-center overflow-x-hidden overflow-y-auto text-foreground"
+      className="entry-gate-screen relative isolate flex items-start justify-center overflow-x-hidden overflow-y-auto text-foreground md:items-center"
       aria-labelledby="auth-title"
       data-testid="auth-screen"
       data-entry-theme={appliedTheme}
@@ -69,7 +69,7 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
       <EntryGateBackdrop animated={animated} />
 
       <motion.section
-        className="relative z-10 flex w-full max-w-lg flex-col gap-4"
+        className="relative z-10 flex w-full max-w-lg flex-col gap-4 md:max-w-2xl md:gap-5 lg:max-w-3xl"
         initial={animated ? "hidden" : false}
         animate="visible"
         variants={authShellVariants}
@@ -82,7 +82,7 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
           />
           <h1
             id="auth-title"
-            className="mx-auto max-w-xs text-4xl font-black leading-none text-foreground sm:text-5xl"
+            className="mx-auto max-w-xs text-4xl font-black leading-none text-foreground sm:text-5xl md:max-w-xl md:text-6xl"
           >
             {t.authWelcomeTitle}
           </h1>

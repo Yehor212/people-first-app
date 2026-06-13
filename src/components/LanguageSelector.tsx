@@ -69,7 +69,7 @@ export function LanguageSelector({ onComplete }: LanguageSelectorProps) {
 
   return (
     <main
-      className="entry-gate-screen relative isolate flex items-start justify-center overflow-x-hidden overflow-y-auto text-foreground"
+      className="entry-gate-screen relative isolate flex items-start justify-center overflow-x-hidden overflow-y-auto text-foreground md:items-center"
       aria-labelledby="language-selector-title"
       data-testid="language-selector-screen"
       data-entry-theme={appliedTheme}
@@ -77,7 +77,7 @@ export function LanguageSelector({ onComplete }: LanguageSelectorProps) {
       <EntryGateBackdrop animated={animated} />
 
       <motion.section
-        className="relative z-10 flex w-full max-w-lg flex-col gap-4"
+        className="relative z-10 flex w-full max-w-lg flex-col gap-4 md:max-w-3xl md:gap-5 lg:max-w-4xl"
         initial={animated ? "hidden" : false}
         animate="visible"
         variants={shellVariants}
@@ -90,7 +90,7 @@ export function LanguageSelector({ onComplete }: LanguageSelectorProps) {
           />
           <h1
             id="language-selector-title"
-            className="mx-auto max-w-xs text-4xl font-black leading-none text-foreground sm:text-5xl"
+            className="mx-auto max-w-xs text-4xl font-black leading-none text-foreground sm:text-5xl md:max-w-xl md:text-6xl"
           >
             {t.welcomeTitle}
           </h1>
@@ -103,7 +103,7 @@ export function LanguageSelector({ onComplete }: LanguageSelectorProps) {
           aria-label={t.selectLanguage}
         >
           <motion.div
-            className="grid grid-cols-2 gap-2"
+            className="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-4"
             role="radiogroup"
             aria-label={t.selectLanguage}
             variants={languageListVariants}
