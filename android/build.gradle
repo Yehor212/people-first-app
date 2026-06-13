@@ -15,6 +15,24 @@ buildscript {
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
     }
+
+    configurations.classpath {
+        resolutionStrategy {
+            // Security floors verified by Snyk all-projects scan (2026-06-13).
+            force 'io.netty:netty-buffer:4.1.135.Final'
+            force 'io.netty:netty-codec:4.1.135.Final'
+            force 'io.netty:netty-codec-http:4.1.135.Final'
+            force 'io.netty:netty-codec-http2:4.1.135.Final'
+            force 'io.netty:netty-codec-socks:4.1.135.Final'
+            force 'io.netty:netty-common:4.1.135.Final'
+            force 'io.netty:netty-handler:4.1.135.Final'
+            force 'io.netty:netty-handler-proxy:4.1.135.Final'
+            force 'io.netty:netty-resolver:4.1.135.Final'
+            force 'io.netty:netty-transport:4.1.135.Final'
+            force 'io.netty:netty-transport-native-unix-common:4.1.135.Final'
+            force 'io.opentelemetry:opentelemetry-api:1.62.0'
+        }
+    }
 }
 
 apply from: "variables.gradle"
@@ -56,18 +74,22 @@ subprojects { project ->
             force 'androidx.fragment:fragment:1.8.9'
             force 'androidx.fragment:fragment-ktx:1.8.9'
 
-            // Security floors verified by Snyk all-projects scan (2026-06-01).
+            // Security floors verified by Snyk all-projects scan (2026-06-13).
             force 'com.google.protobuf:protobuf-java:3.25.5'
             force 'com.google.protobuf:protobuf-javalite:3.25.5'
             force 'com.google.guava:guava:32.0.0-android'
-            force 'io.netty:netty-buffer:4.1.133.Final'
-            force 'io.netty:netty-codec:4.1.133.Final'
-            force 'io.netty:netty-codec-http:4.1.133.Final'
-            force 'io.netty:netty-codec-http2:4.1.133.Final'
-            force 'io.netty:netty-common:4.1.133.Final'
-            force 'io.netty:netty-handler:4.1.133.Final'
-            force 'io.netty:netty-handler-proxy:4.1.133.Final'
-            force 'io.netty:netty-transport:4.1.133.Final'
+            force 'io.netty:netty-buffer:4.1.135.Final'
+            force 'io.netty:netty-codec:4.1.135.Final'
+            force 'io.netty:netty-codec-http:4.1.135.Final'
+            force 'io.netty:netty-codec-http2:4.1.135.Final'
+            force 'io.netty:netty-codec-socks:4.1.135.Final'
+            force 'io.netty:netty-common:4.1.135.Final'
+            force 'io.netty:netty-handler:4.1.135.Final'
+            force 'io.netty:netty-handler-proxy:4.1.135.Final'
+            force 'io.netty:netty-resolver:4.1.135.Final'
+            force 'io.netty:netty-transport:4.1.135.Final'
+            force 'io.netty:netty-transport-native-unix-common:4.1.135.Final'
+            force 'io.opentelemetry:opentelemetry-api:1.62.0'
             force 'org.bouncycastle:bcpg-jdk18on:1.84'
             force 'org.bouncycastle:bcpkix-jdk18on:1.84'
             force 'org.bouncycastle:bcprov-jdk18on:1.84'
