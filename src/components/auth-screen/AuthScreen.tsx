@@ -6,6 +6,8 @@ import {
   Phone,
 } from "lucide-react";
 import { useEffect } from "react";
+import { EntryGateBackdrop } from "@/components/EntryGateBackdrop";
+import { EntryThemeSwitcher } from "@/components/EntryThemeSwitcher";
 import { AuthProviderButton } from "@/components/auth/AuthProviderButton";
 import { ZenFlowBrandMark } from "@/components/ZenFlowBrandMark";
 import { resetEntryGateScroll } from "@/components/entryGateScroll";
@@ -64,7 +66,7 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
       data-testid="auth-screen"
       data-entry-theme={appliedTheme}
     >
-      <div aria-hidden="true" className="entry-gate-aurora" />
+      <EntryGateBackdrop animated={animated} />
 
       <motion.section
         className="relative z-10 flex w-full max-w-lg flex-col gap-4"
@@ -85,6 +87,8 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
             {t.authWelcomeTitle}
           </h1>
         </header>
+
+        <EntryThemeSwitcher />
 
         <section
           className="entry-glass-panel rounded-3xl border border-border/50 p-3.5 shadow-2xl"

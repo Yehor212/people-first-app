@@ -192,13 +192,29 @@ describe("AuthScreen provider buttons", () => {
     expect(handlers.handleProviderSignIn).toHaveBeenCalledWith("google");
   });
 
-  it("keeps sign-in focused without unrelated theme controls", () => {
+  it("keeps sign-in focused while preserving theme choice", () => {
     render(<AuthScreen onComplete={vi.fn()} />);
 
-    expect(screen.queryByRole("radio", { name: "Light" })).toBeNull();
-    expect(screen.queryByRole("radio", { name: "Dark" })).toBeNull();
-    expect(screen.queryByRole("radio", { name: "System" })).toBeNull();
-    expect(themeState.setTheme).not.toHaveBeenCalled();
-    expect(themeState.setThemePreference).not.toHaveBeenCalled();
+    const themeGroup = screen.getByRole("radiogroup", { name: "Appearance" });
+    expect(within(themeGroup).getByRole("radio", { name: "Light" })).toHaveAttribute(
+      "aria-checked",
+      "true"
+    );
+    expect(within(themeGroup).getByRole("radio", { name: "Dark" })).toHaveAttribute(
+      "aria-checked",
+      "false"
+    );
+
+    fireEvent.click(within(themeGroup).getByRole("radio", { name: "Dark" }));
+    expect(themeState.setTheme).toHaveBeenCalledWith("ink");
+    expect(themeState.setThemePreference).toHaveBeenCalledWith("dark");
+  });
+
+  it("uses centered brand icons for social providers", () => {
+    render(<AuthScreen onComplete={vi.fn()} />);
+
+    expect(screen.getByTestId("auth-provider-icon-google")).toHaveClass("h-6", "w-6");
+    expect(screen.getByTestId("auth-provider-icon-facebook")).toHaveClass("h-6", "w-6");
+    expect(screen.getByTestId("auth-provider-icon-telegram")).toHaveClass("h-6", "w-6");
   });
 });

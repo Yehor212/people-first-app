@@ -34,17 +34,28 @@ const AUTH_PROVIDER_BUTTON_SURFACE_CLASS: Record<
 
 function AuthProviderIcon({ provider }: { provider: SocialAuthProviderConfig }) {
   if (provider.id === "telegram") {
-    return <Send className="w-5 h-5 text-primary" aria-hidden="true" />;
+    return (
+      <span
+        className="flex h-6 w-6 shrink-0 items-center justify-center text-primary"
+        aria-hidden="true"
+        data-testid={`auth-provider-icon-${provider.id}`}
+      >
+        <Send className="h-5 w-5" />
+      </span>
+    );
   }
 
   if (provider.id === "facebook") {
     return (
-      <span
-        className="flex h-5 w-5 items-center justify-center font-bold text-primary"
+      <svg
+        className="h-6 w-6 shrink-0 text-primary"
+        viewBox="0 0 24 24"
+        fill="currentColor"
         aria-hidden="true"
+        data-testid={`auth-provider-icon-${provider.id}`}
       >
-        f
-      </span>
+        <path d="M14.55 8.18V6.95c0-.6.4-.74.68-.74h1.73V3.08L14.58 3c-2.64 0-4.08 1.57-4.08 4.44v.74H7.82v3.18h2.68V21h3.3v-9.64h2.76l.37-3.18h-3.1Z" />
+      </svg>
     );
   }
 
@@ -57,12 +68,17 @@ function AuthProviderIcon({ provider }: { provider: SocialAuthProviderConfig }) 
   }
 
   return (
-    <span
-      className="flex h-5 w-5 items-center justify-center font-semibold text-primary"
+    <svg
+      className="h-6 w-6 shrink-0"
+      viewBox="0 0 24 24"
       aria-hidden="true"
+      data-testid={`auth-provider-icon-${provider.id}`}
     >
-      G
-    </span>
+      <path fill="#4285F4" d="M21.6 12.23c0-.75-.07-1.47-.19-2.16H12v4.09h5.38a4.6 4.6 0 0 1-2 3.02v2.5h3.24c1.89-1.74 2.98-4.3 2.98-7.45Z" />
+      <path fill="#34A853" d="M12 22c2.7 0 4.96-.89 6.62-2.42l-3.24-2.5c-.9.6-2.05.95-3.38.95-2.6 0-4.8-1.76-5.59-4.12H3.07v2.58A10 10 0 0 0 12 22Z" />
+      <path fill="#FBBC05" d="M6.41 13.91A6 6 0 0 1 6.1 12c0-.66.11-1.31.31-1.91V7.51H3.07A10 10 0 0 0 2 12c0 1.61.39 3.14 1.07 4.49l3.34-2.58Z" />
+      <path fill="#EA4335" d="M12 5.97c1.47 0 2.8.51 3.84 1.5l2.86-2.86A9.61 9.61 0 0 0 12 2a10 10 0 0 0-8.93 5.51l3.34 2.58C7.2 7.73 9.4 5.97 12 5.97Z" />
+    </svg>
   );
 }
 

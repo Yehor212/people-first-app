@@ -2,6 +2,8 @@ import { motion } from "framer-motion";
 import { ArrowRight, Check } from "lucide-react";
 import { type MouseEvent, useEffect } from "react";
 
+import { EntryGateBackdrop } from "@/components/EntryGateBackdrop";
+import { EntryThemeSwitcher } from "@/components/EntryThemeSwitcher";
 import { ZenFlowBrandMark } from "@/components/ZenFlowBrandMark";
 import { resetEntryGateScroll } from "@/components/entryGateScroll";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -72,7 +74,7 @@ export function LanguageSelector({ onComplete }: LanguageSelectorProps) {
       data-testid="language-selector-screen"
       data-entry-theme={appliedTheme}
     >
-      <div aria-hidden="true" className="entry-gate-aurora" />
+      <EntryGateBackdrop animated={animated} />
 
       <motion.section
         className="relative z-10 flex w-full max-w-lg flex-col gap-4"
@@ -93,6 +95,8 @@ export function LanguageSelector({ onComplete }: LanguageSelectorProps) {
             {t.welcomeTitle}
           </h1>
         </header>
+
+        <EntryThemeSwitcher />
 
         <section
           className="entry-glass-panel rounded-3xl border border-border/50 p-3 shadow-2xl sm:p-3.5"

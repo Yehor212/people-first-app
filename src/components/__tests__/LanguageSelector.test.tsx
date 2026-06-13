@@ -100,6 +100,15 @@ vi.mock("framer-motion", async () => {
           </div>
         );
       }),
+      span: React.forwardRef<HTMLSpanElement, React.ComponentProps<"span">>(
+        function MotionSpan({ children, ...props }, ref) {
+          return (
+            <span ref={ref} {...props}>
+              {children}
+            </span>
+          );
+        }
+      ),
       section: React.forwardRef<HTMLElement, React.ComponentProps<"section">>(
         function MotionSection({ children, ...props }, ref) {
           return (
@@ -170,13 +179,25 @@ describe("LanguageSelector", () => {
     expect(onComplete).toHaveBeenCalledTimes(1);
   });
 
-  it("keeps the entry step free of unrelated theme controls", () => {
+  it("lets users choose light, dark, or system theme from the entry step", () => {
     render(<LanguageSelector onComplete={vi.fn()} />);
 
-    expect(screen.queryByRole("radio", { name: "Light" })).toBeNull();
-    expect(screen.queryByRole("radio", { name: "Dark" })).toBeNull();
-    expect(screen.queryByRole("radio", { name: "System" })).toBeNull();
-    expect(themeState.setTheme).not.toHaveBeenCalled();
-    expect(themeState.setThemePreference).not.toHaveBeenCalled();
+    const themeGroup = screen.getByRole("radiogroup", { name: "Appearance" });
+    expect(within(themeGroup).getByRole("radio", { name: "Light" })).toHaveAttribute(
+      "aria-checked",
+      "false"
+    );
+    expect(within(themeGroup).getByRole("radio", { name: "Dark" })).toHaveAttribute(
+      "aria-checked",
+      "true"
+    );
+    expect(within(themeGroup).getByRole("radio", { name: "System" })).toHaveAttribute(
+      "aria-checked",
+      "false"
+    );
+
+    fireEvent.click(within(themeGroup).getByRole("radio", { name: "Light" }));
+    expect(themeState.setTheme).toHaveBeenCalledWith("paper");
+    expect(themeState.setThemePreference).toHaveBeenCalledWith("light");
   });
 });
