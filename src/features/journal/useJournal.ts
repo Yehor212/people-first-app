@@ -95,6 +95,7 @@ export function useJournal() {
       content: data.content,
       stickers: data.stickers,
       photoIds: data.photoIds,
+      audioIds: data.audioIds,
       mood: data.mood,
       tags: data.tags,
     });

@@ -1,8 +1,11 @@
+import { readFileSync } from "node:fs";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { formatDate } from "@/lib/utils";
 import { JournalCalendar } from "../JournalCalendar";
 import { JournalCalendarFull } from "../JournalCalendarFull";
+
+const journalCalendarSource = readFileSync("src/features/journal/JournalCalendar.tsx", "utf8");
 
 vi.mock("@/contexts/LanguageContext", () => ({
   useLanguage: () => ({
@@ -99,5 +102,11 @@ describe("journal release trace calendar markers", () => {
 
     expect(screen.getByTestId("journal-release-trace-dot")).toBeInTheDocument();
     expect(screen.queryByTestId("journal-calendar-full-mood-orb")).not.toBeInTheDocument();
+  });
+
+  it("keeps strip day button hit targets stable during entrance animation", () => {
+    expect(journalCalendarSource).toContain("initial={animate ? { opacity: 0 } : false}");
+    expect(journalCalendarSource).toContain("snap-start flex h-[46px] w-[46px] flex-none");
+    expect(journalCalendarSource).not.toContain("initial={animate ? { opacity: 0, scale: 0.8 } : false}");
   });
 });

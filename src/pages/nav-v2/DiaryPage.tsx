@@ -197,7 +197,6 @@ export const DiaryPage = memo(function DiaryPage({
             hideCloseButton
             presentation="page"
             initialEntrySuggestion={initialEntrySuggestion}
-            autoCreateInitialEntry
             onInitialEntrySuggestionConsumed={consumePendingMoodContext}
             loadingTheme={appliedTheme}
             onOpenNavMenu={onOpenNavMenu}

@@ -182,7 +182,7 @@ export const DiaryEntrySuggestionCard = memo(function DiaryEntrySuggestionCard({
             <button
               type="button"
               onClick={onDismiss}
-              className="inline-flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-2xl text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              className="inline-flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-2xl text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
               aria-label={tx.orbSkip || "Later"}
             >
               <X className="h-4 w-4" aria-hidden="true" />

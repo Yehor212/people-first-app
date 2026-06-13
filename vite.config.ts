@@ -399,9 +399,6 @@ export default defineConfig(({ mode }) => {
           chunkFileNames: "assets/[name]-[hash].js",
           assetFileNames: "assets/[name]-[hash].[ext]",
 
-          // Merge tiny chunks < 20 KB into neighbors — reduces HTTP overhead and
-          // improves compression ratio. Vite 6 stable option.
-          experimentalMinChunkSize: 20_000,
         },
       },
 

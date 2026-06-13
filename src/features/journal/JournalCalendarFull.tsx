@@ -200,7 +200,7 @@ export function JournalCalendarFull({
           {!isCurrentMonth && (
             <button
               onClick={goToToday}
-              className="text-[10px] font-medium text-primary px-2 py-0.5 rounded-full bg-primary/10"
+              className="flex h-[44px] items-center justify-center rounded-full bg-primary/10 px-3 text-[10px] font-medium text-primary"
             >
               {ts.journalCalendarToday || "Today"}
             </button>
@@ -248,7 +248,7 @@ export function JournalCalendarFull({
               ? { duration: 0.3, type: "spring", stiffness: 260, damping: 25 }
               : { duration: 0 }
           }
-          className="grid grid-cols-7 gap-0.5"
+          className="grid grid-cols-[repeat(7,minmax(44px,1fr))] gap-0.5"
         >
           {calendarDays.map((cell, idx) => {
             if (!cell.date) {
@@ -285,7 +285,7 @@ export function JournalCalendarFull({
                 className={cn(
                   "aspect-square rounded-xl flex flex-col items-center justify-center gap-0.5",
                   "motion-safe:transition-all motion-safe:duration-150 relative overflow-hidden",
-                  "min-h-[36px]",
+                  "min-h-[44px] min-w-[44px]",
                   isFuture && "opacity-30",
                   isSelected
                     ? "bg-primary/15 shadow-sm ring-1 ring-primary/30"

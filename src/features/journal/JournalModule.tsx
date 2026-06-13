@@ -83,6 +83,13 @@ function getPrefillSpaceIds(prefill: JournalEntryPrefill | null | undefined): st
   );
 }
 
+function getSuggestionDismissKey(suggestion: JournalEntrySuggestion, index = 0): string {
+  return (
+    suggestion.id ||
+    `${suggestion.source}-${suggestion.committedAt || suggestion.prefill.date || index}`
+  );
+}
+
 // Lazy-load JournalStats because it is a dense stats surface.
 const LazyJournalStats = lazyWithRetry(
   () => import("./JournalStats").then((m) => ({ default: m.JournalStats })),
@@ -220,7 +227,7 @@ function JournalCompactEmptyListShell({
         <button
           type="button"
           onClick={onNewEntry}
-          className="mt-4 inline-flex min-h-[44px] items-center justify-center gap-2 rounded-2xl bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-[0_14px_34px_hsl(var(--primary)/0.20)] motion-safe:transition-transform active:scale-[0.98]"
+          className="mt-4 inline-flex min-h-[44px] items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-[0_14px_34px_hsl(var(--primary)/0.20)] motion-safe:transition-transform active:scale-[0.98]"
         >
           <Plus className="h-4 w-4" aria-hidden="true" />
           {ts.journalNewEntry || "New entry"}
@@ -255,7 +262,7 @@ function JournalPageEmptyListShell({
         <button
           type="button"
           onClick={onNewEntry}
-          className="mt-5 inline-flex min-h-[44px] items-center justify-center gap-2 rounded-2xl bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-[0_14px_34px_hsl(var(--primary)/0.20)] motion-safe:transition-transform active:scale-[0.98]"
+          className="mt-5 inline-flex min-h-[44px] items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground shadow-[0_14px_34px_hsl(var(--primary)/0.20)] motion-safe:transition-transform active:scale-[0.98]"
         >
           <Plus className="h-4 w-4" aria-hidden="true" />
           {ts.journalNewEntry || "New entry"}
@@ -312,7 +319,7 @@ export const JournalModule = memo(function JournalModule({
   const mobileHeaderMenuClass =
     "flex h-12 w-12 shrink-0 touch-manipulation items-center justify-center rounded-full border border-border/50 bg-card/70 p-0 text-foreground/90 shadow-[0_14px_34px_hsl(var(--foreground)/0.16)] backdrop-blur-xl [-webkit-backdrop-filter:blur(18px)] motion-safe:transition-[transform,background-color,border-color,color,box-shadow] motion-safe:duration-200 motion-safe:ease-out hover:bg-card/85 active:scale-95 active:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2";
   const mobileHeaderActionClass =
-    "press-stable flex min-h-[44px] min-w-[44px] touch-manipulation items-center justify-center rounded-xl p-2 text-muted-foreground motion-safe:transition-[background-color,color,box-shadow] motion-safe:duration-150 hover:bg-muted/50 hover:text-foreground active:bg-muted/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/45";
+    "press-stable flex h-[44px] w-[44px] shrink-0 touch-manipulation items-center justify-center rounded-xl p-0 text-muted-foreground motion-safe:transition-[background-color,color,box-shadow] motion-safe:duration-150 hover:bg-muted/50 hover:text-foreground active:bg-muted/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/45";
   const rewardUser = useGamificationStore((s) => s.rewardUser);
   const moodEntries = useUserDataStore((s) => s.moods);
   const [moduleState, setModuleState] = useState<ModuleState>(
@@ -618,11 +625,12 @@ export const JournalModule = memo(function JournalModule({
   );
 
   const handleUseInitialEntrySuggestion = useCallback(() => {
-    if (!initialSuggestionRef.current) return;
+    const suggestion = initialSuggestionRef.current;
+    if (!suggestion) return;
     initialSuggestionConsumedRef.current = true;
-    handleNewEntry();
+    handleNewEntryWithPrefill(suggestion.prefill);
     onInitialEntrySuggestionConsumed?.();
-  }, [handleNewEntry, onInitialEntrySuggestionConsumed]);
+  }, [handleNewEntryWithPrefill, onInitialEntrySuggestionConsumed]);
 
   const handleDismissInitialEntrySuggestion = useCallback(() => {
     initialSuggestionConsumedRef.current = true;
@@ -679,14 +687,13 @@ export const JournalModule = memo(function JournalModule({
   }, [journal.view, initialEntrySuggestion]);
 
   const activeEntryPrefill: JournalEntryPrefill | null = !journal.activeEntry
-    ? (portalEntryPrefill ?? initialSuggestionRef.current?.prefill ?? null)
+    ? portalEntryPrefill
     : null;
 
   const isLgScreen = useMediaQuery("(min-width: 1024px)");
   const showEntrySuggestionCards = isLgScreen;
 
   const hasInitialEntrySuggestion =
-    showEntrySuggestionCards &&
     !!initialSuggestionRef.current &&
     !initialSuggestionConsumedRef.current &&
     journal.view === "list";
@@ -695,25 +702,22 @@ export const JournalModule = memo(function JournalModule({
     () =>
       showEntrySuggestionCards
         ? extraSuggestions.filter((suggestion, index) => {
-            const key = suggestion.id || `${suggestion.source}-${suggestion.committedAt || index}`;
-            return !dismissedSuggestionIds.includes(key);
+            return !dismissedSuggestionIds.includes(getSuggestionDismissKey(suggestion, index));
           })
         : [],
     [dismissedSuggestionIds, extraSuggestions, showEntrySuggestionCards],
   );
 
   const handleUseExtraSuggestion = useCallback(
-    (suggestion: JournalEntrySuggestion) => {
+    (suggestion: JournalEntrySuggestion, index: number) => {
+      setDismissedSuggestionIds((prev) => [...prev, getSuggestionDismissKey(suggestion, index)]);
       handleNewEntryWithPrefill(suggestion.prefill);
     },
     [handleNewEntryWithPrefill],
   );
 
-  const handleDismissExtraSuggestion = useCallback((suggestion: JournalEntrySuggestion) => {
-    const key =
-      suggestion.id ||
-      `${suggestion.source}-${suggestion.committedAt || suggestion.prefill.date || "draft"}`;
-    setDismissedSuggestionIds((prev) => [...prev, key]);
+  const handleDismissExtraSuggestion = useCallback((suggestion: JournalEntrySuggestion, index: number) => {
+    setDismissedSuggestionIds((prev) => [...prev, getSuggestionDismissKey(suggestion, index)]);
   }, []);
 
   const handleOpenEntry = useCallback(
@@ -1463,7 +1467,7 @@ export const JournalModule = memo(function JournalModule({
                       <div className="flex items-center gap-1">
                         <button
                           onClick={handleOpenStats}
-                          className="p-2 rounded-lg hover:bg-muted/50 text-muted-foreground min-w-[44px] min-h-[44px] flex items-center justify-center"
+                          className="flex h-[44px] w-[44px] items-center justify-center rounded-lg p-0 text-muted-foreground hover:bg-muted/50"
                           title={ts.journalStatsTitle || "Statistics"}
                           aria-label={ts.journalStatsTitle || "Statistics"}
                         >
@@ -1471,7 +1475,7 @@ export const JournalModule = memo(function JournalModule({
                         </button>
                         <button
                           onClick={handleShellSettingsRequest}
-                          className="p-2 rounded-lg hover:bg-muted/50 text-muted-foreground min-w-[44px] min-h-[44px] flex items-center justify-center"
+                          className="flex h-[44px] w-[44px] items-center justify-center rounded-lg p-0 text-muted-foreground hover:bg-muted/50"
                           title={ts.journalSettings || "Diary settings"}
                           aria-label={ts.settings || "Settings"}
                         >
@@ -1480,7 +1484,7 @@ export const JournalModule = memo(function JournalModule({
                         {!hideCloseButton && (
                           <button
                             onClick={handleClose}
-                            className="p-2 rounded-lg hover:bg-muted/50 min-w-[44px] min-h-[44px] flex items-center justify-center"
+                            className="flex h-[44px] w-[44px] items-center justify-center rounded-lg p-0 hover:bg-muted/50"
                             aria-label={ts.close || "Close"}
                           >
                             <X className="w-5 h-5 text-foreground" />
@@ -1700,15 +1704,12 @@ export const JournalModule = memo(function JournalModule({
                           />
                         ) : null}
 
-                        {!autoCreateInitialEntry && visibleExtraSuggestions.map((suggestion) => (
+                        {!autoCreateInitialEntry && visibleExtraSuggestions.map((suggestion, index) => (
                           <DiaryEntrySuggestionCard
-                            key={
-                              suggestion.id ||
-                              `${suggestion.source}-${suggestion.committedAt || suggestion.prefill.date || "draft"}`
-                            }
+                            key={getSuggestionDismissKey(suggestion, index)}
                             suggestion={suggestion}
-                            onStart={() => handleUseExtraSuggestion(suggestion)}
-                            onDismiss={() => handleDismissExtraSuggestion(suggestion)}
+                            onStart={() => handleUseExtraSuggestion(suggestion, index)}
+                            onDismiss={() => handleDismissExtraSuggestion(suggestion, index)}
                           />
                         ))}
 
@@ -2001,18 +2002,15 @@ export const JournalModule = memo(function JournalModule({
                               </div>
                             ) : null}
 
-                            {!autoCreateInitialEntry && visibleExtraSuggestions.map((suggestion) => (
+                            {!autoCreateInitialEntry && visibleExtraSuggestions.map((suggestion, index) => (
                               <div
-                                key={
-                                  suggestion.id ||
-                                  `${suggestion.source}-${suggestion.committedAt || suggestion.prefill.date || "draft"}`
-                                }
+                                key={getSuggestionDismissKey(suggestion, index)}
                                 className="mb-3"
                               >
                                 <DiaryEntrySuggestionCard
                                   suggestion={suggestion}
-                                  onStart={() => handleUseExtraSuggestion(suggestion)}
-                                  onDismiss={() => handleDismissExtraSuggestion(suggestion)}
+                                  onStart={() => handleUseExtraSuggestion(suggestion, index)}
+                                  onDismiss={() => handleDismissExtraSuggestion(suggestion, index)}
                                   compact
                                 />
                               </div>

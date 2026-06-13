@@ -249,6 +249,7 @@ describe('saveEntry', () => {
       content: 'Body text',
       stickers: ['star'],
       photoIds: ['p1'],
+      audioIds: ['a1'],
       tags: ['tag1', 'tag2'],
       mood: 'great',
     });
@@ -257,6 +258,7 @@ describe('saveEntry', () => {
     expect(result.stickers).toEqual(['star']);
     expect(result.tags).toEqual(['tag1', 'tag2']);
     expect(result.photoIds).toEqual(['p1']);
+    expect(result.audioIds).toEqual(['a1']);
   });
 });
 

@@ -49,7 +49,7 @@ export const SidebarCompact = memo(function SidebarCompact({
       <div className="flex flex-col items-center gap-1 border-b border-border/20 px-2 pb-2 pt-3">
         <button
           onClick={onShowList}
-          className="p-2 rounded-lg hover:bg-muted/50 text-muted-foreground min-w-[44px] min-h-[44px] flex items-center justify-center"
+          className="flex h-[44px] w-[44px] items-center justify-center rounded-lg p-0 text-muted-foreground hover:bg-muted/50"
           title={ts.journalTitle || "Diary"}
           aria-label={ts.journalTitle || "Diary"}
         >
@@ -57,7 +57,7 @@ export const SidebarCompact = memo(function SidebarCompact({
         </button>
         <button
           onClick={onOpenStats}
-          className="p-2 rounded-lg hover:bg-muted/50 text-muted-foreground min-w-[44px] min-h-[44px] flex items-center justify-center"
+          className="flex h-[44px] w-[44px] items-center justify-center rounded-lg p-0 text-muted-foreground hover:bg-muted/50"
           title={ts.journalStatsTitle || "Statistics"}
           aria-label={ts.journalStatsTitle || "Statistics"}
         >
@@ -65,7 +65,7 @@ export const SidebarCompact = memo(function SidebarCompact({
         </button>
         <button
           onClick={onOpenSettings}
-          className="p-2 rounded-lg hover:bg-muted/50 text-muted-foreground min-w-[44px] min-h-[44px] flex items-center justify-center"
+          className="flex h-[44px] w-[44px] items-center justify-center rounded-lg p-0 text-muted-foreground hover:bg-muted/50"
           title={ts.journalSettings || "Settings"}
           aria-label={ts.settings || "Settings"}
         >
@@ -83,7 +83,7 @@ export const SidebarCompact = memo(function SidebarCompact({
         <div className="flex flex-col items-center gap-1">
           <button
             onClick={onToggleSidebar}
-            className="p-2 rounded-lg hover:bg-muted/50 text-muted-foreground min-w-[44px] min-h-[44px] flex items-center justify-center"
+            className="flex h-[44px] w-[44px] items-center justify-center rounded-lg p-0 text-muted-foreground hover:bg-muted/50"
             title={toggleLabel}
             aria-label={toggleLabel}
             aria-expanded={!collapsed}
@@ -101,7 +101,7 @@ export const SidebarCompact = memo(function SidebarCompact({
         <div className="mt-2 flex flex-col items-center">
         <button
           onClick={onNewEntry}
-          className="p-2 rounded-lg hover:bg-primary/10 text-primary min-w-[44px] min-h-[44px] flex items-center justify-center"
+          className="flex h-[44px] w-[44px] items-center justify-center rounded-lg p-0 text-primary hover:bg-primary/10"
           title={ts.journalNewEntry || "New entry"}
           aria-label={ts.journalNewEntry || "New entry"}
         >

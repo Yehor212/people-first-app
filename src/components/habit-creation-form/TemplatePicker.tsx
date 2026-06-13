@@ -83,7 +83,7 @@ export function TemplatePicker({
             const symbol = getV2HabitTemplateSymbol(template.id);
             const role = getHabitStarterPlayTone(template.id).role;
             const tone = getRoleTone(role);
-            const roleStyle = getRoleStyleVars(role) as CSSProperties;
+            const roleStyle = getRoleStyleVars(role) as unknown as CSSProperties;
             return isPrimaryCTA ? (
               <motion.button
                 key={template.id}
@@ -157,7 +157,7 @@ export function TemplatePicker({
           className="flex min-h-[48px] w-full items-center justify-between rounded-[18px] border border-[hsl(var(--zf-role-space)/0.34)] bg-[radial-gradient(circle_at_12%_0%,hsl(var(--zf-role-space)/0.20),transparent_34%),linear-gradient(135deg,hsl(var(--card)/0.76),hsl(var(--background)/0.58))] px-3 py-3 text-sm font-semibold text-[hsl(var(--foreground))] shadow-[inset_0_1px_0_hsl(var(--foreground)/0.10),0_14px_34px_-30px_hsl(var(--zf-role-space)/0.70)] motion-safe:transition-colors hover:border-[hsl(var(--zf-role-space)/0.48)] hover:bg-[hsl(var(--zf-role-space)/0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--zf-role-space)/0.62)] focus-visible:ring-offset-2"
           data-card="ritual-custom-habit-action"
           data-visual-role="space"
-          style={getRoleStyleVars("space") as CSSProperties}
+          style={getRoleStyleVars("space") as unknown as CSSProperties}
         >
           <span className="flex min-w-0 items-center gap-2">
             <Settings2 className="h-5 w-5 shrink-0 text-[hsl(var(--zf-role-space))]" aria-hidden="true" />
