@@ -190,7 +190,9 @@ output/playwright/habits-*.png
 output/playwright/portal-*.png
 output/playwright/v1-*.png
 output/playwright/*.png
+output/playwright/*/
 output/playwright/public-v2/
+output/xcode-derived/
 output/snyk-code*.err
 output/snyk-*.json
 output/snyk-tracked-scan*/
