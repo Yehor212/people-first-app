@@ -75,6 +75,7 @@ const ACTION_ICONS = {
   burn: Sparkles,
   focus: Target,
 } satisfies Record<MemoryPortalAction, typeof PenLine>;
+const ACTION_FAN_LONG_PRESS_MS = 430;
 
 const FAN_POSITIONS = [
   { x: -160, y: -86 },
@@ -189,6 +190,7 @@ export const MemoryPortalCanvas = memo(function MemoryPortalCanvas({
   const [capsuleOpen, setCapsuleOpen] = useState(false);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const startYRef = useRef<number | null>(null);
+  const pointerDownAtRef = useRef<number | null>(null);
   const longPressTriggeredRef = useRef(false);
   const prevSelectedDateRef = useRef<string | null>(selectedDate);
   const safeAreaStyle = {
@@ -221,13 +223,15 @@ export const MemoryPortalCanvas = memo(function MemoryPortalCanvas({
 
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
+      event.preventDefault();
+      event.stopPropagation();
       setActionFanOpen(false);
       setCapsuleOpen(false);
       setActiveScene(null);
     };
 
-    window.addEventListener("keydown", handleEscape);
-    return () => window.removeEventListener("keydown", handleEscape);
+    document.addEventListener("keydown", handleEscape, true);
+    return () => document.removeEventListener("keydown", handleEscape, true);
   }, [actionFanOpen, activeScene, capsuleOpen]);
 
   const openFan = useCallback(() => {
@@ -280,9 +284,10 @@ export const MemoryPortalCanvas = memo(function MemoryPortalCanvas({
   const handlePointerDown = useCallback(
     (event: React.PointerEvent<HTMLButtonElement>) => {
       startYRef.current = event.clientY;
+      pointerDownAtRef.current = Date.now();
       longPressTriggeredRef.current = false;
       if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
-      longPressTimerRef.current = setTimeout(openFan, 430);
+      longPressTimerRef.current = setTimeout(openFan, ACTION_FAN_LONG_PRESS_MS);
     },
     [openFan]
   );
@@ -300,12 +305,18 @@ export const MemoryPortalCanvas = memo(function MemoryPortalCanvas({
   const handlePointerEnd = useCallback(() => {
     if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
     startYRef.current = null;
+    const heldForMs = pointerDownAtRef.current == null ? 0 : Date.now() - pointerDownAtRef.current;
+    pointerDownAtRef.current = null;
+    if (heldForMs >= ACTION_FAN_LONG_PRESS_MS) {
+      openFan();
+      return;
+    }
     if (longPressTriggeredRef.current) {
       longPressTriggeredRef.current = false;
       return;
     }
     startEntry("write");
-  }, [startEntry]);
+  }, [openFan, startEntry]);
 
   const handleCoreKeyDown = useCallback(
     (event: React.KeyboardEvent<HTMLButtonElement>) => {
