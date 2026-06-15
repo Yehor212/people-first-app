@@ -3307,6 +3307,7 @@ export const uk: Translations = {
   navV2HabitsKeepGoing: "Імпульс твій",
   navV2HabitsOneHabitLeft: "Залишилася одна звичка",
   navV2HabitsHabitsLeft: "Залишилось {count} звичок",
+  navV2HabitsShowMoreCount: "Показати ще {count}",
   navV2HabitsOfCompleted: "з {total} виконано",
   navV2HabitsOnboardingStep1: "Ким хочеш бути",
   navV2HabitsOnboardingStep2: "Прив’яжи до моменту",

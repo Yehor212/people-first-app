@@ -144,6 +144,7 @@ src-tauri/target/
 # Claude Code enforcement tokens (one-time gate files)
 .preflight-token
 .test-first-token
+.skill-routing-token
 .postflight-done
 .fullcycle-active
 .fullcycle-laws-read
@@ -177,6 +178,8 @@ src-tauri/target/
 # Browser screenshot debug artifacts (Playwright MCP, ad-hoc verification)
 .playwright-cli/
 .codex-artifacts/
+.codex/auto-context/
+.codex/semgrep-venv/
 artifacts/
 test-artifacts/
 .codex-v2-*.png

@@ -249,5 +249,12 @@ describe("AuthScreen provider buttons", () => {
       "max-w-[22rem]",
       "grid-cols-[2rem_minmax(0,1fr)_2rem]"
     );
+    for (const provider of ["google", "facebook", "telegram"]) {
+      expect(screen.getByTestId(`auth-provider-icon-rail-${provider}`)).toHaveClass(
+        "h-8",
+        "w-8",
+        "justify-self-center",
+      );
+    }
   });
 });

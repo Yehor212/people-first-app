@@ -3270,6 +3270,7 @@ const hebrewOverrides: Partial<Translations> = {
   navV2HabitsKeepGoing: "המומנטום שלך",
   navV2HabitsOneHabitLeft: "נותר הרגל אחד",
   navV2HabitsHabitsLeft: "נותרו {count} הרגלים",
+  navV2HabitsShowMoreCount: "הצג עוד {count}",
   navV2HabitsOfCompleted: "מתוך {total} הושלמו",
   navV2HabitsOnboardingStep1: "בחר מי תהפוך להיות",
   navV2HabitsOnboardingStep2: "חבר לרגע אמיתי",

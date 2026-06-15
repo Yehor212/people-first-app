@@ -19,6 +19,7 @@ const PLAIN_STATS_KEYS = [
   "habitStatsRecentProof",
   "navV2HabitsAddCue",
   "navV2HabitsIdentityIntentions",
+  "navV2HabitsShowMoreCount",
 ] as const;
 
 describe("habit stats plain-language copy", () => {

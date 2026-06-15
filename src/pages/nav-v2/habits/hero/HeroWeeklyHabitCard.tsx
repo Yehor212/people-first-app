@@ -1,4 +1,4 @@
-import { memo, useMemo, useState, type CSSProperties } from "react";
+import { memo, useEffect, useMemo, useState, type CSSProperties } from "react";
 import { AnimatedFire } from "@/components/compact-habit-card/AnimatedFire";
 import { MiniWeekRow } from "@/components/habit-hub/MiniWeekRow";
 import { IdentityVisual } from "@/components/IdentityIconPicker";
@@ -13,6 +13,7 @@ import {
   isHabitCompletedOnDate,
 } from "@/lib/habits";
 import { getCurrentStreak } from "@/lib/habitScore";
+import { scheduleIdle, type IdleHandle } from "@/lib/scheduleIdle";
 import { getToday } from "@/lib/utils";
 import {
   getHabitRoleTone,
@@ -29,6 +30,7 @@ import { isHabitDueOnDate, normalizeHabitSchedule } from "@/lib/habitScheduling"
 import type { Habit } from "@/types";
 import { formatLocalizedCount } from "@/features/journal";
 import { ChevronDown } from "lucide-react";
+import { HabitIconVisual } from "./HabitIconVisual";
 
 function getCurrentISOWeek(todayStr: string): string[] {
   const [year, month, day] = todayStr.split("-").map(Number);
@@ -45,6 +47,60 @@ function getCurrentISOWeek(todayStr: string): string[] {
     const d = String(date.getDate()).padStart(2, "0");
     return `${y}-${m}-${d}`;
   });
+}
+
+interface QueuedStreakTask {
+  cancelled: boolean;
+  run: () => void;
+}
+
+const queuedStreakTasks: QueuedStreakTask[] = [];
+let queuedStreakHandle: IdleHandle | null = null;
+const STREAK_IDLE_TIMEOUT_MS = 240;
+const STREAK_IDLE_MIN_DELAY_MS = 80;
+
+function pruneCancelledStreakTasks() {
+  while (queuedStreakTasks[0]?.cancelled) {
+    queuedStreakTasks.shift();
+  }
+}
+
+function pumpQueuedStreakTasks() {
+  pruneCancelledStreakTasks();
+  if (queuedStreakHandle || queuedStreakTasks.length === 0) {
+    return;
+  }
+
+  queuedStreakHandle = scheduleIdle(() => {
+    queuedStreakHandle = null;
+    pruneCancelledStreakTasks();
+    const task = queuedStreakTasks.shift();
+    if (task && !task.cancelled) {
+      task.run();
+    }
+    pruneCancelledStreakTasks();
+    pumpQueuedStreakTasks();
+  }, STREAK_IDLE_TIMEOUT_MS, STREAK_IDLE_MIN_DELAY_MS);
+}
+
+function scheduleQueuedStreakTask(run: () => void): IdleHandle {
+  const task: QueuedStreakTask = { cancelled: false, run };
+  queuedStreakTasks.push(task);
+  pumpQueuedStreakTasks();
+
+  return {
+    cancel: () => {
+      task.cancelled = true;
+      const index = queuedStreakTasks.indexOf(task);
+      if (index >= 0) {
+        queuedStreakTasks.splice(index, 1);
+      }
+      if (queuedStreakTasks.length === 0) {
+        queuedStreakHandle?.cancel();
+        queuedStreakHandle = null;
+      }
+    },
+  };
 }
 
 interface HeroWeeklyHabitCardProps {
@@ -96,7 +152,21 @@ export const HeroWeeklyHabitCard = memo(function HeroWeeklyHabitCard({
       }) as CSSProperties,
     [isCollapsed, isCompletedToday, roleColor, visualRole],
   );
-  const streak = useMemo(() => getCurrentStreak(habit), [habit]);
+  const [streak, setStreak] = useState(0);
+  useEffect(() => {
+    let cancelled = false;
+    setStreak(0);
+    const handle = scheduleQueuedStreakTask(() => {
+      if (!cancelled) {
+        setStreak(getCurrentStreak(habit));
+      }
+    });
+
+    return () => {
+      cancelled = true;
+      handle.cancel();
+    };
+  }, [habit]);
   const isNumeric = habit.habitType === "numerical";
   const tx = t as unknown as Record<string, string>;
   const identityVerb = (habit.identityVerb ?? "").trim();
@@ -187,7 +257,7 @@ export const HeroWeeklyHabitCard = memo(function HeroWeeklyHabitCard({
   return (
     <article
       role="listitem"
-      aria-label={habit.icon ? `${habit.icon} ${habit.name}` : habit.name}
+      aria-label={habit.name}
       className={
         "relative overflow-hidden rounded-[26px] border border-border/55 bg-card shadow-sm " +
         tone.surfaceClass +
@@ -228,7 +298,7 @@ export const HeroWeeklyHabitCard = memo(function HeroWeeklyHabitCard({
             data-testid={`hero-weekly-card-${habit.id}-emoji-check`}
             data-slot="weekly-check"
           >
-            {habit.icon}
+            <HabitIconVisual value={habit.icon} />
           </button>
           <div className="min-w-0 self-center">
             <p

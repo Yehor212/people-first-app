@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { NavV2Orchestrator } from "../NavV2Orchestrator";
 import { readFileSync } from "node:fs";
 
@@ -56,6 +56,14 @@ vi.mock("@/lib/androidBackHandler", () => ({
   registerModalCloseCallback: () => () => undefined,
 }));
 
+vi.mock("@/lib/motion/morph", () => ({
+  morph: vi.fn(async (_name: string, fn: () => void | Promise<void>) => {
+    await fn();
+  }),
+}));
+
+import { morph } from "@/lib/motion/morph";
+
 // Mock page shells as lightweight markers
 vi.mock("@/pages/nav-v2/OrbPage", () => ({
   OrbPage: () => <div data-testid="orb-page">orb</div>,
@@ -75,9 +83,11 @@ vi.mock("../SidebarV2", () => ({
   SidebarV2: ({
     collapsed,
     forceVisible,
+    onPageChange,
   }: {
     collapsed?: boolean;
     forceVisible?: boolean;
+    onPageChange: (page: "habits") => void;
   }) => (
     <nav
       data-testid="sidebar-v2"
@@ -85,12 +95,28 @@ vi.mock("../SidebarV2", () => ({
       data-force-visible={forceVisible ? "true" : "false"}
     >
       sidebar
+      <button type="button" onClick={() => onPageChange("habits")}>
+        Habits
+      </button>
     </nav>
   ),
 }));
 vi.mock("../DrawerV2", () => ({
-  DrawerV2: ({ open }: { open: boolean }) =>
-    open ? <div data-testid="drawer-v2-open">drawer open</div> : null,
+  DrawerV2: ({
+    open,
+    onPageChange,
+  }: {
+    open: boolean;
+    onPageChange: (page: "habits") => void;
+  }) =>
+    open ? (
+      <div data-testid="drawer-v2-open">
+        drawer open
+        <button type="button" onClick={() => onPageChange("habits")}>
+          Habits
+        </button>
+      </div>
+    ) : null,
 }));
 
 // Critical: we want to prove MobileNavV2 is NEVER rendered.
@@ -106,7 +132,9 @@ vi.mock("../MobileNavV2", () => ({
 describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
   beforeEach(() => {
     // Reset URL between tests so useNavigationV2 starts on /orb
+    window.localStorage.clear();
     window.history.replaceState({}, "", "/");
+    vi.mocked(morph).mockClear();
   });
 
   it("does not mount the desktop sidebar on phone layout", () => {
@@ -136,6 +164,45 @@ describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
     const trigger = screen.getByTestId("nav-v2-open-drawer");
     expect(trigger.className).toContain("hidden");
     expect(trigger.className).not.toContain("md:hidden");
+  });
+
+  it("skips full-page morph when a phone-width browser uses the compact web rail", () => {
+    window.history.replaceState({}, "", "/?nav=v2&dev=true");
+
+    render(<NavV2Orchestrator />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Habits" }));
+
+    expect(screen.getByTestId("nav-v2-orchestrator")).toHaveAttribute(
+      "data-active-page",
+      "habits",
+    );
+    expect(morph).not.toHaveBeenCalled();
+  });
+
+  it("skips full-page morph and defers route mount when phone drawer navigation changes page", async () => {
+    render(<NavV2Orchestrator />);
+
+    fireEvent.click(screen.getByTestId("nav-v2-open-drawer"));
+    fireEvent.click(screen.getByRole("button", { name: "Habits" }));
+
+    expect(screen.getByTestId("nav-v2-orchestrator")).toHaveAttribute(
+      "data-active-page",
+      "orb",
+    );
+    expect(morph).not.toHaveBeenCalled();
+
+    await waitFor(() =>
+      expect(screen.getByTestId("nav-v2-orchestrator")).toHaveAttribute(
+        "data-active-page",
+        "habits",
+      )
+    );
+    expect(screen.getByTestId("nav-v2-orchestrator")).toHaveAttribute(
+      "data-active-page",
+      "habits",
+    );
+    expect(morph).not.toHaveBeenCalled();
   });
 
   it("does NOT render MobileNavV2 bottom tabs (Phase 3-A.1 correction)", () => {

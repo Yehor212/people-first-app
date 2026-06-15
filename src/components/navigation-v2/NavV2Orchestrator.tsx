@@ -1,8 +1,9 @@
 import { Suspense, lazy, memo, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { haptics } from "@/lib/haptics";
+import { logger } from "@/lib/logger";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useNavigationV2 } from "@/hooks/useNavigationV2";
+import { NAV_V2_PAGES, useNavigationV2 } from "@/hooks/useNavigationV2";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useDeviceTier } from "@/hooks/useDeviceTier";
 import { registerModalCloseCallback } from "@/lib/androidBackHandler";
@@ -12,18 +13,81 @@ import { SidebarV2 } from "./SidebarV2";
 import { DrawerV2 } from "./DrawerV2";
 import type { GratitudeEntry, MoodEntry } from "@/types";
 import type { V2SettingsControls } from "@/pages/nav-v2/SettingsPage";
+import type { NavV2Page } from "@/hooks/useNavigationV2";
 
-const CommandPalette = lazy(() => import("@/components/desktop/CommandPalette"));
-const OrbPage = lazy(() => import("@/pages/nav-v2/OrbPage").then((m) => ({ default: m.OrbPage })));
-const HabitsPage = lazy(() =>
-  import("@/pages/nav-v2/HabitsPage").then((m) => ({ default: m.HabitsPage })),
-);
-const DiaryPage = lazy(() =>
-  import("@/pages/nav-v2/DiaryPage").then((m) => ({ default: m.DiaryPage })),
-);
-const SettingsPage = lazy(() =>
-  import("@/pages/nav-v2/SettingsPage").then((m) => ({ default: m.SettingsPage })),
-);
+const loadCommandPalette = () => import("@/components/desktop/CommandPalette");
+const loadOrbPage = () =>
+  import("@/pages/nav-v2/OrbPage").then((m) => ({ default: m.OrbPage }));
+const loadHabitsPage = () =>
+  import("@/pages/nav-v2/HabitsPage").then((m) => ({ default: m.HabitsPage }));
+const loadDiaryPage = () =>
+  import("@/pages/nav-v2/DiaryPage").then((m) => ({ default: m.DiaryPage }));
+const loadSettingsPage = () =>
+  import("@/pages/nav-v2/SettingsPage").then((m) => ({ default: m.SettingsPage }));
+
+const CommandPalette = lazy(loadCommandPalette);
+const OrbPage = lazy(loadOrbPage);
+const HabitsPage = lazy(loadHabitsPage);
+const DiaryPage = lazy(loadDiaryPage);
+const SettingsPage = lazy(loadSettingsPage);
+
+type RouteLoader = () => Promise<unknown>;
+const NAV_V2_ROUTE_LOADERS: Record<NavV2Page, RouteLoader> = {
+  orb: loadOrbPage,
+  habits: loadHabitsPage,
+  diary: loadDiaryPage,
+  settings: loadSettingsPage,
+};
+const preloadedNavV2Routes = new Map<NavV2Page, Promise<unknown>>();
+
+function preloadNavV2Route(page: NavV2Page) {
+  if (preloadedNavV2Routes.has(page)) {
+    return;
+  }
+
+  const promise = NAV_V2_ROUTE_LOADERS[page]().catch((error) => {
+    preloadedNavV2Routes.delete(page);
+    logger.warn(`[NavV2] Route preload failed for ${page}`, error);
+  });
+  preloadedNavV2Routes.set(page, promise);
+}
+
+function scheduleNavV2RoutePreload(activePage: NavV2Page) {
+  if (typeof window === "undefined") {
+    return () => undefined;
+  }
+
+  let cancelled = false;
+  const run = () => {
+    if (cancelled) {
+      return;
+    }
+    NAV_V2_PAGES.forEach((page) => {
+      if (page !== activePage) {
+        preloadNavV2Route(page);
+      }
+    });
+  };
+
+  const requestIdle = window.requestIdleCallback;
+  const cancelIdle = window.cancelIdleCallback;
+  const scheduleTimeout = window.setTimeout.bind(window);
+  const cancelTimeout = window.clearTimeout.bind(window);
+
+  if (typeof requestIdle === "function" && typeof cancelIdle === "function") {
+    const idleId = requestIdle(run, { timeout: 750 });
+    return () => {
+      cancelled = true;
+      cancelIdle(idleId);
+    };
+  }
+
+  const timerId = scheduleTimeout(run, 120);
+  return () => {
+    cancelled = true;
+    cancelTimeout(timerId);
+  };
+}
 
 /**
  * NavV2Orchestrator — wraps the V2 navigation shell around flag-gated page shells.
@@ -110,10 +174,24 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
   const shouldShowDrawerTrigger = !forceWebNavigation && !unknownPath && activePage !== "diary";
   const MenuIcon = V2_SHELL_ICONS.menu;
 
+  useEffect(() => scheduleNavV2RoutePreload(activePage), [activePage]);
+
   const handleOpenDrawer = useCallback(() => {
+    NAV_V2_PAGES.forEach((page) => {
+      if (page !== activePage) {
+        preloadNavV2Route(page);
+      }
+    });
     void haptics.tabChanged();
     openDrawer();
-  }, [openDrawer]);
+  }, [activePage, openDrawer]);
+
+  const handlePrimaryPageChange = useCallback(
+    (page: NavV2Page) => {
+      setActivePage(page, { skipTransition: tier === "phone" || !isWebNavigation });
+    },
+    [isWebNavigation, setActivePage, tier],
+  );
 
   // Register Android back handler — drawer close > palette close > let native back
   useEffect(() => {
@@ -145,10 +223,10 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
   ]);
   useKeyboardShortcuts(
     {
-      "ctrl+1": () => setActivePage("orb"),
-      "ctrl+2": () => setActivePage("habits"),
-      "ctrl+3": () => setActivePage("diary"),
-      "ctrl+4": () => setActivePage("settings"),
+      "ctrl+1": () => handlePrimaryPageChange("orb"),
+      "ctrl+2": () => handlePrimaryPageChange("habits"),
+      "ctrl+3": () => handlePrimaryPageChange("diary"),
+      "ctrl+4": () => handlePrimaryPageChange("settings"),
       "ctrl+k": togglePalette,
       escape: () => {
         if (commandPaletteOpen) setCommandPaletteOpen(false);
@@ -163,10 +241,10 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
       requestedPath={unknownPath}
       canGoBack={typeof window !== "undefined" && window.history.length > 1}
       onGoBack={() => window.history.back()}
-      onGoHome={() => setActivePage("orb")}
+      onGoHome={() => handlePrimaryPageChange("orb")}
     />
   ) : activePage === "orb" ? (
-      <OrbPage navigateToPage={setActivePage} onAddMood={onAddMood} />
+      <OrbPage navigateToPage={handlePrimaryPageChange} onAddMood={onAddMood} />
     ) : activePage === "habits" ? (
       <HabitsPage />
     ) : activePage === "diary" ? (
@@ -199,7 +277,7 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
       {isWebNavigation && (
         <SidebarV2
           activePage={activePage}
-          onPageChange={setActivePage}
+          onPageChange={handlePrimaryPageChange}
           collapsed={effectiveSidebarCollapsed}
           onToggleCollapsed={toggleSidebar}
           forceVisible={forceWebNavigation}
@@ -236,7 +314,7 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
         open={!forceWebNavigation && drawerOpen}
         activePage={activePage}
         onClose={closeDrawer}
-        onPageChange={setActivePage}
+        onPageChange={handlePrimaryPageChange}
         onOpenCommandPalette={() => setCommandPaletteOpen(true)}
       />
 

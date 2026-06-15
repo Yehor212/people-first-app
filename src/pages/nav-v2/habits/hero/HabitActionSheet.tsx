@@ -31,6 +31,7 @@ import { Drawer } from "vaul";
 import { X } from "lucide-react";
 import { hapticTap } from "@/lib/haptics";
 import type { Habit } from "@/types";
+import { HabitIconVisual } from "./HabitIconVisual";
 
 export interface HabitActionSheetLabels {
   /** Sheet title announced to screen readers. */
@@ -135,10 +136,14 @@ export const HabitActionSheet = memo(function HabitActionSheet({
             </button>
           </div>
           <p
-            className="px-4 pb-3 text-xs text-muted-foreground"
+            className="flex items-center gap-1.5 px-4 pb-3 text-xs text-muted-foreground"
             data-testid={`habit-action-sheet-${habit.id}-subtitle`}
           >
-            <span aria-hidden="true">{habit.icon} </span>
+            <HabitIconVisual
+              value={habit.icon}
+              iconClassName="h-3.5 w-3.5"
+              textClassName="text-sm leading-none"
+            />
             {habit.name}
           </p>
           <div className="flex flex-col gap-1 px-2 pb-4">

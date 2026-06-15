@@ -41,6 +41,25 @@ interface RouteSnapshot {
   unknownPath: string | null;
 }
 
+function scheduleAfterNextPaint(callback: () => void): () => void {
+  if (typeof window === "undefined" || typeof window.requestAnimationFrame !== "function") {
+    const timerId = globalThis.setTimeout(callback, 0);
+    return () => globalThis.clearTimeout(timerId);
+  }
+
+  let secondFrameId: number | null = null;
+  const firstFrameId = window.requestAnimationFrame(() => {
+    secondFrameId = window.requestAnimationFrame(callback);
+  });
+
+  return () => {
+    window.cancelAnimationFrame(firstFrameId);
+    if (secondFrameId !== null) {
+      window.cancelAnimationFrame(secondFrameId);
+    }
+  };
+}
+
 function isValidPage(value: unknown): value is NavV2Page {
   return typeof value === "string" && (NAV_V2_PAGES as readonly string[]).includes(value);
 }
@@ -88,7 +107,7 @@ export interface UseNavigationV2Return {
   /** Unknown app path that should render the user-facing Not Found state. */
   unknownPath: string | null;
   /** Wrapped page change: writes URL, persists to localStorage, runs via morph(). */
-  setActivePage: (page: NavV2Page) => void;
+  setActivePage: (page: NavV2Page, options?: { skipTransition?: boolean }) => void;
   /** Desktop sidebar rail mode (collapsed = 64-80px, expanded = 240-280px). */
   sidebarCollapsed: boolean;
   toggleSidebar: () => void;
@@ -121,6 +140,14 @@ export function useNavigationV2(): UseNavigationV2Return {
   // Ref avoids stale closures inside the popstate listener
   const activePageRef = useRef(activePage);
   activePageRef.current = activePage;
+  const deferredRouteCancelRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    return () => {
+      deferredRouteCancelRef.current?.();
+      deferredRouteCancelRef.current = null;
+    };
+  }, []);
 
   // Persist last page (for next cold boot when URL is bare "/")
   useEffect(() => {
@@ -145,8 +172,15 @@ export function useNavigationV2(): UseNavigationV2Return {
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
 
-  const setActivePage = useCallback((page: NavV2Page) => {
+  const setActivePage = useCallback((
+    page: NavV2Page,
+    options: { skipTransition?: boolean } = {},
+  ) => {
+    deferredRouteCancelRef.current?.();
+    deferredRouteCancelRef.current = null;
+
     // Close drawer on navigate so mobile users don't see stale overlay
+    const wasDrawerOpen = drawerOpen;
     setDrawerOpen(false);
 
     const run = () => {
@@ -166,9 +200,23 @@ export function useNavigationV2(): UseNavigationV2Return {
       }
     };
 
+    // Phone drawer navigation should be instant; full-page View Transitions can
+    // make mobile browsers wait on expensive snapshots before acknowledging tap.
+    if (options.skipTransition) {
+      if (wasDrawerOpen) {
+        deferredRouteCancelRef.current = scheduleAfterNextPaint(() => {
+          deferredRouteCancelRef.current = null;
+          run();
+        });
+        return;
+      }
+      run();
+      return;
+    }
+
     // morph() handles reduced-motion + VT-API-missing fallback internally.
     void morph(`page-${page}`, run);
-  }, []);
+  }, [drawerOpen]);
 
   const toggleSidebar = useCallback(() => setSidebarCollapsed((s) => !s), []);
   const openDrawer = useCallback(() => setDrawerOpen(true), []);

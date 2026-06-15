@@ -2,12 +2,13 @@
  * HeroTimeOfDayGroup - grouped V2 habit rows for a single day bucket.
  */
 
-import { memo, type CSSProperties } from "react";
+import { memo, useLayoutEffect, useMemo, useState, type CSSProperties } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Orbit, Route, Sprout, Waypoints, type LucideIcon } from "lucide-react";
 import { isHabitCompletedOnDate } from "@/lib/habits";
 import { getToday } from "@/lib/utils";
 import { useShouldAnimate } from "@/hooks/useShouldAnimate";
+import { useDeviceTier } from "@/hooks/useDeviceTier";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getHabitRoleTone, getRoleHsl, getTimeOfDayVisualRole } from "@/lib/nonOrbVisualRoles";
 import type { NumericalEntryAction } from "@/lib/habitNumericalInteraction";
@@ -45,6 +46,9 @@ const BUCKET_ICON: Record<TimeOfDay, LucideIcon> = {
   anytime: Waypoints,
 };
 
+const MOBILE_INITIAL_HABIT_ROWS = 2;
+const MOBILE_HABIT_ROW_BATCH = 8;
+
 export const HeroTimeOfDayGroup = memo(function HeroTimeOfDayGroup({
   bucket,
   habits,
@@ -62,7 +66,9 @@ export const HeroTimeOfDayGroup = memo(function HeroTimeOfDayGroup({
   const { t } = useLanguage();
   const tx = t as unknown as Record<string, string>;
   const animate = useShouldAnimate();
+  const { tier } = useDeviceTier();
   const today = getToday();
+  const [visibleHabitCount, setVisibleHabitCount] = useState(MOBILE_INITIAL_HABIT_ROWS);
 
   const completed = habits.reduce(
     (acc, h) => (isHabitCompletedOnDate(h, today) ? acc + 1 : acc),
@@ -77,6 +83,25 @@ export const HeroTimeOfDayGroup = memo(function HeroTimeOfDayGroup({
     "--habit-group-role-soft": getRoleHsl(visualRole, 0.16),
     "--habit-group-role-line": getRoleHsl(visualRole, 0.34),
   } as CSSProperties;
+  const shouldLimitInitialRows =
+    tier === "phone" && habits.length > MOBILE_INITIAL_HABIT_ROWS;
+  const cappedVisibleCount = shouldLimitInitialRows
+    ? Math.min(visibleHabitCount, habits.length)
+    : habits.length;
+  const visibleHabits = useMemo(
+    () => habits.slice(0, cappedVisibleCount),
+    [cappedVisibleCount, habits],
+  );
+  const remainingHabitCount = Math.max(0, habits.length - visibleHabits.length);
+  const nextRevealCount = Math.min(MOBILE_HABIT_ROW_BATCH, remainingHabitCount);
+  const showMoreText = (tx.navV2HabitsShowMoreCount || "Show {count} more").replace(
+    "{count}",
+    String(nextRevealCount),
+  );
+
+  useLayoutEffect(() => {
+    setVisibleHabitCount(MOBILE_INITIAL_HABIT_ROWS);
+  }, [bucket, habits.length, tier]);
 
   return (
     <section
@@ -84,6 +109,7 @@ export const HeroTimeOfDayGroup = memo(function HeroTimeOfDayGroup({
       data-testid={`hero-group-${bucket}`}
       data-visual-role={visualRole}
       data-habit-group-count={habits.length}
+      data-visible-habit-count={visibleHabits.length}
       className="habit-growth-group relative isolate -mx-2 mt-6 overflow-hidden rounded-[28px] px-2 py-3 first:mt-4 md:-mx-3 md:px-3"
       style={growthStyle}
     >
@@ -121,7 +147,7 @@ export const HeroTimeOfDayGroup = memo(function HeroTimeOfDayGroup({
         data-testid={`hero-group-${bucket}-list`}
       >
         <AnimatePresence initial={false}>
-          {habits.map((habit) => (
+          {visibleHabits.map((habit) => (
             <motion.div
               key={habit.id}
               layout={animate}
@@ -147,6 +173,23 @@ export const HeroTimeOfDayGroup = memo(function HeroTimeOfDayGroup({
           ))}
         </AnimatePresence>
       </ul>
+      {remainingHabitCount > 0 && (
+        <div className="mt-3 flex justify-center px-1">
+          <button
+            type="button"
+            className="inline-flex min-h-[44px] items-center justify-center rounded-2xl border border-[hsl(var(--zf-role-body)/0.28)] bg-card/70 px-4 py-2.5 text-sm font-semibold text-foreground shadow-sm backdrop-blur-md [-webkit-backdrop-filter:blur(12px)] motion-safe:transition-[background-color,transform] hover:bg-card/90 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+            onClick={() =>
+              setVisibleHabitCount((count) =>
+                Math.min(habits.length, count + MOBILE_HABIT_ROW_BATCH),
+              )
+            }
+            aria-label={showMoreText}
+            data-testid={`hero-group-${bucket}-show-more`}
+          >
+            {showMoreText}
+          </button>
+        </div>
+      )}
     </section>
   );
 });

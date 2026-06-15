@@ -3324,6 +3324,7 @@ export const en: Translations = {
   navV2HabitsKeepGoing: "Momentum is yours",
   navV2HabitsOneHabitLeft: "One habit left",
   navV2HabitsHabitsLeft: "{count} habits left",
+  navV2HabitsShowMoreCount: "Show {count} more",
   navV2HabitsOfCompleted: "of {total} done",
   navV2HabitsOnboardingStep1: "Choose who you become",
   navV2HabitsOnboardingStep2: "Attach it to a moment",

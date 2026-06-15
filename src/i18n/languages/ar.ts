@@ -3192,6 +3192,7 @@ const arabicOverrides: Partial<Translations> = {
   navV2HabitsKeepGoing: "الزخم لك",
   navV2HabitsOneHabitLeft: "بقيت عادة واحدة",
   navV2HabitsHabitsLeft: "بقيت {count} عادات",
+  navV2HabitsShowMoreCount: "عرض {count} أخرى",
   navV2HabitsOfCompleted: "من أصل {total} مكتملة",
   navV2HabitsOnboardingStep1: "اختر من تصبح",
   navV2HabitsOnboardingStep2: "اربطه بلحظة حقيقية",

@@ -134,11 +134,14 @@ export function AuthProviderButton({
           className="grid w-full max-w-[22rem] grid-cols-[2rem_minmax(0,1fr)_2rem] items-center gap-2.5 sm:gap-3"
           data-testid={`auth-provider-content-${provider.id}`}
         >
-          <span className="flex h-6 w-6 items-center justify-center justify-self-center">
+          <span
+            className="flex h-8 w-8 items-center justify-center justify-self-center"
+            data-testid={`auth-provider-icon-rail-${provider.id}`}
+          >
             <AuthProviderIcon provider={provider} />
           </span>
           <span className="min-w-0 whitespace-nowrap text-center leading-tight">{label}</span>
-          <span className="h-6 w-6 justify-self-center" aria-hidden="true" />
+          <span className="h-8 w-8 justify-self-center" aria-hidden="true" />
         </span>
       )}
     </button>

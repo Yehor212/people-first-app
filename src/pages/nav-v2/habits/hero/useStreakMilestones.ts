@@ -29,6 +29,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getCurrentStreak } from "@/lib/habitScore";
+import { scheduleIdle } from "@/lib/scheduleIdle";
 import type { Habit } from "@/types";
 
 export const STREAK_MILESTONES: readonly number[] = [3, 7, 21, 66, 100] as const;
@@ -67,49 +68,86 @@ export interface UseStreakMilestonesResult {
  */
 export function useStreakMilestones(habits: readonly Habit[]): UseStreakMilestonesResult {
   const prevStreaksRef = useRef<Map<string, number>>(new Map());
+  const initialHabitsRef = useRef<readonly Habit[] | null>(null);
   const seededRef = useRef(false);
   const queueRef = useRef<StreakMilestoneEvent[]>([]);
   const [event, setEvent] = useState<StreakMilestoneEvent | null>(null);
 
   useEffect(() => {
-    const prev = prevStreaksRef.current;
+    if (!seededRef.current && initialHabitsRef.current === null) {
+      initialHabitsRef.current = habits;
+    }
 
-    // First pass: seed the baseline so we don't celebrate streaks that existed
-    // before the page mounted. After seeding, real transitions fire.
-    if (!seededRef.current) {
+    let cancelled = false;
+    const handle = scheduleIdle(() => {
+      if (cancelled) return;
+      const prev = prevStreaksRef.current;
+      const surfaceNextEvent = () => {
+        if (!event && queueRef.current.length > 0) {
+          const next = queueRef.current.shift();
+          if (next) setEvent(next);
+        }
+      };
+
+      // First pass: seed the baseline so we don't celebrate streaks that existed
+      // before the page mounted. If the user taps before the idle seed runs, compare
+      // against the first snapshot so the legitimate crossing is not swallowed.
+      if (!seededRef.current) {
+        const initialHabits = initialHabitsRef.current;
+        const initialStreaks = new Map<string, number>();
+
+        if (initialHabits && initialHabits !== habits) {
+          for (const h of initialHabits) {
+            initialStreaks.set(h.id, getCurrentStreak(h));
+          }
+        }
+
+        for (const h of habits) {
+          const current = getCurrentStreak(h);
+          const previous = initialStreaks.get(h.id);
+          if (previous !== undefined) {
+            const crossed = didCrossMilestone(previous, current);
+            if (crossed !== null) {
+              queueRef.current.push({ habit: h, streak: current, milestone: crossed });
+            }
+          }
+          prev.set(h.id, current);
+        }
+
+        initialHabitsRef.current = null;
+        seededRef.current = true;
+        surfaceNextEvent();
+        return;
+      }
+
       for (const h of habits) {
-        prev.set(h.id, getCurrentStreak(h));
+        const current = getCurrentStreak(h);
+        const previous = prev.get(h.id) ?? current;
+        const crossed = didCrossMilestone(previous, current);
+        if (crossed !== null) {
+          queueRef.current.push({ habit: h, streak: current, milestone: crossed });
+        }
+        prev.set(h.id, current);
       }
-      seededRef.current = true;
-      return;
-    }
 
-    for (const h of habits) {
-      const current = getCurrentStreak(h);
-      const previous = prev.get(h.id) ?? current;
-      const crossed = didCrossMilestone(previous, current);
-      if (crossed !== null) {
-        queueRef.current.push({ habit: h, streak: current, milestone: crossed });
+      // Prune ids for deleted habits so memory doesn't leak
+      const alive = new Set(habits.map((h) => h.id));
+      for (const id of Array.from(prev.keys())) {
+        if (!alive.has(id)) prev.delete(id);
       }
-      prev.set(h.id, current);
-    }
 
-    // Prune ids for deleted habits so memory doesn't leak
-    const alive = new Set(habits.map((h) => h.id));
-    for (const id of Array.from(prev.keys())) {
-      if (!alive.has(id)) prev.delete(id);
-    }
+      // Surface one event at a time
+      surfaceNextEvent();
+    }, 1_200, 120);
 
-    // Surface one event at a time
-    if (!event && queueRef.current.length > 0) {
-      const next = queueRef.current.shift();
-      if (next) setEvent(next);
-    }
+    return () => {
+      cancelled = true;
+      handle.cancel();
+    };
   }, [habits, event]);
 
   const dismiss = useCallback(() => {
-    setEvent(null);
-    // Next tick of useEffect will pick up the next queued event if any.
+    setEvent(queueRef.current.shift() ?? null);
   }, []);
 
   return { event, dismiss };

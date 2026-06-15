@@ -1,7 +1,7 @@
 /**
  * HeroInsightStrip — V1 insightsEngine → V2 UI wiring tests.
  */
-import { render, cleanup, screen, fireEvent } from "@testing-library/react";
+import { act, render, cleanup, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import type { Habit } from "@/types";
 
@@ -30,7 +30,10 @@ vi.mock("@/contexts/LanguageContext", () => ({
 
 let mockInsights: Array<{ id: string; title: string; description: string; severity: string; confidence: number; type: string }> = [];
 let capturedTranslations: Record<string, string> | null = null;
+const mockMoods: unknown[] = [];
+const mockFocusSessions: unknown[] = [];
 let mockHabits: Habit[] = [];
+const scheduleIdleCallbacks: Array<() => void> = [];
 vi.mock("@/lib/insightsEngine", () => ({
   generateInsights: (
     _moods: unknown[],
@@ -43,18 +46,37 @@ vi.mock("@/lib/insightsEngine", () => ({
   },
 }));
 
+vi.mock("@/lib/scheduleIdle", () => ({
+  scheduleIdle: vi.fn((callback: () => void) => {
+    scheduleIdleCallbacks.push(callback);
+    return {
+      cancel: vi.fn(() => {
+        const index = scheduleIdleCallbacks.indexOf(callback);
+        if (index >= 0) scheduleIdleCallbacks.splice(index, 1);
+      }),
+    };
+  }),
+}));
+
 vi.mock("@/stores", () => ({
   useUserDataStore: (selector: (s: unknown) => unknown) =>
-    selector({ moods: [], habits: mockHabits, focusSessions: [] }),
+    selector({ moods: mockMoods, habits: mockHabits, focusSessions: mockFocusSessions }),
 }));
 
 import { HeroInsightStrip } from "../HeroInsightStrip";
+
+async function runNextIdleCallback() {
+  await act(async () => {
+    scheduleIdleCallbacks.shift()?.();
+  });
+}
 
 describe("HeroInsightStrip", () => {
   beforeEach(() => {
     mockInsights = [];
     capturedTranslations = null;
     mockHabits = [];
+    scheduleIdleCallbacks.length = 0;
   });
   afterEach(() => cleanup());
 
@@ -63,8 +85,9 @@ describe("HeroInsightStrip", () => {
     expect(screen.queryByTestId("habits-hero-insight-strip")).not.toBeInTheDocument();
   });
 
-  it("passes the existing V1 translation contract into insightsEngine", () => {
+  it("passes the existing V1 translation contract into insightsEngine", async () => {
     render(<HeroInsightStrip />);
+    await runNextIdleCallback();
     expect(capturedTranslations).toEqual({
       morning: "mornings-win",
       afternoon: "afternoons-win",
@@ -82,7 +105,7 @@ describe("HeroInsightStrip", () => {
     });
   });
 
-  it("renders the top insight with title + confidence", () => {
+  it("renders the top insight with title + confidence", async () => {
     mockInsights = [
       {
         id: "i1",
@@ -94,6 +117,7 @@ describe("HeroInsightStrip", () => {
       },
     ];
     render(<HeroInsightStrip />);
+    await runNextIdleCallback();
     const strip = screen.getByTestId("habits-hero-insight-strip");
     expect(strip).toHaveAttribute("data-severity", "celebration");
     expect(screen.getByTestId("habits-hero-insight-title")).toHaveTextContent(
@@ -102,7 +126,7 @@ describe("HeroInsightStrip", () => {
     expect(strip).toHaveTextContent("87%");
   });
 
-  it("renders a statistics CTA for habit-linked insights and opens the linked habit", () => {
+  it("renders a statistics CTA for habit-linked insights and opens the linked habit", async () => {
     mockHabits = [
       {
         id: "habit-1",
@@ -140,6 +164,7 @@ describe("HeroInsightStrip", () => {
     ];
     const onOpenHabitInsight = vi.fn();
     render(<HeroInsightStrip onOpenHabitInsight={onOpenHabitInsight} />);
+    await runNextIdleCallback();
     fireEvent.click(screen.getByTestId("habits-hero-insight-cta"));
     expect(onOpenHabitInsight).toHaveBeenCalledTimes(1);
     expect(onOpenHabitInsight).toHaveBeenCalledWith(
@@ -147,7 +172,7 @@ describe("HeroInsightStrip", () => {
     );
   });
 
-  it("applies warning styling for warning severity", () => {
+  it("applies warning styling for warning severity", async () => {
     mockInsights = [
       {
         id: "i2",
@@ -159,9 +184,33 @@ describe("HeroInsightStrip", () => {
       },
     ];
     render(<HeroInsightStrip />);
+    await runNextIdleCallback();
     const strip = screen.getByTestId("habits-hero-insight-strip");
     expect(strip).toHaveAttribute("data-severity", "warning");
     expect(strip.className).toContain("--zf-warning");
+  });
+
+  it("defers V1 insight generation until idle so Habits first paint is not blocked", async () => {
+    mockInsights = [
+      {
+        id: "i1",
+        title: "Later insight",
+        description: "Computed after first paint",
+        severity: "tip",
+        confidence: 70,
+        type: "habit-timing",
+      },
+    ];
+
+    render(<HeroInsightStrip />);
+
+    expect(capturedTranslations).toBeNull();
+    expect(screen.queryByTestId("habits-hero-insight-strip")).not.toBeInTheDocument();
+
+    await runNextIdleCallback();
+
+    expect(capturedTranslations).not.toBeNull();
+    expect(screen.getByTestId("habits-hero-insight-strip")).toHaveTextContent("Later insight");
   });
 
 });

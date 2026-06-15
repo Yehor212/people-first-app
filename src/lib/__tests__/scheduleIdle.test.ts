@@ -53,6 +53,37 @@ describe("scheduleIdle", () => {
     }
   });
 
+  it("falls back when requestIdleCallback is present but not callable", () => {
+    const fn = vi.fn();
+    const originalRic = window.requestIdleCallback;
+    const originalCic = window.cancelIdleCallback;
+    Object.defineProperty(window, "requestIdleCallback", {
+      configurable: true,
+      value: undefined,
+    });
+    Object.defineProperty(window, "cancelIdleCallback", {
+      configurable: true,
+      value: undefined,
+    });
+
+    try {
+      const handle = scheduleIdle(fn, 800);
+      expect(fn).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(800);
+      expect(fn).toHaveBeenCalledTimes(1);
+      expect(() => handle.cancel()).not.toThrow();
+    } finally {
+      Object.defineProperty(window, "requestIdleCallback", {
+        configurable: true,
+        value: originalRic,
+      });
+      Object.defineProperty(window, "cancelIdleCallback", {
+        configurable: true,
+        value: originalCic,
+      });
+    }
+  });
+
   it("cancel() prevents setTimeout fallback from firing", () => {
     const fn = vi.fn();
     const windowWithoutRic = window as unknown as Record<string, unknown>;

@@ -39,7 +39,10 @@ export function scheduleIdle(fn: IdleFn, fallbackMs = 2000, minDelayMs = 0): Idl
     };
   }
 
-  if ("requestIdleCallback" in win) {
+  if (
+    typeof win.requestIdleCallback === "function" &&
+    typeof win.cancelIdleCallback === "function"
+  ) {
     const id = win.requestIdleCallback(fn, { timeout: fallbackMs });
     return { cancel: () => win.cancelIdleCallback(id) };
   }

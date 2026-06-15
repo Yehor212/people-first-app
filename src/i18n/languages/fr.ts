@@ -3357,6 +3357,7 @@ export const fr: Translations = {
   navV2HabitsKeepGoing: "L'élan t'appartient",
   navV2HabitsOneHabitLeft: "Une habitude restante",
   navV2HabitsHabitsLeft: "{count} habitudes restantes",
+  navV2HabitsShowMoreCount: "Afficher {count} de plus",
   navV2HabitsOfCompleted: "sur {total} terminées",
   navV2HabitsOnboardingStep1: "Choisis qui tu deviens",
   navV2HabitsOnboardingStep2: "Relie-la à un moment",

@@ -1,0 +1,29 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/skill-router-gate.cjs\"",
+            "timeout": 5,
+            "statusMessage": "Routing skills"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "apply_patch|functions.apply_patch|Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/skill-router-gate.cjs\"",
+            "timeout": 5,
+            "statusMessage": "Checking skill routing"
+          }
+        ]
+      }
+    ]
+  }
+}

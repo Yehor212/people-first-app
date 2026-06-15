@@ -84,6 +84,54 @@ describe("useNavigationV2", () => {
   });
 
   describe("setActivePage", () => {
+    it("lets a phone drawer close paint before mounting a skipped route", async () => {
+      const rafCallbacks: FrameRequestCallback[] = [];
+      const requestAnimationFrameSpy = vi
+        .spyOn(window, "requestAnimationFrame")
+        .mockImplementation((callback) => {
+          rafCallbacks.push(callback);
+          return rafCallbacks.length;
+        });
+      const cancelAnimationFrameSpy = vi
+        .spyOn(window, "cancelAnimationFrame")
+        .mockImplementation(() => undefined);
+
+      try {
+        const { result } = renderHook(() => useNavigationV2());
+
+        act(() => result.current.openDrawer());
+        expect(result.current.drawerOpen).toBe(true);
+
+        await act(async () => {
+          result.current.setActivePage("habits", { skipTransition: true });
+        });
+
+        expect(result.current.drawerOpen).toBe(false);
+        expect(result.current.activePage).toBe<NavV2Page>("orb");
+        expect(window.location.pathname).toBe("/");
+        expect(requestAnimationFrameSpy).toHaveBeenCalledTimes(1);
+
+        await act(async () => {
+          rafCallbacks.shift()?.(performance.now());
+        });
+
+        expect(result.current.activePage).toBe<NavV2Page>("orb");
+        expect(window.location.pathname).toBe("/");
+        expect(requestAnimationFrameSpy).toHaveBeenCalledTimes(2);
+
+        await act(async () => {
+          rafCallbacks.shift()?.(performance.now());
+        });
+
+        expect(result.current.activePage).toBe<NavV2Page>("habits");
+        expect(window.location.pathname).toBe("/habits");
+        expect(morph).not.toHaveBeenCalled();
+      } finally {
+        requestAnimationFrameSpy.mockRestore();
+        cancelAnimationFrameSpy.mockRestore();
+      }
+    });
+
     it("updates state, URL, and localStorage and wraps in morph()", async () => {
       const { result } = renderHook(() => useNavigationV2());
       await act(async () => {
@@ -94,6 +142,16 @@ describe("useNavigationV2", () => {
       expect(window.location.pathname).toBe("/habits");
       expect(window.localStorage.getItem(STORAGE_KEY)).toBe("habits");
       expect(morph).toHaveBeenCalledWith("page-habits", expect.any(Function));
+    });
+
+    it("can skip morph for phone drawer navigation", async () => {
+      const { result } = renderHook(() => useNavigationV2());
+      await act(async () => {
+        result.current.setActivePage("habits", { skipTransition: true });
+      });
+      expect(result.current.activePage).toBe<NavV2Page>("habits");
+      expect(window.location.pathname).toBe("/habits");
+      expect(morph).not.toHaveBeenCalled();
     });
 
     it("preserves existing query params across navigation", async () => {

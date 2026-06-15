@@ -17,34 +17,15 @@
  *     nothing that matters is hidden).
  */
 
-import { memo, useEffect, useMemo } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useLanguage } from "@/contexts/LanguageContext";
-import type { Translations } from "@/i18n/types";
 import { analytics } from "@/lib/analytics";
 import { generateInsights, type InsightTranslations } from "@/lib/insightsEngine";
+import { scheduleIdle } from "@/lib/scheduleIdle";
 import { V2_SHELL_ICONS } from "@/lib/v2IconSystem";
 import { useUserDataStore } from "@/stores";
 import type { Habit, Insight } from "@/types";
-
-/** The InsightTranslations shape V1 expects - pulled from the typed i18n bag. */
-function buildInsightTranslations(tx: Translations): InsightTranslations {
-  return {
-    morning: tx.insightMorning,
-    afternoon: tx.insightAfternoon,
-    evening: tx.insightEvening,
-    habitImprovesMood: tx.insightHabitImprovesMood,
-    habitImprovesMoodDesc: tx.insightHabitImprovesMoodDesc,
-    focusBestLabel: tx.insightFocusBestLabel,
-    focusBestLabelDesc: tx.insightFocusBestLabelDesc,
-    peakFocusTime: tx.insightPeakFocusTime,
-    peakFocusTimeDesc: tx.insightPeakFocusTimeDesc,
-    bestTimeForHabit: tx.insightBestTimeForHabit,
-    bestTimeForHabitDesc: tx.insightBestTimeForHabitDesc,
-    tagBoostsMood: tx.insightTagBoostsMood,
-    tagBoostsMoodDesc: tx.insightTagBoostsMoodDesc,
-  };
-}
 
 function iconFor(insight: Insight) {
   if (insight.severity === "warning") return V2_SHELL_ICONS.warning;
@@ -68,6 +49,50 @@ export const HeroInsightStrip = memo(function HeroInsightStrip({
 }: HeroInsightStripProps) {
   const { t } = useLanguage();
   const tx = t;
+  const {
+    insightMorning,
+    insightAfternoon,
+    insightEvening,
+    insightHabitImprovesMood,
+    insightHabitImprovesMoodDesc,
+    insightFocusBestLabel,
+    insightFocusBestLabelDesc,
+    insightPeakFocusTime,
+    insightPeakFocusTimeDesc,
+    insightBestTimeForHabit,
+    insightBestTimeForHabitDesc,
+    insightTagBoostsMood,
+    insightTagBoostsMoodDesc,
+  } = tx;
+  const insightTranslations = useMemo<InsightTranslations>(() => ({
+    morning: insightMorning,
+    afternoon: insightAfternoon,
+    evening: insightEvening,
+    habitImprovesMood: insightHabitImprovesMood,
+    habitImprovesMoodDesc: insightHabitImprovesMoodDesc,
+    focusBestLabel: insightFocusBestLabel,
+    focusBestLabelDesc: insightFocusBestLabelDesc,
+    peakFocusTime: insightPeakFocusTime,
+    peakFocusTimeDesc: insightPeakFocusTimeDesc,
+    bestTimeForHabit: insightBestTimeForHabit,
+    bestTimeForHabitDesc: insightBestTimeForHabitDesc,
+    tagBoostsMood: insightTagBoostsMood,
+    tagBoostsMoodDesc: insightTagBoostsMoodDesc,
+  }), [
+    insightMorning,
+    insightAfternoon,
+    insightEvening,
+    insightHabitImprovesMood,
+    insightHabitImprovesMoodDesc,
+    insightFocusBestLabel,
+    insightFocusBestLabelDesc,
+    insightPeakFocusTime,
+    insightPeakFocusTimeDesc,
+    insightBestTimeForHabit,
+    insightBestTimeForHabitDesc,
+    insightTagBoostsMood,
+    insightTagBoostsMoodDesc,
+  ]);
 
   // Pull the three slices needed by generateInsights via a shallow-stable selector
   // so this component does not re-render on unrelated store changes.
@@ -79,21 +104,37 @@ export const HeroInsightStrip = memo(function HeroInsightStrip({
     })),
   );
 
-  const topInsight = useMemo(() => {
-    try {
-      const translations = buildInsightTranslations(tx);
-      const list = generateInsights(
-        Array.isArray(moods) ? moods : [],
-        Array.isArray(habits) ? habits : [],
-        Array.isArray(focusSessions) ? focusSessions : [],
-        translations,
-      );
-      return list[0] ?? null;
-    } catch {
-      // V1 insightsEngine throws on bad shape - never let insights break the page.
-      return null;
-    }
-  }, [moods, habits, focusSessions, tx]);
+  const [topInsight, setTopInsight] = useState<Insight | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setTopInsight(null);
+
+    const handle = scheduleIdle(() => {
+      if (cancelled) return;
+      try {
+        const list = generateInsights(
+          Array.isArray(moods) ? moods : [],
+          Array.isArray(habits) ? habits : [],
+          Array.isArray(focusSessions) ? focusSessions : [],
+          insightTranslations,
+        );
+        if (!cancelled) {
+          setTopInsight(list[0] ?? null);
+        }
+      } catch {
+        // V1 insightsEngine throws on bad shape - never let insights break the page.
+        if (!cancelled) {
+          setTopInsight(null);
+        }
+      }
+    }, 1_200, 120);
+
+    return () => {
+      cancelled = true;
+      handle.cancel();
+    };
+  }, [moods, habits, focusSessions, insightTranslations]);
 
   // Habits spec Section 15 cross-habit signal - emit once per distinct insight identity
   // so the aggregator can compute the "% of users seeing >=1 insight" funnel.

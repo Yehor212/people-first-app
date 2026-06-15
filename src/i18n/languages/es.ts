@@ -3337,6 +3337,7 @@ export const es: Translations = {
   navV2HabitsKeepGoing: "El impulso es tuyo",
   navV2HabitsOneHabitLeft: "Falta un hábito",
   navV2HabitsHabitsLeft: "Faltan {count} hábitos",
+  navV2HabitsShowMoreCount: "Mostrar {count} más",
   navV2HabitsOfCompleted: "de {total} completados",
   navV2HabitsOnboardingStep1: "Elige quién quieres ser",
   navV2HabitsOnboardingStep2: "Únelo a un momento",

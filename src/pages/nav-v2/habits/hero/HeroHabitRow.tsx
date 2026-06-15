@@ -164,32 +164,34 @@ export const HeroHabitRow = memo(function HeroHabitRow({
         onOpenDetail={onOpenDetail}
       />
 
-      <HabitActionSheet
-        open={actionSheetOpen}
-        onClose={closeActionSheet}
-        habit={habit}
-        today={today}
-        isSkippedToday={isSkippedToday}
-        isArchived={isArchived}
-        labels={{
-          title: tx.navV2HabitsActions,
-          close: tx.cancel,
-          skip: tx.skipToday,
-          unskip: tx.unskip,
-          archive: tx.archiveHabit,
-          unarchive: tx.unarchiveHabit,
-          edit: tx.edit,
-          openDetails: tx.statistics || tx.navV2HabitsOpenDetails,
-          delete: tx.delete,
-        }}
-        onSkip={onSkip}
-        onUnskip={onUnskip}
-        onArchive={onArchive}
-        onUnarchive={onUnarchive}
-        onEdit={onEdit}
-        onOpenDetail={onOpenDetail}
-        onDelete={onDelete}
-      />
+      {actionSheetOpen && (
+        <HabitActionSheet
+          open={actionSheetOpen}
+          onClose={closeActionSheet}
+          habit={habit}
+          today={today}
+          isSkippedToday={isSkippedToday}
+          isArchived={isArchived}
+          labels={{
+            title: tx.navV2HabitsActions,
+            close: tx.cancel,
+            skip: tx.skipToday,
+            unskip: tx.unskip,
+            archive: tx.archiveHabit,
+            unarchive: tx.unarchiveHabit,
+            edit: tx.edit,
+            openDetails: tx.statistics || tx.navV2HabitsOpenDetails,
+            delete: tx.delete,
+          }}
+          onSkip={onSkip}
+          onUnskip={onUnskip}
+          onArchive={onArchive}
+          onUnarchive={onUnarchive}
+          onEdit={onEdit}
+          onOpenDetail={onOpenDetail}
+          onDelete={onDelete}
+        />
+      )}
 
       {showCueRow && (
         <div

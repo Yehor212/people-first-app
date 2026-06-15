@@ -3302,6 +3302,7 @@ export interface Translations {
   navV2HabitsKeepGoing: string;
   navV2HabitsOneHabitLeft: string;
   navV2HabitsHabitsLeft: string;
+  navV2HabitsShowMoreCount: string;
   navV2HabitsOfCompleted: string;
   navV2HabitsOnboardingStep1: string;
   navV2HabitsOnboardingStep2: string;

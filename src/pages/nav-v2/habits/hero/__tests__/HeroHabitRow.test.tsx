@@ -45,6 +45,30 @@ vi.mock("../HeroWeeklyHabitCard", () => ({
   ),
 }));
 
+const actionSheetMocks = vi.hoisted(() => ({
+  render: vi.fn(),
+}));
+
+vi.mock("../HabitActionSheet", () => ({
+  HabitActionSheet: (props: {
+    open: boolean;
+    habit: { id: string; name: string };
+  }) => {
+    actionSheetMocks.render(props);
+    if (!props.open) return null;
+    return (
+      <div data-testid={`habit-action-sheet-${props.habit.id}`}>
+        <button
+          type="button"
+          data-testid={`habit-action-sheet-${props.habit.id}-delete`}
+        >
+          Delete
+        </button>
+      </div>
+    );
+  },
+}));
+
 import { HeroHabitRow } from "../HeroHabitRow";
 import type { Habit } from "@/types";
 
@@ -69,7 +93,10 @@ const habit = (overrides: Partial<Habit> = {}): Habit => ({
 });
 
 describe("HeroHabitRow", () => {
-  beforeEach(() => vi.useFakeTimers());
+  beforeEach(() => {
+    vi.useFakeTimers();
+    actionSheetMocks.render.mockClear();
+  });
   afterEach(() => {
     vi.useRealTimers();
     cleanup();
@@ -136,6 +163,20 @@ describe("HeroHabitRow", () => {
     row.focus();
     fireEvent.keyDown(row, { key: "Enter" });
     expect(screen.getByTestId("habit-action-sheet-h1")).toBeInTheDocument();
+  });
+
+  it("does not mount the closed action sheet before secondary actions are requested", () => {
+    render(
+      <HeroHabitRow
+        habit={habit()}
+        onToggle={vi.fn()}
+        onDelete={vi.fn()}
+        onOpenDetail={vi.fn()}
+        onSkip={vi.fn()}
+      />,
+    );
+
+    expect(actionSheetMocks.render).not.toHaveBeenCalled();
   });
 
   it("passes delete through to the action sheet when destructive fallback is needed", () => {

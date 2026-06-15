@@ -1,7 +1,7 @@
 /**
  * useStreakMilestones — pure helpers + hook transition coverage.
  */
-import { describe, it, expect, vi } from "vitest";
+import { beforeEach, describe, it, expect, vi } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import {
   didCrossMilestone,
@@ -11,9 +11,23 @@ import {
 } from "../useStreakMilestones";
 import type { Habit } from "@/types";
 
+const getCurrentStreakMock = vi.fn((h: Habit & { __mockStreak?: number }) => h.__mockStreak ?? 0);
 vi.mock("@/lib/habitScore", () => ({
   // Simple mock: return habit.__mockStreak — lets us drive transitions from tests
-  getCurrentStreak: (h: Habit & { __mockStreak?: number }) => h.__mockStreak ?? 0,
+  getCurrentStreak: (h: Habit & { __mockStreak?: number }) => getCurrentStreakMock(h),
+}));
+
+const scheduleIdleCallbacks: Array<() => void> = [];
+vi.mock("@/lib/scheduleIdle", () => ({
+  scheduleIdle: vi.fn((callback: () => void) => {
+    scheduleIdleCallbacks.push(callback);
+    return {
+      cancel: vi.fn(() => {
+        const index = scheduleIdleCallbacks.indexOf(callback);
+        if (index >= 0) scheduleIdleCallbacks.splice(index, 1);
+      }),
+    };
+  }),
 }));
 
 const habit = (id: string, streak: number): Habit & { __mockStreak: number } => ({
@@ -73,11 +87,51 @@ describe("didCrossMilestone", () => {
 });
 
 describe("useStreakMilestones hook", () => {
+  beforeEach(() => {
+    getCurrentStreakMock.mockClear();
+    scheduleIdleCallbacks.length = 0;
+  });
+
+  function runNextIdleCallback() {
+    act(() => {
+      scheduleIdleCallbacks.shift()?.();
+    });
+  }
+
+  it("defers initial streak seeding until idle so Habits first paint is not blocked", () => {
+    renderHook(({ habits }) => useStreakMilestones(habits), {
+      initialProps: { habits: [habit("a", 7), habit("b", 21)] as Habit[] },
+    });
+
+    expect(getCurrentStreakMock).not.toHaveBeenCalled();
+
+    runNextIdleCallback();
+
+    expect(getCurrentStreakMock).toHaveBeenCalledTimes(2);
+  });
+
   it("does not fire on initial seed", () => {
     const { result } = renderHook(({ habits }) => useStreakMilestones(habits), {
       initialProps: { habits: [habit("a", 7)] as Habit[] },
     });
+    runNextIdleCallback();
     expect(result.current.event).toBeNull();
+  });
+
+  it("fires if a quick tap crosses a milestone before initial idle seeding runs", () => {
+    const { result, rerender } = renderHook(
+      ({ habits }) => useStreakMilestones(habits),
+      { initialProps: { habits: [habit("a", 2)] as Habit[] } },
+    );
+
+    expect(result.current.event).toBeNull();
+
+    rerender({ habits: [habit("a", 3)] as Habit[] });
+    runNextIdleCallback();
+
+    expect(result.current.event?.habit.id).toBe("a");
+    expect(result.current.event?.milestone).toBe(3);
+    expect(result.current.event?.streak).toBe(3);
   });
 
   it("fires when streak crosses a milestone", () => {
@@ -85,8 +139,10 @@ describe("useStreakMilestones hook", () => {
       ({ habits }) => useStreakMilestones(habits),
       { initialProps: { habits: [habit("a", 2)] as Habit[] } },
     );
+    runNextIdleCallback();
     expect(result.current.event).toBeNull();
     rerender({ habits: [habit("a", 3)] as Habit[] });
+    runNextIdleCallback();
     expect(result.current.event?.milestone).toBe(3);
     expect(result.current.event?.streak).toBe(3);
     expect(result.current.event?.habit.id).toBe("a");
@@ -101,7 +157,9 @@ describe("useStreakMilestones hook", () => {
         },
       },
     );
+    runNextIdleCallback();
     rerender({ habits: [habit("a", 3), habit("b", 7)] as Habit[] });
+    runNextIdleCallback();
     // First event = habit a @ milestone 3
     expect(result.current.event?.habit.id).toBe("a");
     act(() => result.current.dismiss());
@@ -115,11 +173,14 @@ describe("useStreakMilestones hook", () => {
       ({ habits }) => useStreakMilestones(habits),
       { initialProps: { habits: [habit("a", 2)] as Habit[] } },
     );
+    runNextIdleCallback();
     rerender({ habits: [habit("a", 3)] as Habit[] });
+    runNextIdleCallback();
     expect(result.current.event?.milestone).toBe(3);
     act(() => result.current.dismiss());
     // Streak stays at 3 — no new event
     rerender({ habits: [habit("a", 3)] as Habit[] });
+    runNextIdleCallback();
     expect(result.current.event).toBeNull();
   });
 
@@ -128,7 +189,9 @@ describe("useStreakMilestones hook", () => {
       ({ habits }) => useStreakMilestones(habits),
       { initialProps: { habits: [habit("a", 2)] as Habit[] } },
     );
+    runNextIdleCallback();
     rerender({ habits: [habit("a", 3)] as Habit[] });
+    runNextIdleCallback();
     expect(result.current.event).not.toBeNull();
     act(() => result.current.dismiss());
     expect(result.current.event).toBeNull();

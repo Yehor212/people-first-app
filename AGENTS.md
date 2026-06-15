@@ -64,6 +64,14 @@ Supported platforms: Web/Vite, PWA, Android/Capacitor, iOS/WKWebView, Desktop/Ta
 - If a red test is impossible, document why before editing and keep the final status `UNVERIFIED` until an equivalent regression proof exists.
 - Documentation-only, generated, config-only, and emergency exceptions are handled only through the policy file; they do not permit calling work `PASS` without fresh evidence.
 
+## Skill Routing Agent Gate
+
+- When a user names plugins or skills such as `@superpowers`, `@chrome`, `@browser`, `@openai-developers`, `$skill`, or `/skills`, read and follow `docs/ai/SKILL_ROUTING_AGENT_POLICY.md`.
+- Do not run every skill inside a plugin by default. Select the minimal relevant skill set, read each selected `SKILL.md` completely, state the order of use, and explain obvious skipped skills.
+- Codex project hooks are registered in `.codex/hooks.json`; `.codex/hooks/skill-router-gate.cjs` injects a routing checklist and guards protected edits.
+- Before guarded Codex edits, provide fresh `.skill-routing-token` evidence or a structured `.preflight-token` with `skill_routing`.
+- Use Browser for local/public runtime checks, Chrome for existing user Chrome state, and Computer Use only for real desktop UI tasks; do not automate Codex itself.
+
 ## Conventions
 
 - Use theme tokens for colors; do not add hardcoded colors.

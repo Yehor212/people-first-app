@@ -3280,6 +3280,7 @@ export const ja: Translations = {
   navV2HabitsKeepGoing: "勢いはあなたのもの",
   navV2HabitsOneHabitLeft: "残り1つの習慣",
   navV2HabitsHabitsLeft: "残り{count}つの習慣",
+  navV2HabitsShowMoreCount: "さらに{count}件表示",
   navV2HabitsOfCompleted: "{total}件中完了",
   navV2HabitsOnboardingStep1: "なりたい自分を選ぶ",
   navV2HabitsOnboardingStep2: "実際の瞬間につなげる",

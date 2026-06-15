@@ -4,6 +4,14 @@ import { MiniWeekRow } from "../MiniWeekRow";
 import { toStoredValue } from "@/lib/habits";
 import type { Habit } from "@/types";
 
+const computeEntriesWithAutoSpy = vi.hoisted(() =>
+  vi.fn((h: { entries?: Habit["entries"] }) => h.entries ?? {}),
+);
+
+vi.mock("@/lib/habitComputedEntries", () => ({
+  computeEntriesWithAuto: computeEntriesWithAutoSpy,
+}));
+
 vi.mock("@/contexts/LanguageContext", () => ({
   useLanguage: () => ({
     t: {
@@ -49,6 +57,7 @@ describe("MiniWeekRow", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2026, 3, 18, 12, 0, 0));
+    computeEntriesWithAutoSpy.mockClear();
   });
 
   afterEach(() => {
@@ -81,6 +90,45 @@ describe("MiniWeekRow", () => {
 
     expect(onToggle).toHaveBeenCalledTimes(1);
     expect(onToggle).toHaveBeenCalledWith("habit-1", "2026-04-18");
+  });
+
+  it("skips full auto-entry history computation for the V2 hero today-only row", () => {
+    render(
+      <MiniWeekRow
+        habit={habit({
+          frequency: { numerator: 3, denominator: 7 },
+          entries: {
+            "2026-04-15": { value: 1 },
+            "2026-04-17": { value: 1 },
+            "2026-04-18": { value: 1 },
+          },
+        })}
+        habitColor="#00ffaa"
+        onToggle={vi.fn()}
+        interactionScope="today"
+      />,
+    );
+
+    expect(computeEntriesWithAutoSpy).not.toHaveBeenCalled();
+  });
+
+  it("keeps full auto-entry history computation for history rows", () => {
+    render(
+      <MiniWeekRow
+        habit={habit({
+          frequency: { numerator: 3, denominator: 7 },
+          entries: {
+            "2026-04-15": { value: 1 },
+            "2026-04-17": { value: 1 },
+            "2026-04-18": { value: 1 },
+          },
+        })}
+        habitColor="#00ffaa"
+        onToggle={vi.fn()}
+      />,
+    );
+
+    expect(computeEntriesWithAutoSpy).toHaveBeenCalledTimes(1);
   });
 
   it("quick-completes a numerical walk target in one hero tap instead of stepping by 0.5", () => {

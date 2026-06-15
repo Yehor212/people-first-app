@@ -91,7 +91,10 @@ export const MiniWeekRow = memo(function MiniWeekRow({
   const isNumerical = habit.habitType === "numerical";
 
   const days = useMemo(() => getCurrentISOWeek(today), [today]);
-  const computedEntries = useMemo(() => computeEntriesWithAuto(habit), [habit]);
+  const computedEntries = useMemo(
+    () => (interactionScope === "today" ? (habit.entries ?? {}) : computeEntriesWithAuto(habit)),
+    [habit, interactionScope],
+  );
 
   const getEntryVal = useCallback(
     (date: string): number => {

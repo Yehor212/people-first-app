@@ -1,11 +1,34 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { HeroWeeklyHabitCard } from "../HeroWeeklyHabitCard";
 import { toStoredValue } from "@/lib/habits";
+import { scheduleIdle } from "@/lib/scheduleIdle";
 import { getToday } from "@/lib/utils";
 import type { Habit } from "@/types";
 
 const miniWeekRowSpy = vi.hoisted(() => vi.fn());
+const getCurrentStreakSpy = vi.hoisted(() =>
+  vi.fn((h: { entries?: Record<string, unknown> }) =>
+    Object.keys(h.entries ?? {}).length > 0 ? 1 : 0,
+  ),
+);
+const scheduleIdleCallbacks = vi.hoisted(() => [] as Array<() => void>);
+
+vi.mock("@/lib/habitScore", () => ({
+  getCurrentStreak: getCurrentStreakSpy,
+}));
+
+vi.mock("@/lib/scheduleIdle", () => ({
+  scheduleIdle: vi.fn((callback: () => void) => {
+    scheduleIdleCallbacks.push(callback);
+    return {
+      cancel: vi.fn(() => {
+        const index = scheduleIdleCallbacks.indexOf(callback);
+        if (index >= 0) scheduleIdleCallbacks.splice(index, 1);
+      }),
+    };
+  }),
+}));
 
 vi.mock("@/contexts/LanguageContext", () => ({
   useLanguage: () => ({
@@ -75,6 +98,9 @@ describe("HeroWeeklyHabitCard", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2026, 3, 20, 12, 0, 0));
     miniWeekRowSpy.mockClear();
+    getCurrentStreakSpy.mockClear();
+    vi.mocked(scheduleIdle).mockClear();
+    scheduleIdleCallbacks.length = 0;
   });
 
   afterEach(() => {
@@ -168,6 +194,35 @@ describe("HeroWeeklyHabitCard", () => {
 
     expect(onToggle).toHaveBeenCalledWith("walk", getToday());
   });
+
+  it.each(["Leaf", "Water", "Focus", "Book"])(
+    "renders stored lucide-style habit icon %s as a pictogram instead of raw text",
+    (icon) => {
+      render(
+        <HeroWeeklyHabitCard
+          habit={habit({
+            id: `icon-${icon.toLowerCase()}`,
+            name: `${icon} habit`,
+            icon,
+            habitType: "boolean",
+            targetValue: 0,
+            unit: "",
+          })}
+          onToggle={vi.fn()}
+        />,
+      );
+
+      const iconButton = screen.getByTestId(
+        `hero-weekly-card-icon-${icon.toLowerCase()}-emoji-check`,
+      );
+      expect(iconButton).not.toHaveTextContent(icon);
+      expect(iconButton.querySelector("svg")).toBeInTheDocument();
+      expect(screen.getByTestId(`hero-weekly-card-icon-${icon.toLowerCase()}`)).toHaveAttribute(
+        "aria-label",
+        `${icon} habit`,
+      );
+    },
+  );
 
   it("uses the emoji button as today's smart numerical check-in", () => {
     const onNumericalAction = vi.fn();
@@ -284,6 +339,86 @@ describe("HeroWeeklyHabitCard", () => {
     );
   });
 
+  it("defers current streak calculation until idle so hero cards do not block first paint", () => {
+    const today = getToday();
+
+    render(
+      <HeroWeeklyHabitCard
+        habit={habit({
+          id: "walk",
+          name: "Morning walk",
+          habitType: "boolean",
+          targetValue: 0,
+          unit: "",
+          entries: {
+            [today]: { value: 1 },
+          },
+        })}
+        onToggle={vi.fn()}
+      />,
+    );
+
+    expect(getCurrentStreakSpy).not.toHaveBeenCalled();
+    expect(scheduleIdle).toHaveBeenCalledWith(expect.any(Function), 240, 80);
+    expect(screen.getByTestId("hero-weekly-card-walk-streak")).not.toHaveTextContent(
+      "1d streak",
+    );
+
+    act(() => {
+      scheduleIdleCallbacks.shift()?.();
+    });
+
+    expect(getCurrentStreakSpy).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId("hero-weekly-card-walk-streak")).toHaveTextContent(
+      "1d streak",
+    );
+  });
+
+  it("serializes idle streak calculations across mounted hero cards", () => {
+    const today = getToday();
+    const card = (id: string) => (
+      <HeroWeeklyHabitCard
+        key={id}
+        habit={habit({
+          id,
+          name: id,
+          habitType: "boolean",
+          targetValue: 0,
+          unit: "",
+          entries: {
+            [today]: { value: 1 },
+          },
+        })}
+        onToggle={vi.fn()}
+      />
+    );
+
+    render(
+      <>
+        {card("walk")}
+        {card("read")}
+        {card("water")}
+      </>,
+    );
+
+    expect(scheduleIdleCallbacks).toHaveLength(1);
+    expect(getCurrentStreakSpy).not.toHaveBeenCalled();
+
+    act(() => {
+      scheduleIdleCallbacks.shift()?.();
+    });
+
+    expect(getCurrentStreakSpy).toHaveBeenCalledTimes(1);
+    expect(scheduleIdleCallbacks).toHaveLength(1);
+
+    act(() => {
+      scheduleIdleCallbacks.shift()?.();
+    });
+
+    expect(getCurrentStreakSpy).toHaveBeenCalledTimes(2);
+    expect(scheduleIdleCallbacks).toHaveLength(1);
+  });
+
   it("keeps quarter-step values readable for measurable habits", () => {
     const today = getToday();
     render(
@@ -383,6 +518,9 @@ describe("HeroWeeklyHabitCard", () => {
         onToggle={vi.fn()}
       />,
     );
+    act(() => {
+      scheduleIdleCallbacks.shift()?.();
+    });
 
     expect(screen.getByTestId("hero-weekly-card-walk-identity-vote")).toHaveTextContent(
       "step logged",
