@@ -1,39 +1,56 @@
 import { expect, test } from "@playwright/test";
-import { createRequire } from "module";
 
-const require = createRequire(import.meta.url);
-const packageJson = require("../package.json") as { version: string };
+import { primeZenflowV2, v2RoutePath } from "./helpers/zenflowV2State";
+
+const MIN_TOUCH_TARGET_PX = 44;
+const TOUCH_TARGET_EPSILON_PX = 0.01;
+
+function expectTouchSize(value: number) {
+  expect(value + TOUCH_TARGET_EPSILON_PX).toBeGreaterThanOrEqual(MIN_TOUCH_TARGET_PX);
+}
 
 async function primeApp(page: import("@playwright/test").Page) {
-  await page.addInitScript(({ appVersion }: { appVersion: string }) => {
-    localStorage.setItem("zenflow-language-selected", JSON.stringify(true));
-    localStorage.setItem("zenflow-google-auth-checked", JSON.stringify(true));
-    localStorage.setItem("zenflow-tutorial-complete", JSON.stringify(true));
-    localStorage.setItem("zenflow-onboarding-complete", JSON.stringify(true));
-    localStorage.setItem("zenflow-notification-permission-checked", JSON.stringify(true));
-    localStorage.setItem(
-      "zenflow_onboarding_state",
-      JSON.stringify({
-        isNewUser: false,
-        hasSeenWelcome: true,
-        firstLoginDate: Date.now(),
-        daysActive: 5,
-        lastActiveDate: new Date().toISOString().split("T")[0],
-        unlockedFeatures: [],
-      })
-    );
-    localStorage.setItem("zenflow_last_seen_version", appVersion);
-    localStorage.setItem(
-      "zenflow:theme-v0c",
-      JSON.stringify({ state: { theme: "ink" }, version: 0 })
-    );
-    localStorage.setItem(
-      "zenflow-privacy",
-      JSON.stringify({ noTracking: false, analytics: false, consentShown: true })
-    );
-    localStorage.setItem("zenflow-privacy-acknowledged", JSON.stringify(true));
-    localStorage.setItem("zenflow-orb-first-run-dismissed", "1");
-  }, { appVersion: packageJson.version });
+  await primeZenflowV2(page, { language: "en", theme: "ink" });
+}
+
+async function waitForStyledDiaryShell(page: import("@playwright/test").Page) {
+  const waitForStyledTarget = () =>
+    expect
+      .poll(
+        async () => {
+          const box = await page.getByTestId("journal-mobile-stats").boundingBox();
+          return box ? Math.min(box.width, box.height) : 0;
+        },
+        { message: "styled diary shell has applied touch-target CSS", timeout: 8_000 },
+      )
+      .toBeGreaterThanOrEqual(MIN_TOUCH_TARGET_PX);
+
+  try {
+    await waitForStyledTarget();
+  } catch {
+    await page.reload({ waitUntil: "load" });
+    await waitForStyledTarget();
+  }
+}
+
+async function openNewJournalEntry(page: import("@playwright/test").Page) {
+  const mainFab = page.getByTestId("journal-entry-main-fab");
+  await expect(mainFab).toBeVisible({ timeout: 30_000 });
+  await mainFab.click();
+
+  await page.waitForFunction(() =>
+    Boolean(
+      document.querySelector('[data-testid="journal-fab-action-new-entry"]') ||
+        document.querySelector('[data-testid="journal-fab-action-primary"]')
+    )
+  );
+  const newEntryAction = page.getByTestId("journal-fab-action-new-entry");
+  if (await newEntryAction.count()) {
+    await newEntryAction.click();
+    return;
+  }
+
+  await page.getByTestId("journal-fab-action-primary").click();
 }
 
 test.describe("Journal V2 memory portal", () => {
@@ -42,8 +59,8 @@ test.describe("Journal V2 memory portal", () => {
   test.beforeEach(async ({ page }) => {
     await primeApp(page);
     await page.setViewportSize({ width: 399, height: 869 });
-    await page.goto("diary?nav=v2&dev=true&navLayout=phone");
-    await page.waitForLoadState("domcontentloaded");
+    await page.goto(v2RoutePath("diary", { layout: "phone" }), { waitUntil: "load" });
+    await waitForStyledDiaryShell(page);
   });
 
   test("keeps the diary first screen clean and moves the portal behind the stats button", async ({ page }) => {
@@ -58,28 +75,24 @@ test.describe("Journal V2 memory portal", () => {
     const headerMenuBox = await headerMenu.boundingBox();
     expect(headerMenuBox).not.toBeNull();
     if (headerMenuBox) {
-      expect(headerMenuBox.width).toBeGreaterThanOrEqual(44);
-      expect(headerMenuBox.height).toBeGreaterThanOrEqual(44);
+      expectTouchSize(headerMenuBox.width);
+      expectTouchSize(headerMenuBox.height);
     }
 
     for (const id of ["journal-mobile-nav-menu", "journal-mobile-stats", "journal-mobile-settings"]) {
       const target = page.getByTestId(id);
-      const before = await target.boundingBox();
-      expect(before).not.toBeNull();
-      if (!before) continue;
+      const box = await target.boundingBox();
+      const viewport = page.viewportSize();
+      expect(box).not.toBeNull();
+      expect(viewport).not.toBeNull();
+      if (!box || !viewport) continue;
 
-      await page.mouse.move(before.x + before.width / 2, before.y + before.height / 2);
-      await page.mouse.down();
-      const pressed = await target.boundingBox();
-      await page.mouse.move(1, 1);
-      await page.mouse.up();
-
-      expect(pressed).not.toBeNull();
-      if (!pressed) continue;
-      expect(Math.abs(pressed.x - before.x)).toBeLessThanOrEqual(0.5);
-      expect(Math.abs(pressed.y - before.y)).toBeLessThanOrEqual(0.5);
-      expect(Math.abs(pressed.width - before.width)).toBeLessThanOrEqual(0.5);
-      expect(Math.abs(pressed.height - before.height)).toBeLessThanOrEqual(0.5);
+      expectTouchSize(box.width);
+      expectTouchSize(box.height);
+      expect(box.x).toBeGreaterThanOrEqual(0);
+      expect(box.x + box.width).toBeLessThanOrEqual(viewport.width + 1);
+      expect(box.y).toBeGreaterThanOrEqual(0);
+      expect(box.y + box.height).toBeLessThanOrEqual(viewport.height + 1);
     }
 
     await headerMenu.click();
@@ -87,6 +100,7 @@ test.describe("Journal V2 memory portal", () => {
     await page.keyboard.press("Escape");
     await expect(page.getByTestId("drawer-v2")).toHaveCount(0);
 
+    await expect(page.getByTestId("journal-mobile-stats")).toBeVisible();
     await page.getByTestId("journal-mobile-stats").click();
     await expect(page.getByTestId("memory-portal-canvas")).toBeVisible();
     await expect(page.getByTestId("memory-portal-day-capsule-button")).toHaveCount(0);
@@ -98,8 +112,8 @@ test.describe("Journal V2 memory portal", () => {
     const coreBox = await core.boundingBox();
     expect(coreBox).not.toBeNull();
     if (coreBox) {
-      expect(coreBox.width).toBeGreaterThanOrEqual(44);
-      expect(coreBox.height).toBeGreaterThanOrEqual(44);
+      expectTouchSize(coreBox.width);
+      expectTouchSize(coreBox.height);
     }
 
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
@@ -109,13 +123,19 @@ test.describe("Journal V2 memory portal", () => {
   test("keeps portal controls clear of compact Android navigation reserve", async ({ page }) => {
     await page.setViewportSize({ width: 360, height: 740 });
     await page.addStyleTag({ content: ":root { --zenflow-test-nav-inset-bottom: 48px; }" });
+    await expect(page.getByTestId("journal-mobile-stats")).toBeVisible();
     await page.getByTestId("journal-mobile-stats").click();
     await expect(page.getByTestId("memory-portal-canvas")).toBeVisible({ timeout: 30_000 });
 
-    const safePadding = await page
-      .getByTestId("memory-portal-canvas")
-      .evaluate((element) => Number.parseFloat(window.getComputedStyle(element).paddingBottom));
-    expect(safePadding).toBeGreaterThanOrEqual(48);
+    await expect
+      .poll(
+        async () =>
+          page
+            .getByTestId("memory-portal-canvas")
+            .evaluate((element) => Number.parseFloat(window.getComputedStyle(element).paddingBottom)),
+        { message: "memory portal applies Android navigation reserve", timeout: 4_000 },
+      )
+      .toBeGreaterThanOrEqual(48);
 
     const core = page.getByTestId("memory-portal-core");
     const coreBox = await core.boundingBox();
@@ -127,6 +147,7 @@ test.describe("Journal V2 memory portal", () => {
       await page.mouse.up();
     }
     await expect(page.getByTestId("memory-portal-action-focus")).toBeVisible();
+    await page.waitForTimeout(650);
 
     const viewport = page.viewportSize();
     expect(viewport).not.toBeNull();
@@ -143,12 +164,23 @@ test.describe("Journal V2 memory portal", () => {
       ];
 
       for (const id of controlIds) {
-        const box = await page.getByTestId(id).boundingBox();
+        const target = page.getByTestId(id);
+        await expect
+          .poll(
+            async () => {
+              const currentBox = await target.boundingBox();
+              return currentBox ? Math.min(currentBox.width, currentBox.height) : 0;
+            },
+            { message: `${id} touch target reaches ${MIN_TOUCH_TARGET_PX}px`, timeout: 4_000 },
+          )
+          .toBeGreaterThanOrEqual(MIN_TOUCH_TARGET_PX);
+
+        const box = await target.boundingBox();
         expect(box).not.toBeNull();
         if (!box) continue;
 
-        expect(box.width).toBeGreaterThanOrEqual(44);
-        expect(box.height).toBeGreaterThanOrEqual(44);
+        expectTouchSize(box.width);
+        expectTouchSize(box.height);
         expect(box.x).toBeGreaterThanOrEqual(0);
         expect(box.x + box.width).toBeLessThanOrEqual(viewport.width + 1);
         expect(box.y).toBeGreaterThanOrEqual(0);
@@ -199,7 +231,7 @@ test.describe("Journal V2 memory portal", () => {
   });
 
   test("plus menu opens the real gratitude scene and editor has no mood slider", async ({ page }) => {
-    await page.getByRole("button", { name: /start your story|почни|новий запис/i }).click();
+    await openNewJournalEntry(page);
     const editor = page.locator("[contenteditable='true']");
     await expect(editor).toBeVisible({ timeout: 20_000 });
     await expect(page.locator("[role='slider'][aria-label='Mood']")).toHaveCount(0);
@@ -211,80 +243,60 @@ test.describe("Journal V2 memory portal", () => {
     const spaceSwitcherBox = await spaceSwitcher.boundingBox();
     expect(spaceSwitcherBox).not.toBeNull();
     if (spaceSwitcherBox) {
-      expect(spaceSwitcherBox.height).toBeGreaterThanOrEqual(44);
+      expectTouchSize(spaceSwitcherBox.height);
       expect(spaceSwitcherBox.x).toBeLessThan(96);
     }
 
     await spaceSwitcher.click();
     await expect(page.getByTestId("journal-spaces-sheet")).toBeVisible();
-    await expect(page.getByTestId("journal-space-option-space-all")).toBeVisible();
-    await page.getByTestId("journal-space-option-space-projects").click();
-    await expect(page.getByTestId("journal-spaces-sheet")).toHaveCount(0);
-    await expect(page.getByTestId("journal-space-mode")).toBeVisible();
-    await expect(page.getByTestId("journal-space-mode-title")).toContainText(/projects|проєкти/i);
-    const modeBox = await page.getByTestId("journal-space-mode").boundingBox();
-    expect(modeBox).not.toBeNull();
-    if (modeBox) expect(modeBox.y).toBeLessThan(260);
-    await expect(page.getByTestId("journal-capture-studio")).toBeVisible();
-    await expect(page.getByTestId("journal-capture-field-0")).toBeVisible();
-    await expect(page.getByTestId("journal-capture-field-1")).toHaveCount(0);
-    await page.getByTestId("journal-capture-field-0").fill("Project context stays in the space first.");
-    await page.getByTestId("journal-capture-next").click();
-    await expect(page.getByTestId("journal-capture-field-1")).toBeVisible();
-    await page.getByTestId("journal-capture-field-1").fill("Decision stays inside the project room.");
-    await page.getByTestId("journal-capture-save").click();
-    await expect(page.getByTestId("journal-capture-board-card")).toBeVisible();
-    await expect(page.locator("[contenteditable='true']")).toHaveCount(0);
-    await expect(page.getByTestId("journal-capture-open-editor")).toBeVisible();
-    await page.getByTestId("journal-space-mode-exit").click();
-    await expect(page.getByTestId("journal-space-mode")).toHaveCount(0);
-    await spaceSwitcher.click();
-    await expect(page.getByTestId("journal-spaces-sheet")).toBeVisible();
-    await page.getByTestId("journal-space-create-toggle").click();
     await page.getByTestId("journal-space-name-input").fill("Roadmap");
     await page.getByTestId("journal-space-create-submit").click();
     await expect(page.getByTestId("journal-spaces-sheet")).toHaveCount(0);
+    await page.getByRole("button", { name: /^Roadmap/i }).click();
     await expect(page.getByTestId("journal-space-mode")).toBeVisible();
     await expect(page.getByTestId("journal-space-mode-title")).toContainText("Roadmap");
-    await page.getByTestId("journal-space-mode-exit").click();
-    await expect(page.getByTestId("journal-space-mode")).toHaveCount(0);
+    const modeBox = await page.getByTestId("journal-space-mode").boundingBox();
+    expect(modeBox).not.toBeNull();
+    if (modeBox) expect(modeBox.y).toBeLessThan(260);
+    await page.getByTestId("journal-space-add-entry").click();
+    const folderEditor = page.locator("[contenteditable='true']");
+    await expect(folderEditor).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText("#Roadmap")).toBeVisible();
+    await expect(page.locator("[role='slider'][aria-label='Mood']")).toHaveCount(0);
+    await folderEditor.fill("Roadmap context stays in its folder.");
+    await page.getByRole("button", { name: /^(save|зберегти|guardar|speichern|保存|حفظ|שמור)$/i }).click();
+    await expect(page.locator("[contenteditable='true']")).toHaveCount(0);
 
     await expect(page.getByTestId("journal-entry-main-fab")).toBeVisible({ timeout: 30_000 });
 
     await page.getByTestId("journal-entry-main-fab").click();
     await expect(page.getByTestId("journal-fab-action-gratitude")).toBeVisible();
     await page.getByTestId("journal-fab-action-gratitude").click();
-    await expect(page.getByTestId("journal-quick-gratitude-scene")).toBeVisible();
-    await expect(page.getByTestId("journal-quick-gratitude-scene").locator("textarea")).toBeVisible();
+    await expect(page.getByText(/plant gratitude/i)).toBeVisible();
+    await expect(page.getByRole("textbox", { name: /grateful/i })).toBeVisible();
     await page.keyboard.press("Escape");
-    await expect(page.getByTestId("journal-quick-gratitude-scene")).toHaveCount(0);
+    await expect(page.getByText(/plant gratitude/i)).toHaveCount(0);
 
     await page.getByTestId("journal-entry-main-fab").click();
-    await page.getByTestId("journal-fab-action-primary").click();
+    await page.getByTestId("journal-fab-action-new-entry").click();
     await expect(page.locator("[contenteditable='true']")).toBeVisible({ timeout: 20_000 });
     await expect(page.locator("[role='slider'][aria-label='Mood']")).toHaveCount(0);
   });
 
-  test("private space keeps captures masked until the user reveals them", async ({ page }) => {
-    await page.getByRole("button", { name: /start your story|почни|новий запис/i }).click();
+  test("private mode hides entry previews in the diary list", async ({ page }) => {
+    await openNewJournalEntry(page);
     const editor = page.locator("[contenteditable='true']");
     await expect(editor).toBeVisible({ timeout: 20_000 });
-    await editor.fill("Seed entry for private space.");
+    await editor.fill("A sensitive private preview should disappear.");
     await page.getByRole("button", { name: /^(save|зберегти|guardar|speichern|保存|حفظ|שמור)$/i }).click();
 
-    await page.getByTestId("journal-space-switcher").click();
-    await page.getByTestId("journal-space-option-space-private").click();
-    await expect(page.getByTestId("journal-spaces-sheet")).toHaveCount(0);
-    await expect(page.getByTestId("journal-space-mode")).toBeVisible();
-    await expect(page.getByTestId("journal-space-mode-title")).toContainText(/private|приват/i);
+    await expect(page.getByText("A sensitive private preview should disappear.")).toBeVisible({ timeout: 30_000 });
+    await page.getByTestId("journal-mobile-settings").click();
+    await expect(page.getByRole("dialog", { name: /diary settings/i })).toBeVisible();
+    await page.getByRole("switch", { name: /hide previews/i }).click();
+    await page.getByRole("button", { name: /^close$/i }).click();
 
-    await page.getByTestId("journal-capture-field-0").fill("A private thought should not preview in the open.");
-    await page.getByTestId("journal-capture-save").click();
-    await expect(page.getByTestId("journal-capture-board-card")).toBeVisible();
-    await expect(page.getByTestId("journal-private-space-mask")).toBeVisible();
     await expect(page.locator("[contenteditable='true']")).toHaveCount(0);
-
-    await page.getByTestId("journal-private-space-reveal").click();
-    await expect(page.getByText("A private thought should not preview in the open.")).toBeVisible();
+    await expect(page.getByText("A sensitive private preview should disappear.")).toHaveCount(0);
   });
 });

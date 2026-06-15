@@ -86,6 +86,16 @@ describe("DrawerV2", () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
+  it("makes the closing backdrop passive during the exit animation", () => {
+    const { rerender } = render(<DrawerV2 {...baseProps} open={true} />);
+
+    rerender(<DrawerV2 {...baseProps} open={false} />);
+
+    const backdrop = screen.getByTestId("drawer-v2-backdrop");
+    expect(backdrop.className).toContain("opacity-0");
+    expect(backdrop.className).toContain("pointer-events-none");
+  });
+
   it("calls onClose when close button is clicked", () => {
     const onClose = vi.fn();
     render(<DrawerV2 {...baseProps} onClose={onClose} />);

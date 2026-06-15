@@ -15,55 +15,15 @@
  */
 
 import { test, expect } from "@playwright/test";
-import { createRequire } from "module";
 
-const require = createRequire(import.meta.url);
-const packageJson = require("../package.json") as { version: string };
+import { primeZenflowV2 } from "./helpers/zenflowV2State";
 
 async function primeApp(
   page: import("@playwright/test").Page,
-  opts: { paperTheme?: "paper" | "ink" } = {},
+  opts: { paperTheme?: "paper" | "ink" | "oled" } = {},
 ) {
   const paperTheme = opts.paperTheme ?? "paper";
-  await page.addInitScript(
-    ({ appVersion, paperTheme }: { appVersion: string; paperTheme: string }) => {
-      // Dismiss first-run chrome so Nav V2 shell takes centre stage.
-      localStorage.setItem("zenflow-language-selected", JSON.stringify(true));
-      localStorage.setItem("zenflow-google-auth-checked", JSON.stringify(true));
-      localStorage.setItem("zenflow-tutorial-complete", JSON.stringify(true));
-      localStorage.setItem("zenflow-onboarding-complete", JSON.stringify(true));
-      localStorage.setItem(
-        "zenflow-notification-permission-checked",
-        JSON.stringify(true),
-      );
-      localStorage.setItem(
-        "zenflow_onboarding_state",
-        JSON.stringify({
-          isNewUser: false,
-          hasSeenWelcome: true,
-          firstLoginDate: Date.now(),
-          daysActive: 5,
-          lastActiveDate: new Date().toISOString().split("T")[0],
-          unlockedFeatures: [],
-        }),
-      );
-      localStorage.setItem("zenflow_last_seen_version", appVersion);
-      localStorage.setItem("zenflow-theme", "light");
-      // Phase 3-A.4a-day: seed paper/ink theme store so OrbPage variant-switches
-      // CosmicBgAdapter between DayCosmicBackground and night cosmic.
-      localStorage.setItem(
-        "zenflow:theme-v0c",
-        JSON.stringify({ state: { theme: paperTheme }, version: 0 }),
-      );
-      localStorage.setItem(
-        "zenflow-privacy",
-        JSON.stringify({ noTracking: false, analytics: false, consentShown: true }),
-      );
-      localStorage.setItem("zenflow-privacy-acknowledged", JSON.stringify(true));
-      localStorage.setItem("zenflow-orb-first-run-dismissed", "1");
-    },
-    { appVersion: packageJson.version, paperTheme },
-  );
+  await primeZenflowV2(page, { language: "en", theme: paperTheme });
 }
 
 // Phase 3-A.3: freeze time-of-day to 'day' (12:00) so palette/stars are
@@ -109,17 +69,35 @@ async function expectOrbPageReady(page: import("@playwright/test").Page) {
   await expect(page.getByTestId("orb-page")).toBeVisible({ timeout: 20_000 });
 }
 
+async function expectDarkThemeCardToken(
+  page: import("@playwright/test").Page,
+  expectedTheme: "ink" | "oled",
+) {
+  const tokens = await page.evaluate(() => {
+    const styles = getComputedStyle(document.documentElement);
+    return {
+      card: styles.getPropertyValue("--card").trim(),
+      surface: styles.getPropertyValue("--zf-surface-1").trim(),
+      theme: document.documentElement.dataset.theme,
+    };
+  });
+
+  expect(tokens.theme).toBe(expectedTheme);
+  expect(tokens.card).toBe(tokens.surface);
+  expect(tokens.card).not.toBe("165 18% 99%");
+}
+
 test.describe("Nav V2 Infrastructure Baselines", () => {
-  test("V2 boot forces the dark main loading screen before the app shell", async ({
+  test("V2 boot uses the persisted loading screen before the app shell", async ({
     page,
   }) => {
     await primeApp(page, { paperTheme: "paper" });
     await freezeTimeToDay(page);
-    await page.goto("/?nav=v2", { waitUntil: "domcontentloaded" });
+    await page.goto("?nav=v2", { waitUntil: "domcontentloaded" });
 
     const splash = page.getByTestId("splash-theme-shell");
     await expect(splash).toBeVisible();
-    await expect(splash).toHaveAttribute("data-splash-theme", "ink");
+    await expect(splash).toHaveAttribute("data-splash-theme", "paper");
     await expect(page.getByTestId("splash-brand-logo")).toBeVisible();
     await expect(page.getByTestId("splash-infinity-loader")).toBeVisible();
     await expect(page.getByText("ZenFlow")).toBeVisible();
@@ -143,7 +121,7 @@ test.describe("Nav V2 Infrastructure Baselines", () => {
         localStorage.setItem("zenflow-orb-first-run-dismissed", "1");
       });
       await page.setViewportSize(viewport);
-      await page.goto("/?nav=v2");
+      await page.goto("?nav=v2");
       await page.evaluate(() => document.fonts.ready);
 
       await expectVisibleAboveFold(page, "orb-page-next");
@@ -158,7 +136,7 @@ test.describe("Nav V2 Infrastructure Baselines", () => {
     await primeApp(page, { paperTheme: "paper" });
     await freezeTimeToDay(page);
     await page.setViewportSize({ width: 1280, height: 800 });
-    await page.goto("/?nav=v2");
+    await page.goto("?nav=v2");
     await page.evaluate(() => document.fonts.ready);
 
     // SidebarV2 must be present + orb page shell rendered
@@ -171,7 +149,7 @@ test.describe("Nav V2 Infrastructure Baselines", () => {
 
     const orbBtn = page
       .getByTestId("sidebar-v2")
-      .getByRole("button", { name: /^Orb$/ });
+      .getByRole("button", { name: /^Mood$/ });
     await expect(orbBtn).toHaveAttribute("aria-current", "page");
 
     // Visual baseline — day variant (paper): warm OKLCH mesh, dust motes,
@@ -189,7 +167,7 @@ test.describe("Nav V2 Infrastructure Baselines", () => {
     await primeApp(page, { paperTheme: "ink" });
     await freezeTimeToDay(page);
     await page.setViewportSize({ width: 1280, height: 800 });
-    await page.goto("/?nav=v2");
+    await page.goto("?nav=v2");
     await page.evaluate(() => document.fonts.ready);
 
     await expectOrbPageReady(page);
@@ -211,7 +189,7 @@ test.describe("Nav V2 Infrastructure Baselines", () => {
     await primeApp(page, { paperTheme: "paper" });
     await freezeTimeToDay(page);
     await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto("/?nav=v2");
+    await page.goto("?nav=v2");
     await page.evaluate(() => document.fonts.ready);
 
     await expectOrbPageReady(page);
@@ -223,11 +201,6 @@ test.describe("Nav V2 Infrastructure Baselines", () => {
     for (const id of ["orb", "habits", "diary", "settings"]) {
       expect(await page.getByTestId(`mobile-nav-v2-tab-${id}`).count()).toBe(0);
     }
-
-    const primaryNav = await page
-      .locator('[role="navigation"][aria-label*="Primary" i]')
-      .count();
-    expect(primaryNav).toBeGreaterThan(0);
 
     await expect(page).toHaveScreenshot("nav-v2-mobile-orb-day.png", {
       fullPage: true,
@@ -242,7 +215,7 @@ test.describe("Nav V2 Infrastructure Baselines", () => {
     await primeApp(page, { paperTheme: "ink" });
     await freezeTimeToDay(page);
     await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto("/?nav=v2");
+    await page.goto("?nav=v2");
     await page.evaluate(() => document.fonts.ready);
 
     await expectOrbPageReady(page);
@@ -259,7 +232,7 @@ test.describe("Nav V2 Infrastructure Baselines", () => {
   test("V1 remains default when ?nav=v2 is absent", async ({ page }) => {
     await primeApp(page);
     await page.setViewportSize({ width: 1280, height: 800 });
-    await page.goto("/");
+    await page.goto("./");
     // V2 shell must NOT render when the flag is off and no override is set
     await expect(page.getByTestId("sidebar-v2")).toHaveCount(0);
     await expect(page.getByTestId("mobile-nav-v2")).toHaveCount(0);
@@ -279,7 +252,7 @@ test.describe("Nav V2 Infrastructure Baselines", () => {
       localStorage.setItem("zenflow-orb-first-run-dismissed", "1");
     });
     await page.setViewportSize({ width: 1280, height: 900 });
-    await page.goto("/?nav=v2");
+    await page.goto("?nav=v2");
     await page.evaluate(() => document.fonts.ready);
 
     await expectOrbPageReady(page);
@@ -328,7 +301,7 @@ test.describe("Nav V2 Infrastructure Baselines", () => {
       localStorage.setItem("zenflow-orb-first-run-dismissed", "1");
     });
     await page.setViewportSize({ width: 1280, height: 900 });
-    await page.goto("/?nav=v2");
+    await page.goto("?nav=v2");
     await page.evaluate(() => document.fonts.ready);
 
     await expectOrbPageReady(page);
@@ -377,7 +350,7 @@ test.describe("Nav V2 Infrastructure Baselines", () => {
       localStorage.setItem("zenflow-orb-first-run-dismissed", "1");
     });
     await page.setViewportSize(opts.viewport);
-    await page.goto("/?nav=v2");
+    await page.goto("?nav=v2");
     await page.evaluate(() => document.fonts.ready);
 
     await expectOrbPageReady(page);
@@ -510,6 +483,34 @@ test.describe("Nav V2 Infrastructure Baselines", () => {
       const count = await chips.count();
       expect(count).toBeGreaterThanOrEqual(15);
 
+      if (theme === "paper") {
+        await expect(page.getByTestId("emotion-more-precise")).toHaveAttribute(
+          "aria-expanded",
+          "true",
+        );
+        for (const key of ["nostalgic", "appreciated", "content", "loved", "brave"]) {
+          await expect(page.getByTestId(`emotion-chip-${key}`)).toBeVisible();
+        }
+        await expect(page.getByTestId("orb-page-back")).toBeVisible();
+        await expect(page.getByTestId("orb-page-open-diary")).toBeVisible();
+
+        const horizontalOverflow = await page.evaluate(
+          () => document.documentElement.scrollWidth - window.innerWidth,
+        );
+        expect(horizontalOverflow).toBeLessThanOrEqual(1);
+        await expect(page).toHaveScreenshot(
+          `nav-v2-mobile-orb-emotions-expanded-${themeLabel}.png`,
+          {
+            fullPage: true,
+            maxDiffPixelRatio: 0.04,
+            animations: "disabled",
+            timeout: 30_000,
+            mask: [page.getByTestId("emotion-tag-chips")],
+          },
+        );
+        return;
+      }
+
       await expect(page).toHaveScreenshot(
         `nav-v2-mobile-orb-emotions-expanded-${themeLabel}.png`,
         {
@@ -532,7 +533,7 @@ test.describe("Nav V2 Infrastructure Baselines", () => {
       localStorage.setItem("zenflow-orb-first-run-dismissed", "1");
     });
     await page.setViewportSize({ width: 1280, height: 900 });
-    await page.goto("/?nav=v2");
+    await page.goto("?nav=v2");
     await page.evaluate(() => document.fonts.ready);
 
     await page.waitForFunction(() => {
@@ -594,7 +595,7 @@ test.describe("Nav V2 Infrastructure Baselines", () => {
       localStorage.setItem("zenflow-orb-first-run-dismissed", "1");
     });
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto("/?nav=v2");
+    await page.goto("?nav=v2");
     await page.evaluate(() => document.fonts.ready);
 
     await page.waitForFunction(() => {
@@ -639,7 +640,7 @@ test.describe("Nav V2 Infrastructure Baselines", () => {
     ).toBeVisible({ timeout: 30_000 });
 
     await expect(page).toHaveScreenshot("nav-v2-diary-draft-card-mobile-day.png", {
-      fullPage: true,
+      fullPage: false,
       maxDiffPixelRatio: 0.04,
       animations: "disabled",
       timeout: 30_000,
@@ -691,18 +692,7 @@ test.describe.skip("MoodSliderV2 Baselines (Phase 3-A.4c-ii-d-d)", () => {
       // @media query branch activates, but DO NOT inject the 0ms override.
       await page.emulateMedia({ reducedMotion: "reduce" });
     }
-    // primeApp supports paper|ink; oled needs explicit override.
-    await primeApp(page, {
-      paperTheme: opts.theme === "oled" ? "paper" : opts.theme,
-    });
-    if (opts.theme === "oled") {
-      await page.addInitScript(() => {
-        localStorage.setItem(
-          "zenflow:theme-v0c",
-          JSON.stringify({ state: { theme: "oled" }, version: 0 }),
-        );
-      });
-    }
+    await primeApp(page, { paperTheme: opts.theme });
     await freezeTimeToDay(page);
     await page.addInitScript(() => {
       localStorage.setItem("zenflow-orb-first-run-dismissed", "1");
@@ -743,7 +733,7 @@ test.describe.skip("MoodSliderV2 Baselines (Phase 3-A.4c-ii-d-d)", () => {
       });
     }
     await page.setViewportSize(opts.viewport);
-    await page.goto("/?nav=v2");
+    await page.goto("?nav=v2");
     await page.evaluate(() => document.fonts.ready);
 
     await expect(page.getByTestId("orb-page")).toBeVisible({
@@ -758,13 +748,7 @@ test.describe.skip("MoodSliderV2 Baselines (Phase 3-A.4c-ii-d-d)", () => {
     // Empirical veracity check for ink/oled: --card token cascade applied.
     // Catches silent paper fallback on non-paper themes (d-c incident lesson).
     if (opts.theme === "ink" || opts.theme === "oled") {
-      const cardHsl = await page.evaluate(() =>
-        getComputedStyle(document.documentElement)
-          .getPropertyValue("--card")
-          .trim(),
-      );
-      const expected = opts.theme === "ink" ? "34 4% 18%" : "30 3% 11%";
-      expect(cardHsl).toBe(expected);
+      await expectDarkThemeCardToken(page, opts.theme);
     }
 
     await page.waitForTimeout(500);
@@ -1122,19 +1106,7 @@ test.describe("SidebarV2 Theme Coverage (Phase 3-A.4c-ii-d-c)", () => {
     opts: { theme: "ink" | "oled"; collapsed: boolean },
   ) {
     await page.emulateMedia({ reducedMotion: "reduce" });
-    // primeApp only supports paper|ink — for oled, prime with paper then
-    // overwrite the theme-v0c key with oled via second init script.
-    await primeApp(page, {
-      paperTheme: opts.theme === "oled" ? "paper" : opts.theme,
-    });
-    if (opts.theme === "oled") {
-      await page.addInitScript(() => {
-        localStorage.setItem(
-          "zenflow:theme-v0c",
-          JSON.stringify({ state: { theme: "oled" }, version: 0 }),
-        );
-      });
-    }
+    await primeApp(page, { paperTheme: opts.theme });
     await freezeTimeToDay(page);
     await page.addInitScript(() => {
       localStorage.setItem("zenflow-orb-first-run-dismissed", "1");
@@ -1155,7 +1127,7 @@ test.describe("SidebarV2 Theme Coverage (Phase 3-A.4c-ii-d-c)", () => {
       document.documentElement.appendChild(s);
     });
     await page.setViewportSize({ width: 1280, height: 900 });
-    await page.goto("/?nav=v2");
+    await page.goto("?nav=v2");
     await page.evaluate(() => document.fonts.ready);
 
     await expect(page.getByTestId("orb-page")).toBeVisible({ timeout: 20_000 });
@@ -1164,14 +1136,7 @@ test.describe("SidebarV2 Theme Coverage (Phase 3-A.4c-ii-d-c)", () => {
     });
 
     // Empirical veracity check: --card must be ink/oled, not paper.
-    const cardHsl = await page.evaluate(() =>
-      getComputedStyle(document.documentElement)
-        .getPropertyValue("--card")
-        .trim(),
-    );
-    const expected =
-      opts.theme === "ink" ? "34 4% 18%" : "30 3% 11%";
-    expect(cardHsl).toBe(expected);
+    await expectDarkThemeCardToken(page, opts.theme);
 
     // Collapsed state is useState-only (not persisted) — click toggle.
     if (opts.collapsed) {

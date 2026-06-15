@@ -60,6 +60,27 @@ function shouldForceWebNavigation(): boolean {
   return params.get("nav") === "v2" && params.get("dev") === "true";
 }
 
+function NavV2RouteFallback({ label }: { label: string }) {
+  return (
+    <main
+      id="main-content-v2"
+      data-testid="nav-v2-route-fallback"
+      role="status"
+      aria-live="polite"
+      aria-label={label}
+      className="flex min-h-screen items-center justify-center px-4 py-10"
+    >
+      <div className="inline-flex min-h-[44px] items-center gap-3 rounded-2xl border border-border/50 bg-card/70 px-4 py-3 text-sm font-medium text-muted-foreground shadow-sm backdrop-blur-xl [-webkit-backdrop-filter:blur(18px)]">
+        <span
+          aria-hidden="true"
+          className="h-2.5 w-2.5 rounded-full bg-primary motion-safe:animate-pulse"
+        />
+        <span>{label}</span>
+      </div>
+    </main>
+  );
+}
+
 export const NavV2Orchestrator = memo(function NavV2Orchestrator({
   onAddMood,
   onAddGratitude,
@@ -228,7 +249,9 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
         </Suspense>
       )}
 
-      <Suspense fallback={null}>{pageNode}</Suspense>
+      <Suspense fallback={<NavV2RouteFallback label={tx.loading || "Loading..."} />}>
+        {pageNode}
+      </Suspense>
     </div>
   );
 });

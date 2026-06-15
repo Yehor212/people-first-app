@@ -180,7 +180,7 @@ describe("JournalCaptureLauncher", () => {
     fireEvent.click(screen.getByTestId("journal-entry-main-fab"));
     fireEvent.click(screen.getByTestId("journal-fab-action-gratitude"));
 
-    expect(screen.queryByTestId("journal-quick-gratitude-scene")).not.toBeInTheDocument();
+    expect(screen.getByTestId("journal-quick-gratitude-scene")).toBeInTheDocument();
     fireEvent.click(screen.getByTestId("gratitude-widget"));
 
     expect(onAddGratitude).toHaveBeenCalledWith({ id: "g1", text: "thanks" });

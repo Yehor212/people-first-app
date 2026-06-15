@@ -1940,6 +1940,13 @@ export const JournalEntryList = memo(function JournalEntryList({
         {renderDailyQuote()}
         {renderQuietReleaseTrace()}
         {renderSpaceShortcut()}
+        <JournalCaptureLauncher
+          variant="inline"
+          onNewEntry={onNewEntry}
+          onAddGratitude={handleAddGratitudeToSpaces}
+          onFocusEntry={onNewEntry}
+          onReleaseThought={onReleaseThought}
+        />
         <div className="flex flex-col items-center justify-center py-14 px-6 relative rounded-[1.6rem] border border-border/25 bg-card/45 backdrop-blur-xl">
           {/* Ambient floating particles */}
           {[
@@ -1999,13 +2006,6 @@ export const JournalEntryList = memo(function JournalEntryList({
           <p className="text-[10px] text-muted-foreground/60 text-center mb-6 italic">
             {ts.journalEmptyQuote || "Your thoughts are worth preserving"}
           </p>
-          <JournalCaptureLauncher
-            variant="inline"
-            onNewEntry={onNewEntry}
-            onAddGratitude={handleAddGratitudeToSpaces}
-            onFocusEntry={onNewEntry}
-            onReleaseThought={onReleaseThought}
-          />
         </div>
       </div>
     );

@@ -28,7 +28,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 async function waitForApp(page: import('@playwright/test').Page) {
-  await page.goto('/');
+  await page.goto('./');
   await page.waitForLoadState('networkidle');
   const nav = page.locator('[role="navigation"]');
   await expect(nav.first()).toBeVisible({ timeout: 15000 });
@@ -108,16 +108,41 @@ test.describe('Reduced Motion', () => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.addInitScript(() => { localStorage.setItem('zenflow-theme', 'light'); });
     await waitForApp(page);
+    const reducedMotionState = await page.evaluate(() => ({
+      bodyClass: document.body.classList.contains('reduce-motion'),
+      rootAttribute: document.documentElement.dataset.reducedMotion,
+    }));
+    expect(reducedMotionState).toEqual({ bodyClass: true, rootAttribute: 'true' });
+
     const animatedElements = await page.evaluate(() => {
+      const toMs = (durationList: string) =>
+        durationList
+          .split(',')
+          .map((duration) => duration.trim())
+          .map((duration) => {
+            if (duration.endsWith('ms')) return Number.parseFloat(duration);
+            if (duration.endsWith('s')) return Number.parseFloat(duration) * 1000;
+            return Number.parseFloat(duration) || 0;
+          });
+
       const all = document.querySelectorAll('*');
-      let animating = 0;
+      const animating: string[] = [];
       for (const el of all) {
         const style = getComputedStyle(el);
-        if (style.animationName !== 'none' && style.animationDuration !== '0s') animating++;
+        const maxAnimationMs = Math.max(0, ...toMs(style.animationDuration));
+        const maxTransitionMs = Math.max(0, ...toMs(style.transitionDuration));
+        if (
+          (style.animationName !== 'none' && maxAnimationMs > 50) ||
+          maxTransitionMs > 50
+        ) {
+          animating.push(
+            `${el.tagName.toLowerCase()}#${el.id}.${Array.from(el.classList).join('.')}`,
+          );
+        }
       }
       return animating;
     });
-    expect(animatedElements).toBeLessThan(5);
+    expect(animatedElements).toEqual([]);
     await expect(page).toHaveScreenshot('home-reduced-motion.png', { maxDiffPixelRatio: 0.02, fullPage: false });
   });
 });

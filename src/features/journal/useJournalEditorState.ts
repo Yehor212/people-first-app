@@ -4,7 +4,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { usePanicGesture } from "@/hooks/usePanicGesture";
 import { registerModalCloseCallback } from "@/lib/androidBackHandler";
-import { createFocusTrap, announceSuccess } from "@/lib/a11y";
+import { createFocusTrap, announceError, announceSuccess } from "@/lib/a11y";
 import { hapticSuccess, hapticTap } from "@/lib/haptics";
 import type { SaveState } from "./SaveIndicator";
 import type {
@@ -83,6 +83,22 @@ function getDefaultEditorTheme(appliedTheme: AppliedTheme): Pick<
     bgIntensity: "full",
     particleSpeed: "slow",
   };
+}
+
+function isMicrophonePermissionError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  return ["NotAllowedError", "PermissionDeniedError", "SecurityError"].includes(error.name);
+}
+
+function getAudioStartFailureMessage(ts: Record<string, string>, error: unknown): string {
+  if (isMicrophonePermissionError(error)) {
+    return (
+      ts.journalAudioPermissionDenied ||
+      ts.journalAudioError ||
+      "Microphone permission is needed to record audio."
+    );
+  }
+  return ts.journalAudioError || "Failed to save audio";
 }
 
 function createEditorSnapshot(
@@ -237,6 +253,7 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
   const [photoIds, setPhotoIds] = useState<string[]>(entry?.photoIds || []);
   const [audioIds, setAudioIds] = useState<string[]>(entry?.audioIds || []);
   const [audioRecordings, setAudioRecordings] = useState<JournalAudio[]>([]);
+  const [audioError, setAudioError] = useState<string | null>(null);
   const [mood, setMood] = useState<MoodType | undefined>(initialSnapshotRef.current.mood);
   const [tags, setTags] = useState<string[]>(
     safeJsonParse<string[]>(initialSnapshotRef.current.tags, []),
@@ -592,13 +609,19 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
           if (!data) return;
           const audio = await onAddAudio(data, duration, mimeType, entryId);
           if (cancelled) return;
+          setAudioError(null);
           setAudioIds((prev) => [...prev, audio.id]);
           setAudioRecordings((prev) => [...prev, audio]);
           resetRecorder();
           setShowRecordingOverlay(false);
-        } catch {
+        } catch (err) {
           if (cancelled) return;
+          const message = ts.journalAudioError || "Failed to save audio";
+          logger.warn("[Journal]", "Audio save failed:", err);
+          setAudioError(message);
+          announceError(message);
           resetRecorder();
+          setShowRecordingOverlay(false);
         }
       };
       void storeRecording();
@@ -606,7 +629,15 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
         cancelled = true;
       };
     }
-  }, [audioData, isRecording, onAddAudio, entryId, duration, mimeType, resetRecorder]);
+  }, [audioData, isRecording, onAddAudio, entryId, duration, mimeType, resetRecorder, ts]);
+
+  useEffect(() => {
+    if (!showRecordingOverlay || !recorder.error || recorder.isRecording) return;
+    setShowRecordingOverlay(false);
+    const message = ts.journalAudioError || "Failed to save audio";
+    setAudioError(message);
+    announceError(message);
+  }, [recorder.error, recorder.isRecording, showRecordingOverlay, ts]);
 
   // Click-outside to close prompts dropdown
   useEffect(() => {
@@ -1055,9 +1086,19 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
 
   const handleStartRecording = useCallback(async () => {
     if (!recorder.isSupported) {
+      const message =
+        ts.journalAudioUnsupported ||
+        ts.journalAudioError ||
+        "Audio recording is not supported on this device.";
+      setAudioError(message);
+      announceError(message);
       return;
     }
     if (audioIds.length >= MAX_AUDIO_PER_ENTRY) {
+      const message =
+        ts.journalAudioMaxReached || `Maximum ${MAX_AUDIO_PER_ENTRY} recordings`;
+      setAudioError(message);
+      announceError(message);
       return;
     }
     setShowStickers(false);
@@ -1067,13 +1108,17 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
     setShowStyleBar(false);
     setShowActionSheet(false);
     setShowRecordingOverlay(true);
+    setAudioError(null);
     try {
       await recorder.start();
-    } catch {
+    } catch (err) {
       setShowRecordingOverlay(false);
-      logger.warn("[Journal]", "Recording failed to start");
+      const message = getAudioStartFailureMessage(ts, err);
+      logger.warn("[Journal]", "Recording failed to start:", err);
+      setAudioError(message);
+      announceError(message);
     }
-  }, [recorder, audioIds.length]);
+  }, [recorder, audioIds.length, ts]);
 
   const handleStopRecording = useCallback(() => {
     recorder.stop();
@@ -1221,6 +1266,7 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
     photoIds,
     audioIds,
     audioRecordings,
+    audioError,
     mood,
     setMood,
     tags,

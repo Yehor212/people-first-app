@@ -109,6 +109,46 @@ function checkHookSystem() {
     }
   }
 
+  function matcherIncludesAll(matcher: string, tools: string[]): boolean {
+    const parts = matcher
+      .split("|")
+      .map((part) => part.trim())
+      .filter(Boolean);
+    return tools.every((tool) => parts.includes(tool));
+  }
+
+  function requiredHookRegistered(
+    event: string,
+    tools: string[],
+    hookName: string,
+  ): boolean {
+    const matchers = (hookEvents[event] || []) as any[];
+    return matchers.some((matcher) => {
+      if (!matcherIncludesAll(String(matcher.matcher || ""), tools)) return false;
+      return (matcher.hooks || []).some((hook: any) =>
+        String(hook.command || "").includes(`.claude/hooks/${hookName}`),
+      );
+    });
+  }
+
+  if (
+    requiredHookRegistered(
+      "PreToolUse",
+      ["Edit", "Write", "MultiEdit"],
+      "test-first-gate.cjs",
+    )
+  ) {
+    pass(
+      "required:test-first-gate",
+      "Registered for PreToolUse Edit|Write|MultiEdit",
+    );
+  } else {
+    fail(
+      "required:test-first-gate",
+      "test-first-gate.cjs must be registered for PreToolUse Edit|Write|MultiEdit",
+    );
+  }
+
   // 1c. All registered hooks exist on disk
   const diskHooks = fs
     .readdirSync(HOOKS_DIR)
@@ -232,6 +272,7 @@ function checkHookSystem() {
     "protected-files.cjs",
     "preflight-gate.cjs",
     "commit-gate.cjs",
+    "test-first-gate.cjs",
   ];
   for (const sh of securityHooks) {
     const filePath = path.join(HOOKS_DIR, sh);
@@ -545,6 +586,7 @@ function checkGitignore() {
   const gitignore = fs.readFileSync(GITIGNORE, "utf8");
   const required = [
     { pattern: ".preflight-token", desc: "PRE-FLIGHT token" },
+    { pattern: ".test-first-token", desc: "TEST-FIRST token" },
     { pattern: ".postflight-done", desc: "POST-FLIGHT token" },
     { pattern: ".fullcycle-active", desc: "Full cycle flag" },
     { pattern: ".fullcycle-laws-read", desc: "Laws read token" },

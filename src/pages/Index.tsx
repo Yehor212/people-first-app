@@ -2,6 +2,7 @@ import {
   lazy,
   Suspense,
   useCallback,
+  useEffect,
   useMemo,
   useRef,
   type Dispatch,
@@ -24,6 +25,7 @@ import { useThemeStore } from "@/stores/themeStore";
 import { useInnerWorld } from "@/hooks/useInnerWorld";
 import { useGamification } from "@/hooks/useGamification";
 import { AdProvider } from "@/contexts/AdContext";
+import { analytics } from "@/lib/analytics";
 import { canInitializeRewardedAds } from "@/lib/privacyConsent";
 import { getChallenges, getBadges } from "@/lib/challengeStorage";
 import { FORCE_NAV_V2, IS_DESKTOP_RUNTIME } from "@/lib/env";
@@ -152,6 +154,10 @@ function IndexV2Impl() {
   const isLoadingUserData = useUserDataStore((s) => s.isLoading);
   const privacy = useUserDataStore((s) => s.privacy);
   const setPrivacy = useUserDataStore((s) => s.setPrivacy);
+  useEffect(() => {
+    analytics.init(privacy);
+  }, [privacy]);
+
   const emptyScheduleEvents = useMemo(() => [], []);
   const { handleNameChange, handleResetData } = useSettingsHandlers(emptyScheduleEvents);
   const {

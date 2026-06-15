@@ -129,8 +129,8 @@ export const JournalCaptureLauncher = memo(function JournalCaptureLauncher({
         };
 
   const actionButtonClasses = inline
-    ? "relative flex min-h-[44px] items-center gap-3"
-    : cn("fixed end-5 z-[56] flex min-h-[44px] items-center gap-3 rtl:flex-row flex-row-reverse", fabBottom);
+    ? "relative flex min-h-[48px] items-center gap-3"
+    : cn("fixed end-5 z-[56] flex min-h-[48px] items-center gap-3 rtl:flex-row flex-row-reverse", fabBottom);
 
   const launcherBody = (
     <>
@@ -185,7 +185,7 @@ export const JournalCaptureLauncher = memo(function JournalCaptureLauncher({
               >
                 <div
                   className={cn(
-                    "flex h-11 w-11 shrink-0 items-center justify-center rounded-full shadow-lg",
+                    "flex h-[48px] w-[48px] shrink-0 items-center justify-center rounded-full shadow-lg",
                     item.color
                   )}
                 >
@@ -246,6 +246,7 @@ export const JournalCaptureLauncher = memo(function JournalCaptureLauncher({
       <AnimatePresence>
         {showQuickGratitude && onAddGratitude && (
           <motion.div
+            data-testid="journal-quick-gratitude-scene"
             className="mb-4 w-full"
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}

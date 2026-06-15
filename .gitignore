@@ -143,6 +143,7 @@ src-tauri/target/
 
 # Claude Code enforcement tokens (one-time gate files)
 .preflight-token
+.test-first-token
 .postflight-done
 .fullcycle-active
 .fullcycle-laws-read

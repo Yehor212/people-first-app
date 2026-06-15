@@ -99,10 +99,12 @@ export function JournalCalendar({
     if (!scrollRef.current) return;
     requestAnimationFrame(() => {
       if (!scrollRef.current) return;
+      const maxScroll = scrollRef.current.scrollWidth - scrollRef.current.clientWidth;
+      const compactSidebarInset = scrollRef.current.clientWidth <= 340 ? 28 : 0;
       if (isRTL) {
-        scrollRef.current.scrollLeft = 0;
+        scrollRef.current.scrollLeft = -(maxScroll - compactSidebarInset);
       } else {
-        scrollRef.current.scrollLeft = scrollRef.current.scrollWidth;
+        scrollRef.current.scrollLeft = maxScroll - compactSidebarInset;
       }
     });
   }, [isRTL, startOffset]);
@@ -156,7 +158,7 @@ export function JournalCalendar({
       {/* Day strip */}
       <div
         ref={scrollRef}
-        className="flex gap-1 overflow-x-auto scrollbar-hide pb-1 -mx-1 px-1 snap-x snap-mandatory"
+        className="flex gap-1 overflow-x-auto scrollbar-hide pb-1 -mx-1 px-1 pr-8 snap-x snap-mandatory rtl:pl-8 rtl:pr-1"
       >
         {days.map((d, index) => {
           const isToday = d.date === today;
@@ -198,7 +200,7 @@ export function JournalCalendar({
               aria-label={`${dayNames[d.dayOfWeek]} ${d.day}${hasEntry ? ` (${mood || "entry"})` : ""}`}
               style={moodBgColor ? { backgroundColor: moodBgColor } : undefined}
               className={cn(
-                "snap-start flex h-[46px] w-[46px] flex-none flex-col items-center gap-0.5 rounded-xl py-1.5 motion-safe:transition-all motion-safe:duration-200 relative overflow-hidden",
+                "snap-start flex h-[44px] w-[44px] flex-none flex-col items-center gap-0.5 rounded-xl py-1.5 motion-safe:transition-all motion-safe:duration-200 relative overflow-hidden",
                 isSelected
                   ? "bg-gradient-to-b from-primary/20 to-primary/10 shadow-sm"
                   : !moodBgColor && "hover:bg-muted/50",

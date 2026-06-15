@@ -1,6 +1,7 @@
 import { memo, useEffect, useCallback, useState, useRef, useLayoutEffect } from "react";
 import {
   ArrowLeft,
+  AlertCircle,
   Camera,
   ChevronDown,
   ChevronUp,
@@ -303,6 +304,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
     photoIds,
     audioIds,
     audioRecordings,
+    audioError,
     mood,
     setMood,
     tags,
@@ -655,7 +657,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
               whileTap={{ scale: 0.92 }}
               onClick={handleBack}
               className={cn(
-                "flex items-center gap-1.5 py-2 rounded-lg text-muted-foreground hover:bg-white/10 dark:hover:bg-white/10 hover:text-foreground motion-safe:transition-all min-h-[44px]",
+                "flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded-lg py-2 text-muted-foreground hover:bg-white/10 dark:hover:bg-white/10 hover:text-foreground motion-safe:transition-all",
                 desktop ? "px-3" : "px-2"
               )}
               aria-label={ts.back || "Back"}
@@ -693,7 +695,8 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                   onChange={(e) => {
                     if (e.target.value) setDate(e.target.value);
                   }}
-                  className="sr-only"
+                  className="pointer-events-none absolute h-px w-px opacity-0"
+                  aria-hidden="true"
                   tabIndex={-1}
                 />
               </div>
@@ -751,8 +754,8 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
               onClick={saveSuccess ? undefined : handleSave}
               disabled={!saveSuccess && (saveState === "saving" || !hasContent)}
               className={cn(
-                "flex items-center gap-1.5 py-2 rounded-xl text-sm font-medium min-h-[44px] motion-safe:transition-all",
-                desktop ? "px-4" : "px-3 min-w-[44px]",
+                "flex items-center gap-1.5 py-2 rounded-xl text-sm font-medium min-h-[48px] motion-safe:transition-all",
+                desktop ? "px-4" : "px-3 min-w-[48px]",
                 saveSuccess
                   ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-sm"
                   : "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25 hover:shadow-sm",
@@ -1283,6 +1286,16 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
               </div>
             )}
 
+            {audioError && (
+              <div
+                role="alert"
+                className="flex min-h-[44px] items-center gap-2 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+              >
+                <AlertCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
+                <span className="min-w-0">{audioError}</span>
+              </div>
+            )}
+
             {/* Voice dictation indicator */}
             <AnimatePresence>
               {voice.isListening && (
@@ -1430,8 +1443,16 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
               }}
               onInput={handleEditorInput}
               onFocus={(e) => {
-                const el = e.target;
-                setTimeout(() => el.scrollIntoView({ behavior: "smooth", block: "center" }), 300);
+                const el = e.currentTarget;
+                const scrollArea = scrollAreaRef.current;
+                if (!scrollArea) return;
+                setTimeout(() => {
+                  const targetTop = Math.max(
+                    0,
+                    el.offsetTop - (scrollArea.clientHeight - el.clientHeight) / 2,
+                  );
+                  scrollArea.scrollTo({ behavior: "smooth", top: targetTop });
+                }, 300);
               }}
               data-placeholder={ts.journalEntryPlaceholder || "What's on your mind?"}
             />
@@ -1546,7 +1567,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                 <button
                   type="button"
                   onClick={handleMobileToolsCollapse}
-                  className="flex min-h-[36px] min-w-[44px] items-center justify-center rounded-full border border-border/60 bg-background/70 text-muted-foreground motion-safe:transition-colors hover:bg-primary/10 hover:text-primary"
+                  className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-border/60 bg-background/70 text-muted-foreground motion-safe:transition-colors hover:bg-primary/10 hover:text-primary"
                   aria-expanded={true}
                   aria-label={ts.close || "Close"}
                 >

@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { haptics } from "@/lib/haptics";
@@ -18,8 +18,8 @@ import "./MoodFirstRunHint.css";
  * via a localStorage flag (`zenflow-orb-first-run-dismissed`). Survives
  * remount/refresh — does NOT re-render once user dismisses.
  *
- * Law 9 (a11y): role=dialog, aria-modal, Escape to close, focus trap on
- * dismiss button. Law 10: safe-area-aware.
+ * Non-modal by design: the hint explains the first mood entry without blocking
+ * V2 navigation. Escape and the explicit button still dismiss it.
  */
 
 const STORAGE_KEY = SK.ORB_FIRST_RUN_DISMISSED;
@@ -45,7 +45,6 @@ export const MoodFirstRunHint = memo(function MoodFirstRunHint({
   const { t } = useLanguage();
   const tx = t as unknown as Record<string, string>;
   const [visible, setVisible] = useState(false);
-  const dismissRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!eligible) return;
@@ -55,9 +54,6 @@ export const MoodFirstRunHint = memo(function MoodFirstRunHint({
 
   useEffect(() => {
     if (!visible) return;
-    // Focus the dismiss button when the hint opens
-    dismissRef.current?.focus();
-
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") {
         setVisible(false);
@@ -79,16 +75,11 @@ export const MoodFirstRunHint = memo(function MoodFirstRunHint({
   return createPortal(
     <div
       role="dialog"
-      aria-modal="true"
       aria-labelledby="mood-first-run-title"
       data-testid="mood-first-run-hint"
       className="mood-first-run-backdrop"
-      onClick={dismiss}
     >
-      <div
-        className="mood-first-run-card"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div className="mood-first-run-card">
         <h2
           id="mood-first-run-title"
           className="mood-first-run-title"
@@ -118,7 +109,6 @@ export const MoodFirstRunHint = memo(function MoodFirstRunHint({
         </ol>
 
         <button
-          ref={dismissRef}
           type="button"
           data-testid="mood-first-run-dismiss"
           className="mood-first-run-dismiss"

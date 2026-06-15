@@ -80,6 +80,12 @@ export function useAudioRecorder() {
       recorder.onerror = () => {
         setError('Recording failed');
         setIsRecording(false);
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+        }
+        stream.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
       };
 
       mediaRecorderRef.current = recorder;
@@ -101,7 +107,17 @@ export function useAudioRecorder() {
       }, 1000);
     } catch (err) {
       setError('Microphone access denied');
+      setIsRecording(false);
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
+      }
       logger.error('[useAudioRecorder] Microphone access denied:', err);
+      throw err;
     }
   }, []);
 

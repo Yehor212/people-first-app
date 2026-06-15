@@ -56,6 +56,14 @@ Supported platforms: Web/Vite, PWA, Android/Capacitor, iOS/WKWebView, Desktop/Ta
 - For architecture/refactor claims, stale `doc-counts` or `constitution:check` output is a STOP/UNVERIFIED condition until refreshed or explicitly waived.
 - For public, runtime, sync, security, visual, or cross-platform claims, use fresh command/browser/CI evidence and mark unknowns `UNVERIFIED`; never cite old CI, memory, or subagent summaries as PASS by themselves.
 
+## Test-First Agent Gate
+
+- Before touching first-party production code for behavior changes, bug fixes, refactors, or user-visible features, every agent must read and follow `docs/ai/TEST_FIRST_AGENT_POLICY.md`.
+- This is mechanically enforced for guarded edits by `.claude/hooks/test-first-gate.cjs`, which accepts fresh `.test-first-token` evidence or a structured `.preflight-token` with `test_first`.
+- The required sequence is: name the expected behavior and risk, choose the smallest useful automated test or characterization proof, run it before production code and record the expected red failure or baseline, implement only the scoped change, then rerun the same evidence green plus blast-radius checks.
+- If a red test is impossible, document why before editing and keep the final status `UNVERIFIED` until an equivalent regression proof exists.
+- Documentation-only, generated, config-only, and emergency exceptions are handled only through the policy file; they do not permit calling work `PASS` without fresh evidence.
+
 ## Conventions
 
 - Use theme tokens for colors; do not add hardcoded colors.

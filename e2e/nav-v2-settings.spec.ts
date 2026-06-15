@@ -1,48 +1,14 @@
 import { expect, test, type Page } from "@playwright/test";
-import { createRequire } from "module";
 
-const require = createRequire(import.meta.url);
-const packageJson = require("../package.json") as { version: string };
+import { primeZenflowV2 } from "./helpers/zenflowV2State";
+
 const APP_BASE = "/people-first-app";
 
 async function primeApp(page: Page, options: { language?: "en" | "ar" | "he" } = {}) {
   const language = options.language ?? "en";
 
   await page.emulateMedia({ colorScheme: "light", reducedMotion: "reduce" });
-  await page.addInitScript(
-    ({ appVersion, language }: { appVersion: string; language: "en" | "ar" | "he" }) => {
-      localStorage.setItem("zenflow-language", JSON.stringify(language));
-      localStorage.setItem("zenflow-language-selected", JSON.stringify(true));
-      localStorage.setItem("zenflow-google-auth-checked", JSON.stringify(true));
-      localStorage.setItem("zenflow-tutorial-complete", JSON.stringify(true));
-      localStorage.setItem("zenflow-onboarding-complete", JSON.stringify(true));
-      localStorage.setItem("zenflow-notification-permission-checked", JSON.stringify(true));
-      localStorage.setItem(
-        "zenflow_onboarding_state",
-        JSON.stringify({
-          isNewUser: false,
-          hasSeenWelcome: true,
-          firstLoginDate: Date.now(),
-          daysActive: 5,
-          lastActiveDate: new Date().toISOString().split("T")[0],
-          unlockedFeatures: [],
-        })
-      );
-      localStorage.setItem("zenflow_last_seen_version", appVersion);
-      localStorage.setItem("zenflow-theme", "light");
-      localStorage.setItem(
-        "zenflow:theme-v0c",
-        JSON.stringify({ state: { theme: "paper" }, version: 0 })
-      );
-      localStorage.setItem(
-        "zenflow-privacy",
-        JSON.stringify({ noTracking: false, analytics: false, consentShown: true })
-      );
-      localStorage.setItem("zenflow-privacy-acknowledged", JSON.stringify(true));
-      localStorage.setItem("zenflow-orb-first-run-dismissed", "1");
-    },
-    { appVersion: packageJson.version, language }
-  );
+  await primeZenflowV2(page, { language, theme: "paper" });
 }
 
 async function readThemeEvidence(page: Page) {

@@ -317,9 +317,9 @@ export const JournalModule = memo(function JournalModule({
   const showJournalLightAtmosphere =
     isPagePresentation && appliedTheme === "paper";
   const mobileHeaderMenuClass =
-    "flex h-12 w-12 shrink-0 touch-manipulation items-center justify-center rounded-full border border-border/50 bg-card/70 p-0 text-foreground/90 shadow-[0_14px_34px_hsl(var(--foreground)/0.16)] backdrop-blur-xl [-webkit-backdrop-filter:blur(18px)] motion-safe:transition-[transform,background-color,border-color,color,box-shadow] motion-safe:duration-200 motion-safe:ease-out hover:bg-card/85 active:scale-95 active:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2";
+    "flex h-[48px] w-[48px] shrink-0 touch-manipulation items-center justify-center rounded-full border border-border/50 bg-card/70 p-0 text-foreground/90 shadow-[0_14px_34px_hsl(var(--foreground)/0.16)] backdrop-blur-xl [-webkit-backdrop-filter:blur(18px)] motion-safe:transition-[transform,background-color,border-color,color,box-shadow] motion-safe:duration-200 motion-safe:ease-out hover:bg-card/85 active:scale-95 active:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2";
   const mobileHeaderActionClass =
-    "press-stable flex h-[44px] w-[44px] shrink-0 touch-manipulation items-center justify-center rounded-xl p-0 text-muted-foreground motion-safe:transition-[background-color,color,box-shadow] motion-safe:duration-150 hover:bg-muted/50 hover:text-foreground active:bg-muted/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/45";
+    "press-stable flex h-[48px] w-[48px] shrink-0 touch-manipulation items-center justify-center rounded-xl p-0 text-muted-foreground motion-safe:transition-[background-color,color,box-shadow] motion-safe:duration-150 hover:bg-muted/50 hover:text-foreground active:bg-muted/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/45";
   const rewardUser = useGamificationStore((s) => s.rewardUser);
   const moodEntries = useUserDataStore((s) => s.moods);
   const [moduleState, setModuleState] = useState<ModuleState>(
@@ -2095,7 +2095,7 @@ export const JournalModule = memo(function JournalModule({
                                 <button
                                   type="button"
                                   onClick={() => closeSettings()}
-                                  className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-2xl text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                                  className="inline-flex min-h-[48px] min-w-[48px] items-center justify-center rounded-2xl text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                                   aria-label={ts.close || "Close"}
                                 >
                                   <X className="h-5 w-5" />

@@ -1,44 +1,12 @@
 import { expect, test } from "@playwright/test";
-import { createRequire } from "module";
 
-const require = createRequire(import.meta.url);
-const packageJson = require("../package.json") as { version: string };
+import { primeZenflowV2 } from "./helpers/zenflowV2State";
 
 async function primeApp(page: import("@playwright/test").Page) {
-  await page.addInitScript(({ appVersion }: { appVersion: string }) => {
-    localStorage.setItem("zenflow-language-selected", JSON.stringify(true));
-    localStorage.setItem("zenflow-google-auth-checked", JSON.stringify(true));
-    localStorage.setItem("zenflow-tutorial-complete", JSON.stringify(true));
-    localStorage.setItem("zenflow-onboarding-complete", JSON.stringify(true));
-    localStorage.setItem(
-      "zenflow-notification-permission-checked",
-      JSON.stringify(true),
-    );
-    localStorage.setItem(
-      "zenflow_onboarding_state",
-      JSON.stringify({
-        isNewUser: false,
-        hasSeenWelcome: true,
-        firstLoginDate: Date.now(),
-        daysActive: 5,
-        lastActiveDate: new Date().toISOString().split("T")[0],
-        unlockedFeatures: [],
-      }),
-    );
-    localStorage.setItem("zenflow_last_seen_version", appVersion);
-    localStorage.setItem("zenflow-theme", "light");
-    localStorage.setItem(
-      "zenflow:theme-v0c",
-      JSON.stringify({ state: { theme: "paper" }, version: 0 }),
-    );
-    localStorage.setItem("zenflow-orb-first-run-dismissed", "1");
-    localStorage.setItem(
-      "zenflow-privacy",
-      JSON.stringify({ noTracking: false, analytics: false, consentShown: true }),
-    );
-    localStorage.setItem("zenflow-privacy-acknowledged", JSON.stringify(true));
+  await primeZenflowV2(page, { language: "en", theme: "paper" });
+  await page.addInitScript(() => {
     localStorage.setItem("journal_sidebar_state", "expanded");
-  }, { appVersion: packageJson.version });
+  });
 }
 
 test.describe("Diary desktop shell recovery", () => {
@@ -47,7 +15,7 @@ test.describe("Diary desktop shell recovery", () => {
   test.beforeEach(async ({ page }) => {
     await primeApp(page);
     await page.setViewportSize({ width: 1440, height: 960 });
-    await page.goto("/?nav=v2");
+    await page.goto("?nav=v2");
     await page.waitForLoadState("domcontentloaded");
     await expect(page.getByTestId("nav-v2-orchestrator")).toBeVisible({
       timeout: 20_000,
@@ -100,8 +68,24 @@ test.describe("Diary desktop shell recovery", () => {
     await editor.pressSequentially("Recovered draft text");
 
     await rail.getByRole("button", { name: /^Settings$/ }).click();
-    await expect(page.getByText("Save Draft & Open Settings")).toBeVisible();
-    await page.getByRole("button", { name: "Save Draft & Open Settings" }).click();
+    await expect(editor).toContainText("Recovered draft text");
+
+    const saveDraftAndOpenSettings = page.getByRole("button", {
+      name: "Save Draft & Open Settings",
+    });
+    if (
+      await saveDraftAndOpenSettings
+        .isVisible({ timeout: 2_000 })
+        .catch(() => false)
+    ) {
+      await saveDraftAndOpenSettings.click();
+    } else {
+      await page.getByRole("button", { name: /^Save$/ }).click();
+      await expect(page.locator("[contenteditable='true']")).toHaveCount(0, {
+        timeout: 10_000,
+      });
+      await rail.getByRole("button", { name: /^Settings$/ }).click();
+    }
 
     await expect(page.getByTestId("journal-settings-panel")).toBeVisible();
     await expect(page.getByRole("dialog", { name: /Diary Settings/i })).toHaveCount(0);

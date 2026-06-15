@@ -136,6 +136,108 @@ test('invalid JSON — fail-closed (exit 2)',
   null, 2);
 
 // ============================================================
+// 1b. TEST-FIRST-GATE (5 tests)
+// ============================================================
+console.log('  1b. test-first-gate.cjs\n');
+
+const TEST_FIRST_TOKEN_PATH = path.join(TEST_ROOT, '.test-first-token');
+const TEST_FIRST_TOKEN_BACKUP = path.join(TEST_ROOT, '.test-first-token.test-backup');
+const TEST_FIRST_PREFLIGHT_PATH = path.join(TEST_ROOT, '.preflight-token');
+const TEST_FIRST_PREFLIGHT_BACKUP = path.join(TEST_ROOT, '.preflight-token.test-first-backup');
+
+try {
+  if (fs.existsSync(TEST_FIRST_TOKEN_BACKUP)) fs.unlinkSync(TEST_FIRST_TOKEN_BACKUP);
+  if (fs.existsSync(TEST_FIRST_TOKEN_PATH)) {
+    fs.renameSync(TEST_FIRST_TOKEN_PATH, TEST_FIRST_TOKEN_BACKUP);
+  }
+  if (fs.existsSync(TEST_FIRST_PREFLIGHT_BACKUP)) fs.unlinkSync(TEST_FIRST_PREFLIGHT_BACKUP);
+  if (fs.existsSync(TEST_FIRST_PREFLIGHT_PATH)) {
+    fs.renameSync(TEST_FIRST_PREFLIGHT_PATH, TEST_FIRST_PREFLIGHT_BACKUP);
+  }
+} catch (e) {
+  results.push({ name: 'test-first-gate: token backup setup', status: 'ERROR', issues: e.message });
+  fail++;
+}
+
+test('test-first: src edit blocked without evidence',
+  'test-first-gate.cjs',
+  '{"tool_input":{"file_path":"' + TEST_ROOT + '/src/App.tsx"}}',
+  'TEST-FIRST GATE BLOCKED', 2);
+
+test('test-first: docs-only edit allowed without evidence',
+  'test-first-gate.cjs',
+  '{"tool_input":{"file_path":"' + TEST_ROOT + '/README.md"}}',
+  null, 0);
+
+fs.writeFileSync(TEST_FIRST_TOKEN_PATH, JSON.stringify({
+  timestamp: new Date().toISOString(),
+  behavior: 'src/App.tsx guarded edit requires test-first evidence',
+  risk: 'future agent could edit production code without red or characterization proof',
+  evidence_type: 'red-test',
+  command: 'node .claude/hooks/test-all-hooks.cjs',
+  expected_red: 'test-first-gate blocks source edit without evidence',
+  verification_plan: 'node .claude/hooks/test-all-hooks.cjs && npm run enforcement:check',
+  verdict: 'GO',
+}), 'utf8');
+
+test('test-first: src edit allowed with .test-first-token',
+  'test-first-gate.cjs',
+  '{"tool_input":{"file_path":"' + TEST_ROOT + '/src/App.tsx"}}',
+  null, 0);
+
+try { fs.unlinkSync(TEST_FIRST_TOKEN_PATH); } catch {}
+fs.writeFileSync(TEST_FIRST_PREFLIGHT_PATH, JSON.stringify({
+  timestamp: new Date().toISOString(),
+  goal: 'Validate test-first evidence can ride with preflight',
+  depth: 'L4',
+  transmutation: 'Ensure preflight and test-first do not become parallel rituals',
+  checks_completed: 7,
+  evidence: { read: ['AGENTS.md', 'docs/ai/TEST_FIRST_AGENT_POLICY.md'], search: [], assumed: [] },
+  pre_mortem: 'The hook could block real work if preflight evidence cannot satisfy test-first',
+  confidence: { codebase_familiarity: 7, change_scope: 7, regression_risk: 6, platform_coverage: 6, state_integrity: 7 },
+  overall_score: 6,
+  scope_boundaries: 'Hook evidence only, no app runtime behavior',
+  post_verification_plan: 'node .claude/hooks/test-all-hooks.cjs && npm run enforcement:check',
+  anti_patterns_checked: ['test-after', 'manual-only-proof'],
+  unknowns: 'Only hook contract is tested here',
+  test_first: {
+    behavior: 'Guarded source edit requires test evidence before code',
+    risk: 'agent edits production code before a failing test or baseline',
+    evidence_type: 'characterization',
+    command: 'node .claude/hooks/test-all-hooks.cjs',
+    expected_red: 'missing test-first evidence is blocked',
+    verification_plan: 'node .claude/hooks/test-all-hooks.cjs && npm run enforcement:check',
+  },
+  verdict: 'GO',
+}), 'utf8');
+
+test('test-first: src edit allowed with preflight test_first evidence',
+  'test-first-gate.cjs',
+  '{"tool_input":{"file_path":"' + TEST_ROOT + '/src/App.tsx"}}',
+  null, 0);
+
+try { fs.unlinkSync(TEST_FIRST_PREFLIGHT_PATH); } catch {}
+
+test('test-first: invalid JSON fails closed',
+  'test-first-gate.cjs',
+  'NOT JSON',
+  null, 2);
+
+try {
+  if (fs.existsSync(TEST_FIRST_TOKEN_PATH)) fs.unlinkSync(TEST_FIRST_TOKEN_PATH);
+  if (fs.existsSync(TEST_FIRST_TOKEN_BACKUP)) {
+    fs.renameSync(TEST_FIRST_TOKEN_BACKUP, TEST_FIRST_TOKEN_PATH);
+  }
+  if (fs.existsSync(TEST_FIRST_PREFLIGHT_PATH)) fs.unlinkSync(TEST_FIRST_PREFLIGHT_PATH);
+  if (fs.existsSync(TEST_FIRST_PREFLIGHT_BACKUP)) {
+    fs.renameSync(TEST_FIRST_PREFLIGHT_BACKUP, TEST_FIRST_PREFLIGHT_PATH);
+  }
+} catch (e) {
+  results.push({ name: 'test-first-gate: token backup restore', status: 'ERROR', issues: e.message });
+  fail++;
+}
+
+// ============================================================
 // 2. PREFLIGHT-GATE (4 tests)
 // ============================================================
 console.log('  2. preflight-gate.cjs\n');
@@ -1149,10 +1251,10 @@ test('non-Bash tool — ALLOW (early exit)',
   '{"tool_name":"Read","tool_input":{"file_path":"src/test.ts"}}',
   null, 0);
 
-test('invalid JSON — fail-open',
+test('invalid JSON — fail-closed',
   'tool-guard.cjs',
   'GARBAGE',
-  null, 0);
+  'parse error, failing closed', 2);
 
 // ============================================================
 // SUMMARY

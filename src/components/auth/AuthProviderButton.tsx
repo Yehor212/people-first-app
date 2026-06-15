@@ -1,4 +1,5 @@
 import { Loader2 } from "lucide-react";
+import { useId } from "react";
 import type { SocialAuthProviderConfig } from "@/lib/authProviders";
 import { cn } from "@/lib/utils";
 
@@ -32,22 +33,35 @@ const AUTH_PROVIDER_BUTTON_SURFACE_CLASS: Record<
     "entry-action-tile bg-[hsl(var(--card)/0.58)] shadow-[inset_0_1px_0_hsl(var(--foreground)/0.06),0_18px_36px_-28px_hsl(var(--primary)/0.78)] hover:bg-[hsl(var(--card)/0.78)]",
 };
 
+function TelegramProviderIcon({ testId }: { testId: string }) {
+  const gradientId = `auth-provider-telegram-gradient-${useId().replace(/:/g, "")}`;
+
+  return (
+    <svg
+      className="h-6 w-6 shrink-0"
+      viewBox="0 0 128 128"
+      aria-hidden="true"
+      data-testid={testId}
+    >
+      <defs>
+        <linearGradient id={gradientId} x1="50%" x2="50%" y1="0%" y2="99.258%">
+          <stop offset="0%" stopColor="#2AABEE" />
+          <stop offset="100%" stopColor="#229ED9" />
+        </linearGradient>
+      </defs>
+      <circle cx="64" cy="64" r="64" fill={`url(#${gradientId})`} />
+      <path
+        fill="#FFFFFF"
+        fillRule="nonzero"
+        d="M28.9700376 63.3244248C47.6273373 55.1957357 60.0684594 49.8368063 66.2934036 47.2476366 84.0668845 39.855031 87.7600616 38.5708563 90.1672227 38.528c.5294328-.0088742 1.7132047.1223351 2.4800024.7445385.6474689.5253764.8256136 1.2350852.9108614 1.7331996.085248.4981144.191402 1.6328319.1070176 2.5194671-.9631512 10.119913-5.1306908 34.6782731-7.2508984 46.012749-.8971395 4.7960416-2.6636347 6.4041299-4.3738066 6.5615026-3.7165995.3420073-6.5388164-2.4561883-10.1385248-4.8158425-5.6328329-3.6923931-8.8150251-5.9909191-14.2826648-9.5940126-6.3188037-4.1639979-2.2225863-6.4526036 1.3784816-10.1928256.9424165-.978834 17.3178391-15.8735468 17.634786-17.2247307.0396394-.1689881.0764268-.7988958-.2977904-1.1315102-.3742172-.3326144-.9265294-.2188732-1.3250934-.1284139-.5649523.1282234-9.5634758 6.0759138-26.9955705 17.8430709-2.554201 1.7539115-4.8677169 2.608476-6.9405467 2.5636937-2.2851298-.049369-6.6808026-1.2920471-9.9485335-2.3542577-4.008005-1.3028444-7.1934876-1.9916677-6.9161036-4.2043006.1444787-1.1524762 1.7315452-2.3311104 4.7611996-3.5359028Z"
+      />
+    </svg>
+  );
+}
+
 function AuthProviderIcon({ provider }: { provider: SocialAuthProviderConfig }) {
   if (provider.id === "telegram") {
-    return (
-      <svg
-        className="h-6 w-6 shrink-0"
-        viewBox="0 0 24 24"
-        aria-hidden="true"
-        data-testid={`auth-provider-icon-${provider.id}`}
-      >
-        <circle cx="12" cy="12" r="12" fill="#2AABEE" />
-        <path
-          fill="#FFFFFF"
-          d="M18.94 6.47 16.91 16c-.15.68-.55.85-1.12.53l-3.08-2.27-1.49 1.44c-.16.16-.3.3-.62.3l.22-3.14 5.71-5.15c.25-.22-.05-.34-.38-.12l-7.06 4.44-3.04-.95c-.66-.21-.68-.66.14-.98l11.9-4.59c.55-.2 1.04.13.85.96Z"
-        />
-      </svg>
-    );
+    return <TelegramProviderIcon testId={`auth-provider-icon-${provider.id}`} />;
   }
 
   if (provider.id === "facebook") {
@@ -108,7 +122,7 @@ export function AuthProviderButton({
       aria-label={isLoading ? loadingLabel : label}
       aria-disabled={disabled}
       className={cn(
-        "flex w-full items-center justify-center gap-2.5 rounded-2xl border border-border/60 font-semibold text-foreground motion-safe:transition-all disabled:cursor-not-allowed disabled:opacity-80 sm:gap-3",
+        "flex w-full items-center justify-center rounded-2xl border border-border/60 font-semibold text-foreground motion-safe:transition-all disabled:cursor-not-allowed disabled:opacity-80",
         AUTH_PROVIDER_BUTTON_SIZE_CLASS[size],
         AUTH_PROVIDER_BUTTON_SURFACE_CLASS[surface]
       )}
@@ -116,10 +130,16 @@ export function AuthProviderButton({
       {isLoading ? (
         <Loader2 className="w-5 h-5 motion-safe:animate-spin" aria-hidden="true" />
       ) : (
-        <>
-          <AuthProviderIcon provider={provider} />
+        <span
+          className="grid w-full max-w-[22rem] grid-cols-[2rem_minmax(0,1fr)_2rem] items-center gap-2.5 sm:gap-3"
+          data-testid={`auth-provider-content-${provider.id}`}
+        >
+          <span className="flex h-6 w-6 items-center justify-center justify-self-center">
+            <AuthProviderIcon provider={provider} />
+          </span>
           <span className="min-w-0 whitespace-nowrap text-center leading-tight">{label}</span>
-        </>
+          <span className="h-6 w-6 justify-self-center" aria-hidden="true" />
+        </span>
       )}
     </button>
   );

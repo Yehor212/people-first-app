@@ -1,27 +1,20 @@
 import { expect, test } from "@playwright/test";
 
+import { primeZenflowV2, v2RoutePath } from "./helpers/zenflowV2State";
+
 const LATE_SWAP_CUTOFF_MS = 1200;
 
 async function primeOrbPage(page: import("@playwright/test").Page) {
-  await page.addInitScript(() => {
-    localStorage.setItem("zenflow-has-onboarded", "true");
-    localStorage.setItem("zenflow-language", "uk");
-    localStorage.setItem("zenflow-language-selected", "true");
-    localStorage.setItem("zenflow-tutorial-complete", "true");
-    localStorage.setItem("zenflow-onboarding-complete", "true");
-    localStorage.setItem("zenflow-orb-first-run-dismissed", "1");
-    localStorage.setItem("zenflow-nav-v2-enabled", "true");
-    localStorage.setItem(
-      "zenflow-user",
-      JSON.stringify({
-        id: "orb-renderer-lifecycle",
-        name: "Orb Probe",
-        email: "orb-probe@example.com",
-      }),
-    );
-    sessionStorage.removeItem("zenflow-orb-webgl-slow-ms");
-    sessionStorage.removeItem("zenflow-mood-entry-draft");
+  await primeZenflowV2(page, {
+    language: "uk",
+    theme: "paper",
+    user: {
+      id: "orb-renderer-lifecycle",
+      name: "Orb Probe",
+    },
+  });
 
+  await page.addInitScript(() => {
     const win = window as typeof window & {
       __zenOrbCanvasEvents?: Array<{
         event: "appendCanvas" | "replaceCanvas";
@@ -71,16 +64,40 @@ async function primeOrbPage(page: import("@playwright/test").Page) {
   });
 }
 
+async function waitForVisibleHeroOrbCanvas(page: import("@playwright/test").Page) {
+  await page.waitForFunction(
+    () =>
+      Array.from(
+        document.querySelectorAll<HTMLElement>(
+          [
+            '[data-orb-renderer-policy="webgpu"][data-orb-visual-ready="true"]',
+            '[data-orb-transition-profile="input-soft"]',
+            '[data-orb-transition-profile="v1-soft"]',
+          ].join(", "),
+        ),
+      ).some((wrapper) =>
+        Array.from(wrapper.querySelectorAll<HTMLCanvasElement>("canvas")).some(
+          (canvas) =>
+            canvas.width >= 200 &&
+            canvas.height >= 200 &&
+            canvas.offsetWidth > 0 &&
+            canvas.offsetHeight > 0 &&
+            (canvas.dataset.orbRendererTier === "webgpu-main" ||
+              canvas.dataset.orbRendererTier === "webgl-main" ||
+              canvas.dataset.orbRendererTier === "webgl-worker"),
+        ),
+      ),
+    { timeout: 30000 },
+  );
+}
+
 test.describe("V2 orb renderer lifecycle", () => {
   test("does not create horizontally scrollable decorative orb layers", async ({
     page,
   }) => {
     await primeOrbPage(page);
-    await page.addInitScript(() => {
-      localStorage.setItem("zenflow-theme", "paper");
-    });
     await page.setViewportSize({ width: 449, height: 698 });
-    await page.goto("orb?nav=v2&navLayout=phone&dev=true", {
+    await page.goto(v2RoutePath("orb", { layout: "phone" }), {
       waitUntil: "domcontentloaded",
     });
     await expect(page.getByTestId("orb-page-next")).toBeVisible();
@@ -138,10 +155,10 @@ test.describe("V2 orb renderer lifecycle", () => {
     test.setTimeout(70000);
 
     await primeOrbPage(page);
-    await page.goto("orb?nav=v2&navLayout=phone&dev=true", {
+    await page.goto(v2RoutePath("orb", { layout: "phone" }), {
       waitUntil: "domcontentloaded",
     });
-    await expect(page.locator('[data-orb-transition-profile="v1-soft"]').last()).toBeVisible();
+    await waitForVisibleHeroOrbCanvas(page);
 
     await page.waitForTimeout(5000);
 
@@ -174,26 +191,7 @@ test.describe("V2 orb renderer lifecycle", () => {
     expect(lateVisibleSwaps).toEqual([]);
 
     await page.reload({ waitUntil: "domcontentloaded" });
-    await page.waitForFunction(
-      () =>
-        Array.from(
-          document.querySelectorAll<HTMLElement>(
-            '[data-orb-renderer-policy="webgpu"][data-orb-visual-ready="true"]',
-          ),
-        ).some((wrapper) =>
-          Array.from(wrapper.querySelectorAll<HTMLCanvasElement>("canvas")).some(
-            (canvas) =>
-              canvas.width >= 200 &&
-              canvas.height >= 200 &&
-              canvas.offsetWidth > 0 &&
-              canvas.offsetHeight > 0 &&
-              (canvas.dataset.orbRendererTier === "webgpu-main" ||
-                canvas.dataset.orbRendererTier === "webgl-main" ||
-                canvas.dataset.orbRendererTier === "webgl-worker"),
-          ),
-        ),
-      { timeout: 30000 },
-    );
+    await waitForVisibleHeroOrbCanvas(page);
 
     const afterReload = await page.evaluate(() => {
       const readyWrappers = Array.from(

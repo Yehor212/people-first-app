@@ -166,6 +166,7 @@ function processInput() {
     const filePath = input.tool_input?.file_path || '';
     if (filePath.includes('audit-checklist') || filePath.includes('audit-active') ||
         filePath.includes('.postflight-done') || filePath.includes('.preflight-token') ||
+        filePath.includes('.test-first-token') ||
         filePath.includes('.verification-done') || filePath.includes('.ide-ack') ||
         filePath.includes('.ruflo-last-action') || filePath.includes('.evolve-done') ||
         filePath.includes('.ruflo-') || filePath.includes('.ci-evidence') ||

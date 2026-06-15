@@ -158,7 +158,7 @@ export function LanguageSelector({ onComplete }: LanguageSelectorProps) {
           data-testid="language-continue"
         >
           <span>{t.continue}</span>
-          <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          <ArrowRight className="h-4 w-4 rtl:scale-x-[-1]" aria-hidden="true" />
         </button>
 
       </motion.section>

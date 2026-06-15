@@ -560,7 +560,7 @@ export const MemoryPortalCanvas = memo(function MemoryPortalCanvas({
                     <motion.button
                       key={action}
                       type="button"
-                      className="pointer-events-auto absolute left-1/2 top-[52%] flex min-h-[48px] w-[min(156px,calc(50vw-0.5rem))] -translate-y-1/2 items-center gap-2 rounded-full border border-primary/20 bg-card/90 px-3 text-xs font-semibold text-foreground shadow-[0_12px_38px_hsl(var(--primary)/0.16)] backdrop-blur-xl [-webkit-backdrop-filter:blur(16px)]"
+                      className="pointer-events-auto absolute left-1/2 top-[52%] flex min-h-[52px] min-w-[52px] w-[min(156px,calc(50vw-0.5rem))] -translate-y-1/2 items-center gap-2 rounded-full border border-primary/20 bg-card/90 px-3 text-xs font-semibold text-foreground shadow-[0_12px_38px_hsl(var(--primary)/0.16)] backdrop-blur-xl [-webkit-backdrop-filter:blur(16px)]"
                       initial={animate ? { opacity: 0, scale: 0.4, x: -78, y: 0 } : false}
                       animate={{ opacity: 1, scale: 1, x: position.x, y: position.y }}
                       exit={animate ? { opacity: 0, scale: 0.5, x: -78, y: 0 } : { opacity: 0 }}

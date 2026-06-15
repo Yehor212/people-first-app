@@ -1,36 +1,13 @@
 import { expect, test, type Page } from "@playwright/test";
-import { createRequire } from "module";
 
-const require = createRequire(import.meta.url);
-const packageJson = require("../package.json") as { version: string };
+import { primeZenflowV2 } from "./helpers/zenflowV2State";
 
 async function primeReleasePreview(page: Page) {
-  await page.addInitScript((appVersion: string) => {
-    localStorage.setItem("zenflow-language", JSON.stringify("uk"));
-    localStorage.setItem("zenflow-language-selected", JSON.stringify(true));
-    localStorage.setItem("zenflow-google-auth-checked", JSON.stringify(true));
-    localStorage.setItem("zenflow-tutorial-complete", JSON.stringify(true));
-    localStorage.setItem("zenflow-onboarding-complete", JSON.stringify(true));
-    localStorage.setItem("zenflow-notification-permission-checked", JSON.stringify(true));
-    localStorage.setItem("zenflow_last_seen_version", appVersion);
-    localStorage.setItem("zenflow-orb-first-run-dismissed", "1");
-    localStorage.setItem(
-      "zenflow-privacy",
-      JSON.stringify({ noTracking: true, analytics: false, consentShown: true }),
-    );
-    localStorage.setItem("zenflow-privacy-acknowledged", JSON.stringify(true));
-    localStorage.setItem(
-      "zenflow_onboarding_state",
-      JSON.stringify({
-        isNewUser: false,
-        hasSeenWelcome: true,
-        firstLoginDate: Date.now(),
-        daysActive: 5,
-        lastActiveDate: new Date().toISOString().split("T")[0],
-        unlockedFeatures: [],
-      }),
-    );
-  }, packageJson.version);
+  await primeZenflowV2(page, {
+    language: "uk",
+    privacyNoTracking: true,
+    theme: "paper",
+  });
 }
 
 test.describe("Deploy smoke", () => {

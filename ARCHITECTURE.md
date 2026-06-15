@@ -16,14 +16,14 @@ The table below is **auto-generated** by `scripts/doc-counts.cjs`. CI (`npm run 
 | Hooks (src/hooks, non-test) | **75** | `ls src/hooks/*.ts` |
 | Zustand stores (runtime) | **8** | `ls src/stores/*.ts` excl. hydrate + index |
 | Hydrate bridges | 2 | `useHydrate*.ts` |
-| Index.tsx LOC | **241** | `wc -l src/pages/Index.tsx` |
+| Index.tsx LOC | **247** | `wc -l src/pages/Index.tsx` |
 | Components top-level dirs | **42** | `ls src/components/ -d` |
 | Features modules | 1 | `ls src/features/ -d` |
 | V2 coexistence files | 26 | `find src -name '*V2*' -o -name '*-v2*'` |
 | `it.todo(` occurrences | 73 | regex walk |
 | `as any` total | 130 (130 in tests, ~0 prod) | regex walk |
 | Console.\* in prod (excl. logger/crashReporting) | **3** | regex walk |
-| ADR files (`docs/adr/NNNN-*.md`) | 9 | ls |
+| ADR files (`docs/adr/NNNN-*.md`) | 10 | ls |
 | SECURITY.md | yes | fs |
 | CONTRIBUTING.md | yes | fs |
 | LICENSE | **MISSING** | fs |
@@ -40,12 +40,12 @@ Checked by `npm run constitution:check`. Update these values from fresh command 
 
 | Metric | Value | Source |
 | --- | ---: | --- |
-| Source files | **858** | `find src -name '*.ts' -o -name '*.tsx' ...` |
-| Test files | **313** | `find src test -name '*.test.*' -o -name '*.spec.*'` |
+| Source files | **862** | `find src -name '*.ts' -o -name '*.tsx' ...` |
+| Test files | **322** | `find src test -name '*.test.*' -o -name '*.spec.*'` |
 | Silent `.catch(() => {})` | **0** | `grep -rn '.catch.*=> {}' src/` |
 | React.memo | **119** | `grep -rl 'memo(' src/ --include='*.tsx'` |
 | index.css LOC | **6,855** | `wc -l < src/index.css` |
-| Inline style={{}} | **313** | `grep -rn 'style={{' src/ --include='*.tsx'` |
+| Inline style={{}} | **315** | `grep -rn 'style={{' src/ --include='*.tsx'` |
 | exhaustive-deps suppressions | **20** | `grep -rn 'eslint-disable.*exhaustive-deps' src/` |
 | Hook coverage | **63** | `47/75 hook tests` |
 

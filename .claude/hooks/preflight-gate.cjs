@@ -33,6 +33,7 @@ const TOKEN = path.join(ROOT, '.preflight-token');
 const ALWAYS_ALLOW_PATTERNS = [
   'memory/',
   '.preflight-token',
+  '.test-first-token',
   '.postflight-done',
   '.fullcycle-active',
   '.fullcycle-laws-read',

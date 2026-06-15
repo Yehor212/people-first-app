@@ -8,85 +8,23 @@
  */
 
 import { test, expect, type Locator, type Page } from "@playwright/test";
-import { createRequire } from "module";
 
-const require = createRequire(import.meta.url);
-const packageJson = require("../package.json") as { version: string };
+import { primeZenflowV2, v2RoutePath } from "./helpers/zenflowV2State";
 
 const MIN_TARGET_PX = 44;
 
-function getAppBasePath(page: Page) {
-  const { pathname } = new URL(page.url());
-  return pathname === "/" ? "" : pathname.replace(/\/$/, "");
-}
-
 async function primeOnboarding(page: Page) {
-  await page.goto("/?nav=v2");
-  await page.evaluate(
-    async ({ appVersion }: { appVersion: string }) => {
-      const deleteDatabase = (name: string) =>
-        new Promise<void>((resolve) => {
-          const request = indexedDB.deleteDatabase(name);
-          request.onsuccess = () => resolve();
-          request.onerror = () => resolve();
-          request.onblocked = () => resolve();
-        });
-
-      localStorage.clear();
-      sessionStorage.clear();
-      try {
-        const databases =
-          typeof indexedDB.databases === "function" ? await indexedDB.databases() : [];
-        await Promise.all(
-          (databases ?? [])
-            .map((db) => db.name)
-            .filter((name): name is string => Boolean(name))
-            .map(deleteDatabase),
-        );
-      } catch {
-        /* some browsers may not expose indexedDB.databases */
-      }
-      localStorage.setItem("zenflow-language", JSON.stringify("en"));
-      localStorage.setItem("zenflow-language-selected", JSON.stringify(true));
-      localStorage.setItem("zenflow-google-auth-checked", JSON.stringify(true));
-      localStorage.setItem("zenflow-tutorial-complete", JSON.stringify(true));
-      localStorage.setItem("zenflow-onboarding-complete", JSON.stringify(true));
-      localStorage.setItem(
-        "zenflow-notification-permission-checked",
-        JSON.stringify(true),
-      );
-      localStorage.setItem(
-        "zenflow_onboarding_state",
-        JSON.stringify({
-          isNewUser: false,
-          hasSeenWelcome: true,
-          firstLoginDate: Date.now(),
-          daysActive: 5,
-          lastActiveDate: new Date().toISOString().split("T")[0],
-          unlockedFeatures: [],
-        }),
-      );
-      localStorage.setItem("zenflow_last_seen_version", appVersion);
-      localStorage.setItem("zenflow-orb-first-run-dismissed", "1");
-      localStorage.setItem("zenflow-theme", "light");
-      localStorage.setItem(
-        "zenflow-privacy",
-        JSON.stringify({
-          noTracking: true,
-          analytics: false,
-          consentShown: true,
-        }),
-      );
-      localStorage.setItem("zenflow-privacy-acknowledged", JSON.stringify(true));
-    },
-    { appVersion: packageJson.version },
-  );
+  await primeZenflowV2(page, {
+    clearStorage: true,
+    language: "en",
+    privacyNoTracking: true,
+    theme: "paper",
+  });
 }
 
 async function gotoHabitsTab(page: Page) {
   await page.setViewportSize({ width: 1280, height: 800 });
-  const appBase = getAppBasePath(page);
-  await page.goto(`${appBase}/habits?nav=v2&dev=true`);
+  await page.goto(v2RoutePath("habits"));
   await expect(page.getByTestId("habits-page")).toBeVisible({
     timeout: 15_000,
   });
@@ -114,21 +52,40 @@ async function completeTemplateSetup(page: Page, quickPickId: string) {
   });
 }
 
-async function openAdvancedMeasuredForm(page: Page) {
+async function openCustomHabitForm(page: Page) {
   await page.getByTestId("habits-hero-create-empty").click();
-  await expect(page.getByTestId("habits-create-sheet")).toBeVisible({ timeout: 10_000 });
-  await page.getByRole("button", { name: /create custom habit/i }).click();
-  await page.getByRole("tab", { name: /advanced/i }).click();
-  await page.getByRole("button", { name: /measurable/i }).click();
-  await expect(page.locator('[data-settings-panel="tracking"]')).toBeVisible();
+  const sheet = page.getByTestId("habits-create-sheet");
+  await expect(sheet).toBeVisible({ timeout: 10_000 });
+
+  const nameInput = page.getByLabel(/habit name/i);
+  const customButton = sheet.getByRole("button", { name: /create custom habit/i });
+  for (let attempt = 0; attempt < 2 && !(await nameInput.isVisible()); attempt += 1) {
+    await expect(customButton).toBeVisible({ timeout: 10_000 });
+    await customButton.click();
+    await page.waitForTimeout(250);
+  }
+
+  await expect(nameInput).toBeVisible({ timeout: 10_000 });
 }
 
-async function openAdvancedCustomForm(page: Page) {
-  await page.getByTestId("habits-hero-create-empty").click();
-  await expect(page.getByTestId("habits-create-sheet")).toBeVisible({ timeout: 10_000 });
-  await page.getByRole("button", { name: /create custom habit/i }).click();
-  await page.getByRole("tab", { name: /advanced/i }).click();
-  await expect(page.locator('[data-settings-panel="tracking"]')).toBeVisible();
+async function openAdvancedMode(page: Page) {
+  await openCustomHabitForm(page);
+  const sheet = page.getByTestId("habits-create-sheet");
+  const advancedTab = sheet.getByRole("tab", { name: /advanced/i });
+  await expect(advancedTab).toBeVisible({ timeout: 10_000 });
+  await advancedTab.click();
+  await expect(advancedTab).toHaveAttribute("aria-selected", "true");
+  await expect(page.locator('[data-settings-panel="tracking"]')).toBeVisible({
+    timeout: 10_000,
+  });
+}
+
+async function openAdvancedMeasuredForm(page: Page) {
+  await openAdvancedMode(page);
+  await page.getByRole("button", { name: /measurable/i }).click();
+  await expect(page.locator('[data-settings-panel="tracking"]')).toBeVisible({
+    timeout: 10_000,
+  });
 }
 
 /** Pure: assert rendered width AND height are ≥ 44 px each. */
@@ -243,7 +200,7 @@ test.describe("§11 #1 — Habits touch targets ≥ 44×44 px", () => {
     await primeOnboarding(page);
     await gotoHabitsTab(page);
     await page.setViewportSize({ width: 415, height: 697 });
-    await openAdvancedCustomForm(page);
+    await openAdvancedMode(page);
 
     await page.getByLabel(/habit name/i).fill("Morning walk");
     await page
@@ -273,15 +230,15 @@ test.describe("§11 #1 — Habits touch targets ≥ 44×44 px", () => {
       .first();
     await expect(card).toBeVisible({ timeout: 15_000 });
     await expect(card.locator('[data-testid$="-identity"]')).toContainText(
-      "Proof: someone who moves daily",
+      "Step toward someone who moves daily",
     );
     await expect(card.locator('[data-testid$="-identity-vote"]')).toContainText(
-      "proof ready",
+      "ready to mark",
     );
 
     await card.locator('[data-testid$="-emoji-check"]').click();
     await expect(card.locator('[data-testid$="-identity-vote"]')).toContainText(
-      "proof logged",
+      "step logged",
     );
   });
 });

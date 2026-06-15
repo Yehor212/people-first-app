@@ -17,6 +17,7 @@ const packageJson = require("../package.json") as { version: string };
 // addInitScript runs before page scripts, ensuring values are ready for React.
 test.beforeEach(async ({ page }) => {
   await page.addInitScript((appVersion: string) => {
+    localStorage.setItem("zenflow-language", JSON.stringify("en"));
     localStorage.setItem("zenflow-language-selected", JSON.stringify(true));
     localStorage.setItem("zenflow-google-auth-checked", JSON.stringify(true));
     localStorage.setItem("zenflow-tutorial-complete", JSON.stringify(true));
@@ -49,7 +50,7 @@ test.beforeEach(async ({ page }) => {
 
 test.describe("App Smoke Tests", () => {
   test("app loads successfully", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("./");
 
     // Wait for app to load (check for main container or navigation)
     await expect(page.locator("body")).toBeVisible();
@@ -60,7 +61,7 @@ test.describe("App Smoke Tests", () => {
   });
 
   test("navigation tabs are visible", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("./");
 
     // Wait for bottom navigation to appear
     const nav = page.locator('nav, [role="navigation"]');
@@ -68,7 +69,7 @@ test.describe("App Smoke Tests", () => {
   });
 
   test("can switch between tabs", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("./");
 
     // Wait for navigation
     await page.waitForTimeout(2000);
@@ -85,7 +86,7 @@ test.describe("App Smoke Tests", () => {
   });
 
   test("theme toggle works", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("./");
     await page.waitForTimeout(2000);
 
     // Get initial theme
@@ -127,7 +128,7 @@ test.describe("App Smoke Tests", () => {
       }
     });
 
-    await page.goto("/");
+    await page.goto("./");
     await page.waitForTimeout(3000);
 
     // Filter out known acceptable errors (like extension errors, third-party, 404s,
@@ -149,7 +150,7 @@ test.describe("App Smoke Tests", () => {
 
 test.describe("Data Persistence", () => {
   test("data persists after page reload", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("./");
     await page.waitForTimeout(2000);
 
     // This is a basic check - in a real test you'd interact with the app
@@ -177,7 +178,7 @@ test.describe("Data Persistence", () => {
  */
 test.describe("Mood Logging", () => {
   test("can log a mood", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("./");
     await page.waitForLoadState("networkidle");
 
     // Ensure we are on the home tab (click it to be safe)
@@ -244,7 +245,7 @@ test.describe("Mood Logging", () => {
  */
 test.describe("Focus Timer", () => {
   test("timer controls are accessible", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("./");
     await page.waitForLoadState("networkidle");
 
     // The home tab should already be active after load.
@@ -295,7 +296,7 @@ test.describe("Focus Timer", () => {
   });
 
   test("can start and pause timer", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("./");
     await page.waitForLoadState("networkidle");
 
     // Scroll to ensure the timer section is in view
@@ -368,7 +369,7 @@ test.describe("Full Navigation", () => {
   test("can navigate to all tabs", async ({ page }) => {
     // Mobile viewport — bottom nav is lg:hidden (hidden at >=1024px)
     await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto("/");
+    await page.goto("./");
     await page.waitForLoadState("networkidle");
 
     // Wait for mobile bottom navigation (nav.last() — sidebar is first but hidden on mobile)
@@ -411,7 +412,7 @@ test.describe("Full Navigation", () => {
  */
 test.describe("Offline Behavior", () => {
   test("shows offline banner when network is lost", async ({ page, context }) => {
-    await page.goto("/");
+    await page.goto("./");
     await page.waitForLoadState("networkidle");
 
     // Wait for app to fully mount (AuthGate resolved, React useEffects registered)
@@ -448,7 +449,7 @@ test.describe("Offline Behavior", () => {
  */
 test.describe("Empty States", () => {
   test("shows empty states for new user", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("./");
     await page.waitForLoadState("networkidle");
 
     // Clear all IndexedDB databases to simulate a brand-new user
@@ -464,6 +465,7 @@ test.describe("Empty States", () => {
     // Clear localStorage but re-set all onboarding bypass keys so we can access the app
     await page.evaluate((appVersion: string) => {
       localStorage.clear();
+      localStorage.setItem("zenflow-language", JSON.stringify("en"));
       localStorage.setItem("zenflow-language-selected", JSON.stringify(true));
       localStorage.setItem("zenflow-google-auth-checked", JSON.stringify(true));
       localStorage.setItem("zenflow-tutorial-complete", JSON.stringify(true));
@@ -481,16 +483,17 @@ test.describe("Empty States", () => {
     await page.reload();
     await page.waitForLoadState("networkidle");
 
-    // Wait for tab navigation to appear (app has loaded past onboarding)
-    const tabList = page.locator('[role="tablist"]').last();
-    await expect(tabList).toBeVisible({ timeout: 15000 });
+    // Wait for visible tab navigation to appear (desktop and mobile can both
+    // leave hidden tablists in the DOM for responsive layouts).
+    const visibleTabs = page.locator('button[role="tab"]:visible');
+    await expect(visibleTabs.first()).toBeVisible({ timeout: 15000 });
 
     // Verify no crash
     await expect(page.locator("body")).toBeVisible();
     await expect(page.locator("text=Something went wrong")).not.toBeVisible();
 
     // Navigate to the stats tab (index 3: home=0, map=1, garden=2, stats=3, settings=4)
-    const statsTab = page.locator('button[role="tab"]').nth(3);
+    const statsTab = visibleTabs.nth(3);
     await statsTab.click();
     await expect(statsTab).toHaveAttribute("aria-selected", "true", { timeout: 10000 });
 
@@ -503,7 +506,7 @@ test.describe("Empty States", () => {
     await expect(page.locator("text=Something went wrong")).not.toBeVisible();
 
     // Navigate to settings tab (index 4)
-    const settingsTab = page.locator('button[role="tab"]').nth(4);
+    const settingsTab = visibleTabs.nth(4);
     await settingsTab.click();
     await expect(settingsTab).toHaveAttribute("aria-selected", "true", { timeout: 10000 });
     await page.waitForTimeout(1000);
@@ -513,7 +516,7 @@ test.describe("Empty States", () => {
     await expect(page.locator("text=Something went wrong")).not.toBeVisible();
 
     // Navigate back to home tab
-    const homeTab = page.locator('button[role="tab"]').nth(0);
+    const homeTab = visibleTabs.nth(0);
     await homeTab.click();
     await expect(homeTab).toHaveAttribute("aria-selected", "true", { timeout: 10000 });
     await page.waitForTimeout(1000);
@@ -534,7 +537,7 @@ test.describe("Empty States", () => {
  */
 test.describe("Settings", () => {
   test("settings panel loads with all sections", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("./");
     await page.waitForLoadState("networkidle");
 
     // Navigate to the settings tab (5th tab, index 4: home=0, map=1, garden=2, stats=3, settings=4)

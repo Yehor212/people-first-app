@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { MoodFirstRunHint } from "../MoodFirstRunHint";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 
 vi.mock("@/contexts/LanguageContext", () => ({
   useLanguage: () => ({
@@ -49,7 +51,7 @@ describe("MoodFirstRunHint", () => {
     render(<MoodFirstRunHint eligible={true} />);
     const dialog = screen.getByTestId("mood-first-run-hint");
     expect(dialog).toHaveAttribute("role", "dialog");
-    expect(dialog).toHaveAttribute("aria-modal", "true");
+    expect(dialog).not.toHaveAttribute("aria-modal", "true");
     expect(dialog).toHaveAttribute(
       "aria-labelledby",
       "mood-first-run-title",
@@ -73,12 +75,20 @@ describe("MoodFirstRunHint", () => {
     expect(screen.queryByTestId("mood-first-run-hint")).not.toBeInTheDocument();
   });
 
-  it("clicking backdrop dismisses hint", () => {
+  it("does not dismiss from the passive backdrop", () => {
     render(<MoodFirstRunHint eligible={true} />);
     const backdrop = screen.getByTestId("mood-first-run-hint");
     fireEvent.click(backdrop);
-    expect(
-      screen.queryByTestId("mood-first-run-hint"),
-    ).not.toBeInTheDocument();
+    expect(screen.getByTestId("mood-first-run-hint")).toBeInTheDocument();
+  });
+
+  it("keeps the full-screen hint layer passive so V2 navigation remains reachable", () => {
+    const css = readFileSync(
+      resolve(process.cwd(), "src/pages/nav-v2/MoodFirstRunHint.css"),
+      "utf8",
+    );
+
+    expect(css).toMatch(/\.mood-first-run-backdrop\s*\{[^}]*pointer-events:\s*none/s);
+    expect(css).toMatch(/\.mood-first-run-card\s*\{[^}]*pointer-events:\s*auto/s);
   });
 });

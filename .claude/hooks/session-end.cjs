@@ -17,6 +17,7 @@ const AUDIT_LOG = path.join(ROOT, '.claude-audit.log');
 
 const CLEANUP_TOKENS = [
   '.preflight-token',
+  '.test-first-token',
   '.postflight-done',
   '.fullcycle-active',
   '.fullcycle-laws-read',

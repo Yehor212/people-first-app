@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { NavV2Orchestrator } from "../NavV2Orchestrator";
+import { readFileSync } from "node:fs";
 
 // --- Mocks ---
 
@@ -192,5 +193,15 @@ describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
     expect(screen.getByText("Page not found")).toBeInTheDocument();
     expect(screen.getByText("/missing-v2-page")).toBeInTheDocument();
     expect(screen.queryByTestId("orb-page")).not.toBeInTheDocument();
+  });
+
+  it("uses a visible V2 page loading fallback instead of a blank route boundary", () => {
+    const source = readFileSync(
+      "src/components/navigation-v2/NavV2Orchestrator.tsx",
+      "utf8",
+    );
+
+    expect(source).toContain("NavV2RouteFallback");
+    expect(source).not.toContain("<Suspense fallback={null}>{pageNode}</Suspense>");
   });
 });

@@ -106,7 +106,10 @@ describe("journal release trace calendar markers", () => {
 
   it("keeps strip day button hit targets stable during entrance animation", () => {
     expect(journalCalendarSource).toContain("initial={animate ? { opacity: 0 } : false}");
-    expect(journalCalendarSource).toContain("snap-start flex h-[46px] w-[46px] flex-none");
+    expect(journalCalendarSource).toContain("scrollRef.current.scrollLeft = -(");
+    expect(journalCalendarSource).toContain("compactSidebarInset");
+    expect(journalCalendarSource).toContain("px-1 pr-8 snap-x snap-mandatory rtl:pl-8 rtl:pr-1");
+    expect(journalCalendarSource).toContain("snap-start flex h-[44px] w-[44px] flex-none");
     expect(journalCalendarSource).not.toContain("initial={animate ? { opacity: 0, scale: 0.8 } : false}");
   });
 });

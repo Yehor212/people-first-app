@@ -285,10 +285,15 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
           )}
         </section>
 
-        <div className="space-y-2 px-2 text-center text-xs leading-5 text-muted-foreground">
-          <p className="mx-auto max-w-[22rem]">{t.authPrivacyNote}</p>
+        <div className="space-y-2 px-2 text-center text-xs leading-5">
+          <p className="entry-gate-muted-copy mx-auto max-w-[22rem]" data-testid="auth-privacy-copy">
+            {t.authPrivacyNote}
+          </p>
 
-          <div className="flex flex-col items-center text-muted-foreground/75">
+          <div
+            className="entry-gate-muted-copy flex flex-col items-center"
+            data-testid="auth-legal-copy"
+          >
             <span>{t.legalAgreePrefix}</span>
             <span className="flex flex-wrap items-center justify-center gap-x-2">
               <a

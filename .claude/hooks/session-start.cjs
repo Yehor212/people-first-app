@@ -33,7 +33,7 @@ const FALLBACK_HOOKS = [
   'search-gate.cjs', 'search-confirm.cjs',
   'ci-tracker.cjs',
   'bandaid-gate.cjs', 'code-quality-check.cjs',
-  'tool-guard.cjs',
+  'tool-guard.cjs', 'test-first-gate.cjs',
 ];
 
 // Auto-discover hooks from settings.json (root cause: eliminate manual sync)
@@ -61,7 +61,7 @@ const EXPECTED_MODULES = [
 ];
 
 const STALE_TOKENS = [
-  '.preflight-token', '.postflight-done', '.fullcycle-active', '.fullcycle-laws-read',
+  '.preflight-token', '.test-first-token', '.postflight-done', '.fullcycle-active', '.fullcycle-laws-read',
   '.bugfix-pending', '.search-confirmed',
   '.ci-evidence', '.ide-ack-pending', '.ide-ack-done', '.worktree-verify-pending',
   '.snyk-pending', '.snyk-scan-done', '.control-flow-pending',

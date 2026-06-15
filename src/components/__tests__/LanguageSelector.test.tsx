@@ -78,13 +78,23 @@ vi.mock("@/lib/animationUtils", () => ({
 
 vi.mock("framer-motion", async () => {
   const React = await import("react");
+  const withoutMotionProps = <T extends Record<string, unknown>>(props: T) => {
+    const {
+      animate: _animate,
+      initial: _initial,
+      transition: _transition,
+      variants: _variants,
+      ...rest
+    } = props;
+    return rest;
+  };
 
   return {
     motion: {
       button: React.forwardRef<HTMLButtonElement, React.ComponentProps<"button">>(
         function MotionButton({ children, ...props }, ref) {
           return (
-            <button ref={ref} {...props}>
+            <button ref={ref} {...withoutMotionProps(props)}>
               {children}
             </button>
           );
@@ -95,7 +105,7 @@ vi.mock("framer-motion", async () => {
         ref
       ) {
         return (
-          <div ref={ref} {...props}>
+          <div ref={ref} {...withoutMotionProps(props)}>
             {children}
           </div>
         );
@@ -103,7 +113,7 @@ vi.mock("framer-motion", async () => {
       span: React.forwardRef<HTMLSpanElement, React.ComponentProps<"span">>(
         function MotionSpan({ children, ...props }, ref) {
           return (
-            <span ref={ref} {...props}>
+            <span ref={ref} {...withoutMotionProps(props)}>
               {children}
             </span>
           );
@@ -112,7 +122,7 @@ vi.mock("framer-motion", async () => {
       section: React.forwardRef<HTMLElement, React.ComponentProps<"section">>(
         function MotionSection({ children, ...props }, ref) {
           return (
-            <section ref={ref} {...props}>
+            <section ref={ref} {...withoutMotionProps(props)}>
               {children}
             </section>
           );
@@ -164,7 +174,10 @@ describe("LanguageSelector", () => {
     expect(screen.queryByText("Skip")).toBeNull();
     expect(screen.queryByText("Your journey to mindful living starts here")).toBeNull();
     expect(screen.queryByTestId("entry-gate-backdrop-star")).toBeNull();
-    expect(screen.getAllByTestId("entry-gate-backdrop-flow-mark")).toHaveLength(2);
+    expect(screen.queryByTestId("entry-gate-backdrop-flow-mark")).toBeNull();
+    expect(screen.getAllByTestId("entry-gate-backdrop-orb")).toHaveLength(7);
+    expect(screen.getAllByTestId("entry-gate-backdrop-ripple")).toHaveLength(3);
+    expect(screen.getAllByTestId("entry-gate-backdrop-ribbon")).toHaveLength(3);
   });
 
   it("selects a language and completes without form submission side effects", () => {

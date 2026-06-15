@@ -63,6 +63,11 @@
             "type": "command",
             "command": "node .claude/hooks/protected-files.cjs",
             "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "node .claude/hooks/test-first-gate.cjs",
+            "timeout": 5
           }
         ]
       }

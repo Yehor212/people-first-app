@@ -121,7 +121,7 @@ export const DrawerV2 = memo(function DrawerV2({
         className={cn(
           "fixed inset-0 z-[59] bg-[hsl(var(--nav-v2-backdrop)/0.38)] backdrop-blur-sm [-webkit-backdrop-filter:blur(4px)]",
           "motion-safe:transition-opacity motion-safe:duration-200",
-          open ? "opacity-100" : "opacity-0"
+          open ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
         )}
         onClick={onClose}
         aria-hidden="true"

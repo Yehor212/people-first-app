@@ -180,6 +180,13 @@ describe("AuthScreen provider buttons", () => {
     expect(screen.getByRole("button", { name: "Continue with Telegram" })).toBeInTheDocument();
     expect(within(screen.getByTestId("auth-screen-panel")).queryByText("ZenFlow")).toBeNull();
     expect(screen.queryByText("Sign in to sync your data across devices")).toBeNull();
+    expect(screen.queryByTestId("entry-gate-backdrop-star")).toBeNull();
+    expect(screen.queryByTestId("entry-gate-backdrop-flow-mark")).toBeNull();
+    expect(screen.getAllByTestId("entry-gate-backdrop-orb")).toHaveLength(7);
+    expect(screen.getAllByTestId("entry-gate-backdrop-ripple")).toHaveLength(3);
+    expect(screen.getAllByTestId("entry-gate-backdrop-ribbon")).toHaveLength(3);
+    expect(screen.getByTestId("auth-privacy-copy")).toHaveClass("entry-gate-muted-copy");
+    expect(screen.getByTestId("auth-legal-copy")).toHaveClass("entry-gate-muted-copy");
   });
 
   it("keeps provider buttons as safe button actions and delegates provider selection", () => {
@@ -221,6 +228,26 @@ describe("AuthScreen provider buttons", () => {
     expect(facebookIcon).toHaveClass("h-6", "w-6");
     expect(telegramIcon).toHaveClass("h-6", "w-6");
     expect(facebookIcon.querySelector('circle[fill="#1877F2"]')).toBeTruthy();
-    expect(telegramIcon.querySelector('circle[fill="#2AABEE"]')).toBeTruthy();
+    expect(telegramIcon).toHaveAttribute("viewBox", "0 0 128 128");
+    expect(
+      telegramIcon.querySelector('circle[fill^="url(#auth-provider-telegram-gradient-"]')
+    ).toBeTruthy();
+    expect(telegramIcon.querySelector('stop[stop-color="#2AABEE"]')).toBeTruthy();
+    expect(telegramIcon.querySelector('stop[stop-color="#229ED9"]')).toBeTruthy();
+    expect(screen.getByTestId("auth-provider-content-google")).toHaveClass(
+      "grid",
+      "max-w-[22rem]",
+      "grid-cols-[2rem_minmax(0,1fr)_2rem]"
+    );
+    expect(screen.getByTestId("auth-provider-content-facebook")).toHaveClass(
+      "grid",
+      "max-w-[22rem]",
+      "grid-cols-[2rem_minmax(0,1fr)_2rem]"
+    );
+    expect(screen.getByTestId("auth-provider-content-telegram")).toHaveClass(
+      "grid",
+      "max-w-[22rem]",
+      "grid-cols-[2rem_minmax(0,1fr)_2rem]"
+    );
   });
 });

@@ -10,7 +10,7 @@ describe("JournalModule V2 header", () => {
     expect(source).not.toContain("PanelLeftOpen");
 
     const menuClass = /const mobileHeaderMenuClass =\s*"([^"]+)";/.exec(source)?.[1] ?? "";
-    expect(menuClass).toContain("h-12 w-12");
+    expect(menuClass).toContain("h-[48px] w-[48px]");
     expect(menuClass).toContain("rounded-full");
     expect(menuClass).toContain("bg-card/70");
     expect(menuClass).not.toContain("press-stable");

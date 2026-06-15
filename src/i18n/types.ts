@@ -2506,6 +2506,7 @@ export interface Translations {
   journalCompressing: string;
   journalPhotoError: string;
   journalPhotoTooLarge: string;
+  journalPhotoInvalidType: string;
   journalDraftFound: string;
   journalRestore: string;
   journalDiscardTitle: string;
@@ -2650,6 +2651,8 @@ export interface Translations {
   journalStatsEntries: string;
   journalAudioSaved: string;
   journalAudioError: string;
+  journalAudioPermissionDenied: string;
+  journalAudioUnsupported: string;
   journalVoiceNotSupported: string;
   journalAudioMaxReached: string;
   journalDictating: string;

@@ -1,6 +1,4 @@
 import { lazy, memo, startTransition, Suspense, useEffect, useRef, useState } from "react";
-import { Bloom } from "@/lib/motion";
-import { staggerDelay } from "@/lib/motion/choreography";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { SplashScreen } from "@/components/SplashScreen";
 import { useThemeStore } from "@/stores/themeStore";
@@ -163,7 +161,7 @@ export const DiaryPage = memo(function DiaryPage({
   }, [pendingMoodContext, tx]);
 
   return (
-    <Bloom key="diary-page" transition={staggerDelay("primary")}>
+    <div className="motion-safe:animate-fade-in">
       <main
         id="main-content-v2"
         role="main"
@@ -205,6 +203,6 @@ export const DiaryPage = memo(function DiaryPage({
           />
         </Suspense>
       </main>
-    </Bloom>
+    </div>
   );
 });

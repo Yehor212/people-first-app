@@ -15,6 +15,18 @@ interface JournalPhotoPickerProps {
   maxCount: number;
 }
 
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"];
+const ALLOWED_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif"];
+
+export function isSupportedJournalPhotoFile(file: Pick<File, "name" | "type">): boolean {
+  const type = file.type.toLowerCase();
+  if (type) return ALLOWED_MIME_TYPES.includes(type);
+
+  const name = file.name.toLowerCase();
+  return ALLOWED_EXTENSIONS.some((extension) => name.endsWith(extension));
+}
+
 export function JournalPhotoPicker({
   onSelectFile,
   onClose,
@@ -39,16 +51,13 @@ export function JournalPhotoPicker({
     }
   }, []);
 
-  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
-  const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
-
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.type || !ALLOWED_MIME_TYPES.includes(file.type)) {
+    if (!isSupportedJournalPhotoFile(file)) {
       setError(
-        ts.journalPhotoInvalidType || "Unsupported file type. Please use JPEG, PNG, or WebP."
+        ts.journalPhotoInvalidType || "Unsupported file type. Please use JPEG, PNG, WebP, or HEIC."
       );
       e.target.value = "";
       return;
@@ -100,7 +109,7 @@ export function JournalPhotoPicker({
         aria-label={t.ariaPhotoPicker}
         className={cn(
           "fixed bottom-0 inset-x-0 z-[65] pb-safe lg:max-w-4xl lg:mx-auto",
-          "bg-card/95 backdrop-blur-xl border-t border-border/40",
+          "bg-card backdrop-blur-xl border-t border-border/40",
           "rounded-t-2xl shadow-lg motion-safe:animate-slide-up",
           "pb-safe"
         )}

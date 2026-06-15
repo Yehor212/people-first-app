@@ -1,8 +1,8 @@
 /**
  * MoodFirstRunHint styling — Phase 3-A.4b.
  *
- * Glass backdrop + glass card with three numbered beats. Dismissed forever
- * after first acknowledgement.
+ * Floating non-modal hint with three numbered beats. The full-screen layer is
+ * passive so V2 navigation stays reachable while the card remains dismissible.
  */
 
 .mood-first-run-backdrop {
@@ -13,15 +13,15 @@
   justify-content: center;
   padding: 1.5rem;
   padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
-  background: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: transparent;
+  pointer-events: none;
   z-index: 80;
   animation: mood-first-run-fade 300ms ease-out both;
 }
 
 .mood-first-run-card {
   position: relative;
+  pointer-events: auto;
   width: 100%;
   max-width: 22rem;
   padding: 1.5rem 1.5rem 1.25rem;
