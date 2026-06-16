@@ -7,7 +7,7 @@ import { ParticleBackground } from "@/components/stats/ParticleBackground";
 import { springs as springPresets } from "@/config/animations";
 import { V2_JOURNAL_ICONS, V2_SHELL_ICONS } from "@/lib/v2IconSystem";
 
-import { TimeOfDayGradient } from "./TimeOfDayGradient";
+import { DiaryWallpaper } from "./DiaryWallpaper";
 import { TypewriterText } from "./TypewriterText";
 import { formatLocalizedCount } from "./journalWordCount";
 
@@ -115,8 +115,8 @@ export const DiaryEmptyCanvas = memo(function DiaryEmptyCanvas({
       className="relative flex flex-1 select-none flex-col items-center justify-center gap-6 overflow-hidden"
       data-testid="diary-empty-canvas"
     >
-      {/* Layer 1: Time-of-day gradient */}
-      <TimeOfDayGradient />
+      {/* Layer 1: shared day/night diary wallpaper */}
+      <DiaryWallpaper surface="empty" />
 
       {/* Layer 2: Ambient particles */}
       {!reducedMotion && (

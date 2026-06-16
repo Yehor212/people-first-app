@@ -5574,6 +5574,244 @@ body.reduce-motion .diary-animated {
   );
 }
 
+
+/* Diary day/night wallpaper: shared background scene for V2 Diary page and empty canvas. */
+.journal-wallpaper {
+  --journal-wallpaper-sky-a: hsl(var(--background) / 0.94);
+  --journal-wallpaper-sky-b: hsl(var(--surface-elevated) / 0.78);
+  --journal-wallpaper-sky-c: hsl(var(--card) / 0.52);
+  --journal-wallpaper-glow-a: hsl(var(--zf-role-energy) / 0.18);
+  --journal-wallpaper-glow-b: hsl(var(--zf-role-body) / 0.16);
+  --journal-wallpaper-glow-c: hsl(var(--zf-role-focus) / 0.14);
+  --journal-wallpaper-ink: hsl(var(--foreground) / 0.06);
+  --journal-wallpaper-star: hsl(var(--card) / 0.58);
+  --journal-wallpaper-veil: linear-gradient(
+    180deg,
+    hsl(var(--background) / 0.24),
+    transparent 34%,
+    hsl(var(--background) / 0.30) 100%
+  );
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  isolation: isolate;
+  contain: paint;
+  background:
+    radial-gradient(ellipse 80% 34% at 18% 4%, var(--journal-wallpaper-glow-a), transparent 68%),
+    radial-gradient(ellipse 72% 38% at 84% 18%, var(--journal-wallpaper-glow-b), transparent 70%),
+    radial-gradient(ellipse 70% 44% at 52% 106%, var(--journal-wallpaper-glow-c), transparent 72%),
+    linear-gradient(150deg, var(--journal-wallpaper-sky-a), var(--journal-wallpaper-sky-b) 56%, var(--journal-wallpaper-sky-c));
+}
+
+.journal-wallpaper > span {
+  position: absolute;
+  pointer-events: none;
+}
+
+.journal-wallpaper__sky {
+  inset: -10% -8% 42%;
+  background:
+    radial-gradient(ellipse at 22% 36%, hsl(var(--card) / 0.42), transparent 54%),
+    conic-gradient(
+      from 218deg at 72% 34%,
+      transparent 0 20%,
+      hsl(var(--zf-role-energy) / 0.10) 28%,
+      hsl(var(--zf-role-body) / 0.12) 40%,
+      hsl(var(--zf-role-focus) / 0.09) 52%,
+      transparent 68% 100%
+    );
+  filter: blur(0.22rem);
+  opacity: 0.78;
+  transform: translate3d(0, 0, 0);
+}
+
+.journal-wallpaper__horizon {
+  inset: auto -10% -18%;
+  height: 56%;
+  background:
+    radial-gradient(ellipse 42% 32% at 22% 32%, hsl(var(--zf-role-body) / 0.13), transparent 72%),
+    radial-gradient(ellipse 46% 30% at 76% 24%, hsl(var(--zf-role-focus) / 0.12), transparent 74%),
+    linear-gradient(180deg, transparent, hsl(var(--background) / 0.62));
+  opacity: 0.86;
+}
+
+.journal-wallpaper__grain {
+  inset: 0;
+  background:
+    repeating-linear-gradient(
+      82deg,
+      transparent 0 1.35rem,
+      var(--journal-wallpaper-ink) 1.35rem 1.40rem,
+      transparent 1.40rem 2.75rem
+    ),
+    repeating-linear-gradient(
+      172deg,
+      transparent 0 1.9rem,
+      hsl(var(--zf-role-body) / 0.026) 1.9rem 1.96rem,
+      transparent 1.96rem 3.75rem
+    );
+  mix-blend-mode: multiply;
+  opacity: 0.48;
+}
+
+.journal-wallpaper__constellation {
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 18% 24%, var(--journal-wallpaper-star) 0 0.055rem, transparent 0.07rem),
+    radial-gradient(circle at 36% 14%, var(--journal-wallpaper-star) 0 0.045rem, transparent 0.06rem),
+    radial-gradient(circle at 67% 28%, var(--journal-wallpaper-star) 0 0.055rem, transparent 0.07rem),
+    radial-gradient(circle at 84% 18%, var(--journal-wallpaper-star) 0 0.05rem, transparent 0.065rem),
+    radial-gradient(circle at 72% 74%, hsl(var(--zf-role-focus) / 0.34) 0 0.06rem, transparent 0.075rem);
+  opacity: 0.26;
+  transform: translate3d(0, 0, 0);
+}
+
+.journal-wallpaper__veil {
+  inset: 0;
+  background: var(--journal-wallpaper-veil);
+  -webkit-backdrop-filter: saturate(1.04) contrast(0.98);
+  backdrop-filter: saturate(1.04) contrast(0.98);
+}
+
+.journal-wallpaper--day {
+  --journal-wallpaper-sky-a: hsl(var(--background) / 0.98);
+  --journal-wallpaper-sky-b: hsl(var(--surface-elevated) / 0.82);
+  --journal-wallpaper-sky-c: hsl(var(--card) / 0.60);
+  --journal-wallpaper-glow-a: hsl(var(--zf-role-energy) / 0.24);
+  --journal-wallpaper-glow-b: hsl(var(--zf-role-body) / 0.18);
+  --journal-wallpaper-glow-c: hsl(var(--zf-role-focus) / 0.13);
+  --journal-wallpaper-star: hsl(var(--foreground) / 0.11);
+  --journal-wallpaper-veil: linear-gradient(
+    180deg,
+    hsl(var(--card) / 0.18),
+    transparent 38%,
+    hsl(var(--background) / 0.34) 100%
+  );
+}
+
+.journal-wallpaper--night {
+  --journal-wallpaper-sky-a: hsl(var(--background) / 0.98);
+  --journal-wallpaper-sky-b: hsl(var(--card) / 0.78);
+  --journal-wallpaper-sky-c: hsl(var(--surface-elevated) / 0.64);
+  --journal-wallpaper-glow-a: hsl(var(--zf-role-focus) / 0.22);
+  --journal-wallpaper-glow-b: hsl(var(--zf-role-rest) / 0.20);
+  --journal-wallpaper-glow-c: hsl(var(--zf-role-energy) / 0.13);
+  --journal-wallpaper-ink: hsl(var(--card) / 0.045);
+  --journal-wallpaper-star: hsl(var(--card) / 0.74);
+  --journal-wallpaper-veil: linear-gradient(
+    180deg,
+    hsl(var(--background) / 0.34),
+    transparent 42%,
+    hsl(var(--background) / 0.42) 100%
+  );
+}
+
+.journal-wallpaper--paper {
+  --journal-wallpaper-glow-a: hsl(var(--zf-role-energy) / 0.20);
+  --journal-wallpaper-glow-b: hsl(var(--zf-role-body) / 0.17);
+  --journal-wallpaper-glow-c: hsl(var(--zf-role-focus) / 0.12);
+}
+
+.journal-wallpaper--oled {
+  --journal-wallpaper-sky-a: hsl(var(--background) / 1);
+  --journal-wallpaper-sky-b: hsl(var(--background) / 0.96);
+  --journal-wallpaper-sky-c: hsl(var(--background) / 0.92);
+  --journal-wallpaper-veil: linear-gradient(
+    180deg,
+    hsl(var(--background) / 0.50),
+    transparent 44%,
+    hsl(var(--background) / 0.60) 100%
+  );
+}
+
+.journal-wallpaper--empty {
+  border-radius: inherit;
+}
+
+.journal-wallpaper--empty .journal-wallpaper__grain {
+  opacity: 0.34;
+}
+
+@media (max-width: 767px) {
+  .journal-wallpaper__sky {
+    inset: -6% -24% 44%;
+  }
+
+  .journal-wallpaper__horizon {
+    height: 46%;
+  }
+
+  .journal-wallpaper__constellation {
+    opacity: 0.20;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .journal-wallpaper__sky {
+    animation: journal-wallpaper-sky-breathe 26s ease-in-out infinite;
+  }
+
+  .journal-wallpaper__horizon {
+    animation: journal-wallpaper-horizon-drift 34s ease-in-out infinite;
+  }
+
+  .journal-wallpaper__constellation {
+    animation: journal-wallpaper-star-shimmer 18s ease-in-out infinite;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .journal-wallpaper,
+  .journal-wallpaper *,
+  .journal-wallpaper::before,
+  .journal-wallpaper::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+@media (forced-colors: active) {
+  .journal-wallpaper {
+    display: none;
+  }
+}
+
+@keyframes journal-wallpaper-sky-breathe {
+  0%,
+  100% {
+    opacity: 0.62;
+    transform: translate3d(0, 0, 0) scale(0.98);
+  }
+  50% {
+    opacity: 0.86;
+    transform: translate3d(0, 0.4rem, 0) scale(1.03);
+  }
+}
+
+@keyframes journal-wallpaper-horizon-drift {
+  0%,
+  100% {
+    opacity: 0.74;
+    transform: translate3d(-1.2%, 0, 0) scaleX(0.98);
+  }
+  50% {
+    opacity: 0.92;
+    transform: translate3d(1.4%, -0.35rem, 0) scaleX(1.02);
+  }
+}
+
+@keyframes journal-wallpaper-star-shimmer {
+  0%,
+  100% {
+    opacity: 0.20;
+  }
+  50% {
+    opacity: 0.42;
+  }
+}
+
 /* Diary page paper atmosphere: a token-based washi/daylight image layer.
  * It stays behind app chrome, so journal cards remain readable across desktop,
  * phone WebView, and native shells.

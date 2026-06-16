@@ -76,6 +76,7 @@ import { useStreakFreeze, StreakFreezeIndicator } from "./StreakFreeze";
 import type { JournalSettingsSection } from "./JournalSettingsContent";
 import type { JournalEntryPrefill, JournalEntrySuggestion, JournalReleaseTraceSummary } from "./types";
 import { DiaryMiniOrb } from "./DiaryMiniOrb";
+import { DiaryWallpaper } from "./DiaryWallpaper";
 
 function getPrefillSpaceIds(prefill: JournalEntryPrefill | null | undefined): string[] {
   if (!prefill) return [];
@@ -2343,6 +2344,7 @@ export const JournalModule = memo(function JournalModule({
         dir={isRTL ? "rtl" : "ltr"}
         data-testid="journal-page-shell"
       >
+        <DiaryWallpaper surface="page" />
         {showJournalLightAtmosphere && (
           <div
             className="journal-light-atmosphere"
