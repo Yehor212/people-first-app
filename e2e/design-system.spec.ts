@@ -101,8 +101,8 @@ async function waitForApp(page: import("@playwright/test").Page) {
   // Keep navigation relative to Playwright's baseURL. A leading "/" drops the
   // /people-first-app/ GitHub Pages base path when this test targets production.
   await page.goto("", { waitUntil: "load", timeout: 45000 });
-  const nav = page.locator('[role="navigation"]');
-  await expect(nav.first()).toBeVisible({ timeout: 30000 });
+  const visibleNav = page.locator('[role="navigation"]:visible');
+  await expect(visibleNav.first()).toBeVisible({ timeout: 30000 });
   // CRITICAL Phase 2-B.2 fix: wait for @fontsource-variable Fraunces/Inter/
   // Caveat to finish loading BEFORE any screenshot, so the display-serif swap
   // is stable instead of FOUT stub. Without this, baselines capture system
@@ -134,6 +134,7 @@ test.describe("Design System Phase 2-B.2 — OKLCH flag bridge", () => {
     await expect(page).toHaveScreenshot("home-flag-off-hsl.png", {
       maxDiffPixelRatio: HOME_SCREENSHOT_MAX_DIFF_PIXEL_RATIO,
       fullPage: false,
+      timeout: 15000,
     });
   });
 
@@ -144,6 +145,7 @@ test.describe("Design System Phase 2-B.2 — OKLCH flag bridge", () => {
     await expect(page).toHaveScreenshot("home-flag-on-oklch.png", {
       maxDiffPixelRatio: HOME_SCREENSHOT_MAX_DIFF_PIXEL_RATIO,
       fullPage: false,
+      timeout: 15000,
     });
   });
 

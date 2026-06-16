@@ -1,6 +1,6 @@
 # ZenFlow Android Entry Gate Contract
 
-Last verified: 2026-06-15
+Last verified: 2026-06-16
 
 This document freezes the Android entry-gate expectations for the ZenFlow
 first-run language screen and the following sign-in screen. It is intentionally
@@ -350,17 +350,17 @@ Retention note:
 Facts file:
 
 - `output/playwright/android-entry-20260615/facts.json`
-- Generated at: `2026-06-16T01:09:48.927Z`
-- Base URL: `http://127.0.0.1:4231/people-first-app/`
+- Generated at: `2026-06-16T22:41:16.514Z`
+- Base URL: `http://127.0.0.1:4321/people-first-app/`
 - Runtime: Chromium production preview
 - SHA-256:
-  `b71326d7053dbde8c3a049c2764774ef187b7bbf4a9ea03f87237ecfc8fa249c`
+  `6dbaf3186a3fab2349d8e5b51ea8b2651d81bf47e442a25253d4a8061fa69ccf`
 
 Verification log:
 
 - `output/playwright/android-entry-20260615/verification-log-20260615.txt`
 - SHA-256:
-  `164ecae22692d75ef6d27e9cfc3b29fe61f87fe948dcf23562a7fee84f1741c7`
+  `44d950758b1a762b033c35c8bb09b3536ec47b1427662ebc906c9790df35aa06`
 
 Screenshots:
 
@@ -377,23 +377,23 @@ Screenshots:
 Screenshot hashes:
 
 - `android-phone-language-light.png`:
-  `d1123e1571e694d9dce28db9d645aee573828748070fbd0ac8e15e0f2103e2c1`
+  `bd0a36563b93d45d7fad99eec90fab7e221f20c33ded209130b4cdd4b14b8886`
 - `android-phone-language-dark.png`:
-  `497222d38c4539b5901a1104a6462447373bbb1bb7fd40555736c02ed521c108`
+  `8be9730bc62f138984f3b07af32c9c6835f1a9246a5a68e2a970cee87b1f9996`
 - `android-phone-language-ar-rtl.png`:
-  `08bd78d89e2f6620e290a4082aeee91fd813a0d43084fda21d04394a652216b3`
+  `89dd20b4f645c3121a5f16255785dfa054a35afad77710a54063c7033b3e24e8`
 - `android-phone-language-he-rtl.png`:
-  `8fb0b0d58b18572b87bb03b3e5af6068cbb0a472493de886b33026102da79f6e`
+  `5ff647cf0b575528bd10257195b89a1d8b347f8257a599514769cff5837f882b`
 - `android-phone-auth-light.png`:
-  `2f4ca7e2a3c799fe1ba08855061a00e0c307f6295c5673723548ba290d2e802d`
+  `ee37029d65bca97f451ff34f625e5ffdd4ef2a60d0d4959bcee3f95673ef7ac0`
 - `android-phone-auth-dark.png`:
-  `7b590ab3f1cf110b94835b6c3fd2f2ef039208f9bc29da06eec88fc4712ab399`
+  `dea5aeb1afbfc297d1f0cf8e850ef1f2f302746da13e31c761f4862cb2017228`
 - `android-tablet-language-system.png`:
-  `24349df1f94a05b8ce468271f14c5b574f2bc4199d786d51ff3f3abd30481840`
+  `c18bd97bd742d6ebe1aa330002bf765f4cd1776c65415e0a0e46fe056603dce2`
 - `android-tablet-language-dark.png`:
-  `f6669f01a9b0a083683a2a3848a0fd326c3b3c407f0458b6c9f2131f0a905cab`
+  `131e353f932e3961e62bd7e16aaa935e9432cec246e7b265b934226bbb526b57`
 - `android-tablet-auth-dark.png`:
-  `e5716d15577e2a10403fc1607d17a442650c0250aab2825b0e60e5123e6f2c8b`
+  `edadcddd2c72632ce4f76f770aba64b933f00a2355dc13610c5fa31809078173`
 
 Native APK:
 
@@ -423,6 +423,43 @@ Current facts:
 - Telegram: `viewBox="0 0 128 128"` with `#2AABEE` and `#229ED9`.
 - Arabic RTL scenario sets `html lang="ar"` and `dir="rtl"`.
 - Hebrew RTL scenario sets `html lang="he"` and `dir="rtl"`.
+
+## Verification Refresh On 2026-06-16
+
+PASS:
+
+- Production web build: exit 0 against the current worktree.
+- Android visual/runtime matrix: 2/2 Playwright tests PASS against
+  `http://127.0.0.1:4321/people-first-app/`, covering 9 screenshots plus all-language smoke.
+- Scoped Android entry lint: exit 0 for `e2e/entry-gate-android.spec.ts`.
+- Scoped whitespace diff check: exit 0 for `e2e/entry-gate-android.spec.ts`.
+- Secret-string scan over the Android entry spec, this contract, and fresh facts/log
+  found only the documentation phrase `token-only`; no secret value was present.
+
+Fresh facts:
+
+- Facts SHA-256: `6dbaf3186a3fab2349d8e5b51ea8b2651d81bf47e442a25253d4a8061fa69ccf`.
+- Verification log SHA-256: `44d950758b1a762b033c35c8bb09b3536ec47b1427662ebc906c9790df35aa06`.
+- Background counts remained 7 orbs, 3 ripples, 3 ribbons, 3 caustics,
+  4 currents, 1 horizon, 0 stars, and 0 old flow marks in every scenario.
+- Auth provider ids remained `google`, `facebook`, `telegram`; icon rail
+  spread remained 0; Telegram kept `viewBox="0 0 128 128"` with
+  `#2AABEE` and `#229ED9`.
+- Console warnings/errors: 0 in all production-preview visual scenarios.
+- Failed requests: 0 in all production-preview visual scenarios.
+
+Failure handling:
+
+- A fresh run hit Chromium `Page.captureScreenshot` protocol failure after the
+  page had already produced a valid PNG. The e2e spec was hardened with a
+  test-only PNG validation/retry helper; product UI code was not changed. The
+  same matrix was rerun and passed.
+
+UNVERIFIED:
+
+- Physical Android device or emulator runtime remains unverified in this refresh.
+- Snyk Code remains unverified because the organization returned
+  `403 SNYK-CODE-0005`.
 
 ## Verification Results On 2026-06-15
 
