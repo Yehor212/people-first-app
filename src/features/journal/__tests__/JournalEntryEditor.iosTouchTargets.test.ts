@@ -29,6 +29,13 @@ describe("JournalEntryEditor iOS touch targets", () => {
   });
 
 
+  it("keeps the mobile editor above iPad sidebar stacking contexts", () => {
+    expect(editorSource).toContain('import { createPortal } from "react-dom";');
+    expect(editorSource).toContain('const editorShell = (');
+    expect(editorSource).toContain('desktop || typeof document === "undefined"');
+    expect(editorSource).toContain('createPortal(editorShell, document.body)');
+  });
+
   it("keeps iPad and dense editor controls at least 44px", () => {
     expect(editorSource).toContain("h-11 w-11 rounded-full");
     expect(editorSource).toContain("h-11 w-11 rounded-lg");

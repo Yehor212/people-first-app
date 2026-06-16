@@ -32,6 +32,7 @@ import {
   Wind,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { createPortal } from "react-dom";
 import { cn, getToday } from "@/lib/utils";
 import { zenMotion } from "@/lib/animationUtils";
 import { hapticTap } from "@/lib/haptics";
@@ -636,7 +637,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
     return () => onBindSettingsRequestHandler?.(null);
   }, [handleRequestSettings, onBindSettingsRequestHandler, onRequestSettings]);
 
-  return (
+  const editorShell = (
     <div
       ref={editorOverlayRef}
       role={desktop ? undefined : "dialog"}
@@ -2367,4 +2368,8 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
       />
     </div>
   );
+
+  return desktop || typeof document === "undefined"
+    ? editorShell
+    : createPortal(editorShell, document.body);
 });
