@@ -976,6 +976,76 @@
 }
 
 @layer components {
+  :root.dark .v2-readable-page,
+  :root[data-theme="ink"] .v2-readable-page,
+  :root[data-theme="oled"] .v2-readable-page {
+    --v2-readable-muted: var(--zf-text-soft);
+    --v2-readable-veil:
+      radial-gradient(ellipse 72% 30% at 50% 7%, hsl(var(--background) / 0.38), transparent 72%),
+      linear-gradient(180deg, hsl(var(--background) / 0.30), transparent 50%, hsl(var(--background) / 0.22));
+    --v2-readable-surface: hsl(var(--card) / 0.88);
+    --v2-readable-surface-border: hsl(var(--foreground) / 0.18);
+    --v2-readable-text-shadow:
+      0 1px 16px hsl(var(--background) / 0.92),
+      0 0 1px hsl(var(--background) / 0.96);
+  }
+
+  .v2-readable-page {
+    --v2-readable-foreground: var(--foreground);
+    --v2-readable-muted: var(--muted-foreground);
+    --v2-readable-accent: var(--primary);
+    --v2-readable-veil:
+      radial-gradient(ellipse 76% 30% at 50% 9%, hsl(var(--card) / 0.46), transparent 70%),
+      linear-gradient(180deg, hsl(var(--background) / 0.42), hsl(var(--background) / 0.18) 48%, hsl(var(--background) / 0.36));
+    --v2-readable-surface: hsl(var(--card) / 0.84);
+    --v2-readable-surface-border: hsl(var(--foreground) / 0.16);
+    --v2-readable-text-shadow:
+      0 1px 12px hsl(var(--background) / 0.72),
+      0 0 1px hsl(var(--background) / 0.88);
+
+    position: relative;
+    isolation: isolate;
+    color: hsl(var(--v2-readable-foreground, var(--foreground)));
+  }
+
+  .v2-readable-page--ambient::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background: var(--v2-readable-veil);
+    -webkit-backdrop-filter: saturate(0.94) contrast(0.98);
+    backdrop-filter: saturate(0.94) contrast(0.98);
+  }
+
+  .v2-readable-page :where(h1, h2, h3, h4, p, span, label, legend, button, a, textarea, input, summary, [role="status"]) {
+    text-shadow: var(--v2-readable-text-shadow);
+  }
+
+  .v2-readable-page :where(svg, .sr-only, .not-sr-only) {
+    text-shadow: none;
+  }
+
+  .v2-readable-page :where(.text-muted-foreground, [class*="text-muted-foreground/"]) {
+    color: hsl(var(--v2-readable-muted)) !important;
+  }
+
+  .v2-readable-page :where([class*="text-foreground/"]) {
+    color: hsl(var(--v2-readable-foreground, var(--foreground)) / 0.94) !important;
+  }
+
+  .v2-readable-page :where([class*="text-primary/"]) {
+    color: hsl(var(--v2-readable-accent) / 0.90) !important;
+  }
+
+  .v2-readable-surface {
+    border-color: var(--v2-readable-surface-border);
+    background: var(--v2-readable-surface);
+    -webkit-backdrop-filter: blur(14px) saturate(128%);
+    backdrop-filter: blur(14px) saturate(128%);
+  }
+
   .v2-preview-portal {
     --v2-portal-blue: var(--zf-role-focus);
     --v2-portal-orange: var(--zf-role-energy);

@@ -65,7 +65,7 @@ export const JournalAudioPlayer = memo(function JournalAudioPlayer({ src, durati
         disabled={!loaded}
         aria-label={playing ? 'Pause' : 'Play'}
         className={cn(
-          'w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0',
+          'min-h-[44px] min-w-[44px] rounded-full flex items-center justify-center flex-shrink-0',
           'bg-primary/15 text-primary',
           'disabled:opacity-40',
           'active:scale-95 motion-safe:transition-transform',

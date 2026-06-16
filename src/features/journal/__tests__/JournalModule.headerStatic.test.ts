@@ -44,7 +44,7 @@ describe("JournalModule V2 header", () => {
     expect(source).toContain("? portalEntryPrefill");
     expect(source).not.toContain("portalEntryPrefill ?? initialSuggestionRef.current?.prefill");
     expect(source).toMatch(
-      /const hasInitialEntrySuggestion =\s*!!initialSuggestionRef\.current &&\s*!initialSuggestionConsumedRef\.current &&\s*journal\.view === "list";/,
+      /const hasInitialEntrySuggestion =\s*!!initialEntrySuggestion &&\s*!!initialSuggestionRef\.current &&\s*!initialSuggestionConsumedRef\.current &&\s*journal\.view === "list";/,
     );
     expect(source).toMatch(/const visibleExtraSuggestions = useMemo\([\s\S]*?showEntrySuggestionCards/);
   });

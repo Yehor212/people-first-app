@@ -10,7 +10,6 @@ import { supabase, getCurrentUserId } from "@/lib/supabaseClient";
 import type { Json } from "@/types/supabase";
 import type { JournalEntry, JournalPhoto, JournalAudio } from "@/features/journal/types";
 import { offlineQueue } from "@/lib/offlineQueue";
-import { generateEmbeddings } from "@/lib/journalAI";
 import { detectNetworkError } from "./syncUtils";
 import { getDeletedJournalEntryIds, trackDeletedJournalEntryId } from "@/storage/deletionTracker";
 import { isEntityTombstonedOnServer } from "./serverTombstones";
@@ -79,11 +78,6 @@ export const syncJournalEntry = async (entry: JournalEntry): Promise<void> => {
       "upsert",
       entry as unknown as Record<string, unknown>,
       deviceId
-    );
-
-    // Fire-and-forget: generate vector embedding for semantic search
-    generateEmbeddings([entry.id]).catch((err) =>
-      logger.warn("[Sync]", "Embedding generation failed:", err)
     );
   } catch (error) {
     if (isAbortError(error)) {

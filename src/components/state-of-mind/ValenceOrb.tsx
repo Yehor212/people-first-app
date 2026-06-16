@@ -86,6 +86,7 @@ const WEBGL_FRAME_INTERVAL = 1000 / 60; // 60fps for healthy WebGL sessions.
 const CANVAS_FRAME_INTERVAL = 1000 / 30; // 30fps for Canvas 2D fallback
 const ORB_FRAME_CLOCK_REANCHOR_GAP_MS = 750;
 const ORB_MAX_FRAME_DELTA_SECONDS = 0.05;
+export const ORB_SHADER_TIME_WRAP_SECONDS = Math.PI * 6000;
 
 function shouldAnimateCanonicalOrb(): boolean {
   return shouldAnimate({ respectRuntimePerformance: false });
@@ -237,6 +238,44 @@ export function resolveOrbFrameDeltaSeconds(
   if (elapsedMs > ORB_FRAME_CLOCK_REANCHOR_GAP_MS) return 0;
 
   return Math.min(elapsedMs / 1000, ORB_MAX_FRAME_DELTA_SECONDS);
+}
+
+function normalizeOrbShaderTime(timeSeconds: number, wrapSeconds = ORB_SHADER_TIME_WRAP_SECONDS): number {
+  if (!Number.isFinite(wrapSeconds) || wrapSeconds <= 0) return 0;
+  if (!Number.isFinite(timeSeconds)) return 0;
+
+  const wrapped = timeSeconds % wrapSeconds;
+  return wrapped < 0 ? wrapped + wrapSeconds : wrapped;
+}
+
+export function resolveOrbWrappedTimeDelta(
+  previousTimeSeconds: number,
+  currentTimeSeconds: number,
+  wrapSeconds = ORB_SHADER_TIME_WRAP_SECONDS,
+): number {
+  if (!Number.isFinite(wrapSeconds) || wrapSeconds <= 0) return 0;
+  if (!Number.isFinite(previousTimeSeconds) || !Number.isFinite(currentTimeSeconds)) return 0;
+
+  const previous = normalizeOrbShaderTime(previousTimeSeconds, wrapSeconds);
+  const current = normalizeOrbShaderTime(currentTimeSeconds, wrapSeconds);
+  const delta = current - previous;
+
+  return delta >= 0 ? delta : delta + wrapSeconds;
+}
+
+export function resolveOrbShaderTime(
+  previousTimeSeconds: number,
+  deltaSeconds: number,
+  animationSpeed: number,
+  wrapSeconds = ORB_SHADER_TIME_WRAP_SECONDS,
+): number {
+  if (!Number.isFinite(wrapSeconds) || wrapSeconds <= 0) return 0;
+
+  const previous = normalizeOrbShaderTime(previousTimeSeconds, wrapSeconds);
+  const safeDelta = Number.isFinite(deltaSeconds) && deltaSeconds > 0 ? deltaSeconds : 0;
+  const safeSpeed = Number.isFinite(animationSpeed) && animationSpeed > 0 ? animationSpeed : 0;
+
+  return normalizeOrbShaderTime(previous + safeDelta * safeSpeed, wrapSeconds);
 }
 
 export function resolveOrbTransitionSettings(
@@ -793,7 +832,7 @@ export const ValenceOrb = memo(function ValenceOrb({
     const computeTouch = (time: number): { x: number; y: number; age: number } => {
       const tc = touchRef.current;
       if (!tc) return { x: 0, y: 0, age: 0 };
-      const age = time - tc.startTime;
+      const age = resolveOrbWrappedTimeDelta(tc.startTime, time);
       if (age > 1.5) { touchRef.current = null; return { x: 0, y: 0, age: 0 }; }
       return { x: tc.x, y: tc.y, age };
     };
@@ -1040,7 +1079,7 @@ export const ValenceOrb = memo(function ValenceOrb({
       // P4: keep shader time stable while preserving subtle idle visual calm.
       const idleElapsed = timestamp - lastInteractionRef.current;
       const idleFactor = Math.max(0, Math.min(1, (idleElapsed - 8000) / 4000));
-      state.time += dt * animationSpeedRef.current;
+      state.time = resolveOrbShaderTime(state.time, dt, animationSpeedRef.current);
 
       // P5: Smoothed valence — organic flow between color/shape states
       // Lower factor → slow-breath settle. User feedback 2026-04-18:

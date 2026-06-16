@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, memo } from "react";
-import { X, Trash2, ZoomIn, ChevronLeft, ChevronRight } from "lucide-react";
+import { X, Trash2, ZoomIn, ChevronLeft, ChevronRight, MoveDiagonal2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useScrollLock } from "@/hooks/useScrollLock";
@@ -139,10 +139,12 @@ export const JournalPhotoGallery = memo(function JournalPhotoGallery({
             {editable && onFloatPhoto && (
               <button
                 onClick={() => onFloatPhoto(photo.id)}
-                className="absolute -bottom-1 -end-1 w-6 h-6 bg-emerald-500/80 rounded-full flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 motion-safe:transition-opacity"
+                className="absolute -bottom-3 -end-3 flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full text-primary-foreground motion-safe:transition-transform active:scale-95"
                 aria-label={t.ariaFloatPhoto}
               >
-                <span className="text-[10px]">↗</span>
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary shadow-md">
+                  <MoveDiagonal2 className="h-4 w-4" aria-hidden="true" />
+                </span>
               </button>
             )}
           </div>

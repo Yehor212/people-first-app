@@ -722,9 +722,13 @@ export const MemoryPortalCanvas = memo(function MemoryPortalCanvas({
                 >
                   <span className="min-w-0">
                     <span className="block truncate text-sm font-bold text-foreground">
-                      {entry.title || ts.journalEntryTitle || "Untitled"}
+                      {privateMode ? ts.journalHubSpacePrivate || "Private" : entry.title || ts.journalEntryTitle || "Untitled"}
                     </span>
-                    <span className="block truncate text-xs text-muted-foreground">{entry.tags.slice(0, 3).join(" ")}</span>
+                    {!privateMode && entry.tags.length > 0 ? (
+                      <span className="block truncate text-xs text-muted-foreground">
+                        {entry.tags.slice(0, 3).join(" ")}
+                      </span>
+                    ) : null}
                   </span>
                   <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
                 </button>
@@ -764,7 +768,7 @@ export const MemoryPortalCanvas = memo(function MemoryPortalCanvas({
       {showList ? (
         <div className="relative z-[1] mt-4 pb-[calc(1.5rem+var(--memory-portal-nav-reserve))]">
           {beforeList}
-          {entries.length > 0 ? <OnThisDayCard entries={entries} onOpenEntry={onOpenEntry} onDismiss={() => {}} /> : null}
+          {entries.length > 0 ? <OnThisDayCard entries={entries} onOpenEntry={onOpenEntry} onDismiss={() => {}}  privateMode={privateMode} /> : null}
           {listTotalCount > 0 || loading ? (
             <JournalEntryList
               groupedEntries={groupedEntries}

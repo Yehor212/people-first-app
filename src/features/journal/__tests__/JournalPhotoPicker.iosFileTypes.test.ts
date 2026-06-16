@@ -20,4 +20,8 @@ describe("JournalPhotoPicker iOS photo file support", () => {
     expect(pickerSource).toContain('"bg-card backdrop-blur-xl border-t border-border/40"');
     expect(pickerSource).not.toContain('"bg-card/95 backdrop-blur-xl border-t border-border/40"');
   });
+
+  it("keeps action buttons inside the iOS viewport during the bottom-sheet entrance", () => {
+    expect(pickerSource).toContain('pb-[calc(max(1rem,env(safe-area-inset-bottom))+0.75rem)]');
+  });
 });

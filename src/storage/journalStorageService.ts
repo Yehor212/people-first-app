@@ -23,14 +23,15 @@ const ALLOWED_AUDIO_MIMES: readonly string[] = [
   "audio/webm",
   "audio/mp4",
   "audio/ogg",
+  "audio/mpeg",
   "audio/wav",
 ];
 
-/** Maximum photo file size: 10 MB */
-const MAX_PHOTO_SIZE = 10 * 1024 * 1024;
+/** Maximum photo file size: 1 MB (matches journal-photos bucket) */
+const MAX_PHOTO_SIZE = 1 * 1024 * 1024;
 
-/** Maximum audio file size: 25 MB */
-const MAX_AUDIO_SIZE = 25 * 1024 * 1024;
+/** Maximum audio file size: 20 MB (matches journal-audio bucket) */
+const MAX_AUDIO_SIZE = 20 * 1024 * 1024;
 
 /** Characters forbidden in storage path segments (null byte checked separately) */
 const UNSAFE_PATH_CHARS = /[/\\:*?"<>|]/;
@@ -104,7 +105,7 @@ export async function uploadPhoto(photoId: string, dataUrl: string): Promise<Upl
     // M12: Enforce file size limit
     if (blob.size > MAX_PHOTO_SIZE) {
       logger.warn("[Storage] Photo upload rejected: file too large", blob.size);
-      throw new Error("Photo too large. Maximum size is 10 MB.");
+      throw new Error("Photo too large. Maximum size is 1 MB.");
     }
 
     const ext = extFromMime(blob.type);
@@ -158,7 +159,7 @@ export async function uploadAudio(
     // M13: Enforce file size limit
     if (blob.size > MAX_AUDIO_SIZE) {
       logger.warn("[Storage] Audio upload rejected: file too large", blob.size);
-      throw new Error("Audio recording too large. Maximum size is 25 MB.");
+      throw new Error("Audio recording too large. Maximum size is 20 MB.");
     }
 
     const ext = extFromMime(mimeType);

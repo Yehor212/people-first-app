@@ -36,6 +36,8 @@ export const DIARY_FONTS: Record<DiaryFontName, { family: string; url: string }>
 export const DIARY_THEME_NAMES: DiaryThemeName[] = ['light', 'dark', 'sepia', 'forest', 'ocean', 'sunset', 'lavender', 'rose', 'midnight', 'cherry'];
 export const DIARY_FONT_NAMES: DiaryFontName[] = ['caveat', 'cormorant', 'outfit', 'dancing'];
 
+export const JOURNAL_DRAFT_ENTRY_ID = "__draft__";
+
 // ── Atmospheric Background Pattern (CSS mesh gradients over canvas) ──
 
 export type DiaryBgPattern =

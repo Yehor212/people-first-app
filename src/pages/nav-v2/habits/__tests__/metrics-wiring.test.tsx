@@ -130,6 +130,13 @@ vi.mock("@/lib/insightsEngine", () => ({
   generateInsights: () => (mockTopInsight ? [mockTopInsight] : []),
 }));
 
+vi.mock("@/lib/scheduleIdle", () => ({
+  scheduleIdle: (callback: () => void) => {
+    queueMicrotask(callback);
+    return { cancel: () => undefined };
+  },
+}));
+
 function makeHabit(id: string): Habit {
   return {
     id,
@@ -365,8 +372,10 @@ describe("HeroInsightStrip → analytics wiring (§15 cross-habit)", () => {
     } as unknown as Insight;
     const { HeroInsightStrip } = await import("../hero/HeroInsightStrip");
     render(<HeroInsightStrip />);
-    expect(analyticsSpy.insightStripRendered).toHaveBeenCalledTimes(1);
-    expect(analyticsSpy.insightStripRendered).toHaveBeenCalledWith("mood-habit", "positive");
+    await waitFor(() => {
+      expect(analyticsSpy.insightStripRendered).toHaveBeenCalledTimes(1);
+      expect(analyticsSpy.insightStripRendered).toHaveBeenCalledWith("mood-habit", "positive");
+    });
   });
 
   it("does not emit when there is no top insight (insufficient data)", async () => {

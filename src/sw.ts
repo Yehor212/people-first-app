@@ -12,9 +12,9 @@ interface SyncEvent extends ExtendableEvent {
  * Uses Workbox BackgroundSyncQueue for reliable offline sync
  */
 
-import { precacheAndRoute, cleanupOutdatedCaches } from "workbox-precaching";
+import { precacheAndRoute, cleanupOutdatedCaches, matchPrecache } from "workbox-precaching";
 import { registerRoute } from "workbox-routing";
-import { CacheFirst, NetworkOnly } from "workbox-strategies";
+import { CacheFirst } from "workbox-strategies";
 import { ExpirationPlugin } from "workbox-expiration";
 import { setCacheNameDetails } from "workbox-core";
 import { logger } from "@/lib/logger";
@@ -23,6 +23,7 @@ declare const self: ServiceWorkerGlobalScope;
 
 const CLIENT_MESSAGE_TYPES = ["SKIP_WAITING", "CLEAR_CACHES", "REGISTER_SYNC"] as const;
 type ClientMessageType = (typeof CLIENT_MESSAGE_TYPES)[number];
+const APP_SHELL_URL = "index.html";
 const SAME_ORIGIN_RUNTIME_ASSET_DESTINATIONS = new Set<RequestDestination>([
   "font",
   "image",
@@ -184,11 +185,24 @@ registerRoute(
 // 3. The app has its own offline queue system (src/lib/offlineQueue.ts)
 // Error was: "Failed to execute 'clone' on 'Request': Request body is already used"
 
-// Handle navigation requests — NEVER cache index.html
-// Using NetworkOnly ensures the browser always fetches fresh HTML from the server.
-// This eliminates stale-cache deadlocks where SW serves old index.html with old
-// version check scripts. The app requires network anyway (Supabase).
-registerRoute(({ request }) => request.mode === "navigate", new NetworkOnly());
+// Handle navigation requests — fetch fresh HTML while online, but keep installed
+// PWA routes bootable offline by falling back to the versioned precached shell.
+// The network response is not stored here, so online navigations still avoid
+// stale-cache deadlocks with old version-check scripts.
+registerRoute(
+  ({ url, request }) => request.mode === "navigate" && url.origin === self.location.origin,
+  async ({ request }) => {
+    try {
+      return await fetch(request);
+    } catch (error) {
+      const appShell = await matchPrecache(APP_SHELL_URL);
+      if (appShell) return appShell;
+
+      logger.warn("[SW] Navigation fallback missing app shell", error);
+      return Response.error();
+    }
+  }
+);
 
 // Listen for sync events (triggered when coming back online)
 self.addEventListener("sync", (evt) => {

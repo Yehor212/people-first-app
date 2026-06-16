@@ -429,7 +429,29 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
   const typingDynamics = useTypingDynamics(editorRef);
   const [orbMounted, setOrbMounted] = useState(false);
   const [mobileToolsCollapsed, setMobileToolsCollapsed] = useState(false);
+  const [panicUnlockError, setPanicUnlockError] = useState<string | null>(null);
   const orbTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handlePanicUnlock = useCallback(async () => {
+    void hapticTap();
+    setPanicUnlockError(null);
+
+    try {
+      const { default: BiometricAuth } = await import("@/plugins/BiometricPlugin");
+      const result = await BiometricAuth.authenticate({
+        reason: ts.journalUnlockBiometric || "Unlock your private diary",
+      });
+
+      if (result.success) {
+        setPanicLocked(false);
+        return;
+      }
+
+      setPanicUnlockError(result.error || ts.authUnexpectedError || "Unlock failed. Please try again.");
+    } catch {
+      setPanicUnlockError(ts.authUnexpectedError || "Unlock failed. Please try again.");
+    }
+  }, [setPanicLocked, ts.authUnexpectedError, ts.journalUnlockBiometric]);
 
   const handleMobileToolsCollapse = useCallback(() => {
     void hapticTap();
@@ -447,6 +469,13 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
     setMobileToolsCollapsed(false);
     setShowStyleBar((value) => !value);
   }, [setShowStyleBar]);
+
+  const collapseMobileToolsForSurface = useCallback(() => {
+    if (desktop) return;
+    setMobileToolsCollapsed(true);
+    setShowStyleBar(false);
+    setShowPromptsDropdown(false);
+  }, [desktop, setShowPromptsDropdown, setShowStyleBar]);
 
   useEffect(() => {
     if (typingDynamics.isTyping) {
@@ -926,7 +955,10 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                   </motion.button>
                   <motion.button
                     whileTap={{ scale: 0.95 }}
-                    onClick={() => setShowStickers(true)}
+                    onClick={() => {
+                      collapseMobileToolsForSurface();
+                      setShowStickers(true);
+                    }}
                     disabled={stickers.length >= MAX_STICKERS_PER_ENTRY}
                     className="px-3 py-2 rounded-lg text-sm border border-transparent bg-transparent text-muted-foreground hover:bg-white/10 dark:hover:bg-white/10 motion-safe:transition-all disabled:opacity-40"
                     aria-label={ts.journalToolbarSticker || "Sticker"}
@@ -1776,7 +1808,10 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
 
                     <button
                       type="button"
-                      onClick={() => setShowStickers(true)}
+                      onClick={() => {
+                        collapseMobileToolsForSurface();
+                        setShowStickers(true);
+                      }}
                       disabled={stickers.length >= MAX_STICKERS_PER_ENTRY}
                       className="flex min-h-[44px] shrink-0 items-center gap-2 rounded-2xl border border-border/60 bg-background/75 px-3 text-xs font-semibold text-muted-foreground motion-safe:transition-all hover:bg-primary/10 hover:text-primary disabled:opacity-40"
                       aria-label={ts.journalToolbarSticker || "Sticker"}
@@ -1787,7 +1822,10 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
 
                     <button
                       type="button"
-                      onClick={() => handleStartRecording()}
+                      onClick={() => {
+                        collapseMobileToolsForSurface();
+                        void handleStartRecording();
+                      }}
                       disabled={audioIds.length >= MAX_AUDIO_PER_ENTRY}
                       className="flex min-h-[44px] shrink-0 items-center gap-2 rounded-2xl border border-border/60 bg-background/75 px-3 text-xs font-semibold text-muted-foreground motion-safe:transition-all hover:bg-primary/10 hover:text-primary disabled:opacity-40"
                     >
@@ -1882,6 +1920,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                 whileTap={{ scale: 0.95 }}
                 onClick={() => {
                   void hapticTap();
+                  collapseMobileToolsForSurface();
                   setShowPhotos(true);
                 }}
                 disabled={photoIds.length >= MAX_PHOTOS_PER_ENTRY}
@@ -1899,6 +1938,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                 whileTap={{ scale: 0.95 }}
                 onClick={() => {
                   void hapticTap();
+                  if (!showBurnWidget) collapseMobileToolsForSurface();
                   setShowBurnWidget((v) => !v);
                   setShowGratitudeWidget(false);
                 }}
@@ -1922,6 +1962,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                   whileTap={{ scale: 0.95 }}
                   onClick={() => {
                     void hapticTap();
+                    if (!showGratitudeWidget) collapseMobileToolsForSurface();
                     setShowGratitudeWidget((v) => !v);
                     setShowBurnWidget(false);
                   }}
@@ -1945,6 +1986,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                 whileTap={{ scale: 0.95 }}
                 onClick={() => {
                   void hapticTap();
+                  if (!showBreathe) collapseMobileToolsForSurface();
                   setShowBreathe(!showBreathe);
                 }}
                 className={cn(
@@ -1964,6 +2006,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                 whileTap={{ scale: 0.95 }}
                 onClick={() => {
                   void hapticTap();
+                  if (!zenFocusActive) collapseMobileToolsForSurface();
                   setZenFocusActive(!zenFocusActive);
                 }}
                 className={cn(
@@ -1983,6 +2026,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                 whileTap={{ scale: 0.95 }}
                 onClick={() => {
                   void hapticTap();
+                  if (!showHabits) collapseMobileToolsForSurface();
                   setShowHabits(!showHabits);
                 }}
                 className={cn(
@@ -2208,7 +2252,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                 }}
                 className="w-full py-2.5 rounded-xl bg-gradient-to-r from-primary to-primary/90 text-primary-foreground text-sm font-medium min-h-[44px]"
               >
-                Save Draft & Open Settings
+                {ts.journalSaveDraftOpenSettings || "Save Draft and Open Settings"}
               </button>
               <button
                 onClick={() => setShowSettingsConfirm(false)}
@@ -2239,12 +2283,24 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
           >
             <DiaryBreatheWidget />
             <button
-              onClick={() => setPanicLocked(false)}
-              className="flex items-center gap-2 px-6 py-3 rounded-xl bg-white/10 dark:bg-white/10 border border-white/20 dark:border-white/20 text-white/80 text-sm font-medium backdrop-blur-sm active:scale-95 motion-safe:transition-transform"
+              type="button"
+              onClick={() => {
+                void handlePanicUnlock();
+              }}
+              className="flex min-h-[44px] min-w-[44px] items-center gap-2 px-6 py-3 rounded-xl bg-white/10 dark:bg-white/10 border border-white/20 dark:border-white/20 text-white/80 text-sm font-medium backdrop-blur-sm active:scale-95 motion-safe:transition-transform"
             >
               <Fingerprint className="w-5 h-5" aria-hidden="true" />
               {ts.journalUnlockBiometric || "Unlock"}
             </button>
+            {panicUnlockError ? (
+              <div
+                role="alert"
+                className="mx-6 flex max-w-[320px] items-start gap-2 rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-left text-xs font-medium text-white/80 backdrop-blur-sm dark:border-white/15 dark:bg-white/10"
+              >
+                <AlertCircle className="mt-0.5 h-4 w-4 flex-none" aria-hidden="true" />
+                <span>{panicUnlockError}</span>
+              </div>
+            ) : null}
           </motion.div>
         )}
       </AnimatePresence>
@@ -2275,25 +2331,31 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
               document.execCommand("insertHTML", false, '<div><input type="checkbox" /> </div>');
               break;
             case "breathe":
+              collapseMobileToolsForSurface();
               setShowBreathe(true);
               break;
             case "gratitude":
+              collapseMobileToolsForSurface();
               setShowGratitudeWidget(true);
               setShowBurnWidget(false);
               break;
             case "burn":
+              collapseMobileToolsForSurface();
               setShowBurnWidget(true);
               setShowGratitudeWidget(false);
               break;
             case "focus":
+              collapseMobileToolsForSurface();
               setZenFocusActive(true);
               break;
             case "template":
               /* template auto-shows for new entries */ break;
             case "photo":
+              collapseMobileToolsForSurface();
               setShowPhotos(true);
               break;
             case "audio":
+              collapseMobileToolsForSurface();
               void handleStartRecording();
               break;
           }

@@ -110,7 +110,7 @@ try {
   const screenshots = [];
 
   page.on("console", (message) => {
-    events.console.push({ type: message.type(), text: message.text() });
+    events.console.push({ location: message.location(), type: message.type(), text: message.text() });
   });
   page.on("pageerror", (error) => {
     events.pageErrors.push({ name: error.name, message: error.message, stack: error.stack });
@@ -139,18 +139,53 @@ try {
   await page.getByTestId("diary-page").waitFor({ state: "visible", timeout: 30_000 });
   await page.waitForTimeout(1_000);
   screenshots.push({ step: "01-empty-diary", path: await capture(page, "01-empty-diary") });
+  const initialShellMetrics = {
+    boxes: {
+      createFab: await boxFor(page, "journal-entry-main-fab"),
+      menu: await boxFor(page, "journal-mobile-nav-menu"),
+      settings: await boxFor(page, "journal-mobile-settings"),
+      stats: await boxFor(page, "journal-mobile-stats"),
+    },
+    details: {
+      createFab: await describeElement(page, "journal-entry-main-fab"),
+      menu: await describeElement(page, "journal-mobile-nav-menu"),
+      settings: await describeElement(page, "journal-mobile-settings"),
+      stats: await describeElement(page, "journal-mobile-stats"),
+    },
+  };
 
   await page.getByTestId("journal-entry-main-fab").click();
   await page.getByTestId("journal-fab-action-new-entry").waitFor({ state: "visible", timeout: 20_000 });
   await page.waitForTimeout(700);
   screenshots.push({ step: "02-create-menu", path: await capture(page, "02-create-menu") });
+  const createMenuMetrics = {
+    boxes: {
+      burn: await boxFor(page, "journal-fab-action-burn"),
+      gratitude: await boxFor(page, "journal-fab-action-gratitude"),
+      newEntry: await boxFor(page, "journal-fab-action-new-entry"),
+      primary: await boxFor(page, "journal-fab-action-primary"),
+    },
+    details: {
+      burn: await describeElement(page, "journal-fab-action-burn"),
+      gratitude: await describeElement(page, "journal-fab-action-gratitude"),
+      newEntry: await describeElement(page, "journal-fab-action-new-entry"),
+      primary: await describeElement(page, "journal-fab-action-primary"),
+    },
+  };
 
   await page.getByTestId("journal-fab-action-new-entry").click();
-  await page.locator("[contenteditable='true']").waitFor({ state: "visible", timeout: 20_000 });
-  await page.locator("[contenteditable='true']").fill("Android diary e2e private test note.");
+  const editor = page.locator("[contenteditable='true']");
+  await editor.waitFor({ state: "visible", timeout: 20_000 });
+  await editor.fill("Android diary e2e private test note.");
   screenshots.push({ step: "03-editor", path: await capture(page, "03-editor") });
+  const editorMetrics = {
+    saveButton: await page
+      .getByRole("button", { name: /^(save|зберегти|guardar|speichern|保存|حفظ|שמור)$/i })
+      .boundingBox(),
+  };
 
   await page.getByRole("button", { name: /^(save|зберегти|guardar|speichern|保存|حفظ|שמור)$/i }).click();
+  await editor.waitFor({ state: "hidden", timeout: 30_000 });
   await page.getByText("Android diary e2e private test note.").waitFor({ state: "visible", timeout: 30_000 });
   screenshots.push({ step: "04-saved-entry", path: await capture(page, "04-saved-entry") });
 
@@ -179,17 +214,12 @@ try {
   }));
 
   const metrics = {
-    boxes: {
-      createFab: await boxFor(page, "journal-entry-main-fab"),
-      menu: await boxFor(page, "journal-mobile-nav-menu"),
-      settings: await boxFor(page, "journal-mobile-settings"),
-      stats: await boxFor(page, "journal-mobile-stats"),
-    },
-    details: {
-      menu: await describeElement(page, "journal-mobile-nav-menu"),
-      memoryPortal: await describeElement(page, "memory-portal-canvas"),
-      settings: await describeElement(page, "journal-mobile-settings"),
-      stats: await describeElement(page, "journal-mobile-stats"),
+    createMenu: createMenuMetrics,
+    editor: editorMetrics,
+    initialShell: initialShellMetrics,
+    memoryPortal: {
+      box: await boxFor(page, "memory-portal-canvas"),
+      details: await describeElement(page, "memory-portal-canvas"),
     },
     horizontalOverflow: await page.evaluate(
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,

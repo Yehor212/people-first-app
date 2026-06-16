@@ -2523,6 +2523,7 @@ export const uk: Translations = {
   journalDiscardMessage: "У вас є незбережені зміни.",
   journalDiscard: "Скасувати",
   journalKeepWriting: "Продовжити",
+  journalSaveDraftOpenSettings: "Зберегти чернетку й відкрити налаштування",
   journalSaveClose: "Зберегти і закрити",
   journalWords: "слів",
   journalWordCountZero: "{count} слів",

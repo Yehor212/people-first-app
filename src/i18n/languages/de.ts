@@ -2559,6 +2559,7 @@ export const de: Translations = {
   journalDiscardMessage: "Du hast ungespeicherte Änderungen.",
   journalDiscard: "Verwerfen",
   journalKeepWriting: "Weiterschreiben",
+  journalSaveDraftOpenSettings: "Entwurf speichern und Einstellungen öffnen",
   journalSaveClose: "Speichern & Schließen",
   journalWords: "Wörter",
   journalWordCountZero: "{count} Wörter",

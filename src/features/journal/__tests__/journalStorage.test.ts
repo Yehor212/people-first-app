@@ -49,12 +49,17 @@ vi.mock('@/storage/realtimeSync', () => ({
 
 vi.mock('@/storage/cloudSync', () => ({ triggerSync: vi.fn() }));
 
+vi.mock('@/storage/deletionTracker', () => ({
+  trackDeletedJournalEntryId: vi.fn(() => Promise.resolve()),
+}));
+
 vi.mock('@/storage/journalStorageService', () => ({
   uploadPhoto: vi.fn(() => Promise.resolve(null)),
   uploadAudio: vi.fn(() => Promise.resolve(null)),
   deletePhotoFromStorage: vi.fn(),
   deleteAudioFromStorage: vi.fn(),
   deleteEntryMediaFromStorage: vi.fn(),
+  downloadAsBase64: vi.fn(() => Promise.resolve(null)),
 }));
 
 vi.mock('@/lib/logger', () => ({
@@ -84,7 +89,8 @@ import {
 } from '../journalStorage';
 import { syncJournalEntry, deleteJournalEntryFromCloud, syncJournalAudio, deleteJournalPhotoFromCloud, deleteJournalAudioFromCloud } from '@/storage/realtimeSync';
 import { triggerSync } from '@/storage/cloudSync';
-import { deleteEntryMediaFromStorage } from '@/storage/journalStorageService';
+import { deleteEntryMediaFromStorage, downloadAsBase64 } from '@/storage/journalStorageService';
+import { trackDeletedJournalEntryId } from '@/storage/deletionTracker';
 import type { JournalEntry, JournalPhoto, JournalAudio } from '../types';
 
 // ─── Helpers ──────────────────────────────────────────────────
@@ -130,6 +136,12 @@ function makeAudio(overrides: Partial<JournalAudio> = {}): JournalAudio {
 }
 
 // ─── Setup ────────────────────────────────────────────────────
+
+async function flushAsyncTurns(turns = 10): Promise<void> {
+  for (let i = 0; i < turns; i += 1) {
+    await Promise.resolve();
+  }
+}
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -260,6 +272,30 @@ describe('saveEntry', () => {
     expect(result.photoIds).toEqual(['p1']);
     expect(result.audioIds).toEqual(['a1']);
   });
+
+  it('relinks draft media rows to the generated entry id', async () => {
+    vi.mocked(db.journalPhotos.get).mockResolvedValue(makePhoto({ id: 'photo-draft', entryId: '__draft__' }));
+    vi.mocked(db.journalAudio.get).mockResolvedValue(makeAudio({ id: 'audio-draft', entryId: '__draft__' }));
+
+    await saveEntry({
+      date: '2026-01-01',
+      title: 'Title',
+      content: 'Body text',
+      stickers: [],
+      photoIds: ['photo-draft'],
+      audioIds: ['audio-draft'],
+      tags: [],
+    });
+
+    expect(db.journalPhotos.update).toHaveBeenCalledWith(
+      'photo-draft',
+      expect.objectContaining({ entryId: 'test-id-123' }),
+    );
+    expect(db.journalAudio.update).toHaveBeenCalledWith(
+      'audio-draft',
+      expect.objectContaining({ entryId: 'test-id-123' }),
+    );
+  });
 });
 
 // ============================================================
@@ -332,6 +368,64 @@ describe('deleteEntry', () => {
     expect(triggerSync).toHaveBeenCalled();
   });
 
+  it('creates the local tombstone before deleting IndexedDB rows', async () => {
+    const mockEquals = vi.fn(() => ({
+      toArray: vi.fn(() => Promise.resolve([])),
+      count: vi.fn(() => Promise.resolve(0)),
+    }));
+    vi.mocked(db.journalPhotos.where).mockReturnValue({ equals: mockEquals } as never);
+    vi.mocked(db.journalAudio.where).mockReturnValue({ equals: mockEquals } as never);
+
+    let resolveTombstone!: () => void;
+    vi.mocked(trackDeletedJournalEntryId).mockImplementationOnce(
+      () => new Promise<void>((resolve) => {
+        resolveTombstone = resolve;
+      }),
+    );
+
+    const deletion = deleteEntry('entry-1');
+    await flushAsyncTurns();
+
+    expect(trackDeletedJournalEntryId).toHaveBeenCalledWith('entry-1');
+    expect(db.transaction).not.toHaveBeenCalled();
+    expect(db.journalEntries.delete).not.toHaveBeenCalled();
+
+    resolveTombstone();
+    await deletion;
+
+    expect(db.transaction).toHaveBeenCalled();
+    expect(db.journalEntries.delete).toHaveBeenCalledWith('entry-1');
+  });
+
+  it('waits for the local tombstone before cloud delete and sync', async () => {
+    const mockEquals = vi.fn(() => ({
+      toArray: vi.fn(() => Promise.resolve([])),
+      count: vi.fn(() => Promise.resolve(0)),
+    }));
+    vi.mocked(db.journalPhotos.where).mockReturnValue({ equals: mockEquals } as never);
+    vi.mocked(db.journalAudio.where).mockReturnValue({ equals: mockEquals } as never);
+
+    let resolveTombstone!: () => void;
+    vi.mocked(trackDeletedJournalEntryId).mockImplementationOnce(
+      () => new Promise<void>((resolve) => {
+        resolveTombstone = resolve;
+      }),
+    );
+
+    const deletion = deleteEntry('entry-1');
+    await flushAsyncTurns();
+
+    expect(trackDeletedJournalEntryId).toHaveBeenCalledWith('entry-1');
+    expect(deleteJournalEntryFromCloud).not.toHaveBeenCalled();
+    expect(triggerSync).not.toHaveBeenCalled();
+
+    resolveTombstone();
+    await deletion;
+
+    expect(deleteJournalEntryFromCloud).toHaveBeenCalledWith('entry-1');
+    expect(triggerSync).toHaveBeenCalled();
+  });
+
   it('skips bulkDelete when entry has no photos or audio', async () => {
     const mockEquals = vi.fn(() => ({
       toArray: vi.fn(() => Promise.resolve([])),
@@ -383,6 +477,34 @@ describe('getPhotosForEntry', () => {
     expect(db.journalPhotos.where).toHaveBeenCalledWith('entryId');
     expect(mockEquals).toHaveBeenCalledWith('entry-1');
     expect(result).toEqual(photos);
+  });
+
+  it('downloads and caches synced photo data when local data is empty', async () => {
+    const remotePhoto = makePhoto({
+      id: 'photo-cloud',
+      data: '',
+      thumbnail: '',
+      storagePath: 'user-1/photo-cloud.jpg',
+    });
+    const mockEquals = vi.fn(() => ({
+      toArray: vi.fn(() => Promise.resolve([remotePhoto])),
+    }));
+    vi.mocked(db.journalPhotos.where).mockReturnValue({ equals: mockEquals } as never);
+    vi.mocked(downloadAsBase64).mockResolvedValue('data:image/jpeg;base64,cloud');
+
+    const result = await getPhotosForEntry('entry-1');
+
+    expect(downloadAsBase64).toHaveBeenCalledWith('journal-photos', 'user-1/photo-cloud.jpg');
+    expect(db.journalPhotos.update).toHaveBeenCalledWith('photo-cloud', {
+      data: 'data:image/jpeg;base64,cloud',
+      thumbnail: 'data:image/jpeg;base64,cloud',
+    });
+    expect(result[0]).toEqual(
+      expect.objectContaining({
+        data: 'data:image/jpeg;base64,cloud',
+        thumbnail: 'data:image/jpeg;base64,cloud',
+      }),
+    );
   });
 });
 
@@ -503,6 +625,29 @@ describe('getAudioForEntry', () => {
     expect(db.journalAudio.where).toHaveBeenCalledWith('entryId');
     expect(mockEquals).toHaveBeenCalledWith('entry-1');
     expect(result).toEqual(audios);
+  });
+
+  it('downloads and caches synced audio data when local data is empty', async () => {
+    const remoteAudio = makeAudio({
+      id: 'audio-cloud',
+      data: '',
+      storagePath: 'user-1/audio-cloud.m4a',
+    });
+    const mockEquals = vi.fn(() => ({
+      toArray: vi.fn(() => Promise.resolve([remoteAudio])),
+    }));
+    vi.mocked(db.journalAudio.where).mockReturnValue({ equals: mockEquals } as never);
+    vi.mocked(downloadAsBase64).mockResolvedValue('data:audio/mp4;base64,cloud');
+
+    const result = await getAudioForEntry('entry-1');
+
+    expect(downloadAsBase64).toHaveBeenCalledWith('journal-audio', 'user-1/audio-cloud.m4a');
+    expect(db.journalAudio.update).toHaveBeenCalledWith('audio-cloud', {
+      data: 'data:audio/mp4;base64,cloud',
+    });
+    expect(result[0]).toEqual(
+      expect.objectContaining({ data: 'data:audio/mp4;base64,cloud' }),
+    );
   });
 });
 

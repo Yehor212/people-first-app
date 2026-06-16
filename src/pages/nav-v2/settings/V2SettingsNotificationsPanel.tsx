@@ -1,9 +1,11 @@
 import { useState } from "react";
-import { Bell, Volume2, Zap } from "lucide-react";
+import { AlertCircle, Bell, Volume2, Zap } from "lucide-react";
+import { LocalNotifications } from "@capacitor/local-notifications";
 import { SmartRemindersCard } from "@/components/SmartRemindersCard";
 import { TimeInputInline } from "@/components/ui/time-input";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useQuickActions } from "@/hooks/useQuickActions";
+import { logger } from "@/lib/logger";
 import {
   getNotificationSound,
   NOTIFICATION_SOUNDS,
@@ -28,6 +30,8 @@ export function NotificationsPanel({ controls }: { controls: V2SettingsControls 
   const [selectedSound, setSelectedSound] = useState<NotificationSoundType>(() =>
     getNotificationSound()
   );
+  const [permissionWarning, setPermissionWarning] = useState<string | null>(null);
+  const [isRequestingReminderPermission, setIsRequestingReminderPermission] = useState(false);
   const dayOptions = [
     { value: 1, label: tx.mon || "Mon" },
     { value: 2, label: tx.tue || "Tue" },
@@ -49,6 +53,47 @@ export function NotificationsPanel({ controls }: { controls: V2SettingsControls 
     setNotificationSound(sound);
   };
 
+  const handleReminderToggle = async (checked: boolean) => {
+    setPermissionWarning(null);
+
+    if (!checked) {
+      setReminder((prev) => ({ ...prev, enabled: false }));
+      return;
+    }
+
+    if (!isNative) {
+      setReminder((prev) => ({ ...prev, enabled: true }));
+      return;
+    }
+
+    setIsRequestingReminderPermission(true);
+    try {
+      const current = await LocalNotifications.checkPermissions();
+      const permission =
+        current.display === "granted" ? current : await LocalNotifications.requestPermissions();
+
+      if (permission.display !== "granted") {
+        setPermissionWarning(
+          tx.pushPermissionDenied ||
+            tx.notificationTestNoPermission ||
+            "Notification permission denied."
+        );
+        return;
+      }
+
+      setReminder((prev) => ({ ...prev, enabled: true }));
+    } catch (error) {
+      logger.error("[Notifications] Failed to request reminder permissions:", error);
+      setPermissionWarning(
+        tx.pushPermissionDenied ||
+          tx.notificationTestNoPermission ||
+          "Notification permission denied."
+      );
+    } finally {
+      setIsRequestingReminderPermission(false);
+    }
+  };
+
   return (
     <PanelFrame
       icon={Bell}
@@ -61,9 +106,21 @@ export function NotificationsPanel({ controls }: { controls: V2SettingsControls 
         title={tx.enableReminders || "Enable reminders"}
         description={tx.remindersDescription || "Get gentle nudges throughout the day."}
         checked={controls.reminders.enabled}
-        onCheckedChange={(checked) => setReminder((prev) => ({ ...prev, enabled: checked }))}
+        onCheckedChange={(checked) => {
+          void handleReminderToggle(checked);
+        }}
+        disabled={isRequestingReminderPermission}
         testId="settings-v2-reminders-toggle"
       />
+
+      {permissionWarning && (
+        <SettingsInset tone="danger" testId="settings-v2-reminders-permission-warning">
+          <div className="flex items-start gap-3 text-sm text-destructive" role="alert">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+            <span>{permissionWarning}</span>
+          </div>
+        </SettingsInset>
+      )}
 
       {controls.reminders.enabled && (
         <SettingsInset>

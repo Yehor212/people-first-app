@@ -56,6 +56,98 @@ describe("runtime performance guards", () => {
     expect(source).not.toContain('"og-image.png"');
   });
 
+  it("keeps PWA navigations fresh online with an offline app-shell fallback", () => {
+    const source = readSource("src/sw.ts");
+    const navigationBlock = extractBlock(
+      source,
+      "// Handle navigation requests",
+      "return Response.error();",
+    );
+
+    expect(source).toContain('const APP_SHELL_URL = "index.html";');
+    expect(navigationBlock).toContain("return await fetch(request);");
+    expect(navigationBlock).toContain("matchPrecache(APP_SHELL_URL)");
+    expect(navigationBlock).toContain("logger.warn");
+    expect(source).not.toContain('request.mode === "navigate", new NetworkOnly()');
+  });
+
+  it("strips the PWA manifest link from native Capacitor bundles", () => {
+    const source = readSource("scripts/capacitor-prune-assets.cjs");
+
+    expect(source).toContain('process.env.CAPACITOR_BUILD !== "true"');
+    expect(source).toContain("const ANDROID_PUBLIC");
+    expect(source).toContain("const ANDROID_RES");
+    expect(source).toContain("const ANDROID_APP_BUILD");
+    expect(source).toContain("const ANDROID_CORDOVA_PLUGINS");
+    expect(source).toContain("const IOS_APP");
+    expect(source).toContain("pruneMacDuplicateArtifacts");
+    expect(source).toContain("/ \\d+(?=\\.|$)/");
+    expect(source).toContain("entry.isDirectory()");
+    expect(source).toContain('pruneMacDuplicateArtifacts(ANDROID_PUBLIC, "android-public")');
+    expect(source).toContain('pruneMacDuplicateArtifacts(ANDROID_RES, "android-res")');
+    expect(source).toContain('pruneMacDuplicateArtifacts(ANDROID_APP_BUILD, "android-app-build")');
+    expect(source).toContain('pruneMacDuplicateArtifacts(ANDROID_CORDOVA_PLUGINS, "android-cordova-plugins")');
+    expect(source).toContain('pruneMacDuplicateArtifacts(IOS_APP, "ios-app")');
+    expect(source).toContain("stripNativeManifestLink");
+    expect(source).toContain("rel=[\"']manifest[\"']");
+    expect(source).toContain("removed native manifest link from index.html");
+    expect(source).toContain("stripNativeManifestLink();");
+  });
+
+  it("cleans duplicate native artifacts again after Android Capacitor sync", () => {
+    const scripts = JSON.parse(readSource("package.json")).scripts as Record<string, string>;
+
+    expect(scripts["cap:sync:android"]).toContain("npx cap sync android &&");
+    expect(scripts["cap:sync:android"]).toContain(
+      "cross-env CAPACITOR_BUILD=true node scripts/capacitor-prune-assets.cjs"
+    );
+  });
+
+  it("cleans duplicate native artifacts again after iOS Capacitor sync", () => {
+    const scripts = JSON.parse(readSource("package.json")).scripts as Record<string, string>;
+
+    expect(scripts["cap:sync:ios"]).toContain("npx cap sync ios &&");
+    expect(scripts["cap:sync:ios"]).toContain(
+      "cross-env CAPACITOR_BUILD=true node scripts/capacitor-prune-assets.cjs"
+    );
+    expect(scripts["cap:sync:ios"]).toMatch(
+      /npx cap sync ios && cross-env CAPACITOR_BUILD=true node scripts\/capacitor-prune-assets\.cjs && node scripts\/normalize-ios-spm\.cjs/
+    );
+  });
+
+  it("does not expose Android-only diary screenshot blocking on iOS", () => {
+    const hookSource = readSource("src/features/journal/useScreenSecurity.ts");
+    const moduleSource = readSource("src/features/journal/JournalModule.tsx");
+
+    expect(hookSource).toContain("import { isAndroid }");
+    expect(hookSource).toContain("const isSupported = isAndroid;");
+    expect(hookSource).toContain("if (!isSupported || !enabled || !journalOpen) return;");
+    expect(hookSource).toContain("return { enabled: isSupported ? enabled : false, setEnabled, isSupported };");
+    expect(moduleSource).toContain("screenSecurity.isSupported &&");
+    expect(moduleSource).not.toContain("screenSecurity.isNative &&");
+  });
+
+  it("strips the PWA manifest link when PWA output is disabled", () => {
+    const source = readSource("vite.config.ts");
+
+    expect(source).toContain("function stripDisabledPwaManifestPlugin");
+    expect(source).toContain("pwaEnabled ? html : stripPwaManifestLink(html)");
+    expect(source).toContain("stripDisabledPwaManifestPlugin(pwaEnabled)");
+    expect(source).toContain("rel=[\"']manifest[\"']");
+  });
+
+  it("keeps desktop diary rail and stats controls at least 44px", () => {
+    const moodDotStrip = readSource("src/features/journal/MoodDotStrip.tsx");
+    const journalStats = readSource("src/features/journal/JournalStats.tsx");
+
+    expect(moodDotStrip).toContain("const DOT_ITEM_HEIGHT = 48;");
+    expect(moodDotStrip).toContain("const totalHeight = entries.length * DOT_ITEM_HEIGHT;");
+    expect(moodDotStrip).toContain("top: realIndex * DOT_ITEM_HEIGHT");
+    expect(moodDotStrip).toContain("h-[44px] w-[44px]");
+    expect(journalStats).not.toContain("min-w-[32px] min-h-[32px]");
+    expect(journalStats).toContain("min-w-[44px] min-h-[44px]");
+  });
+
   it("keeps document visibilitychange free of heavy lifecycle work", () => {
     const source = readSource("src/main.tsx");
     const listener = extractBlock(

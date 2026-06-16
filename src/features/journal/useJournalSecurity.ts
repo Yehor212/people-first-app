@@ -8,6 +8,12 @@ import { JOURNAL_PASSWORD_KEY } from "./types";
 import { logger } from "@/lib/logger";
 
 const BIOMETRIC_SETTINGS_KEY = "journal_biometric";
+const SECURITY_COOLDOWN_KEY = "journal_password_cooldown";
+
+type JournalUnlockCooldown = {
+  failedAttempts: number;
+  cooldownUntil: number;
+};
 
 const PBKDF2_ITERATIONS = 600_000;
 const _LEGACY_PBKDF2_ITERATIONS = 100_000; // For future transparent migration
@@ -31,6 +37,33 @@ const COOLDOWN_STEPS = [
   { after: 3, seconds: 30 },
   { after: 5, seconds: 300 },
 ];
+
+function normalizeCooldownState(value: unknown): JournalUnlockCooldown | null {
+  if (!value || typeof value !== "object") return null;
+  const candidate = value as Partial<JournalUnlockCooldown>;
+  const attempts = Number(candidate.failedAttempts);
+  const until = Number(candidate.cooldownUntil);
+  if (!Number.isFinite(attempts) || !Number.isFinite(until)) return null;
+  return {
+    failedAttempts: Math.max(0, Math.floor(attempts)),
+    cooldownUntil: Math.max(0, until),
+  };
+}
+
+async function persistUnlockCooldown(failedAttempts: number, cooldownUntil: number): Promise<void> {
+  try {
+    if (failedAttempts > 0 || cooldownUntil > Date.now()) {
+      await db.settings.put({
+        key: SECURITY_COOLDOWN_KEY,
+        value: { failedAttempts, cooldownUntil },
+      });
+      return;
+    }
+    await db.settings.delete(SECURITY_COOLDOWN_KEY);
+  } catch (err) {
+    logger.warn("[Journal]", "Password cooldown persistence failed:", err);
+  }
+}
 
 function arrayBufferToBase64(buf: ArrayBuffer): string {
   const bytes = new Uint8Array(buf);
@@ -68,6 +101,7 @@ export function useJournalSecurity() {
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [failedAttempts, setFailedAttempts] = useState(0);
   const [cooldownUntil, setCooldownUntil] = useState(0);
+  const [cooldownLoaded, setCooldownLoaded] = useState(false);
   const [biometricAvailable, setBiometricAvailable] = useState(false);
   const [biometricEnabled, setBiometricEnabledState] = useState(false);
   const unlockedAtRef = useRef(0);
@@ -84,6 +118,17 @@ export function useJournalSecurity() {
         logger.warn("[Journal]", "Password check failed:", err);
         setHasPassword(false);
       });
+
+    db.settings
+      .get(SECURITY_COOLDOWN_KEY)
+      .then((entry) => {
+        const cooldown = normalizeCooldownState(entry?.value);
+        if (!cooldown) return;
+        setFailedAttempts(cooldown.failedAttempts);
+        setCooldownUntil(cooldown.cooldownUntil > Date.now() ? cooldown.cooldownUntil : 0);
+      })
+      .catch((err) => logger.warn("[Journal]", "Password cooldown load failed:", err))
+      .finally(() => setCooldownLoaded(true));
 
     // Check biometric availability
     if (isNative) {
@@ -157,8 +202,11 @@ export function useJournalSecurity() {
         createdAt: Date.now(),
       };
       await db.settings.put({ key: JOURNAL_PASSWORD_KEY, value: data });
+      await persistUnlockCooldown(0, 0);
       setHasPassword(true);
       setIsUnlocked(true);
+      setFailedAttempts(0);
+      setCooldownUntil(0);
       unlockedAtRef.current = Date.now();
       resetAutoLock();
     },
@@ -168,7 +216,7 @@ export function useJournalSecurity() {
   // Unlock with password
   const unlock = useCallback(
     async (password: string): Promise<boolean> => {
-      if (Date.now() < cooldownUntil) return false;
+      if (!cooldownLoaded || Date.now() < cooldownUntil) return false;
 
       const entry = await db.settings.get(JOURNAL_PASSWORD_KEY);
       if (!entry?.value) return false;
@@ -193,6 +241,7 @@ export function useJournalSecurity() {
           await db.settings.put({ key: JOURNAL_PASSWORD_KEY, value: migrated });
           logger.log("[Journal]", "Password hash migrated to current iterations");
         }
+        await persistUnlockCooldown(0, 0);
         setIsUnlocked(true);
         setFailedAttempts(0);
         setCooldownUntil(0);
@@ -202,15 +251,19 @@ export function useJournalSecurity() {
       }
 
       const newAttempts = failedAttempts + 1;
-      setFailedAttempts(newAttempts);
+      const now = Date.now();
+      let nextCooldownUntil = 0;
       for (const step of COOLDOWN_STEPS) {
         if (newAttempts >= step.after) {
-          setCooldownUntil(Date.now() + step.seconds * 1000);
+          nextCooldownUntil = now + step.seconds * 1000;
         }
       }
+      setFailedAttempts(newAttempts);
+      setCooldownUntil(nextCooldownUntil);
+      await persistUnlockCooldown(newAttempts, nextCooldownUntil);
       return false;
     },
-    [failedAttempts, cooldownUntil, resetAutoLock]
+    [failedAttempts, cooldownUntil, cooldownLoaded, resetAutoLock]
   );
 
   // Change password atomically (verify old, then write new in single put)
@@ -243,6 +296,7 @@ export function useJournalSecurity() {
   // Remove password (entries stay, lock removed)
   const removePassword = useCallback(async () => {
     await db.settings.delete(JOURNAL_PASSWORD_KEY);
+    await persistUnlockCooldown(0, 0);
     setHasPassword(false);
     setIsUnlocked(false);
     setFailedAttempts(0);
@@ -262,11 +316,12 @@ export function useJournalSecurity() {
 
   // Biometric unlock
   const unlockWithBiometric = useCallback(async (): Promise<boolean> => {
-    if (!biometricAvailable || !biometricEnabled) return false;
+    if (!cooldownLoaded || !biometricAvailable || !biometricEnabled) return false;
     try {
       const { default: BiometricAuth } = await import("@/plugins/BiometricPlugin");
       const result = await BiometricAuth.authenticate({ reason: "Unlock your journal" });
       if (result.success) {
+        await persistUnlockCooldown(0, 0);
         setIsUnlocked(true);
         setFailedAttempts(0);
         setCooldownUntil(0);
@@ -278,7 +333,7 @@ export function useJournalSecurity() {
       // Biometric failed — fall back to password
     }
     return false;
-  }, [biometricAvailable, biometricEnabled, resetAutoLock]);
+  }, [biometricAvailable, biometricEnabled, cooldownLoaded, resetAutoLock]);
 
   const setBiometricEnabled = useCallback(async (value: boolean) => {
     setBiometricEnabledState(value);
@@ -293,7 +348,7 @@ export function useJournalSecurity() {
     hasPassword,
     isUnlocked,
     isLocked: hasPassword === true && !isUnlocked,
-    loading: hasPassword === null,
+    loading: hasPassword === null || !cooldownLoaded,
     failedAttempts,
     cooldownRemaining,
     biometricAvailable,

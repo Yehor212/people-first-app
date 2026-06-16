@@ -50,6 +50,12 @@ export async function checkAppVersion(): Promise<boolean> {
       return true;
     }
 
+    const contentType = (response.headers?.get("content-type") || "").toLowerCase();
+    if (contentType && !contentType.includes("application/json") && !contentType.includes("+json")) {
+      logger.log("[VersionCheck] version.json returned non-JSON, skipping check");
+      return true;
+    }
+
     const serverVersion: VersionManifest = await response.json();
     const clientVersion = __APP_VERSION__;
     const clientBuildTime = __APP_BUILD_TIME__;

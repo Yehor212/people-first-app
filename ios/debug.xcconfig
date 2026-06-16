@@ -1,1 +1,3 @@
 CAPACITOR_DEBUG = true
+// Local debug fallback only. Release builds must inject the real value through Xcode/CI.
+ZENFLOW_ADMOB_IOS_APP_ID = ca-app-pub-3940256099942544~1458002511

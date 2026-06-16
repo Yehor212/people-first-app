@@ -13,6 +13,7 @@ const MOOD_RING_COLOR: Record<string, string> = {
   bad: "ring-orange-400/40",
   terrible: "ring-red-400/40",
 };
+const DOT_ITEM_HEIGHT = 48;
 
 function getRelativeTimeShort(timestamp: number): string {
   const diff = Date.now() - timestamp;
@@ -51,9 +52,8 @@ export const MoodDotStrip = memo(function MoodDotStrip({
     if (!container) return;
     const handleScroll = () => {
       const scrollTop = container.scrollTop;
-      const itemHeight = 40; // w-8 + gap
-      const viewportItems = Math.ceil(container.clientHeight / itemHeight);
-      const start = Math.max(0, Math.floor(scrollTop / itemHeight) - 5);
+      const viewportItems = Math.ceil(container.clientHeight / DOT_ITEM_HEIGHT);
+      const start = Math.max(0, Math.floor(scrollTop / DOT_ITEM_HEIGHT) - 5);
       const end = Math.min(entries.length, start + viewportItems + 10);
       setVisibleRange({ start, end });
     };
@@ -102,7 +102,7 @@ export const MoodDotStrip = memo(function MoodDotStrip({
     el?.focus();
   }, [focusIndex]);
 
-  const totalHeight = entries.length * 40;
+  const totalHeight = entries.length * DOT_ITEM_HEIGHT;
   const visibleEntries = entries.slice(visibleRange.start, visibleRange.end);
 
   return (
@@ -126,8 +126,8 @@ export const MoodDotStrip = memo(function MoodDotStrip({
           return (
             <div
               key={entry.id}
-              style={{ position: "absolute", top: realIndex * 40, left: 0, right: 0 }}
-              className="flex items-center justify-center h-10"
+              style={{ position: "absolute", top: realIndex * DOT_ITEM_HEIGHT, left: 0, right: 0 }}
+              className="flex h-12 items-center justify-center"
             >
               <motion.button
                 layoutId={`mood-${entry.id}`}
@@ -145,7 +145,7 @@ export const MoodDotStrip = memo(function MoodDotStrip({
                 whileHover={{ scale: 1.15 }}
                 whileTap={{ scale: 0.9 }}
                 className={cn(
-                  "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 motion-safe:transition-all relative",
+                  "flex h-[44px] w-[44px] flex-shrink-0 items-center justify-center rounded-full motion-safe:transition-all relative",
                   isActive && mood && `ring-2 ${MOOD_RING_COLOR[mood]}`,
                   isActive && !mood && "ring-2 ring-primary/30",
                   isFocused && "ring-2 ring-primary/50",

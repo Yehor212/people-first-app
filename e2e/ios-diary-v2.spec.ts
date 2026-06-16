@@ -2,6 +2,14 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 
 import { primeZenflowV2, v2RoutePath } from "./helpers/zenflowV2State";
 
+test.use({
+  browserName: "webkit",
+  deviceScaleFactor: 3,
+  hasTouch: true,
+  ignoreHTTPSErrors: true,
+  isMobile: true,
+});
+
 const IOS_TOUCH_TARGET_PX = 44;
 const TOUCH_EPSILON_PX = 0.01;
 
@@ -58,7 +66,8 @@ async function openNewJournalEntry(page: Page) {
 test.describe("iOS V2 Diary", () => {
   test.describe.configure({ timeout: 90_000 });
 
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ browserName, page }) => {
+    expect(browserName).toBe("webkit");
     await primeZenflowV2(page, { language: "en", theme: "paper" });
     await page.setViewportSize({ width: 390, height: 844 });
     await openDiaryFromV2Root(page);

@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   getPersistentDeviceId: vi.fn(),
   writeEventAndBroadcast: vi.fn(),
   generateEmbeddings: vi.fn(),
+  isEntityTombstonedOnServer: vi.fn(),
 }));
 
 vi.mock("@/lib/supabaseClient", () => ({
@@ -32,6 +33,10 @@ vi.mock("@/storage/eventSync", () => ({
 
 vi.mock("@/lib/journalAI", () => ({
   generateEmbeddings: mocks.generateEmbeddings,
+}));
+
+vi.mock("../serverTombstones", () => ({
+  isEntityTombstonedOnServer: mocks.isEntityTombstonedOnServer,
 }));
 
 vi.mock("@/lib/logger", () => ({
@@ -63,6 +68,34 @@ describe("journal sync tombstones", () => {
     mocks.getDeletedJournalEntryIds.mockResolvedValue(new Set());
     mocks.getPersistentDeviceId.mockResolvedValue("device-1");
     mocks.generateEmbeddings.mockResolvedValue(undefined);
+    mocks.isEntityTombstonedOnServer.mockResolvedValue(false);
+  });
+
+  it("does not generate external AI embeddings during a normal journal sync", async () => {
+    const upsert = vi.fn(() => Promise.resolve({ error: null }));
+    mocks.from.mockReturnValue({ upsert });
+
+    await syncJournalEntry({
+      id: "entry-1",
+      date: "2026-05-25",
+      title: "Private",
+      content: "Private diary content",
+      stickers: [],
+      tags: [],
+      photoIds: [],
+      createdAt: 1,
+      updatedAt: 2,
+    });
+
+    expect(upsert).toHaveBeenCalled();
+    expect(mocks.writeEventAndBroadcast).toHaveBeenCalledWith(
+      "journal",
+      "entry-1",
+      "upsert",
+      expect.objectContaining({ id: "entry-1" }),
+      "device-1",
+    );
+    expect(mocks.generateEmbeddings).not.toHaveBeenCalled();
   });
 
   it("does not upsert a journal entry that already has a local tombstone", async () => {

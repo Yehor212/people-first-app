@@ -143,11 +143,8 @@ export async function scheduleLocalReminders(
     // Check permission
     const permission = await LocalNotifications.checkPermissions();
     if (permission.display !== 'granted') {
-      const request = await LocalNotifications.requestPermissions();
-      if (request.display !== 'granted') {
-        logger.log('Notification permission denied');
-        return;
-      }
+      logger.log('Notification permission not granted for local reminders');
+      return;
     }
 
     // Cancel all existing notifications

@@ -1,13 +1,14 @@
 import { db } from "@/storage/db";
 import { generateId } from "@/lib/utils";
 import type { JournalEntry, JournalPhoto, JournalAudio } from "./types";
-import { MAX_PHOTOS_PER_ENTRY, MAX_AUDIO_PER_ENTRY } from "./types";
+import { JOURNAL_DRAFT_ENTRY_ID, MAX_PHOTOS_PER_ENTRY, MAX_AUDIO_PER_ENTRY } from "./types";
 import {
   uploadPhoto,
   uploadAudio as uploadAudioToStorage,
   deletePhotoFromStorage,
   deleteAudioFromStorage,
   deleteEntryMediaFromStorage,
+  downloadAsBase64,
 } from "@/storage/journalStorageService";
 import {
   syncJournalEntry,
@@ -20,6 +21,63 @@ import {
 import { triggerSync } from "@/storage/cloudSync";
 import { trackDeletedJournalEntryId } from "@/storage/deletionTracker";
 import { logger } from "@/lib/logger";
+
+
+async function relinkDraftMediaToEntry(
+  entryId: string,
+  photoIds: string[],
+  audioIds: string[] = []
+): Promise<{ photos: JournalPhoto[]; audios: JournalAudio[] }> {
+  const relinked = { photos: [] as JournalPhoto[], audios: [] as JournalAudio[] };
+
+  for (const photoId of new Set(photoIds)) {
+    const photo = await db.journalPhotos.get(photoId);
+    if (photo?.entryId !== JOURNAL_DRAFT_ENTRY_ID) continue;
+    const updatedPhoto = { ...photo, entryId };
+    await db.journalPhotos.update(photoId, { entryId });
+    relinked.photos.push(updatedPhoto);
+  }
+
+  for (const audioId of new Set(audioIds)) {
+    const audio = await db.journalAudio.get(audioId);
+    if (audio?.entryId !== JOURNAL_DRAFT_ENTRY_ID) continue;
+    const updatedAudio = { ...audio, entryId };
+    await db.journalAudio.update(audioId, { entryId });
+    relinked.audios.push(updatedAudio);
+  }
+
+  return relinked;
+}
+
+async function hydratePhotoFromStorage(photo: JournalPhoto): Promise<JournalPhoto> {
+  if (photo.data && photo.thumbnail) return photo;
+
+  const downloaded = !photo.data && photo.storagePath
+    ? await downloadAsBase64("journal-photos", photo.storagePath)
+    : null;
+  const data = photo.data || downloaded;
+  if (!data) return photo;
+
+  const thumbnail = photo.thumbnail || data;
+  const changes: Partial<JournalPhoto> = {};
+  if (!photo.data) changes.data = data;
+  if (!photo.thumbnail) changes.thumbnail = thumbnail;
+  if (Object.keys(changes).length > 0) {
+    await db.journalPhotos.update(photo.id, changes);
+  }
+
+  return { ...photo, data, thumbnail };
+}
+
+async function hydrateAudioFromStorage(audio: JournalAudio): Promise<JournalAudio> {
+  if (audio.data || !audio.storagePath) return audio;
+
+  const data = await downloadAsBase64("journal-audio", audio.storagePath);
+  if (!data) return audio;
+
+  await db.journalAudio.update(audio.id, { data });
+  return { ...audio, data };
+}
 
 // ============================================
 // JOURNAL ENTRIES CRUD
@@ -47,10 +105,24 @@ export async function saveEntry(
     createdAt: now,
     updatedAt: now,
   };
-  await db.journalEntries.add(full);
+  let relinkedMedia: { photos: JournalPhoto[]; audios: JournalAudio[] } = { photos: [], audios: [] };
+  await db.transaction("rw", [db.journalEntries, db.journalPhotos, db.journalAudio], async () => {
+    await db.journalEntries.add(full);
+    relinkedMedia = await relinkDraftMediaToEntry(full.id, full.photoIds, full.audioIds || []);
+  });
 
   // Granular sync to cloud (non-blocking)
   syncJournalEntry(full).catch((err) => logger.warn("[JournalSync]", "Entry sync failed:", err));
+  for (const photo of relinkedMedia.photos) {
+    syncJournalPhoto(photo).catch((err) =>
+      logger.warn("[JournalSync]", "Photo relink sync failed:", err)
+    );
+  }
+  for (const audio of relinkedMedia.audios) {
+    syncJournalAudio(audio).catch((err) =>
+      logger.warn("[JournalSync]", "Audio relink sync failed:", err)
+    );
+  }
   triggerSync();
 
   return full;
@@ -77,6 +149,9 @@ export async function deleteEntry(id: string): Promise<void> {
   const photos = await db.journalPhotos.where("entryId").equals(id).toArray();
   const audios = await db.journalAudio.where("entryId").equals(id).toArray();
 
+  // Track deletion before local rows disappear so stale remote pulls cannot resurrect it.
+  await trackDeletedJournalEntryId(id);
+
   // Delete from local IndexedDB (photos + audio + entry)
   await db.transaction("rw", [db.journalEntries, db.journalPhotos, db.journalAudio], async () => {
     if (photos.length) {
@@ -93,9 +168,6 @@ export async function deleteEntry(id: string): Promise<void> {
     photos.map((p) => p.id),
     audios.map((a) => a.id)
   );
-
-  // Track deletion locally so sync never restores this entry
-  void trackDeletedJournalEntryId(id);
 
   // Delete from cloud tables (fire-and-forget)
   deleteJournalEntryFromCloud(id).catch((err) =>
@@ -201,11 +273,13 @@ export async function compressAndStorePhoto(file: File, entryId: string): Promis
 }
 
 export async function getPhotosForEntry(entryId: string): Promise<JournalPhoto[]> {
-  return db.journalPhotos.where("entryId").equals(entryId).toArray();
+  const photos = await db.journalPhotos.where("entryId").equals(entryId).toArray();
+  return Promise.all(photos.map((photo) => hydratePhotoFromStorage(photo)));
 }
 
 export async function getPhotoById(id: string): Promise<JournalPhoto | undefined> {
-  return db.journalPhotos.get(id);
+  const photo = await db.journalPhotos.get(id);
+  return photo ? hydratePhotoFromStorage(photo) : undefined;
 }
 
 export async function deletePhoto(id: string, entryId: string): Promise<void> {
@@ -230,8 +304,8 @@ export async function deletePhoto(id: string, entryId: string): Promise<void> {
 // AUDIO RECORDINGS
 // ============================================
 
-/** Maximum audio file size: 25 MB */
-const MAX_AUDIO_SIZE = 25 * 1024 * 1024;
+/** Maximum audio file size: 20 MB (matches journal-audio bucket) */
+const MAX_AUDIO_SIZE = 20 * 1024 * 1024;
 
 export async function storeAudio(
   entryId: string,
@@ -244,7 +318,7 @@ export async function storeAudio(
   const b64Length = commaIdx >= 0 ? data.length - commaIdx - 1 : data.length;
   const estimatedBytes = Math.ceil((b64Length * 3) / 4);
   if (estimatedBytes > MAX_AUDIO_SIZE) {
-    throw new Error("Audio recording too large. Maximum size is 25 MB.");
+    throw new Error("Audio recording too large. Maximum size is 20 MB.");
   }
 
   const existing = await db.journalAudio.where("entryId").equals(entryId).count();
@@ -290,11 +364,13 @@ export async function storeAudio(
 }
 
 export async function getAudioForEntry(entryId: string): Promise<JournalAudio[]> {
-  return db.journalAudio.where("entryId").equals(entryId).toArray();
+  const audioItems = await db.journalAudio.where("entryId").equals(entryId).toArray();
+  return Promise.all(audioItems.map((audio) => hydrateAudioFromStorage(audio)));
 }
 
 export async function getAudioById(id: string): Promise<JournalAudio | undefined> {
-  return db.journalAudio.get(id);
+  const audio = await db.journalAudio.get(id);
+  return audio ? hydrateAudioFromStorage(audio) : undefined;
 }
 
 export async function deleteAudio(id: string, entryId: string): Promise<void> {

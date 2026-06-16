@@ -91,11 +91,20 @@ function resolveRequestPath(requestUrl) {
 
 function sendFile(response, filePath) {
   const ext = extname(filePath);
+  const size = statSync(filePath).size;
   response.writeHead(200, {
     "Cache-Control": "no-store",
+    "Content-Length": String(size),
     "Content-Type": contentTypes.get(ext) || "application/octet-stream",
   });
-  createReadStream(filePath).pipe(response);
+  const stream = createReadStream(filePath);
+  stream.on("error", (error) => {
+    if (!response.headersSent) {
+      response.writeHead(500, { "Content-Type": "text/plain; charset=utf-8" });
+    }
+    response.destroy(error);
+  });
+  stream.pipe(response);
 }
 
 const handleRequest = (request, response) => {

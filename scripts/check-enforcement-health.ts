@@ -16,6 +16,8 @@ import * as path from "path";
 const CANONICAL_WINDOWS_ROOT = "c:/project/people-first-app";
 const ROOT = path.resolve(process.env.ZENFLOW_REPO_ROOT ?? process.cwd());
 const HOOKS_DIR = path.join(ROOT, ".claude", "hooks");
+const CODEX_HOOKS_DIR = path.join(ROOT, ".codex", "hooks");
+const CODEX_HOOKS_JSON = path.join(ROOT, ".codex", "hooks.json");
 const RULES_DIR = path.join(ROOT, ".claude", "rules");
 const SETTINGS = path.join(ROOT, ".claude", "settings.json");
 const CLAUDE_MD = path.join(ROOT, "CLAUDE.md");
@@ -77,6 +79,14 @@ function isLocalLearningHook(filePath: string): boolean {
   return filePath.replace(/\\/g, "/").includes(".claude/learning/");
 }
 
+function matcherIncludesAll(matcher: string, tools: string[]): boolean {
+  const parts = matcher
+    .split("|")
+    .map((part) => part.trim())
+    .filter(Boolean);
+  return tools.every((tool) => parts.includes(tool));
+}
+
 // ============================================================
 // SECTION 1: HOOK SYSTEM INTEGRITY
 // ============================================================
@@ -107,14 +117,6 @@ function checkHookSystem() {
         }
       }
     }
-  }
-
-  function matcherIncludesAll(matcher: string, tools: string[]): boolean {
-    const parts = matcher
-      .split("|")
-      .map((part) => part.trim())
-      .filter(Boolean);
-    return tools.every((tool) => parts.includes(tool));
   }
 
   function requiredHookRegistered(
@@ -316,6 +318,107 @@ function checkHookSystem() {
         "Does not block on error (correct for advisory)",
       );
     }
+  }
+}
+
+// ============================================================
+// SECTION 1B: CODEX SKILL ROUTING INTEGRITY
+// ============================================================
+
+function checkCodexSkillRouting() {
+  console.log("\n  CODEX SKILL ROUTING INTEGRITY\n");
+
+  let codexHooksConfig: any = {};
+  if (!fs.existsSync(CODEX_HOOKS_JSON)) {
+    fail(
+      "codex:hooks-json",
+      ".codex/hooks.json missing; Codex skill routing is not registered",
+    );
+  } else {
+    try {
+      codexHooksConfig = JSON.parse(fs.readFileSync(CODEX_HOOKS_JSON, "utf8"));
+      pass("codex:hooks-json", "Valid JSON");
+    } catch {
+      fail("codex:hooks-json", "Cannot parse .codex/hooks.json");
+    }
+  }
+
+  const hookEvents = codexHooksConfig.hooks || {};
+
+  function codexHookRegistered(
+    event: string,
+    tools: string[],
+    hookName: string,
+  ): boolean {
+    const matchers = (hookEvents[event] || []) as any[];
+    return matchers.some((matcher) => {
+      if (tools.length > 0 && !matcherIncludesAll(String(matcher.matcher || ""), tools)) {
+        return false;
+      }
+      return (matcher.hooks || []).some((hook: any) =>
+        String(hook.command || "").includes(`.codex/hooks/${hookName}`),
+      );
+    });
+  }
+
+  if (codexHookRegistered("UserPromptSubmit", [], "skill-router-gate.cjs")) {
+    pass(
+      "codex:skill-router-prompt",
+      "Registered for UserPromptSubmit context injection",
+    );
+  } else {
+    fail(
+      "codex:skill-router-prompt",
+      "skill-router-gate.cjs must be registered for UserPromptSubmit",
+    );
+  }
+
+  if (
+    codexHookRegistered(
+      "PreToolUse",
+      ["apply_patch", "Edit", "Write", "MultiEdit"],
+      "skill-router-gate.cjs",
+    )
+  ) {
+    pass(
+      "codex:skill-router-pretool",
+      "Registered for PreToolUse apply_patch|Edit|Write|MultiEdit",
+    );
+  } else {
+    fail(
+      "codex:skill-router-pretool",
+      "skill-router-gate.cjs must guard PreToolUse apply_patch|Edit|Write|MultiEdit",
+    );
+  }
+
+  const hookPath = path.join(CODEX_HOOKS_DIR, "skill-router-gate.cjs");
+  if (!fs.existsSync(hookPath)) {
+    fail(
+      "codex:skill-router-file",
+      ".codex/hooks/skill-router-gate.cjs missing",
+    );
+    return;
+  }
+
+  pass("codex:skill-router-file", "Exists on disk");
+  const content = fs.readFileSync(hookPath, "utf8");
+  if (
+    content.includes("readFileSync(0") ||
+    content.includes("process.stdin.on('data'") ||
+    content.includes('process.stdin.on("data"')
+  ) {
+    pass("codex:skill-router-stdin", "Has stdin JSON parsing");
+  } else {
+    fail("codex:skill-router-stdin", "Missing stdin JSON parsing");
+  }
+
+  if (content.includes("process.exit(2)")) {
+    pass("codex:skill-router-fail-closed", "Has exit(2) fail-closed path");
+  } else {
+    fail(
+      "codex:skill-router-fail-closed",
+      "Missing exit(2); guarded hook would fail open on error",
+    );
   }
 }
 
@@ -587,6 +690,7 @@ function checkGitignore() {
   const required = [
     { pattern: ".preflight-token", desc: "PRE-FLIGHT token" },
     { pattern: ".test-first-token", desc: "TEST-FIRST token" },
+    { pattern: ".skill-routing-token", desc: "SKILL-ROUTING token" },
     { pattern: ".postflight-done", desc: "POST-FLIGHT token" },
     { pattern: ".fullcycle-active", desc: "Full cycle flag" },
     { pattern: ".fullcycle-laws-read", desc: "Laws read token" },
@@ -692,6 +796,7 @@ console.log("  ENFORCEMENT HEALTH CHECK");
 console.log("==================================================");
 
 checkHookSystem();
+checkCodexSkillRouting();
 checkRulesSystem();
 checkMemorySystem();
 checkLawSpecs();

@@ -8,14 +8,58 @@ const fs = require('fs');
 const path = require('path');
 
 const HOOKS = path.resolve(process.cwd(), '.claude/hooks');
+const CODEX_HOOKS = path.resolve(process.cwd(), '.codex/hooks');
 const TEST_ROOT = process.cwd().replace(/\\/g, '/');
+const HOOK_SCRIPT_PATHS = Object.freeze({
+  'auto-format.cjs': path.join(HOOKS, 'auto-format.cjs'),
+  'ci-tracker.cjs': path.join(HOOKS, 'ci-tracker.cjs'),
+  'commit-gate.cjs': path.join(HOOKS, 'commit-gate.cjs'),
+  'config-change-log.cjs': path.join(HOOKS, 'config-change-log.cjs'),
+  'elicitation-log.cjs': path.join(HOOKS, 'elicitation-log.cjs'),
+  'elicitation-result-log.cjs': path.join(HOOKS, 'elicitation-result-log.cjs'),
+  'goal-drift-check.cjs': path.join(HOOKS, 'goal-drift-check.cjs'),
+  'ide-diagnostic-gate.cjs': path.join(HOOKS, 'ide-diagnostic-gate.cjs'),
+  'instructions-loaded.cjs': path.join(HOOKS, 'instructions-loaded.cjs'),
+  'notification-log.cjs': path.join(HOOKS, 'notification-log.cjs'),
+  'output-taint-check.cjs': path.join(HOOKS, 'output-taint-check.cjs'),
+  'permission-request-log.cjs': path.join(HOOKS, 'permission-request-log.cjs'),
+  'post-compact.cjs': path.join(HOOKS, 'post-compact.cjs'),
+  'pre-compact.cjs': path.join(HOOKS, 'pre-compact.cjs'),
+  'preflight-gate.cjs': path.join(HOOKS, 'preflight-gate.cjs'),
+  'preflight-inject.cjs': path.join(HOOKS, 'preflight-inject.cjs'),
+  'protected-files.cjs': path.join(HOOKS, 'protected-files.cjs'),
+  'quality-stop-gate.cjs': path.join(HOOKS, 'quality-stop-gate.cjs'),
+  'search-confirm.cjs': path.join(HOOKS, 'search-confirm.cjs'),
+  'search-gate.cjs': path.join(HOOKS, 'search-gate.cjs'),
+  'session-end.cjs': path.join(HOOKS, 'session-end.cjs'),
+  'session-start.cjs': path.join(HOOKS, 'session-start.cjs'),
+  'stop-failure-log.cjs': path.join(HOOKS, 'stop-failure-log.cjs'),
+  'subagent-start.cjs': path.join(HOOKS, 'subagent-start.cjs'),
+  'subagent-stop.cjs': path.join(HOOKS, 'subagent-stop.cjs'),
+  'task-completed-gate.cjs': path.join(HOOKS, 'task-completed-gate.cjs'),
+  'teammate-idle-gate.cjs': path.join(HOOKS, 'teammate-idle-gate.cjs'),
+  'test-first-gate.cjs': path.join(HOOKS, 'test-first-gate.cjs'),
+  'tool-failure-log.cjs': path.join(HOOKS, 'tool-failure-log.cjs'),
+  'tool-guard.cjs': path.join(HOOKS, 'tool-guard.cjs'),
+  'worktree-create-log.cjs': path.join(HOOKS, 'worktree-create-log.cjs'),
+  'worktree-remove-log.cjs': path.join(HOOKS, 'worktree-remove-log.cjs'),
+  'zenflow-auto-context.cjs': path.join(HOOKS, 'zenflow-auto-context.cjs'),
+});
+
+function resolveHookPath(hookFile) {
+  const hookPath = HOOK_SCRIPT_PATHS[hookFile];
+  if (!hookPath) {
+    throw new Error(`Unknown hook fixture: ${hookFile}`);
+  }
+  return hookPath;
+}
 let pass = 0;
 let fail = 0;
 const results = [];
 
 function test(name, hookFile, stdin, expectMatch, expectExit) {
   try {
-    const hookPath = path.join(HOOKS, hookFile);
+    const hookPath = resolveHookPath(hookFile);
     const result = spawnSync('node', [hookPath], {
       input: stdin,
       encoding: 'utf8',
@@ -63,13 +107,59 @@ function test(name, hookFile, stdin, expectMatch, expectExit) {
 }
 
 function runHook(hookFile, stdin) {
-  const hookPath = path.join(HOOKS, hookFile);
+  const hookPath = resolveHookPath(hookFile);
   return spawnSync('node', [hookPath], {
     input: stdin,
     encoding: 'utf8',
     timeout: 10000,
     stdio: ['pipe', 'pipe', 'pipe'],
   });
+}
+
+function testHookPath(name, hookPath, stdin, expectMatch, expectExit) {
+  try {
+    const result = spawnSync('node', [hookPath], {
+      input: stdin,
+      encoding: 'utf8',
+      timeout: 10000,
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+    const stdout = (result.stdout || '') + (result.stderr || '');
+    const exitCode = result.status || 0;
+
+    let ok = true;
+    const issues = [];
+
+    if (expectExit !== undefined && exitCode !== expectExit) {
+      ok = false;
+      issues.push(`exit=${exitCode}, expected=${expectExit}`);
+    }
+
+    if (expectMatch) {
+      if (typeof expectMatch === 'string') {
+        if (!stdout.includes(expectMatch)) {
+          ok = false;
+          issues.push(`output missing: "${expectMatch}"`);
+        }
+      } else if (expectMatch instanceof RegExp) {
+        if (!expectMatch.test(stdout)) {
+          ok = false;
+          issues.push(`output doesn't match: ${expectMatch}`);
+        }
+      }
+    }
+
+    if (ok) {
+      pass++;
+      results.push({ name, status: 'PASS' });
+    } else {
+      fail++;
+      results.push({ name, status: 'FAIL', issues: issues.join(', '), stdout: stdout.slice(0, 200) });
+    }
+  } catch (e) {
+    fail++;
+    results.push({ name, status: 'ERROR', issues: e.message.slice(0, 200) });
+  }
 }
 
 function getAdditionalContext(stdout) {
@@ -234,6 +324,73 @@ try {
   }
 } catch (e) {
   results.push({ name: 'test-first-gate: token backup restore', status: 'ERROR', issues: e.message });
+  fail++;
+}
+
+// ============================================================
+// 1c. CODEX SKILL-ROUTER-GATE (5 tests)
+// ============================================================
+console.log('  1c. codex skill-router-gate.cjs\n');
+
+const SKILL_ROUTER_HOOK = path.join(CODEX_HOOKS, 'skill-router-gate.cjs');
+const SKILL_ROUTING_TOKEN_PATH = path.join(TEST_ROOT, '.skill-routing-token');
+const SKILL_ROUTING_TOKEN_BACKUP = path.join(TEST_ROOT, '.skill-routing-token.test-backup');
+
+try {
+  if (fs.existsSync(SKILL_ROUTING_TOKEN_BACKUP)) fs.unlinkSync(SKILL_ROUTING_TOKEN_BACKUP);
+  if (fs.existsSync(SKILL_ROUTING_TOKEN_PATH)) {
+    fs.renameSync(SKILL_ROUTING_TOKEN_PATH, SKILL_ROUTING_TOKEN_BACKUP);
+  }
+} catch (e) {
+  results.push({ name: 'skill-router-gate: token backup setup', status: 'ERROR', issues: e.message });
+  fail++;
+}
+
+testHookPath('skill-router: prompt injects routing checklist',
+  SKILL_ROUTER_HOOK,
+  '{"hook_event_name":"UserPromptSubmit","prompt":"проведи глубокий ресерч @superpowers @chrome @Браузер"}',
+  'SKILL ROUTING REQUIRED', 0);
+
+testHookPath('skill-router: guarded src edit blocked without routing evidence',
+  SKILL_ROUTER_HOOK,
+  '{"hook_event_name":"PreToolUse","tool_input":{"file_path":"' + TEST_ROOT + '/src/App.tsx"}}',
+  'SKILL ROUTING GATE BLOCKED', 2);
+
+testHookPath('skill-router: docs-only edit allowed without routing evidence',
+  SKILL_ROUTER_HOOK,
+  '{"hook_event_name":"PreToolUse","tool_input":{"file_path":"' + TEST_ROOT + '/README.md"}}',
+  null, 0);
+
+fs.writeFileSync(SKILL_ROUTING_TOKEN_PATH, JSON.stringify({
+  timestamp: new Date().toISOString(),
+  prompt_summary: 'Validate agents select relevant skills before guarded edits',
+  explicit_plugins: ['Superpowers'],
+  selected_skills: ['superpowers:writing-plans', 'superpowers:test-driven-development', 'superpowers:verification-before-completion'],
+  skipped_obvious: [{ name: 'all superpowers skills', reason: 'official progressive disclosure: use minimal relevant skills, not every skill every turn' }],
+  decision: 'Use planning, TDD, and verification for a protected hook change',
+  verification_plan: 'node .claude/hooks/test-all-hooks.cjs && npm run enforcement:check',
+  verdict: 'GO',
+}), 'utf8');
+
+testHookPath('skill-router: guarded src edit allowed with .skill-routing-token',
+  SKILL_ROUTER_HOOK,
+  '{"hook_event_name":"PreToolUse","tool_input":{"file_path":"' + TEST_ROOT + '/src/App.tsx"}}',
+  null, 0);
+
+try { fs.unlinkSync(SKILL_ROUTING_TOKEN_PATH); } catch {}
+
+testHookPath('skill-router: invalid JSON fails closed',
+  SKILL_ROUTER_HOOK,
+  'NOT JSON',
+  'HOOK ERROR [skill-router-gate]', 2);
+
+try {
+  if (fs.existsSync(SKILL_ROUTING_TOKEN_PATH)) fs.unlinkSync(SKILL_ROUTING_TOKEN_PATH);
+  if (fs.existsSync(SKILL_ROUTING_TOKEN_BACKUP)) {
+    fs.renameSync(SKILL_ROUTING_TOKEN_BACKUP, SKILL_ROUTING_TOKEN_PATH);
+  }
+} catch (e) {
+  results.push({ name: 'skill-router-gate: token backup restore', status: 'ERROR', issues: e.message });
   fail++;
 }
 

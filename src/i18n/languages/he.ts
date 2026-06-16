@@ -2486,6 +2486,7 @@ const hebrewOverrides: Partial<Translations> = {
   journalDiscardMessage: "יש לך שינויים שלא נשמרו.",
   journalDiscard: "בטל",
   journalKeepWriting: "המשך לכתוב",
+  journalSaveDraftOpenSettings: "שמור טיוטה ופתח הגדרות",
   journalSaveClose: "שמור וסגור",
   journalWords: "מילים",
   journalWordCountZero: "{count} מילים",

@@ -63,6 +63,7 @@ public class WidgetProviderSmall extends AppWidgetProvider {
 
         // Set click intent to open diary tab via deep link
         Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("zenflow://diary/mood"));
+        intent.setPackage(context.getPackageName());
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         PendingIntent pendingIntent = PendingIntent.getActivity(
             context,

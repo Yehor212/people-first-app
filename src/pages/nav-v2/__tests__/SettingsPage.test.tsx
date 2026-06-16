@@ -1,5 +1,5 @@
 import type React from "react";
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { SettingsPage } from "../SettingsPage";
 
@@ -23,6 +23,16 @@ const themeStoreMock = vi.hoisted(() => {
 const languageContextMock = vi.hoisted(() => ({
   language: "en",
   setLanguage: vi.fn(),
+}));
+
+const platformMock = vi.hoisted(() => ({
+  isNative: false,
+  isAndroid: false,
+}));
+
+const localNotificationsMock = vi.hoisted(() => ({
+  checkPermissions: vi.fn(),
+  requestPermissions: vi.fn(),
 }));
 
 function expectDocumentOrder(first: HTMLElement, second: HTMLElement) {
@@ -131,6 +141,7 @@ vi.mock("@/contexts/LanguageContext", () => ({
       privacyNoTracking: "No tracking",
       privacyAnalytics: "Analytics",
       enableReminders: "Enable reminders",
+      pushPermissionDenied: "Notification permission denied.",
     },
   }),
 }));
@@ -360,9 +371,10 @@ vi.mock("@/features/journal", () => ({
   setAutoLockMs: vi.fn(),
 }));
 
-vi.mock("@/lib/platform", () => ({
-  isNative: false,
-  isAndroid: false,
+vi.mock("@/lib/platform", () => platformMock);
+
+vi.mock("@capacitor/local-notifications", () => ({
+  LocalNotifications: localNotificationsMock,
 }));
 
 vi.mock("@/lib/env", () => ({
@@ -431,6 +443,10 @@ describe("SettingsPage", () => {
     themeStoreMock.setTheme.mockClear();
     languageContextMock.language = "en";
     languageContextMock.setLanguage.mockClear();
+    platformMock.isNative = false;
+    platformMock.isAndroid = false;
+    localNotificationsMock.checkPermissions.mockReset();
+    localNotificationsMock.requestPermissions.mockReset();
     delete document.documentElement.dataset.theme;
     document.documentElement.classList.remove("oled", "dark");
     localStorage.clear();
@@ -704,6 +720,50 @@ describe("SettingsPage", () => {
     const dayUpdater = controls.onRemindersChange.mock.calls.at(-1)?.[0];
     expect(typeof dayUpdater).toBe("function");
     expect(dayUpdater(controls.reminders).days).not.toContain(1);
+  });
+
+  it("requests native notification permission before enabling reminders", async () => {
+    platformMock.isNative = true;
+    localNotificationsMock.checkPermissions.mockResolvedValue({ display: "prompt" });
+    localNotificationsMock.requestPermissions.mockResolvedValue({ display: "granted" });
+    const controls = createSettingsControls();
+    controls.reminders = { ...controls.reminders, enabled: false };
+    render(<SettingsPage controls={controls} />);
+
+    fireEvent.click(screen.getByTestId("settings-module-card-notifications"));
+    fireEvent.click(
+      within(screen.getByTestId("settings-v2-reminders-toggle")).getByRole("switch", {
+        name: "Enable reminders",
+      })
+    );
+
+    await waitFor(() =>
+      expect(localNotificationsMock.requestPermissions).toHaveBeenCalledTimes(1)
+    );
+    const enabledUpdater = controls.onRemindersChange.mock.calls.at(-1)?.[0];
+    expect(typeof enabledUpdater).toBe("function");
+    expect(enabledUpdater(controls.reminders)).toMatchObject({ enabled: true });
+  });
+
+  it("keeps native reminders off and shows feedback when notification permission is denied", async () => {
+    platformMock.isNative = true;
+    localNotificationsMock.checkPermissions.mockResolvedValue({ display: "prompt" });
+    localNotificationsMock.requestPermissions.mockResolvedValue({ display: "denied" });
+    const controls = createSettingsControls();
+    controls.reminders = { ...controls.reminders, enabled: false };
+    render(<SettingsPage controls={controls} />);
+
+    fireEvent.click(screen.getByTestId("settings-module-card-notifications"));
+    fireEvent.click(
+      within(screen.getByTestId("settings-v2-reminders-toggle")).getByRole("switch", {
+        name: "Enable reminders",
+      })
+    );
+
+    expect(
+      await screen.findByTestId("settings-v2-reminders-permission-warning")
+    ).toHaveTextContent("Notification permission denied.");
+    expect(controls.onRemindersChange).not.toHaveBeenCalled();
   });
 
   it("lets the explicit no-tracking switch turn off no-tracking without enabling analytics", () => {

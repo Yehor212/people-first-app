@@ -9,6 +9,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { decodeInviteData } from "@/lib/friendChallenge";
 import { endAuthFlow } from "@/lib/authGuard";
 import { subscribeToDeepLinks } from "@/lib/deepLinks";
+import { requestDiaryEditorOpen } from "@/lib/diaryDeepLinkIntent";
 import { getAuthUserDisplayName } from "@/lib/authUser";
 import { closeOAuthBrowser } from "@/lib/nativeOAuthBrowser";
 
@@ -257,7 +258,7 @@ export function useDeepLinkHandler(): void {
         setActiveTab("home");
         // If route is "editor", dispatch a custom event so JournalModule can open the editor
         if (data.route === "editor") {
-          window.dispatchEvent(new CustomEvent("zenflow-open-journal-editor"));
+          requestDiaryEditorOpen();
         }
       }
     });

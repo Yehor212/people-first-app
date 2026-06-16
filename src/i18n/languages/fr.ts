@@ -2564,6 +2564,7 @@ export const fr: Translations = {
   journalDiscardMessage: "Vous avez des modifications non enregistrées.",
   journalDiscard: "Abandonner",
   journalKeepWriting: "Continuer à écrire",
+  journalSaveDraftOpenSettings: "Enregistrer le brouillon et ouvrir les paramètres",
   journalSaveClose: "Enregistrer et fermer",
   journalWords: "mots",
   journalWordCountZero: "{count} mots",

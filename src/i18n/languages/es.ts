@@ -2549,6 +2549,7 @@ export const es: Translations = {
   journalDiscardMessage: "Tienes cambios sin guardar.",
   journalDiscard: "Descartar",
   journalKeepWriting: "Seguir escribiendo",
+  journalSaveDraftOpenSettings: "Guardar borrador y abrir ajustes",
   journalSaveClose: "Guardar y cerrar",
   journalWords: "palabras",
   journalWordCountZero: "{count} palabras",

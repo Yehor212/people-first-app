@@ -13,6 +13,7 @@ describe("Journal audio failure feedback", () => {
     expect(editorStateSource).toContain("announceError(message)");
     expect(editorStateSource).toContain("ts.journalAudioUnsupported");
     expect(editorStateSource).toContain("ts.journalAudioPermissionDenied");
+    expect(editorStateSource).toContain("ts.journalVoiceNotSupported");
     expect(editorStateSource).toContain("recorder.error");
     expect(editorStateSource).toContain("setShowRecordingOverlay(false)");
     expect(editorStateSource).toContain("audioError,");
@@ -23,5 +24,25 @@ describe("Journal audio failure feedback", () => {
     expect(editorSource).toContain('role="alert"');
     expect(editorSource).toContain("border-destructive/30");
     expect(editorSource).toContain("{audioError}");
+  });
+});
+
+describe("Journal panic lock privacy guard", () => {
+  it("requires native biometric success before clearing the panic lock", () => {
+    const panicLockBlock =
+      /const handlePanicUnlock = useCallback\([\s\S]*?\n {2}\}, \[[^\]]*setPanicLocked[^\]]*ts\.journalUnlockBiometric[^\]]*\]\);/.exec(editorSource)?.[0] ?? "";
+
+    expect(panicLockBlock).toContain('import("@/plugins/BiometricPlugin")');
+    expect(panicLockBlock).toContain("BiometricAuth.authenticate");
+    expect(panicLockBlock).toContain("if (result.success)");
+    expect(panicLockBlock).toContain("setPanicLocked(false)");
+
+    const panicButtonBlock =
+      /<button[\s\S]*?onClick=\{\(\) => \{\s*void handlePanicUnlock\(\);\s*\}\}[\s\S]*?journalUnlockBiometric[\s\S]*?<\/button>/.exec(
+        editorSource,
+      )?.[0] ?? "";
+
+    expect(panicButtonBlock).toContain("handlePanicUnlock");
+    expect(panicButtonBlock).not.toContain("setPanicLocked(false)");
   });
 });

@@ -15,12 +15,20 @@ import { logger } from "./logger";
 // Event name for deep link navigation
 export const DEEP_LINK_EVENT = "zenflow-deep-link";
 
+const pendingDeepLinks: DeepLinkData[] = [];
+let subscriberCount = 0;
+
 export interface DeepLinkData {
   type: "challenge" | "diary" | "unknown";
   id?: string;
   /** Sub-route for diary deep links: "mood" | "editor" */
   route?: string;
   params?: Record<string, string>;
+}
+
+function deepLinkKey(data: DeepLinkData): string {
+  const params = data.params ? JSON.stringify(Object.entries(data.params).sort()) : "";
+  return [data.type, data.id ?? "", data.route ?? "", params].join(":");
 }
 
 /**
@@ -79,6 +87,13 @@ export function parseDeepLink(url: string): DeepLinkData | null {
  */
 function dispatchDeepLinkEvent(data: DeepLinkData): void {
   logger.log("[DeepLinks] Dispatching deep link event:", data);
+  if (subscriberCount === 0) {
+    const key = deepLinkKey(data);
+    if (!pendingDeepLinks.some((pending) => deepLinkKey(pending) === key)) {
+      pendingDeepLinks.push(data);
+      if (pendingDeepLinks.length > 5) pendingDeepLinks.shift();
+    }
+  }
   window.dispatchEvent(new CustomEvent(DEEP_LINK_EVENT, { detail: data }));
 }
 
@@ -145,9 +160,13 @@ export function subscribeToDeepLinks(callback: (data: DeepLinkData) => void): ()
     callback(customEvent.detail);
   };
 
+  subscriberCount += 1;
   window.addEventListener(DEEP_LINK_EVENT, handler);
+  const replay = pendingDeepLinks.splice(0);
+  for (const data of replay) callback(data);
 
   return () => {
     window.removeEventListener(DEEP_LINK_EVENT, handler);
+    subscriberCount = Math.max(0, subscriberCount - 1);
   };
 }

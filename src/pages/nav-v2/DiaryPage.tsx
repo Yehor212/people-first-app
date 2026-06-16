@@ -166,9 +166,10 @@ export const DiaryPage = memo(function DiaryPage({
         id="main-content-v2"
         role="main"
         tabIndex={-1}
-        className="relative min-h-screen outline-none"
+        className="v2-readable-page v2-readable-page--standard relative min-h-screen outline-none"
         aria-labelledby="diary-page-heading"
         data-testid="diary-page"
+        data-v2-readable-page="diary"
       >
         <h1
           ref={h1Ref}

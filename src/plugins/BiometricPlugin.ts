@@ -1,7 +1,7 @@
 /**
  * Biometric Authentication Plugin Interface
  *
- * Provides biometric (fingerprint/face/iris) authentication on Android.
+ * Provides native biometric authentication where a platform bridge is registered.
  * Web fallback always returns unavailable.
  */
 

@@ -146,6 +146,19 @@ describe("canonical orb invariant", () => {
     expect(webgpuSource).toContain("tier: 'webgpu'");
   });
 
+  it("does not report expected WebGPU device disposal as a crash", () => {
+    const webgpuSource = readSource("src/components/state-of-mind/orbWebGpu.ts");
+    const lostHandlerStart = webgpuSource.indexOf("device.lost?.then");
+    const lostRecordErrorStart = webgpuSource.indexOf("recordError(", lostHandlerStart);
+
+    expect(webgpuSource).toContain("info?.reason === 'destroyed'");
+    expect(lostHandlerStart).toBeGreaterThan(-1);
+    expect(lostRecordErrorStart).toBeGreaterThan(-1);
+    expect(webgpuSource.indexOf("info?.reason === 'destroyed'")).toBeLessThan(
+      lostRecordErrorStart,
+    );
+  });
+
   it("blocks non-canonical CSS fallback visuals on every orb surface", () => {
     const source = readSource("src/components/state-of-mind/ValenceOrb.tsx");
 

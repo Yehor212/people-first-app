@@ -111,7 +111,10 @@ export const DiaryEmptyCanvas = memo(function DiaryEmptyCanvas({
   }, []);
 
   return (
-    <div className="relative flex flex-1 select-none flex-col items-center justify-center gap-6 overflow-hidden">
+    <div
+      className="relative flex flex-1 select-none flex-col items-center justify-center gap-6 overflow-hidden"
+      data-testid="diary-empty-canvas"
+    >
       {/* Layer 1: Time-of-day gradient */}
       <TimeOfDayGradient />
 

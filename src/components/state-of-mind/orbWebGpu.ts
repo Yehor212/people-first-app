@@ -629,6 +629,9 @@ export async function createOrbWebGPUAsync(
     let deviceLost = false;
     device.lost?.then((info) => {
       deviceLost = true;
+      if (info?.reason === 'destroyed') {
+        return;
+      }
       recordError(
         new Error(`WebGPU device lost: ${info?.reason ?? 'unknown'} ${info?.message ?? ''}`.trim()),
         { component: 'ValenceOrb', action: 'webgpu-device-lost' },

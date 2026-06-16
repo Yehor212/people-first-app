@@ -34,6 +34,20 @@ function normalizeIndexBasePathPlugin(base: string) {
   };
 }
 
+function stripPwaManifestLink(html: string): string {
+  return html.replace(/^\s*<link\s+rel=["']manifest["'][^>]*>\s*$/im, "");
+}
+
+function stripDisabledPwaManifestPlugin(pwaEnabled: boolean) {
+  return {
+    name: "zenflow-strip-disabled-pwa-manifest",
+    enforce: "post" as const,
+    transformIndexHtml(html: string) {
+      return pwaEnabled ? html : stripPwaManifestLink(html);
+    },
+  };
+}
+
 function isDeferredObservabilityPreload(dep: string): boolean {
   return dep.startsWith("assets/sentry-");
 }
@@ -266,6 +280,7 @@ export default defineConfig(({ mode }) => {
             },
           })
         : null,
+      stripDisabledPwaManifestPlugin(pwaEnabled),
       normalizeIndexBasePathPlugin(base),
     ].filter(Boolean),
 

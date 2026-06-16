@@ -41,6 +41,8 @@ Object.defineProperty(globalThis, 'sessionStorage', { value: sessionStorageMock,
 vi.stubGlobal('__APP_VERSION__', '1.0.0');
 vi.stubGlobal('__APP_BUILD_TIME__', 1000);
 
+import { logger } from '@/lib/logger';
+
 import {
   checkAppVersion,
   shouldCheckVersion,
@@ -164,6 +166,19 @@ describe('checkAppVersion', () => {
     expect(result).toBe(false);
   });
 
+  it('parses JSON content-type case-insensitively', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      headers: new Headers({ 'content-type': 'Application/VND.ZENFLOW+JSON; charset=utf-8' }),
+      json: () => Promise.resolve({ version: '2.0.0', buildTime: 2000 }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const result = await checkAppVersion();
+
+    expect(result).toBe(false);
+  });
+
   it('returns true on fetch error (network failure)', async () => {
     const fetchMock = vi.fn().mockRejectedValue(new Error('Network error'));
     vi.stubGlobal('fetch', fetchMock);
@@ -178,5 +193,23 @@ describe('checkAppVersion', () => {
 
     const result = await checkAppVersion();
     expect(result).toBe(true);
+  });
+
+  it('returns true when SPA fallback serves HTML instead of version.json', async () => {
+    const warnSpy = vi.spyOn(logger, 'warn');
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      headers: new Headers({ 'content-type': 'text/html; charset=utf-8' }),
+      text: () => Promise.resolve('<!DOCTYPE html><html><body>ZenFlow</body></html>'),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const result = await checkAppVersion();
+
+    expect(result).toBe(true);
+    expect(warnSpy).not.toHaveBeenCalledWith(
+      '[VersionCheck] Check failed, continuing anyway:',
+      expect.anything(),
+    );
   });
 });

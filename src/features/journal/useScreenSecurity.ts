@@ -1,14 +1,15 @@
 /**
  * Hook to enable/disable screenshot blocking when journal is open.
- * Uses FLAG_SECURE on Android. No-op on web.
+ * Uses FLAG_SECURE on Android. No-op on unsupported platforms.
  */
 
 import { useEffect, useState, useCallback } from 'react';
-import { isNative } from '@/lib/platform';
+import { isAndroid } from '@/lib/platform';
 import { db } from '@/storage/db';
 import { logger } from '@/lib/logger';
 
 const SETTINGS_KEY = 'journal_screenshot_block';
+const isSupported = isAndroid;
 
 export function useScreenSecurity(journalOpen: boolean) {
   const [enabled, setEnabledState] = useState(false);
@@ -20,9 +21,9 @@ export function useScreenSecurity(journalOpen: boolean) {
     }).catch(err => logger.warn('[Journal]', 'Screen security setting load failed:', err));
   }, []);
 
-  // Apply FLAG_SECURE when journal is open and setting enabled
+  // Apply FLAG_SECURE when journal is open and setting enabled.
   useEffect(() => {
-    if (!isNative || !enabled || !journalOpen) return;
+    if (!isSupported || !enabled || !journalOpen) return;
 
     let cleanup = false;
 
@@ -39,14 +40,16 @@ export function useScreenSecurity(journalOpen: boolean) {
   }, [enabled, journalOpen]);
 
   const setEnabled = useCallback(async (value: boolean) => {
-    setEnabledState(value);
-    await db.settings.put({ key: SETTINGS_KEY, value });
+    const nextValue = isSupported ? value : false;
 
-    if (isNative && !value) {
+    setEnabledState(nextValue);
+    await db.settings.put({ key: SETTINGS_KEY, value: nextValue });
+
+    if (isSupported && !nextValue) {
       const { default: ScreenSecurity } = await import('@/plugins/ScreenSecurityPlugin');
       await ScreenSecurity.disable();
     }
   }, []);
 
-  return { enabled, setEnabled, isNative };
+  return { enabled: isSupported ? enabled : false, setEnabled, isSupported };
 }

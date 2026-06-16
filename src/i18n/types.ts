@@ -2513,6 +2513,7 @@ export interface Translations {
   journalDiscardMessage: string;
   journalDiscard: string;
   journalKeepWriting: string;
+  journalSaveDraftOpenSettings: string;
   journalSaveClose: string;
   journalWords: string;
   journalWordCountZero: string;

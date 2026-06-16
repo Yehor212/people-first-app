@@ -47,7 +47,7 @@
     "desktop:store:check": "npm run assets:logos:check && node scripts/check-microsoft-store-msix-contract.cjs",
     "cap:sync": "npm run build:android && npx cap sync",
     "cap:sync:android": "npm run build:android && npx cap sync android && cross-env CAPACITOR_BUILD=true node scripts/capacitor-prune-assets.cjs",
-    "cap:sync:ios": "npm run build:ios && npx cap sync ios && node scripts/normalize-ios-spm.cjs",
+    "cap:sync:ios": "npm run build:ios && npx cap sync ios && cross-env CAPACITOR_BUILD=true node scripts/capacitor-prune-assets.cjs && node scripts/normalize-ios-spm.cjs",
     "cap:open:android": "npx cap open android",
     "typecheck": "tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json",
     "check:colors": "npx tsx scripts/check-hardcoded-colors.ts",

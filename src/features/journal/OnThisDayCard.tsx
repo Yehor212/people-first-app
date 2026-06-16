@@ -45,6 +45,7 @@ interface OnThisDayCardProps {
   entries: JournalEntry[];
   onOpenEntry: (id: string) => void;
   onDismiss: () => void;
+  privateMode?: boolean;
 }
 
 /* ── Component ── */
@@ -52,6 +53,7 @@ export const OnThisDayCard = memo(function OnThisDayCard({
   entries,
   onOpenEntry,
   onDismiss,
+  privateMode = false,
 }: OnThisDayCardProps) {
   const { t: rawT, isRTL, language } = useLanguage();
   const t = rawT as unknown as Record<string, string>;
@@ -68,6 +70,7 @@ export const OnThisDayCard = memo(function OnThisDayCard({
   const titleLabel = t.diaryOnThisDay ?? "On This Day";
   const agoLabel = years === 1 ? (t.diaryYearAgo ?? "year ago") : (t.diaryYearsAgo ?? "years ago");
   const moreCount = matches.length - 1;
+  const privateEntryLabel = t.journalHubSpacePrivate ?? "Private";
   const snippet = truncate(entry.content.replace(/<[^>]*>/g, " ").trim(), 60);
 
   const handleDismiss = () => {
@@ -134,11 +137,21 @@ export const OnThisDayCard = memo(function OnThisDayCard({
 
           {/* Entry preview */}
           <div className={cn("flex items-start gap-2 mt-2", isRTL && "flex-row-reverse")}>
-            {entry.mood && (
+            {!privateMode && entry.mood && (
               <DiaryMiniOrb mood={entry.mood} size="micro" className="mt-0.5 scale-[0.58]" />
             )}
             <div className="min-w-0">
-              {entry.title && (
+              {privateMode ? (
+                <p
+                  className={cn(
+                    "text-sm font-medium text-foreground truncate",
+                    isRTL && "text-right"
+                  )}
+                >
+                  {privateEntryLabel}
+                </p>
+              ) : null}
+              {!privateMode && entry.title && (
                 <p
                   className={cn(
                     "text-sm font-medium text-foreground truncate",
@@ -148,7 +161,7 @@ export const OnThisDayCard = memo(function OnThisDayCard({
                   {truncate(entry.title, 60)}
                 </p>
               )}
-              {snippet && (
+              {!privateMode && snippet && (
                 <p
                   className={cn(
                     "text-xs text-muted-foreground mt-0.5 line-clamp-2",

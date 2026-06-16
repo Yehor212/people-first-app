@@ -7,6 +7,8 @@ import { NAV_V2_PAGES, useNavigationV2 } from "@/hooks/useNavigationV2";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useDeviceTier } from "@/hooks/useDeviceTier";
 import { registerModalCloseCallback } from "@/lib/androidBackHandler";
+import { subscribeToDeepLinks } from "@/lib/deepLinks";
+import { requestDiaryEditorOpen } from "@/lib/diaryDeepLinkIntent";
 import { V2_SHELL_ICONS } from "@/lib/v2IconSystem";
 import { NotFoundPage } from "@/components/NotFoundPage";
 import { SidebarV2 } from "./SidebarV2";
@@ -203,6 +205,18 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
     : null;
 
   useEffect(() => scheduleNavV2RoutePreload(activePage), [activePage]);
+
+  useEffect(() => {
+    const cleanup = subscribeToDeepLinks((data) => {
+      if (data.type === "diary") {
+        setActivePage("diary", { skipTransition: true });
+        if (data.route === "editor") {
+          requestDiaryEditorOpen();
+        }
+      }
+    });
+    return cleanup;
+  }, [setActivePage]);
 
   const handleOpenDrawer = useCallback(() => {
     NAV_V2_PAGES.forEach((page) => {

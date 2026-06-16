@@ -217,9 +217,13 @@ export const OrbPage = memo(function OrbPage({
         id="main-content-v2"
         role="main"
         tabIndex={-1}
-        className={`${scopeClass} relative min-h-screen overflow-hidden outline-none`}
+        className={cn(
+          scopeClass,
+          "v2-readable-page v2-readable-page--ambient relative min-h-screen overflow-hidden outline-none",
+        )}
         aria-labelledby="orb-page-heading"
         data-testid="orb-page"
+        data-v2-readable-page="orb"
       >
         <h1 id="orb-page-heading" className="sr-only">
           {tx.somLogFeeling || tx.navV2Orb || "Log how you feel"}

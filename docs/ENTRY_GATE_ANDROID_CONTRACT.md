@@ -350,17 +350,17 @@ Retention note:
 Facts file:
 
 - `output/playwright/android-entry-20260615/facts.json`
-- Generated at: `2026-06-15T23:55:13.302Z`
+- Generated at: `2026-06-16T01:09:48.927Z`
 - Base URL: `http://127.0.0.1:4231/people-first-app/`
 - Runtime: Chromium production preview
 - SHA-256:
-  `09c93b77cdd8727fe8b093cdf4b4b5ff2ea6681594f69ece48f66f641cb40e1d`
+  `b71326d7053dbde8c3a049c2764774ef187b7bbf4a9ea03f87237ecfc8fa249c`
 
 Verification log:
 
 - `output/playwright/android-entry-20260615/verification-log-20260615.txt`
 - SHA-256:
-  `9ede0f7870d3c3512355c89017a2343f9e434e669350f7c70ad478018a55ef2d`
+  `164ecae22692d75ef6d27e9cfc3b29fe61f87fe948dcf23562a7fee84f1741c7`
 
 Screenshots:
 
@@ -377,31 +377,31 @@ Screenshots:
 Screenshot hashes:
 
 - `android-phone-language-light.png`:
-  `5e5e84261f5a3e5ea07d3e0ef1e0d797044af48db4f2a66c3c1f9be37c0b5f24`
+  `d1123e1571e694d9dce28db9d645aee573828748070fbd0ac8e15e0f2103e2c1`
 - `android-phone-language-dark.png`:
-  `5bbc131566d587d01351ac01ad5930f26556b6c318b83fb006ea9ad8adbee5fa`
+  `497222d38c4539b5901a1104a6462447373bbb1bb7fd40555736c02ed521c108`
 - `android-phone-language-ar-rtl.png`:
-  `7d2f18741d5ed133d46fffe800db39254eaae81808174d55a985b653003f8453`
+  `08bd78d89e2f6620e290a4082aeee91fd813a0d43084fda21d04394a652216b3`
 - `android-phone-language-he-rtl.png`:
-  `c099558be678b5d40e7065638470509fb3f6c5c575f4b524adb713580a6b8a33`
+  `8fb0b0d58b18572b87bb03b3e5af6068cbb0a472493de886b33026102da79f6e`
 - `android-phone-auth-light.png`:
-  `ec65a7561cbd09b4c989df9aa6dd725d438d7ed5016359950d1be97f5bbc31c5`
+  `2f4ca7e2a3c799fe1ba08855061a00e0c307f6295c5673723548ba290d2e802d`
 - `android-phone-auth-dark.png`:
-  `8c9cad4671daa42d054a86aab4a29ab6e8a030bbedc3d6d9b150a7890561a57c`
+  `7b590ab3f1cf110b94835b6c3fd2f2ef039208f9bc29da06eec88fc4712ab399`
 - `android-tablet-language-system.png`:
-  `c8ed4c9428950d89d3207fa34a25df45ededc9cff66e6fb66c4e56042702f5a0`
+  `24349df1f94a05b8ce468271f14c5b574f2bc4199d786d51ff3f3abd30481840`
 - `android-tablet-language-dark.png`:
-  `65f3f39f4ae266fa70cd9ac17741fe16b079324f5644ad384b41bd5b67487e12`
+  `f6669f01a9b0a083683a2a3848a0fd326c3b3c407f0458b6c9f2131f0a905cab`
 - `android-tablet-auth-dark.png`:
-  `6f80f109a294359d46239901c8adf151d3727811cf635fb1d45a02ea64bb0bb6`
+  `e5716d15577e2a10403fc1607d17a442650c0250aab2825b0e60e5123e6f2c8b`
 
 Native APK:
 
 - `android/app/build/outputs/apk/debug/app-debug.apk`
-- Size: 26 MB
+- Size: 25 MB
 - Last rebuilt after duplicate-artifact cleanup fix: `2026-06-15`
 - SHA-256:
-  `26b27010d6b6664fa301c407364b23662187d6470b521f0afff5a8350a0fcb2d`
+  `d9a59a7c8ff0d7f2ce1604fc029d516513c1feb38ad7ed3e7124adab5c36005e`
 
 Current facts:
 
@@ -437,10 +437,12 @@ PASS:
 - Production-only audit: `npm audit --omit=dev --audit-level=high` exited 0.
 - Android build: exit 0.
 - `npm run cap:sync:android`: exit 0 after post-sync duplicate cleanup.
-- Android native debug build: `BUILD SUCCESSFUL`, 428 actionable tasks.
+- Android native debug build: `BUILD SUCCESSFUL`, 428 actionable tasks
+  (27 executed, 401 up-to-date).
 - APK generated and hashed.
 - Duplicate native artifact search under Android resource/public/plugin folders
-  and `ios/App/App`: 0 matches for `* 2.*` after sync/build.
+  and Android generated/intermediate build folders: 0 matches for `* 2.*`
+  after sync/build.
 - Android visual/runtime matrix: 2/2 Playwright tests PASS, covering 9
   screenshots plus all-language smoke.
 
@@ -468,8 +470,9 @@ UNVERIFIED:
   returned an empty device list.
 - Android emulator runtime. `emulator -list-avds` could not run because
   `emulator` is not in `PATH`.
-- Snyk Code scan. No `snyk_code_scan` MCP tool was callable in this session;
-  `npx snyk code test ... src/components` reached Snyk but returned
+- Snyk Code scan. Local fallback
+  `npx snyk code test --severity-threshold=high src/components src/lib/authProviders.ts e2e/entry-gate-android.spec.ts`
+  reached Snyk but returned
   `403 Forbidden` because Snyk Code is not enabled for the `yehor212`
   organization.
 - Repo-wide `npm run lint` as a global PASS. It failed on unrelated generated

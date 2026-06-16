@@ -50,9 +50,10 @@ export const SettingsPageShell = forwardRef<HTMLElement, SettingsPageShellProps>
         id="main-content-v2"
         role="main"
         tabIndex={-1}
-        className="mx-auto flex min-h-[100svh] max-w-3xl flex-col gap-4 px-4 py-6 outline-none md:px-6 md:py-10"
+        className="v2-readable-page v2-readable-page--standard mx-auto flex min-h-[100svh] max-w-3xl flex-col gap-4 px-4 py-6 outline-none md:px-6 md:py-10"
         aria-labelledby={labelledBy}
         data-testid="settings-page"
+        data-v2-readable-page="settings"
         data-visual-role="settings"
         data-controls-wired={controlsWired ? "true" : "false"}
       >

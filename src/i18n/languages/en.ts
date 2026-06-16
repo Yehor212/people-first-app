@@ -2536,6 +2536,7 @@ export const en: Translations = {
   journalDiscardMessage: "You have unsaved changes.",
   journalDiscard: "Discard",
   journalKeepWriting: "Keep Writing",
+  journalSaveDraftOpenSettings: "Save Draft and Open Settings",
   journalSaveClose: "Save & Close",
   journalWords: "words",
   journalWordCountZero: "{count} words",

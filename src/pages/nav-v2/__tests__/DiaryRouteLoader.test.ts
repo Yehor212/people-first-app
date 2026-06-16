@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 const diaryPageSource = readFileSync("src/pages/nav-v2/DiaryPage.tsx", "utf8");
 const journalModuleSource = readFileSync("src/features/journal/JournalModule.tsx", "utf8");
 const journalEntryListSource = readFileSync("src/features/journal/JournalEntryList.tsx", "utf8");
+const diaryEmptyCanvasSource = readFileSync("src/features/journal/DiaryEmptyCanvas.tsx", "utf8");
 const useJournalSource = readFileSync("src/features/journal/useJournal.ts", "utf8");
 const memoryPortalSource = readFileSync("src/features/journal/MemoryPortalCanvas.tsx", "utf8");
 const indexSource = readFileSync("src/pages/Index.tsx", "utf8");
@@ -122,13 +123,12 @@ describe("V2 diary loading surface", () => {
     expect(journalModuleSource).toContain("showSpaces={false}");
     expect(journalModuleSource).toContain("showFab={false}");
     expect(journalModuleSource).toContain("JournalCompactEmptyListShell");
-    expect(journalModuleSource).toContain("JournalPageEmptyListShell");
     expect(journalModuleSource).toContain("journal.totalCount === 0 && !journal.loading");
     expect(journalModuleSource).toContain("journal.loading ? (");
-    expect(journalModuleSource).toContain("journal.totalCount === 0 && !journal.loading ? (");
-    expect(journalModuleSource).toContain('<JournalPageEmptyListShell');
+    expect(journalModuleSource).toContain("<LazyDiaryEmptyCanvas");
+    expect(diaryEmptyCanvasSource).toContain('data-testid="diary-empty-canvas"');
     expect(journalModuleSource).toMatch(
-      /data-testid="journal-detail-pane"[\s\S]*?journal\.loading \? \([\s\S]*?<JournalDeferredPanelFallback[\s\S]*?\) : journal\.totalCount === 0 && !journal\.loading \? \([\s\S]*?<JournalPageEmptyListShell/,
+      /data-testid="journal-detail-pane"[\s\S]*?journal\.loading \? \([\s\S]*?<JournalDeferredPanelFallback[\s\S]*?\) : \([\s\S]*?<LazyDiaryEmptyCanvas/,
     );
 
     expect(journalEntryListSource).toContain("showSpaces?: boolean");

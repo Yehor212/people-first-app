@@ -2496,6 +2496,7 @@ export const ja: Translations = {
   journalDiscardMessage: "未保存の変更があります。",
   journalDiscard: "破棄",
   journalKeepWriting: "書き続ける",
+  journalSaveDraftOpenSettings: "下書きを保存して設定を開く",
   journalSaveClose: "保存して閉じる",
   journalWords: "語",
   journalWordCountZero: "{count}語",

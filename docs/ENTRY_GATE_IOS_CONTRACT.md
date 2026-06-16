@@ -1,6 +1,6 @@
 # ZenFlow iOS Entry Gate Contract
 
-Last verified: 2026-06-14
+Last verified: 2026-06-15
 
 This document freezes the intended iOS/WKWebView behavior for the ZenFlow entry
 gate. It covers the first-run language screen and the following sign-in screen.
@@ -68,6 +68,14 @@ Regression tests:
 - `src/components/__tests__/LanguageSelector.test.tsx`
 - `src/components/auth-screen/__tests__/AuthScreen.providers.test.tsx`
 - `src/components/__tests__/AuthGate.test.tsx`
+- `src/lib/__tests__/localNotifications.test.ts`
+- `test/ios-info-plist.test.ts`
+- `e2e/entry-gate-ios.spec.ts`
+
+Native startup configuration:
+
+- `ios/App/App/Info.plist`
+- `src/lib/localNotifications.ts`
 
 ## Gate Flow
 
@@ -83,6 +91,31 @@ Regression tests:
 
 Do not move the language and auth checks below tutorial/onboarding checks. That
 would change first-run behavior and requires new cross-platform proof.
+
+## Native Startup Blockers
+
+These are part of the iOS entry contract because they can prevent the entry UI
+from appearing even when the React screens are visually correct.
+
+AdMob app id:
+
+- `ios/App/App/Info.plist` must declare `GADApplicationIdentifier`.
+- The value must match `ca-app-pub-XXXXXXXXXXXXXXXX~XXXXXXXXXX`.
+- The current local/simulator-safe value is Google's public iOS test app id:
+  `ca-app-pub-3940256099942544~1458002511`.
+- Do not copy the Android sample app id
+  `ca-app-pub-3940256099942544~3347511713` into iOS.
+- Regression test: `test/ios-info-plist.test.ts`.
+
+Notification permission:
+
+- Background reminder scheduling must not call
+  `LocalNotifications.requestPermissions()`.
+- The only acceptable native permission prompt trigger is an explicit user
+  action from the notification permission/settings UI.
+- The first-run language screen must not be covered by the iOS notification
+  system alert.
+- Regression test: `src/lib/__tests__/localNotifications.test.ts`.
 
 ## Element Inventory
 
@@ -124,6 +157,9 @@ Allowed visual layers:
 - Seven soft orb points from `EntryGateBackdrop`.
 - Three soft ripple layers from `EntryGateBackdrop`.
 - Three soft flow-ribbon layers from `EntryGateBackdrop`.
+- Three low-contrast caustic light fields from `EntryGateBackdrop`.
+- Four subtle current strokes from `EntryGateBackdrop`.
+- One horizon wash layer from `EntryGateBackdrop`.
 
 Forbidden without explicit approval and fresh iOS proof:
 
@@ -149,14 +185,18 @@ Contract:
 
 - Source must be `icon-source.svg` through `zenFlowBrandMarkSrc`.
 - Render size on iPhone baseline is 72px by 72px.
-- Intrinsic image size must remain at least 512px by 512px in current evidence.
+- SVG source must declare `width="512"`, `height="512"`, and
+  `viewBox="0 0 512 512"`.
+- WebKit may report SVG `naturalWidth` as the rendered CSS size; use the SVG
+  declaration plus rendered size for iOS proof.
 - The old leaf-only temporary icon must not be reintroduced.
 - The image must be eager enough for entry render: `loading="eager"` and
   `decoding="async"` are intentional.
 
 Regression symptoms:
 
-- Broken image corner, missing logo, or `naturalWidth` below 256.
+- Broken image corner, missing logo, or rendered logo below 64px by 64px.
+- SVG source missing 512 by 512 declaration or `0 0 512 512` viewBox.
 - Logo source not ending in `/people-first-app/icon-source.svg`.
 - Logo clipped by safe area, title, or top viewport edge.
 
@@ -228,6 +268,8 @@ Regression symptoms:
 - Arabic or Hebrew text forced LTR.
 - Continue arrow points the wrong direction in RTL.
 - Language buttons extend outside the viewport.
+- Any supported entry language creates iPhone horizontal overflow or a continue
+  button below the 44px touch-target floor.
 
 ### Continue Button
 
@@ -309,8 +351,11 @@ unchanged or safe:
 - Important content stays inside safe areas on iPhone and iPad.
 - No full-screen decorative element creates horizontal overflow.
 - Both entry pages use `icon-source.svg`.
+- `icon-source.svg` declares 512 by 512 and renders at least 64px by 64px in
+  iOS entry evidence.
 - Background has 0 star glyphs and 0 old flow-mark glyphs.
-- Background has 3 ripples, 7 orb points, and 3 flow ribbons in the current implementation.
+- Background has 3 ripples, 7 orb points, 3 flow ribbons, 3 caustic fields,
+  4 current strokes, and 1 horizon wash in the current implementation.
 - Theme switcher exists on both entry pages.
 - Language screen has 8 options.
 - Auth screen has the enabled social providers in configured order.
@@ -362,7 +407,7 @@ npm run build
 Focused tests:
 
 ```bash
-npm run test -- src/components/__tests__/EntryGate.safeArea.test.ts src/components/__tests__/LanguageSelector.test.tsx src/components/auth-screen/__tests__/AuthScreen.providers.test.tsx src/components/__tests__/AuthGate.test.tsx
+npm run test -- src/components/__tests__/EntryGate.safeArea.test.ts src/components/__tests__/LanguageSelector.test.tsx src/components/auth-screen/__tests__/AuthScreen.providers.test.tsx src/components/__tests__/AuthGate.test.tsx src/lib/__tests__/localNotifications.test.ts test/ios-info-plist.test.ts
 ```
 
 iOS sync and native compile:
@@ -391,18 +436,26 @@ Visual proof:
 - Cover at minimum:
   - iPhone language light, 390 by 844, DPR 3
   - iPhone language Arabic RTL, 390 by 844, DPR 3
+  - iPhone language Hebrew RTL, 390 by 844, DPR 3
   - iPhone auth light, 390 by 844, DPR 3
   - iPhone auth dark, 390 by 844, DPR 3
   - iPad language system, 768 by 1024, DPR 2
+  - iPad language dark, 768 by 1024, DPR 2
   - iPad auth light, 768 by 1024, DPR 2
+  - iPad auth dark, 768 by 1024, DPR 2
+- Also run the compact all-language iPhone WebKit smoke for `en`, `uk`, `es`,
+  `de`, `fr`, `ja`, `ar`, and `he`.
 - Capture screenshots and a JSON facts file.
 - The facts file must assert:
   - no document horizontal overflow
   - no screen horizontal overflow
   - 0 out-of-bounds audited elements
-  - logo loaded with natural size
+  - logo loaded from `icon-source.svg`
+  - logo SVG declares 512 by 512 and `viewBox="0 0 512 512"`
+  - logo rendered size is at least 64px by 64px
   - 0 stars and 0 flow marks
-  - 3 ripples, 7 orbs, and 3 flow ribbons
+  - 3 ripples, 7 orbs, 3 flow ribbons, 3 caustic fields, 4 current strokes,
+    and 1 horizon wash
   - theme switcher present
   - 8 language options on the language screen
   - auth providers visible on the auth screen
@@ -414,38 +467,160 @@ Visual proof:
 
 Evidence directory:
 
-- `output/playwright/ios-entry-single-platform-20260614-final/`
+- `output/playwright/ios-entry-20260615/`
 
 Facts file:
 
-- `output/playwright/ios-entry-single-platform-20260614-final/facts.json`
+- `output/playwright/ios-entry-20260615/facts.json`
 - SHA-256:
-  `8077d3a33f883c81c007e531e52f7e342ea7f182618886ab10010a2279dcf1a9`
+  `41b58a8563b164b0b179ccb853ec2e408be6a9878cdd60405f1f61a71ba30730`
+
+Verification log:
+
+- `output/playwright/ios-entry-20260615/verification-log-20260615.txt`
+- SHA-256:
+  `391d394b3641a1e794da04070a06985f658be215a00ba5a2c485e77fb3bdbc6d`
 
 Screenshots:
 
-- `output/playwright/ios-entry-single-platform-20260614-final/iphone-language-light.png`
-- `output/playwright/ios-entry-single-platform-20260614-final/iphone-language-ar-rtl.png`
-- `output/playwright/ios-entry-single-platform-20260614-final/iphone-auth-light.png`
-- `output/playwright/ios-entry-single-platform-20260614-final/iphone-auth-dark.png`
-- `output/playwright/ios-entry-single-platform-20260614-final/ipad-language-system.png`
-- `output/playwright/ios-entry-single-platform-20260614-final/ipad-auth-light.png`
+- `output/playwright/ios-entry-20260615/iphone-language-light.png`
+  SHA-256:
+  `9c71d5c853b94f05dd7c848078050f246d5a83373917405f0203ea56ea22a025`
+- `output/playwright/ios-entry-20260615/iphone-language-ar-rtl.png`
+  SHA-256:
+  `c8eb36a201d58046aafa21e09f5ea1a3aaba128831747933da81a89cdecfbf73`
+- `output/playwright/ios-entry-20260615/iphone-language-he-rtl.png`
+  SHA-256:
+  `e80d7a382179aff1231d846959ff5d6db4f29a35c63bde0aebababc29ca21567`
+- `output/playwright/ios-entry-20260615/iphone-auth-light.png`
+  SHA-256:
+  `1d071f22cffc9103bb1a9bb3cd1dfd1e4566d4fced6bc65c68ac64ae78a62c5e`
+- `output/playwright/ios-entry-20260615/iphone-auth-dark.png`
+  SHA-256:
+  `d7bdcf7547f95f3a160b6664007087697abc1537d90cd5d553ddf2f6d000732d`
+- `output/playwright/ios-entry-20260615/ipad-language-system.png`
+  SHA-256:
+  `38ded1bdc152822a463144758cc1d02065f33d601a66331db81e20c89921ed6b`
+- `output/playwright/ios-entry-20260615/ipad-language-dark.png`
+  SHA-256:
+  `124808e5ffef72126642a147e41ed8d344e2f26af91a4a400efab03d34182a29`
+- `output/playwright/ios-entry-20260615/ipad-auth-light.png`
+  SHA-256:
+  `29f58fed61267204e50e69b0b6a1f52a63bac300871f2d2ba7f1495bbc94f8f8`
+- `output/playwright/ios-entry-20260615/ipad-auth-dark.png`
+  SHA-256:
+  `002e8ce3d51b90d9be1711a0892b3f4b51470e58e21750eef45104e707254c14`
 
 Baseline facts:
 
-- 6 scenarios passed.
+- 9 screenshot scenarios passed in WebKit over local HTTPS.
+- The same run also passed the compact iPhone WebKit all-language smoke for
+  `en`, `uk`, `es`, `de`, `fr`, `ja`, `ar`, and `he`.
 - Document horizontal overflow: false in all scenarios.
 - Screen horizontal overflow: false in all scenarios.
 - Out-of-bounds audited elements: 0 in all scenarios.
 - Logo source: `/people-first-app/icon-source.svg`.
-- Logo natural size: 512 by 512.
-- Background: 0 stars, 0 old flow marks, 3 ripples, 7 orbs, 3 flow ribbons.
+- Logo rendered size: 72 by 72.
+- Logo SVG: `width="512"`, `height="512"`, `viewBox="0 0 512 512"`.
+- Background: 0 stars, 0 old flow marks, 3 ripples, 7 orbs, 3 flow ribbons,
+  3 caustic fields, 4 current strokes, 1 horizon wash.
 - Theme switcher: present in all scenarios.
 - Language option count: 8 on language scenarios.
 - Auth provider ids: `google`, `facebook`, `telegram` on auth scenarios.
 - Provider icon center spread: 0 on auth scenarios.
 - Telegram: `viewBox="0 0 128 128"` with `#2AABEE` and `#229ED9`.
 - Arabic RTL continue arrow: `matrix(-1, 0, 0, 1, 0, 0)`.
+- Hebrew RTL continue arrow: `matrix(-1, 0, 0, 1, 0, 0)`.
+- iPad dark coverage includes both language and auth pages.
+- Local iOS WebKit proof used HTTPS because the app CSP intentionally contains
+  `upgrade-insecure-requests`; HTTP preview makes WebKit upgrade local asset
+  URLs to HTTPS and leaves the app blank.
+- Console noise remains limited to WebKit ignoring `interactive-widget` in the
+  viewport meta and local Supabase preconnect DNS failure. No failed resource
+  requests were recorded in the 8-scenario WebKit matrix.
+
+Shared EntryGate CSS refresh on 2026-06-15:
+
+- This refresh supersedes the WebKit screenshot hashes above for the current
+  shared `EntryGate.css`, `LanguageSelector`, and `AuthScreen` compact-height
+  pass.
+- `npm run cap:sync:ios` passed first, copying the current Vite build into
+  `ios/App/App/public`.
+- HTTPS native-bundle helper:
+  `PORT=4222 node e2e/helpers/ios-diary/serve-ios-spa.mjs`
+- Command:
+  `ZENFLOW_PLAYWRIGHT_BASE_URL=https://127.0.0.1:4222/people-first-app/ npx playwright test e2e/entry-gate-ios.spec.ts --project=chromium --reporter=line --workers=1`
+- Result: 2/2 tests passed, covering 9 WebKit visual scenarios plus iPhone
+  all-language smoke.
+- Facts SHA-256:
+  `dc1fa9a3772f292ff0a9be480ba1feac89729cb384f9c55d1eb158d9a12d1862`
+- Verification log SHA-256:
+  `245bfe4d00fe7c0ca8badb94d421e89862f8a19ae7c46ce86164ff7189259649`
+- Fresh screenshot hashes:
+  `iphone-language-light=8d8c2174a7796bcbacd5d064771a58fee16b4d30c64c6e8bdaa38e0e855ff553`,
+  `iphone-language-ar-rtl=07ffdab194220a430b5439bdc112bb0a6b0c236eb3435a7040e2be992d46b570`,
+  `iphone-language-he-rtl=882e1630136da3cd94cdd04b6ae3a54f45dc73e8b4835699f728f7f68fb40ffc`,
+  `iphone-auth-light=0f2a7e5227fdfedf95b6407c1a15e2b1fdf1cff80f3034748fc7487d2268aad6`,
+  `iphone-auth-dark=ee62ad7bd9c1d14d1fa16d9724f3dd2d16d5d177a977638855a4f9d329375608`,
+  `ipad-language-system=3741e7beec025c81a7d25a13a531defcef8d641d538bff5fc3d7e2a01989ae6f`,
+  `ipad-language-dark=695585e9bd205e257ca177619911b4e63fa01103922906547f6c942a075dee62`,
+  `ipad-auth-light=89b085af0cac0f9a1f7169785b827e17859c9abd35eeb5bc80269314ba824bb2`,
+  `ipad-auth-dark=002e8ce3d51b90d9be1711a0892b3f4b51470e58e21750eef45104e707254c14`.
+- Refresh facts: horizontal overflow false, out-of-bounds audited elements 0,
+  failed network requests 0, provider icon center spread 0, Telegram viewBox
+  `0 0 128 128`, and 0 star/generic AI marks.
+- Console caveat: each WebKit scenario still records two local console errors:
+  WebKit ignores the `interactive-widget` viewport argument, and local DNS
+  cannot resolve the Supabase preconnect host. These are not layout blockers,
+  but they must not be claimed as `console=0` evidence.
+- Failure handling: running the iOS spec against plain HTTP preview produced a
+  blank WebKit page. The root cause matches the HTTPS requirement above; the
+  proof was rerun against the synced iOS bundle over HTTPS and passed.
+
+Native iPhone runtime evidence, 2026-06-15:
+
+- Red test before fix:
+  `npx vitest run --configLoader runner test/ios-info-plist.test.ts`
+  failed because `GADApplicationIdentifier` was missing.
+- Red test before fix:
+  `npx vitest run --configLoader runner src/lib/__tests__/localNotifications.test.ts`
+  failed because `scheduleLocalReminders` called
+  `LocalNotifications.requestPermissions()`.
+- Green focused tests:
+  `npx vitest run --configLoader runner src/lib/__tests__/localNotifications.test.ts test/ios-info-plist.test.ts`
+  passed: 2 files, 3 tests.
+- `npm run cap:sync:ios` passed.
+- `xcodebuild -project ios/App/App.xcodeproj -scheme App -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 17e,OS=26.5' -configuration Debug -derivedDataPath output/ios-sim-derived CODE_SIGNING_ALLOWED=NO build`
+  passed.
+- Built app plist proof:
+  `plutil -extract GADApplicationIdentifier raw output/ios-sim-derived/Build/Products/Debug-iphonesimulator/App.app/Info.plist`
+  returned `ca-app-pub-3940256099942544~1458002511`.
+- Simulator launch proof: `xcrun simctl launch ... com.zenflow.app`
+  returned PID `42059`; `ps -p 42059` showed the process still alive after
+  screenshot capture.
+- No newer `App-*.ips` crash reports appeared after launch; latest crash reports
+  remained `2026-06-15T03:24:12` and `2026-06-15T03:22:50`.
+- Native screenshot:
+  `output/native-ios-20260615/iphone-17e-native-entry-no-notification-prompt.png`
+- Native screenshot SHA-256:
+  `afa56d969e0b5d286334348b5b2d32738b01c47f92f1a874df8a4b5ba0131fed`.
+
+Current native compile evidence, 2026-06-15:
+
+- `npm run cap:sync:ios` passed after the WebKit matrix was added.
+- `xcodebuild -project ios/App/App.xcodeproj -scheme App -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -configuration Debug CODE_SIGNING_ALLOWED=NO build`
+  passed with `** BUILD SUCCEEDED **`.
+- This current compile proof does not replace a real simulator/device launch
+  screenshot; it only proves the current iOS bundle builds.
+
+Remaining native iOS visual risk:
+
+- The iPhone 17e native screenshot proves the entry screen appears without the
+  notification system alert, but it does not replace the full eight-scenario
+  Playwright visual matrix above.
+- Full-bleed status-bar/native safe-area polish is not frozen by this addendum;
+  changing global iOS `contentInset` or status-bar behavior requires a separate
+  native layout change notice and fresh iPhone plus iPad screenshots.
 
 ## Change Control
 

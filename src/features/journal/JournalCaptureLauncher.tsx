@@ -129,8 +129,8 @@ export const JournalCaptureLauncher = memo(function JournalCaptureLauncher({
         };
 
   const actionButtonClasses = inline
-    ? "relative flex min-h-[48px] items-center gap-3"
-    : cn("fixed end-5 z-[56] flex min-h-[48px] items-center gap-3 rtl:flex-row flex-row-reverse", fabBottom);
+    ? "relative flex min-h-[52px] items-center gap-3"
+    : cn("fixed end-5 z-[56] flex min-h-[52px] items-center gap-3 rtl:flex-row flex-row-reverse", fabBottom);
 
   const launcherBody = (
     <>

@@ -32,6 +32,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { registerModalCloseCallback } from "@/lib/androidBackHandler";
+import { consumePendingDiaryEditorOpen, subscribeToDiaryEditorOpen } from "@/lib/diaryDeepLinkIntent";
 import { useBackHandler } from "@/hooks/useBackHandler";
 import { useModalA11y } from "@/hooks/useModalA11y";
 import { createFocusTrap, announceSuccess, announceError } from "@/lib/a11y";
@@ -228,41 +229,6 @@ function JournalCompactEmptyListShell({
           type="button"
           onClick={onNewEntry}
           className="mt-4 inline-flex min-h-[44px] items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-[0_14px_34px_hsl(var(--primary)/0.20)] motion-safe:transition-transform active:scale-[0.98]"
-        >
-          <Plus className="h-4 w-4" aria-hidden="true" />
-          {ts.journalNewEntry || "New entry"}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function JournalPageEmptyListShell({
-  ts,
-  onNewEntry,
-}: {
-  ts: Record<string, string>;
-  onNewEntry: () => void;
-}) {
-  return (
-    <div
-      className="flex min-h-[420px] flex-1 items-center justify-center rounded-[28px] border border-border/40 bg-card/30 p-6"
-      data-testid="journal-empty-list"
-    >
-      <div className="w-full max-w-md rounded-[1.6rem] border border-border/25 bg-card/45 p-6 text-center backdrop-blur-xl">
-        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-primary/20 bg-primary/[0.10] text-primary">
-          <PenLine className="h-6 w-6" aria-hidden="true" />
-        </div>
-        <h3 className="text-base font-semibold text-foreground">
-          {ts.journalEmpty || "Your diary is empty"}
-        </h3>
-        <p className="mx-auto mt-2 max-w-[300px] text-sm leading-relaxed text-muted-foreground">
-          {ts.journalEmptyHint || "Start writing to capture your thoughts, feelings, and memories."}
-        </p>
-        <button
-          type="button"
-          onClick={onNewEntry}
-          className="mt-5 inline-flex min-h-[44px] items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground shadow-[0_14px_34px_hsl(var(--primary)/0.20)] motion-safe:transition-transform active:scale-[0.98]"
         >
           <Plus className="h-4 w-4" aria-hidden="true" />
           {ts.journalNewEntry || "New entry"}
@@ -615,6 +581,18 @@ export const JournalModule = memo(function JournalModule({
     journal.editEntry(null);
   }, [journal]);
 
+  useEffect(() => {
+    const openEditor = () => {
+      handleNewEntry();
+    };
+
+    if (consumePendingDiaryEditorOpen()) {
+      handleNewEntry();
+    }
+
+    return subscribeToDiaryEditorOpen(openEditor);
+  }, [handleNewEntry]);
+
   const handleNewEntryWithPrefill = useCallback(
     (prefill: JournalEntryPrefill) => {
       entryModeRef.current = "fab";
@@ -677,12 +655,9 @@ export const JournalModule = memo(function JournalModule({
   }, [autoCreateInitialEntry, journal, journal.loading, journal.view, onInitialEntrySuggestionConsumed]);
 
   useEffect(() => {
-    if (
-      journal.view === "list" &&
-      !initialEntrySuggestion &&
-      initialSuggestionConsumedRef.current
-    ) {
+    if (journal.view === "list" && !initialEntrySuggestion) {
       initialSuggestionRef.current = null;
+      initialSuggestionConsumedRef.current = false;
     }
   }, [journal.view, initialEntrySuggestion]);
 
@@ -694,6 +669,7 @@ export const JournalModule = memo(function JournalModule({
   const showEntrySuggestionCards = isLgScreen;
 
   const hasInitialEntrySuggestion =
+    !!initialEntrySuggestion &&
     !!initialSuggestionRef.current &&
     !initialSuggestionConsumedRef.current &&
     journal.view === "list";
@@ -1070,7 +1046,7 @@ export const JournalModule = memo(function JournalModule({
         if (disposed || !supabase) return;
 
         const { data } = supabase.auth.onAuthStateChange(async (event) => {
-          if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
+          if (event === "SIGNED_IN") {
             const pending = storageGetRaw(SK.JOURNAL_PASSWORD_RESET);
             if (pending && Date.now() - Number(pending) < 600_000) {
               await security.removePassword();
@@ -1428,8 +1404,10 @@ export const JournalModule = memo(function JournalModule({
 
                 <div
                   className={cn(
-                    "min-w-0 overflow-hidden border-e border-border/30 bg-card motion-safe:transition-[width,opacity] motion-safe:duration-300",
-                    isExpanded ? "w-[360px] opacity-100" : "w-0 border-e-0 opacity-0",
+                    "min-w-0 flex-none overflow-hidden border-e border-border/30 bg-card motion-safe:transition-[width,max-width,flex-basis,opacity] motion-safe:duration-300",
+                    isExpanded
+                      ? "w-[360px] max-w-[360px] basis-[360px] opacity-100"
+                      : "w-0 max-w-0 basis-0 border-e-0 opacity-0 pointer-events-none",
                     showJournalLightAtmosphere && "journal-light-panel"
                   )}
                   aria-hidden={isSidebarCollapsed}
@@ -1551,6 +1529,7 @@ export const JournalModule = memo(function JournalModule({
                             onDismiss={() => {
                               /* handled internally */
                             }}
+                            privateMode={privateMode}
                           />
                         ) : null}
                         {journal.totalCount === 0 && !journal.loading ? (
@@ -1715,13 +1694,8 @@ export const JournalModule = memo(function JournalModule({
 
                         {journal.loading ? (
                           <JournalDeferredPanelFallback label={t.loading || "Loading..."} />
-                        ) : journal.totalCount === 0 && !journal.loading ? (
-                          <JournalPageEmptyListShell
-                            ts={ts}
-                            onNewEntry={handleNewEntry}
-                          />
                         ) : (
-                          <div className="relative min-h-[420px] flex-1 overflow-hidden rounded-[28px] border border-border/40 bg-card/30">
+                          <div className="relative flex min-h-[420px] flex-1 overflow-hidden rounded-[28px] border border-border/40 bg-card/30">
                             <Suspense fallback={null}>
                               <LazyDiaryEmptyCanvas
                                 onNewEntry={handleNewEntry}
@@ -2023,6 +1997,7 @@ export const JournalModule = memo(function JournalModule({
                                 onDismiss={() => {
                                   /* handled internally */
                                 }}
+                                privateMode={privateMode}
                               />
                             ) : null}
 
@@ -2126,7 +2101,7 @@ export const JournalModule = memo(function JournalModule({
                               </Suspense>
 
                               {/* Screenshot blocking (native only) */}
-                              {screenSecurity.isNative && (
+                              {screenSecurity.isSupported && (
                                 <div className="mt-4 pt-4 border-t border-border/20">
                                   <div className="flex items-center justify-between min-h-[44px]">
                                     <div>

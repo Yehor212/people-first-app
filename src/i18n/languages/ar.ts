@@ -2409,6 +2409,7 @@ const arabicOverrides: Partial<Translations> = {
   journalDiscardMessage: "لديك تغييرات غير محفوظة.",
   journalDiscard: "تجاهل",
   journalKeepWriting: "متابعة الكتابة",
+  journalSaveDraftOpenSettings: "حفظ المسودة وفتح الإعدادات",
   journalSaveClose: "حفظ وإغلاق",
   journalWords: "كلمات",
   journalWordCountZero: "{count} كلمات",

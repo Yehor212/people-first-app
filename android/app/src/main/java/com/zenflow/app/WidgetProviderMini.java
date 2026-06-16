@@ -52,6 +52,7 @@ public class WidgetProviderMini extends AppWidgetProvider {
 
         // Deep link: tap widget root → open diary/mood
         Intent moodIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("zenflow://diary/mood"));
+        moodIntent.setPackage(context.getPackageName());
         moodIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         PendingIntent moodPending = PendingIntent.getActivity(
             context,
@@ -63,6 +64,7 @@ public class WidgetProviderMini extends AppWidgetProvider {
 
         // Deep link: tap write button → open diary/editor
         Intent editorIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("zenflow://diary/editor"));
+        editorIntent.setPackage(context.getPackageName());
         editorIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         PendingIntent editorPending = PendingIntent.getActivity(
             context,

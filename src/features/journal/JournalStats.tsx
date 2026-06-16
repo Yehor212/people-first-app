@@ -724,7 +724,7 @@ export const JournalStats = memo(function JournalStats({ entries, onBack }: Jour
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => setPixelYear((y) => y - 1)}
-                    className="p-1.5 rounded-lg hover:bg-muted/50 min-w-[32px] min-h-[32px] flex items-center justify-center"
+                    className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg p-2 hover:bg-muted/50"
                     aria-label={ts.previous || "Previous"}
                   >
                     <ChevronLeft className="w-3.5 h-3.5 text-muted-foreground rtl:scale-x-[-1]" />
@@ -735,7 +735,7 @@ export const JournalStats = memo(function JournalStats({ entries, onBack }: Jour
                   <button
                     onClick={() => setPixelYear((y) => Math.min(y + 1, currentYear))}
                     disabled={pixelYear >= currentYear}
-                    className="p-1.5 rounded-lg hover:bg-muted/50 disabled:opacity-50 min-w-[32px] min-h-[32px] flex items-center justify-center"
+                    className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg p-2 hover:bg-muted/50 disabled:opacity-50"
                     aria-label={ts.next || "Next"}
                   >
                     <ChevronRight className="w-3.5 h-3.5 text-muted-foreground rtl:scale-x-[-1]" />

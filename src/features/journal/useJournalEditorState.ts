@@ -22,7 +22,13 @@ import type {
   PaperTexture,
 } from "./types";
 import type { MoodType } from "@/types";
-import { MAX_STICKERS_PER_ENTRY, MAX_AUDIO_PER_ENTRY, countWordsHtml, PAPER_COLORS } from "./types";
+import {
+  JOURNAL_DRAFT_ENTRY_ID,
+  MAX_STICKERS_PER_ENTRY,
+  MAX_AUDIO_PER_ENTRY,
+  countWordsHtml,
+  PAPER_COLORS,
+} from "./types";
 import { useJournalVoice } from "./useJournalVoice";
 import { useAudioRecorder } from "./useAudioRecorder";
 import { logger } from "@/lib/logger";
@@ -345,7 +351,7 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
   const [promptSeed, setPromptSeed] = useState(0);
 
   const paperColors = PAPER_COLORS[paperColor];
-  const entryId = entry?.id || "__draft__";
+  const entryId = entry?.id || JOURNAL_DRAFT_ENTRY_ID;
 
   // === Panic gesture ===
   const handlePanic = useCallback(() => setPanicLocked(true), []);
@@ -1078,11 +1084,18 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
       voice.stop();
     } else {
       if (!voice.isSupported) {
+        const message =
+          ts.journalVoiceNotSupported ||
+          voice.error ||
+          "Speech recognition is not supported in this browser.";
+        setAudioError(message);
+        announceError(message);
         return;
       }
+      setAudioError(null);
       voice.start();
     }
-  }, [voice]);
+  }, [voice, ts]);
 
   const handleStartRecording = useCallback(async () => {
     if (!recorder.isSupported) {

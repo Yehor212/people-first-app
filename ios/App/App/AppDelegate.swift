@@ -5,6 +5,7 @@ import Capacitor
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
     var window: UIWindow?
+    private var privacyShieldView: UIView?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
@@ -12,8 +13,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func applicationWillResignActive(_ application: UIApplication) {
-        // Sent when the application is about to move from active to inactive state. This can occur for certain types of temporary interruptions (such as an incoming phone call or SMS message) or when the user quits the application and it begins the transition to the background state.
-        // Use this method to pause ongoing tasks, disable timers, and invalidate graphics rendering callbacks. Games should use this method to pause the game.
+        showPrivacyShield()
     }
 
     func applicationDidEnterBackground(_ application: UIApplication) {
@@ -22,15 +22,45 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func applicationWillEnterForeground(_ application: UIApplication) {
-        // Called as part of the transition from the background to the active state; here you can undo many of the changes made on entering the background.
+        hidePrivacyShield()
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
-        // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
+        hidePrivacyShield()
     }
 
     func applicationWillTerminate(_ application: UIApplication) {
         // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
+    }
+
+    private func currentWindow() -> UIWindow? {
+        if let window = self.window {
+            return window
+        }
+
+        return UIApplication.shared.connectedScenes
+            .compactMap { scene in
+                (scene as? UIWindowScene)?.windows.first { $0.isKeyWindow }
+            }
+            .first
+    }
+
+    private func showPrivacyShield() {
+        guard privacyShieldView == nil, let window = currentWindow() else {
+            return
+        }
+
+        let shield = UIVisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterialDark))
+        shield.frame = window.bounds
+        shield.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        shield.isUserInteractionEnabled = false
+        window.addSubview(shield)
+        privacyShieldView = shield
+    }
+
+    private func hidePrivacyShield() {
+        privacyShieldView?.removeFromSuperview()
+        privacyShieldView = nil
     }
 
     func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {

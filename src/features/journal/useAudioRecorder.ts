@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { MAX_AUDIO_DURATION_SEC } from './types';
 import { logger } from '@/lib/logger';
+import { isNative } from '@/lib/platform';
 
 function blobToBase64(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -42,6 +43,23 @@ export function useAudioRecorder() {
       return () => clearTimeout(timer);
     }
   }, [error]);
+
+  const stopActiveRecording = useCallback(() => {
+    const recorder = mediaRecorderRef.current;
+    if (recorder?.state === 'recording') {
+      recorder.stop();
+    }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+
+    setIsRecording(false);
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+  }, []);
 
   const start = useCallback(async () => {
     setError(null);
@@ -122,15 +140,45 @@ export function useAudioRecorder() {
   }, []);
 
   const stop = useCallback(() => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-      mediaRecorderRef.current.stop();
-    }
-    setIsRecording(false);
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-  }, []);
+    stopActiveRecording();
+  }, [stopActiveRecording]);
+
+  useEffect(() => {
+    const stopOnHidden = () => {
+      if (document.hidden) stopActiveRecording();
+    };
+
+    document.addEventListener('visibilitychange', stopOnHidden);
+    window.addEventListener('pagehide', stopActiveRecording);
+
+    return () => {
+      document.removeEventListener('visibilitychange', stopOnHidden);
+      window.removeEventListener('pagehide', stopActiveRecording);
+    };
+  }, [stopActiveRecording]);
+
+  useEffect(() => {
+    if (!isNative) return undefined;
+
+    let cancelled = false;
+    let removePause: (() => void) | null = null;
+
+    void import('@capacitor/app')
+      .then(async ({ App }) => {
+        const listener = await App.addListener('pause', stopActiveRecording);
+        if (cancelled) {
+          void listener.remove();
+        } else {
+          removePause = () => { void listener.remove(); };
+        }
+      })
+      .catch((err) => logger.warn('[useAudioRecorder] Native pause listener unavailable:', err));
+
+    return () => {
+      cancelled = true;
+      removePause?.();
+    };
+  }, [stopActiveRecording]);
 
   const reset = useCallback(() => {
     setAudioData(null);

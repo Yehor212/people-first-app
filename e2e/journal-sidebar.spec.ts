@@ -22,7 +22,7 @@ test.describe("Diary desktop shell recovery", () => {
     });
     await expect(page.getByTestId("sidebar-v2")).toBeVisible({ timeout: 20_000 });
     await page.getByTestId("sidebar-v2").getByRole("button", { name: /^Diary$/ }).click();
-    await expect(page.getByTestId("diary-page")).toBeVisible();
+    await expect(page.getByTestId("diary-page")).toBeVisible({ timeout: 30_000 });
     await expect(page.getByText("Loading...")).toHaveCount(0, { timeout: 30_000 });
     await expect(page.getByTestId("journal-sidebar-rail")).toBeVisible({ timeout: 30_000 });
     await expect(page.getByTestId("journal-sidebar-wide")).toBeVisible({ timeout: 30_000 });
@@ -57,6 +57,24 @@ test.describe("Diary desktop shell recovery", () => {
       await sidebarWide.evaluate((node) => Math.round(node.getBoundingClientRect().width))
     )).toBeGreaterThan(320);
     await expect(disclosure).toHaveAttribute("aria-expanded", "true");
+  });
+
+  test("empty desktop detail uses the ambient canvas instead of duplicating the list card", async ({ page }) => {
+    const detailPane = page.getByTestId("journal-detail-pane");
+
+    await expect(page.getByTestId("journal-compact-empty-list")).toBeVisible();
+    await expect(detailPane.getByTestId("diary-empty-canvas")).toBeVisible({
+      timeout: 30_000,
+    });
+    await expect(detailPane.getByTestId("journal-empty-list")).toHaveCount(0);
+
+    const canvasHeight = await detailPane
+      .getByTestId("diary-empty-canvas")
+      .evaluate((node) => Math.round(node.getBoundingClientRect().height));
+    const detailHeight = await detailPane.evaluate((node) =>
+      Math.round(node.getBoundingClientRect().height),
+    );
+    expect(canvasHeight).toBeGreaterThan(detailHeight * 0.5);
   });
 
   test("settings render in one desktop detail surface and preserve dirty draft", async ({ page }) => {

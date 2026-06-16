@@ -4,6 +4,7 @@ import { createElement } from "react";
 
 import {
   ORB_TRANSITION_SETTINGS,
+  ORB_SHADER_TIME_WRAP_SECONDS,
   ValenceOrb,
   WEBGL_FORCED_FIRST_FRAME_TIMEOUT_MS,
   WEBGL_VISIBILITY_RETRY_INTERVAL_MS,
@@ -13,7 +14,9 @@ import {
   resolveFrameTransitionProfile,
   resolveOrbFrameDeltaSeconds,
   resolveOrbFrameInterval,
+  resolveOrbShaderTime,
   resolveOrbTransitionSettings,
+  resolveOrbWrappedTimeDelta,
   resetOrbRuntimeSnapshotsForTests,
   shouldApplyWorkerWebGLUpgrade,
   shouldDropLateVisibleWebGLUpgrade,
@@ -421,6 +424,75 @@ describe("ValenceOrb motion profile", () => {
     expect(resolveOrbFrameDeltaSeconds(1000, 1034)).toBeCloseTo(0.034);
     expect(resolveOrbFrameDeltaSeconds(1000, 1100)).toBe(0.05);
     expect(resolveOrbFrameDeltaSeconds(1000, 20_000)).toBe(0);
+  });
+
+  it("keeps long-running shader time bounded without changing frame cadence", () => {
+    const frameSeconds = 1 / 60;
+    const beforeWrap = ORB_SHADER_TIME_WRAP_SECONDS - frameSeconds / 2;
+    const afterWrap = resolveOrbShaderTime(beforeWrap, frameSeconds, 1);
+
+    expect(afterWrap).toBeGreaterThanOrEqual(0);
+    expect(afterWrap).toBeLessThan(ORB_SHADER_TIME_WRAP_SECONDS);
+    expect(resolveOrbWrappedTimeDelta(beforeWrap, afterWrap)).toBeCloseTo(frameSeconds, 8);
+
+    const longSessionTime = resolveOrbShaderTime(
+      ORB_SHADER_TIME_WRAP_SECONDS * 48,
+      frameSeconds,
+      1,
+    );
+
+    expect(longSessionTime).toBeGreaterThanOrEqual(0);
+    expect(longSessionTime).toBeLessThan(ORB_SHADER_TIME_WRAP_SECONDS);
+  });
+
+  it("keeps canonical rotation phase continuous when shader time wraps", () => {
+    const tau = Math.PI * 2;
+    const frameSeconds = 1 / 60;
+    const beforeWrap = ORB_SHADER_TIME_WRAP_SECONDS - frameSeconds / 2;
+    const afterWrap = resolveOrbShaderTime(beforeWrap, frameSeconds, 1);
+    const canonicalValences = [-1, -0.5, 0, 0.25, 0.5, 1];
+    const positiveAngleDelta = (from: number, to: number) => {
+      const delta = (to - from) % tau;
+      return delta < 0 ? delta + tau : delta;
+    };
+
+    for (const valence of canonicalValences) {
+      const rotationSpeed = 0.055 + (0.015 - 0.055) * ((valence + 1) * 0.5);
+      const actualStep = positiveAngleDelta(beforeWrap * rotationSpeed, afterWrap * rotationSpeed);
+
+      expect(actualStep).toBeCloseTo(frameSeconds * rotationSpeed, 6);
+    }
+  });
+
+  it("passes stable shader time through the Canvas renderer during an extended session", async () => {
+    vi.useFakeTimers();
+    stubVisibleOrbRect();
+    const { flushFrameAt } = installQueuedRaf();
+
+    render(
+      createElement(ValenceOrb, {
+        valence: 0.25,
+        renderer: "canvas",
+        animationSpeed: 1,
+      }),
+    );
+
+    const frameMs = 50;
+    const simulatedSeconds = 12 * 60 + 2;
+    const frameCount = Math.ceil(simulatedSeconds / (frameMs / 1000));
+
+    await act(async () => {
+      flushFrameAt(1000);
+      for (let i = 1; i <= frameCount; i += 1) {
+        flushFrameAt(1000 + i * frameMs);
+      }
+      await Promise.resolve();
+    });
+
+    const latestOrbTime = vi.mocked(drawOrbScene).mock.calls.at(-1)?.[1].time ?? 0;
+
+    expect(latestOrbTime).toBeGreaterThan(12 * 60);
+    expect(latestOrbTime).toBeLessThan(ORB_SHADER_TIME_WRAP_SECONDS);
   });
 
   it("keeps canonical shader time cadence stable before idle, during idle, and after interaction", async () => {

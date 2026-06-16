@@ -119,7 +119,7 @@ export function JournalPhotoPicker({
           <div className="w-10 h-1 rounded-full bg-muted-foreground/20" />
         </div>
 
-        <div className="p-4 pt-2">
+        <div className="px-4 pb-[calc(max(1rem,env(safe-area-inset-bottom))+0.75rem)] pt-2">
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
             <span className="text-sm font-semibold text-foreground">

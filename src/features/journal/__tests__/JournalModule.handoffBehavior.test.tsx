@@ -103,6 +103,10 @@ vi.mock("@/lib/a11y", () => ({
 
 vi.mock("@/lib/animationUtils", () => ({
   shouldAnimate: () => false,
+  zenMotion: {
+    gentle: { duration: 0 },
+    snappy: { duration: 0 },
+  },
 }));
 
 vi.mock("@/lib/haptics", () => ({
@@ -364,5 +368,41 @@ describe("JournalModule orb handoff behavior", () => {
     await waitFor(() => {
       expect(screen.queryByTestId("diary-entry-suggestion")).not.toBeInTheDocument();
     });
+  });
+
+  it("clears an unconsumed orb suggestion when the parent clears the handoff", async () => {
+    const onConsumed = vi.fn();
+
+    const { rerender } = render(
+      <JournalModule
+        startOpen
+        disableCardShell
+        hideCloseButton
+        presentation="page"
+        initialEntrySuggestion={initialSuggestion}
+        onInitialEntrySuggestionConsumed={onConsumed}
+      />,
+    );
+
+    expect(await screen.findByTestId("diary-entry-suggestion")).toHaveTextContent(
+      "A steady moment worth keeping.",
+    );
+
+    rerender(
+      <JournalModule
+        startOpen
+        disableCardShell
+        hideCloseButton
+        presentation="page"
+        initialEntrySuggestion={null}
+        onInitialEntrySuggestionConsumed={onConsumed}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("diary-entry-suggestion")).not.toBeInTheDocument();
+    });
+    expect(storageMocks.saveEntry).not.toHaveBeenCalled();
+    expect(onConsumed).not.toHaveBeenCalled();
   });
 });
