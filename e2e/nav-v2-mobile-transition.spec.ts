@@ -351,6 +351,9 @@ test.describe("V2 mobile web route transitions", () => {
     await page.getByTestId("drawer-v2-destination-habits").click({
       timeout: 5_000,
     });
+    await expect(page.getByTestId("nav-v2-route-pending")).toContainText("Habits", {
+      timeout: 750,
+    });
 
     await expect(page.getByTestId("nav-v2-orchestrator")).toHaveAttribute(
       "data-active-page",
@@ -487,6 +490,10 @@ test.describe("V2 mobile web route transitions", () => {
 
       const startedAt = await page.evaluate(() => performance.now());
       await page.getByTestId(destination.destinationTestId).click({ timeout: 5_000 });
+      await expect(page.getByTestId("nav-v2-route-pending")).toContainText(
+        destination.activePage === "diary" ? "Diary" : "Settings",
+        { timeout: 750 },
+      );
 
       await expect(page.getByTestId("nav-v2-orchestrator")).toHaveAttribute(
         "data-active-page",

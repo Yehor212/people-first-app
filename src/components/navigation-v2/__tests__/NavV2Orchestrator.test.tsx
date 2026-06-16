@@ -166,16 +166,22 @@ describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
     expect(trigger.className).not.toContain("md:hidden");
   });
 
-  it("skips full-page morph when a phone-width browser uses the compact web rail", () => {
+  it("skips full-page morph when a phone-width browser uses the compact web rail", async () => {
     window.history.replaceState({}, "", "/?nav=v2&dev=true");
 
     render(<NavV2Orchestrator />);
 
     fireEvent.click(screen.getByRole("button", { name: "Habits" }));
 
-    expect(screen.getByTestId("nav-v2-orchestrator")).toHaveAttribute(
-      "data-active-page",
-      "habits",
+    expect(screen.getByTestId("nav-v2-route-pending")).toHaveTextContent("Habits");
+    await waitFor(() =>
+      expect(screen.getByTestId("nav-v2-orchestrator")).toHaveAttribute(
+        "data-active-page",
+        "habits",
+      )
+    );
+    await waitFor(() =>
+      expect(screen.queryByTestId("nav-v2-route-pending")).not.toBeInTheDocument()
     );
     expect(morph).not.toHaveBeenCalled();
   });
@@ -190,6 +196,7 @@ describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
       "data-active-page",
       "orb",
     );
+    expect(screen.getByTestId("nav-v2-route-pending")).toHaveTextContent("Habits");
     expect(morph).not.toHaveBeenCalled();
 
     await waitFor(() =>
@@ -201,6 +208,9 @@ describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
     expect(screen.getByTestId("nav-v2-orchestrator")).toHaveAttribute(
       "data-active-page",
       "habits",
+    );
+    await waitFor(() =>
+      expect(screen.queryByTestId("nav-v2-route-pending")).not.toBeInTheDocument()
     );
     expect(morph).not.toHaveBeenCalled();
   });

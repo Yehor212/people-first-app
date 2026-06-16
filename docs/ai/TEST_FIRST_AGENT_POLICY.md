@@ -49,7 +49,7 @@ Do this for:
 - Business logic, dates, sync, persistence, auth, security, and migrations: unit or integration test first.
 - UI state, overlays, accessibility, storage gates, and component contracts: Testing Library or static contract test first.
 - Navigation, runtime hangs, route transitions, mobile WebView behavior, and critical journeys: Playwright or browser smoke test first.
-- Performance or "feels frozen" bugs: reproduce with browser timing, long-task, trace, or route-visible evidence, then add the closest regression test that would have caught it.
+- Performance or "feels frozen" bugs: reproduce with browser timing, long-task, trace, or route-visible evidence, then add the closest regression test that would have caught it. For route or tab changes, the first failing check should cover immediate user-visible feedback, not only eventual destination visibility.
 - Visual-only redesigns: capture a before screenshot or existing visual baseline first, then update visual/a11y evidence after the change.
 
 ## E2E Productivity Rules
@@ -86,6 +86,7 @@ Use the test level that fails closest to the user-visible risk:
 - Testing Library guiding principle: tests should resemble how users use the software. Source: https://testing-library.com/docs/guiding-principles/
 - Playwright best practices: test user-visible behavior, isolate tests, and use resilient locators and web-first assertions. Source: https://playwright.dev/docs/best-practices
 - Web responsiveness bugs should be investigated through interaction delay, slow-interaction, and long-task evidence. Source: https://web.dev/articles/optimize-inp
+- React route or tab changes that may suspend or render heavy content should keep urgent feedback visible while non-urgent UI work runs. Source: https://react.dev/reference/react/useTransition
 - Test size should match risk: small tests for pure logic, medium integration tests for services, large tests for full user journeys. Source: https://testing.googleblog.com/2010/12/test-sizes.html
 
 ## Completion Checklist

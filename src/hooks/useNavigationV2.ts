@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { morph } from "@/lib/motion/morph";
 import { storageGetRaw, storageSetRaw } from "@/lib/safeJson";
 import { SK } from "@/lib/storageKeys";
@@ -39,6 +39,15 @@ const PAGE_TO_PATH: Record<NavV2Page, string> = {
 interface RouteSnapshot {
   page: NavV2Page;
   unknownPath: string | null;
+}
+
+const ROUTE_PENDING_MIN_VISIBLE_MS = 320;
+
+function nowMs(): number {
+  if (typeof window !== "undefined" && window.performance?.now) {
+    return window.performance.now();
+  }
+  return Date.now();
 }
 
 function scheduleAfterNextPaint(callback: () => void): () => void {
@@ -108,6 +117,8 @@ export interface UseNavigationV2Return {
   unknownPath: string | null;
   /** Wrapped page change: writes URL, persists to localStorage, runs via morph(). */
   setActivePage: (page: NavV2Page, options?: { skipTransition?: boolean }) => void;
+  /** Destination being prepared after a user navigation tap; null once the new page paints. */
+  routePendingPage: NavV2Page | null;
   /** Desktop sidebar rail mode (collapsed = 64-80px, expanded = 240-280px). */
   sidebarCollapsed: boolean;
   toggleSidebar: () => void;
@@ -136,6 +147,9 @@ export function useNavigationV2(): UseNavigationV2Return {
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
   const [drawerOpen, setDrawerOpen] = useState<boolean>(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState<boolean>(false);
+  const [routePendingPage, setRoutePendingPage] = useState<NavV2Page | null>(null);
+  const routePendingStartedAtRef = useRef(0);
+  const [, startRouteTransition] = useTransition();
 
   // Ref avoids stale closures inside the popstate listener
   const activePageRef = useRef(activePage);
@@ -154,6 +168,24 @@ export function useNavigationV2(): UseNavigationV2Return {
     if (typeof window === "undefined") return;
     storageSetRaw(STORAGE_KEY, activePage);
   }, [activePage]);
+
+  useEffect(() => {
+    if (routePendingPage !== activePage) return undefined;
+
+    let cancelAfterPaint: (() => void) | null = null;
+    const elapsed = nowMs() - routePendingStartedAtRef.current;
+    const remaining = Math.max(0, ROUTE_PENDING_MIN_VISIBLE_MS - elapsed);
+    const timerId = globalThis.setTimeout(() => {
+      cancelAfterPaint = scheduleAfterNextPaint(() => {
+        setRoutePendingPage((pending) => (pending === activePage ? null : pending));
+      });
+    }, remaining);
+
+    return () => {
+      globalThis.clearTimeout(timerId);
+      cancelAfterPaint?.();
+    };
+  }, [activePage, routePendingPage]);
 
   // Browser back/forward -> derive page from URL
   useEffect(() => {
@@ -179,44 +211,61 @@ export function useNavigationV2(): UseNavigationV2Return {
     deferredRouteCancelRef.current?.();
     deferredRouteCancelRef.current = null;
 
-    // Close drawer on navigate so mobile users don't see stale overlay
+    // Close drawer on navigate so mobile users don't see stale overlay.
     const wasDrawerOpen = drawerOpen;
     setDrawerOpen(false);
 
-    const run = () => {
-      setActivePageState(page);
-      setUnknownPath(null);
-      if (typeof window !== "undefined") {
-        const base = (import.meta.env?.BASE_URL || "/").replace(/\/$/, "");
-        const path = PAGE_TO_PATH[page];
-        // Preserve ?nav=v2 (and other) query params across navigation.
-        // Prepend Vite base so GH Pages deploys keep /people-first-app/ prefix.
-        const newUrl = base + path + window.location.search + window.location.hash;
-        try {
-          window.history.pushState({ navV2Page: page }, "", newUrl);
-        } catch {
-          // Some environments block history (sandbox iframes) — state still moves.
+    if (page === activePageRef.current && !unknownPath) {
+      routePendingStartedAtRef.current = 0;
+      setRoutePendingPage(null);
+      return;
+    }
+
+    routePendingStartedAtRef.current = nowMs();
+    setRoutePendingPage(page);
+
+    const run = (deferRouteWork: boolean) => {
+      const updateRoute = () => {
+        setActivePageState(page);
+        setUnknownPath(null);
+        if (typeof window !== "undefined") {
+          const base = (import.meta.env?.BASE_URL || "/").replace(/\/$/, "");
+          const path = PAGE_TO_PATH[page];
+          // Preserve ?nav=v2 (and other) query params across navigation.
+          // Prepend Vite base so GH Pages deploys keep /people-first-app/ prefix.
+          const newUrl = base + path + window.location.search + window.location.hash;
+          try {
+            window.history.pushState({ navV2Page: page }, "", newUrl);
+          } catch {
+            // Some environments block history (sandbox iframes) — state still moves.
+          }
         }
+      };
+
+      if (deferRouteWork) {
+        startRouteTransition(updateRoute);
+        return;
       }
+      updateRoute();
     };
 
-    // Phone drawer navigation should be instant; full-page View Transitions can
-    // make mobile browsers wait on expensive snapshots before acknowledging tap.
+    // Phone drawer navigation should acknowledge the tap first, then schedule
+    // the route render as non-urgent work so low-end mobile web does not feel frozen.
     if (options.skipTransition) {
       if (wasDrawerOpen) {
         deferredRouteCancelRef.current = scheduleAfterNextPaint(() => {
           deferredRouteCancelRef.current = null;
-          run();
+          run(true);
         });
         return;
       }
-      run();
+      run(true);
       return;
     }
 
     // morph() handles reduced-motion + VT-API-missing fallback internally.
-    void morph(`page-${page}`, run);
-  }, [drawerOpen]);
+    void morph(`page-${page}`, () => run(false));
+  }, [drawerOpen, startRouteTransition, unknownPath]);
 
   const toggleSidebar = useCallback(() => setSidebarCollapsed((s) => !s), []);
   const openDrawer = useCallback(() => setDrawerOpen(true), []);
@@ -239,6 +288,7 @@ export function useNavigationV2(): UseNavigationV2Return {
     activePage,
     unknownPath,
     setActivePage,
+    routePendingPage,
     sidebarCollapsed,
     toggleSidebar,
     drawerOpen,
