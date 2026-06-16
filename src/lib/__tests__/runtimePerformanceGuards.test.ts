@@ -92,6 +92,8 @@ describe("runtime performance guards", () => {
     expect(source).toContain("rel=[\"']manifest[\"']");
     expect(source).toContain("removed native manifest link from index.html");
     expect(source).toContain("stripNativeManifestLink();");
+    expect(source).toContain("pwa-192.png is KEPT");
+    expect(source).not.toContain('"pwa-192.png",');
   });
 
   it("cleans duplicate native artifacts again after Android Capacitor sync", () => {
@@ -101,18 +103,46 @@ describe("runtime performance guards", () => {
     expect(scripts["cap:sync:android"]).toContain(
       "cross-env CAPACITOR_BUILD=true node scripts/capacitor-prune-assets.cjs"
     );
+    expect(scripts["cap:sync:android"]).toContain("node scripts/normalize-android-config.cjs");
+    expect(scripts["cap:sync:android"]).toMatch(
+      /npx cap sync android && cross-env CAPACITOR_BUILD=true node scripts\/capacitor-prune-assets\.cjs && node scripts\/normalize-android-config\.cjs/
+    );
   });
 
-  it("cleans duplicate native artifacts again after iOS Capacitor sync", () => {
+  it("applies native cleanup and platform config normalization after all-platform Capacitor sync", () => {
+    const scripts = JSON.parse(readSource("package.json")).scripts as Record<string, string>;
+
+    expect(scripts["cap:sync"]).toContain("npx cap sync &&");
+    expect(scripts["cap:sync"]).toContain(
+      "cross-env CAPACITOR_BUILD=true node scripts/capacitor-prune-assets.cjs"
+    );
+    expect(scripts["cap:sync"]).toContain("node scripts/normalize-android-config.cjs");
+    expect(scripts["cap:sync"]).toContain("node scripts/normalize-ios-config.cjs");
+    expect(scripts["cap:sync"]).toContain("node scripts/normalize-ios-spm.cjs");
+    expect(scripts["cap:sync"]).toMatch(
+      /npx cap sync && cross-env CAPACITOR_BUILD=true node scripts\/capacitor-prune-assets\.cjs && node scripts\/normalize-android-config\.cjs && node scripts\/normalize-ios-config\.cjs && node scripts\/normalize-ios-spm\.cjs/
+    );
+  });
+
+  it("cleans duplicate native artifacts and normalizes iOS config after Capacitor sync", () => {
     const scripts = JSON.parse(readSource("package.json")).scripts as Record<string, string>;
 
     expect(scripts["cap:sync:ios"]).toContain("npx cap sync ios &&");
     expect(scripts["cap:sync:ios"]).toContain(
       "cross-env CAPACITOR_BUILD=true node scripts/capacitor-prune-assets.cjs"
     );
+    expect(scripts["cap:sync:ios"]).toContain("node scripts/normalize-ios-config.cjs");
     expect(scripts["cap:sync:ios"]).toMatch(
-      /npx cap sync ios && cross-env CAPACITOR_BUILD=true node scripts\/capacitor-prune-assets\.cjs && node scripts\/normalize-ios-spm\.cjs/
+      /npx cap sync ios && cross-env CAPACITOR_BUILD=true node scripts\/capacitor-prune-assets\.cjs && node scripts\/normalize-ios-config\.cjs && node scripts\/normalize-ios-spm\.cjs/
     );
+
+    const normalizer = readSource("scripts/normalize-ios-config.cjs");
+    expect(normalizer).toContain("ALLOWED_ACCESS_ORIGINS");
+    expect(normalizer).toContain("https://*.supabase.co");
+    expect(normalizer).toContain("https://api.zenflowapp.online");
+    expect(normalizer).toContain("https://cdn.pixabay.com");
+    expect(normalizer).toContain("https://*.sentry.io");
+    expect(normalizer).not.toContain('origin="*"');
   });
 
   it("does not expose Android-only diary screenshot blocking on iOS", () => {

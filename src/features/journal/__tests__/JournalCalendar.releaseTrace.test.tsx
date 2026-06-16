@@ -104,12 +104,17 @@ describe("journal release trace calendar markers", () => {
     expect(screen.queryByTestId("journal-calendar-full-mood-orb")).not.toBeInTheDocument();
   });
 
-  it("keeps strip day button hit targets stable during entrance animation", () => {
+  it("keeps strip calendar hit targets Android-grade during entrance animation", () => {
     expect(journalCalendarSource).toContain("initial={animate ? { opacity: 0 } : false}");
     expect(journalCalendarSource).toContain("scrollRef.current.scrollLeft = -(");
     expect(journalCalendarSource).toContain("compactSidebarInset");
     expect(journalCalendarSource).toContain("px-1 pr-8 snap-x snap-mandatory rtl:pl-8 rtl:pr-1");
-    expect(journalCalendarSource).toContain("snap-start flex h-[44px] w-[44px] flex-none");
+    expect(journalCalendarSource).toContain("flex h-12 w-12 touch-manipulation items-center justify-center");
+    expect(journalCalendarSource).toContain("snap-start flex h-12 w-12 touch-manipulation flex-none");
+    expect(journalCalendarSource).toContain("min-h-12");
+    expect(journalCalendarSource).not.toContain("h-[46px] w-[46px]");
+    expect(journalCalendarSource).not.toContain("h-[44px] w-[44px]");
+    expect(journalCalendarSource).not.toContain("min-h-[44px]");
     expect(journalCalendarSource).not.toContain("initial={animate ? { opacity: 0, scale: 0.8 } : false}");
   });
 });

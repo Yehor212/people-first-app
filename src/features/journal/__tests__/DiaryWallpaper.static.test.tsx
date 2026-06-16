@@ -12,6 +12,7 @@ describe("Diary wallpaper contract", () => {
 
     expect(moduleSource).toContain('import { DiaryWallpaper } from "./DiaryWallpaper";');
     expect(moduleSource).toContain('<DiaryWallpaper surface="page"');
+    expect(moduleSource).not.toContain('data-testid="journal-light-atmosphere"');
   });
 
   it("keeps the empty diary canvas on the same wallpaper system", () => {
@@ -21,7 +22,7 @@ describe("Diary wallpaper contract", () => {
     expect(emptyCanvasSource).toContain('<DiaryWallpaper surface="empty"');
   });
 
-  it("uses compact tokenized CSS with day, night, and forced-colors support", () => {
+  it("uses tokenized CSS with day, night, and forced-colors support", () => {
     expect(existsSync("src/features/journal/DiaryWallpaper.tsx")).toBe(true);
 
     const wallpaperSource = readSource("src/features/journal/DiaryWallpaper.tsx");
@@ -30,10 +31,20 @@ describe("Diary wallpaper contract", () => {
     expect(wallpaperSource).toContain('data-testid="journal-wallpaper"');
     expect(wallpaperSource).toContain("journal-wallpaper--day");
     expect(wallpaperSource).toContain("journal-wallpaper--night");
+    expect(wallpaperSource).toContain("journal-wallpaper--paper");
+    expect(wallpaperSource).toContain("journal-wallpaper__constellation");
+    expect(wallpaperSource).toContain("journal-wallpaper__sheet");
+    expect(wallpaperSource).toContain("journal-wallpaper__botanical");
     expect(wallpaperSource).toContain("journal-wallpaper__veil");
     expect(cssSource).toContain(".journal-wallpaper");
+    expect(cssSource).toContain(".journal-wallpaper--day {");
     expect(cssSource).toContain(".journal-wallpaper--night");
-    expect(cssSource).not.toContain("@keyframes journal-wallpaper");
+    expect(cssSource).toContain(".journal-wallpaper--paper");
+    expect(cssSource).toContain("\n.journal-wallpaper__constellation {");
+    expect(cssSource).toContain("\n.journal-wallpaper__sheet {");
+    expect(cssSource).toContain("\n.journal-wallpaper__botanical {");
+    expect(cssSource).toContain(".journal-wallpaper--night ~ .relative :where");
     expect(cssSource).toContain("@media (forced-colors: active)");
+    expect(cssSource).not.toContain("@keyframes journal-wallpaper");
   });
 });

@@ -2431,6 +2431,17 @@ export interface Translations {
   journalEmpty: string;
   journalEmptyHint: string;
   journalEmptyQuote: string;
+  diaryStartFirstEntry: string;
+  diaryPrompt1: string;
+  diaryPrompt2: string;
+  diaryPrompt3: string;
+  diaryPrompt4: string;
+  diaryPrompt5: string;
+  diaryPrompt6: string;
+  diaryPrompt7: string;
+  diaryPrompt8: string;
+  diaryPrompt9: string;
+  diaryPrompt10: string;
   journalMemoryPortalEyebrow: string;
   journalMemoryPortalTitle: string;
   journalMemoryPortalHint: string;

@@ -38,8 +38,10 @@ async function openDiaryFromV2Root(page: Page) {
   const drawerButton = page.getByTestId("nav-v2-open-drawer");
   if (await drawerButton.isVisible()) {
     await drawerButton.click();
-    await expect(page.getByTestId("drawer-v2-destination-diary")).toBeVisible({ timeout: 10_000 });
-    await page.getByTestId("drawer-v2-destination-diary").click();
+    const drawer = page.getByRole("dialog", { name: /menu/i });
+    const diaryDestination = drawer.getByRole("button", { name: /^Diary$/ });
+    await expect(diaryDestination).toBeVisible({ timeout: 10_000 });
+    await diaryDestination.click();
   } else {
     await page.getByTestId("sidebar-v2").getByRole("button", { name: /^Diary$/ }).click();
   }

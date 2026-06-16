@@ -115,7 +115,7 @@ export function JournalCalendar({
       <div className="flex items-center justify-between mb-1.5">
         <button
           onClick={() => setStartOffset((prev) => prev + 7)}
-          className="flex h-[46px] w-[46px] items-center justify-center rounded-lg p-0 hover:bg-muted/50"
+          className="flex h-12 w-12 touch-manipulation items-center justify-center rounded-xl p-0 hover:bg-muted/50"
           aria-label={ts.previous || "Previous week"}
         >
           <ChevronLeft className="w-4 h-4 text-muted-foreground rtl:scale-x-[-1]" />
@@ -129,7 +129,7 @@ export function JournalCalendar({
                 setStartOffset(0);
                 onSelectDate(null);
               }}
-              className="text-[10px] font-medium text-primary px-3 py-2 min-h-[44px] rounded-full bg-primary/10 flex items-center justify-center"
+              className="flex min-h-12 touch-manipulation items-center justify-center rounded-full bg-primary/10 px-3 py-2 text-[10px] font-medium text-primary"
             >
               {ts.journalCalendarToday || "Today"}
             </button>
@@ -137,7 +137,7 @@ export function JournalCalendar({
           {onToggleMode && (
             <button
               onClick={onToggleMode}
-              className="flex h-[46px] w-[46px] items-center justify-center rounded-md p-0 hover:bg-muted/50"
+              className="flex h-12 w-12 touch-manipulation items-center justify-center rounded-xl p-0 hover:bg-muted/50"
               aria-label={ts.journalCalendarMonthView || "Switch to month view"}
             >
               <CalendarRange className="w-3.5 h-3.5 text-muted-foreground/60" />
@@ -148,7 +148,7 @@ export function JournalCalendar({
         <button
           onClick={() => setStartOffset((prev) => Math.max(0, prev - 7))}
           disabled={!canGoForward}
-          className="flex h-[46px] w-[46px] items-center justify-center rounded-lg p-0 hover:bg-muted/50 disabled:opacity-50"
+          className="flex h-12 w-12 touch-manipulation items-center justify-center rounded-xl p-0 hover:bg-muted/50 disabled:opacity-50"
           aria-label={ts.next || "Next week"}
         >
           <ChevronRight className="w-4 h-4 text-muted-foreground rtl:scale-x-[-1]" />
@@ -200,7 +200,7 @@ export function JournalCalendar({
               aria-label={`${dayNames[d.dayOfWeek]} ${d.day}${hasEntry ? ` (${mood || "entry"})` : ""}`}
               style={moodBgColor ? { backgroundColor: moodBgColor } : undefined}
               className={cn(
-                "snap-start flex h-[44px] w-[44px] flex-none flex-col items-center gap-0.5 rounded-xl py-1.5 motion-safe:transition-all motion-safe:duration-200 relative overflow-hidden",
+                "snap-start flex h-12 w-12 touch-manipulation flex-none flex-col items-center gap-0.5 rounded-xl py-1 motion-safe:transition-all motion-safe:duration-200 relative overflow-hidden",
                 isSelected
                   ? "bg-gradient-to-b from-primary/20 to-primary/10 shadow-sm"
                   : !moodBgColor && "hover:bg-muted/50",

@@ -67,7 +67,7 @@ export const PhotoGridLayout = memo(function PhotoGridLayout({ photoUrls, onPhot
             aria-label={`Photo ${i + 1} of ${count}`}
             tabIndex={0}
             className={cn(
-              "relative rounded-xl overflow-hidden cursor-pointer group",
+              "relative min-h-[44px] min-w-[44px] overflow-visible rounded-xl cursor-pointer group",
               isHero ? "aspect-video" : "aspect-square"
             )}
             initial={reduced ? false : { opacity: 0, scale: 0.95 }}
@@ -80,29 +80,31 @@ export const PhotoGridLayout = memo(function PhotoGridLayout({ photoUrls, onPhot
             onClick={() => handleTap(photo.id)}
             onKeyDown={(e) => e.key === "Enter" && handleTap(photo.id)}
           >
-            <img
-              src={photo.thumbnail ?? photo.url}
-              alt=""
-              className="w-full h-full object-cover"
-              loading="lazy"
-            />
+            <div className="h-full w-full overflow-hidden rounded-xl">
+              <img
+                src={photo.thumbnail ?? photo.url}
+                alt=""
+                className="h-full w-full object-cover"
+                loading="lazy"
+              />
 
-            {isOverlayCell && (
-              <div className="absolute inset-0 bg-black/40 backdrop-blur-sm [-webkit-backdrop-filter:blur(4px)] flex items-center justify-center">
-                <span className="text-white text-lg font-bold">
-                  +{overflow}
-                </span>
-              </div>
-            )}
+              {isOverlayCell && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm [-webkit-backdrop-filter:blur(4px)]">
+                  <span className="text-lg font-bold text-white">
+                    +{overflow}
+                  </span>
+                </div>
+              )}
+            </div>
 
             {onRemove && (
               <button
                 type="button"
                 aria-label={`Remove photo ${i + 1}`}
-                className="absolute top-1.5 right-1.5 bg-black/50 dark:bg-black/50 rounded-full w-7 h-7 flex items-center justify-center opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 motion-safe:transition-opacity"
+                className="absolute end-1 top-1 flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-black/50 dark:bg-black/50 motion-safe:transition-transform active:scale-95"
                 onClick={(e) => handleRemove(e, photo.id)}
               >
-                <X className="w-4 h-4 text-white" />
+                <X className="h-4 w-4 text-white" />
               </button>
             )}
           </motion.div>
