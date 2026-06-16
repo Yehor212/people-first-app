@@ -5581,6 +5581,7 @@ body.reduce-motion .diary-animated {
   --journal-wallpaper-glow-a: hsl(var(--zf-role-energy) / 0.18);
   --journal-wallpaper-glow-b: hsl(var(--zf-role-body) / 0.16);
   --journal-wallpaper-glow-c: hsl(var(--zf-role-focus) / 0.14);
+  --journal-wallpaper-star: hsl(var(--foreground) / 0.11);
   --journal-wallpaper-veil: linear-gradient(
     180deg,
     hsl(var(--background) / 0.24),
@@ -5631,101 +5632,27 @@ body.reduce-motion .diary-animated {
   opacity: 0.86;
 }
 
-.journal-wallpaper__veil {
-  inset: 0;
-  background: var(--journal-wallpaper-veil);
-}
-
-.journal-wallpaper--night {
-  --journal-wallpaper-sky-a: hsl(var(--background) / 0.98);
-  --journal-wallpaper-sky-b: hsl(var(--card) / 0.78);
-  --journal-wallpaper-sky-c: hsl(var(--surface-elevated) / 0.64);
-  --journal-wallpaper-glow-a: hsl(var(--zf-role-focus) / 0.22);
-  --journal-wallpaper-glow-b: hsl(var(--zf-role-rest) / 0.20);
-  --journal-wallpaper-glow-c: hsl(var(--zf-role-energy) / 0.13);
-  --journal-wallpaper-ink: hsl(var(--card) / 0.045);
-  --journal-wallpaper-veil: linear-gradient(
-    180deg,
-    hsl(var(--background) / 0.34),
-    transparent 42%,
-    hsl(var(--background) / 0.42) 100%
-  );
-}
-
-.journal-wallpaper--empty {
-  border-radius: inherit;
-}
-
-@media (forced-colors: active) {
-  .journal-wallpaper {
-    display: none;
-  }
-}
-
-/* Diary page paper atmosphere: a token-based washi/daylight image layer.
- * It stays behind app chrome, so journal cards remain readable across desktop,
- * phone WebView, and native shells.
- */
-.journal-light-atmosphere {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  overflow: hidden;
-  pointer-events: none;
-  isolation: isolate;
-  background:
-    radial-gradient(ellipse at 18% 9%, hsl(var(--zf-role-energy) / 0.20), transparent 34%),
-    radial-gradient(ellipse at 82% 16%, hsl(var(--zf-role-body) / 0.18), transparent 36%),
-    radial-gradient(ellipse at 66% 88%, hsl(var(--zf-role-focus) / 0.12), transparent 44%),
-    linear-gradient(145deg, hsl(var(--background)) 0%, hsl(var(--surface-elevated) / 0.76) 100%);
-}
-
-.journal-light-atmosphere::before,
-.journal-light-atmosphere::after,
-.journal-light-atmosphere > span {
-  position: absolute;
-  pointer-events: none;
-  content: "";
-}
-
-.journal-light-atmosphere::before {
+.journal-wallpaper__constellation {
   inset: 0;
   background:
-    repeating-linear-gradient(
-      84deg,
-      transparent 0 1.4rem,
-      hsl(var(--foreground) / 0.026) 1.4rem 1.46rem,
-      transparent 1.46rem 2.9rem
-    ),
-    repeating-linear-gradient(
-      174deg,
-      transparent 0 1.9rem,
-      hsl(var(--zf-role-body) / 0.030) 1.9rem 1.96rem,
-      transparent 1.96rem 3.8rem
-    );
-  mix-blend-mode: multiply;
-  opacity: 0.64;
+    radial-gradient(circle at 18% 24%, var(--journal-wallpaper-star) 0 0.055rem, transparent 0.07rem),
+    radial-gradient(circle at 36% 14%, var(--journal-wallpaper-star) 0 0.045rem, transparent 0.06rem),
+    radial-gradient(circle at 67% 28%, var(--journal-wallpaper-star) 0 0.055rem, transparent 0.07rem),
+    radial-gradient(circle at 84% 18%, var(--journal-wallpaper-star) 0 0.05rem, transparent 0.065rem);
+  background-size: min(32rem, 86vw) min(18rem, 42vh);
+  background-repeat: no-repeat;
+  background-position: 50% 12%;
+  opacity: 0.20;
+  transform: translate3d(0, 0, 0);
 }
 
-.journal-light-atmosphere::after {
-  inset: -16% -8% auto;
-  height: 46%;
-  background:
-    radial-gradient(ellipse at 30% 52%, hsl(var(--card) / 0.54), transparent 58%),
-    conic-gradient(
-      from 204deg at 68% 44%,
-      transparent 0 18%,
-      hsl(var(--zf-role-energy) / 0.14) 22%,
-      hsl(var(--zf-role-body) / 0.15) 32%,
-      hsl(var(--zf-role-focus) / 0.10) 44%,
-      transparent 58% 100%
-    );
-  filter: blur(0.35rem);
-  opacity: 0.72;
-  animation: journal-light-caustic-breathe 22s ease-in-out infinite;
+.journal-wallpaper__sheet,
+.journal-wallpaper__fiber,
+.journal-wallpaper__botanical {
+  opacity: 0;
 }
 
-.journal-light-atmosphere__sheet {
+.journal-wallpaper__sheet {
   inset: 8% 10% auto auto;
   width: min(38vw, 24rem);
   height: min(28vw, 17rem);
@@ -5738,38 +5665,31 @@ body.reduce-motion .diary-animated {
   box-shadow:
     inset 0 1px 0 hsl(var(--card) / 0.74),
     0 34px 70px -54px hsl(var(--foreground) / 0.42);
-  opacity: 0.54;
 }
 
-.journal-light-atmosphere__fiber {
+.journal-wallpaper__fiber {
   width: min(64vw, 32rem);
   height: 0.52rem;
   border-radius: 999px;
   background:
     linear-gradient(90deg, transparent, hsl(var(--zf-role-energy) / 0.14), hsl(var(--zf-role-body) / 0.16), transparent);
   filter: blur(0.35rem);
-  opacity: 0.42;
   transform-origin: center;
-  animation: journal-light-fiber-drift 28s ease-in-out infinite;
 }
 
-.journal-light-atmosphere__fiber--one {
-  --journal-fiber-rotate: -12deg;
+.journal-wallpaper__fiber--one {
   left: -8%;
   top: 24%;
-  transform: rotate(-12deg);
+  transform: rotate(-12deg) scaleX(0.96);
 }
 
-.journal-light-atmosphere__fiber--two {
-  --journal-fiber-rotate: -16deg;
+.journal-wallpaper__fiber--two {
   right: -10%;
   bottom: 20%;
-  transform: rotate(-16deg);
-  animation-delay: -12s;
-  opacity: 0.34;
+  transform: rotate(-16deg) scaleX(0.92);
 }
 
-.journal-light-atmosphere__botanical {
+.journal-wallpaper__botanical {
   left: 52%;
   top: 15%;
   width: min(20vw, 11rem);
@@ -5780,7 +5700,6 @@ body.reduce-motion .diary-animated {
     radial-gradient(ellipse at 36% 42%, hsl(var(--zf-role-body) / 0.12), transparent 30%),
     radial-gradient(ellipse at 62% 64%, hsl(var(--zf-role-body) / 0.10), transparent 34%);
   filter: blur(0.08rem);
-  opacity: 0.36;
   transform: rotate(18deg);
   -webkit-mask-image:
     linear-gradient(90deg, transparent 0 46%, hsl(var(--foreground)) 47% 51%, transparent 52% 100%),
@@ -5792,6 +5711,101 @@ body.reduce-motion .diary-animated {
     radial-gradient(ellipse at 64% 54%, hsl(var(--foreground)) 0 18%, transparent 19%);
 }
 
+.journal-wallpaper__veil {
+  inset: 0;
+  background: var(--journal-wallpaper-veil);
+}
+
+.journal-wallpaper--day {
+  --journal-wallpaper-star: hsl(var(--foreground) / 0.10);
+}
+
+.journal-wallpaper--day .journal-wallpaper__constellation {
+  opacity: 0.13;
+}
+
+.journal-wallpaper--night {
+  --journal-wallpaper-sky-a: hsl(var(--background) / 0.98);
+  --journal-wallpaper-sky-b: hsl(var(--card) / 0.78);
+  --journal-wallpaper-sky-c: hsl(var(--surface-elevated) / 0.64);
+  --journal-wallpaper-glow-a: hsl(var(--zf-role-focus) / 0.22);
+  --journal-wallpaper-glow-b: hsl(var(--zf-role-rest) / 0.20);
+  --journal-wallpaper-glow-c: hsl(var(--zf-role-energy) / 0.13);
+  --journal-wallpaper-veil: linear-gradient(
+    180deg,
+    hsl(var(--background) / 0.34),
+    transparent 42%,
+    hsl(var(--background) / 0.42) 100%
+  );
+}
+
+.journal-wallpaper--night .journal-wallpaper__constellation {
+  opacity: 0.28;
+}
+
+.journal-wallpaper--paper .journal-wallpaper__sheet {
+  opacity: 0.54;
+}
+
+.journal-wallpaper--paper .journal-wallpaper__fiber--one {
+  opacity: 0.42;
+}
+
+.journal-wallpaper--paper .journal-wallpaper__fiber--two {
+  opacity: 0.34;
+}
+
+.journal-wallpaper--paper .journal-wallpaper__botanical {
+  opacity: 0.36;
+}
+
+.journal-wallpaper--empty {
+  border-radius: inherit;
+}
+
+.journal-wallpaper--night ~ .relative :where(.text-muted-foreground, [class*="text-muted-foreground/"]) {
+  color: hsl(var(--foreground) / 0.78);
+}
+
+.journal-wallpaper--night ~ .relative :where([class*="text-foreground/"]) {
+  color: hsl(var(--foreground) / 0.86);
+}
+
+@media (max-width: 767px) {
+  .journal-wallpaper__sky {
+    inset: -8% -18% 48%;
+  }
+
+  .journal-wallpaper__horizon {
+    inset-inline: -24%;
+  }
+
+  .journal-wallpaper__constellation {
+    background-position: 50% 9%;
+    background-size: 28rem 15rem;
+  }
+
+  .journal-wallpaper__sheet {
+    inset: 10% -18% auto auto;
+    width: 16rem;
+    height: 11rem;
+  }
+
+  .journal-wallpaper__botanical {
+    left: 58%;
+    top: 12%;
+    width: 7rem;
+    height: 12rem;
+  }
+}
+
+@media (forced-colors: active) {
+  .journal-wallpaper {
+    display: none;
+  }
+}
+
+/* Diary paper panels: readable surfaces over the unified DiaryWallpaper. */
 .journal-light-panel,
 .journal-light-detail-pane {
   position: relative;
@@ -5831,30 +5845,6 @@ body.reduce-motion .diary-animated {
 
 .journal-light-panel {
   box-shadow: inset -1px 0 0 hsl(var(--foreground) / 0.035);
-}
-
-@keyframes journal-light-caustic-breathe {
-  0%,
-  100% {
-    opacity: 0.56;
-    transform: scale(0.98) rotate(-2deg);
-  }
-  50% {
-    opacity: 0.78;
-    transform: scale(1.04) rotate(2deg);
-  }
-}
-
-@keyframes journal-light-fiber-drift {
-  0%,
-  100% {
-    opacity: 0.28;
-    transform: rotate(var(--journal-fiber-rotate, -12deg)) scaleX(0.88);
-  }
-  50% {
-    opacity: 0.44;
-    transform: rotate(calc(var(--journal-fiber-rotate, -12deg) - 2deg)) scaleX(1.04);
-  }
 }
 
 [dir="rtl"] .habit-field-backdrop__progress-lane::after {

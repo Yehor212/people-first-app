@@ -15,6 +15,8 @@
  *   feature-graphic.svg  (10 KB)  — source vector
  *
  * og-image.png is KEPT because index.html references it in meta tags.
+ * pwa-192.png is KEPT because native index.html still references it as a
+ * rel=icon target after the PWA manifest link is stripped.
  */
 
 "use strict";
@@ -43,14 +45,15 @@ const PRUNE = [
   // PWA manifest icons — consumed by browser when installing as PWA via
   // manifest.webmanifest. Capacitor Android/iOS use NATIVE launcher icons
   // from android/app/src/main/res/mipmap-*/ and ios/App/App/Assets.xcassets/
-  // so these 9 PNGs are dead weight in the APK. VitePWA plugin is also
-  // gated `!isCapacitor` so no manifest is generated in native builds.
+  // so these PNGs are dead weight in the APK. VitePWA plugin is also gated
+  // `!isCapacitor` so no manifest is generated in native builds.
+  // Keep pwa-192.png: index.html references it as a favicon, and removing it
+  // produces a broken native WebKit asset request.
   "pwa-72.png",
   "pwa-96.png",
   "pwa-128.png",
   "pwa-144.png",
   "pwa-152.png",
-  "pwa-192.png",
   "pwa-384.png",
   "pwa-512.png",
   "pwa-maskable-512.png",

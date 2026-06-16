@@ -2154,7 +2154,7 @@ export const JournalModule = memo(function JournalModule({
                                         const [h, m] = e.target.value.split(":").map(Number);
                                         if (!isNaN(h) && !isNaN(m)) void reminder.setTime(h, m);
                                       }}
-                                      className="px-2 py-1 rounded-lg bg-muted/50 border border-border/30 text-sm text-foreground min-h-[36px]"
+                                      className="px-2 py-1 rounded-lg bg-muted/50 border border-border/30 text-sm text-foreground min-h-[44px]"
                                     />
                                   </div>
                                 )}
@@ -2345,18 +2345,6 @@ export const JournalModule = memo(function JournalModule({
         data-testid="journal-page-shell"
       >
         <DiaryWallpaper surface="page" />
-        {showJournalLightAtmosphere && (
-          <div
-            className="journal-light-atmosphere"
-            aria-hidden="true"
-            data-testid="journal-light-atmosphere"
-          >
-            <span className="journal-light-atmosphere__sheet" />
-            <span className="journal-light-atmosphere__fiber journal-light-atmosphere__fiber--one" />
-            <span className="journal-light-atmosphere__fiber journal-light-atmosphere__fiber--two" />
-            <span className="journal-light-atmosphere__botanical" />
-          </div>
-        )}
         {moduleContent}
       </section>
     );

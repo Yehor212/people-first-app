@@ -158,8 +158,9 @@ async function resetRoutePerfProbe(page: import("@playwright/test").Page) {
 async function readRoutePerfMetrics(
   page: import("@playwright/test").Page,
   startedAt: number,
+  routeVisibleAt: number,
 ) {
-  return page.evaluate((start) => {
+  return page.evaluate(({ start, visibleAt }) => {
     const state = window as Window & {
       __navV2RoutePerf?: {
         longAnimationFrames: Array<{ blockingDuration: number; duration: number }>;
@@ -169,7 +170,8 @@ async function readRoutePerfMetrics(
     const longTasks = state.__navV2RoutePerf?.longTasks ?? [];
     const longAnimationFrames = state.__navV2RoutePerf?.longAnimationFrames ?? [];
     return {
-      durationMs: performance.now() - start,
+      sampleWindowMs: performance.now() - start,
+      tapToVisibleMs: visibleAt - start,
       drawerMounted: Boolean(document.querySelector('[data-testid="drawer-v2"]')),
       longAnimationFrameCount: longAnimationFrames.length,
       longTaskCount: longTasks.length,
@@ -183,7 +185,7 @@ async function readRoutePerfMetrics(
       ),
       maxLongTaskMs: Math.max(0, ...longTasks.map((entry) => entry.duration)),
     };
-  }, startedAt);
+  }, { start: startedAt, visibleAt: routeVisibleAt });
 }
 
 function isLocalDevTarget(testInfo: import("@playwright/test").TestInfo) {
@@ -439,12 +441,14 @@ test.describe("V2 mobile web route transitions", () => {
       activeTimeout: 750,
       visibleTimeout: 2_500,
     });
+    const routeVisibleAt = await page.evaluate(() => performance.now());
     await expect(page.getByTestId("drawer-v2")).toBeHidden({ timeout: 1_000 });
     await page.waitForTimeout(1_500);
 
-    const metrics = await readRoutePerfMetrics(page, startedAt);
+    const metrics = await readRoutePerfMetrics(page, startedAt, routeVisibleAt);
 
-    expect(metrics.durationMs).toBeLessThan(2_500);
+    expect(metrics.tapToVisibleMs).toBeLessThan(1_500);
+    expect(metrics.sampleWindowMs).toBeLessThan(4_000);
     expect(metrics.drawerMounted).toBe(false);
     expect(metrics.maxLongTaskMs).toBeLessThan(500);
     if (metrics.longAnimationFrameCount > 0) {
@@ -501,11 +505,13 @@ test.describe("V2 mobile web route transitions", () => {
       await expect(page.getByTestId(destination.pageTestId)).toBeVisible({
         timeout: 2_500,
       });
+      const routeVisibleAt = await page.evaluate(() => performance.now());
       await expect(page.getByTestId("drawer-v2")).toBeHidden({ timeout: 1_000 });
       await page.waitForTimeout(500);
 
-      const metrics = await readRoutePerfMetrics(page, startedAt);
-      expect(metrics.durationMs).toBeLessThan(2_500);
+      const metrics = await readRoutePerfMetrics(page, startedAt, routeVisibleAt);
+      expect(metrics.tapToVisibleMs).toBeLessThan(1_500);
+      expect(metrics.sampleWindowMs).toBeLessThan(3_000);
       expect(metrics.drawerMounted).toBe(false);
       expect(metrics.maxLongTaskMs).toBeLessThan(500);
       if (metrics.longAnimationFrameCount > 0) {

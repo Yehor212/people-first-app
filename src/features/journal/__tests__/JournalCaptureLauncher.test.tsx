@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -144,9 +145,22 @@ import { ja } from "@/i18n/languages/ja";
 import { uk } from "@/i18n/languages/uk";
 import { JournalCaptureLauncher } from "../JournalCaptureLauncher";
 
+const launcherSource = readFileSync("src/features/journal/JournalCaptureLauncher.tsx", "utf8");
+
 describe("JournalCaptureLauncher", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it("keeps iOS action fan tap targets stable while animating", () => {
+    expect(launcherSource).toContain(
+      '"relative flex h-14 min-h-14 touch-manipulation items-center gap-3"',
+    );
+    expect(launcherSource).toContain(
+      '"fixed end-5 z-[56] flex h-14 min-h-14 touch-manipulation items-center gap-3 rtl:flex-row flex-row-reverse"',
+    );
+    expect(launcherSource).toContain("animate={{ opacity: 1, y: 0 }}");
+    expect(launcherSource).not.toContain("scale: 0.78");
   });
 
   it("opens the same action set for the floating diary launcher", () => {

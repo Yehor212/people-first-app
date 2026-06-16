@@ -129,8 +129,11 @@ export const JournalCaptureLauncher = memo(function JournalCaptureLauncher({
         };
 
   const actionButtonClasses = inline
-    ? "relative flex min-h-[52px] items-center gap-3"
-    : cn("fixed end-5 z-[56] flex min-h-[52px] items-center gap-3 rtl:flex-row flex-row-reverse", fabBottom);
+    ? "relative flex h-14 min-h-14 touch-manipulation items-center gap-3"
+    : cn(
+        "fixed end-5 z-[56] flex h-14 min-h-14 touch-manipulation items-center gap-3 rtl:flex-row flex-row-reverse",
+        fabBottom
+      );
 
   const launcherBody = (
     <>
@@ -164,9 +167,9 @@ export const JournalCaptureLauncher = memo(function JournalCaptureLauncher({
               <motion.button
                 key={item.id}
                 type="button"
-                initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.78, y: 16 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.78, y: 12 }}
+                initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 12 }}
                 transition={
                   reduceMotion
                     ? { duration: 0.12 }

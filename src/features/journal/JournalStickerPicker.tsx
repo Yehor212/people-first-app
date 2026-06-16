@@ -132,7 +132,7 @@ export function JournalStickerPicker({ onSelect, onClose, mood }: JournalSticker
               <button
                 onClick={() => setActiveCategory(-1)}
                 className={cn(
-                  "snap-start flex-shrink-0 px-2.5 py-1 rounded-lg text-sm motion-safe:transition-colors min-h-[40px] flex flex-col items-center justify-center gap-0.5",
+                  "snap-start flex-shrink-0 px-2.5 py-1 rounded-lg text-sm motion-safe:transition-colors min-h-[44px] flex flex-col items-center justify-center gap-0.5",
                   safeActiveCategory === -1 && activeCategory === -1
                     ? "bg-primary/15"
                     : "hover:bg-muted/50"
@@ -154,7 +154,7 @@ export function JournalStickerPicker({ onSelect, onClose, mood }: JournalSticker
                 key={cat.key}
                 onClick={() => setActiveCategory(i)}
                 className={cn(
-                  "snap-start flex-shrink-0 px-2.5 py-1 rounded-lg text-sm motion-safe:transition-colors min-h-[40px] flex flex-col items-center justify-center gap-0.5",
+                  "snap-start flex-shrink-0 px-2.5 py-1 rounded-lg text-sm motion-safe:transition-colors min-h-[44px] flex flex-col items-center justify-center gap-0.5",
                   safeActiveCategory === i && activeCategory >= 0
                     ? "bg-primary/15"
                     : "hover:bg-muted/50"
