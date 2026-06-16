@@ -14,6 +14,7 @@ sync drill proof.
 | V2 public route smoke | `npm run test:e2e:v2:smoke -- --reporter=line` |
 | V2 critical route/runtime smoke | `npm run test:e2e:v2:critical -- --reporter=line` |
 | V2 visual/orb shell | `npm run check:canonical-orbs && npm run test:e2e:v2:visual -- --reporter=line` |
+| V2 mobile route transition | `ZENFLOW_PLAYWRIGHT_USE_LOCAL_SERVER=true npx playwright test e2e/nav-v2-mobile-transition.spec.ts --project="Mobile Chrome" --reporter=line` |
 | V2 journal | `npm run test:e2e:v2:journal -- --reporter=line` |
 | V2 habits | `npm run test:e2e:v2:habits -- --reporter=line` |
 | Performance | `npm run smoke:chrome-performance` |
@@ -38,6 +39,19 @@ https://yehor212.github.io/people-first-app/orb/?nav=v2&navLayout=phone&cacheBus
 ```
 
 Local preview is useful evidence, but it does not prove GitHub Pages behavior.
+
+For phone route-freeze reports, prove both sides:
+
+- Local production-equivalent preview must show `data-nav-layout="phone"`,
+  `data-active-page="habits"`, a user-visible `main` named `Habits`,
+  `document.startViewTransition` calls equal `0`, no horizontal overflow, and
+  bounded transition work during Mood/Orb -> Habits. Record `longTaskCount`,
+  `maxLongTaskMs`, `longAnimationFrameCount`, and `maxLoafBlockingMs`; do not
+  claim "no long tasks" unless the recorded count is exactly `0`.
+- Cache-busted public GitHub Pages must be checked separately. If public still
+  calls View Transitions while local does not, report deploy/cache status as the
+  remaining blocker instead of adding a loading mask over the delay.
+- Keep screenshot and JSON facts under `output/v2-mobile-transition-YYYYMMDD/`.
 
 ## Auth And Sync Boundary
 

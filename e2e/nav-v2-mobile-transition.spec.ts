@@ -229,6 +229,23 @@ async function expectNoViewTransitionCalls(page: import("@playwright/test").Page
     .toBe(0);
 }
 
+async function expectHabitsRouteVisible(
+  page: import("@playwright/test").Page,
+  options: { activeTimeout?: number; visibleTimeout?: number } = {},
+) {
+  const activeTimeout = options.activeTimeout ?? 2_500;
+  const visibleTimeout = options.visibleTimeout ?? activeTimeout;
+
+  await expect(page.getByTestId("nav-v2-orchestrator")).toHaveAttribute(
+    "data-active-page",
+    "habits",
+    { timeout: activeTimeout },
+  );
+  await expect(page.getByRole("main", { name: /habits/i })).toBeVisible({
+    timeout: visibleTimeout,
+  });
+}
+
 test.describe("V2 mobile web route transitions", () => {
   test.describe.configure({ mode: "serial" });
   test.beforeEach(({ page: _page }, testInfo) => {
@@ -266,14 +283,7 @@ test.describe("V2 mobile web route transitions", () => {
       .getByRole("button", { name: "Habits" })
       .click({ timeout: 5_000 });
 
-    await expect(page.getByTestId("habits-page")).toBeVisible({
-      timeout: 2_500,
-    });
-    await expect(page.getByTestId("nav-v2-orchestrator")).toHaveAttribute(
-      "data-active-page",
-      "habits",
-      { timeout: 2_500 },
-    );
+    await expectHabitsRouteVisible(page, { activeTimeout: 2_500 });
 
     const durationMs = await page.evaluate((start) => performance.now() - start, startedAt);
     expect(durationMs).toBeLessThan(2_500);
@@ -322,14 +332,10 @@ test.describe("V2 mobile web route transitions", () => {
       timeout: 5_000,
     });
 
-    await expect(page.getByTestId("habits-page")).toBeVisible({
-      timeout: 2_500,
+    await expectHabitsRouteVisible(page, {
+      activeTimeout: 2_500,
+      visibleTimeout: 5_000,
     });
-    await expect(page.getByTestId("nav-v2-orchestrator")).toHaveAttribute(
-      "data-active-page",
-      "habits",
-      { timeout: 2_500 },
-    );
   });
 
   test("phone drawer skips View Transition for Mood to Habits", async ({ page }) => {
@@ -355,13 +361,9 @@ test.describe("V2 mobile web route transitions", () => {
       timeout: 750,
     });
 
-    await expect(page.getByTestId("nav-v2-orchestrator")).toHaveAttribute(
-      "data-active-page",
-      "habits",
-      { timeout: 750 }
-    );
-    await expect(page.getByTestId("habits-page")).toBeVisible({
-      timeout: 1_500,
+    await expectHabitsRouteVisible(page, {
+      activeTimeout: 750,
+      visibleTimeout: 2_500,
     });
     await expectNoViewTransitionCalls(page);
   });
@@ -433,13 +435,9 @@ test.describe("V2 mobile web route transitions", () => {
       timeout: 5_000,
     });
 
-    await expect(page.getByTestId("nav-v2-orchestrator")).toHaveAttribute(
-      "data-active-page",
-      "habits",
-      { timeout: 750 }
-    );
-    await expect(page.getByTestId("habits-page")).toBeVisible({
-      timeout: 2_500,
+    await expectHabitsRouteVisible(page, {
+      activeTimeout: 750,
+      visibleTimeout: 2_500,
     });
     await expect(page.getByTestId("drawer-v2")).toBeHidden({ timeout: 1_000 });
     await page.waitForTimeout(1_500);
@@ -540,13 +538,7 @@ test.describe("V2 mobile web route transitions", () => {
       .getByRole("button", { name: "Habits" })
       .click({ timeout: 5_000 });
 
-    await expect(page.getByTestId("nav-v2-orchestrator")).toHaveAttribute(
-      "data-active-page",
-      "habits"
-    );
-    await expect(page.getByTestId("habits-page")).toBeVisible({
-      timeout: 10_000,
-    });
+    await expectHabitsRouteVisible(page, { visibleTimeout: 10_000 });
   });
 
   test("phone drawer remains reachable while the first-run mood hint is visible", async ({
@@ -568,12 +560,6 @@ test.describe("V2 mobile web route transitions", () => {
       timeout: 5_000,
     });
 
-    await expect(page.getByTestId("nav-v2-orchestrator")).toHaveAttribute(
-      "data-active-page",
-      "habits"
-    );
-    await expect(page.getByTestId("habits-page")).toBeVisible({
-      timeout: 10_000,
-    });
+    await expectHabitsRouteVisible(page, { visibleTimeout: 10_000 });
   });
 });
