@@ -21,7 +21,7 @@ describe("Diary wallpaper contract", () => {
     expect(emptyCanvasSource).toContain('<DiaryWallpaper surface="empty"');
   });
 
-  it("uses tokenized CSS with day, night, reduced-motion, and forced-colors support", () => {
+  it("uses compact tokenized CSS with day, night, and forced-colors support", () => {
     expect(existsSync("src/features/journal/DiaryWallpaper.tsx")).toBe(true);
 
     const wallpaperSource = readSource("src/features/journal/DiaryWallpaper.tsx");
@@ -30,12 +30,10 @@ describe("Diary wallpaper contract", () => {
     expect(wallpaperSource).toContain('data-testid="journal-wallpaper"');
     expect(wallpaperSource).toContain("journal-wallpaper--day");
     expect(wallpaperSource).toContain("journal-wallpaper--night");
-    expect(wallpaperSource).toContain("journal-wallpaper--paper");
     expect(wallpaperSource).toContain("journal-wallpaper__veil");
     expect(cssSource).toContain(".journal-wallpaper");
-    expect(cssSource).toContain(".journal-wallpaper--day");
     expect(cssSource).toContain(".journal-wallpaper--night");
-    expect(cssSource).toContain("@media (prefers-reduced-motion: reduce)");
+    expect(cssSource).not.toContain("@keyframes journal-wallpaper");
     expect(cssSource).toContain("@media (forced-colors: active)");
   });
 });

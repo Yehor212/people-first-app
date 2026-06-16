@@ -65,8 +65,6 @@ export const DiaryWallpaper = memo(function DiaryWallpaper({
     >
       <span className="journal-wallpaper__sky" />
       <span className="journal-wallpaper__horizon" />
-      <span className="journal-wallpaper__grain" />
-      <span className="journal-wallpaper__constellation" />
       <span className="journal-wallpaper__veil" />
     </div>
   );
