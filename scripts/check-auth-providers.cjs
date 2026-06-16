@@ -101,8 +101,8 @@ checkSourceContains("src/lib/authProviders.ts", "facebook", "Facebook provider i
 checkSourceContains("src/components/settings/account-section/useAccountAuth.ts", "linkIdentity", "Settings supports provider account linking");
 checkSourceContains("src/lib/nativeOAuthBrowser.ts", "@capacitor/browser", "Native OAuth uses Capacitor Browser");
 checkSourceContains("ios/App/App/Info.plist", "com.zenflow.app", "iOS custom callback scheme is registered");
-checkSourceContains(".env.example", "VITE_ENABLE_FACEBOOK_AUTH=false", "Facebook public feature flag is documented");
-checkSourceContains(".env.example", "VITE_ENABLE_TELEGRAM_AUTH=false", "Telegram public feature flag is documented");
+checkSourceContains(".env.example", "VITE_ENABLE_FACEBOOK_AUTH=true", "Facebook public feature flag is documented");
+checkSourceContains(".env.example", "VITE_ENABLE_TELEGRAM_AUTH=true", "Telegram public feature flag is documented");
 
 for (const provider of [
   ["Facebook", "VITE_ENABLE_FACEBOOK_AUTH"],

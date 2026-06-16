@@ -14,16 +14,17 @@ VITE_ENABLE_FACEBOOK_AUTH=true
 VITE_ENABLE_TELEGRAM_AUTH=true
 ```
 
-Local defaults in `.env.example` stay `false` so unfinished dashboard setup does
-not expose broken buttons in normal builds.
+Local defaults in `.env.example` are `true` so the approved entry screen
+shows every supported social provider. Set a flag to `false` only when the
+matching dashboard provider is intentionally unavailable.
 
 GitHub Pages and native CI builds pass these public flags explicitly:
 
 - `VITE_ENABLE_FACEBOOK_AUTH` defaults to `true` because the ZenFlow Facebook app
   is configured.
-- `VITE_ENABLE_TELEGRAM_AUTH` defaults to `false`; flip the GitHub repository
-  variable to `true` only after the Supabase `custom:telegram` OIDC provider is
-  fully configured and smoke-tested.
+- `VITE_ENABLE_TELEGRAM_AUTH` defaults to `true` so Telegram is visible on
+  the public entry screen. Set the GitHub repository variable to `false` only
+  if the Supabase `custom:telegram` OIDC provider is intentionally disabled.
 
 ## Supabase Project
 

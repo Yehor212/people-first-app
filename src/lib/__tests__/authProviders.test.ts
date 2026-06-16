@@ -1,11 +1,20 @@
 import { describe, expect, it } from "vitest";
 import {
   buildOAuthCredentials,
+  getEnabledAuthScreenProviders,
   isTrustedOAuthRedirectUrl,
 } from "@/lib/authProviders";
 import { SUPABASE_URL } from "@/lib/env";
 
 describe("auth provider config", () => {
+  it("exposes Google, Facebook, and Telegram on the entry auth screen", () => {
+    expect(getEnabledAuthScreenProviders().map((provider) => provider.id)).toEqual([
+      "google",
+      "facebook",
+      "telegram",
+    ]);
+  });
+
   it("builds Facebook OAuth credentials with public profile and email scope", () => {
     const credentials = buildOAuthCredentials("facebook", {
       redirectTo: "com.zenflow.app://login-callback",

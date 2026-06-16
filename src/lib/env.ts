@@ -37,8 +37,8 @@ export const SPOTIFY_CLIENT_ID = (import.meta.env.VITE_SPOTIFY_CLIENT_ID as stri
 // Google OAuth (public Web Client ID — must match Supabase dashboard config)
 // Security: no hardcoded fallback — set VITE_GOOGLE_WEB_CLIENT_ID in .env
 export const GOOGLE_WEB_CLIENT_ID = (import.meta.env.VITE_GOOGLE_WEB_CLIENT_ID as string) || "";
-export const ENABLE_FACEBOOK_AUTH = import.meta.env.VITE_ENABLE_FACEBOOK_AUTH === "true";
-export const ENABLE_TELEGRAM_AUTH = import.meta.env.VITE_ENABLE_TELEGRAM_AUTH === "true";
+export const ENABLE_FACEBOOK_AUTH = import.meta.env.VITE_ENABLE_FACEBOOK_AUTH !== "false";
+export const ENABLE_TELEGRAM_AUTH = import.meta.env.VITE_ENABLE_TELEGRAM_AUTH !== "false";
 
 // AdMob — IDs must come from environment variables, no hardcoded production IDs
 export const ADMOB_APP_ID_ANDROID =
