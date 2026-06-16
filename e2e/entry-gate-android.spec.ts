@@ -119,6 +119,32 @@ function sha256File(filePath: string) {
   return createHash("sha256").update(readFileSync(filePath)).digest("hex");
 }
 
+function hasUsablePng(filePath: string) {
+  if (!existsSync(filePath)) return false;
+  const bytes = readFileSync(filePath);
+  return (
+    bytes.length > 8 &&
+    bytes[0] === 0x89 &&
+    bytes[1] === 0x50 &&
+    bytes[2] === 0x4e &&
+    bytes[3] === 0x47
+  );
+}
+
+async function captureAndroidEntryScreenshot(page: Page, screenshotPath: string) {
+  try {
+    await page.screenshot({ path: screenshotPath, animations: "disabled" });
+    return;
+  } catch {
+    if (hasUsablePng(screenshotPath)) {
+      return;
+    }
+
+    await page.waitForTimeout(250);
+    await page.screenshot({ path: screenshotPath, animations: "disabled" });
+  }
+}
+
 function prepareOutputDir() {
   if (existsSync(OUTPUT_DIR)) {
     rmSync(OUTPUT_DIR, { recursive: true, force: true });
@@ -251,7 +277,7 @@ test.describe("Android entry gate evidence", () => {
       await page.waitForTimeout(350);
 
       const screenshotPath = path.join(OUTPUT_DIR, scenario.fileName);
-      await page.screenshot({ path: screenshotPath });
+      await captureAndroidEntryScreenshot(page, screenshotPath);
 
       const fact = await page.evaluate(async ({ scenario, screenTestId }) => {
         const byTestId = (testId: string) =>
