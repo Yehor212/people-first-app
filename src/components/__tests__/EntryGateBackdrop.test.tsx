@@ -29,6 +29,9 @@ describe("EntryGateBackdrop", () => {
     expect(screen.getAllByTestId("entry-gate-backdrop-orb")).toHaveLength(7);
     expect(screen.getAllByTestId("entry-gate-backdrop-ripple")).toHaveLength(3);
     expect(screen.getAllByTestId("entry-gate-backdrop-ribbon")).toHaveLength(3);
+    expect(screen.getAllByTestId("entry-gate-backdrop-caustic")).toHaveLength(3);
+    expect(screen.getAllByTestId("entry-gate-backdrop-current")).toHaveLength(4);
+    expect(screen.getByTestId("entry-gate-backdrop-horizon")).toBeInTheDocument();
     expect(screen.queryByTestId("entry-gate-backdrop-star")).toBeNull();
     expect(screen.queryByTestId("entry-gate-backdrop-flow-mark")).toBeNull();
   });

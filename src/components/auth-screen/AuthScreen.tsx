@@ -69,7 +69,7 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
       <EntryGateBackdrop animated={animated} />
 
       <motion.section
-        className="relative z-10 flex w-full max-w-lg flex-col gap-4 md:max-w-2xl md:gap-5 lg:max-w-3xl"
+        className="entry-gate-content relative z-10 flex w-full max-w-lg flex-col gap-4 md:max-w-2xl md:gap-5 lg:max-w-3xl"
         initial={animated ? "hidden" : false}
         animate="visible"
         variants={authShellVariants}
@@ -82,7 +82,7 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
           />
           <h1
             id="auth-title"
-            className="mx-auto max-w-xs text-4xl font-black leading-none text-foreground sm:text-5xl md:max-w-xl md:text-6xl"
+            className="entry-gate-title mx-auto max-w-xs text-4xl font-black leading-none text-foreground sm:text-5xl md:max-w-xl md:text-6xl"
           >
             {t.authWelcomeTitle}
           </h1>
@@ -91,7 +91,7 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
         <EntryThemeSwitcher />
 
         <section
-          className="entry-glass-panel rounded-3xl border border-border/50 p-3.5 shadow-2xl"
+          className="entry-auth-panel entry-glass-panel rounded-3xl border border-border/50 p-3.5 shadow-2xl"
           aria-labelledby="auth-methods-title"
           aria-busy={session.isLoading}
           data-testid="auth-screen-panel"
@@ -285,7 +285,7 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
           )}
         </section>
 
-        <div className="space-y-2 px-2 text-center text-xs leading-5">
+        <div className="entry-auth-footer space-y-2 px-2 text-center text-xs leading-5">
           <p className="entry-gate-muted-copy mx-auto max-w-[22rem]" data-testid="auth-privacy-copy">
             {t.authPrivacyNote}
           </p>

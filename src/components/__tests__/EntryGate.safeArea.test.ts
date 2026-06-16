@@ -24,4 +24,20 @@ describe("EntryGate cross-platform safe areas", () => {
     expect(capacitorConfig).toContain('insetsHandling: "css"');
     expect(capacitorConfig).toContain('style: "DEFAULT"');
   });
+
+  it("declares an ink-specific dark parity treatment for Android and iOS entry surfaces", () => {
+    const css = readProjectFile("src/components/EntryGate.css");
+
+    expect(css).toContain('.entry-gate-screen[data-entry-theme="ink"]');
+    expect(css).toContain('.entry-gate-screen[data-entry-theme="ink"] .entry-gate-aurora');
+    expect(css).toContain('.entry-gate-screen[data-entry-theme="ink"] .entry-glass-panel');
+    expect(css).toContain(
+      '.entry-gate-screen[data-entry-theme="ink"] [data-testid="entry-theme-switcher"].entry-action-tile'
+    );
+    expect(css).toContain(
+      '.entry-gate-screen[data-entry-theme="ink"] .entry-glass-panel .entry-action-tile'
+    );
+    expect(css).toContain("--entry-ink-panel-top");
+    expect(css).toContain("--entry-ink-action-surface");
+  });
 });

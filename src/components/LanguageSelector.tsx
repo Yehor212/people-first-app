@@ -77,7 +77,7 @@ export function LanguageSelector({ onComplete }: LanguageSelectorProps) {
       <EntryGateBackdrop animated={animated} />
 
       <motion.section
-        className="relative z-10 flex w-full max-w-lg flex-col gap-4 md:max-w-3xl md:gap-5 lg:max-w-4xl"
+        className="entry-gate-content relative z-10 flex w-full max-w-lg flex-col gap-4 md:max-w-3xl md:gap-5 lg:max-w-4xl"
         initial={animated ? "hidden" : false}
         animate="visible"
         variants={shellVariants}
@@ -90,7 +90,7 @@ export function LanguageSelector({ onComplete }: LanguageSelectorProps) {
           />
           <h1
             id="language-selector-title"
-            className="mx-auto max-w-xs text-4xl font-black leading-none text-foreground sm:text-5xl md:max-w-xl md:text-6xl"
+            className="entry-gate-title mx-auto max-w-xs text-4xl font-black leading-none text-foreground sm:text-5xl md:max-w-xl md:text-6xl"
           >
             {t.welcomeTitle}
           </h1>

@@ -23,6 +23,11 @@ const fs = require("fs");
 const path = require("path");
 
 const DIST = path.resolve(__dirname, "..", "dist");
+const ANDROID_PUBLIC = path.resolve(__dirname, "..", "android", "app", "src", "main", "assets", "public");
+const ANDROID_RES = path.resolve(__dirname, "..", "android", "app", "src", "main", "res");
+const ANDROID_APP_BUILD = path.resolve(__dirname, "..", "android", "app", "build");
+const ANDROID_CORDOVA_PLUGINS = path.resolve(__dirname, "..", "android", "capacitor-cordova-android-plugins");
+const IOS_APP = path.resolve(__dirname, "..", "ios", "App", "App");
 const PRUNE = [
   // Play Store listing artwork — only for manual uploads, not runtime
   "feature-graphic.png",
@@ -51,6 +56,49 @@ const PRUNE = [
   "pwa-maskable-512.png",
 ];
 
+function pruneMacDuplicateArtifacts(root, label) {
+  if (!fs.existsSync(root)) {
+    console.log(`[prune-assets] ${label} not found — skipping duplicate artifact cleanup`);
+    return 0;
+  }
+
+  let removed = 0;
+  for (const entry of fs.readdirSync(root, { withFileTypes: true })) {
+    const entryPath = path.join(root, entry.name);
+    if (/ \d+(?=\.|$)/.test(entry.name)) {
+      fs.rmSync(entryPath, { force: true, recursive: true });
+      removed++;
+      continue;
+    }
+    if (entry.isDirectory()) {
+      removed += pruneMacDuplicateArtifacts(entryPath, `${label}/${entry.name}`);
+    }
+  }
+  console.log(`[prune-assets] removed ${removed} duplicate ${label} artifact(s)`);
+  return removed;
+}
+
+function stripNativeManifestLink() {
+  const indexPath = path.join(DIST, "index.html");
+  if (!fs.existsSync(indexPath)) {
+    console.warn("[prune-assets] index.html not found — cannot strip native manifest link");
+    return;
+  }
+
+  const original = fs.readFileSync(indexPath, "utf8");
+  const updated = original.replace(
+    /^\s*<link\s+rel=["']manifest["'][^>]*>\s*$/im,
+    "",
+  );
+
+  if (updated !== original) {
+    fs.writeFileSync(indexPath, updated);
+    console.log("[prune-assets] removed native manifest link from index.html");
+  } else {
+    console.log("[prune-assets] native manifest link already absent");
+  }
+}
+
 if (process.env.CAPACITOR_BUILD !== "true") {
   console.log("[prune-assets] not a Capacitor build — skipping");
   process.exit(0);
@@ -63,6 +111,13 @@ if (!fs.existsSync(DIST)) {
 
 let pruned = 0;
 let savedBytes = 0;
+
+pruneMacDuplicateArtifacts(DIST, "dist");
+pruneMacDuplicateArtifacts(ANDROID_PUBLIC, "android-public");
+pruneMacDuplicateArtifacts(ANDROID_RES, "android-res");
+pruneMacDuplicateArtifacts(ANDROID_APP_BUILD, "android-app-build");
+pruneMacDuplicateArtifacts(ANDROID_CORDOVA_PLUGINS, "android-cordova-plugins");
+pruneMacDuplicateArtifacts(IOS_APP, "ios-app");
 
 for (const name of PRUNE) {
   const p = path.join(DIST, name);
@@ -82,3 +137,5 @@ if (pruned === 0) {
     `[prune-assets] pruned ${pruned} files, saved ${(savedBytes / 1024).toFixed(1)} KB from APK`,
   );
 }
+
+stripNativeManifestLink();

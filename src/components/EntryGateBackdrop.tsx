@@ -26,6 +26,35 @@ const ribbons = [
   { left: "4%", top: "66%", width: 340, height: 86, delay: 1.5, rotate: -32, tone: "energy" },
 ];
 
+const caustics = [
+  { left: "7%", top: "31%", width: 168, height: 86, delay: 0.4, rotate: -12, tone: "body" },
+  { left: "58%", top: "22%", width: 184, height: 92, delay: 1.1, rotate: 16, tone: "focus" },
+  { left: "28%", top: "68%", width: 212, height: 104, delay: 1.8, rotate: -8, tone: "energy" },
+];
+
+const currents = [
+  { left: "12%", top: "7%", width: 220, delay: 0.2, rotate: -8, tone: "body" },
+  { left: "56%", top: "18%", width: 200, delay: 0.8, rotate: 11, tone: "focus" },
+  { left: "9%", top: "48%", width: 260, delay: 1.4, rotate: -15, tone: "primary" },
+  { left: "48%", top: "81%", width: 230, delay: 2.0, rotate: 9, tone: "energy" },
+];
+
+function entryToneVar(tone: string) {
+  if (tone === "focus") {
+    return "--zf-role-focus";
+  }
+
+  if (tone === "energy") {
+    return "--zf-role-energy";
+  }
+
+  if (tone === "primary") {
+    return "--primary";
+  }
+
+  return "--zf-role-body";
+}
+
 export function EntryGateBackdrop({ animated }: EntryGateBackdropProps) {
   return (
     <>
@@ -39,13 +68,20 @@ export function EntryGateBackdrop({ animated }: EntryGateBackdropProps) {
         className="pointer-events-none absolute inset-0 overflow-hidden"
         data-testid="entry-gate-backdrop"
       >
+        <motion.span
+          className="entry-gate-horizon absolute"
+          data-testid="entry-gate-backdrop-horizon"
+          style={{
+            left: "8%",
+            right: "8%",
+            bottom: "17%",
+          }}
+          animate={animated ? { opacity: [0.18, 0.34, 0.22], scaleX: [0.98, 1.02, 1] } : undefined}
+          transition={{ duration: 11, repeat: Infinity, ease: "easeInOut" }}
+        />
+
         {ribbons.map((ribbon) => {
-          const toneVar =
-            ribbon.tone === "focus"
-              ? "--zf-role-focus"
-              : ribbon.tone === "energy"
-                ? "--zf-role-energy"
-                : "--zf-role-body";
+          const toneVar = entryToneVar(ribbon.tone);
 
           return (
             <motion.span
@@ -75,6 +111,64 @@ export function EntryGateBackdrop({ animated }: EntryGateBackdropProps) {
                 repeat: Infinity,
                 ease: "easeInOut",
               }}
+            />
+          );
+        })}
+
+        {caustics.map((caustic) => {
+          const toneVar = entryToneVar(caustic.tone);
+
+          return (
+            <motion.span
+              key={`${caustic.left}-${caustic.top}`}
+              className="entry-gate-caustic absolute rounded-full"
+              data-testid="entry-gate-backdrop-caustic"
+              style={{
+                left: caustic.left,
+                top: caustic.top,
+                width: caustic.width,
+                height: caustic.height,
+                rotate: `${caustic.rotate}deg`,
+                background: `radial-gradient(ellipse at 35% 45%, hsl(var(${toneVar}) / 0.13), transparent 58%), radial-gradient(ellipse at 68% 52%, hsl(var(--primary) / 0.09), transparent 64%)`,
+              }}
+              animate={
+                animated
+                  ? {
+                      opacity: [0.1, 0.26, 0.14],
+                      scale: [0.98, 1.05, 1],
+                      x: [0, 8, -4, 0],
+                    }
+                  : undefined
+              }
+              transition={{ duration: 9.2, delay: caustic.delay, repeat: Infinity, ease: "easeInOut" }}
+            />
+          );
+        })}
+
+        {currents.map((current) => {
+          const toneVar = entryToneVar(current.tone);
+
+          return (
+            <motion.span
+              key={`${current.left}-${current.top}`}
+              className="entry-gate-current absolute"
+              data-testid="entry-gate-backdrop-current"
+              style={{
+                left: current.left,
+                top: current.top,
+                width: current.width,
+                rotate: `${current.rotate}deg`,
+                background: `linear-gradient(90deg, transparent, hsl(var(${toneVar}) / 0.2), hsl(var(--primary) / 0.08), transparent)`,
+              }}
+              animate={
+                animated
+                  ? {
+                      opacity: [0.08, 0.22, 0.12],
+                      x: [0, 18, -6, 0],
+                    }
+                  : undefined
+              }
+              transition={{ duration: 10.5, delay: current.delay, repeat: Infinity, ease: "easeInOut" }}
             />
           );
         })}

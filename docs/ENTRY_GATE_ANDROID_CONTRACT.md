@@ -1,6 +1,6 @@
 # ZenFlow Android Entry Gate Contract
 
-Last verified: 2026-06-14
+Last verified: 2026-06-15
 
 This document freezes the Android entry-gate expectations for the ZenFlow
 first-run language screen and the following sign-in screen. It is intentionally
@@ -17,12 +17,12 @@ Applies:
 - `AuthScreen` after language selection when the user has no valid session and
   auth has not been completed or bypassed.
 - Light, dark, and system entry themes.
-- RTL spot-check for Arabic.
+- RTL spot-checks for Arabic and Hebrew.
 
 Does not apply:
 
 - Physical Android device or emulator runtime launch; no device was attached
-  during the 2026-06-14 verification.
+  during the 2026-06-15 verification.
 - iOS/WKWebView; see `docs/ENTRY_GATE_IOS_CONTRACT.md`.
 - Desktop/Tauri and PWA-specific shell behavior.
 - Local `?dev=true` bypass, because it skips the entry gates.
@@ -72,9 +72,11 @@ Android platform:
 Regression tests:
 
 - `src/components/__tests__/EntryGate.safeArea.test.ts`
+- `src/components/__tests__/EntryGateBackdrop.test.tsx`
 - `src/components/__tests__/LanguageSelector.test.tsx`
 - `src/components/auth-screen/__tests__/AuthScreen.providers.test.tsx`
 - `src/components/__tests__/AuthGate.test.tsx`
+- `e2e/entry-gate-android.spec.ts`
 
 ## Gate Flow
 
@@ -135,6 +137,9 @@ Contract:
 - Seven soft orb points.
 - Three soft ripple layers.
 - Three soft flow-ribbon layers.
+- Three soft caustic light layers.
+- Four soft current lines.
+- One horizon line.
 - No star, sparkle, magic, or generic AI glyph decorations.
 - No negative full-viewport inset or transform expansion that increases
   `document.documentElement.scrollWidth`.
@@ -206,7 +211,9 @@ Contract:
 - Current Android auth proof shows `google`, `facebook`, and `telegram`.
 - Provider button content keeps the symmetric three-column icon/text/spacer
   grid: `grid-cols-[2rem_minmax(0,1fr)_2rem]`.
-- Provider icon center spread must remain 0 in Android facts.
+- Provider icon rail spread must remain 0 in Android facts: Google, Facebook,
+  and Telegram share the same icon-center X within each scenario while the text
+  stays centered by the symmetric icon/text/spacer grid.
 - Google, Facebook, and Telegram icons render at `h-6 w-6`.
 - Telegram SVG contract:
   - `viewBox="0 0 128 128"`
@@ -227,14 +234,15 @@ Before claiming Android entry PASS, these must be true:
   greater than the viewport.
 - Logo loads with natural size at least 256 by 256.
 - Background has 0 stars and 0 old flow marks.
-- Background has 3 ripples, 7 orbs, and 3 flow ribbons.
+- Background has 7 orbs, 3 ripples, 3 flow ribbons, 3 caustics, 4 current
+  lines, and 1 horizon line.
 - Theme switcher exists on language and auth screens.
 - Language screen has 8 options.
 - Auth screen has the enabled provider ids in configured order.
-- Provider icon center spread is 0.
+- Provider icon rail spread is 0.
 - Telegram SVG contract passes when Telegram is enabled.
-- Arabic RTL scenario sets `html lang="ar"`, `dir="rtl"`, and mirrored continue
-  arrow transform.
+- Arabic and Hebrew RTL scenarios set matching `html lang`, `dir="rtl"`, and
+  mirrored continue arrow transform.
 
 ## Android Best-Practice Basis
 
@@ -271,13 +279,13 @@ layout, auth-provider, logo, i18n, theme, or motion change.
 Focused tests:
 
 ```bash
-npm run test -- src/components/__tests__/EntryGate.safeArea.test.ts src/components/__tests__/LanguageSelector.test.tsx src/components/auth-screen/__tests__/AuthScreen.providers.test.tsx src/components/__tests__/AuthGate.test.tsx
+npm run test -- src/components/__tests__/EntryGate.safeArea.test.ts src/components/__tests__/EntryGateBackdrop.test.tsx src/components/auth-screen/__tests__/AuthScreen.providers.test.tsx src/components/__tests__/LanguageSelector.test.tsx src/components/__tests__/AuthGate.test.tsx src/lib/__tests__/androidCapacitorPrune.test.ts
 ```
 
 Scoped entry lint:
 
 ```bash
-npx eslint src/components/LanguageSelector.tsx src/components/auth-screen/AuthScreen.tsx src/components/EntryGateBackdrop.tsx src/components/EntryThemeSwitcher.tsx src/components/ZenFlowBrandMark.tsx src/components/auth/AuthProviderButton.tsx src/lib/authProviders.ts src/components/__tests__/LanguageSelector.test.tsx src/components/auth-screen/__tests__/AuthScreen.providers.test.tsx src/components/__tests__/EntryGate.safeArea.test.ts src/components/__tests__/AuthGate.test.tsx
+npx eslint e2e/entry-gate-android.spec.ts src/components/LanguageSelector.tsx src/components/auth-screen/AuthScreen.tsx src/components/EntryGateBackdrop.tsx src/components/EntryThemeSwitcher.tsx src/components/ZenFlowBrandMark.tsx src/components/auth/AuthProviderButton.tsx src/lib/authProviders.ts src/components/__tests__/LanguageSelector.test.tsx src/components/auth-screen/__tests__/AuthScreen.providers.test.tsx src/components/__tests__/EntryGate.safeArea.test.ts src/components/__tests__/EntryGateBackdrop.test.tsx src/components/__tests__/AuthGate.test.tsx src/lib/__tests__/androidCapacitorPrune.test.ts scripts/capacitor-prune-assets.cjs --max-warnings=0 --no-warn-ignored
 ```
 
 Core web checks:
@@ -292,9 +300,15 @@ Android build and sync:
 
 ```bash
 npm run build:android
-npx cap sync android
+npm run cap:sync:android
 cd android && ./gradlew assembleDebug
 adb devices
+```
+
+Android visual/runtime proof:
+
+```bash
+ZENFLOW_PLAYWRIGHT_BASE_URL=http://127.0.0.1:<preview-port>/people-first-app/ npx playwright test e2e/entry-gate-android.spec.ts --project=chromium --reporter=line --workers=1
 ```
 
 Visual proof:
@@ -302,25 +316,28 @@ Visual proof:
 - Android phone language light: 412 by 915, DPR 2.625
 - Android phone language dark: 412 by 915, DPR 2.625
 - Android phone Arabic RTL language: 412 by 915, DPR 2.625
+- Android phone Hebrew RTL language: 412 by 915, DPR 2.625
 - Android phone auth light: 412 by 915, DPR 2.625
 - Android phone auth dark: 412 by 915, DPR 2.625
 - Android tablet language system: 800 by 1280, DPR 2
+- Android tablet language dark: 800 by 1280, DPR 2
 - Android tablet auth dark: 800 by 1280, DPR 2
+- Android all-language smoke: `en`, `uk`, `es`, `de`, `fr`, `ja`, `ar`, `he`
+  on Android phone Chromium.
 
 Global lint:
 
 - `npm run lint` should be green in a clean repo.
-- On 2026-06-14 it was not Android-entry PASS evidence because it failed on
-  unrelated workspace files:
-  - `e2e/helpers/zenflowV2State.ts`: redundant Boolean call
-  - `ios/App/CapApp-SPM/.build/.../native-bridge.js`: generated iOS SPM
-    artifacts with stale eslint-disable/rule references
+- On 2026-06-15 it was not Android-entry PASS evidence because it failed on
+  unrelated generated iOS SPM artifacts:
+  - `ios/App/CapApp-SPM/.build/.../native-bridge.js`: stale
+    eslint-disable/rule references for `@typescript-eslint/no-unused-vars`
 
-## Baseline Evidence
+## Current Evidence
 
 Evidence directory:
 
-- `output/playwright/android-entry-20260614/`
+- `output/playwright/android-entry-20260615/`
 
 Retention note:
 
@@ -332,96 +349,142 @@ Retention note:
 
 Facts file:
 
-- `output/playwright/android-entry-20260614/facts.json`
+- `output/playwright/android-entry-20260615/facts.json`
+- Generated at: `2026-06-15T23:55:13.302Z`
+- Base URL: `http://127.0.0.1:4231/people-first-app/`
+- Runtime: Chromium production preview
 - SHA-256:
-  `a305e6e9ed76249f63dddf3b4ede4204706fbf2c67e7ab9cd68f5c4692b47d6b`
+  `09c93b77cdd8727fe8b093cdf4b4b5ff2ea6681594f69ece48f66f641cb40e1d`
 
 Verification log:
 
-- `output/playwright/android-entry-20260614/verification-log-20260614.txt`
+- `output/playwright/android-entry-20260615/verification-log-20260615.txt`
 - SHA-256:
-  `830952d4ed3cbb9c88ece17b2f4695bf03ac47d5f903f8f78031fe6f8172f264`
+  `9ede0f7870d3c3512355c89017a2343f9e434e669350f7c70ad478018a55ef2d`
 
 Screenshots:
 
-- `output/playwright/android-entry-20260614/android-phone-language-light.png`
-- `output/playwright/android-entry-20260614/android-phone-language-dark.png`
-- `output/playwright/android-entry-20260614/android-phone-language-ar-rtl.png`
-- `output/playwright/android-entry-20260614/android-phone-auth-light.png`
-- `output/playwright/android-entry-20260614/android-phone-auth-dark.png`
-- `output/playwright/android-entry-20260614/android-tablet-language-system.png`
-- `output/playwright/android-entry-20260614/android-tablet-auth-dark.png`
+- `output/playwright/android-entry-20260615/android-phone-language-light.png`
+- `output/playwright/android-entry-20260615/android-phone-language-dark.png`
+- `output/playwright/android-entry-20260615/android-phone-language-ar-rtl.png`
+- `output/playwright/android-entry-20260615/android-phone-language-he-rtl.png`
+- `output/playwright/android-entry-20260615/android-phone-auth-light.png`
+- `output/playwright/android-entry-20260615/android-phone-auth-dark.png`
+- `output/playwright/android-entry-20260615/android-tablet-language-system.png`
+- `output/playwright/android-entry-20260615/android-tablet-language-dark.png`
+- `output/playwright/android-entry-20260615/android-tablet-auth-dark.png`
 
 Screenshot hashes:
 
 - `android-phone-language-light.png`:
-  `cd93911db1620281fc3fbc038ccd611d96698e06edd74a13cfc9a7f6c717aeac`
+  `5e5e84261f5a3e5ea07d3e0ef1e0d797044af48db4f2a66c3c1f9be37c0b5f24`
 - `android-phone-language-dark.png`:
-  `5e4fea1c034c1665b2587f118658600f617f6254059dc45df4d4bdcc38df475e`
+  `5bbc131566d587d01351ac01ad5930f26556b6c318b83fb006ea9ad8adbee5fa`
 - `android-phone-language-ar-rtl.png`:
-  `8f43cab3814edfb2b00773ec1a9eb3faa134dea45f5130efa31fe7e0bcce20d7`
+  `7d2f18741d5ed133d46fffe800db39254eaae81808174d55a985b653003f8453`
+- `android-phone-language-he-rtl.png`:
+  `c099558be678b5d40e7065638470509fb3f6c5c575f4b524adb713580a6b8a33`
 - `android-phone-auth-light.png`:
-  `6fb692b91180fbdb5acdd8c991cd41a9ca98b1e4ee81941193031152ab68b968`
+  `ec65a7561cbd09b4c989df9aa6dd725d438d7ed5016359950d1be97f5bbc31c5`
 - `android-phone-auth-dark.png`:
-  `27cbab0662cf0704908abe3e9b3b3e32601f57948a4d1c9f61d2edc5e42e1998`
+  `8c9cad4671daa42d054a86aab4a29ab6e8a030bbedc3d6d9b150a7890561a57c`
 - `android-tablet-language-system.png`:
-  `f388e866e27237948e5336c3b99cda4e0a7415776b86fdff0e778b08b2b8e607`
+  `c8ed4c9428950d89d3207fa34a25df45ededc9cff66e6fb66c4e56042702f5a0`
+- `android-tablet-language-dark.png`:
+  `65f3f39f4ae266fa70cd9ac17741fe16b079324f5644ad384b41bd5b67487e12`
 - `android-tablet-auth-dark.png`:
-  `e3ceaa99700c8fa90622e42113f1bafc2ed7b1b5041d051fe5f160c37013e0c2`
+  `6f80f109a294359d46239901c8adf151d3727811cf635fb1d45a02ea64bb0bb6`
 
 Native APK:
 
 - `android/app/build/outputs/apk/debug/app-debug.apk`
-- Size: 24 MB
+- Size: 26 MB
+- Last rebuilt after duplicate-artifact cleanup fix: `2026-06-15`
 - SHA-256:
-  `101a9bde02ffa1d9f5d31f67dc5e275538f2acb2e0afe53e9b9c41637cb0fb49`
+  `26b27010d6b6664fa301c407364b23662187d6470b521f0afff5a8350a0fcb2d`
 
-Baseline facts:
+Current facts:
 
-- 7 visual scenarios passed.
+- 9 visual scenarios passed.
+- Android all-language smoke passed for `en`, `uk`, `es`, `de`, `fr`, `ja`,
+  `ar`, and `he`.
 - Document horizontal overflow: false in all scenarios.
 - Screen horizontal overflow: false in all scenarios.
 - Out-of-bounds audited elements: 0 in all scenarios.
 - Logo natural size: 512 by 512 in all scenarios.
-- Background: 0 stars, 0 old flow marks, 3 ripples, 7 orbs, 3 flow ribbons.
+- Background: 0 generic AI marks, 7 orbs, 3 ripples, 3 flow ribbons,
+  3 caustics, 4 currents, and 1 horizon line.
+- Console warnings/errors: 0 in all production-preview visual scenarios.
+- Failed network requests: 0 in all production-preview visual scenarios.
 - Theme switcher: present in all scenarios.
 - Language option count: 8 on language scenarios.
 - Auth provider ids: `google`, `facebook`, `telegram` on auth scenarios.
-- Provider icon center spread: 0 on auth scenarios.
+- Auth provider icon rail spread: 0 in all auth scenarios.
 - Telegram: `viewBox="0 0 128 128"` with `#2AABEE` and `#229ED9`.
-- Arabic RTL continue arrow: `matrix(-1, 0, 0, 1, 0, 0)`.
+- Arabic RTL scenario sets `html lang="ar"` and `dir="rtl"`.
+- Hebrew RTL scenario sets `html lang="he"` and `dir="rtl"`.
 
-## Verification Results On 2026-06-14
+## Verification Results On 2026-06-15
 
 PASS:
 
-- Focused entry tests: 4 files passed, 14 tests passed.
+- Focused entry/runtime tests: 6 files passed, 18 tests passed.
 - Typecheck: exit 0.
+- Scoped lint for Android entry files: exit 0.
 - Color check: exit 0, no hardcoded colors found.
-- Scoped entry lint: exit 0.
-- Web production build: exit 0.
+- Production web build: exit 0.
+- Full dependency audit: `npm audit --audit-level=high` exited 0.
+- Production-only audit: `npm audit --omit=dev --audit-level=high` exited 0.
 - Android build: exit 0.
-- `npx cap sync android`: exit 0, 11 Capacitor Android plugins found.
-- Android native debug build: `BUILD SUCCESSFUL`, 428 actionable tasks executed.
+- `npm run cap:sync:android`: exit 0 after post-sync duplicate cleanup.
+- Android native debug build: `BUILD SUCCESSFUL`, 428 actionable tasks.
 - APK generated and hashed.
-- Android visual matrix: 7/7 PASS.
-- Command-output evidence is preserved in
-  `output/playwright/android-entry-20260614/verification-log-20260614.txt`.
+- Duplicate native artifact search under Android resource/public/plugin folders
+  and `ios/App/App`: 0 matches for `* 2.*` after sync/build.
+- Android visual/runtime matrix: 2/2 Playwright tests PASS, covering 9
+  screenshots plus all-language smoke.
+
+Failure handling:
+
+- A first Android screenshot attempt failed during Chromium full-page capture.
+  The partial run was discarded, the capture was changed to viewport screenshots
+  plus DOM overflow facts, and the full matrix was rerun.
+- A first visual facts rerun included false SafeJSON warnings because the
+  Playwright setup wrote `zenflow-language` as raw text. The setup was corrected
+  to the app's JSON storage shape, and the full matrix was regenerated.
+- A dev-server Android visual run produced Vite-only CSP inline-script console
+  errors. The verification target was switched to a production preview build,
+  where all 9 visual scenarios reported `console=0` and `failedRequests=0`.
+- A Gradle debug build failed because `android/app/src/main/res/xml/config 2.xml`
+  was generated with a space in the resource filename. The fix adds a red/green
+  regression test for post-sync cleanup, extends
+  `scripts/capacitor-prune-assets.cjs` to clean Android app build and Cordova
+  plugin duplicates, and makes `npm run cap:sync:android` run the cleanup again
+  after `npx cap sync android`.
 
 UNVERIFIED:
 
-- Physical Android device or emulator runtime interaction. `adb devices` started
-  the daemon but returned an empty device list.
-- Global repo lint. It failed on unrelated existing workspace files listed in
-  the Verification Contract section.
+- Physical Android device or emulator runtime interaction. `adb devices`
+  returned an empty device list.
+- Android emulator runtime. `emulator -list-avds` could not run because
+  `emulator` is not in `PATH`.
+- Snyk Code scan. No `snyk_code_scan` MCP tool was callable in this session;
+  `npx snyk code test ... src/components` reached Snyk but returned
+  `403 Forbidden` because Snyk Code is not enabled for the `yehor212`
+  organization.
+- Repo-wide `npm run lint` as a global PASS. It failed on unrelated generated
+  iOS SPM artifacts under `ios/App/CapApp-SPM/.build/.../native-bridge.js`.
+- Clean-console claim for the local dev server. Playwright reported the same
+  dev-mode CSP inline-script error in each scenario; Arabic selection also
+  triggered non-entry audio/version-check warnings.
 
 Warnings observed, not Android entry blockers:
 
 - Gradle warned that `flatDir` should be avoided.
-- `@capgo/capacitor-social-login` Facebook provider removal warning.
-- `android:extractNativeLibs` manifest warning.
-- Deprecated APIs in third-party Capacitor/AdMob/FileSystem plugins.
-- One native library could not be stripped and was packaged as-is.
+- Vite reported that `runtime-perf-bootstrap.js` cannot be bundled without a
+  `type="module"` attribute.
+- Treat clean-console claims on the local dev server as unverified until checked
+  against a production-equivalent preview without Vite dev injection.
 
 ## Change Control
 
@@ -454,8 +517,8 @@ Before editing Android entry files, future agents must:
 2. Read `AGENTS.md` and `ARCHITECTURE.md`.
 3. State whether the change touches Android layout, auth logic, i18n, motion,
    branding, or native platform behavior.
-4. Run focused tests, Android visual proof, `build:android`, `cap sync android`,
-   and Gradle debug build after edits.
+4. Run focused tests, Android visual proof, `build:android`,
+   `cap:sync:android`, and Gradle debug build after edits.
 5. Mark real device/emulator runtime as `UNVERIFIED` unless a device is attached
    and actually exercised.
 
