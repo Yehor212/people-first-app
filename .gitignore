@@ -140,6 +140,7 @@ docs/visual-aesthetic.md
 
 # Tauri desktop build artifacts
 src-tauri/target/
+src-tauri/gen/schemas/* 2.json
 
 # Claude Code enforcement tokens (one-time gate files)
 .preflight-token
@@ -196,7 +197,11 @@ output/playwright/v1-*.png
 output/playwright/*.png
 output/playwright/*/
 output/playwright/public-v2/
+output/local-https-proxy/
 output/xcode-derived/
+output/**/xcode-derived/
+output/*-audit-*/
+output/*.png
 output/snyk-code*.err
 output/snyk-*.json
 output/snyk-tracked-scan*/
