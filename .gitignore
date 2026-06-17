@@ -73,6 +73,7 @@ pnpm-lock.yaml
 # ============================================
 .vscode/*
 !.vscode/extensions.json
+!.vscode/settings.json
 .idea
 .DS_Store
 .claude.bak/
@@ -199,7 +200,7 @@ output/playwright/*/
 output/playwright/public-v2/
 output/local-https-proxy/
 output/xcode-derived/
-output/**/xcode-derived/
+output/**/xcode-derived*/
 output/*-audit-*/
 output/*.png
 output/snyk-code*.err

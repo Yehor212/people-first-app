@@ -1,0 +1,38 @@
+{
+  "files.exclude": {
+    "**/.playwright-cli": true,
+    "**/.codex-artifacts": true,
+    "**/artifacts": true,
+    "**/test-artifacts": true,
+    "**/output/*-audit-*": true,
+    "**/output/**/xcode-derived*": true,
+    "**/output/local-https-proxy": true,
+    "**/src-tauri/target": true,
+    "**/src-tauri/gen/schemas/* 2.json": true
+  },
+  "search.exclude": {
+    "**/.playwright-cli": true,
+    "**/.codex-artifacts": true,
+    "**/artifacts": true,
+    "**/test-artifacts": true,
+    "**/output/*-audit-*": true,
+    "**/output/**/xcode-derived*": true,
+    "**/output/local-https-proxy": true,
+    "**/src-tauri/target": true,
+    "**/src-tauri/gen/schemas/* 2.json": true,
+    "**/output/playwright/*/**": true
+  },
+  "files.watcherExclude": {
+    "**/.playwright-cli/**": true,
+    "**/.codex-artifacts/**": true,
+    "**/artifacts/**": true,
+    "**/test-artifacts/**": true,
+    "**/output/*-audit-*/**": true,
+    "**/output/**/xcode-derived*/**": true,
+    "**/output/local-https-proxy/**": true,
+    "**/src-tauri/target/**": true,
+    "**/src-tauri/gen/schemas/* 2.json": true,
+    "**/output/playwright/*/**": true
+  },
+  "explorer.excludeGitIgnore": true
+}
