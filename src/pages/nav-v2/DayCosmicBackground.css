@@ -53,10 +53,6 @@
   will-change: auto;
 }
 
-:root[data-runtime-perf] .day-cosmic__solar-portal::before,
-:root[data-runtime-perf] .day-cosmic__solar-portal::after,
-:root[data-runtime-perf] .day-cosmic__solar-portal-core,
-:root[data-runtime-perf] .day-cosmic__solar-portal-orbit,
 :root[data-runtime-perf] .day-cosmic__light-curtain,
 :root[data-runtime-perf] .day-cosmic__sun-thread,
 :root[data-runtime-perf] .day-cosmic__sun-shower,
@@ -112,90 +108,6 @@
   -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 28%, transparent 100%);
   mask-image: linear-gradient(180deg, transparent 0%, #000 28%, transparent 100%);
   opacity: 0.75;
-}
-
-/* ==================== Layer 2 — Aurora bokeh pools ==================== */
-/* ==================== Layer 2 — Solar prism portal ===================== */
-.day-cosmic__solar-portal {
-  position: absolute;
-  left: 50%;
-  top: 27%;
-  width: min(112vw, 42rem);
-  aspect-ratio: 1;
-  pointer-events: none;
-  transform: translate(-50%, -50%);
-  opacity: 0.28;
-  filter: blur(12px) saturate(1.08);
-}
-
-.day-cosmic__solar-portal::before,
-.day-cosmic__solar-portal::after,
-.day-cosmic__solar-portal-core,
-.day-cosmic__solar-portal-orbit {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: 9999px;
-  pointer-events: none;
-}
-
-.day-cosmic__solar-portal::before {
-  inset: 4%;
-  background:
-    radial-gradient(circle, var(--day-portal-core) 0 8%, transparent 25%),
-    radial-gradient(circle, hsl(var(--zf-role-body) / 0.22) 0 34%, transparent 62%),
-    radial-gradient(circle, hsl(var(--zf-role-focus) / 0.14) 42%, transparent 72%);
-  opacity: 0.46;
-  filter: blur(18px);
-  animation: day-cosmic-portal-breathe 9s ease-in-out infinite;
-}
-
-.day-cosmic__solar-portal::after {
-  inset: 23%;
-  border: 1px solid hsl(var(--zf-role-focus) / 0.28);
-  background:
-    radial-gradient(circle, transparent 0 56%, hsl(var(--zf-role-body) / 0.20) 58% 59%, transparent 62%),
-    radial-gradient(circle, hsl(var(--zf-role-focus) / 0.08), transparent 68%);
-  box-shadow:
-    0 0 0 1px hsl(var(--zf-role-energy) / 0.18),
-    0 0 34px hsl(var(--zf-role-body) / 0.30),
-    inset 0 0 34px hsl(var(--zf-role-focus) / 0.18);
-  -webkit-mask-image: radial-gradient(circle, transparent 0 55%, #000 57% 62%, transparent 65%);
-  mask-image: radial-gradient(circle, transparent 0 55%, #000 57% 62%, transparent 65%);
-  opacity: 0.48;
-  animation: day-cosmic-portal-spin 26s linear infinite;
-}
-
-.day-cosmic__solar-portal-core {
-  inset: 35%;
-  background:
-    radial-gradient(circle, hsl(56 100% 92% / 0.92) 0 10%, transparent 33%),
-    radial-gradient(circle, var(--day-portal-core) 0 42%, transparent 72%);
-  box-shadow:
-    0 0 28px hsl(var(--zf-role-energy) / 0.34),
-    0 0 82px hsl(var(--zf-role-body) / 0.28);
-  filter: blur(0.3px);
-  animation: day-cosmic-core-pulse 5.6s ease-in-out infinite;
-}
-
-.day-cosmic__solar-portal-orbit {
-  inset: 19%;
-  border: 1px solid hsl(var(--zf-role-focus) / 0.22);
-  box-shadow:
-    1.4rem 0 0 -1.25rem hsl(var(--zf-role-body) / 0.70),
-    -1.1rem -0.7rem 0 -1rem hsl(var(--zf-role-release) / 0.55),
-    0 0 22px hsl(var(--zf-role-focus) / 0.14);
-  opacity: 0.82;
-  animation: day-cosmic-orbit-drift 18s ease-in-out infinite;
-}
-
-.day-cosmic__solar-portal-orbit--two {
-  inset: 30%;
-  rotate: 74deg;
-  border-color: hsl(var(--zf-role-mind) / 0.22);
-  animation-duration: 22s;
-  animation-direction: reverse;
-  opacity: 0.66;
 }
 
 .day-cosmic__bokeh {
@@ -734,46 +646,6 @@
 /* Reduced motion — freeze motes at their initial position, still visible.
  * data-animated="false" toggled by useShouldAnimate() in TSX for tests,
  * plus the media query belt-and-suspenders for native-resolution override. */
-@keyframes day-cosmic-portal-breathe {
-  0%,
-  100% {
-    opacity: 0.58;
-    transform: scale(0.92) rotate(-4deg);
-  }
-  48% {
-    opacity: 0.92;
-    transform: scale(1.04) rotate(3deg);
-  }
-}
-
-@keyframes day-cosmic-portal-spin {
-  to {
-    transform: rotate(1turn);
-  }
-}
-
-@keyframes day-cosmic-core-pulse {
-  0%,
-  100% {
-    opacity: 0.64;
-    transform: scale(0.94);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.08);
-  }
-}
-
-@keyframes day-cosmic-orbit-drift {
-  0%,
-  100% {
-    transform: rotate(-8deg) scale(0.96);
-  }
-  50% {
-    transform: rotate(18deg) scale(1.03);
-  }
-}
-
 @keyframes day-cosmic-prism-pass {
   0%,
   100% {
@@ -890,55 +762,6 @@
   color-scheme: light;
 }
 
-.orb-day-scope .orb-page-rim-glow {
-  isolation: isolate;
-  --orb-portal-size: calc(var(--orb-hero-size, 260px) * 1.34);
-  --orb-portal-outer: calc(var(--orb-hero-size, 260px) * 1.74);
-}
-
-.orb-day-scope .orb-page-rim-glow::before,
-.orb-day-scope .orb-page-rim-glow::after {
-  content: "";
-  position: absolute;
-  border-radius: 9999px;
-  pointer-events: none;
-}
-
-.orb-day-scope .orb-page-rim-glow::before {
-  left: 50%;
-  top: 50%;
-  height: var(--orb-portal-outer);
-  width: var(--orb-portal-outer);
-  z-index: -1;
-  background:
-    radial-gradient(circle, hsl(54 100% 94% / 0.68) 0 8%, transparent 24%),
-    radial-gradient(circle, hsl(var(--zf-role-body) / 0.34) 0 34%, transparent 66%),
-    radial-gradient(circle, hsl(var(--zf-role-focus) / 0.18) 42%, transparent 72%);
-  filter: blur(12px) saturate(1.18);
-  opacity: 0.72;
-  transform: translate(-50%, -50%);
-  animation: orb-day-hero-corona 7.5s ease-in-out infinite;
-}
-
-.orb-day-scope .orb-page-rim-glow::after {
-  left: 50%;
-  top: 50%;
-  height: var(--orb-portal-size);
-  width: var(--orb-portal-size);
-  z-index: 0;
-  border: 1px solid hsl(var(--zf-role-focus) / 0.34);
-  background:
-    radial-gradient(circle, transparent 0 55%, hsl(54 100% 88% / 0.34) 57% 58%, transparent 60%),
-    radial-gradient(circle, transparent 0 65%, hsl(var(--zf-role-body) / 0.26) 66% 67%, transparent 69%);
-  box-shadow:
-    0 0 0 10px hsl(var(--zf-role-body) / 0.08),
-    0 0 68px hsl(var(--zf-role-focus) / 0.34),
-    inset 0 0 34px hsl(var(--zf-role-energy) / 0.16);
-  opacity: 0.82;
-  transform: translate(-50%, -50%);
-  animation: orb-day-hero-ring 20s linear infinite;
-}
-
 .orb-day-scope .orb-day-anchor-field {
   position: absolute;
   left: 50%;
@@ -948,40 +771,6 @@
   width: calc(var(--orb-hero-size, 260px) * 1.56);
   pointer-events: none;
   transform: translate(-50%, -50%);
-}
-
-.orb-day-scope .orb-day-anchor-field::before,
-.orb-day-scope .orb-day-anchor-field::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: 9999px;
-  pointer-events: none;
-}
-
-.orb-day-scope .orb-day-anchor-field::before {
-  background:
-    radial-gradient(circle, transparent 0 47%, hsl(var(--zf-role-body) / 0.34) 49% 50%, transparent 52%),
-    radial-gradient(circle, transparent 0 61%, hsl(var(--zf-role-focus) / 0.22) 62% 63%, transparent 65%);
-  -webkit-mask-image: radial-gradient(circle, transparent 0 44%, #000 47% 66%, transparent 70%);
-  mask-image: radial-gradient(circle, transparent 0 44%, #000 47% 66%, transparent 70%);
-  filter: drop-shadow(0 0 18px hsl(var(--zf-role-body) / 0.42));
-  opacity: 0.76;
-  animation: orb-day-anchored-star-ring 14s linear infinite;
-}
-
-.orb-day-scope .orb-day-anchor-field::after {
-  inset: 17%;
-  border: 1px solid hsl(var(--zf-role-energy) / 0.28);
-  box-shadow:
-    0 -3.15rem 0 -1.42rem hsl(54 100% 86% / 0.95),
-    3.4rem -0.9rem 0 -1.48rem hsl(var(--zf-role-body) / 0.85),
-    1.8rem 3.1rem 0 -1.56rem hsl(var(--zf-role-focus) / 0.78),
-    -3.2rem 1.1rem 0 -1.52rem hsl(var(--zf-role-energy) / 0.84),
-    -2.2rem -2.6rem 0 -1.58rem hsl(var(--zf-role-release) / 0.70),
-    0 0 36px hsl(var(--zf-role-body) / 0.30);
-  opacity: 0.96;
-  animation: orb-day-anchored-points 9.5s ease-in-out infinite;
 }
 
 .orb-day-scope .orb-day-anchor-spark {
@@ -1053,12 +842,6 @@
   mask-image: radial-gradient(circle, #000 0 45%, rgba(0, 0, 0, 0.76) 49%, transparent 58%);
 }
 
-.orb-day-scope .orb-page-rim-glow::before,
-.orb-day-scope .orb-page-rim-glow::after,
-.orb-day-scope .orb-day-anchor-field::before,
-.orb-day-scope .orb-day-anchor-field::after,
-.orb-day-flourish::before,
-.orb-day-flourish::after,
 .day-cosmic__solar-portal {
   display: none;
 }
@@ -1277,42 +1060,6 @@
   width: 0.56rem;
   background: hsl(var(--zf-role-body) / 0.78);
   animation-delay: -4.8s;
-}
-
-@keyframes orb-day-hero-corona {
-  0%,
-  100% {
-    opacity: 0.50;
-    transform: translate(-50%, -50%) scale(0.94) rotate(-5deg);
-  }
-  45% {
-    opacity: 0.86;
-    transform: translate(-50%, -50%) scale(1.04) rotate(4deg);
-  }
-}
-
-@keyframes orb-day-hero-ring {
-  to {
-    transform: translate(-50%, -50%) rotate(1turn);
-  }
-}
-
-@keyframes orb-day-anchored-star-ring {
-  to {
-    transform: rotate(1turn);
-  }
-}
-
-@keyframes orb-day-anchored-points {
-  0%,
-  100% {
-    opacity: 0.72;
-    transform: rotate(-8deg) scale(0.96);
-  }
-  50% {
-    opacity: 1;
-    transform: rotate(10deg) scale(1.04);
-  }
 }
 
 @keyframes orb-day-anchor-spark {

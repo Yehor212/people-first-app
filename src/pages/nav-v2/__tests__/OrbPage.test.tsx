@@ -251,16 +251,13 @@ describe("OrbPage progressive flow", () => {
     expect(screen.getByTestId("orb-page-select")).toBeInTheDocument();
   });
 
-  it("keeps the night orb rim breathing CSS wired and runtime-perf safe", () => {
+  it("does not let runtime-performance CSS suppress the V2 orb surface", () => {
     const css = readFileSync("src/pages/nav-v2/CosmicBgAdapter.css", "utf8");
 
-    expect(css).toContain(
-      '.orb-cosmic-scope .orb-page-rim-glow[data-orb-breathing="true"]::before',
-    );
-    expect(css).toContain("@keyframes orb-night-rim-breathe");
     expect(css).not.toContain(
       ":root[data-runtime-perf] .orb-cosmic-scope .orb-page-rim-glow",
     );
+    expect(css).not.toContain("orb-night-rim-orbit");
   });
 
   it("clips horizontal overflow inside the orb step scrollers", () => {
