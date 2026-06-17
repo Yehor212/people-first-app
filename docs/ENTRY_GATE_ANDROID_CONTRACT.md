@@ -350,17 +350,17 @@ Retention note:
 Facts file:
 
 - `output/playwright/android-entry-20260615/facts.json`
-- Generated at: `2026-06-16T22:48:30.763Z`
-- Base URL: `http://127.0.0.1:4322/people-first-app/`
+- Generated at: `2026-06-16T23:46:29.365Z`
+- Base URL: `http://127.0.0.1:4232/people-first-app/`
 - Runtime: Chromium production preview
 - SHA-256:
-  `1993b7f1b809ae16b5d69c407ef0e36f49aff8f7c74408ea835bed62c33ae31a`
+  `82083214ded651de48fa8e38f213a272d1da43417daa98f907bc55c21121881e`
 
 Verification log:
 
 - `output/playwright/android-entry-20260615/verification-log-20260615.txt`
 - SHA-256:
-  `3a2bc879e42a640ef6560a7973e5761ecf0162ad7d6b9ae15024c6254b9197d0`
+  `b3b011c378ab853c62cab78b42aeb41769a3b59ab5e3ea9fffb9f18d218c30a9`
 
 Screenshots:
 
@@ -430,7 +430,7 @@ PASS:
 
 - Production web build: exit 0 against the current main worktree.
 - Android visual/runtime matrix: 2/2 Playwright tests PASS against
-  `http://127.0.0.1:4322/people-first-app/`, covering 9 screenshots plus all-language smoke.
+  `http://127.0.0.1:4232/people-first-app/`, covering 9 screenshots plus all-language smoke.
 - Scoped Android entry lint: exit 0 for `e2e/entry-gate-android.spec.ts`.
 - Scoped whitespace diff check: exit 0 for `e2e/entry-gate-android.spec.ts`.
 - Secret-string scan over the Android entry spec, this contract, and fresh facts/log
@@ -438,13 +438,13 @@ PASS:
 
 Fresh facts:
 
-- Facts SHA-256: `1993b7f1b809ae16b5d69c407ef0e36f49aff8f7c74408ea835bed62c33ae31a`.
-- Verification log SHA-256: `3a2bc879e42a640ef6560a7973e5761ecf0162ad7d6b9ae15024c6254b9197d0`.
+- Facts SHA-256: `82083214ded651de48fa8e38f213a272d1da43417daa98f907bc55c21121881e`.
+- Verification log SHA-256: `b3b011c378ab853c62cab78b42aeb41769a3b59ab5e3ea9fffb9f18d218c30a9`.
 - Background counts remained 7 orbs, 3 ripples, 3 ribbons, 3 caustics,
   4 currents, 1 horizon, 0 stars, and 0 old flow marks in every scenario.
-- Auth provider ids remained `google`, `facebook`, `telegram`; icon rail
-  spread remained 0; Telegram kept `viewBox="0 0 128 128"` with
-  `#2AABEE` and `#229ED9`.
+- Auth provider ids remained `google`, `facebook`, `telegram`; Google,
+  Facebook, and Telegram rendered at 24 by 24; icon rail spread remained 0;
+  Telegram kept `viewBox="0 0 128 128"` with `#2AABEE` and `#229ED9`.
 - Console warnings/errors: 0 in all production-preview visual scenarios.
 - Failed requests: 0 in all production-preview visual scenarios.
 

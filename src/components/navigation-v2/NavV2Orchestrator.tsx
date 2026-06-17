@@ -161,7 +161,7 @@ function NavV2RoutePending({ label }: { label: string }) {
       aria-live="polite"
       aria-label={`Loading ${label}`}
       data-testid="nav-v2-route-pending"
-      className="pointer-events-none fixed start-1/2 top-[calc(env(safe-area-inset-top)+0.35rem)] z-[58] max-w-[calc(100vw-6rem)] -translate-x-1/2 rounded-full border border-border/55 bg-card/85 px-3 py-1.5 text-[11px] font-semibold leading-none text-foreground shadow-[0_10px_28px_hsl(var(--foreground)/0.14)] backdrop-blur-xl [-webkit-backdrop-filter:blur(18px)] motion-safe:animate-fade-in"
+      className="pointer-events-none fixed start-1/2 top-[calc(env(safe-area-inset-top)+0.35rem)] z-[61] max-w-[calc(100vw-6rem)] -translate-x-1/2 rounded-full border border-border/55 bg-card/85 px-3 py-1.5 text-[11px] font-semibold leading-none text-foreground shadow-[0_10px_28px_hsl(var(--foreground)/0.14)] backdrop-blur-xl [-webkit-backdrop-filter:blur(18px)] motion-safe:animate-fade-in"
     >
       <span className="inline-flex min-h-[24px] items-center gap-1.5">
         <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-primary motion-safe:animate-pulse" />

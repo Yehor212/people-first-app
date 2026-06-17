@@ -344,6 +344,16 @@ test.describe("Android entry gate evidence", () => {
           const rect = icon?.getBoundingClientRect();
           return rect ? Math.round((rect.left + rect.width / 2) * 100) / 100 : null;
         }).filter((value): value is number => typeof value === "number");
+        const providerIconMetrics = Array.from(
+          document.querySelectorAll<SVGElement>("svg[data-testid^='auth-provider-icon-']"),
+        ).map((icon) => {
+          const rect = icon.getBoundingClientRect();
+          return {
+            id: icon.dataset.testid ?? "",
+            renderedHeight: Math.round(rect.height * 100) / 100,
+            renderedWidth: Math.round(rect.width * 100) / 100,
+          };
+        });
         const telegramIcon = document.querySelector<SVGElement>(
           "[data-testid='auth-provider-icon-telegram']",
         );
@@ -404,6 +414,7 @@ test.describe("Android entry gate evidence", () => {
             element.dataset.testid?.replace("auth-provider-content-", ""),
           ),
           iconCenters,
+          providerIconMetrics,
           iconCenterSpread:
             iconCenters.length > 0 ? Math.max(...iconCenters) - Math.min(...iconCenters) : null,
           telegram: {
@@ -434,8 +445,11 @@ test.describe("Android entry gate evidence", () => {
           `${fact.backdrop.caustics}/${fact.backdrop.currents}/${fact.backdrop.horizons} ` +
           `stars=${fact.backdrop.stars} oldFlowMarks=${fact.backdrop.oldFlowMarks} ` +
           `providers=${fact.authProviders.join(",")} iconCenterSpread=${fact.iconCenterSpread} ` +
-          `telegramViewBox=${fact.telegram.viewBox} console=${consoleMessages.length} ` +
-          `failedRequests=${failedRequests.length} screenshotSha=${screenshotSha}`,
+          `iconMetrics=${fact.providerIconMetrics
+            .map((icon) => `${icon.id}:${icon.renderedWidth}x${icon.renderedHeight}`)
+            .join(",")} telegramViewBox=${fact.telegram.viewBox} ` +
+          `console=${consoleMessages.length} failedRequests=${failedRequests.length} ` +
+          `screenshotSha=${screenshotSha}`,
       );
 
       page.removeAllListeners("console");
@@ -501,6 +515,11 @@ test.describe("Android entry gate evidence", () => {
           "telegram",
         ]);
         expect(fact.iconCenterSpread, `${fact.name} provider icon rail spread`).toBe(0);
+        expect(fact.providerIconMetrics, `${fact.name} provider icon metrics`).toEqual([
+          { id: "auth-provider-icon-google", renderedHeight: 24, renderedWidth: 24 },
+          { id: "auth-provider-icon-facebook", renderedHeight: 24, renderedWidth: 24 },
+          { id: "auth-provider-icon-telegram", renderedHeight: 24, renderedWidth: 24 },
+        ]);
         expect(fact.telegram.exists, `${fact.name} Telegram icon`).toBe(true);
         expect(fact.telegram.viewBox, `${fact.name} Telegram viewBox`).toBe("0 0 128 128");
         expect(fact.telegram.gradientStops, `${fact.name} Telegram gradient`).toEqual([

@@ -38,9 +38,9 @@ Result: PASS as part of the combined PWA/Desktop run, 5 tests passed.
 Evidence:
 
 - Facts: `output/playwright/desktop-tauri-entry-20260615/facts.json`
-- Facts SHA-256: `bb7c999e74d9c5c35d4a83f571ef5497deb9f9a76f9c6094aeb59ff8e5e70c41`
+- Facts SHA-256: `23725ef37938b8029aeed4a3c6193deb5ea60e49c09490b4d449b634b8ee49ab`
 - Verification log: `output/playwright/desktop-tauri-entry-20260615/verification-log-20260615.txt`
-- Verification log SHA-256: `8ea36201e081cc8fb3a181ee874617ca08a1b1d23455f54ea05e6d5683f97398`
+- Verification log SHA-256: `21f51ac4ebb4c4aefda76ea92b4d7987b19c4f09110ee4a26116114393e88cd9`
 
 Scenario summary:
 
@@ -247,7 +247,7 @@ Runtime:
 - `src-tauri/src/main.rs` runs `tauri::Builder::default()` with generated
   context.
 
-## Current Verification On 2026-06-15
+## Historical Verification On 2026-06-15
 
 Evidence directory:
 

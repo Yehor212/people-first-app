@@ -12,7 +12,15 @@ screen and the following sign-in screen. It complements the platform contracts:
 
 ## Current Verdict
 
-Public GitHub Pages entry: PASS on 2026-06-16 after deploy run `27588477374`.
+Public GitHub Pages entry: PASS on 2026-06-16 after fresh cache-busted smoke.
+
+Public GitHub Pages V2 route pending-layer fix: DRIFT on 2026-06-16. The
+published app still renders `nav-v2-route-pending` at z-index 58 while the
+closing drawer is z-index 60 and backdrop is z-index 59. The local main
+worktree fix raises pending to z-index 61, but that local fix is not proven
+deployed by the public smoke below.
+
+Previous public deploy run: `27588477374`.
 
 Visual Regression run `27588477332`: PASS.
 
@@ -21,25 +29,44 @@ Local production-equivalent PWA entry: PASS on 2026-06-16.
 Local Desktop/Tauri web-boundary entry: PASS on 2026-06-16. Real native Tauri
 launch remains outside this public deployment status document.
 
-## Fresh Cache-Busted Smoke - 2026-06-16
+## Fresh Cache-Busted Smoke - 2026-06-16, Current
 
 Command source: inline Playwright smoke against public GitHub Pages.
 
 URL checked:
 
 ```text
-https://yehor212.github.io/people-first-app/?_v=1781576224921
+https://yehor212.github.io/people-first-app/?_v=1781655006647
+https://yehor212.github.io/people-first-app/orb?nav=v2&navLayout=phone&_v=1781655006647
 ```
 
-Result: PASS for three public scenarios.
+Result:
+
+- PASS for three public entry scenarios.
+- DRIFT for the V2 phone route pending-layer fix: the route opens correctly and
+  is not Not Found, but the published pending indicator is still below the
+  closing drawer layer.
 
 Scenario summary:
 
 - `public-phone-language-light`: language-selector-screen, logo 512x512/72x72, background 7/3/3/3/4/1, forbidden marks 0, theme switcher present, language options 8, overflow false/false, console 0, failed requests 0.
-- `public-phone-auth-dark`: auth-screen, logo 512x512/72x72, background 7/3/3/3/4/1, forbidden marks 0, providers google/facebook/telegram, icon center spread 0, Telegram viewBox `0 0 128 128`, overflow false/false, console 0, failed requests 0.
-- `public-desktop-auth-dark`: auth-screen, logo 512x512/72x72, background 7/3/3/3/4/1, forbidden marks 0, providers google/facebook/telegram, icon center spread 0, Telegram viewBox `0 0 128 128`, overflow false/false, console 0, failed requests 0.
+- `public-phone-auth-dark`: auth-screen, logo 512x512/72x72, background 7/3/3/3/4/1, forbidden marks 0, providers google/facebook/telegram, icon center spread 0, provider icons 24x24, Telegram viewBox `0 0 128 128`, overflow false/false, console 0, failed requests 0.
+- `public-desktop-auth-dark`: auth-screen, logo 512x512/72x72, background 7/3/3/3/4/1, forbidden marks 0, providers google/facebook/telegram, icon center spread 0, provider icons 24x24, Telegram viewBox `0 0 128 128`, overflow false/false, console 0, failed requests 0.
+- `public-v2-phone-orb`: active page `orb`, layout `phone`, Not Found false,
+  pending text `Habits`, z-indexes pending/backdrop/drawer = 58/59/60.
+
+Evidence:
+
+- Facts: `output/playwright/public-entry-current-20260616/facts.json`
+- Facts SHA-256: `70ca919906447405cea2e2773b71f07d2da47e05c67b8162366aedc37451d793`
+- Verification log:
+  `output/playwright/public-entry-current-20260616/verification-log.txt`
+- Verification log SHA-256:
+  `ef1e88eb23719c81bd50a9858076a0989e20223372dd90cf8790d03af2b4fafa`
 
 ## Public GitHub Pages Evidence
+
+Historical 2026-06-16 smoke from deploy run `27588477374`.
 
 Public URL:
 
@@ -91,7 +118,7 @@ Result:
 - PWA portion of combined run: PASS.
 - Combined PWA/Desktop command result: 5 tests passed.
 - Facts: `output/playwright/pwa-entry-20260615/facts.json`
-- Facts SHA-256: `c3e8c0331de9535bf28e6cc74ff1c78a7201b0be0a24bd50f68195a7e5ac691e`
+- Facts SHA-256: `30b0ff2ac5a8edf6b5a00f13bd610e8b088857211fcce0788650d3236d8c4695`
 
 Scenario summary:
 
@@ -118,7 +145,7 @@ Result:
 - Desktop/Tauri web-boundary portion of combined run: PASS.
 - Combined PWA/Desktop command result: 5 tests passed.
 - Facts: `output/playwright/desktop-tauri-entry-20260615/facts.json`
-- Facts SHA-256: `bb7c999e74d9c5c35d4a83f571ef5497deb9f9a76f9c6094aeb59ff8e5e70c41`
+- Facts SHA-256: `23725ef37938b8029aeed4a3c6193deb5ea60e49c09490b4d449b634b8ee49ab`
 
 Scenario summary:
 

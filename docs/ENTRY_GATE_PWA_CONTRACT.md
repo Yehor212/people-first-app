@@ -27,9 +27,9 @@ Result: PASS as part of the combined PWA/Desktop run, 5 tests passed.
 Evidence:
 
 - Facts: `output/playwright/pwa-entry-20260615/facts.json`
-- Facts SHA-256: `c3e8c0331de9535bf28e6cc74ff1c78a7201b0be0a24bd50f68195a7e5ac691e`
+- Facts SHA-256: `30b0ff2ac5a8edf6b5a00f13bd610e8b088857211fcce0788650d3236d8c4695`
 - Verification log: `output/playwright/pwa-entry-20260615/verification-log-20260615.txt`
-- Verification log SHA-256: `f8edc20a00d13453b32f255d4aa2d3704ce16aab3e114eda2eff8918e31df233`
+- Verification log SHA-256: `6bfcecf92328512dde1284d6941f2b081516c6f61049f78c2877c3c382288c10`
 
 Scenario summary:
 
@@ -218,17 +218,17 @@ Regression spec:
 Facts file:
 
 - `output/playwright/pwa-entry-20260615/facts.json`
-- Generated at: `2026-06-16T02:09:45.433Z`
+- Generated at: `2026-06-16T23:24:02.814Z`
 - Base URL: `http://127.0.0.1:4232/people-first-app/`
 - Runtime: chromium production preview
 - SHA-256:
-  `c3e8c0331de9535bf28e6cc74ff1c78a7201b0be0a24bd50f68195a7e5ac691e`
+  `30b0ff2ac5a8edf6b5a00f13bd610e8b088857211fcce0788650d3236d8c4695`
 
 Verification log:
 
 - `output/playwright/pwa-entry-20260615/verification-log-20260615.txt`
 - SHA-256:
-  `f8edc20a00d13453b32f255d4aa2d3704ce16aab3e114eda2eff8918e31df233`
+  `6bfcecf92328512dde1284d6941f2b081516c6f61049f78c2877c3c382288c10`
 
 Screenshots:
 

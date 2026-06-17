@@ -370,6 +370,43 @@ test.describe("V2 mobile web route transitions", () => {
     await expectNoViewTransitionCalls(page);
   });
 
+  test("phone drawer shows route pending above the closing drawer", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await primeZenflowV2(page, {
+      clearStorage: true,
+      language: "en",
+      theme: "paper",
+    });
+
+    await page.goto("orb?nav=v2&navLayout=phone&dev=true", {
+      waitUntil: "domcontentloaded",
+    });
+
+    await page.getByTestId("nav-v2-open-drawer").click({ timeout: 5_000 });
+    await expect(page.getByTestId("drawer-v2")).toBeVisible({ timeout: 5_000 });
+
+    await page.getByTestId("drawer-v2-destination-habits").click({ timeout: 5_000 });
+    await expect(page.getByTestId("nav-v2-route-pending")).toContainText("Habits", {
+      timeout: 750,
+    });
+
+    const layers = await page.evaluate(() => {
+      const zIndexOf = (testId: string) => {
+        const element = document.querySelector<HTMLElement>(`[data-testid="${testId}"]`);
+        const parsed = Number.parseInt(window.getComputedStyle(element!).zIndex, 10);
+        return Number.isFinite(parsed) ? parsed : 0;
+      };
+
+      return {
+        backdrop: zIndexOf("drawer-v2-backdrop"),
+        drawer: zIndexOf("drawer-v2"),
+        pending: zIndexOf("nav-v2-route-pending"),
+      };
+    });
+
+    expect(layers.pending).toBeGreaterThan(Math.max(layers.backdrop, layers.drawer));
+  });
+
   test("phone drawer still preloads Habits on WebViews without requestIdleCallback", async ({
     page,
   }, testInfo) => {

@@ -73,11 +73,47 @@ function isValidPage(value: unknown): value is NavV2Page {
   return typeof value === "string" && (NAV_V2_PAGES as readonly string[]).includes(value);
 }
 
+const DEPLOY_BASE_PATH = "/people-first-app";
+
+function normalizeBasePathCandidate(value: unknown): string {
+  if (typeof value !== "string") return "";
+
+  const trimmed = value.trim().split(/[?#]/, 1)[0];
+  if (!trimmed || trimmed === "/" || trimmed === "." || trimmed === "./") {
+    return "";
+  }
+
+  const pathOnly = (() => {
+    try {
+      return trimmed.startsWith("http://") || trimmed.startsWith("https://")
+        ? new URL(trimmed).pathname
+        : trimmed;
+    } catch {
+      return trimmed;
+    }
+  })();
+  const withLeadingSlash = pathOnly.startsWith("/") ? pathOnly : `/${pathOnly}`;
+  const withoutTrailingSlash = withLeadingSlash.replace(/\/+$/, "");
+  return withoutTrailingSlash === "/" ? "" : withoutTrailingSlash;
+}
+
+function getNavV2BasePath(pathname: string): string {
+  const candidates = [
+    normalizeBasePathCandidate(import.meta.env?.BASE_URL),
+    normalizeBasePathCandidate(import.meta.env?.VITE_APP_BASE),
+  ].filter(Boolean);
+
+  if (pathname === DEPLOY_BASE_PATH || pathname.startsWith(`${DEPLOY_BASE_PATH}/`)) {
+    candidates.push(DEPLOY_BASE_PATH);
+  }
+
+  return [...new Set(candidates)].sort((a, b) => b.length - a.length)[0] ?? "";
+}
+
 /** Strip Vite base (e.g. "/people-first-app/") from pathname for GH Pages deploys. */
 function normalizePath(pathname: string): string {
-  // import.meta.env.BASE_URL is set by Vite at build time (e.g. "/people-first-app/")
-  const base = (import.meta.env?.BASE_URL || "/").replace(/\/$/, "");
-  const stripped = base && pathname.startsWith(base)
+  const base = getNavV2BasePath(pathname);
+  const stripped = base && (pathname === base || pathname.startsWith(`${base}/`))
     ? pathname.slice(base.length)
     : pathname;
   const normalized = stripped || "/";
@@ -229,7 +265,7 @@ export function useNavigationV2(): UseNavigationV2Return {
         setActivePageState(page);
         setUnknownPath(null);
         if (typeof window !== "undefined") {
-          const base = (import.meta.env?.BASE_URL || "/").replace(/\/$/, "");
+          const base = getNavV2BasePath(window.location.pathname);
           const path = PAGE_TO_PATH[page];
           // Preserve ?nav=v2 (and other) query params across navigation.
           // Prepend Vite base so GH Pages deploys keep /people-first-app/ prefix.

@@ -439,6 +439,16 @@ test.describe("Desktop/Tauri entry gate evidence", () => {
           id: icon.dataset.testid ?? "",
           viewBox: icon.getAttribute("viewBox"),
         }));
+        const providerIconMetrics = Array.from(
+          document.querySelectorAll<SVGElement>("svg[data-testid^='auth-provider-icon-']"),
+        ).map((icon) => {
+          const rect = icon.getBoundingClientRect();
+          return {
+            id: icon.dataset.testid ?? "",
+            renderedHeight: Math.round(rect.height * 100) / 100,
+            renderedWidth: Math.round(rect.width * 100) / 100,
+          };
+        });
         const telegramIcon = document.querySelector<SVGElement>(
           "[data-testid='auth-provider-icon-telegram']",
         );
@@ -495,6 +505,7 @@ test.describe("Desktop/Tauri entry gate evidence", () => {
             element.dataset.testid?.replace("auth-provider-content-", ""),
           ),
           providerIcons,
+          providerIconMetrics,
           privacyCopyVisibleInViewport: privacyCopyRect
             ? privacyCopyRect.top >= 0 && privacyCopyRect.bottom <= window.innerHeight
             : null,
@@ -534,8 +545,11 @@ test.describe("Desktop/Tauri entry gate evidence", () => {
           `backdrop=${fact.backdrop.orbs}/${fact.backdrop.ripples}/${fact.backdrop.ribbons}/` +
           `${fact.backdrop.caustics}/${fact.backdrop.currents}/${fact.backdrop.horizons} ` +
           `forbiddenMarks=${fact.backdrop.forbiddenMarks} providers=${fact.authProviders.join(",")} ` +
-          `iconCenterSpread=${fact.iconCenterSpread} console=${consoleMessages.length} ` +
-          `failedRequests=${failedRequests.length} screenshotSha=${screenshotSha}`,
+          `iconCenterSpread=${fact.iconCenterSpread} ` +
+          `iconMetrics=${fact.providerIconMetrics
+            .map((icon) => `${icon.id}:${icon.renderedWidth}x${icon.renderedHeight}`)
+            .join(",")} console=${consoleMessages.length} failedRequests=${failedRequests.length} ` +
+          `screenshotSha=${screenshotSha}`,
       );
 
       page.removeAllListeners("console");
@@ -602,6 +616,11 @@ test.describe("Desktop/Tauri entry gate evidence", () => {
         ]);
         expect(fact.iconCenterSpread, `${fact.name} provider icon rail spread`).toBe(0);
         expect(fact.providerIcons.every((icon) => icon.className.includes("h-6 w-6"))).toBe(true);
+        expect(fact.providerIconMetrics, `${fact.name} provider icon metrics`).toEqual([
+          { id: "auth-provider-icon-google", renderedHeight: 24, renderedWidth: 24 },
+          { id: "auth-provider-icon-facebook", renderedHeight: 24, renderedWidth: 24 },
+          { id: "auth-provider-icon-telegram", renderedHeight: 24, renderedWidth: 24 },
+        ]);
         expect(fact.telegram.exists, `${fact.name} Telegram icon`).toBe(true);
         expect(fact.telegram.viewBox, `${fact.name} Telegram viewBox`).toBe("0 0 128 128");
         expect(fact.telegram.gradientStops, `${fact.name} Telegram gradient`).toEqual([

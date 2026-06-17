@@ -1,11 +1,45 @@
 # ZenFlow iOS Entry Gate Contract
 
-Last verified: 2026-06-15
+Last verified: 2026-06-16
 
 This document freezes the intended iOS/WKWebView behavior for the ZenFlow entry
 gate. It covers the first-run language screen and the following sign-in screen.
 Future agents must treat this page as a verified platform contract, not as a
 generic auth screen that can be restyled without iOS evidence.
+
+## Fresh Verification Addendum - 2026-06-16
+
+Command:
+
+```bash
+ZENFLOW_PLAYWRIGHT_BASE_URL=https://127.0.0.1:4233/people-first-app/ npx playwright test e2e/entry-gate-ios.spec.ts --project=chromium --reporter=line --workers=1
+```
+
+Result: PASS, 2 tests passed. The run covered 9 iPhone/iPad screenshots plus
+iPhone all-language smoke.
+
+Evidence:
+
+- Facts: `output/playwright/ios-entry-20260615/facts.json`
+- Facts SHA-256: `c138c39c3ab772a9e4dd0eb80a8f2882a086276cac95db4f171d66b1b7cee770`
+- Verification log: `output/playwright/ios-entry-20260615/verification-log-20260615.txt`
+- Verification log SHA-256: `39d6122211227edb757ec4e01759427c59c74671d0de62634c28fa1625ce5a91`
+
+Fresh assertions proven by current facts:
+
+- iPhone and iPad auth screens render Google, Facebook, and Telegram.
+- Google, Facebook, and Telegram icons render at 24 by 24 in every iOS auth
+  scenario.
+- Provider icon center spread is 0 in every iOS auth scenario.
+- Telegram uses `viewBox="0 0 128 128"` with `#2AABEE` and `#229ED9`.
+- iPad dark coverage includes both language and auth screenshots.
+- Background forbidden star/sparkle/generic AI marks remain 0.
+- Horizontal overflow remains false and audited out-of-bounds elements remain 0.
+
+Failure handling note: running the iOS spec against plain HTTP preview produced a
+blank WebKit page because the CSP contains `upgrade-insecure-requests`; WebKit
+upgraded local assets to HTTPS while the preview server was HTTP-only. The proof
+was rerun on a temporary HTTPS local server and passed.
 
 ## Scope
 

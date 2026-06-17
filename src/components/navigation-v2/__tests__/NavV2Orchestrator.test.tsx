@@ -150,6 +150,23 @@ describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
     expect(trigger.className).toContain("md:hidden");
   });
 
+  it("recognizes the GitHub Pages base path as a valid V2 route", () => {
+    window.history.replaceState(
+      {},
+      "",
+      "/people-first-app/orb?nav=v2&navLayout=phone&dev=true",
+    );
+
+    render(<NavV2Orchestrator />);
+
+    expect(screen.getByTestId("nav-v2-orchestrator")).toHaveAttribute(
+      "data-active-page",
+      "orb",
+    );
+    expect(screen.queryByText("Route not found")).not.toBeInTheDocument();
+    expect(screen.getByTestId("nav-v2-open-drawer").className).toContain("md:hidden");
+  });
+
   it("uses web navigation for the dev-only V2 preview even on a phone-width browser", () => {
     window.history.replaceState({}, "", "/?nav=v2&dev=true");
 
