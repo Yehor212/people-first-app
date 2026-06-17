@@ -200,6 +200,9 @@ vi.mock("@/stores", () => ({
 const themeState = vi.hoisted<{ appliedTheme: AppliedTheme }>(() => ({
   appliedTheme: "ink",
 }));
+const mockUseShouldAnimate = vi.hoisted(() =>
+  vi.fn((_options?: { respectRuntimePerformance?: boolean }) => true),
+);
 
 vi.mock("@/stores/themeStore", () => ({
   useThemeStore: (selector: (s: unknown) => unknown) =>
@@ -207,7 +210,8 @@ vi.mock("@/stores/themeStore", () => ({
 }));
 
 vi.mock("@/hooks/useShouldAnimate", () => ({
-  useShouldAnimate: () => true,
+  useShouldAnimate: (options?: { respectRuntimePerformance?: boolean }) =>
+    mockUseShouldAnimate(options),
 }));
 
 vi.mock("@/lib/motion", () => ({
@@ -220,6 +224,8 @@ describe("OrbPage progressive flow", () => {
     onAddMoodMock.mockClear();
     setActivePageMock.mockClear();
     themeState.appliedTheme = "ink";
+    mockUseShouldAnimate.mockReset();
+    mockUseShouldAnimate.mockReturnValue(true);
     mockMoods = [];
     rebuildMoodsSnapshot();
     setViewport(1024, 900);
@@ -243,6 +249,18 @@ describe("OrbPage progressive flow", () => {
       "auto",
     );
     expect(screen.getByTestId("orb-page-select")).toBeInTheDocument();
+  });
+
+  it("keeps the night orb rim breathing CSS wired and runtime-perf safe", () => {
+    const css = readFileSync("src/pages/nav-v2/CosmicBgAdapter.css", "utf8");
+
+    expect(css).toContain(
+      '.orb-cosmic-scope .orb-page-rim-glow[data-orb-breathing="true"]::before',
+    );
+    expect(css).toContain("@keyframes orb-night-rim-breathe");
+    expect(css).not.toContain(
+      ":root[data-runtime-perf] .orb-cosmic-scope .orb-page-rim-glow",
+    );
   });
 
   it("clips horizontal overflow inside the orb step scrollers", () => {
@@ -353,6 +371,24 @@ describe("OrbPage progressive flow", () => {
       "data-renderer",
       "webgpu",
     );
+  });
+
+  it("keeps the desktop ambient orb breathing alive during runtime performance startup", () => {
+    mockUseShouldAnimate.mockImplementation(
+      (options?: { respectRuntimePerformance?: boolean }) =>
+        options?.respectRuntimePerformance === false,
+    );
+    setViewport(1098, 768);
+
+    render(<OrbPage onAddMood={onAddMoodMock} />);
+
+    expect(screen.getByTestId("orb-page-rim-glow")).toHaveAttribute(
+      "data-orb-breathing",
+      "true",
+    );
+    expect(mockUseShouldAnimate).toHaveBeenCalledWith({
+      respectRuntimePerformance: false,
+    });
   });
 
   it("requires a time before leaving the select step when scope is specific", () => {

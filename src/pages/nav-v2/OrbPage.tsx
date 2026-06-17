@@ -3,6 +3,7 @@ import { Bloom } from "@/lib/motion";
 import { staggerDelay } from "@/lib/motion/choreography";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useThemeStore } from "@/stores/themeStore";
+import { useShouldAnimate } from "@/hooks/useShouldAnimate";
 import { cn } from "@/lib/utils";
 import { haptics } from "@/lib/haptics";
 import { CANONICAL_ORB_ANIMATION_SPEED } from "@/components/state-of-mind/ValenceOrb";
@@ -85,7 +86,6 @@ export const OrbPage = memo(function OrbPage({
   const {
     orbValence,
     auraHue,
-    shouldAnimate,
     step,
     draftValence,
     resolvedValence,
@@ -104,6 +104,7 @@ export const OrbPage = memo(function OrbPage({
     handleBackStep,
     handleOpenDiary,
   } = useOrbMoodFlow({ navigateToPage, onAddMood });
+  const shouldRunAmbientMotion = useShouldAnimate({ respectRuntimePerformance: false });
 
   useEffect(() => {
     mainRef.current?.focus({ preventScroll: true });
@@ -131,11 +132,11 @@ export const OrbPage = memo(function OrbPage({
     // surface — removed per user feedback 2026-04-18.
     void haptics.tabChanged();
     const node = auraRef.current;
-    if (node && shouldAnimate) {
+    if (node && shouldRunAmbientMotion) {
       node.setAttribute("data-orb-pulse", "true");
       setTimeout(() => node.removeAttribute("data-orb-pulse"), 650);
     }
-  }, [shouldAnimate]);
+  }, [shouldRunAmbientMotion]);
 
   const moodLabel = useMemo(() => {
     const moodKey =
@@ -251,7 +252,7 @@ export const OrbPage = memo(function OrbPage({
               tx={tx}
               selectContentLayoutClass={selectContentLayoutClass}
               contentGapClass={contentGapClass}
-              shouldAnimate={shouldAnimate}
+              shouldAnimate={shouldRunAmbientMotion}
               auraHue={auraHue}
               auraRef={auraRef}
               showOrbAura={false}
