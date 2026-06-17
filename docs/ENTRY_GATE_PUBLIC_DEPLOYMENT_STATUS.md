@@ -14,15 +14,18 @@ screen and the following sign-in screen. It complements the platform contracts:
 
 Public GitHub Pages entry: PASS on 2026-06-16 after fresh cache-busted smoke.
 
-Public GitHub Pages V2 route pending-layer fix: PASS on 2026-06-17 after deploy
-run `27657057252`. The published app now renders `nav-v2-route-pending` at
+Public GitHub Pages V2 route pending-layer fix: PASS on 2026-06-17. The
+fix first deployed in run `27657057252`; the current published `main` deploy is
+run `27657437241`. The published app now renders `nav-v2-route-pending` at
 z-index 61 while the closing drawer is z-index 60 and backdrop is z-index 59.
 The public phone smoke proved `orb -> habits` reaches the habits page without
 Not Found, console errors, failed requests, or the pending layer being hidden.
 
-Current public deploy run: `27657057252`.
+Current public deploy run: `27657437241` for commit
+`9d571bee3e5250208412582763d16035241ac086`.
 
-Visual Regression run `27657057255`: PASS.
+Visual Regression run `27657437208`: PASS for commit
+`9d571bee3e5250208412582763d16035241ac086`.
 
 Local production-equivalent PWA entry: PASS on 2026-06-16.
 
@@ -177,7 +180,7 @@ Result:
 - Desktop/Tauri web-boundary portion of combined run: PASS.
 - Combined PWA/Desktop command result: 5 tests passed.
 - Facts: `output/playwright/desktop-tauri-entry-20260615/facts.json`
-- Facts SHA-256: `23725ef37938b8029aeed4a3c6193deb5ea60e49c09490b4d449b634b8ee49ab`
+- Facts SHA-256: `d8cc527c3e040e2e10a8cb7f1de78b1a0f8e7357ff6c56e07ed24ddc9b56d373`
 
 Scenario summary:
 

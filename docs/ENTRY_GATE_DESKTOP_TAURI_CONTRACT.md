@@ -1,6 +1,6 @@
 # ZenFlow Desktop/Tauri Entry Gate Contract
 
-Last verified: 2026-06-16
+Last verified: 2026-06-17
 
 This contract freezes the desktop-width web behavior of the ZenFlow entry gate
 and records the native Tauri boundary. A desktop web preview is useful evidence
@@ -25,6 +25,34 @@ UNVERIFIED on 2026-06-15:
 - Windows EXE/NSIS packaging and Authenticode release readiness.
 - Snyk Code scan, because local Snyk returned `403 Forbidden` for the org.
 
+## Current Artifact Audit - 2026-06-17
+
+Command source: local completion-audit script over the current screenshot/facts
+artifacts in `output/playwright/desktop-tauri-entry-20260615/`.
+
+Result: PASS, 9 scenarios checked, 0 failures.
+
+Current evidence:
+
+- Facts: `output/playwright/desktop-tauri-entry-20260615/facts.json`
+- Facts SHA-256: `d8cc527c3e040e2e10a8cb7f1de78b1a0f8e7357ff6c56e07ed24ddc9b56d373`
+- Verification log:
+  `output/playwright/desktop-tauri-entry-20260615/verification-log-20260615.txt`
+- Verification log SHA-256:
+  `726646dec7f398b27b2060c40c06e1416e4c4acf613baaa5e13190359b69932e`
+
+Audit assertions:
+
+- Desktop default, minimum, wide, Arabic RTL, and Hebrew RTL screenshots exist.
+- Language and auth screens have no horizontal overflow.
+- Background remains 7 orbs, 3 ripples, 3 ribbons, 3 caustics, 4 currents, 1
+  horizon, and 0 forbidden star/sparkle/generic AI marks in every scenario.
+- Auth provider ids remain `google`, `facebook`, `telegram`.
+- Google, Facebook, and Telegram provider icons render at 24 by 24 in every
+  desktop auth scenario.
+- Real native Tauri launch remains UNVERIFIED by this audit; this is still a
+  desktop web-boundary and static Tauri config proof.
+
 ## Fresh Verification Addendum - 2026-06-16
 
 Command:
@@ -38,9 +66,9 @@ Result: PASS as part of the combined PWA/Desktop run, 5 tests passed.
 Evidence:
 
 - Facts: `output/playwright/desktop-tauri-entry-20260615/facts.json`
-- Facts SHA-256: `23725ef37938b8029aeed4a3c6193deb5ea60e49c09490b4d449b634b8ee49ab`
+- Facts SHA-256: `d8cc527c3e040e2e10a8cb7f1de78b1a0f8e7357ff6c56e07ed24ddc9b56d373`
 - Verification log: `output/playwright/desktop-tauri-entry-20260615/verification-log-20260615.txt`
-- Verification log SHA-256: `21f51ac4ebb4c4aefda76ea92b4d7987b19c4f09110ee4a26116114393e88cd9`
+- Verification log SHA-256: `726646dec7f398b27b2060c40c06e1416e4c4acf613baaa5e13190359b69932e`
 
 Scenario summary:
 
