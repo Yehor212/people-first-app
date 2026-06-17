@@ -1,6 +1,6 @@
 # ZenFlow Entry Gate Public Deployment Status
 
-Last checked: 2026-06-16
+Last checked: 2026-06-17
 
 This document records the public deployment status for the first-run language
 screen and the following sign-in screen. It complements the platform contracts:
@@ -14,22 +14,54 @@ screen and the following sign-in screen. It complements the platform contracts:
 
 Public GitHub Pages entry: PASS on 2026-06-16 after fresh cache-busted smoke.
 
-Public GitHub Pages V2 route pending-layer fix: DRIFT on 2026-06-16. The
-published app still renders `nav-v2-route-pending` at z-index 58 while the
-closing drawer is z-index 60 and backdrop is z-index 59. The local main
-worktree fix raises pending to z-index 61, but that local fix is not proven
-deployed by the public smoke below.
+Public GitHub Pages V2 route pending-layer fix: PASS on 2026-06-17 after deploy
+run `27657057252`. The published app now renders `nav-v2-route-pending` at
+z-index 61 while the closing drawer is z-index 60 and backdrop is z-index 59.
+The public phone smoke proved `orb -> habits` reaches the habits page without
+Not Found, console errors, failed requests, or the pending layer being hidden.
 
-Previous public deploy run: `27588477374`.
+Current public deploy run: `27657057252`.
 
-Visual Regression run `27588477332`: PASS.
+Visual Regression run `27657057255`: PASS.
 
 Local production-equivalent PWA entry: PASS on 2026-06-16.
 
 Local Desktop/Tauri web-boundary entry: PASS on 2026-06-16. Real native Tauri
 launch remains outside this public deployment status document.
 
-## Fresh Cache-Busted Smoke - 2026-06-16, Current
+## Fresh Cache-Busted Smoke - 2026-06-17, Current
+
+Command source: inline Playwright smoke against public GitHub Pages.
+
+URL checked:
+
+```text
+https://yehor212.github.io/people-first-app/orb?nav=v2&navLayout=phone&dev=true&_v=1781656078064
+```
+
+Result: PASS for the public V2 phone route transition.
+
+Scenario summary:
+
+- `public-phone-v2-habits-transition`: initial active page `orb`, final active
+  page `habits`, Not Found false, pending text `Habits`, z-indexes
+  pending/backdrop/drawer = 61/59/60, pending visible above drawer, pending text
+  latency 46.6ms, habits active latency 97.3ms, console 0, failed requests 0.
+
+Evidence:
+
+- Facts: `output/playwright/public-v2-transition-20260617/facts.json`
+- Facts SHA-256: `aaa81e3a16d951785c740cfda6f8f2619699eeeb407f316ac6238adcaab2fadc`
+- Verification log:
+  `output/playwright/public-v2-transition-20260617/verification-log.txt`
+- Verification log SHA-256:
+  `553ce333ce30ad52f927e9f6dfeb29968f3408623282ce4d691f96c6163b904e`
+- Screenshot:
+  `output/playwright/public-v2-transition-20260617/public-phone-v2-habits-transition.png`
+- Screenshot SHA-256:
+  `f9588e13b474cb5c654422de58daec5373648acd35cb3e43fd75bbce8c2c272a`
+
+## Fresh Cache-Busted Smoke - 2026-06-16, Historical
 
 Command source: inline Playwright smoke against public GitHub Pages.
 
