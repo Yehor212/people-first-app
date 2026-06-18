@@ -8,7 +8,18 @@
     "**/output/**/xcode-derived*": true,
     "**/output/local-https-proxy": true,
     "**/src-tauri/target": true,
-    "**/src-tauri/gen/schemas/* 2.json": true
+    "**/src-tauri/gen/schemas/* 2.json": true,
+    "**/output/xcodebuild": true,
+    "**/output/security": true,
+    "**/output/*-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]*": true,
+    "**/output/**/DerivedData*": true,
+    "**/output/playwright/*.json": true,
+    "**/src-tauri/gen/schemas/macOS-schema.json": true,
+    "**/output/design-explorations": true,
+    "**/output/android-emulator": true,
+    "**/output/*.json": true,
+    "**/output/*.txt": true,
+    "**/output/*.html": true
   },
   "search.exclude": {
     "**/.playwright-cli": true,
@@ -20,7 +31,18 @@
     "**/output/local-https-proxy": true,
     "**/src-tauri/target": true,
     "**/src-tauri/gen/schemas/* 2.json": true,
-    "**/output/playwright/*/**": true
+    "**/output/playwright/*/**": true,
+    "**/output/xcodebuild": true,
+    "**/output/security": true,
+    "**/output/*-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]*": true,
+    "**/output/**/DerivedData*": true,
+    "**/output/playwright/*.json": true,
+    "**/src-tauri/gen/schemas/macOS-schema.json": true,
+    "**/output/design-explorations": true,
+    "**/output/android-emulator": true,
+    "**/output/*.json": true,
+    "**/output/*.txt": true,
+    "**/output/*.html": true
   },
   "files.watcherExclude": {
     "**/.playwright-cli/**": true,
@@ -32,7 +54,19 @@
     "**/output/local-https-proxy/**": true,
     "**/src-tauri/target/**": true,
     "**/src-tauri/gen/schemas/* 2.json": true,
-    "**/output/playwright/*/**": true
+    "**/output/playwright/*/**": true,
+    "**/output/xcodebuild/**": true,
+    "**/output/security/**": true,
+    "**/output/*-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]*/**": true,
+    "**/output/**/DerivedData*/**": true,
+    "**/output/playwright/*.json": true,
+    "**/src-tauri/gen/schemas/macOS-schema.json": true,
+    "**/output/design-explorations/**": true,
+    "**/output/android-emulator/**": true,
+    "**/output/*.json": true,
+    "**/output/*.txt": true,
+    "**/output/*.html": true
   },
-  "explorer.excludeGitIgnore": true
+  "explorer.excludeGitIgnore": true,
+  "git.showIgnoredFiles": false
 }
