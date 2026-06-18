@@ -179,6 +179,9 @@ src-tauri/gen/schemas/macOS-schema.json
 .research-done
 .prettier-circuit-breaker
 # Browser screenshot debug artifacts (Playwright MCP, ad-hoc verification)
+# Generated verification output is ignored by default.
+# Existing tracked files under output/ remain tracked; use git add -f for intentional new evidence.
+output/**
 .playwright-cli/
 .codex-artifacts/
 .codex/auto-context/

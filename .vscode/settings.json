@@ -19,7 +19,8 @@
     "**/output/android-emulator": true,
     "**/output/*.json": true,
     "**/output/*.txt": true,
-    "**/output/*.html": true
+    "**/output/*.html": true,
+    "**/output/**": true
   },
   "search.exclude": {
     "**/.playwright-cli": true,
@@ -42,7 +43,8 @@
     "**/output/android-emulator": true,
     "**/output/*.json": true,
     "**/output/*.txt": true,
-    "**/output/*.html": true
+    "**/output/*.html": true,
+    "**/output/**": true
   },
   "files.watcherExclude": {
     "**/.playwright-cli/**": true,
@@ -65,7 +67,8 @@
     "**/output/android-emulator/**": true,
     "**/output/*.json": true,
     "**/output/*.txt": true,
-    "**/output/*.html": true
+    "**/output/*.html": true,
+    "**/output/**": true
   },
   "explorer.excludeGitIgnore": true,
   "git.showIgnoredFiles": false
